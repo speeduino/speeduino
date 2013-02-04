@@ -92,7 +92,7 @@ void loop()
       int VE = getTableValue(fuelTable, rpm, MAP);
       
       //From all of the above, calculate an injector pulsewidth
-      int pulseWidth = PW(req_fuel, VE, MAP, 100, engineInjectorDeadTime);
+      int pulseWidth = PW(req_fuel, VE, MAP, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
       
     
     }
