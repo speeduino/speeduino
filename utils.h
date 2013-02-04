@@ -2,6 +2,10 @@
 These are some utility functions and variables used through the main code
 */
 
+#define MS_IN_MINUTE 60000
+#define US_IN_MINUTE 60000000
+
+
 //The following functions help determine the required fuel constant. For more information about these calculations, please refer to http://www.megamanual.com/v22manual/mfuel.htm
 int AIRDEN(int MAP, int temp)
   {
