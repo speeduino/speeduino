@@ -13,6 +13,8 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #define engineStrokes 4 //Can be 2 stroke or 4 stroke, any other value will cause problems
 //**************************************************************************************************
 
+#include "utils.h"
+
 int req_fuel = ((engineCapacity / engineInjectorSize) / engineCylinders / engineStoich) * 100; // This doesn't seem quite correct, but I can't find why. It will be close enough to start an engine
 
 // Setup section
@@ -61,7 +63,7 @@ void loop()
   {
     //Always check for sync
     //Main loop runs within this clause
-    if hasSync
+    if (hasSync)
     {
     
     }
