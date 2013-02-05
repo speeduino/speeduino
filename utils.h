@@ -6,10 +6,12 @@ These are some utility functions and variables used through the main code
 #define US_IN_MINUTE 60000000
 
 
-//The following functions help determine the required fuel constant. For more information about these calculations, please refer to http://www.megamanual.com/v22manual/mfuel.htm
+/* The following functions help determine the required fuel constant. For more information about these calculations, please refer to http://www.megamanual.com/v22manual/mfuel.htm
+  Calc below are for metric inputs of temp (degrees C) and MAP (kPa) to produce kg/m3.
+*/
 int AIRDEN(int MAP, int temp)
   {
-    
+	return (1.2929 * 273.13/(temp+273.13) * MAP/101.325);    
   }
   
 /*
