@@ -37,10 +37,10 @@ int getTableValue(struct table fromTable, int Y, int X)
     //Note: For the X axis specifically, rather than looping from tableAxisX[0] up to tableAxisX[max], we start at tableAxisX[Max] and go down. 
     //      This is because the important tables (fuel and injection) will have the highest RPM at the top of the X axis, so starting there will mean the best case occurs when the RPM is highest (And hence the CPU is needed most)
     int xMin = fromTable.axisX[0];
-    int xMax = fromTable.axisX[fromTable.xSize];
-    for (int x = fromTable.xSize; x > 0; x--)
+    int xMax = fromTable.axisX[fromTable.xSize-1];
+    for (int x = fromTable.xSize-1; x > 0; x--)
     {
-      if ( (X < fromTable.axisX[x]) && (X > fromTable.axisX[x-1]) )
+      if ( (X <= fromTable.axisX[x]) && (X >= fromTable.axisX[x-1]) )
       {
         xMax = fromTable.axisX[x];
         xMin = fromTable.axisX[x-1];
@@ -50,10 +50,10 @@ int getTableValue(struct table fromTable, int Y, int X)
     
     //Loop through the Y axis bins for the min/max pair
     int yMin = fromTable.axisY[0];
-    int yMax = fromTable.axisY[fromTable.ySize];
-    for (int y = fromTable.ySize; y > 0; y--)
+    int yMax = fromTable.axisY[fromTable.ySize-1];
+    for (int y = fromTable.ySize-1; y > 0; y--)
     {
-      if ( (Y < fromTable.axisY[y]) && (Y > fromTable.axisY[y-1]) )
+      if ( (Y >= fromTable.axisY[y]) && (Y <= fromTable.axisY[y-1]) )
       {
         yMax = fromTable.axisY[y];
         yMin = fromTable.axisY[y-1];
@@ -80,11 +80,13 @@ int getTableValue(struct table fromTable, int Y, int X)
     
     //Create some normalised position values
     float p = ((float)(X - xMin)) / (xMax - xMin);
-    float q = ((float)(Y - yMax)) / (yMax - yMin);
+    float q = ((float)(Y - yMax)) / (yMin - yMax);
     
-    float m = (1.0-p)(1.0-q);
+    float m = (1.0-p) * (1.0-q);
+    float n = p * (1-q);
+    float o = (1-p) * q;
+    float r = p * q;
     
     
-    
-    return 1; 
+    return ( (A * m) + (B * n) + (C * o) + (D * r) ); 
   }
