@@ -7,9 +7,10 @@ struct table {
   const static int xSize = 8;
   const static int ySize = 8;
   
-  int values[xSize][ySize];
-  int axisX[xSize];
-  int axisY[ySize];
+  int values[ySize][xSize];
+  //int axisX[xSize];
+  int axisX[];
+  int axisY[];
   //static boolean useInterp = false; //Whether or not interpolation should be used (Assuming we have enough CPU for it)
   
 };
@@ -28,11 +29,62 @@ Eg: 2x2 table
 
 */
 
+//This function pulls a value from a table given a target for X and Y coordinates.
+//It performs a 2D linear interpolation as descibred in: http://www.megamanual.com/v22manual/ve_tuner.pdf
 int getTableValue(struct table fromTable, int Y, int X)
   {
-    for (int x = 0; x < fromTable.xSize; x++)
+    //Loop through the X axis bins for the min/max pair
+    //Note: For the X axis specifically, rather than looping from tableAxisX[0] up to tableAxisX[max], we start at tableAxisX[Max] and go down. 
+    //      This is because the important tables (fuel and injection) will have the highest RPM at the top of the X axis, so starting there will mean the best case occurs when the RPM is highest (And hence the CPU is needed most)
+    int xMin = fromTable.axisX[0];
+    int xMax = fromTable.axisX[fromTable.xSize];
+    for (int x = fromTable.xSize; x > 0; x--)
     {
-      
+      if ( (X < fromTable.axisX[x]) && (X > fromTable.axisX[x-1]) )
+      {
+        xMax = fromTable.axisX[x];
+        xMin = fromTable.axisX[x-1];
+        break;
+      }   
     }
+    
+    //Loop through the Y axis bins for the min/max pair
+    int yMin = fromTable.axisY[0];
+    int yMax = fromTable.axisY[fromTable.ySize];
+    for (int y = fromTable.ySize; y > 0; y--)
+    {
+      if ( (Y < fromTable.axisY[y]) && (Y > fromTable.axisY[y-1]) )
+      {
+        yMax = fromTable.axisY[y];
+        yMin = fromTable.axisY[y-1];
+        break;
+      }   
+    }
+    
+    /* 
+    At this point we have the 4 corners of the map where the interpolated value will fall in
+    Eg: (yMin,xMin)  (yMin,xMax)
+    
+        (yMax,xMin)  (yMax,xMax)
+        
+    In the following calculation the table values are referred to by the following variables:
+              A          B
+              
+              C          D
+    
+    */
+    int A = fromTable.values[yMin][xMin];
+    int B = fromTable.values[yMin][xMax];
+    int C = fromTable.values[yMax][xMin];
+    int D = fromTable.values[yMax][xMax];
+    
+    //Create some normalised position values
+    float p = ((float)(X - xMin)) / (xMax - xMin);
+    float q = ((float)(Y - yMax)) / (yMax - yMin);
+    
+    float m = (1.0-p)(1.0-q);
+    
+    
+    
     return 1; 
   }
