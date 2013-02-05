@@ -103,6 +103,12 @@ void loop()
       //Serial.println(VE);
       Serial.print("VE: ");
       Serial.println(VE);
+      
+      Serial.print("Injector pulsewidth: ");
+      Serial.println(pulseWidth);
+      //Serial.println(req_fuel * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(100/100.0) + engineInjectorDeadTime);
+      //Serial.println( (float)(req_fuel * (float)(VE/100)) );
+      //Serial.println( (float)(VE/100.0));
     
     }
     else
