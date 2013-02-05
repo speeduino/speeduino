@@ -23,7 +23,7 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #include "table.h"
 #include "testing.h"
 
-int req_fuel = ((engineCapacity / engineInjectorSize) / engineCylinders / engineStoich) * 100; // This doesn't seem quite correct, but I can't find why. It will be close enough to start an engine
+float req_fuel = ((engineCapacity / engineInjectorSize) / engineCylinders / engineStoich) * 100; // This doesn't seem quite correct, but I can't find why. It will be close enough to start an engine
 
 
 
@@ -69,7 +69,7 @@ void setup() {
   
   req_fuel = req_fuel / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
 
-  
+  Serial.begin(9600);
   
   
   
@@ -90,7 +90,7 @@ void loop()
       }
       
       //Get the current MAP value
-      int MAP = 1; //Placeholder
+      int MAP = 50; //Placeholder
       
       //Perform lookup into fuel map for RPM vs MAP value
       int VE = getTableValue(fuelTable, rpm, MAP);
@@ -102,13 +102,25 @@ void loop()
     }
     else
     { getSync(); }
+    
+    Serial.print("Time");
+    Serial.println(micros());
+    Serial.println(toothLastToothTime);
+    Serial.println(toothLastMinusOneToothTime);
+    Serial.println(rpm);
+    delay(100);
 
   }
   
 //The get Sync function attempts to wait 
 void getSync()
   {
+    //The are some placeholder values so we can get a fake RPM
+    toothLastMinusOneToothTime = micros();
+    delay(1); //A 1000us delay should make for about a 5000rpm test speed with a 12 tooth wheel(60000000us / (1000us * triggerTeeth)
+    toothLastToothTime = micros();
     
+    hasSync = true;
   }
 
 

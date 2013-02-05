@@ -4,19 +4,20 @@ This file has a few functions that are helpful for testing such as creating dumm
 
 /*
 Aim is to create an 8x8 table that looks like the below:
- VE
-_____________________________________________
-|100|    |    |    |    |    |    |    | 90 |
-| 88|
-| 75|
-| 63|
-| 50|
-| 38|
-| 25| 17 | 21 |
-| 13| 15 | 20 |
-|   | 500|1500|2000|2500|3000|4000|5000|6000| RPM
+ MAP
+______________________________________________
+|100|| 78 | 88 | 92 | 95 | 97 |101 |107 |110 |
+| 88|| 58 | 
+| 75|| 45 |
+| 63|| 35 |  
+| 50|| 28 | 30
+| 38|| 22 | 23 | 
+| 25|| 17 | 21 |
+| 13|| 15 | 20 | 25 | 
+|   || 500|1500|2000|2500|3000|4000|5000|6000| RPM
 
-This is a fairly standard 8x8 VE vs RPM 2D map
+This is a fairly realistic 8x8 VE vs RPM 2D map
+Here is a run through of how the interpolation would flow:
 Pass in:
 x = 1000
 y = 20
