@@ -9,8 +9,8 @@ struct table {
   
   int values[ySize][xSize];
   //int axisX[xSize];
-  int axisX[];
-  int axisY[];
+  int axisX[8];
+  int axisY[8];
   //static boolean useInterp = false; //Whether or not interpolation should be used (Assuming we have enough CPU for it)
   
 };
@@ -38,12 +38,17 @@ int getTableValue(struct table fromTable, int Y, int X)
     //      This is because the important tables (fuel and injection) will have the highest RPM at the top of the X axis, so starting there will mean the best case occurs when the RPM is highest (And hence the CPU is needed most)
     int xMin = fromTable.axisX[0];
     int xMax = fromTable.axisX[fromTable.xSize-1];
+    int xMinValue = 0;
+    int xMaxValue = 0;    
+    
     for (int x = fromTable.xSize-1; x > 0; x--)
     {
       if ( (X <= fromTable.axisX[x]) && (X >= fromTable.axisX[x-1]) )
       {
-        xMax = fromTable.axisX[x];
-        xMin = fromTable.axisX[x-1];
+        xMaxValue = fromTable.axisX[x];
+        xMinValue = fromTable.axisX[x-1];
+        xMax = x;
+        xMin = x-1;
         break;
       }   
     }
@@ -51,15 +56,22 @@ int getTableValue(struct table fromTable, int Y, int X)
     //Loop through the Y axis bins for the min/max pair
     int yMin = fromTable.axisY[0];
     int yMax = fromTable.axisY[fromTable.ySize-1];
+    int yMinValue = 0;
+    int yMaxValue = 0;
+    
     for (int y = fromTable.ySize-1; y > 0; y--)
     {
       if ( (Y >= fromTable.axisY[y]) && (Y <= fromTable.axisY[y-1]) )
       {
-        yMax = fromTable.axisY[y];
-        yMin = fromTable.axisY[y-1];
+        
+        yMaxValue = fromTable.axisY[y];
+        yMinValue = fromTable.axisY[y-1];
+        yMax = y;
+        yMin = y-1;
         break;
       }   
     }
+        
     
     /* 
     At this point we have the 4 corners of the map where the interpolated value will fall in
@@ -79,8 +91,9 @@ int getTableValue(struct table fromTable, int Y, int X)
     int D = fromTable.values[yMax][xMax];
     
     //Create some normalised position values
-    float p = ((float)(X - xMin)) / (xMax - xMin);
-    float q = ((float)(Y - yMax)) / (yMin - yMax);
+    //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
+    float p = ((float)(X - xMinValue)) / (float)(xMaxValue - xMinValue);
+    float q = ((float)(Y - yMaxValue)) / (float)(yMinValue - yMaxValue);
     
     float m = (1.0-p) * (1.0-q);
     float n = p * (1-q);

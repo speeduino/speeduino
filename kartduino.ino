@@ -45,6 +45,7 @@ struct table fuelTable;
 
 
 
+
 void setup() {
   
   //Begin the main crank trigger interrupt pin setup
@@ -71,6 +72,7 @@ void setup() {
 
   Serial.begin(9600);
   
+  dummyFuelTable(&fuelTable);
   
   
 }
@@ -88,26 +90,28 @@ void loop()
         long revolutionTime = (triggerTeeth * (toothLastToothTime - toothLastMinusOneToothTime)); //The time in us that one revolution would take at current speed
         rpm = US_IN_MINUTE / revolutionTime;
       }
-      
+      rpm = 1000;
       //Get the current MAP value
-      int MAP = 50; //Placeholder
+      int MAP = 20; //Placeholder
       
       //Perform lookup into fuel map for RPM vs MAP value
-      int VE = getTableValue(fuelTable, rpm, MAP);
+      int VE = getTableValue(fuelTable, MAP, rpm);
       
       //From all of the above, calculate an injector pulsewidth
       int pulseWidth = PW(req_fuel, VE, MAP, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
       
+      //Serial.println(VE);
+      Serial.print("VE: ");
+      Serial.println(VE);
     
     }
     else
     { getSync(); }
     
-    Serial.print("Time");
-    Serial.println(micros());
-    Serial.println(toothLastToothTime);
-    Serial.println(toothLastMinusOneToothTime);
-    Serial.println(rpm);
+
+    //Serial.println(toothLastToothTime);
+    //Serial.println(toothLastMinusOneToothTime);
+    //Serial.println(rpm);
     delay(100);
 
   }

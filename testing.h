@@ -43,12 +43,33 @@ VE = ( (17 * 0.2083) + (21 * 0.2083) + (15 * 0.9166) + (20 * 0.29166) ) = 18.125
 
 */
 
-void dummyFuelTable()
+void dummyFuelTable(struct table *myFuelTable)
   {
-    table myFuelTable;
+    //table myFuelTable;
     
-    int tempXAxis[8] = {100,88,75,63,50,38,25,13};
-    *myFuelTable.axisY = *tempXAxis;
-    int tempYAxis[8] = {500,1500,2500,3000,4000,5000,6000};
-    *myFuelTable.axisY = *tempYAxis;
+    int tempXAxis[8] = {500,1500,2000,2500,3000,4000,5000,6000};
+    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->axisX[x] = tempXAxis[x]; }
+    //*myFuelTable->axisX = *tempXAxis;
+    int tempYAxis[8] = {100,88,75,63,50,38,25,13};
+    for (int x = 0; x< myFuelTable->ySize; x++) { myFuelTable->axisY[x] = tempYAxis[x]; }
+    //*myFuelTable->axisY = *tempYAxis;
+    
+    //Go through the 8 rows and add the column values
+    int tempRow1[8] = {78,88,92,95,97,101,107,110};
+    int tempRow2[8] = {58,88,75,63,50,38,25,13};
+    int tempRow3[8] = {45,88,75,63,50,38,25,13};
+    int tempRow4[8] = {35,88,75,63,50,38,25,13};
+    int tempRow5[8] = {28,88,75,63,50,38,25,13};
+    int tempRow6[8] = {22,23,75,63,50,38,25,13};
+    int tempRow7[8] = {17,21,75,63,50,38,25,13};
+    int tempRow8[8] = {15,20,25,63,50,38,25,13};
+    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[0][x] = tempRow1[x]; }
+    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[1][x] = tempRow2[x]; }
+    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[2][x] = tempRow3[x]; }
+    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[3][x] = tempRow4[x]; }
+    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[4][x] = tempRow5[x]; }
+    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[5][x] = tempRow6[x]; }
+    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[6][x] = tempRow7[x]; }
+    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[7][x] = tempRow8[x]; }
+        
   }
