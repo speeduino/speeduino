@@ -36,5 +36,5 @@ BARO: Barometric Correction <-- Skip?
 
 int GammaE( int WARMUP, int O2_CLOSED, int AIRTEMP, int BARO)
   {
-    return = (WARMUP/100) * (O2_CLOSED/100) * (AIRTEMP/100) * (BARO/100)
+    return (WARMUP/100) * (O2_CLOSED/100) * (AIRTEMP/100) * (BARO/100);
   }

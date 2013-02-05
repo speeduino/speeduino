@@ -16,13 +16,16 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 
 //The following lines are configurable, but the defaults are probably pretty good for most applications
 #define engineInjectorDeadTime 1.5 //Time in ms that the injector takes to open
-#define engineSquirtsPerCycle 2 //Probably would be 1 for a 2 stroke
+#define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 //**************************************************************************************************
 
 #include "utils.h"
 #include "table.h"
+#include "testing.h"
 
 int req_fuel = ((engineCapacity / engineInjectorSize) / engineCylinders / engineStoich) * 100; // This doesn't seem quite correct, but I can't find why. It will be close enough to start an engine
+
+
 
 // Setup section
 // These aren't really configuration options, more so a description of how the hardware is setup. These are things that will be defined in the recommended hardware setup
@@ -64,6 +67,7 @@ void setup() {
   attachInterrupt(triggerInterrupt, trigger, RISING); // Attach the crank trigger wheel interrupt
   //End crank triger interrupt attachment
   
+  req_fuel = req_fuel / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
 
   
   
