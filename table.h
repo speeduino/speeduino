@@ -2,6 +2,7 @@
 This file is used for everything related to maps/tables including their definition, functions etc
 */
 
+
 struct table {
   //All tables must be the same size for simplicity
   const static int xSize = 8;
@@ -92,6 +93,8 @@ int getTableValue(struct table fromTable, int Y, int X)
     
     //Create some normalised position values
     //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
+    /*
+    // Float version
     float p = ((float)(X - xMinValue)) / (float)(xMaxValue - xMinValue);
     float q = ((float)(Y - yMaxValue)) / (float)(yMinValue - yMaxValue);
     
@@ -102,4 +105,16 @@ int getTableValue(struct table fromTable, int Y, int X)
     
     
     return ( (A * m) + (B * n) + (C * o) + (D * r) ); 
+    */
+    
+    // Non-Float version:
+    int p = ((X - xMinValue) << 7) / (xMaxValue - xMinValue);
+    int q = ((Y - yMaxValue) << 7) / (yMinValue - yMaxValue);
+      
+    int m = ((128-p) * (128-q)) >> 7;
+    int n = (p * (128-q)) >> 7;
+    int o = ((128-p) * q) >> 7;
+    int r = (p * q) >> 7;
+
+    return ( (A * m) + (B * n) + (C * o) + (D * r) ) >> 7; 
   }
