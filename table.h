@@ -9,10 +9,8 @@ struct table {
   const static int ySize = 8;
   
   int values[ySize][xSize];
-  //int axisX[xSize];
-  int axisX[8];
-  int axisY[8];
-  //static boolean useInterp = false; //Whether or not interpolation should be used (Assuming we have enough CPU for it)
+  int axisX[xSize];
+  int axisY[ySize];
   
 };
 
