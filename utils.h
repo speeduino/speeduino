@@ -1,6 +1,6 @@
 /*
 These are some utility functions and variables used through the main code
-*/
+*/ 
 
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000

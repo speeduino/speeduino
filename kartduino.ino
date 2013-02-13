@@ -22,9 +22,14 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #include "utils.h"
 #include "table.h"
 #include "testing.h"
+#include "scheduler.h"
 
+//#include "TimerThree.h" //Enable this when switching to Mega 
+#include "TimerOne.h" //Enable this when using Leo based test board
+
+//
 float req_fuel = ((engineCapacity / engineInjectorSize) / engineCylinders / engineStoich) * 100; // This doesn't seem quite correct, but I can't find why. It will be close enough to start an engine
-
+int req_fuel_uS = req_fuel * 1000; //Convert to uS and, importantly, an int. This is the only variable to be used in calculations
 
 
 // Setup section
@@ -43,7 +48,8 @@ volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) tha
 int rpm = 0; //Stores the last recorded RPM value
 struct table fuelTable;
 
-
+unsigned long injectTime[engineCylinders]; //The system time in uS that each injector needs to next fire at
+boolean intjectorNeedsFire[engineCylinders]; //Whether each injector needs to fire or not
 
 
 void setup() {
@@ -73,12 +79,13 @@ void setup() {
   Serial.begin(9600);
   
   dummyFuelTable(&fuelTable);
-  
+  initialiseScheduler();
   
 }
 
 void loop() 
   {
+    delay(2500);
     //Always check for sync
     //Main loop runs within this clause
     if (hasSync)
@@ -87,7 +94,7 @@ void loop()
       //Calculate the RPM based on the time between the last 2 teeth. I have no idea whether this will be accurate AT ALL, but it's fairly efficient and means there doesn't need to be another variable placed into the trigger interrupt
       if (toothCurrentCount != 1) //We can't perform the RPM calculation if we're at the first tooth as the timing would be double (Well, we can, but it would need a different calculation and I don't think it's worth it, just use the last RPM value)
       {
-        long revolutionTime = (triggerTeeth * (toothLastToothTime - toothLastMinusOneToothTime)); //The time in us that one revolution would take at current speed
+        long revolutionTime = (triggerTeeth * (toothLastToothTime - toothLastMinusOneToothTime)); //The time in uS that one revolution would take at current speed
         rpm = US_IN_MINUTE / revolutionTime;
       }
       rpm = 1000;
@@ -109,6 +116,10 @@ void loop()
       //Serial.println(req_fuel * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(100/100.0) + engineInjectorDeadTime);
       //Serial.println( (float)(req_fuel * (float)(VE/100)) );
       //Serial.println( (float)(VE/100.0));
+      
+      Serial.print("Calling schedule at: ");
+      Serial.println(micros());
+      setSchedule1(openInjector2, 1000);
     
     }
     else
@@ -137,6 +148,7 @@ void getSync()
 //Interrupts  
 
 //These 2 functions simply trigger the injector driver off or on. 
+void openInjector2() { Serial.print("Interrupt finished at: ");  Serial.println(micros());}
 void openInjector() { digitalWrite(pinInjector, HIGH); } // Set based on an estimate of when to open the injector
 void closeInjector() { digitalWrite(pinInjector, LOW); } // Is called x ms after the open time where x is calculated by the rpm, load and req_fuel
 

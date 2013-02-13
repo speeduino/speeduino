@@ -2,7 +2,6 @@
 This file is used for everything related to maps/tables including their definition, functions etc
 */
 
-
 struct table {
   //All tables must be the same size for simplicity
   const static int xSize = 8;
