@@ -51,6 +51,7 @@ struct table fuelTable;
 unsigned long injectTime[engineCylinders]; //The system time in uS that each injector needs to next fire at
 boolean intjectorNeedsFire[engineCylinders]; //Whether each injector needs to fire or not
 
+unsigned long counter;
 
 void setup() {
   
@@ -80,12 +81,12 @@ void setup() {
   
   dummyFuelTable(&fuelTable);
   initialiseScheduler();
-  
+  counter = 0;
 }
 
 void loop() 
   {
-    delay(2500);
+    //delay(2500);
     //Always check for sync
     //Main loop runs within this clause
     if (hasSync)
@@ -108,18 +109,22 @@ void loop()
       int pulseWidth = PW(req_fuel, VE, MAP, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
       
       //Serial.println(VE);
-      Serial.print("VE: ");
-      Serial.println(VE);
+      //Serial.print("VE: ");
+      //Serial.println(VE);
       
-      Serial.print("Injector pulsewidth: ");
-      Serial.println(pulseWidth);
+      //Serial.print("Injector pulsewidth: ");
+      //Serial.println(pulseWidth);
       //Serial.println(req_fuel * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(100/100.0) + engineInjectorDeadTime);
       //Serial.println( (float)(req_fuel * (float)(VE/100)) );
       //Serial.println( (float)(VE/100.0));
-      
+      //920 out
+      if (counter > 100000) {
       Serial.print("Calling schedule at: ");
       Serial.println(micros());
-      setSchedule1(openInjector2, 1000);
+      setSchedule1(openInjector2, 1000000);
+      counter = 0;
+      }
+      counter++;
     
     }
     else
@@ -129,7 +134,7 @@ void loop()
     //Serial.println(toothLastToothTime);
     //Serial.println(toothLastMinusOneToothTime);
     //Serial.println(rpm);
-    delay(100);
+    //delay(100);
 
   }
   
