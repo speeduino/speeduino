@@ -6,9 +6,9 @@
 /*
 Need to calculate the req_fuel figure here, preferably in pre-processor macro
 */
-#define engineCapacity 100 // In cc
+#define engineCapacity 148 // In cc
 #define engineCylinders 1 // May support more than 1 cyl later. Always will assume 1 injector per cylinder. 
-#define engineInjectorSize 100 // In cc/min
+#define engineInjectorSize 80 // In cc/min
 #define engineStoich 14.7 // Stoichiometric ratio of fuel used
 #define engineStrokes 4 //Can be 2 stroke or 4 stroke, any other value will cause problems
 #define engineDwell 3000 //The spark dwell time in uS
@@ -111,21 +111,43 @@ void loop()
       //Perform lookup into fuel map for RPM vs MAP value
       int VE = getTableValue(fuelTable, MAP, rpm);
       //Calculate an injector pulsewidth form the VE
-      int pulseWidth = PW(req_fuel, VE, MAP, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
+      unsigned long pulseWidth = PW(req_fuel, VE, MAP, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
       
       //Perform a lookup to get the desired ignition advance
-      int advance = getTableValue(ignitionTable, MAP, rpm);
+      int ignitionAdvance = getTableValue(ignitionTable, MAP, rpm);
       
       //Determine the current crank angle
       int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is from TDC
       if (crankAngle > 360) { crankAngle -= 360; } //Not sure if this is actually required
       
-      //Determine next firing angles
-      
-      
-      //Finally calculate the time (uS) until we reach the firing angles
+      //How fast are we going? Can possibly work this out from RPM, but I don't think it's going to take a lot of CPU
       unsigned long timePerDegree = (toothLastToothTime - toothLastMinusOneToothTime) / triggerToothAngle; //The time (uS) it is currently taking to move 1 degree
       
+      //Determine next firing angles
+      int injectorStartAngle = 355 - (pulseWidth / timePerDegree); //This is a bit rough, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
+      int ignitionStartAngle = 360 - ignitionAdvance; //Simple
+      
+      
+      //Finally calculate the time (uS) until we reach the firing angles and set the schedules
+      //We only need to set the shcedule if we're BEFORE the open angle
+      //This may potentially be called a number of times as we get closer and closer to the opening time
+      if (injectorStartAngle > crankAngle) 
+      { 
+        setSchedule1(openInjector, 
+                  (injectorStartAngle - crankAngle) * timePerDegree,
+                  pulseWidth,
+                  closeInjector
+                  );
+      }
+      //Likewise for the ignition
+      if (ignitionStartAngle > crankAngle) 
+      { 
+        setSchedule2(beginCoilCharge, 
+                  (ignitionStartAngle - crankAngle) * timePerDegree,
+                  engineDwell,
+                  endCoilCharge
+                  );
+      }
       
       
       //Serial.println(VE);

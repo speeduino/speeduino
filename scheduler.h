@@ -28,10 +28,14 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 
 //#define clockspeed 16000000
 
-int schedule1Active; 
+int schedule1Active; //Value=0 means do nothing, value=1 means call the startCallback, value=2 means call the endCallback
 int schedule2Active;
-void (*schedule1Callback)(); //Callback function for schedule1
-void (*schedule2Callback)();
+unsigned long schedule1Duration; //How long (uS) after calling the start callback to we call the end callback
+unsigned long schedule2Duration;
+void (*schedule1StartCallback)(); //Start Callback function for schedule1
+void (*schedule2StartCallback)();
+void (*schedule1EndCallback)(); //End Callback function for schedule1
+void (*schedule2EndCallback)();
 
 void initialiseScheduler()
   {
@@ -58,28 +62,32 @@ void initialiseScheduler()
   }
   
 /*
-This turns schedule 1 on, gives it a callback functino and resets the relevant timer based on the time in the future that this should be triggered
+This turns schedule 1 on, gives it callback functions and resets the relevant timer based on the time in the future that this should be triggered
 Args:
-callback: The function to be called once the timeout is reach
-timeout: The number of uS in the future that the callback should be triggered
+startCallback: The function to be called once the timeout1 is reached
+timeout1: The number of uS in the future that the callback should be triggered
+duration: The number of uS before endCallback is called
+endCallback
 */
-void setSchedule1(void (*callback)(), unsigned long timeout)
+void setSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
     //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
     //As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
     //TODO: Need to add check for timeout > 1048576 ????
     TCNT3 = 65536 - (timeout / 16); //Each tick occurs every 16uS with a 256 prescaler so divide the timeout by 16 to get ther required number of ticks. Subtract this from the total number of tick (65536 for 16-bit timer)
-    //TCNT3 = 0;
-    schedule1Callback = callback; //Name the callback function
-    schedule1Active = 1; //Turn this schedule on
+    schedule1Duration = duration;
+    schedule1StartCallback = startCallback; //Name the start callback function
+    schedule1EndCallback = endCallback; //Name the start callback function
+    schedule1Active = 1; //Turn this schedule on and set it
   }
   
 //As above, but for schedule2
-void setSchedule2(void (*callback)(), unsigned long timeout)
+void setSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
     //TODO: Need to add check for timeout > 1048576 ????
     TCNT4 = 65536 - (timeout / 16); //Each tick occurs every 16uS with a 256 prescaler so divide the timeout by 16 to get ther required number of ticks. Subtract this from the total number of tick (65536 for 16-bit timer)
-    schedule2Callback = callback; //Name the callback function
+    schedule2StartCallback = startCallback; //Name the callback function
+    schedule2EndCallback = endCallback; //Name the callback function
     schedule2Active = 1; //Turn this schedule on
   }
   
@@ -87,25 +95,37 @@ void setSchedule2(void (*callback)(), unsigned long timeout)
 //This needs to call the callback function if one has been provided and rest the timer
 ISR(TIMER3_OVF_vect)
   {
-    if (schedule1Active > 0) //Check to see if this schedule is turn on
+    if (schedule1Active == 1) //Check to see if this schedule is turn on
     {
-      schedule1Callback(); //Replace with user provided callback
-      schedule1Active = 0; //Turn off the callback 
+      schedule1StartCallback(); //Replace with user provided callback
+      schedule1Active = 2; //Turn off the callback 
+      TCNT3 = 65536 - (schedule2Duration / 16);
+    }
+    else if (schedule1Active == 2)
+    {
+       schedule1EndCallback();
+       schedule1Active = 0; //Turn off the callback
+       TCNT3 = 0;           //Reset Timer to 0 out of 255
     }
     
-  TCNT3 = 0;           //Reset Timer to 0 out of 255
   TIFR3 = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
   }
 
 //AS above for schedule2
 ISR(TIMER4_OVF_vect)
   {
-    if (schedule2Active > 0) //Check to see if this schedule is turn on
+    if (schedule2Active == 1) //A value of 1 means call the start callback
     {
-      schedule2Callback(); //Replace with user provided callback
-      schedule2Active = 0; //Turn off the callback 
+      schedule2StartCallback();
+      schedule2Active = 2; //Set to call the end callback on the next run
+      TCNT4 = 65536 - (schedule2Duration / 16); 
+    }
+    else if (schedule2Active == 2)
+    {
+       schedule2EndCallback();
+       schedule2Active = 0; //Turn off the callback
+       TCNT4 = 0;           //Reset Timer to 0 out of 255
     }
     
-  TCNT3 = 0;           //Reset Timer to 0 out of 255
-  TIFR3 = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
+  TIFR4 = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
   }
