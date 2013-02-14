@@ -11,8 +11,10 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #define engineInjectorSize 100 // In cc/min
 #define engineStoich 14.7 // Stoichiometric ratio of fuel used
 #define engineStrokes 4 //Can be 2 stroke or 4 stroke, any other value will cause problems
+#define engineDwell 3000 //The spark dwell time in uS
 #define triggerTeeth 12 //The full count of teeth on the trigger wheel if there were no gaps
 #define triggerMissingTeeth 1 //The size of the tooth gap (ie number of missing teeth)
+#define triggerAngle 110 // The angle (Degrees) from TDC that No 1 cylinder is at when tooth #1 passes the sensor
 
 //The following lines are configurable, but the defaults are probably pretty good for most applications
 #define engineInjectorDeadTime 1.5 //Time in ms that the injector takes to open
@@ -24,8 +26,6 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #include "testing.h"
 #include "scheduler.h"
 
-//#include "TimerThree.h" //Enable this when switching to Mega 
-#include "TimerOne.h" //Enable this when using Leo based test board
 
 //
 float req_fuel = ((engineCapacity / engineInjectorSize) / engineCylinders / engineStoich) * 100; // This doesn't seem quite correct, but I can't find why. It will be close enough to start an engine
@@ -47,11 +47,14 @@ volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) tha
 
 int rpm = 0; //Stores the last recorded RPM value
 struct table fuelTable;
+struct table ignitionTable;
 
 unsigned long injectTime[engineCylinders]; //The system time in uS that each injector needs to next fire at
 boolean intjectorNeedsFire[engineCylinders]; //Whether each injector needs to fire or not
 
 unsigned long counter;
+unsigned long scheduleStart;
+unsigned long scheduleEnd;
 
 void setup() {
   
@@ -80,6 +83,7 @@ void setup() {
   Serial.begin(9600);
   
   dummyFuelTable(&fuelTable);
+  dummyIgnitionTable(&ignitionTable);
   initialiseScheduler();
   counter = 0;
 }
@@ -102,11 +106,24 @@ void loop()
       //Get the current MAP value
       int MAP = 20; //Placeholder
       
+      //Begin the fuel calculation
       //Perform lookup into fuel map for RPM vs MAP value
       int VE = getTableValue(fuelTable, MAP, rpm);
-      
-      //From all of the above, calculate an injector pulsewidth
+      //Calculate an injector pulsewidth form the VE
       int pulseWidth = PW(req_fuel, VE, MAP, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
+      
+      //Perform a lookup to get the desired ignition advance
+      int advance = getTableValue(ignitionTable, MAP, rpm);
+      
+      //Determine the current crank angle
+      int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is from TDC
+      if (crankAngle > 360) { crankAngle -= 360; } //Not sure if this is actually required
+      
+      //Determine next firing angles
+      
+      
+      //Finally calculate the time (uS) until we reach the firing angles
+      
       
       //Serial.println(VE);
       //Serial.print("VE: ");
@@ -117,14 +134,19 @@ void loop()
       //Serial.println(req_fuel * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(100/100.0) + engineInjectorDeadTime);
       //Serial.println( (float)(req_fuel * (float)(VE/100)) );
       //Serial.println( (float)(VE/100.0));
-      //920 out
+      
       if (counter > 100000) {
-      Serial.print("Calling schedule at: ");
-      Serial.println(micros());
+      scheduleStart = micros();
       setSchedule1(openInjector2, 1000000);
       counter = 0;
       }
       counter++;
+      
+      if (scheduleEnd != 0) { 
+        Serial.print("The schedule took (uS): "); 
+        Serial.println(scheduleEnd - scheduleStart);
+        scheduleEnd = 0;
+      }
     
     }
     else
@@ -153,7 +175,7 @@ void getSync()
 //Interrupts  
 
 //These 2 functions simply trigger the injector driver off or on. 
-void openInjector2() { Serial.print("Interrupt finished at: ");  Serial.println(micros());}
+void openInjector2() { scheduleEnd = micros();}
 void openInjector() { digitalWrite(pinInjector, HIGH); } // Set based on an estimate of when to open the injector
 void closeInjector() { digitalWrite(pinInjector, LOW); } // Is called x ms after the open time where x is calculated by the rpm, load and req_fuel
 
