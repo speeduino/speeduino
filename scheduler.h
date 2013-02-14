@@ -86,6 +86,7 @@ void setSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long 
   {
     //TODO: Need to add check for timeout > 1048576 ????
     TCNT4 = 65536 - (timeout / 16); //Each tick occurs every 16uS with a 256 prescaler so divide the timeout by 16 to get ther required number of ticks. Subtract this from the total number of tick (65536 for 16-bit timer)
+    schedule2Duration = duration;
     schedule2StartCallback = startCallback; //Name the callback function
     schedule2EndCallback = endCallback; //Name the callback function
     schedule2Active = 1; //Turn this schedule on
@@ -99,7 +100,7 @@ ISR(TIMER3_OVF_vect)
     {
       schedule1StartCallback(); //Replace with user provided callback
       schedule1Active = 2; //Turn off the callback 
-      TCNT3 = 65536 - (schedule2Duration / 16);
+      TCNT3 = 65536 - (schedule1Duration / 16);
     }
     else if (schedule1Active == 2)
     {
