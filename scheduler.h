@@ -53,7 +53,8 @@ void initialiseScheduler()
     TCCR4A = 0x00;          //Timer2 Control Reg A: Wave Gen Mode normal
     TCCR4B = (1 << CS12);   //Timer2 Control Reg B: Timer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
    
-    
+    schedule1Active = 0; 
+    schedule2Active = 0;
   }
   
 /*

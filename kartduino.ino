@@ -14,7 +14,7 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #define engineDwell 3000 //The spark dwell time in uS
 #define triggerTeeth 12 //The full count of teeth on the trigger wheel if there were no gaps
 #define triggerMissingTeeth 1 //The size of the tooth gap (ie number of missing teeth)
-#define triggerAngle 110 // The angle (Degrees) from TDC that No 1 cylinder is at when tooth #1 passes the sensor
+#define triggerAngle 110 // The angle (Degrees) from TDC that No 1 cylinder is at when tooth #1 passes the sensor. CANNOT BE 0
 
 //The following lines are configurable, but the defaults are probably pretty good for most applications
 #define engineInjectorDeadTime 1.5 //Time in ms that the injector takes to open
@@ -37,7 +37,8 @@ int req_fuel_uS = req_fuel * 1000; //Convert to uS and, importantly, an int. Thi
 int triggerActualTeeth = triggerTeeth - triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
 int triggerOffset = 120;
 int triggerToothAngle = 360 / triggerTeeth; //The number of degrees that passes from tooth to tooth
-int pinInjector = 6; // The standard pin for the injector driver
+int pinInjector = 6; // The standard pin for the injector driver (Assumes 1 cyl only)
+int pinCoil = 7; //Pin for the coil (AS above, 1 cyl only)
 int pinTrigger = 2;
 
 volatile boolean hasSync = false;
@@ -123,6 +124,8 @@ void loop()
       
       
       //Finally calculate the time (uS) until we reach the firing angles
+      unsigned long timePerDegree = (toothLastToothTime - toothLastMinusOneToothTime) / triggerToothAngle; //The time (uS) it is currently taking to move 1 degree
+      
       
       
       //Serial.println(VE);
@@ -135,6 +138,7 @@ void loop()
       //Serial.println( (float)(req_fuel * (float)(VE/100)) );
       //Serial.println( (float)(VE/100.0));
       
+      /*
       if (counter > 100000) {
       scheduleStart = micros();
       setSchedule1(openInjector2, 1000000);
@@ -142,11 +146,13 @@ void loop()
       }
       counter++;
       
+      
       if (scheduleEnd != 0) { 
         Serial.print("The schedule took (uS): "); 
         Serial.println(scheduleEnd - scheduleStart);
         scheduleEnd = 0;
       }
+      */
     
     }
     else
@@ -175,9 +181,11 @@ void getSync()
 //Interrupts  
 
 //These 2 functions simply trigger the injector driver off or on. 
-void openInjector2() { scheduleEnd = micros();}
+//void openInjector2() { scheduleEnd = micros();}
 void openInjector() { digitalWrite(pinInjector, HIGH); } // Set based on an estimate of when to open the injector
 void closeInjector() { digitalWrite(pinInjector, LOW); } // Is called x ms after the open time where x is calculated by the rpm, load and req_fuel
+void beginCoilCharge() { digitalWrite(pinCoil, HIGH); } // Set based on an estimate of when to begin the charge
+void endCoilCharge() { digitalWrite(pinCoil, LOW); } // Is called after the dwell time has passed
 
 //The trigger function is called everytime a crank tooth passes the sensor
 void trigger()
