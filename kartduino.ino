@@ -19,6 +19,11 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 //The following lines are configurable, but the defaults are probably pretty good for most applications
 #define engineInjectorDeadTime 1.5 //Time in ms that the injector takes to open
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
+
+#define pinInjector 6 //Output pin the injector is on (Assumes 1 cyl only)
+#define pinCoil 7 //Pin for the coil (AS above, 1 cyl only)
+#define pinTPS 8 //TPS input pin
+#define pinTrigger 2 //The CAS pin
 //**************************************************************************************************
 
 #include "utils.h"
@@ -26,20 +31,17 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #include "testing.h"
 #include "scheduler.h"
 
+#include "fastAnalog.h"
+#include "digitalIOPerformance.h"
 
-//
 float req_fuel = ((engineCapacity / engineInjectorSize) / engineCylinders / engineStoich) * 100; // This doesn't seem quite correct, but I can't find why. It will be close enough to start an engine
 int req_fuel_uS = req_fuel * 1000; //Convert to uS and, importantly, an int. This is the only variable to be used in calculations
-
 
 // Setup section
 // These aren't really configuration options, more so a description of how the hardware is setup. These are things that will be defined in the recommended hardware setup
 int triggerActualTeeth = triggerTeeth - triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
 int triggerOffset = 120;
 int triggerToothAngle = 360 / triggerTeeth; //The number of degrees that passes from tooth to tooth
-int pinInjector = 6; // The standard pin for the injector driver (Assumes 1 cyl only)
-int pinCoil = 7; //Pin for the coil (AS above, 1 cyl only)
-int pinTrigger = 2;
 
 volatile boolean hasSync = false;
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
@@ -83,6 +85,14 @@ void setup() {
 
   Serial.begin(9600);
   
+  #ifdef sbi
+  //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS)
+  //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
+  sbi(ADCSRA,ADPS2);
+  cbi(ADCSRA,ADPS1);
+  cbi(ADCSRA,ADPS0);
+  #endif
+  
   dummyFuelTable(&fuelTable);
   dummyIgnitionTable(&ignitionTable);
   initialiseScheduler();
@@ -103,9 +113,11 @@ void loop()
         long revolutionTime = (triggerTeeth * (toothLastToothTime - toothLastMinusOneToothTime)); //The time in uS that one revolution would take at current speed
         rpm = US_IN_MINUTE / revolutionTime;
       }
+      //Serial.print("RPM: "); Serial.println(rpm);
       rpm = 1000;
       //Get the current MAP value
       int MAP = 20; //Placeholder
+      int TPS = 20; //Placeholder
       
       //Begin the fuel calculation
       //Perform lookup into fuel map for RPM vs MAP value
@@ -120,12 +132,16 @@ void loop()
       int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is from TDC
       if (crankAngle > 360) { crankAngle -= 360; } //Not sure if this is actually required
       
+      //Serial.print("Crank angle: "); Serial.println(crankAngle);
+      
       //How fast are we going? Can possibly work this out from RPM, but I don't think it's going to take a lot of CPU
       unsigned long timePerDegree = (toothLastToothTime - toothLastMinusOneToothTime) / triggerToothAngle; //The time (uS) it is currently taking to move 1 degree
       
       //Determine next firing angles
       int injectorStartAngle = 355 - (pulseWidth / timePerDegree); //This is a bit rough, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       int ignitionStartAngle = 360 - ignitionAdvance; //Simple
+      
+      //Serial.print("Injector start angle: "); Serial.println(injectorStartAngle);
       
       
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
@@ -175,6 +191,7 @@ void loop()
         scheduleEnd = 0;
       }
       */
+      trigger();
     
     }
     else
@@ -213,14 +230,15 @@ void endCoilCharge() { digitalWrite(pinCoil, LOW); } // Is called after the dwel
 void trigger()
   {
    // http://www.msextra.com/forums/viewtopic.php?f=94&t=22976
-   // http://www.megamanual.com/ms2/wheel.htm 
+   // http://www.megamanual.com/ms2/wheel.htm
+   unsigned long curTime = micros();
    toothCurrentCount++; //Increment the tooth counter
    
    //Begin the missing tooth detection
-   unsigned long curTime = micros();
    //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
    //if ( (curTime - toothLastToothTime) > (1.5 * (toothLastToothTime - toothLastMinusOneToothTime))) { toothCurrentCount = 1; }
    if ( (curTime - toothLastToothTime) > ((3 * (toothLastToothTime - toothLastMinusOneToothTime))>>1)) { toothCurrentCount = 1; } //Same as above, but uses bitshift instead of multiplying by 1.5
+   //if (toothCurrentCount > triggerActualTeeth) { toothCurrentCount = 1; } //For testing ONLY
    
    // Update the last few tooth times
    toothLastMinusOneToothTime = toothLastToothTime;
