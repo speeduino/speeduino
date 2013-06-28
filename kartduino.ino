@@ -64,7 +64,7 @@ void setup() {
   //Begin the main crank trigger interrupt pin setup
   //The interrupt numbering is a bit odd - See here for reference: http://arduino.cc/en/Reference/AttachInterrupt
   int triggerInterrupt = 0; // By default, use the first interrupt. The user should always have set things up (Or even better, use the recommended pinouts)
-  switch (pinInjector) {
+  switch (pinTrigger) {
     case 2:
       triggerInterrupt = 0; break;
     case 3:
@@ -86,11 +86,12 @@ void setup() {
   Serial.begin(9600);
   
   #ifdef sbi
-  //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS)
-  //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
-  sbi(ADCSRA,ADPS2);
-  cbi(ADCSRA,ADPS1);
-  cbi(ADCSRA,ADPS0);
+    //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS)
+    //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
+    //Please see chapter 11 of 'Practical Arduino' (http://books.google.com.au/books?id=HsTxON1L6D4C&printsec=frontcover#v=onepage&q&f=false) for more details
+    sbi(ADCSRA,ADPS2);
+    cbi(ADCSRA,ADPS1);
+    cbi(ADCSRA,ADPS0);
   #endif
   
   dummyFuelTable(&fuelTable);
