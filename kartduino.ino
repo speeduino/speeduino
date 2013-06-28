@@ -63,8 +63,12 @@ void setup() {
   
   //Begin the main crank trigger interrupt pin setup
   //The interrupt numbering is a bit odd - See here for reference: http://arduino.cc/en/Reference/AttachInterrupt
+  //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly. 
   int triggerInterrupt = 0; // By default, use the first interrupt. The user should always have set things up (Or even better, use the recommended pinouts)
   switch (pinTrigger) {
+    
+    //Arduino Mega 2560 mapping (Uncomment to use)
+    /*
     case 2:
       triggerInterrupt = 0; break;
     case 3:
@@ -77,23 +81,38 @@ void setup() {
       triggerInterrupt = 3; break;
     case 21:
       triggerInterrupt = 2; break;
+      */
+      
+    //Arduino Leo(nardo/stick) mapping (Comment this section if using a mega)
+    case 3:
+      triggerInterrupt = 0; break;
+    case 2:
+      triggerInterrupt = 1; break;
+    case 0:
+      triggerInterrupt = 2; break;
+    case 1:
+      triggerInterrupt = 3; break;
+    case 7:
+      triggerInterrupt = 4; break;  
   }
-  attachInterrupt(triggerInterrupt, trigger, RISING); // Attach the crank trigger wheel interrupt
+  attachInterrupt(triggerInterrupt, trigger, FALLING); // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
   //End crank triger interrupt attachment
   
   req_fuel = req_fuel / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
 
   Serial.begin(9600);
   
+  //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS)
+  //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
+  //Please see chapter 11 of 'Practical Arduino' (http://books.google.com.au/books?id=HsTxON1L6D4C&printsec=frontcover#v=onepage&q&f=false) for more details
+  //Can be disabled by removing the #include "fastAnalog.h" above
   #ifdef sbi
-    //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS)
-    //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
-    //Please see chapter 11 of 'Practical Arduino' (http://books.google.com.au/books?id=HsTxON1L6D4C&printsec=frontcover#v=onepage&q&f=false) for more details
     sbi(ADCSRA,ADPS2);
     cbi(ADCSRA,ADPS1);
     cbi(ADCSRA,ADPS0);
   #endif
   
+  //Setup the dummy fuel and ignition tables
   dummyFuelTable(&fuelTable);
   dummyIgnitionTable(&ignitionTable);
   initialiseScheduler();
@@ -209,6 +228,16 @@ void loop()
 //The get Sync function attempts to wait 
 void getSync()
   {
+    
+    //VERY basic waiting for sync routine. Artifically set the tooth count to be great than 1, then just wait for it to be reset to one (Which occurs in the trigger interrupt function)
+    /*
+    toothCurrentCount = 2;
+    while (toothCurrentCount > 1)
+    {
+      delay(1);
+    }
+    */
+    
     //The are some placeholder values so we can get a fake RPM
     toothLastMinusOneToothTime = micros();
     delay(1); //A 1000us delay should make for about a 5000rpm test speed with a 12 tooth wheel(60000000us / (1000us * triggerTeeth)
@@ -220,12 +249,12 @@ void getSync()
 
 //Interrupts  
 
-//These 2 functions simply trigger the injector driver off or on. 
+//These 4 functions simply trigger the injector/coil driver off or on. 
 //void openInjector2() { scheduleEnd = micros();}
-void openInjector() { digitalWrite(pinInjector, HIGH); } // Set based on an estimate of when to open the injector
-void closeInjector() { digitalWrite(pinInjector, LOW); } // Is called x ms after the open time where x is calculated by the rpm, load and req_fuel
-void beginCoilCharge() { digitalWrite(pinCoil, HIGH); } // Set based on an estimate of when to begin the charge
-void endCoilCharge() { digitalWrite(pinCoil, LOW); } // Is called after the dwell time has passed
+void openInjector() { digitalWrite(pinInjector, HIGH); } 
+void closeInjector() { digitalWrite(pinInjector, LOW); } 
+void beginCoilCharge() { digitalWrite(pinCoil, HIGH); }
+void endCoilCharge() { digitalWrite(pinCoil, LOW); }
 
 //The trigger function is called everytime a crank tooth passes the sensor
 void trigger()
