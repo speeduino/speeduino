@@ -20,11 +20,11 @@ REQ_FUEL
 VE: Lookup from the main MAP vs RPM fuel table
 MAP: In KPa, read from the sensor
 GammaE: Sum of Enrichment factors (Cold start, acceleration). This is a multiplication factor (Eg to add 10%, this should be 110)
-injOpen: Injector open time. The time the injector take to open in tenths of a ms
+injOpen: Injector open time. The time the injector take to open in uS
 */
-int PW(float REQ_FUEL, int VE, int MAP, int GammaE, float injOpen)
+int PW(int REQ_FUEL, int VE, int MAP, int GammaE, int injOpen)
   {
-    return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(GammaE/100.0) + injOpen) * 1000;
+    return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(GammaE/100.0) + injOpen);
   }
 
 /* Determine the Gamma Enrichment number. Forumla borrowed from MS2 manual... may be skipped/simplified for arduino!

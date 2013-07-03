@@ -17,7 +17,7 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #define triggerAngle 110 // The angle (Degrees) from TDC that No 1 cylinder is at when tooth #1 passes the sensor. CANNOT BE 0
 
 //The following lines are configurable, but the defaults are probably pretty good for most applications
-#define engineInjectorDeadTime 1.5 //Time in ms that the injector takes to open
+#define engineInjectorDeadTime 1500 //Time in uS that the injector takes to open
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 
 #define pinInjector 6 //Output pin the injector is on (Assumes 1 cyl only)
@@ -98,7 +98,7 @@ void setup() {
   attachInterrupt(triggerInterrupt, trigger, FALLING); // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
   //End crank triger interrupt attachment
   
-  req_fuel = req_fuel / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
+  req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
 
   Serial.begin(9600);
   
@@ -143,7 +143,7 @@ void loop()
       //Perform lookup into fuel map for RPM vs MAP value
       int VE = getTableValue(fuelTable, MAP, rpm);
       //Calculate an injector pulsewidth form the VE
-      unsigned long pulseWidth = PW(req_fuel, VE, MAP, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
+      unsigned long pulseWidth = PW(req_fuel_uS, VE, MAP, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
       
       //Perform a lookup to get the desired ignition advance
       int ignitionAdvance = getTableValue(ignitionTable, MAP, rpm);
