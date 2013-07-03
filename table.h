@@ -34,13 +34,23 @@ int getTableValue(struct table fromTable, int Y, int X)
     //Loop through the X axis bins for the min/max pair
     //Note: For the X axis specifically, rather than looping from tableAxisX[0] up to tableAxisX[max], we start at tableAxisX[Max] and go down. 
     //      This is because the important tables (fuel and injection) will have the highest RPM at the top of the X axis, so starting there will mean the best case occurs when the RPM is highest (And hence the CPU is needed most)
-    int xMin = fromTable.axisX[0];
-    int xMax = fromTable.axisX[fromTable.xSize-1];
-    int xMinValue = 0;
-    int xMaxValue = 0;    
+    int xMinValue = fromTable.axisX[0];
+    int xMaxValue = fromTable.axisX[fromTable.xSize-1];
+    int xMin = 0;
+    int xMax = 0;    
     
     for (int x = fromTable.xSize-1; x > 0; x--)
     {
+      //Checks the case where the X value is exactly what was requested
+      if (X == fromTable.axisX[x-1])
+      {
+        xMaxValue = fromTable.axisX[x-1];
+        xMinValue = fromTable.axisX[x-1];
+        xMax = x-1;
+        xMin = x-1;
+        break;
+      }
+      //Normal case
       if ( (X <= fromTable.axisX[x]) && (X >= fromTable.axisX[x-1]) )
       {
         xMaxValue = fromTable.axisX[x];
@@ -52,13 +62,23 @@ int getTableValue(struct table fromTable, int Y, int X)
     }
     
     //Loop through the Y axis bins for the min/max pair
-    int yMin = fromTable.axisY[0];
-    int yMax = fromTable.axisY[fromTable.ySize-1];
-    int yMinValue = 0;
-    int yMaxValue = 0;
+    int yMinValue = fromTable.axisY[0];
+    int yMaxValue = fromTable.axisY[fromTable.ySize-1];
+    int yMin = 0;
+    int yMax = 0;
     
     for (int y = fromTable.ySize-1; y > 0; y--)
     {
+      //Checks the case where the Y value is exactly what was requested
+      if (Y == fromTable.axisY[y-1])
+      {
+        yMaxValue = fromTable.axisY[y-1];
+        yMinValue = fromTable.axisY[y-1];
+        yMax = y-1;
+        yMin = y-1;
+        break;
+      }
+      //Normal case
       if ( (Y >= fromTable.axisY[y]) && (Y <= fromTable.axisY[y-1]) )
       {
         
@@ -105,8 +125,18 @@ int getTableValue(struct table fromTable, int Y, int X)
     */
     
     // Non-Float version:
-    int p = ((X - xMinValue) << 7) / (xMaxValue - xMinValue);
-    int q = ((Y - yMaxValue) << 7) / (yMinValue - yMaxValue);
+    //Initial check incase the values were hit straight on
+    int p;
+    if (xMaxValue == xMinValue)
+    { p = ((X - xMinValue) << 7); } //This only occurs if the requested X value was equal to one of the X axis bins
+    else 
+    { p = ((X - xMinValue) << 7) / (xMaxValue - xMinValue); } //This is the standard case
+    
+    int q;
+    if (yMaxValue == yMinValue)
+    { q = ((Y - yMinValue) << 7); }
+    else
+    { q = ((Y - yMaxValue) << 7) / (yMinValue - yMaxValue); }
       
     int m = ((128-p) * (128-q)) >> 7;
     int n = (p * (128-q)) >> 7;
