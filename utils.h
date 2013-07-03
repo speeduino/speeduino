@@ -24,7 +24,15 @@ injOpen: Injector open time. The time the injector take to open in uS
 */
 int PW(int REQ_FUEL, int VE, int MAP, int GammaE, int injOpen)
   {
-    return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(GammaE/100.0) + injOpen);
+    //Standard float version of the calculation
+    //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(GammaE/100.0) + injOpen);
+    
+    //100% float free version, does sacrifice a little bit of accuracy. Accuracy loss is in the order of 0.1ms (100uS)
+    int iVE = (VE << 7) / 100;
+    int iMAP = (MAP << 7) / 100;
+    int iGammaE = (GammaE << 7) / 100;
+    int pulsewidth = (REQ_FUEL * iVE * iMAP * iGammaE) >> 21;
+    return (pulsewidth + injOpen);
   }
 
 /* Determine the Gamma Enrichment number. Forumla borrowed from MS2 manual... may be skipped/simplified for arduino!
