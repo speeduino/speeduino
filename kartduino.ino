@@ -40,7 +40,6 @@ int req_fuel_uS = req_fuel * 1000; //Convert to uS and, importantly, an int. Thi
 // Setup section
 // These aren't really configuration options, more so a description of how the hardware is setup. These are things that will be defined in the recommended hardware setup
 int triggerActualTeeth = triggerTeeth - triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
-int triggerOffset = 120;
 int triggerToothAngle = 360 / triggerTeeth; //The number of degrees that passes from tooth to tooth
 
 volatile boolean hasSync = false;
