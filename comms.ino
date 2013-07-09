@@ -15,10 +15,14 @@ void command()
         break;
 
       case 'P': // set the current page
+        //Blue
         digitalWrite(10, HIGH);
         digitalWrite(9, LOW);
         digitalWrite(13, LOW);
-        currentPage = Serial.read(); //Not doing anything with this currently, but need to read the 2nd byte from the buffer
+        while (Serial.available() == 0) 
+        {
+        }
+        currentPage = Serial.read();
         break; 
 
       case 'R': // send 39 bytes of realtime values
@@ -30,6 +34,7 @@ void command()
         break;
 
       case 'Q': // send code version
+        //Off
         digitalWrite(9, LOW);
         digitalWrite(10, LOW);
         digitalWrite(13, LOW);
@@ -37,6 +42,7 @@ void command()
         break;
 
       case 'V': // send VE table and constants
+        //Red
         digitalWrite(9, LOW);
         digitalWrite(10, LOW);
         digitalWrite(13, HIGH);
@@ -44,6 +50,7 @@ void command()
         break;
 
       case 'W': // receive new VE or constant at 'W'+<offset>+<newbyte>
+        //Green
         digitalWrite(9, HIGH);
         digitalWrite(10, LOW);
         digitalWrite(13, LOW);
@@ -98,16 +105,108 @@ void saveConfig()
 
 void sendPage()
 {
+  byte response[125];
   
-  switch (currentPage) 
+  switch ((int)currentPage) 
   {
       case vePage:
-        Serial.write((uint8_t *)&fuelTable.values, sizeof(fuelTable.values));
+        //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
+        for(byte x=0;x<64;x++) { response[x] = fuelTable.values[7-x/8][x%8]; }
+        
+        response[64] = 0;
+        response[65] = 0;
+        response[66] = 0;
+        response[67] = 0;
+        response[68] = 0;
+        response[78] = 0;
+        response[79] = 0;
+        response[80] = 0;
+        response[81] = 0;
+        response[82] = 0;
+        response[83] = 0;
+        response[84] = 0;
+        response[85] = 0;
+        response[86] = 0;        
+        response[87] = 0;
+        response[88] = 0;
+        response[89] = 0;
+        response[90] = (byte)req_fuel;
+        response[91] = 0;
+        response[92] = 0;
+        response[93] = 0;
+        response[94] = 0;
+        response[95] = 0;
+        response[96] = 0;
+        response[97] = 0;
+        response[98] = 0;
+        response[99] = 0;
+        for(byte x=100;x<108;x++) { response[x] = fuelTable.axisX[(x-100)] / 100; }
+        for(byte y=108;y<116;y++) { response[y] = fuelTable.axisY[7-(y-108)]; }
+        response[116] = 0;
+        response[117] = 0;
+        response[118] = 0;
+        response[119] = 0;
+        response[120] = 0;
+        response[121] = 0;
+        response[122] = 0;
+        response[123] = 0;
+        response[124] = 0;
+
+        Serial.write((uint8_t *)&response, sizeof(response));
         break;
       case ignPage:
-        Serial.write((uint8_t *)&ignitionTable.values, sizeof(ignitionTable.values));
-        break;
+        //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
+        for(byte x=0;x<64;x++) { response[x] = ignitionTable.values[7-x/8][x%8]; }
+        for(byte x=64;x<72;x++) { response[x] = ignitionTable.axisX[(x-64)] / 100; }
+        for(byte y=72;y<80;y++) { response[y] = ignitionTable.axisY[7-(y-72)]; }
+        response[80] = 0;
+        response[81] = 0;
+        response[82] = 0;
+        response[83] = 0;
+        response[84] = 0;
+        response[85] = 0;
+        response[86] = 0;        
+        response[87] = 0;
+        response[88] = 0;
+        response[89] = 0;
+        response[90] = 0;
+        response[91] = 0;
+        response[92] = 0;
+        response[93] = 0;
+        response[94] = 0;
+        response[95] = 0;
+        response[96] = 0;
+        response[97] = 0;
+        response[98] = 0;
+        response[99] = 0;
+        response[100] = 0;
+        response[101] = 0;
+        response[102] = 0;
+        response[103] = 0;
+        response[104] = 0;
+        response[105] = 0;
+        response[106] = 0;
+        response[107] = 0;
+        response[108] = 0;
+        response[109] = 0;
+        response[110] = 0;
+        response[111] = 0;
+        response[112] = 0;
+        response[113] = 0;
+        response[114] = 0;
+        response[115] = 0;
+        response[116] = 0;
+        response[117] = 0;
+        response[118] = 0;
+        response[119] = 0;
+        response[120] = 0;
+        response[121] = 0;
+        response[122] = 0;
+        response[123] = 0;
+        response[124] = 0;
+        Serial.write((uint8_t *)&response, sizeof(response));
         
+        break;  
       default:
 	break;
   }

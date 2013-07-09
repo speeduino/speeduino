@@ -48,29 +48,29 @@ void dummyFuelTable(struct table *myFuelTable)
     //table myFuelTable;
     
     int tempXAxis[8] = {500,1500,2000,2500,3000,4000,5000,6000};
-    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->axisX[x] = tempXAxis[x]; }
+    for (byte x = 0; x< myFuelTable->xSize; x++) { myFuelTable->axisX[x] = tempXAxis[x]; }
     //*myFuelTable->axisX = *tempXAxis;
-    int tempYAxis[8] = {100,88,75,63,50,38,25,13};
-    for (int x = 0; x< myFuelTable->ySize; x++) { myFuelTable->axisY[x] = tempYAxis[x]; }
+    int tempYAxis[8] = {100,88,75,63,50,30,20,10};
+    for (byte x = 0; x< myFuelTable->ySize; x++) { myFuelTable->axisY[x] = tempYAxis[x]; }
     //*myFuelTable->axisY = *tempYAxis;
     
     //Go through the 8 rows and add the column values
-    int tempRow1[8] = {78,88,92,95,97,101,107,110};
-    int tempRow2[8] = {58,88,75,63,50,38,25,13};
-    int tempRow3[8] = {45,88,75,63,50,38,25,13};
-    int tempRow4[8] = {35,88,75,63,50,38,25,13};
-    int tempRow5[8] = {28,88,75,63,50,38,25,13};
-    int tempRow6[8] = {22,23,75,63,50,38,25,13};
-    int tempRow7[8] = {17,21,75,63,50,38,25,13};
-    int tempRow8[8] = {15,20,25,63,50,38,25,13};
-    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[0][x] = tempRow1[x]; }
-    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[1][x] = tempRow2[x]; }
-    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[2][x] = tempRow3[x]; }
-    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[3][x] = tempRow4[x]; }
-    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[4][x] = tempRow5[x]; }
-    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[5][x] = tempRow6[x]; }
-    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[6][x] = tempRow7[x]; }
-    for (int x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[7][x] = tempRow8[x]; }
+    byte tempRow1[8] = {78,88,92,95,97,101,107,110};
+    byte tempRow2[8] = {58,88,75,63,50,38,25,13};
+    byte tempRow3[8] = {45,88,75,63,50,38,25,13};
+    byte tempRow4[8] = {35,88,75,63,50,38,25,13};
+    byte tempRow5[8] = {28,88,75,63,50,38,25,13};
+    byte tempRow6[8] = {22,23,75,63,50,38,25,13};
+    byte tempRow7[8] = {17,21,75,63,50,38,25,13};
+    byte tempRow8[8] = {15,20,25,63,50,38,25,13};
+    for (byte x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[0][x] = tempRow1[x]; }
+    for (byte x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[1][x] = tempRow2[x]; }
+    for (byte x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[2][x] = tempRow3[x]; }
+    for (byte x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[3][x] = tempRow4[x]; }
+    for (byte x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[4][x] = tempRow5[x]; }
+    for (byte x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[5][x] = tempRow6[x]; }
+    for (byte x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[6][x] = tempRow7[x]; }
+    for (byte x = 0; x< myFuelTable->xSize; x++) { myFuelTable->values[7][x] = tempRow8[x]; }
         
   }
   
@@ -80,28 +80,28 @@ Populates a table with some reasonably realistic ignition advance data
 void dummyIgnitionTable(struct table *mySparkTable)
   { 
     int tempXAxis[8] = {500,1500,2000,2500,3000,4000,5000,6000};
-    for (int x = 0; x< mySparkTable->xSize; x++) { mySparkTable->axisX[x] = tempXAxis[x]; }
+    for (byte x = 0; x< mySparkTable->xSize; x++) { mySparkTable->axisX[x] = tempXAxis[x]; }
     //*myFuelTable->axisX = *tempXAxis;
-    int tempYAxis[8] = {100,88,75,63,50,38,25,13};
-    for (int x = 0; x< mySparkTable->ySize; x++) { mySparkTable->axisY[x] = tempYAxis[x]; }
+    int tempYAxis[8] = {100,88,75,63,50,30,20,10};
+    for (byte x = 0; x< mySparkTable->ySize; x++) { mySparkTable->axisY[x] = tempYAxis[x]; }
     //*myFuelTable->axisY = *tempYAxis;
     
     //Go through the 8 rows and add the column values
-    int tempRow1[8] = {10,15,20,26,35,40,43,44};
-    int tempRow2[8] = {10,88,75,63,50,38,25,44};
-    int tempRow3[8] = {12,88,75,63,50,38,25,40};
-    int tempRow4[8] = {12,88,75,63,50,38,25,36};
-    int tempRow5[8] = {28,88,75,63,50,38,25,13};
-    int tempRow6[8] = {22,23,75,63,50,38,25,13};
-    int tempRow7[8] = {17,21,75,63,50,38,25,13};
-    int tempRow8[8] = {15,20,25,63,50,38,25,13};
-    for (int x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[0][x] = tempRow1[x]; }
-    for (int x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[1][x] = tempRow2[x]; }
-    for (int x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[2][x] = tempRow3[x]; }
-    for (int x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[3][x] = tempRow4[x]; }
-    for (int x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[4][x] = tempRow5[x]; }
-    for (int x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[5][x] = tempRow6[x]; }
-    for (int x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[6][x] = tempRow7[x]; }
-    for (int x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[7][x] = tempRow8[x]; }
+    byte tempRow1[8] = {10,15,20,26,35,40,43,44};
+    byte tempRow2[8] = {10,88,75,63,50,38,25,44};
+    byte tempRow3[8] = {12,88,75,63,50,38,25,40};
+    byte tempRow4[8] = {12,88,75,63,50,38,25,36};
+    byte tempRow5[8] = {28,88,75,63,50,38,25,13};
+    byte tempRow6[8] = {22,23,75,63,50,38,25,13};
+    byte tempRow7[8] = {17,21,75,63,50,38,25,13};
+    byte tempRow8[8] = {15,20,25,63,50,38,25,13};
+    for (byte x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[0][x] = tempRow1[x]; }
+    for (byte x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[1][x] = tempRow2[x]; }
+    for (byte x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[2][x] = tempRow3[x]; }
+    for (byte x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[3][x] = tempRow4[x]; }
+    for (byte x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[4][x] = tempRow5[x]; }
+    for (byte x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[5][x] = tempRow6[x]; }
+    for (byte x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[6][x] = tempRow7[x]; }
+    for (byte x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[7][x] = tempRow8[x]; }
         
   }
