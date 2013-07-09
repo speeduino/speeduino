@@ -30,6 +30,7 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #include "table.h"
 #include "testing.h"
 #include "scheduler.h"
+#include "comms.h"
 
 #include "fastAnalog.h"
 #include "digitalIOPerformance.h"
@@ -116,6 +117,10 @@ void setup() {
   dummyIgnitionTable(&ignitionTable);
   initialiseScheduler();
   counter = 0;
+  
+  //Setup some LEDs for testing
+  pinMode(10, OUTPUT);
+  pinMode(9, OUTPUT);
 }
 
 void loop() 
@@ -133,7 +138,7 @@ void loop()
         rpm = US_IN_MINUTE / revolutionTime;
       }
       //Serial.print("RPM: "); Serial.println(rpm);
-      rpm = 1000;
+      //rpm = 1000;
       //Get the current MAP value
       int MAP = 20; //Placeholder
       int TPS = 20; //Placeholder
@@ -182,6 +187,12 @@ void loop()
                   engineDwell,
                   endCoilCharge
                   );
+      }
+      
+      //Check for any requets from serial
+      if (Serial.available() > 0) 
+      {
+        command();
       }
       
       
