@@ -18,7 +18,7 @@ void command()
         digitalWrite(10, HIGH);
         digitalWrite(9, LOW);
         digitalWrite(13, LOW);
-        Serial.read(); //Not doing anything with this currently, but need to read the 2nd byte from the buffer
+        currentPage = Serial.read(); //Not doing anything with this currently, but need to read the 2nd byte from the buffer
         break; 
 
       case 'R': // send 39 bytes of realtime values
@@ -98,7 +98,20 @@ void saveConfig()
 
 void sendPage()
 {
-  Serial.write((uint8_t *)&fuelTable.values, sizeof(fuelTable.values));
+  
+  switch (currentPage) 
+  {
+      case vePage:
+        Serial.write((uint8_t *)&fuelTable.values, sizeof(fuelTable.values));
+        break;
+      case ignPage:
+        Serial.write((uint8_t *)&ignitionTable.values, sizeof(ignitionTable.values));
+        break;
+        
+      default:
+	break;
+  }
+
   return; 
 }
 
