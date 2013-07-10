@@ -154,6 +154,7 @@ void sendPage()
 
         Serial.write((uint8_t *)&response, sizeof(response));
         break;
+        
       case ignPage:
         //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
         for(byte x=0;x<64;x++) { response[x] = ignitionTable.values[7-x/8][x%8]; }
@@ -204,9 +205,10 @@ void sendPage()
         response[122] = 0;
         response[123] = 0;
         response[124] = 0;
-        Serial.write((uint8_t *)&response, sizeof(response));
         
-        break;  
+        Serial.write((uint8_t *)&response, sizeof(response)); 
+        break;
+        
       default:
 	break;
   }
