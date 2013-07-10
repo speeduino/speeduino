@@ -73,9 +73,9 @@ void sendValues(int length)
   boolean b = 0; //inj_port2.status;
   response[1] =  ((a & 0x01) << 0) | ((a & 0x02) << 1) | ((a & 0x04) << 1) | ((b & 0x01) << 1) | ((b & 0x02) << 3) | ((b & 0x04) << 3); //squirt
 
-  response[2] = 0; // Engine Status 
+  response[2] = (byte)128; // Engine Status 
   response[3] = 0x00; //baro
-  response[4] = 0x00; //map
+  response[4] = currentStatus.MAP; //map
   response[5] = 0x00; //mat
   response[6] = 0x00; //Coolant
   response[7] = 0x00; //TPS
@@ -84,12 +84,12 @@ void sendValues(int length)
   response[10] = 0x00; //Exhaust gas correction (%)
   response[11] = 0x00; //Air Correction (%)
   response[12] = 0x00; //Warmup enrichment (%)
-  response[13] = (rpm / 100); //rpm / 100
-  response[14] = 0x00; //Pulsewidth 1 divided by 10 (in ms)
+  response[13] = (currentStatus.RPM / 100); //rpm / 100
+  response[14] = currentStatus.PW / 100; //Pulsewidth 1 divided by 10 (in ms)
   response[15] = 0x00; //acceleration enrichment (ms)
   response[16] = 0x00; //Barometer correction (%)
   response[17] = 0x00; //Total GammaE (%)
-  response[18] = 0x00; //Current VE 1 (%)
+  response[18] = currentStatus.VE; //Current VE 1 (%)
   response[19] = 0x00; //Pulsewidth 2 divided by 10 (in ms)
   response[20] = 0x00; //mCurrent VE 2 (%)
   response[21] = 0x00; //Idle
@@ -142,7 +142,7 @@ void sendPage()
         response[99] = 0;
         for(byte x=100;x<108;x++) { response[x] = fuelTable.axisX[(x-100)] / 100; }
         for(byte y=108;y<116;y++) { response[y] = fuelTable.axisY[7-(y-108)]; }
-        response[116] = 0;
+        response[116] = ((engineCylinders-1) * 16) + (1 * 8) + ((engineStrokes / 4) * 4) + 2; // (engineCylinders * 16) + (1 * 8) + ((engineStrokes / 4) * 4) + 4
         response[117] = 0;
         response[118] = 0;
         response[119] = 0;

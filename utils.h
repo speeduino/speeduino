@@ -1,7 +1,7 @@
 /*
 These are some utility functions and variables used through the main code
 */ 
-
+#include <Arduino.h>
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000
 
@@ -22,17 +22,22 @@ MAP: In KPa, read from the sensor
 GammaE: Sum of Enrichment factors (Cold start, acceleration). This is a multiplication factor (Eg to add 10%, this should be 110)
 injOpen: Injector open time. The time the injector take to open in uS
 */
-int PW(int REQ_FUEL, int VE, int MAP, int GammaE, int injOpen)
+int PW(int REQ_FUEL, byte VE, byte MAP, int GammaE, int injOpen)
   {
     //Standard float version of the calculation
     //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(GammaE/100.0) + injOpen);
     
     //100% float free version, does sacrifice a little bit of accuracy. Accuracy loss is in the order of 0.1ms (100uS)
-    int iVE = (VE << 7) / 100;
-    int iMAP = (MAP << 7) / 100;
+    
+    int iVE = ((int)VE << 7) / 100;
+    int iMAP = ((int)MAP << 7) / 100;
     int iGammaE = (GammaE << 7) / 100;
-    int pulsewidth = (REQ_FUEL * iVE * iMAP * iGammaE) >> 21;
-    return (pulsewidth + injOpen);
+
+    unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >>7; //Need to use an intermediate value to avoid overflowing the long
+    intermediate = (intermediate * iMAP) >> 7;
+    intermediate = (intermediate * iGammaE) >> 7;
+    return (int)intermediate + injOpen;
+
   }
 
 /* Determine the Gamma Enrichment number. Forumla borrowed from MS2 manual... may be skipped/simplified for arduino!
