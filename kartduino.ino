@@ -6,15 +6,7 @@
 /*
 Need to calculate the req_fuel figure here, preferably in pre-processor macro
 */
-#define engineCapacity 148 // In cc
-#define engineCylinders 1 // May support more than 1 cyl later. Always will assume 1 injector per cylinder. 
-#define engineInjectorSize 80 // In cc/min
-#define engineStoich 14.7 // Stoichiometric ratio of fuel used
-#define engineStrokes 4 //Can be 2 stroke or 4 stroke, any other value will cause problems
-#define engineDwell 3000 //The spark dwell time in uS
-#define triggerTeeth 12 //The full count of teeth on the trigger wheel if there were no gaps
-#define triggerMissingTeeth 1 //The size of the tooth gap (ie number of missing teeth)
-#define triggerAngle 110 // The angle (Degrees) from TDC that No 1 cylinder is at when tooth #1 passes the sensor. CANNOT BE 0
+
 
 //The following lines are configurable, but the defaults are probably pretty good for most applications
 #define engineInjectorDeadTime 1500 //Time in uS that the injector takes to open
@@ -36,8 +28,10 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #include "fastAnalog.h"
 #include "digitalIOPerformance.h"
 
-float req_fuel = ((engineCapacity / engineInjectorSize) / engineCylinders / engineStoich) * 100; // This doesn't seem quite correct, but I can't find why. It will be close enough to start an engine
-int req_fuel_uS = req_fuel * 1000; //Convert to uS and, importantly, an int. This is the only variable to be used in calculations
+//NEED TO LOAD FROM EEPROM HERE
+
+//float req_fuel = ((engineCapacity / engineInjectorSize) / engineCylinders / engineStoich) * 100; // This doesn't seem quite correct, but I can't find why. It will be close enough to start an engine
+int req_fuel_uS = config1.req_fuel * 1000; //Convert to uS and an int. This is the only variable to be used in calculations
 
 // Setup section
 // These aren't really configuration options, more so a description of how the hardware is setup. These are things that will be defined in the recommended hardware setup

@@ -112,36 +112,34 @@ void sendPage()
       case vePage:
         //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
         for(byte x=0;x<64;x++) { response[x] = fuelTable.values[7-x/8][x%8]; }
-        
-        response[64] = 0;
-        response[65] = 0;
-        response[66] = 0;
-        response[67] = 0;
-        response[68] = 0;
-        response[78] = 0;
-        response[79] = 0;
+        for(byte x=64;x<72;x++) { response[x] = fuelTable.axisX[(x-100)] / 100; } //RPM Bins for VE table
+        for(byte y=72;y<80;y++) { response[y] = fuelTable.axisY[7-(y-108)]; } //MAP or TPS bins for VE table 
         response[80] = 0;
         response[81] = 0;
         response[82] = 0;
         response[83] = 0;
         response[84] = 0;
-        response[85] = 0;
-        response[86] = 0;        
-        response[87] = 0;
-        response[88] = 0;
-        response[89] = 0;
-        response[90] = (byte)req_fuel;
-        response[91] = 0;
-        response[92] = 0;
-        response[93] = 0;
         response[94] = 0;
         response[95] = 0;
         response[96] = 0;
         response[97] = 0;
         response[98] = 0;
         response[99] = 0;
-        for(byte x=100;x<108;x++) { response[x] = fuelTable.axisX[(x-100)] / 100; }
-        for(byte y=108;y<116;y++) { response[y] = fuelTable.axisY[7-(y-108)]; }
+        response[100] = 0;
+        response[101] = 0;
+        response[102] = 0;
+        response[103] = 0;
+        response[104] = 0;
+        response[105] = 0;
+        response[106] = (byte)req_fuel;
+        response[107] = 0;
+        response[108] = 0;
+        response[109] = 0;
+        response[110] = 0;
+        response[111] = 0;
+        response[112] = 0;
+        response[113] = 0;
+        response[114] = 0; //rpmk (16 bits)
         response[116] = ((engineCylinders-1) * 16) + (1 * 8) + ((engineStrokes / 4) * 4) + 2; // (engineCylinders * 16) + (1 * 8) + ((engineStrokes / 4) * 4) + 4
         response[117] = 0;
         response[118] = 0;
@@ -160,7 +158,7 @@ void sendPage()
         for(byte x=0;x<64;x++) { response[x] = ignitionTable.values[7-x/8][x%8]; }
         for(byte x=64;x<72;x++) { response[x] = ignitionTable.axisX[(x-64)] / 100; }
         for(byte y=72;y<80;y++) { response[y] = ignitionTable.axisY[7-(y-72)]; }
-        response[80] = 0;
+        response[80] = triggerAngle;
         response[81] = 0;
         response[82] = 0;
         response[83] = 0;
