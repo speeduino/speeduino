@@ -55,7 +55,7 @@ struct config1 {
   int rpmk;
 
   byte mapType;
-  byte twoStroke;
+  byte strokes;
   byte injType;
   byte nCylinders;
   byte cltType;
@@ -77,7 +77,7 @@ struct config1 {
 //This mostly covers off variables that are required for ignition
 struct config2 {
   
-  byte trigerAngle;
+  byte triggerAngle;
   byte FixAng;
   byte Trim;
   byte CrankAng;
@@ -93,9 +93,9 @@ struct config2 {
   byte IdleDelayTime;
   byte StgCycles;
 
-  byte dwellcont; //Fixed duty dwell control
-  byte dwellcrank;
-  byte dwellrun;
+  byte dwellCont; //Fixed duty dwell control
+  byte dwellCrank;
+  byte dwellRun;
   
   byte triggerTeeth; //The full count of teeth on the trigger wheel if there were no gaps
   byte triggerMissingTeeth; //The size of the tooth gap (ie number of missing teeth)

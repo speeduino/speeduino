@@ -23,20 +23,23 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #include "table.h"
 #include "testing.h"
 #include "scheduler.h"
+#include "globals.h"
 #include "comms.h"
 
 #include "fastAnalog.h"
 #include "digitalIOPerformance.h"
 
 //NEED TO LOAD FROM EEPROM HERE
+struct config1 config1;
+struct config2 config2;
 
 //float req_fuel = ((engineCapacity / engineInjectorSize) / engineCylinders / engineStoich) * 100; // This doesn't seem quite correct, but I can't find why. It will be close enough to start an engine
-int req_fuel_uS = config1.req_fuel * 1000; //Convert to uS and an int. This is the only variable to be used in calculations
+int req_fuel_uS = config1.reqFuel * 1000; //Convert to uS and an int. This is the only variable to be used in calculations
 
 // Setup section
 // These aren't really configuration options, more so a description of how the hardware is setup. These are things that will be defined in the recommended hardware setup
-int triggerActualTeeth = triggerTeeth - triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
-int triggerToothAngle = 360 / triggerTeeth; //The number of degrees that passes from tooth to tooth
+int triggerActualTeeth = config2.triggerTeeth - config2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
+int triggerToothAngle = 360 / config2.triggerTeeth; //The number of degrees that passes from tooth to tooth
 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
@@ -45,8 +48,8 @@ volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) tha
 struct table fuelTable;
 struct table ignitionTable;
 
-unsigned long injectTime[engineCylinders]; //The system time in uS that each injector needs to next fire at
-boolean intjectorNeedsFire[engineCylinders]; //Whether each injector needs to fire or not
+//unsigned long injectTime[(int)config1.nCylinders]; //The system time in uS that each injector needs to next fire at
+//boolean intjectorNeedsFire[config1.nCylinders]; //Whether each injector needs to fire or not
 
 unsigned long counter;
 unsigned long scheduleStart;
@@ -132,7 +135,7 @@ void loop()
       //Calculate the RPM based on the time between the last 2 teeth. I have no idea whether this will be accurate AT ALL, but it's fairly efficient and means there doesn't need to be another variable placed into the trigger interrupt
       if (toothCurrentCount != 1) //We can't perform the RPM calculation if we're at the first tooth as the timing would be double (Well, we can, but it would need a different calculation and I don't think it's worth it, just use the last RPM value)
       {
-        long revolutionTime = (triggerTeeth * (toothLastToothTime - toothLastMinusOneToothTime)); //The time in uS that one revolution would take at current speed
+        long revolutionTime = (config2.triggerTeeth * (toothLastToothTime - toothLastMinusOneToothTime)); //The time in uS that one revolution would take at current speed
         currentStatus.RPM = US_IN_MINUTE / revolutionTime;
       }
       //Get the current MAP value
@@ -149,7 +152,7 @@ void loop()
       int ignitionAdvance = getTableValue(ignitionTable, currentStatus.MAP, currentStatus.RPM);
       
       //Determine the current crank angle
-      int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is from TDC
+      int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + config2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is from TDC
       if (crankAngle > 360) { crankAngle -= 360; } //Not sure if this is actually required
       
       //Serial.print("Crank angle: "); Serial.println(crankAngle);
@@ -180,7 +183,7 @@ void loop()
       { 
         setSchedule2(beginCoilCharge, 
                   (ignitionStartAngle - crankAngle) * timePerDegree,
-                  engineDwell,
+                  config2.dwellRun,
                   endCoilCharge
                   );
       }

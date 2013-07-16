@@ -112,8 +112,8 @@ void sendPage()
       case vePage:
         //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
         for(byte x=0;x<64;x++) { response[x] = fuelTable.values[7-x/8][x%8]; }
-        for(byte x=64;x<72;x++) { response[x] = fuelTable.axisX[(x-100)] / 100; } //RPM Bins for VE table
-        for(byte y=72;y<80;y++) { response[y] = fuelTable.axisY[7-(y-108)]; } //MAP or TPS bins for VE table 
+        for(byte x=64;x<72;x++) { response[x] = fuelTable.axisX[(x-64)] / 100; } //RPM Bins for VE table
+        for(byte y=72;y<80;y++) { response[y] = fuelTable.axisY[7-(y-72)]; } //MAP or TPS bins for VE table 
         response[80] = 0;
         response[81] = 0;
         response[82] = 0;
@@ -131,7 +131,7 @@ void sendPage()
         response[103] = 0;
         response[104] = 0;
         response[105] = 0;
-        response[106] = (byte)req_fuel;
+        response[106] = config1.reqFuel;
         response[107] = 0;
         response[108] = 0;
         response[109] = 0;
@@ -140,7 +140,7 @@ void sendPage()
         response[112] = 0;
         response[113] = 0;
         response[114] = 0; //rpmk (16 bits)
-        response[116] = ((engineCylinders-1) * 16) + (1 * 8) + ((engineStrokes / 4) * 4) + 2; // (engineCylinders * 16) + (1 * 8) + ((engineStrokes / 4) * 4) + 4
+        response[116] = ((config1.nCylinders-1) * 16) + (1 * 8) + ((config1.strokes / 4) * 4) + 2; // (engineCylinders * 16) + (1 * 8) + ((engineStrokes / 4) * 4) + 4
         response[117] = 0;
         response[118] = 0;
         response[119] = 0;
@@ -158,7 +158,7 @@ void sendPage()
         for(byte x=0;x<64;x++) { response[x] = ignitionTable.values[7-x/8][x%8]; }
         for(byte x=64;x<72;x++) { response[x] = ignitionTable.axisX[(x-64)] / 100; }
         for(byte y=72;y<80;y++) { response[y] = ignitionTable.axisY[7-(y-72)]; }
-        response[80] = triggerAngle;
+        response[80] = config2.triggerAngle;
         response[81] = 0;
         response[82] = 0;
         response[83] = 0;
