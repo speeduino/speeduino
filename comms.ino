@@ -1,3 +1,8 @@
+/*
+This is called when a command is received over serial from TunerStudio / Megatune
+It parses the command and calls the relevant function
+A detailed description of each call can be found at: http://www.msextra.com/doc/ms1extra/COM_RS232.htm
+*/
 void command()
 {
   switch (Serial.read()) 
@@ -6,11 +11,11 @@ void command()
         sendValues(22);
         break;
 
-      case 'B': // store to eeprom
+      case 'B': // Burn current values to eeprom
         saveConfig();
         break;
 
-      case 'C': // test communications
+      case 'C': // test communications. This is used by Tunerstudio to see whether there is an ECU on a given serial port
         testComm();
         break;
 
@@ -19,9 +24,10 @@ void command()
         digitalWrite(10, HIGH);
         digitalWrite(9, LOW);
         digitalWrite(13, LOW);
-        while (Serial.available() == 0) 
-        {
-        }
+        
+        //A 2nd byte of data is required after the 'P' specifying the new page number. 
+        //This loop should never need to run as the byte should already be in the buffer, but is here just in case
+        while (Serial.available() == 0) { }
         currentPage = Serial.read();
         break; 
 
@@ -54,6 +60,7 @@ void command()
         digitalWrite(9, HIGH);
         digitalWrite(10, LOW);
         digitalWrite(13, LOW);
+        
         Serial.read();
         Serial.read(); //Not doing anything with this currently, but need to read the next 2 bytes from the buffer
 	break;
@@ -63,6 +70,9 @@ void command()
   } 
 }
 
+/*
+This function returns the current values of a fixed group of variables
+*/
 void sendValues(int length)
 {
   byte response[22];
@@ -71,9 +81,9 @@ void sendValues(int length)
 
   boolean a = 0; //inj_port1.status;
   boolean b = 0; //inj_port2.status;
-  response[1] =  ((a & 0x01) << 0) | ((a & 0x02) << 1) | ((a & 0x04) << 1) | ((b & 0x01) << 1) | ((b & 0x02) << 3) | ((b & 0x04) << 3); //squirt
+  response[1] =  ((a & 0x01) << 0) | ((a & 0x02) << 1) | ((a & 0x04) << 1) | ((b & 0x01) << 1) | ((b & 0x02) << 3) | ((b & 0x04) << 3); //squirt NOT YET WORKING
 
-  response[2] = (byte)128; // Engine Status 
+  response[2] = (byte)128; // Engine Status NOT YET WORKING
   response[3] = 0x00; //baro
   response[4] = currentStatus.MAP; //map
   response[5] = 0x00; //mat
@@ -111,18 +121,19 @@ void sendPage()
   {
       case vePage:
         //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
+        //MS format has origin (0,0) in the bottom left corner, we use the top left for efficiency reasons
         for(byte x=0;x<64;x++) { response[x] = fuelTable.values[7-x/8][x%8]; }
         for(byte x=64;x<72;x++) { response[x] = fuelTable.axisX[(x-64)] / 100; } //RPM Bins for VE table
         for(byte y=72;y<80;y++) { response[y] = fuelTable.axisY[7-(y-72)]; } //MAP or TPS bins for VE table 
-        response[80] = 0;
-        response[81] = 0;
-        response[82] = 0;
-        response[83] = 0;
-        response[84] = 0;
-        response[94] = 0;
-        response[95] = 0;
-        response[96] = 0;
-        response[97] = 0;
+        response[80] = configPage1.crankCold; //Cold cranking pulsewidth. This is added to the fuel pulsewidth when cranking under a temp threshold (ms)
+        response[81] = configPage1.crankHot; //Warm cranking pulsewidth. This is added to the fuel pulsewidth when cranking (ms)
+        response[82] = configPage1.asePct; //Afterstart enrichment (%)
+        response[83] = configPage1.aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
+        for(byte x=84;x<94;x++) { response[x] = configPage1.wueBins[x-84]; } //Warm up enrichment array (10 bytes, % values)
+        response[94] = configPage1.taeBins1; //TPS based acceleration enrichment bin 1 of 4 (ms)
+        response[95] = configPage1.taeBins2; //TPS based acceleration enrichment bin 2 of 4 (ms)
+        response[96] = configPage1.taeBins3; //TPS based acceleration enrichment bin 3 of 4 (ms)
+        response[97] = configPage1.taeBins4; //TPS based acceleration enrichment bin 4 of 4 (ms)
         response[98] = 0;
         response[99] = 0;
         response[100] = 0;
@@ -131,7 +142,7 @@ void sendPage()
         response[103] = 0;
         response[104] = 0;
         response[105] = 0;
-        response[106] = config1.reqFuel;
+        response[106] = configPage1.reqFuel;
         response[107] = 0;
         response[108] = 0;
         response[109] = 0;
@@ -140,7 +151,7 @@ void sendPage()
         response[112] = 0;
         response[113] = 0;
         response[114] = 0; //rpmk (16 bits)
-        response[116] = ((config1.nCylinders-1) * 16) + (1 * 8) + ((config1.strokes / 4) * 4) + 2; // (engineCylinders * 16) + (1 * 8) + ((engineStrokes / 4) * 4) + 4
+        response[116] = ((configPage1.nCylinders-1) * 16) + (1 * 8) + ((configPage1.strokes / 4) * 4) + 2; // (engineCylinders * 16) + (1 * 8) + ((engineStrokes / 4) * 4) + 4
         response[117] = 0;
         response[118] = 0;
         response[119] = 0;
@@ -158,7 +169,7 @@ void sendPage()
         for(byte x=0;x<64;x++) { response[x] = ignitionTable.values[7-x/8][x%8]; }
         for(byte x=64;x<72;x++) { response[x] = ignitionTable.axisX[(x-64)] / 100; }
         for(byte y=72;y<80;y++) { response[y] = ignitionTable.axisY[7-(y-72)]; }
-        response[80] = config2.triggerAngle;
+        response[80] = configPage2.triggerAngle;
         response[81] = 0;
         response[82] = 0;
         response[83] = 0;
