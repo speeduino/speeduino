@@ -19,11 +19,12 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #define pinMAP 0 //MAP sensor pin
 //**************************************************************************************************
 
+#include "globals.h"
 #include "utils.h"
 #include "table.h"
 #include "testing.h"
 #include "scheduler.h"
-#include "globals.h"
+#include "storage.h"
 #include "comms.h"
 
 #include "fastAnalog.h"

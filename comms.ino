@@ -12,7 +12,7 @@ void command()
         break;
 
       case 'B': // Burn current values to eeprom
-        saveConfig();
+        writeConfig();
         break;
 
       case 'C': // test communications. This is used by Tunerstudio to see whether there is an ECU on a given serial port
@@ -149,11 +149,6 @@ void receiveValue(byte offset, byte newValue)
       default:
 	break;
   }
-}
-
-void saveConfig()
-{
-  return; 
 }
 
 void sendPage()
