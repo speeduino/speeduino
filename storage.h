@@ -7,7 +7,7 @@ void loadConfig();
 void loadTables();
 
 /*
-Current layout of data (Version 1) is as follows (All sizes are in bytes):
+Current layout of EEPROM data (Version 1) is as follows (All sizes are in bytes):
 |---------------------------------------------------|
 |Byte # |Size | Description                         |
 |---------------------------------------------------|

@@ -110,6 +110,45 @@ void sendValues(int length)
 void receiveValue(byte offset, byte newValue)
 {
   
+  byte* pnt_configPage;
+
+  switch (currentPage) 
+  {
+      case vePage:
+        pnt_configPage = (byte *)&configPage1;
+        if (offset < 64) //New value is part of the fuel map
+        {
+          
+        }
+        else if (offset < 80) //New value is one of the X or Y axis bins
+        {
+          
+        }
+        else //New value is one of the remaining config items
+        {
+          *(pnt_configPage + offset) = newValue;
+        }
+        break;
+        
+      case ignPage: //Ignition settings page (Page 2)
+        pnt_configPage = (byte *)&configPage2;
+        if (offset < 64) //New value is part of the ignition map
+        {
+          
+        }
+        else if (offset < 80) //New value is one of the X or Y axis bins
+        {
+          
+        }
+        else //New value is one of the remaining config items
+        {
+          *(pnt_configPage + offset) = newValue;
+        }
+        break;
+      
+      default:
+	break;
+  }
 }
 
 void saveConfig()
@@ -119,7 +158,7 @@ void saveConfig()
 
 void sendPage()
 {
-  byte response[125];
+  byte response[page_size];
   byte offset;
   byte* pnt_configPage;
   
@@ -135,7 +174,7 @@ void sendPage()
         //All other bytes can simply be copied from the config table
         pnt_configPage = (byte *)&configPage1; //Create a pointer to Page 1 in memory
         offset = 80; //Offset is based on the amount already copied above (table + bins)
-        for(byte x=offset;x<125;x++)
+        for(byte x=offset; x<page_size; x++)
         { 
           response[offset] = *(pnt_configPage + offset + x); //Each byte is simply the location in memory of configPage1 + the offset + the variable number (x)
         }
@@ -177,7 +216,7 @@ void sendPage()
         response[124] = 0;
         */
 
-        Serial.write((uint8_t *)&response, sizeof(response));
+        Serial.write((byte *)&response, sizeof(response));
         break;
         
       case ignPage:
@@ -187,9 +226,9 @@ void sendPage()
         for(byte y=72;y<80;y++) { response[y] = ignitionTable.axisY[7-(y-72)]; }
         
         //All other bytes can simply be copied from the config table
-        pnt_configPage = (byte *)&configPage2; //Create a pointer to Page 1 in memory
+        pnt_configPage = (byte *)&configPage2; //Create a pointer to Page 2 in memory
         offset = 80; //Offset is based on the amount already copied above (table + bins)
-        for(byte x=offset;x<125;x++)
+        for(byte x=offset; x<page_size; x++)
         { 
           response[offset] = *(pnt_configPage + offset + x); //Each byte is simply the location in memory of configPage + the offset + the variable number (x)
         }

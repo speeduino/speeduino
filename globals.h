@@ -1,7 +1,8 @@
 #include <Arduino.h>
 
-byte ms_version = 20;
-byte data_structure_version = 1; //This identifies the data structure when reading / writing. 
+const byte ms_version = 20;
+const byte data_structure_version = 1; //This identifies the data structure when reading / writing. 
+const byte page_size = 125;
 
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
@@ -27,9 +28,9 @@ struct config1 {
   byte engineDwell; 3000 //The spark dwell time in uS
   */
   
-  byte crankCold;
-  byte crankHot;
-  byte asePct;
+  byte crankCold; //Cold cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking under a certain temp threshold (ms)
+  byte crankHot; //Warm cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking (ms)
+  byte asePct; //Afterstart enrichment (%)
   byte aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte wueBins[10]; //Warm up enrichment array (10 bytes)
   byte taeBins1; //TPS based acceleration enrichment bin 1 of 4 (ms)
@@ -57,10 +58,10 @@ struct config1 {
   byte mapType;
   byte strokes;
   byte injType;
-  byte nCylinders;
+  byte nCylinders; //Number of cylinders
   byte cltType;
   byte matType;
-  byte nInjectors;
+  byte nInjectors; //Number of injectors
   byte engineType;
   byte egoType;
   byte algorithm; //"Speed Density", "Alpha-N"
