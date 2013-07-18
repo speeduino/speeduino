@@ -61,8 +61,7 @@ void command()
         digitalWrite(10, LOW);
         digitalWrite(13, LOW);
         
-        Serial.read();
-        Serial.read(); //Not doing anything with this currently, but need to read the next 2 bytes from the buffer
+        receiveValue(Serial.read(), Serial.read());
 	break;
 
       default:
@@ -108,6 +107,11 @@ void sendValues(int length)
   return; 
 }
 
+void receiveValue(byte offset, byte newValue)
+{
+  
+}
+
 void saveConfig()
 {
   return; 
@@ -116,6 +120,8 @@ void saveConfig()
 void sendPage()
 {
   byte response[125];
+  byte offset;
+  byte* pnt_configPage;
   
   switch ((int)currentPage) 
   {
@@ -123,8 +129,17 @@ void sendPage()
         //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
         //MS format has origin (0,0) in the bottom left corner, we use the top left for efficiency reasons
         for(byte x=0;x<64;x++) { response[x] = fuelTable.values[7-x/8][x%8]; }
-        for(byte x=64;x<72;x++) { response[x] = fuelTable.axisX[(x-64)] / 100; } //RPM Bins for VE table
+        for(byte x=64;x<72;x++) { response[x] = fuelTable.axisX[(x-64)] / 100; } //RPM Bins for VE table (Need to be dvidied by 100)
         for(byte y=72;y<80;y++) { response[y] = fuelTable.axisY[7-(y-72)]; } //MAP or TPS bins for VE table 
+        
+        //All other bytes can simply be copied from the config table
+        pnt_configPage = (byte *)&configPage1; //Create a pointer to Page 1 in memory
+        offset = 80; //Offset is based on the amount already copied above (table + bins)
+        for(byte x=offset;x<125;x++)
+        { 
+          response[offset] = *(pnt_configPage + offset + x); //Each byte is simply the location in memory of configPage1 + the offset + the variable number (x)
+        }
+        /*
         response[80] = configPage1.crankCold; //Cold cranking pulsewidth. This is added to the fuel pulsewidth when cranking under a temp threshold (ms)
         response[81] = configPage1.crankHot; //Warm cranking pulsewidth. This is added to the fuel pulsewidth when cranking (ms)
         response[82] = configPage1.asePct; //Afterstart enrichment (%)
@@ -160,6 +175,7 @@ void sendPage()
         response[122] = 0;
         response[123] = 0;
         response[124] = 0;
+        */
 
         Serial.write((uint8_t *)&response, sizeof(response));
         break;
@@ -169,53 +185,16 @@ void sendPage()
         for(byte x=0;x<64;x++) { response[x] = ignitionTable.values[7-x/8][x%8]; }
         for(byte x=64;x<72;x++) { response[x] = ignitionTable.axisX[(x-64)] / 100; }
         for(byte y=72;y<80;y++) { response[y] = ignitionTable.axisY[7-(y-72)]; }
-        response[80] = configPage2.triggerAngle;
-        response[81] = 0;
-        response[82] = 0;
-        response[83] = 0;
-        response[84] = 0;
-        response[85] = 0;
-        response[86] = 0;        
-        response[87] = 0;
-        response[88] = 0;
-        response[89] = 0;
-        response[90] = 0;
-        response[91] = 0;
-        response[92] = 0;
-        response[93] = 0;
-        response[94] = 0;
-        response[95] = 0;
-        response[96] = 0;
-        response[97] = 0;
-        response[98] = 0;
-        response[99] = 0;
-        response[100] = 0;
-        response[101] = 0;
-        response[102] = 0;
-        response[103] = 0;
-        response[104] = 0;
-        response[105] = 0;
-        response[106] = 0;
-        response[107] = 0;
-        response[108] = 0;
-        response[109] = 0;
-        response[110] = 0;
-        response[111] = 0;
-        response[112] = 0;
-        response[113] = 0;
-        response[114] = 0;
-        response[115] = 0;
-        response[116] = 0;
-        response[117] = 0;
-        response[118] = 0;
-        response[119] = 0;
-        response[120] = 0;
-        response[121] = 0;
-        response[122] = 0;
-        response[123] = 0;
-        response[124] = 0;
         
-        Serial.write((uint8_t *)&response, sizeof(response)); 
+        //All other bytes can simply be copied from the config table
+        pnt_configPage = (byte *)&configPage2; //Create a pointer to Page 1 in memory
+        offset = 80; //Offset is based on the amount already copied above (table + bins)
+        for(byte x=offset;x<125;x++)
+        { 
+          response[offset] = *(pnt_configPage + offset + x); //Each byte is simply the location in memory of configPage + the offset + the variable number (x)
+        }
+        
+        Serial.write((byte *)&response, sizeof(response)); 
         break;
         
       default:

@@ -40,7 +40,7 @@ struct config1 {
   byte tpsThresh;
   byte taeTime;
   byte tdePct;
-  byte egoTemp;
+  byte egoTemp; //The temperature at which the EGO / O2 sensor values start being used (Degrees)
   byte egoCount;
   byte egoDelta;
   byte egoLimit;
