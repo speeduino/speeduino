@@ -24,11 +24,15 @@ Features:
 * Support for missing tooth crank wheels up to 36-1 with hall effect sensor
 * Alpha-N or Speed Density load control
 * High-Z injector hardware
+* Warmup enrichment
+* Compatible with Tuner studio (http://tunerstudio.com/) for tuning
 
 Phase 2 will include:
 * Batch support for up to 4 cylinder engines
-* Speed Density (MAP) and mixed mode load calculations
 * 2 stroke engine support
+* Acceleration enrichment
+* Closed loop EGO / O2 
+* Autotune with TunerStudio and wideband O2
 
 ========================================================================
 
