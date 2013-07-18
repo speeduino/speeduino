@@ -22,8 +22,9 @@ A: Initial plan is for injection and ignition control on single cylinder 4 strok
 Features:
 * 8x8 maps with interpolation
 * Support for missing tooth crank wheels up to 36-1 with hall effect sensor
-* Alpha-N load control
+* Alpha-N or Speed Density load control
 * High-Z injector hardware
+
 Phase 2 will include:
 * Batch support for up to 4 cylinder engines
 * Speed Density (MAP) and mixed mode load calculations
