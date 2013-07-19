@@ -32,11 +32,23 @@ void writeConfig()
   }
   
 }
-void writeTables();
 
 void loadConfig()
 {
-     
+  byte* pnt_configPage;
+  //The next 125 bytes can simply be pulled straight from the fuelTable
+  pnt_configPage = (byte *)&configPage1; //Create a pointer to Page 1 in memory
+  for(int x=EEPROM_CONFIG1_MAP; x<EEPROM_CONFIG2_XSIZE; x++) 
+  { 
+    *(pnt_configPage + x) = EEPROM.read(x);
+  }
+  //That concludes the writing of the VE table
+  
+  //The next 125 bytes can simply be pulled straight from the ignitionTable
+  pnt_configPage = (byte *)&configPage2; //Create a pointer to Page 2 in memory
+  for(int x=EEPROM_CONFIG2_MAP; x<EEPROM_SIZE; x++) 
+  { 
+     *(pnt_configPage + x) = EEPROM.read(x);
+  }
+  
 }
-
-void loadTables();

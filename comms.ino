@@ -115,14 +115,25 @@ void receiveValue(byte offset, byte newValue)
   switch (currentPage) 
   {
       case vePage:
-        pnt_configPage = (byte *)&configPage1;
+        pnt_configPage = (byte *)&configPage1; //Setup a pointer to the relevant config page
         if (offset < 64) //New value is part of the fuel map
         {
-          
+          fuelTable.values[7-offset/8][offset%8] = newValue;
         }
         else if (offset < 80) //New value is one of the X or Y axis bins
         {
-          
+          //Check whether this is on the X (RPM) or Y (MAP/TPS) axis
+          if (offset < 72) 
+          { 
+            //X Axis
+            *(pnt_configPage + offset) = newValue * 100; //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+          }
+          else
+          { 
+            //Y Axis
+            offset = 7-(offset-72); //Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
+            *(pnt_configPage + offset) = newValue;
+          }
         }
         else //New value is one of the remaining config items
         {
@@ -134,10 +145,22 @@ void receiveValue(byte offset, byte newValue)
         pnt_configPage = (byte *)&configPage2;
         if (offset < 64) //New value is part of the ignition map
         {
-          
+          ignitionTable.values[7-offset/8][offset%8] = newValue;
         }
         else if (offset < 80) //New value is one of the X or Y axis bins
         {
+          //Check whether this is on the X (RPM) or Y (MAP/TPS) axis
+          if (offset < 72) 
+          { 
+            //X Axis
+            *(pnt_configPage + offset) = newValue * 100; 
+          }
+          else
+          { 
+            //Y Axis
+            offset = 7-(offset-72); //Need to do a translation to flip the order 
+            *(pnt_configPage + offset) = newValue;
+          }
           
         }
         else //New value is one of the remaining config items

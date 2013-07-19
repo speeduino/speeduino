@@ -1,10 +1,8 @@
 #include <EEPROM.h>
 
 void writeConfig();
-void writeTables();
 
 void loadConfig();
-void loadTables();
 
 /*
 Current layout of EEPROM data (Version 1) is as follows (All sizes are in bytes):
