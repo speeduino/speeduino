@@ -28,7 +28,7 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #include "comms.h"
 
 #include "fastAnalog.h"
-#include "digitalIOPerformance.h"
+//#include "digitalIOPerformance.h"
 
 //NEED TO LOAD FROM EEPROM HERE
 struct config1 configPage1;
@@ -45,6 +45,8 @@ int triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
 volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
+volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
+volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
 
 struct table fuelTable;
 struct table ignitionTable;
@@ -69,7 +71,6 @@ void setup() {
   switch (pinTrigger) {
     
     //Arduino Mega 2560 mapping (Uncomment to use)
-    /*
     case 2:
       triggerInterrupt = 0; break;
     case 3:
@@ -82,9 +83,10 @@ void setup() {
       triggerInterrupt = 3; break;
     case 21:
       triggerInterrupt = 2; break;
-      */
+     
       
     //Arduino Leo(nardo/stick) mapping (Comment this section if using a mega)
+    /*
     case 3:
       triggerInterrupt = 0; break;
     case 2:
@@ -95,8 +97,11 @@ void setup() {
       triggerInterrupt = 3; break;
     case 7:
       triggerInterrupt = 4; break;  
+      */
   }
-  attachInterrupt(triggerInterrupt, trigger, FALLING); // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+  pinMode(pinTrigger, INPUT);
+  digitalWrite(pinTrigger, HIGH);
+  attachInterrupt(triggerInterrupt, trigger, RISING); // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
   //End crank triger interrupt attachment
   
   req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
@@ -120,6 +125,11 @@ void setup() {
   initialiseScheduler();
   counter = 0;
   
+  configPage2.triggerTeeth = 12; //TESTING ONLY!
+  configPage2.triggerMissingTeeth = 1; //TESTING ONLY!
+  triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
+  triggerToothAngle = 360 / configPage2.triggerTeeth;
+  
   //Setup some LEDs for testing
   pinMode(10, OUTPUT);
   pinMode(9, OUTPUT);
@@ -127,6 +137,31 @@ void setup() {
 
 void loop() 
   {
+    
+          //Check for any requets from serial
+      //Serial.println(toothCurrentCount);
+      //if (toothCurrentCount == 1) //Only check the serial buffer (And hence process serial commands) once per revolution
+      //{
+        if (Serial.available() > 0) 
+        {
+          command();
+        }
+     
+     //Serial.print("Trigger Teeth: ");
+     //Serial.println(configPage2.triggerTeeth); 
+    /*
+     Serial.print("Tooth last time: ");
+     Serial.println(toothLastToothTime);
+     Serial.print("Tooth last minus one time: ");
+     Serial.println(toothLastMinusOneToothTime);
+     */
+     Serial.print("RPM: ");
+     Serial.println(currentStatus.RPM);
+     /*
+     //Serial.print("toothLastToothTime: ");
+     //Serial.println(toothLastToothTime);
+     */
+      //}
     //delay(2500);
     //Always check for sync
     //Main loop runs within this clause
@@ -134,15 +169,19 @@ void loop()
     {
       
       //Calculate the RPM based on the time between the last 2 teeth. I have no idea whether this will be accurate AT ALL, but it's fairly efficient and means there doesn't need to be another variable placed into the trigger interrupt
-      if (toothCurrentCount != 1) //We can't perform the RPM calculation if we're at the first tooth as the timing would be double (Well, we can, but it would need a different calculation and I don't think it's worth it, just use the last RPM value)
+      if (toothCurrentCount != 1 && toothLastMinusOneToothTime != 0) //We can't perform the RPM calculation if we're at the first tooth as the timing would be double (Well, we can, but it would need a different calculation and I don't think it's worth it, just use the last RPM value)
       {
-        long revolutionTime = (configPage2.triggerTeeth * (toothLastToothTime - toothLastMinusOneToothTime)); //The time in uS that one revolution would take at current speed
+        //unsigned long revolutionTime = ((long)configPage2.triggerTeeth * (toothLastToothTime - toothLastMinusOneToothTime)); //The time in uS that one revolution would take at current speed
+        unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed
+        //Serial.println((toothLastToothTime - toothLastMinusOneToothTime));
         currentStatus.RPM = US_IN_MINUTE / revolutionTime;
       }
+      if ( (micros() - toothLastToothTime) > 100000L ) { currentStatus.RPM = 0; toothLastMinusOneToothTime = 0;}
       //Get the current MAP value
       //currentStatus.MAP = 100; //Placeholder
       currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 0, 100); 
       currentStatus.TPS = 20; //Placeholder
+      //currentStatus.TPS = map(analogRead(pinTPS), 0, 1023, 0, 100);
       
       //Begin the fuel calculation
       //Perform lookup into fuel map for RPM vs MAP value
@@ -189,53 +228,9 @@ void loop()
                   );
       }
       
-      //Check for any requets from serial
-      //Serial.println(toothCurrentCount);
-      if (toothCurrentCount == 1) //Only check the serial buffer (And hence process serial commands) once per revolution
-      {
-        if (Serial.available() > 0) 
-        {
-          command();
-        }
-      }
-      
-      
-      //Serial.println(VE);
-      //Serial.print("VE: ");
-      //Serial.println(VE);
-      
-      //Serial.print("Injector pulsewidth: ");
-      //Serial.println(pulseWidth);
-      //Serial.println(req_fuel * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(100/100.0) + engineInjectorDeadTime);
-      //Serial.println( (float)(req_fuel * (float)(VE/100)) );
-      //Serial.println( (float)(VE/100.0));
-      
-      /*
-      if (counter > 100000) {
-      scheduleStart = micros();
-      setSchedule1(openInjector2, 1000000);
-      counter = 0;
-      }
-      counter++;
-      
-      
-      if (scheduleEnd != 0) { 
-        Serial.print("The schedule took (uS): "); 
-        Serial.println(scheduleEnd - scheduleStart);
-        scheduleEnd = 0;
-      }
-      */
-      trigger();
-      delay(1);
     }
     else
     { getSync(); }
-    
-
-    //Serial.println(toothLastToothTime);
-    //Serial.println(toothLastMinusOneToothTime);
-    //Serial.println(rpm);
-    //delay(100);
 
   }
   
@@ -254,7 +249,7 @@ void getSync()
     
     //The are some placeholder values so we can get a fake RPM
     toothLastMinusOneToothTime = micros();
-    delay(1); //A 1000us delay should make for about a 5000rpm test speed with a 12 tooth wheel(60000000us / (1000us * triggerTeeth)
+    //delay(1); //A 1000us delay should make for about a 5000rpm test speed with a 12 tooth wheel(60000000us / (1000us * triggerTeeth)
     toothLastToothTime = micros();
     
     currentStatus.hasSync = true;
@@ -275,18 +270,28 @@ void trigger()
   {
    // http://www.msextra.com/forums/viewtopic.php?f=94&t=22976
    // http://www.megamanual.com/ms2/wheel.htm
+
    unsigned long curTime = micros();
-   toothCurrentCount++; //Increment the tooth counter
+   if ( (curTime - toothLastToothTime) < 500) { return; } //Debounce check. Pulses should never be less than 100uS, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+   toothCurrentCount++; //Increment the tooth counter   
    
+   //Serial.println("Got trigger");
    //Begin the missing tooth detection
    //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
    //if ( (curTime - toothLastToothTime) > (1.5 * (toothLastToothTime - toothLastMinusOneToothTime))) { toothCurrentCount = 1; }
-   if ( (curTime - toothLastToothTime) > ((3 * (toothLastToothTime - toothLastMinusOneToothTime))>>1)) { toothCurrentCount = 1; } //Same as above, but uses bitshift instead of multiplying by 1.5
-   if (toothCurrentCount > triggerActualTeeth) { toothCurrentCount = 1; } //For testing ONLY
+   //if ( (curTime - toothLastToothTime) > ((3 * (toothLastToothTime - toothLastMinusOneToothTime))>>1)) { toothCurrentCount = 1; } //Same as above, but uses bitshift instead of multiplying by 1.5
+   if (toothCurrentCount > triggerActualTeeth)
+   { 
+      toothCurrentCount = 1; 
+      toothOneMinusOneTime = toothOneTime;
+      toothOneTime = curTime;
+   } //For testing ONLY
    
-   // Update the last few tooth times
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
+   // Update the last few tooth times
+   //toothLastMinusOneToothTime = toothLastToothTime;
+   //toothLastToothTime = curTime;
    
   }
 

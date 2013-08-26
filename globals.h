@@ -12,7 +12,15 @@ struct statuses {
   byte MAP;
   byte TPS;
   byte VE;
+  byte squirt;
+  byte engine;
   unsigned long PW; //In uS
+  
+  //Helpful bitwise operations:
+  //Useful reference: http://playground.arduino.cc/Code/BitMath
+  // y = (x >> n) & 1;    // n=0..15.  stores nth bit of x in y.  y becomes 0 or 1.
+  // x &= ~(1 << n);      // forces nth bit of x to be 0.  all other bits left alone.
+  // x |= (1 << n);       // forces nth bit of x to be 1.  all other bits left alone.
   
 };
 

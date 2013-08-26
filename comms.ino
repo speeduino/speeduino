@@ -80,9 +80,9 @@ void sendValues(int length)
 
   boolean a = 0; //inj_port1.status;
   boolean b = 0; //inj_port2.status;
-  response[1] =  ((a & 0x01) << 0) | ((a & 0x02) << 1) | ((a & 0x04) << 1) | ((b & 0x01) << 1) | ((b & 0x02) << 3) | ((b & 0x04) << 3); //squirt NOT YET WORKING
+  response[1] =  currentStatus.squirt; //((a & 0x01) << 0) | ((a & 0x02) << 1) | ((a & 0x04) << 1) | ((b & 0x01) << 1) | ((b & 0x02) << 3) | ((b & 0x04) << 3); //squirt NOT YET WORKING
 
-  response[2] = (byte)128; // Engine Status NOT YET WORKING
+  response[2] = currentStatus.engine; // Engine Status NOT YET WORKING
   response[3] = 0x00; //baro
   response[4] = currentStatus.MAP; //map
   response[5] = 0x00; //mat
@@ -126,13 +126,15 @@ void receiveValue(byte offset, byte newValue)
           if (offset < 72) 
           { 
             //X Axis
-            *(pnt_configPage + offset) = newValue * 100; //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+            //*(pnt_configPage + offset) = newValue * 100; //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+            fuelTable.axisX[(offset-64)] = newValue * 100; //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
           }
           else
           { 
             //Y Axis
             offset = 7-(offset-72); //Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
-            *(pnt_configPage + offset) = newValue;
+            //*(pnt_configPage + offset) = newValue;
+            fuelTable.axisY[offset] = newValue;
           }
         }
         else //New value is one of the remaining config items
@@ -174,6 +176,11 @@ void receiveValue(byte offset, byte newValue)
   }
 }
 
+/*
+sendPage() packs the data within the current page (As set with the 'P' command) 
+into a buffer and sends it.
+Note that some translation of the data is required to lay it out in the way Megasqurit / TunerStudio expect it
+*/
 void sendPage()
 {
   byte response[page_size];
@@ -185,7 +192,7 @@ void sendPage()
       case vePage:
         //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
         //MS format has origin (0,0) in the bottom left corner, we use the top left for efficiency reasons
-        for(byte x=0;x<64;x++) { response[x] = fuelTable.values[7-x/8][x%8]; }
+        for(byte x=0;x<64;x++) { response[x] = fuelTable.values[7-x/8][x%8]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged
         for(byte x=64;x<72;x++) { response[x] = fuelTable.axisX[(x-64)] / 100; } //RPM Bins for VE table (Need to be dvidied by 100)
         for(byte y=72;y<80;y++) { response[y] = fuelTable.axisY[7-(y-72)]; } //MAP or TPS bins for VE table 
         
@@ -196,44 +203,6 @@ void sendPage()
         { 
           response[offset] = *(pnt_configPage + offset + x); //Each byte is simply the location in memory of configPage1 + the offset + the variable number (x)
         }
-        /*
-        response[80] = configPage1.crankCold; //Cold cranking pulsewidth. This is added to the fuel pulsewidth when cranking under a temp threshold (ms)
-        response[81] = configPage1.crankHot; //Warm cranking pulsewidth. This is added to the fuel pulsewidth when cranking (ms)
-        response[82] = configPage1.asePct; //Afterstart enrichment (%)
-        response[83] = configPage1.aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
-        for(byte x=84;x<94;x++) { response[x] = configPage1.wueBins[x-84]; } //Warm up enrichment array (10 bytes, % values)
-        response[94] = configPage1.taeBins1; //TPS based acceleration enrichment bin 1 of 4 (ms)
-        response[95] = configPage1.taeBins2; //TPS based acceleration enrichment bin 2 of 4 (ms)
-        response[96] = configPage1.taeBins3; //TPS based acceleration enrichment bin 3 of 4 (ms)
-        response[97] = configPage1.taeBins4; //TPS based acceleration enrichment bin 4 of 4 (ms)
-        response[98] = 0;
-        response[99] = 0;
-        response[100] = 0;
-        response[101] = 0;
-        response[102] = 0;
-        response[103] = 0;
-        response[104] = 0;
-        response[105] = 0;
-        response[106] = configPage1.reqFuel;
-        response[107] = 0;
-        response[108] = 0;
-        response[109] = 0;
-        response[110] = 0;
-        response[111] = 0;
-        response[112] = 0;
-        response[113] = 0;
-        response[114] = 0; //rpmk (16 bits)
-        response[116] = ((configPage1.nCylinders-1) * 16) + (1 * 8) + ((configPage1.strokes / 4) * 4) + 2; // (engineCylinders * 16) + (1 * 8) + ((engineStrokes / 4) * 4) + 4
-        response[117] = 0;
-        response[118] = 0;
-        response[119] = 0;
-        response[120] = 0;
-        response[121] = 0;
-        response[122] = 0;
-        response[123] = 0;
-        response[124] = 0;
-        */
-
         Serial.write((byte *)&response, sizeof(response));
         break;
         
