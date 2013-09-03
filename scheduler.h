@@ -28,8 +28,8 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 
 //#define clockspeed 16000000
 
-int schedule1Active; //Value=0 means do nothing, value=1 means call the startCallback, value=2 means call the endCallback
-int schedule2Active;
+int schedule1Status; //Value=0 means do nothing, value=1 means call the startCallback, value=2 means call the endCallback
+int schedule2Status; //As above, for 2nd scheduler
 unsigned long schedule1Duration; //How long (uS) after calling the start callback to we call the end callback
 unsigned long schedule2Duration;
 void (*schedule1StartCallback)(); //Start Callback function for schedule1
