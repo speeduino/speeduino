@@ -17,7 +17,6 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #define pinTPS 8 //TPS input pin
 #define pinTrigger 2 //The CAS pin
 #define pinMAP 0 //MAP sensor pin
-#define triggerFilterTime 100 // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 //**************************************************************************************************
 
 #include "globals.h"
@@ -42,6 +41,7 @@ int req_fuel_uS = configPage1.reqFuel * 1000; //Convert to uS and an int. This i
 // These aren't really configuration options, more so a description of how the hardware is setup. These are things that will be defined in the recommended hardware setup
 int triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
 int triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
+int triggerFilterTime = 100; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
@@ -123,7 +123,7 @@ void setup() {
   //Setup the dummy fuel and ignition tables
   dummyFuelTable(&fuelTable);
   dummyIgnitionTable(&ignitionTable);
-  initialiseScheduler();
+  initialiseSchedulers();
   counter = 0;
   
   configPage2.triggerTeeth = 12; //TESTING ONLY!
@@ -214,7 +214,7 @@ void loop()
       //This may potentially be called a number of times as we get closer and closer to the opening time
       if (injectorStartAngle > crankAngle) 
       { 
-        setSchedule1(openInjector, 
+        setFuelSchedule1(openInjector, 
                   (injectorStartAngle - crankAngle) * timePerDegree,
                   currentStatus.PW,
                   closeInjector
@@ -223,7 +223,7 @@ void loop()
       //Likewise for the ignition
       if (ignitionStartAngle > crankAngle) 
       { 
-        setSchedule2(beginCoilCharge, 
+        setIgnitionSchedule1(beginCoilCharge, 
                   (ignitionStartAngle - crankAngle) * timePerDegree,
                   configPage2.dwellRun,
                   endCoilCharge
@@ -278,17 +278,24 @@ void trigger()
    if ( (curTime - toothLastToothTime) < triggerFilterTime) { interrupts(); return; } //Debounce check. Pulses should never be less than 100uS, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    toothCurrentCount++; //Increment the tooth counter   
    
-   //Serial.println("Got trigger");
    //Begin the missing tooth detection
    //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
    //if ( (curTime - toothLastToothTime) > (1.5 * (toothLastToothTime - toothLastMinusOneToothTime))) { toothCurrentCount = 1; }
-   //if ( (curTime - toothLastToothTime) > ((3 * (toothLastToothTime - toothLastMinusOneToothTime))>>1)) { toothCurrentCount = 1; } //Same as above, but uses bitshift instead of multiplying by 1.5
-   if (toothCurrentCount > triggerActualTeeth)
+   if ( (curTime - toothLastToothTime) > ((3 * (toothLastToothTime - toothLastMinusOneToothTime))>>1)) //Same as above, but uses bitshift instead of multiplying by 1.5
+   { 
+     toothCurrentCount = 1; 
+     toothOneMinusOneTime = toothOneTime;
+     toothOneTime = curTime;
+   } 
+   //TESTING METHOD
+   /*
+   if (toothCurrentCount > triggerActualTeeth) }
    { 
       toothCurrentCount = 1; 
       toothOneMinusOneTime = toothOneTime;
       toothOneTime = curTime;
-   } //For testing ONLY
+   }
+   */
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;

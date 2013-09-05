@@ -26,18 +26,22 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #include <avr/interrupt.h> 
 #include <avr/io.h>
 
-//#define clockspeed 16000000
+void initialiseSchedulers();
+void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 
-int schedule1Status; //Value=0 means do nothing, value=1 means call the startCallback, value=2 means call the endCallback
-int schedule2Status; //As above, for 2nd scheduler
-unsigned long schedule1Duration; //How long (uS) after calling the start callback to we call the end callback
-unsigned long schedule2Duration;
-void (*schedule1StartCallback)(); //Start Callback function for schedule1
-void (*schedule2StartCallback)();
-void (*schedule1EndCallback)(); //End Callback function for schedule1
-void (*schedule2EndCallback)();
+enum ScheduleStatus {OFF, PENDING, RUNNING}; //The 3 statuses that a schedule can have
 
+struct Schedule {
+  unsigned long duration;
+  ScheduleStatus Status;
+  void (*StartCallback)(); //Start Callback function for schedule
+  void (*EndCallback)(); //Start Callback function for schedule
+};
 
-void initialiseScheduler();
-void setSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+Schedule fuelSchedule1;
+Schedule fuelSchedule2;
+Schedule ignitionSchedule1;
+Schedule ignitionSchedule2;
