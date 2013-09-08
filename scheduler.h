@@ -35,8 +35,8 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
 enum ScheduleStatus {OFF, PENDING, RUNNING}; //The 3 statuses that a schedule can have
 
 struct Schedule {
-  unsigned long duration;
-  ScheduleStatus Status;
+  volatile unsigned long duration;
+  volatile ScheduleStatus Status;
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
 };

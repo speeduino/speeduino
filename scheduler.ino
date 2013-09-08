@@ -91,10 +91,13 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     TIMSK5 |= (1 << OCIE5B); //Turn on the A compare unit (ie turn on the interrupt)
   }
   
-//Timer3A (fuel schedule 1) Compare Vector
-//This function gets called when either the start time or the duration time are reached
+  
+  
+
+//This function (All 4 ISR functions that are below) gets called when either the start time or the duration time are reached
 //This calls the relevant callback function (startCallback or endCallback) depending on the status of the schedule.
 //If the startCallback function is called, we put the scheduler into RUNNING state
+//Timer3A (fuel schedule 1) Compare Vector
 ISR(TIMER3_COMPA_vect) //fuelSchedule1
   {
     if (fuelSchedule1.Status == PENDING) //Check to see if this schedule is turn on
