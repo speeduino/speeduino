@@ -7,11 +7,15 @@
 #define MPH_PIN 12
 #define POT_PIN 0
 
-#define PULSE_DURATION 20
+#define MAX_DELAY 20000
+#define MIN_DELAY 833
+
+#define PULSE_DURATION 50
 
 int mph_toggle = 1 ;
 int val;
 unsigned int pulse_gap;
+int RPMdirection = 0;
 
 // the setup routine runs once when you press reset:
 void setup() 
@@ -19,6 +23,9 @@ void setup()
   pinMode(PULSE_PIN, OUTPUT);
   pinMode(CAM_PIN, OUTPUT);
   pinMode(MPH_PIN, OUTPUT);
+  
+  Serial.begin(9600);
+  pulse_gap = MIN_DELAY;
 }
 
 
@@ -72,7 +79,26 @@ void loop()
   // read potentiometer wiper pin 0?
   // analog A/D channel 0 
   val = analogRead(POT_PIN);
-  pulse_gap = map(val, 0, 1023, 500, 50000);
+  pulse_gap = map(val, 0, 1023, MIN_DELAY, MAX_DELAY);
+  Serial.println(pulse_gap);
+  /*
+  if (RPMdirection == 0)
+  {
+    if (pulse_gap < MAX_DELAY) { pulse_gap++; }
+    else
+    {
+      RPMdirection = 1;
+    }
+  }
+  else
+  {
+    if (pulse_gap > MIN_DELAY) { pulse_gap--; }
+    else
+    {
+      RPMdirection = 0;
+    }
+  }
+  */
   // for loop 36 counts  , 150 uS to 1000 uS or  5000 to 800 rpm
   for (int i = 0; i < 11; i++) 
   {
@@ -80,10 +106,17 @@ void loop()
       digitalWrite(PULSE_PIN, HIGH);
       delayMicroseconds(PULSE_DURATION);
       digitalWrite(PULSE_PIN, LOW);
-      delayMicroseconds( (pulse_gap - PULSE_DURATION) );
+      if (pulse_gap < 15000) //delayMicroseconds() only works with values up to 16383. Switch to delay() at 15000 to be safe
+      {
+        delayMicroseconds( (pulse_gap - PULSE_DURATION) );
+      }
+      else
+      {
+        delay ( (pulse_gap - PULSE_DURATION) / 1000 ); 
+      }
   } 
   // simulate the missing tooth next
-  delayMicroseconds( (pulse_gap - PULSE_DURATION) );
+  delayMicroseconds( (pulse_gap) );
 
   } 
 // end main loop  version 7 , now perfect  800 rpm to 5000
