@@ -79,20 +79,66 @@ void writeConfig()
 
 void loadConfig()
 {
+  int offset;
+  //Create a pointer to the config page
   byte* pnt_configPage;
-  //The next 125 bytes can simply be pulled straight from the fuelTable
   pnt_configPage = (byte *)&configPage1; //Create a pointer to Page 1 in memory
-  for(int x=EEPROM_CONFIG1_MAP; x<EEPROM_CONFIG2_XSIZE; x++) 
+  
+  //Fuel table (See storage.h for data layout)
+  //fuelTable.xSize = EEPROM.read(EEPROM_CONFIG1_XSIZE); //Read the VE Tables RPM dimension size
+  //fuelTable.ySize = EEPROM.read(EEPROM_CONFIG1_YSIZE); //Read the VE Tables MAP/TPS dimension size
+  for(int x=EEPROM_CONFIG1_MAP; x<EEPROM_CONFIG1_XBINS; x++) 
   { 
-    *(pnt_configPage + x) = EEPROM.read(x);
+    offset = x - EEPROM_CONFIG1_MAP;
+    fuelTable.values[7-offset/8][offset%8] = EEPROM.read(x); //Read the 8x8 map
+  }
+  //RPM bins
+  for(int x=EEPROM_CONFIG1_XBINS; x<EEPROM_CONFIG1_YBINS; x++) 
+  {
+    offset = x - EEPROM_CONFIG1_XBINS;
+    fuelTable.axisX[offset] = (EEPROM.read(x) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+  }
+  //TPS/MAP bins
+  for(int x=EEPROM_CONFIG1_YBINS; x<EEPROM_CONFIG1_SETTINGS; x++) 
+  {
+    offset = x - EEPROM_CONFIG1_YBINS;
+    fuelTable.axisY[offset] = EEPROM.read(x);
+  }
+  //The next 125 bytes can simply be pulled straight from the configTable
+  for(int x=EEPROM_CONFIG1_SETTINGS; x<EEPROM_CONFIG2_XSIZE; x++) 
+  { 
+    *(pnt_configPage - EEPROM_CONFIG1_SETTINGS + x) = EEPROM.read(x);
   }
   //That concludes the writing of the VE table
   
-  //The next 125 bytes can simply be pulled straight from the ignitionTable
+  //*********************************************************************************************************************************************************************************
+  //IGNITION CONFIG PAGE (2)
   pnt_configPage = (byte *)&configPage2; //Create a pointer to Page 2 in memory
-  for(int x=EEPROM_CONFIG2_MAP; x<EEPROM_SIZE; x++) 
+  //Begin writing the Ignition table, basically the same thing as above
+  //ignitionTable.xSize = EEPROM.read(EEPROM_CONFIG2_XSIZE); //Read the ignition Table RPM dimension size (Currently not supproted)
+  //ignitionTable.ySize = EEPROM.read(EEPROM_CONFIG2_YSIZE); //Read the ignition Table MAP/TPS dimension size (Currently not supproted)
+  
+  for(int x=EEPROM_CONFIG2_MAP; x<EEPROM_CONFIG2_XBINS; x++) 
   { 
-     *(pnt_configPage + x) = EEPROM.read(x);
+    offset = x - EEPROM_CONFIG2_MAP;
+    ignitionTable.values[7-offset/8][offset%8] = EEPROM.read(x); //Read the 8x8 map
+  }
+  //RPM bins
+  for(int x=EEPROM_CONFIG2_XBINS; x<EEPROM_CONFIG2_YBINS; x++) 
+  {
+    offset = x - EEPROM_CONFIG2_XBINS;
+    ignitionTable.axisX[offset] = (EEPROM.read(x) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+  }
+  //TPS/MAP bins
+  for(int x=EEPROM_CONFIG2_YBINS; x<EEPROM_CONFIG2_SETTINGS; x++) 
+  {
+    offset = x - EEPROM_CONFIG2_YBINS;
+    ignitionTable.axisY[offset] = EEPROM.read(x);
+  }
+  //The next 125 bytes can simply be pulled straight from the configTable
+  for(int x=EEPROM_CONFIG2_SETTINGS; x<EEPROM_SIZE; x++) 
+  { 
+    *(pnt_configPage - EEPROM_CONFIG2_SETTINGS + x) = EEPROM.read(x);
   }
   
 }
