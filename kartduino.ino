@@ -141,13 +141,13 @@ void loop()
   {
     
       //Check for any requets from serial
-      //Serial.println(toothCurrentCount);
       //if (toothCurrentCount == 1) //Only check the serial buffer (And hence process serial commands) once per revolution
       //{
         if (Serial.available() > 0) 
         {
           command();
         }
+      //}
      
      /*
      Serial.print("RPM: ");
@@ -163,26 +163,24 @@ void loop()
      Serial.print("Tooth Number: ");
      Serial.println(toothCurrentCount);
      */
-      //}
-    //delay(2500);
     //Always check for sync
     //Main loop runs within this clause
     if (currentStatus.hasSync)
     {
       
       //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
-      noInterrupts();
-      if ((micros() - toothLastToothTime) > 100000L)
+      if ((micros() - toothLastToothTime) > 500000L) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped
       {
-        unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+        noInterrupts();
+          unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+        interrupts();
         currentStatus.RPM = US_IN_MINUTE / revolutionTime;
       }
       else
       {
-        //We reach here if the time between revolutions is too great. This VERY likely means the engine has stopped
+        //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
         currentStatus.RPM = 0; 
       }
-      interrupts();
       //Get the current MAP value
       //currentStatus.MAP = 100; //Placeholder
       currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 0, 100); 
@@ -199,7 +197,7 @@ void loop()
       
       //Determine the current crank angle
       int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is from TDC
-      if (crankAngle > 360) { crankAngle -= 360; } //Not sure if this is actually required
+      if (crankAngle > 360) { crankAngle -= 360; } //Needed due to potentially large values of triggerAngle
       
       //Serial.print("Crank angle: "); Serial.println(crankAngle);
       
@@ -208,7 +206,7 @@ void loop()
       
       //Determine next firing angles
       int injectorStartAngle = 355 - (currentStatus.PW / timePerDegree); //This is a bit rough, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
-      int ignitionStartAngle = 360 - ignitionAdvance; //Simple
+      int ignitionStartAngle = 360 - ignitionAdvance - (configPage2.dwellRun / timePerDegree); // 360 - desired advance angle - number of degrees the dwell will take
       
       //Serial.print("Injector start angle: "); Serial.println(injectorStartAngle);
       
