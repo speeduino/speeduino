@@ -39,9 +39,9 @@ int req_fuel_uS = configPage1.reqFuel * 1000; //Convert to uS and an int. This i
 
 // Setup section
 // These aren't really configuration options, more so a description of how the hardware is setup. These are things that will be defined in the recommended hardware setup
-int triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
+volatile int triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
 int triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
-int triggerFilterTime = 100; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
+int triggerFilterTime = 500; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
@@ -68,7 +68,7 @@ void setup() {
   //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly. 
   int triggerInterrupt = 0; // By default, use the first interrupt. The user should always have set things up (Or even better, use the recommended pinouts)
   currentStatus.RPM = 0;
-  currentStatus.hasSync = false;
+  currentStatus.hasSync = true;
   switch (pinTrigger) {
     
     //Arduino Mega 2560 mapping (Uncomment to use)
@@ -101,8 +101,8 @@ void setup() {
       */
   }
   pinMode(pinTrigger, INPUT);
-  digitalWrite(pinTrigger, LOW);
-  attachInterrupt(triggerInterrupt, trigger, RISING); // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+  digitalWrite(pinTrigger, HIGH);
+  attachInterrupt(triggerInterrupt, trigger, FALLING); // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
   //End crank triger interrupt attachment
   
   req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
@@ -126,6 +126,7 @@ void setup() {
   initialiseSchedulers();
   counter = 0;
   
+  configPage2.triggerAngle = 175; //TESTING ONLY!
   configPage2.triggerTeeth = 12; //TESTING ONLY!
   configPage2.triggerMissingTeeth = 1; //TESTING ONLY!
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
@@ -153,8 +154,8 @@ void loop()
      Serial.println(currentStatus.RPM);
      
      
-     Serial.print("toothOneTime: ");
-     Serial.println(toothOneTime);
+     Serial.print("toothLastToothTime: ");
+     Serial.println(toothLastToothTime);
      Serial.print("toothOneMinusOneTime: ");
      Serial.println(toothOneMinusOneTime);
      Serial.print("RevolutionTime: ");
@@ -169,16 +170,19 @@ void loop()
     if (currentStatus.hasSync)
     {
       
-      //Calculate the RPM based on the time between the last 2 teeth. I have no idea whether this will be accurate AT ALL, but it's fairly efficient and means there doesn't need to be another variable placed into the trigger interrupt
+      //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
       noInterrupts();
-      if (toothCurrentCount != 1 && toothLastMinusOneToothTime != 0) //We can't perform the RPM calculation if we're at the first tooth as the timing would be double (Well, we can, but it would need a different calculation and I don't think it's worth it, just use the last RPM value)
+      if ((micros() - toothLastToothTime) > 100000L)
       {
-        //unsigned long revolutionTime = ((long)configPage2.triggerTeeth * (toothLastToothTime - toothLastMinusOneToothTime)); //The time in uS that one revolution would take at current speed
-        unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed
+        unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
         currentStatus.RPM = US_IN_MINUTE / revolutionTime;
       }
+      else
+      {
+        //We reach here if the time between revolutions is too great. This VERY likely means the engine has stopped
+        currentStatus.RPM = 0; 
+      }
       interrupts();
-      if ( (micros() - toothLastToothTime) > 100000L ) { currentStatus.RPM = 0; toothLastMinusOneToothTime = 0;}
       //Get the current MAP value
       //currentStatus.MAP = 100; //Placeholder
       currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 0, 100); 
@@ -272,24 +276,26 @@ void trigger()
   {
    // http://www.msextra.com/forums/viewtopic.php?f=94&t=22976
    // http://www.megamanual.com/ms2/wheel.htm
-  noInterrupts(); //Turn off interrupts whilst in this routine
+   noInterrupts(); //Turn off interrupts whilst in this routine
 
-   unsigned long curTime = micros();
+   volatile unsigned long curTime = micros();
    if ( (curTime - toothLastToothTime) < triggerFilterTime) { interrupts(); return; } //Debounce check. Pulses should never be less than 100uS, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    toothCurrentCount++; //Increment the tooth counter   
    
    //Begin the missing tooth detection
    //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
    //if ( (curTime - toothLastToothTime) > (1.5 * (toothLastToothTime - toothLastMinusOneToothTime))) { toothCurrentCount = 1; }
+   
    if ( (curTime - toothLastToothTime) > ((3 * (toothLastToothTime - toothLastMinusOneToothTime))>>1)) //Same as above, but uses bitshift instead of multiplying by 1.5
    { 
      toothCurrentCount = 1; 
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
    } 
+   
    //TESTING METHOD
    /*
-   if (toothCurrentCount > triggerActualTeeth) }
+   if (toothCurrentCount > triggerActualTeeth)
    { 
       toothCurrentCount = 1; 
       toothOneMinusOneTime = toothOneTime;
