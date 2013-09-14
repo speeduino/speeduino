@@ -60,6 +60,7 @@ unsigned long scheduleStart;
 unsigned long scheduleEnd;
 
 struct statuses currentStatus;
+byte loopCount;
 
 void setup() {
   
@@ -124,7 +125,7 @@ void setup() {
   dummyFuelTable(&fuelTable);
   dummyIgnitionTable(&ignitionTable);
   initialiseSchedulers();
-  counter = 0;
+  loopCount = 0;
   
   configPage2.triggerAngle = 175; //TESTING ONLY!
   configPage2.triggerTeeth = 12; //TESTING ONLY!
@@ -139,15 +140,16 @@ void setup() {
 
 void loop() 
   {
-    
+      loopCount++;    
       //Check for any requets from serial
-      //if (toothCurrentCount == 1) //Only check the serial buffer (And hence process serial commands) once per revolution
-      //{
+      if (loopCount == 50) //Only check the serial buffer (And hence process serial commands) once every x loops (50 Is more than fast enough for TunerStudio)
+      {
         if (Serial.available() > 0) 
         {
           command();
         }
-      //}
+        loopCount = 0;
+      }
      
      /*
      Serial.print("RPM: ");
@@ -163,24 +165,27 @@ void loop()
      Serial.print("Tooth Number: ");
      Serial.println(toothCurrentCount);
      */
+     
+    //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
+    if ((micros() - toothLastToothTime) < 500000L) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped
+    {
+      noInterrupts();
+        unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+      interrupts();
+      currentStatus.RPM = US_IN_MINUTE / revolutionTime;
+    }
+    else
+    {
+      //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
+      currentStatus.RPM = 0; 
+    }
+     
+     
     //Always check for sync
     //Main loop runs within this clause
     if (currentStatus.hasSync)
     {
-      
-      //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
-      if ((micros() - toothLastToothTime) > 500000L) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped
-      {
-        noInterrupts();
-          unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-        interrupts();
-        currentStatus.RPM = US_IN_MINUTE / revolutionTime;
-      }
-      else
-      {
-        //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
-        currentStatus.RPM = 0; 
-      }
+
       //Get the current MAP value
       //currentStatus.MAP = 100; //Placeholder
       currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 0, 100); 
@@ -233,32 +238,10 @@ void loop()
       }
       
     }
-    else
-    { getSync(); }
+    
 
   }
   
-//The get Sync function attempts to wait 
-void getSync()
-  {
-    
-    //VERY basic waiting for sync routine. Artifically set the tooth count to be great than 1, then just wait for it to be reset to one (Which occurs in the trigger interrupt function)
-    /*
-    toothCurrentCount = 2;
-    while (toothCurrentCount > 1)
-    {
-      delay(1);
-    }
-    */
-    
-    //The are some placeholder values so we can get a fake RPM
-    toothLastMinusOneToothTime = micros();
-    //delay(1); //A 1000us delay should make for about a 5000rpm test speed with a 12 tooth wheel(60000000us / (1000us * triggerTeeth)
-    toothLastToothTime = micros();
-    
-    currentStatus.hasSync = true;
-  }
-
 
 //Interrupts  
 
@@ -289,6 +272,7 @@ void trigger()
      toothCurrentCount = 1; 
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
+     currentStatus.hasSync = true;
    } 
    
    //TESTING METHOD
