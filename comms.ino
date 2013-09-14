@@ -21,9 +21,9 @@ void command()
 
       case 'P': // set the current page
         //Blue
-        digitalWrite(10, HIGH);
-        digitalWrite(9, LOW);
-        digitalWrite(13, LOW);
+        //digitalWrite(10, HIGH);
+        //digitalWrite(9, LOW);
+        //digitalWrite(13, LOW);
         
         //A 2nd byte of data is required after the 'P' specifying the new page number. 
         //This loop should never need to run as the byte should already be in the buffer, but is here just in case
@@ -41,25 +41,25 @@ void command()
 
       case 'Q': // send code version
         //Off
-        digitalWrite(9, LOW);
-        digitalWrite(10, LOW);
-        digitalWrite(13, LOW);
+        //digitalWrite(9, LOW);
+        //digitalWrite(10, LOW);
+        //digitalWrite(13, LOW);
         Serial.write(ms_version);
         break;
 
       case 'V': // send VE table and constants
         //Red
-        digitalWrite(9, LOW);
-        digitalWrite(10, LOW);
-        digitalWrite(13, HIGH);
+        //digitalWrite(9, LOW);
+        //digitalWrite(10, LOW);
+        //digitalWrite(13, HIGH);
         sendPage();
         break;
 
       case 'W': // receive new VE or constant at 'W'+<offset>+<newbyte>
         //Green
-        digitalWrite(9, HIGH);
-        digitalWrite(10, LOW);
-        digitalWrite(13, LOW);
+        //digitalWrite(9, HIGH);
+        //digitalWrite(10, LOW);
+        //digitalWrite(13, LOW);
         
         receiveValue(Serial.read(), Serial.read());
 	break;
@@ -126,20 +126,18 @@ void receiveValue(byte offset, byte newValue)
           if (offset < 72) 
           { 
             //X Axis
-            //*(pnt_configPage + offset) = newValue * 100; //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
-            fuelTable.axisX[(offset-64)] = newValue * 100; //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+            fuelTable.axisX[(offset-64)] = (newValue * 100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
           }
           else
           { 
             //Y Axis
             offset = 7-(offset-72); //Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
-            //*(pnt_configPage + offset) = newValue;
-            fuelTable.axisY[offset] = newValue;
+            fuelTable.axisY[offset] = (newValue);
           }
         }
         else //New value is one of the remaining config items
         {
-          *(pnt_configPage + offset) = newValue;
+          *(pnt_configPage + offset - 80) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
         }
         break;
         
@@ -155,19 +153,20 @@ void receiveValue(byte offset, byte newValue)
           if (offset < 72) 
           { 
             //X Axis
-            *(pnt_configPage + offset) = newValue * 100; 
+            //*(pnt_configPage + offset) = newValue * 100; 
+            ignitionTable.axisX[(offset-64)] = (newValue * 100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
           }
           else
           { 
             //Y Axis
             offset = 7-(offset-72); //Need to do a translation to flip the order 
-            *(pnt_configPage + offset) = newValue;
+            ignitionTable.axisY[offset] = (newValue);
           }
           
         }
         else //New value is one of the remaining config items
         {
-          *(pnt_configPage + offset) = newValue;
+          *(pnt_configPage + offset - 80) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
         }
         break;
       
@@ -187,18 +186,19 @@ void sendPage()
   byte offset;
   byte* pnt_configPage;
   
-  switch ((int)currentPage) 
+  switch (currentPage) 
   {
       case vePage:
         //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
         //MS format has origin (0,0) in the bottom left corner, we use the top left for efficiency reasons
         for(byte x=0;x<64;x++) { response[x] = fuelTable.values[7-x/8][x%8]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged
-        for(byte x=64;x<72;x++) { response[x] = fuelTable.axisX[(x-64)] / 100; } //RPM Bins for VE table (Need to be dvidied by 100)
+        for(byte x=64;x<72;x++) { response[x] = byte(fuelTable.axisX[(x-64)] / 100); } //RPM Bins for VE table (Need to be dvidied by 100)
         for(byte y=72;y<80;y++) { response[y] = fuelTable.axisY[7-(y-72)]; } //MAP or TPS bins for VE table 
         
         //All other bytes can simply be copied from the config table
         pnt_configPage = (byte *)&configPage1; //Create a pointer to Page 1 in memory
         offset = 80; //Offset is based on the amount already copied above (table + bins)
+        
         for(byte x=offset; x<page_size; x++)
         { 
           response[offset] = *(pnt_configPage + offset + x); //Each byte is simply the location in memory of configPage1 + the offset + the variable number (x)

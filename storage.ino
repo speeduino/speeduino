@@ -30,7 +30,7 @@ void writeConfig()
   for(int x=EEPROM_CONFIG1_XBINS; x<EEPROM_CONFIG1_YBINS; x++) 
   {
     offset = x - EEPROM_CONFIG1_XBINS;
-    if(EEPROM.read(x) != (byte)(fuelTable.axisX[offset]/100)) { EEPROM.write(x, (byte)(fuelTable.axisX[offset]/100)); } //RPM bins are divided by 100 and converted to a byte
+    if(EEPROM.read(x) != byte(fuelTable.axisX[offset]/100)) { EEPROM.write(x, byte(fuelTable.axisX[offset]/100)); } //RPM bins are divided by 100 and converted to a byte
   }
   //TPS/MAP bins
   for(int x=EEPROM_CONFIG1_YBINS; x<EEPROM_CONFIG1_SETTINGS; x++) 
@@ -61,7 +61,7 @@ void writeConfig()
   for(int x=EEPROM_CONFIG2_XBINS; x<EEPROM_CONFIG2_YBINS; x++) 
   {
     offset = x - EEPROM_CONFIG2_XBINS;
-    if(EEPROM.read(x) != (byte)(ignitionTable.axisX[offset]/100)) { EEPROM.write(x, (byte)(ignitionTable.axisX[offset]/100)); } //RPM bins are divided by 100 and converted to a byte
+    if(EEPROM.read(x) != byte(ignitionTable.axisX[offset]/100)) { EEPROM.write(x, byte(ignitionTable.axisX[offset]/100)); } //RPM bins are divided by 100 and converted to a byte
   }
   //TPS/MAP bins
   for(int x=EEPROM_CONFIG2_YBINS; x<EEPROM_CONFIG2_SETTINGS; x++) 
