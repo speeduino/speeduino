@@ -119,6 +119,7 @@ void receiveValue(byte offset, byte newValue)
         if (offset < 64) //New value is part of the fuel map
         {
           fuelTable.values[7-offset/8][offset%8] = newValue;
+          return;
         }
         else if (offset < 80) //New value is one of the X or Y axis bins
         {
@@ -126,7 +127,7 @@ void receiveValue(byte offset, byte newValue)
           if (offset < 72) 
           { 
             //X Axis
-            fuelTable.axisX[(offset-64)] = (newValue * 100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+            fuelTable.axisX[(offset-64)] = (int(newValue) * 100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
           }
           else
           { 
@@ -134,10 +135,12 @@ void receiveValue(byte offset, byte newValue)
             offset = 7-(offset-72); //Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
             fuelTable.axisY[offset] = (newValue);
           }
+          return;
         }
         else //New value is one of the remaining config items
         {
           *(pnt_configPage + offset - 80) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
+          return;
         }
         break;
         
@@ -154,7 +157,7 @@ void receiveValue(byte offset, byte newValue)
           { 
             //X Axis
             //*(pnt_configPage + offset) = newValue * 100; 
-            ignitionTable.axisX[(offset-64)] = (newValue * 100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+            ignitionTable.axisX[(offset-64)] = (int(newValue) * 100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
           }
           else
           { 
@@ -201,7 +204,7 @@ void sendPage()
         
         for(byte x=offset; x<page_size; x++)
         { 
-          response[offset] = *(pnt_configPage + offset + x); //Each byte is simply the location in memory of configPage1 + the offset + the variable number (x)
+          response[offset] = *(pnt_configPage - offset + x); //Each byte is simply the location in memory of configPage1 + the offset + the variable number (x)
         }
         Serial.write((byte *)&response, sizeof(response));
         break;
@@ -217,7 +220,7 @@ void sendPage()
         offset = 80; //Offset is based on the amount already copied above (table + bins)
         for(byte x=offset; x<page_size; x++)
         { 
-          response[offset] = *(pnt_configPage + offset + x); //Each byte is simply the location in memory of configPage + the offset + the variable number (x)
+          response[offset] = *(pnt_configPage - offset + x); //Each byte is simply the location in memory of configPage + the offset + the variable number (x)
         }
         
         Serial.write((byte *)&response, sizeof(response)); 

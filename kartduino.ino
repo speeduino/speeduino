@@ -122,8 +122,9 @@ void setup() {
   #endif
   
   //Setup the dummy fuel and ignition tables
-  dummyFuelTable(&fuelTable);
-  dummyIgnitionTable(&ignitionTable);
+  //dummyFuelTable(&fuelTable);
+  //dummyIgnitionTable(&ignitionTable);
+  loadConfig();
   initialiseSchedulers();
   loopCount = 0;
   

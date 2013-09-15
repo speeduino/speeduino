@@ -26,6 +26,7 @@ void writeConfig()
     offset = x - EEPROM_CONFIG1_MAP;
     if(EEPROM.read(x) != fuelTable.values[7-offset/8][offset%8]) { EEPROM.write(x, fuelTable.values[7-offset/8][offset%8]); }  //Write the 8x8 map
   }
+  
   //RPM bins
   for(int x=EEPROM_CONFIG1_XBINS; x<EEPROM_CONFIG1_YBINS; x++) 
   {
@@ -41,7 +42,7 @@ void writeConfig()
   //The next 125 bytes can simply be pulled straight from the configTable
   for(int x=EEPROM_CONFIG1_SETTINGS; x<EEPROM_CONFIG2_XSIZE; x++) 
   { 
-    if(EEPROM.read(x) != *(pnt_configPage - EEPROM_CONFIG1_SETTINGS + x)) { EEPROM.write(x, *(pnt_configPage - EEPROM_CONFIG1_SETTINGS + x)); }
+    if(EEPROM.read(x) != *(pnt_configPage - EEPROM_CONFIG1_SETTINGS + byte(x))) { EEPROM.write(x, *(pnt_configPage - EEPROM_CONFIG1_SETTINGS + byte(x))); }
   }
   //That concludes the writing of the VE table
   
@@ -138,7 +139,7 @@ void loadConfig()
   //The next 125 bytes can simply be pulled straight from the configTable
   for(int x=EEPROM_CONFIG2_SETTINGS; x<EEPROM_SIZE; x++) 
   { 
-    *(pnt_configPage - EEPROM_CONFIG2_SETTINGS + x) = EEPROM.read(x);
+    *(pnt_configPage - EEPROM_CONFIG2_SETTINGS + byte(x)) = EEPROM.read(x);
   }
   
 }

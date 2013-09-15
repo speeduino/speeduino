@@ -79,6 +79,9 @@ struct config1 {
   byte fastIdleT; //Fast idle temperature
   byte egoSwitch;
   byte taeColdM;
+  byte unused1;
+  byte unused2;
+  byte unused3;
   
 };
 
