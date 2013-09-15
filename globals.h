@@ -82,6 +82,9 @@ struct config1 {
   byte unused1;
   byte unused2;
   byte unused3;
+  byte unused4;
+  byte unused5;
+  byte unused6;
   
 };
 
@@ -104,12 +107,39 @@ struct config2 {
   byte IdleAdvCLT;
   byte IdleDelayTime;
   byte StgCycles;
-
   byte dwellCont; //Fixed duty dwell control
   byte dwellCrank;
   byte dwellRun;
-  
   byte triggerTeeth; //The full count of teeth on the trigger wheel if there were no gaps
   byte triggerMissingTeeth; //The size of the tooth gap (ie number of missing teeth)
+  byte unused1; //100
+  byte unused2;
+  byte unused3;
+  byte unused4;
+  byte unused5;
+  byte unused6;
+  byte unused7;
+  byte unused8;
+  byte unused9;
+  byte unused10;
+  byte unused11;
+  byte unused12;
+  byte unused13;
+  byte unused14;
+  byte unused15;
+  byte unused16;
+  byte unused17;
+  byte unused18;
+  byte unused19;
+  byte unused20;
+  byte unused21;
+  byte unused22;
+  byte unused23;
+  byte unused24;
+  byte unused25;
+  byte unused26;
+  byte unused27;
+  byte unused28;
+  byte unused29; //128
   
 };
