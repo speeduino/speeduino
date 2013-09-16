@@ -91,7 +91,7 @@ void sendValues(int length)
   response[4] = currentStatus.MAP; //map
   response[5] = 0x00; //mat
   response[6] = 0x00; //Coolant
-  response[7] = 0x00; //TPS
+  response[7] = currentStatus.TPS; //TPS
   response[8] = 0x00; //battery voltage
   response[9] = 0x00; //O2
   response[10] = 0x00; //Exhaust gas correction (%)

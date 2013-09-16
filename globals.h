@@ -60,28 +60,23 @@ struct config1 {
   byte battFac; //Whether to compensate pulsewidth for battery voltage (ms/v)
   int rpmk;
 
-  byte config1;
-  /*
+  //config1 in ini
   byte mapType : 2;
   byte strokes : 1;
   byte injType : 1;
   byte nCylinders : 4; //Number of cylinders
-  */
-  
-  byte config2;
-  /*
+
+  //config2 in ini  
   byte cltType : 2;
   byte matType : 2;
   byte nInjectors : 4; //Number of injectors
-  */
+  
 
-  byte config3;
-  /*
+  //config3 in ini
   byte engineType : 1;
   byte egoType : 1;
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
-  */
   
   byte primePulse;
   byte egoRPM;
