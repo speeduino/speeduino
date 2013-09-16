@@ -28,7 +28,7 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #include "comms.h"
 
 #include "fastAnalog.h"
-//#include "digitalIOPerformance.h"
+#include "digitalIOPerformance.h"
 
 struct config1 configPage1;
 struct config2 configPage2;
