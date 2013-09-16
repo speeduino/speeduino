@@ -42,7 +42,7 @@ void writeConfig()
   //The next 125 bytes can simply be pulled straight from the configTable
   for(int x=EEPROM_CONFIG1_SETTINGS; x<EEPROM_CONFIG2_XSIZE; x++) 
   { 
-    if(EEPROM.read(x) != *(pnt_configPage - EEPROM_CONFIG1_SETTINGS + byte(x))) { EEPROM.write(x, *(pnt_configPage - EEPROM_CONFIG1_SETTINGS + byte(x))); }
+    if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG1_SETTINGS))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG1_SETTINGS))); }
   }
   //That concludes the writing of the VE table
   
@@ -73,7 +73,7 @@ void writeConfig()
   //The next 125 bytes can simply be pulled straight from the configTable
   for(int x=EEPROM_CONFIG2_SETTINGS; x<EEPROM_SIZE; x++) 
   { 
-    if(EEPROM.read(x) != *(pnt_configPage - EEPROM_CONFIG2_SETTINGS + x)) { EEPROM.write(x, *(pnt_configPage - EEPROM_CONFIG2_SETTINGS + x)); }
+    if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG2_SETTINGS))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG2_SETTINGS))); }
   }
   
 }
@@ -108,7 +108,7 @@ void loadConfig()
   //The next 125 bytes can simply be pulled straight from the configTable
   for(int x=EEPROM_CONFIG1_SETTINGS; x<EEPROM_CONFIG2_XSIZE; x++) 
   { 
-    *(pnt_configPage - EEPROM_CONFIG1_SETTINGS + x) = EEPROM.read(x);
+    *(pnt_configPage + byte(x - EEPROM_CONFIG1_SETTINGS)) = EEPROM.read(x);
   }
   //That concludes the writing of the VE table
   
@@ -139,7 +139,7 @@ void loadConfig()
   //The next 125 bytes can simply be pulled straight from the configTable
   for(int x=EEPROM_CONFIG2_SETTINGS; x<EEPROM_SIZE; x++) 
   { 
-    *(pnt_configPage - EEPROM_CONFIG2_SETTINGS + byte(x)) = EEPROM.read(x);
+    *(pnt_configPage + byte(x - EEPROM_CONFIG2_SETTINGS)) = EEPROM.read(x);
   }
   
 }

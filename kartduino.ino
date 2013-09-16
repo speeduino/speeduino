@@ -30,17 +30,11 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #include "fastAnalog.h"
 //#include "digitalIOPerformance.h"
 
-//NEED TO LOAD FROM EEPROM HERE
 struct config1 configPage1;
 struct config2 configPage2;
 
-//float req_fuel = ((engineCapacity / engineInjectorSize) / engineCylinders / engineStoich) * 100; // This doesn't seem quite correct, but I can't find why. It will be close enough to start an engine
-int req_fuel_uS = configPage1.reqFuel * 1000; //Convert to uS and an int. This is the only variable to be used in calculations
-
-// Setup section
-// These aren't really configuration options, more so a description of how the hardware is setup. These are things that will be defined in the recommended hardware setup
-volatile int triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
-int triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
+int req_fuel_uS, triggerToothAngle;
+volatile int triggerActualTeeth;
 int triggerFilterTime = 500; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
@@ -52,9 +46,6 @@ volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros(
 struct table fuelTable;
 struct table ignitionTable;
 
-//unsigned long injectTime[(int)config1.nCylinders]; //The system time in uS that each injector needs to next fire at
-//boolean intjectorNeedsFire[config1.nCylinders]; //Whether each injector needs to fire or not
-
 unsigned long counter;
 unsigned long scheduleStart;
 unsigned long scheduleEnd;
@@ -62,7 +53,20 @@ unsigned long scheduleEnd;
 struct statuses currentStatus;
 byte loopCount;
 
-void setup() {
+void setup() 
+{
+
+  //Setup the dummy fuel and ignition tables
+  //dummyFuelTable(&fuelTable);
+  //dummyIgnitionTable(&ignitionTable);
+  loadConfig();
+  initialiseSchedulers();
+  
+  //Once the configs have been loaded, a number of one time calculations can be completed
+  req_fuel_uS = configPage1.reqFuel * 1000; //Convert to uS and an int. This is the only variable to be used in calculations
+  triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
+  triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
+  
   
   //Begin the main crank trigger interrupt pin setup
   //The interrupt numbering is a bit odd - See here for reference: http://arduino.cc/en/Reference/AttachInterrupt
@@ -121,11 +125,6 @@ void setup() {
     cbi(ADCSRA,ADPS0);
   #endif
   
-  //Setup the dummy fuel and ignition tables
-  //dummyFuelTable(&fuelTable);
-  //dummyIgnitionTable(&ignitionTable);
-  loadConfig();
-  initialiseSchedulers();
   loopCount = 0;
   
   configPage2.triggerAngle = 175; //TESTING ONLY!

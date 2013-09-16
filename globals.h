@@ -41,10 +41,7 @@ struct config1 {
   byte asePct; //Afterstart enrichment (%)
   byte aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte wueBins[10]; //Warm up enrichment array (10 bytes)
-  byte taeBins1; //TPS based acceleration enrichment bin 1 of 4 (ms)
-  byte taeBins2; //TPS based acceleration enrichment bin 2 of 4 (ms)
-  byte taeBins3; //TPS based acceleration enrichment bin 3 of 4 (ms)
-  byte taeBins4; //TPS based acceleration enrichment bin 4 of 4 (ms)
+  byte taeBins[4]; //TPS based acceleration enrichment bin 1 of 4 (ms)
   byte taeColdA;
   byte tpsThresh;
   byte taeTime;
@@ -63,17 +60,29 @@ struct config1 {
   byte battFac; //Whether to compensate pulsewidth for battery voltage (ms/v)
   int rpmk;
 
-  byte mapType;
-  byte strokes;
-  byte injType;
-  byte nCylinders; //Number of cylinders
-  byte cltType;
-  byte matType;
-  byte nInjectors; //Number of injectors
-  byte engineType;
-  byte egoType;
-  byte algorithm; //"Speed Density", "Alpha-N"
-  byte baroCorr;
+  byte config1;
+  /*
+  byte mapType : 2;
+  byte strokes : 1;
+  byte injType : 1;
+  byte nCylinders : 4; //Number of cylinders
+  */
+  
+  byte config2;
+  /*
+  byte cltType : 2;
+  byte matType : 2;
+  byte nInjectors : 4; //Number of injectors
+  */
+
+  byte config3;
+  /*
+  byte engineType : 1;
+  byte egoType : 1;
+  byte algorithm : 1; //"Speed Density", "Alpha-N"
+  byte baroCorr : 1;
+  */
+  
   byte primePulse;
   byte egoRPM;
   byte fastIdleT; //Fast idle temperature
