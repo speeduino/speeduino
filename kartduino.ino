@@ -28,6 +28,7 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #include "comms.h"
 
 #include "fastAnalog.h"
+#define DIGITALIO_NO_MIX_ANALOGWRITE
 #include "digitalIOPerformance.h"
 
 struct config1 configPage1;
@@ -127,9 +128,6 @@ void setup()
   
   loopCount = 0;
   
-  configPage2.triggerAngle = 175; //TESTING ONLY!
-  configPage2.triggerTeeth = 12; //TESTING ONLY!
-  configPage2.triggerMissingTeeth = 1; //TESTING ONLY!
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   triggerToothAngle = 360 / configPage2.triggerTeeth;
   
@@ -221,19 +219,19 @@ void loop()
       //This may potentially be called a number of times as we get closer and closer to the opening time
       if (injectorStartAngle > crankAngle) 
       { 
-        setFuelSchedule1(openInjector, 
+        setFuelSchedule1(openInjector1, 
                   (injectorStartAngle - crankAngle) * timePerDegree,
                   currentStatus.PW,
-                  closeInjector
+                  closeInjector1
                   );
       }
       //Likewise for the ignition
       if (ignitionStartAngle > crankAngle) 
       { 
-        setIgnitionSchedule1(beginCoilCharge, 
+        setIgnitionSchedule1(beginCoil1Charge, 
                   (ignitionStartAngle - crankAngle) * timePerDegree,
                   configPage2.dwellRun,
-                  endCoilCharge
+                  endCoil1Charge
                   );
       }
       
@@ -245,12 +243,20 @@ void loop()
 
 //Interrupts  
 
-//These 4 functions simply trigger the injector/coil driver off or on. 
-//void openInjector2() { scheduleEnd = micros();}
-void openInjector() { digitalWrite(pinInjector, HIGH); } 
-void closeInjector() { digitalWrite(pinInjector, LOW); } 
-void beginCoilCharge() { digitalWrite(pinCoil, HIGH); }
-void endCoilCharge() { digitalWrite(pinCoil, LOW); }
+//These functions simply trigger the injector/coil driver off or on. 
+//NOTE: squirt status is changed as per http://www.msextra.com/doc/ms1extra/COM_RS232.htm#Acmd
+//Useful bit math:
+// x &= ~(1 << n);      // forces nth bit of x to be 0.  all other bits left alone.
+// x |= (1 << n);       // forces nth bit of x to be 1.  all other bits left alone.
+void openInjector1() { digitalWrite(pinInjector, HIGH); currentStatus.squirt |= (1 << 0);} 
+void closeInjector1() { digitalWrite(pinInjector, LOW); currentStatus.squirt &= ~(1 << 0);} 
+void beginCoil1Charge() { digitalWrite(pinCoil, HIGH); }
+void endCoil1Charge() { digitalWrite(pinCoil, LOW); }
+
+void openInjector2() { digitalWrite(pinInjector, HIGH); currentStatus.squirt |= (1 << 1); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
+void closeInjector2() { digitalWrite(pinInjector, LOW); } 
+void beginCoil2Charge() { digitalWrite(pinCoil, HIGH); }
+void endCoil2Charge() { digitalWrite(pinCoil, LOW); }
 
 //The trigger function is called everytime a crank tooth passes the sensor
 void trigger()

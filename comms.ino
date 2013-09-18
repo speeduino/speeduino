@@ -81,11 +81,7 @@ void sendValues(int length)
   byte response[22];
   
   response[0] = (uint8_t)1; //rtc.sec;
-
-  boolean a = 0; //inj_port1.status;
-  boolean b = 0; //inj_port2.status;
-  response[1] =  currentStatus.squirt; //((a & 0x01) << 0) | ((a & 0x02) << 1) | ((a & 0x04) << 1) | ((b & 0x01) << 1) | ((b & 0x02) << 3) | ((b & 0x04) << 3); //squirt NOT YET WORKING
-
+  response[1] =  currentStatus.squirt;
   response[2] = currentStatus.engine; // Engine Status NOT YET WORKING
   response[3] = 0x00; //baro
   response[4] = currentStatus.MAP; //map
@@ -238,7 +234,7 @@ void sendPage()
         offset = 80; //Offset is based on the amount already copied above (table + bins)
         for(byte x=offset; x<page_size; x++)
         { 
-          response[x] = *(pnt_configPage + byte(x - offset)); //Each byte is simply the location in memory of configPage1 + the offset + the variable number (x)
+          response[x] = *(pnt_configPage + byte(x - offset)); //Each byte is simply the location in memory of configPage2 + the offset + the variable number (x)
         }
         Serial.write((byte *)&response, sizeof(response)); 
         Serial.flush();

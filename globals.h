@@ -12,7 +12,7 @@ struct statuses {
   byte MAP;
   byte TPS;
   byte VE;
-  byte squirt;
+  volatile byte squirt;
   byte engine;
   unsigned long PW; //In uS
   
