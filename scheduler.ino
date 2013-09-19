@@ -88,7 +88,7 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule2.StartCallback = startCallback; //Name the start callback function
     ignitionSchedule2.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule2.Status = PENDING; //Turn this schedule on
-    TIMSK5 |= (1 << OCIE5B); //Turn on the A compare unit (ie turn on the interrupt)
+    TIMSK5 |= (1 << OCIE5B); //Turn on the B compare unit (ie turn on the interrupt)
   }
   
   

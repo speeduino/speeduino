@@ -207,11 +207,12 @@ void loop()
       
       //Determine the current crank angle
       //This is the current angle ATDC the engine is at
-      int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC
+      int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth
       if (crankAngle > 360) { crankAngle -= 360; }
       
       //How fast are we going? Can possibly work this out from RPM, but I don't think it's going to take a lot of CPU
       unsigned long timePerDegree = (toothLastToothTime - toothLastMinusOneToothTime) / triggerToothAngle; //The time (uS) it is currently taking to move 1 degree
+      crankAngle += (micros() - toothLastToothTime) / timePerDegree; //Estimate the number of degrees travelled since the last tooth
       
       //Determine next firing angles
       int injectorStartAngle = 355 - (currentStatus.PW / timePerDegree); //This is a bit rough, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
