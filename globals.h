@@ -4,6 +4,10 @@ const byte ms_version = 20;
 const byte data_structure_version = 1; //This identifies the data structure when reading / writing. 
 const byte page_size = 125;
 
+//Handy bitsetting macros
+#define BIT_SET(a,b) ((a) |= (1<<(b)))
+#define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
@@ -116,8 +120,8 @@ struct config2 {
   byte dwellRun;
   byte triggerTeeth; //The full count of teeth on the trigger wheel if there were no gaps
   byte triggerMissingTeeth; //The size of the tooth gap (ie number of missing teeth)
-  byte unused1; //100
-  byte unused2;
+  byte crankRPM; //RPM below which the engine is considered to be cranking
+  byte floodClear; //TPS value that triggers flood clear mode (No fuel whilst cranking)
   byte unused3;
   byte unused4;
   byte unused5;

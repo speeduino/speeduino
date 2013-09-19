@@ -153,7 +153,6 @@ void loop()
      Serial.print("RPM: ");
      Serial.println(currentStatus.RPM);
      
-     
      Serial.print("toothLastToothTime: ");
      Serial.println(toothLastToothTime);
      Serial.print("toothOneMinusOneTime: ");
@@ -176,6 +175,7 @@ void loop()
     {
       //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
       currentStatus.RPM = 0; 
+      currentStatus.hasSync = false;
     }
      
      
@@ -183,12 +183,19 @@ void loop()
     //Main loop runs within this clause
     if (currentStatus.hasSync)
     {
-
-      //Get the current MAP value
-      //currentStatus.MAP = 100; //Placeholder
-      currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 0, 100); 
-      currentStatus.TPS = 20; //Placeholder
-      //currentStatus.TPS = map(analogRead(pinTPS), 0, 1023, 0, 100);
+      //***SET STATUSES***
+      //-----------------------------------------------------------------------------------------------------
+      currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 0, 100); //Get the current MAP value
+      currentStatus.TPS = map(analogRead(pinTPS), 0, 1023, 0, 100); //Get the current TPS value
+      if(currentStatus.RPM > 0) //Check if the engine is turning at all
+      { 
+        //If it is, check is we're running or cranking
+        if(currentStatus.RPM > configPage2.crankRPM) { BIT_SET(currentStatus.engine, 0); BIT_CLEAR(currentStatus.engine, 1); } //Sets the engine running bit, clears the engine cranking bit
+        else {  BIT_SET(currentStatus.engine, 1); BIT_CLEAR(currentStatus.engine, 0); } //Sets the engine cranking bit, clears the engine running bit
+      }
+      
+      //END SETTING STATUSES
+      //-----------------------------------------------------------------------------------------------------
       
       //Begin the fuel calculation
       //Perform lookup into fuel map for RPM vs MAP value
@@ -196,13 +203,12 @@ void loop()
       //Calculate an injector pulsewidth form the VE
       currentStatus.PW = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
       //Perform a lookup to get the desired ignition advance
-      int ignitionAdvance = getTableValue(ignitionTable, currentStatus.MAP, currentStatus.RPM);
+      byte ignitionAdvance = getTableValue(ignitionTable, currentStatus.MAP, currentStatus.RPM);
       
       //Determine the current crank angle
-      int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is from TDC
-      if (crankAngle > 360) { crankAngle -= 360; } //Needed due to potentially large values of triggerAngle
-      
-      //Serial.print("Crank angle: "); Serial.println(crankAngle);
+      //This is the current angle ATDC the engine is at
+      int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC
+      if (crankAngle > 360) { crankAngle -= 360; }
       
       //How fast are we going? Can possibly work this out from RPM, but I don't think it's going to take a lot of CPU
       unsigned long timePerDegree = (toothLastToothTime - toothLastMinusOneToothTime) / triggerToothAngle; //The time (uS) it is currently taking to move 1 degree
@@ -210,8 +216,6 @@ void loop()
       //Determine next firing angles
       int injectorStartAngle = 355 - (currentStatus.PW / timePerDegree); //This is a bit rough, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       int ignitionStartAngle = 360 - ignitionAdvance - (configPage2.dwellRun / timePerDegree); // 360 - desired advance angle - number of degrees the dwell will take
-      
-      //Serial.print("Injector start angle: "); Serial.println(injectorStartAngle);
       
       
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
@@ -248,12 +252,12 @@ void loop()
 //Useful bit math:
 // x &= ~(1 << n);      // forces nth bit of x to be 0.  all other bits left alone.
 // x |= (1 << n);       // forces nth bit of x to be 1.  all other bits left alone.
-void openInjector1() { digitalWrite(pinInjector, HIGH); currentStatus.squirt |= (1 << 0);} 
-void closeInjector1() { digitalWrite(pinInjector, LOW); currentStatus.squirt &= ~(1 << 0);} 
+void openInjector1() { digitalWrite(pinInjector, HIGH); BIT_SET(currentStatus.squirt, 0); } 
+void closeInjector1() { digitalWrite(pinInjector, LOW); BIT_CLEAR(currentStatus.squirt, 0);} 
 void beginCoil1Charge() { digitalWrite(pinCoil, HIGH); }
 void endCoil1Charge() { digitalWrite(pinCoil, LOW); }
 
-void openInjector2() { digitalWrite(pinInjector, HIGH); currentStatus.squirt |= (1 << 1); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
+void openInjector2() { digitalWrite(pinInjector, HIGH); BIT_SET(currentStatus.squirt, 1); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
 void closeInjector2() { digitalWrite(pinInjector, LOW); } 
 void beginCoil2Charge() { digitalWrite(pinCoil, HIGH); }
 void endCoil2Charge() { digitalWrite(pinCoil, LOW); }
