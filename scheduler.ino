@@ -39,7 +39,8 @@ void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned l
     
     //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
     //As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
+    //unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
+    unsigned int absoluteTimeout = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
     OCR3A = absoluteTimeout;
     fuelSchedule1.duration = duration;
     fuelSchedule1.StartCallback = startCallback; //Name the start callback function
@@ -53,7 +54,8 @@ void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned l
     
     //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
     //As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
+    //unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
+    unsigned int absoluteTimeout = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
     OCR3B = absoluteTimeout; //Use the B copmare unit of timer 3
     fuelSchedule2.duration = duration;
     fuelSchedule2.StartCallback = startCallback; //Name the start callback function
@@ -68,7 +70,9 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
     
     //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
     //As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    unsigned int absoluteTimeout = TCNT5 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
+    //unsigned int absoluteTimeout = TCNT5 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
+    //unsigned int absoluteTimeout = TCNT5 + (timeout >> 4); //Divide by 16 (See line above)
+    unsigned int absoluteTimeout = TCNT5 + (timeout >> 4); //As above, but with bit shift instead of / 16
     OCR5A = absoluteTimeout;
     ignitionSchedule1.duration = duration;
     ignitionSchedule1.StartCallback = startCallback; //Name the start callback function
@@ -82,7 +86,8 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     
     //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
     //As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    unsigned int absoluteTimeout = TCNT5 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
+    //unsigned int absoluteTimeout = TCNT5 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
+    unsigned int absoluteTimeout = TCNT5 + (timeout >> 4); //As above, but with bit shift instead of / 16
     OCR5B = absoluteTimeout;
     ignitionSchedule2.duration = duration;
     ignitionSchedule2.StartCallback = startCallback; //Name the start callback function
@@ -104,7 +109,8 @@ ISR(TIMER3_COMPA_vect) //fuelSchedule1
     {
       fuelSchedule1.StartCallback();
       fuelSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      unsigned int absoluteTimeout = TCNT3 + (fuelSchedule1.duration / 16);
+      //unsigned int absoluteTimeout = TCNT3 + (fuelSchedule1.duration / 16);
+      unsigned int absoluteTimeout = TCNT3 + (fuelSchedule1.duration >> 4); //Divide by 16
       OCR3A = absoluteTimeout;
     }
     else if (fuelSchedule1.Status == RUNNING)
@@ -121,7 +127,8 @@ ISR(TIMER3_COMPB_vect) //fuelSchedule2
     {
       fuelSchedule2.StartCallback();
       fuelSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      unsigned int absoluteTimeout = TCNT3 + (fuelSchedule2.duration / 16);
+      //unsigned int absoluteTimeout = TCNT3 + (fuelSchedule2.duration / 16);
+      unsigned int absoluteTimeout = TCNT3 + (fuelSchedule2.duration >> 4); //Divide by 16
       OCR3B = absoluteTimeout;
     }
     else if (fuelSchedule2.Status == RUNNING)
@@ -138,7 +145,8 @@ ISR(TIMER5_COMPA_vect) //ignitionSchedule1
     {
       ignitionSchedule1.StartCallback();
       ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule1.duration / 16);
+      //unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule1.duration / 16);
+      unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule1.duration >> 4); //Divide by 16
       OCR5A = absoluteTimeout;
     }
     else if (ignitionSchedule1.Status == RUNNING)
@@ -155,7 +163,8 @@ ISR(TIMER5_COMPB_vect) //ignitionSchedule2
     {
       ignitionSchedule2.StartCallback();
       ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration / 16);
+      //unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration / 16);
+      unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration >> 4); //Divide by 16
       OCR5B = absoluteTimeout;
     }
     else if (ignitionSchedule2.Status == RUNNING)

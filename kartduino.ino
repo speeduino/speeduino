@@ -17,6 +17,7 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #define pinTPS 8 //TPS input pin
 #define pinTrigger 2 //The CAS pin
 #define pinMAP 0 //MAP sensor pin
+#define pinO2 1 //O2 Sensor pin
 //**************************************************************************************************
 
 #include "globals.h"
@@ -26,6 +27,7 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #include "scheduler.h"
 #include "storage.h"
 #include "comms.h"
+#include "math.h"
 
 #include "fastAnalog.h"
 #define DIGITALIO_NO_MIX_ANALOGWRITE
@@ -52,7 +54,7 @@ unsigned long scheduleStart;
 unsigned long scheduleEnd;
 
 struct statuses currentStatus;
-byte loopCount;
+int loopCount;
 
 void setup() 
 {
@@ -91,20 +93,6 @@ void setup()
     case 21:
       triggerInterrupt = 2; break;
      
-      
-    //Arduino Leo(nardo/stick) mapping (Comment this section if using a mega)
-    /*
-    case 3:
-      triggerInterrupt = 0; break;
-    case 2:
-      triggerInterrupt = 1; break;
-    case 0:
-      triggerInterrupt = 2; break;
-    case 1:
-      triggerInterrupt = 3; break;
-    case 7:
-      triggerInterrupt = 4; break;  
-      */
   }
   pinMode(pinTrigger, INPUT);
   digitalWrite(pinTrigger, HIGH);
@@ -169,7 +157,8 @@ void loop()
       noInterrupts();
         unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
       interrupts();
-      currentStatus.RPM = US_IN_MINUTE / revolutionTime;
+      //currentStatus.RPM = US_IN_MINUTE / revolutionTime;
+      currentStatus.RPM = fastDivide32(US_IN_MINUTE, revolutionTime);  // (fastDivide version of above line)
     }
     else
     {
@@ -185,8 +174,9 @@ void loop()
     {
       //***SET STATUSES***
       //-----------------------------------------------------------------------------------------------------
-      currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 0, 100); //Get the current MAP value
-      currentStatus.TPS = map(analogRead(pinTPS), 0, 1023, 0, 100); //Get the current TPS value
+      currentStatus.MAP = fastMap(analogRead(pinMAP), 0, 1023, 0, 100); //Get the current MAP value
+      currentStatus.TPS = fastMap(analogRead(pinTPS), 0, 1023, 0, 100); //Get the current TPS value
+      currentStatus.O2 = fastMap(analogRead(pinO2), 0, 1023, 117, 358); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4, then multiple by 16 (<< 4). This is the correct calibration for an Innovate Wideband 0v - 5V unit
       if(currentStatus.RPM > 0) //Check if the engine is turning at all
       { 
         //If it is, check is we're running or cranking
@@ -211,13 +201,16 @@ void loop()
       if (crankAngle > 360) { crankAngle -= 360; }
       
       //How fast are we going? Can possibly work this out from RPM, but I don't think it's going to take a lot of CPU
-      unsigned long timePerDegree = (toothLastToothTime - toothLastMinusOneToothTime) / triggerToothAngle; //The time (uS) it is currently taking to move 1 degree
-      crankAngle += (micros() - toothLastToothTime) / timePerDegree; //Estimate the number of degrees travelled since the last tooth
+      //unsigned long timePerDegree = (toothLastToothTime - toothLastMinusOneToothTime) / triggerToothAngle; //The time (uS) it is currently taking to move 1 degree
+      unsigned long timePerDegree = fastDivide32( (toothLastToothTime - toothLastMinusOneToothTime), triggerToothAngle); //The time (uS) it is currently taking to move 1 degree (fastDivide version)
+      //crankAngle += (micros() - toothLastToothTime) / timePerDegree; //Estimate the number of degrees travelled since the last tooth
+      crankAngle += fastDivide32( (micros() - toothLastToothTime), timePerDegree); //Estimate the number of degrees travelled since the last tooth (fastDivide version)
       
       //Determine next firing angles
-      int injectorStartAngle = 355 - (currentStatus.PW / timePerDegree); //This is a bit rough, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
-      int ignitionStartAngle = 360 - ignitionAdvance - (configPage2.dwellRun / timePerDegree); // 360 - desired advance angle - number of degrees the dwell will take
-      
+      //int injectorStartAngle = 355 - (currentStatus.PW / timePerDegree); //This is a bit rough, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
+      //int ignitionStartAngle = 360 - ignitionAdvance - (configPage2.dwellRun / timePerDegree); // 360 - desired advance angle - number of degrees the dwell will take
+      int injectorStartAngle = 355 - ( fastDivide32(currentStatus.PW, timePerDegree) ); //As above, but using fastDivide function
+      int ignitionStartAngle = 360 - ignitionAdvance - (fastDivide32(configPage2.dwellRun, timePerDegree) ); //As above, but using fastDivide function
       
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
       //We only need to set the shcedule if we're BEFORE the open angle
