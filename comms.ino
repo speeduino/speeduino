@@ -62,6 +62,7 @@ void command()
         //digitalWrite(13, LOW);
         
         byte offset;
+        while (Serial.available() == 0) { }
         offset = Serial.read();
         while (Serial.available() == 0) { }
         
@@ -120,7 +121,6 @@ void receiveValue(byte offset, byte newValue)
         if (offset < 64) //New value is part of the fuel map
         {
           fuelTable.values[7-offset/8][offset%8] = newValue;
-          if(offset==20) {newValue = 111;}
           return;
         }
         else if (offset < 80) //New value is one of the X or Y axis bins
