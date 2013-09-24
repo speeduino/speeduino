@@ -80,7 +80,6 @@ void setup()
   //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly. 
   int triggerInterrupt = 0; // By default, use the first interrupt. The user should always have set things up (Or even better, use the recommended pinouts)
   currentStatus.RPM = 0;
-  currentStatus.hasSync = true;
   currentStatus.hasSync = false;
   switch (pinTrigger) {
     
