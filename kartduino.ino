@@ -58,7 +58,6 @@ int loopCount;
 
 void setup() 
 {
-
   pinMode(pinCoil, OUTPUT);
   digitalWrite(pinCoil, LOW);
   
@@ -198,6 +197,7 @@ void loop()
       currentStatus.PW = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
       //Perform a lookup to get the desired ignition advance
       byte ignitionAdvance = getTableValue(ignitionTable, currentStatus.MAP, currentStatus.RPM);
+      ignitionAdvance = 10;
       
       //Determine the current crank angle
       //This is the current angle ATDC the engine is at
@@ -208,13 +208,14 @@ void loop()
       //unsigned long timePerDegree = (toothLastToothTime - toothLastMinusOneToothTime) / triggerToothAngle; //The time (uS) it is currently taking to move 1 degree
       unsigned long timePerDegree = fastDivide32( (toothLastToothTime - toothLastMinusOneToothTime), triggerToothAngle); //The time (uS) it is currently taking to move 1 degree (fastDivide version)
       //crankAngle += (micros() - toothLastToothTime) / timePerDegree; //Estimate the number of degrees travelled since the last tooth
-      crankAngle += fastDivide32( (micros() - toothLastToothTime), timePerDegree); //Estimate the number of degrees travelled since the last tooth (fastDivide version)
+      //crankAngle += fastDivide32( (micros() - toothLastToothTime), timePerDegree); //Estimate the number of degrees travelled since the last tooth (fastDivide version)
       
       //Determine next firing angles
       //int injectorStartAngle = 355 - (currentStatus.PW / timePerDegree); //This is a bit rough, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       //int ignitionStartAngle = 360 - ignitionAdvance - (configPage2.dwellRun / timePerDegree); // 360 - desired advance angle - number of degrees the dwell will take
       int injectorStartAngle = 355 - ( fastDivide32(currentStatus.PW, timePerDegree) ); //As above, but using fastDivide function
       int ignitionStartAngle = 360 - ignitionAdvance - (fastDivide32(configPage2.dwellRun, timePerDegree) ); //As above, but using fastDivide function
+      ignitionStartAngle = 340;
       
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
       //We only need to set the shcedule if we're BEFORE the open angle
@@ -232,7 +233,7 @@ void loop()
       { 
         setIgnitionSchedule1(beginCoil1Charge, 
                   (ignitionStartAngle - crankAngle) * timePerDegree,
-                  configPage2.dwellRun,
+                  (configPage2.dwellRun * 1000),
                   endCoil1Charge
                   );
       }
