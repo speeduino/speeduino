@@ -59,6 +59,10 @@ int loopCount;
 void setup() 
 {
 
+  pinMode(pinCoil, OUTPUT);
+  digitalWrite(pinCoil, LOW);
+  
+  
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
   //dummyIgnitionTable(&ignitionTable);
@@ -77,6 +81,7 @@ void setup()
   int triggerInterrupt = 0; // By default, use the first interrupt. The user should always have set things up (Or even better, use the recommended pinouts)
   currentStatus.RPM = 0;
   currentStatus.hasSync = true;
+  currentStatus.hasSync = false;
   switch (pinTrigger) {
     
     //Arduino Mega 2560 mapping (Uncomment to use)
