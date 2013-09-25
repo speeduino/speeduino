@@ -17,6 +17,7 @@ struct statuses {
   byte TPS;
   byte VE;
   byte O2;
+  byte advance;
   volatile byte squirt;
   byte engine;
   unsigned long PW; //In uS

@@ -79,7 +79,7 @@ This function returns the current values of a fixed group of variables
 */
 void sendValues(int length)
 {
-  byte response[22];
+  byte response[23];
   
   response[0] = (uint8_t)1; //rtc.sec;
   response[1] =  currentStatus.squirt;
@@ -101,8 +101,9 @@ void sendValues(int length)
   response[17] = 0x00; //Total GammaE (%)
   response[18] = currentStatus.VE; //Current VE 1 (%)
   response[19] = 0x00; //Pulsewidth 2 divided by 10 (in ms)
-  response[20] = 0x00; //mCurrent VE 2 (%)
+  response[20] = 0x00; //Current VE 2 (%)
   response[21] = 0x00; //Idle
+  response[22] = currentStatus.advance;
 
   Serial.write(response, (size_t)22);
   Serial.flush();
