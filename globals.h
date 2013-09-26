@@ -107,10 +107,12 @@ struct config2 {
   byte Trim;
   byte CrankAng;
   byte IgHold;
-  byte Trig_plus;
-  byte TrigCrank;
-  byte IgInv;
-  byte oddfire;
+  
+  byte Trig_plus : 2;
+  byte TrigCrank : 1;
+  byte IgInv : 1;
+  byte oddfire : 4;
+  
   byte IdleAdv;
   byte IdleAdvTPS;
   byte IdleAdvRPM;
