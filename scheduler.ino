@@ -67,7 +67,7 @@ void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned l
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
     if(ignitionSchedule1.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
-    if(ignitionSchedule1.Status == PENDING) { return; } //Check that we're not already part way through a schedule
+    //if(ignitionSchedule1.Status == PENDING) { return; } //Check that we're not already part way through a schedule
     
     //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
     //As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
