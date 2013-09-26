@@ -105,7 +105,7 @@ void sendValues(int length)
   response[21] = 0x00; //Idle
   response[22] = currentStatus.advance;
 
-  Serial.write(response, (size_t)22);
+  Serial.write(response, (size_t)23);
   Serial.flush();
   return; 
 }
