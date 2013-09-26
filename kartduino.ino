@@ -14,10 +14,10 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 
 #define pinInjector 6 //Output pin the injector is on (Assumes 1 cyl only)
 #define pinCoil 7 //Pin for the coil (AS above, 1 cyl only)
-#define pinTPS 8 //TPS input pin
 #define pinTrigger 2 //The CAS pin
-#define pinMAP 0 //MAP sensor pin
-#define pinO2 1 //O2 Sensor pin
+#define pinMAP A0 //MAP sensor pin
+#define pinO2 A1 //O2 Sensor pin
+#define pinTPS A2 //TPS input pin
 //**************************************************************************************************
 
 #include "globals.h"
@@ -73,7 +73,6 @@ void setup()
   triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   
-  
   //Begin the main crank trigger interrupt pin setup
   //The interrupt numbering is a bit odd - See here for reference: http://arduino.cc/en/Reference/AttachInterrupt
   //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly. 
@@ -119,12 +118,14 @@ void setup()
   
   loopCount = 0;
   
-  triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
-  triggerToothAngle = 360 / configPage2.triggerTeeth;
-  
-  //Setup some LEDs for testing
-  pinMode(10, OUTPUT);
-  pinMode(9, OUTPUT);
+  //Setup other relevant pins
+  pinMode(pinMAP, INPUT);
+  pinMode(pinO2, INPUT);
+  pinMode(pinTPS, INPUT);
+  //Turn on pullups for above pins
+  digitalWrite(pinMAP, LOW);
+  digitalWrite(pinO2, LOW);
+  digitalWrite(pinTPS, LOW);
 }
 
 void loop() 
@@ -179,7 +180,7 @@ void loop()
       //-----------------------------------------------------------------------------------------------------
       currentStatus.MAP = fastMap(analogRead(pinMAP), 0, 1023, 0, 100); //Get the current MAP value
       currentStatus.TPS = fastMap(analogRead(pinTPS), 0, 1023, 0, 100); //Get the current TPS value
-      currentStatus.O2 = fastMap(analogRead(pinO2), 0, 1023, 117, 358); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4, then multiple by 16 (<< 4). This is the correct calibration for an Innovate Wideband 0v - 5V unit
+      currentStatus.O2 = fastMap(analogRead(pinO2), 0, 1023, 117, 358); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4, then multiplied by 16 (<< 4). This is the correct calibration for an Innovate Wideband 0v - 5V unit
       if(currentStatus.RPM > 0) //Check if the engine is turning at all
       { 
         //If it is, check is we're running or cranking
@@ -197,7 +198,6 @@ void loop()
       currentStatus.PW = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
       //Perform a lookup to get the desired ignition advance
       currentStatus.advance = getTableValue(ignitionTable, currentStatus.MAP, currentStatus.RPM);
-      currentStatus.advance = 10;
       
       //Determine the current crank angle
       //This is the current angle ATDC the engine is at
@@ -208,14 +208,13 @@ void loop()
       //unsigned long timePerDegree = (toothLastToothTime - toothLastMinusOneToothTime) / triggerToothAngle; //The time (uS) it is currently taking to move 1 degree
       unsigned long timePerDegree = fastDivide32( (toothLastToothTime - toothLastMinusOneToothTime), triggerToothAngle); //The time (uS) it is currently taking to move 1 degree (fastDivide version)
       //crankAngle += (micros() - toothLastToothTime) / timePerDegree; //Estimate the number of degrees travelled since the last tooth
-      //crankAngle += fastDivide32( (micros() - toothLastToothTime), timePerDegree); //Estimate the number of degrees travelled since the last tooth (fastDivide version)
+      crankAngle += fastDivide32( (micros() - toothLastToothTime), timePerDegree); //Estimate the number of degrees travelled since the last tooth (fastDivide version)
       
       //Determine next firing angles
       //int injectorStartAngle = 355 - (currentStatus.PW / timePerDegree); //This is a bit rough, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       //int ignitionStartAngle = 360 - ignitionAdvance - (configPage2.dwellRun / timePerDegree); // 360 - desired advance angle - number of degrees the dwell will take
       int injectorStartAngle = 355 - ( fastDivide32(currentStatus.PW, timePerDegree) ); //As above, but using fastDivide function
-      int ignitionStartAngle = 360 - currentStatus.advance - (fastDivide32(configPage2.dwellRun, timePerDegree) ); //As above, but using fastDivide function
-      ignitionStartAngle = 340;
+      int ignitionStartAngle = 360 - currentStatus.advance - (fastDivide32((configPage2.dwellRun*100), timePerDegree) ); //As above, but using fastDivide function
       
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
       //We only need to set the shcedule if we're BEFORE the open angle
