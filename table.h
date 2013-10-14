@@ -37,7 +37,11 @@ int getTableValue(struct table fromTable, int Y, int X)
     int xMinValue = fromTable.axisX[0];
     int xMaxValue = fromTable.axisX[fromTable.xSize-1];
     int xMin = 0;
-    int xMax = 0;    
+    int xMax = 0;
+    
+    //If the requested X value is greater/small than the maximum/minimum bin, reset X to be that value
+    if(X > xMaxValue) { X = xMaxValue; }
+    if(X < xMinValue) { X = xMinValue; }
     
     for (int x = fromTable.xSize-1; x > 0; x--)
     {
@@ -66,6 +70,10 @@ int getTableValue(struct table fromTable, int Y, int X)
     int yMaxValue = fromTable.axisY[fromTable.ySize-1];
     int yMin = 0;
     int yMax = 0;
+    
+    //If the requested Y value is greater/small than the maximum/minimum bin, reset Y to be that value
+    if(Y > yMaxValue) { Y = yMaxValue; }
+    if(Y < yMinValue) { Y = yMinValue; }
     
     for (int y = fromTable.ySize-1; y > 0; y--)
     {
