@@ -53,19 +53,27 @@ unsigned long counter;
 unsigned long scheduleStart;
 unsigned long scheduleEnd;
 
+byte coilHIGH = HIGH;
+byte coilLOW = LOW;
+
 struct statuses currentStatus;
 int loopCount;
 
 void setup() 
 {
   pinMode(pinCoil, OUTPUT);
-  digitalWrite(pinCoil, LOW);
   
   
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
   //dummyIgnitionTable(&ignitionTable);
   loadConfig();
+
+  //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
+  if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
+  else { coilHIGH = HIGH, coilLOW = LOW; }
+  digitalWrite(pinCoil, coilLOW);
+  
   initialiseSchedulers();
   
   //Once the configs have been loaded, a number of one time calculations can be completed
@@ -123,7 +131,7 @@ void setup()
   pinMode(pinO2, INPUT);
   pinMode(pinTPS, INPUT);
   //Turn on pullups for above pins
-  digitalWrite(pinMAP, LOW);
+  digitalWrite(pinMAP, HIGH);
   digitalWrite(pinO2, LOW);
   digitalWrite(pinTPS, LOW);
 }
@@ -252,13 +260,13 @@ void loop()
 // x |= (1 << n);       // forces nth bit of x to be 1.  all other bits left alone.
 void openInjector1() { digitalWrite(pinInjector, HIGH); BIT_SET(currentStatus.squirt, 0); } 
 void closeInjector1() { digitalWrite(pinInjector, LOW); BIT_CLEAR(currentStatus.squirt, 0);} 
-void beginCoil1Charge() { digitalWrite(pinCoil, HIGH); }
-void endCoil1Charge() { digitalWrite(pinCoil, LOW); }
+void beginCoil1Charge() { digitalWrite(pinCoil, coilHIGH); }
+void endCoil1Charge() { digitalWrite(pinCoil, coilLOW); }
 
 void openInjector2() { digitalWrite(pinInjector, HIGH); BIT_SET(currentStatus.squirt, 1); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
 void closeInjector2() { digitalWrite(pinInjector, LOW); } 
-void beginCoil2Charge() { digitalWrite(pinCoil, HIGH); }
-void endCoil2Charge() { digitalWrite(pinCoil, LOW); }
+void beginCoil2Charge() { digitalWrite(pinCoil, coilHIGH); }
+void endCoil2Charge() { digitalWrite(pinCoil, coilLOW); }
 
 //The trigger function is called everytime a crank tooth passes the sensor
 void trigger()
