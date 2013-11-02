@@ -213,8 +213,8 @@ void loop()
       if (crankAngle > 360) { crankAngle -= 360; }
       
       //How fast are we going? Can possibly work this out from RPM, but I don't think it's going to take a lot of CPU
-      //unsigned long timePerDegree = (toothLastToothTime - toothLastMinusOneToothTime) / triggerToothAngle; //The time (uS) it is currently taking to move 1 degree
-      unsigned long timePerDegree = fastDivide32( (toothLastToothTime - toothLastMinusOneToothTime), triggerToothAngle); //The time (uS) it is currently taking to move 1 degree (fastDivide version)
+      //unsigned long timePerDegree = (toothLastToothTime - toothLastMinusOneToothTime) / (triggerToothAngle * configPage2.triggerTeeth); //The time (uS) it is currently taking to move 1 degree
+      unsigned long timePerDegree = fastDivide32( (toothOneTime - toothOneMinusOneTime), (triggerToothAngle * configPage2.triggerTeeth)); //The time (uS) it is currently taking to move 1 degree (fastDivide version)
       //crankAngle += (micros() - toothLastToothTime) / timePerDegree; //Estimate the number of degrees travelled since the last tooth
       crankAngle += fastDivide32( (micros() - toothLastToothTime), timePerDegree); //Estimate the number of degrees travelled since the last tooth (fastDivide version)
       
