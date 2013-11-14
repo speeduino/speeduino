@@ -1,0 +1,74 @@
+*Pick And Place List
+*Company=
+*Author=
+*eMail=
+*
+*Project=schematic
+*Date=06:20:07
+*CreatedBy=Fritzing 0.8.3b.07.27.048f
+*
+*
+*Coordinates in mm, always center of component
+*Origin 0/0=Lower left corner of PCB
+*Rotation in degree (0-360, math. pos.)
+*
+*No;Value;Package;X;Y;Rotation;Side;Name
+1;;;3.77152;-52.9077;0;Bottom;TXT3
+2;;;52.5959;-14.949;0;Bottom;Via2
+3;;;3.77152;-7.32882;0;Bottom;TXT3
+4;;;2.7661;-32.9562;90;Bottom;TXT4
+5;;300 mil [THT];66.5913;-47.9689;180;Bottom;D1
+6;;;5.36398;-10.7155;0;Bottom;TXT3
+7;;;3.72105;-1.96659;0;Bottom;TXT3
+8;;THT;124.732;-50.6758;0;Bottom;Ignition Outputs 1/2
+9;;;5.54048;-43.731;0;Bottom;TXT3
+10;;;127.667;-17.3477;0;Bottom;TXT3
+11;;;127.667;-27.6488;0;Bottom;TXT3
+12;;TO220 [THT];25.6719;-7.32886;-90;Bottom;Q3
+13;;;126.513;-47.9688;0;Bottom;TXT3
+14;1k;THT;24.6559;-32.7289;90;Bottom;R9
+15;;;126.936;-12.5499;0;Bottom;TXT3
+16;10k;THT;70.3759;-30.1889;0;Bottom;R1
+17;1k;THT;47.5159;-25.1089;90;Bottom;R6
+18;;;7.40668;-26.0261;90;Bottom;TXT4
+19;100nF;200 mil [THT, multilayer];60.2159;-40.3489;-90;Bottom;C1
+20;1k;THT;29.7359;-40.3489;-90;Bottom;R8
+21;;;125.127;-56.1533;0;Bottom;TXT3
+22;;300 mil [THT];18.2805;-53.0489;0;Bottom;D3
+23;;THT;5.85995;-50.3419;180;Bottom;Ignition outputs 3/4
+24;;TO220 [THT];38.3719;-40.3489;-90;Bottom;Q1
+25;;;57.2777;-19.8877;0;Bottom;TXT3
+26;;TO220 [THT];25.6719;-20.0289;-90;Bottom;Q4
+27;;;5.17265;-27.4361;90;Bottom;TXT4
+28;;THT;60.2159;-22.5689;0;Bottom;J1
+29;;TO220 [THT];38.3719;-27.6489;-90;Bottom;Q2
+30;;THT;124.732;-4.95585;0;Bottom;Injector Outputs
+31;;;57.419;-25.2499;0;Bottom;TXT3
+32;;;127.667;-22.4277;0;Bottom;TXT3
+33;10k;THT;70.3759;-22.5689;0;Bottom;R2
+34;;THT;83.0759;-28.9189;90;Bottom;U1
+35;10k;THT;47.5159;-37.8089;-90;Bottom;R3
+36;;;127.717;-42.4655;0;Bottom;TXT3
+37;;;126.936;-37.6677;0;Bottom;TXT3
+38;10k;THT;22.1159;-32.7289;90;Bottom;R10
+39;;;127.667;-32.5877;0;Bottom;TXT3
+40;;THT;5.85995;-4.62191;180;Bottom;Injector outputs 3/4
+41;1k;THT;50.0559;-37.8089;-90;Bottom;R4
+42;;;67.8783;-28.9189;0;Bottom;Arduino Mega 2560
+43;;;108.476;-37.809;0;Bottom;Via1
+44;;THT;124.732;-27.7759;0;Bottom;Inputs
+45;;;34.8409;-11.1487;0;Bottom;TXT2
+46;;;3.77152;-47.9688;0;Bottom;TXT3
+47;100nF;200 mil [THT, multilayer];19.5759;-40.3489;-90;Bottom;C3
+48;;THT;37.5229;-3.77299;90;Bottom;12v Input
+49;;;127.385;-6.90548;0;Bottom;TXT3
+50;;;126.538;-52.9077;0;Bottom;TXT3
+51;10k;THT;44.9759;-25.1089;90;Bottom;R5
+52;;;127.385;-2.38993;0;Bottom;TXT3
+53;;;40.2294;-11.171;0;Bottom;TXT2
+54;100nF;200 mil [THT, multilayer];70.3759;-35.2689;0;Bottom;C2
+55;;300 mil [THT];69.1313;-40.3489;180;Bottom;D2
+56;100nF;200 mil [THT, multilayer];14.4959;-40.3489;-90;Bottom;C4
+57;10k;THT;27.1959;-40.3489;-90;Bottom;R7
+58;;;126.35;-8.92811;0;Bottom;TXT3
+59;;300 mil [THT];18.2805;-47.9689;0;Bottom;D4
