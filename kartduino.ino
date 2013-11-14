@@ -12,12 +12,21 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #define engineInjectorDeadTime 1500 //Time in uS that the injector takes to open
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 
-#define pinInjector 6 //Output pin the injector is on (Assumes 1 cyl only)
-#define pinCoil 7 //Pin for the coil (AS above, 1 cyl only)
+//Pin mappings as per the v0.1 shield
+#define pinInjector1 8 //Output pin injector 1 is on
+#define pinInjector2 9 //Output pin injector 2 is on
+#define pinInjector3 11 //Output pin injector 3 is on
+#define pinInjector4 10 //Output pin injector 4 is on
+#define pinCoil1 6 //Pin for coil 1
+#define pinCoil2 7 //Pin for coil 2
+#define pinCoil3 12 //Pin for coil 3
+#define pinCoil4 13 //Pin for coil 4
 #define pinTrigger 2 //The CAS pin
-#define pinMAP A0 //MAP sensor pin
-#define pinO2 A1 //O2 Sensor pin
-#define pinTPS A2 //TPS input pin
+#define pinTPS A0 //TPS input pin
+#define pinMAP A1 //MAP sensor pin
+#define pinIAT A2 //IAT sensor pin
+#define pinO2 A3 //O2 Sensor pin
+
 //**************************************************************************************************
 
 #include "globals.h"
