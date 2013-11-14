@@ -70,7 +70,10 @@ int loopCount;
 
 void setup() 
 {
-  pinMode(pinCoil, OUTPUT);
+  pinMode(pinCoil1, OUTPUT);
+  pinMode(pinCoil2, OUTPUT);
+  pinMode(pinCoil3, OUTPUT);
+  pinMode(pinCoil4, OUTPUT);
   
   
   //Setup the dummy fuel and ignition tables
@@ -81,7 +84,10 @@ void setup()
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
   else { coilHIGH = HIGH, coilLOW = LOW; }
-  digitalWrite(pinCoil, coilLOW);
+  digitalWrite(pinCoil1, coilLOW);
+  digitalWrite(pinCoil2, coilLOW);
+  digitalWrite(pinCoil3, coilLOW);
+  digitalWrite(pinCoil4, coilLOW);
   
   initialiseSchedulers();
   
@@ -259,23 +265,30 @@ void loop()
 
   }
   
-
+//************************************************************************************************
 //Interrupts  
 
 //These functions simply trigger the injector/coil driver off or on. 
 //NOTE: squirt status is changed as per http://www.msextra.com/doc/ms1extra/COM_RS232.htm#Acmd
-//Useful bit math:
-// x &= ~(1 << n);      // forces nth bit of x to be 0.  all other bits left alone.
-// x |= (1 << n);       // forces nth bit of x to be 1.  all other bits left alone.
-void openInjector1() { digitalWrite(pinInjector, HIGH); BIT_SET(currentStatus.squirt, 0); } 
-void closeInjector1() { digitalWrite(pinInjector, LOW); BIT_CLEAR(currentStatus.squirt, 0);} 
-void beginCoil1Charge() { digitalWrite(pinCoil, coilHIGH); }
-void endCoil1Charge() { digitalWrite(pinCoil, coilLOW); }
+void openInjector1() { digitalWrite(pinInjector1, HIGH); BIT_SET(currentStatus.squirt, 0); } 
+void closeInjector1() { digitalWrite(pinInjector1, LOW); BIT_CLEAR(currentStatus.squirt, 0);} 
+void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); }
+void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); }
 
-void openInjector2() { digitalWrite(pinInjector, HIGH); BIT_SET(currentStatus.squirt, 1); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
-void closeInjector2() { digitalWrite(pinInjector, LOW); } 
-void beginCoil2Charge() { digitalWrite(pinCoil, coilHIGH); }
-void endCoil2Charge() { digitalWrite(pinCoil, coilLOW); }
+void openInjector2() { digitalWrite(pinInjector2, HIGH); BIT_SET(currentStatus.squirt, 1); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
+void closeInjector2() { digitalWrite(pinInjector2, LOW); BIT_SET(currentStatus.squirt, 1); } 
+void beginCoil2Charge() { digitalWrite(pinCoil2, coilHIGH); }
+void endCoil2Charge() { digitalWrite(pinCoil2, coilLOW); }
+
+void openInjector3() { digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, 1); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
+void closeInjector3() { digitalWrite(pinInjector3, LOW); BIT_SET(currentStatus.squirt, 1); } 
+void beginCoil3Charge() { digitalWrite(pinCoil3, coilHIGH); }
+void endCoil3Charge() { digitalWrite(pinCoil3, coilLOW); }
+
+void openInjector4() { digitalWrite(pinInjector4, HIGH); BIT_SET(currentStatus.squirt, 1); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
+void closeInjector4() { digitalWrite(pinInjector4, LOW); BIT_SET(currentStatus.squirt, 1); } 
+void beginCoil4Charge() { digitalWrite(pinCoil4, coilHIGH); }
+void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); }
 
 //The trigger function is called everytime a crank tooth passes the sensor
 void trigger()

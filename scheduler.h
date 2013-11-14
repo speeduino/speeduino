@@ -29,8 +29,12 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 void initialiseSchedulers();
 void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 
 enum ScheduleStatus {OFF, PENDING, RUNNING}; //The 3 statuses that a schedule can have
 
@@ -43,5 +47,9 @@ struct Schedule {
 
 Schedule fuelSchedule1;
 Schedule fuelSchedule2;
+Schedule fuelSchedule3;
+Schedule fuelSchedule4;
 Schedule ignitionSchedule1;
 Schedule ignitionSchedule2;
+Schedule ignitionSchedule3;
+Schedule ignitionSchedule4;
