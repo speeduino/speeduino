@@ -1,12 +1,6 @@
 
 //**************************************************************************************************
 // Config section
-//this section is where all the user set stuff is. This will eventually be replaced by a config file
-
-/*
-Need to calculate the req_fuel figure here, preferably in pre-processor macro
-*/
-
 
 //The following lines are configurable, but the defaults are probably pretty good for most applications
 #define engineInjectorDeadTime 1500 //Time in uS that the injector takes to open
@@ -26,6 +20,7 @@ Need to calculate the req_fuel figure here, preferably in pre-processor macro
 #define pinMAP A1 //MAP sensor pin
 #define pinIAT A2 //IAT sensor pin
 #define pinO2 A3 //O2 Sensor pin
+#define pinCLT A4 //CLS sensor pin (NOT CONNECTED BY DEFAULT ON THE v0.1 BOARD!)
 
 //**************************************************************************************************
 
@@ -74,6 +69,10 @@ void setup()
   pinMode(pinCoil2, OUTPUT);
   pinMode(pinCoil3, OUTPUT);
   pinMode(pinCoil4, OUTPUT);
+  pinMode(pinInjector1, OUTPUT);
+  pinMode(pinInjector2, OUTPUT);
+  pinMode(pinInjector3, OUTPUT);
+  pinMode(pinInjector4, OUTPUT);
   
   
   //Setup the dummy fuel and ignition tables
@@ -99,12 +98,12 @@ void setup()
   //Begin the main crank trigger interrupt pin setup
   //The interrupt numbering is a bit odd - See here for reference: http://arduino.cc/en/Reference/AttachInterrupt
   //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly. 
-  int triggerInterrupt = 0; // By default, use the first interrupt. The user should always have set things up (Or even better, use the recommended pinouts)
+  int triggerInterrupt = 0; // By default, use the first interrupt
   currentStatus.RPM = 0;
   currentStatus.hasSync = false;
   switch (pinTrigger) {
     
-    //Arduino Mega 2560 mapping (Uncomment to use)
+    //Arduino Mega 2560 mapping
     case 2:
       triggerInterrupt = 0; break;
     case 3:
@@ -145,6 +144,7 @@ void setup()
   pinMode(pinMAP, INPUT);
   pinMode(pinO2, INPUT);
   pinMode(pinTPS, INPUT);
+  pinMode(pinIAT, INPUT);
   //Turn on pullups for above pins
   digitalWrite(pinMAP, HIGH);
   digitalWrite(pinO2, LOW);
@@ -236,25 +236,25 @@ void loop()
       //Determine next firing angles
       //int injectorStartAngle = 355 - (currentStatus.PW / timePerDegree); //This is a bit rough, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       //int ignitionStartAngle = 360 - ignitionAdvance - (configPage2.dwellRun / timePerDegree); // 360 - desired advance angle - number of degrees the dwell will take
-      int injectorStartAngle = 355 - ( fastDivide32(currentStatus.PW, timePerDegree) ); //As above, but using fastDivide function
-      int ignitionStartAngle = 360 - currentStatus.advance - (fastDivide32((configPage2.dwellRun*100), timePerDegree) ); //As above, but using fastDivide function
+      int injector1StartAngle = 355 - ( fastDivide32(currentStatus.PW, timePerDegree) ); //As above, but using fastDivide function
+      int ignition1StartAngle = 360 - currentStatus.advance - (fastDivide32((configPage2.dwellRun*100), timePerDegree) ); //As above, but using fastDivide function
       
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
       //We only need to set the shcedule if we're BEFORE the open angle
       //This may potentially be called a number of times as we get closer and closer to the opening time
-      if (injectorStartAngle > crankAngle) 
+      if (injector1StartAngle > crankAngle) 
       { 
         setFuelSchedule1(openInjector1, 
-                  (injectorStartAngle - crankAngle) * timePerDegree,
+                  (injector1StartAngle - crankAngle) * timePerDegree,
                   currentStatus.PW,
                   closeInjector1
                   );
       }
       //Likewise for the ignition
-      if (ignitionStartAngle > crankAngle) 
+      if (ignition1StartAngle > crankAngle) 
       { 
         setIgnitionSchedule1(beginCoil1Charge, 
-                  (ignitionStartAngle - crankAngle) * timePerDegree,
+                  (ignition1StartAngle - crankAngle) * timePerDegree,
                   (configPage2.dwellRun * 100), //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
                   endCoil1Charge
                   );
@@ -276,17 +276,17 @@ void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); }
 void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); }
 
 void openInjector2() { digitalWrite(pinInjector2, HIGH); BIT_SET(currentStatus.squirt, 1); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
-void closeInjector2() { digitalWrite(pinInjector2, LOW); BIT_SET(currentStatus.squirt, 1); } 
+void closeInjector2() { digitalWrite(pinInjector2, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
 void beginCoil2Charge() { digitalWrite(pinCoil2, coilHIGH); }
 void endCoil2Charge() { digitalWrite(pinCoil2, coilLOW); }
 
 void openInjector3() { digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, 1); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
-void closeInjector3() { digitalWrite(pinInjector3, LOW); BIT_SET(currentStatus.squirt, 1); } 
+void closeInjector3() { digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
 void beginCoil3Charge() { digitalWrite(pinCoil3, coilHIGH); }
 void endCoil3Charge() { digitalWrite(pinCoil3, coilLOW); }
 
 void openInjector4() { digitalWrite(pinInjector4, HIGH); BIT_SET(currentStatus.squirt, 1); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
-void closeInjector4() { digitalWrite(pinInjector4, LOW); BIT_SET(currentStatus.squirt, 1); } 
+void closeInjector4() { digitalWrite(pinInjector4, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
 void beginCoil4Charge() { digitalWrite(pinCoil4, coilHIGH); }
 void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); }
 
@@ -298,13 +298,12 @@ void trigger()
    noInterrupts(); //Turn off interrupts whilst in this routine
 
    volatile unsigned long curTime = micros();
-   if ( (curTime - toothLastToothTime) < triggerFilterTime) { interrupts(); return; } //Debounce check. Pulses should never be less than 100uS, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+   if ( (curTime - toothLastToothTime) < triggerFilterTime) { interrupts(); return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    toothCurrentCount++; //Increment the tooth counter   
    
    //Begin the missing tooth detection
    //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
    //if ( (curTime - toothLastToothTime) > (1.5 * (toothLastToothTime - toothLastMinusOneToothTime))) { toothCurrentCount = 1; }
-   
    if ( (curTime - toothLastToothTime) > ((3 * (toothLastToothTime - toothLastMinusOneToothTime))>>1)) //Same as above, but uses bitshift instead of multiplying by 1.5
    { 
      toothCurrentCount = 1; 
