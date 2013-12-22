@@ -15,14 +15,17 @@ int AIRDEN(int MAP, int temp)
   }
 
 /*
-This functino retuns a pulsewidth time (in us) given the following:
+This function retuns a pulsewidth time (in us) using a hybrid Alpha-N algorithm, given the following:
 REQ_FUEL
 VE: Lookup from the main MAP vs RPM fuel table
 MAP: In KPa, read from the sensor
 GammaE: Sum of Enrichment factors (Cold start, acceleration). This is a multiplication factor (Eg to add 10%, this should be 110)
-injOpen: Injector open time. The time the injector take to open in uS
+injDT: Injector dead time. The time the injector take to open minus the time it takes to close (Both in uS)
+TPS: Throttle position (0% to 100%)
+
+This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N calculations respectively. 
 */
-int PW(int REQ_FUEL, byte VE, byte MAP, int GammaE, int injOpen)
+int PW(int REQ_FUEL, byte VE, byte MAP, int GammaE, int injOpen, byte TPS)
   {
     //Standard float version of the calculation
     //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(GammaE/100.0) + injOpen);
@@ -32,13 +35,26 @@ int PW(int REQ_FUEL, byte VE, byte MAP, int GammaE, int injOpen)
     int iVE = ((int)VE << 7) / 100;
     int iMAP = ((int)MAP << 7) / 100;
     int iGammaE = (GammaE << 7) / 100;
+    int iTPS = ((int)TPS << 7) / 100;
 
     unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >>7; //Need to use an intermediate value to avoid overflowing the long
     intermediate = (intermediate * iMAP) >> 7;
     intermediate = (intermediate * iGammaE) >> 7;
+    intermediate = (intermediate * iTPS) >> 7;
     return (int)intermediate + injOpen;
 
   }
+ 
+//Convenience function for Speed Density 
+int PW_SD(int REQ_FUEL, byte VE, byte MAP, int GammaE, int injOpen)
+{
+  return PW(REQ_FUEL, VE, MAP, GammaE, injOpen, 1); //Just use 1 in place of the TPS
+}
+
+int PW_AN(int REQ_FUEL, byte VE, byte TPS, int GammaE, int injOpen)
+{
+  return PW(REQ_FUEL, VE, 1, GammaE, injOpen, TPS); //Just use 1 in place of the MAP
+}
 
 /* Determine the Gamma Enrichment number. Forumla borrowed from MS2 manual... may be skipped/simplified for arduino!
 WARMUP: Warmup Correction 
