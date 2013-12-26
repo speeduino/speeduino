@@ -215,10 +215,20 @@ void loop()
       //-----------------------------------------------------------------------------------------------------
       
       //Begin the fuel calculation
-      //Perform lookup into fuel map for RPM vs MAP value
-      currentStatus.VE = getTableValue(fuelTable, currentStatus.MAP, currentStatus.RPM);
-      //Calculate an injector pulsewidth form the VE
-      currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
+      //Calculate an injector pulsewidth from the VE
+      if (configPage1.algorithm == 0) 
+      { 
+        //Speed Density
+        currentStatus.VE = getTableValue(fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
+        currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
+      }
+      else
+      { 
+        //Alpha-N
+        currentStatus.VE = getTableValue(fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
+        currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110 
+      }
+      
       //Perform a lookup to get the desired ignition advance
       currentStatus.advance = getTableValue(ignitionTable, currentStatus.MAP, currentStatus.RPM);
       
