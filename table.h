@@ -43,19 +43,19 @@ int getTableValue(struct table fromTable, int Y, int X)
     if(X > xMaxValue) { X = xMaxValue; }
     if(X < xMinValue) { X = xMinValue; }
     
-    for (int x = fromTable.xSize-1; x > 0; x--)
+    for (int x = fromTable.xSize-1; x >= 0; x--)
     {
       //Checks the case where the X value is exactly what was requested
-      if (X == fromTable.axisX[x-1])
+      if ( (X == fromTable.axisX[x]) || (x == 0) )
       {
-        xMaxValue = fromTable.axisX[x-1];
-        xMinValue = fromTable.axisX[x-1];
-        xMax = x-1;
-        xMin = x-1;
+        xMaxValue = fromTable.axisX[x];
+        xMinValue = fromTable.axisX[x];
+        xMax = x;
+        xMin = x;
         break;
       }
       //Normal case
-      if ( (X <= fromTable.axisX[x]) && (X >= fromTable.axisX[x-1]) )
+      if ( (X <= fromTable.axisX[x]) && (X > fromTable.axisX[x-1]) )
       {
         xMaxValue = fromTable.axisX[x];
         xMinValue = fromTable.axisX[x-1];
@@ -75,21 +75,20 @@ int getTableValue(struct table fromTable, int Y, int X)
     if(Y > yMaxValue) { Y = yMaxValue; }
     if(Y < yMinValue) { Y = yMinValue; }
     
-    for (int y = fromTable.ySize-1; y > 0; y--)
+    for (int y = fromTable.ySize-1; y >= 0; y--)
     {
       //Checks the case where the Y value is exactly what was requested
-      if (Y == fromTable.axisY[y-1])
+      if ( (Y == fromTable.axisY[y]) || (y==0) )
       {
-        yMaxValue = fromTable.axisY[y-1];
-        yMinValue = fromTable.axisY[y-1];
-        yMax = y-1;
-        yMin = y-1;
+        yMaxValue = fromTable.axisY[y];
+        yMinValue = fromTable.axisY[y];
+        yMax = y;
+        yMin = y;
         break;
       }
       //Normal case
-      if ( (Y >= fromTable.axisY[y]) && (Y <= fromTable.axisY[y-1]) )
+      if ( (Y >= fromTable.axisY[y]) && (Y < fromTable.axisY[y-1]) )
       {
-        
         yMaxValue = fromTable.axisY[y];
         yMinValue = fromTable.axisY[y-1];
         yMax = y;
@@ -121,8 +120,14 @@ int getTableValue(struct table fromTable, int Y, int X)
     
     // Float version
     /*
-    float p = ((float)(X - xMinValue)) / (float)(xMaxValue - xMinValue);
-    float q = ((float)(Y - yMaxValue)) / (float)(yMinValue - yMaxValue);
+    float p, q;
+    if (xMaxValue == xMinValue)
+    { p = (float)(X-xMinValue); }
+    else { p = ((float)(X - xMinValue)) / (float)(xMaxValue - xMinValue); }
+    
+    if (yMaxValue == yMinValue)
+    { q = (float)(Y - yMinValue); }
+    else { q = ((float)(Y - yMaxValue)) / (float)(yMinValue - yMaxValue); }
     
     float m = (1.0-p) * (1.0-q);
     float n = p * (1-q);
@@ -135,22 +140,23 @@ int getTableValue(struct table fromTable, int Y, int X)
     
     // Non-Float version:
     //Initial check incase the values were hit straight on
-    int p;
+    long p;
     if (xMaxValue == xMinValue)
-    { p = ((X - xMinValue) << 7); } //This only occurs if the requested X value was equal to one of the X axis bins
+    { p = ((long)(X - xMinValue) << 8); } //This only occurs if the requested X value was equal to one of the X axis bins
     else 
-    { p = ((X - xMinValue) << 7) / (xMaxValue - xMinValue); } //This is the standard case
+    { 
+      p = ((long)(X - xMinValue) << 8) / (xMaxValue - xMinValue); } //This is the standard case
     
-    int q;
+    long q;
     if (yMaxValue == yMinValue)
-    { q = ((Y - yMinValue) << 7); }
+    { q = ((long)(Y - yMinValue) << 8); }
     else
-    { q = ((Y - yMaxValue) << 7) / (yMinValue - yMaxValue); }
+    { q = ((long)(Y - yMaxValue) << 8) / (yMinValue - yMaxValue); }
       
-    int m = ((128-p) * (128-q)) >> 7;
-    int n = (p * (128-q)) >> 7;
-    int o = ((128-p) * q) >> 7;
-    int r = (p * q) >> 7;
+    int m = ((257-p) * (257-q)) >> 8;
+    int n = (p * (257-q)) >> 8;
+    int o = ((257-p) * q) >> 8;
+    int r = (p * q) >> 8;
 
-    return ( (A * m) + (B * n) + (C * o) + (D * r) ) >> 7; 
+    return ( (A * m) + (B * n) + (C * o) + (D * r) ) >> 8;
   }

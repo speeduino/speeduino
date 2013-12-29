@@ -3,7 +3,7 @@
 // Config section
 
 //The following lines are configurable, but the defaults are probably pretty good for most applications
-#define engineInjectorDeadTime 1500 //Time in uS that the injector takes to open
+#define engineInjectorDeadTime 1500 //Time in uS that the injector takes to open minus the time it takes to close
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 
 //Pin mappings as per the v0.1 shield
@@ -193,6 +193,13 @@ void loop()
       currentStatus.RPM = 0; 
       currentStatus.hasSync = false;
     }
+    
+    //Uncomment the following for testing
+    /*
+    currentStatus.hasSync = true;
+    currentStatus.TPS = 100;
+    currentStatus.RPM = 5500;
+    */
      
     //***SET STATUSES***
     //-----------------------------------------------------------------------------------------------------
@@ -222,16 +229,18 @@ void loop()
         //Speed Density
         currentStatus.VE = getTableValue(fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
         currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
+        
+        currentStatus.advance = getTableValue(ignitionTable, currentStatus.MAP, currentStatus.RPM); //As above, but for ignition advance
       }
       else
       { 
         //Alpha-N
         currentStatus.VE = getTableValue(fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
         currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110 
+        //currentStatus.PW = 20000;
+        currentStatus.advance = getTableValue(ignitionTable, currentStatus.TPS, currentStatus.RPM); //As above, but for ignition advance
       }
-      
-      //Perform a lookup to get the desired ignition advance
-      currentStatus.advance = getTableValue(ignitionTable, currentStatus.MAP, currentStatus.RPM);
+
       
       //Determine the current crank angle
       //This is the current angle ATDC the engine is at
