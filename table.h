@@ -66,8 +66,8 @@ int getTableValue(struct table fromTable, int Y, int X)
     }
     
     //Loop through the Y axis bins for the min/max pair
-    int yMinValue = fromTable.axisY[0];
-    int yMaxValue = fromTable.axisY[fromTable.ySize-1];
+    int yMaxValue = fromTable.axisY[0];
+    int yMinValue = fromTable.axisY[fromTable.ySize-1];
     int yMin = 0;
     int yMax = 0;
     
@@ -118,8 +118,9 @@ int getTableValue(struct table fromTable, int Y, int X)
     
     //Create some normalised position values
     //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
-    /*
+    
     // Float version
+    /*
     float p = ((float)(X - xMinValue)) / (float)(xMaxValue - xMinValue);
     float q = ((float)(Y - yMaxValue)) / (float)(yMinValue - yMaxValue);
     
