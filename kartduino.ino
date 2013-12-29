@@ -194,16 +194,17 @@ void loop()
       currentStatus.hasSync = false;
     }
      
-     
+    //***SET STATUSES***
+    //-----------------------------------------------------------------------------------------------------
+    currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 0, 100); //Get the current MAP value
+    //currentStatus.TPS = map(analogRead(pinTPS), 0, 1023, 255, 0); //Get the current TPS value
+    currentStatus.TPS = map(analogRead(pinTPS), 0, 1023, 100, 0); //Get the current TPS value
+    currentStatus.O2 = map(analogRead(pinO2), 0, 1023, 117, 358); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4, then multiplied by 16 (<< 4). This is the correct calibration for an Innovate Wideband 0v - 5V unit
+    
     //Always check for sync
     //Main loop runs within this clause
     if (currentStatus.hasSync)
     {
-      //***SET STATUSES***
-      //-----------------------------------------------------------------------------------------------------
-      currentStatus.MAP = fastMap(analogRead(pinMAP), 0, 1023, 0, 100); //Get the current MAP value
-      currentStatus.TPS = fastMap(analogRead(pinTPS), 0, 1023, 0, 100); //Get the current TPS value
-      currentStatus.O2 = fastMap(analogRead(pinO2), 0, 1023, 117, 358); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4, then multiplied by 16 (<< 4). This is the correct calibration for an Innovate Wideband 0v - 5V unit
       if(currentStatus.RPM > 0) //Check if the engine is turning at all
       { 
         //If it is, check is we're running or cranking
