@@ -28,7 +28,7 @@ This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N ca
 int PW(int REQ_FUEL, byte VE, byte MAP, int GammaE, int injOpen, byte TPS)
   {
     //Standard float version of the calculation
-    //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(GammaE/100.0) + injOpen);
+    return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(GammaE/100.0) + injOpen);
     
     //100% float free version, does sacrifice a little bit of accuracy. Accuracy loss is in the order of 0.1ms (100uS)
     
@@ -48,12 +48,12 @@ int PW(int REQ_FUEL, byte VE, byte MAP, int GammaE, int injOpen, byte TPS)
 //Convenience function for Speed Density 
 int PW_SD(int REQ_FUEL, byte VE, byte MAP, int GammaE, int injOpen)
 {
-  return PW(REQ_FUEL, VE, MAP, GammaE, injOpen, 1); //Just use 1 in place of the TPS
+  return PW(REQ_FUEL, VE, MAP, GammaE, injOpen, 100); //Just use 1 in place of the TPS
 }
 
 int PW_AN(int REQ_FUEL, byte VE, byte TPS, int GammaE, int injOpen)
 {
-  return PW(REQ_FUEL, VE, 1, GammaE, injOpen, TPS); //Just use 1 in place of the MAP
+  return PW(REQ_FUEL, VE, 100, GammaE, injOpen, TPS); //Just use 1 in place of the MAP
 }
 
 /* Determine the Gamma Enrichment number. Forumla borrowed from MS2 manual... may be skipped/simplified for arduino!
