@@ -43,7 +43,7 @@ VE = ( (17 * 0.2083) + (21 * 0.2083) + (15 * 0.9166) + (20 * 0.29166) ) = 18.125
 
 */
 
-void dummyFuelTable(struct table *myFuelTable)
+void dummyFuelTable(struct table3D *myFuelTable)
   {
     //table myFuelTable;
     
@@ -77,7 +77,7 @@ void dummyFuelTable(struct table *myFuelTable)
 /*
 Populates a table with some reasonably realistic ignition advance data
 */
-void dummyIgnitionTable(struct table *mySparkTable)
+void dummyIgnitionTable(struct table3D *mySparkTable)
   { 
     int tempXAxis[8] = {500,1500,2000,2500,3000,4000,5000,6000};
     for (byte x = 0; x< mySparkTable->xSize; x++) { mySparkTable->axisX[x] = tempXAxis[x]; }

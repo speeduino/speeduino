@@ -32,6 +32,7 @@
 #include "storage.h"
 #include "comms.h"
 #include "math.h"
+#include "corrections.h"
 
 #include "fastAnalog.h"
 #define DIGITALIO_NO_MIX_ANALOGWRITE
@@ -50,8 +51,10 @@ volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) tha
 volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
 volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
 
-struct table fuelTable;
-struct table ignitionTable;
+struct table3D fuelTable; //8x8 fuel map
+struct table3D ignitionTable; //8x8 ignition map
+struct table2Dx4 taeTable; //4 bin TPS Acceleration Enrichment map (2D)
+struct table2Dx10 WUETable; //10 bin Warm Up Enrichment map (2D)
 
 unsigned long counter;
 unsigned long scheduleStart;
@@ -224,21 +227,22 @@ void loop()
       
       //Begin the fuel calculation
       //Calculate an injector pulsewidth from the VE
+      byte corrections = correctionsTotal();
       if (configPage1.algorithm == 0) 
       { 
         //Speed Density
-        currentStatus.VE = getTableValue(fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-        currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
+        currentStatus.VE = get3DTableValue(fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
+        currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, corrections, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
         
-        currentStatus.advance = getTableValue(ignitionTable, currentStatus.MAP, currentStatus.RPM); //As above, but for ignition advance
+        currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.MAP, currentStatus.RPM); //As above, but for ignition advance
       }
       else
       { 
         //Alpha-N
-        currentStatus.VE = getTableValue(fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
-        currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, 100, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110 
+        currentStatus.VE = get3DTableValue(fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
+        currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, corrections, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110 
         //currentStatus.PW = 20000;
-        currentStatus.advance = getTableValue(ignitionTable, currentStatus.TPS, currentStatus.RPM); //As above, but for ignition advance
+        currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.TPS, currentStatus.RPM); //As above, but for ignition advance
       }
 
       
