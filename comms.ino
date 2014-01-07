@@ -102,7 +102,7 @@ void sendValues(int length)
   response[18] = currentStatus.VE; //Current VE 1 (%)
   response[19] = 0x00; //Pulsewidth 2 divided by 10 (in ms)
   response[20] = 0x00; //Current VE 2 (%)
-  response[21] = 0x00; //Idle
+  response[21] = currentStatus.TPS; //Will be TPS DOT
   response[22] = currentStatus.advance;
 
   Serial.write(response, (size_t)23);
