@@ -6,13 +6,13 @@ FAQ:
 
 Q: Kartduino, clever name. Does it mean anything?
 
-A: Initial aim was for a simple DIY ECU for go-karts. The important part of that being SIMPLE! The code is written with simplicity above all else in mind and all areas are well commented. Where code is complex or low level, a high level pseudo code example is given to explain what is being performed. 
+A: Initial aim was for a simple DIY ECU for go-karts. The important part of that being SIMPLE! The code is written with simplicity above all else in mind and all areas are well commented. The project can be loaded directly into the Arduino IDE and compiled with only a single additional library needing to be added. Where code is complex or low level, a high level pseudo code example is given to explain what is being performed. 
 
 ========================================================================
 
 Q: Arduino ECU,pffft, heard THAT before. Does this one actually work?
 
-A: Nope, well, not as of June 2013. That said, the software IS largely complete and many of the subsystems are well tested. A reference hardware setup is currently being put together for full testing
+A: Yep! Single cylinder engines are well tested and working as of Nov 2013. Final work continues on accleration enrichment and will then move onto multi-cylinder engines early in 2014
 
 ========================================================================
 
@@ -25,12 +25,12 @@ Features:
 * Alpha-N or Speed Density load control
 * High-Z injector hardware
 * Warmup enrichment
+* Acceleration enrichment
 * Compatible with Tuner studio (http://tunerstudio.com/) for tuning
 
 Phase 2 will include:
 * Batch support for up to 4 cylinder engines
 * 2 stroke engine support
-* Acceleration enrichment
 * Closed loop EGO / O2 
 * Autotune with TunerStudio and wideband O2
 
@@ -38,4 +38,4 @@ Phase 2 will include:
 
 Q: Target platform?
 
-A: Originally it was the Freetronics Leostick (http://www.freetronics.com/collections/arduino/products/leostick) with the aim of making a teeny tiny ECU. This Leonardo compatible board is suitable for a single cylinder applications but lacks the hardware timers do multi-cylinder engines. For Phase 2 (Including up to 4 cylinders) an Arduino Mega (Or other ATmega1280 / ATmega2560 powered SKU) will be required
+A: Arduino Mega (Or other ATmega1280 / ATmega2560 powered SKU) will be required. Standard arduino models are not suitable for multi-cylinder engines due to their lack of 16-bit timers. The shield board has been designed around the Mega and it is not expected that there will be a non-Mega variant. 
