@@ -187,8 +187,7 @@ void loop()
       noInterrupts();
         unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
       interrupts();
-      //currentStatus.RPM = US_IN_MINUTE / revolutionTime;
-      currentStatus.RPM = fastDivide32(US_IN_MINUTE, revolutionTime);  // (fastDivide version of above line)
+      currentStatus.RPM = fastDivide32(US_IN_MINUTE, revolutionTime); //Calc RPM based on last full revolution time
     }
     else
     {
@@ -241,28 +240,25 @@ void loop()
         //Alpha-N
         currentStatus.VE = get3DTableValue(fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
         currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, corrections, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110 
-        //currentStatus.PW = 20000;
         currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.TPS, currentStatus.RPM); //As above, but for ignition advance
       }
 
       
       //Determine the current crank angle
-      //This is the current angle ATDC the engine is at
+      //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
       int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth
       if (crankAngle > 360) { crankAngle -= 360; }
       
-      //How fast are we going? Can possibly work this out from RPM, but I don't think it's going to take a lot of CPU
-      //unsigned long timePerDegree = (toothLastToothTime - toothLastMinusOneToothTime) / (triggerToothAngle * configPage2.triggerTeeth); //The time (uS) it is currently taking to move 1 degree
+      //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       unsigned long timePerDegree = fastDivide32( (toothOneTime - toothOneMinusOneTime), (triggerToothAngle * configPage2.triggerTeeth)); //The time (uS) it is currently taking to move 1 degree (fastDivide version)
-      //crankAngle += (micros() - toothLastToothTime) / timePerDegree; //Estimate the number of degrees travelled since the last tooth
       crankAngle += fastDivide32( (micros() - toothLastToothTime), timePerDegree); //Estimate the number of degrees travelled since the last tooth (fastDivide version)
       
       //Determine next firing angles
-      //int injectorStartAngle = 355 - (currentStatus.PW / timePerDegree); //This is a bit rough, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
-      //int ignitionStartAngle = 360 - ignitionAdvance - (configPage2.dwellRun / timePerDegree); // 360 - desired advance angle - number of degrees the dwell will take
-      int injector1StartAngle = 355 - ( fastDivide32(currentStatus.PW, timePerDegree) ); //As above, but using fastDivide function
-      int ignition1StartAngle = 360 - currentStatus.advance - (fastDivide32((configPage2.dwellRun*100), timePerDegree) ); //As above, but using fastDivide function
-      if (currentStatus.RPM > ((int)(configPage2.SoftRevLim * 100)) ) { ignition1StartAngle = ignition1StartAngle + configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+      int injector1StartAngle = 355 - ( fastDivide32(currentStatus.PW, timePerDegree) ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
+
+      if (currentStatus.RPM > ((int)(configPage2.SoftRevLim * 100)) ) { currentStatus.advance -= configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+      int ignition1StartAngle = 360 - currentStatus.advance - (fastDivide32((configPage2.dwellRun*100), timePerDegree) ); // 360 - desired advance angle - number of degrees the dwell will take
+
       
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
       //We only need to set the shcedule if we're BEFORE the open angle
@@ -339,16 +335,6 @@ void trigger()
      toothOneTime = curTime;
      currentStatus.hasSync = true;
    } 
-   
-   //TESTING METHOD
-   /*
-   if (toothCurrentCount > triggerActualTeeth)
-   { 
-      toothCurrentCount = 1; 
-      toothOneMinusOneTime = toothOneTime;
-      toothOneTime = curTime;
-   }
-   */
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
