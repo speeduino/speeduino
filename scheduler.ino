@@ -55,7 +55,7 @@ void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned l
     OCR3A = absoluteTimeout;
     fuelSchedule1.duration = duration;
     fuelSchedule1.StartCallback = startCallback; //Name the start callback function
-    fuelSchedule1.EndCallback = endCallback; //Name the start callback function
+    fuelSchedule1.EndCallback = endCallback; //Name the end callback function
     fuelSchedule1.Status = PENDING; //Turn this schedule on
     TIMSK3 |= (1 << OCIE3A); //Turn on the A compare unit (ie turn on the interrupt)
   }
@@ -70,7 +70,7 @@ void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned l
     OCR3B = absoluteTimeout; //Use the B copmare unit of timer 3
     fuelSchedule2.duration = duration;
     fuelSchedule2.StartCallback = startCallback; //Name the start callback function
-    fuelSchedule2.EndCallback = endCallback; //Name the start callback function
+    fuelSchedule2.EndCallback = endCallback; //Name the end callback function
     fuelSchedule2.Status = PENDING; //Turn this schedule on
     TIMSK3 |= (1 << OCIE3B); //Turn on the B compare unit (ie turn on the interrupt)
   }
@@ -85,7 +85,7 @@ void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned l
     OCR3C = absoluteTimeout; //Use the C compare unit of timer 3
     fuelSchedule3.duration = duration;
     fuelSchedule3.StartCallback = startCallback; //Name the start callback function
-    fuelSchedule3.EndCallback = endCallback; //Name the start callback function
+    fuelSchedule3.EndCallback = endCallback; //Name the end callback function
     fuelSchedule3.Status = PENDING; //Turn this schedule on
     TIMSK3 |= (1 << OCIE3C); //Turn on the C compare unit (ie turn on the interrupt)
   }
@@ -100,7 +100,7 @@ void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned l
     OCR4B = absoluteTimeout; //Use the B compare unit of timer 4
     fuelSchedule4.duration = duration;
     fuelSchedule4.StartCallback = startCallback; //Name the start callback function
-    fuelSchedule4.EndCallback = endCallback; //Name the start callback function
+    fuelSchedule4.EndCallback = endCallback; //Name the end callback function
     fuelSchedule4.Status = PENDING; //Turn this schedule on
     TIMSK4 |= (1 << OCIE4B); //Turn on the B compare unit (ie turn on the interrupt)
   }
@@ -257,7 +257,6 @@ ISR(TIMER5_COMPA_vect) //ignitionSchedule1
        ignitionSchedule1.Status = OFF; //Turn off the schedule
        TIMSK5 &= ~(1 << OCIE5A); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
-  //TIFR3 = 0x00;          //Timer3 INT Flag Reg: Clear Timer Overflow Flag. I'm not 100% sure this is necessary, but better to be safe
   }
 ISR(TIMER5_COMPB_vect) //ignitionSchedule2
   {

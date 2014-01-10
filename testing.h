@@ -7,16 +7,16 @@ Aim is to create an 8x8 table that looks like the below:
  MAP
 ______________________________________________
 |100|| 78 | 88 | 92 | 95 | 97 |101 |107 |110 |
-| 88|| 58 | 
-| 75|| 45 |
-| 63|| 35 |  
-| 50|| 28 | 30
-| 38|| 22 | 23 | 
-| 25|| 17 | 21 |
-| 13|| 15 | 20 | 25 | 
+| 88|| 58 | 88 | 75 | 63 | 50 | 38 | 25 | 13 | 
+| 75|| 45 | 88 | 75 | 63 | 50 | 38 | 25 | 13 | 
+| 63|| 35 | 88 | 75 | 63 | 50 | 38 | 25 | 13 | 
+| 50|| 28 | 88 | 75 | 63 | 50 | 38 | 25 | 13 | 
+| 38|| 22 | 23 | 75 | 63 | 50 | 38 | 25 | 13 |  
+| 25|| 17 | 21 | 75 | 63 | 50 | 38 | 25 | 13 | 
+| 13|| 15 | 20 | 25 | 63 | 50 | 38 | 25 | 13 | 
 |   || 500|1500|2000|2500|3000|4000|5000|6000| RPM
 
-This is a fairly realistic 8x8 VE vs RPM 2D map
+This is not really a realistic 8x8 VE vs RPM 2D map, but it's enough for testing
 Here is a run through of how the interpolation would flow:
 Pass in:
 x = 1000

@@ -227,12 +227,11 @@ void loop()
       //Begin the fuel calculation
       //Calculate an injector pulsewidth from the VE
       byte corrections = correctionsTotal();
-      if (configPage1.algorithm == 0) 
+      if (configPage1.algorithm == 0) //Check with fuelling algorithm is being used
       { 
         //Speed Density
         currentStatus.VE = get3DTableValue(fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-        currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, corrections, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110
-        
+        currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, corrections, engineInjectorDeadTime);
         currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.MAP, currentStatus.RPM); //As above, but for ignition advance
       }
       else
