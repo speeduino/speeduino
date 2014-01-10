@@ -262,6 +262,7 @@ void loop()
       //int ignitionStartAngle = 360 - ignitionAdvance - (configPage2.dwellRun / timePerDegree); // 360 - desired advance angle - number of degrees the dwell will take
       int injector1StartAngle = 355 - ( fastDivide32(currentStatus.PW, timePerDegree) ); //As above, but using fastDivide function
       int ignition1StartAngle = 360 - currentStatus.advance - (fastDivide32((configPage2.dwellRun*100), timePerDegree) ); //As above, but using fastDivide function
+      if (currentStatus.RPM > ((int)(configPage2.SoftRevLim * 100)) ) { ignition1StartAngle = ignition1StartAngle + configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
       
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
       //We only need to set the shcedule if we're BEFORE the open angle
@@ -275,13 +276,16 @@ void loop()
                   );
       }
       //Likewise for the ignition
-      if (ignition1StartAngle > crankAngle) 
+      if ( ignition1StartAngle > crankAngle)
       { 
-        setIgnitionSchedule1(beginCoil1Charge, 
-                  (ignition1StartAngle - crankAngle) * timePerDegree,
-                  (configPage2.dwellRun * 100), //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
-                  endCoil1Charge
-                  );
+        if (currentStatus.RPM < ((int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
+        {
+          setIgnitionSchedule1(beginCoil1Charge, 
+                    (ignition1StartAngle - crankAngle) * timePerDegree,
+                    (configPage2.dwellRun * 100), //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
+                    endCoil1Charge
+                    );
+        }
       }
       
     }

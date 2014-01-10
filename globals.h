@@ -126,10 +126,10 @@ struct config2 {
   byte triggerMissingTeeth; //The size of the tooth gap (ie number of missing teeth)
   byte crankRPM; //RPM below which the engine is considered to be cranking
   byte floodClear; //TPS value that triggers flood clear mode (No fuel whilst cranking)
-  byte unused3;
-  byte unused4;
-  byte unused5;
-  byte unused6;
+  byte SoftRevLim; //Soft rev limit (RPM/100)
+  byte SoftLimRetard; //Amount soft limit retards (degrees)
+  byte SoftLimMax; //Time the soft limit can run
+  byte HardRevLim; //Hard rev limit (RPM/100)
   byte unused7;
   byte unused8;
   byte unused9;
