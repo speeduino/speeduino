@@ -39,3 +39,9 @@ Phase 2 will include:
 Q: Target platform?
 
 A: Arduino Mega (Or other ATmega1280 / ATmega2560 powered SKU) will be required. Standard arduino models are not suitable for multi-cylinder engines due to their lack of 16-bit timers. The shield board has been designed around the Mega and it is not expected that there will be a non-Mega variant. 
+
+========================================================================
+
+Q: I must know more! How can I contact you?
+
+A: Feel free to drop me a line: noisymime (AT) gmail (dot) com
