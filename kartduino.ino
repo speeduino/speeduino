@@ -65,6 +65,7 @@ byte coilLOW = LOW;
 
 struct statuses currentStatus;
 int loopCount;
+unsigned long secCounter; //The next time to increment 'runSecs' counter.
 
 void setup() 
 {
@@ -104,6 +105,8 @@ void setup()
   int triggerInterrupt = 0; // By default, use the first interrupt
   currentStatus.RPM = 0;
   currentStatus.hasSync = false;
+  currentStatus.runSecs = 0; 
+  
   switch (pinTrigger) {
     
     //Arduino Mega 2560 mapping
@@ -194,6 +197,11 @@ void loop()
       //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
       currentStatus.RPM = 0; 
       currentStatus.hasSync = false;
+      currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
+      secCounter = 0; //Reset our seconds counter.
+          
+      
+      
     }
     
     //Uncomment the following for testing
@@ -217,9 +225,40 @@ void loop()
       if(currentStatus.RPM > 0) //Check if the engine is turning at all
       { 
         //If it is, check is we're running or cranking
-        if(currentStatus.RPM > configPage2.crankRPM) { BIT_SET(currentStatus.engine, 0); BIT_CLEAR(currentStatus.engine, 1); } //Sets the engine running bit, clears the engine cranking bit
-        else {  BIT_SET(currentStatus.engine, 1); BIT_CLEAR(currentStatus.engine, 0); } //Sets the engine cranking bit, clears the engine running bit
+        if(currentStatus.RPM > configPage2.crankRPM) 
+        { //Sets the engine running bit, clears the engine cranking bit
+          BIT_SET(currentStatus.engine, 0); 
+          BIT_CLEAR(currentStatus.engine, 1); 
+          
+          
+        } 
+        else 
+        {  //Sets the engine cranking bit, clears the engine running bit
+          BIT_SET(currentStatus.engine, 1); 
+          BIT_CLEAR(currentStatus.engine, 0); 
+          
+          if (secCounter == 0) //Check to see if we already have a counter update queued.
+         { 
+           secCounter = micros() + 100000; //Kick off the runtime counter if it isn't already going.
+         }
+        
+        } 
+        
+        
+         //If the engine is running or cranking, Update Engine Running seconds.
+        if (((currentStatus.engine & ENGINE_RUN) || (currentStatus.engine & ENGINE_CRANK)) && micros() > secCounter)
+       { 
+          currentStatus.runSecs ++; //Increment our run counter by 1 second.
+          secCounter = micros() + 100000; //Reset the next increment for 1 second from now.
+       
+       }
+        
+        
       }
+      
+     
+      
+      
       
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------

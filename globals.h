@@ -8,6 +8,18 @@ const byte page_size = 125;
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
 #define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
 
+//Define masks for engine
+#define ENGINE_RUN 1     // Engine running
+#define ENGINE_CRANK 2   // Engine cranking
+#define ENGINE_ASE  4    // after start enrichment (ASE)
+#define ENGINE_WARMUP 8  // Engine in warmup
+#define ENGINE_TPS 16    // in TPS acceleration mode
+#define ENGINE_ACC 32    // in deceleration mode
+#define ENGINE_MAP 64    // in MAP acceleration mode
+#define ENGINE_IDLE 128  // idle on
+
+
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
@@ -21,6 +33,7 @@ struct statuses {
   volatile byte squirt;
   byte engine;
   unsigned long PW; //In uS
+  byte runSecs;
   
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath

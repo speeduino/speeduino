@@ -1,6 +1,5 @@
 
 
-
 byte correctionsTotal()
 {
   int sumCorrections = (correctionWUE() * correctionASE()) / 100;
@@ -15,6 +14,11 @@ byte correctionWUE()
 
 byte correctionASE()
 {
+  
+  if (currentStatus.runSecs < configPage1.aseCount) 
+  {
+    return configPage1.asePct;
+  }
   
 }
 
