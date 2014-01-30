@@ -25,45 +25,33 @@ TPS: Throttle position (0% to 100%)
 
 This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N calculations respectively. 
 */
-int PW(int REQ_FUEL, byte VE, byte MAP, int GammaE, int injOpen, byte TPS)
+int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, byte TPS)
   {
     //Standard float version of the calculation
-    return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(GammaE/100.0) + injOpen);
+    //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(corrections/100.0) + injOpen);
     
     //100% float free version, does sacrifice a little bit of accuracy. Accuracy loss is in the order of 0.1ms (100uS)
     
     int iVE = ((int)VE << 7) / 100;
     int iMAP = ((int)MAP << 7) / 100;
-    int iGammaE = (GammaE << 7) / 100;
+    int iCorrections = (corrections << 7) / 100;
     int iTPS = ((int)TPS << 7) / 100;
 
     unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >>7; //Need to use an intermediate value to avoid overflowing the long
     intermediate = (intermediate * iMAP) >> 7;
-    intermediate = (intermediate * iGammaE) >> 7;
+    intermediate = (intermediate * iCorrections) >> 7;
     intermediate = (intermediate * iTPS) >> 7;
     return (int)intermediate + injOpen;
 
   }
  
 //Convenience function for Speed Density 
-int PW_SD(int REQ_FUEL, byte VE, byte MAP, int GammaE, int injOpen)
+int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 {
-  return PW(REQ_FUEL, VE, MAP, GammaE, injOpen, 100); //Just use 1 in place of the TPS
+  return PW(REQ_FUEL, VE, MAP, corrections, injOpen, 100); //Just use 1 in place of the TPS
 }
 
-int PW_AN(int REQ_FUEL, byte VE, byte TPS, int GammaE, int injOpen)
+int PW_AN(int REQ_FUEL, byte VE, byte TPS, int corrections, int injOpen)
 {
-  return PW(REQ_FUEL, VE, 100, GammaE, injOpen, TPS); //Just use 1 in place of the MAP
+  return PW(REQ_FUEL, VE, 100, corrections, injOpen, TPS); //Just use 1 in place of the MAP
 }
-
-/* Determine the Gamma Enrichment number. Forumla borrowed from MS2 manual... may be skipped/simplified for arduino!
-WARMUP: Warmup Correction 
-O2_CLOSED: Feedback from Closed Loop Operation
-AIRTEMP: Air Temp correction <-- Skip?
-BARO: Barometric Correction <-- Skip?
-*/
-
-int GammaE( int WARMUP, int O2_CLOSED, int AIRTEMP, int BARO)
-  {
-    return (WARMUP/100) * (O2_CLOSED/100) * (AIRTEMP/100) * (BARO/100);
-  }
