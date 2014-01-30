@@ -1,5 +1,3 @@
-#include <Serial.h>
-
 #define vePage    1
 #define ignPage   2
 
