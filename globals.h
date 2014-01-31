@@ -18,6 +18,14 @@ const byte page_size = 125;
 #define ENGINE_MAP 64    // in MAP acceleration mode
 #define ENGINE_IDLE 128  // idle on
 
+//Define masks for Squirt
+#define SQUIRT_INJ1           1  //inj1 Squirt
+#define SQUIRT_INJ2           2  //inj2 Squirt
+#define SQUIRT_SCHSQRT        4  //Scheduled to squirt
+#define SQUIRT_SQRTING        8  //Squirting
+#define SQUIRT_INJ2SCHED      16
+#define SQUIRT_INJ2SQRT      32  //Injector2 (Schedule2)
+#define SQUIRT_BOOSTCTRLOFF  64  //Squirting Injector 2
 
 
 //The status struct contains the current values for all 'live' variables
