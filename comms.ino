@@ -82,8 +82,8 @@ void sendValues(int length)
   byte response[23];
   
   response[0] = currentStatus.runSecs; //rtc.sec;
-  response[1] =  currentStatus.squirt;
-  response[2] = currentStatus.engine; // Engine Status NOT YET WORKING
+  response[1] = currentStatus.squirt; //Squirt Bitfield
+  response[2] = currentStatus.engine; //Engine Status Bitfield - NOT YET WORKING
   response[3] = 0x00; //baro
   response[4] = currentStatus.MAP; //map
   response[5] = 0x00; //mat
