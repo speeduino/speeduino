@@ -33,6 +33,7 @@
 #include "comms.h"
 #include "math.h"
 #include "corrections.h"
+#include "kartTimers.h"
 
 #include "fastAnalog.h"
 #define DIGITALIO_NO_MIX_ANALOGWRITE
@@ -93,6 +94,7 @@ void setup()
   digitalWrite(pinCoil4, coilLOW);
   
   initialiseSchedulers();
+  initialiseTimers();
   
   //Once the configs have been loaded, a number of one time calculations can be completed
   req_fuel_uS = configPage1.reqFuel * 1000; //Convert to uS and an int. This is the only variable to be used in calculations
@@ -236,22 +238,11 @@ void loop()
         {  //Sets the engine cranking bit, clears the engine running bit
           BIT_SET(currentStatus.engine, 1); 
           BIT_CLEAR(currentStatus.engine, 0); 
-          
-          if (secCounter == 0) //Check to see if we already have a counter update queued.
-         { 
-           secCounter = micros() + 100000; //Kick off the runtime counter if it isn't already going.
-         }
-        
+          currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
         } 
         
         
-         //If the engine is running or cranking, Update Engine Running seconds.
-        if (((currentStatus.engine & ENGINE_RUN) || (currentStatus.engine & ENGINE_CRANK)) && micros() > secCounter)
-       { 
-          currentStatus.runSecs ++; //Increment our run counter by 1 second.
-          secCounter = micros() + 100000; //Reset the next increment for 1 second from now.
-       
-       }
+         
         
         
       }

@@ -3,8 +3,7 @@
 
 void initialiseSchedulers()
   {
-    
-    // Much help in this from http://arduinomega.blogspot.com.au/2011/05/timer2-and-overflow-interrupt-lets-get.html
+   // Much help in this from http://arduinomega.blogspot.com.au/2011/05/timer2-and-overflow-interrupt-lets-get.html
     //Fuel Schedules, which uses timer 3
     TCCR3B = 0x00;          //Disbale Timer3 while we set it up
     TCNT3  = 0;             //Reset Timer Count
