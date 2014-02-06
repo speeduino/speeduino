@@ -1,4 +1,4 @@
-Kartduino
+Speeduino
 =========
 
 FAQ:
