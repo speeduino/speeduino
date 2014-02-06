@@ -1,8 +1,9 @@
 #include <Arduino.h>
 
 const byte ms_version = 20;
-const byte data_structure_version = 1; //This identifies the data structure when reading / writing. 
-const byte page_size = 125;
+const byte signature = 20;
+const byte data_structure_version = 2; //This identifies the data structure when reading / writing. 
+const byte page_size = 128;
 
 //Handy bitsetting macros
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
@@ -35,6 +36,7 @@ struct statuses {
   unsigned int RPM;
   byte MAP;
   byte TPS;
+  byte tpsADC;
   byte VE;
   byte O2;
   byte advance;
@@ -85,8 +87,8 @@ struct config1 {
   byte injPwmP;
   byte injPwmT;
   byte battFac; //Whether to compensate pulsewidth for battery voltage (ms/v)
-  int rpmk;
-
+  int rpmk; //2 bytes
+//36
   //config1 in ini
   byte mapType : 2;
   byte strokes : 1;
@@ -110,12 +112,11 @@ struct config1 {
   byte fastIdleT; //Fast idle temperature
   byte egoSwitch;
   byte taeColdM;
+  byte tpsMin;
+  byte tpsMax;
   byte unused1;
-  byte unused2;
-  byte unused3;
-  byte unused4;
-  byte unused5;
-  byte unused6;
+
+  //48
   
 };
 

@@ -33,7 +33,7 @@
 #include "comms.h"
 #include "math.h"
 #include "corrections.h"
-#include "kartTimers.h"
+#include "timers.h"
 
 #include "fastAnalog.h"
 #define DIGITALIO_NO_MIX_ANALOGWRITE
@@ -190,7 +190,7 @@ void loop()
     if ((micros() - toothLastToothTime) < 500000L) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped
     {
       noInterrupts();
-        unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+      unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
       interrupts();
       currentStatus.RPM = fastDivide32(US_IN_MINUTE, revolutionTime); //Calc RPM based on last full revolution time
     }
@@ -201,9 +201,6 @@ void loop()
       currentStatus.hasSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       secCounter = 0; //Reset our seconds counter.
-          
-      
-      
     }
     
     //Uncomment the following for testing
@@ -216,40 +213,29 @@ void loop()
     //***SET STATUSES***
     //-----------------------------------------------------------------------------------------------------
     currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 0, 100); //Get the current MAP value
-    //currentStatus.TPS = map(analogRead(pinTPS), 0, 1023, 255, 0); //Get the current TPS value
-    currentStatus.TPS = map(analogRead(pinTPS), 0, 1023, 100, 0); //Get the current TPS value
+    currentStatus.tpsADC = map(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
+    currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
     currentStatus.O2 = map(analogRead(pinO2), 0, 1023, 117, 358); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4, then multiplied by 16 (<< 4). This is the correct calibration for an Innovate Wideband 0v - 5V unit
     
     //Always check for sync
     //Main loop runs within this clause
     if (currentStatus.hasSync)
     {
-      if(currentStatus.RPM > 0) //Check if the engine is turning at all
-      { 
-        //If it is, check is we're running or cranking
-        if(currentStatus.RPM > configPage2.crankRPM) 
-        { //Sets the engine running bit, clears the engine cranking bit
-          BIT_SET(currentStatus.engine, 0); 
-          BIT_CLEAR(currentStatus.engine, 1); 
-          
-          
-        } 
-        else 
-        {  //Sets the engine cranking bit, clears the engine running bit
-          BIT_SET(currentStatus.engine, 1); 
-          BIT_CLEAR(currentStatus.engine, 0); 
-          currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
-        } 
-        
-        
-         
-        
-        
-      }
-      
-     
-      
-      
+       if(currentStatus.RPM > 0) //Check if the engine is turning at all
+       { 
+          //If it is, check is we're running or cranking
+          if(currentStatus.RPM > configPage2.crankRPM) 
+          { //Sets the engine running bit, clears the engine cranking bit
+            BIT_SET(currentStatus.engine, 0); 
+            BIT_CLEAR(currentStatus.engine, 1); 
+          } 
+          else 
+          {  //Sets the engine cranking bit, clears the engine running bit
+            BIT_SET(currentStatus.engine, 1); 
+            BIT_CLEAR(currentStatus.engine, 0); 
+            currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
+          } 
+       }
       
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
@@ -315,7 +301,6 @@ void loop()
       
     }
     
-
   }
   
 //************************************************************************************************

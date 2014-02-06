@@ -36,7 +36,7 @@ void command()
         break;    
 
       case 'S': // send code version
-        Serial.write(ms_version);
+        Serial.print(signature);
         break;
 
       case 'Q': // send code version
@@ -44,7 +44,8 @@ void command()
         //digitalWrite(9, LOW);
         //digitalWrite(10, LOW);
         //digitalWrite(13, LOW);
-        Serial.write(ms_version);
+        Serial.print(signature);
+        //Serial.write("Speeduino_0_2");
         break;
 
       case 'V': // send VE table and constants
@@ -79,7 +80,7 @@ This function returns the current values of a fixed group of variables
 */
 void sendValues(int length)
 {
-  byte response[23];
+  byte response[24];
   
   response[0] = currentStatus.runSecs; //rtc.sec;
   response[1] = currentStatus.squirt; //Squirt Bitfield
@@ -88,7 +89,7 @@ void sendValues(int length)
   response[4] = currentStatus.MAP; //map
   response[5] = 0x00; //mat
   response[6] = 0x00; //Coolant
-  response[7] = currentStatus.TPS; //TPS
+  response[7] = currentStatus.tpsADC; //TPS (Raw 0-255)
   response[8] = 0x00; //battery voltage
   response[9] = 0x00; //O2
   response[10] = 0x00; //Exhaust gas correction (%)
@@ -100,12 +101,13 @@ void sendValues(int length)
   response[16] = 0x00; //Barometer correction (%)
   response[17] = 0x00; //Total GammaE (%)
   response[18] = currentStatus.VE; //Current VE 1 (%)
-  response[19] = 0x00; //Pulsewidth 2 divided by 10 (in ms)
-  response[20] = 0x00; //Current VE 2 (%)
-  response[21] = currentStatus.TPS; //Will be TPS DOT
+  response[19] = configPage1.tpsMin; //Pulsewidth 2 divided by 10 (in ms)
+  response[20] = configPage1.tpsMax; //Current VE 2 (%)
+  response[21] = 0x00; //Will be TPS DOT
   response[22] = currentStatus.advance;
+  response[23] = currentStatus.TPS; // TPS (0% to 100%)
 
-  Serial.write(response, (size_t)23);
+  Serial.write(response, (size_t)24);
   Serial.flush();
   return; 
 }

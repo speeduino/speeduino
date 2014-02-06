@@ -40,7 +40,7 @@ void writeConfig()
     if(EEPROM.read(x) != fuelTable.axisY[offset]) { EEPROM.write(x, fuelTable.axisY[offset]); }
   }
   //The next 45 bytes can simply be pulled straight from the configTable
-  for(int x=EEPROM_CONFIG1_SETTINGS; x<EEPROM_CONFIG2_XSIZE; x++) 
+  for(int x=EEPROM_CONFIG1_SETTINGS; x<EEPROM_CONFIG1_END; x++) 
   { 
     if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG1_SETTINGS))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG1_SETTINGS))); }
   }
@@ -106,7 +106,7 @@ void loadConfig()
     fuelTable.axisY[offset] = EEPROM.read(x);
   }
   //The next 45 bytes can simply be pulled straight from the configTable
-  for(int x=EEPROM_CONFIG1_SETTINGS; x<EEPROM_CONFIG2_XSIZE; x++) 
+  for(int x=EEPROM_CONFIG1_SETTINGS; x<EEPROM_CONFIG1_END; x++) 
   { 
     *(pnt_configPage + byte(x - EEPROM_CONFIG1_SETTINGS)) = EEPROM.read(x);
   }
