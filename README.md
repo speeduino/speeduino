@@ -4,9 +4,10 @@ Kartduino
 FAQ:
 =========
 
-Q: Kartduino, clever name. Does it mean anything?
+Q: Speeduino, didn't you used to be called something else?
 
-A: Initial aim was for a simple DIY ECU for go-karts. The important part of that being SIMPLE! The code is written with simplicity above all else in mind and all areas are well commented. The project can be loaded directly into the Arduino IDE and compiled with only a single additional library needing to be added. Where code is complex or low level, a high level pseudo code example is given to explain what is being performed. 
+A: Initial aim was for a simple DIY ECU for go-karts and the original project title was kartduino. As it became apparent that we wanted to extend support to larger vehicles, the name became a bit misleading.
+The important ideas though remain the same and the priority is still SIMPLICITY! The code is written with simplicity above all else in mind and all areas are well commented. The project can be loaded directly into the Arduino IDE and compiled with only a single additional library needing to be added. Where code is complex or low level, a high level pseudo code example is given to explain what is being performed. 
 
 ========================================================================
 
