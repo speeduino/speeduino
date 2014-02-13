@@ -58,6 +58,8 @@ struct table2Dx4 taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2Dx10 WUETable; //10 bin Warm Up Enrichment map (2D)
 
 unsigned long counter;
+unsigned long currentLoopTime; //The time the current loop started (uS)
+unsigned long previousLoopTime; //The time the previous loop started (uS)
 unsigned long scheduleStart;
 unsigned long scheduleEnd;
 
@@ -132,6 +134,10 @@ void setup()
   //End crank triger interrupt attachment
   
   req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
+  
+  //Initial values for loop times
+  previousLoopTime = 0;
+  currentLoopTime = micros();
 
   //Serial.begin(9600);
   Serial.begin(115200);
@@ -187,7 +193,9 @@ void loop()
      */
      
     //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
-    if ((micros() - toothLastToothTime) < 500000L) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped
+    previousLoopTime = currentLoopTime;
+    currentLoopTime = micros();
+    if ((currentLoopTime - toothLastToothTime) < 500000L) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped
     {
       noInterrupts();
       unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)

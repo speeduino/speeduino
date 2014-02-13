@@ -35,8 +35,9 @@ struct statuses {
   volatile boolean hasSync;
   unsigned int RPM;
   byte MAP;
-  byte TPS;
-  byte tpsADC;
+  byte TPS; //The current TPS reading (0% - 100%)
+  byte TPSlast; //The previous TPS reading
+  byte tpsADC; //0-255 byte representation of the TPS
   byte VE;
   byte O2;
   byte advance;
