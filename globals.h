@@ -153,28 +153,21 @@ struct config2 {
   byte SoftLimRetard; //Amount soft limit retards (degrees)
   byte SoftLimMax; //Time the soft limit can run
   byte HardRevLim; //Hard rev limit (RPM/100)
-  byte unused7;
-  byte unused8;
-  byte unused9;
-  byte unused10;
-  byte unused11;
-  byte unused12;
-  byte unused13;
-  byte unused14;
-  byte unused15;
-  byte unused16;
-  byte unused17;
-  byte unused18;
-  byte unused19;
-  byte unused20;
-  byte unused21;
-  byte unused22;
-  byte unused23;
-  byte unused24;
-  byte unused25;
-  byte unused26;
-  byte unused27;
-  byte unused28;
-  byte unused29; //128
+  byte taeBins[4]; //TPS based acceleration enrichment bins (%/s)
+  int taeRates[4]; //TPS based acceleration enrichment rates (% to add)
+  byte unused115;
+  byte unused116;
+  byte unused117;
+  byte unused118;
+  byte unused119;
+  byte unused120;
+  byte unused121;
+  byte unused122;
+  byte unused123;
+  byte unused124;
+  byte unused125;
+  byte unused126;
+  byte unused127;
+
   
 };

@@ -27,7 +27,13 @@ byte correctionASE()
   
 }
 
+/*
+TPS based acceleration enrichment
+Calculates the % change of the throttle over time (%/second) and performs a lookup based on this
+*/
+
 byte correctionAccel()
 {
+  int rateOfChange = (1000000 / (currentLoopTime - previousLoopTime)) * (currentStatus.TPS - currentStatus.TPSlast); //This is the % per second that the TPS has moved
   
 }

@@ -220,6 +220,7 @@ void loop()
      
     //***SET STATUSES***
     //-----------------------------------------------------------------------------------------------------
+    currentStatus.TPSlast = currentStatus.TPS;
     currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 0, 100); //Get the current MAP value
     currentStatus.tpsADC = map(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
     currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
