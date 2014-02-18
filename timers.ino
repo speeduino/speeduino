@@ -49,9 +49,10 @@ ISR(TIMER2_OVF_vect)
     mainLoopCount = 0;
     //**************************************************************************************************************************************************
     
-    //Reset Timer2 to trigger in another ~10ms
+
+  }
+      //Reset Timer2 to trigger in another ~10ms
     TCNT2  = 99;           //Preload timer2 with 100 cycles, leaving 156 till overflow.
     TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
-  }
   
 }

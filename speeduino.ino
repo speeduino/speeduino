@@ -67,7 +67,7 @@ byte coilHIGH = HIGH;
 byte coilLOW = LOW;
 
 struct statuses currentStatus;
-int mainLoopCount;
+volatile int mainLoopCount;
 unsigned long secCounter; //The next time to increment 'runSecs' counter.
 
 void setup() 
@@ -224,7 +224,7 @@ void loop()
     currentStatus.tpsADC = map(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
     currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
     currentStatus.O2 = map(analogRead(pinO2), 0, 1023, 117, 358); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4, then multiplied by 16 (<< 4). This is the correct calibration for an Innovate Wideband 0v - 5V unit
-    
+
     //Always check for sync
     //Main loop runs within this clause
     if (currentStatus.hasSync)
