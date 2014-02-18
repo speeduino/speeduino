@@ -45,6 +45,7 @@ struct statuses {
   byte engine;
   unsigned long PW; //In uS
   byte runSecs;
+  unsigned int loopsPerSecond;
   
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath

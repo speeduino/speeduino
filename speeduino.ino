@@ -67,7 +67,7 @@ byte coilHIGH = HIGH;
 byte coilLOW = LOW;
 
 struct statuses currentStatus;
-int loopCount;
+int mainLoopCount;
 unsigned long secCounter; //The next time to increment 'runSecs' counter.
 
 void setup() 
@@ -152,7 +152,7 @@ void setup()
     cbi(ADCSRA,ADPS0);
   #endif
   
-  loopCount = 0;
+  mainLoopCount = 0;
   
   //Setup other relevant pins
   pinMode(pinMAP, INPUT);
@@ -167,15 +167,14 @@ void setup()
 
 void loop() 
   {
-      loopCount++;    
+      mainLoopCount++;    
       //Check for any requets from serial
-      if (loopCount == 50) //Only check the serial buffer (And hence process serial commands) once every x loops (50 Is more than fast enough for TunerStudio)
+      if ((mainLoopCount & 63) == 1) //Only check the serial buffer (And hence process serial commands) once every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
       {
         if (Serial.available() > 0) 
         {
           command();
         }
-        loopCount = 0;
       }
      
      /*

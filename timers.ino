@@ -35,12 +35,19 @@ ISR(TIMER2_OVF_vect)
   {
     loopSec = 0; //Reset counter.
 
+    //**************************************************************************************************************************************************
+    //This updates the runSecs variable
     //If the engine is running or cranking, we need ot update the run time counter.
     if (((currentStatus.engine & ENGINE_RUN) || (currentStatus.engine & ENGINE_CRANK)))
     { //NOTE - There is a potential for a ~1sec gap between engine crank starting and ths runSec number being incremented. This may delay ASE!         
       if (currentStatus.runSecs <= 254) //Ensure we cap out at 255 and don't overflow. (which would reset ASE)
         { currentStatus.runSecs++; } //Increment our run counter by 1 second.
     }
+    //**************************************************************************************************************************************************
+    //This records the number of main loops the system has completed in the last second
+    currentStatus.loopsPerSecond = mainLoopCount;
+    mainLoopCount = 0;
+    //**************************************************************************************************************************************************
     
     //Reset Timer2 to trigger in another ~10ms
     TCNT2  = 99;           //Preload timer2 with 100 cycles, leaving 156 till overflow.
