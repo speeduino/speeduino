@@ -80,7 +80,7 @@ This function returns the current values of a fixed group of variables
 */
 void sendValues(int length)
 {
-  byte packetSize = 25;
+  byte packetSize = 26;
   byte response[packetSize];
   
   response[0] = currentStatus.runSecs; //rtc.sec;
@@ -107,7 +107,7 @@ void sendValues(int length)
   response[21] = 0x00; //Will be TPS DOT
   response[22] = currentStatus.advance;
   response[23] = currentStatus.TPS; // TPS (0% to 100%)
-  response[24] = (currentStatus.loopsPerSecond / 10); // How fast the system is running (Main loops per second divided by 10)
+  response[24] = (currentStatus.loopsPerSecond); // How fast the system is running (Main loops per second divided by 10)
 
   Serial.write(response, (size_t)packetSize);
   Serial.flush();
