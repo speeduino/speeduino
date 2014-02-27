@@ -4,20 +4,13 @@ This file is used for everything related to maps/tables including their definiti
 #include <Arduino.h>
 
 struct table2D {
-  static byte xSize;
+  byte xSize;
   
   byte *values;
-  int *axisX;
+  byte *axisX;
 };
 
 void table2D_setSize(struct table2D targetTable, byte newSize);
-
-struct table2Dx10 {
-  const static byte xSize = 10;
-  
-  byte values[xSize];
-  int axisX[xSize];
-};
 
 struct table3D {
   //All tables must be the same size for simplicity

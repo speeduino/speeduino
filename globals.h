@@ -71,7 +71,7 @@ struct config1 {
   byte crankHot; //Warm cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking (ms)
   byte asePct; //Afterstart enrichment (%)
   byte aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
-  byte wueBins[10]; //Warm up enrichment array (10 bytes)
+  byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte taeBins[4]; //TPS based acceleration enrichment bin 1 of 4 (ms)
   byte taeColdA;
   byte tpsThresh;
@@ -155,7 +155,8 @@ struct config2 {
   byte SoftLimMax; //Time the soft limit can run
   byte HardRevLim; //Hard rev limit (RPM/100)
   byte taeBins[4]; //TPS based acceleration enrichment bins (%/s)
-  int taeRates[4]; //TPS based acceleration enrichment rates (% to add)
+  byte taeValues[4]; //TPS based acceleration enrichment rates (% to add)
+  byte wueBins[10]; //Warmup Enrichment bins (Values are in configTable1)
   byte unused115;
   byte unused116;
   byte unused117;

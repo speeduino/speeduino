@@ -1,26 +1,12 @@
 /*
 Because the size of the table is dynamic, this functino is required to reallocate the array sizes
-Note that this will clear all the existing values of the table
+Note that this may clear some of the existing values of the table
 */
-void table2D_setSize(struct table2D targetTable, byte newSize)
+void table2D_setSize(struct table2D* targetTable, byte newSize)
 {
-  //We are able to check whether this is the first time the table has been initialised by checking the xSize. By default it will be 0
-  if(targetTable.xSize == 0)
-  {
-    //Initialise the arrays
-    targetTable.values = (byte *)malloc(newSize * sizeof(byte));
-    targetTable.axisX = (int *)malloc(newSize * sizeof(int));
-  }
-  else
-  {
-    //Free the existing memory and then initialise to new size
-    free(targetTable.values);
-    free(targetTable.axisX);
-    targetTable.values = (byte *)malloc(newSize * sizeof(byte));
-    targetTable.axisX = (int *)malloc(newSize * sizeof(int));
-  }
-  targetTable.xSize = newSize;
-  
+  targetTable->values = (byte *)realloc(targetTable->values, newSize * sizeof(byte));
+  targetTable->axisX = (byte *)realloc(targetTable->axisX, newSize * sizeof(byte));
+  targetTable->xSize = newSize;
 }
 
 /*

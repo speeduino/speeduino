@@ -55,7 +55,7 @@ volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros(
 struct table3D fuelTable; //8x8 fuel map
 struct table3D ignitionTable; //8x8 ignition map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
-struct table2Dx10 WUETable; //10 bin Warm Up Enrichment map (2D)
+struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 
 unsigned long counter;
 unsigned long currentLoopTime; //The time the current loop started (uS)
@@ -81,11 +81,26 @@ void setup()
   pinMode(pinInjector3, OUTPUT);
   pinMode(pinInjector4, OUTPUT);
   
-  
+
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
   //dummyIgnitionTable(&ignitionTable);
   loadConfig();
+  
+
+  //Repoint the 2D table structs to the config pages
+  taeTable.xSize = 4;
+  taeTable.values = configPage2.taeValues;
+  taeTable.axisX = configPage2.taeBins;
+  WUETable.xSize = 10;
+  WUETable.values = configPage1.wueValues;
+  WUETable.axisX = configPage2.wueBins;
+    /*
+    //Initialise table sizes (Must be done before the call to loadConfig())
+  table2D_setSize(&taeTable, 4); //TPS acceleration enrichment (4x X axis points)
+  table2D_setSize(&WUETable, 10); //Warm Up Enrichment (10x X axis points)
+  //3D tables are currently 8x8 fixed size and so don't need initialising (This is on the TODO list to change)
+  */
 
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
