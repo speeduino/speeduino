@@ -54,7 +54,7 @@ volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros(
 
 struct table3D fuelTable; //8x8 fuel map
 struct table3D ignitionTable; //8x8 ignition map
-struct table2Dx4 taeTable; //4 bin TPS Acceleration Enrichment map (2D)
+struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2Dx10 WUETable; //10 bin Warm Up Enrichment map (2D)
 
 unsigned long counter;

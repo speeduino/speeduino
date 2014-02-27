@@ -1,5 +1,33 @@
-//This function simply pulls a 1D linear interpolated (ie averaged) value from a 2D table
-int get2DTableValue(struct table2Dx4 fromTable, int X)
+/*
+Because the size of the table is dynamic, this functino is required to reallocate the array sizes
+Note that this will clear all the existing values of the table
+*/
+void table2D_setSize(struct table2D targetTable, byte newSize)
+{
+  //We are able to check whether this is the first time the table has been initialised by checking the xSize. By default it will be 0
+  if(targetTable.xSize == 0)
+  {
+    //Initialise the arrays
+    targetTable.values = (byte *)malloc(newSize * sizeof(byte));
+    targetTable.axisX = (int *)malloc(newSize * sizeof(int));
+  }
+  else
+  {
+    //Free the existing memory and then initialise to new size
+    free(targetTable.values);
+    free(targetTable.axisX);
+    targetTable.values = (byte *)malloc(newSize * sizeof(byte));
+    targetTable.axisX = (int *)malloc(newSize * sizeof(int));
+  }
+  targetTable.xSize = newSize;
+  
+}
+
+/*
+This function simply pulls a 1D linear interpolated (ie averaged) value from a 2D table
+ie: Given a value on the X axis, it returns a Y value that coresponds to the point on the curve between the nearest two defined X values
+*/
+int table2D_getValue(struct table2D fromTable, int X)
 {
     int xMinValue = fromTable.axisX[0];
     int xMaxValue = fromTable.axisX[fromTable.xSize-1];
@@ -38,7 +66,7 @@ int get2DTableValue(struct table2Dx4 fromTable, int X)
     
     //Non-Float version
     int yVal;
-    yVal = ((m << 6) / n) * (abs(fromTable.values[xMax] - fromTable.values[xMin]));
+    yVal = ((long)(m << 6) / n) * (abs(fromTable.values[xMax] - fromTable.values[xMin]));
     yVal = (yVal >> 6);
     
     if (fromTable.values[xMax] > fromTable.values[xMin]) { yVal = fromTable.values[xMin] + yVal; }
