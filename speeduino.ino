@@ -19,8 +19,8 @@
 #define pinTPS A0 //TPS input pin
 #define pinMAP A1 //MAP sensor pin
 #define pinIAT A2 //IAT sensor pin
-#define pinO2 A3 //O2 Sensor pin
-#define pinCLT A4 //CLS sensor pin (NOT CONNECTED BY DEFAULT ON THE v0.1 BOARD!)
+#define pinCLT A3 //CLS sensor pin
+#define pinO2 A4 //O2 Sensor pin
 
 //**************************************************************************************************
 
