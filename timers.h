@@ -17,7 +17,7 @@ Hence we will preload the timer with 99 cycles to leave 156 until overflow (~10m
 
 */
 
-volatile int loopGen;
+volatile int loop250ms;
 volatile int loopSec;
 
 

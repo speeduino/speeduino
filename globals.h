@@ -8,26 +8,26 @@ const byte page_size = 128;
 //Handy bitsetting macros
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
 #define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
+#define BIT_CHECK(var,pos) ((var) & (1<<(pos)))
 
-//Define masks for engine
-#define ENGINE_RUN 1     // Engine running
-#define ENGINE_CRANK 2   // Engine cranking
-#define ENGINE_ASE  4    // after start enrichment (ASE)
-#define ENGINE_WARMUP 8  // Engine in warmup
-#define ENGINE_TPS 16    // in TPS acceleration mode
-#define ENGINE_ACC 32    // in deceleration mode
-#define ENGINE_MAP 64    // in MAP acceleration mode
-#define ENGINE_IDLE 128  // idle on
+//Define bit positions within engine virable
+#define BIT_ENGINE_RUN      0     // Engine running
+#define BIT_ENGINE_CRANK    1   // Engine cranking
+#define BIT_ENGINE_ASE      2    // after start enrichment (ASE)
+#define BIT_ENGINE_WARMUP   3  // Engine in warmup
+#define BIT_ENGINE_TPS      4    // in TPS acceleration mode
+#define BIT_ENGINE_ACC      5    // in deceleration mode
+#define BIT_ENGINE_MAP      6    // in MAP acceleration mode
+#define BIT_ENGINE_IDLE     7  // idle on
 
 //Define masks for Squirt
-#define SQUIRT_INJ1           1  //inj1 Squirt
-#define SQUIRT_INJ2           2  //inj2 Squirt
-#define SQUIRT_SCHSQRT        4  //Scheduled to squirt
-#define SQUIRT_SQRTING        8  //Squirting
-#define SQUIRT_INJ2SCHED      16
-#define SQUIRT_INJ2SQRT      32  //Injector2 (Schedule2)
-#define SQUIRT_BOOSTCTRLOFF  64  //Squirting Injector 2
-
+#define BIT_SQUIRT_INJ1           0  //inj1 Squirt
+#define BIT_SQUIRT_INJ2           1  //inj2 Squirt
+#define BIT_SQUIRT_SCHSQRT        2  //Scheduled to squirt
+#define BIT_SQUIRT_SQRTING        3  //Squirting
+#define BIT_SQUIRT_INJ2SCHED      4
+#define BIT_SQUIRT_INJ2SQRT       5  //Injector2 (Schedule2)
+#define BIT_SQUIRT_BOOSTCTRLOFF   6  //Squirting Injector 2
 
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes

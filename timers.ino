@@ -1,5 +1,9 @@
+/*
+Timers are used for having actions performed repeatedly at a fixed interval (Eg every 100ms)
+They should not be confused with Schedulers, which are for performing an action once at a given point of time in the future
 
-
+Timers are typically low resolution (Compared to Schedulers), with maximum frequency currently being approximately every 10ms
+*/
 
 void initialiseTimers() 
 {  
@@ -14,20 +18,20 @@ void initialiseTimers()
 
 
 //Timer2 Overflow Interrupt Vector, called when the timer overflows.
-//SHOULD execute every ~10ms.
+//Executes every ~10ms.
 ISR(TIMER2_OVF_vect) 
 {
   
   //Increment Loop Counters
-  loopGen++;
+  loop250ms++;
   loopSec++;
   
   
   //Loop executed every 250ms loop (10ms x 25 = 250ms)
-  if (loopGen == 25) 
+  //Anything inside this if statement will run every 250ms.
+  if (loop250ms == 25) 
   {
-    loopGen = 0; //Reset Counter.
-    //INSERT 250ms Code here. 
+    loop250ms = 0; //Reset Counter.
   }
   
   //Loop executed every 1 second (10ms x 100 = 1000ms)
@@ -38,7 +42,7 @@ ISR(TIMER2_OVF_vect)
     //**************************************************************************************************************************************************
     //This updates the runSecs variable
     //If the engine is running or cranking, we need ot update the run time counter.
-    if (((currentStatus.engine & ENGINE_RUN) || (currentStatus.engine & ENGINE_CRANK)))
+    if ((BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) || BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)))
     { //NOTE - There is a potential for a ~1sec gap between engine crank starting and ths runSec number being incremented. This may delay ASE!         
       if (currentStatus.runSecs <= 254) //Ensure we cap out at 255 and don't overflow. (which would reset ASE)
         { currentStatus.runSecs++; } //Increment our run counter by 1 second.

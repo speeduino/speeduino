@@ -87,20 +87,13 @@ void setup()
   //dummyIgnitionTable(&ignitionTable);
   loadConfig();
   
-
-  //Repoint the 2D table structs to the config pages
+  //Repoint the 2D table structs to the config pages that were just loaded
   taeTable.xSize = 4;
   taeTable.values = configPage2.taeValues;
   taeTable.axisX = configPage2.taeBins;
   WUETable.xSize = 10;
   WUETable.values = configPage1.wueValues;
   WUETable.axisX = configPage2.wueBins;
-    /*
-    //Initialise table sizes (Must be done before the call to loadConfig())
-  table2D_setSize(&taeTable, 4); //TPS acceleration enrichment (4x X axis points)
-  table2D_setSize(&WUETable, 10); //Warm Up Enrichment (10x X axis points)
-  //3D tables are currently 8x8 fixed size and so don't need initialising (This is on the TODO list to change)
-  */
 
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
@@ -249,13 +242,13 @@ void loop()
           //If it is, check is we're running or cranking
           if(currentStatus.RPM > configPage2.crankRPM) 
           { //Sets the engine running bit, clears the engine cranking bit
-            BIT_SET(currentStatus.engine, 0); 
-            BIT_CLEAR(currentStatus.engine, 1); 
+            BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); 
+            BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); 
           } 
           else 
           {  //Sets the engine cranking bit, clears the engine running bit
-            BIT_SET(currentStatus.engine, 1); 
-            BIT_CLEAR(currentStatus.engine, 0); 
+            BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK); 
+            BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); 
             currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
           } 
        }

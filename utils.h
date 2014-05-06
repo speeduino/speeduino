@@ -15,7 +15,7 @@ int AIRDEN(int MAP, int temp)
   }
 
 /*
-This function retuns a pulsewidth time (in us) using a hybrid Alpha-N algorithm, given the following:
+This function retuns a pulsewidth time (in us) using a either Alpha-N or Speed Density algorithms, given the following:
 REQ_FUEL
 VE: Lookup from the main MAP vs RPM fuel table
 MAP: In KPa, read from the sensor
@@ -45,7 +45,7 @@ int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, byte TPS)
 
   }
  
-//Convenience function for Speed Density 
+//Convenience functions for Speed Density and Alpha-N
 int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 {
   return PW(REQ_FUEL, VE, MAP, corrections, injOpen, 100); //Just use 1 in place of the TPS
