@@ -38,6 +38,7 @@ struct statuses {
   byte TPS; //The current TPS reading (0% - 100%)
   byte TPSlast; //The previous TPS reading
   byte tpsADC; //0-255 byte representation of the TPS
+  byte tpsDOT;
   byte VE;
   byte O2;
   byte advance;

@@ -39,10 +39,11 @@ Calculates the % change of the throttle over time (%/second) and performs a look
 byte correctionAccel()
 {
   int rateOfChange = (1000000 / (currentLoopTime - previousLoopTime)) * (currentStatus.TPS - currentStatus.TPSlast); //This is the % per second that the TPS has moved
+  currentStatus.tpsDOT = rateOfChange / 10;
   
   if (rateOfChange > configPage1.tpsThresh)
   {
-    return 100 + table2D_getValue(taeTable, rateOfChange);
+    return 100 + table2D_getValue(taeTable, currentStatus.tpsDOT);
   }
   
   return 100;
