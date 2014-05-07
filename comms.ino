@@ -104,10 +104,12 @@ void sendValues(int length)
   response[18] = currentStatus.VE; //Current VE 1 (%)
   response[19] = configPage1.tpsMin; //Pulsewidth 2 divided by 10 (in ms)
   response[20] = configPage1.tpsMax; //Current VE 2 (%)
-  response[21] = 0x00; //Will be TPS DOT
+  response[21] = currentStatus.tpsDOT; //TPS DOT
   response[22] = currentStatus.advance;
   response[23] = currentStatus.TPS; // TPS (0% to 100%)
-  response[24] = (currentStatus.loopsPerSecond); // How fast the system is running (Main loops per second divided by 10)
+  //Need to split the int loopsPerSecond value into 2 bytes
+  response[24] = (byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
+  response[25] = (byte)(currentStatus.loopsPerSecond & 0xFF);
 
   Serial.write(response, (size_t)packetSize);
   Serial.flush();
