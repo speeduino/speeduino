@@ -13,7 +13,7 @@ The important ideas though remain the same and the priority is still SIMPLICITY!
 
 Q: Arduino ECU,pffft, heard THAT before. Does this one actually work?
 
-A: Yep! Single cylinder engines are well tested and working as of Nov 2013. Final work continues on accleration enrichment and will then move onto multi-cylinder engines early in 2014
+A: Yep! Single cylinder engines are well tested and working as of Nov 2013 and multi-cylinder support is in testing. Please see the dev roadmap (https://github.com/noisymime/speeduino/wiki/Development-Roadmap) for the current status of in progress work
 
 ========================================================================
 
