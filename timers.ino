@@ -52,6 +52,8 @@ ISR(TIMER2_OVF_vect)
     currentStatus.loopsPerSecond = mainLoopCount;
     mainLoopCount = 0;
     //**************************************************************************************************************************************************
+    //increament secl (secl is simply a counter that increments every second and is used to track whether the system has unexpectedly reset
+    currentStatus.secl++;
     
 
   }

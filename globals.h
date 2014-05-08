@@ -45,7 +45,8 @@ struct statuses {
   volatile byte squirt;
   byte engine;
   unsigned long PW; //In uS
-  byte runSecs;
+  volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
+  volatile byte secl; //Continous 
   volatile int loopsPerSecond;
   
   //Helpful bitwise operations:

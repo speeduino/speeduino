@@ -83,7 +83,7 @@ void sendValues(int length)
   byte packetSize = 26;
   byte response[packetSize];
   
-  response[0] = currentStatus.runSecs; //rtc.sec;
+  response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   response[1] = currentStatus.squirt; //Squirt Bitfield
   response[2] = currentStatus.engine; //Engine Status Bitfield - NOT YET WORKING
   response[3] = 0x00; //baro

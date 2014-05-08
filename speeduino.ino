@@ -118,6 +118,7 @@ void setup()
   currentStatus.RPM = 0;
   currentStatus.hasSync = false;
   currentStatus.runSecs = 0; 
+  currentStatus.secl = 0;
   
   switch (pinTrigger) {
     
