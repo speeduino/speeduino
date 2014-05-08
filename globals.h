@@ -41,6 +41,10 @@ struct statuses {
   byte tpsDOT;
   byte VE;
   byte O2;
+  byte coolant;
+  byte coolantADC;
+  byte IAT;
+  byte iatADC;
   byte advance;
   volatile byte squirt;
   byte engine;

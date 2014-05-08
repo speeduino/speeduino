@@ -31,7 +31,6 @@ int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, byte TPS)
     //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(corrections/100.0) + injOpen);
     
     //100% float free version, does sacrifice a little bit of accuracy. Accuracy loss is in the order of 0.1ms (100uS)
-    
     int iVE = ((int)VE << 7) / 100;
     int iMAP = ((int)MAP << 7) / 100;
     int iCorrections = (corrections << 7) / 100;

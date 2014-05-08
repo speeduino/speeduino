@@ -208,7 +208,7 @@ void loop()
       noInterrupts();
       unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
       interrupts();
-      currentStatus.RPM = fastDivide32(US_IN_MINUTE, revolutionTime); //Calc RPM based on last full revolution time
+      currentStatus.RPM = div(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time
     }
     else
     {
@@ -222,17 +222,18 @@ void loop()
     //Uncomment the following for testing
     /*
     currentStatus.hasSync = true;
-    currentStatus.TPS = 100;
     currentStatus.RPM = 5500;
     */
      
     //***SET STATUSES***
     //-----------------------------------------------------------------------------------------------------
     currentStatus.TPSlast = currentStatus.TPS;
-    currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 0, 100); //Get the current MAP value
-    currentStatus.tpsADC = map(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
-    currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
-    currentStatus.O2 = map(analogRead(pinO2), 0, 1023, 117, 358); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4, then multiplied by 16 (<< 4). This is the correct calibration for an Innovate Wideband 0v - 5V unit
+    currentStatus.MAP = fastMap(analogRead(pinMAP), 0, 1023, 0, 100); //Get the current MAP value
+    currentStatus.coolant = fastMap(analogRead(pinCLT), 0, 1023, 0, 255); //Get the current raw CLT value
+    currentStatus.iatADC = fastMap(analogRead(pinIAT), 0, 1023, 0, 255); //Get the current raw IAT value
+    currentStatus.tpsADC = fastMap(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
+    currentStatus.TPS = fastMap(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+    currentStatus.O2 = fastMap(analogRead(pinO2), 0, 1023, 117, 358); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4, then multiplied by 16 (<< 4). This is the correct calibration for an Innovate Wideband 0v - 5V unit
 
     //Always check for sync
     //Main loop runs within this clause
@@ -282,14 +283,14 @@ void loop()
       if (crankAngle > 360) { crankAngle -= 360; }
       
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
-      unsigned long timePerDegree = fastDivide32( (toothOneTime - toothOneMinusOneTime), (triggerToothAngle * configPage2.triggerTeeth)); //The time (uS) it is currently taking to move 1 degree (fastDivide version)
-      crankAngle += fastDivide32( (micros() - toothLastToothTime), timePerDegree); //Estimate the number of degrees travelled since the last tooth (fastDivide version)
+      unsigned long timePerDegree = div( (toothOneTime - toothOneMinusOneTime), (triggerToothAngle * configPage2.triggerTeeth)).quot; //The time (uS) it is currently taking to move 1 degree (fastDivide version)
+      crankAngle += div( (micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
       
       //Determine next firing angles
-      int injector1StartAngle = 355 - ( fastDivide32(currentStatus.PW, timePerDegree) ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
+      int injector1StartAngle = 355 - ( div(currentStatus.PW, timePerDegree).quot ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
 
       if (currentStatus.RPM > ((int)(configPage2.SoftRevLim * 100)) ) { currentStatus.advance -= configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
-      int ignition1StartAngle = 360 - currentStatus.advance - (fastDivide32((configPage2.dwellRun*100), timePerDegree) ); // 360 - desired advance angle - number of degrees the dwell will take
+      int ignition1StartAngle = 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ); // 360 - desired advance angle - number of degrees the dwell will take
 
       
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules

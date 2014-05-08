@@ -12,8 +12,8 @@ byte correctionsTotal()
 
 byte correctionWUE()
 {
-  //Not yet implemented
-  return 100;
+  //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
+  return 100 + table2D_getValue(WUETable, currentStatus.coolant);
 }
 
 byte correctionASE()
@@ -38,8 +38,9 @@ Calculates the % change of the throttle over time (%/second) and performs a look
 
 byte correctionAccel()
 {
-  int rateOfChange = (1000000 / (currentLoopTime - previousLoopTime)) * (currentStatus.TPS - currentStatus.TPSlast); //This is the % per second that the TPS has moved
-  currentStatus.tpsDOT = rateOfChange / 10;
+  int rateOfChange = div(1000000, (currentLoopTime - previousLoopTime)).quot * (currentStatus.TPS - currentStatus.TPSlast); //This is the % per second that the TPS has moved
+  //int rateOfChange = div( (1000000 * (currentStatus.TPS - currentStatus.TPSlast)), (currentLoopTime - previousLoopTime)).quot; //This is the % per second that the TPS has moved
+  currentStatus.tpsDOT = div(rateOfChange, 10).quot;
   
   if (rateOfChange > configPage1.tpsThresh)
   {

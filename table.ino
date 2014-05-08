@@ -182,7 +182,8 @@ int get3DTableValue(struct table3D fromTable, int Y, int X)
     { p = ((long)(X - xMinValue) << 8); } //This only occurs if the requested X value was equal to one of the X axis bins
     else 
     { 
-      p = ((long)(X - xMinValue) << 8) / (xMaxValue - xMinValue); } //This is the standard case
+      p = ((long)(X - xMinValue) << 8) / (xMaxValue - xMinValue); //This is the standard case
+    } 
     
     long q;
     if (yMaxValue == yMinValue)
