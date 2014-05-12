@@ -5,6 +5,16 @@ These are some utility functions and variables used through the main code
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000
 
+/*
+Returns how much free dynamic memory exists (between heap and stack)
+*/
+int freeRam () 
+{
+  extern int __heap_start, *__brkval; 
+  int v; 
+  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
+}
+
 
 /* The following functions help determine the required fuel constant. For more information about these calculations, please refer to http://www.megamanual.com/v22manual/mfuel.htm
   Calc below are for metric inputs of temp (degrees C) and MAP (kPa) to produce kg/m3.
