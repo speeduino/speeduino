@@ -42,7 +42,7 @@ struct statuses {
   byte VE;
   byte O2;
   byte coolant;
-  byte coolantADC;
+  byte cltADC;
   byte IAT;
   byte iatADC;
   byte advance;
