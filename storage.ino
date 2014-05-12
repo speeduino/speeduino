@@ -158,15 +158,17 @@ void loadCalibration()
   
   for(byte x=0; x<3; x++)
   {
-    int y = 2*x;
-    cltCalibrationTable.axisX16[x] = EEPROM.read( (EEPROM_CALIBRATION_CLT + y) );
-    cltCalibrationTable.values16[x] = EEPROM.read( (EEPROM_CALIBRATION_CLT + y + 1) );
+    int y = EEPROM_CALIBRATION_CLT + (2*x);
+    cltCalibrationTable.axisX16[x] = int(word(EEPROM.read(y), EEPROM.read(y+1)));
+    cltCalibrationTable.values16[x] = int(word(EEPROM.read(y+2), EEPROM.read(y+3)));
     
-    iatCalibrationTable.axisX16[x] = EEPROM.read( (EEPROM_CALIBRATION_IAT + y) );
-    iatCalibrationTable.values16[x] = EEPROM.read( (EEPROM_CALIBRATION_IAT + y + 1) );
+    y = EEPROM_CALIBRATION_IAT + (2*x);
+    iatCalibrationTable.axisX16[x] = int(word(EEPROM.read(y), EEPROM.read(y+1)));
+    iatCalibrationTable.values16[x] = int(word(EEPROM.read(y+2), EEPROM.read(y+3)));
     
-    o2CalibrationTable.axisX16[x] = EEPROM.read( (EEPROM_CALIBRATION_O2 + y) );
-    o2CalibrationTable.values16[x] = EEPROM.read( (EEPROM_CALIBRATION_O2 + y + 1) );
+    y = EEPROM_CALIBRATION_O2 + (2*x);
+    o2CalibrationTable.axisX16[x] = int(word(EEPROM.read(y), EEPROM.read(y+1)));
+    o2CalibrationTable.values16[x] = int(word(EEPROM.read(y+2), EEPROM.read(y+3)));
   }
   
 }
