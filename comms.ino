@@ -20,11 +20,6 @@ void command()
         break;
 
       case 'P': // set the current page
-        //Blue
-        //digitalWrite(10, HIGH);
-        //digitalWrite(9, LOW);
-        //digitalWrite(13, LOW);
-        
         //A 2nd byte of data is required after the 'P' specifying the new page number. 
         //This loop should never need to run as the byte should already be in the buffer, but is here just in case
         while (Serial.available() == 0) { }
@@ -40,34 +35,47 @@ void command()
         break;
 
       case 'Q': // send code version
-        //Off
-        //digitalWrite(9, LOW);
-        //digitalWrite(10, LOW);
-        //digitalWrite(13, LOW);
         Serial.print(signature);
         //Serial.write("Speeduino_0_2");
         break;
 
       case 'V': // send VE table and constants
-        //Red
-        //digitalWrite(9, LOW);
-        //digitalWrite(10, LOW);
-        //digitalWrite(13, HIGH);
         sendPage();
         break;
 
       case 'W': // receive new VE or constant at 'W'+<offset>+<newbyte>
-        //Green
-        //digitalWrite(9, HIGH);
-        //digitalWrite(10, LOW);
-        //digitalWrite(13, LOW);
-        
         byte offset;
         while (Serial.available() == 0) { }
         offset = Serial.read();
         while (Serial.available() == 0) { }
         
         receiveValue(offset, Serial.read());
+	break;
+
+      case 't': // receive new Calibration info. "t", 0, <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
+        byte tableID;
+        
+        EEPROM.write(260,'2');
+        EEPROM.write(261,'2');
+        EEPROM.write(262,'2');
+        int y;
+        y=263;
+        while (y<300)
+        {
+          while (Serial.available() == 0) { }
+          EEPROM.write(y, Serial.read());
+          y++;
+        }       
+
+	break;
+
+      case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed
+        for(int x=260; x<300; x++)
+        {
+          Serial.write(EEPROM.read(x));
+        }
+        Serial.write('2');
+        Serial.flush();
 	break;
 
       default:
@@ -108,8 +116,8 @@ void sendValues(int length)
   response[22] = currentStatus.advance;
   response[23] = currentStatus.TPS; // TPS (0% to 100%)
   //Need to split the int loopsPerSecond value into 2 bytes
-  response[24] = (byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
-  response[25] = (byte)(currentStatus.loopsPerSecond & 0xFF);
+  response[24] = highByte(currentStatus.loopsPerSecond); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
+  response[25] = lowByte(currentStatus.loopsPerSecond); //(byte)(currentStatus.loopsPerSecond & 0xFF);
 
   Serial.write(response, (size_t)packetSize);
   Serial.flush();
@@ -252,6 +260,15 @@ void sendPage()
   }
 
   return; 
+}
+
+
+/*
+This function is used to store calibration data sent by Tuner Studio. 
+*/
+void receiveCalibration()
+{
+  
 }
 
 void testComm()
