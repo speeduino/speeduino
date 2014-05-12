@@ -4,19 +4,44 @@ Note that this may clear some of the existing values of the table
 */
 void table2D_setSize(struct table2D* targetTable, byte newSize)
 {
-  targetTable->values = (byte *)realloc(targetTable->values, newSize * sizeof(byte));
-  targetTable->axisX = (byte *)realloc(targetTable->axisX, newSize * sizeof(byte));
-  targetTable->xSize = newSize;
+  //2D tables can contain either bytes or ints, depending on the value of the valueSize field
+  if(targetTable->valueSize == SIZE_BYTE)
+  {
+    targetTable->values = (byte *)realloc(targetTable->values, newSize * sizeof(byte));
+    targetTable->axisX = (byte *)realloc(targetTable->axisX, newSize * sizeof(byte));
+    targetTable->xSize = newSize;
+  }
+  else
+  {
+    targetTable->values16 = (int *)realloc(targetTable->values16, newSize * sizeof(int));
+    targetTable->axisX16 = (int *)realloc(targetTable->axisX16, newSize * sizeof(int));
+    targetTable->xSize = newSize;
+  }
 }
 
 /*
 This function simply pulls a 1D linear interpolated (ie averaged) value from a 2D table
 ie: Given a value on the X axis, it returns a Y value that coresponds to the point on the curve between the nearest two defined X values
+
+This function must take into account whether a table contains 8-bit or 16-bit values. 
+Unfortunately this means many of the lines are duplicated depending on this
 */
 int table2D_getValue(struct table2D fromTable, int X)
 {
-    int xMinValue = fromTable.axisX[0];
-    int xMaxValue = fromTable.axisX[fromTable.xSize-1];
+
+    int xMinValue, xMaxValue;
+    if (fromTable.valueSize == SIZE_BYTE)
+    {
+      //Byte version
+      xMinValue = fromTable.axisX[0];
+      xMaxValue = fromTable.axisX[fromTable.xSize-1];
+    }
+    else
+    {
+      //int version
+      xMinValue = fromTable.axisX16[0];
+      xMaxValue = fromTable.axisX16[fromTable.xSize-1];
+    }
     int xMin = 0;
     int xMax = 0;
     
@@ -26,20 +51,41 @@ int table2D_getValue(struct table2D fromTable, int X)
 
     for (int x = fromTable.xSize-1; x >= 0; x--)
     {
-      //Checks the case where the X value is exactly what was requested
-      if ( (X == fromTable.axisX[x]) || (x == 0) )
-      {
-        return fromTable.values[x]; //Simply return the coresponding value
-      }
-      //Normal case
-      if ( (X <= fromTable.axisX[x]) && (X > fromTable.axisX[x-1]) )
-      {
-        xMaxValue = fromTable.axisX[x];
-        xMinValue = fromTable.axisX[x-1];
-        xMax = x;
-        xMin = x-1;
-        break;
-      }
+       if (fromTable.valueSize == SIZE_BYTE)
+       {
+          //Byte version
+          //Checks the case where the X value is exactly what was requested
+          if ( (X == fromTable.axisX[x]) || (x == 0) )
+          {
+            return fromTable.values[x]; //Simply return the coresponding value
+          }
+          //Normal case
+          if ( (X <= fromTable.axisX[x]) && (X > fromTable.axisX[x-1]) )
+          {
+            xMaxValue = fromTable.axisX[x];
+            xMinValue = fromTable.axisX[x-1];
+            xMax = x;
+            xMin = x-1;
+            break;
+          }
+       }
+       else
+       {
+         //int version
+         if ( (X == fromTable.axisX16[x]) || (x == 0) )
+          {
+            return fromTable.values16[x]; //Simply return the coresponding value
+          }
+          //Normal case
+          if ( (X <= fromTable.axisX16[x]) && (X > fromTable.axisX16[x-1]) )
+          {
+            xMaxValue = fromTable.axisX16[x];
+            xMinValue = fromTable.axisX16[x-1];
+            xMax = x;
+            xMin = x-1;
+            break;
+          }
+       }
     }
     
     unsigned int m = X - xMinValue;
@@ -52,11 +98,24 @@ int table2D_getValue(struct table2D fromTable, int X)
     
     //Non-Float version
     int yVal;
-    yVal = ((long)(m << 6) / n) * (abs(fromTable.values[xMax] - fromTable.values[xMin]));
-    yVal = (yVal >> 6);
-    
-    if (fromTable.values[xMax] > fromTable.values[xMin]) { yVal = fromTable.values[xMin] + yVal; }
-    else { yVal = fromTable.values[xMin] - yVal; }
+    if (fromTable.valueSize == SIZE_BYTE)
+    {
+       //Byte version
+       yVal = ((long)(m << 6) / n) * (abs(fromTable.values[xMax] - fromTable.values[xMin]));
+       yVal = (yVal >> 6);
+        
+       if (fromTable.values[xMax] > fromTable.values[xMin]) { yVal = fromTable.values[xMin] + yVal; }
+       else { yVal = fromTable.values[xMin] - yVal; }
+    }
+    else
+    {
+       //int version
+       yVal = ((long)(m << 6) / n) * (abs(fromTable.values16[xMax] - fromTable.values16[xMin]));
+       yVal = (yVal >> 6);
+        
+       if (fromTable.values[xMax] > fromTable.values16[xMin]) { yVal = fromTable.values16[xMin] + yVal; }
+       else { yVal = fromTable.values16[xMin] - yVal; }
+    }
     
     return yVal;
 }

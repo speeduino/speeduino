@@ -3,11 +3,19 @@ This file is used for everything related to maps/tables including their definiti
 */
 #include <Arduino.h>
 
+/*
+The 2D table can contain either 8-bit (byte) or 16-bit (int) values
+The valueSize variable should be set to either 8 or 16 to indicate this BEFORE the table is used
+*/
 struct table2D {
+  byte valueSize; 
   byte xSize;
   
   byte *values;
   byte *axisX;
+  
+  int *values16;
+  int *axisX16;
 };
 
 void table2D_setSize(struct table2D targetTable, byte newSize);
