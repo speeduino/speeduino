@@ -198,20 +198,6 @@ void loop()
         }
       }
      
-     /*
-     Serial.print("RPM: ");
-     Serial.println(currentStatus.RPM);
-     
-     Serial.print("toothLastToothTime: ");
-     Serial.println(toothLastToothTime);
-     Serial.print("toothOneMinusOneTime: ");
-     Serial.println(toothOneMinusOneTime);
-     Serial.print("RevolutionTime: ");
-     Serial.println(toothOneTime-toothOneMinusOneTime);
-     Serial.print("Tooth Number: ");
-     Serial.println(toothCurrentCount);
-     */
-     
     //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
     previousLoopTime = currentLoopTime;
     currentLoopTime = micros();
@@ -232,10 +218,10 @@ void loop()
     }
     
     //Uncomment the following for testing
-    
+    /*
     currentStatus.hasSync = true;
     currentStatus.RPM = 5500;
-    
+    */
      
     //***SET STATUSES***
     //-----------------------------------------------------------------------------------------------------

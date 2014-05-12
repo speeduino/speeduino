@@ -88,7 +88,7 @@ This function returns the current values of a fixed group of variables
 */
 void sendValues(int length)
 {
-  byte packetSize = 26;
+  byte packetSize = 28;
   byte response[packetSize];
   
   response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
@@ -118,12 +118,12 @@ void sendValues(int length)
   //Need to split the int loopsPerSecond value into 2 bytes
   response[24] = highByte(currentStatus.loopsPerSecond); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
   response[25] = lowByte(currentStatus.loopsPerSecond); //(byte)(currentStatus.loopsPerSecond & 0xFF);
-  /*
+ 
   //The following can be used to show the amount of free memory
   int mem = freeRam();
-  response[24] = highByte(mem); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
-  response[25] = lowByte(mem);
-  */ 
+  response[26] = highByte(mem); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
+  response[27] = lowByte(mem);
+  
 
   Serial.write(response, (size_t)packetSize);
   Serial.flush();
