@@ -29,6 +29,9 @@ const byte page_size = 128;
 #define BIT_SQUIRT_INJ2SQRT       5  //Injector2 (Schedule2)
 #define BIT_SQUIRT_BOOSTCTRLOFF   6  //Squirting Injector 2
 
+#define SIZE_BYTE   8
+#define SIZE_INT    16
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {

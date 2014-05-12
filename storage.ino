@@ -1,4 +1,5 @@
 #include <EEPROM.h>
+//#include "table.h"
 
 /*
 Takes the current configuration (config pages and maps)
@@ -140,6 +141,32 @@ void loadConfig()
   for(int x=EEPROM_CONFIG2_SETTINGS; x<EEPROM_CONFIG_END; x++) 
   { 
     *(pnt_configPage + byte(x - EEPROM_CONFIG2_SETTINGS)) = EEPROM.read(x);
+  }
+  
+}
+
+/*
+Reads the calibration information from EEPROM.
+This is separate from the config load as the calibrations do not exist as pages within the ini file for Tuner Studio
+*/
+void loadCalibration()
+{
+  //Set the table sizes to 3 (This allocates memory for the arrays as well)
+  table2D_setSize(&cltCalibrationTable, 3);
+  table2D_setSize(&iatCalibrationTable, 3);
+  table2D_setSize(&o2CalibrationTable, 3);
+  
+  for(byte x=0; x<3; x++)
+  {
+    int y = 2*x;
+    cltCalibrationTable.axisX16[x] = EEPROM.read( (EEPROM_CALIBRATION_CLT + y) );
+    cltCalibrationTable.values16[x] = EEPROM.read( (EEPROM_CALIBRATION_CLT + y + 1) );
+    
+    iatCalibrationTable.axisX16[x] = EEPROM.read( (EEPROM_CALIBRATION_IAT + y) );
+    iatCalibrationTable.values16[x] = EEPROM.read( (EEPROM_CALIBRATION_IAT + y + 1) );
+    
+    o2CalibrationTable.axisX16[x] = EEPROM.read( (EEPROM_CALIBRATION_O2 + y) );
+    o2CalibrationTable.values16[x] = EEPROM.read( (EEPROM_CALIBRATION_O2 + y + 1) );
   }
   
 }

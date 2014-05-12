@@ -91,12 +91,21 @@ void setup()
   loadConfig();
   
   //Repoint the 2D table structs to the config pages that were just loaded
+  taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
   taeTable.xSize = 4;
   taeTable.values = configPage2.taeValues;
   taeTable.axisX = configPage2.taeBins;
+  WUETable.valueSize = SIZE_BYTE; //Set this table to use byte values
   WUETable.xSize = 10;
   WUETable.values = configPage1.wueValues;
   WUETable.axisX = configPage2.wueBins;
+  
+  //Setup the calibration tables
+  
+  cltCalibrationTable.valueSize = SIZE_INT;
+  iatCalibrationTable.valueSize = SIZE_INT;
+  o2CalibrationTable.valueSize = SIZE_INT;
+  loadCalibration();
 
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
