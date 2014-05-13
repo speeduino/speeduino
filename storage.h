@@ -3,6 +3,7 @@
 void writeConfig();
 void loadConfig();
 void loadCalibration();
+void writeCalibration();
 
 /*
 Current layout of EEPROM data (Version 2) is as follows (All sizes are in bytes):

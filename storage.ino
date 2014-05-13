@@ -158,17 +158,43 @@ void loadCalibration()
   
   for(byte x=0; x<3; x++)
   {
-    int y = EEPROM_CALIBRATION_CLT + (2*x);
+    int y = EEPROM_CALIBRATION_CLT + (4*x);
     cltCalibrationTable.axisX16[x] = int(word(EEPROM.read(y), EEPROM.read(y+1)));
     cltCalibrationTable.values16[x] = int(word(EEPROM.read(y+2), EEPROM.read(y+3)));
     
-    y = EEPROM_CALIBRATION_IAT + (2*x);
+    y = EEPROM_CALIBRATION_IAT + (4*x);
     iatCalibrationTable.axisX16[x] = int(word(EEPROM.read(y), EEPROM.read(y+1)));
     iatCalibrationTable.values16[x] = int(word(EEPROM.read(y+2), EEPROM.read(y+3)));
     
-    y = EEPROM_CALIBRATION_O2 + (2*x);
+    y = EEPROM_CALIBRATION_O2 + (4*x);
     o2CalibrationTable.axisX16[x] = int(word(EEPROM.read(y), EEPROM.read(y+1)));
     o2CalibrationTable.values16[x] = int(word(EEPROM.read(y+2), EEPROM.read(y+3)));
+  }
+  
+}
+
+void writeCalibration()
+{
+  
+  for(byte x=0; x<3; x++)
+  {
+    int y = EEPROM_CALIBRATION_CLT + (4*x);
+    EEPROM.write(y, highByte(cltCalibrationTable.axisX16[x]));
+    EEPROM.write(y+1, lowByte(cltCalibrationTable.axisX16[x]));
+    EEPROM.write(y+2, highByte(cltCalibrationTable.values16[x]));
+    EEPROM.write(y+3, lowByte(cltCalibrationTable.values16[x]));
+    
+    y = EEPROM_CALIBRATION_IAT + (4*x);
+    EEPROM.write(y, highByte(iatCalibrationTable.axisX16[x]));
+    EEPROM.write(y+1, lowByte(iatCalibrationTable.axisX16[x]));
+    EEPROM.write(y+2, highByte(iatCalibrationTable.values16[x]));
+    EEPROM.write(y+3, lowByte(iatCalibrationTable.values16[x]));
+    
+    y = EEPROM_CALIBRATION_O2 + (4*x);
+    EEPROM.write(y, highByte(o2CalibrationTable.axisX16[x]));
+    EEPROM.write(y+1, lowByte(o2CalibrationTable.axisX16[x]));
+    EEPROM.write(y+2, highByte(o2CalibrationTable.values16[x]));
+    EEPROM.write(y+3, lowByte(o2CalibrationTable.values16[x]));
   }
   
 }
