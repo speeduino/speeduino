@@ -52,29 +52,43 @@ void command()
         receiveValue(offset, Serial.read());
 	break;
 
-      case 't': // receive new Calibration info. "t", 0, <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
+      case 't': // receive new Calibration info. Command structure: "t", 0, <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
         byte tableID;
+        byte canID;
         
-        EEPROM.write(260,'2');
-        EEPROM.write(261,'2');
-        EEPROM.write(262,'2');
-        int y;
-        y=263;
-        while (y<300)
-        {
-          while (Serial.available() == 0) { }
-          EEPROM.write(y, Serial.read());
-          y++;
-        }       
+        //The first 2 bytes sent represent the canID and tableID
+        while (Serial.available() == 0) { }
+          canID = Serial.read(); //Not currently used for anything
+        while (Serial.available() == 0) { }
+          tableID = Serial.read();  
+          
+        receiveCalibration(tableID); //Receive new values and store in memory
+        writeCalibration(); //Store received values in EEPROM
 
 	break;
 
-      case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed
-        for(int x=260; x<300; x++)
+      case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed. This function takes 1.5kb of program space! :S
+        Serial.println("Coolant");
+        for(int x=0; x<3; x++)
         {
-          Serial.write(EEPROM.read(x));
+          Serial.print(cltCalibrationTable.axisX16[x]);
+          Serial.print(", ");
+          Serial.println(cltCalibrationTable.values16[x]);
         }
-        Serial.write('2');
+        Serial.println("Inlet temp");
+        for(int x=0; x<3; x++)
+        {
+          Serial.print(iatCalibrationTable.axisX16[x]);
+          Serial.print(", ");
+          Serial.println(iatCalibrationTable.values16[x]);
+        }
+        Serial.println("O2");
+        for(int x=0; x<3; x++)
+        {
+          Serial.print(o2CalibrationTable.axisX16[x]);
+          Serial.print(", ");
+          Serial.println(o2CalibrationTable.values16[x]);
+        }
         Serial.flush();
 	break;
 
@@ -272,9 +286,57 @@ void sendPage()
 /*
 This function is used to store calibration data sent by Tuner Studio. 
 */
-void receiveCalibration()
+void receiveCalibration(byte tableID)
 {
+  table2D* pnt_TargetTable; //Pointer that will be used to point to the required target table
   
+  switch(tableID)
+  {
+     case 0:
+       //coolant table
+       pnt_TargetTable = (table2D *)&cltCalibrationTable;
+       break;
+     case 1:
+       //coolant table
+       pnt_TargetTable = (table2D *)&iatCalibrationTable;
+       break;
+     case 2:
+       //coolant table
+       pnt_TargetTable = (table2D *)&o2CalibrationTable;
+       break;
+       
+     default:
+       break;
+  }
+  
+  //1024 value pairs are sent. We have to receive them all, but only pick out the ones we want to keep
+  //Currently we are only picking out 3 values
+  int ADCvalue;
+  int newValue;
+  for(int x=0; x<1024; x++)
+  {
+    ADCvalue = Serial.parseInt();
+    newValue = Serial.parseInt();
+    
+    switch(ADCvalue)
+    {
+      case 0:
+        pnt_TargetTable->axisX16[0] = ADCvalue;
+        pnt_TargetTable->values16[0] = newValue;
+        break;
+      case 511:
+        pnt_TargetTable->axisX16[1] = ADCvalue;
+        pnt_TargetTable->values16[1] = newValue;
+        break;
+      case 1023:
+        pnt_TargetTable->axisX16[2] = ADCvalue;
+        pnt_TargetTable->values16[2] = newValue;
+        break;
+        
+      default:
+        break;
+    }
+  }
 }
 
 void testComm()
