@@ -52,22 +52,23 @@ void command()
         receiveValue(offset, Serial.read());
 	break;
 
-      case 't': // receive new Calibration info. Command structure: "t", 0, <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
+      case 't': // receive new Calibration info. Command structure: "t", <can_id> <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
         byte tableID;
         byte canID;
         
         //The first 2 bytes sent represent the canID and tableID
         while (Serial.available() == 0) { }
           canID = Serial.read(); //Not currently used for anything
-        while (Serial.available() == 0) { }
-          tableID = Serial.read();  
+        //while (Serial.available() == 0) { }
+        //  tableID = Serial.read();  
           
-        receiveCalibration(tableID); //Receive new values and store in memory
+        receiveCalibration(canID); //Receive new values and store in memory
         writeCalibration(); //Store received values in EEPROM
 
 	break;
 
       case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed. This function takes 1.5kb of program space! :S
+        
         Serial.println("Coolant");
         for(int x=0; x<3; x++)
         {
@@ -130,8 +131,8 @@ void sendValues(int length)
   response[22] = currentStatus.advance;
   response[23] = currentStatus.TPS; // TPS (0% to 100%)
   //Need to split the int loopsPerSecond value into 2 bytes
-  response[24] = highByte(currentStatus.loopsPerSecond); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
-  response[25] = lowByte(currentStatus.loopsPerSecond); //(byte)(currentStatus.loopsPerSecond & 0xFF);
+  response[24] = highByte(currentStatus.loopsPerSecond);
+  response[25] = lowByte(currentStatus.loopsPerSecond);
  
   //The following can be used to show the amount of free memory
   int mem = freeRam();
@@ -288,55 +289,64 @@ This function is used to store calibration data sent by Tuner Studio.
 */
 void receiveCalibration(byte tableID)
 {
-  table2D* pnt_TargetTable; //Pointer that will be used to point to the required target table
+  struct table2D* pnt_TargetTable; //Pointer that will be used to point to the required target table
+  int default_val; //The default value that is used in the sent table for invalid ADC values
   
   switch(tableID)
   {
      case 0:
        //coolant table
        pnt_TargetTable = (table2D *)&cltCalibrationTable;
+       default_val = 1800;
        break;
      case 1:
        //coolant table
        pnt_TargetTable = (table2D *)&iatCalibrationTable;
+       default_val = 700;
        break;
      case 2:
        //coolant table
        pnt_TargetTable = (table2D *)&o2CalibrationTable;
+       default_val = -1; //-1 is used when there is no default value
        break;
        
      default:
-       break;
+       return; //Should never get here, but if we do, just fail back to main loop
+       //pnt_TargetTable = (table2D *)&o2CalibrationTable;
+       //break;
   }
   
   //1024 value pairs are sent. We have to receive them all, but only pick out the ones we want to keep
   //Currently we are only picking out 3 values
-  int ADCvalue;
-  int newValue;
+  //Each of the tables has a threshold at which valid values start and end
+  int newValues[1024];
+  //The first and last valid values
+  int first = 0;
+  int last = 0;
   for(int x=0; x<1024; x++)
   {
-    ADCvalue = Serial.parseInt();
-    newValue = Serial.parseInt();
+    while (Serial.available() < 2) { }
+    newValues[x] = int(word(Serial.read(), Serial.read())); //Read 2 bytes, convert to word (an unsigned int), convert to signed int 
     
-    switch(ADCvalue)
+    if (tableID != 2)
     {
-      case 0:
-        pnt_TargetTable->axisX16[0] = ADCvalue;
-        pnt_TargetTable->values16[0] = newValue;
-        break;
-      case 511:
-        pnt_TargetTable->axisX16[1] = ADCvalue;
-        pnt_TargetTable->values16[1] = newValue;
-        break;
-      case 1023:
-        pnt_TargetTable->axisX16[2] = ADCvalue;
-        pnt_TargetTable->values16[2] = newValue;
-        break;
-        
-      default:
-        break;
+      if ( (first == 0) && (newValues[x] != default_val) && (default_val != -1) ) { first = x; }
+      if ( (last == 0) && (x > first) && (first != 0) && (newValues[x] == default_val) ) { last = x-1; }
     }
   }
+  //Quick checks to make sure things were set
+  if (last == 0) { last = 1023; }
+  if (default_val == -1) { first = 0; last = 1023; }
+  
+  int mid = (last - first) / 2;
+  pnt_TargetTable->axisX16[0] = first;
+  pnt_TargetTable->axisX16[1] = mid;
+  pnt_TargetTable->axisX16[2] = last;
+  
+  pnt_TargetTable->values16[0] = newValues[first];
+  pnt_TargetTable->values16[1] = newValues[mid];
+  pnt_TargetTable->values16[2] = newValues[last];
+ 
 }
 
 void testComm()
