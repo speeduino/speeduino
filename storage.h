@@ -22,9 +22,9 @@ Current layout of EEPROM data (Version 2) is as follows (All sizes are in bytes)
 | 205   |8    | Ign Table MAP/TPS bins              |
 | 213   |45   | Remaining Page 2 settings           |
 | 258   |12   | Calibration data (CLT)              |
-| 260   |12   | Calibration data (IAT)              |
-| 272   |12   | Calibration data (O2)               |
-| 284   |28   | Calibration data (Reserved)         |
+| 270   |12   | Calibration data (IAT)              |
+| 282   |12   | Calibration data (O2)               |
+| 294   |28   | Calibration data (Reserved)         |
 -----------------------------------------------------
 */
 
@@ -45,6 +45,6 @@ Current layout of EEPROM data (Version 2) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG_END 258
 
 #define EEPROM_CALIBRATION_CLT 258
-#define EEPROM_CALIBRATION_IAT 260
-#define EEPROM_CALIBRATION_O2 272
+#define EEPROM_CALIBRATION_IAT 270
+#define EEPROM_CALIBRATION_O2 282
 
