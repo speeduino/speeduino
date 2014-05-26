@@ -1,9 +1,33 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS 2.5.05 - EFI Analytics, Inc." tuneComment="    &#10;&#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;  " writeDate="Thu Feb 06 20:58:30 EST 2014"/>
-<versionInfo fileFormat="4.0" firmwareInfo="Bowling &amp; Grippo MS1 Base Code 20" nPages="2" signature="20"/>
+<bibliography author="TunerStudio MS 2.6.01 - EFI Analytics, Inc." tuneComment="    &#10;&#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;  " writeDate="Mon May 26 20:19:53 EST 2014"/>
+<versionInfo fileFormat="4.0" firmwareInfo="" nPages="2" signature="20"/>
 <page>
 <pcVariable name="tsCanId">"0"</pcVariable>
+<pcVariable cols="1" digits="1" name="wueAfrTargetOffset" rows="10" units=":1">
+         -1.5 
+         -1.1 
+         -0.8 
+         -0.6 
+         -0.5 
+         -0.4 
+         -0.3 
+         -0.2 
+         -0.1 
+         0.0 
+      </pcVariable>
+<pcVariable cols="1" digits="0" name="tempTable" rows="10" units="%">
+         -40.0 
+         -29.0 
+         -18.0 
+         -7.0 
+         4.0 
+         16.0 
+         27.0 
+         38.0 
+         54.0 
+         71.0 
+      </pcVariable>
 </page>
 <page number="0" size="128">
 <constant cols="8" digits="0" name="veTable" rows="8" units="%">
@@ -45,25 +69,19 @@
          158.0 
          145.0 
          131.0 
-         120.0 
-         120.0 
+         127.0 
+         119.0 
          119.0 
          119.0 
          109.0 
-         100.0 
+         101.0 
       </constant>
-<constant cols="1" digits="1" name="taeBins" rows="4" units="ms">
-         0.2 
-         0.2 
-         0.2 
-         0.0 
-      </constant>
-<constant digits="1" name="taeBins1" units="ms">0.2</constant>
-<constant digits="1" name="taeBins2" units="ms">0.2</constant>
-<constant digits="1" name="taeBins3" units="ms">0.2</constant>
-<constant digits="1" name="taeBins4" units="ms">0.0</constant>
+<constant digits="1" name="unused1" units="ms">0.2</constant>
+<constant digits="1" name="unused2" units="ms">0.2</constant>
+<constant digits="1" name="unused3" units="ms">0.2</constant>
+<constant digits="1" name="unused4" units="ms">0.0</constant>
 <constant digits="1" name="taeColdA" units="ms">0.0</constant>
-<constant digits="3" name="tpsThresh" units="v/s">0.1953125</constant>
+<constant digits="0" name="tpsThresh" units="%/s">80.0</constant>
 <constant digits="1" name="taeTime" units="ms">0.0</constant>
 <constant digits="0" name="tdePct" units="%">0.0</constant>
 <constant digits="0" name="egoTemp" units="°C">-39.96</constant>
@@ -95,8 +113,8 @@
 <constant digits="1" name="fastIdleT" units="°C">59.94</constant>
 <constant digits="3" name="egoSwitch" units="v">0.0</constant>
 <constant digits="0" name="taeColdM" units="%">0.0</constant>
-<constant digits="0" name="tpsMin" units="ADC">0.0</constant>
-<constant digits="0" name="tpsMax" units="ADC">255.0</constant>
+<constant digits="0" name="tpsMin" units="ADC">243.0</constant>
+<constant digits="0" name="tpsMax" units="ADC">182.0</constant>
 </page>
 <page number="1" size="128">
 <constant cols="8" digits="0" name="advTable1" rows="8" units="deg">
@@ -155,6 +173,37 @@
 <constant digits="0" name="SoftLimRetard" units="deg">14.9952</constant>
 <constant digits="1" name="SoftLimMax" units="s">2.0</constant>
 <constant digits="0" name="HardRevLim" units="rpm">6500.0</constant>
+<constant cols="1" digits="0" name="taeBins" rows="4" units="%/s">
+         10.0 
+         200.0 
+         300.0 
+         570.0 
+      </constant>
+<constant cols="1" digits="0" name="taeRates" rows="4" units="%">
+         14.0 
+         24.0 
+         30.0 
+         38.0 
+      </constant>
+<constant cols="1" digits="0" name="wueRates" rows="10" units="C">
+         28.0 
+         145.0 
+         44.0 
+         211.0 
+         255.0 
+         255.0 
+         255.0 
+         255.0 
+         255.0 
+         255.0 
+      </constant>
+<constant digits="0" name="unused121" units="none">0.0</constant>
+<constant digits="0" name="unused122" units="none">0.0</constant>
+<constant digits="0" name="unused123" units="none">0.0</constant>
+<constant digits="0" name="unused124" units="none">0.0</constant>
+<constant digits="0" name="unused125" units="none">0.0</constant>
+<constant digits="0" name="unused126" units="none">0.0</constant>
+<constant digits="0" name="unused127" units="none">0.0</constant>
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">
 <setting name="NARROW_BAND_EGO" value="NARROW_BAND_EGO"/>
