@@ -72,6 +72,7 @@ byte coilLOW = LOW;
 struct statuses currentStatus;
 volatile int mainLoopCount;
 unsigned long secCounter; //The next time to increment 'runSecs' counter.
+byte crankDegreesPerCylinder; //The number of crank degrees between cylinders (180 in a 4 cylinder, usually 120 in a 6 cylinder etc)
 
 void setup() 
 {
@@ -160,7 +161,6 @@ void setup()
   previousLoopTime = 0;
   currentLoopTime = micros();
 
-  //Serial.begin(9600);
   Serial.begin(115200);
   
   //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS)
@@ -184,6 +184,25 @@ void setup()
   digitalWrite(pinMAP, HIGH);
   digitalWrite(pinO2, LOW);
   digitalWrite(pinTPS, LOW);
+  
+  //Calculate the number of degrees between cylinders
+  switch (configPage1.nCylinders) {
+    case 1:
+      crankDegreesPerCylinder = 360;
+      break;
+    case 2:
+      crankDegreesPerCylinder = 180;
+      break;
+    case 4:
+      crankDegreesPerCylinder = 180;
+      break;
+    case 6:
+      crankDegreesPerCylinder = 120;
+      break;
+    default: //Handle this better!!!
+      crankDegreesPerCylinder = 180;
+      break;
+  }
 }
 
 void loop() 
@@ -281,6 +300,14 @@ void loop()
         currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.TPS, currentStatus.RPM); //As above, but for ignition advance
       }
 
+      int injector1StartAngle = 0;
+      int injector2StartAngle = 0;
+      int injector3StartAngle = 0; //Not used until sequential gets written
+      int injector4StartAngle = 0; //Not used until sequential gets written
+      int ignition1StartAngle = 0;
+      int ignition2StartAngle = 0;
+      int ignition3StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
+      int ignition4StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
       
       //Determine the current crank angle
       //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
@@ -292,10 +319,15 @@ void loop()
       crankAngle += div( (micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
       
       //Determine next firing angles
-      int injector1StartAngle = 355 - ( div(currentStatus.PW, timePerDegree).quot ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
+      injector1StartAngle = 355 - ( div(currentStatus.PW, timePerDegree).quot ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
+      //Repeat the above for each cylinder
+      if (configPage1.nCylinders == 2) { injector2StartAngle = (355 + crankDegreesPerCylinder - ( div(currentStatus.PW, timePerDegree).quot )) % 360; }    
+      if (configPage1.nCylinders == 4) { injector2StartAngle = (355 + crankDegreesPerCylinder - ( div(currentStatus.PW, timePerDegree).quot )) % 360; }    
 
       if (currentStatus.RPM > ((int)(configPage2.SoftRevLim * 100)) ) { currentStatus.advance -= configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
-      int ignition1StartAngle = 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ); // 360 - desired advance angle - number of degrees the dwell will take
+      ignition1StartAngle = 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ); // 360 - desired advance angle - number of degrees the dwell will take
+      if (configPage1.nCylinders == 2) { (ignition1StartAngle = 360 + crankDegreesPerCylinder - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot )) % 360; }
+      if (configPage1.nCylinders == 4) { (ignition1StartAngle = 360 + crankDegreesPerCylinder - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot )) % 360; }
 
       
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
@@ -309,15 +341,35 @@ void loop()
                   closeInjector1
                   );
       }
+      if (injector2StartAngle > crankAngle) 
+      { 
+        setFuelSchedule2(openInjector2, 
+                  (injector2StartAngle - crankAngle) * timePerDegree,
+                  currentStatus.PW,
+                  closeInjector2
+                  );
+      }
       //Likewise for the ignition
+      int dwell = (configPage2.dwellRun * 100); //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
       if ( ignition1StartAngle > crankAngle)
       { 
         if (currentStatus.RPM < ((int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
         {
           setIgnitionSchedule1(beginCoil1Charge, 
                     (ignition1StartAngle - crankAngle) * timePerDegree,
-                    (configPage2.dwellRun * 100), //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
+                    dwell,
                     endCoil1Charge
+                    );
+        }
+      }
+      if ( ignition2StartAngle > crankAngle)
+      { 
+        if (currentStatus.RPM < ((int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
+        {
+          setIgnitionSchedule2(beginCoil2Charge, 
+                    (ignition2StartAngle - crankAngle) * timePerDegree,
+                    dwell,
+                    endCoil2Charge
                     );
         }
       }
