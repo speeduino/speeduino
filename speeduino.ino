@@ -225,7 +225,7 @@ void loop()
       noInterrupts();
       unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
       interrupts();
-      currentStatus.RPM = div(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time
+      currentStatus.RPM = US_IN_MINUTE / revolutionTime; //Calc RPM based on last full revolution time (Can't use div() here as US_IN_MINUTE is larger than an unsigned int)
     }
     else
     {
