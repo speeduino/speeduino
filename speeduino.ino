@@ -44,7 +44,7 @@ struct config2 configPage2;
 
 int req_fuel_uS, triggerToothAngle;
 volatile int triggerActualTeeth;
-int triggerFilterTime = 500; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
+unsigned int triggerFilterTime = 500; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
@@ -72,7 +72,7 @@ byte coilLOW = LOW;
 struct statuses currentStatus;
 volatile int mainLoopCount;
 unsigned long secCounter; //The next time to increment 'runSecs' counter.
-byte crankDegreesPerCylinder; //The number of crank degrees between cylinders (180 in a 4 cylinder, usually 120 in a 6 cylinder etc)
+int crankDegreesPerCylinder; //The number of crank degrees between cylinders (180 in a 4 cylinder, usually 120 in a 6 cylinder etc)
 
 void setup() 
 {
@@ -225,7 +225,7 @@ void loop()
       noInterrupts();
       unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
       interrupts();
-      currentStatus.RPM = US_IN_MINUTE / revolutionTime; //Calc RPM based on last full revolution time (Can't use div() here as US_IN_MINUTE is larger than an unsigned int)
+      currentStatus.RPM = ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long)
     }
     else
     {
@@ -324,10 +324,13 @@ void loop()
       if (configPage1.nCylinders == 2) { injector2StartAngle = (355 + crankDegreesPerCylinder - ( div(currentStatus.PW, timePerDegree).quot )) % 360; }    
       if (configPage1.nCylinders == 4) { injector2StartAngle = (355 + crankDegreesPerCylinder - ( div(currentStatus.PW, timePerDegree).quot )) % 360; }    
 
-      if (currentStatus.RPM > ((int)(configPage2.SoftRevLim * 100)) ) { currentStatus.advance -= configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+      if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim * 100)) ) { currentStatus.advance -= configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+      //Calculate start angle for each channel
+      //1
       ignition1StartAngle = 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ); // 360 - desired advance angle - number of degrees the dwell will take
-      if (configPage1.nCylinders == 2) { (ignition1StartAngle = 360 + crankDegreesPerCylinder - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot )) % 360; }
-      if (configPage1.nCylinders == 4) { (ignition1StartAngle = 360 + crankDegreesPerCylinder - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot )) % 360; }
+      //2
+      if (configPage1.nCylinders == 2) { (ignition2StartAngle = crankDegreesPerCylinder + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot )) % 360; }
+      if (configPage1.nCylinders == 4) { (ignition2StartAngle = crankDegreesPerCylinder + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot )) % 360; }
 
       
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
@@ -353,7 +356,7 @@ void loop()
       int dwell = (configPage2.dwellRun * 100); //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
       if ( ignition1StartAngle > crankAngle)
       { 
-        if (currentStatus.RPM < ((int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
+        if (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
         {
           setIgnitionSchedule1(beginCoil1Charge, 
                     (ignition1StartAngle - crankAngle) * timePerDegree,
@@ -364,7 +367,7 @@ void loop()
       }
       if ( ignition2StartAngle > crankAngle)
       { 
-        if (currentStatus.RPM < ((int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
+        if (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
         {
           setIgnitionSchedule2(beginCoil2Charge, 
                     (ignition2StartAngle - crankAngle) * timePerDegree,

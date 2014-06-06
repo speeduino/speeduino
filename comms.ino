@@ -52,17 +52,17 @@ void command()
         receiveValue(offset, Serial.read());
 	break;
 
-      case 't': // receive new Calibration info. Command structure: "t", <can_id> <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
+      case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
         byte tableID;
-        byte canID;
+        //byte canID;
         
         //The first 2 bytes sent represent the canID and tableID
         while (Serial.available() == 0) { }
-          canID = Serial.read(); //Not currently used for anything
+          tableID = Serial.read(); //Not currently used for anything
         //while (Serial.available() == 0) { }
         //  tableID = Serial.read();  
           
-        receiveCalibration(canID); //Receive new values and store in memory
+        receiveCalibration(tableID); //Receive new values and store in memory
         writeCalibration(); //Store received values in EEPROM
 
 	break;
@@ -316,8 +316,8 @@ void receiveCalibration(byte tableID)
        //break;
   }
   
-  //1024 value pairs are sent. We have to receive them all, but only pick out the ones we want to keep
-  //Currently we are only picking out 3 values
+  //1024 value pairs are sent. We have to receive them all, but only pick out the 3 we want to keep
+  //Currently we are only picking out 3 values, we could switch to 5 or 7, but 3 seems to be working OK
   //Each of the tables has a threshold at which valid values start and end
   int newValues[1024];
   //The first and last valid values
