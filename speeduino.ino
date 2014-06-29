@@ -319,9 +319,12 @@ void loop()
       crankAngle += div( (micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
       
       //Determine next firing angles
+      //1
       injector1StartAngle = 355 - ( div(currentStatus.PW, timePerDegree).quot ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       //Repeat the above for each cylinder
-      if (configPage1.nCylinders == 2) { injector2StartAngle = (355 + crankDegreesPerCylinder - ( div(currentStatus.PW, timePerDegree).quot )) % 360; }    
+      //2
+      if (configPage1.nCylinders == 2) { injector2StartAngle = (355 + crankDegreesPerCylinder - ( div(currentStatus.PW, timePerDegree).quot )) % 360; }
+      //4 
       if (configPage1.nCylinders == 4) { injector2StartAngle = (355 + crankDegreesPerCylinder - ( div(currentStatus.PW, timePerDegree).quot )) % 360; }    
 
       if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim * 100)) ) { currentStatus.advance -= configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
@@ -330,6 +333,7 @@ void loop()
       ignition1StartAngle = 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ); // 360 - desired advance angle - number of degrees the dwell will take
       //2
       if (configPage1.nCylinders == 2) { (ignition2StartAngle = crankDegreesPerCylinder + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot )) % 360; }
+      //4
       if (configPage1.nCylinders == 4) { (ignition2StartAngle = crankDegreesPerCylinder + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot )) % 360; }
 
       
