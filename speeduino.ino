@@ -296,7 +296,7 @@ void loop()
       { 
         //Alpha-N
         currentStatus.VE = get3DTableValue(fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
-        currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, corrections, engineInjectorDeadTime); //The 100 here is just a placeholder for any enrichment factors (Cold start, acceleration etc). To add 10% extra fuel, this would be 110 
+        currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, corrections, engineInjectorDeadTime); //Calculate pulsewidth using the Alpha-N algorithm
         currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.TPS, currentStatus.RPM); //As above, but for ignition advance
       }
 
@@ -315,8 +315,9 @@ void loop()
       if (crankAngle > 360) { crankAngle -= 360; }
       
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
-      unsigned long timePerDegree = div( (toothOneTime - toothOneMinusOneTime), (triggerToothAngle * configPage2.triggerTeeth)).quot; //The time (uS) it is currently taking to move 1 degree (fastDivide version)
-      crankAngle += div( (micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+      //unsigned long timePerDegree = div( (toothOneTime - toothOneMinusOneTime), (triggerToothAngle * configPage2.triggerTeeth)).quot; //The time (uS) it is currently taking to move 1 degree
+      int timePerDegree = div( abs((int)(toothOneTime - toothOneMinusOneTime)), 360).quot; //The time (uS) it is currently taking to move 1 degree
+      crankAngle += div( (int)(micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
       
       //Determine next firing angles
       //1
