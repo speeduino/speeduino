@@ -239,7 +239,7 @@ void loop()
     //Uncomment the following for testing
     /*
     currentStatus.hasSync = true;
-    currentStatus.RPM = 5500;
+    currentStatus.RPM = 500;
     */
      
     //***SET STATUSES***
@@ -315,8 +315,7 @@ void loop()
       if (crankAngle > 360) { crankAngle -= 360; }
       
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
-      //unsigned long timePerDegree = div( (toothOneTime - toothOneMinusOneTime), (triggerToothAngle * configPage2.triggerTeeth)).quot; //The time (uS) it is currently taking to move 1 degree
-      int timePerDegree = div( abs((int)(toothOneTime - toothOneMinusOneTime)), 360).quot; //The time (uS) it is currently taking to move 1 degree
+      int timePerDegree = ldiv( (toothOneTime - toothOneMinusOneTime) , 360).quot; //The time (uS) it is currently taking to move 1 degree
       crankAngle += div( (int)(micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
       
       //Determine next firing angles
@@ -336,7 +335,6 @@ void loop()
       if (configPage1.nCylinders == 2) { (ignition2StartAngle = crankDegreesPerCylinder + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot )) % 360; }
       //4
       if (configPage1.nCylinders == 4) { (ignition2StartAngle = crankDegreesPerCylinder + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot )) % 360; }
-
       
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
       //We only need to set the shcedule if we're BEFORE the open angle
