@@ -399,13 +399,13 @@ void closeInjector2() { digitalWrite(pinInjector2, LOW); BIT_CLEAR(currentStatus
 void beginCoil2Charge() { digitalWrite(pinCoil2, coilHIGH); }
 void endCoil2Charge() { digitalWrite(pinCoil2, coilLOW); }
 
-void openInjector3() { digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, 1); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
-void closeInjector3() { digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
+void openInjector3() { digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, 2); } //Sets the relevant pin HIGH and changes the current status bit for injector 3 (3rd bit of currentStatus.squirt)
+void closeInjector3() { digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, 2); } 
 void beginCoil3Charge() { digitalWrite(pinCoil3, coilHIGH); }
 void endCoil3Charge() { digitalWrite(pinCoil3, coilLOW); }
 
-void openInjector4() { digitalWrite(pinInjector4, HIGH); BIT_SET(currentStatus.squirt, 1); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
-void closeInjector4() { digitalWrite(pinInjector4, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
+void openInjector4() { digitalWrite(pinInjector4, HIGH); BIT_SET(currentStatus.squirt, 3); } //Sets the relevant pin HIGH and changes the current status bit for injector 4 (4th bit of currentStatus.squirt)
+void closeInjector4() { digitalWrite(pinInjector4, LOW); BIT_CLEAR(currentStatus.squirt, 3); } 
 void beginCoil4Charge() { digitalWrite(pinCoil4, coilHIGH); }
 void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); }
 

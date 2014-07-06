@@ -174,6 +174,7 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
 //Timer3A (fuel schedule 1) Compare Vector
 ISR(TIMER3_COMPA_vect) //fuelSchedule1
   {
+    noInterrupts();
     if (fuelSchedule1.Status == PENDING) //Check to see if this schedule is turn on
     {
       fuelSchedule1.StartCallback();
@@ -188,9 +189,11 @@ ISR(TIMER3_COMPA_vect) //fuelSchedule1
        fuelSchedule1.Status = OFF; //Turn off the schedule
        TIMSK3 &= ~(1 << OCIE3A); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
+    interrupts();
   }
 ISR(TIMER3_COMPB_vect) //fuelSchedule2
   {
+    noInterrupts();
     if (fuelSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
       fuelSchedule2.StartCallback();
@@ -205,6 +208,7 @@ ISR(TIMER3_COMPB_vect) //fuelSchedule2
        fuelSchedule2.Status = OFF; //Turn off the schedule
        TIMSK3 &= ~(1 << OCIE3B); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
+    interrupts();
   }
 ISR(TIMER3_COMPC_vect) //fuelSchedule3
   {
