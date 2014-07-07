@@ -44,7 +44,7 @@ struct config2 configPage2;
 
 int req_fuel_uS, triggerToothAngle;
 volatile int triggerActualTeeth;
-unsigned int triggerFilterTime = 500; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
+unsigned int triggerFilterTime = 200; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
@@ -316,7 +316,8 @@ void loop()
       
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       int timePerDegree = ldiv( (toothOneTime - toothOneMinusOneTime) , 360).quot; //The time (uS) it is currently taking to move 1 degree
-      crankAngle += div( (int)(micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+      //crankAngle += div( (int)(micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+      crankAngle += ldiv( (micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
       
       //Determine next firing angles
       //1

@@ -212,6 +212,7 @@ ISR(TIMER3_COMPB_vect) //fuelSchedule2
   }
 ISR(TIMER3_COMPC_vect) //fuelSchedule3
   {
+    noInterrupts();
     if (fuelSchedule3.Status == PENDING) //Check to see if this schedule is turn on
     {
       fuelSchedule3.StartCallback();
@@ -226,9 +227,11 @@ ISR(TIMER3_COMPC_vect) //fuelSchedule3
        fuelSchedule3.Status = OFF; //Turn off the schedule
        TIMSK3 &= ~(1 << OCIE3C); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
+    interrupts();
   }
 ISR(TIMER4_COMPB_vect) //fuelSchedule4
   {
+    noInterrupts();
     if (fuelSchedule4.Status == PENDING) //Check to see if this schedule is turn on
     {
       fuelSchedule4.StartCallback();
@@ -243,9 +246,11 @@ ISR(TIMER4_COMPB_vect) //fuelSchedule4
        fuelSchedule4.Status = OFF; //Turn off the schedule
        TIMSK4 &= ~(1 << OCIE4B); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
+    interrupts();
   }
 ISR(TIMER5_COMPA_vect) //ignitionSchedule1
   {
+    noInterrupts();
     if (ignitionSchedule1.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule1.StartCallback();
@@ -260,9 +265,11 @@ ISR(TIMER5_COMPA_vect) //ignitionSchedule1
        ignitionSchedule1.Status = OFF; //Turn off the schedule
        TIMSK5 &= ~(1 << OCIE5A); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
+    interrupts();
   }
 ISR(TIMER5_COMPB_vect) //ignitionSchedule2
   {
+    noInterrupts();
     if (ignitionSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule2.StartCallback();
@@ -277,9 +284,11 @@ ISR(TIMER5_COMPB_vect) //ignitionSchedule2
        ignitionSchedule2.Status = OFF; //Turn off the schedule
        TIMSK5 &= ~(1 << OCIE5B); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
+    interrupts();
   }
 ISR(TIMER5_COMPC_vect) //ignitionSchedule3
   {
+    noInterrupts();
     if (ignitionSchedule3.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule3.StartCallback();
@@ -294,9 +303,11 @@ ISR(TIMER5_COMPC_vect) //ignitionSchedule3
        ignitionSchedule3.Status = OFF; //Turn off the schedule
        TIMSK5 &= ~(1 << OCIE5C); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
+    interrupts();
   }
 ISR(TIMER4_COMPA_vect) //ignitionSchedule4
   {
+    noInterrupts();
     if (ignitionSchedule4.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule4.StartCallback();
@@ -311,4 +322,5 @@ ISR(TIMER4_COMPA_vect) //ignitionSchedule4
        ignitionSchedule4.Status = OFF; //Turn off the schedule
        TIMSK5 &= ~(1 << OCIE4A); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
+    interrupts();
   }
