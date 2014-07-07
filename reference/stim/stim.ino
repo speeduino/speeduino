@@ -2,16 +2,20 @@
  by Ichabod mudd 
  */
 #include "Arduino.h"
-#define PULSE_PIN 10
+#define PULSE_PIN 0
 #define CAM_PIN  8
 #define MPH_PIN 12
-#define POT_PIN 0
+#define POT_PIN A0
 
-#define MAX_DELAY 20000
-#define MIN_DELAY 833
+#define teeth 36
+#define missingTeeth 1
 
 #define PULSE_DURATION 50
 
+unsigned int MAX_DELAY;
+unsigned int MIN_DELAY;
+
+byte actualTeeth;
 int mph_toggle = 1 ;
 int val;
 unsigned int pulse_gap;
@@ -23,6 +27,19 @@ void setup()
   pinMode(PULSE_PIN, OUTPUT);
   pinMode(CAM_PIN, OUTPUT);
   pinMode(MPH_PIN, OUTPUT);
+  
+  actualTeeth = teeth - missingTeeth;
+  
+  if(actualTeeth == 35)
+  {
+    MAX_DELAY = 4000;
+    MIN_DELAY = 29;
+  }
+  else if(actualTeeth == 11)
+  {
+    MAX_DELAY = 20000;
+    MIN_DELAY = 833;
+  }
   
   Serial.begin(9600);
   pulse_gap = MIN_DELAY;
@@ -100,7 +117,7 @@ void loop()
   }
   */
   // for loop 36 counts  , 150 uS to 1000 uS or  5000 to 800 rpm
-  for (int i = 0; i < 11; i++) 
+  for (int i = 0; i < actualTeeth; i++) 
   {
     // go high then low , in Symmetry
       digitalWrite(PULSE_PIN, HIGH);
