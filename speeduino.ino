@@ -52,6 +52,8 @@ volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the la
 volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
 volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
 volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
+volatile byte startRevolutions = 0; //A counter for how many revolutions have been completed since sync was achieved.
+volatile bool ignitionOn = true; //The current state of the ignition system
 
 struct table3D fuelTable; //8x8 fuel map
 struct table3D ignitionTable; //8x8 ignition map
@@ -278,6 +280,9 @@ void loop()
             BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK); 
             BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); 
             currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
+            //Check whether enough cranking revolutions have been performed to turn the ignition on
+            if(startRevolutions > configPage2.StgCycles)
+            {ignitionOn = true;}
           } 
        }
       
@@ -359,27 +364,31 @@ void loop()
                   );
       }
       //Likewise for the ignition
-      int dwell = (configPage2.dwellRun * 100); //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
-      if ( ignition1StartAngle > crankAngle)
-      { 
-        if (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
-        {
-          setIgnitionSchedule1(beginCoil1Charge, 
-                    (ignition1StartAngle - crankAngle) * timePerDegree,
-                    dwell,
-                    endCoil1Charge
-                    );
+      //Perform an initial check to see if the ignition is turned on
+      if(ignitionOn)
+      {
+        int dwell = (configPage2.dwellRun * 100); //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
+        if ( ignition1StartAngle > crankAngle)
+        { 
+          if (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
+          {
+            setIgnitionSchedule1(beginCoil1Charge, 
+                      (ignition1StartAngle - crankAngle) * timePerDegree,
+                      dwell,
+                      endCoil1Charge
+                      );
+          }
         }
-      }
-      if ( ignition2StartAngle > crankAngle)
-      { 
-        if (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
-        {
-          setIgnitionSchedule2(beginCoil2Charge, 
-                    (ignition2StartAngle - crankAngle) * timePerDegree,
-                    dwell,
-                    endCoil2Charge
-                    );
+        if ( ignition2StartAngle > crankAngle)
+        { 
+          if (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
+          {
+            setIgnitionSchedule2(beginCoil2Charge, 
+                      (ignition2StartAngle - crankAngle) * timePerDegree,
+                      dwell,
+                      endCoil2Charge
+                      );
+          }
         }
       }
       
@@ -432,6 +441,7 @@ void trigger()
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      currentStatus.hasSync = true;
+     startRevolutions++; //Counter 
    } 
    
    toothLastMinusOneToothTime = toothLastToothTime;

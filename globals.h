@@ -149,12 +149,12 @@ struct config2 {
   byte IdleAdv;
   byte IdleAdvTPS;
   byte IdleAdvRPM;
-  byte IdleAdvCLT;
+  byte IdleAdvCLT; //The temperature below which the idle is advanced
   byte IdleDelayTime;
-  byte StgCycles;
+  byte StgCycles; //The number of initial cycles before the ignition should fire when first cranking
   byte dwellCont; //Fixed duty dwell control
-  byte dwellCrank;
-  byte dwellRun;
+  byte dwellCrank; //Dwell time whilst cranking
+  byte dwellRun; //Dwell time whilst running 
   byte triggerTeeth; //The full count of teeth on the trigger wheel if there were no gaps
   byte triggerMissingTeeth; //The size of the tooth gap (ie number of missing teeth)
   byte crankRPM; //RPM below which the engine is considered to be cranking
