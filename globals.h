@@ -48,6 +48,7 @@ struct statuses {
   byte cltADC;
   byte IAT;
   byte iatADC;
+  byte batADC;
   byte advance;
   volatile byte squirt;
   byte engine;
@@ -182,3 +183,39 @@ struct config2 {
 
   
 };
+
+//Pin mappings as per the v0.2 shield
+#define pinInjector1 8 //Output pin injector 1 is on
+#define pinInjector2 9 //Output pin injector 2 is on
+#define pinInjector3 10 //Output pin injector 3 is on
+#define pinInjector4 11 //Output pin injector 4 is on
+#define pinCoil1 24 //Pin for coil 1
+#define pinCoil2 28 //Pin for coil 2
+#define pinCoil3 36 //Pin for coil 3
+#define pinCoil4 40 //Pin for coil 4
+#define pinTrigger 20 //The CAS pin
+#define pinTrigger2 21 //The Cam Sensor pin
+#define pinTPS A2 //TPS input pin
+#define pinMAP A3 //MAP sensor pin
+#define pinIAT A0 //IAT sensor pin
+#define pinCLT A1 //CLS sensor pin
+#define pinO2 A8 //O2 Sensor pin
+#define pinBat A4 //O2 Sensor pin
+
+//Pin mappings as per the v0.1 shield
+/*
+#define pinInjector1 8 //Output pin injector 1 is on
+#define pinInjector2 9 //Output pin injector 2 is on
+#define pinInjector3 11 //Output pin injector 3 is on
+#define pinInjector4 10 //Output pin injector 4 is on
+#define pinCoil1 6 //Pin for coil 1
+#define pinCoil2 7 //Pin for coil 2
+#define pinCoil3 12 //Pin for coil 3
+#define pinCoil4 13 //Pin for coil 4
+#define pinTrigger 2 //The CAS pin
+#define pinTPS A0 //TPS input pin
+#define pinMAP A1 //MAP sensor pin
+#define pinIAT A2 //IAT sensor pin
+#define pinCLT A3 //CLS sensor pin
+#define pinO2 A4 //O2 Sensor pin
+*/
