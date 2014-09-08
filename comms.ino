@@ -111,8 +111,8 @@ void sendValues(int length)
   response[2] = currentStatus.engine; //Engine Status Bitfield - NOT YET WORKING
   response[3] = 0x00; //baro
   response[4] = currentStatus.MAP; //map
-  response[5] = currentStatus.iatADC; //mat
-  response[6] = currentStatus.cltADC; //Coolant ADC
+  response[5] = currentStatus.IAT; //mat
+  response[6] = currentStatus.coolant; //Coolant ADC
   response[7] = currentStatus.tpsADC; //TPS (Raw 0-255)
   response[8] = currentStatus.batADC; //battery voltage
   response[9] = currentStatus.O2; //O2
@@ -138,6 +138,9 @@ void sendValues(int length)
   int mem = freeRam();
   response[26] = highByte(mem); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
   response[27] = lowByte(mem);
+  
+  //response[26] = highByte(cltCalibrationTable.axisX16[0]); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
+  //response[27] = lowByte(cltCalibrationTable.axisX16[0]);
   
 
   Serial.write(response, (size_t)packetSize);
@@ -300,12 +303,12 @@ void receiveCalibration(byte tableID)
        default_val = 1800;
        break;
      case 1:
-       //coolant table
+       //Inlet air temp table
        pnt_TargetTable = (table2D *)&iatCalibrationTable;
        default_val = 700;
        break;
      case 2:
-       //coolant table
+       //O2 table
        pnt_TargetTable = (table2D *)&o2CalibrationTable;
        default_val = -1; //-1 is used when there is no default value
        break;
