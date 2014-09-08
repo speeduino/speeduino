@@ -111,11 +111,11 @@ void sendValues(int length)
   response[2] = currentStatus.engine; //Engine Status Bitfield - NOT YET WORKING
   response[3] = 0x00; //baro
   response[4] = currentStatus.MAP; //map
-  response[5] = 0x00; //mat
-  response[6] = 0x00; //Coolant ADC
+  response[5] = currentStatus.iatADC; //mat
+  response[6] = currentStatus.cltADC; //Coolant ADC
   response[7] = currentStatus.tpsADC; //TPS (Raw 0-255)
   response[8] = currentStatus.batADC; //battery voltage
-  response[9] = 0x00; //O2
+  response[9] = currentStatus.O2; //O2
   response[10] = 0x00; //Exhaust gas correction (%)
   response[11] = 0x00; //Air Correction (%)
   response[12] = 0x00; //Warmup enrichment (%)
