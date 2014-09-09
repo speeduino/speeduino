@@ -28,7 +28,7 @@ struct config2 configPage2;
 
 int req_fuel_uS, triggerToothAngle;
 volatile int triggerActualTeeth;
-int triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
+unsigned int triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 #define MAX_RPM 9000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
