@@ -233,16 +233,16 @@ void loop()
     //***SET STATUSES***
     //-----------------------------------------------------------------------------------------------------
     currentStatus.TPSlast = currentStatus.TPS;
-    currentStatus.MAP = fastMap(analogRead(pinMAP), 0, 1023, 10, 260); //Get the current MAP value
-    currentStatus.tpsADC = fastMap(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
-    currentStatus.TPS = fastMap(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
-    currentStatus.O2 = fastMap(analogRead(pinO2), 0, 1023, 117, 358); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4, then multiplied by 16 (<< 4). This is the correct calibration for an Innovate Wideband 0v - 5V unit
+    currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 10, 260); //Get the current MAP value
+    currentStatus.tpsADC = map(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
+    currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+    currentStatus.O2 = map(analogRead(pinO2), 0, 1023, 117, 358); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4, then multiplied by 16 (<< 4). This is the correct calibration for an Innovate Wideband 0v - 5V unit
     //The IAT and CLT readings can be done less frequently. This still runs about 10 times per second
     if ((mainLoopCount & 127) == 1)
     {
-       currentStatus.cltADC = fastMap(analogRead(pinCLT), 0, 1023, 0, 255); //Get the current raw CLT value
-       currentStatus.iatADC = fastMap(analogRead(pinIAT), 0, 1023, 0, 255); //Get the current raw IAT value
-       currentStatus.batADC = fastMap(analogRead(pinBat), 0, 1023, 0, 255); //Get the current raw Battery value
+       currentStatus.cltADC = map(analogRead(pinCLT), 0, 1023, 0, 255); //Get the current raw CLT value
+       currentStatus.iatADC = map(analogRead(pinIAT), 0, 1023, 0, 255); //Get the current raw IAT value
+       currentStatus.batADC = map(analogRead(pinBat), 0, 1023, 0, 255); //Get the current raw Battery value
        
        currentStatus.coolant = table2D_getValue(cltCalibrationTable, currentStatus.cltADC);
        currentStatus.IAT = table2D_getValue(iatCalibrationTable, currentStatus.iatADC);
