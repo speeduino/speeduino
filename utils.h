@@ -38,7 +38,7 @@ This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N ca
 int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, byte TPS)
   {
     //Standard float version of the calculation
-    //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(corrections/100.0) + injOpen);
+    //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
     
     //100% float free version, does sacrifice a little bit of accuracy. Accuracy loss is in the order of 0.1ms (100uS)
     int iVE = ((int)VE << 7) / 100;

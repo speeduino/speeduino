@@ -119,8 +119,8 @@ void sendValues(int length)
   response[10] = 0x00; //Exhaust gas correction (%)
   response[11] = 0x00; //Air Correction (%)
   response[12] = 0x00; //Warmup enrichment (%)
-  response[13] = div(currentStatus.RPM, 100).quot; //rpm / 100
-  response[14] = div(currentStatus.PW, 100).quot; //Pulsewidth 1 divided by 10 (in ms)
+  response[13] = (byte)(div(currentStatus.RPM, 100).quot); //rpm / 100
+  response[14] = (byte)(div(currentStatus.PW, 10).quot); //Pulsewidth 1 divided by 10 (in ms)
   response[15] = 0x00; //acceleration enrichment (ms)
   response[16] = 0x00; //Barometer correction (%)
   response[17] = currentStatus.corrections; //Total GammaE (%)
