@@ -236,6 +236,7 @@ void loop()
     currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 10, 260); //Get the current MAP value
     currentStatus.tpsADC = map(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
     currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+    //currentStatus.TPS = 50;
     currentStatus.O2 = map(analogRead(pinO2), 0, 1023, 117, 358); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4, then multiplied by 16 (<< 4). This is the correct calibration for an Innovate Wideband 0v - 5V unit
     //The IAT and CLT readings can be done less frequently. This still runs about 10 times per second
     if ((mainLoopCount & 127) == 1)
@@ -250,38 +251,35 @@ void loop()
 
     //Always check for sync
     //Main loop runs within this clause
-    if (currentStatus.hasSync)
+    if (currentStatus.hasSync && currentStatus.RPM > 0)
     {
-       if(currentStatus.RPM > 0) //Check if the engine is turning at all
-       { 
-          //If it is, check is we're running or cranking
-          if(currentStatus.RPM > configPage2.crankRPM) 
-          { //Sets the engine running bit, clears the engine cranking bit
-            BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); 
-            BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); 
-          } 
-          else 
-          {  //Sets the engine cranking bit, clears the engine running bit
-            BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK); 
-            BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); 
-            currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
-            //Check whether enough cranking revolutions have been performed to turn the ignition on
-            if(startRevolutions > configPage2.StgCycles)
-            {ignitionOn = true;}
-          } 
-       }
+        //If it is, check is we're running or cranking
+        if(currentStatus.RPM > configPage2.crankRPM) 
+        { //Sets the engine running bit, clears the engine cranking bit
+          BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); 
+          BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); 
+        } 
+        else 
+        {  //Sets the engine cranking bit, clears the engine running bit
+          BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK); 
+          BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); 
+          currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
+          //Check whether enough cranking revolutions have been performed to turn the ignition on
+          if(startRevolutions > configPage2.StgCycles)
+          {ignitionOn = true;}
+        } 
       
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
       
       //Begin the fuel calculation
       //Calculate an injector pulsewidth from the VE
-      byte corrections = correctionsTotal();
+      currentStatus.corrections = correctionsTotal();
       if (configPage1.algorithm == 0) //Check with fuelling algorithm is being used
       { 
         //Speed Density
         currentStatus.VE = get3DTableValue(fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-        currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, corrections, engineInjectorDeadTime);
+        currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, engineInjectorDeadTime);
         if (configPage2.FixAng == 0) //Check whether the user has set a fixed timing angle
           { currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.MAP, currentStatus.RPM); } //As above, but for ignition advance
          else
@@ -291,7 +289,7 @@ void loop()
       { 
         //Alpha-N
         currentStatus.VE = get3DTableValue(fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
-        currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, corrections, engineInjectorDeadTime); //Calculate pulsewidth using the Alpha-N algorithm
+        currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, engineInjectorDeadTime); //Calculate pulsewidth using the Alpha-N algorithm
         if (configPage2.FixAng == 0) //Check whether the user has set a fixed timing angle
           { currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.TPS, currentStatus.RPM); } //As above, but for ignition advance
         else

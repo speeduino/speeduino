@@ -50,6 +50,7 @@ struct statuses {
   byte iatADC;
   byte batADC;
   byte advance;
+  byte corrections;
   volatile byte squirt;
   byte engine;
   unsigned long PW; //In uS
