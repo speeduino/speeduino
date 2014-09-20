@@ -7,7 +7,7 @@ byte correctionsTotal()
   sumCorrections = div((sumCorrections * correctionASE()), 100).quot;
   sumCorrections = div((sumCorrections * correctionAccel()), 100).quot;
   sumCorrections = div((sumCorrections * correctionFloodClear()), 100).quot;
-  return sumCorrections;
+  return (byte)sumCorrections;
 }
 
 byte correctionWUE()
