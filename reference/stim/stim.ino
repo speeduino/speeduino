@@ -7,8 +7,8 @@
 #define MPH_PIN 12
 #define POT_PIN A0
 
-#define teeth 36
-#define missingTeeth 1
+#define teeth 60
+#define missingTeeth 2
 
 #define PULSE_DURATION 50
 
@@ -30,7 +30,12 @@ void setup()
   
   actualTeeth = teeth - missingTeeth;
   
-  if(actualTeeth == 35)
+  if(actualTeeth == 58)
+  {
+    MAX_DELAY = 3500;
+    MIN_DELAY = 130;
+  }
+  else if(actualTeeth == 35)
   {
     MAX_DELAY = 4000;
     MIN_DELAY = 29;
@@ -133,7 +138,7 @@ void loop()
       }
   } 
   // simulate the missing tooth next
-  delayMicroseconds( (pulse_gap) );
+  delayMicroseconds( (pulse_gap * missingTeeth) );
 
   } 
 // end main loop  version 7 , now perfect  800 rpm to 5000
