@@ -35,7 +35,7 @@ TPS: Throttle position (0% to 100%)
 
 This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N calculations respectively. 
 */
-int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, byte TPS)
+unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, byte TPS)
   {
     //Standard float version of the calculation
     //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
@@ -50,17 +50,19 @@ int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, byte TPS)
     intermediate = (intermediate * iMAP) >> 7;
     intermediate = (intermediate * iCorrections) >> 7;
     intermediate = (intermediate * iTPS) >> 7;
-    return (int)intermediate + injOpen;
+    unsigned int final = (unsigned int)(intermediate + injOpen);
+    //if (final > 65535) { final = 65535; } //Make sure this won't overflow. This means the maximum pulsewidth possible is 65.535mS
+    return final;
 
   }
  
 //Convenience functions for Speed Density and Alpha-N
-int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
+unsigned int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 {
   return PW(REQ_FUEL, VE, MAP, corrections, injOpen, 100); //Just use 1 in place of the TPS
 }
 
-int PW_AN(int REQ_FUEL, byte VE, byte TPS, int corrections, int injOpen)
+unsigned int PW_AN(int REQ_FUEL, byte VE, byte TPS, int corrections, int injOpen)
 {
   return PW(REQ_FUEL, VE, 100, corrections, injOpen, TPS); //Just use 1 in place of the MAP
 }
