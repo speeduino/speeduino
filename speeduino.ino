@@ -36,6 +36,8 @@ volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the la
 volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
 volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
 volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
+volatile unsigned long toothHistory[256];
+volatile byte toothHistoryIndex = 0;
 volatile byte startRevolutions = 0; //A counter for how many revolutions have been completed since sync was achieved.
 volatile bool ignitionOn = true; //The current state of the ignition system
 
@@ -421,7 +423,9 @@ void trigger()
 
    volatile unsigned long curTime = micros();
    if ( (curTime - toothLastToothTime) < triggerFilterTime) { interrupts(); return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
-   toothCurrentCount++; //Increment the tooth counter   
+   toothCurrentCount++; //Increment the tooth counter
+   toothHistory[toothHistoryIndex] = curTime;
+   toothHistoryIndex++;
    
    //Begin the missing tooth detection
    //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap

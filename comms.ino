@@ -93,6 +93,34 @@ void command()
         Serial.flush();
 	break;
 
+      case 'T': //Totally non-standard testing function. Will be removed once calibration testing is completed.
+        unsigned long tempToothHistory[256];
+        byte tempToothHistoryIndex;
+        
+        while(1)
+        {
+          tempToothHistoryIndex = toothHistoryIndex;
+          
+          for(byte x=0; x<tempToothHistoryIndex; x++)
+          {
+            tempToothHistory[x] = toothHistory[x];
+          }
+          //Catch any remaining ones that triggered whilst the above loop was running
+          for(byte x=tempToothHistoryIndex; x<toothHistoryIndex; x++)
+          {
+            tempToothHistory[x] = toothHistory[x];
+            tempToothHistoryIndex++;
+          }
+          toothHistoryIndex = 0; //Reset the history index
+  
+          for(byte x=0; x<tempToothHistoryIndex; x++)
+          {
+            Serial.println(tempToothHistory[x]);
+          }
+          Serial.flush();
+        }
+	break;
+
       default:
 	break;
   } 
