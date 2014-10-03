@@ -93,32 +93,24 @@ void command()
         Serial.flush();
 	break;
 
-      case 'T': //Totally non-standard testing function. Will be removed once calibration testing is completed.
-        unsigned long tempToothHistory[256];
-        byte tempToothHistoryIndex;
+      case 'T': //Send 256 tooth log entries to TunerStudio
+      
+        //We need 256 records to send to TunerStudio. If there aren't that many in the buffer (Buffer is 512 long) then we just return and wait for the next call
+        //if (toothHistoryIndex < 256) { return; } //Don't believe this is the best way to go. Just display whatever is in the buffer
         
-        while(1)
+        int tempToothHistory[512]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
+        
+        //Copy the working history into the temporary buffer array. This is done so that, if the history loops whilst the values are being sent over serial, it doesn't affect the values
+        memcpy( (void*)tempToothHistory, (void*)toothHistory, sizeof(tempToothHistory) );
+        toothHistoryIndex = 0; //Reset the history index
+
+        //Loop only needs to go to 256 (Even though the buffer is 512 long) as we only ever send 256 entries at a time
+        for(int x=0; x<256; x++)
         {
-          tempToothHistoryIndex = toothHistoryIndex;
-          
-          for(byte x=0; x<tempToothHistoryIndex; x++)
-          {
-            tempToothHistory[x] = toothHistory[x];
-          }
-          //Catch any remaining ones that triggered whilst the above loop was running
-          for(byte x=tempToothHistoryIndex; x<toothHistoryIndex; x++)
-          {
-            tempToothHistory[x] = toothHistory[x];
-            tempToothHistoryIndex++;
-          }
-          toothHistoryIndex = 0; //Reset the history index
-  
-          for(byte x=0; x<tempToothHistoryIndex; x++)
-          {
-            Serial.println(tempToothHistory[x]);
-          }
-          Serial.flush();
+          Serial.write(highByte(tempToothHistory[x]));
+          Serial.write(lowByte(tempToothHistory[x]));
         }
+        Serial.flush();
 	break;
 
       default:

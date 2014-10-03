@@ -36,8 +36,8 @@ volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the la
 volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
 volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
 volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
-volatile unsigned long toothHistory[256];
-volatile byte toothHistoryIndex = 0;
+volatile int toothHistory[512];
+volatile int toothHistoryIndex = 0;
 volatile byte startRevolutions = 0; //A counter for how many revolutions have been completed since sync was achieved.
 volatile bool ignitionOn = true; //The current state of the ignition system
 
@@ -311,7 +311,7 @@ void loop()
       
       //Determine the current crank angle
       //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
-      int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + (int)(configPage2.triggerAngle*4); //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth. Needs to be multipled by 4 as the trigger angle is divided by 4 for the serial protocol
+      int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + ((int)(configPage2.triggerAngle)*4); //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth. Needs to be multipled by 4 as the trigger angle is divided by 4 for the serial protocol
       if (crankAngle > 360) { crankAngle -= 360; }
       
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
@@ -422,15 +422,21 @@ void trigger()
    noInterrupts(); //Turn off interrupts whilst in this routine
 
    volatile unsigned long curTime = micros();
-   if ( (curTime - toothLastToothTime) < triggerFilterTime) { interrupts(); return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+   volatile int curGap = curTime - toothLastToothTime;
+   if ( curGap < triggerFilterTime) { interrupts(); return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    toothCurrentCount++; //Increment the tooth counter
-   toothHistory[toothHistoryIndex] = curTime;
-   toothHistoryIndex++;
+   
+   //High speed tooth logging history
+   toothHistory[toothHistoryIndex] = curGap;
+   if(toothHistoryIndex == 511)
+   { toothHistoryIndex = 0; }
+   else
+   { toothHistoryIndex++; }
    
    //Begin the missing tooth detection
    //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
    //if ( (curTime - toothLastToothTime) > (1.5 * (toothLastToothTime - toothLastMinusOneToothTime))) { toothCurrentCount = 1; }
-   if ( (curTime - toothLastToothTime) > ((3 * (toothLastToothTime - toothLastMinusOneToothTime))>>1)) //Same as above, but uses bitshift instead of multiplying by 1.5
+   if ( curGap > ((3 * (toothLastToothTime - toothLastMinusOneToothTime))>>1)) //Same as above, but uses bitshift instead of multiplying by 1.5
    { 
      toothCurrentCount = 1; 
      toothOneMinusOneTime = toothOneTime;
