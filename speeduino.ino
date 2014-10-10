@@ -109,7 +109,7 @@ void setup()
   initialiseTimers();
   
   //Once the configs have been loaded, a number of one time calculations can be completed
-  req_fuel_uS = configPage1.reqFuel * 1000; //Convert to uS and an int. This is the only variable to be used in calculations
+  req_fuel_uS = configPage1.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations
   triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   
@@ -235,10 +235,10 @@ void loop()
     //***SET STATUSES***
     //-----------------------------------------------------------------------------------------------------
     currentStatus.TPSlast = currentStatus.TPS;
-    currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 10, 260); //Get the current MAP value
+    currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 10, 255); //Get the current MAP value
     currentStatus.tpsADC = map(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
     currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
-    //currentStatus.TPS = 50;
+    //currentStatus.TPS = 70;
     currentStatus.O2 = map(analogRead(pinO2), 0, 1023, 117, 358); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4, then multiplied by 16 (<< 4). This is the correct calibration for an Innovate Wideband 0v - 5V unit
     //The IAT and CLT readings can be done less frequently. This still runs about 10 times per second
     if ((mainLoopCount & 127) == 1)
@@ -293,7 +293,6 @@ void loop()
         //Alpha-N
         currentStatus.VE = get3DTableValue(fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
         currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, engineInjectorDeadTime); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
-        //currentStatus.PW = 30000;
         if (configPage2.FixAng == 0) //Check whether the user has set a fixed timing angle
           { currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.TPS, currentStatus.RPM); } //As above, but for ignition advance
         else
