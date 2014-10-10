@@ -64,5 +64,7 @@ unsigned int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen
 
 unsigned int PW_AN(int REQ_FUEL, byte VE, byte TPS, int corrections, int injOpen)
 {
+  //Sanity check
+  if(TPS > 100) { TPS = 100; }
   return PW(REQ_FUEL, VE, 100, corrections, injOpen, TPS); //Just use 1 in place of the MAP
 }
