@@ -93,24 +93,12 @@ void command()
         Serial.flush();
 	break;
 
-      case 'T': //Send 256 tooth log entries to TunerStudio
-      
-        //We need 256 records to send to TunerStudio. If there aren't that many in the buffer (Buffer is 512 long) then we just return and wait for the next call
-        //if (toothHistoryIndex < 256) { return; } //Don't believe this is the best way to go. Just display whatever is in the buffer
-        
-        int tempToothHistory[512]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
-        
-        //Copy the working history into the temporary buffer array. This is done so that, if the history loops whilst the values are being sent over serial, it doesn't affect the values
-        memcpy( (void*)tempToothHistory, (void*)toothHistory, sizeof(tempToothHistory) );
-        toothHistoryIndex = 0; //Reset the history index
+      case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
+        sendToothLog(false); //Sends tooth log values as ints
+	break;
 
-        //Loop only needs to go to 256 (Even though the buffer is 512 long) as we only ever send 256 entries at a time
-        for(int x=0; x<256; x++)
-        {
-          Serial.write(highByte(tempToothHistory[x]));
-          Serial.write(lowByte(tempToothHistory[x]));
-        }
-        Serial.flush();
+      case 'r': //Send 256 tooth log entries to a terminal emulator
+        sendToothLog(true); //Sends tooth log values as chars
 	break;
 
       default:
@@ -371,6 +359,42 @@ void receiveCalibration(byte tableID)
   pnt_TargetTable->values16[2] = newValues[last];
  
 }
+
+/*
+Send 256 tooth log entries
+ * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
+ * if useChar is false, the values are sent as a 2 byte integer which is readable by TunerStudios tooth logger
+*/
+void sendToothLog(bool useChar)
+{
+
+      //We need 256 records to send to TunerStudio. If there aren't that many in the buffer (Buffer is 512 long) then we just return and wait for the next call
+      if (toothHistoryIndex < 256) { return; } //Don't believe this is the best way to go. Just display whatever is in the buffer
+      int tempToothHistory[512]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
+      
+      //Copy the working history into the temporary buffer array. This is done so that, if the history loops whilst the values are being sent over serial, it doesn't affect the values
+      memcpy( (void*)tempToothHistory, (void*)toothHistory, sizeof(tempToothHistory) );
+      toothHistoryIndex = 0; //Reset the history index
+
+      //Loop only needs to go to 256 (Even though the buffer is 512 long) as we only ever send 256 entries at a time
+      if (useChar)
+      {
+        for(int x=0; x<256; x++)
+        {
+          Serial.println(tempToothHistory[x]);
+        }
+      }
+      else
+      {
+        for(int x=0; x<256; x++)
+        {
+          Serial.write(highByte(tempToothHistory[x]));
+          Serial.write(lowByte(tempToothHistory[x]));
+        }
+      }
+      Serial.flush();
+}
+  
 
 void testComm()
 {

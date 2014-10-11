@@ -8,4 +8,6 @@ void sendValues();
 void receiveValue(byte offset, byte newValue);
 void saveConfig();
 void sendPage();
+void receiveCalibration(byte tableID);
+void sendToothLog(bool useChar);
 void testComm();
