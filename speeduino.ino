@@ -245,7 +245,8 @@ void loop()
     {
        currentStatus.cltADC = map(analogRead(pinCLT), 0, 1023, 0, 255); //Get the current raw CLT value
        currentStatus.iatADC = map(analogRead(pinIAT), 0, 1023, 0, 255); //Get the current raw IAT value
-       currentStatus.batADC = map(analogRead(pinBat), 0, 1023, 0, 255); //Get the current raw Battery value
+       currentStatus.battery10 = map(analogRead(pinBat), 0, 1023, 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
+       //currentStatus.batADC = map(analogRead(pinBat), 0, 1023, 0, 255); //Get the current raw Battery value
        
        currentStatus.coolant = table2D_getValue(cltCalibrationTable, currentStatus.cltADC);
        currentStatus.IAT = table2D_getValue(iatCalibrationTable, currentStatus.iatADC);
@@ -435,7 +436,7 @@ void trigger()
    //Begin the missing tooth detection
    //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
    //if ( (curTime - toothLastToothTime) > (1.5 * (toothLastToothTime - toothLastMinusOneToothTime))) { toothCurrentCount = 1; }
-   if ( curGap > ((3 * (toothLastToothTime - toothLastMinusOneToothTime))>>1)) //Same as above, but uses bitshift instead of multiplying by 1.5
+   if ( curGap > ((3 * ((toothLastToothTime - toothLastMinusOneToothTime) * configPage2.triggerMissingTeeth))>>1)) //Same as above, but uses bitshift instead of multiplying by 1.5
    { 
      toothCurrentCount = 1; 
      toothOneMinusOneTime = toothOneTime;

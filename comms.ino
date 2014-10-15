@@ -122,7 +122,7 @@ void sendValues(int length)
   response[5] = currentStatus.IAT; //mat
   response[6] = currentStatus.coolant; //Coolant ADC
   response[7] = currentStatus.tpsADC; //TPS (Raw 0-255)
-  response[8] = currentStatus.batADC; //battery voltage
+  response[8] = currentStatus.battery10; //battery voltage
   response[9] = currentStatus.O2; //O2
   response[10] = 0x00; //Exhaust gas correction (%)
   response[11] = 0x00; //Air Correction (%)

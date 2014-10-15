@@ -49,6 +49,7 @@ struct statuses {
   byte IAT;
   byte iatADC;
   byte batADC;
+  byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
   byte advance;
   byte corrections;
   volatile byte squirt;
