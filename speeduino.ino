@@ -254,7 +254,7 @@ void loop()
 
     //Always check for sync
     //Main loop runs within this clause
-    if (currentStatus.hasSync && currentStatus.RPM > 0)
+    if (currentStatus.hasSync && (currentStatus.RPM > 0))
     {
         //If it is, check is we're running or cranking
         if(currentStatus.RPM > configPage2.crankRPM) 
