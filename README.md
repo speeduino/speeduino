@@ -43,8 +43,14 @@ A: Arduino Mega (Or other ATmega1280 / ATmega2560 powered SKU) will be required.
 
 ========================================================================
 
+Q: I'm trying to get started or need some general help. What should I do?
+
+A: Support is all through the forum at: http://speeduino.com/forum
+
+========================================================================
+
 Q: I must know more! How can I contact you?
 
-A: Checkout the details on the wiki to get started: https://github.com/noisymime/speeduino/wiki
+A: Come and visit the forum : http://speeduino.com/forum
 
 If you still need some more info, feel free to drop me a line: noisymime (AT) gmail (dot) com
