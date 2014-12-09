@@ -62,6 +62,7 @@ struct statuses currentStatus;
 volatile int mainLoopCount;
 unsigned long secCounter; //The next time to increment 'runSecs' counter.
 int crankDegreesPerCylinder; //The number of crank degrees between cylinders (180 in a 4 cylinder, usually 120 in a 6 cylinder etc)
+int timePerDegree;
 
 void setup() 
 {
@@ -312,12 +313,12 @@ void loop()
       //Determine the current crank angle
       //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
       int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + ((int)(configPage2.triggerAngle)*4); //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth. Needs to be multipled by 4 as the trigger angle is divided by 4 for the serial protocol
-      if (crankAngle > 360) { crankAngle -= 360; }
       
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
-      int timePerDegree = ldiv( (toothOneTime - toothOneMinusOneTime) , 360).quot; //The time (uS) it is currently taking to move 1 degree
+      timePerDegree = ldiv( (toothOneTime - toothOneMinusOneTime) , 360).quot; //The time (uS) it is currently taking to move 1 degree
       //crankAngle += div( (int)(micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
       crankAngle += ldiv( (micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+      if (crankAngle > 360) { crankAngle -= 360; }
       
       //Determine next firing angles
       //1
@@ -331,7 +332,10 @@ void loop()
       if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim * 100)) ) { currentStatus.advance -= configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
       //Calculate start angle for each channel
       //1
-      ignition1StartAngle = 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ); // 360 - desired advance angle - number of degrees the dwell will take
+      int dwell = (configPage2.dwellRun * 100); //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
+      int dwellAngle = (div(dwell, timePerDegree).quot );
+      ignition1StartAngle = 360 - currentStatus.advance - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
+
       //2
       if (configPage1.nCylinders == 2) { (ignition2StartAngle = crankDegreesPerCylinder + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot )) % 360; }
       //4
@@ -343,7 +347,7 @@ void loop()
       if (injector1StartAngle > crankAngle) 
       { 
         setFuelSchedule1(openInjector1, 
-                  (injector1StartAngle - crankAngle) * timePerDegree,
+                  ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                   (unsigned long)currentStatus.PW,
                   closeInjector1
                   );
@@ -351,8 +355,8 @@ void loop()
       if (injector2StartAngle > crankAngle) 
       { 
         setFuelSchedule2(openInjector2, 
-                  (injector2StartAngle - crankAngle) * timePerDegree,
-                  currentStatus.PW,
+                  ((unsigned long)(injector2StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                  (unsigned long)currentStatus.PW,
                   closeInjector2
                   );
       }
@@ -360,13 +364,12 @@ void loop()
       //Perform an initial check to see if the ignition is turned on
       if(ignitionOn)
       {
-        int dwell = (configPage2.dwellRun * 100); //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
-        if ( ignition1StartAngle > crankAngle)
+        if ( (ignition1StartAngle > crankAngle) )
         { 
           if (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
           {
             setIgnitionSchedule1(beginCoil1Charge, 
-                      (ignition1StartAngle - crankAngle) * timePerDegree,
+                      ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                       dwell,
                       endCoil1Charge
                       );
@@ -377,7 +380,7 @@ void loop()
           if (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
           {
             setIgnitionSchedule2(beginCoil2Charge, 
-                      (ignition2StartAngle - crankAngle) * timePerDegree,
+                      ((unsigned long)(ignition2StartAngle - crankAngle) * (unsigned long)timePerDegree),
                       dwell,
                       endCoil2Charge
                       );

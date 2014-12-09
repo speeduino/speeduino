@@ -107,13 +107,17 @@ void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned l
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
     if(ignitionSchedule1.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
-    //if(ignitionSchedule1.Status == PENDING) { return; } //Check that we're not already part way through a schedule
+    if(ignitionSchedule1.Status == PENDING) { TIMSK5 &= ~(1 << OCIE5A); } //Check that we're not already part way through a schedule
     
     //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
     //As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
     //unsigned int absoluteTimeout = TCNT5 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
+    //unsigned char sreg;
+    //sreg = SREG;
+    //noInterrupts();
     unsigned int absoluteTimeout = TCNT5 + (timeout >> 4); //As above, but with bit shift instead of / 16
     OCR5A = absoluteTimeout;
+    //SREG = sreg;
     ignitionSchedule1.duration = duration;
     ignitionSchedule1.StartCallback = startCallback; //Name the start callback function
     ignitionSchedule1.EndCallback = endCallback; //Name the start callback function
@@ -250,22 +254,20 @@ ISR(TIMER4_COMPB_vect) //fuelSchedule4
   }
 ISR(TIMER5_COMPA_vect) //ignitionSchedule1
   {
-    noInterrupts();
     if (ignitionSchedule1.Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule1.StartCallback();
       ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule1.StartCallback();
       //unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule1.duration / 16);
       unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule1.duration >> 4); //Divide by 16
       OCR5A = absoluteTimeout;
     }
     else if (ignitionSchedule1.Status == RUNNING)
     {
-       ignitionSchedule1.EndCallback();
-       ignitionSchedule1.Status = OFF; //Turn off the schedule
-       TIMSK5 &= ~(1 << OCIE5A); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
+      ignitionSchedule1.Status = OFF; //Turn off the schedule
+      ignitionSchedule1.EndCallback();
+      TIMSK5 &= ~(1 << OCIE5A); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
-    interrupts();
   }
 ISR(TIMER5_COMPB_vect) //ignitionSchedule2
   {
