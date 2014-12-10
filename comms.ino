@@ -59,8 +59,6 @@ void command()
         //The first 2 bytes sent represent the canID and tableID
         while (Serial.available() == 0) { }
           tableID = Serial.read(); //Not currently used for anything
-        //while (Serial.available() == 0) { }
-        //  tableID = Serial.read();  
           
         receiveCalibration(tableID); //Receive new values and store in memory
         writeCalibration(); //Store received values in EEPROM
@@ -70,25 +68,25 @@ void command()
       case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed. This function takes 1.5kb of program space! :S
         
         Serial.println("Coolant");
-        for(int x=0; x<3; x++)
+        for(int x=0; x<CALIBRATION_TABLE_SIZE; x++)
         {
-          Serial.print(cltCalibrationTable.axisX16[x]);
+          Serial.print(x);
           Serial.print(", ");
-          Serial.println(cltCalibrationTable.values16[x]);
+          Serial.println(cltCalibrationTable[x]);
         }
         Serial.println("Inlet temp");
-        for(int x=0; x<3; x++)
+        for(int x=0; x<CALIBRATION_TABLE_SIZE; x++)
         {
-          Serial.print(iatCalibrationTable.axisX16[x]);
+          Serial.print(x);
           Serial.print(", ");
-          Serial.println(iatCalibrationTable.values16[x]);
+          Serial.println(iatCalibrationTable[x]);
         }
         Serial.println("O2");
-        for(int x=0; x<3; x++)
+        for(int x=0; x<CALIBRATION_TABLE_SIZE; x++)
         {
-          Serial.print(o2CalibrationTable.axisX16[x]);
+          Serial.print(x);
           Serial.print(", ");
-          Serial.println(o2CalibrationTable.values16[x]);
+          Serial.println(o2CalibrationTable[x]);
         }
         Serial.flush();
 	break;
@@ -300,25 +298,22 @@ This function is used to store calibration data sent by Tuner Studio.
 */
 void receiveCalibration(byte tableID)
 {
-  struct table2D* pnt_TargetTable; //Pointer that will be used to point to the required target table
+  byte* pnt_TargetTable; //Pointer that will be used to point to the required target table
   int default_val; //The default value that is used in the sent table for invalid ADC values
   
   switch(tableID)
   {
      case 0:
        //coolant table
-       pnt_TargetTable = (table2D *)&cltCalibrationTable;
-       default_val = 1800;
+       pnt_TargetTable = (byte *)&cltCalibrationTable;
        break;
      case 1:
        //Inlet air temp table
-       pnt_TargetTable = (table2D *)&iatCalibrationTable;
-       default_val = 700;
+       pnt_TargetTable = (byte *)&iatCalibrationTable;
        break;
      case 2:
        //O2 table
-       pnt_TargetTable = (table2D *)&o2CalibrationTable;
-       default_val = -1; //-1 is used when there is no default value
+       pnt_TargetTable = (byte *)&o2CalibrationTable;
        break;
        
      default:
@@ -327,37 +322,24 @@ void receiveCalibration(byte tableID)
        //break;
   }
   
-  //1024 value pairs are sent. We have to receive them all, but only pick out the 3 we want to keep
-  //Currently we are only picking out 3 values, we could switch to 5 or 7, but 3 seems to be working OK
-  //Each of the tables has a threshold at which valid values start and end
+  //1024 value pairs are sent. We have to receive them all, but only use every second one (We only store 512 calibratino table entries to save on EEPROM space)
+  //The values are sent as 2 byte ints, but we convert them to single bytes. Any values over 255 are capped at 255.
   int newValues[1024];
-  //The first and last valid values
-  int first = 0;
-  int last = 0;
+  bool every2nd = true;
   for(int x=0; x<1024; x++)
   {
     while (Serial.available() < 2) { }
-    newValues[x] = int(word(Serial.read(), Serial.read())); //Read 2 bytes, convert to word (an unsigned int), convert to signed int 
-    
-    if (tableID != 2)
+    newValues[x] = int(word(Serial.read(), Serial.read())) / 10; //Read 2 bytes, convert to word (an unsigned int), convert to signed int 
+
+    if (every2nd) //Only use every 2nd value
     {
-      if ( (first == 0) && (newValues[x] != default_val) && (default_val != -1) ) { first = x; }
-      if ( (last == 0) && (x > first) && (first != 0) && (newValues[x] == default_val) ) { last = x-1; }
+      if (newValues[x] > 255) { newValues[x] = 255; } // Cap the maximum value to prevent overflow when converting to byte
+      if (newValues[x] < 0) { newValues[x] = 0; }
+      pnt_TargetTable[(x/2)] = (byte)newValues[x];
+      every2nd = false;
     }
+    else { every2nd = true; }
   }
-  //Quick checks to make sure things were set
-  if (last == 0) { last = 1023; }
-  if (default_val == -1) { first = 0; last = 1023; }
-  
-  int mid = (last - first) / 2;
-  pnt_TargetTable->axisX16[0] = first;
-  pnt_TargetTable->axisX16[1] = mid;
-  pnt_TargetTable->axisX16[2] = last;
-  
-  pnt_TargetTable->values16[0] = newValues[first];
-  pnt_TargetTable->values16[1] = newValues[mid];
-  pnt_TargetTable->values16[2] = newValues[last];
- 
 }
 
 /*

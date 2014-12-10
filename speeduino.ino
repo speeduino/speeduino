@@ -45,9 +45,9 @@ struct table3D fuelTable; //8x8 fuel map
 struct table3D ignitionTable; //8x8 ignition map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
-struct table2D cltCalibrationTable;
-struct table2D iatCalibrationTable;
-struct table2D o2CalibrationTable;
+byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
+byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
+byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
 
 unsigned long counter;
 unsigned long currentLoopTime; //The time the current loop started (uS)
@@ -92,10 +92,6 @@ void setup()
   WUETable.axisX = configPage2.wueBins;
   
   //Setup the calibration tables
-  
-  cltCalibrationTable.valueSize = SIZE_INT;
-  iatCalibrationTable.valueSize = SIZE_INT;
-  o2CalibrationTable.valueSize = SIZE_INT;
   loadCalibration();
 
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
@@ -244,13 +240,13 @@ void loop()
     //The IAT and CLT readings can be done less frequently. This still runs about 10 times per second
     if ((mainLoopCount & 127) == 1)
     {
-       currentStatus.cltADC = map(analogRead(pinCLT), 0, 1023, 0, 255); //Get the current raw CLT value
-       currentStatus.iatADC = map(analogRead(pinIAT), 0, 1023, 0, 255); //Get the current raw IAT value
+       currentStatus.cltADC = map(analogRead(pinCLT), 0, 1023, 0, 512); //Get the current raw CLT value
+       currentStatus.iatADC = map(analogRead(pinIAT), 0, 1023, 0, 512); //Get the current raw IAT value
        currentStatus.battery10 = map(analogRead(pinBat), 0, 1023, 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
        //currentStatus.batADC = map(analogRead(pinBat), 0, 1023, 0, 255); //Get the current raw Battery value
        
-       currentStatus.coolant = table2D_getValue(cltCalibrationTable, currentStatus.cltADC);
-       currentStatus.IAT = table2D_getValue(iatCalibrationTable, currentStatus.iatADC);
+       currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC];
+       currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC];
     }
 
     //Always check for sync

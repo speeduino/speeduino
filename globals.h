@@ -32,6 +32,9 @@ const byte page_size = 128;
 #define SIZE_BYTE   8
 #define SIZE_INT    16
 
+//Table sizes
+#define CALIBRATION_TABLE_SIZE 512
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
@@ -45,10 +48,10 @@ struct statuses {
   byte VE;
   byte O2;
   byte coolant;
-  byte cltADC;
+  int cltADC;
   byte IAT;
-  byte iatADC;
-  byte batADC;
+  int iatADC;
+  int batADC;
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
   byte advance;
   byte corrections;
