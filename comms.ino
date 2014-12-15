@@ -300,46 +300,77 @@ void receiveCalibration(byte tableID)
 {
   byte* pnt_TargetTable; //Pointer that will be used to point to the required target table
   int default_val; //The default value that is used in the sent table for invalid ADC values
-  
-  switch(tableID)
+  int offset;
+
+  switch (tableID)
   {
-     case 0:
-       //coolant table
-       pnt_TargetTable = (byte *)&cltCalibrationTable;
-       break;
-     case 1:
-       //Inlet air temp table
-       pnt_TargetTable = (byte *)&iatCalibrationTable;
-       break;
-     case 2:
-       //O2 table
-       pnt_TargetTable = (byte *)&o2CalibrationTable;
-       break;
-       
-     default:
-       return; //Should never get here, but if we do, just fail back to main loop
-       //pnt_TargetTable = (table2D *)&o2CalibrationTable;
-       //break;
+    case 0:
+      //coolant table
+      pnt_TargetTable = (byte *)&cltCalibrationTable;
+      offset = CALIBRATION_TEMPERATURE_OFFSET;
+      break;
+    case 1:
+      //Inlet air temp table
+      pnt_TargetTable = (byte *)&iatCalibrationTable;
+      offset = CALIBRATION_TEMPERATURE_OFFSET;
+      break;
+    case 2:
+      //O2 table
+      pnt_TargetTable = (byte *)&o2CalibrationTable;
+      offset = 0;
+      break;
+
+    default:
+      return; //Should never get here, but if we do, just fail back to main loop
+      //pnt_TargetTable = (table2D *)&o2CalibrationTable;
+      //break;
   }
-  
+
   //1024 value pairs are sent. We have to receive them all, but only use every second one (We only store 512 calibratino table entries to save on EEPROM space)
   //The values are sent as 2 byte ints, but we convert them to single bytes. Any values over 255 are capped at 255.
-  int newValues[1024];
+  int tempValue;
   bool every2nd = true;
-  for(int x=0; x<1024; x++)
+  //byte tempVal = 3;
+  int x;
+  int counter = 0;
+  for (x = 0; x < 800; x++)
   {
-    while (Serial.available() < 2) { }
-    newValues[x] = int(word(Serial.read(), Serial.read())) / 10; //Read 2 bytes, convert to word (an unsigned int), convert to signed int 
+    //tempVal = Serial.available();
+    int failcount = 0;
+    //while ( (Serial.available() < 2) && (failcount < 20000) ) { failcount++; }
+    
+    int hsb16 = -1;
+    while( hsb16 == -1 ) { hsb16 = Serial.read(); } 
+    byte hsb = (byte)(hsb16);
+    int lsb16 = -1;
+    while( lsb16 == -1 ) { lsb16 = Serial.read(); } 
+    byte lsb = (byte)(lsb16);
+    
+    //int hsb16 = Serial.read();
+    //int lsb16 = Serial.read();
+    
+    tempValue = div(int(word(hsb16, lsb16)), 10).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
+    tempValue = tempValue + offset;
 
     if (every2nd) //Only use every 2nd value
     {
-      if (newValues[x] > 255) { newValues[x] = 255; } // Cap the maximum value to prevent overflow when converting to byte
-      if (newValues[x] < 0) { newValues[x] = 0; }
-      pnt_TargetTable[(x/2)] = (byte)newValues[x];
+      if (tempValue > 255) { tempValue = 255; } // Cap the maximum value to prevent overflow when converting to byte
+      if (tempValue < 0) { tempValue = 0; }
+      //pnt_TargetTable[(x / 2)] = (byte)tempValue;
+      pnt_TargetTable[counter] = (byte)tempValue;
+      if(counter > 400) { cltCalibrationTable[counter] = 201;}
+
       every2nd = false;
+      counter++;
     }
     else { every2nd = true; }
+
+    //pnt_TargetTable[x] = tempVal;
+    x++;
   }
+  
+  //pnt_TargetTable[511] = 123;
+  //cltCalibrationTable[510] = 123;
 }
 
 /*

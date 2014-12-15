@@ -34,6 +34,7 @@ const byte page_size = 128;
 
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
+#define CALIBRATION_TEMPERATURE_OFFSET 40 // All temperature measurements are stored offset by 40 degrees. This is so we can use an unsigned byte (0-255) to represent temperature ranges from -40 to 215
 
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
@@ -47,9 +48,9 @@ struct statuses {
   byte tpsDOT;
   byte VE;
   byte O2;
-  byte coolant;
+  int coolant;
   int cltADC;
-  byte IAT;
+  int IAT;
   int iatADC;
   int batADC;
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
