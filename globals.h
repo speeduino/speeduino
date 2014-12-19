@@ -195,10 +195,10 @@ struct config2 {
 #define pinInjector2 9 //Output pin injector 2 is on
 #define pinInjector3 10 //Output pin injector 3 is on
 #define pinInjector4 11 //Output pin injector 4 is on
-#define pinCoil1 24 //Pin for coil 1
-#define pinCoil2 28 //Pin for coil 2
-#define pinCoil3 36 //Pin for coil 3
-#define pinCoil4 40 //Pin for coil 4
+#define pinCoil1 28 //Pin for coil 1
+#define pinCoil2 24 //Pin for coil 2
+#define pinCoil3 40 //Pin for coil 3
+#define pinCoil4 36 //Pin for coil 4
 #define pinTrigger 20 //The CAS pin
 #define pinTrigger2 21 //The Cam Sensor pin
 #define pinTPS A2 //TPS input pin

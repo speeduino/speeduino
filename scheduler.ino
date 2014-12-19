@@ -127,6 +127,7 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
 void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
     if(ignitionSchedule2.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
+    if(ignitionSchedule2.Status == PENDING) { TIMSK5 &= ~(1 << OCIE5B); } //Check that we're not already part way through a schedule
     
     //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
     //As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
@@ -271,22 +272,20 @@ ISR(TIMER5_COMPA_vect) //ignitionSchedule1
   }
 ISR(TIMER5_COMPB_vect) //ignitionSchedule2
   {
-    noInterrupts();
     if (ignitionSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule2.StartCallback();
       ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule2.StartCallback();
       //unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration / 16);
       unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration >> 4); //Divide by 16
       OCR5B = absoluteTimeout;
     }
     else if (ignitionSchedule2.Status == RUNNING)
     {
-       ignitionSchedule2.EndCallback();
-       ignitionSchedule2.Status = OFF; //Turn off the schedule
-       TIMSK5 &= ~(1 << OCIE5B); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
+      ignitionSchedule2.Status = OFF; //Turn off the schedule
+      ignitionSchedule2.EndCallback();
+      TIMSK5 &= ~(1 << OCIE5B); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
-    interrupts();
   }
 ISR(TIMER5_COMPC_vect) //ignitionSchedule3
   {
