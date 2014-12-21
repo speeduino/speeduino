@@ -3,9 +3,9 @@
 byte correctionsTotal()
 {
   int sumCorrections = 100;
-  sumCorrections = div((sumCorrections * correctionWUE()), 100).quot;
+  //sumCorrections = div((sumCorrections * correctionWUE()), 100).quot;
   sumCorrections = div((sumCorrections * correctionASE()), 100).quot;
-  sumCorrections = div((sumCorrections * correctionAccel()), 100).quot;
+  //sumCorrections = div((sumCorrections * correctionAccel()), 100).quot;
   sumCorrections = div((sumCorrections * correctionFloodClear()), 100).quot;
   return (byte)sumCorrections;
 }

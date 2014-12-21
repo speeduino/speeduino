@@ -274,8 +274,8 @@ void loop()
       
       //Begin the fuel calculation
       //Calculate an injector pulsewidth from the VE
-      //currentStatus.corrections = correctionsTotal();
-      currentStatus.corrections = 100;
+      currentStatus.corrections = correctionsTotal();
+      //currentStatus.corrections = 100;
       if (configPage1.algorithm == 0) //Check with fuelling algorithm is being used
       { 
         //Speed Density
