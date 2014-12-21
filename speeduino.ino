@@ -429,14 +429,17 @@ void beginCoil4Charge() { digitalWrite(pinCoil4, coilHIGH); }
 void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); }
 
 //The trigger function is called everytime a crank tooth passes the sensor
+volatile unsigned long curTime;
+volatile int curGap;
+volatile unsigned int targetGap; 
 void trigger()
   {
    // http://www.msextra.com/forums/viewtopic.php?f=94&t=22976
    // http://www.megamanual.com/ms2/wheel.htm
    noInterrupts(); //Turn off interrupts whilst in this routine
 
-   volatile unsigned long curTime = micros();
-   volatile int curGap = curTime - toothLastToothTime;
+   curTime = micros();
+   curGap = curTime - toothLastToothTime;
    if ( curGap < triggerFilterTime) { interrupts(); return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    toothCurrentCount++; //Increment the tooth counter
    
@@ -450,7 +453,10 @@ void trigger()
    //Begin the missing tooth detection
    //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
    //if ( (curTime - toothLastToothTime) > (1.5 * (toothLastToothTime - toothLastMinusOneToothTime))) { toothCurrentCount = 1; }
-   if ( curGap > ((3 * ((toothLastToothTime - toothLastMinusOneToothTime) * configPage2.triggerMissingTeeth))>>1)) //Same as above, but uses bitshift instead of multiplying by 1.5
+   if(configPage2.triggerMissingTeeth == 1) { targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
+   //else { targetGap = (10 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 2; } //Multiply by 2.5 (Checks for a gap 2.5x greater than the last one)
+   else { targetGap = ((toothLastToothTime - toothLastMinusOneToothTime)) * 2; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
+   if ( curGap > targetGap )
    { 
      toothCurrentCount = 1; 
      toothOneMinusOneTime = toothOneTime;
