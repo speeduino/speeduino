@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS 2.6.01 - EFI Analytics, Inc." tuneComment="    &#10;&#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;  " writeDate="Wed Aug 27 09:54:05 EST 2014"/>
+<bibliography author="TunerStudio MS 2.6.04 - EFI Analytics, Inc." tuneComment="    &#10;&#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;  " writeDate="Sun Dec 21 23:19:21 EST 2014"/>
 <versionInfo fileFormat="4.0" firmwareInfo="" nPages="2" signature="20"/>
 <page>
 <pcVariable name="tsCanId">"0"</pcVariable>
@@ -15,6 +15,18 @@
          -0.2 
          -0.1 
          0.0 
+      </pcVariable>
+<pcVariable cols="1" digits="0" name="wueAnalRecommend" rows="10" units="%">
+         199.0 
+         158.0 
+         145.0 
+         131.0 
+         127.0 
+         119.0 
+         119.0 
+         119.0 
+         109.0 
+         101.0 
       </pcVariable>
 <pcVariable cols="1" digits="0" name="tempTable" rows="10" units="%">
          -40.0 
@@ -38,7 +50,7 @@
          35.0 45.0 57.0 60.0 68.0 75.0 85.0 68.0 
          45.0 55.0 68.0 63.0 70.0 88.0 92.0 79.0 
          53.0 68.0 77.0 88.0 90.0 94.0 96.0 90.0 
-         65.0 75.0 85.0 96.0 90.0 100.0 100.0 100.0 
+         65.0 75.0 85.0 90.0 90.0 100.0 100.0 100.0 
       </constant>
 <constant cols="1" digits="0" name="rpmBins" rows="8" units="RPM">
          700.0 
@@ -68,7 +80,7 @@
          199.0 
          158.0 
          145.0 
-         131.0 
+         134.0 
          127.0 
          119.0 
          119.0 
@@ -88,7 +100,7 @@
 <constant digits="0" name="egoCount">0.0</constant>
 <constant digits="0" name="egoDelta" units="%">0.0</constant>
 <constant digits="0" name="egoLimit" units="%">0.0</constant>
-<constant digits="1" name="reqFuel" units="ms">11.2</constant>
+<constant digits="1" name="reqFuel" units="ms">5.6</constant>
 <constant digits="0" name="divider">2.0</constant>
 <constant name="alternate">"Simultaneous"</constant>
 <constant digits="1" name="injOpen" units="ms">0.0</constant>
@@ -96,14 +108,14 @@
 <constant digits="0" name="injPwmP" units="%">0.0</constant>
 <constant digits="1" name="injPwmT" units="ms">0.0</constant>
 <constant digits="2" name="battFac" units="ms/v">0.0</constant>
-<constant digits="0" name="rpmk">3000.0</constant>
+<constant digits="0" name="rpmk">6000.0</constant>
 <constant name="mapType">"115 kPa"</constant>
 <constant name="twoStroke">"Four-stroke"</constant>
-<constant name="injType">"Throttle Body"</constant>
-<constant name="nCylinders">"4"</constant>
+<constant name="injType">"Port"</constant>
+<constant name="nCylinders">"2"</constant>
 <constant name="cltType">"GM"</constant>
 <constant name="matType">"GM"</constant>
-<constant name="nInjectors">"1"</constant>
+<constant name="nInjectors">"2"</constant>
 <constant name="engineType">"Even fire"</constant>
 <constant name="egoType">"Narrow band"</constant>
 <constant name="algorithm">"Alpha-N"</constant>
@@ -148,9 +160,9 @@
          100.0 
       </constant>
 <constant digits="0" name="TrigAng" units="Deg">176.0</constant>
-<constant digits="0" name="FixAng" units="Deg">-9.9968</constant>
+<constant digits="0" name="FixAng" units="Deg">0.0</constant>
 <constant digits="0" name="Trim" units="Deg">13.024</constant>
-<constant digits="0" name="CrankAng" units="Deg">4.0832</constant>
+<constant digits="0" name="CrankAng" units="Deg">11.6</constant>
 <constant digits="0" name="IgHold">10.0</constant>
 <constant name="Trig_plus">"+22.5"</constant>
 <constant name="TrigCrank">"Time Based"</constant>
@@ -165,10 +177,10 @@
 <constant name="dwellcont">"Dwell control"</constant>
 <constant digits="1" name="dwellcrank" units="ms">4.5</constant>
 <constant digits="1" name="dwellrun" units="ms">4.0</constant>
-<constant digits="0" name="numteeth" units="teeth">12.0</constant>
+<constant digits="0" name="numteeth" units="teeth">36.0</constant>
 <constant digits="0" name="onetwo" units="teeth">1.0</constant>
 <constant digits="0" name="crankRPM" units="rpm">3500.0</constant>
-<constant digits="0" name="tpsflood" units="raw">12.0</constant>
+<constant digits="0" name="tpsflood" units="%">70.0</constant>
 <constant digits="0" name="SoftRevLim" units="rpm">6000.0</constant>
 <constant digits="0" name="SoftLimRetard" units="deg">14.9952</constant>
 <constant digits="1" name="SoftLimMax" units="s">2.0</constant>
