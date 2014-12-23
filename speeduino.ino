@@ -102,6 +102,12 @@ void setup()
   digitalWrite(pinCoil3, coilLOW);
   digitalWrite(pinCoil4, coilLOW);
   
+  //Similar for injectors, make sure they're turned off
+  digitalWrite(pinInjector1, LOW);
+  digitalWrite(pinInjector2, LOW);
+  digitalWrite(pinInjector3, LOW);
+  digitalWrite(pinInjector4, LOW);
+  
   initialiseSchedulers();
   initialiseTimers();
   
@@ -167,9 +173,10 @@ void setup()
   pinMode(pinO2, INPUT);
   pinMode(pinTPS, INPUT);
   pinMode(pinIAT, INPUT);
+  pinMode(pinCLT, INPUT);
   //Turn on pullups for above pins
   digitalWrite(pinMAP, HIGH);
-  digitalWrite(pinO2, LOW);
+  //digitalWrite(pinO2, LOW);
   digitalWrite(pinTPS, LOW);
   
   //Calculate the number of degrees between cylinders
@@ -236,7 +243,7 @@ void loop()
     currentStatus.tpsADC = map(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
     currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
     //currentStatus.TPS = 70;
-    currentStatus.O2 = map(analogRead(pinO2), 0, 1023, 74, 224); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4, then multiplied by 16 (<< 4). This is the correct calibration for an Innovate Wideband 0v - 5V unit
+    currentStatus.O2 = map(analogRead(pinO2), 0, 1023, 74, 224); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4. This is the correct calibration for an Innovate Wideband 0v - 5V unit. Proper calibration is still a WIP
     //The IAT and CLT readings can be done less frequently. This still runs about 10 times per second
     if ((mainLoopCount & 127) == 1)
     {
@@ -254,7 +261,7 @@ void loop()
     if (currentStatus.hasSync && (currentStatus.RPM > 0))
     {
         //If it is, check is we're running or cranking
-        if(currentStatus.RPM > int(configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100 
+        if(currentStatus.RPM > (int)(configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100 
         { //Sets the engine running bit, clears the engine cranking bit
           BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); 
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); 
