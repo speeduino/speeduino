@@ -214,7 +214,8 @@ void loop()
     //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
     previousLoopTime = currentLoopTime;
     currentLoopTime = micros();
-    if ((currentLoopTime - toothLastToothTime) < 500000L) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped
+    long timeToLastTooth = (currentLoopTime - toothLastToothTime);
+    if ( (timeToLastTooth < 500000L) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
       noInterrupts();
       unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
@@ -261,7 +262,7 @@ void loop()
     if (currentStatus.hasSync && (currentStatus.RPM > 0))
     {
         //If it is, check is we're running or cranking
-        if(currentStatus.RPM > (int)(configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100 
+        if(currentStatus.RPM > ((unsigned int)configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100 
         { //Sets the engine running bit, clears the engine cranking bit
           BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); 
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); 
