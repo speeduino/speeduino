@@ -114,7 +114,7 @@ void sendValues(int length)
   
   response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   response[1] = currentStatus.squirt; //Squirt Bitfield
-  response[2] = currentStatus.engine; //Engine Status Bitfield - NOT YET WORKING
+  response[2] = currentStatus.engine; //Engine Status Bitfield
   response[3] = 0x00; //baro
   response[4] = currentStatus.MAP; //map
   response[5] = currentStatus.IAT; //mat
@@ -299,25 +299,27 @@ This function is used to store calibration data sent by Tuner Studio.
 void receiveCalibration(byte tableID)
 {
   byte* pnt_TargetTable; //Pointer that will be used to point to the required target table
-  int default_val; //The default value that is used in the sent table for invalid ADC values
-  int offset;
+  int OFFSET, DIVISION_FACTOR;
 
   switch (tableID)
   {
     case 0:
       //coolant table
       pnt_TargetTable = (byte *)&cltCalibrationTable;
-      offset = CALIBRATION_TEMPERATURE_OFFSET;
+      OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
+      DIVISION_FACTOR = 10;
       break;
     case 1:
       //Inlet air temp table
       pnt_TargetTable = (byte *)&iatCalibrationTable;
-      offset = CALIBRATION_TEMPERATURE_OFFSET;
+      OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
+      DIVISION_FACTOR = 10;
       break;
     case 2:
       //O2 table
       pnt_TargetTable = (byte *)&o2CalibrationTable;
-      offset = 0;
+      OFFSET = 0;
+      DIVISION_FACTOR = 1;
       break;
 
     default:
@@ -329,46 +331,63 @@ void receiveCalibration(byte tableID)
   //1024 value pairs are sent. We have to receive them all, but only use every second one (We only store 512 calibratino table entries to save on EEPROM space)
   //The values are sent as 2 byte ints, but we convert them to single bytes. Any values over 255 are capped at 255.
   int tempValue;
+  byte tempBuffer[2];
   bool every2nd = true;
   //byte tempVal = 3;
   int x;
   int counter = 0;
-  for (x = 0; x < 800; x++)
+  Serial.setTimeout(20);
+  pinMode(13, OUTPUT);
+  digitalWrite(13, LOW);
+  for (x = 0; x < 1024; x++)
   {
     //tempVal = Serial.available();
-    int failcount = 0;
-    //while ( (Serial.available() < 2) && (failcount < 20000) ) { failcount++; }
+    //int failcount = 0;
+    while ( Serial.available() < 2 ) {}
+    tempBuffer[0] = Serial.read();
+    tempBuffer[1] = Serial.read();
     
+    /*
     int hsb16 = -1;
     while( hsb16 == -1 ) { hsb16 = Serial.read(); } 
     byte hsb = (byte)(hsb16);
     int lsb16 = -1;
     while( lsb16 == -1 ) { lsb16 = Serial.read(); } 
     byte lsb = (byte)(lsb16);
+    */
+    //Serial.readBytes(tempBuffer, 2);
     
     //int hsb16 = Serial.read();
     //int lsb16 = Serial.read();
     
-    tempValue = div(int(word(hsb16, lsb16)), 10).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
-    tempValue = tempValue + offset;
+
+    
+    tempValue = div(int(word(tempBuffer[0], tempBuffer[1])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
+    //tempValue = div((tempBuffer[0] << 8 | tempBuffer[1]), 10).quot;
+    tempValue = tempValue + OFFSET;
+    //tempValue = word(tempBuffer[0], tempBuffer[1]);
 
     if (every2nd) //Only use every 2nd value
     {
       if (tempValue > 255) { tempValue = 255; } // Cap the maximum value to prevent overflow when converting to byte
       if (tempValue < 0) { tempValue = 0; }
       //pnt_TargetTable[(x / 2)] = (byte)tempValue;
-      pnt_TargetTable[counter] = (byte)tempValue;
-      if(counter > 400) { cltCalibrationTable[counter] = 201;}
+      pnt_TargetTable[counter] = (byte)(counter);
+      int y = EEPROM_CALIBRATION_O2 + counter;
+      EEPROM.write(y, (byte)counter);
+      //if(counter > 400) { pnt_TargetTable[counter] = 201;}
 
       every2nd = false;
+      analogWrite(13, (counter % 50) );
       counter++;
     }
-    else { every2nd = true; }
+    else { every2nd = true; }//digitalWrite(13, HIGH); }
 
-    //pnt_TargetTable[x] = tempVal;
-    x++;
+    //pnt_TargetTable[x] = tempValue;
+    //x++;
   }
-  
+  Serial.setTimeout(1000);
+  while(Serial.available() > 0) { Serial.read(); }
   //pnt_TargetTable[511] = 123;
   //cltCalibrationTable[510] = 123;
 }
