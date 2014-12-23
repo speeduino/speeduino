@@ -42,7 +42,7 @@ ISR(TIMER2_OVF_vect)
     //**************************************************************************************************************************************************
     //This updates the runSecs variable
     //If the engine is running or cranking, we need ot update the run time counter.
-    if ((BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) || BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)))
+    if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
     { //NOTE - There is a potential for a ~1sec gap between engine crank starting and ths runSec number being incremented. This may delay ASE!         
       if (currentStatus.runSecs <= 254) //Ensure we cap out at 255 and don't overflow. (which would reset ASE)
         { currentStatus.runSecs++; } //Increment our run counter by 1 second.
