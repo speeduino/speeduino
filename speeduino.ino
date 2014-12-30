@@ -145,7 +145,7 @@ void setup()
      
   }
   pinMode(pinTrigger, INPUT);
-  digitalWrite(pinTrigger, HIGH);
+  //digitalWrite(pinTrigger, HIGH);
   attachInterrupt(triggerInterrupt, trigger, FALLING); // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
   //End crank triger interrupt attachment
   

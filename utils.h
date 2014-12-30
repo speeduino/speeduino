@@ -59,12 +59,14 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, b
 //Convenience functions for Speed Density and Alpha-N
 unsigned int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 {
-  return PW(REQ_FUEL, VE, MAP, corrections, injOpen, 100); //Just use 1 in place of the TPS
+  //return PW(REQ_FUEL, VE, MAP, corrections, injOpen, 100); //Just use 1 in place of the TPS
+  return PW(REQ_FUEL, VE, 100, corrections, injOpen, 100); //Just use 1 in place of the TPS
 }
 
 unsigned int PW_AN(int REQ_FUEL, byte VE, byte TPS, int corrections, int injOpen)
 {
   //Sanity check
   if(TPS > 100) { TPS = 100; }
-  return PW(REQ_FUEL, VE, 100, corrections, injOpen, TPS); //Just use 1 in place of the MAP
+  //return PW(REQ_FUEL, VE, 100, corrections, injOpen, TPS); //Just use 1 in place of the MAP
+  return PW(REQ_FUEL, VE, 100, corrections, injOpen, 100); //Just use 1 in place of the MAP
 }
