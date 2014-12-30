@@ -3,7 +3,7 @@
 // Config section
 
 //The following lines are configurable, but the defaults are probably pretty good for most applications
-#define engineInjectorDeadTime 1500 //Time in uS that the injector takes to open minus the time it takes to close
+//#define engineInjectorDeadTime 2500 //Time in uS that the injector takes to open minus the time it takes to close
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 
 //**************************************************************************************************
@@ -26,7 +26,7 @@
 struct config1 configPage1;
 struct config2 configPage2;
 
-int req_fuel_uS, triggerToothAngle;
+int req_fuel_uS, triggerToothAngle, inj_opentime_uS;
 volatile int triggerActualTeeth;
 unsigned int triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 #define MAX_RPM 9000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
@@ -115,6 +115,7 @@ void setup()
   req_fuel_uS = configPage1.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations
   triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
+  inj_opentime_uS = configPage1.injOpen * 100; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155). 
   
   //Begin the main crank trigger interrupt pin setup
   //The interrupt numbering is a bit odd - See here for reference: http://arduino.cc/en/Reference/AttachInterrupt
@@ -226,6 +227,8 @@ void loop()
     {
       //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
       currentStatus.RPM = 0; 
+      currentStatus.PW = 0;
+      currentStatus.VE = 0;
       currentStatus.hasSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       secCounter = 0; //Reset our seconds counter.
@@ -288,7 +291,7 @@ void loop()
       { 
         //Speed Density
         currentStatus.VE = get3DTableValue(fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-        currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, engineInjectorDeadTime);
+        currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
         if (configPage2.FixAng == 0) //Check whether the user has set a fixed timing angle
           { currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.MAP, currentStatus.RPM); } //As above, but for ignition advance
          else
@@ -298,7 +301,7 @@ void loop()
       { 
         //Alpha-N
         currentStatus.VE = get3DTableValue(fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
-        currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, engineInjectorDeadTime); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
+        currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
         if (configPage2.FixAng == 0) //Check whether the user has set a fixed timing angle
           { currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.TPS, currentStatus.RPM); } //As above, but for ignition advance
         else
