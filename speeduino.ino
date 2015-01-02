@@ -61,7 +61,10 @@ byte coilLOW = LOW;
 struct statuses currentStatus;
 volatile int mainLoopCount;
 unsigned long secCounter; //The next time to increment 'runSecs' counter.
-int crankDegreesPerCylinder; //The number of crank degrees between cylinders (180 in a 4 cylinder, usually 120 in a 6 cylinder etc)
+int channel1Degrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
+int channel2Degrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
+int channel3Degrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
+int channel4Degrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
 int timePerDegree;
 
 void setup() 
@@ -183,19 +186,29 @@ void setup()
   //Calculate the number of degrees between cylinders
   switch (configPage1.nCylinders) {
     case 1:
-      crankDegreesPerCylinder = 360;
+      channel1Degrees = 0;
       break;
     case 2:
-      crankDegreesPerCylinder = 180;
+      channel1Degrees = 0;
+      channel2Degrees = 180;
+      break;
+    case 3:
+      channel1Degrees = 0;
+      channel2Degrees = 120;
+      channel3Degrees = 240;
       break;
     case 4:
-      crankDegreesPerCylinder = 180;
+      channel1Degrees = 0;
+      channel2Degrees = 180;
       break;
     case 6:
-      crankDegreesPerCylinder = 120;
+      channel1Degrees = 0;
+      channel2Degrees = 120;
+      channel3Degrees = 240;
       break;
     default: //Handle this better!!!
-      crankDegreesPerCylinder = 180;
+      channel1Degrees = 0;
+      channel2Degrees = 180;
       break;
   }
 }
@@ -310,7 +323,7 @@ void loop()
 
       int injector1StartAngle = 0;
       int injector2StartAngle = 0;
-      int injector3StartAngle = 0; //Not used until sequential gets written
+      int injector3StartAngle = 0; //Currently used for 3 cylinder only
       int injector4StartAngle = 0; //Not used until sequential gets written
       int ignition1StartAngle = 0;
       int ignition2StartAngle = 0;
@@ -327,6 +340,8 @@ void loop()
       crankAngle += ldiv( (micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
       if (crankAngle > 360) { crankAngle -= 360; }
       
+      //***********************************************************************************************
+      //BEGIN INJECTION TIMING
       //Determine next firing angles
       //1
       injector1StartAngle = 355 - ( div(currentStatus.PW, timePerDegree).quot ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
@@ -334,34 +349,52 @@ void loop()
       //2
       if (configPage1.nCylinders == 2) 
       { 
-        injector2StartAngle = (355 + crankDegreesPerCylinder - ( div(currentStatus.PW, timePerDegree).quot ));
+        injector2StartAngle = (355 + channel2Degrees - ( div(currentStatus.PW, timePerDegree).quot ));
         if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
       }
-      //4 
-      if (configPage1.nCylinders == 4) 
-      { 
-        injector2StartAngle = (355 + crankDegreesPerCylinder - ( div(currentStatus.PW, timePerDegree).quot ));
+      //3
+      else if (configPage1.nCylinders == 4) 
+      {
+        injector2StartAngle = (355 + channel2Degrees - ( div(currentStatus.PW, timePerDegree).quot ));
         if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
-      }    
-
+        injector3StartAngle = (355 + channel3Degrees - ( div(currentStatus.PW, timePerDegree).quot ));
+        if(injector3StartAngle > 360) {injector3StartAngle -= 360;}        
+      }
+      //4 
+      else if (configPage1.nCylinders == 4) 
+      { 
+        injector2StartAngle = (355 + channel2Degrees - ( div(currentStatus.PW, timePerDegree).quot ));
+        if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
+      }
+    
+      //***********************************************************************************************
+      //BEGIN IGNITION CALCULATIONS
       if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim * 100)) ) { currentStatus.advance -= configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
       //Calculate start angle for each channel
       //1
       int dwell = (configPage2.dwellRun * 100); //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
       int dwellAngle = (div(dwell, timePerDegree).quot );
       ignition1StartAngle = 360 - currentStatus.advance - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
-
       //2
       if (configPage1.nCylinders == 2) 
       { 
-        (ignition2StartAngle = crankDegreesPerCylinder + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ));
+        (ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ));
         if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
       }
-      //4
-      if (configPage1.nCylinders == 4) { 
-        (ignition2StartAngle = crankDegreesPerCylinder + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ));
+      //3
+      else if (configPage1.nCylinders == 3) 
+      { 
+        (ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ));
         if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
-    }
+        (ignition3StartAngle = channel3Degrees + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ));
+        if(ignition3StartAngle > 360) {ignition3StartAngle -= 360;}
+      }
+      //4
+      else if (configPage1.nCylinders == 4) 
+      { 
+        (ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ));
+        if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
+      }
       
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
       //We only need to set the shcedule if we're BEFORE the open angle
@@ -380,6 +413,14 @@ void loop()
                   ((unsigned long)(injector2StartAngle - crankAngle) * (unsigned long)timePerDegree),
                   (unsigned long)currentStatus.PW,
                   closeInjector2
+                  );
+      }
+      if (injector3StartAngle > crankAngle) 
+      { 
+        setFuelSchedule3(openInjector3, 
+                  ((unsigned long)(injector3StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                  (unsigned long)currentStatus.PW,
+                  closeInjector3
                   );
       }
       //Likewise for the ignition
@@ -405,6 +446,17 @@ void loop()
                       ((unsigned long)(ignition2StartAngle - crankAngle) * (unsigned long)timePerDegree),
                       dwell,
                       endCoil2Charge
+                      );
+          }
+        }
+        if ( ignition3StartAngle > crankAngle)
+        { 
+          if (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
+          {
+            setIgnitionSchedule3(beginCoil3Charge, 
+                      ((unsigned long)(ignition2StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                      dwell,
+                      endCoil3Charge
                       );
           }
         }
