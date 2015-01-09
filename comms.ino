@@ -62,6 +62,7 @@ void command()
           
         receiveCalibration(tableID); //Receive new values and store in memory
         writeCalibration(); //Store received values in EEPROM
+        analogWrite(13, 0 );
 
 	break;
 
@@ -333,34 +334,16 @@ void receiveCalibration(byte tableID)
   int tempValue;
   byte tempBuffer[2];
   bool every2nd = true;
-  //byte tempVal = 3;
   int x;
   int counter = 0;
-  Serial.setTimeout(20);
   pinMode(13, OUTPUT);
+  
   digitalWrite(13, LOW);
   for (x = 0; x < 1024; x++)
   {
-    //tempVal = Serial.available();
-    //int failcount = 0;
     while ( Serial.available() < 2 ) {}
     tempBuffer[0] = Serial.read();
     tempBuffer[1] = Serial.read();
-    
-    /*
-    int hsb16 = -1;
-    while( hsb16 == -1 ) { hsb16 = Serial.read(); } 
-    byte hsb = (byte)(hsb16);
-    int lsb16 = -1;
-    while( lsb16 == -1 ) { lsb16 = Serial.read(); } 
-    byte lsb = (byte)(lsb16);
-    */
-    //Serial.readBytes(tempBuffer, 2);
-    
-    //int hsb16 = Serial.read();
-    //int lsb16 = Serial.read();
-    
-
     
     tempValue = div(int(word(tempBuffer[0], tempBuffer[1])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
     //tempValue = div((tempBuffer[0] << 8 | tempBuffer[1]), 10).quot;
@@ -371,11 +354,10 @@ void receiveCalibration(byte tableID)
     {
       if (tempValue > 255) { tempValue = 255; } // Cap the maximum value to prevent overflow when converting to byte
       if (tempValue < 0) { tempValue = 0; }
-      //pnt_TargetTable[(x / 2)] = (byte)tempValue;
-      pnt_TargetTable[counter] = (byte)(counter);
+      pnt_TargetTable[(x / 2)] = (byte)tempValue;
+      //pnt_TargetTable[counter] = (byte)(counter);
       int y = EEPROM_CALIBRATION_O2 + counter;
-      EEPROM.write(y, (byte)counter);
-      //if(counter > 400) { pnt_TargetTable[counter] = 201;}
+      //EEPROM.write(y, (byte)counter);
 
       every2nd = false;
       analogWrite(13, (counter % 50) );
@@ -383,13 +365,8 @@ void receiveCalibration(byte tableID)
     }
     else { every2nd = true; }//digitalWrite(13, HIGH); }
 
-    //pnt_TargetTable[x] = tempValue;
-    //x++;
   }
-  Serial.setTimeout(1000);
-  while(Serial.available() > 0) { Serial.read(); }
-  //pnt_TargetTable[511] = 123;
-  //cltCalibrationTable[510] = 123;
+
 }
 
 /*

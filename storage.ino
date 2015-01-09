@@ -169,8 +169,6 @@ void loadCalibration()
 /*
 This takes the values in the 3 calibration tables (Coolant, Inlet temp and O2) 
 and saves them to the EEPROM.
-
-TODO: Need to add checking prior to write in order to prolong EEPROM life
 */
 void writeCalibration()
 {
@@ -178,13 +176,13 @@ void writeCalibration()
   for(int x=0; x<CALIBRATION_TABLE_SIZE; x++) //Each calibration table is 512 bytes long
   {
     int y = EEPROM_CALIBRATION_CLT + x;
-    EEPROM.write(y, cltCalibrationTable[x]);
+    if(EEPROM.read(y) != cltCalibrationTable[x]) { EEPROM.write(y, cltCalibrationTable[x]); }
     
     y = EEPROM_CALIBRATION_IAT + x;
-    EEPROM.write(y, iatCalibrationTable[x]);
+    if(EEPROM.read(y) != iatCalibrationTable[x]) { EEPROM.write(y, iatCalibrationTable[x]); }
     
     y = EEPROM_CALIBRATION_O2 + x;
-    EEPROM.write(y, o2CalibrationTable[x]);
+    if(EEPROM.read(y) != o2CalibrationTable[x]) { EEPROM.write(y, o2CalibrationTable[x]); }
   }
   
 }
