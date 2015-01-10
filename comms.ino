@@ -62,7 +62,6 @@ void command()
           
         receiveCalibration(tableID); //Receive new values and store in memory
         writeCalibration(); //Store received values in EEPROM
-        analogWrite(13, 0 );
 
 	break;
 
@@ -300,7 +299,7 @@ This function is used to store calibration data sent by Tuner Studio.
 void receiveCalibration(byte tableID)
 {
   byte* pnt_TargetTable; //Pointer that will be used to point to the required target table
-  int OFFSET, DIVISION_FACTOR;
+  int OFFSET, DIVISION_FACTOR, BYTES_PER_VALUE;
 
   switch (tableID)
   {
@@ -309,18 +308,22 @@ void receiveCalibration(byte tableID)
       pnt_TargetTable = (byte *)&cltCalibrationTable;
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
       DIVISION_FACTOR = 10;
+      BYTES_PER_VALUE = 2;
       break;
     case 1:
       //Inlet air temp table
       pnt_TargetTable = (byte *)&iatCalibrationTable;
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
       DIVISION_FACTOR = 10;
+      BYTES_PER_VALUE = 2;
       break;
     case 2:
       //O2 table
       pnt_TargetTable = (byte *)&o2CalibrationTable;
       OFFSET = 0;
       DIVISION_FACTOR = 1;
+      o2CalibrationTable[10] = 123;
+      BYTES_PER_VALUE = 1;
       break;
 
     default:
@@ -341,29 +344,35 @@ void receiveCalibration(byte tableID)
   digitalWrite(13, LOW);
   for (x = 0; x < 1024; x++)
   {
-    while ( Serial.available() < 2 ) {}
-    tempBuffer[0] = Serial.read();
-    tempBuffer[1] = Serial.read();
-    
-    tempValue = div(int(word(tempBuffer[0], tempBuffer[1])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
-    //tempValue = div((tempBuffer[0] << 8 | tempBuffer[1]), 10).quot;
+    //UNlike what is listed in the protocol documentation, the O2 sensor values are sent as bytes rather than ints
+    if(BYTES_PER_VALUE == 1)
+    {
+      while ( Serial.available() < 1 ) {}
+      tempValue = Serial.read();
+    }
+    else
+    {
+      while ( Serial.available() < 2 ) {}
+      tempBuffer[0] = Serial.read();
+      tempBuffer[1] = Serial.read();
+      
+      tempValue = div(int(word(tempBuffer[0], tempBuffer[1])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
+    }
     tempValue = tempValue + OFFSET;
-    //tempValue = word(tempBuffer[0], tempBuffer[1]);
 
     if (every2nd) //Only use every 2nd value
     {
       if (tempValue > 255) { tempValue = 255; } // Cap the maximum value to prevent overflow when converting to byte
       if (tempValue < 0) { tempValue = 0; }
+      
       pnt_TargetTable[(x / 2)] = (byte)tempValue;
-      //pnt_TargetTable[counter] = (byte)(counter);
       int y = EEPROM_CALIBRATION_O2 + counter;
-      //EEPROM.write(y, (byte)counter);
 
       every2nd = false;
       analogWrite(13, (counter % 50) );
       counter++;
     }
-    else { every2nd = true; }//digitalWrite(13, HIGH); }
+    else { every2nd = true; }
 
   }
 
