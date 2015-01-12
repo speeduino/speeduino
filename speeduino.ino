@@ -263,9 +263,9 @@ void loop()
     //The IAT and CLT readings can be done less frequently. This still runs about 10 times per second
     if ((mainLoopCount & 127) == 1)
     {
-       currentStatus.cltADC = map(analogRead(pinCLT), 0, 1023, 0, 512); //Get the current raw CLT value
-       currentStatus.iatADC = map(analogRead(pinIAT), 0, 1023, 0, 512); //Get the current raw IAT value
-       currentStatus.O2ADC = map(analogRead(pinO2), 0, 1023, 0, 512); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4. This is the correct calibration for an Innovate Wideband 0v - 5V unit. Proper calibration is still a WIP
+       currentStatus.cltADC = map(analogRead(pinCLT), 0, 1023, 0, 511); //Get the current raw CLT value
+       currentStatus.iatADC = map(analogRead(pinIAT), 0, 1023, 0, 511); //Get the current raw IAT value
+       currentStatus.O2ADC = map(analogRead(pinO2), 0, 1023, 0, 511); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4. This is the correct calibration for an Innovate Wideband 0v - 5V unit. Proper calibration is still a WIP
        currentStatus.battery10 = map(analogRead(pinBat), 0, 1023, 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
        //currentStatus.batADC = map(analogRead(pinBat), 0, 1023, 0, 255); //Get the current raw Battery value
        

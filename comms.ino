@@ -357,6 +357,7 @@ void receiveCalibration(byte tableID)
       tempBuffer[1] = Serial.read();
       
       tempValue = div(int(word(tempBuffer[0], tempBuffer[1])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
+      tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
     }
     tempValue = tempValue + OFFSET;
 
