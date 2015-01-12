@@ -117,8 +117,8 @@ void sendValues(int length)
   response[2] = currentStatus.engine; //Engine Status Bitfield
   response[3] = 0x00; //baro
   response[4] = currentStatus.MAP; //map
-  response[5] = currentStatus.IAT; //mat
-  response[6] = currentStatus.coolant; //Coolant ADC
+  response[5] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
+  response[6] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
   response[7] = currentStatus.tpsADC; //TPS (Raw 0-255)
   response[8] = currentStatus.battery10; //battery voltage
   response[9] = currentStatus.O2; //O2
