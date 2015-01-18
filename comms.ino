@@ -88,6 +88,13 @@ void command()
           Serial.print(", ");
           Serial.println(o2CalibrationTable[x]);
         }
+        Serial.println("WUE");
+        for(int x=0; x<10; x++)
+        {
+          Serial.print(configPage2.wueBins[x]);
+          Serial.print(", ");
+          Serial.println(configPage1.wueValues[x]);
+        }
         Serial.flush();
 	break;
 

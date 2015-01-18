@@ -3,7 +3,7 @@
 byte correctionsTotal()
 {
   int sumCorrections = 100;
-  //sumCorrections = div((sumCorrections * correctionWUE()), 100).quot;
+  sumCorrections = div((sumCorrections * correctionWUE()), 100).quot;
   sumCorrections = div((sumCorrections * correctionASE()), 100).quot;
   //sumCorrections = div((sumCorrections * correctionAccel()), 100).quot;
   sumCorrections = div((sumCorrections * correctionFloodClear()), 100).quot;
@@ -13,7 +13,7 @@ byte correctionsTotal()
 byte correctionWUE()
 {
   //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
-  return 100 + table2D_getValue(WUETable, currentStatus.coolant);
+  return table2D_getValue(WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
 }
 
 byte correctionASE()
