@@ -13,6 +13,7 @@ byte correctionsTotal()
 byte correctionWUE()
 {
   //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
+  if (currentStatus.coolant > (WUETable.axisX[9] - CALIBRATION_TEMPERATURE_OFFSET)) { return 100; } //This prevents us doing the 2D lookup if we're already up to temp
   return table2D_getValue(WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
 }
 
