@@ -3,10 +3,18 @@
 byte correctionsTotal()
 {
   int sumCorrections = 100;
-  sumCorrections = div((sumCorrections * correctionWUE()), 100).quot;
-  sumCorrections = div((sumCorrections * correctionASE()), 100).quot;
-  //sumCorrections = div((sumCorrections * correctionAccel()), 100).quot;
-  sumCorrections = div((sumCorrections * correctionFloodClear()), 100).quot;
+  byte result; //temporary variable to store the result of each corrections function
+  
+  //As the 'normal' case will be for each function to return 100, we only perform the division operation if the returned result is not equal to that
+  result = correctionWUE();
+  if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
+  result = correctionASE();
+  if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
+  result = correctionAccel();
+  //if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
+  result = correctionFloodClear();
+  if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
+  
   return (byte)sumCorrections;
 }
 
