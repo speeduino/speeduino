@@ -226,8 +226,10 @@ void setup()
 void loop() 
   {
       mainLoopCount++;    
-      //Check for any requets from serial
-      if ((mainLoopCount & 63) == 1) //Only check the serial buffer (And hence process serial commands) once every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
+      //Check for any requets from serial. Serial operations are checked under 2 scenarios:
+      // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
+      // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
+      if ( ((mainLoopCount & 63) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD)) 
       {
         if (Serial.available() > 0) 
         {
