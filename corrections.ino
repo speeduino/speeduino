@@ -1,5 +1,17 @@
+/*
+The corrections functions in this file affect the fuel pulsewidth (Either increasing or decreasing)
+based on factors other than the VE lookup.
+
+These factors include temperature (Warmup Enrichment and After Start Enrichment), Acceleration/Decelleration, 
+Flood clear mode etc.
+*/
+//************************************************************************************************************
 
 
+/*
+correctionsTotal() calls all the other corrections functions and combines their results.
+This is the only function that should be called from anywhere outside the file
+*/
 byte correctionsTotal()
 {
   int sumCorrections = 100;
@@ -18,6 +30,10 @@ byte correctionsTotal()
   return (byte)sumCorrections;
 }
 
+/*
+Warm Up Enrichment (WUE)
+Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add
+*/
 byte correctionWUE()
 {
   //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
@@ -25,6 +41,11 @@ byte correctionWUE()
   return table2D_getValue(WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
 }
 
+/*
+After Start Enrichment
+This is a short period (Usually <20 seconds) immediately after the engine first fires (But not when cranking)
+where an additional amount of fuel is added (Over and above the WUE amount)
+*/
 byte correctionASE()
 {
   
@@ -43,19 +64,38 @@ byte correctionASE()
 /*
 TPS based acceleration enrichment
 Calculates the % change of the throttle over time (%/second) and performs a lookup based on this
+When the enrichment is turned on, it runs at that amount for a fixed period of time (taeTime)
 */
-
 byte correctionAccel()
 {
+  //First, check whether the accel. enrichment is already running
+  if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
+  {
+    //If it is currently running, check whether it should still be running or whether it's reached it's end time
+    if( micros() >= currentStatus.TAEEndTime )
+    {
+      //Time to turn enrichment off
+      BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
+      currentStatus.TAEamount = 0;
+      return 100;
+    }
+    //Enrichment still needs to keep running. Simply return the total TAE amount
+    return 100 + currentStatus.TAEamount; 
+  }
+  
+  //If TAE isn't currently turned on, need to check whether it needs to be turned on
   int rateOfChange = ldiv(1000000, (currentLoopTime - previousLoopTime)).quot * (currentStatus.TPS - currentStatus.TPSlast); //This is the % per second that the TPS has moved
-  //int rateOfChange = div( (1000000 * (currentStatus.TPS - currentStatus.TPSlast)), (currentLoopTime - previousLoopTime)).quot; //This is the % per second that the TPS has moved
-  currentStatus.tpsDOT = div(rateOfChange, 10).quot;
+  currentStatus.tpsDOT = div(rateOfChange, 10).quot; //The TAE bins are divided by 10 in order to allow them to be stored in a byte. 
   
   if (rateOfChange > configPage1.tpsThresh)
   {
-    return 100 + table2D_getValue(taeTable, currentStatus.tpsDOT);
+    BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
+    currentStatus.TAEamount = table2D_getValue(taeTable, currentStatus.tpsDOT); //Lookup and store the amount of enrichment required
+    currentStatus.TAEEndTime = micros() + (configPage1.taeTime * 100); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS * 10, so multiply it by 100 to get it in uS
+    return 100 + currentStatus.TAEamount;
   }
   
+  //If we reach here then TAE is neither on, nor does it need to be turned on.
   return 100;
 }
 

@@ -15,8 +15,8 @@ const byte page_size = 128;
 #define BIT_ENGINE_CRANK    1   // Engine cranking
 #define BIT_ENGINE_ASE      2    // after start enrichment (ASE)
 #define BIT_ENGINE_WARMUP   3  // Engine in warmup
-#define BIT_ENGINE_TPS      4    // in TPS acceleration mode
-#define BIT_ENGINE_ACC      5    // in deceleration mode
+#define BIT_ENGINE_ACC      4    // in TPS acceleration mode
+#define BIT_ENGINE_DCC      5    // in deceleration mode
 #define BIT_ENGINE_MAP      6    // in MAP acceleration mode
 #define BIT_ENGINE_IDLE     7  // idle on
 
@@ -59,6 +59,8 @@ struct statuses {
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
   byte advance;
   byte corrections;
+  byte TAEamount; //The amount of accleration enrichment currently being applied
+  unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte squirt;
   byte engine;
   unsigned int PW; //In uS

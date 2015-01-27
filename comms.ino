@@ -134,7 +134,7 @@ void sendValues(int length)
   response[12] = 0x00; //Warmup enrichment (%)
   response[13] = (byte)(div(currentStatus.RPM, 100).quot); //rpm / 100 
   response[14] = (byte)(currentStatus.PW / 200); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS. 
-  response[15] = 0x00; //acceleration enrichment (ms)
+  response[15] = currentStatus.TAEamount; //acceleration enrichment (ms)
   response[16] = 0x00; //Barometer correction (%)
   response[17] = currentStatus.corrections; //Total GammaE (%)
   response[18] = currentStatus.VE; //Current VE 1 (%)
