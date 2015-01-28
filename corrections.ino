@@ -69,7 +69,6 @@ When the enrichment is turned on, it runs at that amount for a fixed period of t
 byte correctionAccel()
 {
   //First, check whether the accel. enrichment is already running
-  
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
   {
     //If it is currently running, check whether it should still be running or whether it's reached it's end time
@@ -84,10 +83,9 @@ byte correctionAccel()
     return 100 + currentStatus.TAEamount; 
   }
   
-  
   //If TAE isn't currently turned on, need to check whether it needs to be turned on
   int rateOfChange = ldiv(1000000, (currentLoopTime - previousLoopTime)).quot * (currentStatus.TPS - currentStatus.TPSlast); //This is the % per second that the TPS has moved
-  currentStatus.tpsDOT = div(rateOfChange, 10).quot; //The TAE bins are divided by 10 in order to allow them to be stored in a byte. 
+  currentStatus.tpsDOT = divs10(rateOfChange); //The TAE bins are divided by 10 in order to allow them to be stored in a byte. 
   
   if (currentStatus.tpsDOT > (configPage1.tpsThresh * 10))
   {

@@ -269,11 +269,11 @@ void loop()
     //-----------------------------------------------------------------------------------------------------
     currentStatus.TPSlast = currentStatus.TPS;
     currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 10, 255); //Get the current MAP value
-    currentStatus.tpsADC = map(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
-    currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+    currentStatus.tpsADC = fastMap(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
+    currentStatus.TPS = fastMap(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
     
-    //The IAT and CLT readings can be done less frequently. This still runs about 10 times per second
-    if ((mainLoopCount & 127) == 1)
+    //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
+    if ((mainLoopCount & 255) == 1)
     {
        currentStatus.cltADC = map(analogRead(pinCLT), 0, 1023, 0, 511); //Get the current raw CLT value
        currentStatus.iatADC = map(analogRead(pinIAT), 0, 1023, 0, 511); //Get the current raw IAT value
@@ -357,26 +357,27 @@ void loop()
       //BEGIN INJECTION TIMING
       //Determine next firing angles
       //1
-      injector1StartAngle = 355 - ( div(currentStatus.PW, timePerDegree).quot ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
+      int PWdivTimerPerDegree = div(currentStatus.PW, timePerDegree).quot; //This variable is used multiple times, so only do the division once. 
+      injector1StartAngle = 355 - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       //Repeat the above for each cylinder
       //2
       if (configPage1.nCylinders == 2) 
       { 
-        injector2StartAngle = (355 + channel2Degrees - ( div(currentStatus.PW, timePerDegree).quot ));
+        injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
         if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
       }
       //3
-      else if (configPage1.nCylinders == 4) 
+      else if (configPage1.nCylinders == 3) 
       {
-        injector2StartAngle = (355 + channel2Degrees - ( div(currentStatus.PW, timePerDegree).quot ));
+        injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
         if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
-        injector3StartAngle = (355 + channel3Degrees - ( div(currentStatus.PW, timePerDegree).quot ));
+        injector3StartAngle = (355 + channel3Degrees - ( PWdivTimerPerDegree ));
         if(injector3StartAngle > 360) {injector3StartAngle -= 360;}        
       }
       //4 
       else if (configPage1.nCylinders == 4) 
       { 
-        injector2StartAngle = (355 + channel2Degrees - ( div(currentStatus.PW, timePerDegree).quot ));
+        injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
         if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
       }
     
