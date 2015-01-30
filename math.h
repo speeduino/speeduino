@@ -7,6 +7,7 @@ int fastMap(int x, int in_min, int in_max, int out_min, int out_max)
 
 /*
 The following are all fast versions of specific divisions
+Ref: http://www.hackersdelight.org/divcMore.pdf
 */
 
 //Unsigned divide by 10

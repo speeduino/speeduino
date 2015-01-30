@@ -269,8 +269,8 @@ void loop()
     //-----------------------------------------------------------------------------------------------------
     currentStatus.TPSlast = currentStatus.TPS;
     currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 10, 255); //Get the current MAP value
-    currentStatus.tpsADC = fastMap(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
-    currentStatus.TPS = fastMap(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+    currentStatus.tpsADC = map(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
+    currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
     
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
     if ((mainLoopCount & 255) == 1)
@@ -294,7 +294,7 @@ void loop()
         if(currentStatus.RPM > ((unsigned int)configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100 
         { //Sets the engine running bit, clears the engine cranking bit
           BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); 
-          BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); 
+          BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
         } 
         else 
         {  //Sets the engine cranking bit, clears the engine running bit

@@ -72,7 +72,7 @@ byte correctionAccel()
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
   {
     //If it is currently running, check whether it should still be running or whether it's reached it's end time
-    if( micros() >= currentStatus.TAEEndTime )
+    if( currentLoopTime >= currentStatus.TAEEndTime )
     {
       //Time to turn enrichment off
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
