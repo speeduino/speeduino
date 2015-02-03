@@ -1,5 +1,6 @@
 #define vePage    1
 #define ignPage   2
+#define afrPage   3
 
 byte currentPage;
 

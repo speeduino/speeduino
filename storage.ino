@@ -72,9 +72,40 @@ void writeConfig()
     if(EEPROM.read(x) != ignitionTable.axisY[offset]) { EEPROM.write(x, ignitionTable.axisY[offset]); }
   }
   //The next 45 bytes can simply be pulled straight from the configTable
-  for(int x=EEPROM_CONFIG2_SETTINGS; x<EEPROM_CONFIG_END; x++) 
+  for(int x=EEPROM_CONFIG2_SETTINGS; x<EEPROM_CONFIG2_END; x++) 
   { 
     if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG2_SETTINGS))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG2_SETTINGS))); }
+  }
+  //That concludes the writing of the IGN table
+  
+  //*********************************************************************************************************************************************************************************
+  //AFR CONFIG PAGE (3)
+  pnt_configPage = (byte *)&configPage3; //Create a pointer to Page 3 in memory
+  //Begin writing the Ignition table, basically the same thing as above
+  if(EEPROM.read(EEPROM_CONFIG3_XSIZE) != afrTable.xSize) { EEPROM.write(EEPROM_CONFIG3_XSIZE,afrTable.xSize); } //Write the ignition Table RPM dimension size
+  if(EEPROM.read(EEPROM_CONFIG3_YSIZE) != afrTable.ySize) { EEPROM.write(EEPROM_CONFIG3_YSIZE,afrTable.ySize); } //Write the ignition Table MAP/TPS dimension size
+  
+  for(int x=EEPROM_CONFIG3_MAP; x<EEPROM_CONFIG3_XBINS; x++) 
+  { 
+    offset = x - EEPROM_CONFIG3_MAP;
+    if(EEPROM.read(x) != afrTable.values[7-offset/8][offset%8]) { EEPROM.write(x, afrTable.values[7-offset/8][offset%8]); }  //Write the 8x8 map
+  }
+  //RPM bins
+  for(int x=EEPROM_CONFIG3_XBINS; x<EEPROM_CONFIG3_YBINS; x++) 
+  {
+    offset = x - EEPROM_CONFIG3_XBINS;
+    if(EEPROM.read(x) != byte(afrTable.axisX[offset]/100)) { EEPROM.write(x, byte(afrTable.axisX[offset]/100)); } //RPM bins are divided by 100 and converted to a byte
+  }
+  //TPS/MAP bins
+  for(int x=EEPROM_CONFIG3_YBINS; x<EEPROM_CONFIG3_SETTINGS; x++) 
+  {
+    offset = x - EEPROM_CONFIG3_YBINS;
+    if(EEPROM.read(x) != afrTable.axisY[offset]) { EEPROM.write(x, afrTable.axisY[offset]); }
+  }
+  //The next 45 bytes can simply be pulled straight from the configTable
+  for(int x=EEPROM_CONFIG3_SETTINGS; x<EEPROM_CONFIG3_END; x++) 
+  { 
+    if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG3_SETTINGS))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG3_SETTINGS))); }
   }
   
 }
@@ -138,9 +169,39 @@ void loadConfig()
     ignitionTable.axisY[offset] = EEPROM.read(x);
   }
   //The next 45 bytes can simply be pulled straight from the configTable
-  for(int x=EEPROM_CONFIG2_SETTINGS; x<EEPROM_CONFIG_END; x++) 
+  for(int x=EEPROM_CONFIG2_SETTINGS; x<EEPROM_CONFIG2_END; x++) 
   { 
     *(pnt_configPage + byte(x - EEPROM_CONFIG2_SETTINGS)) = EEPROM.read(x);
+  }
+  
+  //*********************************************************************************************************************************************************************************
+  //AFR TARGET CONFIG PAGE (3)
+  pnt_configPage = (byte *)&configPage3; //Create a pointer to Page 2 in memory
+  //Begin writing the Ignition table, basically the same thing as above
+  //ignitionTable.xSize = EEPROM.read(EEPROM_CONFIG2_XSIZE); //Read the ignition Table RPM dimension size (Currently not supproted)
+  //ignitionTable.ySize = EEPROM.read(EEPROM_CONFIG2_YSIZE); //Read the ignition Table MAP/TPS dimension size (Currently not supproted)
+  
+  for(int x=EEPROM_CONFIG3_MAP; x<EEPROM_CONFIG3_XBINS; x++) 
+  { 
+    offset = x - EEPROM_CONFIG3_MAP;
+    afrTable.values[7-offset/8][offset%8] = EEPROM.read(x); //Read the 8x8 map
+  }
+  //RPM bins
+  for(int x=EEPROM_CONFIG3_XBINS; x<EEPROM_CONFIG3_YBINS; x++) 
+  {
+    offset = x - EEPROM_CONFIG3_XBINS;
+    afrTable.axisX[offset] = (EEPROM.read(x) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+  }
+  //TPS/MAP bins
+  for(int x=EEPROM_CONFIG3_YBINS; x<EEPROM_CONFIG3_SETTINGS; x++) 
+  {
+    offset = x - EEPROM_CONFIG3_YBINS;
+    afrTable.axisY[offset] = EEPROM.read(x);
+  }
+  //The next 45 bytes can simply be pulled straight from the configTable
+  for(int x=EEPROM_CONFIG3_SETTINGS; x<EEPROM_CONFIG3_END; x++) 
+  { 
+    *(pnt_configPage + byte(x - EEPROM_CONFIG3_SETTINGS)) = EEPROM.read(x);
   }
   
 }

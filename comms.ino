@@ -237,6 +237,41 @@ void receiveValue(byte offset, byte newValue)
           return;
         }
         break;
+      case afrPage: //Air/Fuel ratio target settings page (Page 3)
+        pnt_configPage = (byte *)&configPage3;
+        if (offset < 64) //New value is part of the afr map
+        {
+          afrTable.values[7-offset/8][offset%8] = newValue;
+          return;
+        }
+        else if (offset < 80) //New value is one of the X or Y axis bins
+        {
+          //Check whether this is on the X (RPM) or Y (MAP/TPS) axis
+          if (offset < 72) 
+          { 
+            //X Axis
+            afrTable.axisX[(offset-64)] = int(newValue) * int(100); //The RPM values sent by megasquirt are divided by 100, need to multiply it back by 100 to make it correct
+          }
+          else
+          { 
+            
+            //Y Axis
+            offset = 7-(offset-72); //Need to do a translation to flip the order 
+            afrTable.axisY[offset] = int(newValue);
+            
+          }
+          return;
+        }
+        else //New value is one of the remaining config items
+        {
+          //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
+          if( offset < page_size)
+          {
+            *(pnt_configPage + byte(offset - 80)) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
+          }
+          return;
+        }
+        break;
       
       default:
 	break;
@@ -283,6 +318,23 @@ void sendPage()
         
         //All other bytes can simply be copied from the config table
         pnt_configPage = (byte *)&configPage2; //Create a pointer to Page 2 in memory
+        offset = 80; //Offset is based on the amount already copied above (table + bins)
+        for(byte x=offset; x<page_size; x++)
+        { 
+          response[x] = *(pnt_configPage + byte(x - offset)); //Each byte is simply the location in memory of configPage2 + the offset + the variable number (x)
+        }
+        Serial.write((byte *)&response, sizeof(response)); 
+        Serial.flush();
+        break;
+        
+      case afrPage:
+        //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
+        for(byte x=0;x<64;x++) { response[x] = afrTable.values[7-x/8][x%8]; }
+        for(byte x=64;x<72;x++) { response[x] = byte(afrTable.axisX[(x-64)] / 100); }
+        for(byte y=72;y<80;y++) { response[y] = byte(afrTable.axisY[7-(y-72)]); }
+        
+        //All other bytes can simply be copied from the config table
+        pnt_configPage = (byte *)&configPage3; //Create a pointer to Page 2 in memory
         offset = 80; //Offset is based on the amount already copied above (table + bins)
         for(byte x=offset; x<page_size; x++)
         { 

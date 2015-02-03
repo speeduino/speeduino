@@ -25,6 +25,7 @@
 
 struct config1 configPage1;
 struct config2 configPage2;
+struct config3 configPage3;
 
 int req_fuel_uS, triggerToothAngle, inj_opentime_uS;
 volatile int triggerActualTeeth;
@@ -43,6 +44,7 @@ volatile bool ignitionOn = true; //The current state of the ignition system
 
 struct table3D fuelTable; //8x8 fuel map
 struct table3D ignitionTable; //8x8 ignition map
+struct table3D afrTable; //8x8 afr target map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];

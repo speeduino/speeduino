@@ -80,13 +80,6 @@ struct statuses {
 //Page 1 of the config - See the ini file for further reference
 //This mostly covers off variables that are required for fuel
 struct config1 {
-  /*
-  byte engineCylinders; 1 // May support more than 1 cyl later. Always will assume 1 injector per cylinder. 
-  byte engineInjectorSize; 80 // In cc/min
-  byte engineStoich; 14.7 // Stoichiometric ratio of fuel used
-  byte engineStrokes; 4 //Can be 2 stroke or 4 stroke, any other value will cause problems
-  byte engineDwell; 3000 //The spark dwell time in uS
-  */
   
   byte crankCold; //Cold cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking under a certain temp threshold (ms)
   byte crankHot; //Warm cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking (ms)
@@ -98,10 +91,10 @@ struct config1 {
   byte tpsThresh;
   byte taeTime;
   byte tdePct;
-  byte egoTemp; //The temperature at which the EGO / O2 sensor values start being used (Degrees)
-  byte egoCount;
-  byte egoDelta;
-  byte egoLimit;
+  byte unused102;
+  byte unused103;
+  byte unused104;
+  byte unused105;
   byte reqFuel;
   byte divider;
   byte alternate;
@@ -178,6 +171,51 @@ struct config2 {
   byte taeBins[4]; //TPS based acceleration enrichment bins (%/s)
   byte taeValues[4]; //TPS based acceleration enrichment rates (% to add)
   byte wueBins[10]; //Warmup Enrichment bins (Values are in configTable1)
+  byte unused115;
+  byte unused116;
+  byte unused117;
+  byte unused118;
+  byte unused119;
+  byte unused120;
+  byte unused121;
+  byte unused122;
+  byte unused123;
+  byte unused124;
+  byte unused125;
+  byte unused126;
+  byte unused127;
+
+  
+};
+
+//Page 3 of the config - See the ini file for further reference
+//This mostly covers off variables that are required for AFR targets and closed loop
+struct config3 {
+  
+  byte egoAlgorithm : 2;
+  byte egoType : 2;
+  byte unused : 4;
+  
+  byte egoKP;
+  byte egoKI;
+  byte egoKD;
+  byte egoTemp; //The temperature above which closed loop functions
+  byte egoCount; //The number of ignition cylces per step
+  byte egoDelta; //The step size (In %) when using simple algorithm
+  byte egoLimit; //Maximum amount the closed loop will vary the fueling
+  byte ego_min; //AFR must be above this for closed loop to function
+  byte ego_max; //AFR must be below this for closed loop to function
+  byte ego_sdelay; //Time in seconds after engine starts that closed loop becomes available
+  byte egoRPM; //RPM must be above this for closed loop to function
+  byte egoTPSMax; //TPS must be below this for closed loop to function
+  byte floodClear; //TPS value that triggers flood clear mode (No fuel whilst cranking)
+  byte egoLoadMax; //Load (TPS or MAP) must be below this for closed loop to function
+  byte egoLoadMin; //Load (TPS or MAP) must be above this for closed loop to function
+  byte unused95; 
+  byte unused96;
+  byte unused97; 
+  byte unused98; 
+  byte unused99; 
   byte unused115;
   byte unused116;
   byte unused117;
