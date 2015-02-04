@@ -50,9 +50,10 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, b
     intermediate = (intermediate * iMAP) >> 7;
     intermediate = (intermediate * iCorrections) >> 7;
     intermediate = (intermediate * iTPS) >> 7;
-    unsigned int final = (unsigned int)(intermediate + injOpen);
-    //if (final > 65535) { final = 65535; } //Make sure this won't overflow. This means the maximum pulsewidth possible is 65.535mS
-    return final;
+    intermediate += injOpen; //Add the injector opening time
+    if ( intermediate > 65535) { intermediate = 65535; } //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
+    //unsigned int final = (unsigned int)(intermediate);
+    return (unsigned int)(intermediate);
 
   }
  

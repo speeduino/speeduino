@@ -359,7 +359,7 @@ void loop()
       //BEGIN INJECTION TIMING
       //Determine next firing angles
       //1
-      int PWdivTimerPerDegree = div(currentStatus.PW, timePerDegree).quot; //This variable is used multiple times, so only do the division once. 
+      int PWdivTimerPerDegree = div(currentStatus.PW, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
       injector1StartAngle = 355 - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       //Repeat the above for each cylinder
       //2
