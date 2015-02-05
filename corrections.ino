@@ -18,14 +18,16 @@ byte correctionsTotal()
   byte result; //temporary variable to store the result of each corrections function
   
   //As the 'normal' case will be for each function to return 100, we only perform the division operation if the returned result is not equal to that
-  result = correctionWUE();
-  if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
+  currentStatus.wueCorrection = correctionWUE();
+  if (currentStatus.wueCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.wueCorrection), 100).quot; }
   result = correctionASE();
   if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
-  result = correctionAccel();
-  //if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
+  currentStatus.TAEamount = correctionAccel();
+  //if (currentStatus.TAEamount != 100) { sumCorrections = div((sumCorrections * currentStatus.TAEamount), 100).quot; }
   result = correctionFloodClear();
   if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
+  currentStatus.egoCorrection = correctionsAFRClosedLoop();
+  if (currentStatus.egoCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.egoCorrection), 100).quot; }
   
   return (byte)sumCorrections;
 }
@@ -90,9 +92,8 @@ byte correctionAccel()
   if (currentStatus.tpsDOT > (configPage1.tpsThresh * 10))
   {
     BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
-    currentStatus.TAEamount = table2D_getValue(taeTable, currentStatus.tpsDOT); //Lookup and store the amount of enrichment required
     currentStatus.TAEEndTime = micros() + (configPage1.taeTime * 100); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS * 10, so multiply it by 100 to get it in uS
-    return 100 + currentStatus.TAEamount;
+    return 100 + table2D_getValue(taeTable, currentStatus.tpsDOT);
   }
   
   //If we reach here then TAE is neither on, nor does it need to be turned on.
@@ -116,4 +117,39 @@ byte correctionFloodClear()
     }
   }
   return 100;
+}
+
+/*
+Lookup the AFR target table and perform either a simple or PID adjustment based on this
+
+Simple (Best suited to narrowband sensors):
+If the O2 sensor reports that the mixture is lean/rich compared to the desired AFR target, it will make a 1% adjustment
+It then waits <egoDelta> number of ignition events and compares O2 against the target table again. If it is still lean/rich then the adjustment is increased to 2%
+This continues until either:
+  a) the O2 reading flips from lean to rich, at which point the adjustment cycle starts again at 1% or
+  b) the adjustment amount increases to <egoLimit> at which point it stays at this level until the O2 state (rich/lean) changes
+ 
+PID (Best suited to wideband sensors):
+ 
+*/
+byte correctionsAFRClosedLoop()
+{
+  if(configPage3.egoAlgorithm == 0) { return 100; } //An egoAlgorithm value of 0 means DISALBLED
+  
+  //Check the ignition count to see whether the next step is required
+  if( (ignitionCount & (configPage3.egoCount - 1)) == 1 ) //This is the equivalent of ( (ignitionCount % configPage3.egoCount) == 0 ) but without the expensive modulus operation. ie It results in True every <egoCount> ignition loops. Note that it only works for power of two vlaues for egoCount
+  {
+    //Check all other requirements for closed loop adjustments
+    if( (currentStatus.coolant > configPage3.egoTemp) && (currentStatus.RPM > (unsigned int)(configPage3.egoRPM * 100)) && (currentStatus.TPS < configPage3.egoTPSMax) && (currentStatus.O2 < configPage3.ego_max) && (currentStatus.O2 > configPage3.ego_min) && (currentStatus.runSecs > configPage3.ego_sdelay) )
+    {
+      //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
+      byte yValue;
+      if (configPage1.algorithm == 0) { yValue = currentStatus.MAP; }
+      else  { yValue = currentStatus.TPS; }
+      
+      byte afrTarget = get3DTableValue(afrTable, yValue, currentStatus.RPM); //Perform the target lookup
+      
+      
+    }
+  }
 }

@@ -263,6 +263,7 @@ ISR(TIMER5_COMPA_vect) //ignitionSchedule1
     {
       ignitionSchedule1.Status = OFF; //Turn off the schedule
       ignitionSchedule1.EndCallback();
+      ignitionCount += 1; //Increment the igintion counter
       TIMSK5 &= ~(1 << OCIE5A); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
   }
@@ -280,6 +281,7 @@ ISR(TIMER5_COMPB_vect) //ignitionSchedule2
     {
       ignitionSchedule2.Status = OFF; //Turn off the schedule
       ignitionSchedule2.EndCallback();
+      ignitionCount += 1; //Increment the igintion counter
       TIMSK5 &= ~(1 << OCIE5B); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
   }
@@ -296,8 +298,9 @@ ISR(TIMER5_COMPC_vect) //ignitionSchedule3
     }
     else if (ignitionSchedule3.Status == RUNNING)
     {
-       ignitionSchedule3.EndCallback();
        ignitionSchedule3.Status = OFF; //Turn off the schedule
+       ignitionSchedule3.EndCallback();
+       ignitionCount += 1; //Increment the igintion counter
        TIMSK5 &= ~(1 << OCIE5C); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
     interrupts();
@@ -315,8 +318,9 @@ ISR(TIMER4_COMPA_vect) //ignitionSchedule4
     }
     else if (ignitionSchedule4.Status == RUNNING)
     {
-       ignitionSchedule4.EndCallback();
        ignitionSchedule4.Status = OFF; //Turn off the schedule
+       ignitionSchedule4.EndCallback();
+       ignitionCount += 1; //Increment the igintion counter
        TIMSK5 &= ~(1 << OCIE4A); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
     interrupts();

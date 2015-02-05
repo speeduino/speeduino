@@ -134,12 +134,12 @@ void sendValues(int length)
   response[12] = currentStatus.wueCorrection; //Warmup enrichment (%)
   response[13] = (byte)(div(currentStatus.RPM, 100).quot); //rpm / 100 
   response[14] = (byte)(currentStatus.PW / 200); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS. 
-  response[15] = currentStatus.TAEamount; //acceleration enrichment (ms)
+  response[15] = currentStatus.TAEamount; //acceleration enrichment (%)
   response[16] = 0x00; //Barometer correction (%)
   response[17] = currentStatus.corrections; //Total GammaE (%)
   response[18] = currentStatus.VE; //Current VE 1 (%)
-  response[19] = configPage1.tpsMin; //Pulsewidth 2 divided by 10 (in ms)
-  response[20] = configPage1.tpsMax; //Current VE 2 (%)
+  response[19] = 0x00; //Pulsewidth 2 (Unused currently)
+  response[20] = 0x00; //Current VE 2 (Unused Currently)
   response[21] = currentStatus.tpsDOT; //TPS DOT
   response[22] = currentStatus.advance;
   response[23] = currentStatus.TPS; // TPS (0% to 100%)

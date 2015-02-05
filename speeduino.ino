@@ -62,6 +62,7 @@ byte coilLOW = LOW;
 
 struct statuses currentStatus;
 volatile int mainLoopCount;
+byte ignitionCount;
 unsigned long secCounter; //The next time to increment 'runSecs' counter.
 int channel1Degrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
 int channel2Degrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
@@ -183,6 +184,7 @@ void setup()
   #endif
   
   mainLoopCount = 0;
+  ignitionCount = 0;
   
   //Setup other relevant pins
   pinMode(pinMAP, INPUT);
