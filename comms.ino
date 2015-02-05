@@ -129,9 +129,9 @@ void sendValues(int length)
   response[7] = currentStatus.tpsADC; //TPS (Raw 0-255)
   response[8] = currentStatus.battery10; //battery voltage
   response[9] = currentStatus.O2; //O2
-  response[10] = 0x00; //Exhaust gas correction (%)
+  response[10] = currentStatus.egoCorrection; //Exhaust gas correction (%)
   response[11] = 0x00; //Air Correction (%)
-  response[12] = 0x00; //Warmup enrichment (%)
+  response[12] = currentStatus.wueCorrection; //Warmup enrichment (%)
   response[13] = (byte)(div(currentStatus.RPM, 100).quot); //rpm / 100 
   response[14] = (byte)(currentStatus.PW / 200); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS. 
   response[15] = currentStatus.TAEamount; //acceleration enrichment (ms)

@@ -60,6 +60,8 @@ struct statuses {
   byte advance;
   byte corrections;
   byte TAEamount; //The amount of accleration enrichment currently being applied
+  byte egoCorrection; //The amount of closed loop AFR enrichment currently being applied
+  byte wueCorrection; //The amount of closed loop AFR enrichment currently being applied
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte squirt;
   byte engine;
