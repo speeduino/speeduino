@@ -55,8 +55,7 @@ byte correctionASE()
   if (currentStatus.runSecs < configPage1.aseCount) 
   {
     BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-    //return 100 + configPage1.asePct;
-    return 100 + 15;
+    return 100 + configPage1.asePct;
   }
   
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
