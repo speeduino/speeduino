@@ -89,7 +89,10 @@ struct config1 {
   byte asePct; //Afterstart enrichment (%)
   byte aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
-  byte taeBins[4]; //TPS based acceleration enrichment bin 1 of 4 (ms)
+  byte crankingPct; //Cranking enrichment
+  byte unused95;
+  byte unused96;
+  byte unused97;
   byte taeColdA;
   byte tpsThresh;
   byte taeTime;

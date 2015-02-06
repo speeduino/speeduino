@@ -22,6 +22,8 @@ byte correctionsTotal()
   if (currentStatus.wueCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.wueCorrection), 100).quot; }
   result = correctionASE();
   if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
+  result = correctionCranking();
+  if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
   currentStatus.TAEamount = correctionAccel();
   if (currentStatus.TAEamount != 100) { sumCorrections = div((sumCorrections * currentStatus.TAEamount), 100).quot; }
   result = correctionFloodClear();
@@ -45,14 +47,26 @@ byte correctionWUE()
 }
 
 /*
+Cranking Enrichment
+Additional fuel % to be added when the engine is cranking
+*/
+byte correctionCranking()
+{
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { return 100 + configPage1.crankingPct; }
+  else { return 100; }
+}
+
+/*
 After Start Enrichment
 This is a short period (Usually <20 seconds) immediately after the engine first fires (But not when cranking)
 where an additional amount of fuel is added (Over and above the WUE amount)
 */
 byte correctionASE()
 {
-  
-  if (currentStatus.runSecs < configPage1.aseCount) 
+  //Two checks are requiredL:
+  //1) Is the negine run time less than the configured ase time
+  //2) Make sure we're not still cranking
+  if ( (currentStatus.runSecs < configPage1.aseCount) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
   {
     BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
     return 100 + configPage1.asePct;
@@ -60,8 +74,6 @@ byte correctionASE()
   
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
   return 100;
-   
-  
 }
 
 /*
