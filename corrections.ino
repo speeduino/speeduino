@@ -23,12 +23,13 @@ byte correctionsTotal()
   result = correctionASE();
   if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
   currentStatus.TAEamount = correctionAccel();
-  //if (currentStatus.TAEamount != 100) { sumCorrections = div((sumCorrections * currentStatus.TAEamount), 100).quot; }
+  if (currentStatus.TAEamount != 100) { sumCorrections = div((sumCorrections * currentStatus.TAEamount), 100).quot; }
   result = correctionFloodClear();
   if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
   currentStatus.egoCorrection = correctionsAFRClosedLoop();
   if (currentStatus.egoCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.egoCorrection), 100).quot; }
   
+  if(sumCorrections > 255) { sumCorrections = 255; } //This is the maximum allowable increase
   return (byte)sumCorrections;
 }
 
@@ -54,7 +55,8 @@ byte correctionASE()
   if (currentStatus.runSecs < configPage1.aseCount) 
   {
     BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-    return 100 + configPage1.asePct;
+    //return 100 + configPage1.asePct;
+    return 100 + 15;
   }
   
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
@@ -134,7 +136,7 @@ PID (Best suited to wideband sensors):
 */
 byte correctionsAFRClosedLoop()
 {
-  if(configPage3.egoAlgorithm == 0) { return 100; } //An egoAlgorithm value of 0 means DISALBLED
+  if( (configPage3.egoAlgorithm == 3) || (configPage3.egoType == 0)) { return 100; } //An egoAlgorithm value of 3 means NO CORRECTION, egoType of 0 means no O2 sensor
   
   //Check the ignition count to see whether the next step is required
   if( (ignitionCount & (configPage3.egoCount - 1)) == 1 ) //This is the equivalent of ( (ignitionCount % configPage3.egoCount) == 0 ) but without the expensive modulus operation. ie It results in True every <egoCount> ignition loops. Note that it only works for power of two vlaues for egoCount
@@ -147,9 +149,11 @@ byte correctionsAFRClosedLoop()
       if (configPage1.algorithm == 0) { yValue = currentStatus.MAP; }
       else  { yValue = currentStatus.TPS; }
       
-      byte afrTarget = get3DTableValue(afrTable, yValue, currentStatus.RPM); //Perform the target lookup
+      currentStatus.afrTarget = get3DTableValue(afrTable, yValue, currentStatus.RPM); //Perform the target lookup
       
       
     }
   }
+  
+  return 100; //Catch all
 }
