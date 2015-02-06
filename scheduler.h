@@ -3,10 +3,10 @@ This scheduler is designed to maintain 2 schedules for use by the fuel and ignit
 It functions by waiting for the overflow vectors from each of the timers in use to overflow, which triggers an interrupt
 
 //Technical
-Currently I am prescaling the 16-bit timers to 256. This means that the counter increments every 16us and will overflow every 1048576uS
+Currently I am prescaling the 16-bit timers to 256 for injection and 64 for ignition. This means that the counter increments every 16us (injection) / 4uS (ignition) and will overflow every 1048576uS
 Max Period = (Prescale)*(1/Frequency)*(2^17)
 (See http://playground.arduino.cc/code/timer1)
-This means that the precision of the scheduler is 16uS (+/- 8uS of target)
+This means that the precision of the scheduler is 16uS (+/- 8uS of target) for fuel and 4uS (+/- 2uS) for ignition
 
 /Features
 This differs from most other schedulers in that its calls are non-recurring (IE You schedule an event at a certain time and once it has occurred, it will not reoccur unless you explicitely ask for it)
