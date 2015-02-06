@@ -30,7 +30,7 @@ struct config3 configPage3;
 int req_fuel_uS, triggerToothAngle, inj_opentime_uS;
 volatile int triggerActualTeeth;
 unsigned int triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
-#define MAX_RPM 9000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
+#define MAX_RPM 10000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
@@ -69,6 +69,7 @@ int channel2Degrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8
 int channel3Degrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
 int channel4Degrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
 int timePerDegree;
+byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
 
 void setup() 
 {
@@ -346,6 +347,10 @@ void loop()
       int ignition2StartAngle = 0;
       int ignition3StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
       int ignition4StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
+      //These are used for comparisons on channels above 1 where the starting angle (for injectors or ignition) can be less than a single loop time
+      //(Don't ask why this is needed, it will break your head)
+      int tempCrankAngle;
+      int tempStartAngle; 
       
       //Determine the current crank angle
       //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
@@ -353,7 +358,7 @@ void loop()
       
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       timePerDegree = ldiv( (toothOneTime - toothOneMinusOneTime) , 360).quot; //The time (uS) it is currently taking to move 1 degree
-      //crankAngle += div( (int)(micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+      //degreesPerLoop = ldiv(1000000L, ((long)currentStatus.loopsPerSecond*timePerDegree)).quot; //The number of crank degrees the pass each loop
       crankAngle += ldiv( (micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
       if (crankAngle > 360) { crankAngle -= 360; }
       
@@ -363,6 +368,7 @@ void loop()
       //1
       int PWdivTimerPerDegree = div(currentStatus.PW, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
       injector1StartAngle = 355 - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
+      if(injector1StartAngle < 0) {injector1StartAngle += 360;} 
       //Repeat the above for each cylinder
       //2
       if (configPage1.nCylinders == 2) 
@@ -386,38 +392,42 @@ void loop()
       }
     
       //***********************************************************************************************
-      //BEGIN IGNITION CALCULATIONS
+      //| BEGIN IGNITION CALCULATIONS
       if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim * 100)) ) { currentStatus.advance -= configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
-      //Calculate start angle for each channel
-      //1
       int dwell = (configPage2.dwellRun * 100); //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
       int dwellAngle = (div(dwell, timePerDegree).quot );
-      ignition1StartAngle = 360 - currentStatus.advance - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
+      //Calculate start angle for each channel
+      //1
+        ignition1StartAngle = 360 - currentStatus.advance - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
+        if(ignition1StartAngle < 0) {ignition1StartAngle += 360;} 
       //2
       if (configPage1.nCylinders == 2) 
       { 
-        (ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ));
+        ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle;
         if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
       }
       //3
       else if (configPage1.nCylinders == 3) 
       { 
-        (ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ));
+        ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle;
         if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
-        (ignition3StartAngle = channel3Degrees + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ));
+        ignition3StartAngle = channel3Degrees + 360 - currentStatus.advance - dwellAngle;
         if(ignition3StartAngle > 360) {ignition3StartAngle -= 360;}
       }
       //4
       else if (configPage1.nCylinders == 4) 
       { 
-        (ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - (div((configPage2.dwellRun*100), timePerDegree).quot ));
-        if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
+        ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle; //(div((configPage2.dwellRun*100), timePerDegree).quot ));
+        if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;}
+        if(ignition2StartAngle < 0) {ignition2StartAngle += 360;} 
       }
       
+      //***********************************************************************************************
+      //| BEGIN FUEL SCHEDULES
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
       //We only need to set the shcedule if we're BEFORE the open angle
       //This may potentially be called a number of times as we get closer and closer to the opening time
-      if (injector1StartAngle > crankAngle) 
+      if (injector1StartAngle > crankAngle)
       { 
         setFuelSchedule1(openInjector1, 
                   ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
@@ -425,58 +435,72 @@ void loop()
                   closeInjector1
                   );
       }
-      if (injector2StartAngle > crankAngle) 
+      
+      tempCrankAngle = crankAngle - channel2Degrees;
+      if( tempCrankAngle < 0) { tempCrankAngle += 360; }
+      tempStartAngle = injector2StartAngle - channel2Degrees;
+      if ( tempStartAngle < 0) { tempStartAngle += 360; }
+      if (tempStartAngle > tempCrankAngle)
       { 
         setFuelSchedule2(openInjector2, 
-                  ((unsigned long)(injector2StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                  ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                   (unsigned long)currentStatus.PW,
                   closeInjector2
                   );
       }
-      if (injector3StartAngle > crankAngle) 
+      
+      tempCrankAngle = crankAngle - channel3Degrees;
+      if( tempCrankAngle < 0) { tempCrankAngle += 360; }
+      tempStartAngle = injector3StartAngle - channel3Degrees;
+      if ( tempStartAngle < 0) { tempStartAngle += 360; }
+      if (tempStartAngle > tempCrankAngle)
       { 
         setFuelSchedule3(openInjector3, 
-                  ((unsigned long)(injector3StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                  ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                   (unsigned long)currentStatus.PW,
                   closeInjector3
                   );
       }
+      //***********************************************************************************************
+      //| BEGIN IGNITION SCHEDULES
       //Likewise for the ignition
-      //Perform an initial check to see if the ignition is turned on
-      if(ignitionOn)
+      //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
+      //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
+      if(ignitionOn && (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ))
       {
         if ( (ignition1StartAngle > crankAngle) )
         { 
-          if (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
-          {
             setIgnitionSchedule1(beginCoil1Charge, 
                       ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                       dwell,
                       endCoil1Charge
                       );
-          }
         }
-        if ( ignition2StartAngle > crankAngle)
+
+        tempCrankAngle = crankAngle - channel2Degrees;
+        if( tempCrankAngle < 0) { tempCrankAngle += 360; }
+        tempStartAngle = ignition2StartAngle - channel2Degrees;
+        if ( tempStartAngle < 0) { tempStartAngle += 360; }
+        if (tempStartAngle > tempCrankAngle)
         { 
-          if (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
-          {
             setIgnitionSchedule2(beginCoil2Charge, 
-                      ((unsigned long)(ignition2StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       dwell,
                       endCoil2Charge
                       );
-          }
         }
-        if ( ignition3StartAngle > crankAngle)
+        
+        tempCrankAngle = crankAngle - channel3Degrees;
+        if( tempCrankAngle < 0) { tempCrankAngle += 360; }
+        tempStartAngle = ignition3StartAngle - channel3Degrees;
+        if ( tempStartAngle < 0) { tempStartAngle += 360; }
+        if (tempStartAngle > tempCrankAngle)
         { 
-          if (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ) //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
-          {
             setIgnitionSchedule3(beginCoil3Charge, 
-                      ((unsigned long)(ignition2StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       dwell,
                       endCoil3Charge
                       );
-          }
         }
       }
       
