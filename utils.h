@@ -39,20 +39,20 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, b
   {
     //Standard float version of the calculation
     //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
+    //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
     
     //100% float free version, does sacrifice a little bit of accuracy.
     int iVE = ((int)VE << 7) / 100;
-    int iMAP = ((int)MAP << 7) / 100;
+    //int iMAP = ((int)MAP << 7) / 100;
     int iCorrections = (corrections << 7) / 100;
-    int iTPS = ((int)TPS << 7) / 100;
+    //int iTPS = ((int)TPS << 7) / 100;
 
     unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >>7; //Need to use an intermediate value to avoid overflowing the long
-    intermediate = (intermediate * iMAP) >> 7;
+    //intermediate = (intermediate * iMAP) >> 7;
     intermediate = (intermediate * iCorrections) >> 7;
-    intermediate = (intermediate * iTPS) >> 7;
+    //intermediate = (intermediate * iTPS) >> 7;
     intermediate += injOpen; //Add the injector opening time
     if ( intermediate > 65535) { intermediate = 65535; } //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
-    //unsigned int final = (unsigned int)(intermediate);
     return (unsigned int)(intermediate);
 
   }
