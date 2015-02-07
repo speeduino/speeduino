@@ -132,10 +132,8 @@ void sendValues(int length)
   response[10] = currentStatus.egoCorrection; //Exhaust gas correction (%)
   response[11] = 0x00; //Air Correction (%)
   response[12] = currentStatus.wueCorrection; //Warmup enrichment (%)
-  //response[13] = (byte)(div(currentStatus.RPM, 100).quot); //rpm / 100 
   response[13] = highByte(currentStatus.RPM); //rpm HB
   response[14] = lowByte(currentStatus.RPM); //rpm LB
-  //response[14] = (byte)(currentStatus.PW / 200); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS. 
   response[15] = currentStatus.TAEamount; //acceleration enrichment (%)
   response[16] = 0x00; //Barometer correction (%)
   response[17] = currentStatus.corrections; //Total GammaE (%)

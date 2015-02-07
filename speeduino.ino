@@ -394,8 +394,13 @@ void loop()
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
       if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim * 100)) ) { currentStatus.advance -= configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
-      int dwell = (configPage2.dwellRun * 100); //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
-      int dwellAngle = (div(dwell, timePerDegree).quot );
+      
+      //Set dwell
+       //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
+      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { currentStatus.dwell =  (configPage2.dwellCrank * 100); }
+      else { currentStatus.dwell =  (configPage2.dwellRun * 100); }
+      int dwellAngle = (div(currentStatus.dwell, timePerDegree).quot );
+      
       //Calculate start angle for each channel
       //1
         ignition1StartAngle = 360 - currentStatus.advance - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
@@ -472,7 +477,7 @@ void loop()
         { 
             setIgnitionSchedule1(beginCoil1Charge, 
                       ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                      dwell,
+                      currentStatus.dwell,
                       endCoil1Charge
                       );
         }
@@ -485,7 +490,7 @@ void loop()
         { 
             setIgnitionSchedule2(beginCoil2Charge, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      dwell,
+                      currentStatus.dwell,
                       endCoil2Charge
                       );
         }
@@ -498,7 +503,7 @@ void loop()
         { 
             setIgnitionSchedule3(beginCoil3Charge, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      dwell,
+                      currentStatus.dwell,
                       endCoil3Charge
                       );
         }

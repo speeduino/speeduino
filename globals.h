@@ -56,6 +56,7 @@ struct statuses {
   int iatADC;
   int batADC;
   int O2ADC;
+  int dwell;
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
   byte advance;
   byte corrections;
