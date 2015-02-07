@@ -1,11 +1,4 @@
 /*
-These are some utility functions and variables used through the main code
-*/ 
-#include <Arduino.h>
-#define MS_IN_MINUTE 60000
-#define US_IN_MINUTE 60000000
-
-/*
 Returns how much free dynamic memory exists (between heap and stack)
 */
 int freeRam () 
@@ -43,6 +36,7 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, b
     
     //100% float free version, does sacrifice a little bit of accuracy.
     int iVE = ((int)VE << 7) / 100;
+    //int iVE = divs100( ((int)VE << 7));
     //int iMAP = ((int)MAP << 7) / 100;
     int iCorrections = (corrections << 7) / 100;
     //int iTPS = ((int)TPS << 7) / 100;
