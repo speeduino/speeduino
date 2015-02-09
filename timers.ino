@@ -9,11 +9,14 @@ void initialiseTimers()
 {  
    //Configure Timer2 for our low-freq interrupt code.
    TCCR2B = 0x00;          //Disbale Timer2 while we set it up
-   TCNT2  = 99;           //Preload timer2 with 100 cycles, leaving 156 till overflow.
+   TCNT2  = 131;           //Preload timer2 with 100 cycles, leaving 156 till overflow.
    TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
    TIMSK2 = 0x01;          //Timer2 Set Overflow Interrupt enabled.
    TCCR2A = 0x00;          //Timer2 Control Reg A: Wave Gen Mode normal
-   TCCR2B = ((1 << CS10) | (1 << CS11) | (1 << CS12));   //Timer2 Set Prescaler to 5 (101), 1024 mode. 
+   //TCCR2B = ((1 << CS10) | (1 << CS11) | (1 << CS12));   //Timer2 Set Prescaler to 5 (101), 1024 mode.
+   /* Now configure the prescaler to CPU clock divided by 128 */
+   TCCR2B |= (1<<CS22)  | (1<<CS20); // Set bits
+   TCCR2B &= ~(1<<CS21);             // Clear bit
 }
 
 
@@ -27,15 +30,17 @@ ISR(TIMER2_OVF_vect)
   loopSec++;
   
   
+  
+  
   //Loop executed every 250ms loop (10ms x 25 = 250ms)
   //Anything inside this if statement will run every 250ms.
-  if (loop250ms == 25) 
+  if (loop250ms == 250) 
   {
     loop250ms = 0; //Reset Counter.
   }
   
   //Loop executed every 1 second (10ms x 100 = 1000ms)
-  if (loopSec == 100) 
+  if (loopSec == 1000) 
   {
     loopSec = 0; //Reset counter.
 
@@ -58,7 +63,8 @@ ISR(TIMER2_OVF_vect)
 
   }
       //Reset Timer2 to trigger in another ~10ms
-    TCNT2  = 99;           //Preload timer2 with 100 cycles, leaving 156 till overflow.
+    //TCNT2  = 99;           //Preload timer2 with 100 cycles, leaving 156 till overflow.
+    TCNT2 = 131;
     TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
   
 }
