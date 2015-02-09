@@ -255,6 +255,7 @@ ISR(TIMER5_COMPA_vect) //ignitionSchedule1
     if (ignitionSchedule1.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule1.startTime = currentLoopTime;
       ignitionSchedule1.StartCallback();
       //unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule1.duration / 4);
       unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule1.duration >> 2); //Divide by 4
@@ -273,6 +274,7 @@ ISR(TIMER5_COMPB_vect) //ignitionSchedule2
     if (ignitionSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule2.startTime = currentLoopTime;
       ignitionSchedule2.StartCallback();
       //unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration / 4);
       unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration >> 2); //Divide by 4
@@ -291,8 +293,9 @@ ISR(TIMER5_COMPC_vect) //ignitionSchedule3
     noInterrupts();
     if (ignitionSchedule3.Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule3.StartCallback();
       ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule3.startTime = currentLoopTime;
+      ignitionSchedule3.StartCallback();
       //unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration / 4);
       unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule3.duration >> 2); //Divide by 4
       OCR5C = absoluteTimeout;
@@ -311,8 +314,9 @@ ISR(TIMER4_COMPA_vect) //ignitionSchedule4
     noInterrupts();
     if (ignitionSchedule4.Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule4.StartCallback();
       ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule4.startTime = currentLoopTime;
+      ignitionSchedule4.StartCallback();
       //unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration / 16);
       unsigned int absoluteTimeout = TCNT4 + (ignitionSchedule4.duration >> 4); //Divide by 16
       OCR4A = absoluteTimeout;

@@ -43,6 +43,7 @@ struct Schedule {
   volatile ScheduleStatus Status;
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
+  unsigned long startTime;
 };
 
 Schedule fuelSchedule1;
