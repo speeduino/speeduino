@@ -179,6 +179,7 @@ struct config2 {
   byte taeBins[4]; //TPS based acceleration enrichment bins (%/s)
   byte taeValues[4]; //TPS based acceleration enrichment rates (% to add)
   byte wueBins[10]; //Warmup Enrichment bins (Values are in configTable1)
+  byte dwellLimit;
   byte unused115;
   byte unused116;
   byte unused117;

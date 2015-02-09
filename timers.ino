@@ -29,7 +29,13 @@ ISR(TIMER2_OVF_vect)
   loop250ms++;
   loopSec++;
   
-  
+  //Overdwell check
+  targetOverdwellTime = currentLoopTime - (1000 * configPage2.dwellLimit); //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
+  //Check first whether each spark output is currently on. Only check it's dwell time if it is
+  if(ignitionSchedule1.Status == RUNNING) { if(ignitionSchedule1.startTime < targetOverdwellTime) { endCoil1Charge(); } }
+  if(ignitionSchedule2.Status == RUNNING) { if(ignitionSchedule2.startTime < targetOverdwellTime) { endCoil2Charge(); } }
+  if(ignitionSchedule3.Status == RUNNING) { if(ignitionSchedule3.startTime < targetOverdwellTime) { endCoil3Charge(); } }
+  if(ignitionSchedule4.Status == RUNNING) { if(ignitionSchedule4.startTime < targetOverdwellTime) { endCoil4Charge(); } }
   
   
   //Loop executed every 250ms loop (10ms x 25 = 250ms)
