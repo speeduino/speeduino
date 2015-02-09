@@ -66,6 +66,7 @@ struct statuses {
   byte afrTarget;
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte squirt;
+  volatile byte spark;
   byte engine;
   unsigned int PW; //In uS
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
