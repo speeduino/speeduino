@@ -157,7 +157,7 @@ void sendValues(int length)
   
 
   Serial.write(response, (size_t)packetSize);
-  Serial.flush();
+  //Serial.flush();
   return; 
 }
 
@@ -307,7 +307,7 @@ void sendPage()
           response[x] = *(pnt_configPage + byte(x - offset)); //Each byte is simply the location in memory of configPage1 + the offset + the variable number (x)
         }
         Serial.write((byte *)&response, sizeof(response));
-        Serial.flush();
+        //Serial.flush();
         break;
         
       case ignPage:
@@ -324,7 +324,7 @@ void sendPage()
           response[x] = *(pnt_configPage + byte(x - offset)); //Each byte is simply the location in memory of configPage2 + the offset + the variable number (x)
         }
         Serial.write((byte *)&response, sizeof(response)); 
-        Serial.flush();
+        //Serial.flush();
         break;
         
       case afrPage:
@@ -341,7 +341,7 @@ void sendPage()
           response[x] = *(pnt_configPage + byte(x - offset)); //Each byte is simply the location in memory of configPage2 + the offset + the variable number (x)
         }
         Serial.write((byte *)&response, sizeof(response)); 
-        Serial.flush();
+        //Serial.flush();
         break;
         
       default:
