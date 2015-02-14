@@ -214,7 +214,9 @@ void setup()
       break;
     case 4:
       channel1Degrees = 0;
-      channel2Degrees = 180;
+      channel2Degrees = 180; // 540 deg from TDC on cyl1
+      channel3Degrees = 180;
+      channel4Degrees = 0;   // 360 deg from TDC on cyl1
       break;
     case 6:
       channel1Degrees = 0;
@@ -388,7 +390,10 @@ void loop()
       else if (configPage1.nCylinders == 4) 
       { 
         injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
-        if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
+        if(injector2StartAngle > 360) {injector2StartAngle -= 360;}
+        // squirt semi sequential, same thing as injector 1-4 and 2-3 were hardwired together
+        injector3StartAngle = injector2StartAngle;
+        injector4StartAngle = injector1StartAngle;
       }
     
       //***********************************************************************************************
@@ -424,7 +429,11 @@ void loop()
       { 
         ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle; //(div((configPage2.dwellRun*100), timePerDegree).quot ));
         if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;}
-        if(ignition2StartAngle < 0) {ignition2StartAngle += 360;} 
+        if(ignition2StartAngle < 0) {ignition2StartAngle += 360;}
+
+        // fire semi sequential, same thing as coils 1-4 and 2-3 were hardwired together
+        ignition3StartAngle = ignition2StartAngle;
+        ignition4StartAngle = ignition1StartAngle;
       }
       
       //***********************************************************************************************
@@ -466,6 +475,18 @@ void loop()
                   closeInjector3
                   );
       }
+
+      tempCrankAngle = crankAngle - channel4Degrees;
+      if( tempCrankAngle < 0 ) { tempCrankAngle += 360; }
+      tempStartAngle = injector4StartAngle - channel4Degrees;
+      if ( tempStartAngle < 0 ) { tempStartAngle += 360; }
+      if (tempStartAngle > tempCrankAngle) {
+    	  setFuelSchedule4(openInjector4,
+    			  ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+				  (unsigned long)currentStatus.PW,
+				  closeInjector4
+    	  	  	  );
+      }
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
       //Likewise for the ignition
@@ -506,6 +527,18 @@ void loop()
                       currentStatus.dwell,
                       endCoil3Charge
                       );
+        }
+
+        tempCrankAngle = crankAngle - channel4Degrees;
+        if (tempCrankAngle < 0) { tempCrankAngle += 360; }
+        tempStartAngle = ignition4StartAngle - channel4Degrees;
+        if (tempStartAngle < 0) { tempStartAngle += 360; }
+        if (tempStartAngle > tempCrankAngle) {
+        	setIgnitionSchedule4(beginCoil4Charge,
+        			((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+					currentStatus.dwell,
+					endCoil4Charge
+        			);
         }
       }
       
