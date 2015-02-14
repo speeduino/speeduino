@@ -7,6 +7,8 @@ Flood clear mode etc.
 */
 //************************************************************************************************************
 
+#include "corrections.h"
+#include "globals.h"
 
 /*
 correctionsTotal() calls all the other corrections functions and combines their results.

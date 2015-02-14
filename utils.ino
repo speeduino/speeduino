@@ -1,6 +1,8 @@
 /*
 Returns how much free dynamic memory exists (between heap and stack)
 */
+#include "utils.h"
+
 int freeRam () 
 {
   extern int __heap_start, *__brkval; 

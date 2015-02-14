@@ -273,4 +273,24 @@ struct config3 {
 #define pinO2 A4 //O2 Sensor pin
 */
 
+// global variables // from speeduino.ino
+extern struct statuses currentStatus; // from speeduino.ino
+extern struct table3D fuelTable; //8x8 fuel map
+extern struct table3D ignitionTable; //8x8 ignition map
+extern struct table3D afrTable; //8x8 afr target map
+extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map
+extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
+extern struct config1 configPage1;
+extern struct config2 configPage2;
+extern struct config3 configPage3;
+extern unsigned long currentLoopTime; //The time the current loop started (uS)
+extern unsigned long previousLoopTime; //The time the previous loop started (uS)
+extern byte ignitionCount;
+extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
+extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
+extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
+extern volatile int toothHistory[512];
+extern volatile int toothHistoryIndex;
+
+
 #endif // GLOBALS_H
