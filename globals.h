@@ -1,3 +1,5 @@
+#ifndef GLOBALS_H
+#define GLOBALS_H
 #include <Arduino.h>
 
 const byte ms_version = 20;
@@ -270,3 +272,5 @@ struct config3 {
 #define pinCLT A3 //CLS sensor pin
 #define pinO2 A4 //O2 Sensor pin
 */
+
+#endif // GLOBALS_H

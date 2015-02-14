@@ -16,6 +16,8 @@ We're after a 1ms interval so we'll need 131 intervals to reach this ( 1ms / 0.0
 Hence we will preload the timer with 131 cycles to leave 125 until overflow (1ms).
 
 */
+#ifndef TIMERS_H
+#define TIMERS_H
 
 volatile int loop250ms;
 volatile int loopSec;
@@ -24,4 +26,4 @@ volatile unsigned long targetOverdwellTime;
 
 void initialiseTimers();
 
-
+#endif TIMERS_H
