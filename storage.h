@@ -1,3 +1,5 @@
+#ifndef STORAGE_H
+#define STORAGE_H
 #include <EEPROM.h>
 
 void writeConfig();
@@ -59,3 +61,4 @@ Current layout of EEPROM data (Version 2) is as follows (All sizes are in bytes)
 #define EEPROM_CALIBRATION_IAT 3071
 #define EEPROM_CALIBRATION_CLT 3583
 
+#endif // STORAGE_H

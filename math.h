@@ -1,3 +1,5 @@
+#ifndef MATH_H
+#define MATH_H
 
 //Replace the standard arduino map() function to use the div function instead
 int fastMap(int x, int in_min, int in_max, int out_min, int out_max)
@@ -49,3 +51,5 @@ int divs100(int n) {
  return q + ((r + 28) >> 7);
 // return q + (r > 99);
 }
+
+#endif // MATH_H

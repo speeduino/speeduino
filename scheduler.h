@@ -22,6 +22,8 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 256 prescale gives overflow every 1048576uS (This means maximum wait time is 1.0485 seconds)
 
 */
+#ifndef SCHEDULER_H
+#define SCHEDULER_H
 
 #include <avr/interrupt.h> 
 #include <avr/io.h>
@@ -54,3 +56,5 @@ Schedule ignitionSchedule1;
 Schedule ignitionSchedule2;
 Schedule ignitionSchedule3;
 Schedule ignitionSchedule4;
+
+#endif // SCHEDULER_H

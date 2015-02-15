@@ -1,3 +1,6 @@
+#ifndef COMMS_H
+#define COMMS_H
+
 #define vePage    1
 #define ignPage   2
 #define afrPage   3
@@ -12,3 +15,5 @@ void sendPage();
 void receiveCalibration(byte tableID);
 void sendToothLog(bool useChar);
 void testComm();
+
+#endif // COMMS_H

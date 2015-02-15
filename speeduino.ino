@@ -540,7 +540,7 @@ void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); BIT_CLEAR(currentStatus
 
 //The trigger function is called everytime a crank tooth passes the sensor
 volatile unsigned long curTime;
-volatile int curGap;
+volatile unsigned int curGap;
 volatile unsigned int targetGap; 
 void trigger()
   {
@@ -550,7 +550,7 @@ void trigger()
 
    curTime = micros();
    curGap = curTime - toothLastToothTime;
-   if ( curGap < triggerFilterTime) { interrupts(); return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+   if ( curGap < triggerFilterTime ) { interrupts(); return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    toothCurrentCount++; //Increment the tooth counter
    
    //High speed tooth logging history

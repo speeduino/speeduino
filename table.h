@@ -1,6 +1,8 @@
 /*
 This file is used for everything related to maps/tables including their definition, functions etc
 */
+#ifndef TABLE_H
+#define TABLE_H
 #include <Arduino.h>
 
 /*
@@ -46,3 +48,5 @@ Eg: 2x2 table
 */
 int get3DTableValue(struct table3D, int, int);
 int table2D_getValue(struct table2D, int);
+
+#endif // TABLE_H

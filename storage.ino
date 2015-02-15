@@ -1,5 +1,8 @@
 #include <EEPROM.h>
+#include "storage.h"
+#include "globals.h"
 //#include "table.h"
+
 
 /*
 Takes the current configuration (config pages and maps)

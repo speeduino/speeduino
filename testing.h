@@ -1,7 +1,8 @@
 /*
 This file has a few functions that are helpful for testing such as creating dummy maps and faking interrupts
 */
-
+#ifndef TESTING_H
+#define TESTING_H
 /*
 Aim is to create an 8x8 table that looks like the below:
  MAP
@@ -105,3 +106,5 @@ void dummyIgnitionTable(struct table3D *mySparkTable)
     for (byte x = 0; x< mySparkTable->xSize; x++) { mySparkTable->values[7][x] = tempRow8[x]; }
         
   }
+
+#endif // TESTING_H

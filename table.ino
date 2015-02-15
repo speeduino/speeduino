@@ -2,6 +2,9 @@
 Because the size of the table is dynamic, this functino is required to reallocate the array sizes
 Note that this may clear some of the existing values of the table
 */
+#include "table.h"
+#include "globals.h"
+
 void table2D_setSize(struct table2D* targetTable, byte newSize)
 {
   //2D tables can contain either bytes or ints, depending on the value of the valueSize field
