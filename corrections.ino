@@ -162,9 +162,38 @@ byte correctionsAFRClosedLoop()
       
       currentStatus.afrTarget = get3DTableValue(afrTable, yValue, currentStatus.RPM); //Perform the target lookup
       
+      //Check which algorithm is used, simple or PID
+      if (configPage3.egoAlgorithm == 0)
+      {
+        //*************************************************************************************************************************************
+        //Simple algorithm
+        if(currentStatus.O2 > currentStatus.afrTarget)
+        {
+          //Running lean
+          if(currentStatus.egoCorrection < (100 + configPage3.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
+          {
+            if(currentStatus.egoCorrection >= 100) { return (currentStatus.egoCorrection + 1); } //Increase the fueling by 1%
+            else { return 100; } //This means that the last reading had been rich, so simply return back to no adjustment (100%)
+          }
+          else { return currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return then again
+        }
+        else
+          //Running Rich
+          if(currentStatus.egoCorrection > (100 - configPage3.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
+          {
+            if(currentStatus.egoCorrection <= 100) { return (currentStatus.egoCorrection - 1); } //Increase the fueling by 1%
+            else { return 100; } //This means that the last reading had been lean, so simply return back to no adjustment (100%)
+          }
+          else { return currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return then again
+      }
+      else if(configPage3.egoAlgorithm == 2)
+      {
+        //*************************************************************************************************************************************
+        //PID algorithm
+      }
       
     }
   }
   
-  return 100; //Catch all
+  return 100; //Catch all (Includes when AFR target = current AFR
 }
