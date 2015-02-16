@@ -573,7 +573,7 @@ void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); BIT_CLEAR(currentStatus
 
 //The trigger function is called everytime a crank tooth passes the sensor
 volatile unsigned long curTime;
-volatile int curGap;
+volatile unsigned int curGap;
 volatile unsigned int targetGap; 
 void trigger()
   {
@@ -583,7 +583,7 @@ void trigger()
 
    curTime = micros();
    curGap = curTime - toothLastToothTime;
-   if ( curGap < static_cast<int>(triggerFilterTime) ) { interrupts(); return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+   if ( curGap < triggerFilterTime ) { interrupts(); return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    toothCurrentCount++; //Increment the tooth counter
    
    //High speed tooth logging history
@@ -599,7 +599,7 @@ void trigger()
    if(configPage2.triggerMissingTeeth == 1) { targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
    //else { targetGap = (10 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 2; } //Multiply by 2.5 (Checks for a gap 2.5x greater than the last one)
    else { targetGap = ((toothLastToothTime - toothLastMinusOneToothTime)) * 2; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
-   if ( curGap > static_cast<int>(targetGap) )
+   if ( curGap > targetGap )
    { 
      toothCurrentCount = 1; 
      toothOneMinusOneTime = toothOneTime;
