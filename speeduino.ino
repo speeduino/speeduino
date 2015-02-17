@@ -5,6 +5,7 @@
 //The following lines are configurable, but the defaults are probably pretty good for most applications
 //#define engineInjectorDeadTime 2500 //Time in uS that the injector takes to open minus the time it takes to close
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
+#define USE_SEQUENTIAL true // sequential injections and ignitions
 
 //**************************************************************************************************
 
@@ -27,8 +28,12 @@ struct config1 configPage1;
 struct config2 configPage2;
 struct config3 configPage3;
 
-int req_fuel_uS, triggerToothAngle, inj_opentime_uS;
-volatile int triggerActualTeeth;
+int req_fuel_uS; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155). divided by engineSquirtsPerCycle
+int	req_fuel_uS_sequential; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155)
+int inj_opentime_uS;
+int	triggerToothAngle; //The number of degrees that passes from tooth to tooth
+// FIXME does this really need to be volatile?
+volatile int triggerActualTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
 unsigned int triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 #define MAX_RPM 10000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
@@ -64,10 +69,63 @@ struct statuses currentStatus;
 volatile int mainLoopCount;
 byte ignitionCount;
 unsigned long secCounter; //The next time to increment 'runSecs' counter.
-int channel1Degrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
-int channel2Degrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
-int channel3Degrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
-int channel4Degrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
+
+// stores to crank angles when each injector and coil should fire
+struct channels_t {
+  channels_t() :
+	cyl1Deg(0),	cyl2Deg(0),	cyl3Deg(0),	cyl4Deg(0),
+	inj1EndDeg(0), inj2EndDeg(0), inj3EndDeg(0), inj4EndDeg(0),
+	nCyl(0), inValveOpenDegAfterTDC(340), maxAngle(360)
+  {}
+
+  int16_t cyl1Deg; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
+  int16_t cyl2Deg; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
+  int16_t cyl3Deg; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
+  int16_t cyl4Deg; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
+  int16_t inj1EndDeg; // when injector 1 should should Close
+  int16_t inj2EndDeg;
+  int16_t inj3EndDeg;
+  int16_t inj4EndDeg;
+  uint8_t nCyl;			// nr of cylinders in engine
+  int16_t inValveOpenDegAfterTDC;
+  int16_t maxAngle;
+
+  void setCylCrankAngles(const int nrCyl, const int angles[4]) {
+	nCyl = nrCyl;
+	if (nrCyl < 2) { return; } // 1 cyl engine nothing to do
+
+    cyl1Deg = angles[0];
+    if (nrCyl >= 2) { cyl2Deg = angles[1]; }
+    if (nrCyl >= 3) { cyl3Deg = angles[2]; }
+    if (nrCyl >= 4) { cyl4Deg = angles[3]; }
+
+    setSequential(false);
+  }
+
+  void setSequential(const bool sequential) {
+    // set as if we were sequential first
+	inj1EndDeg = cyl1Deg + inValveOpenDegAfterTDC;
+	inj2EndDeg = cyl2Deg + inValveOpenDegAfterTDC;
+	inj3EndDeg = cyl3Deg + inValveOpenDegAfterTDC;
+	inj4EndDeg = cyl4Deg + inValveOpenDegAfterTDC;
+
+	if (sequential) {
+	  if (inj1EndDeg > 720) { inj1EndDeg -= 720; }
+	  if (inj2EndDeg > 720) { inj2EndDeg -= 720; }
+	  if (inj3EndDeg > 720) { inj3EndDeg -= 720; }
+      if (inj4EndDeg > 720) { inj4EndDeg -= 720; }
+      maxAngle = 720;
+	} else {
+	  if (inj1EndDeg > 360) { inj1EndDeg -= 360; }
+      if (inj2EndDeg > 360) { inj2EndDeg -= 360; }
+      if (inj3EndDeg > 360) { inj3EndDeg -= 360; }
+      if (inj4EndDeg > 360) { inj4EndDeg -= 360; }
+      maxAngle = 360;
+	}
+  }
+
+} channels;
+
 int timePerDegree;
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
 
@@ -129,7 +187,7 @@ void setup()
   initialiseTimers();
   
   //Once the configs have been loaded, a number of one time calculations can be completed
-  req_fuel_uS = configPage1.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations
+  req_fuel_uS_sequential = configPage1.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations
   triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   inj_opentime_uS = configPage1.injOpen * 100; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155). 
@@ -142,6 +200,8 @@ void setup()
   currentStatus.hasSync = false;
   currentStatus.runSecs = 0; 
   currentStatus.secl = 0;
+  currentStatus.isSequential = false;
+  currentStatus.onSecondRev = false;
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   
   switch (pinTrigger) {
@@ -199,51 +259,49 @@ void setup()
   digitalWrite(pinTPS, LOW);
   
   //Calculate the number of degrees between cylinders
+  // FIXME these crank angles should be configurable via tunerstudio
+  int angles[4] = { 0, 0, 0, 0};
   switch (configPage1.nCylinders) {
     case 1:
-      channel1Degrees = 0;
+      angles[0] = 0;
       break;
-    case 2:
-      channel1Degrees = 0;
-      channel2Degrees = 180;
+    case 2: // this is probably only correct for a 2 cyl straight engine, not a V2 like a Harley or a boxer
+      angles[0] = 0;
+      angles[1] = 180;
       break;
-    case 3:
-      channel1Degrees = 0;
-      channel2Degrees = 120;
-      channel3Degrees = 240;
+    case 3: // this is only correct for firing order 132
+      angles[0] = 0;
+      angles[1] = 480; // 120deg when non sequential;
+      angles[2] = 240;
       break;
     case 4:
-      channel1Degrees = 0;
-      channel2Degrees = 180; // 540 deg from TDC on cyl1
-      channel3Degrees = 180;
-      channel4Degrees = 0;   // 360 deg from TDC on cyl1
-      break;
-    case 6:
-      channel1Degrees = 0;
-      channel2Degrees = 120;
-      channel3Degrees = 240;
-      break;
-    default: //Handle this better!!!
-      channel1Degrees = 0;
-      channel2Degrees = 180;
+      // falltrough on purpose.
+    default: // this is only correct for 4 cyl straight engine, firing order 1342
+      angles[0] = 0;
+      angles[1] = 540; // 540 deg from TDC on cyl1
+      angles[2] = 180;
+      angles[3] = 360;   // 360 deg from TDC on cyl1
       break;
   }
+
+  // set up
+  channels.setCylCrankAngles(configPage1.nCylinders, angles);
 }
 
 void loop() 
   {
-      mainLoopCount++;    
-      //Check for any requets from serial. Serial operations are checked under 2 scenarios:
-      // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
-      // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
-      if ( ((mainLoopCount & 63) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) ) 
-      {
-        if (Serial.available() > 0) 
-        {
-          command();
-        }
-      }
-     
+    mainLoopCount++;
+    //Check for any requets from serial. Serial operations are checked under 2 scenarios:
+    // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
+    // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
+    if ( (((mainLoopCount & 63) == 1) and (Serial.available() > 0)) or
+         (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+    {
+      command();
+    }
+
+
+
     //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
     previousLoopTime = currentLoopTime;
     currentLoopTime = micros();
@@ -263,6 +321,9 @@ void loop()
       currentStatus.VE = 0;
       currentStatus.hasSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
+      currentStatus.isSequential = false;
+      currentStatus.onSecondRev = false;
+      channels.setSequential(false);
       secCounter = 0; //Reset our seconds counter.
     }
     
@@ -308,6 +369,9 @@ void loop()
           BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK); 
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); 
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
+          currentStatus.isSequential = false;
+          currentStatus.onSecondRev = false;
+          channels.setSequential(false);
           //Check whether enough cranking revolutions have been performed to turn the ignition on
           if(startRevolutions > configPage2.StgCycles)
           {ignitionOn = true;}
@@ -320,11 +384,12 @@ void loop()
       //Calculate an injector pulsewidth from the VE
       currentStatus.corrections = correctionsTotal();
       //currentStatus.corrections = 100;
+      int fuel = currentStatus.isSequential ? req_fuel_uS : req_fuel_uS_sequential; // when sequential we dont squirt twice a cycle as set in req_fuel_uS
       if (configPage1.algorithm == 0) //Check with fuelling algorithm is being used
       { 
         //Speed Density
         currentStatus.VE = get3DTableValue(fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-        currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
+        currentStatus.PW = PW_SD(fuel, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
         if (configPage2.FixAng == 0) //Check whether the user has set a fixed timing angle
           { currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.MAP, currentStatus.RPM); } //As above, but for ignition advance
          else
@@ -334,7 +399,7 @@ void loop()
       { 
         //Alpha-N
         currentStatus.VE = get3DTableValue(fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
-        currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
+        currentStatus.PW = PW_AN(fuel, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
         if (configPage2.FixAng == 0) //Check whether the user has set a fixed timing angle
           { currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.TPS, currentStatus.RPM); } //As above, but for ignition advance
         else
@@ -343,16 +408,16 @@ void loop()
 
       int injector1StartAngle = 0;
       int injector2StartAngle = 0;
-      int injector3StartAngle = 0; //Currently used for 3 cylinder only
-      int injector4StartAngle = 0; //Not used until sequential gets written
+      int injector3StartAngle = 0;
+      int injector4StartAngle = 0;
       int ignition1StartAngle = 0;
       int ignition2StartAngle = 0;
-      int ignition3StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
-      int ignition4StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
+      int ignition3StartAngle = 0;
+      int ignition4StartAngle = 0;
       //These are used for comparisons on channels above 1 where the starting angle (for injectors or ignition) can be less than a single loop time
       //(Don't ask why this is needed, it will break your head)
       int tempCrankAngle;
-      int tempStartAngle; 
+      int tempStartAngle;
       
       //Determine the current crank angle
       //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
@@ -363,38 +428,107 @@ void loop()
       //degreesPerLoop = ldiv(1000000L, ((long)currentStatus.loopsPerSecond*timePerDegree)).quot; //The number of crank degrees the pass each loop
       crankAngle += ldiv( (micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
       if (crankAngle > 360) { crankAngle -= 360; }
+
+
+
+#if USE_SEQUENTIAL
+      static bool misfireTest = false;
+      static bool blockMisfireTest = false;
+      static int lastFiredGapTime = 0;
+      static int lastCrankAngle = 0;
+      static uint8_t revCount = 0;
+      static const uint8_t maxPressureDeg = 35; // test speedup of crank at this angle
+
+      if (crankAngle < lastCrankAngle) {
+        // we have passed TDC on cyl1 aka we are slightly more than 0 deg or 360 deg on cyl 1
+        if (currentStatus.isSequential) {
+          currentStatus.onSecondRev = not currentStatus.onSecondRev; // toggle 1st or 2nd revolution
+        } else if (misfireTest) {
+          ++revCount;
+        } else if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK )) {
+          // reset if we start cranking again
+          blockMisfireTest = false;
+          misfireTest = false;
+          channels.setSequential(false);
+        } else if (currentStatus.runSecs > 0 and blockMisfireTest == false and misfireTest == false
+                   and (currentStatus.engine & 0x81) and toothHistoryIndex > 450)
+        {
+          // when engine is idling and is running 0b10000001, have turned at least 450 tooths
+          // try to find sync pulse using misfire on cyl1 and see if it stops accelerate like it has for the last revs
+          // if crank didnt accelerate we were at cyl 1 otherwise swap crankangle 360 degrees
+          int goBackDeg = 360 - (maxPressureDeg - crankAngle); // check curGap a rev ago at 35 crank degrees, 35deg should be around maxpressure in cyl
+                                                               // aka crank should speed up considerably if it has fired
+          int idx = toothHistoryIndex - (div(goBackDeg, triggerToothAngle).quot - configPage2.triggerMissingTeeth);
+
+          // find to fastest time between tooth gaps
+          lastFiredGapTime = max(toothHistory[idx], toothHistory[idx - triggerActualTeeth]);
+          lastFiredGapTime = max(lastFiredGapTime, toothHistory[idx - (triggerActualTeeth * 2)]);
+          misfireTest = true;
+          revCount = 0;
+        }
+        // end start new revolution
+      } else if (misfireTest and revCount == 2 and crankAngle > 90) {
+        // check if we have fired cyl 1
+        int id = toothHistoryIndex - div(crankAngle - maxPressureDeg, triggerToothAngle).quot;
+        if (id < 0) { id += 512; }
+        int gapTime = toothHistory[id];
+        if (gapTime) {
+          int testFactor = gapTime >> 4; //div(gapTime, 16).quot; // allow 6.25% difference
+          if ((gapTime + testFactor < lastFiredGapTime) or
+              (gapTime - testFactor > lastFiredGapTime))
+          {
+            // it still fired so it must have been cyl4 that fired aka we are on 2nd rev when cyl1 is venting
+            currentStatus.onSecondRev = true;
+          } else {
+            // it didnt fire so it must have been cyl 1
+            currentStatus.onSecondRev = false;
+          }
+
+          currentStatus.isSequential = true;
+          channels.setSequential(true);
+        }
+        misfireTest = false;
+        blockMisfireTest = true;
+      }
+
+      lastCrankAngle = crankAngle;
+#endif // USE_SEQUENTIAL
       
+
+      // when we are in sequential mode we use 720deg crankangle, 0deg is when cyl1 is at tdc and its burning inside
+      if (currentStatus.isSequential and currentStatus.onSecondRev) { crankAngle += 360; }
+
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
+      int PWdivTimerPerDegree = div(currentStatus.PW, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
       //Determine next firing angles
       //1
-      int PWdivTimerPerDegree = div(currentStatus.PW, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
-      injector1StartAngle = 355 - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
-      if(injector1StartAngle < 0) {injector1StartAngle += 360;} 
+
+      injector1StartAngle = channels.inj1EndDeg - PWdivTimerPerDegree; //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
+      if(injector1StartAngle < 0) { injector1StartAngle += channels.maxAngle;}
+#if USE_SEQUENTIAL
+      if (misfireTest == true) { injector1StartAngle = 0; } // kill cyl1 this cycle to determine if we are on 1st or 2nd revolution
+#endif
       //Repeat the above for each cylinder
       //2
-      if (configPage1.nCylinders == 2) 
-      { 
-        injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
-        if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
+      if (configPage1.nCylinders >= 2)
+      {
+        injector2StartAngle = channels.inj2EndDeg - PWdivTimerPerDegree;
+        if(injector2StartAngle < 0) { injector2StartAngle += channels.maxAngle;}
       }
       //3
-      else if (configPage1.nCylinders == 3) 
+      if (configPage1.nCylinders >= 3)
       {
-        injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
-        if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
-        injector3StartAngle = (355 + channel3Degrees - ( PWdivTimerPerDegree ));
-        if(injector3StartAngle > 360) {injector3StartAngle -= 360;}        
+        injector3StartAngle = channels.inj3EndDeg - PWdivTimerPerDegree;
+        if(injector3StartAngle < 0) { injector3StartAngle += channels.maxAngle;}
       }
-      //4 
-      else if (configPage1.nCylinders == 4) 
-      { 
-        injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
-        if(injector2StartAngle > 360) {injector2StartAngle -= 360;}
-        // squirt semi sequential, same thing as injector 1-4 and 2-3 were hardwired together
-        injector3StartAngle = injector2StartAngle;
-        injector4StartAngle = injector1StartAngle;
+      //4
+      if (configPage1.nCylinders >= 4)
+      {
+        injector4StartAngle = channels.inj4EndDeg - PWdivTimerPerDegree;
+        if(injector4StartAngle < 0) { injector4StartAngle += channels.maxAngle;}
       }
+
     
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
@@ -408,32 +542,25 @@ void loop()
       
       //Calculate start angle for each channel
       //1
-        ignition1StartAngle = 360 - currentStatus.advance - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
-        if(ignition1StartAngle < 0) {ignition1StartAngle += 360;} 
+      ignition1StartAngle = channels.cyl1Deg - currentStatus.advance - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
+      if(ignition1StartAngle < 0) { ignition1StartAngle += channels.maxAngle; }
       //2
-      if (configPage1.nCylinders == 2) 
+      if (configPage1.nCylinders >= 2)
       { 
-        ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle;
-        if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
+        ignition2StartAngle = channels.cyl2Deg - currentStatus.advance - dwellAngle;
+        if(ignition2StartAngle < 0) { ignition2StartAngle += channels.maxAngle; }
       }
       //3
-      else if (configPage1.nCylinders == 3) 
+      if (configPage1.nCylinders >= 3)
       { 
-        ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle;
-        if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
-        ignition3StartAngle = channel3Degrees + 360 - currentStatus.advance - dwellAngle;
-        if(ignition3StartAngle > 360) {ignition3StartAngle -= 360;}
+        ignition3StartAngle = channels.cyl3Deg - currentStatus.advance - dwellAngle;
+        if(ignition3StartAngle < 0) { ignition3StartAngle += channels.maxAngle; }
       }
       //4
-      else if (configPage1.nCylinders == 4) 
+      if (configPage1.nCylinders >= 4)
       { 
-        ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle; //(div((configPage2.dwellRun*100), timePerDegree).quot ));
-        if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;}
-        if(ignition2StartAngle < 0) {ignition2StartAngle += 360;}
-
-        // fire semi sequential, same thing as coils 1-4 and 2-3 were hardwired together
-        ignition3StartAngle = ignition2StartAngle;
-        ignition4StartAngle = ignition1StartAngle;
+        ignition4StartAngle = channels.cyl4Deg - currentStatus.advance - dwellAngle;
+        if(ignition4StartAngle < 0) { ignition4StartAngle += channels.maxAngle; }
       }
       
       //***********************************************************************************************
@@ -450,10 +577,10 @@ void loop()
                   );
       }
       
-      tempCrankAngle = crankAngle - channel2Degrees;
-      if( tempCrankAngle < 0) { tempCrankAngle += 360; }
-      tempStartAngle = injector2StartAngle - channel2Degrees;
-      if ( tempStartAngle < 0) { tempStartAngle += 360; }
+      tempCrankAngle = crankAngle - channels.cyl2Deg;
+      if( tempCrankAngle < 0) { tempCrankAngle += channels.maxAngle; }
+      tempStartAngle = injector2StartAngle - channels.cyl2Deg; //channel2Degrees;
+      if ( tempStartAngle < 0) { tempStartAngle += channels.maxAngle; }
       if (tempStartAngle > tempCrankAngle)
       { 
         setFuelSchedule2(openInjector2, 
@@ -463,10 +590,10 @@ void loop()
                   );
       }
       
-      tempCrankAngle = crankAngle - channel3Degrees;
-      if( tempCrankAngle < 0) { tempCrankAngle += 360; }
-      tempStartAngle = injector3StartAngle - channel3Degrees;
-      if ( tempStartAngle < 0) { tempStartAngle += 360; }
+      tempCrankAngle = crankAngle - channels.cyl3Deg; //channel3Degrees;
+      if( tempCrankAngle < 0) { tempCrankAngle += channels.maxAngle; }
+      tempStartAngle = injector3StartAngle - channels.cyl3Deg;//channel3Degrees;
+      if ( tempStartAngle < 0) { tempStartAngle += channels.maxAngle; }
       if (tempStartAngle > tempCrankAngle)
       { 
         setFuelSchedule3(openInjector3, 
@@ -476,10 +603,10 @@ void loop()
                   );
       }
 
-      tempCrankAngle = crankAngle - channel4Degrees;
-      if( tempCrankAngle < 0 ) { tempCrankAngle += 360; }
-      tempStartAngle = injector4StartAngle - channel4Degrees;
-      if ( tempStartAngle < 0 ) { tempStartAngle += 360; }
+      tempCrankAngle = crankAngle - channels.cyl4Deg;//channel4Degrees;
+      if( tempCrankAngle < 0 ) { tempCrankAngle += channels.maxAngle; }
+      tempStartAngle = injector4StartAngle - channels.cyl4Deg; //channel4Degrees;
+      if ( tempStartAngle < 0 ) { tempStartAngle += channels.maxAngle; }
       if (tempStartAngle > tempCrankAngle) {
     	  setFuelSchedule4(openInjector4,
     			  ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
@@ -503,10 +630,10 @@ void loop()
                       );
         }
 
-        tempCrankAngle = crankAngle - channel2Degrees;
-        if( tempCrankAngle < 0) { tempCrankAngle += 360; }
-        tempStartAngle = ignition2StartAngle - channel2Degrees;
-        if ( tempStartAngle < 0) { tempStartAngle += 360; }
+        tempCrankAngle = crankAngle - channels.cyl2Deg; //channel2Degrees;
+        if( tempCrankAngle < 0) { tempCrankAngle += channels.maxAngle; }
+        tempStartAngle = ignition2StartAngle - channels.cyl2Deg; //channel2Degrees;
+        if ( tempStartAngle < 0) { tempStartAngle += channels.maxAngle; }
         if (tempStartAngle > tempCrankAngle)
         { 
             setIgnitionSchedule2(beginCoil2Charge, 
@@ -516,10 +643,10 @@ void loop()
                       );
         }
         
-        tempCrankAngle = crankAngle - channel3Degrees;
-        if( tempCrankAngle < 0) { tempCrankAngle += 360; }
-        tempStartAngle = ignition3StartAngle - channel3Degrees;
-        if ( tempStartAngle < 0) { tempStartAngle += 360; }
+        tempCrankAngle = crankAngle - channels.cyl3Deg; //channel3Degrees;
+        if( tempCrankAngle < 0) { tempCrankAngle += channels.maxAngle; }
+        tempStartAngle = ignition3StartAngle - channels.cyl3Deg; //channel3Degrees;
+        if ( tempStartAngle < 0) { tempStartAngle += channels.maxAngle; }
         if (tempStartAngle > tempCrankAngle)
         { 
             setIgnitionSchedule3(beginCoil3Charge, 
@@ -529,10 +656,10 @@ void loop()
                       );
         }
 
-        tempCrankAngle = crankAngle - channel4Degrees;
-        if (tempCrankAngle < 0) { tempCrankAngle += 360; }
-        tempStartAngle = ignition4StartAngle - channel4Degrees;
-        if (tempStartAngle < 0) { tempStartAngle += 360; }
+        tempCrankAngle = crankAngle - channels.cyl4Deg; //channel4Degrees;
+        if (tempCrankAngle < 0) { tempCrankAngle += channels.maxAngle; }
+        tempStartAngle = ignition4StartAngle - channels.cyl4Deg; //channel4Degrees;
+        if (tempStartAngle < 0) { tempStartAngle += channels.maxAngle; }
         if (tempStartAngle > tempCrankAngle) {
         	setIgnitionSchedule4(beginCoil4Charge,
         			((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
@@ -605,7 +732,7 @@ void trigger()
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      currentStatus.hasSync = true;
-     startRevolutions++; //Counter 
+     startRevolutions++; //Counter
    } 
    
    toothLastMinusOneToothTime = toothLastToothTime;

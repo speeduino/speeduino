@@ -75,6 +75,10 @@ struct statuses {
   volatile byte secl; //Continous 
   volatile int loopsPerSecond;
   
+
+  bool isSequential = false; // when true engine squirts and fires sequentially
+  bool onSecondRev = false;  // true when engine is on second revolution (cyl1 in intake-compression stroke)
+
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
   // y = (x >> n) & 1;    // n=0..15.  stores nth bit of x in y.  y becomes 0 or 1.
