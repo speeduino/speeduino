@@ -10,28 +10,28 @@ const byte data_structure_version = 2; //This identifies the data structure when
 const byte page_size = 128;
 
 //Handy bitsetting macros
-#define BIT_SET(a,b) ((a) |= (1<<(b)))
-#define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
-#define BIT_CHECK(var,pos) ((var) & (1<<(pos)))
+#define BIT_SET(a,b) ((a) |= (b))
+#define BIT_CLEAR(a,b) ((a) &= ~(b))
+#define BIT_CHECK(var,pos) ((var) & (pos))
 
-//Define bit positions within engine virable
-#define BIT_ENGINE_RUN      0     // Engine running
-#define BIT_ENGINE_CRANK    1   // Engine cranking
-#define BIT_ENGINE_ASE      2    // after start enrichment (ASE)
-#define BIT_ENGINE_WARMUP   3  // Engine in warmup
-#define BIT_ENGINE_ACC      4    // in TPS acceleration mode
-#define BIT_ENGINE_DCC      5    // in deceleration mode
-#define BIT_ENGINE_MAP      6    // in MAP acceleration mode
-#define BIT_ENGINE_IDLE     7  // idle on
+//Define bit positions within engine variable
+#define BIT_ENGINE_RUN      1          // Engine running
+#define BIT_ENGINE_CRANK    (1 << 1)   // Engine cranking
+#define BIT_ENGINE_ASE      (1 << 2)   // after start enrichment (ASE)
+#define BIT_ENGINE_WARMUP   (1 << 3)   // Engine in warmup
+#define BIT_ENGINE_ACC      (1 << 4)   // in TPS acceleration mode
+#define BIT_ENGINE_DCC      (1 << 5)   // in deceleration mode
+#define BIT_ENGINE_MAP      (1 << 6)   // in MAP acceleration mode
+#define BIT_ENGINE_IDLE     (1 << 7)   // idle on
 
 //Define masks for Squirt
-#define BIT_SQUIRT_INJ1           0  //inj1 Squirt
-#define BIT_SQUIRT_INJ2           1  //inj2 Squirt
-#define BIT_SQUIRT_SCHSQRT        2  //Scheduled to squirt
-#define BIT_SQUIRT_SQRTING        3  //Squirting
-#define BIT_SQUIRT_INJ2SCHED      4
-#define BIT_SQUIRT_INJ2SQRT       5  //Injector2 (Schedule2)
-#define BIT_SQUIRT_BOOSTCTRLOFF   6  //Squirting Injector 2
+#define BIT_SQUIRT_INJ1           1         //inj1 Squirt
+#define BIT_SQUIRT_INJ2           (1 << 1)  //inj2 Squirt
+#define BIT_SQUIRT_SCHSQRT        (1 << 2)  //Scheduled to squirt
+#define BIT_SQUIRT_SQRTING        (1 << 3)  //Squirting
+#define BIT_SQUIRT_INJ2SCHED      (1 << 4)
+#define BIT_SQUIRT_INJ2SQRT       (1 << 5)  //Injector2 (Schedule2)
+#define BIT_SQUIRT_BOOSTCTRLOFF   (1 << 6)  //Squirting Injector 2
 
 #define SIZE_BYTE   8
 #define SIZE_INT    16

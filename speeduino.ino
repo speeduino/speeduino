@@ -453,12 +453,13 @@ void loop()
           misfireTest = false;
           channels.setSequential(false);
         } else if (currentStatus.runSecs > 0 and blockMisfireTest == false and misfireTest == false
-                   and (currentStatus.engine & 0x81) and toothHistoryIndex > 450)
+                   and (currentStatus.engine & (BIT_ENGINE_RUN | BIT_ENGINE_IDLE)) and toothHistoryIndex > 450)
         {
           // when engine is idling and is running 0b10000001, have turned at least 450 tooths
           // try to find sync pulse using misfire on cyl1 and see if it stops accelerate like it has for the last revs
           // if crank didnt accelerate we were at cyl 1 otherwise swap crankangle 360 degrees
-          int goBackDeg = 360 - (maxPressureDeg - crankAngle); // check curGap a rev ago at 35 crank degrees, 35deg should be around maxpressure in cyl
+          int goBackDeg = 360 - (maxPressureDeg - crankAngle); // check curGap a rev ago at 35 crank degrees,
+                                                               // 35deg should be around maxpressure in cyl
                                                                // aka crank should speed up considerably if it has fired
           int idx = toothHistoryIndex - (div(goBackDeg, triggerToothAngle).quot - configPage2.triggerMissingTeeth);
 
