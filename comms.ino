@@ -120,7 +120,7 @@ This function returns the current values of a fixed group of variables
 */
 void sendValues(int length)
 {
-  byte packetSize = 28;
+  const byte packetSize = 29;
   byte response[packetSize];
   
   response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
@@ -158,6 +158,7 @@ void sendValues(int length)
   
   //response[26] = highByte(cltCalibrationTable.axisX16[0]); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
   //response[27] = lowByte(cltCalibrationTable.axisX16[0]);
+  response[28] = 0x01 & currentStatus.isSequential;
   
 
   Serial.write(response, (size_t)packetSize);
