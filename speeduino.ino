@@ -10,6 +10,7 @@
 
 //**************************************************************************************************
 
+
 #include "globals.h"
 #include "utils.h"
 #include "table.h"
@@ -21,8 +22,10 @@
 #include "corrections.h"
 #include "timers.h"
 
+
 #include "fastAnalog.h"
-#define DIGITALIO_NO_MIX_ANALOGWRITE
+// gets set in global.h, somehow that was the only way to silence a compiler warning
+//#define DIGITALIO_NO_MIX_ANALOGWRITE
 #include "digitalIOPerformance.h"
 
 struct config1 configPage1;

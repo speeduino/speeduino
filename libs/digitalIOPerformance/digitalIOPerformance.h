@@ -48,6 +48,7 @@ inline static bool _inputIsAtomic(uint8_t pin);
 #endif
 
 #ifdef DIGITALIO_NO_MIX_ANALOGWRITE
+#undef DIGITALIO_NO_MIX_ANALOGWRITE // silence compiler warnings
 #define DIGITALIO_NO_MIX_ANALOGWRITE 1
 #else
 #define DIGITALIO_NO_MIX_ANALOGWRITE 0

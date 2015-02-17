@@ -2,6 +2,8 @@
 #define GLOBALS_H
 #include <Arduino.h>
 
+#define DIGITALIO_NO_MIX_ANALOGWRITE
+
 const byte ms_version = 20;
 const byte signature = 20;
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing. 
