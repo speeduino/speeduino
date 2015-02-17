@@ -21,7 +21,8 @@
 
 #include "fastAnalog.h"
 #define DIGITALIO_NO_MIX_ANALOGWRITE
-#include "digitalIOPerformance.h"
+#include <digitalIOPerformance.h>
+#include <PID_v1.h>
 
 struct config1 configPage1;
 struct config2 configPage2;
@@ -272,10 +273,18 @@ void loop()
      
     //***SET STATUSES***
     //-----------------------------------------------------------------------------------------------------
-    currentStatus.TPSlast = currentStatus.TPS;
+
     currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 10, 255); //Get the current MAP value
-    currentStatus.tpsADC = map(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
-    currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+    
+    //TPS setting to be performed every 16 loops (any faster and it can upset the TPSdot sampling time)
+    if ((mainLoopCount & 15) == 1)
+    {
+      currentStatus.TPSlast = currentStatus.TPS;
+      currentStatus.TPSlast_time = currentStatus.TPS_time;
+      currentStatus.tpsADC = map(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
+      currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+      currentStatus.TPS_time = currentLoopTime;
+    }
     
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
     if ((mainLoopCount & 255) == 1)
