@@ -5,8 +5,6 @@ All functions in the gamma file return
 #ifndef CORRECTIONS_H
 #define CORRECTIONS_H
 
-//static byte numCorrections = 2;
-
 byte correctionsTotal();
 byte correctionWUE(); //Warmup enrichment
 byte correctionASE(); //After Start Enrichment

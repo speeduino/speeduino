@@ -97,17 +97,21 @@ byte correctionAccel()
       return 100;
     }
     //Enrichment still needs to keep running. Simply return the total TAE amount
-    return 100 + currentStatus.TAEamount; 
+    return currentStatus.TAEamount; 
   }
   
-  //If TAE isn't currently turned on, need to check whether it needs to be turned on
-  int rateOfChange = ldiv(1000000, (currentLoopTime - previousLoopTime)).quot * (currentStatus.TPS - currentStatus.TPSlast); //This is the % per second that the TPS has moved
-  currentStatus.tpsDOT = divs10(rateOfChange); //The TAE bins are divided by 10 in order to allow them to be stored in a byte. 
+  //Check for deceleration (Deceleration adjustment not yet supported)
+  if (currentStatus.TPS < currentStatus.TPSlast) { return 100; }
   
-  if (currentStatus.tpsDOT > (configPage1.tpsThresh * 10))
+  //If TAE isn't currently turned on, need to check whether it needs to be turned on
+  int rateOfChange = ldiv(1000000, (currentStatus.TPS_time - currentStatus.TPSlast_time)).quot * (currentStatus.TPS - currentStatus.TPSlast); //This is the % per second that the TPS has moved
+  //currentStatus.tpsDOT = divs10(rateOfChange); //The TAE bins are divided by 10 in order to allow them to be stored in a byte. 
+  currentStatus.tpsDOT = rateOfChange / 10;
+  
+  if (rateOfChange > configPage1.tpsThresh)
   {
     BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
-    currentStatus.TAEEndTime = micros() + (configPage1.taeTime * 100); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS * 10, so multiply it by 100 to get it in uS
+    currentStatus.TAEEndTime = micros() + ((unsigned long)configPage1.taeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
     return 100 + table2D_getValue(taeTable, currentStatus.tpsDOT);
   }
   

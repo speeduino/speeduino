@@ -277,7 +277,7 @@ void loop()
     currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 10, 255); //Get the current MAP value
     
     //TPS setting to be performed every 16 loops (any faster and it can upset the TPSdot sampling time)
-    if ((mainLoopCount & 15) == 1)
+    if ((mainLoopCount & 31) == 1)
     {
       currentStatus.TPSlast = currentStatus.TPS;
       currentStatus.TPSlast_time = currentStatus.TPS_time;

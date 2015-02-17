@@ -48,6 +48,8 @@ struct statuses {
   byte MAP;
   byte TPS; //The current TPS reading (0% - 100%)
   byte TPSlast; //The previous TPS reading
+  unsigned long TPS_time; //The time the TPS sample was taken
+  unsigned long TPSlast_time; //The time the previous TPS sample was taken
   byte tpsADC; //0-255 byte representation of the TPS
   byte tpsDOT;
   byte VE;
