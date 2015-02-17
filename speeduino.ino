@@ -5,6 +5,7 @@
 //The following lines are configurable, but the defaults are probably pretty good for most applications
 //#define engineInjectorDeadTime 2500 //Time in uS that the injector takes to open minus the time it takes to close
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
+#define MAX_RPM 10000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 #define USE_SEQUENTIAL true // sequential injections and ignitions
 
 //**************************************************************************************************
@@ -32,10 +33,8 @@ int req_fuel_uS; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155).
 int	req_fuel_uS_sequential; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155)
 int inj_opentime_uS;
 int	triggerToothAngle; //The number of degrees that passes from tooth to tooth
-// FIXME does this really need to be volatile?
-volatile int triggerActualTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
+unsigned int triggerActualTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
 unsigned int triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
-#define MAX_RPM 10000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
