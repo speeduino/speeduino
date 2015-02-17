@@ -386,7 +386,7 @@ void loop()
       //Calculate an injector pulsewidth from the VE
       currentStatus.corrections = correctionsTotal();
       //currentStatus.corrections = 100;
-      int fuel = currentStatus.isSequential ? req_fuel_uS : req_fuel_uS_sequential; // when sequential we dont squirt twice a cycle as set in req_fuel_uS
+      int fuel = currentStatus.isSequential ? req_fuel_uS_sequential : req_fuel_uS; // when sequential we dont squirt twice a cycle as set in req_fuel_uS
       if (configPage1.algorithm == 0) //Check with fuelling algorithm is being used
       { 
         //Speed Density
