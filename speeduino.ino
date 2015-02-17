@@ -463,11 +463,22 @@ void loop()
                                                                // aka crank should speed up considerably if it has fired
           int idx = toothHistoryIndex - (div(goBackDeg, triggerToothAngle).quot - configPage2.triggerMissingTeeth);
 
-          // find to fastest time between tooth gaps
-          lastFiredGapTime = max(toothHistory[idx], toothHistory[idx - triggerActualTeeth]);
-          lastFiredGapTime = max(lastFiredGapTime, toothHistory[idx - (triggerActualTeeth * 2)]);
           misfireTest = true;
           revCount = 0;
+
+          // make sure we have stable idle
+          lastFiredGapTime = toothHistory[idx];
+          int testFactor = lastFiredGapTime >> 4; //div(gapTime, 16).quot; // allow 6.25% difference
+          for (int i = 1; i < 5; ++i){
+            int oldGap = toothHistory[idx - triggerActualTeeth * i];
+            if ((oldGap + testFactor < lastFiredGapTime) or
+                (oldGap - testFactor > lastFiredGapTime))
+            {
+              // rough idle, dont do misfire test
+              misfireTest = false;
+              break;
+            }
+          }
         }
         // end start new revolution
       } else if (misfireTest and revCount == 2 and crankAngle > 90) {
@@ -475,7 +486,7 @@ void loop()
         int id = toothHistoryIndex - div(crankAngle - maxPressureDeg, triggerToothAngle).quot;
         if (id < 0) { id += 512; }
         int gapTime = toothHistory[id];
-        if (gapTime) {
+        if (gapTime and (currentStatus.engine & (BIT_ENGINE_RUN | BIT_ENGINE_IDLE))) {
           int testFactor = gapTime >> 4; //div(gapTime, 16).quot; // allow 6.25% difference
           if ((gapTime + testFactor < lastFiredGapTime) or
               (gapTime - testFactor > lastFiredGapTime))
