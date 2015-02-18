@@ -78,8 +78,8 @@ struct statuses {
   volatile int loopsPerSecond;
   
 
-  bool isSequential = false; // when true engine squirts and fires sequentially
-  bool onSecondRev = false;  // true when engine is on second revolution (cyl1 in intake-compression stroke)
+  bool isSequential; // when true engine squirts and fires sequentially
+  bool onSecondRev;  // true when engine is on second revolution (cyl1 in intake-compression stroke)
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
