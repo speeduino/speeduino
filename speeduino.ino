@@ -39,6 +39,7 @@ int	triggerToothAngle; //The number of degrees that passes from tooth to tooth
 unsigned int triggerActualTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
 unsigned int triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 
+volatile unsigned char lastRevToothCount = 1;
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
 volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
@@ -106,24 +107,20 @@ struct channels_t {
 
   void setSequential(const bool sequential) {
     // set as if we were sequential first
-	inj1EndDeg = cyl1Deg + inValveOpenDegAfterTDC;
-	inj2EndDeg = cyl2Deg + inValveOpenDegAfterTDC;
-	inj3EndDeg = cyl3Deg + inValveOpenDegAfterTDC;
-	inj4EndDeg = cyl4Deg + inValveOpenDegAfterTDC;
+    inj1EndDeg = cyl1Deg + inValveOpenDegAfterTDC;
+    inj2EndDeg = cyl2Deg + inValveOpenDegAfterTDC;
+    inj3EndDeg = cyl3Deg + inValveOpenDegAfterTDC;
+    inj4EndDeg = cyl4Deg + inValveOpenDegAfterTDC;
 
-	if (sequential) {
-	  if (inj1EndDeg > 720) { inj1EndDeg -= 720; }
-	  if (inj2EndDeg > 720) { inj2EndDeg -= 720; }
-	  if (inj3EndDeg > 720) { inj3EndDeg -= 720; }
-      if (inj4EndDeg > 720) { inj4EndDeg -= 720; }
+    if (sequential) {
       maxAngle = 720;
-	} else {
-	  if (inj1EndDeg > 360) { inj1EndDeg -= 360; }
-      if (inj2EndDeg > 360) { inj2EndDeg -= 360; }
-      if (inj3EndDeg > 360) { inj3EndDeg -= 360; }
-      if (inj4EndDeg > 360) { inj4EndDeg -= 360; }
+    } else {
       maxAngle = 360;
-	}
+    }
+    while (inj1EndDeg > maxAngle) { inj1EndDeg -= maxAngle; }
+    while (inj2EndDeg > maxAngle) { inj2EndDeg -= maxAngle; }
+    while (inj3EndDeg > maxAngle) { inj3EndDeg -= maxAngle; }
+    while (inj4EndDeg > maxAngle) { inj4EndDeg -= maxAngle; }
   }
 
 } channels;
@@ -190,6 +187,7 @@ void setup()
   
   //Once the configs have been loaded, a number of one time calculations can be completed
   req_fuel_uS_sequential = configPage1.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations
+  req_fuel_uS = req_fuel_uS_sequential / engineSquirtsPerCycle;
   triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   inj_opentime_uS = configPage1.injOpen * 100; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155). 
@@ -228,7 +226,7 @@ void setup()
   attachInterrupt(triggerInterrupt, trigger, FALLING); // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
   //End crank triger interrupt attachment
   
-  req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
+  //req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
   
   //Initial values for loop times
   previousLoopTime = 0;
@@ -308,12 +306,31 @@ void loop()
     previousLoopTime = currentLoopTime;
     currentLoopTime = micros();
     long timeToLastTooth = (currentLoopTime - toothLastToothTime);
+    static unsigned long revolutionTime = 1;
+    static bool falseSync = true; // true if CKP sensor triggered sync falsely on this revolution
+    static uint8_t lastToothCount = 1; // used to determine if we are on a new revolution (sync just happened)
+    bool syncHappened = false;
     if ( (timeToLastTooth < 500000L) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
-      noInterrupts();
-      unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-      interrupts();
-      currentStatus.RPM = ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long)
+      // this code block only calculate values that change once every new revolution
+      if (toothCurrentCount < lastToothCount){
+        noInterrupts();
+        revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+        interrupts();
+        if (lastRevToothCount < triggerActualTeeth) {
+          // CKP sensor might miss occasionally, interpolate for that so RPM is correct and later crankAngle interpolation don't go haywire
+          revolutionTime /= triggerActualTeeth - (triggerActualTeeth - (lastRevToothCount - 2));
+          revolutionTime *= triggerActualTeeth;
+          falseSync = true;
+          Serial.print("missed pulse");Serial.println(lastRevToothCount);
+        } else {
+          falseSync = false;
+          syncHappened = true;
+        }
+        timePerDegree = ldiv( revolutionTime , 360).quot; //The time (uS) it is currently taking to move 1 degree
+        currentStatus.RPM = ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long)
+      }
+      lastToothCount = toothCurrentCount;
     }
     else
     {
@@ -424,27 +441,34 @@ void loop()
       //Determine the current crank angle
       //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
       int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + ((int)(configPage2.triggerAngle)*4); //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth. Needs to be multipled by 4 as the trigger angle is divided by 4 for the serial protocol
-      
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
-      timePerDegree = ldiv( (toothOneTime - toothOneMinusOneTime) , 360).quot; //The time (uS) it is currently taking to move 1 degree
+      //Serial.print("tooths in last rev:");Serial.print(lastRevToothCount);Serial.print(" rpm=");Serial.println(currentStatus.RPM);
       //degreesPerLoop = ldiv(1000000L, ((long)currentStatus.loopsPerSecond*timePerDegree)).quot; //The number of crank degrees the pass each loop
       crankAngle += ldiv( (micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
-      if (crankAngle > 360) { crankAngle -= 360; }
+      //Serial.print(timePerDegree);Serial.print(" micros=");Serial.print(micros());Serial.print(" toothLastTime=");Serial.print(toothLastToothTime);Serial.print(" crankAngle=");Serial.println(crankAngle);
+      //return;
 
+      if (crankAngle >= 360) { crankAngle -= 360; }
 
 
 #if USE_SEQUENTIAL
       static bool misfireTest = false;
       static bool blockMisfireTest = false;
       static int lastFiredGapTime = 0;
-      static int lastCrankAngle = 0;
       static uint8_t revCount = 0;
       static const uint8_t maxPressureDeg = 35; // test speedup of crank at this angle
 
-      if (crankAngle < lastCrankAngle) {
+      if (syncHappened) {
         // we have passed TDC on cyl1 aka we are slightly more than 0 deg or 360 deg on cyl 1
         if (currentStatus.isSequential) {
-          currentStatus.onSecondRev = not currentStatus.onSecondRev; // toggle 1st or 2nd revolution
+          // only shift when we have a true sync signal ie no skipped tooths
+          if (not falseSync) {
+            currentStatus.onSecondRev = not currentStatus.onSecondRev; // toggle 1st or 2nd revolution
+          } else {
+            channels.setSequential(false);
+            currentStatus.isSequential = false;
+            currentStatus.onSecondRev = false;
+          }
         } else if (misfireTest) {
           ++revCount;
         } else if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK )) {
@@ -452,8 +476,10 @@ void loop()
           blockMisfireTest = false;
           misfireTest = false;
           channels.setSequential(false);
-        } else if (currentStatus.runSecs > 0 and blockMisfireTest == false and misfireTest == false
-                   and (currentStatus.engine & (BIT_ENGINE_RUN | BIT_ENGINE_IDLE)) and toothHistoryIndex > 450)
+        } else if (!blockMisfireTest and !misfireTest and currentStatus.runSecs > 0 and
+                   currentStatus.RPM > 700 and currentStatus.RPM < 1200 and
+                   (currentStatus.engine & (BIT_ENGINE_RUN | BIT_ENGINE_IDLE)) and
+                   toothHistoryIndex > 450)
         {
           // when engine is idling and is running 0b10000001, have turned at least 450 tooths
           // try to find sync pulse using misfire on cyl1 and see if it stops accelerate like it has for the last revs
@@ -500,14 +526,17 @@ void loop()
 
           currentStatus.isSequential = true;
           channels.setSequential(true);
+          //Serial.println("****sequential***");
         }
         misfireTest = false;
         blockMisfireTest = true;
       }
 
-      lastCrankAngle = crankAngle;
 #endif // USE_SEQUENTIAL
       
+      // uncomment to test sequential
+      //currentStatus.isSequential = true;
+      //channels.setSequential(true);
 
       // when we are in sequential mode we use 720deg crankangle, 0deg is when cyl1 is at tdc and its burning inside
       if (currentStatus.isSequential and currentStatus.onSecondRev) { crankAngle += 360; }
@@ -557,24 +586,28 @@ void loop()
       //Calculate start angle for each channel
       //1
       ignition1StartAngle = channels.cyl1Deg - currentStatus.advance - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
-      if(ignition1StartAngle < 0) { ignition1StartAngle += channels.maxAngle; }
+      if (ignition1StartAngle < 0) { ignition1StartAngle += channels.maxAngle; }
+      if (ignition1StartAngle >= channels.maxAngle) { ignition1StartAngle -= channels.maxAngle; } // needed when a map contains negative timing, ie spark ATDC
       //2
       if (configPage1.nCylinders >= 2)
       { 
         ignition2StartAngle = channels.cyl2Deg - currentStatus.advance - dwellAngle;
-        if(ignition2StartAngle < 0) { ignition2StartAngle += channels.maxAngle; }
+        if (ignition2StartAngle < 0) { ignition2StartAngle += channels.maxAngle; }
+        if (ignition2StartAngle >= channels.maxAngle) { ignition2StartAngle -= channels.maxAngle; }
       }
       //3
       if (configPage1.nCylinders >= 3)
       { 
         ignition3StartAngle = channels.cyl3Deg - currentStatus.advance - dwellAngle;
-        if(ignition3StartAngle < 0) { ignition3StartAngle += channels.maxAngle; }
+        if (ignition3StartAngle < 0) { ignition3StartAngle += channels.maxAngle; }
+        if (ignition3StartAngle >= channels.maxAngle) { ignition3StartAngle -= channels.maxAngle; }
       }
       //4
       if (configPage1.nCylinders >= 4)
       { 
         ignition4StartAngle = channels.cyl4Deg - currentStatus.advance - dwellAngle;
         if(ignition4StartAngle < 0) { ignition4StartAngle += channels.maxAngle; }
+        if (ignition4StartAngle >= channels.maxAngle) { ignition4StartAngle -= channels.maxAngle; }
       }
       
       //***********************************************************************************************
@@ -683,6 +716,16 @@ void loop()
         }
       }
       
+      // uncomment to debug
+      /*Serial.print("ignition1StartAngle=");Serial.println(ignition1StartAngle);
+      Serial.print("ignition2StartAngle=");Serial.println(ignition2StartAngle);
+      Serial.print("ignition3StartAngle=");Serial.println(ignition3StartAngle);
+      Serial.print("ignition4StartAngle=");Serial.println(ignition4StartAngle);*/
+
+      /*Serial.print("injection1StartAngle");Serial.println(injector1StartAngle);
+      Serial.print("injection2StartAngle");Serial.println(injector2StartAngle);
+      Serial.print("injection3StartAngle");Serial.println(injector3StartAngle);
+      Serial.print("injection4StartAngle");Serial.println(injector4StartAngle);*/
     }
     
   }
@@ -742,6 +785,9 @@ void trigger()
    else { targetGap = ((toothLastToothTime - toothLastMinusOneToothTime)) * 2; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
    if ( curGap > targetGap )
    { 
+     // CKP sensor might skip pulses, keep track of last revs toothcount
+     lastRevToothCount = toothCurrentCount;
+
      toothCurrentCount = 1; 
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
