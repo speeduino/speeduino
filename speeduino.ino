@@ -47,6 +47,7 @@ int inj_opentime_uS;
 int	triggerToothAngle; //The number of degrees that passes from tooth to tooth
 unsigned int triggerActualTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
 unsigned int triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
+unsigned int triggerFilterMinimum; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 
 volatile unsigned char lastRevToothCount = 1;
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
@@ -212,6 +213,7 @@ void setup()
   currentStatus.isSequential = false;
   currentStatus.onSecondRev = false;
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+  triggerFilterMinimum = triggerFilterTime;
   
   switch (pinTrigger) {
     
@@ -328,7 +330,7 @@ void loop()
       }
     }
 
-    const int emulateRpm = 800;
+    const int emulateRpm = 6; //800; // set 6 to turn off, all above turns it on
 #endif
 
 
@@ -360,6 +362,13 @@ void loop()
         }
         timePerDegree = ldiv( revolutionTime , 360).quot; //The time (uS) it is currently taking to move 1 degree
         currentStatus.RPM = ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long)
+
+        // set triggerFilterTime based on last revolution so we have a longer time on low revs
+        // Makes system more interference tolerant
+        long newTimeUs = ldiv(revolutionTime, (int)configPage2.triggerTeeth ).quot;
+        newTimeUs = (newTimeUs * 2) / 3; // 2/3 of the medium time on last rev.
+        triggerFilterTime = max((unsigned int)newTimeUs, triggerFilterMinimum);
+        debug("triggerFilterTime");debugln(triggerFilterTime);
       }
       lastToothCount = toothCurrentCount;
     }
@@ -375,8 +384,10 @@ void loop()
       currentStatus.onSecondRev = false;
       channels.setSequential(false);
       secCounter = 0; //Reset our seconds counter.
+      triggerFilterTime = triggerFilterMinimum;
       debugln("engine stalled");
     }
+
      
     //***SET STATUSES***
     //-----------------------------------------------------------------------------------------------------
@@ -402,7 +413,7 @@ void loop()
 
 #ifdef DEBUG_TEST
     if (syncHappened) {
-      currentStatus.RPM = emulateRpm;
+      if (emulateRpm > 6) { currentStatus.RPM = emulateRpm; }
       timePerDegree = (int)(1000000L / ((emulateRpm / 6)));// 60) * 360));
       BIT_SET(currentStatus.engine, BIT_ENGINE_IDLE);
     }
