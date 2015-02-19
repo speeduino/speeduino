@@ -9,7 +9,7 @@ A detailed description of each call can be found at: http://www.msextra.com/doc/
 
 void command()
 {
-  switch (Serial.read()) 
+  switch (Serial.read())
   {
       case 'A': // send 22 bytes of realtime values
         sendValues(22);
@@ -481,6 +481,7 @@ void sendToothLog(bool useChar)
 
 void testComm()
 {
-  Serial.write(1);
+  //Serial.write(1);
+  Serial.write((unsigned char)millis() & 0x000000ff); // echo back a timer 0-255
   return; 
 }
