@@ -300,6 +300,21 @@ void loop()
       command();
     }
 
+    // uncomment for testing
+    static uint8_t testSync = 1;
+    static uint8_t incTest = 0;
+    incTest += 9; // around 1100rpm
+    //incTest += 6; // around 580rpm
+    //incTest += 2; //   around 390rpm
+    //incTest += 1; // around 170rpm
+    if (incTest > triggerToothAngle) {
+      incTest = 0;
+      if (++testSync <= triggerActualTeeth)
+        trigger(); // a visible teeth
+      else if (testSync > configPage2.triggerTeeth){
+        testSync = 1; // a missing teeth
+      }
+    }
 
 
     //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
@@ -322,7 +337,7 @@ void loop()
           revolutionTime /= triggerActualTeeth - (triggerActualTeeth - (lastRevToothCount - 2));
           revolutionTime *= triggerActualTeeth;
           falseSync = true;
-          Serial.print("missed pulse");Serial.println(lastRevToothCount);
+          //Serial.print("missed pulse");Serial.println(lastRevToothCount);
         } else {
           falseSync = false;
           syncHappened = true;
