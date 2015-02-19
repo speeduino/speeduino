@@ -8,8 +8,17 @@
 #define MAX_RPM 10000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 #define USE_SEQUENTIAL true // sequential injections and ignitions
 
+//#define DEBUG_TEST // firmware emulates itself to be running
+//#define DEBUG // turn on debug messages, sends over serial (collides with tunerstudio)
 //**************************************************************************************************
 
+#ifdef DEBUG
+#define debug(A) Serial.print(A)
+#define debugln(A) Serial.println(A)
+#else
+#define debug(A) // nothing
+#define debugln(A) // nothing
+#endif
 
 #include "globals.h"
 #include "utils.h"
@@ -286,6 +295,7 @@ void setup()
 
   // set up
   channels.setCylCrankAngles(configPage1.nCylinders, angles);
+  debugln("reset*******");
 }
 
 void loop() 
@@ -300,21 +310,27 @@ void loop()
       command();
     }
 
+#ifdef DEBUG_TEST
     // uncomment for testing
     static uint8_t testSync = 1;
     static uint8_t incTest = 0;
-    incTest += 9; // around 1100rpm
-    //incTest += 6; // around 580rpm
+    //incTest += 9; // around 1100rpm
+    incTest += 6; // around 580rpm
+    //incTest += 3;
     //incTest += 2; //   around 390rpm
     //incTest += 1; // around 170rpm
     if (incTest > triggerToothAngle) {
       incTest = 0;
-      if (++testSync <= triggerActualTeeth)
+      if (testSync++ <= triggerActualTeeth){
         trigger(); // a visible teeth
-      else if (testSync > configPage2.triggerTeeth){
+      } else if (testSync > configPage2.triggerTeeth){
         testSync = 1; // a missing teeth
       }
     }
+
+    const int emulateRpm = 800;
+#endif
+
 
 
     //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
@@ -337,7 +353,7 @@ void loop()
           revolutionTime /= triggerActualTeeth - (triggerActualTeeth - (lastRevToothCount - 2));
           revolutionTime *= triggerActualTeeth;
           falseSync = true;
-          //Serial.print("missed pulse");Serial.println(lastRevToothCount);
+          debug("missed pulse ");debugln(lastRevToothCount);
         } else {
           falseSync = false;
           syncHappened = true;
@@ -359,18 +375,13 @@ void loop()
       currentStatus.onSecondRev = false;
       channels.setSequential(false);
       secCounter = 0; //Reset our seconds counter.
+      debugln("engine stalled");
     }
-    
-    //Uncomment the following for testing
-    /*
-    currentStatus.hasSync = true;
-    currentStatus.RPM = 500;
-    */
      
     //***SET STATUSES***
     //-----------------------------------------------------------------------------------------------------
     currentStatus.TPSlast = currentStatus.TPS;
-    currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 10, 255); //Get the current MAP value
+    currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 0, 255); //Get the current MAP value
     currentStatus.tpsADC = map(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
     currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
     
@@ -387,6 +398,15 @@ void loop()
        currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
        currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
     }
+
+
+#ifdef DEBUG_TEST
+    if (syncHappened) {
+      currentStatus.RPM = emulateRpm;
+      timePerDegree = (int)(1000000L / ((emulateRpm / 6)));// 60) * 360));
+      BIT_SET(currentStatus.engine, BIT_ENGINE_IDLE);
+    }
+#endif
 
     //Always check for sync
     //Main loop runs within this clause
@@ -456,24 +476,33 @@ void loop()
       //Determine the current crank angle
       //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
       int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + ((int)(configPage2.triggerAngle)*4); //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth. Needs to be multipled by 4 as the trigger angle is divided by 4 for the serial protocol
+
+      //debug("crankAngle=");debugln(crankAngle);
+
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
-      //Serial.print("tooths in last rev:");Serial.print(lastRevToothCount);Serial.print(" rpm=");Serial.println(currentStatus.RPM);
       //degreesPerLoop = ldiv(1000000L, ((long)currentStatus.loopsPerSecond*timePerDegree)).quot; //The number of crank degrees the pass each loop
-      crankAngle += ldiv( (micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
-      //Serial.print(timePerDegree);Serial.print(" micros=");Serial.print(micros());Serial.print(" toothLastTime=");Serial.print(toothLastToothTime);Serial.print(" crankAngle=");Serial.println(crankAngle);
-      //return;
+      long interpolateDeg = ldiv( (micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+      if (interpolateDeg >= 0 and interpolateDeg <= triggerToothAngle) {
+        crankAngle += interpolateDeg; // when we have a false trigger with very few tooths counted, interpolateDeg goes way of
+      }
 
       if (crankAngle >= 360) { crankAngle -= 360; }
+      //debug("crankAngle=");debugln(crankAngle);
 
 
 #if USE_SEQUENTIAL
       static bool misfireTest = false;
       static bool blockMisfireTest = false;
       static int lastFiredGapTime = 0;
+      static int lastCrankAngle = 0;
       static uint8_t revCount = 0;
       static const uint8_t maxPressureDeg = 35; // test speedup of crank at this angle
 
-      if (syncHappened) {
+      if (crankAngle < lastCrankAngle) {
+        debug("new rev, falseSync=");debug(falseSync);
+        debug(" running:");debug(BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN));
+        debug(" idle:");debug(BIT_CHECK(currentStatus.engine, BIT_ENGINE_IDLE ));
+        debug(" runSecs:");debug(currentStatus.runSecs);debug(" toothHistoryIdx:");debugln(toothHistoryIndex);
         // we have passed TDC on cyl1 aka we are slightly more than 0 deg or 360 deg on cyl 1
         if (currentStatus.isSequential) {
           // only shift when we have a true sync signal ie no skipped tooths
@@ -491,8 +520,11 @@ void loop()
           blockMisfireTest = false;
           misfireTest = false;
           channels.setSequential(false);
-        } else if (!blockMisfireTest and !misfireTest and currentStatus.runSecs > 0 and
-                   currentStatus.RPM > 700 and currentStatus.RPM < 1200 and
+          currentStatus.isSequential = false;
+          currentStatus.onSecondRev = false;
+          debugln("cranking again");
+        } else if (blockMisfireTest == false and currentStatus.runSecs > 0 and
+                   currentStatus.RPM > 699 and currentStatus.RPM < 1201 and
                    (currentStatus.engine & (BIT_ENGINE_RUN | BIT_ENGINE_IDLE)) and
                    toothHistoryIndex > 450)
         {
@@ -506,6 +538,7 @@ void loop()
 
           misfireTest = true;
           revCount = 0;
+          debugln("trying misfireTest");
 
           // make sure we have stable idle
           lastFiredGapTime = toothHistory[idx];
@@ -517,6 +550,7 @@ void loop()
             {
               // rough idle, dont do misfire test
               misfireTest = false;
+              debugln("abort misfiretest");
               break;
             }
           }
@@ -541,17 +575,15 @@ void loop()
 
           currentStatus.isSequential = true;
           channels.setSequential(true);
-          //Serial.println("****sequential***");
+          debugln("****setting sequential***");
         }
         misfireTest = false;
         blockMisfireTest = true;
       }
 
+      lastCrankAngle = crankAngle;
+
 #endif // USE_SEQUENTIAL
-      
-      // uncomment to test sequential
-      //currentStatus.isSequential = true;
-      //channels.setSequential(true);
 
       // when we are in sequential mode we use 720deg crankangle, 0deg is when cyl1 is at tdc and its burning inside
       if (currentStatus.isSequential and currentStatus.onSecondRev) { crankAngle += 360; }
@@ -561,11 +593,12 @@ void loop()
       int PWdivTimerPerDegree = div(currentStatus.PW, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
       //Determine next firing angles
       //1
-
       injector1StartAngle = channels.inj1EndDeg - PWdivTimerPerDegree; //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       if(injector1StartAngle < 0) { injector1StartAngle += channels.maxAngle;}
 #if USE_SEQUENTIAL
-      if (misfireTest == true) { injector1StartAngle = 0; } // kill cyl1 this cycle to determine if we are on 1st or 2nd revolution
+      if (misfireTest == true) {
+        injector1StartAngle = 0; // kill cyl1 this cycle to determine if we are on 1st or 2nd revolution
+      }
 #endif
       //Repeat the above for each cylinder
       //2
@@ -602,27 +635,27 @@ void loop()
       //1
       ignition1StartAngle = channels.cyl1Deg - currentStatus.advance - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
       if (ignition1StartAngle < 0) { ignition1StartAngle += channels.maxAngle; }
-      if (ignition1StartAngle >= channels.maxAngle) { ignition1StartAngle -= channels.maxAngle; } // needed when a map contains negative timing, ie spark ATDC
+      if (ignition1StartAngle > channels.maxAngle) { ignition1StartAngle -= channels.maxAngle; } // needed when a map contains negative timing, ie spark ATDC
       //2
       if (configPage1.nCylinders >= 2)
       { 
         ignition2StartAngle = channels.cyl2Deg - currentStatus.advance - dwellAngle;
         if (ignition2StartAngle < 0) { ignition2StartAngle += channels.maxAngle; }
-        if (ignition2StartAngle >= channels.maxAngle) { ignition2StartAngle -= channels.maxAngle; }
+        if (ignition2StartAngle > channels.maxAngle) { ignition2StartAngle -= channels.maxAngle; }
       }
       //3
       if (configPage1.nCylinders >= 3)
       { 
         ignition3StartAngle = channels.cyl3Deg - currentStatus.advance - dwellAngle;
         if (ignition3StartAngle < 0) { ignition3StartAngle += channels.maxAngle; }
-        if (ignition3StartAngle >= channels.maxAngle) { ignition3StartAngle -= channels.maxAngle; }
+        if (ignition3StartAngle > channels.maxAngle) { ignition3StartAngle -= channels.maxAngle; }
       }
       //4
       if (configPage1.nCylinders >= 4)
       { 
         ignition4StartAngle = channels.cyl4Deg - currentStatus.advance - dwellAngle;
         if(ignition4StartAngle < 0) { ignition4StartAngle += channels.maxAngle; }
-        if (ignition4StartAngle >= channels.maxAngle) { ignition4StartAngle -= channels.maxAngle; }
+        if (ignition4StartAngle > channels.maxAngle) { ignition4StartAngle -= channels.maxAngle; }
       }
       
       //***********************************************************************************************
@@ -732,15 +765,20 @@ void loop()
       }
       
       // uncomment to debug
-      /*Serial.print("ignition1StartAngle=");Serial.println(ignition1StartAngle);
-      Serial.print("ignition2StartAngle=");Serial.println(ignition2StartAngle);
-      Serial.print("ignition3StartAngle=");Serial.println(ignition3StartAngle);
-      Serial.print("ignition4StartAngle=");Serial.println(ignition4StartAngle);*/
-
-      /*Serial.print("injection1StartAngle");Serial.println(injector1StartAngle);
-      Serial.print("injection2StartAngle");Serial.println(injector2StartAngle);
-      Serial.print("injection3StartAngle");Serial.println(injector3StartAngle);
-      Serial.print("injection4StartAngle");Serial.println(injector4StartAngle);*/
+      debug("\n---- current crankAngle ");debug(crankAngle);debug(" isSequential=");
+      debug(currentStatus.isSequential);debug(" rpm=");debug(currentStatus.RPM);debugln(" ------");
+      if (currentStatus.isSequential) {
+      debug("injection1StartAngle");debugln(injector1StartAngle);
+      debug("injection2StartAngle");debugln(injector2StartAngle);
+      debug("injection3StartAngle");debugln(injector3StartAngle);
+      debug("injection4StartAngle");debugln(injector4StartAngle);
+      debugln("--");
+      debug("ignition1StartAngle=");debugln(ignition1StartAngle);
+      debug("ignition2StartAngle=");debugln(ignition2StartAngle);
+      debug("ignition3StartAngle=");debugln(ignition3StartAngle);
+      debug("ignition4StartAngle=");debugln(ignition4StartAngle);
+      }
+      debug("--------------------------\n\n");
     }
     
   }
@@ -772,8 +810,8 @@ void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); BIT_CLEAR(currentStatus
 
 //The trigger function is called everytime a crank tooth passes the sensor
 volatile unsigned long curTime;
-volatile unsigned int curGap;
-volatile unsigned int targetGap; 
+volatile unsigned long curGap; // need to be long as a 4 point distributor at cranking speed 150rpm has a gap of 100000us
+volatile unsigned long targetGap; // also need to be long
 void trigger()
   {
    // http://www.msextra.com/forums/viewtopic.php?f=94&t=22976
