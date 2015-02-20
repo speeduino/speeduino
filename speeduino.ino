@@ -420,21 +420,25 @@ void loop()
         //Speed Density
         currentStatus.VE = get3DTableValue(fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
         currentStatus.PW = PW_SD(fuel, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
-        if (configPage2.FixAng == 0) //Check whether the user has set a fixed timing angle
-          { currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.MAP, currentStatus.RPM); } //As above, but for ignition advance
-         else
-          { currentStatus.advance = configPage2.FixAng; }
       }
       else
       { 
         //Alpha-N
         currentStatus.VE = get3DTableValue(fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
         currentStatus.PW = PW_AN(fuel, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
-        if (configPage2.FixAng == 0) //Check whether the user has set a fixed timing angle
-          { currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.TPS, currentStatus.RPM); } //As above, but for ignition advance
-        else
-          { currentStatus.advance = configPage2.FixAng; }
       }
+
+      // setting spark advance
+      if (configPage2.FixAng == 0) {//Check whether the user has set a fixed timing angle
+        if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) {
+          currentStatus.advance = configPage2.CrankAng; // use fixed timing during cranking
+        } else {
+          currentStatus.advance = get3DTableValue(ignitionTable, currentStatus.TPS, currentStatus.RPM); //Lookup ignition advance
+        }
+      } else {
+        currentStatus.advance = configPage2.FixAng;
+      }
+
 
       int injector1StartAngle = 0;
       int injector2StartAngle = 0;
