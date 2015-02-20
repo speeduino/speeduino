@@ -299,7 +299,7 @@ void loop()
       }
     }
 
-    const int emulateRpm = 800; // set 6 to turn off, all above turns it on
+    const int emulateRpm = 6; //800;//set 6 to turn off, all above turns it on
 #endif
 
 
@@ -328,16 +328,16 @@ void loop()
         } else {
           falseSync = false;
           syncHappened = true;
+
+          // set triggerFilterTime based on last revolution so we have a longer time on low revs
+          // Makes system more interference tolerant
+          //long newTimeUs = ldiv(revolutionTime, (int)configPage2.triggerTeeth ).quot;
+          //newTimeUs = (newTimeUs * 2) / 3; // 2/3 of the medium time on last rev.
+          //triggerFilterTime = max((unsigned int)newTimeUs, triggerFilterMinimum);
+          //debug("triggerFilterTime");debugln(triggerFilterTime);
         }
         timePerDegree = ldiv( revolutionTime , 360).quot; //The time (uS) it is currently taking to move 1 degree
         currentStatus.RPM = ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long)
-
-        // set triggerFilterTime based on last revolution so we have a longer time on low revs
-        // Makes system more interference tolerant
-        long newTimeUs = ldiv(revolutionTime, (int)configPage2.triggerTeeth ).quot;
-        newTimeUs = (newTimeUs * 2) / 3; // 2/3 of the medium time on last rev.
-        triggerFilterTime = max((unsigned int)newTimeUs, triggerFilterMinimum);
-        debug("triggerFilterTime");debugln(triggerFilterTime);
       }
       lastToothCount = toothCurrentCount;
     }
@@ -352,7 +352,7 @@ void loop()
       channels.setSequential(false);
       secCounter = 0; //Reset our seconds counter.
       triggerFilterTime = triggerFilterMinimum;
-      debugln("engine stalled");
+      //debugln("engine stalled");
     }
 
      
@@ -740,17 +740,17 @@ void loop()
       
       debug("\n---- current crankAngle ");debug(crankAngle);debug(" isSequential=");
       debug(currentStatus.isSequential);debug(" rpm=");debug(currentStatus.RPM);debugln(" ------");
-      if (currentStatus.isSequential) {
-      /*debug("injection1StartAngle");debugln(injector1StartAngle);
+      //if (currentStatus.isSequential) {
+      debug("injection1StartAngle");debugln(injector1StartAngle);
       debug("injection2StartAngle");debugln(injector2StartAngle);
       debug("injection3StartAngle");debugln(injector3StartAngle);
-      debug("injection4StartAngle");debugln(injector4StartAngle);*/
-      //debugln("--");
-      /*debug("ignition1StartAngle=");debugln(ignition1StartAngle);
+      debug("injection4StartAngle");debugln(injector4StartAngle);
+      debugln("--");
+      debug("ignition1StartAngle=");debugln(ignition1StartAngle);
       debug("ignition2StartAngle=");debugln(ignition2StartAngle);
       debug("ignition3StartAngle=");debugln(ignition3StartAngle);
-      debug("ignition4StartAngle=");debugln(ignition4StartAngle);*/
-      }
+      debug("ignition4StartAngle=");debugln(ignition4StartAngle);
+      //}
       debug("--------------------------\n\n");
     }
     
