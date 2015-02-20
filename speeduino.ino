@@ -86,51 +86,47 @@ unsigned long secCounter; //The next time to increment 'runSecs' counter.
 // stores to crank angles when each injector and coil should fire
 struct channels_t {
   channels_t() :
-	cyl1Deg(0),	cyl2Deg(0),	cyl3Deg(0),	cyl4Deg(0),
 	inj1EndDeg(0), inj2EndDeg(0), inj3EndDeg(0), inj4EndDeg(0),
-	nCyl(0), inValveOpenDegAfterTDC(340), maxAngle(360)
+	cfg1(0), cfg2(0), status(0), inValveOpenDegAfterTDC(340), maxAngle(360)
   {}
-
-  int16_t cyl1Deg; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
-  int16_t cyl2Deg; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
-  int16_t cyl3Deg; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
-  int16_t cyl4Deg; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
   int16_t inj1EndDeg; // when injector 1 should should Close
   int16_t inj2EndDeg;
   int16_t inj3EndDeg;
   int16_t inj4EndDeg;
-  uint8_t nCyl;			// nr of cylinders in engine
+  config1 const *cfg1;
+  config2 const *cfg2;
+  statuses *status;
   int16_t inValveOpenDegAfterTDC;
   int16_t maxAngle;
 
-  void setCylCrankAngles(const int nrCyl, const int angles[4]) {
-	nCyl = nrCyl;
-	if (nrCyl < 2) { return; } // 1 cyl engine nothing to do
-
-    cyl1Deg = angles[0];
-    if (nrCyl >= 2) { cyl2Deg = angles[1]; }
-    if (nrCyl >= 3) { cyl3Deg = angles[2]; }
-    if (nrCyl >= 4) { cyl4Deg = angles[3]; }
+  void init(const config1 &cfgPage1, const config2 &cfgPage2, statuses &currentStatus) {
+    cfg1 = &cfgPage1;
+    cfg2 = &cfgPage2;
+    status = &currentStatus;
+    if (cfg1->nCylinders < 2) { return; } // 1 cyl engine nothing to do
 
     setSequential(false);
   }
 
   void setSequential(const bool sequential) {
     // set as if we were sequential first
-    inj1EndDeg = cyl1Deg + inValveOpenDegAfterTDC;
-    inj2EndDeg = cyl2Deg + inValveOpenDegAfterTDC;
-    inj3EndDeg = cyl3Deg + inValveOpenDegAfterTDC;
-    inj4EndDeg = cyl4Deg + inValveOpenDegAfterTDC;
+    inj1EndDeg = inValveOpenDegAfterTDC; // cyl 1 is at 0 deg
+    inj2EndDeg = cfg2->cyl2TDCAngle + inValveOpenDegAfterTDC;
+    inj3EndDeg = cfg2->cyl3TDCAngle + inValveOpenDegAfterTDC;
+    inj4EndDeg = cfg2->cyl4TDCAngle + inValveOpenDegAfterTDC;
 
     if (sequential) {
       maxAngle = 720;
     } else {
       maxAngle = 360;
+      status->onSecondRev = false;
     }
     while (inj1EndDeg > maxAngle) { inj1EndDeg -= maxAngle; }
     while (inj2EndDeg > maxAngle) { inj2EndDeg -= maxAngle; }
     while (inj3EndDeg > maxAngle) { inj3EndDeg -= maxAngle; }
     while (inj4EndDeg > maxAngle) { inj4EndDeg -= maxAngle; }
+
+    status->isSequential = sequential;
   }
 
 } channels;
@@ -268,35 +264,8 @@ void setup()
   digitalWrite(pinMAP, HIGH);
   //digitalWrite(pinO2, LOW);
   digitalWrite(pinTPS, LOW);
-  
-  //Calculate the number of degrees between cylinders
-  // FIXME these crank angles should be configurable via tunerstudio
-  int angles[4] = { 0, 0, 0, 0};
-  switch (configPage1.nCylinders) {
-    case 1:
-      angles[0] = 0;
-      break;
-    case 2: // this is probably only correct for a 2 cyl straight engine, not a V2 like a Harley or a boxer
-      angles[0] = 0;
-      angles[1] = 180;
-      break;
-    case 3: // this is only correct for firing order 132
-      angles[0] = 0;
-      angles[1] = 480; // 120deg when non sequential;
-      angles[2] = 240;
-      break;
-    case 4:
-      // falltrough on purpose.
-    default: // this is only correct for 4 cyl straight engine, firing order 1342
-      angles[0] = 0;
-      angles[1] = 540; // 540 deg from TDC on cyl1
-      angles[2] = 180;
-      angles[3] = 360;   // 360 deg from TDC on cyl1
-      break;
-  }
 
-  // set up
-  channels.setCylCrankAngles(configPage1.nCylinders, angles);
+  channels.init(configPage1, configPage2, currentStatus); // set up cylinder angles
   debugln("reset*******");
 }
 
@@ -330,7 +299,7 @@ void loop()
       }
     }
 
-    const int emulateRpm = 6; //800; // set 6 to turn off, all above turns it on
+    const int emulateRpm = 800; // set 6 to turn off, all above turns it on
 #endif
 
 
@@ -380,8 +349,6 @@ void loop()
       currentStatus.VE = 0;
       currentStatus.hasSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
-      currentStatus.isSequential = false;
-      currentStatus.onSecondRev = false;
       channels.setSequential(false);
       secCounter = 0; //Reset our seconds counter.
       triggerFilterTime = triggerFilterMinimum;
@@ -434,8 +401,6 @@ void loop()
           BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK); 
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); 
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
-          currentStatus.isSequential = false;
-          currentStatus.onSecondRev = false;
           channels.setSequential(false);
           //Check whether enough cranking revolutions have been performed to turn the ignition on
           if(startRevolutions > configPage2.StgCycles)
@@ -501,100 +466,99 @@ void loop()
       //debug("crankAngle=");debugln(crankAngle);
 
 
-#if USE_SEQUENTIAL
+      // sequential code
       static bool misfireTest = false;
-      static bool blockMisfireTest = false;
-      static int lastFiredGapTime = 0;
-      static int lastCrankAngle = 0;
-      static uint8_t revCount = 0;
-      static const uint8_t maxPressureDeg = 35; // test speedup of crank at this angle
+      debug("use sequential:");debugln(configPage1.useSequential);
+      if (configPage1.useSequential) {
+        static bool blockMisfireTest = false;
+        static int lastFiredGapTime = 0;
+        static int lastCrankAngle = 0;
+        static uint8_t revCount = 0;
+        static const uint8_t maxPressureDeg = 35; // test speedup of crank at this angle
 
-      if (crankAngle < lastCrankAngle) {
-        debug("new rev, falseSync=");debug(falseSync);
-        debug(" running:");debug(BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN));
-        debug(" idle:");debug(BIT_CHECK(currentStatus.engine, BIT_ENGINE_IDLE ));
-        debug(" runSecs:");debug(currentStatus.runSecs);debug(" toothHistoryIdx:");debugln(toothHistoryIndex);
-        // we have passed TDC on cyl1 aka we are slightly more than 0 deg or 360 deg on cyl 1
-        if (currentStatus.isSequential) {
-          // only shift when we have a true sync signal ie no skipped tooths
-          if (not falseSync) {
-            currentStatus.onSecondRev = not currentStatus.onSecondRev; // toggle 1st or 2nd revolution
-          } else {
+        if (crankAngle < lastCrankAngle) {
+          debug("new rev, falseSync=");debug(falseSync);
+          debug(" running:");debug(BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN));
+          debug(" idle:");debug(BIT_CHECK(currentStatus.engine, BIT_ENGINE_IDLE ));
+          debug(" runSecs:");debug(currentStatus.runSecs);debug(" toothHistoryIdx:");debugln(toothHistoryIndex);
+          // we have passed TDC on cyl1 aka we are slightly more than 0 deg or 360 deg on cyl 1
+          if (currentStatus.isSequential) {
+            // only shift when we have a true sync signal ie no skipped tooths
+            if (not falseSync) {
+              currentStatus.onSecondRev = not currentStatus.onSecondRev; // toggle 1st or 2nd revolution
+            } else {
+              channels.setSequential(false);
+            }
+          } else if (misfireTest) {
+            ++revCount;
+          } else if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK )) {
+            // reset if we start cranking again
+            blockMisfireTest = false;
+            misfireTest = false;
             channels.setSequential(false);
-            currentStatus.isSequential = false;
-            currentStatus.onSecondRev = false;
-          }
-        } else if (misfireTest) {
-          ++revCount;
-        } else if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK )) {
-          // reset if we start cranking again
-          blockMisfireTest = false;
-          misfireTest = false;
-          channels.setSequential(false);
-          currentStatus.isSequential = false;
-          currentStatus.onSecondRev = false;
-          debugln("cranking again");
-        } else if (blockMisfireTest == false and currentStatus.runSecs > 0 and
-                   currentStatus.RPM > 699 and currentStatus.RPM < 1201 and
-                   (currentStatus.engine & (BIT_ENGINE_RUN | BIT_ENGINE_IDLE)) and
-                   toothHistoryIndex > 450)
-        {
-          // when engine is idling and is running 0b10000001, have turned at least 450 tooths
-          // try to find sync pulse using misfire on cyl1 and see if it stops accelerate like it has for the last revs
-          // if crank didnt accelerate we were at cyl 1 otherwise swap crankangle 360 degrees
-          int goBackDeg = 360 - (maxPressureDeg - crankAngle); // check curGap a rev ago at 35 crank degrees,
-                                                               // 35deg should be around maxpressure in cyl
-                                                               // aka crank should speed up considerably if it has fired
-          int idx = toothHistoryIndex - (div(goBackDeg, triggerToothAngle).quot - configPage2.triggerMissingTeeth);
+            debugln("cranking again");
+          } else if (blockMisfireTest == false and currentStatus.runSecs > 0 and
+                     currentStatus.RPM > 699 and currentStatus.RPM < 1201 and
+                     (currentStatus.engine & (BIT_ENGINE_RUN | BIT_ENGINE_IDLE)) and
+                     toothHistoryIndex > 450)
+          {
+            // when engine is idling and is running 0b10000001, have turned at least 450 tooths
+            // try to find sync pulse using misfire on cyl1 and see if it stops accelerate like it has for the last revs
+            // if crank didnt accelerate we were at cyl 1 otherwise swap crankangle 360 degrees
+            int goBackDeg = 360 - (maxPressureDeg - crankAngle); // check curGap a rev ago at 35 crank degrees,
+                                                                 // 35deg should be around maxpressure in cyl
+                                                                 // aka crank should speed up considerably if it has fired
+            int idx = toothHistoryIndex - (div(goBackDeg, triggerToothAngle).quot - configPage2.triggerMissingTeeth);
 
-          misfireTest = true;
-          revCount = 0;
-          debugln("trying misfireTest");
+            misfireTest = true;
+            revCount = 0;
+            debugln("trying misfireTest");
 
-          // make sure we have stable idle
-          lastFiredGapTime = toothHistory[idx];
-          int testFactor = lastFiredGapTime >> 4; //div(gapTime, 16).quot; // allow 6.25% difference
-          for (int i = 1; i < 5; ++i){
-            int oldGap = toothHistory[idx - triggerActualTeeth * i];
-            if ((oldGap + testFactor < lastFiredGapTime) or
-                (oldGap - testFactor > lastFiredGapTime))
-            {
-              // rough idle, dont do misfire test
-              misfireTest = false;
-              debugln("abort misfiretest");
-              break;
+            // make sure we have stable idle
+            lastFiredGapTime = toothHistory[idx];
+            int testFactor = lastFiredGapTime >> 4; //div(gapTime, 16).quot; // allow 6.25% difference
+            for (int i = 1; i < 5; ++i){
+              int oldGap = toothHistory[idx - triggerActualTeeth * i];
+              if ((oldGap + testFactor < lastFiredGapTime) or
+                  (oldGap - testFactor > lastFiredGapTime))
+              {
+                // rough idle, dont do misfire test
+                misfireTest = false;
+                debugln("abort misfiretest");
+                break;
+              }
             }
           }
-        }
-        // end start new revolution
-      } else if (misfireTest and revCount == 2 and crankAngle > 90) {
-        // check if we have fired cyl 1
-        int id = toothHistoryIndex - div(crankAngle - maxPressureDeg, triggerToothAngle).quot;
-        if (id < 0) { id += 512; }
-        int gapTime = toothHistory[id];
-        if (gapTime and (currentStatus.engine & (BIT_ENGINE_RUN | BIT_ENGINE_IDLE))) {
-          int testFactor = gapTime >> 4; //div(gapTime, 16).quot; // allow 6.25% difference
-          if ((gapTime + testFactor < lastFiredGapTime) or
-              (gapTime - testFactor > lastFiredGapTime))
-          {
-            // it still fired so it must have been cyl4 that fired aka we are on 2nd rev when cyl1 is venting
-            currentStatus.onSecondRev = true;
-          } else {
-            // it didnt fire so it must have been cyl 1
-            currentStatus.onSecondRev = false;
+          // end start new revolution
+        } else if (misfireTest and revCount == 2 and crankAngle > 90) {
+          // check if we have fired cyl 1
+          int id = toothHistoryIndex - div(crankAngle - maxPressureDeg, triggerToothAngle).quot;
+          if (id < 0) { id += 512; }
+          int gapTime = toothHistory[id];
+          if (gapTime and (currentStatus.engine & (BIT_ENGINE_RUN | BIT_ENGINE_IDLE))) {
+            int testFactor = gapTime >> 4; //div(gapTime, 16).quot; // allow 6.25% difference
+            if ((gapTime + testFactor < lastFiredGapTime) or
+                (gapTime - testFactor > lastFiredGapTime))
+            {
+              // it still fired so it must have been cyl4 that fired aka we are on 2nd rev when cyl1 is venting
+              currentStatus.onSecondRev = true;
+            } else {
+              // it didnt fire so it must have been cyl 1
+              currentStatus.onSecondRev = false;
+            }
+
+            channels.setSequential(true);
+            debugln("****setting sequential***");
           }
-
-          currentStatus.isSequential = true;
-          channels.setSequential(true);
-          debugln("****setting sequential***");
+          misfireTest = false;
+          blockMisfireTest = true;
         }
-        misfireTest = false;
-        blockMisfireTest = true;
+
+        lastCrankAngle = crankAngle;
+      } // USE SEQUENTIAL
+      else {
+        channels.setSequential(false);
       }
-
-      lastCrankAngle = crankAngle;
-
-#endif // USE_SEQUENTIAL
 
       // when we are in sequential mode we use 720deg crankangle, 0deg is when cyl1 is at tdc and its burning inside
       if (currentStatus.isSequential and currentStatus.onSecondRev) { crankAngle += 360; }
@@ -606,11 +570,10 @@ void loop()
       //1
       injector1StartAngle = channels.inj1EndDeg - PWdivTimerPerDegree; //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       if(injector1StartAngle < 0) { injector1StartAngle += channels.maxAngle;}
-#if USE_SEQUENTIAL
       if (misfireTest == true) {
         injector1StartAngle = 0; // kill cyl1 this cycle to determine if we are on 1st or 2nd revolution
       }
-#endif
+
       //Repeat the above for each cylinder
       //2
       if (configPage1.nCylinders >= 2)
@@ -644,27 +607,27 @@ void loop()
       
       //Calculate start angle for each channel
       //1
-      ignition1StartAngle = channels.cyl1Deg - currentStatus.advance - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
+      ignition1StartAngle = 0 - currentStatus.advance - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
       if (ignition1StartAngle < 0) { ignition1StartAngle += channels.maxAngle; }
       if (ignition1StartAngle > channels.maxAngle) { ignition1StartAngle -= channels.maxAngle; } // needed when a map contains negative timing, ie spark ATDC
       //2
       if (configPage1.nCylinders >= 2)
       { 
-        ignition2StartAngle = channels.cyl2Deg - currentStatus.advance - dwellAngle;
+        ignition2StartAngle = configPage2.cyl2TDCAngle - currentStatus.advance - dwellAngle;
         if (ignition2StartAngle < 0) { ignition2StartAngle += channels.maxAngle; }
         if (ignition2StartAngle > channels.maxAngle) { ignition2StartAngle -= channels.maxAngle; }
       }
       //3
       if (configPage1.nCylinders >= 3)
       { 
-        ignition3StartAngle = channels.cyl3Deg - currentStatus.advance - dwellAngle;
+        ignition3StartAngle = configPage2.cyl3TDCAngle - currentStatus.advance - dwellAngle;
         if (ignition3StartAngle < 0) { ignition3StartAngle += channels.maxAngle; }
         if (ignition3StartAngle > channels.maxAngle) { ignition3StartAngle -= channels.maxAngle; }
       }
       //4
       if (configPage1.nCylinders >= 4)
       { 
-        ignition4StartAngle = channels.cyl4Deg - currentStatus.advance - dwellAngle;
+        ignition4StartAngle = configPage2.cyl4TDCAngle - currentStatus.advance - dwellAngle;
         if(ignition4StartAngle < 0) { ignition4StartAngle += channels.maxAngle; }
         if (ignition4StartAngle > channels.maxAngle) { ignition4StartAngle -= channels.maxAngle; }
       }
@@ -683,9 +646,9 @@ void loop()
                   );
       }
       
-      tempCrankAngle = crankAngle - channels.cyl2Deg;
+      tempCrankAngle = crankAngle - configPage2.cyl2TDCAngle;
       if( tempCrankAngle < 0) { tempCrankAngle += channels.maxAngle; }
-      tempStartAngle = injector2StartAngle - channels.cyl2Deg; //channel2Degrees;
+      tempStartAngle = injector2StartAngle - configPage2.cyl2TDCAngle; //channel2Degrees;
       if ( tempStartAngle < 0) { tempStartAngle += channels.maxAngle; }
       if (tempStartAngle > tempCrankAngle)
       { 
@@ -696,9 +659,9 @@ void loop()
                   );
       }
       
-      tempCrankAngle = crankAngle - channels.cyl3Deg; //channel3Degrees;
+      tempCrankAngle = crankAngle - configPage2.cyl3TDCAngle; //channel3Degrees;
       if( tempCrankAngle < 0) { tempCrankAngle += channels.maxAngle; }
-      tempStartAngle = injector3StartAngle - channels.cyl3Deg;//channel3Degrees;
+      tempStartAngle = injector3StartAngle - configPage2.cyl3TDCAngle;//channel3Degrees;
       if ( tempStartAngle < 0) { tempStartAngle += channels.maxAngle; }
       if (tempStartAngle > tempCrankAngle)
       { 
@@ -709,9 +672,9 @@ void loop()
                   );
       }
 
-      tempCrankAngle = crankAngle - channels.cyl4Deg;//channel4Degrees;
+      tempCrankAngle = crankAngle - configPage2.cyl4TDCAngle;//channel4Degrees;
       if( tempCrankAngle < 0 ) { tempCrankAngle += channels.maxAngle; }
-      tempStartAngle = injector4StartAngle - channels.cyl4Deg; //channel4Degrees;
+      tempStartAngle = injector4StartAngle - configPage2.cyl4TDCAngle; //channel4Degrees;
       if ( tempStartAngle < 0 ) { tempStartAngle += channels.maxAngle; }
       if (tempStartAngle > tempCrankAngle) {
     	  setFuelSchedule4(openInjector4,
@@ -736,9 +699,9 @@ void loop()
                       );
         }
 
-        tempCrankAngle = crankAngle - channels.cyl2Deg; //channel2Degrees;
+        tempCrankAngle = crankAngle - configPage2.cyl2TDCAngle; //channel2Degrees;
         if( tempCrankAngle < 0) { tempCrankAngle += channels.maxAngle; }
-        tempStartAngle = ignition2StartAngle - channels.cyl2Deg; //channel2Degrees;
+        tempStartAngle = ignition2StartAngle - configPage2.cyl2TDCAngle; //channel2Degrees;
         if ( tempStartAngle < 0) { tempStartAngle += channels.maxAngle; }
         if (tempStartAngle > tempCrankAngle)
         { 
@@ -749,9 +712,9 @@ void loop()
                       );
         }
         
-        tempCrankAngle = crankAngle - channels.cyl3Deg; //channel3Degrees;
+        tempCrankAngle = crankAngle - configPage2.cyl3TDCAngle; //channel3Degrees;
         if( tempCrankAngle < 0) { tempCrankAngle += channels.maxAngle; }
-        tempStartAngle = ignition3StartAngle - channels.cyl3Deg; //channel3Degrees;
+        tempStartAngle = ignition3StartAngle - configPage2.cyl3TDCAngle; //channel3Degrees;
         if ( tempStartAngle < 0) { tempStartAngle += channels.maxAngle; }
         if (tempStartAngle > tempCrankAngle)
         { 
@@ -762,9 +725,9 @@ void loop()
                       );
         }
 
-        tempCrankAngle = crankAngle - channels.cyl4Deg; //channel4Degrees;
+        tempCrankAngle = crankAngle - configPage2.cyl4TDCAngle; //channel4Degrees;
         if (tempCrankAngle < 0) { tempCrankAngle += channels.maxAngle; }
-        tempStartAngle = ignition4StartAngle - channels.cyl4Deg; //channel4Degrees;
+        tempStartAngle = ignition4StartAngle - configPage2.cyl4TDCAngle; //channel4Degrees;
         if (tempStartAngle < 0) { tempStartAngle += channels.maxAngle; }
         if (tempStartAngle > tempCrankAngle) {
         	setIgnitionSchedule4(beginCoil4Charge,
@@ -775,19 +738,18 @@ void loop()
         }
       }
       
-      // uncomment to debug
       debug("\n---- current crankAngle ");debug(crankAngle);debug(" isSequential=");
       debug(currentStatus.isSequential);debug(" rpm=");debug(currentStatus.RPM);debugln(" ------");
       if (currentStatus.isSequential) {
-      debug("injection1StartAngle");debugln(injector1StartAngle);
+      /*debug("injection1StartAngle");debugln(injector1StartAngle);
       debug("injection2StartAngle");debugln(injector2StartAngle);
       debug("injection3StartAngle");debugln(injector3StartAngle);
-      debug("injection4StartAngle");debugln(injector4StartAngle);
-      debugln("--");
-      debug("ignition1StartAngle=");debugln(ignition1StartAngle);
+      debug("injection4StartAngle");debugln(injector4StartAngle);*/
+      //debugln("--");
+      /*debug("ignition1StartAngle=");debugln(ignition1StartAngle);
       debug("ignition2StartAngle=");debugln(ignition2StartAngle);
       debug("ignition3StartAngle=");debugln(ignition3StartAngle);
-      debug("ignition4StartAngle=");debugln(ignition4StartAngle);
+      debug("ignition4StartAngle=");debugln(ignition4StartAngle);*/
       }
       debug("--------------------------\n\n");
     }

@@ -138,6 +138,7 @@ struct config1 {
   byte egoType : 1;
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
+  byte useSequential : 1; // "Semi Sequential", "Sequential"
   
   byte primePulse;
   byte egoRPM;
@@ -188,14 +189,9 @@ struct config2 {
   byte taeValues[4]; //TPS based acceleration enrichment rates (% to add)
   byte wueBins[10]; //Warmup Enrichment bins (Values are in configTable1)
   byte dwellLimit;
-  byte unused122;
-  byte unused123;
-  byte unused124;
-  byte unused125;
-  byte unused126;
-  byte unused127;
-
-  
+  uint16_t cyl2TDCAngle;
+  uint16_t cyl3TDCAngle;
+  uint16_t cyl4TDCAngle;
 };
 
 //Page 3 of the config - See the ini file for further reference
