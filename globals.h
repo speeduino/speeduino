@@ -139,6 +139,7 @@ struct config1 {
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
   byte useSequential : 1; // "Semi Sequential", "Sequential"
+  byte triggRisingEdge : 1;   // Falling, Rising edge, VR conditioner may invert signal, such as Jbperf board
   
   byte primePulse;
   byte egoRPM;
