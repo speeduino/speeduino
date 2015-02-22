@@ -68,7 +68,8 @@ byte correctionASE()
   //Two checks are requiredL:
   //1) Is the negine run time less than the configured ase time
   //2) Make sure we're not still cranking
-  if ( (currentStatus.runSecs < configPage1.aseCount) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
+  if ( (currentStatus.runSecs < 30 && ignitionCount < configPage1.aseCount) &&
+       !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
   {
     BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
     return 100 + configPage1.asePct;

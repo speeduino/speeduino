@@ -76,7 +76,6 @@ struct statuses {
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
   volatile int loopsPerSecond;
-  
 
   bool isSequential; // when true engine squirts and fires sequentially
   bool onSecondRev;  // true when engine is on second revolution (cyl1 in intake-compression stroke)
@@ -288,7 +287,7 @@ extern struct config2 configPage2;
 extern struct config3 configPage3;
 extern unsigned long currentLoopTime; //The time the current loop started (uS)
 extern unsigned long previousLoopTime; //The time the previous loop started (uS)
-extern byte ignitionCount;
+extern uint16_t ignitionCount;
 extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];

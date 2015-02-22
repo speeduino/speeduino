@@ -8,7 +8,7 @@
 #define MAX_RPM 10000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 #define USE_SEQUENTIAL true // sequential injections and ignitions
 
-//#define DEBUG_TEST // firmware emulates itself to be running
+#define DEBUG_TEST // firmware emulates itself to be running
 //#define DEBUG // turn on debug messages, sends over serial (collides with tunerstudio)
 //**************************************************************************************************
 
@@ -80,7 +80,7 @@ byte coilLOW = LOW;
 
 struct statuses currentStatus;
 volatile int mainLoopCount;
-byte ignitionCount;
+uint16_t ignitionCount; // number of ignitions since engine start, used by after start enrichment
 unsigned long secCounter; //The next time to increment 'runSecs' counter.
 
 // stores to crank angles when each injector and coil should fire
@@ -300,7 +300,7 @@ void loop()
       }
     }
 
-    const int emulateRpm = 6; //800;//set 6 to turn off, all above turns it on
+    const int emulateRpm = 800;//6; //800;//set 6 to turn off, all above turns it on
 #endif
 
 
@@ -352,6 +352,7 @@ void loop()
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       channels.setSequential(false);
       secCounter = 0; //Reset our seconds counter.
+      ignitionCount = 0;
       triggerFilterTime = triggerFilterMinimum;
       //debugln("engine stalled");
     }
@@ -385,6 +386,11 @@ void loop()
       timePerDegree = (int)(1000000L / ((emulateRpm / 6)));// 60) * 360));
       BIT_SET(currentStatus.engine, BIT_ENGINE_IDLE);
     }
+    currentStatus.MAP = 30; // about idle
+    currentStatus.coolant = 90;
+    currentStatus.IAT = 25;
+
+    currentStatus.isSequential = configPage1.useSequential;
 #endif
 
     //Always check for sync
@@ -403,6 +409,7 @@ void loop()
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); 
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
           channels.setSequential(false);
+          ignitionCount = 0;
           //Check whether enough cranking revolutions have been performed to turn the ignition on
           if(startRevolutions > configPage2.StgCycles)
           {ignitionOn = true;}
@@ -439,7 +446,6 @@ void loop()
       } else {
         currentStatus.advance = configPage2.FixAng;
       }
-
 
       int injector1StartAngle = 0;
       int injector2StartAngle = 0;
@@ -741,6 +747,7 @@ void loop()
 					endCoil4Charge
         			);
         }
+
       }
       
       debug("\n---- current crankAngle ");debug(crankAngle);debug(" isSequential=");
