@@ -103,7 +103,6 @@ struct channels_t {
     cfg1 = &cfgPage1;
     cfg2 = &cfgPage2;
     status = &currentStatus;
-    if (cfg1->nCylinders < 2) { return; } // 1 cyl engine nothing to do
 
     setSequential(false);
   }
