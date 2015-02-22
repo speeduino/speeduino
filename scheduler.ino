@@ -327,7 +327,7 @@ ISR(TIMER4_COMPA_vect) //ignitionSchedule4
        ignitionSchedule4.Status = OFF; //Turn off the schedule
        ignitionSchedule4.EndCallback();
        ignitionCount += 1; //Increment the igintion counter
-       TIMSK5 &= ~(1 << OCIE4A); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
+       TIMSK4 &= ~(1 << OCIE4A); //Turn off this output compare unit (This simply writes 0 to the OCIE4A bit of TIMSK4)
     }
     interrupts();
   }
