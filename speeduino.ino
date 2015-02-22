@@ -8,7 +8,7 @@
 #define MAX_RPM 10000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 #define USE_SEQUENTIAL true // sequential injections and ignitions
 
-#define DEBUG_TEST // firmware emulates itself to be running
+//#define DEBUG_TEST // firmware emulates itself to be running
 //#define DEBUG // turn on debug messages, sends over serial (collides with tunerstudio)
 //**************************************************************************************************
 
@@ -87,12 +87,16 @@ unsigned long secCounter; //The next time to increment 'runSecs' counter.
 struct channels_t {
   channels_t() :
 	inj1EndDeg(0), inj2EndDeg(0), inj3EndDeg(0), inj4EndDeg(0),
+	cyl2TDCDeg(0), cyl3TDCDeg(0), cyl4TDCDeg(0),
 	cfg1(0), cfg2(0), status(0), inValveOpenDegAfterTDC(340), maxAngle(360)
   {}
   int16_t inj1EndDeg; // when injector 1 should should Close
   int16_t inj2EndDeg;
   int16_t inj3EndDeg;
   int16_t inj4EndDeg;
+  int16_t cyl2TDCDeg;
+  int16_t cyl3TDCDeg;
+  int16_t cyl4TDCDeg;
   config1 const *cfg1;
   config2 const *cfg2;
   statuses *status;
@@ -114,6 +118,10 @@ struct channels_t {
     inj3EndDeg = cfg2->cyl3TDCAngle + inValveOpenDegAfterTDC;
     inj4EndDeg = cfg2->cyl4TDCAngle + inValveOpenDegAfterTDC;
 
+    cyl2TDCDeg = cfg2->cyl2TDCAngle;
+    cyl3TDCDeg = cfg2->cyl3TDCAngle;
+    cyl4TDCDeg = cfg2->cyl4TDCAngle;
+
     if (sequential) {
       maxAngle = 720;
     } else {
@@ -124,6 +132,10 @@ struct channels_t {
     while (inj2EndDeg > maxAngle) { inj2EndDeg -= maxAngle; }
     while (inj3EndDeg > maxAngle) { inj3EndDeg -= maxAngle; }
     while (inj4EndDeg > maxAngle) { inj4EndDeg -= maxAngle; }
+
+    while (cyl2TDCDeg > maxAngle) { cyl2TDCDeg -= maxAngle; }
+    while (cyl3TDCDeg > maxAngle) { cyl3TDCDeg -= maxAngle; }
+    while (cyl4TDCDeg > maxAngle) { cyl4TDCDeg -= maxAngle; }
 
     status->isSequential = sequential;
   }
@@ -328,6 +340,7 @@ void loop()
         } else {
           falseSync = false;
           syncHappened = true;
+          debugln("synced");
 
           // set triggerFilterTime based on last revolution so we have a longer time on low revs
           // Makes system more interference tolerant
@@ -478,7 +491,7 @@ void loop()
 
       // sequential code
       static bool misfireTest = false;
-      debug("use sequential:");debugln(configPage1.useSequential);
+      //debug("use sequential:");debugln(configPage1.useSequential);
       if (configPage1.useSequential) {
         static bool blockMisfireTest = false;
         static int lastFiredGapTime = 0;
@@ -656,9 +669,9 @@ void loop()
                   );
       }
       
-      tempCrankAngle = crankAngle - configPage2.cyl2TDCAngle;
+      tempCrankAngle = crankAngle - channels.cyl2TDCDeg;
       if( tempCrankAngle < 0) { tempCrankAngle += channels.maxAngle; }
-      tempStartAngle = injector2StartAngle - configPage2.cyl2TDCAngle; //channel2Degrees;
+      tempStartAngle = injector2StartAngle - channels.cyl2TDCDeg; //channel2Degrees;
       if ( tempStartAngle < 0) { tempStartAngle += channels.maxAngle; }
       if (tempStartAngle > tempCrankAngle)
       { 
@@ -669,9 +682,9 @@ void loop()
                   );
       }
       
-      tempCrankAngle = crankAngle - configPage2.cyl3TDCAngle; //channel3Degrees;
+      tempCrankAngle = crankAngle - channels.cyl3TDCDeg; //channel3Degrees;
       if( tempCrankAngle < 0) { tempCrankAngle += channels.maxAngle; }
-      tempStartAngle = injector3StartAngle - configPage2.cyl3TDCAngle;//channel3Degrees;
+      tempStartAngle = injector3StartAngle - channels.cyl3TDCDeg;//channel3Degrees;
       if ( tempStartAngle < 0) { tempStartAngle += channels.maxAngle; }
       if (tempStartAngle > tempCrankAngle)
       { 
@@ -682,9 +695,9 @@ void loop()
                   );
       }
 
-      tempCrankAngle = crankAngle - configPage2.cyl4TDCAngle;//channel4Degrees;
+      tempCrankAngle = crankAngle - channels.cyl4TDCDeg;//channel4Degrees;
       if( tempCrankAngle < 0 ) { tempCrankAngle += channels.maxAngle; }
-      tempStartAngle = injector4StartAngle - configPage2.cyl4TDCAngle; //channel4Degrees;
+      tempStartAngle = injector4StartAngle - channels.cyl4TDCDeg; //channel4Degrees;
       if ( tempStartAngle < 0 ) { tempStartAngle += channels.maxAngle; }
       if (tempStartAngle > tempCrankAngle) {
     	  setFuelSchedule4(openInjector4,
@@ -702,6 +715,9 @@ void loop()
       {
         if ( (ignition1StartAngle > crankAngle) )
         { 
+          //extern Schedule ignitionSchedule1;
+          //debug("cyl1_timeout:");debug(((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree));
+          //debug(" pending");debugln(ignitionSchedule1.Status);debug(" TIMSK5:");Serial.println(TIMSK5, BIN);
             setIgnitionSchedule1(beginCoil1Charge, 
                       ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                       currentStatus.dwell,
@@ -709,25 +725,27 @@ void loop()
                       );
         }
 
-        tempCrankAngle = crankAngle - configPage2.cyl2TDCAngle; //channel2Degrees;
+        tempCrankAngle = crankAngle - channels.cyl2TDCDeg; //channel2Degrees;
         if( tempCrankAngle < 0) { tempCrankAngle += channels.maxAngle; }
-        tempStartAngle = ignition2StartAngle - configPage2.cyl2TDCAngle; //channel2Degrees;
+        tempStartAngle = ignition2StartAngle - channels.cyl2TDCDeg; //channel2Degrees;
         if ( tempStartAngle < 0) { tempStartAngle += channels.maxAngle; }
         if (tempStartAngle > tempCrankAngle)
         { 
-            setIgnitionSchedule2(beginCoil2Charge, 
+          //debug("cyl2_timeout:");debugln(((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree));
+            setIgnitionSchedule2(beginCoil2Charge,
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       currentStatus.dwell,
                       endCoil2Charge
                       );
         }
         
-        tempCrankAngle = crankAngle - configPage2.cyl3TDCAngle; //channel3Degrees;
+        tempCrankAngle = crankAngle - channels.cyl3TDCDeg; //channel3Degrees;
         if( tempCrankAngle < 0) { tempCrankAngle += channels.maxAngle; }
-        tempStartAngle = ignition3StartAngle - configPage2.cyl3TDCAngle; //channel3Degrees;
+        tempStartAngle = ignition3StartAngle - channels.cyl3TDCDeg; //channel3Degrees;
         if ( tempStartAngle < 0) { tempStartAngle += channels.maxAngle; }
         if (tempStartAngle > tempCrankAngle)
         { 
+          //debug("cyl3_timeout:");debugln(((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree));
             setIgnitionSchedule3(beginCoil3Charge, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       currentStatus.dwell,
@@ -735,11 +753,12 @@ void loop()
                       );
         }
 
-        tempCrankAngle = crankAngle - configPage2.cyl4TDCAngle; //channel4Degrees;
+        tempCrankAngle = crankAngle - channels.cyl4TDCDeg; //channel4Degrees;
         if (tempCrankAngle < 0) { tempCrankAngle += channels.maxAngle; }
-        tempStartAngle = ignition4StartAngle - configPage2.cyl4TDCAngle; //channel4Degrees;
+        tempStartAngle = ignition4StartAngle - channels.cyl4TDCDeg; //channel4Degrees;
         if (tempStartAngle < 0) { tempStartAngle += channels.maxAngle; }
         if (tempStartAngle > tempCrankAngle) {
+          //debug("cyl4_timeout:");debugln(((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree));
         	setIgnitionSchedule4(beginCoil4Charge,
         			((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
 					currentStatus.dwell,
@@ -752,7 +771,7 @@ void loop()
       debug("\n---- current crankAngle ");debug(crankAngle);debug(" isSequential=");
       debug(currentStatus.isSequential);debug(" rpm=");debug(currentStatus.RPM);debugln(" ------");
       //if (currentStatus.isSequential) {
-      debug("injection1StartAngle");debugln(injector1StartAngle);
+     /* debug("injection1StartAngle");debugln(injector1StartAngle);
       debug("injection2StartAngle");debugln(injector2StartAngle);
       debug("injection3StartAngle");debugln(injector3StartAngle);
       debug("injection4StartAngle");debugln(injector4StartAngle);
@@ -760,7 +779,7 @@ void loop()
       debug("ignition1StartAngle=");debugln(ignition1StartAngle);
       debug("ignition2StartAngle=");debugln(ignition2StartAngle);
       debug("ignition3StartAngle=");debugln(ignition3StartAngle);
-      debug("ignition4StartAngle=");debugln(ignition4StartAngle);
+      debug("ignition4StartAngle=");debugln(ignition4StartAngle);*/
       //}
       debug("--------------------------\n\n");
     }
