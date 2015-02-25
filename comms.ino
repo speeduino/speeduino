@@ -143,7 +143,7 @@ void sendValues(int length)
   response[17] = currentStatus.corrections; //Total GammaE (%)
   response[18] = currentStatus.VE; //Current VE 1 (%)
   response[19] = currentStatus.afrTarget;
-  response[20] = (byte)(currentStatus.PW / 200); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS. 
+  response[20] = (byte)(currentStatus.PW / 100); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS. 
   response[21] = currentStatus.tpsDOT; //TPS DOT
   response[22] = currentStatus.advance;
   response[23] = currentStatus.TPS; // TPS (0% to 100%)
