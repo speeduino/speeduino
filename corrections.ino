@@ -44,7 +44,8 @@ Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y 
 byte correctionWUE()
 {
   //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
-  if (currentStatus.coolant > (WUETable.axisX[9] - CALIBRATION_TEMPERATURE_OFFSET)) { return 100; } //This prevents us doing the 2D lookup if we're already up to temp
+  if (currentStatus.coolant > (WUETable.axisX[9] - CALIBRATION_TEMPERATURE_OFFSET)) { BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); return 100; } //This prevents us doing the 2D lookup if we're already up to temp
+  BIT_SET(currentStatus.engine, BIT_ENGINE_WARMUP);
   return table2D_getValue(WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
 }
 
