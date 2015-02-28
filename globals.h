@@ -103,9 +103,17 @@ struct config1 {
   byte tpsThresh;
   byte taeTime;
   byte tdePct;
-  byte unused102;
-  byte unused103;
-  byte unused104;
+  
+  //Display config bits
+  byte displayType : 3;
+  byte display1 : 3;
+  byte display2 : 2;
+  byte display3 : 3;
+  byte display4 : 2;
+  byte display5 : 3;
+  byte displayB1 : 4;
+  byte displayB2 : 4;
+  
   byte unused105;
   byte reqFuel;
   byte divider;

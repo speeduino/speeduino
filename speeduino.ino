@@ -18,6 +18,7 @@
 #include "math.h"
 #include "corrections.h"
 #include "timers.h"
+#include "display.h"
 
 #include "fastAnalog.h"
 #define DIGITALIO_NO_MIX_ANALOGWRITE
@@ -128,6 +129,7 @@ void setup()
   
   initialiseSchedulers();
   initialiseTimers();
+  initialiseDisplay();
   
   //Once the configs have been loaded, a number of one time calculations can be completed
   req_fuel_uS = configPage1.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations
@@ -242,6 +244,8 @@ void loop()
           command();
         }
       }
+      
+      if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
      
     //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
     previousLoopTime = currentLoopTime;
@@ -274,14 +278,16 @@ void loop()
     //***SET STATUSES***
     //-----------------------------------------------------------------------------------------------------
 
-    currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 10, 255); //Get the current MAP value
+    //currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 10, 255); //Get the current MAP value
+    currentStatus.MAP = fastMap1023toX(analogRead(pinMAP), 0, 1023, 10, 255); //Get the current MAP value
     
-    //TPS setting to be performed every 16 loops (any faster and it can upset the TPSdot sampling time)
+    //TPS setting to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
     if ((mainLoopCount & 31) == 1)
     {
       currentStatus.TPSlast = currentStatus.TPS;
       currentStatus.TPSlast_time = currentStatus.TPS_time;
-      currentStatus.tpsADC = map(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
+      //currentStatus.tpsADC = map(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
+      currentStatus.tpsADC = fastMap1023toX(analogRead(pinTPS), 0, 1023, 0, 255); //Same as above line, but using optimised map function
       currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
       currentStatus.TPS_time = currentLoopTime;
     }
