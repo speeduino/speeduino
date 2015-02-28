@@ -7,15 +7,6 @@ Adafruit_SSD1306 display(pinDisplayReset);
 
 void initialiseDisplay()
 {
-   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C (for the 128x32)
-   display.clearDisplay();
-   display.setTextSize(1);
-   display.setTextColor(WHITE);
-   display.setCursor(0,0);
-   display.print("RPM: ");
-   display.setCursor(0,16);
-   display.print("CPU: ");
-   
    switch(configPage1.displayType)
    {
      case 1:
@@ -31,6 +22,15 @@ void initialiseDisplay()
        display.SSD1306_SETCOMPINS_V = 0x12;
       break; 
    }
+  
+   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C (for the 128x32)
+   display.clearDisplay();
+   display.setTextSize(1);
+   display.setTextColor(WHITE);
+   display.setCursor(0,0);
+   display.print("RPM: ");
+   display.setCursor(0,16);
+   display.print("CPU: ");
 }
 
 void updateDisplay()
