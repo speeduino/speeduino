@@ -76,6 +76,7 @@ struct statuses {
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
   volatile int loopsPerSecond;
+  int freeRAM;
   
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
