@@ -152,9 +152,9 @@ void sendValues(int length)
   response[25] = lowByte(currentStatus.loopsPerSecond);
  
   //The following can be used to show the amount of free memory
-  int mem = freeRam();
-  response[26] = highByte(mem); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
-  response[27] = lowByte(mem);
+  currentStatus.freeRAM = freeRam();
+  response[26] = highByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
+  response[27] = lowByte(currentStatus.freeRAM);
   
   //response[26] = highByte(cltCalibrationTable.axisX16[0]); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
   //response[27] = lowByte(cltCalibrationTable.axisX16[0]);

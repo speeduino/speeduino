@@ -36,19 +36,145 @@ void initialiseDisplay()
 void updateDisplay()
 {
   display.clearDisplay();
-   //display.setCursor(0,0);
-   //display.print("RPM: ");
-   display.setCursor(64,0);
-   display.print("PW: ");
-   display.setCursor(0,11);
-   display.print("CPU: ");
-  /*
-  display.setCursor(28,0);
-  display.print(currentStatus.RPM); 
-  display.setCursor(92,0);
-  display.print((currentStatus.PW));*/
-  display.setCursor(28,11);
-  display.print(currentStatus.loopsPerSecond); 
+  display.setCursor(0,0);
+  switch(configPage1.display1)
+  {
+    case 0:
+      display.print("RPM: ");
+      display.setCursor(28,0);
+      display.print(currentStatus.RPM);
+      break;
+    case 1:
+      display.print("PW: ");
+      display.setCursor(28,0);
+      display.print(currentStatus.PW);
+      break;
+    case 2:
+      display.print("Adv: ");
+      display.setCursor(28,0);
+      display.print(currentStatus.advance);
+      break;
+    case 3:
+      display.print("VE: ");
+      display.setCursor(28,0);
+      display.print(currentStatus.VE);
+      break;
+    case 4:
+      display.print("GamE: ");
+      display.setCursor(28,0);
+      display.print(currentStatus.corrections);
+      break;
+    case 5:
+      display.print("TPS: ");
+      display.setCursor(28,0);
+      display.print(currentStatus.TPS);
+      break;
+    case 6:
+      display.print("IAT: ");
+      display.setCursor(28,0);
+      display.print(currentStatus.IAT);
+      break;
+    case 7:
+      display.print("CLT: ");
+      display.setCursor(28,0);
+      display.print(currentStatus.coolant);
+      break;
+  }
+  
+  display.setCursor(0,11);
+  switch(configPage1.display3)
+  {
+    case 0:
+      display.print("RPM: ");
+      display.setCursor(28,11);
+      display.print(currentStatus.RPM);
+      break;
+    case 1:
+      display.print("PW: ");
+      display.setCursor(28,11);
+      display.print(currentStatus.PW);
+      break;
+    case 2:
+      display.print("Adv: ");
+      display.setCursor(28,11);
+      display.print(currentStatus.advance);
+      break;
+    case 3:
+      display.print("VE: ");
+      display.setCursor(28,11);
+      display.print(currentStatus.VE);
+      break;
+    case 4:
+      display.print("GamE: ");
+      display.setCursor(28,11);
+      display.print(currentStatus.corrections);
+      break;
+    case 5:
+      display.print("TPS: ");
+      display.setCursor(28,11);
+      display.print(currentStatus.TPS);
+      break;
+    case 6:
+      display.print("IAT: ");
+      display.setCursor(28,11);
+      display.print(currentStatus.IAT);
+      break;
+    case 7:
+      display.print("CLT: ");
+      display.setCursor(28,11);
+      display.print(currentStatus.coolant);
+      break;
+  }
+  
+  display.setCursor(64,0);
+  switch(configPage1.display2)
+  {
+    case 0:
+      display.print("O2: ");
+      display.setCursor(92,0);
+      display.print(currentStatus.O2);
+      break;
+    case 1:
+      display.print("Vdc: ");
+      display.setCursor(92,0);
+      display.print(currentStatus.battery10);
+      break;
+    case 2:
+      display.print("CPU: ");
+      display.setCursor(92,0);
+      display.print(currentStatus.loopsPerSecond);
+      break;
+    case 3:
+      display.print("Mem: ");
+      display.setCursor(92,0);
+      display.print(currentStatus.freeRAM);
+      break;
+  }
+  
+  display.setCursor(64,11);
+  switch(configPage1.display4)
+  {
+    case 0:
+      display.print("O2: ");
+      display.setCursor(92,11);
+      display.print(currentStatus.O2);
+      break;
+    case 1:
+      display.print("Vdc: ");
+      display.setCursor(92,11);
+      display.print(currentStatus.battery10);
+      break;
+    case 2:
+      display.print("CPU: ");
+      display.setCursor(92,11);
+      display.print(currentStatus.loopsPerSecond);
+      break;
+    case 3:
+      display.print("Mem: ");
+      display.setCursor(92,11);
+      display.print(currentStatus.freeRAM);
+      break;
+  }
   
   int barWidth = ldiv(((unsigned long)currentStatus.RPM * 128), 9000).quot;
   //int barWidth = map(currentStatus.RPM, 0, 9000, 0, 128);
