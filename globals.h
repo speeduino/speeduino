@@ -248,7 +248,29 @@ struct config3 {
   
 };
 
+/*
+//Pin mappings as per the v0.3 shield
+#define pinInjector1 8 //Output pin injector 1 is on
+#define pinInjector2 9 //Output pin injector 2 is on
+#define pinInjector3 10 //Output pin injector 3 is on
+#define pinInjector4 11 //Output pin injector 4 is on
+#define pinCoil1 28 //Pin for coil 1
+#define pinCoil2 24 //Pin for coil 2
+#define pinCoil3 40 //Pin for coil 3
+#define pinCoil4 36 //Pin for coil 4
+#define pinTrigger 18 //The CAS pin
+#define pinTrigger2 19 //The Cam Sensor pin
+#define pinTPS A2 //TPS input pin
+#define pinMAP A3 //MAP sensor pin
+#define pinIAT A0 //IAT sensor pin
+#define pinCLT A1 //CLS sensor pin
+#define pinO2 A8 //O2 Sensor pin
+#define pinBat A4 //O2 Sensor pin
+#define pinDisplayReset 48 // OLED reset pin
+*/
+
 //Pin mappings as per the v0.2 shield
+
 #define pinInjector1 8 //Output pin injector 1 is on
 #define pinInjector2 9 //Output pin injector 2 is on
 #define pinInjector3 10 //Output pin injector 3 is on
@@ -265,6 +287,8 @@ struct config3 {
 #define pinCLT A1 //CLS sensor pin
 #define pinO2 A8 //O2 Sensor pin
 #define pinBat A4 //O2 Sensor pin
+#define pinDisplayReset 48 // OLED reset pin
+
 
 //Pin mappings as per the v0.1 shield
 /*

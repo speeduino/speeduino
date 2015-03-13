@@ -3,9 +3,9 @@ This is called when a command is received over serial from TunerStudio / Megatun
 It parses the command and calls the relevant function
 A detailed description of each call can be found at: http://www.msextra.com/doc/ms1extra/COM_RS232.htm
 */
-#include "comms.h"
-#include "globals.h"
-#include "storage.h"
+//#include "comms.h"
+//#include "globals.h"
+//#include "storage.h"
 
 void command()
 {
