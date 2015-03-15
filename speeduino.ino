@@ -13,12 +13,17 @@
 #include "table.h"
 #include "testing.h"
 #include "scheduler.h"
-#include "storage.h"
 #include "comms.h"
 #include "math.h"
 #include "corrections.h"
 #include "timers.h"
 #include "display.h"
+
+#ifdef __SAM3X8E__
+ //Do stuff for ARM based CPUs 
+#else
+  #include "storage.h"
+#endif
 
 #include "fastAnalog.h"
 #define DIGITALIO_NO_MIX_ANALOGWRITE
@@ -112,6 +117,8 @@ void setup()
   
   //Setup the calibration tables
   loadCalibration();
+  //Set the pin mappings
+  setPinMapping(configPage1.pinMapping);
 
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }

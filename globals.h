@@ -97,7 +97,7 @@ struct config1 {
   byte aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
-  byte unused95;
+  byte pinMapping; // The board / ping mapping to be used
   byte unused96;
   byte unused97;
   byte taeColdA;
@@ -248,65 +248,23 @@ struct config3 {
   
 };
 
-/*
-//Pin mappings as per the v0.3 shield
-#define pinInjector1 8 //Output pin injector 1 is on
-#define pinInjector2 9 //Output pin injector 2 is on
-#define pinInjector3 10 //Output pin injector 3 is on
-#define pinInjector4 11 //Output pin injector 4 is on
-#define pinCoil1 28 //Pin for coil 1
-#define pinCoil2 24 //Pin for coil 2
-#define pinCoil3 40 //Pin for coil 3
-#define pinCoil4 36 //Pin for coil 4
-#define pinTrigger 18 //The CAS pin
-#define pinTrigger2 19 //The Cam Sensor pin
-#define pinTPS A2 //TPS input pin
-#define pinMAP A3 //MAP sensor pin
-#define pinIAT A0 //IAT sensor pin
-#define pinCLT A1 //CLS sensor pin
-#define pinO2 A8 //O2 Sensor pin
-#define pinBat A4 //O2 Sensor pin
-#define pinDisplayReset 48 // OLED reset pin
-*/
-
-//Pin mappings as per the v0.2 shield
-
-#define pinInjector1 8 //Output pin injector 1 is on
-#define pinInjector2 9 //Output pin injector 2 is on
-#define pinInjector3 10 //Output pin injector 3 is on
-#define pinInjector4 11 //Output pin injector 4 is on
-#define pinCoil1 28 //Pin for coil 1
-#define pinCoil2 24 //Pin for coil 2
-#define pinCoil3 40 //Pin for coil 3
-#define pinCoil4 36 //Pin for coil 4
-#define pinTrigger 20 //The CAS pin
-#define pinTrigger2 21 //The Cam Sensor pin
-#define pinTPS A2 //TPS input pin
-#define pinMAP A3 //MAP sensor pin
-#define pinIAT A0 //IAT sensor pin
-#define pinCLT A1 //CLS sensor pin
-#define pinO2 A8 //O2 Sensor pin
-#define pinBat A4 //O2 Sensor pin
-#define pinDisplayReset 48 // OLED reset pin
-
-
-//Pin mappings as per the v0.1 shield
-/*
-#define pinInjector1 8 //Output pin injector 1 is on
-#define pinInjector2 9 //Output pin injector 2 is on
-#define pinInjector3 11 //Output pin injector 3 is on
-#define pinInjector4 10 //Output pin injector 4 is on
-#define pinCoil1 6 //Pin for coil 1
-#define pinCoil2 7 //Pin for coil 2
-#define pinCoil3 12 //Pin for coil 3
-#define pinCoil4 13 //Pin for coil 4
-#define pinTrigger 2 //The CAS pin
-#define pinTPS A0 //TPS input pin
-#define pinMAP A1 //MAP sensor pin
-#define pinIAT A2 //IAT sensor pin
-#define pinCLT A3 //CLS sensor pin
-#define pinO2 A4 //O2 Sensor pin
-*/
+byte pinInjector1; //Output pin injector 1
+byte pinInjector2; //Output pin injector 2
+byte pinInjector3; //Output pin injector 3 is on
+byte pinInjector4; //Output pin injector 4 is on
+byte pinCoil1; //Pin for coil 1
+byte pinCoil2; //Pin for coil 2
+byte pinCoil3; //Pin for coil 3
+byte pinCoil4; //Pin for coil 4
+byte pinTrigger; //The CAS pin
+byte pinTrigger2; //The Cam Sensor pin
+byte pinTPS;//TPS input pin
+byte pinMAP; //MAP sensor pin
+byte pinIAT; //IAT sensor pin
+byte pinCLT; //CLS sensor pin
+byte pinO2; //O2 Sensor pin
+byte pinBat; //O2 Sensor pin
+byte pinDisplayReset; // OLED reset pin
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino

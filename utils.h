@@ -9,6 +9,7 @@ These are some utility functions and variables used through the main code
 #define US_IN_MINUTE 60000000
 
 int freeRam ();
+void setPinMapping(byte boardID);
 int AIRDEN();
 unsigned int PW();
 unsigned int PW_SD();

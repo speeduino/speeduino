@@ -10,6 +10,91 @@ int freeRam ()
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
 }
 
+void setPinMapping(byte boardID)
+{
+  switch(boardID)
+  {
+    case 0:
+      //Pin mappings as per the v0.1 shield
+      pinInjector1 = 8; //Output pin injector 1 is on
+      pinInjector2 = 9; //Output pin injector 2 is on
+      pinInjector3 = 11; //Output pin injector 3 is on
+      pinInjector4 = 10; //Output pin injector 4 is on
+      pinCoil1 = 6; //Pin for coil 1
+      pinCoil2 = 7; //Pin for coil 2
+      pinCoil3 = 12; //Pin for coil 3
+      pinCoil4 = 13; //Pin for coil 4
+      pinTrigger = 2; //The CAS pin
+      pinTPS = A0; //TPS input pin
+      pinMAP = A1; //MAP sensor pin
+      pinIAT = A2; //IAT sensor pin
+      pinCLT = A3; //CLS sensor pin
+      pinO2 = A4; //O2 Sensor pin
+      break;
+    case 1:
+      //Pin mappings as per the v0.2 shield
+      pinInjector1 = 8; //Output pin injector 1 is on
+      pinInjector2 = 9; //Output pin injector 2 is on
+      pinInjector3 = 10; //Output pin injector 3 is on
+      pinInjector4 = 11; //Output pin injector 4 is on
+      pinCoil1 = 28; //Pin for coil 1
+      pinCoil2 = 24; //Pin for coil 2
+      pinCoil3 = 40; //Pin for coil 3
+      pinCoil4 = 36; //Pin for coil 4
+      pinTrigger = 20; //The CAS pin
+      pinTrigger2 = 21; //The Cam Sensor pin
+      pinTPS = A2; //TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A8; //O2 Sensor pin
+      pinBat = A4; //O2 Sensor pin
+      pinDisplayReset = 48; // OLED reset pin
+      break;
+    case 2:
+      //Pin mappings as per the v0.3 shield
+      pinInjector1 = 8; //Output pin injector 1 is on
+      pinInjector2 = 9; //Output pin injector 2 is on
+      pinInjector3 = 10; //Output pin injector 3 is on
+      pinInjector4 = 11; //Output pin injector 4 is on
+      pinCoil1 = 28; //Pin for coil 1
+      pinCoil2 = 24; //Pin for coil 2
+      pinCoil3 = 40; //Pin for coil 3
+      pinCoil4 = 36; //Pin for coil 4
+      pinTrigger = 18; //The CAS pin
+      pinTrigger2 = 19; //The Cam Sensor pin
+      pinTPS = A2;//TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A8; //O2 Sensor pin
+      pinBat = A4; //O2 Sensor pin
+      pinDisplayReset = 48; // OLED reset pin
+      break;
+      
+    default:
+      //Pin mappings as per the v0.2 shield
+      pinInjector1 = 8; //Output pin injector 1 is on
+      pinInjector2 = 9; //Output pin injector 2 is on
+      pinInjector3 = 10; //Output pin injector 3 is on
+      pinInjector4 = 11; //Output pin injector 4 is on
+      pinCoil1 = 28; //Pin for coil 1
+      pinCoil2 = 24; //Pin for coil 2
+      pinCoil3 = 40; //Pin for coil 3
+      pinCoil4 = 36; //Pin for coil 4
+      pinTrigger = 20; //The CAS pin
+      pinTrigger2 = 21; //The Cam Sensor pin
+      pinTPS = A2; //TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A8; //O2 Sensor pin
+      pinBat = A4; //O2 Sensor pin
+      pinDisplayReset = 48; // OLED reset pin
+      break;
+  }
+}
+
 
 /* The following functions help determine the required fuel constant. For more information about these calculations, please refer to http://www.megamanual.com/v22manual/mfuel.htm
   Calc below are for metric inputs of temp (degrees C) and MAP (kPa) to produce kg/m3.
