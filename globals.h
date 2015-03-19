@@ -252,6 +252,10 @@ byte pinInjector1; //Output pin injector 1
 byte pinInjector2; //Output pin injector 2
 byte pinInjector3; //Output pin injector 3 is on
 byte pinInjector4; //Output pin injector 4 is on
+byte pinInjector5; //Placeholder only - NOT USED
+byte pinInjector6; //Placeholder only - NOT USED
+byte pinInjector7; //Placeholder only - NOT USED
+byte pinInjector8; //Placeholder only - NOT USED
 byte pinCoil1; //Pin for coil 1
 byte pinCoil2; //Pin for coil 2
 byte pinCoil3; //Pin for coil 3
@@ -260,11 +264,14 @@ byte pinTrigger; //The CAS pin
 byte pinTrigger2; //The Cam Sensor pin
 byte pinTPS;//TPS input pin
 byte pinMAP; //MAP sensor pin
+byte pinMAP2; //2nd MAP sensor (Currently unused)
 byte pinIAT; //IAT sensor pin
 byte pinCLT; //CLS sensor pin
 byte pinO2; //O2 Sensor pin
 byte pinBat; //O2 Sensor pin
 byte pinDisplayReset; // OLED reset pin
+byte pinSpareTemp1; // Future use only
+byte pinSpareTemp2; // Future use only
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino

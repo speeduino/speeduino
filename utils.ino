@@ -48,7 +48,7 @@ void setPinMapping(byte boardID)
       pinIAT = A0; //IAT sensor pin
       pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
-      pinBat = A4; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
       break;
     case 2:
@@ -68,8 +68,36 @@ void setPinMapping(byte boardID)
       pinIAT = A0; //IAT sensor pin
       pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
-      pinBat = A4; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
+      break;
+      
+    case 10:
+      //Pin mappings for user turtanas PCB
+      pinInjector1 = 4; //Output pin injector 1 is on
+      pinInjector2 = 5; //Output pin injector 2 is on
+      pinInjector3 = 6; //Output pin injector 3 is on
+      pinInjector4 = 7; //Output pin injector 4 is on
+      pinInjector5 = 8; //Placeholder only - NOT USED
+      pinInjector6 = 9; //Placeholder only - NOT USED
+      pinInjector7 = 10; //Placeholder only - NOT USED
+      pinInjector8 = 11; //Placeholder only - NOT USED
+      pinCoil1 = 24; //Pin for coil 1
+      pinCoil2 = 28; //Pin for coil 2
+      pinCoil3 = 36; //Pin for coil 3
+      pinCoil4 = 40; //Pin for coil 4
+      pinTrigger = 18; //The CAS pin
+      pinTrigger2 = 19; //The Cam Sensor pin
+      pinTPS = A2;//TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinMAP2 = A8; //MAP2 sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A4; //O2 Sensor pin
+      pinBat = A7; //Battery reference voltage pin
+      pinDisplayReset = 48; // OLED reset pin
+      pinSpareTemp1 = A6;
+      pinSpareTemp2 = A5;
       break;
       
     default:
@@ -89,7 +117,7 @@ void setPinMapping(byte boardID)
       pinIAT = A0; //IAT sensor pin
       pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
-      pinBat = A4; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
       break;
   }
