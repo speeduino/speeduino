@@ -22,12 +22,12 @@ Current layout of EEPROM data (Version 2) is as follows (All sizes are in bytes)
 | 133   |64   | Ignition Map (8x8)                  |
 | 197   |8    | Ign Table RPM bins                  |
 | 205   |8    | Ign Table MAP/TPS bins              |
-| 213   |46   | Remaining Page 2 settings           |
-| 259   |2    | X and Y sizes for AFR table         |
-| 261   |64   | AFR Target Map (8x8)                |
-| 325   |8    | AFR Table RPM bins                  |
-| 333   |8    | AFR Table MAP/TPS bins              |
-| 341   |46   | Remaining Page 3 settings           |
+| 213   |48   | Remaining Page 2 settings           |
+| 261   |2    | X and Y sizes for AFR table         |
+| 263   |64   | AFR Target Map (8x8)                |
+| 327   |8    | AFR Table RPM bins                  |
+| 335   |8    | AFR Table MAP/TPS bins              |
+| 343   |48   | Remaining Page 3 settings           |
 | 2559  |512  | Calibration data (O2)              |
 | 3071  |512  | Calibration data (IAT)             |
 | 3583  |512  | Calibration data (CLT)             |
@@ -47,14 +47,14 @@ Current layout of EEPROM data (Version 2) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG2_XBINS 197
 #define EEPROM_CONFIG2_YBINS 205
 #define EEPROM_CONFIG2_SETTINGS 213
-#define EEPROM_CONFIG2_END 259
-#define EEPROM_CONFIG3_XSIZE 259
-#define EEPROM_CONFIG3_YSIZE 260
-#define EEPROM_CONFIG3_MAP 261
-#define EEPROM_CONFIG3_XBINS 325
-#define EEPROM_CONFIG3_YBINS 333
-#define EEPROM_CONFIG3_SETTINGS 341
-#define EEPROM_CONFIG3_END 387
+#define EEPROM_CONFIG2_END 261
+#define EEPROM_CONFIG3_XSIZE 261
+#define EEPROM_CONFIG3_YSIZE 262
+#define EEPROM_CONFIG3_MAP 263
+#define EEPROM_CONFIG3_XBINS 327
+#define EEPROM_CONFIG3_YBINS 335
+#define EEPROM_CONFIG3_SETTINGS 343
+#define EEPROM_CONFIG3_END 391
 
 //Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
 #define EEPROM_CALIBRATION_O2 2559

@@ -171,7 +171,7 @@ void loadConfig()
     offset = x - EEPROM_CONFIG2_YBINS;
     ignitionTable.axisY[offset] = EEPROM.read(x);
   }
-  //The next 45 bytes can simply be pulled straight from the configTable
+  //The next 48 bytes can simply be pulled straight from the configTable
   for(int x=EEPROM_CONFIG2_SETTINGS; x<EEPROM_CONFIG2_END; x++) 
   { 
     *(pnt_configPage + byte(x - EEPROM_CONFIG2_SETTINGS)) = EEPROM.read(x);
