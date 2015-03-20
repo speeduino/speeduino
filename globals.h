@@ -123,7 +123,7 @@ struct config1 {
   byte injOCfuel;
   byte injPwmP;
   byte injPwmT;
-  byte battFac; //Whether to compensate pulsewidth for battery voltage (ms/v)
+  byte unused113;
   int rpmk; //2 bytes
 //36
   //config1 in ini
@@ -223,6 +223,16 @@ struct config3 {
   byte egoLoadMax; //Load (TPS or MAP) must be below this for closed loop to function
   byte egoLoadMin; //Load (TPS or MAP) must be above this for closed loop to function
   byte dwellCorrectionBins[6]; //Correction table for dwell vs battery voltage
+  byte injVoltageCorrectionBins[6]; //Correction table for injector PW vs battery voltage
+  byte unused107;
+  byte unused108;
+  byte unused109;
+  byte unused110;
+  byte unused111;
+  byte unused112;
+  byte unused113;
+  byte unused114;
+  byte unused115;
   byte unused116;
   byte unused117;
   byte unused118;

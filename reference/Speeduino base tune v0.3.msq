@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS 2.6.14 - EFI Analytics, Inc." tuneComment="    &#10;&#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;  " writeDate="Fri Mar 20 15:08:21 EST 2015"/>
-<versionInfo fileFormat="4.0" firmwareInfo="Bowling &amp; Grippo MS1 Base Code 20" nPages="3" signature="20"/>
+<bibliography author="TunerStudio MS 2.6.14 - EFI Analytics, Inc." tuneComment="    &#10;&#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;  " writeDate="Sat Mar 21 10:40:40 EST 2015"/>
+<versionInfo fileFormat="4.0" firmwareInfo="" nPages="3" signature="20"/>
 <page>
 <pcVariable name="tsCanId">"0"</pcVariable>
 <pcVariable cols="1" digits="1" name="wueAfrTargetOffset" rows="10" units=":1">
@@ -112,7 +112,6 @@
 <constant digits="0" name="injOCfuel" units="ms">0.0</constant>
 <constant digits="0" name="injPwmP" units="%">0.0</constant>
 <constant digits="1" name="injPwmT" units="ms">0.0</constant>
-<constant digits="2" name="battFac" units="ms/v">0.0</constant>
 <constant digits="0" name="rpmk">3000.0</constant>
 <constant name="mapType">"250 kPa"</constant>
 <constant name="twoStroke">"Four-stroke"</constant>
@@ -273,11 +272,19 @@
 <constant digits="0" name="egoLoadMin" units="%">20.0</constant>
 <constant cols="1" digits="0" name="brvBins" rows="6" units="V">
          6.0 
-         8.0 
-         10.0 
-         13.0 
-         15.0 
-         19.0 
+         9.0 
+         12.0 
+         14.0 
+         18.0 
+         21.0 
+      </constant>
+<constant cols="1" digits="0" name="injBatRates" rows="6" units="%">
+         221.0 
+         151.0 
+         107.0 
+         100.0 
+         95.0 
+         92.0 
       </constant>
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">
