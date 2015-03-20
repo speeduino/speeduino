@@ -193,12 +193,8 @@ struct config2 {
   byte taeValues[4]; //TPS based acceleration enrichment rates (% to add)
   byte wueBins[10]; //Warmup Enrichment bins (Values are in configTable1)
   byte dwellLimit;
-  byte unused122;
-  byte unused123;
-  byte unused124;
-  byte unused125;
-  byte unused126;
-  byte unused127;
+  byte dwellCorrectionValues[6]; //Correction table for dwell vs battery voltage
+  //Full - All 128bytes of this table are used
 
   
 };
@@ -226,12 +222,7 @@ struct config3 {
   byte floodClear; //TPS value that triggers flood clear mode (No fuel whilst cranking)
   byte egoLoadMax; //Load (TPS or MAP) must be below this for closed loop to function
   byte egoLoadMin; //Load (TPS or MAP) must be above this for closed loop to function
-  byte unused95; 
-  byte unused96;
-  byte unused97; 
-  byte unused98; 
-  byte unused99; 
-  byte unused115;
+  byte dwellCorrectionBins[6]; //Correction table for dwell vs battery voltage
   byte unused116;
   byte unused117;
   byte unused118;
