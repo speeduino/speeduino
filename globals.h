@@ -143,6 +143,7 @@ struct config1 {
   byte egoType : 1;
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
+  byte injTiming : 2;
   
   byte primePulse;
   byte egoRPM;

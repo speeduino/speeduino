@@ -468,11 +468,22 @@ void loop()
       //This may potentially be called a number of times as we get closer and closer to the opening time
       if (injector1StartAngle > crankAngle)
       { 
-        setFuelSchedule1(openInjector1, 
-                  ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                  (unsigned long)currentStatus.PW,
-                  closeInjector1
-                  );
+        if (configPage1.injTiming == 1)
+        {
+          setFuelSchedule1(openInjector1and4, 
+                    ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                    (unsigned long)currentStatus.PW,
+                    closeInjector1and4
+                    );
+        }
+        else
+        {
+          setFuelSchedule1(openInjector1, 
+                    ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                    (unsigned long)currentStatus.PW,
+                    closeInjector1
+                    );
+        }
       }
       
       tempCrankAngle = crankAngle - channel2Degrees;
@@ -481,11 +492,22 @@ void loop()
       if ( tempStartAngle < 0) { tempStartAngle += 360; }
       if (tempStartAngle > tempCrankAngle)
       { 
-        setFuelSchedule2(openInjector2, 
-                  ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                  (unsigned long)currentStatus.PW,
-                  closeInjector2
-                  );
+        if (configPage1.injTiming == 1)
+        {
+          setFuelSchedule2(openInjector2and3, 
+                    ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                    (unsigned long)currentStatus.PW,
+                    closeInjector2and3
+                    );
+        }
+        else
+        {
+          setFuelSchedule2(openInjector2, 
+                    ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                    (unsigned long)currentStatus.PW,
+                    closeInjector2
+                    );
+        }
       }
       
       tempCrankAngle = crankAngle - channel3Degrees;
