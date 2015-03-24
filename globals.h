@@ -273,6 +273,12 @@ byte pinBat; //O2 Sensor pin
 byte pinDisplayReset; // OLED reset pin
 byte pinSpareTemp1; // Future use only
 byte pinSpareTemp2; // Future use only
+byte pinSpareOut1; //Generic output
+byte pinSpareOut2; //Generic output
+byte pinSpareOut3; //Generic output
+byte pinSpareOut4; //Generic output
+byte pinSpareOut5; //Generic output
+byte pinSpareOut6; //Generic output
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino

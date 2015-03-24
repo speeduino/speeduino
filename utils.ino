@@ -100,6 +100,33 @@ void setPinMapping(byte boardID)
       pinSpareTemp2 = A5;
       break;
       
+     case 20:
+      //Pin mappings as per the Plazomat In/Out shields Rev 0.1
+      pinInjector1 = 8; //Output pin injector 1 is on
+      pinInjector2 = 9; //Output pin injector 2 is on
+      pinInjector3 = 10; //Output pin injector 3 is on
+      pinInjector4 = 11; //Output pin injector 4 is on
+      pinCoil1 = 28; //Pin for coil 1
+      pinCoil2 = 24; //Pin for coil 2
+      pinCoil3 = 40; //Pin for coil 3
+      pinCoil4 = 36; //Pin for coil 4
+      pinSpareOut1 = 4; //Spare LSD Output 1(PWM)
+      pinSpareOut2 = 5; //Spare LSD Output 2(PWM)
+      pinSpareOut3 = 6; //Spare LSD Output 3(PWM)
+      pinSpareOut4 = 7; //Spare LSD Output 4(PWM)
+      pinSpareOut5 = 50; //Spare LSD Output 5(digital)
+      pinSpareOut6 = 52; //Spare LSD Output 6(digital)
+      pinTrigger = 20; //The CAS pin
+      pinTrigger2 = 21; //The Cam Sensor pin
+      pinSpareTemp2 = A15; //spare Analog input 2
+      pinSpareTemp1 = A14; //spare Analog input 1
+      pinO2 = A8; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinMAP = A3; //MAP sensor pin
+      pinTPS = A2;//TPS input pin
+      pinCLT = A1; //CLS sensor pin
+      pinIAT = A0; //IAT sensor pin
+      
     default:
       //Pin mappings as per the v0.2 shield
       pinInjector1 = 8; //Output pin injector 1 is on
