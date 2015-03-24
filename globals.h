@@ -222,7 +222,7 @@ struct config3 {
   byte floodClear; //TPS value that triggers flood clear mode (No fuel whilst cranking)
   byte egoLoadMax; //Load (TPS or MAP) must be below this for closed loop to function
   byte egoLoadMin; //Load (TPS or MAP) must be above this for closed loop to function
-  byte dwellCorrectionBins[6]; //Correction table for dwell vs battery voltage
+  byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
   byte injVoltageCorrectionBins[6]; //Correction table for injector PW vs battery voltage
   byte unused107;
   byte unused108;

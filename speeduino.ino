@@ -54,6 +54,8 @@ struct table3D ignitionTable; //8x8 ignition map
 struct table3D afrTable; //8x8 afr target map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
+struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
+struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
 byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
@@ -104,6 +106,7 @@ void setup()
   WUETable.xSize = 10;
   WUETable.values = configPage1.wueValues;
   WUETable.axisX = configPage2.wueBins;
+  //The WUE X axis values are hard coded (Don't ask, they just are)
   WUETable.axisX[0] = 0;
   WUETable.axisX[1] = 11;
   WUETable.axisX[2] = 22;
@@ -114,6 +117,15 @@ void setup()
   WUETable.axisX[7] = 78;
   WUETable.axisX[8] = 94;
   WUETable.axisX[9] = 111;
+  
+  dwellVCorrectionTable.valueSize = SIZE_BYTE;
+  dwellVCorrectionTable.xSize = 6;
+  dwellVCorrectionTable.values = configPage2.dwellCorrectionValues;
+  dwellVCorrectionTable.axisX = configPage3.voltageCorrectionBins;
+  injectorVCorrectionTable.valueSize = SIZE_BYTE;
+  injectorVCorrectionTable.xSize = 6;
+  injectorVCorrectionTable.values = configPage3.injVoltageCorrectionBins;
+  injectorVCorrectionTable.axisX = configPage3.voltageCorrectionBins;
   
   //Setup the calibration tables
   loadCalibration();
@@ -559,6 +571,12 @@ void openInjector4() { digitalWrite(pinInjector4, HIGH); BIT_SET(currentStatus.s
 void closeInjector4() { digitalWrite(pinInjector4, LOW); BIT_CLEAR(currentStatus.squirt, 3); } 
 void beginCoil4Charge() { digitalWrite(pinCoil4, coilHIGH); BIT_SET(currentStatus.spark, 3); }
 void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); BIT_CLEAR(currentStatus.spark, 3); }
+
+//Combination functions for semi-sequential injection
+void openInjector1and4() { digitalWrite(pinInjector1, HIGH); digitalWrite(pinInjector4, HIGH); BIT_SET(currentStatus.squirt, 0); } 
+void closeInjector1and4() { digitalWrite(pinInjector1, LOW); digitalWrite(pinInjector4, LOW);BIT_CLEAR(currentStatus.squirt, 0); }
+void openInjector2and3() { digitalWrite(pinInjector2, HIGH); digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, 1); }
+void closeInjector2and3() { digitalWrite(pinInjector2, LOW); digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
 
 //The trigger function is called everytime a crank tooth passes the sensor
 volatile unsigned long curTime;

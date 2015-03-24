@@ -25,8 +25,12 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include <avr/interrupt.h> 
-#include <avr/io.h>
+#ifdef __SAM3X8E__
+ //Do stuff for ARM based CPUs 
+#else
+  #include <avr/interrupt.h> 
+  #include <avr/io.h>
+#endif
 
 void initialiseSchedulers();
 void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
