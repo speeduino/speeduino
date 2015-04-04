@@ -32,6 +32,8 @@ byte correctionsTotal()
   if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
   currentStatus.egoCorrection = correctionsAFRClosedLoop();
   if (currentStatus.egoCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.egoCorrection), 100).quot; }
+  currentStatus.batCorrection = correctionsBatVoltage();
+  if (currentStatus.batCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.batCorrection), 100).quot; }
   
   if(sumCorrections > 255) { sumCorrections = 255; } //This is the maximum allowable increase
   return (byte)sumCorrections;
@@ -137,6 +139,15 @@ byte correctionFloodClear()
     }
   }
   return 100;
+}
+
+/*
+Battery Voltage correction
+Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add
+*/
+byte correctionsBatVoltage()
+{
+  return table2D_getValue(injectorVCorrectionTable, currentStatus.battery10);
 }
 
 /*
