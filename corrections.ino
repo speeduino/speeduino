@@ -147,6 +147,7 @@ Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y 
 */
 byte correctionsBatVoltage()
 {
+  if (currentStatus.battery10 > (injectorVCorrectionTable.axisX[5])) { return injectorVCorrectionTable.values[injectorVCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the voltage is above maximum 
   return table2D_getValue(injectorVCorrectionTable, currentStatus.battery10);
 }
 

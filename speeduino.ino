@@ -124,7 +124,7 @@ void setup()
   dwellVCorrectionTable.axisX = configPage3.voltageCorrectionBins;
   injectorVCorrectionTable.valueSize = SIZE_BYTE;
   injectorVCorrectionTable.xSize = 6;
-  injectorVCorrectionTable.values = configPage3.injVoltageCorrectionBins;
+  injectorVCorrectionTable.values = configPage3.injVoltageCorrectionValues;
   injectorVCorrectionTable.axisX = configPage3.voltageCorrectionBins;
   
   //Setup the calibration tables

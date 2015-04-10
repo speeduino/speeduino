@@ -221,11 +221,10 @@ struct config3 {
   byte ego_sdelay; //Time in seconds after engine starts that closed loop becomes available
   byte egoRPM; //RPM must be above this for closed loop to function
   byte egoTPSMax; //TPS must be below this for closed loop to function
-  byte floodClear; //TPS value that triggers flood clear mode (No fuel whilst cranking)
   byte egoLoadMax; //Load (TPS or MAP) must be below this for closed loop to function
   byte egoLoadMin; //Load (TPS or MAP) must be above this for closed loop to function
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
-  byte injVoltageCorrectionBins[6]; //Correction table for injector PW vs battery voltage
+  byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
   byte unused107;
   byte unused108;
   byte unused109;
