@@ -149,7 +149,7 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
     //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
     //As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
     //unsigned int absoluteTimeout = TCNT5 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
-    unsigned int absoluteTimeout = TCNT5 + (timeout >> 4); //As above, but with bit shift instead of / 16
+    unsigned int absoluteTimeout = TCNT5 + (timeout >> 2); //As above, but with bit shift instead of / 16
     OCR5C = absoluteTimeout;
     ignitionSchedule3.duration = duration;
     ignitionSchedule3.StartCallback = startCallback; //Name the start callback function
