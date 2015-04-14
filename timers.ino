@@ -9,21 +9,20 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 
 void initialiseTimers() 
 {  
-   //Configure Timer2 for our low-freq interrupt code.
+   //Configure Timer2 for our low-freq interrupt code. 
    TCCR2B = 0x00;          //Disbale Timer2 while we set it up
-   TCNT2  = 131;           //Preload timer2 with 100 cycles, leaving 156 till overflow.
+   TCNT2  = 131;           //Preload timer2 with 131 cycles, leaving 125 till overflow. As the timer runs at 125Khz, this causes overflow to occur at 1Khz = 1ms
    TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
    TIMSK2 = 0x01;          //Timer2 Set Overflow Interrupt enabled.
    TCCR2A = 0x00;          //Timer2 Control Reg A: Wave Gen Mode normal
-   //TCCR2B = ((1 << CS10) | (1 << CS11) | (1 << CS12));   //Timer2 Set Prescaler to 5 (101), 1024 mode.
-   /* Now configure the prescaler to CPU clock divided by 128 */
+   /* Now configure the prescaler to CPU clock divided by 128 = 125Khz */
    TCCR2B |= (1<<CS22)  | (1<<CS20); // Set bits
    TCCR2B &= ~(1<<CS21);             // Clear bit
 }
 
 
 //Timer2 Overflow Interrupt Vector, called when the timer overflows.
-//Executes every ~10ms.
+//Executes every ~1ms.
 ISR(TIMER2_OVF_vect) 
 {
   
@@ -33,21 +32,23 @@ ISR(TIMER2_OVF_vect)
   
   //Overdwell check
   targetOverdwellTime = currentLoopTime - (1000 * configPage2.dwellLimit); //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
+  targetTachoPulseTime = currentLoopTime - (1500);
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
-  if(ignitionSchedule1.Status == RUNNING) { if(ignitionSchedule1.startTime < targetOverdwellTime) { endCoil1Charge(); } }
-  if(ignitionSchedule2.Status == RUNNING) { if(ignitionSchedule2.startTime < targetOverdwellTime) { endCoil2Charge(); } }
-  if(ignitionSchedule3.Status == RUNNING) { if(ignitionSchedule3.startTime < targetOverdwellTime) { endCoil3Charge(); } }
-  if(ignitionSchedule4.Status == RUNNING) { if(ignitionSchedule4.startTime < targetOverdwellTime) { endCoil4Charge(); } }
+  if(ignitionSchedule1.Status == RUNNING) { if(ignitionSchedule1.startTime < targetOverdwellTime) { endCoil1Charge(); } if(ignitionSchedule1.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
+  if(ignitionSchedule2.Status == RUNNING) { if(ignitionSchedule2.startTime < targetOverdwellTime) { endCoil2Charge(); } if(ignitionSchedule2.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
+  if(ignitionSchedule3.Status == RUNNING) { if(ignitionSchedule3.startTime < targetOverdwellTime) { endCoil3Charge(); } if(ignitionSchedule3.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
+  if(ignitionSchedule4.Status == RUNNING) { if(ignitionSchedule4.startTime < targetOverdwellTime) { endCoil4Charge(); } if(ignitionSchedule4.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
   
+    
   
-  //Loop executed every 250ms loop (10ms x 25 = 250ms)
+  //Loop executed every 250ms loop (1ms x 250 = 250ms)
   //Anything inside this if statement will run every 250ms.
   if (loop250ms == 250) 
   {
     loop250ms = 0; //Reset Counter.
   }
   
-  //Loop executed every 1 second (10ms x 100 = 1000ms)
+  //Loop executed every 1 second (1ms x 1000 = 1000ms)
   if (loopSec == 1000) 
   {
     loopSec = 0; //Reset counter.
@@ -70,9 +71,8 @@ ISR(TIMER2_OVF_vect)
     
 
   }
-      //Reset Timer2 to trigger in another ~10ms
-    //TCNT2  = 99;           //Preload timer2 with 100 cycles, leaving 156 till overflow.
-    TCNT2 = 131;
+      //Reset Timer2 to trigger in another ~1ms 
+    TCNT2 = 131;            //Preload timer2 with 100 cycles, leaving 156 till overflow.
     TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
   
 }

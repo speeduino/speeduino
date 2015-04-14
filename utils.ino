@@ -70,7 +70,30 @@ void setPinMapping(byte boardID)
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
+      pinTachOut = 49; //Tacho output pin
       break;
+
+    case 3:
+      //Pin mappings as per the v0.4 shield
+      pinInjector1 = 8; //Output pin injector 1 is on
+      pinInjector2 = 9; //Output pin injector 2 is on
+      pinInjector3 = 10; //Output pin injector 3 is on
+      pinInjector4 = 11; //Output pin injector 4 is on
+      pinCoil1 = 28; //Pin for coil 1
+      pinCoil2 = 24; //Pin for coil 2
+      pinCoil3 = 40; //Pin for coil 3
+      pinCoil4 = 36; //Pin for coil 4
+      pinTrigger = 18; //The CAS pin
+      pinTrigger2 = 19; //The Cam Sensor pin
+      pinTPS = A2;//TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A8; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinDisplayReset = 48; // OLED reset pin
+      pinTachOut = 49; //Tacho output pin
+      break;     
       
     case 10:
       //Pin mappings for user turtanas PCB

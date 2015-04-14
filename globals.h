@@ -272,6 +272,7 @@ byte pinCLT; //CLS sensor pin
 byte pinO2; //O2 Sensor pin
 byte pinBat; //O2 Sensor pin
 byte pinDisplayReset; // OLED reset pin
+byte pinTachOut; //Tacho output
 byte pinSpareTemp1; // Future use only
 byte pinSpareTemp2; // Future use only
 byte pinSpareOut1; //Generic output
