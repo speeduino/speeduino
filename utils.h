@@ -10,7 +10,6 @@ These are some utility functions and variables used through the main code
 
 int freeRam ();
 void setPinMapping(byte boardID);
-int AIRDEN();
 unsigned int PW();
 unsigned int PW_SD();
 unsigned int PW_AN();
