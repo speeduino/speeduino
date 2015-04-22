@@ -61,6 +61,7 @@ struct statuses {
   int batADC;
   int O2ADC;
   int dwell;
+  byte dwellCorrection; //The amount of correction being applied to the dwell time.
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
   byte advance;
   byte corrections;
@@ -225,24 +226,8 @@ struct config3 {
   byte egoLoadMin; //Load (TPS or MAP) must be above this for closed loop to function
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
-  byte unused107;
-  byte unused108;
-  byte unused109;
-  byte unused110;
-  byte unused111;
-  byte unused112;
-  byte unused113;
-  byte unused114;
-  byte unused115;
-  byte unused116;
-  byte unused117;
-  byte unused118;
-  byte unused119;
-  byte unused120;
-  byte unused121;
-  byte unused122;
-  byte unused123;
-  byte unused124;
+  byte airDenBins[9];
+  byte airDenRates[9];
   byte unused125;
   byte unused126;
   byte unused127;
