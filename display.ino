@@ -7,6 +7,9 @@ Adafruit_SSD1306 display(pinDisplayReset);
 
 void initialiseDisplay()
 {
+  //Protection against older pin mappings where the crank/cam signals were on the SDA and SCL pins. This will cause the Arduino to lock hard if you try to initialise i2c devices when a crank signal is coming in
+  if(pinTrigger == 20 || pinTrigger == 21 || pinTrigger2 == 20 || pinTrigger2 == 21) { return; }
+  
    switch(configPage1.displayType)
    {
      case 1:
