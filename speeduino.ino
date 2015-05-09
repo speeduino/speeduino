@@ -81,16 +81,6 @@ byte degreesPerLoop; //The number of crank degrees that pass for each mainloop o
 
 void setup() 
 {
-  pinMode(pinCoil1, OUTPUT);
-  pinMode(pinCoil2, OUTPUT);
-  pinMode(pinCoil3, OUTPUT);
-  pinMode(pinCoil4, OUTPUT);
-  pinMode(pinInjector1, OUTPUT);
-  pinMode(pinInjector2, OUTPUT);
-  pinMode(pinInjector3, OUTPUT);
-  pinMode(pinInjector4, OUTPUT);
-  pinMode(pinTachOut, OUTPUT);
-
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
   //dummyIgnitionTable(&ignitionTable);
@@ -131,6 +121,16 @@ void setup()
   //Set the pin mappings
   setPinMapping(configPage1.pinMapping);
 
+  pinMode(pinCoil1, OUTPUT);
+  pinMode(pinCoil2, OUTPUT);
+  pinMode(pinCoil3, OUTPUT);
+  pinMode(pinCoil4, OUTPUT);
+  pinMode(pinInjector1, OUTPUT);
+  pinMode(pinInjector2, OUTPUT);
+  pinMode(pinInjector3, OUTPUT);
+  pinMode(pinInjector4, OUTPUT);
+  pinMode(pinTachOut, OUTPUT);
+  
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
   else { coilHIGH = HIGH, coilLOW = LOW; }
