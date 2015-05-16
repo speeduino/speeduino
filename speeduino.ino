@@ -17,6 +17,7 @@
 #include "corrections.h"
 #include "timers.h"
 #include "display.h"
+#include "decoders.h"
 
 #ifdef __SAM3X8E__
  //Do stuff for ARM based CPUs 
@@ -33,20 +34,13 @@ struct config1 configPage1;
 struct config2 configPage2;
 struct config3 configPage3;
 
-int req_fuel_uS, triggerToothAngle, inj_opentime_uS;
-volatile int triggerActualTeeth;
-unsigned int triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
+int req_fuel_uS, inj_opentime_uS;
 #define MAX_RPM 10000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
-volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
-volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
-volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
-volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
-volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
-volatile int toothHistory[512];
-volatile int toothHistoryIndex = 0;
 volatile byte startRevolutions = 0; //A counter for how many revolutions have been completed since sync was achieved.
 volatile bool ignitionOn = true; //The current state of the ignition system
+
+void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 
 struct table3D fuelTable; //8x8 fuel map
 struct table3D ignitionTable; //8x8 ignition map
@@ -147,6 +141,9 @@ void setup()
   triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   inj_opentime_uS = configPage1.injOpen * 100; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155). 
+  
+  //Set the trigger function based on the decoder in the config
+  trigger = triggerPri_missingTooth;
   
   //Begin the main crank trigger interrupt pin setup
   //The interrupt numbering is a bit odd - See here for reference: http://arduino.cc/en/Reference/AttachInterrupt
@@ -585,50 +582,6 @@ void openInjector1and4() { digitalWrite(pinInjector1, HIGH); digitalWrite(pinInj
 void closeInjector1and4() { digitalWrite(pinInjector1, LOW); digitalWrite(pinInjector4, LOW);BIT_CLEAR(currentStatus.squirt, 0); }
 void openInjector2and3() { digitalWrite(pinInjector2, HIGH); digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, 1); }
 void closeInjector2and3() { digitalWrite(pinInjector2, LOW); digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
-
-//The trigger function is called everytime a crank tooth passes the sensor
-volatile unsigned long curTime;
-volatile unsigned int curGap;
-volatile unsigned int targetGap; 
-void trigger()
-  {
-   // http://www.msextra.com/forums/viewtopic.php?f=94&t=22976
-   // http://www.megamanual.com/ms2/wheel.htm
-   noInterrupts(); //Turn off interrupts whilst in this routine
-
-   curTime = micros();
-   curGap = curTime - toothLastToothTime;
-   if ( curGap < triggerFilterTime ) { interrupts(); return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
-   toothCurrentCount++; //Increment the tooth counter
-   
-   //High speed tooth logging history
-   toothHistory[toothHistoryIndex] = curGap;
-   if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; }
-   else
-   { toothHistoryIndex++; }
-   
-   //Begin the missing tooth detection
-   //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
-   //if ( (curTime - toothLastToothTime) > (1.5 * (toothLastToothTime - toothLastMinusOneToothTime))) { toothCurrentCount = 1; }
-   if(configPage2.triggerMissingTeeth == 1) { targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
-   //else { targetGap = (10 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 2; } //Multiply by 2.5 (Checks for a gap 2.5x greater than the last one)
-   else { targetGap = ((toothLastToothTime - toothLastMinusOneToothTime)) * 2; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
-   if ( curGap > targetGap )
-   { 
-     toothCurrentCount = 1; 
-     toothOneMinusOneTime = toothOneTime;
-     toothOneTime = curTime;
-     currentStatus.hasSync = true;
-     startRevolutions++; //Counter 
-   } 
-   
-   toothLastMinusOneToothTime = toothLastToothTime;
-   toothLastToothTime = curTime;
-   
-   interrupts(); //Turn interrupts back on
-   
-  }
 
   
 
