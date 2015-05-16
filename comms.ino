@@ -136,8 +136,8 @@ void sendValues(int length)
   response[10] = currentStatus.egoCorrection; //Exhaust gas correction (%)
   response[11] = 0x00; //Air Correction (%)
   response[12] = currentStatus.wueCorrection; //Warmup enrichment (%)
-  response[13] = highByte(currentStatus.RPM); //rpm HB
-  response[14] = lowByte(currentStatus.RPM); //rpm LB
+  response[13] = lowByte(currentStatus.RPM); //rpm HB
+  response[14] = highByte(currentStatus.RPM); //rpm LB
   response[15] = currentStatus.TAEamount; //acceleration enrichment (%)
   response[16] = 0x00; //Barometer correction (%)
   response[17] = currentStatus.corrections; //Total GammaE (%)
@@ -148,13 +148,13 @@ void sendValues(int length)
   response[22] = currentStatus.advance;
   response[23] = currentStatus.TPS; // TPS (0% to 100%)
   //Need to split the int loopsPerSecond value into 2 bytes
-  response[24] = highByte(currentStatus.loopsPerSecond);
-  response[25] = lowByte(currentStatus.loopsPerSecond);
+  response[24] = lowByte(currentStatus.loopsPerSecond);
+  response[25] = highByte(currentStatus.loopsPerSecond);
  
   //The following can be used to show the amount of free memory
-  currentStatus.freeRAM = freeRam();
-  response[26] = highByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
-  response[27] = lowByte(currentStatus.freeRAM);
+  currentStatus.freeRAM = configPage2.triggerAngle;//freeRam();
+  response[26] = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
+  response[27] = highByte(currentStatus.freeRAM);
   
   response[28] = currentStatus.batCorrection; //Battery voltage correction (%)
   response[29] = (byte)(currentStatus.dwell / 100);

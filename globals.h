@@ -164,9 +164,8 @@ struct config1 {
 //This mostly covers off variables that are required for ignition
 struct config2 {
   
-  byte triggerAngle;
+  int triggerAngle;
   byte FixAng;
-  byte Trim;
   byte CrankAng;
   byte IgHold;
   
