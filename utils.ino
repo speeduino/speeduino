@@ -71,6 +71,9 @@ void setPinMapping(byte boardID)
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
       pinTachOut = 49; //Tacho output pin
+      pinIdle1 = 5; //Single wire idle control
+      pinFuelPump = 4; //Fuel pump output
+
       break;
 
     case 3:
@@ -171,6 +174,32 @@ void setPinMapping(byte boardID)
       pinDisplayReset = 48; // OLED reset pin
       break;
   }
+
+  //Finally, set the relevant pin modes for outputs
+  pinMode(pinCoil1, OUTPUT);
+  pinMode(pinCoil2, OUTPUT);
+  pinMode(pinCoil3, OUTPUT);
+  pinMode(pinCoil4, OUTPUT);
+  pinMode(pinInjector1, OUTPUT);
+  pinMode(pinInjector2, OUTPUT);
+  pinMode(pinInjector3, OUTPUT);
+  pinMode(pinInjector4, OUTPUT);
+  pinMode(pinTachOut, OUTPUT);
+  pinMode(pinIdle1, OUTPUT);
+  pinMode(pinIdle2, OUTPUT);
+  pinMode(pinFuelPump, OUTPUT);
+  
+  //And for inputs
+  pinMode(pinMAP, INPUT);
+  pinMode(pinO2, INPUT);
+  pinMode(pinTPS, INPUT);
+  pinMode(pinIAT, INPUT);
+  pinMode(pinCLT, INPUT);
+  
+  //
+  digitalWrite(pinMAP, HIGH);
+  //digitalWrite(pinO2, LOW);
+  digitalWrite(pinTPS, LOW);
 }
 
 /*

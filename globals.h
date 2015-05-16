@@ -258,6 +258,9 @@ byte pinO2; //O2 Sensor pin
 byte pinBat; //O2 Sensor pin
 byte pinDisplayReset; // OLED reset pin
 byte pinTachOut; //Tacho output
+byte pinFuelPump; //Fuel pump on/off
+byte pinIdle1; //Single wire idle control
+byte pinIdle2; //2 wire idle control (Not currently used)
 byte pinSpareTemp1; // Future use only
 byte pinSpareTemp2; // Future use only
 byte pinSpareOut1; //Generic output

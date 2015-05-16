@@ -120,16 +120,6 @@ void setup()
   loadCalibration();
   //Set the pin mappings
   setPinMapping(configPage1.pinMapping);
-
-  pinMode(pinCoil1, OUTPUT);
-  pinMode(pinCoil2, OUTPUT);
-  pinMode(pinCoil3, OUTPUT);
-  pinMode(pinCoil4, OUTPUT);
-  pinMode(pinInjector1, OUTPUT);
-  pinMode(pinInjector2, OUTPUT);
-  pinMode(pinInjector3, OUTPUT);
-  pinMode(pinInjector4, OUTPUT);
-  pinMode(pinTachOut, OUTPUT);
   
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
@@ -211,17 +201,6 @@ void setup()
   mainLoopCount = 0;
   ignitionCount = 0;
   
-  //Setup other relevant pins
-  pinMode(pinMAP, INPUT);
-  pinMode(pinO2, INPUT);
-  pinMode(pinTPS, INPUT);
-  pinMode(pinIAT, INPUT);
-  pinMode(pinCLT, INPUT);
-  //Turn on pullups for above pins
-  digitalWrite(pinMAP, HIGH);
-  //digitalWrite(pinO2, LOW);
-  digitalWrite(pinTPS, LOW);
-  
   //Calculate the number of degrees between cylinders
   switch (configPage1.nCylinders) {
     case 1:
@@ -279,6 +258,7 @@ void loop()
       unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
       interrupts();
       currentStatus.RPM = ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long)
+      if(digitalRead(pinFuelPump) == LOW) { digitalWrite(pinFuelPump, HIGH); } //Check if the fuel pump is on and turn it on if it isn't. 
     }
     else
     {
@@ -289,6 +269,7 @@ void loop()
       currentStatus.hasSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       secCounter = 0; //Reset our seconds counter.
+      digitalWrite(pinFuelPump, LOW); //Turn off the fuel pump
     }
     
     //Uncomment the following for testing
