@@ -9,6 +9,7 @@ Each decoder must have the following 4 functions (Where xxxx is the decoder name
 * getCrankAngle_xxxx - Returns the current crank angle, as calculated b the decoder
 
 And each decoder must utlise at least the following variables:
+toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
 * 
 
 */
@@ -58,3 +59,23 @@ void triggerPri_missingTooth()
 }
 
 void triggerSec_missingTooth(){ return; } //This function currently is not used
+
+int getRPM_missingTooth()
+{
+  
+}
+
+int getCrankAngle_missingTooth()
+{
+  
+}
+
+/* 
+Name: Missing tooth wheel
+Desc: A multi-tooth wheel with one of more 'missing' teeth. The first tooth after the missing one is considered number 1 and isthe basis for the trigger angle
+Note: This does not currently support dual wheel (ie missing tooth + single tooth on cam)
+*/
+void triggerPri_DualWheel()
+{ 
+  return;
+}

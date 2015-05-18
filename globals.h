@@ -169,10 +169,11 @@ struct config2 {
   byte CrankAng;
   byte IgHold;
   
-  byte Trig_plus : 2;
-  byte TrigCrank : 1;
+  byte TrigEdge : 1;
+  byte TrigSpeed : 1;
   byte IgInv : 1;
-  byte oddfire : 4;
+  byte oddfire : 1;
+  byte TrigPattern : 4;
   
   byte IdleAdv;
   byte IdleAdvTPS;

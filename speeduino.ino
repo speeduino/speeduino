@@ -142,9 +142,6 @@ void setup()
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   inj_opentime_uS = configPage1.injOpen * 100; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155). 
   
-  //Set the trigger function based on the decoder in the config
-  trigger = triggerPri_missingTooth;
-  
   //Begin the main crank trigger interrupt pin setup
   //The interrupt numbering is a bit odd - See here for reference: http://arduino.cc/en/Reference/AttachInterrupt
   //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly. 
@@ -174,7 +171,25 @@ void setup()
   }
   pinMode(pinTrigger, INPUT);
   //digitalWrite(pinTrigger, HIGH);
-  attachInterrupt(triggerInterrupt, trigger, FALLING); // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+  if(configPage2.TrigEdge == 0)
+  { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+  else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+  
+  //Set the trigger function based on the decoder in the config
+  switch (configPage2.TrigPattern)
+  {
+    case 0:
+      trigger = triggerPri_missingTooth;
+      break;
+      
+    case 1:
+      trigger = triggerPri_DualWheel;
+      break;
+      
+    case 2:
+      trigger = triggerPri_missingTooth;
+      break;
+  }
   //End crank triger interrupt attachment
   
   req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
