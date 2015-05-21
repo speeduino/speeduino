@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS 2.6.14 - EFI Analytics, Inc." tuneComment="    &#10;&#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;  " writeDate="Tue Apr 28 13:05:46 EST 2015"/>
+<bibliography author="TunerStudio MS 2.6.14 - EFI Analytics, Inc." tuneComment="    &#10;&#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;  " writeDate="Fri May 22 07:20:59 EST 2015"/>
 <versionInfo fileFormat="4.0" firmwareInfo="" nPages="3" signature="20"/>
 <page>
 <pcVariable name="tsCanId">"0"</pcVariable>
@@ -45,7 +45,7 @@
 <constant cols="8" digits="0" name="veTable" rows="8" units="%">
          27.0 27.0 27.0 27.0 27.0 27.0 27.0 27.0 
          29.0 32.0 33.0 35.0 36.0 36.0 36.0 36.0 
-         35.0 42.0 43.0 45.0 45.0 46.0 46.0 46.0 
+         35.0 37.0 38.0 39.0 41.0 46.0 46.0 46.0 
          46.0 53.0 55.0 56.0 56.0 56.0 55.0 55.0 
          59.0 64.0 65.0 65.0 65.0 65.0 65.0 65.0 
          71.0 74.0 75.0 75.0 75.0 75.0 75.0 74.0 
@@ -53,23 +53,23 @@
          102.0 102.0 103.0 103.0 103.0 103.0 103.0 103.0 
       </constant>
 <constant cols="1" digits="0" name="rpmBins" rows="8" units="RPM">
-         700.0 
-         1200.0 
+         1000.0 
+         1500.0 
          2000.0 
          3000.0 
-         4000.0 
-         4900.0 
-         5500.0 
-         6500.0 
+         4500.0 
+         6000.0 
+         7500.0 
+         9000.0 
       </constant>
 <constant cols="1" digits="0" name="tpsBins" rows="8" units="TPS">
-         20.0 
-         30.0 
-         40.0 
-         50.0 
-         60.0 
-         70.0 
-         88.0 
+         2.0 
+         6.0 
+         10.0 
+         25.0 
+         45.0 
+         65.0 
+         85.0 
          100.0 
       </constant>
 <constant digits="1" name="crankCold" units="ms">6.5</constant>
@@ -105,8 +105,8 @@
 <constant name="displayB1">"RPM"</constant>
 <constant name="displayB2">"RPM"</constant>
 <constant digits="1" name="unused105" units="ms">0.0</constant>
-<constant digits="1" name="reqFuel" units="ms">6.2</constant>
-<constant digits="0" name="divider">1.0</constant>
+<constant digits="1" name="reqFuel" units="ms">12.4</constant>
+<constant digits="0" name="divider">2.0</constant>
 <constant name="alternate">"Alternating"</constant>
 <constant digits="1" name="injOpen" units="ms">1.0</constant>
 <constant digits="0" name="injOCfuel" units="ms">0.0</constant>
@@ -146,34 +146,34 @@
          10.0 15.0 15.0 17.0 17.0 18.0 20.0 23.0 
       </constant>
 <constant cols="1" digits="0" name="rpmBins2" rows="8" units="RPM">
-         500.0 
-         1200.0 
+         1000.0 
+         1500.0 
          2000.0 
          3000.0 
-         3500.0 
-         4200.0 
-         5000.0 
+         4500.0 
          6000.0 
+         7500.0 
+         9000.0 
       </constant>
 <constant cols="1" digits="0" name="tpsBins2" rows="8" units="TPS">
+         2.0 
+         6.0 
          10.0 
-         20.0 
-         35.0 
-         50.0 
+         25.0 
+         45.0 
          65.0 
-         75.0 
-         86.0 
+         85.0 
          100.0 
       </constant>
-<constant digits="0" name="TrigAng" units="Deg">244.0</constant>
+<constant digits="0" name="TrigAng" units="Deg">1.0</constant>
 <constant digits="0" name="FixAng" units="Deg">0.0</constant>
-<constant digits="0" name="Trim" units="Deg">13.024</constant>
 <constant digits="0" name="CrankAng" units="Deg">11.6</constant>
 <constant digits="0" name="IgHold">10.0</constant>
-<constant name="Trig_plus">"+45"</constant>
-<constant name="TrigCrank">"Time Based"</constant>
+<constant name="TrigEdge">"Leading"</constant>
+<constant name="TrigSpeed">"Crank Speed"</constant>
 <constant name="IgInv">"No"</constant>
 <constant name="oddfire">"Yes"</constant>
+<constant name="TrigPattern">"Missing Tooth"</constant>
 <constant digits="0" name="IdleAdv" units="Deg">-1.9008</constant>
 <constant digits="0" name="IdleAdvTPS" units="ADC">65.0</constant>
 <constant digits="0" name="IdleAdvRPM" units="RPM">3200.0</constant>
@@ -183,25 +183,25 @@
 <constant name="dwellcont">"Dwell control"</constant>
 <constant digits="1" name="dwellcrank" units="ms">4.5</constant>
 <constant digits="1" name="dwellrun" units="ms">3.0</constant>
-<constant digits="0" name="numteeth" units="teeth">36.0</constant>
-<constant digits="0" name="onetwo" units="teeth">1.0</constant>
+<constant digits="0" name="numteeth" units="teeth">60.0</constant>
+<constant digits="0" name="onetwo" units="teeth">2.0</constant>
 <constant digits="0" name="crankRPM" units="rpm">300.0</constant>
 <constant digits="0" name="tpsflood" units="%">92.0</constant>
-<constant digits="0" name="SoftRevLim" units="rpm">7000.0</constant>
-<constant digits="0" name="SoftLimRetard" units="deg">15.0</constant>
+<constant digits="0" name="SoftRevLim" units="rpm">8800.0</constant>
+<constant digits="0" name="SoftLimRetard" units="deg">10.0</constant>
 <constant digits="1" name="SoftLimMax" units="s">2.0</constant>
-<constant digits="0" name="HardRevLim" units="rpm">10000.0</constant>
+<constant digits="0" name="HardRevLim" units="rpm">9000.0</constant>
 <constant cols="1" digits="0" name="taeBins" rows="4" units="%/s">
-         80.0 
-         200.0 
-         520.0 
-         890.0 
+         150.0 
+         390.0 
+         650.0 
+         900.0 
       </constant>
 <constant cols="1" digits="0" name="taeRates" rows="4" units="%">
+         12.0 
          18.0 
-         24.0 
-         33.0 
-         42.0 
+         25.0 
+         32.0 
       </constant>
 <constant cols="1" digits="0" name="wueRates" rows="10" units="C">
          0.0 
@@ -217,9 +217,9 @@
       </constant>
 <constant digits="0" name="dwellLim" units="ms">8.0</constant>
 <constant cols="1" digits="0" name="dwellRates" rows="6" units="%">
-         248.0 
-         189.0 
+         164.0 
          132.0 
+         107.0 
          100.0 
          91.0 
          85.0 
@@ -247,16 +247,16 @@
          6000.0 
       </constant>
 <constant cols="1" digits="0" name="tpsBinsAFR" rows="8" units="TPS">
+         2.0 
+         4.0 
+         6.0 
+         8.0 
          10.0 
+         15.0 
          20.0 
-         35.0 
-         50.0 
-         65.0 
-         75.0 
-         86.0 
-         100.0 
+         30.0 
       </constant>
-<constant name="egoAlgorithm">"PID"</constant>
+<constant name="egoAlgorithm">"No correction"</constant>
 <constant name="egoType">"Wide Band"</constant>
 <constant digits="0" name="egoKP" units="%">100.0</constant>
 <constant digits="0" name="egoKI" units="%">20.0</constant>
@@ -273,8 +273,8 @@
 <constant digits="0" name="egoLoadMax" units="%">90.0</constant>
 <constant digits="0" name="egoLoadMin" units="%">20.0</constant>
 <constant cols="1" digits="1" name="brvBins" rows="6" units="V">
-         6.0 
-         9.0 
+         6.4 
+         9.4 
          12.0 
          14.0 
          16.9 
