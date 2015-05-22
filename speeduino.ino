@@ -41,6 +41,9 @@ volatile byte startRevolutions = 0; //A counter for how many revolutions have be
 volatile bool ignitionOn = true; //The current state of the ignition system
 
 void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
+void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
+int (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
+int (*getCrankAngle)(int); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 
 struct table3D fuelTable; //8x8 fuel map
 struct table3D ignitionTable; //8x8 ignition map
@@ -177,7 +180,11 @@ void setup()
   switch (configPage2.TrigPattern)
   {
     case 0:
+      //Missing tooth decoder
       trigger = triggerPri_missingTooth;
+      triggerSecondary = triggerSec_missingTooth;
+      getRPM = getRPM_missingTooth;
+      getCrankAngle = getCrankAngle_missingTooth;
       break;
       
     case 1:
@@ -271,10 +278,7 @@ void loop()
     long timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < 500000L) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
-      noInterrupts();
-      unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-      interrupts();
-      currentStatus.RPM = ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long)
+      currentStatus.RPM = getRPM();
       if(digitalRead(pinFuelPump) == LOW) { digitalWrite(pinFuelPump, HIGH); } //Check if the fuel pump is on and turn it on if it isn't. 
     }
     else
@@ -386,15 +390,11 @@ void loop()
       int tempCrankAngle;
       int tempStartAngle; 
       
-      //Determine the current crank angle
-      //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
-      int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-      
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
-      timePerDegree = ldiv( (toothOneTime - toothOneMinusOneTime) , 360).quot; //The time (uS) it is currently taking to move 1 degree
-      //degreesPerLoop = ldiv(1000000L, ((long)currentStatus.loopsPerSecond*timePerDegree)).quot; //The number of crank degrees the pass each loop
-      crankAngle += ldiv( (micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
-      if (crankAngle > 360) { crankAngle -= 360; }
+      timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS
+      
+      //Determine the current crank angle
+      int crankAngle = getCrankAngle(timePerDegree);
       
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
