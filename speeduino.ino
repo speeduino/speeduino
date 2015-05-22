@@ -141,8 +141,6 @@ void setup()
   
   //Once the configs have been loaded, a number of one time calculations can be completed
   req_fuel_uS = configPage1.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations
-  triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
-  triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   inj_opentime_uS = configPage1.injOpen * 100; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155). 
   
   //Begin the main crank trigger interrupt pin setup
@@ -181,6 +179,7 @@ void setup()
   {
     case 0:
       //Missing tooth decoder
+      triggerSetup_missingTooth();
       trigger = triggerPri_missingTooth;
       triggerSecondary = triggerSec_missingTooth;
       getRPM = getRPM_missingTooth;
@@ -188,11 +187,15 @@ void setup()
       break;
       
     case 1:
-      trigger = triggerPri_DualWheel;
+      // Basic distributor
+      triggerSetup_BasicDistributor();
+      trigger = triggerPri_BasicDistributor;
+      getRPM = getRPM_BasicDistributor;
+      getCrankAngle = getCrankAngle_BasicDistributor;
       break;
-      
+          
     case 2:
-      trigger = triggerPri_missingTooth;
+      trigger = triggerPri_DualWheel;
       break;
       
     default:
