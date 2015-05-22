@@ -171,9 +171,7 @@ void setup()
   }
   pinMode(pinTrigger, INPUT);
   //digitalWrite(pinTrigger, HIGH);
-  if(configPage2.TrigEdge == 0)
-  { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-  else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+
   
   //Set the trigger function based on the decoder in the config
   switch (configPage2.TrigPattern)
@@ -189,7 +187,14 @@ void setup()
     case 2:
       trigger = triggerPri_missingTooth;
       break;
+      
+    default:
+      trigger = triggerPri_missingTooth;
+      break;
   }
+  if(configPage2.TrigEdge == 0)
+    { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+    else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
   //End crank triger interrupt attachment
   
   req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
