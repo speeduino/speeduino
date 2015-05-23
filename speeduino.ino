@@ -201,6 +201,7 @@ void setup()
     default:
       trigger = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;
+      getCrankAngle = getCrankAngle_missingTooth
       break;
   }
   if(configPage2.TrigEdge == 0)
