@@ -152,7 +152,7 @@ void sendValues(int length)
   response[25] = highByte(currentStatus.loopsPerSecond);
  
   //The following can be used to show the amount of free memory
-  currentStatus.freeRAM = configPage2.triggerAngle;//freeRam();
+  currentStatus.freeRAM = freeRam();
   response[26] = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
   response[27] = highByte(currentStatus.freeRAM);
   
@@ -385,7 +385,6 @@ void receiveCalibration(byte tableID)
       pnt_TargetTable = (byte *)&o2CalibrationTable;
       OFFSET = 0;
       DIVISION_FACTOR = 1;
-      o2CalibrationTable[10] = 123;
       BYTES_PER_VALUE = 1;
       break;
 
@@ -419,7 +418,7 @@ void receiveCalibration(byte tableID)
       tempBuffer[0] = Serial.read();
       tempBuffer[1] = Serial.read();
       
-      tempValue = div(int(word(tempBuffer[0], tempBuffer[1])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
+      tempValue = div(int(word(tempBuffer[1], tempBuffer[0])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
       tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
     }
     tempValue = tempValue + OFFSET;
