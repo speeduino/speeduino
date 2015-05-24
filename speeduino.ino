@@ -253,6 +253,12 @@ void setup()
       channel2Degrees = 120;
       channel3Degrees = 240;
       break;
+    case 8:
+      channel1Degrees = 0;
+      channel2Degrees = 90;
+      channel3Degrees = 180;
+      channel4Degrees = 270;
+      break;
     default: //Handle this better!!!
       channel1Degrees = 0;
       channel2Degrees = 180;
@@ -409,25 +415,44 @@ void loop()
       injector1StartAngle = 355 - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       if(injector1StartAngle < 0) {injector1StartAngle += 360;} 
       //Repeat the above for each cylinder
-      //2
-      if (configPage1.nCylinders == 2) 
-      { 
-        injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
-        if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
-      }
-      //3
-      else if (configPage1.nCylinders == 3) 
+      switch (configPage1.nCylinders)
       {
-        injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
-        if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
-        injector3StartAngle = (355 + channel3Degrees - ( PWdivTimerPerDegree ));
-        if(injector3StartAngle > 360) {injector3StartAngle -= 360;}        
-      }
-      //4 
-      else if (configPage1.nCylinders == 4) 
-      { 
-        injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
-        if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
+        //2 cylinders
+        case 2:
+          injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
+          if(injector2StartAngle > 360) {injector2StartAngle -= 360;}
+          break;
+        //3 cylinders
+        case 3:
+          injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
+          if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
+          injector3StartAngle = (355 + channel3Degrees - ( PWdivTimerPerDegree ));
+          if(injector3StartAngle > 360) {injector3StartAngle -= 360;}
+          break;
+        //4 cylinders
+        case 4:
+          injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
+          if(injector2StartAngle > 360) {injector2StartAngle -= 360;}
+          break;
+        //6 cylinders
+        case 6: 
+          injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
+          if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
+          injector3StartAngle = (355 + channel3Degrees - ( PWdivTimerPerDegree ));
+          if(injector3StartAngle > 360) {injector3StartAngle -= 360;}
+          break;
+        //8 cylinders
+        case 8: 
+          injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
+          if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
+          injector3StartAngle = (355 + channel3Degrees - ( PWdivTimerPerDegree ));
+          if(injector3StartAngle > 360) {injector3StartAngle -= 360;}
+          injector4StartAngle = (355 + channel4Degrees - ( PWdivTimerPerDegree ));
+          if(injector4StartAngle > 360) {injector4StartAngle -= 360;}
+          break;
+        //Will hit the default case on 1 cylinder or >8 cylinders. Do nothing in these cases
+        default:
+          break;
       }
     
       //***********************************************************************************************
@@ -444,29 +469,51 @@ void loop()
       int dwellAngle = (div(currentStatus.dwell, timePerDegree).quot ); //Convert the dwell time to dwell angle based on the current engine speed
       
       //Calculate start angle for each channel
-      //1
-        ignition1StartAngle = 360 - currentStatus.advance - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
-        if(ignition1StartAngle < 0) {ignition1StartAngle += 360;} 
-      //2
-      if (configPage1.nCylinders == 2) 
-      { 
-        ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle;
-        if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
-      }
-      //3
-      else if (configPage1.nCylinders == 3) 
-      { 
-        ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle;
-        if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
-        ignition3StartAngle = channel3Degrees + 360 - currentStatus.advance - dwellAngle;
-        if(ignition3StartAngle > 360) {ignition3StartAngle -= 360;}
-      }
-      //4
-      else if (configPage1.nCylinders == 4) 
-      { 
-        ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle; //(div((configPage2.dwellRun*100), timePerDegree).quot ));
-        if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;}
-        if(ignition2StartAngle < 0) {ignition2StartAngle += 360;} 
+      //1 cylinder (Everyone gets this)
+      ignition1StartAngle = 360 - currentStatus.advance - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
+      if(ignition1StartAngle < 0) {ignition1StartAngle += 360;} 
+      
+      //This test for more cylinders and do the same thing
+      switch (configPage1.nCylinders)
+      {
+        //2 cylinders
+        case 2:
+          ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle;
+          if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;}
+          break;
+        //3 cylinders
+        case 3:
+          ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle;
+          if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
+          ignition3StartAngle = channel3Degrees + 360 - currentStatus.advance - dwellAngle;
+          if(ignition3StartAngle > 360) {ignition3StartAngle -= 360;}
+          break;
+        //4 cylinders
+        case 4:
+          ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle; //(div((configPage2.dwellRun*100), timePerDegree).quot ));
+          if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;}
+          if(ignition2StartAngle < 0) {ignition2StartAngle += 360;}
+          break;
+        //6 cylinders
+        case 6:
+          ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle;
+          if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
+          ignition3StartAngle = channel3Degrees + 360 - currentStatus.advance - dwellAngle;
+          if(ignition3StartAngle > 360) {ignition3StartAngle -= 360;}
+          break;
+        //8 cylinders
+        case 8:
+          ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle;
+          if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
+          ignition3StartAngle = channel3Degrees + 360 - currentStatus.advance - dwellAngle;
+          if(ignition3StartAngle > 360) {ignition3StartAngle -= 360;}
+          ignition4StartAngle = channel4Degrees + 360 - currentStatus.advance - dwellAngle;
+          if(ignition4StartAngle > 360) {ignition4StartAngle -= 360;}
+          break;
+          
+        //Will hit the default case on 1 cylinder or >8 cylinders. Do nothing in these cases
+        default:
+          break;
       }
       
       //***********************************************************************************************
@@ -530,6 +577,19 @@ void loop()
                   closeInjector3
                   );
       }
+      
+      tempCrankAngle = crankAngle - channel4Degrees;
+      if( tempCrankAngle < 0) { tempCrankAngle += 360; }
+      tempStartAngle = injector4StartAngle - channel4Degrees;
+      if ( tempStartAngle < 0) { tempStartAngle += 360; }
+      if (tempStartAngle > tempCrankAngle)
+      { 
+        setFuelSchedule4(openInjector4, 
+                  ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                  (unsigned long)currentStatus.PW,
+                  closeInjector4
+                  );
+      }
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
       //Likewise for the ignition
@@ -571,6 +631,20 @@ void loop()
                       endCoil3Charge
                       );
         }
+        
+        tempCrankAngle = crankAngle - channel4Degrees;
+        if( tempCrankAngle < 0) { tempCrankAngle += 360; }
+        tempStartAngle = ignition4StartAngle - channel4Degrees;
+        if ( tempStartAngle < 0) { tempStartAngle += 360; }
+        if (tempStartAngle > tempCrankAngle)
+        { 
+            setIgnitionSchedule4(beginCoil4Charge, 
+                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      currentStatus.dwell,
+                      endCoil4Charge
+                      );
+        }
+        
       }
       
     }
