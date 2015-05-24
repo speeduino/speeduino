@@ -111,7 +111,7 @@ void triggerPri_BasicDistributor()
   curTime = micros();
   
   toothCurrentCount++; //Increment the tooth counter
-  if(toothCurrentCount > 8) //Check if we're back to the beginning of a cycle
+  if(toothCurrentCount > (configPage1.nCylinders >> 1) ) //Check if we're back to the beginning of a revolution
   { 
      toothCurrentCount = 1; //Reset the counter
      toothOneMinusOneTime = toothOneTime;
