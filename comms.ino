@@ -1,4 +1,10 @@
 /*
+Speeduino - Simple engine management for the Arduino Mega 2560 platform
+Copyright (C) Josh Stewart
+A full copy of the license may be found in the projects root directory
+*/
+
+/*
 This is called when a command is received over serial from TunerStudio / Megatune
 It parses the command and calls the relevant function
 A detailed description of each call can be found at: http://www.msextra.com/doc/ms1extra/COM_RS232.htm

@@ -1,4 +1,10 @@
 /*
+Speeduino - Simple engine management for the Arduino Mega 2560 platform
+Copyright (C) Josh Stewart
+A full copy of the license may be found in the projects root directory
+*/
+
+/*
 The corrections functions in this file affect the fuel pulsewidth (Either increasing or decreasing)
 based on factors other than the VE lookup.
 

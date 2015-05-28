@@ -1,4 +1,10 @@
 /*
+Speeduino - Simple engine management for the Arduino Mega 2560 platform
+Copyright (C) Josh Stewart
+A full copy of the license may be found in the projects root directory
+*/
+
+/*
 This file contains the various crank and cam wheel decoder functions.
 
 Each decoder must have the following 4 functions (Where xxxx is the decoder name):

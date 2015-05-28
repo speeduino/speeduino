@@ -1,4 +1,10 @@
 /*
+Speeduino - Simple engine management for the Arduino Mega 2560 platform
+Copyright (C) Josh Stewart
+A full copy of the license may be found in the projects root directory
+*/
+
+/*
 Because the size of the table is dynamic, this functino is required to reallocate the array sizes
 Note that this may clear some of the existing values of the table
 */

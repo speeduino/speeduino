@@ -1,4 +1,10 @@
 /*
+Speeduino - Simple engine management for the Arduino Mega 2560 platform
+Copyright (C) Josh Stewart
+A full copy of the license may be found in the projects root directory
+*/
+
+/*
 Timers are used for having actions performed repeatedly at a fixed interval (Eg every 100ms)
 They should not be confused with Schedulers, which are for performing an action once at a given point of time in the future
 
