@@ -412,42 +412,42 @@ void loop()
       //Determine next firing angles
       //1
       int PWdivTimerPerDegree = div(currentStatus.PW, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
-      injector1StartAngle = 355 - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
+      injector1StartAngle = configPage1.inj1Ang - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       if(injector1StartAngle < 0) {injector1StartAngle += 360;} 
       //Repeat the above for each cylinder
       switch (configPage1.nCylinders)
       {
         //2 cylinders
         case 2:
-          injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
+          injector2StartAngle = (configPage1.inj2Ang + channel2Degrees - ( PWdivTimerPerDegree ));
           if(injector2StartAngle > 360) {injector2StartAngle -= 360;}
           break;
         //3 cylinders
         case 3:
-          injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
+          injector2StartAngle = (configPage1.inj2Ang + channel2Degrees - ( PWdivTimerPerDegree ));
           if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
-          injector3StartAngle = (355 + channel3Degrees - ( PWdivTimerPerDegree ));
+          injector3StartAngle = (configPage1.inj3Ang + channel3Degrees - ( PWdivTimerPerDegree ));
           if(injector3StartAngle > 360) {injector3StartAngle -= 360;}
           break;
         //4 cylinders
         case 4:
-          injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
+          injector2StartAngle = (configPage1.inj2Ang + channel2Degrees - ( PWdivTimerPerDegree ));
           if(injector2StartAngle > 360) {injector2StartAngle -= 360;}
           break;
         //6 cylinders
         case 6: 
-          injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
+          injector2StartAngle = (configPage1.inj2Ang + channel2Degrees - ( PWdivTimerPerDegree ));
           if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
-          injector3StartAngle = (355 + channel3Degrees - ( PWdivTimerPerDegree ));
+          injector3StartAngle = (configPage1.inj3Ang + channel3Degrees - ( PWdivTimerPerDegree ));
           if(injector3StartAngle > 360) {injector3StartAngle -= 360;}
           break;
         //8 cylinders
         case 8: 
-          injector2StartAngle = (355 + channel2Degrees - ( PWdivTimerPerDegree ));
+          injector2StartAngle = (configPage1.inj2Ang + channel2Degrees - ( PWdivTimerPerDegree ));
           if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
-          injector3StartAngle = (355 + channel3Degrees - ( PWdivTimerPerDegree ));
+          injector3StartAngle = (configPage1.inj3Ang + channel3Degrees - ( PWdivTimerPerDegree ));
           if(injector3StartAngle > 360) {injector3StartAngle -= 360;}
-          injector4StartAngle = (355 + channel4Degrees - ( PWdivTimerPerDegree ));
+          injector4StartAngle = (configPage1.inj4Ang + channel4Degrees - ( PWdivTimerPerDegree ));
           if(injector4StartAngle > 360) {injector4StartAngle -= 360;}
           break;
         //Will hit the default case on 1 cylinder or >8 cylinders. Do nothing in these cases
@@ -541,6 +541,17 @@ void loop()
         }
       }
       
+      /*-----------------------------------------------------------------------------------------
+      | A Note on tempCrankAngle and tempStartAngle:
+      |   The use of tempCrankAngle/tempStartAngle is described below. It is then used in the same way for channels 2, 3 and 4 on both injectors and ignition
+      |   Essentially, these 2 variables are used to realign the current crank and and the desired start angle around 0 degrees for the given cylinder/output
+      |   Eg: If cylinder 2 TDC is 180 degrees after cylinder 1 (Eg a standard 4 cylidner engine), then tempCrankAngle is 180* less than the current crank angle and
+      |       tempStartAngle is the desired open time less 180*. Thus the cylinder is being treated relative to its own TDC, regardless of its offset
+      |
+      |   This is done to avoid problems with very short of very long times until tempStartAngle. 
+      |   This will very likely need to be rewritten when sequential is enabled
+      |------------------------------------------------------------------------------------------
+      */
       tempCrankAngle = crankAngle - channel2Degrees;
       if( tempCrankAngle < 0) { tempCrankAngle += 360; }
       tempStartAngle = injector2StartAngle - channel2Degrees;

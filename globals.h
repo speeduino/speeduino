@@ -101,11 +101,10 @@ struct config1 {
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
   byte unused96;
-  byte unused97;
+  byte tdePct; // TPS decelleration (%)
   byte taeColdA;
   byte tpsThresh;
   byte taeTime;
-  byte tdePct;
   
   //Display config bits
   byte displayType : 3;
@@ -117,17 +116,16 @@ struct config1 {
   byte displayB1 : 4;
   byte displayB2 : 4;
   
-  byte unused105;
   byte reqFuel;
   byte divider;
   byte alternate;
-  byte injOpen;
-  byte injOCfuel;
-  byte injPwmP;
-  byte injPwmT;
-  byte unused113;
-  int rpmk; //2 bytes
-//36
+  byte injOpen; //Injector opening time (ms * 10)
+  unsigned int inj1Ang;
+  unsigned int inj2Ang; 
+  unsigned int inj3Ang; 
+  unsigned int inj4Ang; 
+
+//116
   //config1 in ini
   byte mapType : 2;
   byte strokes : 1;
