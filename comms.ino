@@ -283,6 +283,16 @@ void receiveValue(byte offset, byte newValue)
         }
         break;
       
+      case iacPage: //Idle Air Control settings page (Page 4)
+        pnt_configPage = (byte *)&configPage4;
+        //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
+        if( offset < page_size)
+        {
+          *(pnt_configPage + byte(offset)) = newValue;
+        }
+        return;
+        break;
+      
       default:
 	break;
   }
@@ -352,6 +362,16 @@ void sendPage()
         }
         Serial.write((byte *)&response, sizeof(response)); 
         //Serial.flush();
+        break;
+        
+      case iacPage:
+        pnt_configPage = (byte *)&configPage4; //Create a pointer to Page 2 in memory
+        offset = 0; //No offset required on page 4
+        for(byte x=offset; x<page_size; x++)
+        { 
+          response[x] = *(pnt_configPage + byte(x)); //Each byte is simply the location in memory of configPage2 + the offset + the variable number (x)
+        }
+        Serial.write((byte *)&response, sizeof(response)); 
         break;
         
       default:

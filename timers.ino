@@ -45,6 +45,8 @@ ISR(TIMER2_OVF_vect)
   if(ignitionSchedule3.Status == RUNNING) { if(ignitionSchedule3.startTime < targetOverdwellTime) { endCoil3Charge(); } if(ignitionSchedule3.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
   if(ignitionSchedule4.Status == RUNNING) { if(ignitionSchedule4.startTime < targetOverdwellTime) { endCoil4Charge(); } if(ignitionSchedule4.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
   
+  //Check if there's any actions pending for a stepper idle
+  
     
   
   //Loop executed every 250ms loop (1ms x 250 = 250ms)

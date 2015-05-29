@@ -233,6 +233,28 @@ struct config3 {
   
 };
 
+//Page 4 of the config mostly deals with idle control
+//See ini file for further info
+struct config4 {
+  byte iacCLValues[10]; //Closed loop target RPM value
+  byte iacOLStepVal[10]; //Open loop step values for stepper motors
+  byte iacOLPWMVal[10]; //Open loop duty values for PMWM valves
+  byte iacBins[10]; //Temperature Bins for the above 3 curves
+  byte iacCrankSteps[4]; //Steps to use when cranking (Stepper motor)
+  byte iacCrankDuty[4]; //Duty cycle to use on PWM valves when cranking
+  byte iacCrankBins[4]; //Temperature Bins for the above 2 curves
+  
+  byte iacAlgorithm : 3; //Valid values are: "None", "On/Off", "PWM", "PWM Closed Loop", "Stepper", "Stepper Closed Loop"
+  byte iacStepTime : 3; //How long to pulse the stepper for to ensure the step completes (ms)
+  byte unused38 : 2;
+  
+  byte iacFastTemp; //Fast idle temp when using a simple on/off valve
+  
+  byte iacStepHome; //When using a stepper motor, the number of steps to be taken on startup to home the motor
+  byte iacStepHyster; //Hysteresis temperature (*10). Eg 2.2C = 22
+  
+};
+
 byte pinInjector1; //Output pin injector 1
 byte pinInjector2; //Output pin injector 2
 byte pinInjector3; //Output pin injector 3 is on
