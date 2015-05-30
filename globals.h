@@ -236,6 +236,11 @@ struct config3 {
 //Page 4 of the config mostly deals with idle control
 //See ini file for further info
 struct config4 {
+  byte FanInv : 1;        // Fan output inversion bit
+  byte FanEnable : 1;     // Fan enable bit 
+  byte FanSP;             // Cooling fan start temperature
+  byte FanHyster;         // Fan hysteresis 
+  
   byte iacCLValues[10]; //Closed loop target RPM value
   byte iacOLStepVal[10]; //Open loop step values for stepper motors
   byte iacOLPWMVal[10]; //Open loop duty values for PMWM valves
@@ -289,6 +294,7 @@ byte pinSpareOut3; //Generic output
 byte pinSpareOut4; //Generic output
 byte pinSpareOut5; //Generic output
 byte pinSpareOut6; //Generic output
+byte pinFan;       // Cooling fan output
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
