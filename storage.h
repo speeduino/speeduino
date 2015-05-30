@@ -28,9 +28,10 @@ Current layout of EEPROM data (Version 2) is as follows (All sizes are in bytes)
 | 327   |8    | AFR Table RPM bins                  |
 | 335   |8    | AFR Table MAP/TPS bins              |
 | 343   |48   | Remaining Page 3 settings           |
-| 2559  |512  | Calibration data (O2)              |
-| 3071  |512  | Calibration data (IAT)             |
-| 3583  |512  | Calibration data (CLT)             |
+| 391   |128  | Page 4 settings                     |
+| 2559  |512  | Calibration data (O2)               |
+| 3071  |512  | Calibration data (IAT)              |
+| 3583  |512  | Calibration data (CLT)              |
 -----------------------------------------------------
 */
 
@@ -55,6 +56,8 @@ Current layout of EEPROM data (Version 2) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG3_YBINS 335
 #define EEPROM_CONFIG3_SETTINGS 343
 #define EEPROM_CONFIG3_END 391
+#define EEPROM_CONFIG4_SETTINGS 392
+#define EEPROM_CONFIG4_END 519   
 
 //Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
 #define EEPROM_CALIBRATION_O2 2559
