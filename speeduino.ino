@@ -81,8 +81,8 @@ unsigned long scheduleEnd;
 
 byte coilHIGH = HIGH;
 byte coilLOW = LOW;
-byte FanHIGH = HIGH;             // Used to invert the cooling fan output
-byte FanLOW = LOW;               // Used to invert the cooling fan output
+byte fanHIGH = HIGH;             // Used to invert the cooling fan output
+byte fanLOW = LOW;               // Used to invert the cooling fan output
 
 struct statuses currentStatus;
 volatile int mainLoopCount;
@@ -360,15 +360,6 @@ void loop()
        currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
        currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
     }
-
-    // Only check the fan controls every 1000 loops to save processing power                                            // ################
-    if ((mainLoopCount & 1001) == 1)
-    {
-      if (configPage4.FanEnable == 1)
-        { 
-          FanControl();            // Fucntion to turn the cooling fan on/off 
-        }
-    }  
 
     //Always check for sync
     //Main loop runs within this clause

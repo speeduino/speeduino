@@ -236,11 +236,6 @@ struct config3 {
 //Page 4 of the config mostly deals with idle control
 //See ini file for further info
 struct config4 {
-  byte FanInv : 1;        // Fan output inversion bit
-  byte FanEnable : 1;     // Fan enable bit 
-  byte FanSP;             // Cooling fan start temperature
-  byte FanHyster;         // Fan hysteresis 
-  
   byte iacCLValues[10]; //Closed loop target RPM value
   byte iacOLStepVal[10]; //Open loop step values for stepper motors
   byte iacOLPWMVal[10]; //Open loop duty values for PMWM valves
@@ -258,6 +253,10 @@ struct config4 {
   byte iacStepHome; //When using a stepper motor, the number of steps to be taken on startup to home the motor
   byte iacStepHyster; //Hysteresis temperature (*10). Eg 2.2C = 22
   
+  byte fanInv : 1;        // Fan output inversion bit
+  byte fanEnable : 1;     // Fan enable bit 
+  byte fanSP;             // Cooling fan start temperature
+  byte fanHyster;         // Fan hysteresis 
 };
 
 byte pinInjector1; //Output pin injector 1

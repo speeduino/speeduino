@@ -77,6 +77,11 @@ ISR(TIMER2_OVF_vect)
     //increament secl (secl is simply a counter that increments every second and is used to track whether the system has unexpectedly reset
     currentStatus.secl++;
     
+    //Check the fan output status
+    if (configPage4.fanEnable == 1)
+    { 
+       fanControl();            // Fucntion to turn the cooling fan on/off 
+    }
 
   }
       //Reset Timer2 to trigger in another ~1ms 
