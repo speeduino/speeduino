@@ -116,7 +116,16 @@ void writeConfig()
   { 
     if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG3_SETTINGS))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG3_SETTINGS))); }
   }
-  
+    //*********************************************************************************************************************************************************************************
+
+ //IGNITION CONFIG PAGE (4)                                               
+  pnt_configPage = (byte *)&configPage4; //Create a pointer to Page 4 in memory
+ 
+  //The next 128 bytes can simply be pulled straight from the configTable
+  for(int x=EEPROM_CONFIG4_SETTINGS; x<EEPROM_CONFIG4_END; x++) 
+  { 
+    if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG4_SETTINGS))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG4_SETTINGS))); }
+  }
 }
 
 void loadConfig()
@@ -212,7 +221,20 @@ void loadConfig()
   { 
     *(pnt_configPage + byte(x - EEPROM_CONFIG3_SETTINGS)) = EEPROM.read(x);
   }
+ 
+  //*********************************************************************************************************************************************************************************
+ 
+  //CONFIG PAGE (4)                                                                                                                                           //############
+  pnt_configPage = (byte *)&configPage4; //Create a pointer to Page 3 in memory
+  //Begin writing the Ignition table, basically the same thing as above
+  //ignitionTable.xSize = EEPROM.read(EEPROM_CONFIG2_XSIZE); //Read the ignition Table RPM dimension size (Currently not supproted)
+  //ignitionTable.ySize = EEPROM.read(EEPROM_CONFIG2_YSIZE); //Read the ignition Table MAP/TPS dimension size (Currently not supproted)
   
+  //The next 45 bytes can simply be pulled straight from the configTable
+  for(int x=EEPROM_CONFIG4_SETTINGS; x<EEPROM_CONFIG4_END; x++) 
+  { 
+    *(pnt_configPage + byte(x - EEPROM_CONFIG4_SETTINGS)) = EEPROM.read(x);
+  } 
 }
 
 /*
