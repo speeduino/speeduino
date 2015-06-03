@@ -36,11 +36,10 @@ void triggerPri_missingTooth()
 {
    // http://www.msextra.com/forums/viewtopic.php?f=94&t=22976
    // http://www.megamanual.com/ms2/wheel.htm
-   noInterrupts(); //Turn off interrupts whilst in this routine
 
    curTime = micros();
    curGap = curTime - toothLastToothTime;
-   if ( curGap < triggerFilterTime ) { interrupts(); return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+   if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    toothCurrentCount++; //Increment the tooth counter
    
    //High speed tooth logging history
@@ -68,7 +67,6 @@ void triggerPri_missingTooth()
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
    
-   interrupts(); //Turn interrupts back on
 }
 
 void triggerSec_missingTooth(){ return; } //This function currently is not used
@@ -78,14 +76,14 @@ int getRPM_missingTooth()
    noInterrupts();
    unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
    interrupts(); 
-   return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long)
+   return (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long)
 }
 
 int getCrankAngle_missingTooth(int timePerDegree)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-    crankAngle += ldiv( (micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+    crankAngle += ( (micros() - toothLastToothTime) / timePerDegree); //Estimate the number of degrees travelled since the last tooth
     if (crankAngle > 360) { crankAngle -= 360; }
     
     return crankAngle;

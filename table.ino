@@ -141,14 +141,14 @@ int get3DTableValue(struct table3D fromTable, int Y, int X)
     //      This is because the important tables (fuel and injection) will have the highest RPM at the top of the X axis, so starting there will mean the best case occurs when the RPM is highest (And hence the CPU is needed most)
     int xMinValue = fromTable.axisX[0];
     int xMaxValue = fromTable.axisX[fromTable.xSize-1];
-    int xMin = 0;
-    int xMax = 0;
+    byte xMin = 0;
+    byte xMax = 0;
     
     //If the requested X value is greater/small than the maximum/minimum bin, reset X to be that value
     if(X > xMaxValue) { X = xMaxValue; }
     if(X < xMinValue) { X = xMinValue; }
     
-    for (int x = fromTable.xSize-1; x >= 0; x--)
+    for (byte x = fromTable.xSize-1; x >= 0; x--)
     {
       //Checks the case where the X value is exactly what was requested
       if ( (X == fromTable.axisX[x]) || (x == 0) )
@@ -173,14 +173,14 @@ int get3DTableValue(struct table3D fromTable, int Y, int X)
     //Loop through the Y axis bins for the min/max pair
     int yMaxValue = fromTable.axisY[0];
     int yMinValue = fromTable.axisY[fromTable.ySize-1];
-    int yMin = 0;
-    int yMax = 0;
+    byte yMin = 0;
+    byte yMax = 0;
     
     //If the requested Y value is greater/small than the maximum/minimum bin, reset Y to be that value
     if(Y > yMaxValue) { Y = yMaxValue; }
     if(Y < yMinValue) { Y = yMinValue; }
     
-    for (int y = fromTable.ySize-1; y >= 0; y--)
+    for (byte y = fromTable.ySize-1; y >= 0; y--)
     {
       //Checks the case where the Y value is exactly what was requested
       if ( (Y == fromTable.axisY[y]) || (y==0) )
@@ -257,7 +257,9 @@ int get3DTableValue(struct table3D fromTable, int Y, int X)
     if (yMaxValue == yMinValue)
     { q = ((long)(Y - yMinValue) << 8); }
     else
-    { q = ((long)(Y - yMaxValue) << 8) / (yMinValue - yMaxValue); }
+    { 
+      q = ((long)(Y - yMaxValue) << 8) / (yMinValue - yMaxValue); 
+    }
       
     int m = ((257-p) * (257-q)) >> 8;
     int n = (p * (257-q)) >> 8;
