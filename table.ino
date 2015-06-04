@@ -134,13 +134,13 @@ int table2D_getValue(struct table2D fromTable, int X)
 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: http://www.megamanual.com/v22manual/ve_tuner.pdf
-int get3DTableValue(struct table3D fromTable, int Y, int X)
+int get3DTableValue(struct table3D *fromTable, int Y, int X)
   {
     //Loop through the X axis bins for the min/max pair
     //Note: For the X axis specifically, rather than looping from tableAxisX[0] up to tableAxisX[max], we start at tableAxisX[Max] and go down. 
     //      This is because the important tables (fuel and injection) will have the highest RPM at the top of the X axis, so starting there will mean the best case occurs when the RPM is highest (And hence the CPU is needed most)
-    int xMinValue = fromTable.axisX[0];
-    int xMaxValue = fromTable.axisX[fromTable.xSize-1];
+    int xMinValue = fromTable->axisX[0];
+    int xMaxValue = fromTable->axisX[fromTable->xSize-1];
     byte xMin = 0;
     byte xMax = 0;
     
@@ -148,31 +148,59 @@ int get3DTableValue(struct table3D fromTable, int Y, int X)
     if(X > xMaxValue) { X = xMaxValue; }
     if(X < xMinValue) { X = xMinValue; }
     
-    for (byte x = fromTable.xSize-1; x >= 0; x--)
+    //1st check is whether we're still in the same X bin as last time
+    if ( (X <= fromTable->axisX[fromTable->lastXMax]) && (X > fromTable->axisX[fromTable->lastXMin]) )
     {
-      //Checks the case where the X value is exactly what was requested
-      if ( (X == fromTable.axisX[x]) || (x == 0) )
+      xMaxValue = fromTable->axisX[fromTable->lastXMax];
+      xMinValue = fromTable->axisX[fromTable->lastXMin];
+      xMax = fromTable->lastXMax;
+      xMin = fromTable->lastXMin;
+    }
+    //2nd check is whether we're in the next RPM bin (To the right)
+    else if ( ((fromTable->lastXMax + 1) < fromTable->xSize ) && (X <= fromTable->axisX[fromTable->lastXMax +1 ]) && (X > fromTable->axisX[fromTable->lastXMin + 1]) ) //First make sure we're not already at the last X bin
+    {
+      fromTable->lastXMax = xMax = fromTable->lastXMax + 1;
+      fromTable->lastXMin = xMin = fromTable->lastXMin + 1;
+      xMaxValue = fromTable->axisX[fromTable->lastXMax];
+      xMinValue = fromTable->axisX[fromTable->lastXMin];
+    }
+    //3rd check is to look at the previous bin (to the left)
+    else if ( (fromTable->lastXMin > 0 ) && (X <= fromTable->axisX[fromTable->lastXMax - 1]) && (X > fromTable->axisX[fromTable->lastXMin - 1]) ) //First make sure we're not already at the first X bin
+    {
+      fromTable->lastXMax = xMax = fromTable->lastXMax - 1;
+      fromTable->lastXMin = xMin = fromTable->lastXMin - 1;
+      xMaxValue = fromTable->axisX[fromTable->lastXMax];
+      xMinValue = fromTable->axisX[fromTable->lastXMin];      
+    }
+    else
+    //If it's not caught by one of the above scenarios, give up and just run the loop
+    {
+      for (byte x = fromTable->xSize-1; x >= 0; x--)
       {
-        xMaxValue = fromTable.axisX[x];
-        xMinValue = fromTable.axisX[x];
-        xMax = x;
-        xMin = x;
-        break;
+        //Checks the case where the X value is exactly what was requested
+        if ( (X == fromTable->axisX[x]) || (x == 0) )
+        {
+          xMaxValue = fromTable->axisX[x];
+          xMinValue = fromTable->axisX[x];
+          fromTable->lastXMax = xMax = x;
+          fromTable->lastXMin = xMin = x;
+          break;
+        }
+        //Normal case
+        if ( (X <= fromTable->axisX[x]) && (X > fromTable->axisX[x-1]) )
+        {
+          xMaxValue = fromTable->axisX[x];
+          xMinValue = fromTable->axisX[x-1];
+          fromTable->lastXMax = xMax = x;
+          fromTable->lastXMin = xMin = x-1;
+          break;
+        }   
       }
-      //Normal case
-      if ( (X <= fromTable.axisX[x]) && (X > fromTable.axisX[x-1]) )
-      {
-        xMaxValue = fromTable.axisX[x];
-        xMinValue = fromTable.axisX[x-1];
-        xMax = x;
-        xMin = x-1;
-        break;
-      }   
     }
     
     //Loop through the Y axis bins for the min/max pair
-    int yMaxValue = fromTable.axisY[0];
-    int yMinValue = fromTable.axisY[fromTable.ySize-1];
+    int yMaxValue = fromTable->axisY[0];
+    int yMinValue = fromTable->axisY[fromTable->ySize-1];
     byte yMin = 0;
     byte yMax = 0;
     
@@ -180,26 +208,54 @@ int get3DTableValue(struct table3D fromTable, int Y, int X)
     if(Y > yMaxValue) { Y = yMaxValue; }
     if(Y < yMinValue) { Y = yMinValue; }
     
-    for (byte y = fromTable.ySize-1; y >= 0; y--)
+    //1st check is whether we're still in the same Y bin as last time
+    if ( (Y >= fromTable->axisY[fromTable->lastYMax]) && (Y < fromTable->axisY[fromTable->lastYMin]) )
     {
-      //Checks the case where the Y value is exactly what was requested
-      if ( (Y == fromTable.axisY[y]) || (y==0) )
+      yMaxValue = fromTable->axisY[fromTable->lastYMax];
+      yMinValue = fromTable->axisY[fromTable->lastYMin];
+      yMax = fromTable->lastYMax;
+      yMin = fromTable->lastYMin;
+    }
+    //2nd check is whether we're in the next MAP/TPS bin (Next one up)
+    else if ( (fromTable->lastYMin > 0 ) && (Y <= fromTable->axisY[fromTable->lastYMin - 1 ]) && (Y > fromTable->axisY[fromTable->lastYMax - 1]) ) //First make sure we're not already at the top Y bin
+    {
+      fromTable->lastYMax = yMax = fromTable->lastYMax - 1;
+      fromTable->lastYMin = yMin = fromTable->lastYMin - 1;
+      yMaxValue = fromTable->axisY[fromTable->lastYMax];
+      yMinValue = fromTable->axisY[fromTable->lastYMin];
+    }
+    //3rd check is to look at the previous bin (Next one down)
+    else if ( ((fromTable->lastYMax + 1) < fromTable->ySize) && (Y <= fromTable->axisY[fromTable->lastYMin + 1]) && (Y > fromTable->axisY[fromTable->lastYMax + 1]) ) //First make sure we're not already at the bottom Y bin
+    {
+      fromTable->lastYMax = yMax = fromTable->lastYMax + 1;
+      fromTable->lastYMin = yMin = fromTable->lastYMin + 1;
+      yMaxValue = fromTable->axisY[fromTable->lastYMax];
+      yMinValue = fromTable->axisY[fromTable->lastYMin];      
+    }
+    else
+    //If it's not caught by one of the above scenarios, give up and just run the loop
+    {
+      for (byte y = fromTable->ySize-1; y >= 0; y--)
       {
-        yMaxValue = fromTable.axisY[y];
-        yMinValue = fromTable.axisY[y];
-        yMax = y;
-        yMin = y;
-        break;
+        //Checks the case where the Y value is exactly what was requested
+        if ( (Y == fromTable->axisY[y]) || (y==0) )
+        {
+          yMaxValue = fromTable->axisY[y];
+          yMinValue = fromTable->axisY[y];
+          fromTable->lastYMax = yMax = y;
+          fromTable->lastYMin = yMin = y;
+          break;
+        }
+        //Normal case
+        if ( (Y >= fromTable->axisY[y]) && (Y < fromTable->axisY[y-1]) )
+        {
+          yMaxValue = fromTable->axisY[y];
+          yMinValue = fromTable->axisY[y-1];
+          fromTable->lastYMax = yMax = y;
+          fromTable->lastYMin = yMin = y-1;
+          break;
+        }   
       }
-      //Normal case
-      if ( (Y >= fromTable.axisY[y]) && (Y < fromTable.axisY[y-1]) )
-      {
-        yMaxValue = fromTable.axisY[y];
-        yMinValue = fromTable.axisY[y-1];
-        yMax = y;
-        yMin = y-1;
-        break;
-      }   
     }
         
     
@@ -215,10 +271,10 @@ int get3DTableValue(struct table3D fromTable, int Y, int X)
               C          D
     
     */
-    int A = fromTable.values[yMin][xMin];
-    int B = fromTable.values[yMin][xMax];
-    int C = fromTable.values[yMax][xMin];
-    int D = fromTable.values[yMax][xMax];
+    int A = fromTable->values[yMin][xMin];
+    int B = fromTable->values[yMin][xMax];
+    int C = fromTable->values[yMax][xMin];
+    int D = fromTable->values[yMax][xMax];
     
     //Create some normalised position values
     //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis

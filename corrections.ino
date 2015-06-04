@@ -188,7 +188,7 @@ byte correctionsAFRClosedLoop()
       if (configPage1.algorithm == 0) { yValue = currentStatus.MAP; }
       else  { yValue = currentStatus.TPS; }
       
-      currentStatus.afrTarget = get3DTableValue(afrTable, yValue, currentStatus.RPM); //Perform the target lookup
+      currentStatus.afrTarget = get3DTableValue(&afrTable, yValue, currentStatus.RPM); //Perform the target lookup
       
       //Check which algorithm is used, simple or PID
       if (configPage3.egoAlgorithm == 0)
