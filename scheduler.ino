@@ -185,7 +185,7 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
 //This calls the relevant callback function (startCallback or endCallback) depending on the status of the schedule.
 //If the startCallback function is called, we put the scheduler into RUNNING state
 //Timer3A (fuel schedule 1) Compare Vector
-ISR(TIMER3_COMPA_vect) //fuelSchedule1
+ISR(TIMER3_COMPA_vect, ISR_NOBLOCK) //fuelSchedule1
   {
     if (fuelSchedule1.Status == PENDING) //Check to see if this schedule is turn on
     {
@@ -202,7 +202,7 @@ ISR(TIMER3_COMPA_vect) //fuelSchedule1
        TIMSK3 &= ~(1 << OCIE3A); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
   }
-ISR(TIMER3_COMPB_vect) //fuelSchedule2
+ISR(TIMER3_COMPB_vect, ISR_NOBLOCK) //fuelSchedule2
   {
     if (fuelSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
@@ -219,9 +219,8 @@ ISR(TIMER3_COMPB_vect) //fuelSchedule2
        TIMSK3 &= ~(1 << OCIE3B); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
   }
-ISR(TIMER3_COMPC_vect) //fuelSchedule3
+ISR(TIMER3_COMPC_vect, ISR_NOBLOCK) //fuelSchedule3
   {
-    noInterrupts();
     if (fuelSchedule3.Status == PENDING) //Check to see if this schedule is turn on
     {
       fuelSchedule3.StartCallback();
@@ -236,11 +235,9 @@ ISR(TIMER3_COMPC_vect) //fuelSchedule3
        fuelSchedule3.Status = OFF; //Turn off the schedule
        TIMSK3 &= ~(1 << OCIE3C); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
-    interrupts();
   }
-ISR(TIMER4_COMPB_vect) //fuelSchedule4
+ISR(TIMER4_COMPB_vect, ISR_NOBLOCK) //fuelSchedule4
   {
-    noInterrupts();
     if (fuelSchedule4.Status == PENDING) //Check to see if this schedule is turn on
     {
       fuelSchedule4.StartCallback();
@@ -255,9 +252,8 @@ ISR(TIMER4_COMPB_vect) //fuelSchedule4
        fuelSchedule4.Status = OFF; //Turn off the schedule
        TIMSK4 &= ~(1 << OCIE4B); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
-    interrupts();
   }
-ISR(TIMER5_COMPA_vect) //ignitionSchedule1
+ISR(TIMER5_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule1
   {
     if (ignitionSchedule1.Status == PENDING) //Check to see if this schedule is turn on
     {
@@ -276,7 +272,7 @@ ISR(TIMER5_COMPA_vect) //ignitionSchedule1
       TIMSK5 &= ~(1 << OCIE5A); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
   }
-ISR(TIMER5_COMPB_vect) //ignitionSchedule2
+ISR(TIMER5_COMPB_vect, ISR_NOBLOCK) //ignitionSchedule2
   {
     if (ignitionSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
@@ -295,9 +291,8 @@ ISR(TIMER5_COMPB_vect) //ignitionSchedule2
       TIMSK5 &= ~(1 << OCIE5B); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
   }
-ISR(TIMER5_COMPC_vect) //ignitionSchedule3
+ISR(TIMER5_COMPC_vect, ISR_NOBLOCK) //ignitionSchedule3
   {
-    noInterrupts();
     if (ignitionSchedule3.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
@@ -314,11 +309,9 @@ ISR(TIMER5_COMPC_vect) //ignitionSchedule3
        ignitionCount += 1; //Increment the igintion counter
        TIMSK5 &= ~(1 << OCIE5C); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
-    interrupts();
   }
-ISR(TIMER4_COMPA_vect) //ignitionSchedule4
+ISR(TIMER4_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule4
   {
-    noInterrupts();
     if (ignitionSchedule4.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
@@ -335,5 +328,4 @@ ISR(TIMER4_COMPA_vect) //ignitionSchedule4
        ignitionCount += 1; //Increment the igintion counter
        TIMSK5 &= ~(1 << OCIE4A); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
-    interrupts();
   }

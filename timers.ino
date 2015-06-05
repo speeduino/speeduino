@@ -29,7 +29,7 @@ void initialiseTimers()
 
 //Timer2 Overflow Interrupt Vector, called when the timer overflows.
 //Executes every ~1ms.
-ISR(TIMER2_OVF_vect) 
+ISR(TIMER2_OVF_vect, ISR_NOBLOCK) 
 {
   
   //Increment Loop Counters

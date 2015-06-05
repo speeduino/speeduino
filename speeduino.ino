@@ -425,9 +425,6 @@ void loop()
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       
-      //Determine the current crank angle
-      int crankAngle = getCrankAngle(timePerDegree);
-      
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
       //Determine next firing angles
@@ -542,6 +539,10 @@ void loop()
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
       //We only need to set the shcedule if we're BEFORE the open angle
       //This may potentially be called a number of times as we get closer and closer to the opening time
+      
+      //Determine the current crank angle
+      int crankAngle = getCrankAngle(timePerDegree);
+      
       if (injector1StartAngle > crankAngle)
       { 
         if (configPage1.injTiming == 1)

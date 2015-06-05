@@ -36,11 +36,10 @@ void triggerPri_missingTooth()
 {
    // http://www.msextra.com/forums/viewtopic.php?f=94&t=22976
    // http://www.megamanual.com/ms2/wheel.htm
-  noInterrupts();
 
    curTime = micros();
    curGap = curTime - toothLastToothTime;
-   if ( curGap < triggerFilterTime ) { interrupts(); return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+   if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    toothCurrentCount++; //Increment the tooth counter
    
    //High speed tooth logging history
@@ -56,7 +55,7 @@ void triggerPri_missingTooth()
    if(configPage2.triggerMissingTeeth == 1) { targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
    //else { targetGap = (10 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 2; } //Multiply by 2.5 (Checks for a gap 2.5x greater than the last one)
    else { targetGap = ((toothLastToothTime - toothLastMinusOneToothTime)) * 2; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
-   if ( curGap > targetGap )
+   if ( curGap > targetGap || toothCurrentCount > triggerActualTeeth)
    { 
      toothCurrentCount = 1; 
      toothOneMinusOneTime = toothOneTime;
@@ -67,7 +66,7 @@ void triggerPri_missingTooth()
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
-   interrupts();
+   //interrupts();
 }
 
 void triggerSec_missingTooth(){ return; } //This function currently is not used
@@ -83,8 +82,10 @@ int getRPM_missingTooth()
 int getCrankAngle_missingTooth(int timePerDegree)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    noInterrupts();
     int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
     crankAngle += ( (micros() - toothLastToothTime) / timePerDegree); //Estimate the number of degrees travelled since the last tooth
+    interrupts();
     if (crankAngle > 360) { crankAngle -= 360; }
     
     return crankAngle;
