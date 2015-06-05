@@ -36,10 +36,11 @@ void triggerPri_missingTooth()
 {
    // http://www.msextra.com/forums/viewtopic.php?f=94&t=22976
    // http://www.megamanual.com/ms2/wheel.htm
+  noInterrupts();
 
    curTime = micros();
    curGap = curTime - toothLastToothTime;
-   if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+   if ( curGap < triggerFilterTime ) { interrupts(); return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    toothCurrentCount++; //Increment the tooth counter
    
    //High speed tooth logging history
@@ -66,7 +67,7 @@ void triggerPri_missingTooth()
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
-   
+   interrupts();
 }
 
 void triggerSec_missingTooth(){ return; } //This function currently is not used

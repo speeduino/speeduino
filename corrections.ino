@@ -54,7 +54,7 @@ byte correctionWUE()
   //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
   if (currentStatus.coolant > (WUETable.axisX[9] - CALIBRATION_TEMPERATURE_OFFSET)) { BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); return 100; } //This prevents us doing the 2D lookup if we're already up to temp
   BIT_SET(currentStatus.engine, BIT_ENGINE_WARMUP);
-  return table2D_getValue(WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  return table2D_getValue(&WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
 }
 
 /*
@@ -121,7 +121,7 @@ byte correctionAccel()
   {
     BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
     currentStatus.TAEEndTime = micros() + ((unsigned long)configPage1.taeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
-    return 100 + table2D_getValue(taeTable, currentStatus.tpsDOT);
+    return 100 + table2D_getValue(&taeTable, currentStatus.tpsDOT);
   }
   
   //If we reach here then TAE is neither on, nor does it need to be turned on.
@@ -154,7 +154,7 @@ Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y 
 byte correctionsBatVoltage()
 {
   if (currentStatus.battery10 > (injectorVCorrectionTable.axisX[5])) { return injectorVCorrectionTable.values[injectorVCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the voltage is above maximum 
-  return table2D_getValue(injectorVCorrectionTable, currentStatus.battery10);
+  return table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
 }
 
 /*

@@ -18,6 +18,9 @@ struct table2D {
   
   int *values16;
   int *axisX16;
+  
+  //Store the last X and Y coordinates in the table. This is used to make the next check faster
+  byte lastXMax, lastXMin;
 };
 
 void table2D_setSize(struct table2D targetTable, byte newSize);
@@ -50,6 +53,6 @@ Eg: 2x2 table
 
 */
 int get3DTableValue(struct table3D *fromTable, int, int);
-int table2D_getValue(struct table2D, int);
+int table2D_getValue(struct table2D *fromTable, int);
 
 #endif // TABLE_H

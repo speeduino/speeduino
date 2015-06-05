@@ -485,7 +485,7 @@ void loop()
       if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { currentStatus.dwell =  (configPage2.dwellCrank * 100); }
       else { currentStatus.dwell =  (configPage2.dwellRun * 100); }
       //Pull battery voltage based dwell correction and apply if needed
-      currentStatus.dwellCorrection = table2D_getValue(dwellVCorrectionTable, currentStatus.battery10);
+      currentStatus.dwellCorrection = table2D_getValue(&dwellVCorrectionTable, currentStatus.battery10);
       if (currentStatus.dwellCorrection != 100) { currentStatus.dwell = divs100(currentStatus.dwell) * currentStatus.dwellCorrection; }
       int dwellAngle = (div(currentStatus.dwell, timePerDegree).quot ); //Convert the dwell time to dwell angle based on the current engine speed
       
