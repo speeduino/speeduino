@@ -8,7 +8,7 @@ void loadCalibration();
 void writeCalibration();
 
 /*
-Current layout of EEPROM data (Version 2) is as follows (All sizes are in bytes):
+Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes):
 |---------------------------------------------------|
 |Byte # |Size | Description                         |
 |---------------------------------------------------|
@@ -33,31 +33,55 @@ Current layout of EEPROM data (Version 2) is as follows (All sizes are in bytes)
 | 3071  |512  | Calibration data (IAT)              |
 | 3583  |512  | Calibration data (CLT)              |
 -----------------------------------------------------
+|---------------------------------------------------|
+|Byte # |Size | Description                         |
+|---------------------------------------------------|
+| 0     |1    | Data structure version              |
+| 1     |2    | X and Y sizes for VE table          |
+| 3     |256  | VE Map (16x16)                      |
+| 259   |16   | VE Table RPM bins                   |
+| 275   |16   | VE Table MAP/TPS bins               |
+| 291   |64   | Page 2 settings (Non-Map page)      |
+| 355   |2    | X and Y sizes for Ign table         |
+| 357   |256  | Ignition Map (16x16)                |
+| 613   |16   | Ign Table RPM bins                  |
+| 629   |16   | Ign Table MAP/TPS bins              |
+| 645   |64   | Page 4 settings (Non-Map page)      |
+| 709   |2    | X and Y sizes for AFR table         |
+| 263   |64   | AFR Target Map (8x8)                |
+| 327   |8    | AFR Table RPM bins                  |
+| 335   |8    | AFR Table MAP/TPS bins              |
+| 343   |48   | Remaining Page 3 settings           |
+| 391   |128  | Page 4 settings                     |
+| 2559  |512  | Calibration data (O2)               |
+| 3071  |512  | Calibration data (IAT)              |
+| 3583  |512  | Calibration data (CLT)              |
+-----------------------------------------------------
 */
 
 #define EEPROM_CONFIG1_XSIZE 1
 #define EEPROM_CONFIG1_YSIZE 2
 #define EEPROM_CONFIG1_MAP 3
-#define EEPROM_CONFIG1_XBINS 67
-#define EEPROM_CONFIG1_YBINS 75
-#define EEPROM_CONFIG1_SETTINGS 83
-#define EEPROM_CONFIG1_END 131
-#define EEPROM_CONFIG2_XSIZE 131
-#define EEPROM_CONFIG2_YSIZE 132
-#define EEPROM_CONFIG2_MAP 133
-#define EEPROM_CONFIG2_XBINS 197
-#define EEPROM_CONFIG2_YBINS 205
-#define EEPROM_CONFIG2_SETTINGS 213
-#define EEPROM_CONFIG2_END 261
-#define EEPROM_CONFIG3_XSIZE 261
-#define EEPROM_CONFIG3_YSIZE 262
-#define EEPROM_CONFIG3_MAP 263
-#define EEPROM_CONFIG3_XBINS 327
-#define EEPROM_CONFIG3_YBINS 335
-#define EEPROM_CONFIG3_SETTINGS 343
-#define EEPROM_CONFIG3_END 391
-#define EEPROM_CONFIG4_SETTINGS 392
-#define EEPROM_CONFIG4_END 519   
+#define EEPROM_CONFIG1_XBINS 259
+#define EEPROM_CONFIG1_YBINS 275
+#define EEPROM_CONFIG2_START 291
+#define EEPROM_CONFIG2_END 355 // +64   131
+#define EEPROM_CONFIG3_XSIZE 355
+#define EEPROM_CONFIG3_YSIZE 356
+#define EEPROM_CONFIG3_MAP 357
+#define EEPROM_CONFIG3_XBINS 613
+#define EEPROM_CONFIG3_YBINS 629
+#define EEPROM_CONFIG4_START 645
+#define EEPROM_CONFIG4_END 709
+#define EEPROM_CONFIG5_XSIZE 709
+#define EEPROM_CONFIG5_YSIZE 710
+#define EEPROM_CONFIG5_MAP 711
+#define EEPROM_CONFIG5_XBINS 967
+#define EEPROM_CONFIG5_YBINS 983
+#define EEPROM_CONFIG6_START 999
+#define EEPROM_CONFIG6_END 1063
+#define EEPROM_CONFIG7_START 1063
+#define EEPROM_CONFIG7_END 1127   
 
 //Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
 #define EEPROM_CALIBRATION_O2 2559

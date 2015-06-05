@@ -5,7 +5,8 @@
 const byte ms_version = 20;
 const byte signature = 20;
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing. 
-const byte page_size = 128;
+const byte page_size = 64;
+const int map_page_size = 288;
 
 //Handy bitsetting macros
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
@@ -297,10 +298,10 @@ byte pinFan;       // Cooling fan output
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
-extern struct table3D fuelTable; //8x8 fuel map
-extern struct table3D ignitionTable; //8x8 ignition map
-extern struct table3D afrTable; //8x8 afr target map
-extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map
+extern struct table3D fuelTable; //16x16 fuel map
+extern struct table3D ignitionTable; //16x16 ignition map
+extern struct table3D afrTable; //16x16 afr target map
+extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 extern struct config1 configPage1;
 extern struct config2 configPage2;

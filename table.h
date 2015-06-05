@@ -24,8 +24,8 @@ void table2D_setSize(struct table2D targetTable, byte newSize);
 
 struct table3D {
   //All tables must be the same size for simplicity
-  const static byte xSize = 8;
-  const static byte ySize = 8;
+  const static byte xSize = 16;
+  const static byte ySize = 16;
   
   byte values[ySize][xSize];
   int axisX[xSize];

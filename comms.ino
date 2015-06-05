@@ -54,9 +54,21 @@ void command()
         break;
 
       case 'W': // receive new VE or constant at 'W'+<offset>+<newbyte>
-        byte offset;
+        int offset;
         while (Serial.available() == 0) { }
-        offset = Serial.read();
+        
+        if(currentPage == veMapPage || currentPage == ignMapPage || currentPage == afrMapPage )
+        {
+        byte offset1, offset2;
+        offset1 = Serial.read();
+        while (Serial.available() == 0) { }
+        offset2 = Serial.read();
+        offset = word(offset2, offset1);
+        }
+        else
+        {
+          offset = Serial.read();
+        }
         while (Serial.available() == 0) { }
         
         receiveValue(offset, Serial.read());
@@ -171,115 +183,108 @@ void sendValues(int length)
   return; 
 }
 
-void receiveValue(byte offset, byte newValue)
+void receiveValue(int offset, byte newValue)
 {
   
   byte* pnt_configPage;
 
   switch (currentPage) 
   {
-      case vePage:
-        pnt_configPage = (byte *)&configPage1; //Setup a pointer to the relevant config page
-        if (offset < 64) //New value is part of the fuel map
+      case veMapPage:
+        if (offset < 256) //New value is part of the fuel map
         {
-          fuelTable.values[7-offset/8][offset%8] = newValue;
+          fuelTable.values[15-offset/16][offset%16] = newValue;
           return;
         }
-        else if (offset < 80) //New value is one of the X or Y axis bins
+        else
         {
           //Check whether this is on the X (RPM) or Y (MAP/TPS) axis
-          if (offset < 72) 
+          if (offset < 272) 
           { 
             //X Axis
-            fuelTable.axisX[(offset-64)] = (int(newValue) * 100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+            fuelTable.axisX[(offset-256)] = (int(newValue) * 100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
           }
           else
           { 
             //Y Axis
-            offset = 7-(offset-72); //Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
+            offset = 15-(offset-272); //Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
             fuelTable.axisY[offset] = int(newValue);
           }
           return;
         }
-        else //New value is one of the remaining config items
+        break;
+        
+      case veSetPage:
+        pnt_configPage = (byte *)&configPage1; //Setup a pointer to the relevant config page
+        //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
+        if( offset < page_size)
         {
-          //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-          if( offset < page_size)
-          {
-            *(pnt_configPage + byte(offset - 80)) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
-          } 
+          *(pnt_configPage + (byte)offset) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
+        } 
+        break;
+        
+      case ignMapPage: //Ignition settings page (Page 2)
+        if (offset < 256) //New value is part of the ignition map
+        {
+          ignitionTable.values[15-offset/16][offset%16] = newValue;
           return;
+        }
+        else
+        {
+          //Check whether this is on the X (RPM) or Y (MAP/TPS) axis
+          if (offset < 272) 
+          { 
+            //X Axis
+            ignitionTable.axisX[(offset-256)] = int(newValue) * int(100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+          }
+          else
+          { 
+            //Y Axis
+            offset = 15-(offset-272); //Need to do a translation to flip the order 
+            ignitionTable.axisY[offset] = int(newValue);
+          }
+          return;
+        }
+        
+      case ignSetPage:
+        pnt_configPage = (byte *)&configPage2;
+        //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
+        if( offset < page_size)
+        {
+          *(pnt_configPage + (byte)offset) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
         }
         break;
         
-      case ignPage: //Ignition settings page (Page 2)
-        pnt_configPage = (byte *)&configPage2;
-        if (offset < 64) //New value is part of the ignition map
+      case afrMapPage: //Air/Fuel ratio target settings page
+        if (offset < 256) //New value is part of the afr map
         {
-          ignitionTable.values[7-offset/8][offset%8] = newValue;
+          afrTable.values[15-offset/16][offset%16] = newValue;
           return;
         }
-        else if (offset < 80) //New value is one of the X or Y axis bins
+        else
         {
           //Check whether this is on the X (RPM) or Y (MAP/TPS) axis
-          if (offset < 72) 
+          if (offset < 272) 
           { 
             //X Axis
-            ignitionTable.axisX[(offset-64)] = int(newValue) * int(100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+            afrTable.axisX[(offset-256)] = int(newValue) * int(100); //The RPM values sent by megasquirt are divided by 100, need to multiply it back by 100 to make it correct
           }
           else
           { 
-            
             //Y Axis
-            offset = 7-(offset-72); //Need to do a translation to flip the order 
-            ignitionTable.axisY[offset] = int(newValue);
-            
-          }
-          return;
-        }
-        else //New value is one of the remaining config items
-        {
-          //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-          if( offset < page_size)
-          {
-            *(pnt_configPage + byte(offset - 80)) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
-          }
-          return;
-        }
-        break;
-      case afrPage: //Air/Fuel ratio target settings page (Page 3)
-        pnt_configPage = (byte *)&configPage3;
-        if (offset < 64) //New value is part of the afr map
-        {
-          afrTable.values[7-offset/8][offset%8] = newValue;
-          return;
-        }
-        else if (offset < 80) //New value is one of the X or Y axis bins
-        {
-          //Check whether this is on the X (RPM) or Y (MAP/TPS) axis
-          if (offset < 72) 
-          { 
-            //X Axis
-            afrTable.axisX[(offset-64)] = int(newValue) * int(100); //The RPM values sent by megasquirt are divided by 100, need to multiply it back by 100 to make it correct
-          }
-          else
-          { 
-            
-            //Y Axis
-            offset = 7-(offset-72); //Need to do a translation to flip the order 
+            offset = 15-(offset-272); //Need to do a translation to flip the order 
             afrTable.axisY[offset] = int(newValue);
             
           }
           return;
         }
-        else //New value is one of the remaining config items
+      
+      case afrSetPage:
+        pnt_configPage = (byte *)&configPage3;
+        //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
+        if( offset < page_size)
         {
-          //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-          if( offset < page_size)
-          {
-            *(pnt_configPage + byte(offset - 80)) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
-          }
-          return;
+          *(pnt_configPage + (byte)offset) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
         }
         break;
       
@@ -288,9 +293,8 @@ void receiveValue(byte offset, byte newValue)
         //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
         if( offset < page_size)
         {
-          *(pnt_configPage + byte(offset)) = newValue;
+          *(pnt_configPage + (byte)offset) = newValue;
         }
-        return;
         break;
       
       default:
@@ -305,74 +309,101 @@ Note that some translation of the data is required to lay it out in the way Mega
 */
 void sendPage()
 {
-  byte response[page_size];
-  byte offset;
   byte* pnt_configPage;
   
   switch (currentPage) 
   {
-      case vePage:
+      case veMapPage:
+      {
         //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
         //MS format has origin (0,0) in the bottom left corner, we use the top left for efficiency reasons
-        for(byte x=0;x<64;x++) { response[x] = fuelTable.values[7-x/8][x%8]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged
-        for(byte x=64;x<72;x++) { response[x] = byte(fuelTable.axisX[(x-64)] / 100); } //RPM Bins for VE table (Need to be dvidied by 100)
-        for(byte y=72;y<80;y++) { response[y] = byte(fuelTable.axisY[7-(y-72)]); } //MAP or TPS bins for VE table 
+        byte response[map_page_size];
         
+        for(int x=0;x<256;x++) { response[x] = fuelTable.values[15-x/16][x%16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged
+        for(int x=256;x<272;x++) { response[x] = byte(fuelTable.axisX[(x-256)] / 100); } //RPM Bins for VE table (Need to be dvidied by 100)
+        for(int y=272;y<288;y++) { response[y] = byte(fuelTable.axisY[15-(y-272)]); } //MAP or TPS bins for VE table 
+        Serial.write((byte *)&response, sizeof(response));
+        break;
+      }
+        
+      case veSetPage:
+      {
         //All other bytes can simply be copied from the config table
-        pnt_configPage = (byte *)&configPage1; //Create a pointer to Page 1 in memory
-        offset = 80; //Offset is based on the amount already copied above (table + bins)
+        byte response[page_size];
         
-        for(byte x=offset; x<page_size; x++)
+        pnt_configPage = (byte *)&configPage1; //Create a pointer to Page 1 in memory
+        for(byte x=0; x<page_size; x++)
         { 
-          response[x] = *(pnt_configPage + byte(x - offset)); //Each byte is simply the location in memory of configPage1 + the offset + the variable number (x)
+          response[x] = *(pnt_configPage + x); //Each byte is simply the location in memory of configPage1 + the offset + the variable number (x)
         }
         Serial.write((byte *)&response, sizeof(response));
-        //Serial.flush();
         break;
+      }
         
-      case ignPage:
+      case ignMapPage:
+      {
         //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
-        for(byte x=0;x<64;x++) { response[x] = ignitionTable.values[7-x/8][x%8]; }
-        for(byte x=64;x<72;x++) { response[x] = byte(ignitionTable.axisX[(x-64)] / 100); }
-        for(byte y=72;y<80;y++) { response[y] = byte(ignitionTable.axisY[7-(y-72)]); }
+        byte response[map_page_size];
         
+        for(int x=0;x<256;x++) { response[x] = ignitionTable.values[15-x/16][x%16]; }
+        for(int x=256;x<272;x++) { response[x] = byte(ignitionTable.axisX[(x-256)] / 100); }
+        for(int y=272;y<288;y++) { response[y] = byte(ignitionTable.axisY[15-(y-272)]); }
+        Serial.write((byte *)&response, sizeof(response));
+        break;
+      }
+        
+      case ignSetPage:
+      {
         //All other bytes can simply be copied from the config table
+        byte response[page_size];
+        
         pnt_configPage = (byte *)&configPage2; //Create a pointer to Page 2 in memory
-        offset = 80; //Offset is based on the amount already copied above (table + bins)
-        for(byte x=offset; x<page_size; x++)
+        for(byte x=0; x<page_size; x++)
         { 
-          response[x] = *(pnt_configPage + byte(x - offset)); //Each byte is simply the location in memory of configPage2 + the offset + the variable number (x)
+          response[x] = *(pnt_configPage + x); //Each byte is simply the location in memory of configPage2 + the offset + the variable number (x)
         }
         Serial.write((byte *)&response, sizeof(response)); 
-        //Serial.flush();
         break;
+      }
         
-      case afrPage:
+      case afrMapPage:
+      {
         //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
-        for(byte x=0;x<64;x++) { response[x] = afrTable.values[7-x/8][x%8]; }
-        for(byte x=64;x<72;x++) { response[x] = byte(afrTable.axisX[(x-64)] / 100); }
-        for(byte y=72;y<80;y++) { response[y] = byte(afrTable.axisY[7-(y-72)]); }
+        byte response[map_page_size];
         
+        for(int x=0;x<256;x++) { response[x] = afrTable.values[15-x/16][x%16]; }
+        for(int x=256;x<272;x++) { response[x] = byte(afrTable.axisX[(x-256)] / 100); }
+        for(int y=272;y<288;y++) { response[y] = byte(afrTable.axisY[15-(y-272)]); }
+        Serial.write((byte *)&response, sizeof(response));
+        break;
+      }
+        
+      case afrSetPage:
+      {
         //All other bytes can simply be copied from the config table
+        byte response[page_size];
+        
         pnt_configPage = (byte *)&configPage3; //Create a pointer to Page 2 in memory
-        offset = 80; //Offset is based on the amount already copied above (table + bins)
-        for(byte x=offset; x<page_size; x++)
+        for(byte x=0; x<page_size; x++)
         { 
-          response[x] = *(pnt_configPage + byte(x - offset)); //Each byte is simply the location in memory of configPage2 + the offset + the variable number (x)
+          response[x] = *(pnt_configPage + x); //Each byte is simply the location in memory of configPage2 + the offset + the variable number (x)
         }
         Serial.write((byte *)&response, sizeof(response)); 
-        //Serial.flush();
         break;
+      }
         
       case iacPage:
+      {
+        byte response[page_size];
+      
         pnt_configPage = (byte *)&configPage4; //Create a pointer to Page 2 in memory
-        offset = 0; //No offset required on page 4
-        for(byte x=offset; x<page_size; x++)
+        for(byte x=0; x<page_size; x++)
         { 
-          response[x] = *(pnt_configPage + byte(x)); //Each byte is simply the location in memory of configPage2 + the offset + the variable number (x)
+          response[x] = *(pnt_configPage + x); //Each byte is simply the location in memory of configPage2 + the offset + the variable number (x)
         }
         Serial.write((byte *)&response, sizeof(response)); 
         break;
+      }
         
       default:
 	break;

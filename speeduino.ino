@@ -286,7 +286,7 @@ void setup()
 }
 
 void loop() 
-  {
+{
     
       mainLoopCount++;    
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
@@ -299,7 +299,7 @@ void loop()
           command();
         }
       }
-      
+
       if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
      
     //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
