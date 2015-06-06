@@ -147,8 +147,10 @@ int getRPM_BasicDistributor()
 int getCrankAngle_BasicDistributor(int timePerDegree)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    noInterrupts();
     int crankAngle = (toothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
     crankAngle += ldiv( (micros() - toothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+    interrupts();
     if (crankAngle > 360) { crankAngle -= 360; }
     
     return crankAngle;

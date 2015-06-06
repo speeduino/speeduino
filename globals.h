@@ -101,7 +101,7 @@ struct config1 {
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
-  byte unused96;
+  byte unused16;
   byte tdePct; // TPS decelleration (%)
   byte taeColdA;
   byte tpsThresh;
@@ -111,9 +111,11 @@ struct config1 {
   byte displayType : 3;
   byte display1 : 3;
   byte display2 : 2;
+  
   byte display3 : 3;
   byte display4 : 2;
   byte display5 : 3;
+  
   byte displayB1 : 4;
   byte displayB2 : 4;
   
@@ -126,7 +128,6 @@ struct config1 {
   unsigned int inj3Ang; 
   unsigned int inj4Ang; 
 
-//116
   //config1 in ini
   byte mapType : 2;
   byte strokes : 1;
@@ -147,15 +148,30 @@ struct config1 {
   byte injTiming : 2;
   
   byte primePulse;
-  byte egoRPM;
-  byte fastIdleT; //Fast idle temperature
+  byte unused40;
+  byte unused41;
   byte egoSwitch;
   byte taeColdM;
   byte tpsMin;
   byte tpsMax;
-  byte unused1;
-
-  //48
+  byte unused46;
+  byte unused47;
+  byte unused48;
+  byte unused49;
+  byte unused50;
+  byte unused51;
+  byte unused52;
+  byte unused53;
+  byte unused54;
+  byte unused55;
+  byte unused56;
+  byte unused57;
+  byte unused58;
+  byte unused59;
+  byte unused60;
+  byte unused61;
+  byte unused62;
+  byte unused63;
   
 };
 
@@ -196,7 +212,22 @@ struct config2 {
   byte wueBins[10]; //Warmup Enrichment bins (Values are in configTable1)
   byte dwellLimit;
   byte dwellCorrectionValues[6]; //Correction table for dwell vs battery voltage
-  //Full - All 128bytes of this table are used
+  byte unused48;
+  byte unused49;
+  byte unused50;
+  byte unused51;
+  byte unused52;
+  byte unused53;
+  byte unused54;
+  byte unused55;
+  byte unused56;
+  byte unused57;
+  byte unused58;
+  byte unused59;
+  byte unused60;
+  byte unused61;
+  byte unused62;
+  byte unused63;
 
   
 };
@@ -227,9 +258,25 @@ struct config3 {
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
   byte airDenBins[9];
   byte airDenRates[9];
-  byte unused125;
-  byte unused126;
-  byte unused127;
+  byte unused45;
+  byte unused46;
+  byte unused47;
+  byte unused48;
+  byte unused49;
+  byte unused50;
+  byte unused51;
+  byte unused452;
+  byte unused53;
+  byte unused54;
+  byte unused55;
+  byte unused56;
+  byte unused57;
+  byte unused58;
+  byte unused59;
+  byte unused60;
+  byte unused61;
+  byte unused62;
+  byte unused63;
 
   
 };
@@ -247,7 +294,7 @@ struct config4 {
   
   byte iacAlgorithm : 3; //Valid values are: "None", "On/Off", "PWM", "PWM Closed Loop", "Stepper", "Stepper Closed Loop"
   byte iacStepTime : 3; //How long to pulse the stepper for to ensure the step completes (ms)
-  byte unused38 : 2;
+  byte unused52 : 2;
   
   byte iacFastTemp; //Fast idle temp when using a simple on/off valve
   
