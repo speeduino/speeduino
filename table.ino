@@ -288,7 +288,7 @@ int get3DTableValue(struct table3D *fromTable, int Y, int X)
     
     if (yMaxValue == yMinValue)
     { q = (float)(Y - yMinValue); }
-    else { q = ((float)(Y - yMaxValue)) / (float)(yMinValue - yMaxValue); }
+    else { q = 1- (((float)(Y - yMaxValue)) / (float)(yMinValue - yMaxValue)); }
     
     float m = (1.0-p) * (1.0-q);
     float n = p * (1-q);
@@ -314,13 +314,11 @@ int get3DTableValue(struct table3D *fromTable, int Y, int X)
     { q = ((long)(Y - yMinValue) << 8); }
     else
     { 
-      q = ((long)(Y - yMaxValue) << 8) / (yMinValue - yMaxValue); 
+      q = 256 - (((long)(Y - yMaxValue) << 8) / (yMinValue - yMaxValue)); 
     }
-      
-    int m = ((257-p) * (257-q)) >> 8;
-    int n = (p * (257-q)) >> 8;
-    int o = ((257-p) * q) >> 8;
+    int m = ((256-p) * (256-q)) >> 8;
+    int n = (p * (256-q)) >> 8;
+    int o = ((256-p) * q) >> 8;
     int r = (p * q) >> 8;
-
     return ( (A * m) + (B * n) + (C * o) + (D * r) ) >> 8;
   }
