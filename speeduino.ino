@@ -340,9 +340,8 @@ void loop()
     {
       currentStatus.TPSlast = currentStatus.TPS;
       currentStatus.TPSlast_time = currentStatus.TPS_time;
-      int tpsTemp = analogRead(pinTPS);
-      currentStatus.tpsADC = fastMap1023toX(tpsTemp, 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
-      currentStatus.TPS = map(tpsTemp, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+      currentStatus.tpsADC = fastMap1023toX(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
+      currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
       currentStatus.TPS_time = currentLoopTime;
     }
     
