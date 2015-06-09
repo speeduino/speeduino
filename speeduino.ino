@@ -333,7 +333,7 @@ void loop()
     //-----------------------------------------------------------------------------------------------------
 
     //currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 10, 255); //Get the current MAP value
-    currentStatus.MAP = fastMap1023toX(analogRead(pinMAP), 0, 1023, 10, 255); //Get the current MAP value
+    currentStatus.MAP = (byte)fastMap1023toX(analogRead(pinMAP), 0, 1023, 10, 255); //Get the current MAP value
     
     //TPS setting to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
     if ((mainLoopCount & 31) == 1)

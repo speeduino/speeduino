@@ -202,13 +202,13 @@ void receiveValue(int offset, byte newValue)
           if (offset < 272) 
           { 
             //X Axis
-            fuelTable.axisX[(offset-256)] = (int(newValue) * 100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+            fuelTable.axisX[(offset-256)] = ((int)(newValue) * 100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
           }
           else
           { 
             //Y Axis
             offset = 15-(offset-272); //Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
-            fuelTable.axisY[offset] = int(newValue);
+            fuelTable.axisY[offset] = (int)(newValue);
           }
           return;
         }
@@ -235,13 +235,13 @@ void receiveValue(int offset, byte newValue)
           if (offset < 272) 
           { 
             //X Axis
-            ignitionTable.axisX[(offset-256)] = int(newValue) * int(100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+            ignitionTable.axisX[(offset-256)] = (int)(newValue) * int(100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
           }
           else
           { 
             //Y Axis
             offset = 15-(offset-272); //Need to do a translation to flip the order 
-            ignitionTable.axisY[offset] = int(newValue);
+            ignitionTable.axisY[offset] = (int)(newValue);
           }
           return;
         }

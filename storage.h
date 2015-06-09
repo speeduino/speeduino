@@ -14,30 +14,6 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 |---------------------------------------------------|
 | 0     |1    | Data structure version              |
 | 1     |2    | X and Y sizes for VE table          |
-| 3     |64   | VE Map (8x8)                        |
-| 67    |8    | VE Table RPM bins                   |
-| 75    |8    | VE Table MAP/TPS bins               |
-| 83    |48   | Remaining Page 1 settings           |
-| 131   |2    | X and Y sizes for Ign table         |
-| 133   |64   | Ignition Map (8x8)                  |
-| 197   |8    | Ign Table RPM bins                  |
-| 205   |8    | Ign Table MAP/TPS bins              |
-| 213   |48   | Remaining Page 2 settings           |
-| 261   |2    | X and Y sizes for AFR table         |
-| 263   |64   | AFR Target Map (8x8)                |
-| 327   |8    | AFR Table RPM bins                  |
-| 335   |8    | AFR Table MAP/TPS bins              |
-| 343   |48   | Remaining Page 3 settings           |
-| 391   |128  | Page 4 settings                     |
-| 2559  |512  | Calibration data (O2)               |
-| 3071  |512  | Calibration data (IAT)              |
-| 3583  |512  | Calibration data (CLT)              |
------------------------------------------------------
-|---------------------------------------------------|
-|Byte # |Size | Description                         |
-|---------------------------------------------------|
-| 0     |1    | Data structure version              |
-| 1     |2    | X and Y sizes for VE table          |
 | 3     |256  | VE Map (16x16)                      |
 | 259   |16   | VE Table RPM bins                   |
 | 275   |16   | VE Table MAP/TPS bins               |
@@ -48,11 +24,11 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 | 629   |16   | Ign Table MAP/TPS bins              |
 | 645   |64   | Page 4 settings (Non-Map page)      |
 | 709   |2    | X and Y sizes for AFR table         |
-| 263   |64   | AFR Target Map (8x8)                |
-| 327   |8    | AFR Table RPM bins                  |
-| 335   |8    | AFR Table MAP/TPS bins              |
-| 343   |48   | Remaining Page 3 settings           |
-| 391   |128  | Page 4 settings                     |
+| 711   |256  | AFR Target Map (16x16)              |
+| 967   |16   | AFR Table RPM bins                  |
+| 983   |16   | AFR Table MAP/TPS bins              |
+| 999   |64   | Remaining Page 3 settings           |
+| 1063  |64   | Page 4 settings                     |
 | 2559  |512  | Calibration data (O2)               |
 | 3071  |512  | Calibration data (IAT)              |
 | 3583  |512  | Calibration data (CLT)              |
