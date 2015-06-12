@@ -148,7 +148,7 @@ struct config1 {
   byte injTiming : 2;
   
   byte primePulse;
-  byte unused40;
+  byte dutyLim;
   byte unused41;
   byte egoSwitch;
   byte taeColdM;

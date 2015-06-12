@@ -13,3 +13,4 @@ volatile int toothHistoryIndex = 0;
 volatile int triggerActualTeeth;
 unsigned int triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 unsigned int triggerToothAngle; //The number of crank degrees that elapse per tooth
+unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)

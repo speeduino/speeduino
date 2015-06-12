@@ -60,4 +60,23 @@ int divs100(int n) {
 // return q + (r > 99);
 }
 
+//Unsigned divide by 100
+unsigned int divu100(unsigned n) {
+ unsigned q, r;
+ q = (n >> 1) + (n >> 3) + (n >> 6) - (n >> 10) +
+ (n >> 12) + (n >> 13) - (n >> 16);
+ q = q + (q >> 20);
+ q = q >> 6;
+ r = n - q*100;
+ return q + ((r + 28) >> 7);
+// return q + (r > 99);
+}
+
+//Return x percent of y
+//This is a relatively fast approximation of a percentage value. 
+unsigned int percentage(byte x, unsigned int y)
+{
+  return divu100(y) * x;
+}
+
 #endif // MATH_H

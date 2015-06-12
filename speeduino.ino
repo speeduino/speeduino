@@ -53,7 +53,8 @@ int req_fuel_uS, inj_opentime_uS;
 #define MAX_RPM 10000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
 volatile byte startRevolutions = 0; //A counter for how many revolutions have been completed since sync was achieved.
-volatile bool ignitionOn = true; //The current state of the ignition system
+bool ignitionOn = false; //The current state of the ignition system
+bool fuelOn = false; //The current state of the ignition system
 
 void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
@@ -320,6 +321,9 @@ void loop()
       currentStatus.hasSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       secCounter = 0; //Reset our seconds counter.
+      startRevolutions = 0;
+      ignitionOn = false;
+      fuelOn = false;
       digitalWrite(pinFuelPump, LOW); //Turn off the fuel pump
     }
     
@@ -369,6 +373,7 @@ void loop()
         { //Sets the engine running bit, clears the engine cranking bit
           BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); 
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+          if(startRevolutions > configPage2.StgCycles) { ignitionOn = true; fuelOn = true;}
         } 
         else 
         {  //Sets the engine cranking bit, clears the engine running bit
@@ -376,8 +381,7 @@ void loop()
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); 
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
           //Check whether enough cranking revolutions have been performed to turn the ignition on
-          if(startRevolutions > configPage2.StgCycles)
-          {ignitionOn = true;}
+          if(startRevolutions > configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;}
         } 
       
       //END SETTING STATUSES
@@ -423,6 +427,10 @@ void loop()
       
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
+      
+      //Check that the duty cycle of the chosen pulsewidth isn't too high
+      unsigned int pwLimit = percentage(configPage1.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+      if (currentStatus.PW > pwLimit) { currentStatus.PW = pwLimit; }
       
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
@@ -542,85 +550,88 @@ void loop()
       //Determine the current crank angle
       int crankAngle = getCrankAngle(timePerDegree);
       
-      if (injector1StartAngle > crankAngle)
-      { 
-        if (configPage1.injTiming == 1)
-        {
-          setFuelSchedule1(openInjector1and4, 
-                    ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                    (unsigned long)currentStatus.PW,
-                    closeInjector1and4
-                    );
+      if (fuelOn)
+      {
+        if (injector1StartAngle > crankAngle)
+        { 
+          if (configPage1.injTiming == 1)
+          {
+            setFuelSchedule1(openInjector1and4, 
+                      ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                      (unsigned long)currentStatus.PW,
+                      closeInjector1and4
+                      );
+          }
+          else
+          {
+            setFuelSchedule1(openInjector1, 
+                      ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                      (unsigned long)currentStatus.PW,
+                      closeInjector1
+                      );
+          }
         }
-        else
-        {
-          setFuelSchedule1(openInjector1, 
-                    ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                    (unsigned long)currentStatus.PW,
-                    closeInjector1
-                    );
+        
+        /*-----------------------------------------------------------------------------------------
+        | A Note on tempCrankAngle and tempStartAngle:
+        |   The use of tempCrankAngle/tempStartAngle is described below. It is then used in the same way for channels 2, 3 and 4 on both injectors and ignition
+        |   Essentially, these 2 variables are used to realign the current crank and and the desired start angle around 0 degrees for the given cylinder/output
+        |   Eg: If cylinder 2 TDC is 180 degrees after cylinder 1 (Eg a standard 4 cylidner engine), then tempCrankAngle is 180* less than the current crank angle and
+        |       tempStartAngle is the desired open time less 180*. Thus the cylinder is being treated relative to its own TDC, regardless of its offset
+        |
+        |   This is done to avoid problems with very short of very long times until tempStartAngle. 
+        |   This will very likely need to be rewritten when sequential is enabled
+        |------------------------------------------------------------------------------------------
+        */
+        tempCrankAngle = crankAngle - channel2Degrees;
+        if( tempCrankAngle < 0) { tempCrankAngle += 360; }
+        tempStartAngle = injector2StartAngle - channel2Degrees;
+        if ( tempStartAngle < 0) { tempStartAngle += 360; }
+        if (tempStartAngle > tempCrankAngle)
+        { 
+          if (configPage1.injTiming == 1)
+          {
+            setFuelSchedule2(openInjector2and3, 
+                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      (unsigned long)currentStatus.PW,
+                      closeInjector2and3
+                      );
+          }
+          else
+          {
+            setFuelSchedule2(openInjector2, 
+                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      (unsigned long)currentStatus.PW,
+                      closeInjector2
+                      );
+          }
         }
-      }
-      
-      /*-----------------------------------------------------------------------------------------
-      | A Note on tempCrankAngle and tempStartAngle:
-      |   The use of tempCrankAngle/tempStartAngle is described below. It is then used in the same way for channels 2, 3 and 4 on both injectors and ignition
-      |   Essentially, these 2 variables are used to realign the current crank and and the desired start angle around 0 degrees for the given cylinder/output
-      |   Eg: If cylinder 2 TDC is 180 degrees after cylinder 1 (Eg a standard 4 cylidner engine), then tempCrankAngle is 180* less than the current crank angle and
-      |       tempStartAngle is the desired open time less 180*. Thus the cylinder is being treated relative to its own TDC, regardless of its offset
-      |
-      |   This is done to avoid problems with very short of very long times until tempStartAngle. 
-      |   This will very likely need to be rewritten when sequential is enabled
-      |------------------------------------------------------------------------------------------
-      */
-      tempCrankAngle = crankAngle - channel2Degrees;
-      if( tempCrankAngle < 0) { tempCrankAngle += 360; }
-      tempStartAngle = injector2StartAngle - channel2Degrees;
-      if ( tempStartAngle < 0) { tempStartAngle += 360; }
-      if (tempStartAngle > tempCrankAngle)
-      { 
-        if (configPage1.injTiming == 1)
-        {
-          setFuelSchedule2(openInjector2and3, 
+        
+        tempCrankAngle = crankAngle - channel3Degrees;
+        if( tempCrankAngle < 0) { tempCrankAngle += 360; }
+        tempStartAngle = injector3StartAngle - channel3Degrees;
+        if ( tempStartAngle < 0) { tempStartAngle += 360; }
+        if (tempStartAngle > tempCrankAngle)
+        { 
+          setFuelSchedule3(openInjector3, 
                     ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                     (unsigned long)currentStatus.PW,
-                    closeInjector2and3
+                    closeInjector3
                     );
         }
-        else
-        {
-          setFuelSchedule2(openInjector2, 
+        
+        tempCrankAngle = crankAngle - channel4Degrees;
+        if( tempCrankAngle < 0) { tempCrankAngle += 360; }
+        tempStartAngle = injector4StartAngle - channel4Degrees;
+        if ( tempStartAngle < 0) { tempStartAngle += 360; }
+        if (tempStartAngle > tempCrankAngle)
+        { 
+          setFuelSchedule4(openInjector4, 
                     ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                     (unsigned long)currentStatus.PW,
-                    closeInjector2
+                    closeInjector4
                     );
         }
-      }
-      
-      tempCrankAngle = crankAngle - channel3Degrees;
-      if( tempCrankAngle < 0) { tempCrankAngle += 360; }
-      tempStartAngle = injector3StartAngle - channel3Degrees;
-      if ( tempStartAngle < 0) { tempStartAngle += 360; }
-      if (tempStartAngle > tempCrankAngle)
-      { 
-        setFuelSchedule3(openInjector3, 
-                  ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                  (unsigned long)currentStatus.PW,
-                  closeInjector3
-                  );
-      }
-      
-      tempCrankAngle = crankAngle - channel4Degrees;
-      if( tempCrankAngle < 0) { tempCrankAngle += 360; }
-      tempStartAngle = injector4StartAngle - channel4Degrees;
-      if ( tempStartAngle < 0) { tempStartAngle += 360; }
-      if (tempStartAngle > tempCrankAngle)
-      { 
-        setFuelSchedule4(openInjector4, 
-                  ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                  (unsigned long)currentStatus.PW,
-                  closeInjector4
-                  );
       }
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
