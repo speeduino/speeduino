@@ -66,7 +66,6 @@ void triggerPri_missingTooth()
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
-   //interrupts();
 }
 
 void triggerSec_missingTooth(){ return; } //This function currently is not used
@@ -74,9 +73,9 @@ void triggerSec_missingTooth(){ return; } //This function currently is not used
 int getRPM_missingTooth()
 {
    noInterrupts();
-   unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
    interrupts(); 
-   return (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long)
+   return (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
 }
 
 int getCrankAngle_missingTooth(int timePerDegree)
@@ -109,7 +108,7 @@ void triggerPri_DualWheel()
 }
 
 
-/* 
+/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Basic Distributor
 Desc: Tooth equal to the number of cylinders are evenly spaced on the cam. No position sensing (Distributor is retained) so crank angle is a made up figure based purely on the first teeth to be seen
 Note: This is a very simple decoder. See http://www.megamanual.com/ms2/GM_7pinHEI.htm
@@ -147,11 +146,78 @@ void triggerSec_BasicDistributor() { return; } //Not required
 int getRPM_BasicDistributor()
 {
    noInterrupts();
-   unsigned long revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
    interrupts(); 
    return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long) 
 }
 int getCrankAngle_BasicDistributor(int timePerDegree)
+{
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables. 
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    interrupts();
+    
+    int crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    crankAngle += ldiv( (micros() - tempToothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+    if (crankAngle > 360) { crankAngle -= 360; }
+    
+    return crankAngle;
+}
+
+/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Name: GM7X
+Desc: GM 7X trigger wheel. It has six equally spaced teeth and a seventh tooth for cylinder identification.
+Note: 
+*/
+void triggerSetup_GM7X()
+{
+  triggerToothAngle = 360 / 6; //The number of degrees that passes from tooth to tooth
+}
+
+void triggerPri_GM7X()
+{
+   curTime = micros();
+   curGap = curTime - toothLastToothTime;
+   toothCurrentCount++; //Increment the tooth counter
+   
+   //High speed tooth logging history
+   toothHistory[toothHistoryIndex] = curGap;
+   if(toothHistoryIndex == 511)
+   { toothHistoryIndex = 0; }
+   else
+   { toothHistoryIndex++; }
+   
+   //Begin the missing tooth detection
+   //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
+   //if ( (curTime - toothLastToothTime) > (1.5 * (toothLastToothTime - toothLastMinusOneToothTime))) { toothCurrentCount = 1; }
+   if(configPage2.triggerMissingTeeth == 1) { targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
+   //else { targetGap = (10 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 2; } //Multiply by 2.5 (Checks for a gap 2.5x greater than the last one)
+   else { targetGap = ((toothLastToothTime - toothLastMinusOneToothTime)) * 2; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
+   if ( curGap > targetGap || toothCurrentCount > 7)
+   { 
+     toothCurrentCount = 1; 
+     toothOneMinusOneTime = toothOneTime;
+     toothOneTime = curTime;
+     currentStatus.hasSync = true;
+     startRevolutions++; //Counter 
+   } 
+   
+   toothLastMinusOneToothTime = toothLastToothTime;
+   toothLastToothTime = curTime;
+}
+void triggerSec_GM7X() { return; } //Not required
+int getRPM_GM7X()
+{
+   noInterrupts();
+   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+   interrupts(); 
+   return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long) 
+}
+int getCrankAngle_GM7X(int timePerDegree)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
