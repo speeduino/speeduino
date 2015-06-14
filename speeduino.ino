@@ -218,6 +218,13 @@ void setup()
       trigger = triggerPri_DualWheel;
       break;
       
+    case 3:
+      triggerSetup_GM7X();
+      trigger = triggerPri_GM7X;
+      getRPM = getRPM_GM7X;
+      getCrankAngle = getCrankAngle_GM7X;
+      break;
+      
     default:
       trigger = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;

@@ -171,7 +171,7 @@ int getCrankAngle_BasicDistributor(int timePerDegree)
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: GM7X
 Desc: GM 7X trigger wheel. It has six equally spaced teeth and a seventh tooth for cylinder identification.
-Note: 
+Note: Within the code below, the sync tooth is referred to as tooth #3 rather than tooth #7. This makes for simpler angle calculations
 */
 void triggerSetup_GM7X()
 {
@@ -180,6 +180,7 @@ void triggerSetup_GM7X()
 
 void triggerPri_GM7X()
 {
+   lastGap = curGap;
    curTime = micros();
    curGap = curTime - toothLastToothTime;
    toothCurrentCount++; //Increment the tooth counter
@@ -191,20 +192,23 @@ void triggerPri_GM7X()
    else
    { toothHistoryIndex++; }
    
-   //Begin the missing tooth detection
-   //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
-   //if ( (curTime - toothLastToothTime) > (1.5 * (toothLastToothTime - toothLastMinusOneToothTime))) { toothCurrentCount = 1; }
-   if(configPage2.triggerMissingTeeth == 1) { targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
-   //else { targetGap = (10 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 2; } //Multiply by 2.5 (Checks for a gap 2.5x greater than the last one)
-   else { targetGap = ((toothLastToothTime - toothLastMinusOneToothTime)) * 2; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
-   if ( curGap > targetGap || toothCurrentCount > 7)
-   { 
+   //
+   if( toothCurrentCount > 7 )
+   {
      toothCurrentCount = 1; 
-     toothOneMinusOneTime = toothOneTime;
+     toothOneMinusOneTime = toothOneTime; 
      toothOneTime = curTime;
-     currentStatus.hasSync = true;
-     startRevolutions++; //Counter 
-   } 
+   }
+   else
+   {
+     targetGap = (lastGap) >> 1; //The target gap is set at half the last tooth gap
+     if ( curGap < targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the magical 3rd tooth
+     { 
+       toothCurrentCount = 3; 
+       currentStatus.hasSync = true;
+       startRevolutions++; //Counter 
+     } 
+   }
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
@@ -228,7 +232,21 @@ int getCrankAngle_GM7X(int timePerDegree)
     tempToothLastToothTime = toothLastToothTime;
     interrupts();
     
-    int crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    //Check if the last tooth seen was the reference tooth (Number 3). All others can be calculated, but tooth 3 has a unique angle
+    int crankAngle;
+    if( tempToothCurrentCount < 3 )
+    {
+      crankAngle = (tempToothCurrentCount - 1) * 60 + 42; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    }
+    else if( tempToothCurrentCount == 3 )
+    {
+      crankAngle = 112;
+    }
+    else
+    {
+      crankAngle = (tempToothCurrentCount - 2) * 60 + 42; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    }
+    
     crankAngle += ldiv( (micros() - tempToothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
     if (crankAngle > 360) { crankAngle -= 360; }
     

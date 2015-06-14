@@ -1,5 +1,6 @@
 volatile unsigned long curTime;
 volatile unsigned int curGap;
+volatile unsigned int lastGap;
 volatile unsigned int targetGap; 
 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
