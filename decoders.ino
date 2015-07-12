@@ -254,3 +254,69 @@ int getCrankAngle_GM7X(int timePerDegree)
 }
 
 
+/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Name: Mitsubishi 4G63 / NA/NB Miata + MX-5 / 4/2
+Desc: TBA
+Note: TBA
+*/
+void triggerSetup_4G63()
+{
+  triggerToothAngle = 180; //The number of degrees that passes from tooth to tooth (primary)
+}
+
+void triggerPri_4G63()
+{
+  curTime = micros();
+  
+  if(toothCurrentCount == 1) { toothCurrentCount == 2; }
+  else
+  { 
+     toothCurrentCount = 1; //Reset the counter
+     toothOneMinusOneTime = toothOneTime;
+     toothOneTime = curTime;
+     currentStatus.hasSync = true;
+     startRevolutions++; //Counter 
+  } 
+  
+   //High speed tooth logging history
+   toothHistory[toothHistoryIndex] = curGap;
+   if(toothHistoryIndex == 511)
+   { toothHistoryIndex = 0; }
+   else
+   { toothHistoryIndex++; }
+   
+   toothLastMinusOneToothTime = toothLastToothTime;
+   toothLastToothTime = curTime;
+}
+void triggerSec_4G63()
+{ 
+
+return; 
+}
+
+
+int getRPM_4G63()
+{
+   noInterrupts();
+   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+   interrupts(); 
+   return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long) 
+}
+int getCrankAngle_4G63(int timePerDegree)
+{
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables. 
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    interrupts();
+    
+    int crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    crankAngle += ldiv( (micros() - tempToothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+    if (crankAngle > 360) { crankAngle -= 360; }
+    
+    return crankAngle;
+}
+
