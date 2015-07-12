@@ -87,10 +87,14 @@ struct statuses currentStatus;
 volatile int mainLoopCount;
 byte ignitionCount;
 unsigned long secCounter; //The next time to increment 'runSecs' counter.
-int channel1Degrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
-int channel2Degrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
-int channel3Degrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
-int channel4Degrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
+int channel1IgnDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
+int channel2IgnDegrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
+int channel3IgnDegrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
+int channel4IgnDegrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
+int channel1InjDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
+int channel2InjDegrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
+int channel3InjDegrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
+int channel4InjDegrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
 int timePerDegree;
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
 
@@ -166,15 +170,15 @@ void setup()
   //Begin the main crank trigger interrupt pin setup
   //The interrupt numbering is a bit odd - See here for reference: http://arduino.cc/en/Reference/AttachInterrupt
   //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly. 
-  int triggerInterrupt = 0; // By default, use the first interrupt
+  byte triggerInterrupt = 0; // By default, use the first interrupt
+  byte triggerInterrupt2 = 1;
   currentStatus.RPM = 0;
   currentStatus.hasSync = false;
   currentStatus.runSecs = 0; 
   currentStatus.secl = 0;
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   
-  switch (pinTrigger) {
-    
+  switch (pinTrigger) {  
     //Arduino Mega 2560 mapping
     case 2:
       triggerInterrupt = 0; break;
@@ -190,7 +194,24 @@ void setup()
       triggerInterrupt = 2; break;
      
   }
+  switch (pinTrigger2) {  
+    //Arduino Mega 2560 mapping
+    case 2:
+      triggerInterrupt2 = 0; break;
+    case 3:
+      triggerInterrupt2 = 1; break;
+    case 18:
+      triggerInterrupt2 = 5; break;
+    case 19:
+      triggerInterrupt2 = 4; break;
+    case 20:
+      triggerInterrupt2 = 3; break;
+    case 21:
+      triggerInterrupt2 = 2; break;
+     
+  }
   pinMode(pinTrigger, INPUT);
+  pinMode(pinTrigger2, INPUT);
   //digitalWrite(pinTrigger, HIGH);
 
   
@@ -204,6 +225,9 @@ void setup()
       triggerSecondary = triggerSec_missingTooth;
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
+      
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       break;
       
     case 1:
@@ -212,6 +236,9 @@ void setup()
       trigger = triggerPri_BasicDistributor;
       getRPM = getRPM_BasicDistributor;
       getCrankAngle = getCrankAngle_BasicDistributor;
+      
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       break;
           
     case 2:
@@ -223,17 +250,32 @@ void setup()
       trigger = triggerPri_GM7X;
       getRPM = getRPM_GM7X;
       getCrankAngle = getCrankAngle_GM7X;
+      
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+      break;
+      
+    case 4:
+      triggerSetup_4G63();
+      trigger = triggerPri_4G63;
+      getRPM = getRPM_4G63;
+      getCrankAngle = getCrankAngle_4G63;
+      
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to 
+      attachInterrupt(triggerInterrupt2, triggerSec_4G63, CHANGE);
       break;
       
     default:
       trigger = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
+      
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       break;
   }
-  if(configPage2.TrigEdge == 0)
-    { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-    else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+
   //End crank triger interrupt attachment
   
   req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
@@ -260,35 +302,84 @@ void setup()
   //Calculate the number of degrees between cylinders
   switch (configPage1.nCylinders) {
     case 1:
-      channel1Degrees = 0;
+      channel1IgnDegrees = 0;
+      channel1InjDegrees = 0;
       break;
     case 2:
-      channel1Degrees = 0;
-      channel2Degrees = 180;
+      channel1IgnDegrees = 0;
+      channel2IgnDegrees = 180;
+      
+      //For alternatiing injection, the squirt occurs at different times for each channel
+      if(configPage1.alternate)
+      {
+        channel1InjDegrees = 0;
+        channel2InjDegrees = 180;
+      }
+      else { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       break;
     case 3:
-      channel1Degrees = 0;
-      channel2Degrees = 120;
-      channel3Degrees = 240;
+      channel1IgnDegrees = 0;
+      channel2IgnDegrees = 120;
+      channel3IgnDegrees = 240;
+      
+      //For alternatiing injection, the squirt occurs at different times for each channel
+      if(configPage1.alternate)
+      {
+        channel1InjDegrees = 0;
+        channel2InjDegrees = 120;
+        channel3InjDegrees = 240;
+      }
+      else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       break;
     case 4:
-      channel1Degrees = 0;
-      channel2Degrees = 180;
+      channel1IgnDegrees = 0;
+      channel2IgnDegrees = 180;
+
+      //For alternatiing injection, the squirt occurs at different times for each channel
+      if(configPage1.alternate)
+      {
+        channel1InjDegrees = 0;
+        channel2InjDegrees = 180;
+      }
+      else { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       break;
     case 6:
-      channel1Degrees = 0;
-      channel2Degrees = 120;
-      channel3Degrees = 240;
+      channel1IgnDegrees = 0;
+      channel2IgnDegrees = 120;
+      channel3IgnDegrees = 240;
+      
+      //For alternatiing injection, the squirt occurs at different times for each channel
+      if(configPage1.alternate)
+      {
+        channel1InjDegrees = 0;
+        channel2InjDegrees = 120;
+        channel3InjDegrees = 240;
+      }
+      else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      
+      configPage1.injTiming = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
       break;
     case 8:
-      channel1Degrees = 0;
-      channel2Degrees = 90;
-      channel3Degrees = 180;
-      channel4Degrees = 270;
+      channel1IgnDegrees = 0;
+      channel2IgnDegrees = 90;
+      channel3IgnDegrees = 180;
+      channel4IgnDegrees = 270;
+      
+      //For alternatiing injection, the squirt occurs at different times for each channel
+      if(configPage1.alternate)
+      {
+        channel1InjDegrees = 0;
+        channel2InjDegrees = 90;
+        channel3InjDegrees = 180;
+        channel4InjDegrees = 270;
+      }
+      else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      
+      configPage1.injTiming = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
       break;
     default: //Handle this better!!!
-      channel1Degrees = 0;
-      channel2Degrees = 180;
+      channel1InjDegrees = 0;
+      channel2InjDegrees = 180;
       break;
   }
 }
@@ -451,35 +542,35 @@ void loop()
       {
         //2 cylinders
         case 2:
-          injector2StartAngle = (configPage1.inj2Ang + channel2Degrees - ( PWdivTimerPerDegree ));
+          injector2StartAngle = (configPage1.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
           if(injector2StartAngle > 360) {injector2StartAngle -= 360;}
           break;
         //3 cylinders
         case 3:
-          injector2StartAngle = (configPage1.inj2Ang + channel2Degrees - ( PWdivTimerPerDegree ));
+          injector2StartAngle = (configPage1.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
           if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
-          injector3StartAngle = (configPage1.inj3Ang + channel3Degrees - ( PWdivTimerPerDegree ));
+          injector3StartAngle = (configPage1.inj3Ang + channel3InjDegrees - ( PWdivTimerPerDegree ));
           if(injector3StartAngle > 360) {injector3StartAngle -= 360;}
           break;
         //4 cylinders
         case 4:
-          injector2StartAngle = (configPage1.inj2Ang + channel2Degrees - ( PWdivTimerPerDegree ));
+          injector2StartAngle = (configPage1.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
           if(injector2StartAngle > 360) {injector2StartAngle -= 360;}
           break;
         //6 cylinders
         case 6: 
-          injector2StartAngle = (configPage1.inj2Ang + channel2Degrees - ( PWdivTimerPerDegree ));
+          injector2StartAngle = (configPage1.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
           if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
-          injector3StartAngle = (configPage1.inj3Ang + channel3Degrees - ( PWdivTimerPerDegree ));
+          injector3StartAngle = (configPage1.inj3Ang + channel3InjDegrees - ( PWdivTimerPerDegree ));
           if(injector3StartAngle > 360) {injector3StartAngle -= 360;}
           break;
         //8 cylinders
         case 8: 
-          injector2StartAngle = (configPage1.inj2Ang + channel2Degrees - ( PWdivTimerPerDegree ));
+          injector2StartAngle = (configPage1.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
           if(injector2StartAngle > 360) {injector2StartAngle -= 360;} 
-          injector3StartAngle = (configPage1.inj3Ang + channel3Degrees - ( PWdivTimerPerDegree ));
+          injector3StartAngle = (configPage1.inj3Ang + channel3InjDegrees - ( PWdivTimerPerDegree ));
           if(injector3StartAngle > 360) {injector3StartAngle -= 360;}
-          injector4StartAngle = (configPage1.inj4Ang + channel4Degrees - ( PWdivTimerPerDegree ));
+          injector4StartAngle = (configPage1.inj4Ang + channel4InjDegrees - ( PWdivTimerPerDegree ));
           if(injector4StartAngle > 360) {injector4StartAngle -= 360;}
           break;
         //Will hit the default case on 1 cylinder or >8 cylinders. Do nothing in these cases
@@ -510,36 +601,36 @@ void loop()
       {
         //2 cylinders
         case 2:
-          ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle;
+          ignition2StartAngle = channel2IgnDegrees + 360 - currentStatus.advance - dwellAngle;
           if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;}
           break;
         //3 cylinders
         case 3:
-          ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle;
+          ignition2StartAngle = channel2IgnDegrees + 360 - currentStatus.advance - dwellAngle;
           if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
-          ignition3StartAngle = channel3Degrees + 360 - currentStatus.advance - dwellAngle;
+          ignition3StartAngle = channel3IgnDegrees + 360 - currentStatus.advance - dwellAngle;
           if(ignition3StartAngle > 360) {ignition3StartAngle -= 360;}
           break;
         //4 cylinders
         case 4:
-          ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle; //(div((configPage2.dwellRun*100), timePerDegree).quot ));
+          ignition2StartAngle = channel2IgnDegrees + 360 - currentStatus.advance - dwellAngle; //(div((configPage2.dwellRun*100), timePerDegree).quot ));
           if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;}
           if(ignition2StartAngle < 0) {ignition2StartAngle += 360;}
           break;
         //6 cylinders
         case 6:
-          ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle;
+          ignition2StartAngle = channel2IgnDegrees + 360 - currentStatus.advance - dwellAngle;
           if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
-          ignition3StartAngle = channel3Degrees + 360 - currentStatus.advance - dwellAngle;
+          ignition3StartAngle = channel3IgnDegrees + 360 - currentStatus.advance - dwellAngle;
           if(ignition3StartAngle > 360) {ignition3StartAngle -= 360;}
           break;
         //8 cylinders
         case 8:
-          ignition2StartAngle = channel2Degrees + 360 - currentStatus.advance - dwellAngle;
+          ignition2StartAngle = channel2IgnDegrees + 360 - currentStatus.advance - dwellAngle;
           if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;} 
-          ignition3StartAngle = channel3Degrees + 360 - currentStatus.advance - dwellAngle;
+          ignition3StartAngle = channel3IgnDegrees + 360 - currentStatus.advance - dwellAngle;
           if(ignition3StartAngle > 360) {ignition3StartAngle -= 360;}
-          ignition4StartAngle = channel4Degrees + 360 - currentStatus.advance - dwellAngle;
+          ignition4StartAngle = channel4IgnDegrees + 360 - currentStatus.advance - dwellAngle;
           if(ignition4StartAngle > 360) {ignition4StartAngle -= 360;}
           break;
           
@@ -590,9 +681,9 @@ void loop()
         |   This will very likely need to be rewritten when sequential is enabled
         |------------------------------------------------------------------------------------------
         */
-        tempCrankAngle = crankAngle - channel2Degrees;
+        tempCrankAngle = crankAngle - channel2InjDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
-        tempStartAngle = injector2StartAngle - channel2Degrees;
+        tempStartAngle = injector2StartAngle - channel2InjDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
         if (tempStartAngle > tempCrankAngle)
         { 
@@ -614,9 +705,9 @@ void loop()
           }
         }
         
-        tempCrankAngle = crankAngle - channel3Degrees;
+        tempCrankAngle = crankAngle - channel3InjDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
-        tempStartAngle = injector3StartAngle - channel3Degrees;
+        tempStartAngle = injector3StartAngle - channel3InjDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
         if (tempStartAngle > tempCrankAngle)
         { 
@@ -627,9 +718,9 @@ void loop()
                     );
         }
         
-        tempCrankAngle = crankAngle - channel4Degrees;
+        tempCrankAngle = crankAngle - channel4InjDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
-        tempStartAngle = injector4StartAngle - channel4Degrees;
+        tempStartAngle = injector4StartAngle - channel4InjDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
         if (tempStartAngle > tempCrankAngle)
         { 
@@ -656,9 +747,9 @@ void loop()
                       );
         }
 
-        tempCrankAngle = crankAngle - channel2Degrees;
+        tempCrankAngle = crankAngle - channel2IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
-        tempStartAngle = ignition2StartAngle - channel2Degrees;
+        tempStartAngle = ignition2StartAngle - channel2IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
         if (tempStartAngle > tempCrankAngle)
         { 
@@ -669,9 +760,9 @@ void loop()
                       );
         }
         
-        tempCrankAngle = crankAngle - channel3Degrees;
+        tempCrankAngle = crankAngle - channel3IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
-        tempStartAngle = ignition3StartAngle - channel3Degrees;
+        tempStartAngle = ignition3StartAngle - channel3IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
         if (tempStartAngle > tempCrankAngle)
         { 
@@ -682,9 +773,9 @@ void loop()
                       );
         }
         
-        tempCrankAngle = crankAngle - channel4Degrees;
+        tempCrankAngle = crankAngle - channel4IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
-        tempStartAngle = ignition4StartAngle - channel4Degrees;
+        tempStartAngle = ignition4StartAngle - channel4IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
         if (tempStartAngle > tempCrankAngle)
         { 
