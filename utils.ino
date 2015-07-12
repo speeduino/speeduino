@@ -131,8 +131,8 @@ void setPinMapping(byte boardID)
       pinDisplayReset = 48; // OLED reset pin
       pinSpareTemp1 = A6;
       pinSpareTemp2 = A5;
-      pinTachOut = 5; //Tacho output pin transistori puuttuu 2n2222 tähän ja 1k 12v
-      pinFuelPump = 7; //Fuel pump output 2n2222
+      pinTachOut = 41; //Tacho output pin transistori puuttuu 2n2222 tähän ja 1k 12v
+      pinFuelPump = 42; //Fuel pump output 2n2222
       break;
       
      case 20:
