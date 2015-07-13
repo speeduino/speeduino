@@ -266,6 +266,17 @@ void setup()
       attachInterrupt(triggerInterrupt2, triggerSec_4G63, CHANGE);
       break;
       
+    case 5:
+      triggerSetup_24X();
+      trigger = triggerPri_24X;
+      getRPM = getRPM_24X;
+      getCrankAngle = getCrankAngle_24X;
+      
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to 
+      attachInterrupt(triggerInterrupt2, triggerSec_24X, CHANGE);
+      break;
+      
     default:
       trigger = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;

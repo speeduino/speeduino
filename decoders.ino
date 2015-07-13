@@ -320,3 +320,99 @@ int getCrankAngle_4G63(int timePerDegree)
     return crankAngle;
 }
 
+/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Name: GM 24X
+Desc: TBA
+Note: Useful references:
+http://www.vems.hu/wiki/index.php?page=MembersPage%2FJorgenKarlsson%2FTwentyFourX
+*/
+void triggerSetup_24X()
+{
+  triggerToothAngle = 180; //The number of degrees that passes from tooth to tooth (primary)
+  toothAngles[0] = 12;
+  toothAngles[1] = 18;
+  toothAngles[2] = 33;
+  toothAngles[3] = 48;
+  toothAngles[4] = 63;
+  toothAngles[5] = 78;
+  toothAngles[6] = 102;
+  toothAngles[7] = 108;
+  toothAngles[8] = 123;
+  toothAngles[9] = 138;
+  toothAngles[10] = 162;
+  toothAngles[11] = 177;
+  toothAngles[12] = 183;
+  toothAngles[13] = 198;
+  toothAngles[14] = 222;
+  toothAngles[15] = 237;
+  toothAngles[16] = 252;
+  toothAngles[17] = 258;
+  toothAngles[18] = 282;
+  toothAngles[19] = 288;
+  toothAngles[20] = 312;
+  toothAngles[21] = 327;
+  toothAngles[22] = 342;
+  toothAngles[23] = 357;
+  
+  toothCurrentCount = 25; //We set the initial tooth value to be something that should never be reached. This indicates no sync
+}
+
+void triggerPri_24X()
+{
+  if(toothCurrentCount == 25) { currentStatus.hasSync = false; return; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
+  curTime = micros();
+  curGap = curTime - toothLastToothTime;
+  
+  if(toothCurrentCount == 0)
+  { 
+     toothCurrentCount = 1; //Reset the counter
+     toothOneMinusOneTime = toothOneTime;
+     toothOneTime = curTime;
+     currentStatus.hasSync = true;
+     startRevolutions++; //Counter 
+  }
+  else
+  {
+    toothCurrentCount++; //Increment the tooth counter
+  }
+  
+   //High speed tooth logging history
+   toothHistory[toothHistoryIndex] = curGap;
+   if(toothHistoryIndex == 511)
+   { toothHistoryIndex = 0; }
+   else
+   { toothHistoryIndex++; }
+   
+   toothLastToothTime = curTime;
+}
+void triggerSec_24X()
+{ 
+  toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
+  return; 
+}
+
+int getRPM_24X()
+{
+   noInterrupts();
+   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+   interrupts(); 
+   return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long) 
+}
+int getCrankAngle_24X(int timePerDegree)
+{
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables. 
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    interrupts();
+    
+    int crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was. 
+    crankAngle += ldiv( (micros() - tempToothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+    if (crankAngle > 360) { crankAngle -= 360; }
+    
+    return crankAngle;
+}
+
