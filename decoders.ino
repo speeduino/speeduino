@@ -409,7 +409,95 @@ int getCrankAngle_24X(int timePerDegree)
     tempToothLastToothTime = toothLastToothTime;
     interrupts();
     
-    int crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was. 
+    int crankAngle;
+    if (toothCurrentCount == 0) { crankAngle = 0 + configPage2.triggerAngle; } //This is the special case to handle when the 'last tooth' seen was the cam tooth. 0 is the angle at which the crank tooth goes high (Within 360 degrees). 
+    else { crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle;} //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was. 
+    if (crankAngle > 360) { crankAngle -= 360; }
+    
+    return crankAngle;
+}
+
+/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Name: Jeep 2000
+Desc: For '91 to 2000 6 cylinder Jeep engines
+Note: Quite similar to the 24X setup. 24 crank teeth over 720 degrees, in groups of 4. Crank wheel is high for 360 crank degrees. AS we only need timing within 360 degrees, only 12 tooth angles are defined.
+Tooth number 1 represents the first tooth seen after the cam signal goes high
+http://speeduino.com/forum/download/file.php?id=205
+*/
+void triggerSetup_Jeep2000()
+{
+  triggerToothAngle = 180; //The number of degrees that passes from tooth to tooth (primary)
+  toothAngles[0] = 174;
+  toothAngles[1] = 194;
+  toothAngles[2] = 214;
+  toothAngles[3] = 234;
+  toothAngles[4] = 294;
+  toothAngles[5] = 314;
+  toothAngles[6] = 334;
+  toothAngles[7] = 354;
+  toothAngles[8] = 414;
+  toothAngles[9] = 434;
+  toothAngles[10] = 454;
+  toothAngles[11] = 474;
+  
+  toothCurrentCount = 13; //We set the initial tooth value to be something that should never be reached. This indicates no sync
+}
+
+void triggerPri_Jeep2000()
+{
+  if(toothCurrentCount == 13) { currentStatus.hasSync = false; return; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
+  curTime = micros();
+  curGap = curTime - toothLastToothTime;
+  
+  if(toothCurrentCount == 0)
+  { 
+     toothCurrentCount = 1; //Reset the counter
+     toothOneMinusOneTime = toothOneTime;
+     toothOneTime = curTime;
+     currentStatus.hasSync = true;
+     startRevolutions++; //Counter 
+  }
+  else
+  {
+    toothCurrentCount++; //Increment the tooth counter
+  }
+  
+   //High speed tooth logging history
+   toothHistory[toothHistoryIndex] = curGap;
+   if(toothHistoryIndex == 511)
+   { toothHistoryIndex = 0; }
+   else
+   { toothHistoryIndex++; }
+   
+   toothLastToothTime = curTime;
+}
+void triggerSec_Jeep2000()
+{ 
+  toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
+  return; 
+}
+
+int getRPM_Jeep2000()
+{
+   noInterrupts();
+   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+   interrupts(); 
+   return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long) 
+}
+int getCrankAngle_Jeep2000(int timePerDegree)
+{
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables. 
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    interrupts();
+    
+    int crankAngle;
+    if (toothCurrentCount == 0) { crankAngle = 146 + configPage2.triggerAngle; } //This is the special case to handle when the 'last tooth' seen was the cam tooth. 146 is the angle at which the crank tooth goes high. 
+    else { crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle;} //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was. 
     crankAngle += ldiv( (micros() - tempToothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
     if (crankAngle > 360) { crankAngle -= 360; }
     
