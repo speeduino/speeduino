@@ -257,26 +257,35 @@ int getCrankAngle_GM7X(int timePerDegree)
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Mitsubishi 4G63 / NA/NB Miata + MX-5 / 4/2
 Desc: TBA
-Note: TBA
+Note: http://i39.photobucket.com/albums/e191/Archiqtechnik/DSM/Diagrams/Evo8CrankCamphase_zps8a91152d.jpg
+Tooth #1 is defined as the one where the signal is HIGH when the cam signal is falling. (Isthe 3rd crank pulse in the above diamgram)
 */
 void triggerSetup_4G63()
 {
   triggerToothAngle = 180; //The number of degrees that passes from tooth to tooth (primary)
+  toothCurrentCount = 99; //Fake tooth count represents no sync
+  
+  //Note that these angles are for every rising and falling edge
+  
+  toothAngles[0] = 355; //Falling edge of tooth #1
+  toothAngles[1] = 105; //Rising edge of tooth #2
+  toothAngles[2] = 175; //Falling edge of tooth #2
+  toothAngles[3] = 285; //Rising edge of tooth #1
 }
 
 void triggerPri_4G63()
 {
   curTime = micros();
   
-  if(toothCurrentCount == 1) { toothCurrentCount == 2; }
-  else
+  if(toothCurrentCount == 0 || toothCurrentCount == 4)
   { 
      toothCurrentCount = 1; //Reset the counter
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      currentStatus.hasSync = true;
      startRevolutions++; //Counter 
-  } 
+  }
+  else  { toothCurrentCount++; }
   
    //High speed tooth logging history
    toothHistory[toothHistoryIndex] = curGap;
@@ -290,8 +299,13 @@ void triggerPri_4G63()
 }
 void triggerSec_4G63()
 { 
-
-return; 
+  if(!currentStatus.hasSync)
+  {
+    //Check the status of the crank trigger
+    bool crank = digitalRead(pinTrigger);
+    if(crank) { toothCurrentCount = 0; } //If the crank trigger is currently HIGH, it means we're on tooth #1
+  }
+  return; 
 }
 
 
@@ -313,7 +327,7 @@ int getCrankAngle_4G63(int timePerDegree)
     tempToothLastToothTime = toothLastToothTime;
     interrupts();
     
-    int crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    int crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was. 
     crankAngle += ldiv( (micros() - tempToothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
     if (crankAngle > 360) { crankAngle -= 360; }
     
@@ -412,6 +426,7 @@ int getCrankAngle_24X(int timePerDegree)
     int crankAngle;
     if (toothCurrentCount == 0) { crankAngle = 0 + configPage2.triggerAngle; } //This is the special case to handle when the 'last tooth' seen was the cam tooth. 0 is the angle at which the crank tooth goes high (Within 360 degrees). 
     else { crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle;} //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was. 
+    crankAngle += ldiv( (micros() - tempToothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
     if (crankAngle > 360) { crankAngle -= 360; }
     
     return crankAngle;
