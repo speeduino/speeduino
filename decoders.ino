@@ -257,8 +257,9 @@ int getCrankAngle_GM7X(int timePerDegree)
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Mitsubishi 4G63 / NA/NB Miata + MX-5 / 4/2
 Desc: TBA
-Note: http://i39.photobucket.com/albums/e191/Archiqtechnik/DSM/Diagrams/Evo8CrankCamphase_zps8a91152d.jpg
-Tooth #1 is defined as the one where the signal is HIGH when the cam signal is falling. (Isthe 3rd crank pulse in the above diamgram)
+Note: https://raw.githubusercontent.com/noisymime/speeduino/master/reference/wiki/decoders/4g63_trace.png
+Tooth #1 is defined as the next crank tooth after the crank signal is LOW when the cam signal is rising.
+Tooth number one is at 355* ATDC
 */
 void triggerSetup_4G63()
 {
@@ -303,7 +304,7 @@ void triggerSec_4G63()
   {
     //Check the status of the crank trigger
     bool crank = digitalRead(pinTrigger);
-    if(crank) { toothCurrentCount = 0; } //If the crank trigger is currently HIGH, it means we're on tooth #1
+    if(crank == LOW) { toothCurrentCount = 0; } //If the crank trigger is currently HIGH, it means we're on tooth #1
   }
   return; 
 }

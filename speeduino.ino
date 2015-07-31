@@ -265,7 +265,7 @@ void setup()
       if(configPage2.TrigEdge == 0)
       {
         attachInterrupt(triggerInterrupt, trigger, CHANGE);  // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-        attachInterrupt(triggerInterrupt2, triggerSec_4G63, FALLING);
+        attachInterrupt(triggerInterrupt2, triggerSec_4G63, RISING); //changed
       }
       else
       {
