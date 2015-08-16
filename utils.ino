@@ -89,8 +89,8 @@ void setPinMapping(byte boardID)
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
-      pinCoil1 = 28; //Pin for coil 1
-      pinCoil2 = 24; //Pin for coil 2
+      pinCoil1 = 40; //Pin for coil 1
+      pinCoil2 = 38; //Pin for coil 2
       pinCoil3 = 40; //Pin for coil 3
       pinCoil4 = 36; //Pin for coil 4
       pinTrigger = 19; //The CAS pin
@@ -103,6 +103,8 @@ void setPinMapping(byte boardID)
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
       pinTachOut = 49; //Tacho output pin
+      pinIdle1 = 5; //Single wire idle control
+      pinFuelPump = 45; //Fuel pump output
       break;     
       
     case 10:
