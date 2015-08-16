@@ -272,11 +272,15 @@ void triggerSetup_4G63()
   toothAngles[1] = 105; //Rising edge of tooth #2
   toothAngles[2] = 175; //Falling edge of tooth #2
   toothAngles[3] = 285; //Rising edge of tooth #1
+  
+  triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth. 
 }
 
 void triggerPri_4G63()
 {
   curTime = micros();
+  curGap = curTime - toothLastToothTime;
+  if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime
   
   if(toothCurrentCount == 0 || toothCurrentCount == 4)
   { 
@@ -340,6 +344,7 @@ Name: GM 24X
 Desc: TBA
 Note: Useful references:
 http://www.vems.hu/wiki/index.php?page=MembersPage%2FJorgenKarlsson%2FTwentyFourX
+Provided that the cam signal is used, this decoder simply counts the teeth and then looks their angles up against a lookup table. The cam signal is used to determine tooth #1
 */
 void triggerSetup_24X()
 {
