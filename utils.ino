@@ -206,6 +206,7 @@ void setPinMapping(byte boardID)
   pinMode(pinTPS, INPUT);
   pinMode(pinIAT, INPUT);
   pinMode(pinCLT, INPUT);
+  pinMode(pinBat, INPUT);
   
   //
   digitalWrite(pinMAP, HIGH);
