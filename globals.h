@@ -282,7 +282,7 @@ struct config3 {
 };
 
 //Page 4 of the config mostly deals with idle control
-//See ini file for further info
+//See ini file for further info (Config Page 7 in the ini)
 struct config4 {
   byte iacCLValues[10]; //Closed loop target RPM value
   byte iacOLStepVal[10]; //Open loop step values for stepper motors
