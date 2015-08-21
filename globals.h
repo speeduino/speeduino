@@ -184,6 +184,9 @@ struct config2 {
   int triggerAngle;
   byte FixAng;
   byte CrankAng;
+  byte CamtriggerAngle;
+  byte CamFixAng;
+  byte CamAng;
   byte IgHold;
   
   byte TrigEdge : 1;
@@ -191,6 +194,7 @@ struct config2 {
   byte IgInv : 1;
   byte oddfire : 1;
   byte TrigPattern : 4;
+  byte CamTrigPattern : 4;
   
   byte IdleAdv;
   byte IdleAdvTPS;
@@ -203,6 +207,8 @@ struct config2 {
   byte dwellRun; //Dwell time whilst running 
   byte triggerTeeth; //The full count of teeth on the trigger wheel if there were no gaps
   byte triggerMissingTeeth; //The size of the tooth gap (ie number of missing teeth)
+  byte CamtriggerTeeth; // full count of teeth on the cam trigger wheel if no gaps
+  byte CamtriggerMissingTeeth;  //the number of teeth missing in the gap
   byte crankRPM; //RPM below which the engine is considered to be cranking
   byte floodClear; //TPS value that triggers flood clear mode (No fuel whilst cranking)
   byte SoftRevLim; //Soft rev limit (RPM/100)
@@ -374,6 +380,7 @@ extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
 extern volatile int toothHistory[512];
 extern volatile int toothHistoryIndex;
-
+extern volatile int CamToothHistory[512];
+extern volatile int CamtoothHistoryIndex;
 
 #endif // GLOBALS_H

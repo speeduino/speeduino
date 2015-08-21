@@ -60,6 +60,7 @@ void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relev
 void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
 int (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
 int (*getCrankAngle)(int); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
+int (*getCamAngle)(int);  //getcamangle function pointer
 
 struct table3D fuelTable; //8x8 fuel map
 struct table3D ignitionTable; //8x8 ignition map
@@ -213,6 +214,7 @@ void setup()
   }
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
+  pinMode(pinTrigger3, INPUT);
   //digitalWrite(pinTrigger, HIGH);
 
   
@@ -243,7 +245,16 @@ void setup()
       break;
           
     case 2:
+      //dual missing teeth
+      triggerSetup_DualmissingTooth();
       trigger = triggerPri_DualWheel;
+      triggerSecondary = triggerSec_DualmissingTooth;
+      getRPM = getRPM_DualmissingTooth;
+      getCrankAngle = getCrankAngle_DualmissingTooth;
+      getCamAngle = getCamAngle_DualmissingTooth;
+      
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       break;
       
     case 3:

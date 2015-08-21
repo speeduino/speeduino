@@ -11,12 +11,31 @@ volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros(
 volatile int toothHistory[512];
 volatile int toothHistoryIndex = 0;
 
+volatile unsigned long CamcurTime;
+volatile unsigned int CamcurGap;
+volatile unsigned int CamlastGap;
+volatile unsigned int CamtargetGap; 
+
+volatile int CamtoothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
+volatile unsigned long CamtoothLastToothTime = 0; //The time (micros()) that the last tooth was registered
+volatile unsigned long CamtoothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
+volatile unsigned long CamtoothOneTime = 0; //The time (micros()) that tooth 1 last triggered
+volatile unsigned long CamtoothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
+volatile int CamtoothHistory[512];
+volatile int CamtoothHistoryIndex = 0;
+
 volatile byte secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
 volatile unsigned long secondaryLastToothTime = 0; //The time (micros()) that the last tooth was registered (Cam input)
 
 volatile int triggerActualTeeth;
 unsigned int triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 unsigned int triggerToothAngle; //The number of crank degrees that elapse per tooth
+
+volatile int CamtriggerActualTeeth;
+unsigned int CamtriggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
+unsigned int CamtriggerToothAngle; //The number of crank degrees that elapse per tooth
+
+
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 
 unsigned int toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
