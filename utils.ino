@@ -10,16 +10,16 @@ Returns how much free dynamic memory exists (between heap and stack)
 */
 #include "utils.h"
 
-int freeRam ()
+int freeRam () 
 {
-  extern int __heap_start, *__brkval;
-  int v;
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+  extern int __heap_start, *__brkval; 
+  int v; 
+  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
 }
 
 void setPinMapping(byte boardID)
 {
-  switch (boardID)
+  switch(boardID)
   {
     case 0:
       //Pin mappings as per the v0.1 shield
@@ -105,10 +105,8 @@ void setPinMapping(byte boardID)
       pinTachOut = 49; //Tacho output pin
       pinIdle1 = 5; //Single wire idle control
       pinFuelPump = 45; //Fuel pump output
-      pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinStepperStep = 17; //Step pin for DRV8825 driver
-      break;
-
+      break;     
+      
     case 10:
       //Pin mappings for user turtanas PCB
       pinInjector1 = 4; //Output pin injector 1 is on
@@ -138,8 +136,8 @@ void setPinMapping(byte boardID)
       pinTachOut = 41; //Tacho output pin transistori puuttuu 2n2222 tähän ja 1k 12v
       pinFuelPump = 42; //Fuel pump output 2n2222
       break;
-
-    case 20:
+      
+     case 20:
       //Pin mappings as per the Plazomat In/Out shields Rev 0.1
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on
@@ -165,7 +163,6 @@ void setPinMapping(byte boardID)
       pinTPS = A2;//TPS input pin
       pinCLT = A1; //CLS sensor pin
       pinIAT = A0; //IAT sensor pin
-<<<<<<< HEAD:speeduino/utils.ino
       
     case 30:
       //Pin mappings as per the dazv6 shield
@@ -203,9 +200,6 @@ void setPinMapping(byte boardID)
       pinSpareLOut5 = 53;
       break; 
       
-=======
-
->>>>>>> 998a97bfece9cafb53d043a4eede4f284325a6eb:utils.ino
     default:
       //Pin mappings as per the v0.2 shield
       pinInjector1 = 8; //Output pin injector 1 is on
@@ -241,7 +235,6 @@ void setPinMapping(byte boardID)
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
-<<<<<<< HEAD:speeduino/utils.ino
   pinMode(pinSpareHOut1, OUTPUT);
   pinMode(pinSpareHOut2, OUTPUT);
   pinMode(pinBoost, OUTPUT);
@@ -251,9 +244,6 @@ void setPinMapping(byte boardID)
   pinMode(pinSpareLOut4, OUTPUT);
   pinMode(pinSpareLOut5, OUTPUT);
   
-=======
-
->>>>>>> 998a97bfece9cafb53d043a4eede4f284325a6eb:utils.ino
   //And for inputs
   pinMode(pinMAP, INPUT);
   pinMode(pinO2, INPUT);
@@ -262,9 +252,7 @@ void setPinMapping(byte boardID)
   pinMode(pinIAT, INPUT);
   pinMode(pinCLT, INPUT);
   pinMode(pinBat, INPUT);
-  pinMode(pinTrigger, INPUT);
-  pinMode(pinTrigger2, INPUT);
-
+  
   //
   digitalWrite(pinMAP, HIGH);
   //digitalWrite(pinO2, LOW);
@@ -280,33 +268,31 @@ GammaE: Sum of Enrichment factors (Cold start, acceleration). This is a multipli
 injDT: Injector dead time. The time the injector take to open minus the time it takes to close (Both in uS)
 TPS: Throttle position (0% to 100%)
 
-This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N calculations respectively.
+This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N calculations respectively. 
 */
 unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, byte TPS)
-{
-  //Standard float version of the calculation
-  //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
-  //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
+  {
+    //Standard float version of the calculation
+    //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
+    //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
+    
+    //100% float free version, does sacrifice a little bit of accuracy.
+    int iVE = ((int)VE << 7) / 100;
+    //int iVE = divs100( ((int)VE << 7));
+    //int iMAP = ((int)MAP << 7) / 100;
+    int iCorrections = (corrections << 7) / 100;
+    //int iTPS = ((int)TPS << 7) / 100;
 
-  //100% float free version, does sacrifice a little bit of accuracy.
-  int iVE = ((int)VE << 7) / 100;
-  //int iVE = divs100( ((int)VE << 7));
-  //int iMAP = ((int)MAP << 7) / 100;
-  int iCorrections = (corrections << 7) / 100;
-  //int iTPS = ((int)TPS << 7) / 100;
+    unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >>7; //Need to use an intermediate value to avoid overflowing the long
+    //intermediate = (intermediate * iMAP) >> 7;
+    intermediate = (intermediate * iCorrections) >> 7;
+    //intermediate = (intermediate * iTPS) >> 7;
+    intermediate += injOpen; //Add the injector opening time
+    if ( intermediate > 65535) { intermediate = 65535; } //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
+    return (unsigned int)(intermediate);
 
-  unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
-  //intermediate = (intermediate * iMAP) >> 7;
-  intermediate = (intermediate * iCorrections) >> 7;
-  //intermediate = (intermediate * iTPS) >> 7;
-  intermediate += injOpen; //Add the injector opening time
-  if ( intermediate > 65535) {
-    intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
   }
-  return (unsigned int)(intermediate);
-
-}
-
+ 
 //Convenience functions for Speed Density and Alpha-N
 unsigned int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 {
