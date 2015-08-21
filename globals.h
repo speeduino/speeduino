@@ -282,7 +282,7 @@ struct config3 {
 };
 
 //Page 4 of the config mostly deals with idle control
-//See ini file for further info
+//See ini file for further info (Config Page 7 in the ini)
 struct config4 {
   byte iacCLValues[10]; //Closed loop target RPM value
   byte iacOLStepVal[10]; //Open loop step values for stepper motors
@@ -342,6 +342,8 @@ byte pinSpareOut4; //Generic output
 byte pinSpareOut5; //Generic output
 byte pinSpareOut6; //Generic output
 byte pinFan;       // Cooling fan output
+byte pinStepperDir; //Direction pin for the stepper motor driver
+byte pinStepperStep; //Step pin for the stepper motor driver
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
