@@ -102,6 +102,138 @@ Name: Missing tooth wheel
 Desc: A multi-tooth wheel with one of more 'missing' teeth. The first tooth after the missing one is considered number 1 and isthe basis for the trigger angle
 Note: This does not currently support dual wheel (ie missing tooth + single tooth on cam)
 */
+void triggerSetup_DualmissingTooth()
+{
+  triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
+  triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
+
+  CamtriggerToothAngle = 360 / configPage2.CamtriggerTeeth; //The number of degrees that passes from tooth to tooth
+  CamtriggerActualTeeth = configPage2.CamtriggerTeeth - configPage2.CamtriggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
+  
+}
+
+void triggerPri_DualmissingTooth()
+{
+   // http://www.msextra.com/forums/viewtopic.php?f=94&t=22976
+   // http://www.megamanual.com/ms2/wheel.htm
+
+   curTime = micros();
+   curGap = curTime - toothLastToothTime;
+   if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+   toothCurrentCount++; //Increment the tooth counter
+   
+   //High speed tooth logging history
+   toothHistory[toothHistoryIndex] = curGap;
+   if(toothHistoryIndex == 511)
+   { toothHistoryIndex = 0; }
+   else
+   { toothHistoryIndex++; }
+   
+   //Begin the missing tooth detection
+   //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
+   //if ( (curTime - toothLastToothTime) > (1.5 * (toothLastToothTime - toothLastMinusOneToothTime))) { toothCurrentCount = 1; }
+   if(configPage2.triggerMissingTeeth == 1) { targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
+   //else { targetGap = (10 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 2; } //Multiply by 2.5 (Checks for a gap 2.5x greater than the last one)
+   else { targetGap = ((toothLastToothTime - toothLastMinusOneToothTime)) * 2; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
+   if ( curGap > targetGap || toothCurrentCount > triggerActualTeeth)
+   { 
+     toothCurrentCount = 1; 
+     toothOneMinusOneTime = toothOneTime;
+     toothOneTime = curTime;
+     currentStatus.hasSync = true;
+     startRevolutions++; //Counter 
+   } 
+   
+   toothLastMinusOneToothTime = toothLastToothTime;
+   toothLastToothTime = curTime;
+}
+
+void triggerSec_DualmissingTooth()
+{ 
+    CamcurTime = micros();
+   CamcurGap = CamcurTime - CamtoothLastToothTime;
+   if ( CamcurGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+   CamtoothCurrentCount++; //Increment the tooth counter
+   
+   //High speed tooth logging history
+   CamtoothHistory[CamtoothHistoryIndex] = CamcurGap;
+   if(CamtoothHistoryIndex == 511)
+   { CamtoothHistoryIndex = 0; }
+   else
+   { CamtoothHistoryIndex++; }
+   
+   //Begin the missing tooth detection
+   //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
+   //if ( (curTime - toothLastToothTime) > (1.5 * (toothLastToothTime - toothLastMinusOneToothTime))) { toothCurrentCount = 1; }
+   if(configPage2.CamtriggerMissingTeeth == 1) { targetGap = (3 * (CamtoothLastToothTime - CamtoothLastMinusOneToothTime)) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
+   //else { targetGap = (10 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 2; } //Multiply by 2.5 (Checks for a gap 2.5x greater than the last one)
+   else { CamtargetGap = ((CamtoothLastToothTime - CamtoothLastMinusOneToothTime)) * 2; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
+   if ( CamcurGap > CamtargetGap || CamtoothCurrentCount > CamtriggerActualTeeth)
+   { 
+     CamtoothCurrentCount = 1; 
+     CamtoothOneMinusOneTime = CamtoothOneTime;
+     CamtoothOneTime = CamcurTime;
+     currentStatus.hasSync = true;
+     startRevolutions++; //Counter 
+   } 
+   
+   CamtoothLastMinusOneToothTime = CamtoothLastToothTime;
+   CamtoothLastToothTime = CamcurTime;
+  //return; } //This function currently is not used
+}
+
+int getRPM_DualmissingTooth()
+{
+   noInterrupts();
+   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+   interrupts(); 
+   return (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
+}
+
+int getCrankAngle_DualmissingTooth(int timePerDegree)
+{
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables. 
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    interrupts();
+    
+    int crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    crankAngle += ( (micros() - tempToothLastToothTime) / timePerDegree); //Estimate the number of degrees travelled since the last tooth
+
+    if (crankAngle > 360) { crankAngle -= 360; }
+    
+    return crankAngle;
+}
+
+
+int getCamAngle_DualmissingTooth(int CamtimePerDegree)
+{
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempCamToothLastToothTime;
+    int tempCamToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables. 
+    noInterrupts();
+    tempCamToothCurrentCount = CamtoothCurrentCount;
+    tempCamToothLastToothTime = CamtoothLastToothTime;
+    interrupts();
+    
+    int camAngle = (tempCamToothCurrentCount - 1) * CamtriggerToothAngle + configPage2.CamtriggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    camAngle += ( (micros() - tempCamToothLastToothTime) / CamtimePerDegree); //Estimate the number of degrees travelled since the last tooth
+
+    if (camAngle > 360) { camAngle -= 360; }
+    
+    return camAngle;
+}
+
+/* 
+Name: Missing tooth wheel
+Desc: A multi-tooth wheel with one of more 'missing' teeth. The first tooth after the missing one is considered number 1 and isthe basis for the trigger angle
+Note: This does not currently support dual wheel (ie missing tooth + single tooth on cam)
+*/
 void triggerPri_DualWheel()
 { 
   return;

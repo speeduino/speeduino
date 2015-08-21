@@ -55,12 +55,14 @@ struct statuses {
   byte tpsDOT;
   byte VE;
   byte O2;
+  byte O2_2;
   int coolant;
   int cltADC;
   int IAT;
   int iatADC;
   int batADC;
   int O2ADC;
+  int O2_2ADC;
   int dwell;
   byte dwellCorrection; //The amount of correction being applied to the dwell time.
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
@@ -182,6 +184,9 @@ struct config2 {
   int triggerAngle;
   byte FixAng;
   byte CrankAng;
+  byte CamtriggerAngle;
+  byte CamFixAng;
+  byte CamAng;
   byte IgHold;
   
   byte TrigEdge : 1;
@@ -189,6 +194,7 @@ struct config2 {
   byte IgInv : 1;
   byte oddfire : 1;
   byte TrigPattern : 4;
+  byte CamTrigPattern : 4;
   
   byte IdleAdv;
   byte IdleAdvTPS;
@@ -201,6 +207,8 @@ struct config2 {
   byte dwellRun; //Dwell time whilst running 
   byte triggerTeeth; //The full count of teeth on the trigger wheel if there were no gaps
   byte triggerMissingTeeth; //The size of the tooth gap (ie number of missing teeth)
+  byte CamtriggerTeeth; // full count of teeth on the cam trigger wheel if no gaps
+  byte CamtriggerMissingTeeth;  //the number of teeth missing in the gap
   byte crankRPM; //RPM below which the engine is considered to be cranking
   byte floodClear; //TPS value that triggers flood clear mode (No fuel whilst cranking)
   byte SoftRevLim; //Soft rev limit (RPM/100)
@@ -282,7 +290,7 @@ struct config3 {
 };
 
 //Page 4 of the config mostly deals with idle control
-//See ini file for further info (Config Page 7 in the ini)
+//See ini file for further info
 struct config4 {
   byte iacCLValues[10]; //Closed loop target RPM value
   byte iacOLStepVal[10]; //Open loop step values for stepper motors
@@ -321,13 +329,15 @@ byte pinCoil3; //Pin for coil 3
 byte pinCoil4; //Pin for coil 4
 byte pinTrigger; //The CAS pin
 byte pinTrigger2; //The Cam Sensor pin
+byte pinTrigger3; //cam sensor 2
 byte pinTPS;//TPS input pin
 byte pinMAP; //MAP sensor pin
 byte pinMAP2; //2nd MAP sensor (Currently unused)
 byte pinIAT; //IAT sensor pin
 byte pinCLT; //CLS sensor pin
 byte pinO2; //O2 Sensor pin
-byte pinBat; //O2 Sensor pin
+byte pinO2_2;  //second O2 sensor
+byte pinBat; //battery voltage test pin
 byte pinDisplayReset; // OLED reset pin
 byte pinTachOut; //Tacho output
 byte pinFuelPump; //Fuel pump on/off
@@ -341,9 +351,16 @@ byte pinSpareOut3; //Generic output
 byte pinSpareOut4; //Generic output
 byte pinSpareOut5; //Generic output
 byte pinSpareOut6; //Generic output
+byte pinSpareHOut1; //spare high current output
+byte pinSpareHOut2; // spare high current output
+byte pinSpareLOut1; // spare low current output
+byte pinSpareLOut2; // spare low current output
+byte pinSpareLOut3;
+byte pinSpareLOut4;
+byte pinSpareLOut5;
 byte pinFan;       // Cooling fan output
-byte pinStepperDir; //Direction pin for the stepper motor driver
-byte pinStepperStep; //Step pin for the stepper motor driver
+byte pinBoost;
+byte pinVVt;
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
@@ -363,6 +380,7 @@ extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
 extern volatile int toothHistory[512];
 extern volatile int toothHistoryIndex;
-
+extern volatile int CamToothHistory[512];
+extern volatile int CamtoothHistoryIndex;
 
 #endif // GLOBALS_H

@@ -61,6 +61,7 @@ void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relev
 void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
 int (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
 int (*getCrankAngle)(int); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
+int (*getCamAngle)(int);  //getcamangle function pointer
 
 struct table3D fuelTable; //8x8 fuel map
 struct table3D ignitionTable; //8x8 ignition map
@@ -72,6 +73,7 @@ struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D
 byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
+
 
 unsigned long counter;
 unsigned long currentLoopTime; //The time the current loop started (uS)
@@ -213,6 +215,7 @@ void setup()
   }
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
+  pinMode(pinTrigger3, INPUT);
   //digitalWrite(pinTrigger, HIGH);
 
   
@@ -243,7 +246,16 @@ void setup()
       break;
           
     case 2:
+      //dual missing teeth
+      triggerSetup_DualmissingTooth();
       trigger = triggerPri_DualWheel;
+      triggerSecondary = triggerSec_DualmissingTooth;
+      getRPM = getRPM_DualmissingTooth;
+      getCrankAngle = getCrankAngle_DualmissingTooth;
+      getCamAngle = getCamAngle_DualmissingTooth;
+      
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       break;
       
     case 3:
@@ -486,6 +498,8 @@ void loop()
        currentStatus.cltADC = map(analogRead(pinCLT), 0, 1023, 0, 511); //Get the current raw CLT value
        currentStatus.iatADC = map(analogRead(pinIAT), 0, 1023, 0, 511); //Get the current raw IAT value
        currentStatus.O2ADC = map(analogRead(pinO2), 0, 1023, 0, 511); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4. This is the correct calibration for an Innovate Wideband 0v - 5V unit. Proper calibration is still a WIP
+       currentStatus.O2_2ADC = map(analogRead(pinO2_2), 0, 1023, 0, 511); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4. This is the correct calibration for an Innovate Wideband 0v - 5V unit. Proper calibration is still a WIP
+ 
        //currentStatus.battery10 = map(analogRead(pinBat), 0, 1023, 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
        currentStatus.battery10 = fastMap1023toX(analogRead(pinBat), 0, 1023, 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
        //currentStatus.batADC = map(analogRead(pinBat), 0, 1023, 0, 255); //Get the current raw Battery value
@@ -493,6 +507,7 @@ void loop()
        currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
        currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
        currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
+       currentStatus.O2_2 = o2CalibrationTable[currentStatus.O2_2ADC]; //use one calibration table for now
     }
 
     //Always check for sync
