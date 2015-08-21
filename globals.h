@@ -342,6 +342,8 @@ byte pinSpareOut4; //Generic output
 byte pinSpareOut5; //Generic output
 byte pinSpareOut6; //Generic output
 byte pinFan;       // Cooling fan output
+byte pinStepperDir; //Direction pin for the stepper motor driver
+byte pinStepperStep; //Step pin for the stepper motor driver
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
