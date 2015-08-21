@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<msq xmlns="http://www.msefi.com/:msq">
+<bibliography author="TunerStudio MS 2.0.6 - EFI Analytics, Inc." tuneComment="    &lt;p style=&quot;margin-top: 0&quot;&gt;&lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;      &lt;br&gt;    &lt;/p&gt;&lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;    &lt;br&gt;  " writeDate="Wed Sep 18 16:45:09 EST 2013"/>
+<versionInfo fileFormat="4.0" firmwareInfo="Bowling &amp; Grippo MS1 Base Code 20" nPages="2" signature="20"/>
+<page number="0" size="125">
+<constant digits="0" name="taeColdM" units="%">0.0</constant>
+<constant digits="0" name="egoRPM" units="RPM">0.0</constant>
+<constant cols="1" digits="0" name="wueBins" rows="10" units="%">
+         2.0 
+         2.0 
+         2.0 
+         2.0 
+         2.0 
+         2.0 
+         2.0 
+         2.0 
+         2.0 
+         2.0 
+      </constant>
+<constant digits="1" name="injOpen" units="ms">0.0</constant>
+<constant digits="1" name="taeColdA" units="ms">0.0</constant>
+<constant name="egoType">"Narrow band"</constant>
+<constant name="mapType">"115 kPa"</constant>
+<constant name="alternate">"Alternating"</constant>
+<constant digits="0" name="egoDelta" units="%">0.0</constant>
+<constant digits="1" name="crankCold" units="ms">0.2</constant>
+<constant digits="1" name="primePulse" units="ms">0.0</constant>
+<constant digits="0" name="divider">2.0</constant>
+<constant name="twoStroke">"Four-stroke"</constant>
+<constant digits="0" name="egoTemp" units="°C">-39.96</constant>
+<constant cols="8" digits="0" name="veTable" rows="8" units="%">
+         15.0 20.0 25.0 25.0 27.0 30.0 34.0 39.0 
+         20.0 21.0 28.0 33.0 55.0 37.0 25.0 44.0 
+         22.0 23.0 35.0 49.0 55.0 44.0 40.0 47.0 
+         28.0 33.0 47.0 60.0 61.0 60.0 85.0 55.0 
+         35.0 45.0 57.0 60.0 68.0 75.0 85.0 68.0 
+         45.0 55.0 68.0 63.0 75.0 88.0 92.0 79.0 
+         53.0 68.0 77.0 88.0 90.0 94.0 96.0 90.0 
+         65.0 75.0 85.0 96.0 98.0 100.0 101.0 99.0 
+      </constant>
+<constant digits="0" name="aseCount">13.0</constant>
+<constant digits="3" name="tpsThresh" units="v/s">0.0</constant>
+<constant digits="1" name="reqFuel" units="ms">13.4</constant>
+<constant digits="1" name="taeBins1" units="ms">0.2</constant>
+<constant digits="1" name="taeBins2" units="ms">0.2</constant>
+<constant digits="1" name="taeBins3" units="ms">0.2</constant>
+<constant name="nCylinders">"4"</constant>
+<constant digits="0" name="tdePct" units="%">0.0</constant>
+<constant name="algorithm">"Speed Density"</constant>
+<constant digits="1" name="taeBins4" units="ms">0.0</constant>
+<constant digits="1" name="taeTime" units="ms">0.0</constant>
+<constant cols="1" digits="1" name="taeBins" rows="4" units="ms">
+         0.2 
+         0.2 
+         0.2 
+         0.0 
+      </constant>
+<constant digits="0" name="injOCfuel" units="ms">0.0</constant>
+<constant name="cltType">"GM"</constant>
+<constant digits="3" name="egoSwitch" units="v">0.0</constant>
+<constant cols="1" digits="0" name="mapBins" rows="8" units="kPa">
+         20.0 
+         30.0 
+         40.0 
+         50.0 
+         60.0 
+         70.0 
+         88.0 
+         100.0 
+      </constant>
+<constant digits="0" name="asePct" units="%">12.0</constant>
+<constant name="baroCorr">"Off"</constant>
+<constant cols="1" digits="0" name="rpmBins" rows="8" units="RPM">
+         700.0 
+         1200.0 
+         2000.0 
+         3000.0 
+         4000.0 
+         4900.0 
+         5500.0 
+         6500.0 
+      </constant>
+<constant digits="0" name="injPwmP" units="%">0.0</constant>
+<constant digits="0" name="egoCount">0.0</constant>
+<constant digits="1" name="crankHot" units="ms">3.5</constant>
+<constant digits="1" name="fastIdleT" units="°C">59.94</constant>
+<constant digits="2" name="battFac" units="ms/v">0.0</constant>
+<constant name="engineType">"Even fire"</constant>
+<constant name="nInjectors">"4"</constant>
+<constant digits="0" name="egoLimit" units="%">0.0</constant>
+<constant digits="0" name="rpmk">3000.0</constant>
+<constant name="injType">"Port"</constant>
+<constant digits="1" name="injPwmT" units="ms">0.0</constant>
+<constant name="matType">"GM"</constant>
+</page>
+<page number="1" size="125">
+<constant cols="8" digits="0" name="advTable1" rows="8" units="deg">
+         10.0 20.0 25.0 27.0 32.0 35.0 36.0 40.0 
+         10.0 21.0 23.0 27.0 32.0 35.0 38.0 40.0 
+         12.0 23.0 23.0 28.0 32.0 35.0 38.0 40.0 
+         12.0 15.0 23.0 28.0 34.0 35.0 38.0 40.0 
+         10.0 15.0 23.0 28.0 35.0 36.0 38.0 40.0 
+         10.0 15.0 23.0 28.0 35.0 36.0 38.0 40.0 
+         10.0 15.0 23.0 28.0 35.0 36.0 38.0 40.0 
+         10.0 15.0 23.0 28.0 35.0 36.0 38.0 40.0 
+      </constant>
+<constant cols="1" digits="0" name="rpmBins2" rows="8" units="RPM">
+         500.0 
+         1200.0 
+         2000.0 
+         3000.0 
+         3500.0 
+         4200.0 
+         5000.0 
+         6000.0 
+      </constant>
+<constant digits="1" name="IdleAdvCLT" units="C">-20.535</constant>
+<constant name="TrigCrank">"Time Based"</constant>
+<constant digits="1" name="dwellrun" units="ms">4.5</constant>
+<constant digits="0" name="IdleAdvRPM" units="RPM">3200.0</constant>
+<constant digits="0" name="onetwo" units="teeth">1.0</constant>
+<constant name="oddfire">"Yes"</constant>
+<constant digits="0" name="IdleAdvTPS" units="ADC">27.0</constant>
+<constant digits="0" name="IgHold">10.0</constant>
+<constant cols="1" digits="0" name="mapBins2" rows="8" units="kPa">
+         15.0 
+         20.0 
+         30.0 
+         45.0 
+         65.0 
+         75.0 
+         86.0 
+         100.0 
+      </constant>
+<constant digits="1" name="dwellcrank" units="ms">4.0</constant>
+<constant digits="0" name="Trim" units="Deg">13.024</constant>
+<constant digits="0" name="CrankAng" units="Deg">4.0832</constant>
+<constant name="dwellcont">"Dwell control"</constant>
+<constant digits="0" name="numteeth" units="teeth">12.0</constant>
+<constant digits="0" name="TrigAng" units="Deg">176.0</constant>
+<constant digits="0" name="StgCycles" units="cycles">40.0</constant>
+<constant digits="0" name="IdleAdv" units="Deg">-1.9008</constant>
+<constant digits="0" name="IdleDelayTime" units="sec">38.0</constant>
+<constant name="IgInv">"No"</constant>
+<constant digits="0" name="FixAng" units="Deg">-9.9968</constant>
+<constant name="Trig_plus">"+22.5"</constant>
+</page>
+<settings Comment="These setting are only used if this msq is opened without a project.">
+<setting name="NARROW_BAND_EGO" value="NARROW_BAND_EGO"/>
+<setting name="CELSIUS" value="CELSIUS"/>
+<setting name="SPEED_DENSITY" value="SPEED_DENSITY"/>
+<setting name="MPX4250" value="MPX4250"/>
+</settings>
+<userComments Comment="These are user comments that can be related to a particular setting or dialog.">
+<userComment name="IgHold" value=""/>
+</userComments>
+</msq>

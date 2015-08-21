@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<msq xmlns="http://www.msefi.com/:msq">
+<bibliography author="TunerStudio MS 2.6.14 - EFI Analytics, Inc." tuneComment="    &#10;&#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;      &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;    &#10;  " writeDate="Tue Feb 17 16:32:50 EST 2015"/>
+<versionInfo fileFormat="4.0" firmwareInfo="Bowling &amp; Grippo MS1 Base Code 20" nPages="3" signature="20"/>
+<page>
+<pcVariable name="tsCanId">"0"</pcVariable>
+<pcVariable cols="1" digits="1" name="wueAfrTargetOffset" rows="10" units=":1">
+         -1.5 
+         -1.1 
+         -0.8 
+         -0.6 
+         -0.5 
+         -0.4 
+         -0.3 
+         -0.2 
+         -0.1 
+         0.0 
+      </pcVariable>
+<pcVariable cols="1" digits="0" name="wueAnalRecommend" rows="10" units="%">
+         199.0 
+         158.0 
+         145.0 
+         135.0 
+         126.0 
+         120.0 
+         119.0 
+         118.0 
+         114.0 
+         101.0 
+      </pcVariable>
+<pcVariable cols="1" digits="0" name="tempTable" rows="10" units="%">
+         -40.0 
+         -29.0 
+         -18.0 
+         -7.0 
+         4.0 
+         16.0 
+         27.0 
+         38.0 
+         54.0 
+         71.0 
+      </pcVariable>
+</page>
+<page number="0" size="128">
+<constant cols="8" digits="0" name="veTable" rows="8" units="%">
+         27.0 27.0 27.0 27.0 27.0 27.0 27.0 27.0 
+         29.0 32.0 35.0 36.0 36.0 36.0 36.0 36.0 
+         35.0 42.0 45.0 46.0 46.0 46.0 46.0 46.0 
+         46.0 53.0 55.0 56.0 56.0 56.0 55.0 55.0 
+         59.0 64.0 65.0 65.0 65.0 65.0 65.0 65.0 
+         71.0 74.0 75.0 75.0 75.0 75.0 75.0 74.0 
+         90.0 91.0 92.0 92.0 92.0 92.0 92.0 91.0 
+         102.0 103.0 103.0 104.0 103.0 103.0 103.0 103.0 
+      </constant>
+<constant cols="1" digits="0" name="rpmBins" rows="8" units="RPM">
+         700.0 
+         1200.0 
+         2000.0 
+         3000.0 
+         4000.0 
+         4900.0 
+         5500.0 
+         6500.0 
+      </constant>
+<constant cols="1" digits="0" name="tpsBins" rows="8" units="TPS">
+         20.0 
+         30.0 
+         40.0 
+         50.0 
+         60.0 
+         70.0 
+         88.0 
+         100.0 
+      </constant>
+<constant digits="1" name="crankCold" units="ms">6.5</constant>
+<constant digits="1" name="crankHot" units="ms">3.5</constant>
+<constant digits="0" name="asePct" units="%">15.0</constant>
+<constant digits="0" name="aseCount" units="s">13.0</constant>
+<constant cols="1" digits="0" name="wueBins" rows="10" units="%">
+         162.0 
+         152.0 
+         143.0 
+         135.0 
+         126.0 
+         120.0 
+         119.0 
+         118.0 
+         114.0 
+         101.0 
+      </constant>
+<constant digits="0" name="crankingPct" units="%">25.0</constant>
+<constant digits="1" name="unused96" units="ms">0.0</constant>
+<constant digits="1" name="unused97" units="ms">0.0</constant>
+<constant digits="1" name="taeColdA" units="ms">0.0</constant>
+<constant digits="0" name="tpsThresh" units="%/s">90.0</constant>
+<constant digits="0" name="taeTime" units="ms">200.0</constant>
+<constant digits="0" name="tdePct" units="%">80.0</constant>
+<constant digits="1" name="unused102" units="ms">0.0</constant>
+<constant digits="1" name="unused103" units="ms">0.0</constant>
+<constant digits="1" name="unused104" units="ms">0.0</constant>
+<constant digits="1" name="unused105" units="ms">0.0</constant>
+<constant digits="1" name="reqFuel" units="ms">6.2</constant>
+<constant digits="0" name="divider">1.0</constant>
+<constant name="alternate">"Alternating"</constant>
+<constant digits="1" name="injOpen" units="ms">1.0</constant>
+<constant digits="0" name="injOCfuel" units="ms">0.0</constant>
+<constant digits="0" name="injPwmP" units="%">0.0</constant>
+<constant digits="1" name="injPwmT" units="ms">0.0</constant>
+<constant digits="2" name="battFac" units="ms/v">0.0</constant>
+<constant digits="0" name="rpmk">3000.0</constant>
+<constant name="mapType">"250 kPa"</constant>
+<constant name="twoStroke">"Four-stroke"</constant>
+<constant name="injType">"Port"</constant>
+<constant name="nCylinders">"4"</constant>
+<constant name="cltType">"GM"</constant>
+<constant name="matType">"GM"</constant>
+<constant name="nInjectors">"4"</constant>
+<constant name="engineType">"Even fire"</constant>
+<constant name="egoType1">"Narrow band"</constant>
+<constant name="algorithm">"Speed Density"</constant>
+<constant name="baroCorr">"Off"</constant>
+<constant digits="1" name="primePulse" units="ms">1.5</constant>
+<constant digits="0" name="unused120" units="RPM">0.0</constant>
+<constant digits="1" name="fastIdleT" units="°C">59.94</constant>
+<constant digits="3" name="egoSwitch" units="v">0.0</constant>
+<constant digits="0" name="taeColdM" units="%">0.0</constant>
+<constant digits="0" name="tpsMin" units="ADC">0.0</constant>
+<constant digits="0" name="tpsMax" units="ADC">252.0</constant>
+</page>
+<page number="1" size="128">
+<constant cols="8" digits="0" name="advTable1" rows="8" units="deg">
+         10.0 20.0 25.0 27.0 32.0 38.0 38.0 40.0 
+         10.0 21.0 23.0 27.0 32.0 35.0 38.0 40.0 
+         12.0 23.0 23.0 28.0 32.0 35.0 38.0 40.0 
+         12.0 15.0 23.0 28.0 27.0 28.0 31.0 33.0 
+         10.0 15.0 19.0 24.0 24.0 25.0 27.0 29.0 
+         10.0 15.0 13.0 18.0 18.0 19.0 21.0 23.0 
+         10.0 15.0 12.0 17.0 17.0 18.0 20.0 22.0 
+         10.0 15.0 15.0 17.0 17.0 18.0 20.0 23.0 
+      </constant>
+<constant cols="1" digits="0" name="rpmBins2" rows="8" units="RPM">
+         500.0 
+         1200.0 
+         2000.0 
+         3000.0 
+         3500.0 
+         4200.0 
+         5000.0 
+         6000.0 
+      </constant>
+<constant cols="1" digits="0" name="tpsBins2" rows="8" units="TPS">
+         10.0 
+         20.0 
+         35.0 
+         50.0 
+         65.0 
+         75.0 
+         86.0 
+         100.0 
+      </constant>
+<constant digits="0" name="TrigAng" units="Deg">244.0</constant>
+<constant digits="0" name="FixAng" units="Deg">0.0</constant>
+<constant digits="0" name="Trim" units="Deg">13.024</constant>
+<constant digits="0" name="CrankAng" units="Deg">11.6</constant>
+<constant digits="0" name="IgHold">10.0</constant>
+<constant name="Trig_plus">"+45"</constant>
+<constant name="TrigCrank">"Time Based"</constant>
+<constant name="IgInv">"No"</constant>
+<constant name="oddfire">"Yes"</constant>
+<constant digits="0" name="IdleAdv" units="Deg">-1.9008</constant>
+<constant digits="0" name="IdleAdvTPS" units="ADC">65.0</constant>
+<constant digits="0" name="IdleAdvRPM" units="RPM">3200.0</constant>
+<constant digits="1" name="IdleAdvCLT" units="C">-20.535</constant>
+<constant digits="0" name="IdleDelayTime" units="sec">38.0</constant>
+<constant digits="0" name="StgCycles" units="cycles">1.0</constant>
+<constant name="dwellcont">"Dwell control"</constant>
+<constant digits="1" name="dwellcrank" units="ms">4.5</constant>
+<constant digits="1" name="dwellrun" units="ms">3.0</constant>
+<constant digits="0" name="numteeth" units="teeth">36.0</constant>
+<constant digits="0" name="onetwo" units="teeth">1.0</constant>
+<constant digits="0" name="crankRPM" units="rpm">300.0</constant>
+<constant digits="0" name="tpsflood" units="%">92.0</constant>
+<constant digits="0" name="SoftRevLim" units="rpm">7000.0</constant>
+<constant digits="0" name="SoftLimRetard" units="deg">15.0</constant>
+<constant digits="1" name="SoftLimMax" units="s">2.0</constant>
+<constant digits="0" name="HardRevLim" units="rpm">7500.0</constant>
+<constant cols="1" digits="0" name="taeBins" rows="4" units="%/s">
+         80.0 
+         200.0 
+         520.0 
+         890.0 
+      </constant>
+<constant cols="1" digits="0" name="taeRates" rows="4" units="%">
+         18.0 
+         24.0 
+         33.0 
+         42.0 
+      </constant>
+<constant cols="1" digits="0" name="wueRates" rows="10" units="C">
+         0.0 
+         11.0 
+         22.0 
+         33.0 
+         44.0 
+         56.0 
+         67.0 
+         78.0 
+         94.0 
+         111.0 
+      </constant>
+<constant digits="0" name="dwellLim" units="ms">8.0</constant>
+<constant digits="0" name="unused122" units="none">0.0</constant>
+<constant digits="0" name="unused123" units="none">0.0</constant>
+<constant digits="0" name="unused124" units="none">0.0</constant>
+<constant digits="0" name="unused125" units="none">0.0</constant>
+<constant digits="0" name="unused126" units="none">0.0</constant>
+<constant digits="0" name="unused127" units="none">0.0</constant>
+</page>
+<page number="2" size="128">
+<constant digits="0" name="unused95" units="none">0.0</constant>
+<constant cols="8" digits="1" name="afrTable" rows="8" units="AFR">
+         14.7 14.7 15.0 15.1 14.9 14.7 14.7 14.7 
+         14.7 14.7 15.0 15.1 14.9 14.7 14.7 14.7 
+         14.7 14.7 14.8 15.0 14.8 14.6 14.4 14.0 
+         14.3 14.3 14.7 14.7 14.6 14.1 13.8 13.4 
+         14.1 14.2 14.5 14.3 14.0 13.5 13.1 12.9 
+         14.1 14.2 13.7 13.6 13.4 13.1 13.0 12.8 
+         13.5 13.5 12.8 12.9 12.8 12.7 12.7 12.7 
+         12.8 12.8 12.8 12.7 12.5 12.5 12.5 12.5 
+      </constant>
+<constant cols="1" digits="0" name="rpmBinsAFR" rows="8" units="RPM">
+         500.0 
+         1200.0 
+         2000.0 
+         3000.0 
+         3500.0 
+         4200.0 
+         5000.0 
+         6000.0 
+      </constant>
+<constant cols="1" digits="0" name="tpsBinsAFR" rows="8" units="TPS">
+         10.0 
+         20.0 
+         35.0 
+         50.0 
+         65.0 
+         75.0 
+         86.0 
+         100.0 
+      </constant>
+<constant name="egoAlgorithm">"Simple"</constant>
+<constant name="egoType">"Disabled"</constant>
+<constant digits="0" name="egoKP" units="%">100.0</constant>
+<constant digits="0" name="egoKI" units="%">20.0</constant>
+<constant digits="0" name="egoKD" units="%">0.0</constant>
+<constant digits="0" name="egoTemp" units="°C">69.93</constant>
+<constant digits="0" name="egoCount">16.0</constant>
+<constant digits="0" name="egoDelta" units="%">1.0</constant>
+<constant digits="0" name="egoLimit">15.0</constant>
+<constant digits="1" name="ego_min" units="AFR">9.0</constant>
+<constant digits="1" name="ego_max" units="AFR">19.0</constant>
+<constant digits="0" name="ego_sdelay" units="sec">15.0</constant>
+<constant digits="0" name="egoRPM" units="rpm">1200.0</constant>
+<constant digits="0" name="egoTPSMax" units="%">70.0</constant>
+<constant digits="0" name="egoLoadMax" units="%">90.0</constant>
+<constant digits="0" name="egoLoadMin" units="%">20.0</constant>
+</page>
+<settings Comment="These setting are only used if this msq is opened without a project.">
+<setting name="CELSIUS" value="CELSIUS"/>
+<setting name="ALPHA_N" value="ALPHA_N"/>
+<setting name="MPX4250" value="MPX4250"/>
+<setting name="INNOVATE_LC1_DEFAULT" value="INNOVATE_LC1_DEFAULT"/>
+</settings>
+<userComments Comment="These are user comments that can be related to a particular setting or dialog.">
+<userComment name="SoftRevLim" value=""/>
+<userComment name="aseCount" value=""/>
+</userComments>
+</msq>
