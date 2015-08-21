@@ -55,6 +55,7 @@ int req_fuel_uS, inj_opentime_uS;
 volatile byte startRevolutions = 0; //A counter for how many revolutions have been completed since sync was achieved.
 bool ignitionOn = false; //The current state of the ignition system
 bool fuelOn = false; //The current state of the ignition system
+bool fuelPumpOn = false; //The current status of the fuel pump
 
 void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
@@ -439,7 +440,7 @@ void loop()
     if ( (timeToLastTooth < 500000L) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
       currentStatus.RPM = getRPM();
-      if(digitalRead(pinFuelPump) == LOW) { digitalWrite(pinFuelPump, HIGH); } //Check if the fuel pump is on and turn it on if it isn't. 
+      if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't. 
     }
     else
     {
@@ -454,6 +455,7 @@ void loop()
       ignitionOn = false;
       fuelOn = false;
       digitalWrite(pinFuelPump, LOW); //Turn off the fuel pump
+      fuelPumpOn = false;
     }
     
     //Uncomment the following for testing
