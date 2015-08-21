@@ -176,7 +176,7 @@ void sendValues(int length)
   
   response[28] = currentStatus.batCorrection; //Battery voltage correction (%)
   response[29] = (byte)(currentStatus.dwell / 100);
-  response[30] = currentStatus.O22; //15; send dummy value to second o2 sensor channel
+  response[30] = currentStatus.O2_2; //15; send dummy value to second o2 sensor channel
 
   Serial.write(response, (size_t)packetSize);
   //Serial.flush();

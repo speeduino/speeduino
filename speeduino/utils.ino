@@ -184,7 +184,7 @@ void setPinMapping(byte boardID)
       pinIAT = A0; //IAT sensor pin
       pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
-      pinO22 = A9; //O2 sensor pin (second sensor)
+      pinO2_2 = A9; //O2 sensor pin (second sensor)
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
       pinTachOut = 49; //Tacho output pin
@@ -247,7 +247,7 @@ void setPinMapping(byte boardID)
   //And for inputs
   pinMode(pinMAP, INPUT);
   pinMode(pinO2, INPUT);
-  pinMode(pinO22, INPUT);
+  pinMode(pinO2_2, INPUT);
   pinMode(pinTPS, INPUT);
   pinMode(pinIAT, INPUT);
   pinMode(pinCLT, INPUT);

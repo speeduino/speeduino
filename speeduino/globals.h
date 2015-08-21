@@ -55,14 +55,14 @@ struct statuses {
   byte tpsDOT;
   byte VE;
   byte O2;
-  byte O22;
+  byte O2_2;
   int coolant;
   int cltADC;
   int IAT;
   int iatADC;
   int batADC;
   int O2ADC;
-  int O2ADC2;
+  int O2_2ADC;
   int dwell;
   byte dwellCorrection; //The amount of correction being applied to the dwell time.
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
@@ -330,7 +330,7 @@ byte pinMAP2; //2nd MAP sensor (Currently unused)
 byte pinIAT; //IAT sensor pin
 byte pinCLT; //CLS sensor pin
 byte pinO2; //O2 Sensor pin
-byte pinO22;  //second O2 sensor
+byte pinO2_2;  //second O2 sensor
 byte pinBat; //battery voltage test pin
 byte pinDisplayReset; // OLED reset pin
 byte pinTachOut; //Tacho output
@@ -345,15 +345,16 @@ byte pinSpareOut3; //Generic output
 byte pinSpareOut4; //Generic output
 byte pinSpareOut5; //Generic output
 byte pinSpareOut6; //Generic output
-byte pinSpareHOut1;
-byte pinSpareHOut2;
-byte pinSpareLOut1;
-byte pinSpareLOut2;
+byte pinSpareHOut1; //spare high current output
+byte pinSpareHOut2; // spare high current output
+byte pinSpareLOut1; // spare low current output
+byte pinSpareLOut2; // spare low current output
 byte pinSpareLOut3;
 byte pinSpareLOut4;
 byte pinSpareLOut5;
 byte pinFan;       // Cooling fan output
 byte pinBoost;
+byte pinVVt;
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
@@ -371,7 +372,6 @@ extern byte ignitionCount;
 extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
-extern byte o2CalibrationTable2[CALIBRATION_TABLE_SIZE];
 extern volatile int toothHistory[512];
 extern volatile int toothHistoryIndex;
 
