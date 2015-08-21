@@ -164,6 +164,42 @@ void setPinMapping(byte boardID)
       pinCLT = A1; //CLS sensor pin
       pinIAT = A0; //IAT sensor pin
       
+    case 30:
+      //Pin mappings as per the dazv6 shield
+      pinInjector1 = 8; //Output pin injector 1 is on
+      pinInjector2 = 9; //Output pin injector 2 is on
+      pinInjector3 = 10; //Output pin injector 3 is on
+      pinInjector4 = 11; //Output pin injector 4 is on
+      //pinInjector5 = 12; //Placeholder only - NOT USED
+      //pinInjector6 = 13; //Placeholder only - NOT USED
+      pinCoil1 = 40; //Pin for coil 1
+      pinCoil2 = 38; //Pin for coil 2
+      pinCoil3 = 50; //Pin for coil 3
+      pinCoil4 = 52; //Pin for coil 4
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinTrigger3 = 17; // cam sensor 2 pin
+      pinTPS = A2;//TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A8; //O2 Sensor pin
+      pinO22 = A9; //O2 sensor pin (second sensor)
+      pinBat = A4; //Battery reference voltage pin
+      pinDisplayReset = 48; // OLED reset pin
+      pinTachOut = 49; //Tacho output pin
+      pinIdle1 = 5; //Single wire idle control
+      pinFuelPump = 45; //Fuel pump output
+      pinSpareHOut1 = 4; // high current output spare1
+      pinSpareHOut2 = 6; // high current output spare2
+      pinBoost = 7;
+      pinSpareLOut1 = 43; //low current output spare1
+      pinSpareLOut2 = 47;
+      pinSpareLOut3 = 49;
+      pinSpareLOut4 = 51;
+      pinSpareLOut5 = 53;
+      break; 
+      
     default:
       //Pin mappings as per the v0.2 shield
       pinInjector1 = 8; //Output pin injector 1 is on
@@ -199,10 +235,19 @@ void setPinMapping(byte boardID)
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
+  pinMode(pinSpareHOut1, OUTPUT);
+  pinMode(pinSpareHOut2, OUTPUT);
+  pinMode(pinBoost, OUTPUT);
+  pinMode(pinSpareLOut1, OUTPUT);
+  pinMode(pinSpareLOut2, OUTPUT);
+  pinMode(pinSpareLOut3, OUTPUT);
+  pinMode(pinSpareLOut4, OUTPUT);
+  pinMode(pinSpareLOut5, OUTPUT);
   
   //And for inputs
   pinMode(pinMAP, INPUT);
   pinMode(pinO2, INPUT);
+  pinMode(pinO22, INPUT);
   pinMode(pinTPS, INPUT);
   pinMode(pinIAT, INPUT);
   pinMode(pinCLT, INPUT);
