@@ -563,6 +563,7 @@ void loop()
       unsigned int pwLimit = percentage(configPage1.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
       if (currentStatus.PW > pwLimit) { currentStatus.PW = pwLimit; }
       
+      
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
       //Determine next firing angles
