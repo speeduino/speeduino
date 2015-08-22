@@ -526,8 +526,8 @@ void sendToothLog(bool useChar)
       {
         for(int x=0; x<256; x++)
         {
-          Serial.write(highByte(tempToothHistory[x]));
           Serial.write(lowByte(tempToothHistory[x]));
+          Serial.write(highByte(tempToothHistory[x]));
         }
       }
       Serial.flush();

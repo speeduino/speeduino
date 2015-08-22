@@ -290,6 +290,7 @@ void triggerPri_4G63()
      currentStatus.hasSync = true;
      startRevolutions++; //Counter 
   }
+  else if (!currentStatus.hasSync) { return; }
   else  { toothCurrentCount++; }
   
    //High speed tooth logging history
