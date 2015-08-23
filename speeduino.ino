@@ -564,7 +564,7 @@ void loop()
       //Check that the duty cycle of the chosen pulsewidth isn't too high. This is disabled at cranking
       if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
-        unsigned int pwLimit = percentage(configPage1.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+        unsigned long pwLimit = percentage(configPage1.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
         if (currentStatus.PW > pwLimit) { currentStatus.PW = pwLimit; }
       }
       
@@ -777,7 +777,8 @@ void loop()
       //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
       if(ignitionOn && (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ))
       {
-        if ( (ignition1StartAngle > crankAngle) )
+        //if ( (ignition1StartAngle > crankAngle) && ign1LastRev != startRevolutions)
+        if ( (ignition1StartAngle > crankAngle) && ign1LastRev != startRevolutions)
         {
             setIgnitionSchedule1(beginCoil1Charge, 
                       ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
