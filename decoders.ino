@@ -116,21 +116,25 @@ Note: This is a very simple decoder. See http://www.megamanual.com/ms2/GM_7pinHE
 void triggerSetup_BasicDistributor()
 {
   triggerToothAngle = 360 / (configPage1.nCylinders / 2); //The number of degrees that passes from tooth to tooth
+  triggerFilterTime = 60000000L / MAX_RPM / configPage1.nCylinders; // Minimum time required between teeth
+  triggerFilterTime = triggerFilterTime / 2; //Safety margin
 }
 
 void triggerPri_BasicDistributor()
 {
   curTime = micros();
+  curGap = curTime - toothLastToothTime;
+  if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime
   
-  toothCurrentCount++; //Increment the tooth counter
-  if(toothCurrentCount > (configPage1.nCylinders >> 1) ) //Check if we're back to the beginning of a revolution
+  if(toothCurrentCount == (configPage1.nCylinders >> 1) ) //Check if we're back to the beginning of a revolution
   { 
      toothCurrentCount = 1; //Reset the counter
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      currentStatus.hasSync = true;
      startRevolutions++; //Counter 
-  } 
+  }
+  else { toothCurrentCount++; } //Increment the tooth counter 
   
    //High speed tooth logging history
    toothHistory[toothHistoryIndex] = curGap;
@@ -273,6 +277,11 @@ void triggerSetup_4G63()
   toothAngles[2] = 175; //Falling edge of tooth #2
   toothAngles[3] = 285; //Rising edge of tooth #1
   
+  toothAngles[0] = 105; //Falling edge of tooth #1
+  toothAngles[1] = 175; //Rising edge of tooth #2
+  toothAngles[2] = 285; //Falling edge of tooth #2
+  toothAngles[3] = 355; //Rising edge of tooth #1
+  
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth. 
 }
 
@@ -282,7 +291,7 @@ void triggerPri_4G63()
   curGap = curTime - toothLastToothTime;
   if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime
   
-  if(toothCurrentCount == 0 || toothCurrentCount == 4)
+  if(toothCurrentCount == 0 || toothCurrentCount == 4) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
   { 
      toothCurrentCount = 1; //Reset the counter
      toothOneMinusOneTime = toothOneTime;
@@ -309,7 +318,7 @@ void triggerSec_4G63()
   {
     //Check the status of the crank trigger
     bool crank = digitalRead(pinTrigger);
-    if(crank == LOW) { toothCurrentCount = 0; } //If the crank trigger is currently HIGH, it means we're on tooth #1
+    if(crank == HIGH) { toothCurrentCount = 0; } //If the crank trigger is currently HIGH, it means we're on tooth #1
   }
   return; 
 }
