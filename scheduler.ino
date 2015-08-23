@@ -259,10 +259,12 @@ ISR(TIMER5_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule1
   {
     if (ignitionSchedule1.Status == PENDING) //Check to see if this schedule is turn on
     {
+      if ( ign1LastRev == startRevolutions ) { return; }
       ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule1.startTime = currentLoopTime;
       ignitionSchedule1.StartCallback();
       unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule1.duration >> 4);
+      ign1LastRev = startRevolutions;
       //unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule1.duration >> 2); //Divide by 4
       OCR5A = absoluteTimeout;
     }
@@ -278,10 +280,12 @@ ISR(TIMER5_COMPB_vect, ISR_NOBLOCK) //ignitionSchedule2
   {
     if (ignitionSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
+      if ( ign2LastRev == startRevolutions ) { return; }
       ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule2.startTime = currentLoopTime;
       ignitionSchedule2.StartCallback();
       unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration >> 4);
+      ign2LastRev = startRevolutions;
       //unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration >> 2); //Divide by 4
       OCR5B = absoluteTimeout;
     }
@@ -297,10 +301,12 @@ ISR(TIMER5_COMPC_vect, ISR_NOBLOCK) //ignitionSchedule3
   {
     if (ignitionSchedule3.Status == PENDING) //Check to see if this schedule is turn on
     {
+      if ( ign3LastRev == startRevolutions ) { return; }
       ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule3.startTime = currentLoopTime;
       ignitionSchedule3.StartCallback();
       unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration >> 4);
+      ign3LastRev = startRevolutions;
       //unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule3.duration >> 2); //Divide by 4
       OCR5C = absoluteTimeout;
     }
@@ -316,11 +322,13 @@ ISR(TIMER4_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule4
   {
     if (ignitionSchedule4.Status == PENDING) //Check to see if this schedule is turn on
     {
+      if ( ign4LastRev == startRevolutions ) { return; }
       ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule4.startTime = currentLoopTime;
       ignitionSchedule4.StartCallback();
       //unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration / 16);
       unsigned int absoluteTimeout = TCNT4 + (ignitionSchedule4.duration >> 4); //Divide by 16
+      ign4LastRev = startRevolutions;
       OCR4A = absoluteTimeout;
     }
     else if (ignitionSchedule4.Status == RUNNING)
@@ -328,6 +336,6 @@ ISR(TIMER4_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule4
        ignitionSchedule4.Status = OFF; //Turn off the schedule
        ignitionSchedule4.EndCallback();
        ignitionCount += 1; //Increment the igintion counter
-       TIMSK4 &= ~(1 << OCIE4A); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
+       TIMSK4 &= ~(1 << OCIE4A); //Turn off this output compare unit (This simply writes 0 to the OCIE4A bit of TIMSK4)
     }
   }

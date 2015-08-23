@@ -53,6 +53,10 @@ int req_fuel_uS, inj_opentime_uS;
 #define MAX_RPM 10000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
 volatile byte startRevolutions = 0; //A counter for how many revolutions have been completed since sync was achieved.
+volatile byte ign1LastRev;
+volatile byte ign2LastRev;
+volatile byte ign3LastRev;
+volatile byte ign4LastRev;
 bool ignitionOn = false; //The current state of the ignition system
 bool fuelOn = false; //The current state of the ignition system
 bool fuelPumpOn = false; //The current status of the fuel pump
@@ -527,21 +531,19 @@ void loop()
         //Speed Density
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
         currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
-        if (configPage2.FixAng == 0) //Check whether the user has set a fixed timing angle
-          { currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.MAP, currentStatus.RPM); } //As above, but for ignition advance
-         else
-          { currentStatus.advance = configPage2.FixAng; }
+        currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.MAP, currentStatus.RPM); //As above, but for ignition advance
       }
       else
       { 
         //Alpha-N
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
         currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
-        if (configPage2.FixAng == 0) //Check whether the user has set a fixed timing angle
-          { currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM); } //As above, but for ignition advance
-        else
-          { currentStatus.advance = configPage2.FixAng; }
+        currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM); //As above, but for ignition advance
       }
+      
+      //Check for fixed ignition angles
+      if (configPage2.FixAng != 0) { currentStatus.advance = configPage2.FixAng; } //Check whether the user has set a fixed timing angle
+      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { currentStatus.advance = configPage2.CrankAng; } //Use the fixed cranking ignition angle
 
       int injector1StartAngle = 0;
       int injector2StartAngle = 0;
@@ -559,9 +561,12 @@ void loop()
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       
-      //Check that the duty cycle of the chosen pulsewidth isn't too high
-      unsigned int pwLimit = percentage(configPage1.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
-      if (currentStatus.PW > pwLimit) { currentStatus.PW = pwLimit; }
+      //Check that the duty cycle of the chosen pulsewidth isn't too high. This is disabled at cranking
+      if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+      {
+        unsigned int pwLimit = percentage(configPage1.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+        if (currentStatus.PW > pwLimit) { currentStatus.PW = pwLimit; }
+      }
       
       
       //***********************************************************************************************
@@ -773,7 +778,7 @@ void loop()
       if(ignitionOn && (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ))
       {
         if ( (ignition1StartAngle > crankAngle) )
-        { 
+        {
             setIgnitionSchedule1(beginCoil1Charge, 
                       ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                       currentStatus.dwell,
