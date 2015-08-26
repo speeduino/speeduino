@@ -303,6 +303,7 @@ struct config4 {
   
   byte fanInv : 1;        // Fan output inversion bit
   byte fanEnable : 1;     // Fan enable bit 
+  byte unused : 6;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis 
 };
