@@ -8,8 +8,8 @@ volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the la
 volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
 volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
 volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
-volatile int toothHistory[512];
-volatile int toothHistoryIndex = 0;
+volatile unsigned int toothHistory[512];
+volatile unsigned int toothHistoryIndex = 0;
 
 volatile byte secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
 volatile unsigned long secondaryLastToothTime = 0; //The time (micros()) that the last tooth was registered (Cam input)

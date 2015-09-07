@@ -362,8 +362,6 @@ extern byte ignitionCount;
 extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
-extern volatile int toothHistory[512];
-extern volatile int toothHistoryIndex;
 
 
 #endif // GLOBALS_H
