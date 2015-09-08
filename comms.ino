@@ -144,7 +144,7 @@ void sendValues(int length)
   response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   response[1] = currentStatus.squirt; //Squirt Bitfield
   response[2] = currentStatus.engine; //Engine Status Bitfield
-  response[3] = 0x00; //baro
+  response[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
   response[4] = currentStatus.MAP; //map
   response[5] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
   response[6] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
