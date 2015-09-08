@@ -181,7 +181,7 @@ void setup()
   currentStatus.hasSync = false;
   currentStatus.runSecs = 0; 
   currentStatus.secl = 0;
-  triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+  triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
   
   switch (pinTrigger) {  
     //Arduino Mega 2560 mapping
@@ -247,7 +247,14 @@ void setup()
       break;
           
     case 2:
+      triggerSetup_DualWheel();
       trigger = triggerPri_DualWheel;
+      getRPM = getRPM_DualWheel;
+      getCrankAngle = getCrankAngle_DualWheel;
+      
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+      attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, RISING);
       break;
       
     case 3:
