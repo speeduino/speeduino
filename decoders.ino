@@ -359,6 +359,7 @@ void triggerSetup_4G63()
   toothAngles[3] = 355; //Rising edge of tooth #1
   
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth. 
+  triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
 }
 
 void triggerPri_4G63()
@@ -373,7 +374,8 @@ void triggerPri_4G63()
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      currentStatus.hasSync = true;
-     startRevolutions++; //Counter 
+     startRevolutions++; //Counter
+     //if ((startRevolutions & 63) == 1) { currentStatus.hasSync = false; } //Every 64 revolutions, force a resync with the cam
   }
   else if (!currentStatus.hasSync) { return; }
   else  { toothCurrentCount++; }
@@ -390,6 +392,11 @@ void triggerPri_4G63()
 }
 void triggerSec_4G63()
 { 
+  curTime2 = micros();
+  curGap2 = curTime2 - toothLastSecToothTime;
+  if ( curGap2 < triggerSecFilterTime ) { return; } 
+  toothLastSecToothTime = curTime2;
+  
   if(!currentStatus.hasSync)
   {
     //Check the status of the crank trigger

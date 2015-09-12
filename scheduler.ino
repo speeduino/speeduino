@@ -141,8 +141,8 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     
     //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
     //As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    unsigned int absoluteTimeout = TCNT5 + (timeout >> 4 ); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
-    //unsigned int absoluteTimeout = TCNT5 + (timeout >> 2); //As above, but with bit shift instead of / 16
+    //unsigned int absoluteTimeout = TCNT5 + (timeout >> 4 ); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
+    unsigned int absoluteTimeout = TCNT5 + (timeout >> 2); //As above, but with bit shift instead of / 16 (high precision)
     OCR5B = absoluteTimeout;
     ignitionSchedule2.duration = duration;
     ignitionSchedule2.StartCallback = startCallback; //Name the start callback function
@@ -285,9 +285,8 @@ ISR(TIMER5_COMPB_vect, ISR_NOBLOCK) //ignitionSchedule2
       ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule2.startTime = currentLoopTime;
       ignitionSchedule2.StartCallback();
-      unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration >> 4);
       ign2LastRev = startRevolutions;
-      //unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration >> 2); //Divide by 4
+      unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration >> 2);
       OCR5B = absoluteTimeout;
     }
     else if (ignitionSchedule2.Status == RUNNING)
@@ -306,9 +305,8 @@ ISR(TIMER5_COMPC_vect, ISR_NOBLOCK) //ignitionSchedule3
       ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule3.startTime = currentLoopTime;
       ignitionSchedule3.StartCallback();
-      unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration >> 4);
+      unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule2.duration >> 2);
       ign3LastRev = startRevolutions;
-      //unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule3.duration >> 2); //Divide by 4
       OCR5C = absoluteTimeout;
     }
     else if (ignitionSchedule3.Status == RUNNING)
