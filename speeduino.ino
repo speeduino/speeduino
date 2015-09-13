@@ -515,7 +515,7 @@ void loop()
         { //Sets the engine running bit, clears the engine cranking bit
           BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); 
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
-          if(startRevolutions > configPage2.StgCycles) { ignitionOn = true; fuelOn = true;}
+          if(startRevolutions >= configPage2.StgCycles) { ignitionOn = true; fuelOn = true;}
         } 
         else 
         {  //Sets the engine cranking bit, clears the engine running bit
@@ -523,7 +523,7 @@ void loop()
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); 
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
           //Check whether enough cranking revolutions have been performed to turn the ignition on
-          if(startRevolutions > configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;}
+          if(startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;}
         } 
       
       //END SETTING STATUSES
