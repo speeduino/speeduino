@@ -196,7 +196,11 @@ struct config2 {
   byte IdleAdvCLT; //The temperature below which the idle is advanced
   byte IdleDelayTime;
   byte StgCycles; //The number of initial cycles before the ignition should fire when first cranking
-  byte dwellCont; //Fixed duty dwell control
+  
+  byte dwellCont : 1; //Fixed duty dwell control
+  byte useDwellLim : 1; //Whether the dwell limiter is off or on
+  byte dwellUnused : 6;
+  
   byte dwellCrank; //Dwell time whilst cranking
   byte dwellRun; //Dwell time whilst running 
   byte triggerTeeth; //The full count of teeth on the trigger wheel if there were no gaps
@@ -303,6 +307,7 @@ struct config4 {
   
   byte fanInv : 1;        // Fan output inversion bit
   byte fanEnable : 1;     // Fan enable bit 
+  byte unused : 6;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis 
 };
@@ -361,8 +366,6 @@ extern byte ignitionCount;
 extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
-extern volatile int toothHistory[512];
-extern volatile int toothHistoryIndex;
 
 
 #endif // GLOBALS_H

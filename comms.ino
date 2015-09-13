@@ -144,7 +144,7 @@ void sendValues(int length)
   response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   response[1] = currentStatus.squirt; //Squirt Bitfield
   response[2] = currentStatus.engine; //Engine Status Bitfield
-  response[3] = 0x00; //baro
+  response[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
   response[4] = currentStatus.MAP; //map
   response[5] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
   response[6] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
@@ -508,7 +508,7 @@ void sendToothLog(bool useChar)
 
       //We need 256 records to send to TunerStudio. If there aren't that many in the buffer (Buffer is 512 long) then we just return and wait for the next call
       if (toothHistoryIndex < 256) { return; } //Don't believe this is the best way to go. Just display whatever is in the buffer
-      int tempToothHistory[512]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
+      unsigned int tempToothHistory[512]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
       
       //Copy the working history into the temporary buffer array. This is done so that, if the history loops whilst the values are being sent over serial, it doesn't affect the values
       memcpy( (void*)tempToothHistory, (void*)toothHistory, sizeof(tempToothHistory) );
@@ -530,7 +530,7 @@ void sendToothLog(bool useChar)
           Serial.write(lowByte(tempToothHistory[x]));
         }
       }
-      Serial.flush();
+      //Serial.flush();
 }
   
 

@@ -91,8 +91,8 @@ void setPinMapping(byte boardID)
       pinInjector4 = 11; //Output pin injector 4 is on
       pinCoil1 = 40; //Pin for coil 1
       pinCoil2 = 38; //Pin for coil 2
-      pinCoil3 = 40; //Pin for coil 3
-      pinCoil4 = 36; //Pin for coil 4
+      pinCoil3 = 52; //Pin for coil 3
+      pinCoil4 = 50; //Pin for coil 4
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTPS = A2;//TPS input pin
