@@ -53,13 +53,8 @@ int req_fuel_uS, inj_opentime_uS;
 #define MAX_RPM 10000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
 volatile byte startRevolutions = 0; //A counter for how many revolutions have been completed since sync was achieved.
-volatile byte ign1LastRev;
-volatile byte ign2LastRev;
-volatile byte ign3LastRev;
-volatile byte ign4LastRev;
 bool ignitionOn = false; //The current state of the ignition system
 bool fuelOn = false; //The current state of the ignition system
-bool fuelPumpOn = false; //The current status of the fuel pump
 
 void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
@@ -181,7 +176,7 @@ void setup()
   currentStatus.hasSync = false;
   currentStatus.runSecs = 0; 
   currentStatus.secl = 0;
-  triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
+  triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   
   switch (pinTrigger) {  
     //Arduino Mega 2560 mapping
@@ -247,14 +242,7 @@ void setup()
       break;
           
     case 2:
-      triggerSetup_DualWheel();
       trigger = triggerPri_DualWheel;
-      getRPM = getRPM_DualWheel;
-      getCrankAngle = getCrankAngle_DualWheel;
-      
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-      attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, RISING);
       break;
       
     case 3:
@@ -277,12 +265,12 @@ void setup()
       if(configPage2.TrigEdge == 0)
       {
         attachInterrupt(triggerInterrupt, trigger, CHANGE);  // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-        attachInterrupt(triggerInterrupt2, triggerSec_4G63, FALLING); //changed
+        attachInterrupt(triggerInterrupt2, triggerSec_4G63, RISING); //changed
       }
       else
       {
         attachInterrupt(triggerInterrupt, trigger, CHANGE); // Primary trigger connects to 
-        attachInterrupt(triggerInterrupt2, triggerSec_4G63, FALLING);
+        attachInterrupt(triggerInterrupt2, triggerSec_4G63, RISING);
       }
       
       break;
@@ -451,7 +439,7 @@ void loop()
     if ( (timeToLastTooth < 500000L) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
       currentStatus.RPM = getRPM();
-      if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't. 
+      if(digitalRead(pinFuelPump) == LOW) { digitalWrite(pinFuelPump, HIGH); } //Check if the fuel pump is on and turn it on if it isn't. 
     }
     else
     {
@@ -466,7 +454,6 @@ void loop()
       ignitionOn = false;
       fuelOn = false;
       digitalWrite(pinFuelPump, LOW); //Turn off the fuel pump
-      fuelPumpOn = false;
     }
     
     //Uncomment the following for testing
@@ -497,6 +484,8 @@ void loop()
        currentStatus.cltADC = map(analogRead(pinCLT), 0, 1023, 0, 511); //Get the current raw CLT value
        currentStatus.iatADC = map(analogRead(pinIAT), 0, 1023, 0, 511); //Get the current raw IAT value
        currentStatus.O2ADC = map(analogRead(pinO2), 0, 1023, 0, 511); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4. This is the correct calibration for an Innovate Wideband 0v - 5V unit. Proper calibration is still a WIP
+       currentStatus.O2_2ADC = map(analogRead(pinO2_2), 0, 1023, 0, 511); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4. This is the correct calibration for an Innovate Wideband 0v - 5V unit. Proper calibration is still a WIP
+
        //currentStatus.battery10 = map(analogRead(pinBat), 0, 1023, 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
        currentStatus.battery10 = fastMap1023toX(analogRead(pinBat), 0, 1023, 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
        //currentStatus.batADC = map(analogRead(pinBat), 0, 1023, 0, 255); //Get the current raw Battery value
@@ -504,6 +493,7 @@ void loop()
        currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
        currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
        currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
+       currentStatus.O2_2 = o2CalibrationTable[currentStatus.O2_2ADC];
     }
 
     //Always check for sync
@@ -515,7 +505,7 @@ void loop()
         { //Sets the engine running bit, clears the engine cranking bit
           BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); 
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
-          if(startRevolutions >= configPage2.StgCycles) { ignitionOn = true; fuelOn = true;}
+          if(startRevolutions > configPage2.StgCycles) { ignitionOn = true; fuelOn = true;}
         } 
         else 
         {  //Sets the engine cranking bit, clears the engine running bit
@@ -523,7 +513,7 @@ void loop()
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); 
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
           //Check whether enough cranking revolutions have been performed to turn the ignition on
-          if(startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;}
+          if(startRevolutions > configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;}
         } 
       
       //END SETTING STATUSES
@@ -538,19 +528,21 @@ void loop()
         //Speed Density
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
         currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
-        currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.MAP, currentStatus.RPM); //As above, but for ignition advance
+        if (configPage2.FixAng == 0) //Check whether the user has set a fixed timing angle
+          { currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.MAP, currentStatus.RPM); } //As above, but for ignition advance
+         else
+          { currentStatus.advance = configPage2.FixAng; }
       }
       else
       { 
         //Alpha-N
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
         currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
-        currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM); //As above, but for ignition advance
+        if (configPage2.FixAng == 0) //Check whether the user has set a fixed timing angle
+          { currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM); } //As above, but for ignition advance
+        else
+          { currentStatus.advance = configPage2.FixAng; }
       }
-      
-      //Check for fixed ignition angles
-      if (configPage2.FixAng != 0) { currentStatus.advance = configPage2.FixAng; } //Check whether the user has set a fixed timing angle
-      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { currentStatus.advance = configPage2.CrankAng; } //Use the fixed cranking ignition angle
 
       int injector1StartAngle = 0;
       int injector2StartAngle = 0;
@@ -568,13 +560,9 @@ void loop()
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       
-      //Check that the duty cycle of the chosen pulsewidth isn't too high. This is disabled at cranking
-      if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
-      {
-        unsigned long pwLimit = percentage(configPage1.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
-        if (currentStatus.PW > pwLimit) { currentStatus.PW = pwLimit; }
-      }
-      
+      //Check that the duty cycle of the chosen pulsewidth isn't too high
+      unsigned int pwLimit = percentage(configPage1.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+      if (currentStatus.PW > pwLimit) { currentStatus.PW = pwLimit; }
       
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
@@ -784,9 +772,8 @@ void loop()
       //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
       if(ignitionOn && (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ))
       {
-        //if ( (ignition1StartAngle > crankAngle) && ign1LastRev != startRevolutions)
-        if ( (ignition1StartAngle > crankAngle) && ign1LastRev != startRevolutions)
-        {
+        if ( (ignition1StartAngle > crankAngle) )
+        { 
             setIgnitionSchedule1(beginCoil1Charge, 
                       ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                       currentStatus.dwell,

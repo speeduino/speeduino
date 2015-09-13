@@ -55,12 +55,14 @@ struct statuses {
   byte tpsDOT;
   byte VE;
   byte O2;
+  byte O2_2;
   int coolant;
   int cltADC;
   int IAT;
   int iatADC;
   int batADC;
   int O2ADC;
+  int O2_2ADC;
   int dwell;
   byte dwellCorrection; //The amount of correction being applied to the dwell time.
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
@@ -196,11 +198,7 @@ struct config2 {
   byte IdleAdvCLT; //The temperature below which the idle is advanced
   byte IdleDelayTime;
   byte StgCycles; //The number of initial cycles before the ignition should fire when first cranking
-  
-  byte dwellCont : 1; //Fixed duty dwell control
-  byte useDwellLim : 1; //Whether the dwell limiter is off or on
-  byte dwellUnused : 6;
-  
+  byte dwellCont; //Fixed duty dwell control
   byte dwellCrank; //Dwell time whilst cranking
   byte dwellRun; //Dwell time whilst running 
   byte triggerTeeth; //The full count of teeth on the trigger wheel if there were no gaps
@@ -307,7 +305,6 @@ struct config4 {
   
   byte fanInv : 1;        // Fan output inversion bit
   byte fanEnable : 1;     // Fan enable bit 
-  byte unused : 6;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis 
 };
@@ -332,7 +329,8 @@ byte pinMAP2; //2nd MAP sensor (Currently unused)
 byte pinIAT; //IAT sensor pin
 byte pinCLT; //CLS sensor pin
 byte pinO2; //O2 Sensor pin
-byte pinBat; //O2 Sensor pin
+byte pinO2_2; //second O2 pin
+byte pinBat; //battery sense pin
 byte pinDisplayReset; // OLED reset pin
 byte pinTachOut; //Tacho output
 byte pinFuelPump; //Fuel pump on/off
@@ -346,6 +344,15 @@ byte pinSpareOut3; //Generic output
 byte pinSpareOut4; //Generic output
 byte pinSpareOut5; //Generic output
 byte pinSpareOut6; //Generic output
+byte pinSpareHOut1; //spare high current output
+byte pinSpareHOut2; // spare high current output
+byte pinSpareLOut1; // spare low current output
+byte pinSpareLOut2; // spare low current output
+byte pinSpareLOut3;
+byte pinSpareLOut4;
+byte pinSpareLOut5;
+byte pinBoost;
+byte pinVVt;
 byte pinFan;       // Cooling fan output
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
@@ -366,6 +373,8 @@ extern byte ignitionCount;
 extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
+extern volatile int toothHistory[512];
+extern volatile int toothHistoryIndex;
 
 
 #endif // GLOBALS_H

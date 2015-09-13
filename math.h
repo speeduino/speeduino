@@ -61,8 +61,8 @@ int divs100(int n) {
 }
 
 //Unsigned divide by 100
-unsigned long divu100(unsigned long n) {
- unsigned long q, r;
+unsigned int divu100(unsigned n) {
+ unsigned q, r;
  q = (n >> 1) + (n >> 3) + (n >> 6) - (n >> 10) +
  (n >> 12) + (n >> 13) - (n >> 16);
  q = q + (q >> 20);
@@ -74,7 +74,7 @@ unsigned long divu100(unsigned long n) {
 
 //Return x percent of y
 //This is a relatively fast approximation of a percentage value. 
-unsigned long percentage(byte x, unsigned long y)
+unsigned int percentage(byte x, unsigned int y)
 {
   return divu100(y) * x;
 }
