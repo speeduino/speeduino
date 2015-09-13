@@ -352,11 +352,12 @@ void triggerSetup_4G63()
   toothAngles[1] = 105; //Rising edge of tooth #2
   toothAngles[2] = 175; //Falling edge of tooth #2
   toothAngles[3] = 285; //Rising edge of tooth #1
-  
+  /*
   toothAngles[0] = 105; //Falling edge of tooth #1
   toothAngles[1] = 175; //Rising edge of tooth #2
   toothAngles[2] = 285; //Falling edge of tooth #2
   toothAngles[3] = 355; //Rising edge of tooth #1
+  */
   
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth. 
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
@@ -394,14 +395,15 @@ void triggerSec_4G63()
 { 
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
-  if ( curGap2 < triggerSecFilterTime ) { return; } 
+  //if ( curGap2 < triggerSecFilterTime ) { return; } 
   toothLastSecToothTime = curTime2;
   
   if(!currentStatus.hasSync)
   {
     //Check the status of the crank trigger
     bool crank = digitalRead(pinTrigger);
-    if(crank == HIGH) { toothCurrentCount = 0; } //If the crank trigger is currently HIGH, it means we're on tooth #1
+    triggerFilterTime = 1;
+    if(crank == HIGH) { toothCurrentCount = 4; } //If the crank trigger is currently HIGH, it means we're on tooth #1
   }
   return; 
 }
@@ -411,7 +413,8 @@ int getRPM_4G63()
 {
    noInterrupts();
    revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-   interrupts(); 
+   interrupts();
+   triggerFilterTime = revolutionTime >> 5;
    return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long) 
 }
 int getCrankAngle_4G63(int timePerDegree)
