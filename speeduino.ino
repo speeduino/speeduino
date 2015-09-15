@@ -529,6 +529,7 @@ void loop()
           if(startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;}
         } 
       
+      idleControl(); //Perform any idle realted actions
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
       
@@ -536,7 +537,7 @@ void loop()
       //Calculate an injector pulsewidth from the VE
       currentStatus.corrections = correctionsTotal();
       //currentStatus.corrections = 100;
-      if (configPage1.algorithm == 0) //Check with fuelling algorithm is being used
+      if (configPage1.algorithm == 0) //Check which fuelling algorithm is being used
       { 
         //Speed Density
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
