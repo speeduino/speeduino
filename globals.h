@@ -46,7 +46,8 @@ const int map_page_size = 288;
 struct statuses {
   volatile boolean hasSync;
   unsigned int RPM;
-  byte MAP;
+  int mapADC;
+  int MAP;
   byte TPS; //The current TPS reading (0% - 100%)
   byte TPSlast; //The previous TPS reading
   unsigned long TPS_time; //The time the TPS sample was taken
@@ -156,8 +157,8 @@ struct config1 {
   byte taeColdM;
   byte tpsMin;
   byte tpsMax;
-  byte unused46;
-  byte unused47;
+  byte mapMin;
+  unsigned int mapMax;
   byte unused48;
   byte unused49;
   byte unused50;
