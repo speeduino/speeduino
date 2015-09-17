@@ -443,7 +443,7 @@ void loop()
         }
       }
 
-      if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
+      // if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();} //Timers currently disabled
      
     //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
     previousLoopTime = currentLoopTime;
