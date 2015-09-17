@@ -88,7 +88,6 @@ void command()
 	break;
 
       case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed. This function takes 1.5kb of program space! :S
-        
         Serial.println("Coolant");
         for(int x=0; x<CALIBRATION_TABLE_SIZE; x++)
         {
@@ -145,7 +144,7 @@ void sendValues(int length)
   response[1] = currentStatus.squirt; //Squirt Bitfield
   response[2] = currentStatus.engine; //Engine Status Bitfield
   response[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
-  response[4] = currentStatus.MAP; //map
+  response[4] = (byte)(currentStatus.MAP >> 1); //map value is divided by 2
   response[5] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
   response[6] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
   response[7] = currentStatus.tpsADC; //TPS (Raw 0-255)
