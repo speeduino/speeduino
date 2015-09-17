@@ -159,7 +159,6 @@ struct config1 {
   byte tpsMax;
   byte mapMin;
   unsigned int mapMax;
-  byte unused48;
   byte unused49;
   byte unused50;
   byte unused51;
