@@ -26,18 +26,22 @@ struct table2D {
 void table2D_setSize(struct table2D targetTable, byte newSize);
 
 struct table3D {
-  //All tables must be the same size for simplicity
-  const static byte xSize = 16;
-  const static byte ySize = 16;
   
-  byte values[ySize][xSize];
-  int axisX[xSize];
-  int axisY[ySize];
+  //All tables must be the same size for simplicity
+  
+  byte xSize;
+  byte ySize;
+  
+  byte **values;
+  int *axisX;
+  int *axisY;
   
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
   byte lastXMax, lastXMin;
   byte lastYMax, lastYMin;
 };
+
+void table3D_setSize(struct table3D *targetTable, byte newSize);
 
 /*
 3D Tables have an origin (0,0) in the top left hand corner. Vertical axis is expressed first.

@@ -28,6 +28,18 @@ void table2D_setSize(struct table2D* targetTable, byte newSize)
   }
 }
 
+
+void table3D_setSize(struct table3D *targetTable, byte newSize)
+{
+    targetTable->values = (byte **)malloc(newSize * sizeof(byte*));
+    for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)malloc(newSize * sizeof(byte)); }
+      
+    targetTable->axisX = (int *)malloc(newSize * sizeof(int));
+    targetTable->axisY = (int *)malloc(newSize * sizeof(int));
+    targetTable->xSize = newSize;
+    targetTable->ySize = newSize;
+}
+
 /*
 This function simply pulls a 1D linear interpolated (ie averaged) value from a 2D table
 ie: Given a value on the X axis, it returns a Y value that coresponds to the point on the curve between the nearest two defined X values

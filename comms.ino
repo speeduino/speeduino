@@ -201,7 +201,7 @@ void receiveValue(int offset, byte newValue)
           if (offset < 272) 
           { 
             //X Axis
-            fuelTable.axisX[(offset-256)] = ((int)(newValue) * 100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+            fuelTable.axisX[(offset-256)] = ((int)(newValue) * 100); //The RPM values sent by tunerstudio are divided by 100, need to multiple it back by 100 to make it correct
           }
           else
           { 

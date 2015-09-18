@@ -108,6 +108,10 @@ void setup()
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
   //dummyIgnitionTable(&ignitionTable);
+  table3D_setSize(&fuelTable, 16);
+  table3D_setSize(&ignitionTable, 16);
+  table3D_setSize(&afrTable, 16);
+  
   loadConfig();
   
   //Repoint the 2D table structs to the config pages that were just loaded
