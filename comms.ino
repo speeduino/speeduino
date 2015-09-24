@@ -88,6 +88,13 @@ void command()
 	break;
 
       case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed. This function takes 1.5kb of program space! :S
+        digitalWrite(pinInjector1, HIGH);
+        digitalWrite(pinInjector2, HIGH);
+        delay(20);
+        digitalWrite(pinInjector1, LOW);
+        digitalWrite(pinInjector2, LOW);
+        return;
+      
         Serial.println("Coolant");
         for(int x=0; x<CALIBRATION_TABLE_SIZE; x++)
         {
@@ -234,7 +241,7 @@ void receiveValue(int offset, byte newValue)
           if (offset < 272) 
           { 
             //X Axis
-            ignitionTable.axisX[(offset-256)] = (int)(newValue) * int(100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+            ignitionTable.axisX[(offset-256)] = (int)(newValue) * int(100); //The RPM values sent by TunerStudio are divided by 100, need to multiple it back by 100 to make it correct
           }
           else
           { 
@@ -266,7 +273,7 @@ void receiveValue(int offset, byte newValue)
           if (offset < 272) 
           { 
             //X Axis
-            afrTable.axisX[(offset-256)] = int(newValue) * int(100); //The RPM values sent by megasquirt are divided by 100, need to multiply it back by 100 to make it correct
+            afrTable.axisX[(offset-256)] = int(newValue) * int(100); //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct
           }
           else
           { 
@@ -295,6 +302,41 @@ void receiveValue(int offset, byte newValue)
           *(pnt_configPage + (byte)offset) = newValue;
         }
         break;
+        
+      case boostvvtPage: //Boost and VVT maps (8x8)
+        if (offset < 64) //New value is part of the boost map
+        {
+          boostTable.values[7-offset/8][offset%8] = newValue;
+          return;
+        }
+        else if (offset < 72) //New value is on the X (RPM) axis of the boost table
+        {
+          boostTable.axisX[(offset-64)] = int(newValue) * int(100); //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct
+          return;
+        }
+        else if (offset < 80) //New value is on the Y (TPS) axis of the boost table
+        { 
+          boostTable.axisY[(7-(offset-72))] = int(newValue);
+          return;
+        }
+        else if (offset < 144) //New value is part of the vvt map
+        {
+          offset = offset - 80;
+          vvtTable.values[7-offset/8][offset%8] = newValue;
+          return;
+        }
+        else if (offset < 152) //New value is on the X (RPM) axis of the vvt table
+        {
+          offset = offset - 144;
+          vvtTable.axisX[offset] = int(newValue) * int(100); //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct
+          return;
+        }
+        else //New value is on the Y (Load) axis of the vvt table
+        { 
+          offset = offset - 152;
+          vvtTable.axisY[(7-offset)] = int(newValue);
+          return;
+        }
       
       default:
 	break;
@@ -401,6 +443,23 @@ void sendPage()
           response[x] = *(pnt_configPage + x); //Each byte is simply the location in memory of configPage2 + the offset + the variable number (x)
         }
         Serial.write((byte *)&response, sizeof(response)); 
+        break;
+      }
+      
+      case boostvvtPage:
+      {
+        //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
+        byte response[160]; //Bit hacky, but the size is: (8x8 + 8 + 8) + (8x8 + 8 + 8) = 160
+        
+        //Boost table
+        for(int x=0;x<64;x++) { response[x] = boostTable.values[7-x/8][x%8]; }
+        for(int x=64;x<72;x++) { response[x] = byte(boostTable.axisX[(x-64)] / 100); }
+        for(int y=72;y<80;y++) { response[y] = byte(boostTable.axisY[7-(y-72)]); }
+        //VVT table
+        for(int x=0;x<64;x++) { response[x+80] = vvtTable.values[7-x/8][x%8]; }
+        for(int x=64;x<72;x++) { response[x+80] = byte(vvtTable.axisX[(x-64)] / 100); }
+        for(int y=72;y<80;y++) { response[y+80] = byte(vvtTable.axisY[7-(y-72)]); }
+        Serial.write((byte *)&response, sizeof(response));
         break;
       }
         

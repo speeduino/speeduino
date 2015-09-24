@@ -28,7 +28,7 @@ void initialiseSchedulers()
     TIFR5  = 0x00;          //Timer5 INT Flag Reg: Clear Timer Overflow Flag
     TCCR5A = 0x00;          //Timer5 Control Reg A: Wave Gen Mode normal
     //TCCR5B = (1 << CS12);   //Timer5 Control Reg B: Timer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
-    TCCR5B = 0x03; //Reverting this for now due to issue with low RPM overflow
+    TCCR5B = 0x03;         //aka Divisor = 64 = 490.1Hz
     ignitionSchedule1.Status = OFF;
     ignitionSchedule2.Status = OFF;
     ignitionSchedule3.Status = OFF;
@@ -38,7 +38,7 @@ void initialiseSchedulers()
     TCNT4  = 0;             //Reset Timer Count
     TIFR4  = 0x00;          //Timer4 INT Flag Reg: Clear Timer Overflow Flag
     TCCR4A = 0x00;          //Timer4 Control Reg A: Wave Gen Mode normal
-    TCCR4B = (1 << CS12);   //Timer4 Control Reg B: Timer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
+    TCCR4B = (1 << CS12);   //Timer4 Control Reg B: aka Divisor = 256 = 122.5HzTimer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg 
     ignitionSchedule4.Status = OFF;
     fuelSchedule4.Status = OFF;
   }

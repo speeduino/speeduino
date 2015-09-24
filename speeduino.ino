@@ -66,9 +66,11 @@ void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets p
 int (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
 int (*getCrankAngle)(int); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 
-struct table3D fuelTable; //8x8 fuel map
-struct table3D ignitionTable; //8x8 ignition map
-struct table3D afrTable; //8x8 afr target map
+struct table3D fuelTable; //16x16 fuel map
+struct table3D ignitionTable; //16x16 ignition map
+struct table3D afrTable; //16x16 afr target map
+struct table3D boostTable; //8x8 boost map
+struct table3D vvtTable; //8x8 vvt map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
@@ -111,6 +113,8 @@ void setup()
   table3D_setSize(&fuelTable, 16);
   table3D_setSize(&ignitionTable, 16);
   table3D_setSize(&afrTable, 16);
+  table3D_setSize(&boostTable, 8);
+  table3D_setSize(&vvtTable, 8);
   
   loadConfig();
   
