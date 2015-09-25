@@ -18,7 +18,7 @@ void initialiseSchedulers()
     TCCR3A = 0x00;          //Timer3 Control Reg A: Wave Gen Mode normal
     TCCR3B = (1 << CS12);   //Timer3 Control Reg B: Timer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
     //TCCR3B = 0x03;   //Timer3 Control Reg B: Timer Prescaler set to 64. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
-    fuelSchedule1.Status = OFF;
+    //Timer 3 compare channel A is reserved for idle control, therefore there are only 2 fuel channels here
     fuelSchedule2.Status = OFF;
     fuelSchedule3.Status = OFF;
 
@@ -41,6 +41,7 @@ void initialiseSchedulers()
     TCCR4B = (1 << CS12);   //Timer4 Control Reg B: aka Divisor = 256 = 122.5HzTimer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg 
     ignitionSchedule4.Status = OFF;
     fuelSchedule4.Status = OFF;
+    fuelSchedule1.Status = OFF; //Uses compare channel C
   }
   
 /*
@@ -59,14 +60,14 @@ void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned l
     //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
     //As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
     //unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
-    unsigned int absoluteTimeout = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
-    OCR3A = absoluteTimeout;
+    unsigned int absoluteTimeout = TCNT4 + (timeout >> 4); //As above, but with bit shift instead of / 16
+    OCR4C = absoluteTimeout;
     fuelSchedule1.duration = duration;
     fuelSchedule1.StartCallback = startCallback; //Name the start callback function
     fuelSchedule1.EndCallback = endCallback; //Name the end callback function
     fuelSchedule1.Status = PENDING; //Turn this schedule on
     
-    TIMSK3 |= (1 << OCIE3A); //Turn on the A compare unit (ie turn on the interrupt)
+    TIMSK4 |= (1 << OCIE4C); //Turn on the C compare unit (ie turn on the interrupt)
   }
 void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
@@ -188,21 +189,21 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
 //This calls the relevant callback function (startCallback or endCallback) depending on the status of the schedule.
 //If the startCallback function is called, we put the scheduler into RUNNING state
 //Timer3A (fuel schedule 1) Compare Vector
-ISR(TIMER3_COMPA_vect, ISR_NOBLOCK) //fuelSchedule1
+ISR(TIMER4_COMPC_vect, ISR_NOBLOCK) //fuelSchedule1
   {
     if (fuelSchedule1.Status == PENDING) //Check to see if this schedule is turn on
     {
       fuelSchedule1.StartCallback();
       fuelSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       //unsigned int absoluteTimeout = TCNT3 + (fuelSchedule1.duration / 16);
-      unsigned int absoluteTimeout = TCNT3 + (fuelSchedule1.duration >> 4); //Divide by 16
-      OCR3A = absoluteTimeout;
+      unsigned int absoluteTimeout = TCNT4 + (fuelSchedule1.duration >> 4); //Divide by 16
+      OCR4C = absoluteTimeout;
     }
     else if (fuelSchedule1.Status == RUNNING)
     {
        fuelSchedule1.EndCallback();
        fuelSchedule1.Status = OFF; //Turn off the schedule
-       TIMSK3 &= ~(1 << OCIE3A); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
+       TIMSK4 &= ~(1 << OCIE4C); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
     }
   }
 ISR(TIMER3_COMPB_vect, ISR_NOBLOCK) //fuelSchedule2
