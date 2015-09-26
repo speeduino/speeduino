@@ -23,4 +23,11 @@ struct StepperIdle idleStepper;
 bool idleOn; //Simply tracks whether idle was on last time around
 unsigned int iacStepTime;
 
+volatile byte *idle_pin_port;
+volatile byte idle_pin_mask;
+volatile bool idle_pwm_state;
+unsigned int idle_pwm_max_count; //Used for variable PWM frequency
+unsigned int idle_pwm_cur_value;
+
 void initialiseIdle();
+
