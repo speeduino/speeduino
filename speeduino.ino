@@ -34,6 +34,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "display.h"
 #include "decoders.h"
 #include "idle.h"
+#include "auxiliaries.h"
 
 #ifdef __SAM3X8E__
  //Do stuff for ARM based CPUs 
@@ -113,10 +114,12 @@ void setup()
   table3D_setSize(&fuelTable, 16);
   table3D_setSize(&ignitionTable, 16);
   table3D_setSize(&afrTable, 16);
-  table3D_setSize(&boostTable, 8);
-  table3D_setSize(&vvtTable, 8);
   
   loadConfig();
+  
+  //Boost and vvt tables are only created if they are turned on
+  if(configPage3.boostEnabled) { table3D_setSize(&boostTable, 8); }
+  if(configPage3.vvtEnabled) { table3D_setSize(&vvtTable, 8); }
   
   //Repoint the 2D table structs to the config pages that were just loaded
   taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values

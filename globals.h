@@ -244,7 +244,9 @@ struct config3 {
   
   byte egoAlgorithm : 2;
   byte egoType : 2;
-  byte unused : 4;
+  byte boostEnabled : 1;
+  byte vvtEnabled : 1;
+  byte unused : 2;
   
   byte egoKP;
   byte egoKI;
@@ -264,8 +266,8 @@ struct config3 {
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
   byte airDenBins[9];
   byte airDenRates[9];
-  byte unused45;
-  byte unused46;
+  byte boostFreq; //Frequency of the boost PWM valve
+  byte vvtFreq; //Frequency of the vvt PWM valve
   byte unused47;
   byte unused48;
   byte unused49;
