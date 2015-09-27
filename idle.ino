@@ -5,7 +5,7 @@ A full copy of the license may be found in the projects root directory
 */
 
 /*
-These functions over the PWM and stepper idle control
+These functions cover the PWM and stepper idle control
 */
 
 /*
@@ -39,6 +39,11 @@ void initialiseIdle()
       iacCrankDutyTable.xSize = 4;
       iacCrankDutyTable.values = configPage4.iacCrankDuty;
       iacCrankDutyTable.axisX = configPage4.iacCrankBins;
+      
+      idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
+      idle_pin_mask = digitalPinToBitMask(pinIdle1);
+      idle_pwm_max_count = 512; //Timer3 ticks every 16us. 16 * 512 = 8192uS. 1000000/8192 = 122Hz
+      TIMSK3 |= (1 << OCIE3A); //Turn on the A compare unit (ie turn on the interrupt)
       break;
     
     case 3:
@@ -107,13 +112,13 @@ void idleControl()
       if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         //Currently cranking. Use the cranking table
-        analogWrite(pinIdle1, table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)); //All temps are offset by 40 degrees
+        idle_pwm_cur_value = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 2; //All temps are offset by 40 degrees
         idleOn = true;
       }
-      else if( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < iacPWMTable.values[IDLE_TABLE_SIZE-1])
+      else if( currentStatus.coolant < (iacPWMTable.values[IDLE_TABLE_SIZE-1] + CALIBRATION_TEMPERATURE_OFFSET))
       {
         //Standard running
-        analogWrite(pinIdle1, table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)); //All temps are offset by 40 degrees
+        idle_pwm_cur_value = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 2; //All temps are offset by 40 degrees
         idleOn = true;
       }
       else if (idleOn) { digitalWrite(pinIdle1, LOW); idleOn = false; }
@@ -199,4 +204,22 @@ void homeStepper()
    idleStepper.curIdleStep = 0; 
    idleStepper.targetIdleStep = 0;
    idleStepper.stepperStatus = SOFF;
+}
+
+//The interrupt to turn off the idle pwm
+ISR(TIMER3_COMPA_vect)
+{
+  if (idle_pwm_state)
+  {
+    *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low
+    OCR3A = TCNT3 + (idle_pwm_max_count - idle_pwm_cur_value);
+    idle_pwm_state = false;
+  }
+  else
+  {
+    *idle_pin_port |= (idle_pin_mask);  // Switch pin high
+    OCR3A = TCNT3 + idle_pwm_cur_value;
+    idle_pwm_state = true;
+  }
+    
 }

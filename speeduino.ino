@@ -34,6 +34,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "display.h"
 #include "decoders.h"
 #include "idle.h"
+#include "auxiliaries.h"
 
 #ifdef __SAM3X8E__
  //Do stuff for ARM based CPUs 
@@ -66,9 +67,11 @@ void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets p
 int (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
 int (*getCrankAngle)(int); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 
-struct table3D fuelTable; //8x8 fuel map
-struct table3D ignitionTable; //8x8 ignition map
-struct table3D afrTable; //8x8 afr target map
+struct table3D fuelTable; //16x16 fuel map
+struct table3D ignitionTable; //16x16 ignition map
+struct table3D afrTable; //16x16 afr target map
+struct table3D boostTable; //8x8 boost map
+struct table3D vvtTable; //8x8 vvt map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
@@ -108,7 +111,15 @@ void setup()
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
   //dummyIgnitionTable(&ignitionTable);
+  table3D_setSize(&fuelTable, 16);
+  table3D_setSize(&ignitionTable, 16);
+  table3D_setSize(&afrTable, 16);
+  
   loadConfig();
+  
+  //Boost and vvt tables are only created if they are turned on
+  if(configPage3.boostEnabled) { table3D_setSize(&boostTable, 8); }
+  if(configPage3.vvtEnabled) { table3D_setSize(&vvtTable, 8); }
   
   //Repoint the 2D table structs to the config pages that were just loaded
   taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
@@ -217,6 +228,7 @@ void setup()
   }
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
+  pinMode(pinTrigger3, INPUT);
   //digitalWrite(pinTrigger, HIGH);
 
   
@@ -425,6 +437,10 @@ void setup()
       channel2InjDegrees = 180;
       break;
   }
+  
+  //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
+  setFuelSchedule1(openInjector1and4, 100, (unsigned long)(configPage1.primePulse * 100), closeInjector1and4);
+  setFuelSchedule2(openInjector2and3, 100, (unsigned long)(configPage1.primePulse * 100), closeInjector2and3);
 }
 
 void loop() 
@@ -442,7 +458,7 @@ void loop()
         }
       }
 
-      if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
+      // if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();} //Timers currently disabled
      
     //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
     previousLoopTime = currentLoopTime;
@@ -479,7 +495,8 @@ void loop()
     //-----------------------------------------------------------------------------------------------------
 
     //currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 10, 255); //Get the current MAP value
-    currentStatus.MAP = (byte)fastMap1023toX(analogRead(pinMAP), 0, 1023, 10, 255); //Get the current MAP value
+    currentStatus.mapADC = analogRead(pinMAP);
+    currentStatus.MAP = map(currentStatus.mapADC, 0, 1023, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
     
     //TPS setting to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
     if ((mainLoopCount & 31) == 1)
@@ -489,6 +506,8 @@ void loop()
       currentStatus.tpsADC = fastMap1023toX(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
       currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
       currentStatus.TPS_time = currentLoopTime;
+      
+      boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched at least that frequently
     }
     
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
@@ -497,6 +516,7 @@ void loop()
        currentStatus.cltADC = map(analogRead(pinCLT), 0, 1023, 0, 511); //Get the current raw CLT value
        currentStatus.iatADC = map(analogRead(pinIAT), 0, 1023, 0, 511); //Get the current raw IAT value
        currentStatus.O2ADC = map(analogRead(pinO2), 0, 1023, 0, 511); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4. This is the correct calibration for an Innovate Wideband 0v - 5V unit. Proper calibration is still a WIP
+       currentStatus.O2_2ADC = map(analogRead(pinO2_2), 0, 1023, 0, 511); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4. This is the correct calibration for an Innovate Wideband 0v - 5V unit. Proper calibration is still a WIP
        //currentStatus.battery10 = map(analogRead(pinBat), 0, 1023, 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
        currentStatus.battery10 = fastMap1023toX(analogRead(pinBat), 0, 1023, 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
        //currentStatus.batADC = map(analogRead(pinBat), 0, 1023, 0, 255); //Get the current raw Battery value
@@ -504,6 +524,7 @@ void loop()
        currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
        currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
        currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
+       currentStatus.O2_2 = o2CalibrationTable[currentStatus.O2_2ADC];
     }
 
     //Always check for sync
@@ -526,6 +547,8 @@ void loop()
           if(startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;}
         } 
       
+      idleControl(); //Perform any idle realted actions
+      vvtControl();
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
       
@@ -533,7 +556,7 @@ void loop()
       //Calculate an injector pulsewidth from the VE
       currentStatus.corrections = correctionsTotal();
       //currentStatus.corrections = 100;
-      if (configPage1.algorithm == 0) //Check with fuelling algorithm is being used
+      if (configPage1.algorithm == 0) //Check which fuelling algorithm is being used
       { 
         //Speed Density
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
@@ -626,7 +649,7 @@ void loop()
     
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
-      if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { currentStatus.advance = currentStatus.advance - configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+      if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { currentStatus.advance = configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
       
       //Set dwell
        //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS

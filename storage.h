@@ -29,6 +29,10 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 | 983   |16   | AFR Table MAP/TPS bins              |
 | 999   |64   | Remaining Page 3 settings           |
 | 1063  |64   | Page 4 settings                     |
+| 1127  |2    | X and Y sizes for boost table       |
+| 1129  |64   | Boost Map (8x8)                     |
+| 1193  |8    | Boost Table RPM bins                |
+| 1201  |8    | Bost Table TPS bins                 |
 | 2559  |512  | Calibration data (O2)               |
 | 3071  |512  | Calibration data (IAT)              |
 | 3583  |512  | Calibration data (CLT)              |
@@ -58,6 +62,17 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG6_END 1063
 #define EEPROM_CONFIG7_START 1063
 #define EEPROM_CONFIG7_END 1127   
+#define EEPROM_CONFIG8_XSIZE1 1127   
+#define EEPROM_CONFIG8_YSIZE1 1128
+#define EEPROM_CONFIG8_MAP1 1129
+#define EEPROM_CONFIG8_XBINS1 1193
+#define EEPROM_CONFIG8_YBINS1 1201
+#define EEPROM_CONFIG8_XSIZE2 1209  
+#define EEPROM_CONFIG8_YSIZE2 1210
+#define EEPROM_CONFIG8_MAP2 1211
+#define EEPROM_CONFIG8_XBINS2 1275
+#define EEPROM_CONFIG8_YBINS2 1283
+#define EEPROM_CONFIG8_END 1291
 
 //Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
 #define EEPROM_CALIBRATION_O2 2559

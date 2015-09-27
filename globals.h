@@ -46,7 +46,8 @@ const int map_page_size = 288;
 struct statuses {
   volatile boolean hasSync;
   unsigned int RPM;
-  byte MAP;
+  int mapADC;
+  int MAP;
   byte TPS; //The current TPS reading (0% - 100%)
   byte TPSlast; //The previous TPS reading
   unsigned long TPS_time; //The time the TPS sample was taken
@@ -55,12 +56,14 @@ struct statuses {
   byte tpsDOT;
   byte VE;
   byte O2;
+  byte O2_2;
   int coolant;
   int cltADC;
   int IAT;
   int iatADC;
   int batADC;
   int O2ADC;
+  int O2_2ADC;
   int dwell;
   byte dwellCorrection; //The amount of correction being applied to the dwell time.
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
@@ -154,9 +157,8 @@ struct config1 {
   byte taeColdM;
   byte tpsMin;
   byte tpsMax;
-  byte unused46;
-  byte unused47;
-  byte unused48;
+  byte mapMin;
+  unsigned int mapMax;
   byte unused49;
   byte unused50;
   byte unused51;
@@ -242,7 +244,9 @@ struct config3 {
   
   byte egoAlgorithm : 2;
   byte egoType : 2;
-  byte unused : 4;
+  byte boostEnabled : 1;
+  byte vvtEnabled : 1;
+  byte unused : 2;
   
   byte egoKP;
   byte egoKI;
@@ -262,8 +266,8 @@ struct config3 {
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
   byte airDenBins[9];
   byte airDenRates[9];
-  byte unused45;
-  byte unused46;
+  byte boostFreq; //Frequency of the boost PWM valve
+  byte vvtFreq; //Frequency of the vvt PWM valve
   byte unused47;
   byte unused48;
   byte unused49;
@@ -326,12 +330,14 @@ byte pinCoil3; //Pin for coil 3
 byte pinCoil4; //Pin for coil 4
 byte pinTrigger; //The CAS pin
 byte pinTrigger2; //The Cam Sensor pin
+byte pinTrigger3;	//the 2nd cam sensor pin
 byte pinTPS;//TPS input pin
 byte pinMAP; //MAP sensor pin
 byte pinMAP2; //2nd MAP sensor (Currently unused)
 byte pinIAT; //IAT sensor pin
 byte pinCLT; //CLS sensor pin
 byte pinO2; //O2 Sensor pin
+byte pinO2_2; //second O2 pin
 byte pinBat; //O2 Sensor pin
 byte pinDisplayReset; // OLED reset pin
 byte pinTachOut; //Tacho output
@@ -346,6 +352,16 @@ byte pinSpareOut3; //Generic output
 byte pinSpareOut4; //Generic output
 byte pinSpareOut5; //Generic output
 byte pinSpareOut6; //Generic output
+byte pinSpareHOut1; //spare high current output
+byte pinSpareHOut2; // spare high current output
+byte pinSpareLOut1; // spare low current output
+byte pinSpareLOut2; // spare low current output
+byte pinSpareLOut3;
+byte pinSpareLOut4;
+byte pinSpareLOut5;
+byte pinBoost;
+byte pinVVT_1;		// vvt output 1
+byte pinVVt_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver

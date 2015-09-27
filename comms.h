@@ -8,6 +8,7 @@
 #define afrMapPage   5
 #define afrSetPage   6
 #define iacPage      7
+#define boostvvtPage 8
 
 byte currentPage;
 
