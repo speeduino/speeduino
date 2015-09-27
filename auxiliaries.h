@@ -7,8 +7,11 @@ volatile byte vvt_pin_mask;
 
 volatile bool boost_pwm_state;
 unsigned int boost_pwm_max_count; //Used for variable PWM frequency
-unsigned int boost_pwm_cur_value;
+volatile unsigned int boost_pwm_cur_value;
+unsigned int boost_pwm_target_value;
 
 volatile bool vvt_pwm_state;
 unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
-unsigned int vvt_pwm_cur_value;
+volatile unsigned int vvt_pwm_cur_value;
+unsigned int vvt_pwm_target_value;
+

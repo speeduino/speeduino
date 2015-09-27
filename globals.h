@@ -360,7 +360,7 @@ byte pinSpareLOut3;
 byte pinSpareLOut4;
 byte pinSpareLOut5;
 byte pinBoost;
-byte pinVVt_1;		// vvt output 1
+byte pinVVT_1;		// vvt output 1
 byte pinVVt_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
 byte pinStepperDir; //Direction pin for the stepper motor driver

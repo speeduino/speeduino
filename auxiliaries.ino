@@ -30,8 +30,8 @@ void initialiseAuxPWM()
   
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
   boost_pin_mask = digitalPinToBitMask(pinBoost);
-  boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
-  boost_pin_mask = digitalPinToBitMask(pinBoost);
+  vvt_pin_port = portOutputRegister(digitalPinToPort(pinVVT_1));
+  vvt_pin_mask = digitalPinToBitMask(pinVVT_1);
   
   boost_pwm_max_count = 1000000L / (16 * configPage3.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte)
   vvt_pwm_max_count = 1000000L / (16 * configPage3.vvtFreq * 2);; //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
@@ -41,7 +41,54 @@ void initialiseAuxPWM()
 
 void boostControl()
 {
-  
+  if(configPage3.boostEnabled)
+  {
+    byte boostDuty = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM);
+    boost_pwm_target_value = percentage(boostDuty, boost_pwm_max_count);
+  }
 }
 
+void vvtControl()
+{
+  if(configPage3.vvtEnabled)
+  {
+    byte vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
+    vvt_pwm_target_value = percentage(vvtDuty, vvt_pwm_max_count);
+  }
+}
 
+//The interrupt to control the Boost PWM
+ISR(TIMER1_COMPA_vect)
+{
+  if (boost_pwm_state)
+  {
+    *boost_pin_port &= ~(boost_pin_mask);  // Switch pin to low
+    OCR1A = TCNT1 + (boost_pwm_max_count - boost_pwm_cur_value);
+    boost_pwm_state = false;
+  }
+  else
+  {
+    *boost_pin_port |= (boost_pin_mask);  // Switch pin high
+    OCR1A = TCNT1 + boost_pwm_target_value;
+    boost_pwm_cur_value = boost_pwm_target_value;
+    boost_pwm_state = true;
+  }  
+}
+
+//The interrupt to control the VVT PWM
+ISR(TIMER1_COMPB_vect)
+{
+  if (vvt_pwm_state)
+  {
+    *vvt_pin_port &= ~(vvt_pin_mask);  // Switch pin to low
+    OCR1B = TCNT1 + (vvt_pwm_max_count - vvt_pwm_cur_value);
+    vvt_pwm_state = false;
+  }
+  else
+  {
+    *vvt_pin_port |= (vvt_pin_mask);  // Switch pin high
+    OCR1B = TCNT1 + vvt_pwm_target_value;
+    vvt_pwm_cur_value = vvt_pwm_target_value;
+    vvt_pwm_state = true;
+  }  
+}

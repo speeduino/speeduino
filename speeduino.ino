@@ -506,6 +506,8 @@ void loop()
       currentStatus.tpsADC = fastMap1023toX(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
       currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
       currentStatus.TPS_time = currentLoopTime;
+      
+      boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched at least that frequently
     }
     
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
@@ -546,6 +548,7 @@ void loop()
         } 
       
       idleControl(); //Perform any idle realted actions
+      vvtControl();
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
       
