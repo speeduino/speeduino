@@ -188,13 +188,13 @@ void writeConfig()
   }
   //TPS/MAP bins
   y=EEPROM_CONFIG8_YBINS2;
-  for(int x=EEPROM_CONFIG8_YBINS1; x<EEPROM_CONFIG8_END; x++) 
+  for(int x=EEPROM_CONFIG8_YBINS1; x<EEPROM_CONFIG8_XSIZE2; x++) 
   {
     offset = x - EEPROM_CONFIG8_YBINS1;
     if(EEPROM.read(x) != boostTable.axisY[offset]) { EEPROM.write(x, boostTable.axisY[offset]); }
-    offset = x - EEPROM_CONFIG8_YBINS1;
+    offset = y - EEPROM_CONFIG8_YBINS2;
     if(EEPROM.read(y) != vvtTable.axisY[offset]) { EEPROM.write(y, vvtTable.axisY[offset]); }
-    x++;
+    y++;
   }
 }
 
@@ -311,7 +311,6 @@ void loadConfig()
   
   //*********************************************************************************************************************************************************************************
   // Boost and vvt tables load
-  
   int y = EEPROM_CONFIG8_MAP2;
   for(int x=EEPROM_CONFIG8_MAP1; x<EEPROM_CONFIG8_XBINS1; x++) 
   { 
@@ -321,6 +320,7 @@ void loadConfig()
     vvtTable.values[7-offset/8][offset%8] = EEPROM.read(y); //Read the 8x8 map
     y++;
   }
+
   //RPM bins
   y = EEPROM_CONFIG8_XBINS2;
   for(int x=EEPROM_CONFIG8_XBINS1; x<EEPROM_CONFIG8_YBINS1; x++) 
@@ -331,9 +331,10 @@ void loadConfig()
     vvtTable.axisX[offset] = (EEPROM.read(y) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
     y++;
   }
+    
   //TPS/MAP bins
   y = EEPROM_CONFIG8_YBINS2;
-  for(int x=EEPROM_CONFIG8_YBINS1; x<EEPROM_CONFIG8_END; x++) 
+  for(int x=EEPROM_CONFIG8_YBINS1; x<EEPROM_CONFIG8_XSIZE2; x++) 
   {
     offset = x - EEPROM_CONFIG8_YBINS1;
     boostTable.axisY[offset] = EEPROM.read(x);

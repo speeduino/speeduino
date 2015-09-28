@@ -114,12 +114,10 @@ void setup()
   table3D_setSize(&fuelTable, 16);
   table3D_setSize(&ignitionTable, 16);
   table3D_setSize(&afrTable, 16);
+  table3D_setSize(&boostTable, 8);
+  table3D_setSize(&vvtTable, 8);
   
   loadConfig();
-  
-  //Boost and vvt tables are only created if they are turned on
-  if(configPage3.boostEnabled) { table3D_setSize(&boostTable, 8); }
-  if(configPage3.vvtEnabled) { table3D_setSize(&vvtTable, 8); }
   
   //Repoint the 2D table structs to the config pages that were just loaded
   taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
@@ -506,9 +504,7 @@ void loop()
       currentStatus.TPSlast_time = currentStatus.TPS_time;
       currentStatus.tpsADC = fastMap1023toX(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
       currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
-      currentStatus.TPS_time = currentLoopTime;
-      
-      boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched at least that frequently
+      currentStatus.TPS_time = currentLoopTime;   
     }
     
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
@@ -526,6 +522,9 @@ void loop()
        currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
        currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
        currentStatus.O2_2 = o2CalibrationTable[currentStatus.O2_2ADC];
+       
+      vvtControl();
+      boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
     }
 
     //Always check for sync
@@ -549,7 +548,6 @@ void loop()
         } 
       
       idleControl(); //Perform any idle realted actions
-      vvtControl();
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
       

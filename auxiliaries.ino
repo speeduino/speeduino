@@ -56,7 +56,7 @@ void vvtControl()
     vvt_pwm_target_value = percentage(vvtDuty, vvt_pwm_max_count);
   }
 }
-
+  
 //The interrupt to control the Boost PWM
 ISR(TIMER1_COMPA_vect)
 {
