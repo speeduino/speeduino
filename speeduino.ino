@@ -177,7 +177,8 @@ void setup()
   initialiseTimers();
   initialiseDisplay();
   initialiseIdle();
-  initialiseFan(); 
+  initialiseFan();
+  initialiseAuxPWM();
   
   //Once the configs have been loaded, a number of one time calculations can be completed
   req_fuel_uS = configPage1.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations

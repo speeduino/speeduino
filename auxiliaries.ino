@@ -24,9 +24,9 @@ void initialiseAuxPWM()
 {
   TCCR1B = 0x00;          //Disbale Timer1 while we set it up
   TCNT1  = 0;             //Reset Timer Count
-  TIFR1  = 0x00;          //Timer3 INT Flag Reg: Clear Timer Overflow Flag
-  TCCR1A = 0x00;          //Timer3 Control Reg A: Wave Gen Mode normal
-  TCCR1B = (1 << CS12);   //Timer3 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg 
+  TIFR1  = 0x00;          //Timer1 INT Flag Reg: Clear Timer Overflow Flag
+  TCCR1A = 0x00;          //Timer1 Control Reg A: Wave Gen Mode normal (Simply counts up from 0 to 65535 (16-bit int)
+  TCCR1B = (1 << CS12);   //Timer1 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg 
   
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
   boost_pin_mask = digitalPinToBitMask(pinBoost);
