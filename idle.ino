@@ -112,13 +112,15 @@ void idleControl()
       if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         //Currently cranking. Use the cranking table
-        idle_pwm_cur_value = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 2; //All temps are offset by 40 degrees
+        byte idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        idle_pwm_target_value = percentage(idleDuty, idle_pwm_max_count);
         idleOn = true;
       }
       else if( currentStatus.coolant < (iacPWMTable.values[IDLE_TABLE_SIZE-1] + CALIBRATION_TEMPERATURE_OFFSET))
       {
         //Standard running
-        idle_pwm_cur_value = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 2; //All temps are offset by 40 degrees
+        byte idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        idle_pwm_target_value = percentage(idleDuty, idle_pwm_max_count);
         idleOn = true;
       }
       else if (idleOn) { digitalWrite(pinIdle1, LOW); idleOn = false; }
@@ -218,7 +220,8 @@ ISR(TIMER4_COMPC_vect)
   else
   {
     *idle_pin_port |= (idle_pin_mask);  // Switch pin high
-    OCR4A = TCNT4 + idle_pwm_cur_value;
+    OCR4C = TCNT4 + idle_pwm_target_value;
+    idle_pwm_cur_value = idle_pwm_target_value;
     idle_pwm_state = true;
   }
     

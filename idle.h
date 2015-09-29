@@ -27,7 +27,8 @@ volatile byte *idle_pin_port;
 volatile byte idle_pin_mask;
 volatile bool idle_pwm_state;
 unsigned int idle_pwm_max_count; //Used for variable PWM frequency
-unsigned int idle_pwm_cur_value;
+volatile unsigned int idle_pwm_cur_value;
+unsigned int idle_pwm_target_value;
 
 void initialiseIdle();
 
