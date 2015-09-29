@@ -268,7 +268,7 @@ struct config3 {
   byte airDenRates[9];
   byte boostFreq; //Frequency of the boost PWM valve
   byte vvtFreq; //Frequency of the vvt PWM valve
-  byte unused47;
+  byte idleFreq;
   byte unused48;
   byte unused49;
   byte unused50;

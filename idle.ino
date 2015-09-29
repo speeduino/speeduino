@@ -42,8 +42,8 @@ void initialiseIdle()
       
       idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
       idle_pin_mask = digitalPinToBitMask(pinIdle1);
-      idle_pwm_max_count = 512; //Timer3 ticks every 16us. 16 * 512 = 8192uS. 1000000/8192 = 122Hz
-      TIMSK3 |= (1 << OCIE3A); //Turn on the A compare unit (ie turn on the interrupt)
+      idle_pwm_max_count = 1000000L / (16 * configPage3.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      TIMSK4 |= (1 << OCIE4C); //Turn on the A compare unit (ie turn on the interrupt)
       break;
     
     case 3:
@@ -207,18 +207,18 @@ void homeStepper()
 }
 
 //The interrupt to turn off the idle pwm
-ISR(TIMER3_COMPA_vect)
+ISR(TIMER4_COMPC_vect)
 {
   if (idle_pwm_state)
   {
     *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low
-    OCR3A = TCNT3 + (idle_pwm_max_count - idle_pwm_cur_value);
+    OCR4C = TCNT4 + (idle_pwm_max_count - idle_pwm_cur_value);
     idle_pwm_state = false;
   }
   else
   {
     *idle_pin_port |= (idle_pin_mask);  // Switch pin high
-    OCR3A = TCNT3 + idle_pwm_cur_value;
+    OCR4A = TCNT4 + idle_pwm_cur_value;
     idle_pwm_state = true;
   }
     
