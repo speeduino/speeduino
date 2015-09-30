@@ -41,6 +41,16 @@ const int map_page_size = 288;
 
 #define SERIAL_BUFFER_THRESHOLD 32 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
 
+//These are for the direct port manipulation of the injectors and coils
+volatile byte *inj1_pin_port;
+volatile byte inj1_pin_mask;
+volatile byte *inj2_pin_port;
+volatile byte inj2_pin_mask;
+volatile byte *inj3_pin_port;
+volatile byte inj3_pin_mask;
+volatile byte *inj4_pin_port;
+volatile byte inj4_pin_mask;
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
