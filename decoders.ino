@@ -414,7 +414,7 @@ int getRPM_4G63()
    noInterrupts();
    revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
    interrupts();
-   triggerFilterTime = revolutionTime >> 5;
+   //triggerFilterTime = revolutionTime >> 5; PROBLEMATIC!!!
    return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long) 
 }
 int getCrankAngle_4G63(int timePerDegree)
