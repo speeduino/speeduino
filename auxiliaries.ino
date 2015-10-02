@@ -60,6 +60,7 @@ void vvtControl()
 //The interrupt to control the Boost PWM
 ISR(TIMER1_COMPA_vect)
 {
+  if(!configPage3.boostEnabled) { return; }
   if (boost_pwm_state)
   {
     *boost_pin_port &= ~(boost_pin_mask);  // Switch pin to low
@@ -78,6 +79,7 @@ ISR(TIMER1_COMPA_vect)
 //The interrupt to control the VVT PWM
 ISR(TIMER1_COMPB_vect)
 {
+  if(!configPage3.vvtEnabled) { return; }
   if (vvt_pwm_state)
   {
     *vvt_pin_port &= ~(vvt_pin_mask);  // Switch pin to low
