@@ -45,6 +45,7 @@ void boostControl()
   {
     byte boostDuty = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM);
     boost_pwm_target_value = percentage(boostDuty, boost_pwm_max_count);
+    currentStatus.boost_duty = boostDuty;
   }
 }
 
@@ -54,6 +55,7 @@ void vvtControl()
   {
     byte vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
     vvt_pwm_target_value = percentage(vvtDuty, vvt_pwm_max_count);
+    currentStatus.vvt_duty1 = vvtDuty;
   }
 }
   

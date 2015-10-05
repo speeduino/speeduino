@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS 2.6.14 - EFI Analytics, Inc." tuneComment="" writeDate="Wed Sep 30 14:46:41 EST 2015"/>
-<versionInfo fileFormat="4.0" firmwareInfo="" nPages="8" signature="20"/>
+<bibliography author="TunerStudio MS 2.6.19 - EFI Analytics, Inc." tuneComment="" writeDate="Mon Oct 05 23:53:01 BST 2015"/>
+<versionInfo fileFormat="4.0" firmwareInfo="Bowling &amp; Grippo MS1 Base Code 20" nPages="8" signature="20"/>
 <page>
 <pcVariable name="tsCanId">"0"</pcVariable>
 <pcVariable cols="1" digits="1" name="wueAfrTargetOffset" rows="10" units=":1">
@@ -129,8 +129,8 @@
 <constant name="display5">"RPM"</constant>
 <constant name="displayB1">"RPM"</constant>
 <constant name="displayB2">"RPM"</constant>
-<constant digits="1" name="reqFuel" units="ms">4.3</constant>
-<constant digits="0" name="divider">2.0</constant>
+<constant digits="1" name="reqFuel" units="ms">4.4</constant>
+<constant digits="0" name="divider">3.0</constant>
 <constant name="alternate">"Simultaneous"</constant>
 <constant digits="1" name="injOpen" units="ms">1.0</constant>
 <constant digits="0" name="inj1Ang" units="deg">355.0</constant>
@@ -140,10 +140,10 @@
 <constant name="mapType">"250 kPa"</constant>
 <constant name="twoStroke">"Four-stroke"</constant>
 <constant name="injType">"Port"</constant>
-<constant name="nCylinders">"4"</constant>
+<constant name="nCylinders">"6"</constant>
 <constant name="cltType">"GM"</constant>
 <constant name="matType">"GM"</constant>
-<constant name="nInjectors">"4"</constant>
+<constant name="nInjectors">"6"</constant>
 <constant name="engineType">"Even fire"</constant>
 <constant name="egoType1">"Narrow band"</constant>
 <constant name="algorithm">"Speed Density"</constant>
@@ -216,7 +216,7 @@
       </constant>
 </page>
 <page number="3" size="64">
-<constant digits="0" name="TrigAng" units="Deg">250.0</constant>
+<constant digits="0" name="TrigAng" units="Deg">0.0</constant>
 <constant digits="0" name="FixAng" units="Deg">0.0</constant>
 <constant digits="0" name="CrankAng" units="Deg">5.0</constant>
 <constant digits="0" name="IgHold">10.0</constant>
@@ -235,7 +235,7 @@
 <constant name="useDwellLim">"On"</constant>
 <constant digits="1" name="dwellcrank" units="ms">6.0</constant>
 <constant digits="1" name="dwellrun" units="ms">3.0</constant>
-<constant digits="0" name="numteeth" units="teeth">24.0</constant>
+<constant digits="0" name="numteeth" units="teeth">36.0</constant>
 <constant digits="0" name="onetwo" units="teeth">1.0</constant>
 <constant digits="0" name="crankRPM" units="rpm">600.0</constant>
 <constant digits="0" name="tpsflood" units="%">90.0</constant>
@@ -352,7 +352,7 @@
 <constant name="egoAlgorithm">"PID"</constant>
 <constant name="egoType">"Disabled"</constant>
 <constant name="boostEnabled">"Off"</constant>
-<constant name="vvtEnabled">"Off"</constant>
+<constant name="vvtEnabled">"On"</constant>
 <constant digits="0" name="egoKP" units="%">100.0</constant>
 <constant digits="0" name="egoKI" units="%">20.0</constant>
 <constant digits="0" name="egoKD" units="%">0.0</constant>
@@ -477,7 +477,7 @@
          44.0 
          73.0 
       </constant>
-<constant name="iacAlgorithm">"None"</constant>
+<constant name="iacAlgorithm">"PWM"</constant>
 <constant name="iacStepTime">"3"</constant>
 <constant digits="0" name="iacFastTemp" units="C">20.0</constant>
 <constant digits="0" name="iacStepHome" units="Steps">240.0</constant>
@@ -556,9 +556,8 @@
       </constant>
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">
-<setting name="NARROW_BAND_EGO" value="NARROW_BAND_EGO"/>
-<setting name="CELSIUS" value="CELSIUS"/>
 <setting name="SPEED_DENSITY" value="SPEED_DENSITY"/>
+<setting name="CELSIUS" value="CELSIUS"/>
 </settings>
 <userComments Comment="These are user comments that can be related to a particular setting or dialog."/>
 </msq>

@@ -67,6 +67,9 @@ struct statuses {
   byte VE;
   byte O2;
   byte O2_2;
+  byte boost_duty;
+  byte vvt_duty1;
+  byte vvt_duty2;
   int coolant;
   int cltADC;
   int IAT;
