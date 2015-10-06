@@ -258,8 +258,8 @@ struct config3 {
   byte egoAlgorithm : 2;
   byte egoType : 2;
   byte boostEnabled : 1;
-  byte vvtEnabled : 1;
-  byte unused : 2;
+  byte vvtEnabled : 2;
+  byte vvtchannels : 1;
   
   byte egoKP;
   byte egoKI;
