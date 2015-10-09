@@ -820,7 +820,7 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
         tempStartAngle = ignition2StartAngle - channel2IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
-        if (tempStartAngle > tempCrankAngle)
+        if ( (tempStartAngle > tempCrankAngle)  && ign2LastRev != startRevolutions)
         { 
             setIgnitionSchedule2(beginCoil2Charge, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
@@ -895,6 +895,5 @@ void openInjector1and4() { digitalWrite(pinInjector1, HIGH); digitalWrite(pinInj
 void closeInjector1and4() { digitalWrite(pinInjector1, LOW); digitalWrite(pinInjector4, LOW);BIT_CLEAR(currentStatus.squirt, 0); }
 void openInjector2and3() { digitalWrite(pinInjector2, HIGH); digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, 1); }
 void closeInjector2and3() { digitalWrite(pinInjector2, LOW); digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
-
   
 
