@@ -10,13 +10,24 @@
 #define iacPage      7
 #define boostvvtPage 8
 
-byte currentPage;
-
+byte currentPage = 1;
+boolean isMap = true;
+const char pageTitles[] PROGMEM
+  {
+   "\nVolumetric Efficiancy Map\0"
+   "\nPage 1 Config\0"
+   "\nIgnition Map\0"
+   "\nPage 2 Config\0"
+   "\nAir/Fuel Ratio Map\0"
+   "\nPage 3 Config\0"
+   "\nPage 4 Config"
+  };
+  
 void command();
 void sendValues();
 void receiveValue(int offset, byte newValue);
 void saveConfig();
-void sendPage();
+void sendPage(bool useChar);
 void receiveCalibration(byte tableID);
 void sendToothLog(bool useChar);
 void testComm();
