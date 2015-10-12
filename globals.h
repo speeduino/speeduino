@@ -55,6 +55,8 @@ volatile byte inj4_pin_mask;
 //In current version this is 64 bytes
 struct statuses {
   volatile boolean hasSync;
+    volatile boolean hasSync_2;
+  volatile boolean crank_rotation;
   unsigned int RPM;
   int mapADC;
   int MAP;

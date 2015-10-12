@@ -94,10 +94,10 @@ ISR(TIMER1_COMPA_vect)
   }  
 }
 
-//The interrupt to control the VVT PWM
+//The interrupt to control the VVT PWM 1
 ISR(TIMER1_COMPB_vect)
 {
-  if(!configPage3.vvtEnabled) { return; }
+  if(configPage3.vvtEnabled <= 1 ) { return; }
   if (vvt_pwm_state)
   {
     *vvt_pin_port &= ~(vvt_pin_mask);  // Switch pin to low

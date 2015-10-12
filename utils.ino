@@ -180,7 +180,7 @@ void setPinMapping(byte boardID)
       pinCoil4 = 52; //Pin for coil 4
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
-      pinTrigger3 = 17; // cam sensor 2 pin
+      pinTrigger3 = 20; // cam sensor 2 pin
       pinTPS = A2;//TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
@@ -194,12 +194,14 @@ void setPinMapping(byte boardID)
       pinFuelPump = 45; //Fuel pump output
       pinSpareHOut1 = 4; // high current output spare1
       pinSpareHOut2 = 6; // high current output spare2
-      pinBoost = 7;
       pinSpareLOut1 = 43; //low current output spare1
       pinSpareLOut2 = 47;
       pinSpareLOut3 = 49;
       pinSpareLOut4 = 51;
       pinSpareLOut5 = 53;
+      pinBoost = 7; // boost control outout
+      pinVVT_1 = 4; // vvt output 1
+      pinVVT_2 = 6; // vvt output 2
       break; 
       
     default:

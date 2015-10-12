@@ -64,8 +64,11 @@ bool fuelPumpOn = false; //The current status of the fuel pump
 
 void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
+void (*triggerTertiary)();  //pointer for the tertiary(third) trigger function
 int (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
 int (*getCrankAngle)(int); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
+int (*getCamAngle)(int); // pointer to the getCam angle function (gets pointed to the releavent decoder)
+int (*getCamAngle_2)(int);  // pointer to the getcam_2 angle function
 
 struct table3D fuelTable; //16x16 fuel map
 struct table3D ignitionTable; //16x16 ignition map
@@ -187,6 +190,8 @@ void setup()
   //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly. 
   byte triggerInterrupt = 0; // By default, use the first interrupt
   byte triggerInterrupt2 = 1;
+// byte triggerInterrupt3 = 2;
+
   currentStatus.RPM = 0;
   currentStatus.hasSync = false;
   currentStatus.runSecs = 0; 
@@ -225,6 +230,22 @@ void setup()
       triggerInterrupt2 = 2; break;
      
   }
+   // switch (pinTrigger3) {  
+    //Arduino Mega 2560 mapping
+   // case 2:
+   //   triggerInterrupt2 = 0; break;
+   // case 3:
+  //    triggerInterrupt2 = 1; break;
+  //  case 18:
+  //    triggerInterrupt2 = 5; break;
+  //  case 19:
+  //    triggerInterrupt2 = 4; break;
+ //   case 20:
+ //     triggerInterrupt2 = 3; break;
+  //  case 21:
+ //     triggerInterrupt2 = 2; break;
+     
+ // }
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
@@ -320,6 +341,24 @@ void setup()
       attachInterrupt(triggerInterrupt2, triggerSec_Jeep2000, RISING);
       break;
       
+    case 7:
+      //Missing tooth decoder for aj30
+      triggerSetup_Aj30();
+      trigger = triggerPri_Aj30;
+      triggerSecondary = triggerSec_Aj30;
+      triggerTertiary = triggerTer_Aj30;
+      getRPM = getRPM_Aj30;
+      getCrankAngle = getCrankAngle_Aj30;
+      getCamAngle = getCamAngle_Aj30;
+      getCamAngle_2 = getCamAngle_Aj30_2;
+      
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+      
+      attachInterrupt(triggerInterrupt2, triggerSecondary, RISING);
+      
+      break;
+        
     default:
       trigger = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;
