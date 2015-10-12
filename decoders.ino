@@ -352,6 +352,7 @@ void triggerSetup_4G63()
   toothAngles[1] = 105; //Rising edge of tooth #2
   toothAngles[2] = 175; //Falling edge of tooth #2
   toothAngles[3] = 285; //Rising edge of tooth #1
+  
   /*
   toothAngles[0] = 105; //Falling edge of tooth #1
   toothAngles[1] = 175; //Rising edge of tooth #2
@@ -431,6 +432,7 @@ int getCrankAngle_4G63(int timePerDegree)
     int crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was. 
     crankAngle += ldiv( (micros() - tempToothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
     if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
 }
