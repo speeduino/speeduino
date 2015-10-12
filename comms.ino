@@ -831,7 +831,7 @@ void sendToothLog(bool useChar)
       Serial.write(lowByte(tempToothHistory[x]));
     }
   }
-  Serial.flush();
+  //Serial.flush();
 }
 
 
