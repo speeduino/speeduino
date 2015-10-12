@@ -147,7 +147,7 @@ struct config1 {
   unsigned int inj4Ang; 
 
   //config1 in ini
-  byte mapSample : 2;
+  byte mapType : 2;
   byte strokes : 1;
   byte injType : 1;
   byte nCylinders : 4; //Number of cylinders
@@ -233,9 +233,9 @@ struct config2 {
   byte wueBins[10]; //Warmup Enrichment bins (Values are in configTable1)
   byte dwellLimit;
   byte dwellCorrectionValues[6]; //Correction table for dwell vs battery voltage
-  byte unused48;
-  byte unused49;
-  byte unused50;
+  byte testminadv : 1;//unused48;
+  byte testmaxadv : 30;//unused49;
+  byte testoutadv : 10;//unused50;
   byte unused51;
   byte unused52;
   byte unused53;
@@ -376,7 +376,7 @@ byte pinSpareLOut4;
 byte pinSpareLOut5;
 byte pinBoost;
 byte pinVVT_1;		// vvt output 1
-byte pinVVt_2;		// vvt output 2
+byte pinVVT_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
