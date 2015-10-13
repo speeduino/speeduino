@@ -29,11 +29,11 @@ void command()
       testComm();
       break;
 
-    case 'L':
+    case 'L': // List the contents of current page in human readable form
       sendPage(true);
       break;
 
-    case 'N':
+    case 'N': // Displays a new line.  Like pushing enter in a text editor
       Serial.println();
       break;
 
@@ -42,10 +42,10 @@ void command()
       //This loop should never need to run as the byte should already be in the buffer, but is here just in case
       while (Serial.available() == 0) { }
       currentPage = Serial.read();
-      if (currentPage >= '0') {
+      if (currentPage >= '0') {//This converts the ascii number char into binary
         currentPage -= '0';
       }
-      if (currentPage == veMapPage || currentPage == ignMapPage || currentPage == afrMapPage) {
+      if (currentPage == veMapPage || currentPage == ignMapPage || currentPage == afrMapPage) {// Detecting if the current page is a table/map
         isMap = true;
       }
       else {
@@ -66,7 +66,7 @@ void command()
       //Serial.write("Speeduino_0_2");
       break;
 
-    case 'V': // send VE table and constants
+    case 'V': // send VE table and constants in binary
       sendPage(false);
       break;
 
@@ -242,7 +242,7 @@ void sendValues(int length)
 void receiveValue(int offset, byte newValue)
 {
 
-  void* pnt_configPage;
+  void* pnt_configPage;//This only stores the address of the value that it's pointing to and not the max size
 
   switch (currentPage)
   {
@@ -401,7 +401,7 @@ void sendPage(bool useChar)
 {
   void* pnt_configPage;
   struct table3D currentTable;
-  byte currentTitleIndex = 0;
+  byte currentTitleIndex = 0;// This corresponds to the count up to the first char of a string in pageTitles
 
   switch (currentPage)
   {
@@ -417,20 +417,28 @@ void sendPage(bool useChar)
         // currentTitleIndex = 27;
         if (useChar)
         {
-          //To Display Values from Config Page 1
-          Serial.println((const __FlashStringHelper *)&pageTitles[27]);
+          // To Display Values from Config Page 1
+          // When casting to the __FlashStringHelper type Serial.println uses the same subroutine as when using the F macro
+          Serial.println((const __FlashStringHelper *)&pageTitles[27]);//27 is the index to the first char in the second sting in pageTitles
+          // The following loop displays in human readable form of all byte values in config page 1 up to but not including the first array.
+          // incrementing void pointers is cumbersome. Thus we have "pnt_configPage = (byte *)pnt_configPage + 1"
           for (pnt_configPage = &configPage1; pnt_configPage < &configPage1.wueValues[0]; pnt_configPage = (byte *)pnt_configPage + 1) Serial.println(*((byte *)pnt_configPage));
-          for (byte x = 10; x; x--)
+          for (byte x = 10; x; x--)// The x between the ';' has the same representation as the "x != 0" test or comparision
           {
-            Serial.print(configPage1.wueValues[10 - x]);
+            Serial.print(configPage1.wueValues[10 - x]);// This displays the values horizantially on the screen
             Serial.print(' ');
           }
           Serial.println();
           for (pnt_configPage = (byte *)&configPage1.wueValues[9] + 1; pnt_configPage < &configPage1.inj1Ang; pnt_configPage = (byte *)pnt_configPage + 1) {
-            Serial.println(*((byte *)pnt_configPage));
+            Serial.println(*((byte *)pnt_configPage));// This displays all the byte values between the last array up to but not including the first unsigned int on config page 1
           }
+          // The following loop displays four unsigned ints
           for (pnt_configPage = &configPage1.inj1Ang; pnt_configPage < (unsigned int *)&configPage1.inj4Ang + 1; pnt_configPage = (unsigned int *)pnt_configPage + 1) Serial.println(*((unsigned int *)pnt_configPage));
-          for (pnt_configPage = (unsigned int *)&configPage1.inj4Ang + 1; pnt_configPage < (byte *)&configPage1 + page_size; pnt_configPage = (byte *)pnt_configPage + 1) Serial.println(*((byte *)pnt_configPage));
+          // Following loop displays byte values between the unsigned ints
+          for (pnt_configPage = (unsigned int *)&configPage1.inj4Ang + 1; pnt_configPage < &configPage1.mapMax; pnt_configPage = (byte *)pnt_configPage + 1) Serial.println(*((byte *)pnt_configPage));
+          Serial.println(configPage1.mapMax);
+          // Following loop displays remaining byte values of the page
+          for (pnt_configPage = (unsigned int *)&configPage1.mapMax + 1; pnt_configPage < (byte *)&configPage1 + page_size; pnt_configPage = (byte *)pnt_configPage + 1) Serial.println(*((byte *)pnt_configPage));
           return;
         }
         else pnt_configPage = &configPage1; //Create a pointer to Page 1 in memory
@@ -439,7 +447,7 @@ void sendPage(bool useChar)
 
     case ignMapPage:
       {
-        currentTitleIndex = 42;
+        currentTitleIndex = 42;// the index to the first char of the third string in pageTitles
         currentTable = ignitionTable;
         break;
       }
@@ -451,12 +459,12 @@ void sendPage(bool useChar)
         {
           //To Display Values from Config Page 2
           Serial.println((const __FlashStringHelper *)&pageTitles[56]);
-          Serial.println(configPage2.triggerAngle);
-
+          Serial.println(configPage2.triggerAngle);// configPsge2.triggerAngle is an int so just display it without complication
+          // Following loop displays byte values after that first int up to but not including the first array in config page 2
           for (pnt_configPage = (int *)&configPage2 + 1; pnt_configPage < &configPage2.taeBins[0]; pnt_configPage = (byte *)pnt_configPage + 1) Serial.println(*((byte *)pnt_configPage));
-          for (byte y = 2; y; y--)
+          for (byte y = 2; y; y--)// Displaying two equal sized arrays
           {
-            byte * currentVar;
+            byte * currentVar;// A placeholder for each array
             if (y == 2) {
               currentVar = configPage2.taeBins;
             }
@@ -473,11 +481,11 @@ void sendPage(bool useChar)
           }
           for (byte x = 10; x ; x--)
           {
-            Serial.print(configPage2.wueBins[10 - x]);
+            Serial.print(configPage2.wueBins[10 - x]);//Displaying array horizontally across screen
             Serial.print(' ');
           }
           Serial.println();
-          Serial.println(configPage2.dwellLimit);
+          Serial.println(configPage2.dwellLimit);// Little lonely byte stuck between two arrays. No complications just display it.
           for (byte x = 6; x; x--)
           {
             Serial.print(configPage2.dwellCorrectionValues[6 - x]);
@@ -486,7 +494,7 @@ void sendPage(bool useChar)
           Serial.println();
           for (pnt_configPage = (byte *)&configPage2.dwellCorrectionValues[5] + 1; pnt_configPage < (byte *)&configPage2 + page_size; pnt_configPage = (byte *)pnt_configPage + 1)
           {
-            Serial.println(*((byte *)pnt_configPage));
+            Serial.println(*((byte *)pnt_configPage));// Displaying remaining byte values of the page
           }
           return;
         }
@@ -496,7 +504,7 @@ void sendPage(bool useChar)
 
     case afrMapPage:
       {
-        currentTitleIndex = 71;
+        currentTitleIndex = 71;//Array index to next string
         currentTable = afrTable;
         break;
       }
@@ -507,12 +515,12 @@ void sendPage(bool useChar)
         if (useChar)
         {
           //To Display Values from Config Page 3
-          Serial.println((const __FlashStringHelper *)&pageTitles[91]);
+          Serial.println((const __FlashStringHelper *)&pageTitles[91]);//special typecasting to enable suroutine that the F macro uses
           for (pnt_configPage = &configPage3; pnt_configPage < &configPage3.voltageCorrectionBins[0]; pnt_configPage = (byte *)pnt_configPage + 1) 
           {
-            Serial.println(*((byte *)pnt_configPage));
+            Serial.println(*((byte *)pnt_configPage));// Displaying byte values of config page 3 up to but not including the first array
           }
-          for (byte y = 2; y; y--)
+          for (byte y = 2; y; y--)// Displaying two equally sized arrays that are next to each other
           {
             byte * currentVar;
             if (y == 2) { currentVar = configPage3.voltageCorrectionBins; }
@@ -525,7 +533,7 @@ void sendPage(bool useChar)
             }
             Serial.println();
           }
-          for (byte y = 2; y; y--)
+          for (byte y = 2; y; y--)// and again
           {
             byte* currentVar;
             if (y == 2) currentVar = configPage3.airDenBins;
@@ -537,6 +545,7 @@ void sendPage(bool useChar)
             }
             Serial.println();
           }
+          // Following loop displays the remaining byte values of the page
           for (pnt_configPage = (byte *)&configPage3.airDenRates[8] + 1; pnt_configPage < (byte *)&configPage3 + page_size; pnt_configPage = (byte *)pnt_configPage + 1)
           {
             Serial.println(*((byte *)pnt_configPage));
@@ -553,8 +562,8 @@ void sendPage(bool useChar)
         //To Display Values from Config Page 4
         if (useChar)
         {
-          Serial.println((const __FlashStringHelper *)&pageTitles[106]);
-          for (byte y = 4; y; y--)
+          Serial.println((const __FlashStringHelper *)&pageTitles[106]);// F macro hack
+          for (byte y = 4; y; y--)// Display four equally sized arrays
           {
             byte * currentVar;
             switch (y)
@@ -572,7 +581,7 @@ void sendPage(bool useChar)
             }
             Serial.println();
           }
-          for (byte y = 3; y; y--)
+          for (byte y = 3; y; y--)// Three equally sized arrays
           {
             byte * currentVar;
             switch (y)
@@ -589,6 +598,7 @@ void sendPage(bool useChar)
             }
             Serial.println();
           }
+          // Following loop is for remaining byte value of page
           for (pnt_configPage = (byte *)&configPage4.iacCrankBins[3] + 1; pnt_configPage < (byte *)&configPage4 + page_size; pnt_configPage = (byte *)pnt_configPage + 1) Serial.println(*((byte *)pnt_configPage));
           return;
         }
@@ -598,20 +608,22 @@ void sendPage(bool useChar)
 
     case boostvvtPage:
       {
-        //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
-        byte response[160]; //Bit hacky, but the size is: (8x8 + 8 + 8) + (8x8 + 8 + 8) = 160
+        if(!useChar)
+        {
+          //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format        
+          byte response[160]; //Bit hacky, but the size is: (8x8 + 8 + 8) + (8x8 + 8 + 8) = 160
 
-        //Boost table
-        for (int x = 0; x < 64; x++) { response[x] = boostTable.values[7 - x / 8][x % 8]; }
-        for (int x = 64; x < 72; x++) { response[x] = byte(boostTable.axisX[(x - 64)] / 100); }
-        for (int y = 72; y < 80; y++) { response[y] = byte(boostTable.axisY[7 - (y - 72)]); }
-        //VVT table
-        for (int x = 0; x < 64; x++) { response[x + 80] = vvtTable.values[7 - x / 8][x % 8]; }
-        for (int x = 64; x < 72; x++) { response[x + 80] = byte(vvtTable.axisX[(x - 64)] / 100); }
-        for (int y = 72; y < 80; y++) { response[y + 80] = byte(vvtTable.axisY[7 - (y - 72)]); }
-        Serial.write((byte *)&response, sizeof(response));
-        return;
-        break;
+          //Boost table
+          for (int x = 0; x < 64; x++) { response[x] = boostTable.values[7 - x / 8][x % 8]; }
+          for (int x = 64; x < 72; x++) { response[x] = byte(boostTable.axisX[(x - 64)] / 100); }
+          for (int y = 72; y < 80; y++) { response[y] = byte(boostTable.axisY[7 - (y - 72)]); }
+          //VVT table
+          for (int x = 0; x < 64; x++) { response[x + 80] = vvtTable.values[7 - x / 8][x % 8]; }
+          for (int x = 64; x < 72; x++) { response[x + 80] = byte(vvtTable.axisX[(x - 64)] / 100); }
+          for (int y = 72; y < 80; y++) { response[y + 80] = byte(vvtTable.axisY[7 - (y - 72)]); }
+          Serial.write((byte *)&response, sizeof(response));
+          return;
+        }
       }
     default:
       {
@@ -630,9 +642,9 @@ void sendPage(bool useChar)
        Serial.print(pageTitles[currentTitleIndex]);
        currentTitleIndex++;
       }*/
-      Serial.println((const __FlashStringHelper *)&pageTitles[currentTitleIndex]);
+      Serial.println((const __FlashStringHelper *)&pageTitles[currentTitleIndex]);// F macro hack
       Serial.print(F("\n    "));
-      for (int x = 0; x < currentTable.xSize; x++)
+      for (int x = 0; x < currentTable.xSize; x++)// Horizontal bins
       {
         byte axisX = byte(currentTable.axisX[x] / 100);
         if (axisX < 100)
@@ -649,7 +661,7 @@ void sendPage(bool useChar)
       Serial.println();
       for (int y = 0; y < currentTable.ySize; y++)
       {
-        Serial.print(byte(currentTable.axisY[y]));
+        Serial.print(byte(currentTable.axisY[y]));// Vertical Bins
         Serial.write(spaceChar);
         for (int x = 0; x < currentTable.xSize; x++)
         {
