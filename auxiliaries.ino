@@ -49,11 +49,28 @@ void boostControl()
 }
 
 void vvtControl()
-{
-  if(configPage3.vvtEnabled)
-  {
-    byte vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
-    vvt_pwm_target_value = percentage(vvtDuty, vvt_pwm_max_count);
+ {
+  if (configPage3.vvtEnabled == 1)
+    {        
+      byte vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
+        if (vvtDuty <= 49)
+          {
+            vvtDuty = 0;
+          }
+        else if (vvtDuty >=50)
+          {
+            vvtDuty = 100;  
+          }
+    
+     vvt_pwm_target_value = percentage(vvtDuty, vvt_pwm_max_count);        
+     currentStatus.vvt_duty1 = vvtDuty;      
+    }
+  
+  if(configPage3.vvtEnabled == 2)
+   {
+     byte vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
+     vvt_pwm_target_value = percentage(vvtDuty, vvt_pwm_max_count);
+     currentStatus.vvt_duty1 = vvtDuty;
   }
 }
   
