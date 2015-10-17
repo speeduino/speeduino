@@ -142,7 +142,7 @@ struct config1 {
   unsigned int inj4Ang; 
 
   //config1 in ini
-  byte mapType : 2;
+  byte mapSample : 2;
   byte strokes : 1;
   byte injType : 1;
   byte nCylinders : 4; //Number of cylinders

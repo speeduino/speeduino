@@ -83,8 +83,11 @@ byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
 unsigned long counter;
 unsigned long currentLoopTime; //The time the current loop started (uS)
 unsigned long previousLoopTime; //The time the previous loop started (uS)
-unsigned long scheduleStart;
-unsigned long scheduleEnd;
+
+unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
+unsigned int MAPcount; //Number of samples taken in the current MAP cycle
+byte MAPcurRev = 0; //Tracks which revolution we're sampling on
+
 
 byte coilHIGH = HIGH;
 byte coilLOW = LOW;
@@ -493,9 +496,51 @@ void loop()
     //***SET STATUSES***
     //-----------------------------------------------------------------------------------------------------
 
-    //currentStatus.MAP = map(analogRead(pinMAP), 0, 1023, 10, 255); //Get the current MAP value
-    currentStatus.mapADC = analogRead(pinMAP);
-    currentStatus.MAP = map(currentStatus.mapADC, 0, 1023, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+    //MAP Sampling system
+    switch(configPage1.mapSample)
+    {
+      case 0:
+        //Instantaneous MAP readings
+        currentStatus.mapADC = analogRead(pinMAP);
+        currentStatus.MAP = map(currentStatus.mapADC, 0, 1023, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+        break;
+        
+      case 1:
+        //Average of a cycle
+        if( (MAPcurRev == startRevolutions) || (MAPcurRev == startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for. 
+        {
+          MAPrunningValue = MAPrunningValue + analogRead(pinMAP); //Add the current reading onto the total
+          MAPcount++;
+        }
+        else
+        {
+          //Reaching here means that the last cylce has completed and the MAP value should be calculated
+          currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
+          currentStatus.MAP = map(currentStatus.mapADC, 0, 1023, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+          MAPcurRev = startRevolutions; //Reset the current rev count
+          MAPrunningValue = 0;
+          MAPcount = 0;
+        }
+        break;
+      
+      case 2:
+        //Minimum reading in a cycle
+        if( (MAPcurRev == startRevolutions) || (MAPcurRev == startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for. 
+        {
+          int tempValue = analogRead(pinMAP);
+          if( tempValue < MAPrunningValue) { MAPrunningValue = tempValue; } //Check whether the current reading is lower than the running minimum
+          MAPcount++;
+        }
+        else
+        {
+          //Reaching here means that the last cylce has completed and the MAP value should be calculated
+          currentStatus.mapADC = MAPrunningValue;
+          currentStatus.MAP = map(currentStatus.mapADC, 0, 1023, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+          MAPcurRev = startRevolutions; //Reset the current rev count
+          MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
+        }
+        break;
+    }
     
     //TPS setting to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
     if ((mainLoopCount & 31) == 1)
@@ -820,7 +865,7 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
         tempStartAngle = ignition2StartAngle - channel2IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
-        if (tempStartAngle > tempCrankAngle)
+        if ( (tempStartAngle > tempCrankAngle)  && ign2LastRev != startRevolutions)
         { 
             setIgnitionSchedule2(beginCoil2Charge, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
@@ -895,6 +940,5 @@ void openInjector1and4() { digitalWrite(pinInjector1, HIGH); digitalWrite(pinInj
 void closeInjector1and4() { digitalWrite(pinInjector1, LOW); digitalWrite(pinInjector4, LOW);BIT_CLEAR(currentStatus.squirt, 0); }
 void openInjector2and3() { digitalWrite(pinInjector2, HIGH); digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, 1); }
 void closeInjector2and3() { digitalWrite(pinInjector2, LOW); digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
-
   
 
