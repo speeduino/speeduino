@@ -40,6 +40,8 @@ byte correctionsTotal()
   if (currentStatus.egoCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.egoCorrection), 100).quot; }
   currentStatus.batCorrection = correctionsBatVoltage();
   if (currentStatus.batCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.batCorrection), 100).quot; }
+  currentStatus.iatCorrection = correctionsIATDensity();
+  if (currentStatus.iatCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.iatCorrection), 100).quot; }
   
   if(sumCorrections > 255) { sumCorrections = 255; } //This is the maximum allowable increase
   return (byte)sumCorrections;
@@ -155,6 +157,15 @@ byte correctionsBatVoltage()
 {
   if (currentStatus.battery10 > (injectorVCorrectionTable.axisX[5])) { return injectorVCorrectionTable.values[injectorVCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the voltage is above maximum 
   return table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
+}
+
+/*
+
+*/
+byte correctionsIATDensity()
+{
+  if (currentStatus.IAT > (IATDensityVCorrectionTable.axisX[8])) { return IATDensityVCorrectionTable.values[IATDensityVCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the intake temp is above maximum 
+  return table2D_getValue(&IATDensityVCorrectionTable, currentStatus.IAT);
 }
 
 /*

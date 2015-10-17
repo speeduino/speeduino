@@ -76,6 +76,7 @@ struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
+struct table2D IATDensityVCorrectionTable; //9 bin inlet air temperature density correction (2D)
 byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
@@ -151,6 +152,10 @@ void setup()
   injectorVCorrectionTable.xSize = 6;
   injectorVCorrectionTable.values = configPage3.injVoltageCorrectionValues;
   injectorVCorrectionTable.axisX = configPage3.voltageCorrectionBins;
+  IATDensityVCorrectionTable.valueSize = SIZE_BYTE;
+  IATDensityVCorrectionTable.xSize = 9;
+  IATDensityVCorrectionTable.values = configPage3.airDenRates;
+  IATDensityVCorrectionTable.axisX = configPage3.airDenBins;
   
   //Setup the calibration tables
   loadCalibration();

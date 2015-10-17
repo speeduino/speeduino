@@ -83,6 +83,7 @@ struct statuses {
   byte egoCorrection; //The amount of closed loop AFR enrichment currently being applied
   byte wueCorrection; //The amount of warmup enrichment currently being applied
   byte batCorrection; //The amount of battery voltage enrichment currently being applied
+  byte iatCorrection; //The amount of inlet air temperature adjustment currently being applied
   byte afrTarget;
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte squirt;
