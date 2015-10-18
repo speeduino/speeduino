@@ -76,7 +76,7 @@ struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
-struct table2D IATDensityVCorrectionTable; //9 bin inlet air temperature density correction (2D)
+struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
@@ -152,10 +152,10 @@ void setup()
   injectorVCorrectionTable.xSize = 6;
   injectorVCorrectionTable.values = configPage3.injVoltageCorrectionValues;
   injectorVCorrectionTable.axisX = configPage3.voltageCorrectionBins;
-  IATDensityVCorrectionTable.valueSize = SIZE_BYTE;
-  IATDensityVCorrectionTable.xSize = 9;
-  IATDensityVCorrectionTable.values = configPage3.airDenRates;
-  IATDensityVCorrectionTable.axisX = configPage3.airDenBins;
+  IATDensityCorrectionTable.valueSize = SIZE_BYTE;
+  IATDensityCorrectionTable.xSize = 9;
+  IATDensityCorrectionTable.values = configPage3.airDenRates;
+  IATDensityCorrectionTable.axisX = configPage3.airDenBins;
   
   //Setup the calibration tables
   loadCalibration();
@@ -554,7 +554,10 @@ void loop()
       currentStatus.TPSlast_time = currentStatus.TPS_time;
       currentStatus.tpsADC = fastMap1023toX(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
       currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
-      currentStatus.TPS_time = currentLoopTime;   
+      currentStatus.TPS_time = currentLoopTime;  
+     
+      //Check for launch in (clutch) can be done around here too
+      currentStatus.launching = !digitalRead(pinLaunch); 
     }
     
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
@@ -699,6 +702,7 @@ void loop()
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
       if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { currentStatus.advance = configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+      if (currentStatus.launching && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) ) { currentStatus.advance = configPage3.lnchRetard; } //SoftCut rev limit for 2-step launch control
       
       //Set dwell
        //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS

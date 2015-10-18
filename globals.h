@@ -84,6 +84,7 @@ struct statuses {
   byte wueCorrection; //The amount of warmup enrichment currently being applied
   byte batCorrection; //The amount of battery voltage enrichment currently being applied
   byte iatCorrection; //The amount of inlet air temperature adjustment currently being applied
+  byte launchCorrection; //The amount of correction being applied if launch control is active
   byte afrTarget;
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte squirt;
@@ -93,6 +94,7 @@ struct statuses {
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
   volatile int loopsPerSecond;
+  boolean launching; //True when in launch control mode
   int freeRAM;
   
   //Helpful bitwise operations:
@@ -280,11 +282,15 @@ struct config3 {
   byte boostFreq; //Frequency of the boost PWM valve
   byte vvtFreq; //Frequency of the vvt PWM valve
   byte idleFreq;
-  byte unused48;
-  byte unused49;
-  byte unused50;
-  byte unused51;
-  byte unused452;
+  
+  byte launchPin : 6;
+  byte launchEnabled : 1;
+  byte unused48h : 1;
+  
+  byte lnchSoftLim;
+  byte lnchRetard;
+  byte lnchHardLim;
+  byte lnchFuelAdd;
   byte unused53;
   byte unused54;
   byte unused55;
@@ -376,6 +382,7 @@ byte pinVVt_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
+byte pinLaunch;
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino

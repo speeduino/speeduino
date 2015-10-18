@@ -42,6 +42,8 @@ byte correctionsTotal()
   if (currentStatus.batCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.batCorrection), 100).quot; }
   currentStatus.iatCorrection = correctionsIATDensity();
   if (currentStatus.iatCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.iatCorrection), 100).quot; }
+  currentStatus.launchCorrection = correctionsLaunch();
+  if (currentStatus.launchCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.launchCorrection), 100).quot; }
   
   if(sumCorrections > 255) { sumCorrections = 255; } //This is the maximum allowable increase
   return (byte)sumCorrections;
@@ -160,12 +162,23 @@ byte correctionsBatVoltage()
 }
 
 /*
-
+Simple temperature based corrections lookup based on the inlet air temperature. 
+This corrects for changes in air density from movement of the temperature 
 */
 byte correctionsIATDensity()
 {
-  if (currentStatus.IAT > (IATDensityVCorrectionTable.axisX[8])) { return IATDensityVCorrectionTable.values[IATDensityVCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the intake temp is above maximum 
-  return table2D_getValue(&IATDensityVCorrectionTable, currentStatus.IAT);
+  if ( (currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) > (IATDensityCorrectionTable.axisX[8])) { return IATDensityCorrectionTable.values[IATDensityCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the intake temp is above maximum 
+  return table2D_getValue(&IATDensityCorrectionTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
+}
+
+/*
+Launch control has a setting to increase the fuel load to assist in bringing up boost
+This simple check applies the extra fuel if we're currently launching
+*/
+byte correctionsLaunch()
+{
+  if(currentStatus.launching) { return (100 + configPage3.lnchFuelAdd); }
+  else { return 100; }
 }
 
 /*

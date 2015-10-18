@@ -223,6 +223,8 @@ void setPinMapping(byte boardID)
       pinDisplayReset = 48; // OLED reset pin
       break;
   }
+  
+  
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinCoil1, OUTPUT);
@@ -237,6 +239,7 @@ void setPinMapping(byte boardID)
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
+  pinMode(pinLaunch, INPUT_PULLUP);
   
   inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
   inj1_pin_mask = digitalPinToBitMask(pinInjector1);
