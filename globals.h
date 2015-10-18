@@ -55,6 +55,8 @@ volatile byte inj4_pin_mask;
 //In current version this is 64 bytes
 struct statuses {
   volatile boolean hasSync;
+  volatile boolean hasSync_2;
+  volatile boolean crank_rotation;
   unsigned int RPM;
   int mapADC;
   int MAP;
@@ -77,6 +79,8 @@ struct statuses {
   byte boost_duty;
   byte vvt_duty1;
   byte vvt_duty2;
+  int camAngleoffset;
+  int camAngleoffset_2;
   byte idlepwm_duty;
   int dwell;
   byte dwellCorrection; //The amount of correction being applied to the dwell time.

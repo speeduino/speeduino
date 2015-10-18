@@ -4,8 +4,14 @@ volatile unsigned long curTime;
 volatile unsigned int curGap;
 volatile unsigned long curTime2;
 volatile unsigned int curGap2;
+volatile unsigned int curTime3;
+volatile unsigned int curGap3;
 volatile unsigned int lastGap;
 volatile unsigned int targetGap; 
+volatile unsigned int lastGap2;
+volatile unsigned int targetGap2;
+volatile unsigned int lastGap3;
+volatile unsigned int targetGap3;
 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
@@ -18,14 +24,25 @@ volatile unsigned int toothHistoryIndex = 0;
 
 volatile byte secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
 volatile unsigned long secondaryLastToothTime = 0; //The time (micros()) that the last tooth was registered (Cam input)
+volatile unsigned long secondarytoothCurrentCount = 0;
+volatile unsigned long secondarytoothLastToothTime = 0; //The time (micros()) that the last tooth was registered on the secondary input
+volatile unsigned long secondarytoothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
+volatile unsigned long secondarytoothOneTime = 0; //The time (micros()) that tooth 1 last triggered
+volatile unsigned long secondarytoothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
+ 
+volatile int CamtoothCurrentCount = 0;
+volatile byte tertiaryToothCount;
 
 volatile int triggerActualTeeth;
+volatile int secondarytriggerActualTeeth;
 volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 unsigned int triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
 unsigned int triggerToothAngle; //The number of crank degrees that elapse per tooth
+unsigned int secondarytriggerToothAngle;
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 
 unsigned int toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
+unsigned int CamtoothAngles[10]; // array for storing fixed cam tooth angles
 
 //Used for identifying long and short pulses on the 4G63 (And possibly other) trigger patterns
 #define LONG 0;
