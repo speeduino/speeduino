@@ -55,6 +55,8 @@ volatile byte inj4_pin_mask;
 //In current version this is 64 bytes
 struct statuses {
   volatile boolean hasSync;
+  volatile boolean hasSync_2;
+  volatile boolean crank_rotation;
   unsigned int RPM;
   int mapADC;
   int MAP;
@@ -74,6 +76,12 @@ struct statuses {
   int batADC;
   int O2ADC;
   int O2_2ADC;
+  byte boost_duty;
+  byte vvt_duty1;
+  byte vvt_duty2;
+  int camAngleoffset;
+  int camAngleoffset_2;
+  byte idlepwm_duty;
   int dwell;
   byte dwellCorrection; //The amount of correction being applied to the dwell time.
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
@@ -256,8 +264,8 @@ struct config3 {
   byte egoAlgorithm : 2;
   byte egoType : 2;
   byte boostEnabled : 1;
-  byte vvtEnabled : 1;
-  byte unused : 2;
+  byte vvtEnabled : 2;
+  byte vvtchannels : 1;
   
   byte egoKP;
   byte egoKI;
@@ -280,14 +288,14 @@ struct config3 {
   byte boostFreq; //Frequency of the boost PWM valve
   byte vvtFreq; //Frequency of the vvt PWM valve
   byte idleFreq;
-  byte unused48;
+  byte unused48; //reserved for launch control
   byte unused49;
   byte unused50;
   byte unused51;
-  byte unused452;
-  byte unused53;
-  byte unused54;
-  byte unused55;
+  byte unused52;
+  byte minvvt; // vvt min pwm ratio
+  byte maxvvt; // vvt max pwm ratio
+  byte neutralvvt; // vvt nutral setting pwm ratio
   byte unused56;
   byte unused57;
   byte unused58;

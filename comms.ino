@@ -194,7 +194,7 @@ This function returns the current values of a fixed group of variables
 */
 void sendValues(int length)
 {
-  byte packetSize = 31;
+  byte packetSize = 37;
   byte response[packetSize];
 
   response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
@@ -233,7 +233,13 @@ void sendValues(int length)
   response[28] = currentStatus.batCorrection; //Battery voltage correction (%)
   response[29] = (byte)(currentStatus.dwell / 100);
   response[30] = currentStatus.O2_2; //O2
-
+  response[31] = currentStatus.boost_duty; //boost_duty
+  response[32] = currentStatus.vvt_duty1;
+  response[33] = currentStatus.vvt_duty2;
+  response[34] = currentStatus.idlepwm_duty;
+  response[35] = currentStatus.camAngleoffset;    //offset in deg from crank vs cam tdc
+  response[36] = currentStatus.camAngleoffset_2;
+  
   Serial.write(response, (size_t)packetSize);
   //Serial.flush();
   return;
