@@ -64,6 +64,7 @@ struct statuses {
   unsigned long TPSlast_time; //The time the previous TPS sample was taken
   byte tpsADC; //0-255 byte representation of the TPS
   byte tpsDOT;
+  int rpmDOT;
   byte VE;
   byte O2;
   byte O2_2;

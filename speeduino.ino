@@ -473,8 +473,10 @@ void loop()
     long timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < 500000L) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
+      int lastRPM = currentStatus.RPM; //Need to record this for rpmDOT calculation
       currentStatus.RPM = getRPM();
       if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't. 
+      currentStatus.rpmDOT = ldiv(1000000, (currentLoopTime - previousLoopTime)).quot * (currentStatus.RPM - lastRPM); //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     }
     else
     {
@@ -486,6 +488,7 @@ void loop()
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       secCounter = 0; //Reset our seconds counter.
       startRevolutions = 0;
+      currentStatus.rpmDOT = 0;
       ignitionOn = false;
       fuelOn = false;
       digitalWrite(pinFuelPump, LOW); //Turn off the fuel pump
@@ -702,7 +705,7 @@ void loop()
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
       if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { currentStatus.advance = configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
-      if (currentStatus.launching && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) ) { currentStatus.advance = configPage3.lnchRetard; } //SoftCut rev limit for 2-step launch control
+      if (configPage3.launchEnabled && currentStatus.launching && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) ) { currentStatus.advance = configPage3.lnchRetard; } //SoftCut rev limit for 2-step launch control
       
       //Set dwell
        //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
