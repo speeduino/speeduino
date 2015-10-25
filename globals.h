@@ -24,13 +24,14 @@ const int map_page_size = 288;
 #define BIT_ENGINE_IDLE     7  // idle on
 
 //Define masks for Squirt
-#define BIT_SQUIRT_INJ1           0  //inj1 Squirt
-#define BIT_SQUIRT_INJ2           1  //inj2 Squirt
-#define BIT_SQUIRT_SCHSQRT        2  //Scheduled to squirt
-#define BIT_SQUIRT_SQRTING        3  //Squirting
+#define BIT_SQUIRT_INJ1          0  //inj1 Squirt
+#define BIT_SQUIRT_INJ2          1  //inj2 Squirt
+#define BIT_SQUIRT_INJ3          2  //inj3 Squirt
+#define BIT_SQUIRT_INJ4          3  //inj4 Squirt
 #define BIT_SQUIRT_INJ2SCHED      4
 #define BIT_SQUIRT_INJ2SQRT       5  //Injector2 (Schedule2)
-#define BIT_SQUIRT_BOOSTCTRLOFF   6  //Squirting Injector 2
+#define BIT_SQUIRT_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
+#define BIT_SQUIRT_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
 
 #define SIZE_BYTE   8
 #define SIZE_INT    16

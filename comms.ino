@@ -822,8 +822,8 @@ void sendToothLog(bool useChar)
 {
 
   //We need 256 records to send to TunerStudio. If there aren't that many in the buffer (Buffer is 512 long) then we just return and wait for the next call
-  if (toothHistoryIndex < 256) {
-    return;  //Don't believe this is the best way to go. Just display whatever is in the buffer
+  if (toothHistoryIndex < 255) {
+    return;  //This should no longer ever occur
   }
   unsigned int tempToothHistory[512]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
 
@@ -846,6 +846,7 @@ void sendToothLog(bool useChar)
       Serial.write(highByte(tempToothHistory[x]));
       Serial.write(lowByte(tempToothHistory[x]));
     }
+    BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY);
   }
   //Serial.flush();
 }

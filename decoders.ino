@@ -131,7 +131,7 @@ void triggerPri_DualWheel()
    //High speed tooth logging history
    toothHistory[toothHistoryIndex] = curGap;
    if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; }
+   { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a true 255 values, all concurrent. 
    else
    { toothHistoryIndex++; }
    
@@ -215,7 +215,7 @@ void triggerPri_BasicDistributor()
    //High speed tooth logging history
    toothHistory[toothHistoryIndex] = curGap;
    if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; }
+   { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a true 255 values, all concurrent. 
    else
    { toothHistoryIndex++; }
    
@@ -268,7 +268,7 @@ void triggerPri_GM7X()
    //High speed tooth logging history
    toothHistory[toothHistoryIndex] = curGap;
    if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; }
+   { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a true 255 values, all concurrent. 
    else
    { toothHistoryIndex++; }
    
@@ -385,7 +385,7 @@ void triggerPri_4G63()
    //High speed tooth logging history
    toothHistory[toothHistoryIndex] = curGap;
    if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; }
+   { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a true 255 values, all concurrent. 
    else
    { toothHistoryIndex++; }
    
@@ -497,7 +497,7 @@ void triggerPri_24X()
    //High speed tooth logging history
    toothHistory[toothHistoryIndex] = curGap;
    if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; }
+   { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a true 255 values, all concurrent. 
    else
    { toothHistoryIndex++; }
    
@@ -584,7 +584,7 @@ void triggerPri_Jeep2000()
    //High speed tooth logging history
    toothHistory[toothHistoryIndex] = curGap;
    if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; }
+   { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a true 255 values, all concurrent. 
    else
    { toothHistoryIndex++; }
    
