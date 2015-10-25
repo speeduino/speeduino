@@ -21,6 +21,16 @@ toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
 
 */
 
+inline void addToothLogEntry(unsigned long time)
+{
+  //High speed tooth logging history
+  toothHistory[toothHistoryIndex] = curGap;
+  if(toothHistoryIndex == 511)
+  { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a true 255 values, all concurrent. 
+  else
+  { toothHistoryIndex++; }
+}
+
 /* 
 Name: Missing tooth wheel
 Desc: A multi-tooth wheel with one of more 'missing' teeth. The first tooth after the missing one is considered number 1 and isthe basis for the trigger angle
@@ -43,12 +53,7 @@ void triggerPri_missingTooth()
    if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    toothCurrentCount++; //Increment the tooth counter
    
-   //High speed tooth logging history
-   toothHistory[toothHistoryIndex] = curGap;
-   if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; }
-   else
-   { toothHistoryIndex++; }
+   addToothLogEntry(curGap);
    
    //Begin the missing tooth detection
    //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
@@ -128,12 +133,7 @@ void triggerPri_DualWheel()
      if ((startRevolutions & 63) == 1) { currentStatus.hasSync = false; } //Every 64 revolutions, force a resync with the cam
    } 
    
-   //High speed tooth logging history
-   toothHistory[toothHistoryIndex] = curGap;
-   if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a true 255 values, all concurrent. 
-   else
-   { toothHistoryIndex++; }
+   addToothLogEntry(curGap);
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
@@ -212,15 +212,10 @@ void triggerPri_BasicDistributor()
   }
   else { toothCurrentCount++; } //Increment the tooth counter 
   
-   //High speed tooth logging history
-   toothHistory[toothHistoryIndex] = curGap;
-   if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a true 255 values, all concurrent. 
-   else
-   { toothHistoryIndex++; }
+  addToothLogEntry(curGap);
    
-   toothLastMinusOneToothTime = toothLastToothTime;
-   toothLastToothTime = curTime;
+  toothLastMinusOneToothTime = toothLastToothTime;
+  toothLastToothTime = curTime;
 }
 void triggerSec_BasicDistributor() { return; } //Not required
 int getRPM_BasicDistributor()
@@ -265,12 +260,7 @@ void triggerPri_GM7X()
    curGap = curTime - toothLastToothTime;
    toothCurrentCount++; //Increment the tooth counter
    
-   //High speed tooth logging history
-   toothHistory[toothHistoryIndex] = curGap;
-   if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a true 255 values, all concurrent. 
-   else
-   { toothHistoryIndex++; }
+   addToothLogEntry(curGap);
    
    //
    if( toothCurrentCount > 7 )
@@ -382,12 +372,7 @@ void triggerPri_4G63()
   else if (!currentStatus.hasSync) { return; }
   else  { toothCurrentCount++; }
   
-   //High speed tooth logging history
-   toothHistory[toothHistoryIndex] = curGap;
-   if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a true 255 values, all concurrent. 
-   else
-   { toothHistoryIndex++; }
+   addToothLogEntry(curGap);
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
@@ -494,12 +479,7 @@ void triggerPri_24X()
     toothCurrentCount++; //Increment the tooth counter
   }
   
-   //High speed tooth logging history
-   toothHistory[toothHistoryIndex] = curGap;
-   if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a true 255 values, all concurrent. 
-   else
-   { toothHistoryIndex++; }
+   addToothLogEntry(curGap);
    
    toothLastToothTime = curTime;
 }
@@ -581,12 +561,7 @@ void triggerPri_Jeep2000()
     toothCurrentCount++; //Increment the tooth counter
   }
   
-   //High speed tooth logging history
-   toothHistory[toothHistoryIndex] = curGap;
-   if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a true 255 values, all concurrent. 
-   else
-   { toothHistoryIndex++; }
+   addToothLogEntry(curGap);
    
    toothLastToothTime = curTime;
 }
