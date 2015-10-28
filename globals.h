@@ -219,7 +219,8 @@ struct config2 {
   
   byte dwellCont : 1; //Fixed duty dwell control
   byte useDwellLim : 1; //Whether the dwell limiter is off or on
-  byte dwellUnused : 6;
+  byte sparkMode : 2; //Spark output mode (Eg Wasted spark, single channel or Wasted COP)
+  byte dwellUnused : 4;
   
   byte dwellCrank; //Dwell time whilst cranking
   byte dwellRun; //Dwell time whilst running 

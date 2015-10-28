@@ -107,6 +107,17 @@ int channel1InjDegrees; //The number of crank degrees until cylinder 1 is at TDC
 int channel2InjDegrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
 int channel3InjDegrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
 int channel4InjDegrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
+
+//These are the functions the get called to begin and end the ignition coil charging. They are required for the various spark output modes
+void (*ign1StartFunction)();
+void (*ign1EndFunction)();
+void (*ign2StartFunction)();
+void (*ign2EndFunction)();
+void (*ign3StartFunction)();
+void (*ign3EndFunction)();
+void (*ign4StartFunction)();
+void (*ign4EndFunction)();
+
 int timePerDegree;
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
 
@@ -442,6 +453,62 @@ void setup()
     default: //Handle this better!!!
       channel1InjDegrees = 0;
       channel2InjDegrees = 180;
+      break;
+  }
+  
+  switch(configPage2.sparkMode)
+  {
+    case 0:
+      //Wasted Spark (Normal mode)
+      ign1StartFunction = beginCoil1Charge;
+      ign1EndFunction = endCoil1Charge;
+      ign2StartFunction = beginCoil2Charge;
+      ign2EndFunction = endCoil2Charge;
+      ign3StartFunction = beginCoil3Charge;
+      ign3EndFunction = endCoil3Charge;
+      ign4StartFunction = beginCoil4Charge;
+      ign4EndFunction = endCoil4Charge;
+      break;
+      
+    case 1:
+      //Single channel mode. All ignition pulses are on channel 1
+      ign1StartFunction = beginCoil1Charge;
+      ign1EndFunction = endCoil1Charge;
+      ign2StartFunction = beginCoil1Charge;
+      ign2EndFunction = endCoil1Charge;
+      ign3StartFunction = beginCoil1Charge;
+      ign3EndFunction = endCoil1Charge;
+      ign4StartFunction = beginCoil1Charge;
+      ign4EndFunction = endCoil1Charge;
+      break;
+      
+    case 2:
+      //Wasted COP mode. Ignition channels 1&3 and 2&4 are paired together
+      //This is not a valid mode for >4 cylinders
+      if( configPage1.nCylinders <= 4 )
+      {
+        ign1StartFunction = beginCoil1and3Charge;
+        ign1StartFunction = endCoil1and3Charge;
+        ign2StartFunction = beginCoil2and4Charge;
+        ign2StartFunction = endCoil2and4Charge;
+      }
+      else
+      {
+        //If the person has inadvertantly selected this when running more than 4 cylinders, just use standard Wasted spark mode
+        ign1StartFunction = beginCoil1Charge;
+        ign1EndFunction = endCoil1Charge;
+        ign2StartFunction = beginCoil2Charge;
+        ign2EndFunction = endCoil2Charge;
+        ign3StartFunction = beginCoil3Charge;
+        ign3EndFunction = endCoil3Charge;
+        ign4StartFunction = beginCoil4Charge;
+        ign4EndFunction = endCoil4Charge;
+      }
+      break;
+    
+    default:
+      ign2StartFunction = beginCoil2Charge;
+      ign2EndFunction = endCoil2Charge;
       break;
   }
   
@@ -954,5 +1021,11 @@ void openInjector1and4() { digitalWrite(pinInjector1, HIGH); digitalWrite(pinInj
 void closeInjector1and4() { digitalWrite(pinInjector1, LOW); digitalWrite(pinInjector4, LOW);BIT_CLEAR(currentStatus.squirt, 0); }
 void openInjector2and3() { digitalWrite(pinInjector2, HIGH); digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, 1); }
 void closeInjector2and3() { digitalWrite(pinInjector2, LOW); digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
+
+//As above but for ignition (Wasted COP mode)
+void beginCoil1and3Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinCoil3, coilHIGH); BIT_SET(currentStatus.spark, 0); BIT_SET(currentStatus.spark, 2); digitalWrite(pinTachOut, LOW); }
+void endCoil1and3Charge() { digitalWrite(pinCoil1, coilLOW); digitalWrite(pinCoil3, coilLOW); BIT_CLEAR(currentStatus.spark, 0); BIT_CLEAR(currentStatus.spark, 2); }
+void beginCoil2and4Charge() { digitalWrite(pinCoil2, coilHIGH); digitalWrite(pinCoil4, coilHIGH); BIT_SET(currentStatus.spark, 1); BIT_SET(currentStatus.spark, 3); digitalWrite(pinTachOut, LOW); }
+void endCoil2and4Charge() { digitalWrite(pinCoil2, coilLOW); digitalWrite(pinCoil4, coilLOW); BIT_CLEAR(currentStatus.spark, 1); BIT_CLEAR(currentStatus.spark, 3); }
   
 
