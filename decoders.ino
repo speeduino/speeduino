@@ -31,6 +31,18 @@ inline void addToothLogEntry(unsigned long time)
   { toothHistoryIndex++; }
 }
 
+/*
+As nearly all the decoders use a common method of determining RPM (The time the last full revolution took)
+A common function is simpler
+*/
+inline int stdGetRPM()
+{
+  noInterrupts();
+  revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+  interrupts(); 
+  return (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
+}
+
 /* 
 Name: Missing tooth wheel
 Desc: A multi-tooth wheel with one of more 'missing' teeth. The first tooth after the missing one is considered number 1 and isthe basis for the trigger angle
@@ -78,10 +90,7 @@ void triggerSec_missingTooth(){ return; } //This function currently is not used
 
 int getRPM_missingTooth()
 {
-   noInterrupts();
-   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-   interrupts(); 
-   return (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
+   return stdGetRPM();
 }
 
 int getCrankAngle_missingTooth(int timePerDegree)
@@ -155,10 +164,7 @@ void triggerSec_DualWheel()
 
 int getRPM_DualWheel()
 {
-   noInterrupts();
-   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-   interrupts(); 
-   return (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
+   return stdGetRPM();
 }
 
 int getCrankAngle_DualWheel(int timePerDegree)
@@ -220,10 +226,7 @@ void triggerPri_BasicDistributor()
 void triggerSec_BasicDistributor() { return; } //Not required
 int getRPM_BasicDistributor()
 {
-   noInterrupts();
-   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-   interrupts(); 
-   return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long) 
+   return stdGetRPM();
 }
 int getCrankAngle_BasicDistributor(int timePerDegree)
 {
@@ -286,10 +289,7 @@ void triggerPri_GM7X()
 void triggerSec_GM7X() { return; } //Not required
 int getRPM_GM7X()
 {
-   noInterrupts();
-   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-   interrupts(); 
-   return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long) 
+   return stdGetRPM();
 }
 int getCrankAngle_GM7X(int timePerDegree)
 {
@@ -495,10 +495,7 @@ void triggerSec_24X()
 
 int getRPM_24X()
 {
-   noInterrupts();
-   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-   interrupts(); 
-   return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long) 
+   return stdGetRPM();
 }
 int getCrankAngle_24X(int timePerDegree)
 {
@@ -577,10 +574,7 @@ void triggerSec_Jeep2000()
 
 int getRPM_Jeep2000()
 {
-   noInterrupts();
-   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-   interrupts(); 
-   return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long) 
+   return stdGetRPM();
 }
 int getCrankAngle_Jeep2000(int timePerDegree)
 {
