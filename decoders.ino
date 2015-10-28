@@ -25,7 +25,7 @@ inline void addToothLogEntry(unsigned long time)
 {
   //High speed tooth logging history
   toothHistory[toothHistoryIndex] = curGap;
-  if(toothHistoryIndex == 511)
+  if(toothHistoryIndex == (TOOTH_LOG_BUFFER-1))
   { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a true 255 values, all concurrent. 
   else
   { toothHistoryIndex++; }
@@ -328,7 +328,7 @@ int getCrankAngle_GM7X(int timePerDegree)
 Name: Mitsubishi 4G63 / NA/NB Miata + MX-5 / 4/2
 Desc: TBA
 Note: https://raw.githubusercontent.com/noisymime/speeduino/master/reference/wiki/decoders/4g63_trace.png
-Tooth #1 is defined as the next crank tooth after the crank signal is LOW when the cam signal is rising.
+Tooth #1 is defined as the next crank tooth after the crank signal is HIGH when the cam signal is falling.
 Tooth number one is at 355* ATDC
 */
 void triggerSetup_4G63()
@@ -388,9 +388,13 @@ void triggerSec_4G63()
   {
     //Check the status of the crank trigger
     bool crank = digitalRead(pinTrigger);
-    triggerFilterTime = 1;
-    if(crank == HIGH) { toothCurrentCount = 4; } //If the crank trigger is currently HIGH, it means we're on tooth #1
+    if(crank == HIGH)
+    {
+      triggerFilterTime = 1; //Effectively turns off the trigger filter for now 
+      toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
+    } 
   }
+  else { triggerFilterTime = 1500; } //reset filter time (ugly)
   return; 
 }
 
