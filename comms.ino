@@ -820,18 +820,17 @@ Send 256 tooth log entries
 */
 void sendToothLog(bool useChar)
 {
-
-  //We need 256 records to send to TunerStudio. If there aren't that many in the buffer (Buffer is 512 long) then we just return and wait for the next call
+  //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (toothHistoryIndex < TOOTH_LOG_SIZE) {
-    return;  //This should no longer ever occur
+    return;  //This should no longer ever occur since the flagging system was put in place
   }
-  unsigned int tempToothHistory[512]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
+  unsigned int tempToothHistory[TOOTH_LOG_BUFFER]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
 
   //Copy the working history into the temporary buffer array. This is done so that, if the history loops whilst the values are being sent over serial, it doesn't affect the values
   memcpy( (void*)tempToothHistory, (void*)toothHistory, sizeof(tempToothHistory) );
   toothHistoryIndex = 0; //Reset the history index
 
-  //Loop only needs to go to 256 (Even though the buffer is 512 long) as we only ever send 256 entries at a time
+  //Loop only needs to go to half the buffer size
   if (useChar)
   {
     for (int x = 0; x < TOOTH_LOG_SIZE; x++)

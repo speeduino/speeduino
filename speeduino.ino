@@ -629,7 +629,7 @@ void loop()
       //Check for launch in (clutch) can be done around here too
       currentStatus.launching = !digitalRead(pinLaunch);
       //And check whether the tooth log buffer is ready
-      if(toothHistoryIndex > 255) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
+      if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
     }
     
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
