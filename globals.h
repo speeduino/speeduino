@@ -82,6 +82,12 @@ struct statuses {
   int batADC;
   int O2ADC;
   int O2_2ADC;
+  byte boost_duty;
+  byte vvt_duty1;
+  byte vvt_duty2;
+  int camAngleoffset;
+  int camAngleoffset_2;
+  byte idlepwm_duty;
   int dwell;
   byte dwellCorrection; //The amount of correction being applied to the dwell time.
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
