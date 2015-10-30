@@ -21,7 +21,7 @@ toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
 
 */
 
-inline void addToothLogEntry(unsigned long time)
+__inline void addToothLogEntry(unsigned long time)
 {
   //High speed tooth logging history
   toothHistory[toothHistoryIndex] = curGap;
@@ -35,7 +35,7 @@ inline void addToothLogEntry(unsigned long time)
 As nearly all the decoders use a common method of determining RPM (The time the last full revolution took)
 A common function is simpler
 */
-inline int stdGetRPM()
+__inline int stdGetRPM()
 {
   noInterrupts();
   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)

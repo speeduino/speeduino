@@ -27,9 +27,11 @@ byte correctionsTotal()
   
   //As the 'normal' case will be for each function to return 100, we only perform the division operation if the returned result is not equal to that
   currentStatus.wueCorrection = correctionWUE();
-  if (currentStatus.wueCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.wueCorrection), 100).quot; }
+  //if (currentStatus.wueCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.wueCorrection), 100).quot; }
+  if (currentStatus.wueCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.wueCorrection); }
   result = correctionASE();
-  if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
+  //if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
+  if (result != 100) { sumCorrections = divs100(sumCorrections * result); }
   result = correctionCranking();
   if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
   currentStatus.TAEamount = correctionAccel();
@@ -37,11 +39,14 @@ byte correctionsTotal()
   result = correctionFloodClear();
   if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
   currentStatus.egoCorrection = correctionsAFRClosedLoop();
-  if (currentStatus.egoCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.egoCorrection), 100).quot; }
+  //if (currentStatus.egoCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.egoCorrection), 100).quot; }
+  if (currentStatus.egoCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.egoCorrection); }
   currentStatus.batCorrection = correctionsBatVoltage();
-  if (currentStatus.batCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.batCorrection), 100).quot; }
+  //if (currentStatus.batCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.batCorrection), 100).quot; }
+  if (currentStatus.batCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.batCorrection); }
   currentStatus.iatCorrection = correctionsIATDensity();
-  if (currentStatus.iatCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.iatCorrection), 100).quot; }
+  //if (currentStatus.iatCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.iatCorrection), 100).quot; }
+  if (currentStatus.iatCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.iatCorrection); }
   currentStatus.launchCorrection = correctionsLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.launchCorrection), 100).quot; }
   

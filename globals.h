@@ -55,6 +55,9 @@ volatile byte inj3_pin_mask;
 volatile byte *inj4_pin_port;
 volatile byte inj4_pin_mask;
 
+volatile byte *ign1_pin_port;
+volatile byte ign1_pin_mask;
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {

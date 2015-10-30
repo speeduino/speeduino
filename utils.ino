@@ -249,6 +249,9 @@ void setPinMapping(byte boardID)
   inj3_pin_mask = digitalPinToBitMask(pinInjector3);
   inj4_pin_port = portOutputRegister(digitalPinToPort(pinInjector4));
   inj4_pin_mask = digitalPinToBitMask(pinInjector4);
+  
+  ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
+  ign1_pin_mask = digitalPinToBitMask(pinCoil1);
 
   //And for inputs
   pinMode(pinMAP, INPUT);
