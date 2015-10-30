@@ -488,9 +488,14 @@ void setup()
       if( configPage1.nCylinders <= 4 )
       {
         ign1StartFunction = beginCoil1and3Charge;
-        ign1StartFunction = endCoil1and3Charge;
+        ign1EndFunction = endCoil1and3Charge;
         ign2StartFunction = beginCoil2and4Charge;
-        ign2StartFunction = endCoil2and4Charge;
+        ign2EndFunction = endCoil2and4Charge;
+        
+        ign3StartFunction = nullCallback;
+        ign3EndFunction = nullCallback;
+        ign4StartFunction = nullCallback;
+        ign4EndFunction = nullCallback;
       }
       else
       {
@@ -507,8 +512,15 @@ void setup()
       break;
     
     default:
+      //Wasted spark (Shouldn't ever happen anyway)
+      ign1StartFunction = beginCoil1Charge;
+      ign1EndFunction = endCoil1Charge;
       ign2StartFunction = beginCoil2Charge;
       ign2EndFunction = endCoil2Charge;
+      ign3StartFunction = beginCoil3Charge;
+      ign3EndFunction = endCoil3Charge;
+      ign4StartFunction = beginCoil4Charge;
+      ign4EndFunction = endCoil4Charge;
       break;
   }
   
@@ -963,10 +975,10 @@ void loop()
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
         if (tempStartAngle > tempCrankAngle)
         { 
-            setIgnitionSchedule3(beginCoil3Charge, 
+            setIgnitionSchedule3(ign3StartFunction, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       currentStatus.dwell,
-                      endCoil3Charge
+                      ign3EndFunction
                       );
         }
         
@@ -976,10 +988,10 @@ void loop()
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
         if (tempStartAngle > tempCrankAngle)
         { 
-            setIgnitionSchedule4(beginCoil4Charge, 
+            setIgnitionSchedule4(ign4StartFunction, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       currentStatus.dwell,
-                      endCoil4Charge
+                      ign4EndFunction
                       );
         }
         
@@ -1031,5 +1043,7 @@ void beginCoil1and3Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pin
 void endCoil1and3Charge() { digitalWrite(pinCoil1, coilLOW); digitalWrite(pinCoil3, coilLOW); BIT_CLEAR(currentStatus.spark, 0); BIT_CLEAR(currentStatus.spark, 2); }
 void beginCoil2and4Charge() { digitalWrite(pinCoil2, coilHIGH); digitalWrite(pinCoil4, coilHIGH); BIT_SET(currentStatus.spark, 1); BIT_SET(currentStatus.spark, 3); digitalWrite(pinTachOut, LOW); }
 void endCoil2and4Charge() { digitalWrite(pinCoil2, coilLOW); digitalWrite(pinCoil4, coilLOW); BIT_CLEAR(currentStatus.spark, 1); BIT_CLEAR(currentStatus.spark, 3); }
+
+void nullCallback() { return; }
   
 
