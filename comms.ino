@@ -194,7 +194,7 @@ This function returns the current values of a fixed group of variables
 */
 void sendValues(int length)
 {
-  byte packetSize = 31;
+  byte packetSize = 33;
   byte response[packetSize];
 
   response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
@@ -233,6 +233,10 @@ void sendValues(int length)
   response[28] = currentStatus.batCorrection; //Battery voltage correction (%)
   response[29] = (byte)(currentStatus.dwell / 100);
   response[30] = currentStatus.O2_2; //O2
+  
+  //rpmDOT must be sent as a signed integer
+  response[31] = lowByte(currentStatus.rpmDOT);
+  response[32] = highByte(currentStatus.rpmDOT);
 
   Serial.write(response, (size_t)packetSize);
   //Serial.flush();
@@ -816,34 +820,33 @@ Send 256 tooth log entries
 */
 void sendToothLog(bool useChar)
 {
-
-  //We need 256 records to send to TunerStudio. If there aren't that many in the buffer (Buffer is 512 long) then we just return and wait for the next call
-  if (toothHistoryIndex < 256) {
-    return;  //Don't believe this is the best way to go. Just display whatever is in the buffer
+  //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
+  if (toothHistoryIndex < TOOTH_LOG_SIZE) {
+    return;  //This should no longer ever occur since the flagging system was put in place
   }
-  unsigned int tempToothHistory[512]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
+  unsigned int tempToothHistory[TOOTH_LOG_BUFFER]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
 
   //Copy the working history into the temporary buffer array. This is done so that, if the history loops whilst the values are being sent over serial, it doesn't affect the values
   memcpy( (void*)tempToothHistory, (void*)toothHistory, sizeof(tempToothHistory) );
   toothHistoryIndex = 0; //Reset the history index
 
-  //Loop only needs to go to 256 (Even though the buffer is 512 long) as we only ever send 256 entries at a time
+  //Loop only needs to go to half the buffer size
   if (useChar)
   {
-    for (int x = 0; x < 256; x++)
+    for (int x = 0; x < TOOTH_LOG_SIZE; x++)
     {
       Serial.println(tempToothHistory[x]);
     }
   }
   else
   {
-    for (int x = 0; x < 256; x++)
+    for (int x = 0; x < TOOTH_LOG_SIZE; x++)
     {
       Serial.write(highByte(tempToothHistory[x]));
       Serial.write(lowByte(tempToothHistory[x]));
     }
+    BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY);
   }
-  //Serial.flush();
 }
 
 

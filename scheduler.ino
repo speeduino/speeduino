@@ -128,8 +128,8 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
     //sreg = SREG;
     //noInterrupts();
     //unsigned int absoluteTimeout = TCNT5 + (timeout >> 4); //As above, but with bit shift instead of / 16
-    unsigned int absoluteTimeout = TCNT5 + (timeout >> 2); //As above, but with bit shift instead of / 16
-    OCR5A = absoluteTimeout;
+    OCR5A = TCNT5 + (timeout >> 2); //Divid timeout by 4 (Each tick represent 4uS)
+    
     //SREG = sreg;
     ignitionSchedule1.duration = duration;
     ignitionSchedule1.StartCallback = startCallback; //Name the start callback function

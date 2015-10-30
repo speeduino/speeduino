@@ -21,6 +21,28 @@ toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
 
 */
 
+inline void addToothLogEntry(unsigned long time)
+{
+  //High speed tooth logging history
+  toothHistory[toothHistoryIndex] = curGap;
+  if(toothHistoryIndex == (TOOTH_LOG_BUFFER-1))
+  { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a set of concurrent values. 
+  else
+  { toothHistoryIndex++; }
+}
+
+/*
+As nearly all the decoders use a common method of determining RPM (The time the last full revolution took)
+A common function is simpler
+*/
+inline int stdGetRPM()
+{
+  noInterrupts();
+  revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+  interrupts(); 
+  return (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
+}
+
 /* 
 Name: Missing tooth wheel
 Desc: A multi-tooth wheel with one of more 'missing' teeth. The first tooth after the missing one is considered number 1 and isthe basis for the trigger angle
@@ -43,12 +65,7 @@ void triggerPri_missingTooth()
    if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    toothCurrentCount++; //Increment the tooth counter
    
-   //High speed tooth logging history
-   toothHistory[toothHistoryIndex] = curGap;
-   if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; }
-   else
-   { toothHistoryIndex++; }
+   addToothLogEntry(curGap);
    
    //Begin the missing tooth detection
    //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
@@ -73,10 +90,7 @@ void triggerSec_missingTooth(){ return; } //This function currently is not used
 
 int getRPM_missingTooth()
 {
-   noInterrupts();
-   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-   interrupts(); 
-   return (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
+   return stdGetRPM();
 }
 
 int getCrankAngle_missingTooth(int timePerDegree)
@@ -128,12 +142,7 @@ void triggerPri_DualWheel()
      if ((startRevolutions & 63) == 1) { currentStatus.hasSync = false; } //Every 64 revolutions, force a resync with the cam
    } 
    
-   //High speed tooth logging history
-   toothHistory[toothHistoryIndex] = curGap;
-   if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; }
-   else
-   { toothHistoryIndex++; }
+   addToothLogEntry(curGap);
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
@@ -155,10 +164,7 @@ void triggerSec_DualWheel()
 
 int getRPM_DualWheel()
 {
-   noInterrupts();
-   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-   interrupts(); 
-   return (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
+   return stdGetRPM();
 }
 
 int getCrankAngle_DualWheel(int timePerDegree)
@@ -212,23 +218,15 @@ void triggerPri_BasicDistributor()
   }
   else { toothCurrentCount++; } //Increment the tooth counter 
   
-   //High speed tooth logging history
-   toothHistory[toothHistoryIndex] = curGap;
-   if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; }
-   else
-   { toothHistoryIndex++; }
+  addToothLogEntry(curGap);
    
-   toothLastMinusOneToothTime = toothLastToothTime;
-   toothLastToothTime = curTime;
+  toothLastMinusOneToothTime = toothLastToothTime;
+  toothLastToothTime = curTime;
 }
 void triggerSec_BasicDistributor() { return; } //Not required
 int getRPM_BasicDistributor()
 {
-   noInterrupts();
-   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-   interrupts(); 
-   return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long) 
+   return stdGetRPM();
 }
 int getCrankAngle_BasicDistributor(int timePerDegree)
 {
@@ -265,12 +263,7 @@ void triggerPri_GM7X()
    curGap = curTime - toothLastToothTime;
    toothCurrentCount++; //Increment the tooth counter
    
-   //High speed tooth logging history
-   toothHistory[toothHistoryIndex] = curGap;
-   if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; }
-   else
-   { toothHistoryIndex++; }
+   addToothLogEntry(curGap);
    
    //
    if( toothCurrentCount > 7 )
@@ -296,10 +289,7 @@ void triggerPri_GM7X()
 void triggerSec_GM7X() { return; } //Not required
 int getRPM_GM7X()
 {
-   noInterrupts();
-   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-   interrupts(); 
-   return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long) 
+   return stdGetRPM();
 }
 int getCrankAngle_GM7X(int timePerDegree)
 {
@@ -338,7 +328,7 @@ int getCrankAngle_GM7X(int timePerDegree)
 Name: Mitsubishi 4G63 / NA/NB Miata + MX-5 / 4/2
 Desc: TBA
 Note: https://raw.githubusercontent.com/noisymime/speeduino/master/reference/wiki/decoders/4g63_trace.png
-Tooth #1 is defined as the next crank tooth after the crank signal is LOW when the cam signal is rising.
+Tooth #1 is defined as the next crank tooth after the crank signal is HIGH when the cam signal is falling.
 Tooth number one is at 355* ATDC
 */
 void triggerSetup_4G63()
@@ -382,12 +372,7 @@ void triggerPri_4G63()
   else if (!currentStatus.hasSync) { return; }
   else  { toothCurrentCount++; }
   
-   //High speed tooth logging history
-   toothHistory[toothHistoryIndex] = curGap;
-   if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; }
-   else
-   { toothHistoryIndex++; }
+   addToothLogEntry(curGap);
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
@@ -403,9 +388,13 @@ void triggerSec_4G63()
   {
     //Check the status of the crank trigger
     bool crank = digitalRead(pinTrigger);
-    triggerFilterTime = 1;
-    if(crank == HIGH) { toothCurrentCount = 4; } //If the crank trigger is currently HIGH, it means we're on tooth #1
+    if(crank == HIGH)
+    {
+      triggerFilterTime = 1; //Effectively turns off the trigger filter for now 
+      toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
+    } 
   }
+  else { triggerFilterTime = 1500; } //reset filter time (ugly)
   return; 
 }
 
@@ -494,12 +483,7 @@ void triggerPri_24X()
     toothCurrentCount++; //Increment the tooth counter
   }
   
-   //High speed tooth logging history
-   toothHistory[toothHistoryIndex] = curGap;
-   if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; }
-   else
-   { toothHistoryIndex++; }
+   addToothLogEntry(curGap);
    
    toothLastToothTime = curTime;
 }
@@ -511,10 +495,7 @@ void triggerSec_24X()
 
 int getRPM_24X()
 {
-   noInterrupts();
-   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-   interrupts(); 
-   return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long) 
+   return stdGetRPM();
 }
 int getCrankAngle_24X(int timePerDegree)
 {
@@ -581,12 +562,7 @@ void triggerPri_Jeep2000()
     toothCurrentCount++; //Increment the tooth counter
   }
   
-   //High speed tooth logging history
-   toothHistory[toothHistoryIndex] = curGap;
-   if(toothHistoryIndex == 511)
-   { toothHistoryIndex = 0; }
-   else
-   { toothHistoryIndex++; }
+   addToothLogEntry(curGap);
    
    toothLastToothTime = curTime;
 }
@@ -598,10 +574,7 @@ void triggerSec_Jeep2000()
 
 int getRPM_Jeep2000()
 {
-   noInterrupts();
-   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-   interrupts(); 
-   return ldiv(US_IN_MINUTE, revolutionTime).quot; //Calc RPM based on last full revolution time (uses ldiv rather than div as US_IN_MINUTE is a long) 
+   return stdGetRPM();
 }
 int getCrankAngle_Jeep2000(int timePerDegree)
 {

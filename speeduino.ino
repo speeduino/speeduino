@@ -51,7 +51,7 @@ struct config3 configPage3;
 struct config4 configPage4;
 
 int req_fuel_uS, inj_opentime_uS;
-#define MAX_RPM 10000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
+#define MAX_RPM 15000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
 volatile byte startRevolutions = 0; //A counter for how many revolutions have been completed since sync was achieved.
 volatile byte ign1LastRev;
@@ -76,6 +76,7 @@ struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
+struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
@@ -106,6 +107,17 @@ int channel1InjDegrees; //The number of crank degrees until cylinder 1 is at TDC
 int channel2InjDegrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
 int channel3InjDegrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
 int channel4InjDegrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
+
+//These are the functions the get called to begin and end the ignition coil charging. They are required for the various spark output modes
+void (*ign1StartFunction)();
+void (*ign1EndFunction)();
+void (*ign2StartFunction)();
+void (*ign2EndFunction)();
+void (*ign3StartFunction)();
+void (*ign3EndFunction)();
+void (*ign4StartFunction)();
+void (*ign4EndFunction)();
+
 int timePerDegree;
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
 
@@ -151,6 +163,10 @@ void setup()
   injectorVCorrectionTable.xSize = 6;
   injectorVCorrectionTable.values = configPage3.injVoltageCorrectionValues;
   injectorVCorrectionTable.axisX = configPage3.voltageCorrectionBins;
+  IATDensityCorrectionTable.valueSize = SIZE_BYTE;
+  IATDensityCorrectionTable.xSize = 9;
+  IATDensityCorrectionTable.values = configPage3.airDenRates;
+  IATDensityCorrectionTable.axisX = configPage3.airDenBins;
   
   //Setup the calibration tables
   loadCalibration();
@@ -440,6 +456,74 @@ void setup()
       break;
   }
   
+  switch(configPage2.sparkMode)
+  {
+    case 0:
+      //Wasted Spark (Normal mode)
+      ign1StartFunction = beginCoil1Charge;
+      ign1EndFunction = endCoil1Charge;
+      ign2StartFunction = beginCoil2Charge;
+      ign2EndFunction = endCoil2Charge;
+      ign3StartFunction = beginCoil3Charge;
+      ign3EndFunction = endCoil3Charge;
+      ign4StartFunction = beginCoil4Charge;
+      ign4EndFunction = endCoil4Charge;
+      break;
+      
+    case 1:
+      //Single channel mode. All ignition pulses are on channel 1
+      ign1StartFunction = beginCoil1Charge;
+      ign1EndFunction = endCoil1Charge;
+      ign2StartFunction = beginCoil1Charge;
+      ign2EndFunction = endCoil1Charge;
+      ign3StartFunction = beginCoil1Charge;
+      ign3EndFunction = endCoil1Charge;
+      ign4StartFunction = beginCoil1Charge;
+      ign4EndFunction = endCoil1Charge;
+      break;
+      
+    case 2:
+      //Wasted COP mode. Ignition channels 1&3 and 2&4 are paired together
+      //This is not a valid mode for >4 cylinders
+      if( configPage1.nCylinders <= 4 )
+      {
+        ign1StartFunction = beginCoil1and3Charge;
+        ign1EndFunction = endCoil1and3Charge;
+        ign2StartFunction = beginCoil2and4Charge;
+        ign2EndFunction = endCoil2and4Charge;
+        
+        ign3StartFunction = nullCallback;
+        ign3EndFunction = nullCallback;
+        ign4StartFunction = nullCallback;
+        ign4EndFunction = nullCallback;
+      }
+      else
+      {
+        //If the person has inadvertantly selected this when running more than 4 cylinders, just use standard Wasted spark mode
+        ign1StartFunction = beginCoil1Charge;
+        ign1EndFunction = endCoil1Charge;
+        ign2StartFunction = beginCoil2Charge;
+        ign2EndFunction = endCoil2Charge;
+        ign3StartFunction = beginCoil3Charge;
+        ign3EndFunction = endCoil3Charge;
+        ign4StartFunction = beginCoil4Charge;
+        ign4EndFunction = endCoil4Charge;
+      }
+      break;
+    
+    default:
+      //Wasted spark (Shouldn't ever happen anyway)
+      ign1StartFunction = beginCoil1Charge;
+      ign1EndFunction = endCoil1Charge;
+      ign2StartFunction = beginCoil2Charge;
+      ign2EndFunction = endCoil2Charge;
+      ign3StartFunction = beginCoil3Charge;
+      ign3EndFunction = endCoil3Charge;
+      ign4StartFunction = beginCoil4Charge;
+      ign4EndFunction = endCoil4Charge;
+      break;
+  }
+  
   //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
   setFuelSchedule1(openInjector1and4, 100, (unsigned long)(configPage1.primePulse * 100), closeInjector1and4);
   setFuelSchedule2(openInjector2and3, 100, (unsigned long)(configPage1.primePulse * 100), closeInjector2and3);
@@ -468,8 +552,10 @@ void loop()
     long timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < 500000L) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
+      int lastRPM = currentStatus.RPM; //Need to record this for rpmDOT calculation
       currentStatus.RPM = getRPM();
       if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't. 
+      currentStatus.rpmDOT = ldiv(1000000, (currentLoopTime - previousLoopTime)).quot * (currentStatus.RPM - lastRPM); //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     }
     else
     {
@@ -481,6 +567,7 @@ void loop()
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       secCounter = 0; //Reset our seconds counter.
       startRevolutions = 0;
+      currentStatus.rpmDOT = 0;
       ignitionOn = false;
       fuelOn = false;
       digitalWrite(pinFuelPump, LOW); //Turn off the fuel pump
@@ -549,13 +636,19 @@ void loop()
       currentStatus.TPSlast_time = currentStatus.TPS_time;
       currentStatus.tpsADC = fastMap1023toX(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
       currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
-      currentStatus.TPS_time = currentLoopTime;   
+      currentStatus.TPS_time = currentLoopTime;  
+     
+      //Check for launch in (clutch) can be done around here too
+      currentStatus.launching = !digitalRead(pinLaunch);
+      //And check whether the tooth log buffer is ready
+      if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
     }
     
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
     if ((mainLoopCount & 255) == 1)
     {
-       currentStatus.cltADC = map(analogRead(pinCLT), 0, 1023, 0, 511); //Get the current raw CLT value
+       //currentStatus.cltADC = map(analogRead(pinCLT), 0, 1023, 0, 511); //Get the current raw CLT value
+       currentStatus.cltADC = fastMap1023toX(analogRead(pinCLT), 0, 1023, 0, 511); //Get the current raw CLT value
        currentStatus.iatADC = map(analogRead(pinIAT), 0, 1023, 0, 511); //Get the current raw IAT value
        currentStatus.O2ADC = map(analogRead(pinO2), 0, 1023, 0, 511); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4. This is the correct calibration for an Innovate Wideband 0v - 5V unit. Proper calibration is still a WIP
        currentStatus.O2_2ADC = map(analogRead(pinO2_2), 0, 1023, 0, 511); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4. This is the correct calibration for an Innovate Wideband 0v - 5V unit. Proper calibration is still a WIP
@@ -694,6 +787,7 @@ void loop()
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
       if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { currentStatus.advance = configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+      if (configPage3.launchEnabled && currentStatus.launching && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) ) { currentStatus.advance = configPage3.lnchRetard; } //SoftCut rev limit for 2-step launch control
       
       //Set dwell
        //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
@@ -849,15 +943,16 @@ void loop()
       //Likewise for the ignition
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
       //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
+      crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
       if(ignitionOn && (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ))
       {
         //if ( (ignition1StartAngle > crankAngle) && ign1LastRev != startRevolutions)
         if ( (ignition1StartAngle > crankAngle) && ign1LastRev != startRevolutions)
         {
-            setIgnitionSchedule1(beginCoil1Charge, 
+            setIgnitionSchedule1(ign1StartFunction, 
                       ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                       currentStatus.dwell,
-                      endCoil1Charge
+                      ign1EndFunction
                       );
         }
 
@@ -867,10 +962,10 @@ void loop()
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
         if ( (tempStartAngle > tempCrankAngle)  && ign2LastRev != startRevolutions)
         { 
-            setIgnitionSchedule2(beginCoil2Charge, 
+            setIgnitionSchedule2(ign2StartFunction, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       currentStatus.dwell,
-                      endCoil2Charge
+                      ign2EndFunction
                       );
         }
         
@@ -880,10 +975,10 @@ void loop()
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
         if (tempStartAngle > tempCrankAngle)
         { 
-            setIgnitionSchedule3(beginCoil3Charge, 
+            setIgnitionSchedule3(ign3StartFunction, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       currentStatus.dwell,
-                      endCoil3Charge
+                      ign3EndFunction
                       );
         }
         
@@ -893,10 +988,10 @@ void loop()
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
         if (tempStartAngle > tempCrankAngle)
         { 
-            setIgnitionSchedule4(beginCoil4Charge, 
+            setIgnitionSchedule4(ign4StartFunction, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       currentStatus.dwell,
-                      endCoil4Charge
+                      ign4EndFunction
                       );
         }
         
@@ -911,27 +1006,29 @@ void loop()
 
 //These functions simply trigger the injector/coil driver off or on. 
 //NOTE: squirt status is changed as per http://www.msextra.com/doc/ms1extra/COM_RS232.htm#Acmd
-void openInjector1() { digitalWrite(pinInjector1, HIGH); BIT_SET(currentStatus.squirt, 0); } 
-void closeInjector1() { digitalWrite(pinInjector1, LOW); BIT_CLEAR(currentStatus.squirt, 0); } 
+void openInjector1() { digitalWrite(pinInjector1, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
+void closeInjector1() { digitalWrite(pinInjector1, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
 //void openInjector1() { *inj1_pin_port |= (inj1_pin_mask); ; BIT_SET(currentStatus.squirt, 0); } 
 //void closeInjector1() { *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.squirt, 0); }
 void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); BIT_SET(currentStatus.spark, 0); digitalWrite(pinTachOut, LOW); }
 void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); BIT_CLEAR(currentStatus.spark, 0); }
+//void beginCoil1Charge() { *ign1_pin_port |= (ign1_pin_mask); }
+//void endCoil1Charge() { *ign1_pin_port &= ~(ign1_pin_mask); }
 
-void openInjector2() { digitalWrite(pinInjector2, HIGH); BIT_SET(currentStatus.squirt, 1); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
-void closeInjector2() { digitalWrite(pinInjector2, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
+void openInjector2() { digitalWrite(pinInjector2, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ2); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
+void closeInjector2() { digitalWrite(pinInjector2, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ2); } 
 //void openInjector2() { *inj2_pin_port |= (inj2_pin_mask); ; BIT_SET(currentStatus.squirt, 0); } 
 //void closeInjector2() { *inj2_pin_port &= ~(inj2_pin_mask);  BIT_CLEAR(currentStatus.squirt, 0); }
 void beginCoil2Charge() { digitalWrite(pinCoil2, coilHIGH); BIT_SET(currentStatus.spark, 1); digitalWrite(pinTachOut, LOW); }
 void endCoil2Charge() { digitalWrite(pinCoil2, coilLOW); BIT_CLEAR(currentStatus.spark, 1);}
 
-void openInjector3() { digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, 2); } //Sets the relevant pin HIGH and changes the current status bit for injector 3 (3rd bit of currentStatus.squirt)
-void closeInjector3() { digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, 2); } 
+void openInjector3() { digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ3); } //Sets the relevant pin HIGH and changes the current status bit for injector 3 (3rd bit of currentStatus.squirt)
+void closeInjector3() { digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ3); } 
 void beginCoil3Charge() { digitalWrite(pinCoil3, coilHIGH); BIT_SET(currentStatus.spark, 2); digitalWrite(pinTachOut, LOW); }
 void endCoil3Charge() { digitalWrite(pinCoil3, coilLOW); BIT_CLEAR(currentStatus.spark, 2); }
 
-void openInjector4() { digitalWrite(pinInjector4, HIGH); BIT_SET(currentStatus.squirt, 3); } //Sets the relevant pin HIGH and changes the current status bit for injector 4 (4th bit of currentStatus.squirt)
-void closeInjector4() { digitalWrite(pinInjector4, LOW); BIT_CLEAR(currentStatus.squirt, 3); } 
+void openInjector4() { digitalWrite(pinInjector4, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ4); } //Sets the relevant pin HIGH and changes the current status bit for injector 4 (4th bit of currentStatus.squirt)
+void closeInjector4() { digitalWrite(pinInjector4, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ4); } 
 void beginCoil4Charge() { digitalWrite(pinCoil4, coilHIGH); BIT_SET(currentStatus.spark, 3); digitalWrite(pinTachOut, LOW); }
 void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); BIT_CLEAR(currentStatus.spark, 3); }
 
@@ -940,5 +1037,13 @@ void openInjector1and4() { digitalWrite(pinInjector1, HIGH); digitalWrite(pinInj
 void closeInjector1and4() { digitalWrite(pinInjector1, LOW); digitalWrite(pinInjector4, LOW);BIT_CLEAR(currentStatus.squirt, 0); }
 void openInjector2and3() { digitalWrite(pinInjector2, HIGH); digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, 1); }
 void closeInjector2and3() { digitalWrite(pinInjector2, LOW); digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
+
+//As above but for ignition (Wasted COP mode)
+void beginCoil1and3Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinCoil3, coilHIGH); BIT_SET(currentStatus.spark, 0); BIT_SET(currentStatus.spark, 2); digitalWrite(pinTachOut, LOW); }
+void endCoil1and3Charge() { digitalWrite(pinCoil1, coilLOW); digitalWrite(pinCoil3, coilLOW); BIT_CLEAR(currentStatus.spark, 0); BIT_CLEAR(currentStatus.spark, 2); }
+void beginCoil2and4Charge() { digitalWrite(pinCoil2, coilHIGH); digitalWrite(pinCoil4, coilHIGH); BIT_SET(currentStatus.spark, 1); BIT_SET(currentStatus.spark, 3); digitalWrite(pinTachOut, LOW); }
+void endCoil2and4Charge() { digitalWrite(pinCoil2, coilLOW); digitalWrite(pinCoil4, coilLOW); BIT_CLEAR(currentStatus.spark, 1); BIT_CLEAR(currentStatus.spark, 3); }
+
+void nullCallback() { return; }
   
 

@@ -1,5 +1,3 @@
-#define TOOTH_HISTORY_LENGTH 512
-
 volatile unsigned long curTime;
 volatile unsigned int curGap;
 volatile unsigned long curTime2;
@@ -13,7 +11,7 @@ volatile unsigned long toothLastSecToothTime = 0; //The time (micros()) that the
 volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
 volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
 volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
-volatile unsigned int toothHistory[TOOTH_HISTORY_LENGTH];
+volatile unsigned int toothHistory[TOOTH_LOG_BUFFER];
 volatile unsigned int toothHistoryIndex = 0;
 
 volatile byte secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth

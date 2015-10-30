@@ -27,9 +27,11 @@ byte correctionsTotal()
   
   //As the 'normal' case will be for each function to return 100, we only perform the division operation if the returned result is not equal to that
   currentStatus.wueCorrection = correctionWUE();
-  if (currentStatus.wueCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.wueCorrection), 100).quot; }
+  //if (currentStatus.wueCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.wueCorrection), 100).quot; }
+  if (currentStatus.wueCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.wueCorrection); }
   result = correctionASE();
-  if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
+  //if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
+  if (result != 100) { sumCorrections = divs100(sumCorrections * result); }
   result = correctionCranking();
   if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
   currentStatus.TAEamount = correctionAccel();
@@ -37,9 +39,16 @@ byte correctionsTotal()
   result = correctionFloodClear();
   if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
   currentStatus.egoCorrection = correctionsAFRClosedLoop();
-  if (currentStatus.egoCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.egoCorrection), 100).quot; }
+  //if (currentStatus.egoCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.egoCorrection), 100).quot; }
+  if (currentStatus.egoCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.egoCorrection); }
   currentStatus.batCorrection = correctionsBatVoltage();
-  if (currentStatus.batCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.batCorrection), 100).quot; }
+  //if (currentStatus.batCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.batCorrection), 100).quot; }
+  if (currentStatus.batCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.batCorrection); }
+  currentStatus.iatCorrection = correctionsIATDensity();
+  //if (currentStatus.iatCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.iatCorrection), 100).quot; }
+  if (currentStatus.iatCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.iatCorrection); }
+  currentStatus.launchCorrection = correctionsLaunch();
+  if (currentStatus.launchCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.launchCorrection), 100).quot; }
   
   if(sumCorrections > 255) { sumCorrections = 255; } //This is the maximum allowable increase
   return (byte)sumCorrections;
@@ -155,6 +164,26 @@ byte correctionsBatVoltage()
 {
   if (currentStatus.battery10 > (injectorVCorrectionTable.axisX[5])) { return injectorVCorrectionTable.values[injectorVCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the voltage is above maximum 
   return table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
+}
+
+/*
+Simple temperature based corrections lookup based on the inlet air temperature. 
+This corrects for changes in air density from movement of the temperature 
+*/
+byte correctionsIATDensity()
+{
+  if ( (currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) > (IATDensityCorrectionTable.axisX[8])) { return IATDensityCorrectionTable.values[IATDensityCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the intake temp is above maximum 
+  return table2D_getValue(&IATDensityCorrectionTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
+}
+
+/*
+Launch control has a setting to increase the fuel load to assist in bringing up boost
+This simple check applies the extra fuel if we're currently launching
+*/
+byte correctionsLaunch()
+{
+  if(configPage3.launchEnabled && currentStatus.launching) { return (100 + configPage3.lnchFuelAdd); }
+  else { return 100; }
 }
 
 /*
