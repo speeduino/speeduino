@@ -13,6 +13,7 @@ volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last
 volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
 volatile unsigned int toothHistory[TOOTH_LOG_BUFFER];
 volatile unsigned int toothHistoryIndex = 0;
+volatile long toothDeltaV; //Represents the change in time taken between the last 2 teeth compared to the previous 2. Positive value represents accleration, negative = deccleration
 
 volatile byte secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
 volatile unsigned long secondaryLastToothTime = 0; //The time (micros()) that the last tooth was registered (Cam input)

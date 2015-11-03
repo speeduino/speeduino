@@ -726,7 +726,9 @@ void loop()
       int tempStartAngle; 
       
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
-      timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
+      long toothAccel = toothDeltaV / triggerToothAngle; //An amount represengint the current acceleration or decceleration of the crank in degrees per uS per uS
+      timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot + (toothAccel * (micros() - toothLastToothTime)); //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
+      //timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       
       //Check that the duty cycle of the chosen pulsewidth isn't too high. This is disabled at cranking
       if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
@@ -741,7 +743,7 @@ void loop()
       //Determine next firing angles
       //1
       int PWdivTimerPerDegree = div(currentStatus.PW, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
-      injector1StartAngle = configPage1.inj1Ang - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. I am using 355 as the point at which the injector MUST be closed by. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
+      injector1StartAngle = configPage1.inj1Ang - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       if(injector1StartAngle < 0) {injector1StartAngle += 360;} 
       //Repeat the above for each cylinder
       switch (configPage1.nCylinders)
@@ -820,7 +822,7 @@ void loop()
           break;
         //4 cylinders
         case 4:
-          ignition2StartAngle = channel2IgnDegrees + 360 - currentStatus.advance - dwellAngle; //(div((configPage2.dwellRun*100), timePerDegree).quot ));
+          ignition2StartAngle = channel2IgnDegrees + 360 - currentStatus.advance - dwellAngle;
           if(ignition2StartAngle > 360) {ignition2StartAngle -= 360;}
           if(ignition2StartAngle < 0) {ignition2StartAngle += 360;}
           break;
@@ -946,9 +948,13 @@ void loop()
       crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
       if(ignitionOn && (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ))
       {
-        //if ( (ignition1StartAngle > crankAngle) && ign1LastRev != startRevolutions)
         if ( (ignition1StartAngle > crankAngle) && ign1LastRev != startRevolutions)
+        //if (ign1LastRev != startRevolutions)
         {
+            unsigned long ignition1StartTime;
+            if(ignition1StartAngle > crankAngle) { ignition1StartTime = ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree); }
+            else { ignition1StartTime = ((unsigned long)(360 - crankAngle + ignition1StartAngle) * (unsigned long)timePerDegree); }
+            
             setIgnitionSchedule1(ign1StartFunction, 
                       ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                       currentStatus.dwell,
@@ -961,7 +967,12 @@ void loop()
         tempStartAngle = ignition2StartAngle - channel2IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
         if ( (tempStartAngle > tempCrankAngle)  && ign2LastRev != startRevolutions)
+        //if ( ign2LastRev != startRevolutions )
         { 
+            unsigned long ignition2StartTime;
+            if(tempStartAngle > tempCrankAngle) { ignition2StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
+            else { ignition2StartTime = ((unsigned long)(360 - tempCrankAngle + tempStartAngle) * (unsigned long)timePerDegree); }
+            
             setIgnitionSchedule2(ign2StartFunction, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       currentStatus.dwell,
