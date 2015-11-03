@@ -726,9 +726,17 @@ void loop()
       int tempStartAngle; 
       
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
-      long toothAccel = toothDeltaV / triggerToothAngle; //An amount represengint the current acceleration or decceleration of the crank in degrees per uS per uS
-      timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot + (toothAccel * (micros() - toothLastToothTime)); //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
-      //timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
+      //We use a 1st Deriv accleration prediction, but only when there is an even spacing between primary sensor teeth
+      //Any decoder that has uneven spacing has its triggerToothAngle set to 0
+      if(triggerToothAngle > 0)
+      {
+        long toothAccel = toothDeltaV / triggerToothAngle; //An amount represengint the current acceleration or decceleration of the crank in degrees per uS per uS
+        timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot + (toothAccel * (micros() - toothLastToothTime)); //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
+      }
+      else
+      {
+        timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
+      }
       
       //Check that the duty cycle of the chosen pulsewidth isn't too high. This is disabled at cranking
       if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
@@ -741,7 +749,6 @@ void loop()
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
       //Determine next firing angles
-      //1
       int PWdivTimerPerDegree = div(currentStatus.PW, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
       injector1StartAngle = configPage1.inj1Ang - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       if(injector1StartAngle < 0) {injector1StartAngle += 360;} 

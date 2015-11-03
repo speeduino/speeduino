@@ -303,6 +303,7 @@ void triggerPri_GM7X()
        toothCurrentCount = 3; 
        currentStatus.hasSync = true;
        startRevolutions++; //Counter 
+       return; //We return here so that the tooth times below don't get set (The magical 3rd tooth should not be considered for any calculations that use those times)
      } 
    }
    
@@ -330,7 +331,7 @@ int getCrankAngle_GM7X(int timePerDegree)
     int crankAngle;
     if( tempToothCurrentCount < 3 )
     {
-      crankAngle = (tempToothCurrentCount - 1) * 60 + 42; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+      crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + 42; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
     }
     else if( tempToothCurrentCount == 3 )
     {
@@ -338,7 +339,7 @@ int getCrankAngle_GM7X(int timePerDegree)
     }
     else
     {
-      crankAngle = (tempToothCurrentCount - 2) * 60 + 42; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+      crankAngle = (tempToothCurrentCount - 2) * triggerToothAngle + 42; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
     }
     
     crankAngle += ldiv( (micros() - tempToothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
@@ -459,7 +460,7 @@ Provided that the cam signal is used, this decoder simply counts the teeth and t
 */
 void triggerSetup_24X()
 {
-  triggerToothAngle = 180; //The number of degrees that passes from tooth to tooth (primary)
+  triggerToothAngle = 15; //The number of degrees that passes from tooth to tooth (primary)
   toothAngles[0] = 12;
   toothAngles[1] = 18;
   toothAngles[2] = 33;
@@ -550,7 +551,7 @@ http://speeduino.com/forum/download/file.php?id=205
 */
 void triggerSetup_Jeep2000()
 {
-  triggerToothAngle = 180; //The number of degrees that passes from tooth to tooth (primary)
+  triggerToothAngle = 0; //The number of degrees that passes from tooth to tooth (primary)
   toothAngles[0] = 174;
   toothAngles[1] = 194;
   toothAngles[2] = 214;
