@@ -96,7 +96,7 @@ void triggerPri_missingTooth()
      startRevolutions++; //Counter 
    } 
    
-   toothDeltaV = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime - toothLastToothTime); //Positive value = accleration, Negative = decceleration
+   toothDeltaT = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime - toothLastToothTime); //Positive value = accleration, Negative = decceleration
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
 }
@@ -160,7 +160,7 @@ void triggerPri_DualWheel()
    
    addToothLogEntry(curGap);
    
-   toothDeltaV = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime - toothLastToothTime); //Positive value = accleration, Negative = decceleration
+   toothDeltaT = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime - toothLastToothTime); //Positive value = accleration, Negative = decceleration
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
 }
@@ -239,14 +239,14 @@ void triggerPri_BasicDistributor()
   
   addToothLogEntry(curGap);
   
-  toothDeltaV = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime -toothLastToothTime); //Positive value = accleration, Negative = decceleration
+  toothDeltaT = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime -toothLastToothTime); //Positive value = accleration, Negative = decceleration
   toothLastMinusOneToothTime = toothLastToothTime;
   toothLastToothTime = curTime;
 }
 void triggerSec_BasicDistributor() { return; } //Not required
 int getRPM_BasicDistributor()
 {
-  if(currentStatus.RPM < configPage2.crankRPM) { crankingGetRPM((configPage1.nCylinders >> 1)); }
+  if(currentStatus.RPM < configPage2.crankRPM) { return crankingGetRPM((configPage1.nCylinders >> 1)); }
   else { return stdGetRPM(); }
 }
 int getCrankAngle_BasicDistributor(int timePerDegree)
@@ -307,7 +307,7 @@ void triggerPri_GM7X()
      } 
    }
    
-   toothDeltaV = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime - toothLastToothTime); //Positive value = accleration, Negative = decceleration
+   toothDeltaT = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime - toothLastToothTime); //Positive value = accleration, Negative = decceleration
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
 }
@@ -399,7 +399,10 @@ void triggerPri_4G63()
   
    addToothLogEntry(curGap);
    
-   toothDeltaV = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime - toothLastToothTime); //Positive value = accleration, Negative = decceleration
+   //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
+   if(toothCurrentCount == 1 || toothCurrentCount == 3) { triggerToothAngle = 70; }
+   else { triggerToothAngle = 110; }
+   toothDeltaT = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime - toothLastToothTime); //Positive value = accleration, Negative = decceleration
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
 }
@@ -427,7 +430,7 @@ void triggerSec_4G63()
 
 int getRPM_4G63()
 {
-  if(currentStatus.RPM < configPage2.crankRPM) { crankingGetRPM(2); }
+  if(currentStatus.RPM < configPage2.crankRPM) { return crankingGetRPM(2); }
   else { return stdGetRPM(); }
 }
   int getCrankAngle_4G63(int timePerDegree)
@@ -589,7 +592,7 @@ void triggerPri_Jeep2000()
   
   addToothLogEntry(curGap);
    
-  toothDeltaV = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime - toothLastToothTime); //Positive value = accleration, Negative = decceleration
+  toothDeltaT = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime - toothLastToothTime); //Positive value = accleration, Negative = decceleration
   toothLastMinusOneToothTime = toothLastToothTime;
   toothLastToothTime = curTime;
 }
