@@ -549,7 +549,7 @@ void loop()
     //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
     previousLoopTime = currentLoopTime;
     currentLoopTime = micros();
-    long timeToLastTooth = (currentLoopTime - toothLastToothTime);
+    unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < 500000L) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
       int lastRPM = currentStatus.RPM; //Need to record this for rpmDOT calculation
@@ -563,6 +563,7 @@ void loop()
       currentStatus.RPM = 0; 
       currentStatus.PW = 0;
       currentStatus.VE = 0;
+      toothLastToothTime = 0;
       currentStatus.hasSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       secCounter = 0; //Reset our seconds counter.
@@ -728,12 +729,13 @@ void loop()
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       //We use a 1st Deriv accleration prediction, but only when there is an even spacing between primary sensor teeth
       //Any decoder that has uneven spacing has its triggerToothAngle set to 0
+      /*
       if(triggerToothAngle > 0)
       {
         long toothAccel = toothDeltaT / triggerToothAngle; //An amount represengint the current acceleration or decceleration of the crank in degrees per uS per uS
         timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot + (toothAccel * (micros() - toothLastToothTime)); //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       }
-      else
+      else */
       {
         timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       }
