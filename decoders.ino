@@ -24,7 +24,7 @@ toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
 inline void addToothLogEntry(unsigned long time)
 {
   //High speed tooth logging history
-  toothHistory[toothHistoryIndex] = curGap;
+  toothHistory[toothHistoryIndex] = time;
   if(toothHistoryIndex == (TOOTH_LOG_BUFFER-1))
   { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a set of concurrent values. 
   else
@@ -96,7 +96,6 @@ void triggerPri_missingTooth()
      startRevolutions++; //Counter 
    } 
    
-   toothDeltaT = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime - toothLastToothTime); //Positive value = accleration, Negative = decceleration
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
 }
@@ -160,7 +159,6 @@ void triggerPri_DualWheel()
    
    addToothLogEntry(curGap);
    
-   toothDeltaT = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime - toothLastToothTime); //Positive value = accleration, Negative = decceleration
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
 }
@@ -240,7 +238,6 @@ void triggerPri_BasicDistributor()
   
   addToothLogEntry(curGap);
   
-  toothDeltaT = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime -toothLastToothTime); //Positive value = accleration, Negative = decceleration
   toothLastMinusOneToothTime = toothLastToothTime;
   toothLastToothTime = curTime;
 }
@@ -308,7 +305,6 @@ void triggerPri_GM7X()
      } 
    }
    
-   toothDeltaT = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime - toothLastToothTime); //Positive value = accleration, Negative = decceleration
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
 }
@@ -396,7 +392,7 @@ void triggerPri_4G63()
   //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
   if(toothCurrentCount == 1 || toothCurrentCount == 3) { triggerToothAngle = 70; }
   else { triggerToothAngle = 110; }
-  toothDeltaT = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime - toothLastToothTime); //Positive value = accleration, Negative = decceleration
+
   toothLastMinusOneToothTime = toothLastToothTime;
   toothLastToothTime = curTime;
 }
@@ -595,7 +591,6 @@ void triggerPri_Jeep2000()
   
   addToothLogEntry(curGap);
    
-  toothDeltaT = (toothLastToothTime - toothLastMinusOneToothTime) - (curTime - toothLastToothTime); //Positive value = accleration, Negative = decceleration
   toothLastMinusOneToothTime = toothLastToothTime;
   toothLastToothTime = curTime;
 }

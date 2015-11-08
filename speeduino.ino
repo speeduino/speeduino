@@ -730,12 +730,13 @@ void loop()
       //We use a 1st Deriv accleration prediction, but only when there is an even spacing between primary sensor teeth
       //Any decoder that has uneven spacing has its triggerToothAngle set to 0
       /*
-      if(triggerToothAngle > 0)
+      if(triggerToothAngle > 0 && toothHistoryIndex >= 3) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries
       {
+        long toothDeltaT = toothHistory[toothHistoryIndex-1] - toothHistory[toothHistoryIndex]; //Positive value = accleration, Negative = decceleration
         long toothAccel = toothDeltaT / triggerToothAngle; //An amount represengint the current acceleration or decceleration of the crank in degrees per uS per uS
         timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot + (toothAccel * (micros() - toothLastToothTime)); //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       }
-      else */
+      else*/
       {
         timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       }
