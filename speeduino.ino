@@ -544,9 +544,8 @@ void loop()
         }
       }
 
-      // if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();} //Timers currently disabled
-     
-    //Calculate the RPM based on the uS between the last 2 times tooth One was seen.
+    // if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();} //Displays currently disabled
+    
     previousLoopTime = currentLoopTime;
     currentLoopTime = micros();
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
@@ -729,14 +728,27 @@ void loop()
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       //We use a 1st Deriv accleration prediction, but only when there is an even spacing between primary sensor teeth
       //Any decoder that has uneven spacing has its triggerToothAngle set to 0
-      /*
-      if(triggerToothAngle > 0 && toothHistoryIndex >= 3) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries
+      if(triggerToothAngle > 0 && toothHistoryIndex >= 3 && currentStatus.RPM < 3000 ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
       {
-        long toothDeltaT = toothHistory[toothHistoryIndex-1] - toothHistory[toothHistoryIndex]; //Positive value = accleration, Negative = decceleration
-        long toothAccel = toothDeltaT / triggerToothAngle; //An amount represengint the current acceleration or decceleration of the crank in degrees per uS per uS
-        timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot + (toothAccel * (micros() - toothLastToothTime)); //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
+        int angle1, angle2; //These represent that crank angles that are travelled for the last 2 pulses
+        if(configPage2.TrigPattern == 4)
+        {
+          //Special case for 70/110 pattern on 4g63
+          angle2 = triggerToothAngle; //Angle 2 is the most recent
+          if (angle2 == 70) { angle1 = 110; }
+          else { angle1 = 70; }
+        }
+        else { angle1 = angle2 = triggerToothAngle; }
+          
+        long toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
+        long toothDeltaT = toothHistory[toothHistoryIndex];
+        long timeToLastTooth = micros() - toothLastToothTime; //Cannot be unsigned
+          
+        int rpmDelta = (toothDeltaV * timeToLastTooth) / (6 * toothDeltaT);
+        
+        timePerDegree = ldiv( 166666L, (currentStatus.RPM + rpmDelta)).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       }
-      else*/
+      else
       {
         timePerDegree = ldiv( 166666L, currentStatus.RPM ).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       }
