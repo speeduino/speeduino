@@ -97,8 +97,10 @@ byte fanLOW = LOW;               // Used to invert the cooling fan output
 
 struct statuses currentStatus;
 volatile int mainLoopCount;
+byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
+int rpmDelta;
 byte ignitionCount;
-unsigned long secCounter; //The next time to increment 'runSecs' counter.
+unsigned long secCounter; //The next time to incremen 'runSecs' counter.
 int channel1IgnDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
 int channel2IgnDegrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
 int channel3IgnDegrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
@@ -730,21 +732,26 @@ void loop()
       //Any decoder that has uneven spacing has its triggerToothAngle set to 0
       if(triggerToothAngle > 0 && toothHistoryIndex >= 3 && currentStatus.RPM < 3000 ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
       {
-        int angle1, angle2; //These represent that crank angles that are travelled for the last 2 pulses
-        if(configPage2.TrigPattern == 4)
+        //Only recalculate deltaV if the tooth has changed since last time
+        if (deltaToothCount != toothCurrentCount)
         {
-          //Special case for 70/110 pattern on 4g63
-          angle2 = triggerToothAngle; //Angle 2 is the most recent
-          if (angle2 == 70) { angle1 = 110; }
-          else { angle1 = 70; }
+          deltaToothCount = toothCurrentCount;
+          int angle1, angle2; //These represent that crank angles that are travelled for the last 2 pulses
+          if(configPage2.TrigPattern == 4)
+          {
+            //Special case for 70/110 pattern on 4g63
+            angle2 = triggerToothAngle; //Angle 2 is the most recent
+            if (angle2 == 70) { angle1 = 110; }
+            else { angle1 = 70; }
+          }
+          else { angle1 = angle2 = triggerToothAngle; }
+            
+          long toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
+          long toothDeltaT = toothHistory[toothHistoryIndex];
+          long timeToLastTooth = micros() - toothLastToothTime; //Cannot be unsigned
+            
+          rpmDelta = (toothDeltaV * timeToLastTooth) / (6 * toothDeltaT);
         }
-        else { angle1 = angle2 = triggerToothAngle; }
-          
-        long toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
-        long toothDeltaT = toothHistory[toothHistoryIndex];
-        long timeToLastTooth = micros() - toothLastToothTime; //Cannot be unsigned
-          
-        int rpmDelta = (toothDeltaV * timeToLastTooth) / (6 * toothDeltaT);
         
         timePerDegree = ldiv( 166666L, (currentStatus.RPM + rpmDelta)).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       }
