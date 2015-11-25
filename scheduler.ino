@@ -263,15 +263,14 @@ ISR(TIMER5_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule1
       ignitionSchedule1.startTime = micros();
       ignitionSchedule1.StartCallback();
       ign1LastRev = startRevolutions;
-      unsigned int absoluteTimeout = TCNT5 + (ignitionSchedule1.duration >> 2); //Divide by 4
-      OCR5A = absoluteTimeout;
+      OCR5A = TCNT5 + (ignitionSchedule1.duration >> 2); //Divide by 4
     }
     else if (ignitionSchedule1.Status == RUNNING)
     {
       ignitionSchedule1.Status = OFF; //Turn off the schedule
       ignitionSchedule1.EndCallback();
       ignitionCount += 1; //Increment the igintion counter
-      TIMSK5 &= ~(1 << OCIE5A); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
+      TIMSK5 &= ~(1 << OCIE5A); //Turn off this output compare unit
     }
   }
 ISR(TIMER5_COMPB_vect, ISR_NOBLOCK) //ignitionSchedule2

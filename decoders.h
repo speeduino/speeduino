@@ -1,3 +1,5 @@
+#include <limits.h>
+
 volatile unsigned long curTime;
 volatile unsigned int curGap;
 volatile unsigned long curTime2;
@@ -28,3 +30,5 @@ int toothAngles[24]; //An array for storing fixed tooth angles. Currently sized 
 //Used for identifying long and short pulses on the 4G63 (And possibly other) trigger patterns
 #define LONG 0;
 #define SHORT 1;
+
+

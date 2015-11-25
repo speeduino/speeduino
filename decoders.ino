@@ -119,7 +119,10 @@ int getCrankAngle_missingTooth(int timePerDegree)
     interrupts();
     
     int crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-    crankAngle += ( (micros() - tempToothLastToothTime) / timePerDegree); //Estimate the number of degrees travelled since the last tooth
+    //Estimate the number of degrees travelled since the last tooth}
+    long elapsedTime = micros() - tempToothLastToothTime;
+    if(elapsedTime < SHRT_MAX ) { crankAngle += div(elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
+    else { ldiv(elapsedTime, timePerDegree).quot; }
 
     if (crankAngle >= 720) { crankAngle -= 720; } 
     else if (crankAngle > 360) { crankAngle -= 360; }
@@ -199,7 +202,11 @@ int getCrankAngle_DualWheel(int timePerDegree)
     if(tempToothCurrentCount == 0) { tempToothCurrentCount = configPage2.triggerTeeth; }
     
     int crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-    crankAngle += ( (micros() - tempToothLastToothTime) / timePerDegree); //Estimate the number of degrees travelled since the last tooth
+    //Estimate the number of degrees travelled since the last tooth}
+    long elapsedTime = micros() - tempToothLastToothTime;
+    if(elapsedTime < SHRT_MAX ) { crankAngle += div(elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
+    else { ldiv(elapsedTime, timePerDegree).quot; }
+    
     
     if (crankAngle >= 720) { crankAngle -= 720; } 
     if (crankAngle > 360) { crankAngle -= 360; }
@@ -261,7 +268,11 @@ int getCrankAngle_BasicDistributor(int timePerDegree)
     interrupts();
     
     int crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-    crankAngle += ldiv( (micros() - tempToothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+    //Estimate the number of degrees travelled since the last tooth}
+    long elapsedTime = micros() - tempToothLastToothTime;
+    if(elapsedTime < SHRT_MAX ) { crankAngle += div(elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
+    else { ldiv(elapsedTime, timePerDegree).quot; }
+    
     if (crankAngle >= 720) { crankAngle -= 720; } 
     if (crankAngle > 360) { crankAngle -= 360; }
     if (crankAngle < 0) { crankAngle += 360; }
@@ -341,7 +352,11 @@ int getCrankAngle_GM7X(int timePerDegree)
       crankAngle = (tempToothCurrentCount - 2) * triggerToothAngle + 42; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
     }
     
-    crankAngle += ldiv( (micros() - tempToothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+    //Estimate the number of degrees travelled since the last tooth}
+    long elapsedTime = micros() - tempToothLastToothTime;
+    if(elapsedTime < SHRT_MAX ) { crankAngle += div(elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
+    else { ldiv(elapsedTime, timePerDegree).quot; }
+    
     if (crankAngle > 360) { crankAngle -= 360; }
     
     return crankAngle;
@@ -447,7 +462,12 @@ int getRPM_4G63()
     interrupts();
     
     int crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was. 
-    crankAngle += ldiv( (micros() - tempToothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+    //Estimate the number of degrees travelled since the last tooth}
+    long elapsedTime = micros() - tempToothLastToothTime;
+    if(elapsedTime < SHRT_MAX ) { crankAngle += div(elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
+    else { ldiv(elapsedTime, timePerDegree).quot; }
+    
+    
     if (crankAngle >= 720) { crankAngle -= 720; }  
     if (crankAngle > 360) { crankAngle -= 360; }
     if (crankAngle < 0) { crankAngle += 360; }
@@ -540,7 +560,13 @@ int getCrankAngle_24X(int timePerDegree)
     int crankAngle;
     if (toothCurrentCount == 0) { crankAngle = 0 + configPage2.triggerAngle; } //This is the special case to handle when the 'last tooth' seen was the cam tooth. 0 is the angle at which the crank tooth goes high (Within 360 degrees). 
     else { crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle;} //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was. 
-    crankAngle += ldiv( (micros() - tempToothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+    
+    //Estimate the number of degrees travelled since the last tooth}
+    long elapsedTime = micros() - tempToothLastToothTime;
+    if(elapsedTime < SHRT_MAX ) { crankAngle += div(elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
+    else { ldiv(elapsedTime, timePerDegree).quot; }
+    
+    
     if (crankAngle > 360) { crankAngle -= 360; }
     
     return crankAngle;
@@ -620,7 +646,12 @@ int getCrankAngle_Jeep2000(int timePerDegree)
     int crankAngle;
     if (toothCurrentCount == 0) { crankAngle = 146 + configPage2.triggerAngle; } //This is the special case to handle when the 'last tooth' seen was the cam tooth. 146 is the angle at which the crank tooth goes high. 
     else { crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle;} //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was. 
-    crankAngle += ldiv( (micros() - tempToothLastToothTime), timePerDegree).quot; //Estimate the number of degrees travelled since the last tooth
+    //Estimate the number of degrees travelled since the last tooth}
+    long elapsedTime = micros() - tempToothLastToothTime;
+    if(elapsedTime < SHRT_MAX ) { crankAngle += div(elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
+    else { ldiv(elapsedTime, timePerDegree).quot; }
+    
+    
     if (crankAngle > 360) { crankAngle -= 360; }
     
     return crankAngle;

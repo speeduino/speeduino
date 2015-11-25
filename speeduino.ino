@@ -983,7 +983,7 @@ void loop()
       //Likewise for the ignition
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
       //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
-      crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
+      //crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
       if(ignitionOn && (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ))
       {
         //if ( (ignition1StartAngle > crankAngle))// && ign1LastRev != startRevolutions)
@@ -1063,10 +1063,10 @@ void openInjector1() { digitalWrite(pinInjector1, HIGH); BIT_SET(currentStatus.s
 void closeInjector1() { digitalWrite(pinInjector1, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
 //void openInjector1() { *inj1_pin_port |= (inj1_pin_mask); ; BIT_SET(currentStatus.squirt, 0); } 
 //void closeInjector1() { *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.squirt, 0); }
-void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); BIT_SET(currentStatus.spark, 0); digitalWrite(pinTachOut, LOW); }
-void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); BIT_CLEAR(currentStatus.spark, 0); }
-//void beginCoil1Charge() { *ign1_pin_port |= (ign1_pin_mask); }
-//void endCoil1Charge() { *ign1_pin_port &= ~(ign1_pin_mask); }
+//void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); BIT_SET(currentStatus.spark, 0); digitalWrite(pinTachOut, LOW); }
+//void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); BIT_CLEAR(currentStatus.spark, 0); }
+void beginCoil1Charge() { *ign1_pin_port |= (ign1_pin_mask); }
+void endCoil1Charge() { *ign1_pin_port &= ~(ign1_pin_mask); }
 
 void openInjector2() { digitalWrite(pinInjector2, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ2); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
 void closeInjector2() { digitalWrite(pinInjector2, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ2); } 
