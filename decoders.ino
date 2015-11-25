@@ -121,7 +121,9 @@ int getCrankAngle_missingTooth(int timePerDegree)
     int crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
     crankAngle += ( (micros() - tempToothLastToothTime) / timePerDegree); //Estimate the number of degrees travelled since the last tooth
 
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    else if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
 }
