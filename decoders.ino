@@ -67,6 +67,7 @@ void triggerSetup_missingTooth()
   triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+  secondDerivEnabled = false;
 }
 
 void triggerPri_missingTooth()
@@ -142,6 +143,7 @@ void triggerSetup_DualWheel()
   toothCurrentCount = 255; //Default value
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  secondDerivEnabled = false;
 }
 
 
@@ -227,6 +229,7 @@ void triggerSetup_BasicDistributor()
   triggerToothAngle = 360 / triggerActualTeeth; //The number of degrees that passes from tooth to tooth
   triggerFilterTime = 60000000L / MAX_RPM / configPage1.nCylinders; // Minimum time required between teeth
   triggerFilterTime = triggerFilterTime / 2; //Safety margin
+  secondDerivEnabled = false;
 }
 
 void triggerPri_BasicDistributor()
@@ -288,6 +291,7 @@ Note: Within the code below, the sync tooth is referred to as tooth #3 rather th
 void triggerSetup_GM7X()
 {
   triggerToothAngle = 360 / 6; //The number of degrees that passes from tooth to tooth
+  secondDerivEnabled = false;
 }
 
 void triggerPri_GM7X()
@@ -374,6 +378,7 @@ void triggerSetup_4G63()
 {
   triggerToothAngle = 180; //The number of degrees that passes from tooth to tooth (primary)
   toothCurrentCount = 99; //Fake tooth count represents no sync
+  secondDerivEnabled = false;
   
   //Note that these angles are for every rising and falling edge
   
@@ -511,6 +516,7 @@ void triggerSetup_24X()
   toothAngles[23] = 357;
   
   toothCurrentCount = 25; //We set the initial tooth value to be something that should never be reached. This indicates no sync
+  secondDerivEnabled = false;
 }
 
 void triggerPri_24X()
@@ -596,6 +602,7 @@ void triggerSetup_Jeep2000()
   toothAngles[11] = 474;
   
   toothCurrentCount = 13; //We set the initial tooth value to be something that should never be reached. This indicates no sync
+  secondDerivEnabled = false;
 }
 
 void triggerPri_Jeep2000()

@@ -167,7 +167,8 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     if(ignitionSchedule4.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
     
     //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
-    //As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
+    //The timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency))
+    //Note this is different to the other ignition timers
     unsigned int absoluteTimeout = TCNT4 + (timeout >> 4); //As above, but with bit shift instead of / 16
     
     OCR4A = absoluteTimeout;
