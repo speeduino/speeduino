@@ -451,11 +451,13 @@ int getRPM_4G63()
   //Because these signals aren't even (Alternativing 110 and 70 degrees), this needs a special function
   if(currentStatus.RPM < configPage2.crankRPM) 
   { 
-  noInterrupts();
-  revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen  
-  interrupts();
-  revolutionTime = revolutionTime * 36;
-  return (triggerToothAngle * 60000000L) / revolutionTime;
+    int tempToothAngle;
+    noInterrupts();
+    tempToothAngle = triggerToothAngle;
+    revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen  
+    interrupts();
+    revolutionTime = revolutionTime * 36;
+    return (tempToothAngle * 60000000L) / revolutionTime;
   }
   else { return stdGetRPM(); }
 }
