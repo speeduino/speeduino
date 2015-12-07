@@ -224,6 +224,9 @@ void setPinMapping(byte boardID)
       break;
   }
   
+  //Setup any devices that are using selectable pins
+  if(configPage3.launchPin != 0) { pinLaunch = configPage3.launchPin; }
+  
   
 
   //Finally, set the relevant pin modes for outputs

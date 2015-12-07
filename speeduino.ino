@@ -97,8 +97,10 @@ byte fanLOW = LOW;               // Used to invert the cooling fan output
 
 struct statuses currentStatus;
 volatile int mainLoopCount;
+byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
+int rpmDelta;
 byte ignitionCount;
-unsigned long secCounter; //The next time to increment 'runSecs' counter.
+unsigned long secCounter; //The next time to incremen 'runSecs' counter.
 int channel1IgnDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
 int channel2IgnDegrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
 int channel3IgnDegrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
@@ -725,26 +727,40 @@ void loop()
       int tempCrankAngle;
       int tempStartAngle; 
       
+      //********************************************************
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       //We use a 1st Deriv accleration prediction, but only when there is an even spacing between primary sensor teeth
       //Any decoder that has uneven spacing has its triggerToothAngle set to 0
-      if(triggerToothAngle > 0 && toothHistoryIndex >= 3 && currentStatus.RPM < 3000 ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
+      if(secondDerivEnabled && toothHistoryIndex >= 3 && currentStatus.RPM < 2000 ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
       {
-        int angle1, angle2; //These represent that crank angles that are travelled for the last 2 pulses
-        if(configPage2.TrigPattern == 4)
+        //Only recalculate deltaV if the tooth has changed since last time (DeltaV stays the same until the next tooth)
+        if (deltaToothCount != toothCurrentCount)
         {
-          //Special case for 70/110 pattern on 4g63
-          angle2 = triggerToothAngle; //Angle 2 is the most recent
-          if (angle2 == 70) { angle1 = 110; }
-          else { angle1 = 70; }
-        }
-        else { angle1 = angle2 = triggerToothAngle; }
+          deltaToothCount = toothCurrentCount;
+          int angle1, angle2; //These represent the crank angles that are travelled for the last 2 pulses
+          if(configPage2.TrigPattern == 4)
+          {
+            //Special case for 70/110 pattern on 4g63
+            angle2 = triggerToothAngle; //Angle 2 is the most recent
+            if (angle2 == 70) { angle1 = 110; }
+            else { angle1 = 70; }
+          }
+          else if(configPage2.TrigPattern == 0)
+          {
+            //Special case for missing tooth decoder where the missing tooth was one of the last 2 seen
+            if(toothCurrentCount == 1) { angle2 = 2*triggerToothAngle; angle1 = triggerToothAngle; }
+            else if(toothCurrentCount == 2) { angle1 = 2*triggerToothAngle; angle2 = triggerToothAngle; }
+            else { angle1 = angle2 = triggerToothAngle; }
+          }
+          else { angle1 = angle2 = triggerToothAngle; }
+            
+          long toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
+          long toothDeltaT = toothHistory[toothHistoryIndex];
+          long timeToLastTooth = micros() - toothLastToothTime; //Cannot be unsigned
           
-        long toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
-        long toothDeltaT = toothHistory[toothHistoryIndex];
-        long timeToLastTooth = micros() - toothLastToothTime; //Cannot be unsigned
-          
-        int rpmDelta = (toothDeltaV * timeToLastTooth) / (6 * toothDeltaT);
+          rpmDelta = (toothDeltaV << 10) / (6 * toothDeltaT);
+        } 
+        
         
         timePerDegree = ldiv( 166666L, (currentStatus.RPM + rpmDelta)).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       }
@@ -967,21 +983,25 @@ void loop()
       //Likewise for the ignition
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
       //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
-      crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
+      //crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
       if(ignitionOn && (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ))
       {
-        if ( (ignition1StartAngle > crankAngle) && ign1LastRev != startRevolutions)
-        //if (ign1LastRev != startRevolutions)
+        //if ( (ignition1StartAngle > crankAngle))// && ign1LastRev != startRevolutions)
+        //if ((ignition1StartAngle > crankAngle) == 0)
+        //if ((ignition1StartAngle < crankAngle))
         {
-            unsigned long ignition1StartTime;
+            long ignition1StartTime;
             if(ignition1StartAngle > crankAngle) { ignition1StartTime = ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree); }
-            else { ignition1StartTime = ((unsigned long)(360 - crankAngle + ignition1StartAngle) * (unsigned long)timePerDegree); }
+            else if (ignition1StartAngle < crankAngle) { ignition1StartTime = ((long)(360 - crankAngle + ignition1StartAngle) * (long)timePerDegree); }
+            else { ignition1StartTime = 0; }
             
+            if(ignition1StartTime > 0) {
             setIgnitionSchedule1(ign1StartFunction, 
-                      ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                      ignition1StartTime,
                       currentStatus.dwell,
                       ign1EndFunction
                       );
+            }
         }
 
         tempCrankAngle = crankAngle - channel2IgnDegrees;
@@ -1043,10 +1063,10 @@ void openInjector1() { digitalWrite(pinInjector1, HIGH); BIT_SET(currentStatus.s
 void closeInjector1() { digitalWrite(pinInjector1, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
 //void openInjector1() { *inj1_pin_port |= (inj1_pin_mask); ; BIT_SET(currentStatus.squirt, 0); } 
 //void closeInjector1() { *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.squirt, 0); }
-void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); BIT_SET(currentStatus.spark, 0); digitalWrite(pinTachOut, LOW); }
-void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); BIT_CLEAR(currentStatus.spark, 0); }
-//void beginCoil1Charge() { *ign1_pin_port |= (ign1_pin_mask); }
-//void endCoil1Charge() { *ign1_pin_port &= ~(ign1_pin_mask); }
+//void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); BIT_SET(currentStatus.spark, 0); digitalWrite(pinTachOut, LOW); }
+//void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); BIT_CLEAR(currentStatus.spark, 0); }
+void beginCoil1Charge() { *ign1_pin_port |= (ign1_pin_mask); }
+void endCoil1Charge() { *ign1_pin_port &= ~(ign1_pin_mask); }
 
 void openInjector2() { digitalWrite(pinInjector2, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ2); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
 void closeInjector2() { digitalWrite(pinInjector2, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ2); } 
