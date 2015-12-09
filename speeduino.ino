@@ -731,10 +731,10 @@ void loop()
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       //We use a 1st Deriv accleration prediction, but only when there is an even spacing between primary sensor teeth
       //Any decoder that has uneven spacing has its triggerToothAngle set to 0
-      if(secondDerivEnabled && toothHistoryIndex >= 3 && currentStatus.RPM < 2000 ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
+      if(secondDerivEnabled && toothHistoryIndex >= 3 && currentStatus.RPM < 2000) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
       {
         //Only recalculate deltaV if the tooth has changed since last time (DeltaV stays the same until the next tooth)
-        if (deltaToothCount != toothCurrentCount)
+        //if (deltaToothCount != toothCurrentCount)
         {
           deltaToothCount = toothCurrentCount;
           int angle1, angle2; //These represent the crank angles that are travelled for the last 2 pulses
@@ -990,9 +990,9 @@ void loop()
         //if ((ignition1StartAngle > crankAngle) == 0)
         //if ((ignition1StartAngle < crankAngle))
         {
-            long ignition1StartTime;
+            unsigned long ignition1StartTime = 0;
             if(ignition1StartAngle > crankAngle) { ignition1StartTime = ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree); }
-            else if (ignition1StartAngle < crankAngle) { ignition1StartTime = ((long)(360 - crankAngle + ignition1StartAngle) * (long)timePerDegree); }
+            //else if (ignition1StartAngle < crankAngle) { ignition1StartTime = ((unsigned long)(360 - crankAngle + ignition1StartAngle) * (unsigned long)timePerDegree); }
             else { ignition1StartTime = 0; }
             
             if(ignition1StartTime > 0) {
@@ -1008,18 +1008,21 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
         tempStartAngle = ignition2StartAngle - channel2IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
-        if ( (tempStartAngle > tempCrankAngle)  && ign2LastRev != startRevolutions)
+        //if ( (tempStartAngle > tempCrankAngle)  && ign2LastRev != startRevolutions)
         //if ( ign2LastRev != startRevolutions )
         { 
-            unsigned long ignition2StartTime;
+            long ignition2StartTime = 0;
             if(tempStartAngle > tempCrankAngle) { ignition2StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
-            else { ignition2StartTime = ((unsigned long)(360 - tempCrankAngle + tempStartAngle) * (unsigned long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            else { ignition2StartTime = 0; }
             
+            if(ignition2StartTime > 0) {
             setIgnitionSchedule2(ign2StartFunction, 
-                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      ignition2StartTime,
                       currentStatus.dwell,
                       ign2EndFunction
                       );
+            }
         }
         
         tempCrankAngle = crankAngle - channel3IgnDegrees;

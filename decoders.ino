@@ -448,7 +448,7 @@ void triggerSec_4G63()
 int getRPM_4G63()
 {
   //During cranking, RPM is calculated 4 times per revolution, once for each rising/falling of the crank signal. 
-  //Because these signals aren't even (Alternativing 110 and 70 degrees), this needs a special function
+  //Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
   if(currentStatus.RPM < configPage2.crankRPM) 
   { 
     int tempToothAngle;
@@ -461,7 +461,8 @@ int getRPM_4G63()
   }
   else { return stdGetRPM(); }
 }
-  int getCrankAngle_4G63(int timePerDegree)
+
+int getCrankAngle_4G63(int timePerDegree)
 {
     if(!currentStatus.hasSync) { return 0;}
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
@@ -475,10 +476,10 @@ int getRPM_4G63()
     
     int crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was. 
     //Estimate the number of degrees travelled since the last tooth}
+    
     long elapsedTime = micros() - tempToothLastToothTime;
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
-    
     
     if (crankAngle >= 720) { crankAngle -= 720; }  
     if (crankAngle > 360) { crankAngle -= 360; }
