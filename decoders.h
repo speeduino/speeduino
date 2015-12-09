@@ -1,11 +1,11 @@
 #include <limits.h>
 
 volatile unsigned long curTime;
-volatile unsigned int curGap;
+volatile unsigned long curGap;
 volatile unsigned long curTime2;
-volatile unsigned int curGap2;
-volatile unsigned int lastGap;
-volatile unsigned int targetGap; 
+volatile unsigned long curGap2;
+volatile unsigned long lastGap;
+volatile unsigned long targetGap; 
 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
