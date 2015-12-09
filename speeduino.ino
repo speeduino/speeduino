@@ -1028,27 +1028,42 @@ void loop()
         tempCrankAngle = crankAngle - channel3IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
         tempStartAngle = ignition3StartAngle - channel3IgnDegrees;
-        if ( tempStartAngle < 0) { tempStartAngle += 360; }
-        if (tempStartAngle > tempCrankAngle)
+        //if ( tempStartAngle < 0) { tempStartAngle += 360; }
+        //if (tempStartAngle > tempCrankAngle)
         { 
+            long ignition3StartTime = 0;
+            if(tempStartAngle > tempCrankAngle) { ignition3StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            else { ignition3StartTime = 0; }
+            
+            if(ignition3StartTime > 0) {
             setIgnitionSchedule3(ign3StartFunction, 
-                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      ignition3StartTime,
                       currentStatus.dwell,
                       ign3EndFunction
                       );
+            }
         }
         
         tempCrankAngle = crankAngle - channel4IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
         tempStartAngle = ignition4StartAngle - channel4IgnDegrees;
-        if ( tempStartAngle < 0) { tempStartAngle += 360; }
-        if (tempStartAngle > tempCrankAngle)
+        //if ( tempStartAngle < 0) { tempStartAngle += 360; }
+        //if (tempStartAngle > tempCrankAngle)
         { 
+          
+            long ignition4StartTime = 0;
+            if(tempStartAngle > tempCrankAngle) { ignition4StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            else { ignition4StartTime = 0; }
+            
+            if(ignition4StartTime > 0) {
             setIgnitionSchedule4(ign4StartFunction, 
-                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      ignition4StartTime,
                       currentStatus.dwell,
                       ign4EndFunction
                       );
+            }
         }
         
       }
