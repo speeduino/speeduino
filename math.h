@@ -22,7 +22,7 @@ Ref: http://www.hackersdelight.org/divcMore.pdf
 
 //Unsigned divide by 10
 unsigned int divu10(unsigned int n) {
- unsigned int q, r;
+ unsigned long q, r;
  q = (n >> 1) + (n >> 2);
  q = q + (q >> 4);
  q = q + (q >> 8);
@@ -34,8 +34,8 @@ unsigned int divu10(unsigned int n) {
 }
 
 //Signed divide by 10
-int divs10(int n) {
- int q, r;
+int divs10(long n) {
+ long q, r;
  n = n + (n>>31 & 9);
  q = (n >> 1) + (n >> 2);
  q = q + (q >> 4);
@@ -48,8 +48,8 @@ int divs10(int n) {
 }
 
 //Signed divide by 100
-int divs100(int n) {
- int q, r;
+int divs100(long n) {
+ long q, r;
  n = n + (n>>31 & 99);
  q = (n >> 1) + (n >> 3) + (n >> 6) - (n >> 10) +
  (n >> 12) + (n >> 13) - (n >> 16);
