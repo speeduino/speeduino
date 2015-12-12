@@ -33,6 +33,9 @@ const int map_page_size = 288;
 #define BIT_SQUIRT_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
 #define BIT_SQUIRT_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
 
+#define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
+#define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
+
 #define TOOTH_LOG_SIZE      128
 #define TOOTH_LOG_BUFFER    256
 

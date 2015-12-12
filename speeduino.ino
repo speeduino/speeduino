@@ -81,6 +81,12 @@ byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
 
+//These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
+byte mapErrorCount = 0;
+byte iatErrorCount = 0;
+byte cltErrorCount = 0;
+
+
 unsigned long counter;
 unsigned long currentLoopTime; //The time the current loop started (uS)
 unsigned long previousLoopTime; //The time the previous loop started (uS)
@@ -586,11 +592,17 @@ void loop()
     //-----------------------------------------------------------------------------------------------------
 
     //MAP Sampling system
+    int tempReading;
     switch(configPage1.mapSample)
     {
       case 0:
         //Instantaneous MAP readings
-        currentStatus.mapADC = analogRead(pinMAP);
+        tempReading = analogRead(pinMAP);
+
+        //Error checking
+        if(tempReading >= VALID_MAP_MAX || tempReading <= VALID_MAP_MIN) { mapErrorCount += 1; }
+        else { currentStatus.mapADC = tempReading; mapErrorCount = 0; }
+        
         currentStatus.MAP = map(currentStatus.mapADC, 0, 1023, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
         break;
         
@@ -598,8 +610,15 @@ void loop()
         //Average of a cycle
         if( (MAPcurRev == startRevolutions) || (MAPcurRev == startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for. 
         {
-          MAPrunningValue = MAPrunningValue + analogRead(pinMAP); //Add the current reading onto the total
-          MAPcount++;
+          tempReading = analogRead(pinMAP);
+          
+          //Error check
+          if(tempReading < VALID_MAP_MAX && tempReading > VALID_MAP_MIN)
+          {
+            MAPrunningValue = MAPrunningValue + tempReading; //Add the current reading onto the total
+            MAPcount++;
+          }
+          else { mapErrorCount += 1; }
         }
         else
         {
@@ -616,9 +635,14 @@ void loop()
         //Minimum reading in a cycle
         if( (MAPcurRev == startRevolutions) || (MAPcurRev == startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for. 
         {
-          int tempValue = analogRead(pinMAP);
-          if( tempValue < MAPrunningValue) { MAPrunningValue = tempValue; } //Check whether the current reading is lower than the running minimum
-          MAPcount++;
+          tempReading = analogRead(pinMAP);
+
+          //Error check
+          if(tempReading < VALID_MAP_MAX && tempReading > VALID_MAP_MIN)
+          {
+            if( tempReading < MAPrunningValue) { MAPrunningValue = tempReading; } //Check whether the current reading is lower than the running minimum
+          }
+          else { mapErrorCount += 1; }
         }
         else
         {
