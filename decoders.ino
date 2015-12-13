@@ -417,8 +417,8 @@ void triggerPri_4G63()
   addToothLogEntry(curGap);
    
   //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
-  if(toothCurrentCount == 1 || toothCurrentCount == 3) { triggerToothAngle = 70; triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
-  else { triggerToothAngle = 110; triggerFilterTime = (curGap * 3) >> 3; } //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
+  if(toothCurrentCount == 1 || toothCurrentCount == 3) { triggerToothAngle = 70; }//triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
+  else { triggerToothAngle = 110; }//triggerFilterTime = (curGap * 3) >> 3; } //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
 
   toothLastMinusOneToothTime = toothLastToothTime;
   toothLastToothTime = curTime;
@@ -440,7 +440,7 @@ void triggerSec_4G63()
       toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
     } 
   }
-  //else { triggerFilterTime = 1500; } //reset filter time (ugly)
+  else { triggerFilterTime = 1500; } //reset filter time (ugly)
   return; 
 }
 

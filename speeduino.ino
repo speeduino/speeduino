@@ -575,6 +575,7 @@ void loop()
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       secCounter = 0; //Reset our seconds counter.
       startRevolutions = 0;
+      MAPcurRev = 0;
       currentStatus.rpmDOT = 0;
       ignitionOn = false;
       fuelOn = false;
