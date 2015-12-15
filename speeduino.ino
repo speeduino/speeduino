@@ -931,7 +931,7 @@ void loop()
       //Determine the current crank angle
       int crankAngle = getCrankAngle(timePerDegree);
       
-      if (fuelOn)
+      if (fuelOn && currentStatus.PW > 0)
       {
         if (injector1StartAngle > crankAngle)
         { 
