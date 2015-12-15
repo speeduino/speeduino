@@ -346,6 +346,17 @@ void setup()
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to 
       attachInterrupt(triggerInterrupt2, triggerSec_Jeep2000, CHANGE);
       break;
+              
+    case 7:
+      triggerSetup_Audi135();
+      trigger = triggerPri_Audi135;
+      getRPM = getRPM_Audi135;
+      getCrankAngle = getCrankAngle_Audi135;
+      
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+      attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, RISING);
+      break;
       
     default:
       trigger = triggerPri_missingTooth;
