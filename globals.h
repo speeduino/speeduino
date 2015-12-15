@@ -169,7 +169,7 @@ struct config1 {
 
   //config3 in ini
   byte engineType : 1;
-  byte egoType : 1;
+  byte egoType_old : 1;
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
   byte injTiming : 2;
@@ -343,6 +343,11 @@ struct config4 {
   byte unused : 6;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis 
+  byte unused59;
+  byte unused60;
+  byte unused61;
+  byte unused62;
+  byte unused63;
 };
 
 byte pinInjector1; //Output pin injector 1
