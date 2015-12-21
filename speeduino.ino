@@ -128,6 +128,7 @@ void (*ign4EndFunction)();
 
 int timePerDegree;
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
+volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 
 void setup() 
 {
@@ -543,6 +544,9 @@ void setup()
       break;
   }
   
+  //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
+  digitalWrite(pinFuelPump, HIGH);
+  fuelPumpOn = false;
   //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
   setFuelSchedule1(openInjector1and4, 100, (unsigned long)(configPage1.primePulse * 100), closeInjector1and4);
   setFuelSchedule2(openInjector2and3, 100, (unsigned long)(configPage1.primePulse * 100), closeInjector2and3);
@@ -590,7 +594,7 @@ void loop()
       currentStatus.rpmDOT = 0;
       ignitionOn = false;
       fuelOn = false;
-      digitalWrite(pinFuelPump, LOW); //Turn off the fuel pump
+      if (fpPrimed) { digitalWrite(pinFuelPump, LOW); } //Turn off the fuel pump, but only if the priming is complete
       fuelPumpOn = false;
     }
     

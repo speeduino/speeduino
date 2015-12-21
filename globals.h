@@ -183,7 +183,7 @@ struct config1 {
   byte tpsMax;
   byte mapMin;
   unsigned int mapMax;
-  byte unused49;
+  byte fpPrime; //Time (In seconds) that the fuel pump should be primed for on power up
   byte unused50;
   byte unused51;
   byte unused52;

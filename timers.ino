@@ -82,6 +82,16 @@ ISR(TIMER2_OVF_vect, ISR_NOBLOCK)
     { 
        fanControl();            // Fucntion to turn the cooling fan on/off 
     }
+    
+    //Check whether fuel pump priming is complete
+    if(!fpPrimed)
+    {
+      if(currentStatus.secl >= configPage1.fpPrime) 
+      {
+        fpPrimed = true; //Mark the priming as being completed
+        if(currentStatus.RPM == 0) { digitalWrite(pinFuelPump, LOW); fuelPumpOn = false; } //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
+      }
+    }
 
   }
       //Reset Timer2 to trigger in another ~1ms 
