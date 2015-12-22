@@ -685,7 +685,7 @@ void triggerSetup_Audi135()
   triggerToothAngle = 8; //135/3 = 45, 360/45 = 8 degrees every 3 teeth
   toothCurrentCount = 255; //Default value
   toothSystemCount = 0;
-  triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * 135)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+  triggerFilterTime = (unsigned long)(1000000 / (MAX_RPM / 60 * 135UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   secondDerivEnabled = false;
 }
@@ -693,9 +693,10 @@ void triggerSetup_Audi135()
 void triggerPri_Audi135()
 { 
    curTime = micros();
-   curGap = curTime - toothLastToothTime;
+   curGap = curTime - toothSystemLastToothTime;
    if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    toothSystemCount++;
+   toothSystemLastToothTime = curTime;
    addToothLogEntry(curGap);
    if ( toothSystemCount != 3 ) { return; } //We only proceed for every third tooth
    toothSystemCount = 0;
