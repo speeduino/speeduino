@@ -81,6 +81,12 @@ byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
 
+//These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
+byte mapErrorCount = 0;
+byte iatErrorCount = 0;
+byte cltErrorCount = 0;
+
+
 unsigned long counter;
 unsigned long currentLoopTime; //The time the current loop started (uS)
 unsigned long previousLoopTime; //The time the previous loop started (uS)
@@ -122,6 +128,7 @@ void (*ign4EndFunction)();
 
 int timePerDegree;
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
+volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 
 void setup() 
 {
@@ -340,6 +347,17 @@ void setup()
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to 
       attachInterrupt(triggerInterrupt2, triggerSec_Jeep2000, CHANGE);
       break;
+              
+    case 7:
+      triggerSetup_Audi135();
+      trigger = triggerPri_Audi135;
+      getRPM = getRPM_Audi135;
+      getCrankAngle = getCrankAngle_Audi135;
+      
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+      attachInterrupt(triggerInterrupt2, triggerSec_Audi135, RISING);
+      break;
       
     default:
       trigger = triggerPri_missingTooth;
@@ -526,6 +544,9 @@ void setup()
       break;
   }
   
+  //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
+  digitalWrite(pinFuelPump, HIGH);
+  fuelPumpOn = true;
   //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
   setFuelSchedule1(openInjector1and4, 100, (unsigned long)(configPage1.primePulse * 100), closeInjector1and4);
   setFuelSchedule2(openInjector2and3, 100, (unsigned long)(configPage1.primePulse * 100), closeInjector2and3);
@@ -569,10 +590,11 @@ void loop()
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       secCounter = 0; //Reset our seconds counter.
       startRevolutions = 0;
+      MAPcurRev = 0;
       currentStatus.rpmDOT = 0;
       ignitionOn = false;
       fuelOn = false;
-      digitalWrite(pinFuelPump, LOW); //Turn off the fuel pump
+      if (fpPrimed) { digitalWrite(pinFuelPump, LOW); } //Turn off the fuel pump, but only if the priming is complete
       fuelPumpOn = false;
     }
     
@@ -586,11 +608,17 @@ void loop()
     //-----------------------------------------------------------------------------------------------------
 
     //MAP Sampling system
+    int tempReading;
     switch(configPage1.mapSample)
     {
       case 0:
         //Instantaneous MAP readings
-        currentStatus.mapADC = analogRead(pinMAP);
+        tempReading = analogRead(pinMAP);
+
+        //Error checking
+        if(tempReading >= VALID_MAP_MAX || tempReading <= VALID_MAP_MIN) { mapErrorCount += 1; }
+        else { currentStatus.mapADC = tempReading; mapErrorCount = 0; }
+        
         currentStatus.MAP = map(currentStatus.mapADC, 0, 1023, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
         break;
         
@@ -598,8 +626,15 @@ void loop()
         //Average of a cycle
         if( (MAPcurRev == startRevolutions) || (MAPcurRev == startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for. 
         {
-          MAPrunningValue = MAPrunningValue + analogRead(pinMAP); //Add the current reading onto the total
-          MAPcount++;
+          tempReading = analogRead(pinMAP);
+          
+          //Error check
+          if(tempReading < VALID_MAP_MAX && tempReading > VALID_MAP_MIN)
+          {
+            MAPrunningValue = MAPrunningValue + tempReading; //Add the current reading onto the total
+            MAPcount++;
+          }
+          else { mapErrorCount += 1; }
         }
         else
         {
@@ -616,9 +651,14 @@ void loop()
         //Minimum reading in a cycle
         if( (MAPcurRev == startRevolutions) || (MAPcurRev == startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for. 
         {
-          int tempValue = analogRead(pinMAP);
-          if( tempValue < MAPrunningValue) { MAPrunningValue = tempValue; } //Check whether the current reading is lower than the running minimum
-          MAPcount++;
+          tempReading = analogRead(pinMAP);
+
+          //Error check
+          if(tempReading < VALID_MAP_MAX && tempReading > VALID_MAP_MIN)
+          {
+            if( tempReading < MAPrunningValue) { MAPrunningValue = tempReading; } //Check whether the current reading is lower than the running minimum
+          }
+          else { mapErrorCount += 1; }
         }
         else
         {
@@ -731,10 +771,10 @@ void loop()
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       //We use a 1st Deriv accleration prediction, but only when there is an even spacing between primary sensor teeth
       //Any decoder that has uneven spacing has its triggerToothAngle set to 0
-      if(secondDerivEnabled && toothHistoryIndex >= 3 && currentStatus.RPM < 2000 ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
+      if(secondDerivEnabled && toothHistoryIndex >= 3 && currentStatus.RPM < 2000) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
       {
         //Only recalculate deltaV if the tooth has changed since last time (DeltaV stays the same until the next tooth)
-        if (deltaToothCount != toothCurrentCount)
+        //if (deltaToothCount != toothCurrentCount)
         {
           deltaToothCount = toothCurrentCount;
           int angle1, angle2; //These represent the crank angles that are travelled for the last 2 pulses
@@ -895,7 +935,7 @@ void loop()
       //Determine the current crank angle
       int crankAngle = getCrankAngle(timePerDegree);
       
-      if (fuelOn)
+      if (fuelOn && currentStatus.PW > 0)
       {
         if (injector1StartAngle > crankAngle)
         { 
@@ -990,9 +1030,9 @@ void loop()
         //if ((ignition1StartAngle > crankAngle) == 0)
         //if ((ignition1StartAngle < crankAngle))
         {
-            long ignition1StartTime;
+            unsigned long ignition1StartTime = 0;
             if(ignition1StartAngle > crankAngle) { ignition1StartTime = ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree); }
-            else if (ignition1StartAngle < crankAngle) { ignition1StartTime = ((long)(360 - crankAngle + ignition1StartAngle) * (long)timePerDegree); }
+            //else if (ignition1StartAngle < crankAngle) { ignition1StartTime = ((unsigned long)(360 - crankAngle + ignition1StartAngle) * (unsigned long)timePerDegree); }
             else { ignition1StartTime = 0; }
             
             if(ignition1StartTime > 0) {
@@ -1008,44 +1048,62 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
         tempStartAngle = ignition2StartAngle - channel2IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
-        if ( (tempStartAngle > tempCrankAngle)  && ign2LastRev != startRevolutions)
+        //if ( (tempStartAngle > tempCrankAngle)  && ign2LastRev != startRevolutions)
         //if ( ign2LastRev != startRevolutions )
         { 
-            unsigned long ignition2StartTime;
+            long ignition2StartTime = 0;
             if(tempStartAngle > tempCrankAngle) { ignition2StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
-            else { ignition2StartTime = ((unsigned long)(360 - tempCrankAngle + tempStartAngle) * (unsigned long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            else { ignition2StartTime = 0; }
             
+            if(ignition2StartTime > 0) {
             setIgnitionSchedule2(ign2StartFunction, 
-                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      ignition2StartTime,
                       currentStatus.dwell,
                       ign2EndFunction
                       );
+            }
         }
         
         tempCrankAngle = crankAngle - channel3IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
         tempStartAngle = ignition3StartAngle - channel3IgnDegrees;
-        if ( tempStartAngle < 0) { tempStartAngle += 360; }
-        if (tempStartAngle > tempCrankAngle)
+        //if ( tempStartAngle < 0) { tempStartAngle += 360; }
+        //if (tempStartAngle > tempCrankAngle)
         { 
+            long ignition3StartTime = 0;
+            if(tempStartAngle > tempCrankAngle) { ignition3StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            else { ignition3StartTime = 0; }
+            
+            if(ignition3StartTime > 0) {
             setIgnitionSchedule3(ign3StartFunction, 
-                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      ignition3StartTime,
                       currentStatus.dwell,
                       ign3EndFunction
                       );
+            }
         }
         
         tempCrankAngle = crankAngle - channel4IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
         tempStartAngle = ignition4StartAngle - channel4IgnDegrees;
-        if ( tempStartAngle < 0) { tempStartAngle += 360; }
-        if (tempStartAngle > tempCrankAngle)
+        //if ( tempStartAngle < 0) { tempStartAngle += 360; }
+        //if (tempStartAngle > tempCrankAngle)
         { 
+          
+            long ignition4StartTime = 0;
+            if(tempStartAngle > tempCrankAngle) { ignition4StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            else { ignition4StartTime = 0; }
+            
+            if(ignition4StartTime > 0) {
             setIgnitionSchedule4(ign4StartFunction, 
-                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      ignition4StartTime,
                       currentStatus.dwell,
                       ign4EndFunction
                       );
+            }
         }
         
       }

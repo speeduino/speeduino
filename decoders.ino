@@ -417,9 +417,11 @@ void triggerPri_4G63()
   addToothLogEntry(curGap);
    
   //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
-  if(toothCurrentCount == 1 || toothCurrentCount == 3) { triggerToothAngle = 70; }
-  else { triggerToothAngle = 110; }
-
+  if(toothCurrentCount == 1 || toothCurrentCount == 3) { triggerToothAngle = 70; triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
+  else { triggerToothAngle = 110; triggerFilterTime = (curGap * 3) >> 3; } //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
+  
+  curGap = curGap >> 1;
+  
   toothLastMinusOneToothTime = toothLastToothTime;
   toothLastToothTime = curTime;
 }
@@ -432,6 +434,7 @@ void triggerSec_4G63()
   
   if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) || !currentStatus.hasSync)
   {
+    triggerFilterTime = 1500;
     //Check the status of the crank trigger
     bool crank = digitalRead(pinTrigger);
     if(crank == HIGH)
@@ -440,7 +443,7 @@ void triggerSec_4G63()
       toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
     } 
   }
-  else { triggerFilterTime = 1500; } //reset filter time (ugly)
+  //else { triggerFilterTime = 1500; } //reset filter time (ugly)
   return; 
 }
 
@@ -448,18 +451,21 @@ void triggerSec_4G63()
 int getRPM_4G63()
 {
   //During cranking, RPM is calculated 4 times per revolution, once for each rising/falling of the crank signal. 
-  //Because these signals aren't even (Alternativing 110 and 70 degrees), this needs a special function
+  //Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
   if(currentStatus.RPM < configPage2.crankRPM) 
   { 
-  noInterrupts();
-  revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen  
-  interrupts();
-  revolutionTime = revolutionTime * 36;
-  return (triggerToothAngle * 60000000L) / revolutionTime;
+    int tempToothAngle;
+    noInterrupts();
+    tempToothAngle = triggerToothAngle;
+    revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen  
+    interrupts();
+    revolutionTime = revolutionTime * 36;
+    return (tempToothAngle * 60000000L) / revolutionTime;
   }
   else { return stdGetRPM(); }
 }
-  int getCrankAngle_4G63(int timePerDegree)
+
+int getCrankAngle_4G63(int timePerDegree)
 {
     if(!currentStatus.hasSync) { return 0;}
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
@@ -473,10 +479,10 @@ int getRPM_4G63()
     
     int crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was. 
     //Estimate the number of degrees travelled since the last tooth}
+    
     long elapsedTime = micros() - tempToothLastToothTime;
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
-    
     
     if (crankAngle >= 720) { crankAngle -= 720; }  
     if (crankAngle > 360) { crankAngle -= 360; }
@@ -667,5 +673,70 @@ int getCrankAngle_Jeep2000(int timePerDegree)
     if (crankAngle > 360) { crankAngle -= 360; }
     
     return crankAngle;
+}
+
+/* 
+Name: Audi 135
+Desc: 135 teeth on the crank and 1 tooth on the cam. 
+Note: This is very similar to the dual wheel decoder, however due to the 135 teeth not dividing evenly into 360, only every 3rd crank tooth is used in calculating the crank angle. This effectively makes it a 45 tooth dual wheel setup
+*/
+void triggerSetup_Audi135()
+{
+  triggerToothAngle = 8; //135/3 = 45, 360/45 = 8 degrees every 3 teeth
+  toothCurrentCount = 255; //Default value
+  toothSystemCount = 0;
+  triggerFilterTime = (unsigned long)(1000000 / (MAX_RPM / 60 * 135UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+  triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  secondDerivEnabled = false;
+}
+
+void triggerPri_Audi135()
+{ 
+   curTime = micros();
+   curGap = curTime - toothSystemLastToothTime;
+   if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+   toothSystemCount++;
+   toothSystemLastToothTime = curTime;
+   addToothLogEntry(curGap);
+   if ( toothSystemCount != 3 ) { return; } //We only proceed for every third tooth
+   toothSystemCount = 0;
+   toothCurrentCount++; //Increment the tooth counter
+   
+   if ( toothCurrentCount == 1 || toothCurrentCount > 45)
+   { 
+     toothCurrentCount = 1; 
+     toothOneMinusOneTime = toothOneTime;
+     toothOneTime = curTime;
+     startRevolutions++; //Counter
+     currentStatus.hasSync = true;
+   } 
+   
+   toothLastMinusOneToothTime = toothLastToothTime;
+   toothLastToothTime = curTime;
+}
+
+void triggerSec_Audi135()
+{ 
+  curTime2 = micros();
+  curGap2 = curTime2 - toothLastSecToothTime;
+  if ( curGap2 < triggerSecFilterTime ) { return; } 
+  toothLastSecToothTime = curTime2;
+  
+  if(!currentStatus.hasSync)
+  {
+    toothCurrentCount = 0;
+    toothSystemCount = 0;
+    currentStatus.hasSync = true;
+  }
+} 
+
+int getRPM_Audi135()
+{
+   return stdGetRPM();
+}
+
+int getCrankAngle_Audi135(int timePerDegree)
+{   
+    return getCrankAngle_DualWheel(timePerDegree);
 }
 

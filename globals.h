@@ -33,6 +33,9 @@ const int map_page_size = 288;
 #define BIT_SQUIRT_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
 #define BIT_SQUIRT_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
 
+#define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
+#define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
+
 #define TOOTH_LOG_SIZE      128
 #define TOOTH_LOG_BUFFER    256
 
@@ -118,8 +121,8 @@ struct statuses {
 //This mostly covers off variables that are required for fuel
 struct config1 {
   
-  byte crankCold; //Cold cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking under a certain temp threshold (ms)
-  byte crankHot; //Warm cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking (ms)
+  byte unused1; //Cold cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking under a certain temp threshold (ms)
+  byte unused2; //Warm cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking (ms)
   byte asePct; //Afterstart enrichment (%)
   byte aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
@@ -166,7 +169,7 @@ struct config1 {
 
   //config3 in ini
   byte engineType : 1;
-  byte egoType : 1;
+  byte egoType_old : 1;
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
   byte injTiming : 2;
@@ -180,7 +183,7 @@ struct config1 {
   byte tpsMax;
   byte mapMin;
   unsigned int mapMax;
-  byte unused49;
+  byte fpPrime; //Time (In seconds) that the fuel pump should be primed for on power up
   byte unused50;
   byte unused51;
   byte unused52;
@@ -340,6 +343,11 @@ struct config4 {
   byte unused : 6;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis 
+  byte unused59;
+  byte unused60;
+  byte unused61;
+  byte unused62;
+  byte unused63;
 };
 
 byte pinInjector1; //Output pin injector 1

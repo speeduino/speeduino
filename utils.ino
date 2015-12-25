@@ -301,6 +301,8 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, b
   //intermediate = (intermediate * iMAP) >> 7;
   intermediate = (intermediate * iCorrections) >> 7;
   //intermediate = (intermediate * iTPS) >> 7;
+  if(intermediate == 0) { return 0; } //If the pulsewidth is 0, we return here before the opening time gets added
+  
   intermediate += injOpen; //Add the injector opening time
   if ( intermediate > 65535) {
     intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
