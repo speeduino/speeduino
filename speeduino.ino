@@ -677,6 +677,9 @@ void loop()
       currentStatus.TPSlast = currentStatus.TPS;
       currentStatus.TPSlast_time = currentStatus.TPS_time;
       currentStatus.tpsADC = fastMap1023toX(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
+      //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range). 
+      if (currentStatus.tpsADC < configPage1.tpsMin) { currentStatus.tpsADC = configPage1.tpsMin; }
+      else if(currentStatus.tpsADC > configPage1.tpsMax) { currentStatus.tpsADC = configPage1.tpsMax; }
       currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
       currentStatus.TPS_time = currentLoopTime;  
      
