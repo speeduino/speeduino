@@ -60,6 +60,12 @@ volatile byte inj4_pin_mask;
 
 volatile byte *ign1_pin_port;
 volatile byte ign1_pin_mask;
+volatile byte *ign2_pin_port;
+volatile byte ign2_pin_mask;
+volatile byte *ign3_pin_port;
+volatile byte ign3_pin_mask;
+volatile byte *ign4_pin_port;
+volatile byte ign4_pin_mask;
 
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
@@ -317,6 +323,7 @@ struct config3 {
 
   
 };
+
 
 //Page 4 of the config mostly deals with idle control
 //See ini file for further info (Config Page 7 in the ini)

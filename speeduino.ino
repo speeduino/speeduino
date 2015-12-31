@@ -1071,7 +1071,7 @@ void loop()
         tempCrankAngle = crankAngle - channel3IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
         tempStartAngle = ignition3StartAngle - channel3IgnDegrees;
-        //if ( tempStartAngle < 0) { tempStartAngle += 360; }
+        if ( tempStartAngle < 0) { tempStartAngle += 360; }
         //if (tempStartAngle > tempCrankAngle)
         { 
             long ignition3StartTime = 0;
@@ -1091,7 +1091,7 @@ void loop()
         tempCrankAngle = crankAngle - channel4IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += 360; }
         tempStartAngle = ignition4StartAngle - channel4IgnDegrees;
-        //if ( tempStartAngle < 0) { tempStartAngle += 360; }
+        if ( tempStartAngle < 0) { tempStartAngle += 360; }
         //if (tempStartAngle > tempCrankAngle)
         { 
           
@@ -1126,8 +1126,8 @@ void closeInjector1() { digitalWrite(pinInjector1, LOW); BIT_CLEAR(currentStatus
 //void closeInjector1() { *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.squirt, 0); }
 //void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); BIT_SET(currentStatus.spark, 0); digitalWrite(pinTachOut, LOW); }
 //void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); BIT_CLEAR(currentStatus.spark, 0); }
-void beginCoil1Charge() { *ign1_pin_port |= (ign1_pin_mask); }
-void endCoil1Charge() { *ign1_pin_port &= ~(ign1_pin_mask); }
+void beginCoil1Charge() { *ign1_pin_port |= (ign1_pin_mask); BIT_SET(currentStatus.spark, 0); digitalWrite(pinTachOut, LOW); }
+void endCoil1Charge() { *ign1_pin_port &= ~(ign1_pin_mask); BIT_CLEAR(currentStatus.spark, 0); }
 
 void openInjector2() { digitalWrite(pinInjector2, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ2); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
 void closeInjector2() { digitalWrite(pinInjector2, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ2); } 

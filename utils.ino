@@ -255,6 +255,12 @@ void setPinMapping(byte boardID)
   
   ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
   ign1_pin_mask = digitalPinToBitMask(pinCoil1);
+  ign2_pin_port = portOutputRegister(digitalPinToPort(pinCoil2));
+  ign2_pin_mask = digitalPinToBitMask(pinCoil2);
+  ign3_pin_port = portOutputRegister(digitalPinToPort(pinCoil3));
+  ign3_pin_mask = digitalPinToBitMask(pinCoil3);
+  ign4_pin_port = portOutputRegister(digitalPinToPort(pinCoil4));
+  ign4_pin_mask = digitalPinToBitMask(pinCoil4);
 
   //And for inputs
   pinMode(pinMAP, INPUT);

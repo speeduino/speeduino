@@ -297,7 +297,7 @@ ISR(TIMER5_COMPC_vect, ISR_NOBLOCK) //ignitionSchedule3
     {
       //if ( ign3LastRev == startRevolutions ) { return; }
       ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule3.startTime = currentLoopTime;
+      ignitionSchedule3.startTime = micros();
       ignitionSchedule3.StartCallback();
       ign3LastRev = startRevolutions;
       OCR5C = TCNT5 + (ignitionSchedule3.duration >> 2);
@@ -316,7 +316,7 @@ ISR(TIMER4_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule4
     {
       //if ( ign4LastRev == startRevolutions ) { return; }
       ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule4.startTime = currentLoopTime;
+      ignitionSchedule4.startTime = micros();
       ignitionSchedule4.StartCallback();
       ign4LastRev = startRevolutions;
       OCR4A = TCNT4 + (ignitionSchedule4.duration >> 4); //Divide by 16
