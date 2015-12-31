@@ -160,7 +160,6 @@ void triggerPri_DualWheel()
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      startRevolutions++; //Counter
-     currentStatus.hasSync = true;
      //if ((startRevolutions & 63) == 1) { currentStatus.hasSync = false; } //Every 64 revolutions, force a resync with the cam
    } 
    
@@ -702,13 +701,11 @@ void triggerPri_Audi135()
    toothSystemCount = 0;
    toothCurrentCount++; //Increment the tooth counter
    
-   if ( toothCurrentCount == 1 || toothCurrentCount > 45)
+   if ( toothCurrentCount == 1 )// || toothCurrentCount > 45)
    { 
-     toothCurrentCount = 1; 
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      startRevolutions++; //Counter
-     currentStatus.hasSync = true;
    } 
    
    toothLastMinusOneToothTime = toothLastToothTime;
