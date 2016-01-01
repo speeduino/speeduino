@@ -153,8 +153,10 @@ void triggerPri_DualWheel()
    curGap = curTime - toothLastToothTime;
    if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    toothCurrentCount++; //Increment the tooth counter
+   addToothLogEntry(curGap);
+   if ( !currentStatus.hasSync ) { return; }
    
-   if ( toothCurrentCount == 1 || toothCurrentCount > configPage2.triggerTeeth)
+   if ( toothCurrentCount == 1 || toothCurrentCount > configPage2.triggerTeeth )
    { 
      toothCurrentCount = 1; 
      toothOneMinusOneTime = toothOneTime;
@@ -162,8 +164,6 @@ void triggerPri_DualWheel()
      startRevolutions++; //Counter
      //if ((startRevolutions & 63) == 1) { currentStatus.hasSync = false; } //Every 64 revolutions, force a resync with the cam
    } 
-   
-   addToothLogEntry(curGap);
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
@@ -697,12 +697,14 @@ void triggerPri_Audi135()
    toothSystemCount++;
    toothSystemLastToothTime = curTime;
    addToothLogEntry(curGap);
+   if ( !currentStatus.hasSync ) { return; }
    if ( toothSystemCount != 3 ) { return; } //We only proceed for every third tooth
    toothSystemCount = 0;
    toothCurrentCount++; //Increment the tooth counter
    
-   if ( toothCurrentCount == 1 )// || toothCurrentCount > 45)
+   if ( toothCurrentCount == 1 || toothCurrentCount > 45 )
    { 
+     toothCurrentCount == 1;
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      startRevolutions++; //Counter
