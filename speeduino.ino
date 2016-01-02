@@ -77,6 +77,7 @@ struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
 struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
+struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
 byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
@@ -176,6 +177,10 @@ void setup()
   IATDensityCorrectionTable.xSize = 9;
   IATDensityCorrectionTable.values = configPage3.airDenRates;
   IATDensityCorrectionTable.axisX = configPage3.airDenBins;
+  IATRetardTable.valueSize = SIZE_BYTE;
+  IATRetardTable.xSize = 6;
+  IATRetardTable.values = configPage2.iatRetValues;
+  IATRetardTable.axisX = configPage2.iatRetBins;
   
   //Setup the calibration tables
   loadCalibration();
@@ -756,6 +761,8 @@ void loop()
       //Check for fixed ignition angles
       if (configPage2.FixAng != 0) { currentStatus.advance = configPage2.FixAng; } //Check whether the user has set a fixed timing angle
       if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { currentStatus.advance = configPage2.CrankAng; } //Use the fixed cranking ignition angle
+      //Adjust the advance based on IAT
+      currentStatus.advance -= table2D_getValue(&IATRetardTable, currentStatus.IAT);
 
       int injector1StartAngle = 0;
       int injector2StartAngle = 0;
@@ -1123,6 +1130,11 @@ void loop()
 /*
 #ifdef defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   //For the AVR chips, use the faster bit flipping method of switching pins
+  void ignitionSetter(byte *port, bool startCharge) 
+  {
+    if(
+  }
+  
   void openInjector1() { *inj1_pin_port |= (inj1_pin_mask); ; BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
   void closeInjector1() { *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ1); }
   void beginCoil1Charge() { *ign1_pin_port |= (ign1_pin_mask); BIT_SET(currentStatus.spark, 0); digitalWrite(pinTachOut, LOW); }

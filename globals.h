@@ -249,8 +249,8 @@ struct config2 {
   byte wueBins[10]; //Warmup Enrichment bins (Values are in configTable1)
   byte dwellLimit;
   byte dwellCorrectionValues[6]; //Correction table for dwell vs battery voltage
-  byte unused48;
-  byte unused49;
+  byte iatRetBins[6]; // Inlet Air Temp timing retard curve bins
+  byte iatRetValues[6]; // Inlet Air Temp timing retard curve values
   byte unused50;
   byte unused51;
   byte unused52;
