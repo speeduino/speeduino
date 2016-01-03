@@ -693,18 +693,19 @@ void triggerPri_Audi135()
 { 
    curTime = micros();
    curGap = curTime - toothSystemLastToothTime;
-   if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+   if ( curGap < triggerFilterTime ) { return; }
    toothSystemCount++;
    toothSystemLastToothTime = curTime;
    addToothLogEntry(curGap);
    if ( !currentStatus.hasSync ) { return; }
-   if ( toothSystemCount != 3 ) { return; } //We only proceed for every third tooth
+   if ( toothSystemCount < 3 ) { return; } //We only proceed for every third tooth
+   
    toothSystemCount = 0;
    toothCurrentCount++; //Increment the tooth counter
    
    if ( toothCurrentCount == 1 || toothCurrentCount > 45 )
    { 
-     toothCurrentCount == 1;
+     toothCurrentCount = 1;
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      startRevolutions++; //Counter
@@ -721,11 +722,11 @@ void triggerSec_Audi135()
   if ( curGap2 < triggerSecFilterTime ) { return; } 
   toothLastSecToothTime = curTime2;
   
-  if(!currentStatus.hasSync)
+  if( !currentStatus.hasSync )
   {
     toothCurrentCount = 0;
-    toothSystemCount = 0;
     currentStatus.hasSync = true;
+    toothSystemCount = 3; //Need to set this to 3 so that the next primary tooth is counted
   }
 } 
 
@@ -736,6 +737,29 @@ int getRPM_Audi135()
 
 int getCrankAngle_Audi135(int timePerDegree)
 {   
-    return getCrankAngle_DualWheel(timePerDegree);
+        //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables. 
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    interrupts();
+    
+    //Handle case where the secondary tooth was the last one seen
+    if(tempToothCurrentCount == 0) { tempToothCurrentCount = 45; }
+    
+    int crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    //Estimate the number of degrees travelled since the last tooth}
+    long elapsedTime = micros() - tempToothLastToothTime;
+    if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
+    else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
+    
+    
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle < 0) { crankAngle += 360; }
+    
+    return crankAngle;
 }
 
