@@ -178,7 +178,7 @@ struct config1 {
   byte egoType_old : 1;
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
-  byte injTiming : 2;
+  byte injLayout : 2;
   
   byte primePulse;
   byte dutyLim;

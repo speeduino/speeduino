@@ -455,7 +455,7 @@ void setup()
       }
       else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       
-      configPage1.injTiming = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
+      configPage1.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
       break;
     case 8:
       channel1IgnDegrees = 0;
@@ -473,7 +473,7 @@ void setup()
       }
       else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       
-      configPage1.injTiming = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
+      configPage1.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
       break;
     default: //Handle this better!!!
       channel1InjDegrees = 0;
@@ -949,7 +949,7 @@ void loop()
       {
         if (injector1StartAngle > crankAngle)
         { 
-          if (configPage1.injTiming == 1)
+          if (configPage1.injLayout == 1)
           {
             setFuelSchedule1(openInjector1and4, 
                       ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
@@ -984,7 +984,7 @@ void loop()
         if ( tempStartAngle < 0) { tempStartAngle += 360; }
         if (tempStartAngle > tempCrankAngle)
         { 
-          if (configPage1.injTiming == 1)
+          if (configPage1.injLayout == 1)
           {
             setFuelSchedule2(openInjector2and3, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
