@@ -35,6 +35,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "decoders.h"
 #include "idle.h"
 #include "auxiliaries.h"
+#include "fastAnalog.h"
+#include "libs/PID_v1/PID_v1.h"
 
 #ifdef __SAM3X8E__
  //Do stuff for ARM based CPUs 
@@ -42,8 +44,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
   #include "storage.h"
 #endif
 
-#include "fastAnalog.h"
-#include <PID_v1.h>
 
 struct config1 configPage1;
 struct config2 configPage2;
@@ -1128,7 +1128,7 @@ void loop()
 //These functions simply trigger the injector/coil driver off or on. 
 //NOTE: squirt status is changed as per http://www.msextra.com/doc/ms1extra/COM_RS232.htm#Acmd
 /*
-#ifdef defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   //For the AVR chips, use the faster bit flipping method of switching pins
   void ignitionSetter(byte *port, bool startCharge) 
   {
