@@ -239,6 +239,8 @@ void sendValues(int length)
   response[32] = highByte(currentStatus.rpmDOT);
 
   Serial.write(response, (size_t)packetSize);
+
+  //if(Serial.available()) { command(); }
   //Serial.flush();
   return;
 }
@@ -848,7 +850,6 @@ void sendToothLog(bool useChar)
     BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY);
   }
 }
-
 
 void testComm()
 {

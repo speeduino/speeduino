@@ -79,7 +79,10 @@ void setPinMapping(byte boardID)
       pinDisplayReset = 48; // OLED reset pin
       pinTachOut = 49; //Tacho output pin
       pinIdle1 = 5; //Single wire idle control
+      pinIdle2 = 7; //2 wire idle control
       pinFuelPump = 4; //Fuel pump output
+      pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pinStepperStep = 17; //Step pin for DRV8825 driver
 
       break;
 
@@ -104,6 +107,7 @@ void setPinMapping(byte boardID)
       pinDisplayReset = 48; // OLED reset pin
       pinTachOut = 49; //Tacho output pin
       pinIdle1 = 5; //Single wire idle control
+      pinIdle2 = 7; //2 wire idle control (Note this is shared with boost!!!)
       pinFuelPump = 45; //Fuel pump output
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver

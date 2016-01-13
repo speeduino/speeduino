@@ -58,6 +58,7 @@ void vvtControl()
 }
   
 //The interrupt to control the Boost PWM
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 ISR(TIMER1_COMPA_vect)
 {
   if(!configPage3.boostEnabled) { return; }
@@ -94,3 +95,7 @@ ISR(TIMER1_COMPB_vect)
     vvt_pwm_state = true;
   }  
 }
+
+#elif defined(PROCESSOR_TEENSY_3_1) || defined(PROCESSOR_TEENSY_3_2)
+#endif
+

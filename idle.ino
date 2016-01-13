@@ -42,6 +42,8 @@ void initialiseIdle()
       
       idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
       idle_pin_mask = digitalPinToBitMask(pinIdle1);
+      idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
+      idle2_pin_mask = digitalPinToBitMask(pinIdle2);
       idle_pwm_max_count = 1000000L / (16 * configPage3.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       TIMSK4 |= (1 << OCIE4C); //Turn on the A compare unit (ie turn on the interrupt)
       break;
@@ -112,15 +114,15 @@ void idleControl()
       if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         //Currently cranking. Use the cranking table
-        byte idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
-        idle_pwm_target_value = percentage(idleDuty, idle_pwm_max_count);
+        currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         idleOn = true;
       }
       else if( currentStatus.coolant < (iacPWMTable.values[IDLE_TABLE_SIZE-1] + CALIBRATION_TEMPERATURE_OFFSET))
       {
         //Standard running
-        byte idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
-        idle_pwm_target_value = percentage(idleDuty, idle_pwm_max_count);
+        currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         idleOn = true;
       }
       else if (idleOn) { digitalWrite(pinIdle1, LOW); idleOn = false; }
@@ -209,20 +211,26 @@ void homeStepper()
 }
 
 //The interrupt to turn off the idle pwm
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 ISR(TIMER4_COMPC_vect)
 {
   if (idle_pwm_state)
   {
-    *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low
+    *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
+    if(configPage4.iacChannels) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     OCR4C = TCNT4 + (idle_pwm_max_count - idle_pwm_cur_value);
     idle_pwm_state = false;
   }
   else
   {
     *idle_pin_port |= (idle_pin_mask);  // Switch pin high
+    if(configPage4.iacChannels) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     OCR4C = TCNT4 + idle_pwm_target_value;
     idle_pwm_cur_value = idle_pwm_target_value;
     idle_pwm_state = true;
   }
     
 }
+#elif defined(PROCESSOR_TEENSY_3_1) || defined(PROCESSOR_TEENSY_3_2)
+void idle_off() { }
+#endif
