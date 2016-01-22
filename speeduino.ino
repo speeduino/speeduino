@@ -141,7 +141,7 @@ void setup()
   table3D_setSize(&afrTable, 16);
   table3D_setSize(&boostTable, 8);
   table3D_setSize(&vvtTable, 8);
-  
+ 
   loadConfig();
   
   //Repoint the 2D table structs to the config pages that were just loaded
@@ -186,7 +186,7 @@ void setup()
   loadCalibration();
   //Set the pin mappings
   setPinMapping(configPage1.pinMapping);
-  
+
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
   else { coilHIGH = HIGH, coilLOW = LOW; }
@@ -206,7 +206,7 @@ void setup()
   
   initialiseSchedulers();
   initialiseTimers();
-  initialiseDisplay();
+  //initialiseDisplay();
   initialiseIdle();
   initialiseFan();
   initialiseAuxPWM();
@@ -559,7 +559,6 @@ void setup()
 
 void loop() 
 {
-    
       mainLoopCount++;    
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
       // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
@@ -713,6 +712,7 @@ void loop()
        
       vvtControl();
       boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
+      idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient. 
     }
 
     //Always check for sync
@@ -735,7 +735,6 @@ void loop()
           if(startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;}
         } 
       
-      idleControl(); //Perform any idle realted actions
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
       
@@ -761,8 +760,10 @@ void loop()
       //Check for fixed ignition angles
       if (configPage2.FixAng != 0) { currentStatus.advance = configPage2.FixAng; } //Check whether the user has set a fixed timing angle
       if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { currentStatus.advance = configPage2.CrankAng; } //Use the fixed cranking ignition angle
-      //Adjust the advance based on IAT
-      currentStatus.advance -= table2D_getValue(&IATRetardTable, currentStatus.IAT);
+      //Adjust the advance based on IAT. If the adjustment amount is greater than the current advance, just set advance to 0
+      byte advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
+      if (advanceIATadjust <= currentStatus.advance) { currentStatus.advance -= advanceIATadjust; }
+      else { currentStatus.advance = 0; } 
 
       int injector1StartAngle = 0;
       int injector2StartAngle = 0;
