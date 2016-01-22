@@ -46,6 +46,9 @@ void boostControl()
     byte boostDuty = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM);
     boost_pwm_target_value = percentage(boostDuty, boost_pwm_max_count);
   }
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+  else { TIMSK1 &= ~(1 << OCIE1A); } // Disable timer channel
+#endif
 }
 
 void vvtControl()
@@ -55,13 +58,15 @@ void vvtControl()
     byte vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
     vvt_pwm_target_value = percentage(vvtDuty, vvt_pwm_max_count);
   }
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+  else { TIMSK1 &= ~(1 << OCIE1B); } // Disable timer channel
+#endif
 }
   
 //The interrupt to control the Boost PWM
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 ISR(TIMER1_COMPA_vect)
 {
-  if(!configPage3.boostEnabled) { return; }
   if (boost_pwm_state)
   {
     *boost_pin_port &= ~(boost_pin_mask);  // Switch pin to low
@@ -80,7 +85,6 @@ ISR(TIMER1_COMPA_vect)
 //The interrupt to control the VVT PWM
 ISR(TIMER1_COMPB_vect)
 {
-  if(!configPage3.vvtEnabled) { return; }
   if (vvt_pwm_state)
   {
     *vvt_pin_port &= ~(vvt_pin_mask);  // Switch pin to low
