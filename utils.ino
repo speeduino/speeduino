@@ -37,6 +37,10 @@ void setPinMapping(byte boardID)
       pinIAT = A2; //IAT sensor pin
       pinCLT = A3; //CLS sensor pin
       pinO2 = A4; //O2 Sensor pin
+      pinIdle1 = 46; //Single wire idle control
+      pinIdle2 = 47; //2 wire idle control
+      pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pinStepperStep = 17; //Step pin for DRV8825 driver
       break;
     case 1:
       //Pin mappings as per the v0.2 shield
@@ -57,6 +61,11 @@ void setPinMapping(byte boardID)
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
+      pinTachOut = 49; //Tacho output pin
+      pinIdle1 = 30; //Single wire idle control
+      pinIdle2 = 31; //2 wire idle control
+      pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pinStepperStep = 17; //Step pin for DRV8825 driver
       break;
     case 2:
       //Pin mappings as per the v0.3 shield
