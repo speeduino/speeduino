@@ -14,6 +14,11 @@ Currently limited to on/off control and open loop PWM and stepper drive
 */
 void initialiseIdle()
 {
+//By default, turn off the PWM interrupt (It gets turned on below if needed)  
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+  else { TIMSK1 &= ~(1 << OCIE1A); } // Disable timer channel
+#endif
+  
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
   switch(configPage4.iacAlgorithm)
   {
