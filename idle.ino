@@ -16,7 +16,7 @@ void initialiseIdle()
 {
 //By default, turn off the PWM interrupt (It gets turned on below if needed)  
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-  else { TIMSK1 &= ~(1 << OCIE1A); } // Disable timer channel
+  TIMSK4 &= ~(1 << OCIE4C); // Disable timer channel for idle
 #endif
   
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
