@@ -39,6 +39,14 @@ const int map_page_size = 288;
 #define TOOTH_LOG_SIZE      128
 #define TOOTH_LOG_BUFFER    256
 
+// The following are alpha values for the ADC filters. 
+// Their values are from 0 to 255 with 0 being no filtering and 255 being maximum
+#define ADCFILTER_TPS  128
+#define ADCFILTER_CLT  210
+#define ADCFILTER_IAT  128
+#define ADCFILTER_O2  128
+#define ADCFILTER_BAT  128
+
 #define SIZE_BYTE   8
 #define SIZE_INT    16
 
