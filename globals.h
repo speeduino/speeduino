@@ -39,6 +39,10 @@ const int map_page_size = 288;
 #define TOOTH_LOG_SIZE      128
 #define TOOTH_LOG_BUFFER    256
 
+#define INJ_SIMULTANEOUS    0
+#define INJ_SEMISEQUENTIAL  1
+#define INJ_SEQUENTIAL      2
+
 // The following are alpha values for the ADC filters. 
 // Their values are from 0 to 255 with 0 being no filtering and 255 being maximum
 #define ADCFILTER_TPS  128
@@ -163,7 +167,8 @@ struct config1 {
   
   byte reqFuel;
   byte divider;
-  byte alternate;
+  byte injTiming : 2;
+  byte unused26 : 6;
   byte injOpen; //Injector opening time (ms * 10)
   unsigned int inj1Ang;
   unsigned int inj2Ang; 
