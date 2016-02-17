@@ -68,6 +68,7 @@ void triggerSetup_missingTooth()
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   secondDerivEnabled = false;
+  decoderIsSequential = false;
 }
 
 void triggerPri_missingTooth()
@@ -144,6 +145,7 @@ void triggerSetup_DualWheel()
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   secondDerivEnabled = false;
+  decoderIsSequential = true;
 }
 
 
@@ -230,6 +232,7 @@ void triggerSetup_BasicDistributor()
   triggerFilterTime = 60000000L / MAX_RPM / configPage1.nCylinders; // Minimum time required between teeth
   triggerFilterTime = triggerFilterTime / 2; //Safety margin
   secondDerivEnabled = false;
+  decoderIsSequential = false;
 }
 
 void triggerPri_BasicDistributor()
@@ -296,6 +299,7 @@ void triggerSetup_GM7X()
 {
   triggerToothAngle = 360 / 6; //The number of degrees that passes from tooth to tooth
   secondDerivEnabled = false;
+  decoderIsSequential = false;
 }
 
 void triggerPri_GM7X()
@@ -383,6 +387,7 @@ void triggerSetup_4G63()
   triggerToothAngle = 180; //The number of degrees that passes from tooth to tooth (primary)
   toothCurrentCount = 99; //Fake tooth count represents no sync
   secondDerivEnabled = false;
+  decoderIsSequential = true;
   
   //Note that these angles are for every rising and falling edge
   
@@ -527,6 +532,7 @@ void triggerSetup_24X()
   
   toothCurrentCount = 25; //We set the initial tooth value to be something that should never be reached. This indicates no sync
   secondDerivEnabled = false;
+  decoderIsSequential = true;
 }
 
 void triggerPri_24X()
@@ -613,6 +619,7 @@ void triggerSetup_Jeep2000()
   
   toothCurrentCount = 13; //We set the initial tooth value to be something that should never be reached. This indicates no sync
   secondDerivEnabled = false;
+  decoderIsSequential = true;
 }
 
 void triggerPri_Jeep2000()
@@ -687,6 +694,7 @@ void triggerSetup_Audi135()
   triggerFilterTime = (unsigned long)(1000000 / (MAX_RPM / 60 * 135UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   secondDerivEnabled = false;
+  decoderIsSequential = true;
 }
 
 void triggerPri_Audi135()
@@ -759,6 +767,87 @@ int getCrankAngle_Audi135(int timePerDegree)
     if (crankAngle >= 720) { crankAngle -= 720; } 
     if (crankAngle > 360) { crankAngle -= 360; }
     if (crankAngle < 0) { crankAngle += 360; }
+    
+    return crankAngle;
+}
+
+/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Name: Honda D17
+Desc: GM 7X trigger wheel. It has six equally spaced teeth and a seventh tooth for cylinder identification.
+Note: Within the code below, the sync tooth is referred to as tooth #3 rather than tooth #7. This makes for simpler angle calculations
+*/
+void triggerSetup_HondaD17()
+{
+  triggerToothAngle = 360 / 12; //The number of degrees that passes from tooth to tooth
+  secondDerivEnabled = false;
+  decoderIsSequential = false;
+}
+
+void triggerPri_HondaD17()
+{
+   lastGap = curGap;
+   curTime = micros();
+   curGap = curTime - toothLastToothTime;
+   toothCurrentCount++; //Increment the tooth counter
+   
+   addToothLogEntry(curGap);
+   
+   //
+   if( toothCurrentCount > 12 && currentStatus.hasSync)
+   {
+     toothCurrentCount = 1; 
+     toothOneMinusOneTime = toothOneTime; 
+     toothOneTime = curTime;
+     startRevolutions++; //Counter 
+   }
+   else
+   {
+     targetGap = (lastGap) >> 1; //The target gap is set at half the last tooth gap
+     if ( curGap < targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the magical 13th tooth
+     { 
+       toothCurrentCount = 0; 
+       currentStatus.hasSync = true;
+       startRevolutions++; //Counter 
+       return; //We return here so that the tooth times below don't get set (The magical 13th tooth should not be considered for any calculations that use those times)
+     } 
+   }
+   
+   toothLastMinusOneToothTime = toothLastToothTime;
+   toothLastToothTime = curTime;
+}
+void triggerSec_HondaD17() { return; } //The 4+1 signal on the cam is yet to be supported
+int getRPM_HondaD17()
+{
+   return stdGetRPM();
+}
+int getCrankAngle_HondaD17(int timePerDegree)
+{
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables. 
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    interrupts();
+    
+    //Check if the last tooth seen was the reference tooth 13 (Number 0 here). All others can be calculated, but tooth 3 has a unique angle
+    int crankAngle;
+    if( tempToothCurrentCount == 0 )
+    {
+      crankAngle = 11 * triggerToothAngle + configPage2.triggerAngle; //if temptoothCurrentCount is 0, the last tooth seen was the 13th one. Based on this, ignore the 13th tooth and use the 12th one as the last reference. 
+    }
+    else
+    {
+      crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    }
+    
+    //Estimate the number of degrees travelled since the last tooth}
+    long elapsedTime = micros() - tempToothLastToothTime;
+    if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
+    else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
+    
+    if (crankAngle > 360) { crankAngle -= 360; }
     
     return crankAngle;
 }

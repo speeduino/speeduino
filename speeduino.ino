@@ -366,6 +366,17 @@ void setup()
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       attachInterrupt(triggerInterrupt2, triggerSec_Audi135, RISING);
       break;
+
+    case 8:
+      triggerSetup_HondaD17();
+      trigger = triggerPri_HondaD17;
+      getRPM = getRPM_HondaD17;
+      getCrankAngle = getCrankAngle_HondaD17;
+      
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to 
+      attachInterrupt(triggerInterrupt2, triggerSec_HondaD17, CHANGE);
+      break;
       
     default:
       trigger = triggerPri_missingTooth;
@@ -729,11 +740,11 @@ void loop()
        currentStatus.iatADC = ADC_FILTER(tempReading, ADCFILTER_IAT, currentStatus.iatADC);
        currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
 
-       tempReading = map(analogRead(pinO2), 0, 1023, 0, 511); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4. This is the correct calibration for an Innovate Wideband 0v - 5V unit. Proper calibration is still a WIP
+       tempReading = map(analogRead(pinO2), 0, 1023, 0, 511); //Get the current O2 value. 
        currentStatus.O2ADC = ADC_FILTER(tempReading, ADCFILTER_O2, currentStatus.O2ADC);
        currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
        
-       currentStatus.O2_2ADC = map(analogRead(pinO2_2), 0, 1023, 0, 511); //Get the current O2 value. Calibration is from AFR values 7.35 to 22.4. This is the correct calibration for an Innovate Wideband 0v - 5V unit. Proper calibration is still a WIP
+       currentStatus.O2_2ADC = map(analogRead(pinO2_2), 0, 1023, 0, 511); //Get the current O2 value.
        currentStatus.O2_2ADC = ADC_FILTER(tempReading, ADCFILTER_O2, currentStatus.O2_2ADC);
        currentStatus.O2_2 = o2CalibrationTable[currentStatus.O2_2ADC];
 
