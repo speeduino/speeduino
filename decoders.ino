@@ -793,9 +793,13 @@ void triggerPri_HondaD17()
    addToothLogEntry(curGap);
    
    //
-   if( toothCurrentCount > 12 && currentStatus.hasSync)
+   if( toothCurrentCount == 13 && currentStatus.hasSync)
    {
-     toothCurrentCount = 1; 
+     toothCurrentCount = 0; 
+     return;
+   }
+   else if( toothCurrentCount == 1 && currentStatus.hasSync)
+   {
      toothOneMinusOneTime = toothOneTime; 
      toothOneTime = curTime;
      startRevolutions++; //Counter 
