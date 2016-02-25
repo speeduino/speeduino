@@ -407,6 +407,7 @@ void setup()
     cbi(ADCSRA,ADPS1);
     cbi(ADCSRA,ADPS0);
   #endif
+
   
   mainLoopCount = 0;
   ignitionCount = 0;
@@ -744,9 +745,11 @@ void loop()
        currentStatus.O2ADC = ADC_FILTER(tempReading, ADCFILTER_O2, currentStatus.O2ADC);
        currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
        
+       /* Second O2 currently disabled as its not being used
        currentStatus.O2_2ADC = map(analogRead(pinO2_2), 0, 1023, 0, 511); //Get the current O2 value.
        currentStatus.O2_2ADC = ADC_FILTER(tempReading, ADCFILTER_O2, currentStatus.O2_2ADC);
        currentStatus.O2_2 = o2CalibrationTable[currentStatus.O2_2ADC];
+       */
 
        tempReading = fastMap1023toX(analogRead(pinBat), 0, 1023, 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
        currentStatus.battery10 = ADC_FILTER(tempReading, ADCFILTER_BAT, currentStatus.battery10);
