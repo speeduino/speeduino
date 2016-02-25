@@ -13,27 +13,13 @@ The important ideas though remain the same and the priority is still SIMPLICITY!
 
 Q: Arduino ECU,pffft, heard THAT before. Does this one actually work?
 
-A: Yep! Single cylinder engines are well tested and working as of Nov 2013 and multi-cylinder support is in testing. Please see the dev roadmap (https://github.com/noisymime/speeduino/wiki/Development-Roadmap) for the current status of in progress work
+A: Yep! 1, 2, 4, 6 and 8 cylinder engines have all run, fuel and ignition, off Speeduino. 
 
 ========================================================================
 
 Q: So what can it do?
 
-A: Initial plan is for injection and ignition control on single cylinder 4 stroke engines. 
-Features:
-* 8x8 maps with interpolation
-* Support for missing tooth crank wheels up to 36-1 with hall effect sensor
-* Alpha-N or Speed Density load control
-* High-Z injector hardware
-* Warmup enrichment
-* Acceleration enrichment
-* Compatible with Tuner studio (http://tunerstudio.com/) for tuning
-
-Phase 2 will include:
-* Batch support for up to 4 cylinder engines
-* 2 stroke engine support
-* Closed loop EGO / O2 
-* Autotune with TunerStudio and wideband O2
+A: Take a look at this page for details: http://speeduino.com/wiki/index.php/Overview
 
 ========================================================================
 
