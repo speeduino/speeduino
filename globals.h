@@ -120,6 +120,7 @@ struct statuses {
   volatile byte squirt;
   volatile byte spark;
   byte engine;
+  bool dfcoOn; //Decelleration fuel cutoff
   unsigned int PW; //In uS
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
@@ -246,7 +247,8 @@ struct config2 {
   byte dwellCont : 1; //Fixed duty dwell control
   byte useDwellLim : 1; //Whether the dwell limiter is off or on
   byte sparkMode : 2; //Spark output mode (Eg Wasted spark, single channel or Wasted COP)
-  byte dwellUnused : 4;
+  byte dfcoEnabled : 1; //Whether or not DFCO is turned on
+  byte dwellUnused : 3;
   
   byte dwellCrank; //Dwell time whilst cranking
   byte dwellRun; //Dwell time whilst running 
@@ -265,19 +267,9 @@ struct config2 {
   byte dwellCorrectionValues[6]; //Correction table for dwell vs battery voltage
   byte iatRetBins[6]; // Inlet Air Temp timing retard curve bins
   byte iatRetValues[6]; // Inlet Air Temp timing retard curve values
-  byte unused50;
-  byte unused51;
-  byte unused52;
-  byte unused53;
-  byte unused54;
-  byte unused55;
-  byte unused56;
-  byte unused57;
-  byte unused58;
-  byte unused59;
-  byte unused60;
-  byte unused61;
-  byte unused62;
+  byte dfcoRPM; //RPM at which DFCO turns off/on at
+  byte dfcoHyster; //Hysteris RPM for DFCO
+  byte dfcoTPSThresh; //TPS must be below this figure for DFCO to engage
   byte unused63;
 
   

@@ -26,11 +26,10 @@ byte correctionsTotal()
   byte result; //temporary variable to store the result of each corrections function
   
   //As the 'normal' case will be for each function to return 100, we only perform the division operation if the returned result is not equal to that
+  //The function divs100 divides a signed int by 100 in a very fast way and is used instead of div() or / 
   currentStatus.wueCorrection = correctionWUE();
-  //if (currentStatus.wueCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.wueCorrection), 100).quot; }
   if (currentStatus.wueCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.wueCorrection); }
   result = correctionASE();
-  //if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
   if (result != 100) { sumCorrections = divs100(sumCorrections * result); }
   result = correctionCranking();
   if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
@@ -39,16 +38,15 @@ byte correctionsTotal()
   result = correctionFloodClear();
   if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
   currentStatus.egoCorrection = correctionsAFRClosedLoop();
-  //if (currentStatus.egoCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.egoCorrection), 100).quot; }
   if (currentStatus.egoCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.egoCorrection); }
   currentStatus.batCorrection = correctionsBatVoltage();
-  //if (currentStatus.batCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.batCorrection), 100).quot; }
   if (currentStatus.batCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.batCorrection); }
   currentStatus.iatCorrection = correctionsIATDensity();
-  //if (currentStatus.iatCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.iatCorrection), 100).quot; }
   if (currentStatus.iatCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.iatCorrection); }
   currentStatus.launchCorrection = correctionsLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.launchCorrection), 100).quot; }
+  currentStatus.dfcoOn = correctionsDFCO();
+  if ( currentStatus.dfcoOn ) { sumCorrections = 0; } 
   
   if(sumCorrections > 255) { sumCorrections = 255; } //This is the maximum allowable increase
   return (byte)sumCorrections;
@@ -184,6 +182,16 @@ byte correctionsLaunch()
 {
   if(configPage3.launchEnabled && currentStatus.launching) { return (100 + configPage3.lnchFuelAdd); }
   else { return 100; }
+}
+
+/*
+ * Returns true if decelleration fuel cutoff should be on, false if its off
+ */
+bool correctionsDFCO()
+{
+  if ( !configPage2.dfcoEnabled ) { return false; } //If the DFCO option isn't turned on, always return false (off)
+  if (currentStatus.dfcoOn) { return ( currentStatus.RPM > configPage2.dfcoRPM ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
+  else { return ( currentStatus.RPM > (configPage2.dfcoRPM + configPage2.dfcoHyster) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
 }
 
 /*
