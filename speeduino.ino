@@ -331,7 +331,6 @@ void setup()
         attachInterrupt(triggerInterrupt, trigger, CHANGE); // Primary trigger connects to 
         attachInterrupt(triggerInterrupt2, triggerSec_4G63, FALLING);
       }
-      
       break;
       
     case 5:
@@ -376,6 +375,25 @@ void setup()
       if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to 
       attachInterrupt(triggerInterrupt2, triggerSec_HondaD17, CHANGE);
+      break;
+
+    case 9:
+      triggerSetup_Miata9905();
+      trigger = triggerPri_Miata9905;
+      getRPM = getRPM_Miata9905;
+      getCrankAngle = getCrankAngle_Miata9905;
+      
+      //These may both need to change, not sure
+      if(configPage2.TrigEdge == 0)
+      {
+        attachInterrupt(triggerInterrupt, trigger, RISING);  // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+        attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, FALLING); //changed
+      }
+      else
+      {
+        attachInterrupt(triggerInterrupt, trigger, FALLING); // Primary trigger connects to 
+        attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, RISING);
+      }
       break;
       
     default:

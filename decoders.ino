@@ -806,12 +806,12 @@ void triggerPri_HondaD17()
    }
    else
    {
+     //13th tooth
      targetGap = (lastGap) >> 1; //The target gap is set at half the last tooth gap
      if ( curGap < targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the magical 13th tooth
      { 
        toothCurrentCount = 0; 
        currentStatus.hasSync = true;
-       startRevolutions++; //Counter 
        return; //We return here so that the tooth times below don't get set (The magical 13th tooth should not be considered for any calculations that use those times)
      } 
    }
@@ -852,6 +852,127 @@ int getCrankAngle_HondaD17(int timePerDegree)
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
     if (crankAngle > 360) { crankAngle -= 360; }
+    
+    return crankAngle;
+}
+
+/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Name: Miata '99 to '05
+Desc: TBA (See: http://forum.diyefi.org/viewtopic.php?f=56&t=1077)
+Note: 4x 70 degree duration teeth running at cam speed. Believed to be at the same angles as the 4g63 decoder
+Tooth #1 is defined as the next crank tooth after the crank signal is HIGH when the cam signal is falling.
+Tooth number one is at 355* ATDC
+*/
+void triggerSetup_Miata9905()
+{
+  triggerToothAngle = 90; //The number of degrees that passes from tooth to tooth (primary)
+  toothCurrentCount = 99; //Fake tooth count represents no sync
+  secondDerivEnabled = false;
+  decoderIsSequential = true;
+  
+  //Note that these angles are for every rising and falling edge
+  
+  toothAngles[0] = 350; //Falling edge of tooth #1
+  toothAngles[1] = 100; //Rising edge of tooth #2
+  toothAngles[2] = 170; //Falling edge of tooth #2
+  toothAngles[3] = 280; //Rising edge of tooth #1
+  
+  triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth. 
+  triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+}
+
+void triggerPri_Miata9905()
+{
+  curTime = micros();
+  curGap = curTime - toothLastToothTime;
+  if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime
+  
+  toothCurrentCount++;
+  if(toothCurrentCount == 1 || toothCurrentCount == 5) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
+  { 
+     toothCurrentCount = 1; //Reset the counter
+     toothOneMinusOneTime = toothOneTime;
+     toothOneTime = curTime;
+     currentStatus.hasSync = true;
+     startRevolutions++; //Counter
+     //if ((startRevolutions & 15) == 1) { currentStatus.hasSync = false; } //Every 64 revolutions, force a resync with the cam
+  }
+  else if (!currentStatus.hasSync) { return; }
+  
+  addToothLogEntry(curGap);
+   
+  //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
+  if(toothCurrentCount == 1 || toothCurrentCount == 3) { triggerToothAngle = 70; triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
+  else { triggerToothAngle = 110; triggerFilterTime = (curGap * 3) >> 3; } //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
+  
+  curGap = curGap >> 1;
+  
+  toothLastMinusOneToothTime = toothLastToothTime;
+  toothLastToothTime = curTime;
+}
+void triggerSec_Miata9905()
+{ 
+  curTime2 = micros();
+  curGap2 = curTime2 - toothLastSecToothTime;
+  if ( curGap2 < triggerSecFilterTime ) { return; } 
+  toothLastSecToothTime = curTime2;
+  lastGap = curGap2;
+  
+  if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) || !currentStatus.hasSync)
+  {
+    triggerFilterTime = 1500;
+    //Check the status of the crank trigger
+    targetGap = (lastGap) >> 1; //The target gap is set at half the last tooth gap
+    if ( curGap < targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the extra (3rd) tooth on the cam). This tooth is located at 421 crank degrees (aka 61 degrees) and therefore the last crank tooth seen was number 1 (At 350 degrees)
+    { 
+      toothCurrentCount = 1; 
+      currentStatus.hasSync = true;
+    } 
+  }
+  //else { triggerFilterTime = 1500; } //reset filter time (ugly)
+  return; 
+}
+
+
+int getRPM_Miata9905()
+{
+  //During cranking, RPM is calculated 4 times per revolution, once for each tooth on the crank signal. 
+  //Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
+  if(currentStatus.RPM < configPage2.crankRPM) 
+  { 
+    int tempToothAngle;
+    noInterrupts();
+    tempToothAngle = triggerToothAngle;
+    revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen  
+    interrupts();
+    revolutionTime = revolutionTime * 36;
+    return (tempToothAngle * 60000000L) / revolutionTime;
+  }
+  else { return stdGetRPM(); }
+}
+
+int getCrankAngle_Miata9905(int timePerDegree)
+{
+    if(!currentStatus.hasSync) { return 0;}
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables. 
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    interrupts();
+    
+    int crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was. 
+    //Estimate the number of degrees travelled since the last tooth}
+    
+    long elapsedTime = micros() - tempToothLastToothTime;
+    if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
+    else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
+    
+    if (crankAngle >= 720) { crankAngle -= 720; }  
+    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
 }
