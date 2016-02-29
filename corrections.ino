@@ -190,8 +190,8 @@ byte correctionsLaunch()
 bool correctionsDFCO()
 {
   if ( !configPage2.dfcoEnabled ) { return false; } //If the DFCO option isn't turned on, always return false (off)
-  if (currentStatus.dfcoOn) { return ( currentStatus.RPM > configPage2.dfcoRPM ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
-  else { return ( currentStatus.RPM > (configPage2.dfcoRPM + configPage2.dfcoHyster) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
+  if (currentStatus.dfcoOn) { return ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
+  else { return ( currentStatus.RPM > ( (configPage2.dfcoRPM * 10) + configPage2.dfcoHyster) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
 }
 
 /*
