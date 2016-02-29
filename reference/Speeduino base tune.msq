@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS 2.6.14 - EFI Analytics, Inc." tuneComment="" writeDate="Wed Feb 03 08:21:25 EST 2016"/>
+<bibliography author="TunerStudio MS 2.6.14 - EFI Analytics, Inc." tuneComment="" writeDate="Mon Feb 29 22:22:29 EST 2016"/>
 <versionInfo fileFormat="4.0" firmwareInfo="" nPages="8" signature="20"/>
 <page>
 <pcVariable name="tsCanId">"0"</pcVariable>
@@ -111,8 +111,8 @@
          145.0 
          140.0 
          133.0 
-         128.0 
-         100.0 
+         124.0 
+         107.0 
       </constant>
 <constant digits="0" name="crankingPct" units="%">20.0</constant>
 <constant name="pinLayout">"Speeduino v0.4"</constant>
@@ -131,7 +131,6 @@
 <constant name="displayB2">"RPM"</constant>
 <constant digits="1" name="reqFuel" units="ms">14.4</constant>
 <constant digits="0" name="divider">2.0</constant>
-<constant name="alternate">"Alternating"</constant>
 <constant digits="1" name="injOpen" units="ms">1.0</constant>
 <constant digits="0" name="inj1Ang" units="deg">355.0</constant>
 <constant digits="0" name="inj2Ang" units="deg">355.0</constant>
@@ -249,6 +248,7 @@
 <constant name="dwellcont">"Dwell control"</constant>
 <constant name="useDwellLim">"On"</constant>
 <constant name="sparkMode">"Single Channel"</constant>
+<constant name="dfcoEnabled">"On"</constant>
 <constant digits="1" name="dwellcrank" units="ms">4.5</constant>
 <constant digits="1" name="dwellrun" units="ms">3.0</constant>
 <constant digits="0" name="numteeth" units="teeth">135.0</constant>
@@ -263,7 +263,7 @@
          80.0 
          270.0 
          490.0 
-         900.0 
+         880.0 
       </constant>
 <constant cols="1" digits="0" name="taeRates" rows="4" units="%">
          5.0 
@@ -293,11 +293,11 @@
          85.0 
       </constant>
 <constant cols="1" digits="0" name="iatRetBins" rows="6" units="C">
-         71.0 
+         58.0 
          82.0 
          93.0 
          104.0 
-         115.0 
+         116.0 
          126.0 
       </constant>
 <constant cols="1" digits="0" name="iatRetRates" rows="6" units="deg">
@@ -308,9 +308,9 @@
          6.0 
          8.0 
       </constant>
-<constant digits="0" name="unused4-60" units="RPM">500.0</constant>
-<constant digits="0" name="unused4-61" units="RPM">1100.0</constant>
-<constant digits="0" name="unused4-62" units="RPM">1700.0</constant>
+<constant digits="0" name="dfcoRPM" units="RPM">1500.0</constant>
+<constant digits="0" name="dfcoHyster" units="RPM">200.0</constant>
+<constant digits="0" name="dfcoTPSThresh" units="%">7.0</constant>
 <constant digits="0" name="unused4-63" units="RPM">3200.0</constant>
 </page>
 <page number="4" size="288">
