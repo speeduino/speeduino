@@ -732,12 +732,14 @@ void loop()
     {
       currentStatus.TPSlast = currentStatus.TPS;
       currentStatus.TPSlast_time = currentStatus.TPS_time;
+      analogRead(pinTPS);
       byte tempTPS = fastMap1023toX(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
       currentStatus.tpsADC = ADC_FILTER(tempTPS, ADCFILTER_TPS, currentStatus.tpsADC);
       //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range). 
-      if (currentStatus.tpsADC < configPage1.tpsMin) { currentStatus.tpsADC = configPage1.tpsMin; }
-      else if(currentStatus.tpsADC > configPage1.tpsMax) { currentStatus.tpsADC = configPage1.tpsMax; }
-      currentStatus.TPS = map(currentStatus.tpsADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+      byte tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
+      if (currentStatus.tpsADC < configPage1.tpsMin) { tempADC = configPage1.tpsMin; }
+      else if(currentStatus.tpsADC > configPage1.tpsMax) { tempADC = configPage1.tpsMax; }
+      currentStatus.TPS = map(tempADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
       currentStatus.TPS_time = currentLoopTime;  
      
       //Check for launch in (clutch) can be done around here too
@@ -750,15 +752,18 @@ void loop()
     if ((mainLoopCount & 255) == 1)
     {
        int tempReading;
-       
+
+       tempReading = analogRead(pinCLT);
        tempReading = fastMap1023toX(analogRead(pinCLT), 0, 1023, 0, 511); //Get the current raw CLT value
        currentStatus.cltADC = ADC_FILTER(tempReading, ADCFILTER_CLT, currentStatus.cltADC);
        currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 
+       tempReading = analogRead(pinIAT);
        tempReading = map(analogRead(pinIAT), 0, 1023, 0, 511); //Get the current raw IAT value
        currentStatus.iatADC = ADC_FILTER(tempReading, ADCFILTER_IAT, currentStatus.iatADC);
        currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
 
+       tempReading = analogRead(pinO2);
        tempReading = map(analogRead(pinO2), 0, 1023, 0, 511); //Get the current O2 value. 
        currentStatus.O2ADC = ADC_FILTER(tempReading, ADCFILTER_O2, currentStatus.O2ADC);
        currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
@@ -769,6 +774,7 @@ void loop()
        currentStatus.O2_2 = o2CalibrationTable[currentStatus.O2_2ADC];
        */
 
+       tempReading = analogRead(pinBat);
        tempReading = fastMap1023toX(analogRead(pinBat), 0, 1023, 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
        currentStatus.battery10 = ADC_FILTER(tempReading, ADCFILTER_BAT, currentStatus.battery10);
        

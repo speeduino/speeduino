@@ -46,8 +46,8 @@ const int map_page_size = 288;
 // The following are alpha values for the ADC filters. 
 // Their values are from 0 to 255 with 0 being no filtering and 255 being maximum
 #define ADCFILTER_TPS  128
-#define ADCFILTER_CLT  210
-#define ADCFILTER_IAT  128
+#define ADCFILTER_CLT  180
+#define ADCFILTER_IAT  180
 #define ADCFILTER_O2  128
 #define ADCFILTER_BAT  128
 
