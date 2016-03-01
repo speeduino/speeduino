@@ -28,7 +28,7 @@ const int map_page_size = 288;
 #define BIT_SQUIRT_INJ2          1  //inj2 Squirt
 #define BIT_SQUIRT_INJ3          2  //inj3 Squirt
 #define BIT_SQUIRT_INJ4          3  //inj4 Squirt
-#define BIT_SQUIRT_INJ2SCHED      4
+#define BIT_SQUIRT_DFCO          4
 #define BIT_SQUIRT_INJ2SQRT       5  //Injector2 (Schedule2)
 #define BIT_SQUIRT_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
 #define BIT_SQUIRT_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
@@ -120,7 +120,6 @@ struct statuses {
   volatile byte squirt;
   volatile byte spark;
   byte engine;
-  bool dfcoOn; //Decelleration fuel cutoff
   unsigned int PW; //In uS
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
