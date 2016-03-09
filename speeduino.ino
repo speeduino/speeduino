@@ -36,6 +36,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "idle.h"
 #include "auxiliaries.h"
 #include "fastAnalog.h"
+#include "sensors.h"
 #include "libs/PID_v1/PID_v1.h"
 
 #ifdef __SAM3X8E__
@@ -660,72 +661,9 @@ void loop()
     currentStatus.RPM = 500;
     */
      
-    //***SET STATUSES***
+    //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
-
-    //MAP Sampling system
-    int tempReading;
-    switch(configPage1.mapSample)
-    {
-      case 0:
-        //Instantaneous MAP readings
-        tempReading = analogRead(pinMAP);
-
-        //Error checking
-        if(tempReading >= VALID_MAP_MAX || tempReading <= VALID_MAP_MIN) { mapErrorCount += 1; }
-        else { currentStatus.mapADC = tempReading; mapErrorCount = 0; }
-        
-        currentStatus.MAP = map(currentStatus.mapADC, 0, 1023, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
-        break;
-        
-      case 1:
-        //Average of a cycle
-        if( (MAPcurRev == startRevolutions) || (MAPcurRev == startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for. 
-        {
-          tempReading = analogRead(pinMAP);
-          
-          //Error check
-          if(tempReading < VALID_MAP_MAX && tempReading > VALID_MAP_MIN)
-          {
-            MAPrunningValue = MAPrunningValue + tempReading; //Add the current reading onto the total
-            MAPcount++;
-          }
-          else { mapErrorCount += 1; }
-        }
-        else
-        {
-          //Reaching here means that the last cylce has completed and the MAP value should be calculated
-          currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
-          currentStatus.MAP = map(currentStatus.mapADC, 0, 1023, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
-          MAPcurRev = startRevolutions; //Reset the current rev count
-          MAPrunningValue = 0;
-          MAPcount = 0;
-        }
-        break;
-      
-      case 2:
-        //Minimum reading in a cycle
-        if( (MAPcurRev == startRevolutions) || (MAPcurRev == startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for. 
-        {
-          tempReading = analogRead(pinMAP);
-
-          //Error check
-          if(tempReading < VALID_MAP_MAX && tempReading > VALID_MAP_MIN)
-          {
-            if( tempReading < MAPrunningValue) { MAPrunningValue = tempReading; } //Check whether the current reading is lower than the running minimum
-          }
-          else { mapErrorCount += 1; }
-        }
-        else
-        {
-          //Reaching here means that the last cylce has completed and the MAP value should be calculated
-          currentStatus.mapADC = MAPrunningValue;
-          currentStatus.MAP = map(currentStatus.mapADC, 0, 1023, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
-          MAPcurRev = startRevolutions; //Reset the current rev count
-          MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
-        }
-        break;
-    }
+    readMAP();
     
     //TPS setting to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
     if ((mainLoopCount & 31) == 1)
