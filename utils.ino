@@ -41,6 +41,9 @@ void setPinMapping(byte boardID)
       pinIdle2 = 47; //2 wire idle control
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinFan = 47; //Pin for the fan output
+      pinFuelPump = 4; //Fuel pump output
+      pinTachOut = 49; //Tacho output pin
       break;
     case 1:
       //Pin mappings as per the v0.2 shield
@@ -66,6 +69,8 @@ void setPinMapping(byte boardID)
       pinIdle2 = 31; //2 wire idle control
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinFan = 47; //Pin for the fan output
+      pinFuelPump = 4; //Fuel pump output
       break;
     case 2:
       //Pin mappings as per the v0.3 shield
@@ -92,7 +97,7 @@ void setPinMapping(byte boardID)
       pinFuelPump = 4; //Fuel pump output
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
-
+      pinFan = A13; //Pin for the fan output
       break;
 
     case 3:
@@ -114,12 +119,13 @@ void setPinMapping(byte boardID)
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
-      pinTachOut = 49; //Tacho output pin
+      pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
       pinIdle1 = 5; //Single wire idle control
       pinIdle2 = 7; //2 wire idle control (Note this is shared with boost!!!)
-      pinFuelPump = 45; //Fuel pump output
+      pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       break;
 
     case 10:
@@ -150,6 +156,8 @@ void setPinMapping(byte boardID)
       pinSpareTemp2 = A5;
       pinTachOut = 41; //Tacho output pin transistori puuttuu 2n2222 tähän ja 1k 12v
       pinFuelPump = 42; //Fuel pump output 2n2222
+      pinFan = 47; //Pin for the fan output
+      pinTachOut = 49; //Tacho output pin
       break;
 
     case 20:
@@ -178,6 +186,9 @@ void setPinMapping(byte boardID)
       pinTPS = A2;//TPS input pin
       pinCLT = A1; //CLS sensor pin
       pinIAT = A0; //IAT sensor pin
+      pinFan = 47; //Pin for the fan output
+      pinFuelPump = 4; //Fuel pump output
+      pinTachOut = 49; //Tacho output pin
 
     case 30:
       //Pin mappings as per the dazv6 shield
@@ -213,6 +224,7 @@ void setPinMapping(byte boardID)
       pinSpareLOut3 = 49;
       pinSpareLOut4 = 51;
       pinSpareLOut5 = 53;
+      pinFan = 47; //Pin for the fan output
       break; 
       
     default:
@@ -234,6 +246,9 @@ void setPinMapping(byte boardID)
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
+      pinFan = 47; //Pin for the fan output
+      pinFuelPump = 4; //Fuel pump output
+      pinTachOut = 49; //Tacho output pin
       break;
   }
   
