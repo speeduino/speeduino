@@ -1013,7 +1013,10 @@ void loop()
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
       //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
       //crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
-      if(ignitionOn && (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) ))
+      bool hardLimitOff = (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) );
+      if (configPage3.launchEnabled && currentStatus.launching) { hardLimitOff = hardLimitOff && (currentStatus.RPM < ((unsigned int)(configPage3.lnchHardLim) * 100)); } 
+      
+      if(ignitionOn && hardLimitOff)
       {
         //if ( (ignition1StartAngle > crankAngle))// && ign1LastRev != startRevolutions)
         //if ((ignition1StartAngle > crankAngle) == 0)
