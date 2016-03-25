@@ -673,7 +673,8 @@ void loop()
       readTPS();
      
       //Check for launching (clutch) can be done around here too
-      currentStatus.launching = !digitalRead(pinLaunch);
+      if(configPage3.launchHiLo) { currentStatus.launching = digitalRead(pinLaunch); }
+      else { currentStatus.launching = !digitalRead(pinLaunch); } 
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
     }

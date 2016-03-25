@@ -18,7 +18,7 @@ const int map_page_size = 288;
 #define BIT_ENGINE_CRANK    1   // Engine cranking
 #define BIT_ENGINE_ASE      2    // after start enrichment (ASE)
 #define BIT_ENGINE_WARMUP   3  // Engine in warmup
-#define BIT_ENGINE_ACC      4    // in TPS acceleration mode
+#define BIT_ENGINE_ACC      4    // in TPS acceleration model
 #define BIT_ENGINE_DCC      5    // in deceleration mode
 #define BIT_ENGINE_MAP      6    // in MAP acceleration mode
 #define BIT_ENGINE_IDLE     7  // idle on
@@ -300,7 +300,7 @@ struct config3 {
   
   byte launchPin : 6;
   byte launchEnabled : 1;
-  byte unused48h : 1;
+  byte launchHiLo : 1;
   
   byte lnchSoftLim;
   byte lnchRetard;
