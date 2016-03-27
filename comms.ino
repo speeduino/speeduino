@@ -63,7 +63,7 @@ void command()
 
     case 'Q': // send code version
       Serial.print(signature);
-      //Serial.write("Speeduino_0_2");
+      //Serial.write("speeduino");
       break;
 
     case 'V': // send VE table and constants in binary
@@ -208,7 +208,7 @@ void sendValues(int length)
   response[8] = currentStatus.battery10; //battery voltage
   response[9] = currentStatus.O2; //O2
   response[10] = currentStatus.egoCorrection; //Exhaust gas correction (%)
-  response[11] = 0x00; //Air Correction (%)
+  response[11] = currentStatus.iatCorrection; //Air temperature Correction (%)
   response[12] = currentStatus.wueCorrection; //Warmup enrichment (%)
   response[13] = lowByte(currentStatus.RPM); //rpm HB
   response[14] = highByte(currentStatus.RPM); //rpm LB
