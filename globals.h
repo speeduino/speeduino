@@ -33,6 +33,16 @@ const int map_page_size = 288;
 #define BIT_SQUIRT_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
 #define BIT_SQUIRT_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
 
+//Define masks for spark variable
+#define BIT_SPARK_LAUNCH          0  //Launch indicator
+#define BIT_SPARK_SFTLIM          1  //Soft limiter indicator
+#define BIT_SPARK_HRDLIM          2  //Hard limiter indicator
+#define BIT_SPARK_UNUSED1          3  //
+#define BIT_SPARK_UNUSED2          4  //
+#define BIT_SPARK_UNUSED3          5  //
+#define BIT_SPARK_UNUSED4          6  //
+#define BIT_SPARK_UNUSED5          7  //
+
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
@@ -174,8 +184,8 @@ struct config1 {
   byte nCylinders : 4; //Number of cylinders
 
   //config2 in ini  
-  byte cltType : 2;
-  byte matType : 2;
+  byte cltType1 : 2;
+  byte matType1 : 2;
   byte nInjectors : 4; //Number of injectors
   
 
@@ -344,15 +354,12 @@ struct config4 {
   byte iacStepHyster; //Hysteresis temperature (*10). Eg 2.2C = 22
   
   byte fanInv : 1;        // Fan output inversion bit
-  byte fanEnable : 1;     // Fan enable bit 
-  byte unused : 6;
+  byte fanEnable : 2;     // Fan enable bit. 0=Off, 1=On/Off, 2=PWM
+  byte unused : 5;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis 
-  byte unused59;
-  byte unused60;
-  byte unused61;
-  byte unused62;
-  byte unused63;
+  byte fanFreq;           // Fan PWM frequency
+  byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
 };
 
 byte pinInjector1; //Output pin injector 1

@@ -231,7 +231,7 @@ void sendValues(int length)
   response[27] = highByte(currentStatus.freeRAM);
 
   response[28] = currentStatus.batCorrection; //Battery voltage correction (%)
-  response[29] = (byte)(currentStatus.dwell / 100);
+  response[29] = currentStatus.spark; //Spark related bitfield
   response[30] = currentStatus.O2_2; //O2
   
   //rpmDOT must be sent as a signed integer
