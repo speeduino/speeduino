@@ -52,7 +52,7 @@ struct config3 configPage3;
 struct config4 configPage4;
 
 int req_fuel_uS, inj_opentime_uS;
-#define MAX_RPM 15000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
+#define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
 volatile byte startRevolutions = 0; //A counter for how many revolutions have been completed since sync was achieved.
 volatile byte ign1LastRev;

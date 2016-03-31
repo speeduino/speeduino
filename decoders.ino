@@ -39,8 +39,10 @@ inline int stdGetRPM()
 {
   noInterrupts();
   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-  interrupts(); 
-  return (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
+  interrupts();
+  int tempRPM = (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
+  if(tempRPM >= MAX_RPM) { return currentStatus.RPM; } //Sanity check
+  return tempRPM;
 }
 
 /*
@@ -496,7 +498,7 @@ int getCrankAngle_4G63(int timePerDegree)
 }
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: GM 24X
+Name: GM
 Desc: TBA
 Note: Useful references:
 http://www.vems.hu/wiki/index.php?page=MembersPage%2FJorgenKarlsson%2FTwentyFourX
