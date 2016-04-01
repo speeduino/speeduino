@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS 2.6.14 - EFI Analytics, Inc." tuneComment="" writeDate="Mon Feb 29 22:22:29 EST 2016"/>
+<bibliography author="TunerStudio MS 2.6.14 - EFI Analytics, Inc." tuneComment="" writeDate="Fri Apr 01 13:39:33 EST 2016"/>
 <versionInfo fileFormat="4.0" firmwareInfo="" nPages="8" signature="20"/>
 <page>
 <pcVariable name="tsCanId">"0"</pcVariable>
@@ -115,7 +115,7 @@
          107.0 
       </constant>
 <constant digits="0" name="crankingPct" units="%">20.0</constant>
-<constant name="pinLayout">"Speeduino v0.4"</constant>
+<constant name="pinLayout">"Speeduino v0.3"</constant>
 <constant digits="1" name="unused16" units="ms">0.0</constant>
 <constant digits="1" name="tdePct" units="ms">3.2</constant>
 <constant digits="1" name="taeColdA" units="ms">0.0</constant>
@@ -129,8 +129,9 @@
 <constant name="display5">"RPM"</constant>
 <constant name="displayB1">"RPM"</constant>
 <constant name="displayB2">"RPM"</constant>
-<constant digits="1" name="reqFuel" units="ms">14.4</constant>
+<constant digits="1" name="reqFuel" units="ms">12.2</constant>
 <constant digits="0" name="divider">2.0</constant>
+<constant name="alternate">"Alternating"</constant>
 <constant digits="1" name="injOpen" units="ms">1.0</constant>
 <constant digits="0" name="inj1Ang" units="deg">355.0</constant>
 <constant digits="0" name="inj2Ang" units="deg">355.0</constant>
@@ -238,7 +239,7 @@
 <constant name="TrigSpeed">"Crank Speed"</constant>
 <constant name="IgInv">"Going Low"</constant>
 <constant name="oddfire">"Yes"</constant>
-<constant name="TrigPattern">"Basic Distributor"</constant>
+<constant name="TrigPattern">"Missing Tooth"</constant>
 <constant digits="0" name="IdleAdv" units="Deg">-1.9008</constant>
 <constant digits="0" name="IdleAdvTPS" units="ADC">65.0</constant>
 <constant digits="0" name="IdleAdvRPM" units="RPM">3200.0</constant>
@@ -247,7 +248,7 @@
 <constant digits="0" name="StgCycles" units="cycles">2.0</constant>
 <constant name="dwellcont">"Dwell control"</constant>
 <constant name="useDwellLim">"On"</constant>
-<constant name="sparkMode">"Single Channel"</constant>
+<constant name="sparkMode">"Wasted Spark"</constant>
 <constant name="dfcoEnabled">"On"</constant>
 <constant digits="1" name="dwellcrank" units="ms">4.5</constant>
 <constant digits="1" name="dwellrun" units="ms">3.0</constant>
@@ -298,7 +299,7 @@
          93.0 
          104.0 
          116.0 
-         126.0 
+         120.0 
       </constant>
 <constant cols="1" digits="0" name="iatRetRates" rows="6" units="deg">
          0.0 
@@ -378,7 +379,7 @@
 <constant digits="0" name="egoKP" units="%">100.0</constant>
 <constant digits="0" name="egoKI" units="%">20.0</constant>
 <constant digits="0" name="egoKD" units="%">0.0</constant>
-<constant digits="0" name="egoTemp" units="°C">69.93</constant>
+<constant digits="0" name="egoTemp" units="°C">70.0</constant>
 <constant digits="0" name="egoCount">16.0</constant>
 <constant digits="0" name="egoDelta" units="%">1.0</constant>
 <constant digits="0" name="egoLimit">15.0</constant>
@@ -430,13 +431,13 @@
 <constant digits="0" name="boostFreq" units="Hz">30.0</constant>
 <constant digits="0" name="vvtFreq" units="Hz">300.0</constant>
 <constant digits="0" name="idleFreq" units="Hz">120.0</constant>
-<constant name="launchPin">"1"</constant>
+<constant name="launchPin">"Board Default"</constant>
 <constant name="launchEnable">"No"</constant>
-<constant name="unused48h">"No"</constant>
+<constant name="launchHiLo">"LOW"</constant>
 <constant digits="0" name="lnchSoftLim" units="rpm">3500.0</constant>
 <constant digits="0" name="lnchRetard" units="deg">15.0</constant>
 <constant digits="0" name="lnchHardLim" units="rpm">4000.0</constant>
-<constant digits="0" name="lnchFuelAdd" units="%">255.0</constant>
+<constant digits="0" name="lnchFuelAdd" units="%">30.0</constant>
 <constant digits="0" name="unused6-53" units="RPM">800.0</constant>
 <constant digits="0" name="unused6-54" units="RPM">2300.0</constant>
 <constant digits="0" name="unused6-55" units="RPM">6500.0</constant>
@@ -499,22 +500,22 @@
          143.0 
       </constant>
 <constant cols="1" digits="0" name="iacCrankSteps" rows="4" units="Steps">
-         123.0 
-         579.0 
-         390.0 
-         300.0 
+         402.0 
+         372.0 
+         330.0 
+         243.0 
       </constant>
 <constant cols="1" digits="0" name="iacCrankDuty" rows="4" units="Duty %">
-         27.0 
-         31.0 
-         44.0 
-         60.0 
+         55.0 
+         49.0 
+         32.0 
+         11.0 
       </constant>
 <constant cols="1" digits="0" name="iacCrankBins" rows="4" units="C">
-         -28.0 
-         6.0 
-         44.0 
-         76.0 
+         -27.0 
+         8.0 
+         40.0 
+         72.0 
       </constant>
 <constant name="iacAlgorithm">"None"</constant>
 <constant name="iacStepTime">"3"</constant>
@@ -524,20 +525,14 @@
 <constant digits="0" name="iacStepHome" units="Steps">240.0</constant>
 <constant digits="0" name="iacStepHyster" units="Steps">4.0</constant>
 <constant name="fanInv">"No"</constant>
-<constant name="fanEnable">"No"</constant>
-<constant name="unused7-55a">"No"</constant>
+<constant name="fanEnable">"Off"</constant>
 <constant name="unused7-55b">"No"</constant>
 <constant name="unused7-55c">"No"</constant>
 <constant name="unused7-55d">"No"</constant>
 <constant name="unused7-55e">"No"</constant>
 <constant name="unused7-55f">"No"</constant>
-<constant digits="0" name="fanSP" units="°C">77.0</constant>
+<constant digits="0" name="fanSP" units="°C">75.0</constant>
 <constant digits="0" name="fanHyster" units="°C">2.0</constant>
-<constant digits="0" name="unused7-59" units="RPM">300.0</constant>
-<constant digits="0" name="unused7-60" units="RPM">10000.0</constant>
-<constant digits="0" name="unused7-61" units="RPM">2000.0</constant>
-<constant digits="0" name="unused7-62" units="RPM">0.0</constant>
-<constant digits="0" name="unused7-63" units="RPM">19800.0</constant>
 </page>
 <page number="7" size="160">
 <constant cols="8" digits="0" name="boostTable" rows="8" units="%">
