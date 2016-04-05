@@ -68,8 +68,78 @@ int table2D_getValue(struct table2D *fromTable, int X)
     
     //If the requested X value is greater/small than the maximum/minimum bin, reset X to be that value
     if(X > xMaxValue) { X = xMaxValue; }
-    if(X < xMinValue) { X = xMinValue; }  
+    if(X < xMinValue) { X = xMinValue; }
 
+
+    if (fromTable->valueSize == SIZE_BYTE)
+    {
+       //Byte version
+       
+       //1st check is whether we're still in the same X bin as last time
+       if ( (X <= fromTable->axisX[fromTable->lastXMax]) && (X > fromTable->axisX[fromTable->lastXMin]) )
+       {
+         xMaxValue = fromTable->axisX[fromTable->lastXMax];
+         xMinValue = fromTable->axisX[fromTable->lastXMin];
+         xMax = fromTable->lastXMax;
+         xMin = fromTable->lastXMin;
+       }
+       else
+       {
+          //
+          for (int x = fromTable->xSize-1; x >= 0; x--)
+          {
+              //Checks the case where the X value is exactly what was requested
+              if ( (X == fromTable->axisX[x]) || (x == 0) )
+              {
+                return fromTable->values[x]; //Simply return the coresponding value
+              }
+              //Normal case
+              if ( (X <= fromTable->axisX[x]) && (X > fromTable->axisX[x-1]) )
+              {
+                xMaxValue = fromTable->axisX[x];
+                xMinValue = fromTable->axisX[x-1];
+                xMax = x;
+                xMin = x-1;
+                break;
+              }   
+          }
+       }
+    }
+    else
+    {
+       //1st check is whether we're still in the same X bin as last time
+       if ( (X <= fromTable->axisX16[fromTable->lastXMax]) && (X > fromTable->axisX16[fromTable->lastXMin]) )
+       {
+         xMaxValue = fromTable->axisX16[fromTable->lastXMax];
+         xMinValue = fromTable->axisX16[fromTable->lastXMin];
+         xMax = fromTable->lastXMax;
+         xMin = fromTable->lastXMin;
+       }
+       else
+       {
+          //
+          for (int x = fromTable->xSize-1; x >= 0; x--)
+          {
+              //Checks the case where the X value is exactly what was requested
+              if ( (X == fromTable->axisX16[x]) || (x == 0) )
+              {
+                return fromTable->values16[x]; //Simply return the coresponding value
+              }
+              //Normal case
+              if ( (X <= fromTable->axisX16[x]) && (X > fromTable->axisX16[x-1]) )
+              {
+                xMaxValue = fromTable->axisX16[x];
+                xMinValue = fromTable->axisX16[x-1];
+                xMax = x;
+                xMin = x-1;
+                break;
+              }    
+          }
+       }
+      
+    }
+
+/*
     for (int x = fromTable->xSize-1; x >= 0; x--)
     {
        if (fromTable->valueSize == SIZE_BYTE)
@@ -108,6 +178,7 @@ int table2D_getValue(struct table2D *fromTable, int X)
           }
        }
     }
+    */
     
     unsigned int m = X - xMinValue;
     unsigned int n = xMaxValue - xMinValue;

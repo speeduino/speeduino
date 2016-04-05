@@ -37,6 +37,13 @@ void setPinMapping(byte boardID)
       pinIAT = A2; //IAT sensor pin
       pinCLT = A3; //CLS sensor pin
       pinO2 = A4; //O2 Sensor pin
+      pinIdle1 = 46; //Single wire idle control
+      pinIdle2 = 47; //2 wire idle control
+      pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinFan = 47; //Pin for the fan output
+      pinFuelPump = 4; //Fuel pump output
+      pinTachOut = 49; //Tacho output pin
       break;
     case 1:
       //Pin mappings as per the v0.2 shield
@@ -57,6 +64,13 @@ void setPinMapping(byte boardID)
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
+      pinTachOut = 49; //Tacho output pin
+      pinIdle1 = 30; //Single wire idle control
+      pinIdle2 = 31; //2 wire idle control
+      pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinFan = 47; //Pin for the fan output
+      pinFuelPump = 4; //Fuel pump output
       break;
     case 2:
       //Pin mappings as per the v0.3 shield
@@ -79,8 +93,11 @@ void setPinMapping(byte boardID)
       pinDisplayReset = 48; // OLED reset pin
       pinTachOut = 49; //Tacho output pin
       pinIdle1 = 5; //Single wire idle control
+      pinIdle2 = 7; //2 wire idle control
       pinFuelPump = 4; //Fuel pump output
-
+      pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinFan = A13; //Pin for the fan output
       break;
 
     case 3:
@@ -102,11 +119,13 @@ void setPinMapping(byte boardID)
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
-      pinTachOut = 49; //Tacho output pin
+      pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
       pinIdle1 = 5; //Single wire idle control
-      pinFuelPump = 45; //Fuel pump output
+      pinIdle2 = 7; //2 wire idle control (Note this is shared with boost!!!)
+      pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       break;
 
     case 10:
@@ -137,6 +156,8 @@ void setPinMapping(byte boardID)
       pinSpareTemp2 = A5;
       pinTachOut = 41; //Tacho output pin transistori puuttuu 2n2222 tähän ja 1k 12v
       pinFuelPump = 42; //Fuel pump output 2n2222
+      pinFan = 47; //Pin for the fan output
+      pinTachOut = 49; //Tacho output pin
       break;
 
     case 20:
@@ -165,6 +186,9 @@ void setPinMapping(byte boardID)
       pinTPS = A2;//TPS input pin
       pinCLT = A1; //CLS sensor pin
       pinIAT = A0; //IAT sensor pin
+      pinFan = 47; //Pin for the fan output
+      pinFuelPump = 4; //Fuel pump output
+      pinTachOut = 49; //Tacho output pin
 
     case 30:
       //Pin mappings as per the dazv6 shield
@@ -200,6 +224,7 @@ void setPinMapping(byte boardID)
       pinSpareLOut3 = 49;
       pinSpareLOut4 = 51;
       pinSpareLOut5 = 53;
+      pinFan = 47; //Pin for the fan output
       break; 
       
     default:
@@ -221,8 +246,16 @@ void setPinMapping(byte boardID)
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
+      pinFan = 47; //Pin for the fan output
+      pinFuelPump = 4; //Fuel pump output
+      pinTachOut = 49; //Tacho output pin
       break;
   }
+  
+  //Setup any devices that are using selectable pins
+  if(configPage3.launchPin != 0) { pinLaunch = configPage3.launchPin; }
+  
+  
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinCoil1, OUTPUT);
@@ -237,6 +270,8 @@ void setPinMapping(byte boardID)
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
+  if (configPage3.launchHiLo) { pinMode(pinLaunch, INPUT); }
+  else { pinMode(pinLaunch, INPUT_PULLUP); } //If launch triggers on LOW signal, then set a pull up as the default
   
   inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
   inj1_pin_mask = digitalPinToBitMask(pinInjector1);
@@ -246,6 +281,15 @@ void setPinMapping(byte boardID)
   inj3_pin_mask = digitalPinToBitMask(pinInjector3);
   inj4_pin_port = portOutputRegister(digitalPinToPort(pinInjector4));
   inj4_pin_mask = digitalPinToBitMask(pinInjector4);
+  
+  ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
+  ign1_pin_mask = digitalPinToBitMask(pinCoil1);
+  ign2_pin_port = portOutputRegister(digitalPinToPort(pinCoil2));
+  ign2_pin_mask = digitalPinToBitMask(pinCoil2);
+  ign3_pin_port = portOutputRegister(digitalPinToPort(pinCoil3));
+  ign3_pin_mask = digitalPinToBitMask(pinCoil3);
+  ign4_pin_port = portOutputRegister(digitalPinToPort(pinCoil4));
+  ign4_pin_mask = digitalPinToBitMask(pinCoil4);
 
   //And for inputs
   pinMode(pinMAP, INPUT);
@@ -292,6 +336,8 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, b
   //intermediate = (intermediate * iMAP) >> 7;
   intermediate = (intermediate * iCorrections) >> 7;
   //intermediate = (intermediate * iTPS) >> 7;
+  if(intermediate == 0) { return 0; } //If the pulsewidth is 0, we return here before the opening time gets added
+  
   intermediate += injOpen; //Add the injector opening time
   if ( intermediate > 65535) {
     intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS

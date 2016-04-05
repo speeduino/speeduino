@@ -18,19 +18,40 @@ const int map_page_size = 288;
 #define BIT_ENGINE_CRANK    1   // Engine cranking
 #define BIT_ENGINE_ASE      2    // after start enrichment (ASE)
 #define BIT_ENGINE_WARMUP   3  // Engine in warmup
-#define BIT_ENGINE_ACC      4    // in TPS acceleration mode
+#define BIT_ENGINE_ACC      4    // in TPS acceleration model
 #define BIT_ENGINE_DCC      5    // in deceleration mode
 #define BIT_ENGINE_MAP      6    // in MAP acceleration mode
 #define BIT_ENGINE_IDLE     7  // idle on
 
 //Define masks for Squirt
-#define BIT_SQUIRT_INJ1           0  //inj1 Squirt
-#define BIT_SQUIRT_INJ2           1  //inj2 Squirt
-#define BIT_SQUIRT_SCHSQRT        2  //Scheduled to squirt
-#define BIT_SQUIRT_SQRTING        3  //Squirting
-#define BIT_SQUIRT_INJ2SCHED      4
+#define BIT_SQUIRT_INJ1          0  //inj1 Squirt
+#define BIT_SQUIRT_INJ2          1  //inj2 Squirt
+#define BIT_SQUIRT_INJ3          2  //inj3 Squirt
+#define BIT_SQUIRT_INJ4          3  //inj4 Squirt
+#define BIT_SQUIRT_DFCO          4
 #define BIT_SQUIRT_INJ2SQRT       5  //Injector2 (Schedule2)
-#define BIT_SQUIRT_BOOSTCTRLOFF   6  //Squirting Injector 2
+#define BIT_SQUIRT_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
+#define BIT_SQUIRT_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
+
+//Define masks for spark variable
+#define BIT_SPARK_LAUNCH          0  //Launch indicator
+#define BIT_SPARK_SFTLIM          1  //Soft limiter indicator
+#define BIT_SPARK_HRDLIM          2  //Hard limiter indicator
+#define BIT_SPARK_UNUSED1          3  //
+#define BIT_SPARK_UNUSED2          4  //
+#define BIT_SPARK_UNUSED3          5  //
+#define BIT_SPARK_UNUSED4          6  //
+#define BIT_SPARK_UNUSED5          7  //
+
+#define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
+#define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
+
+#define TOOTH_LOG_SIZE      128
+#define TOOTH_LOG_BUFFER    256
+
+#define INJ_SIMULTANEOUS    0
+#define INJ_SEMISEQUENTIAL  1
+#define INJ_SEQUENTIAL      2
 
 #define SIZE_BYTE   8
 #define SIZE_INT    16
@@ -51,6 +72,15 @@ volatile byte inj3_pin_mask;
 volatile byte *inj4_pin_port;
 volatile byte inj4_pin_mask;
 
+volatile byte *ign1_pin_port;
+volatile byte ign1_pin_mask;
+volatile byte *ign2_pin_port;
+volatile byte ign2_pin_mask;
+volatile byte *ign3_pin_port;
+volatile byte ign3_pin_mask;
+volatile byte *ign4_pin_port;
+volatile byte ign4_pin_mask;
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
@@ -64,6 +94,7 @@ struct statuses {
   unsigned long TPSlast_time; //The time the previous TPS sample was taken
   byte tpsADC; //0-255 byte representation of the TPS
   byte tpsDOT;
+  int rpmDOT;
   byte VE;
   byte O2;
   byte O2_2;
@@ -83,7 +114,10 @@ struct statuses {
   byte egoCorrection; //The amount of closed loop AFR enrichment currently being applied
   byte wueCorrection; //The amount of warmup enrichment currently being applied
   byte batCorrection; //The amount of battery voltage enrichment currently being applied
+  byte iatCorrection; //The amount of inlet air temperature adjustment currently being applied
+  byte launchCorrection; //The amount of correction being applied if launch control is active
   byte afrTarget;
+  byte idleDuty;
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte squirt;
   volatile byte spark;
@@ -92,6 +126,7 @@ struct statuses {
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
   volatile int loopsPerSecond;
+  boolean launching; //True when in launch control mode
   int freeRAM;
   
   //Helpful bitwise operations:
@@ -107,8 +142,8 @@ struct statuses {
 //This mostly covers off variables that are required for fuel
 struct config1 {
   
-  byte crankCold; //Cold cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking under a certain temp threshold (ms)
-  byte crankHot; //Warm cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking (ms)
+  byte unused1; //Cold cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking under a certain temp threshold (ms)
+  byte unused2; //Warm cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking (ms)
   byte asePct; //Afterstart enrichment (%)
   byte aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
@@ -134,7 +169,8 @@ struct config1 {
   
   byte reqFuel;
   byte divider;
-  byte alternate;
+  byte injTiming : 2;
+  byte unused26 : 6;
   byte injOpen; //Injector opening time (ms * 10)
   unsigned int inj1Ang;
   unsigned int inj2Ang; 
@@ -148,17 +184,17 @@ struct config1 {
   byte nCylinders : 4; //Number of cylinders
 
   //config2 in ini  
-  byte cltType : 2;
-  byte matType : 2;
+  byte cltType1 : 2;
+  byte matType1 : 2;
   byte nInjectors : 4; //Number of injectors
   
 
   //config3 in ini
   byte engineType : 1;
-  byte egoType : 1;
+  byte egoType_old : 1;
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
-  byte injTiming : 2;
+  byte injLayout : 2;
   
   byte primePulse;
   byte dutyLim;
@@ -169,7 +205,7 @@ struct config1 {
   byte tpsMax;
   byte mapMin;
   unsigned int mapMax;
-  byte unused49;
+  byte fpPrime; //Time (In seconds) that the fuel pump should be primed for on power up
   byte unused50;
   byte unused51;
   byte unused52;
@@ -211,7 +247,9 @@ struct config2 {
   
   byte dwellCont : 1; //Fixed duty dwell control
   byte useDwellLim : 1; //Whether the dwell limiter is off or on
-  byte dwellUnused : 6;
+  byte sparkMode : 2; //Spark output mode (Eg Wasted spark, single channel or Wasted COP)
+  byte dfcoEnabled : 1; //Whether or not DFCO is turned on
+  byte dwellUnused : 3;
   
   byte dwellCrank; //Dwell time whilst cranking
   byte dwellRun; //Dwell time whilst running 
@@ -228,21 +266,11 @@ struct config2 {
   byte wueBins[10]; //Warmup Enrichment bins (Values are in configTable1)
   byte dwellLimit;
   byte dwellCorrectionValues[6]; //Correction table for dwell vs battery voltage
-  byte unused48;
-  byte unused49;
-  byte unused50;
-  byte unused51;
-  byte unused52;
-  byte unused53;
-  byte unused54;
-  byte unused55;
-  byte unused56;
-  byte unused57;
-  byte unused58;
-  byte unused59;
-  byte unused60;
-  byte unused61;
-  byte unused62;
+  byte iatRetBins[6]; // Inlet Air Temp timing retard curve bins
+  byte iatRetValues[6]; // Inlet Air Temp timing retard curve values
+  byte dfcoRPM; //RPM at which DFCO turns off/on at
+  byte dfcoHyster; //Hysteris RPM for DFCO
+  byte dfcoTPSThresh; //TPS must be below this figure for DFCO to engage
   byte unused63;
 
   
@@ -279,11 +307,15 @@ struct config3 {
   byte boostFreq; //Frequency of the boost PWM valve
   byte vvtFreq; //Frequency of the vvt PWM valve
   byte idleFreq;
-  byte unused48;
-  byte unused49;
-  byte unused50;
-  byte unused51;
-  byte unused452;
+  
+  byte launchPin : 6;
+  byte launchEnabled : 1;
+  byte launchHiLo : 1;
+  
+  byte lnchSoftLim;
+  byte lnchRetard;
+  byte lnchHardLim;
+  byte lnchFuelAdd;
   byte unused53;
   byte unused54;
   byte unused55;
@@ -299,6 +331,7 @@ struct config3 {
   
 };
 
+
 //Page 4 of the config mostly deals with idle control
 //See ini file for further info (Config Page 7 in the ini)
 struct config4 {
@@ -312,7 +345,8 @@ struct config4 {
   
   byte iacAlgorithm : 3; //Valid values are: "None", "On/Off", "PWM", "PWM Closed Loop", "Stepper", "Stepper Closed Loop"
   byte iacStepTime : 3; //How long to pulse the stepper for to ensure the step completes (ms)
-  byte unused52 : 2;
+  byte iacChannels : 1; //How many outputs to use in PWM mode (0 = 1 channel, 1 = 2 channels)
+  byte unused52 : 1;
   
   byte iacFastTemp; //Fast idle temp when using a simple on/off valve
   
@@ -320,10 +354,12 @@ struct config4 {
   byte iacStepHyster; //Hysteresis temperature (*10). Eg 2.2C = 22
   
   byte fanInv : 1;        // Fan output inversion bit
-  byte fanEnable : 1;     // Fan enable bit 
-  byte unused : 6;
+  byte fanEnable : 2;     // Fan enable bit. 0=Off, 1=On/Off, 2=PWM
+  byte unused : 5;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis 
+  byte fanFreq;           // Fan PWM frequency
+  byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
 };
 
 byte pinInjector1; //Output pin injector 1
@@ -375,6 +411,7 @@ byte pinVVt_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
+byte pinLaunch;
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino

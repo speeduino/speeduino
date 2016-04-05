@@ -63,7 +63,7 @@ void command()
 
     case 'Q': // send code version
       Serial.print(signature);
-      //Serial.write("Speeduino_0_2");
+      //Serial.write("speeduino");
       break;
 
     case 'V': // send VE table and constants in binary
@@ -194,21 +194,21 @@ This function returns the current values of a fixed group of variables
 */
 void sendValues(int length)
 {
-  byte packetSize = 31;
+  byte packetSize = 33;
   byte response[packetSize];
 
   response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   response[1] = currentStatus.squirt; //Squirt Bitfield
   response[2] = currentStatus.engine; //Engine Status Bitfield
   response[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
-  response[4] = currentStatus.MAP; //map
+  response[4] = (byte)(currentStatus.MAP >> 1); //map value is divided by 2
   response[5] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
   response[6] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
   response[7] = currentStatus.tpsADC; //TPS (Raw 0-255)
   response[8] = currentStatus.battery10; //battery voltage
   response[9] = currentStatus.O2; //O2
   response[10] = currentStatus.egoCorrection; //Exhaust gas correction (%)
-  response[11] = 0x00; //Air Correction (%)
+  response[11] = currentStatus.iatCorrection; //Air temperature Correction (%)
   response[12] = currentStatus.wueCorrection; //Warmup enrichment (%)
   response[13] = lowByte(currentStatus.RPM); //rpm HB
   response[14] = highByte(currentStatus.RPM); //rpm LB
@@ -231,10 +231,16 @@ void sendValues(int length)
   response[27] = highByte(currentStatus.freeRAM);
 
   response[28] = currentStatus.batCorrection; //Battery voltage correction (%)
-  response[29] = (byte)(currentStatus.dwell / 100);
+  response[29] = currentStatus.spark; //Spark related bitfield
   response[30] = currentStatus.O2_2; //O2
+  
+  //rpmDOT must be sent as a signed integer
+  response[31] = lowByte(currentStatus.rpmDOT);
+  response[32] = highByte(currentStatus.rpmDOT);
 
   Serial.write(response, (size_t)packetSize);
+
+  //if(Serial.available()) { command(); }
   //Serial.flush();
   return;
 }
@@ -816,36 +822,34 @@ Send 256 tooth log entries
 */
 void sendToothLog(bool useChar)
 {
-
-  //We need 256 records to send to TunerStudio. If there aren't that many in the buffer (Buffer is 512 long) then we just return and wait for the next call
-  if (toothHistoryIndex < 256) {
-    return;  //Don't believe this is the best way to go. Just display whatever is in the buffer
+  //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
+  if (toothHistoryIndex < TOOTH_LOG_SIZE) {
+    return;  //This should no longer ever occur since the flagging system was put in place
   }
-  unsigned int tempToothHistory[512]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
+  unsigned int tempToothHistory[TOOTH_LOG_BUFFER]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
 
   //Copy the working history into the temporary buffer array. This is done so that, if the history loops whilst the values are being sent over serial, it doesn't affect the values
   memcpy( (void*)tempToothHistory, (void*)toothHistory, sizeof(tempToothHistory) );
   toothHistoryIndex = 0; //Reset the history index
 
-  //Loop only needs to go to 256 (Even though the buffer is 512 long) as we only ever send 256 entries at a time
+  //Loop only needs to go to half the buffer size
   if (useChar)
   {
-    for (int x = 0; x < 256; x++)
+    for (int x = 0; x < TOOTH_LOG_SIZE; x++)
     {
       Serial.println(tempToothHistory[x]);
     }
   }
   else
   {
-    for (int x = 0; x < 256; x++)
+    for (int x = 0; x < TOOTH_LOG_SIZE; x++)
     {
       Serial.write(highByte(tempToothHistory[x]));
       Serial.write(lowByte(tempToothHistory[x]));
     }
+    BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY);
   }
-  //Serial.flush();
 }
-
 
 void testComm()
 {
