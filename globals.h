@@ -34,10 +34,10 @@ const int map_page_size = 288;
 #define BIT_SQUIRT_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
 
 //Define masks for spark variable
-#define BIT_SPARK_LAUNCH          0  //Launch indicator
-#define BIT_SPARK_SFTLIM          1  //Soft limiter indicator
+#define BIT_SPARK_HLAUNCH         0  //Hard Launch indicator
+#define BIT_SPARK_SLAUNCH         1  //Soft Launch indicator
 #define BIT_SPARK_HRDLIM          2  //Hard limiter indicator
-#define BIT_SPARK_UNUSED1          3  //
+#define BIT_SPARK_SFTLIM          3  //Soft limiter indicator
 #define BIT_SPARK_UNUSED2          4  //
 #define BIT_SPARK_UNUSED3          5  //
 #define BIT_SPARK_UNUSED4          6  //
@@ -126,7 +126,8 @@ struct statuses {
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
   volatile int loopsPerSecond;
-  boolean launching; //True when in launch control mode
+  boolean launchingSoft; //True when in launch control soft limit mode
+  boolean launchingHard; //True when in launch control hard limit mode
   int freeRAM;
   
   //Helpful bitwise operations:

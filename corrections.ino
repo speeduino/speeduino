@@ -180,7 +180,7 @@ This simple check applies the extra fuel if we're currently launching
 */
 byte correctionsLaunch()
 {
-  if(configPage3.launchEnabled && currentStatus.launching) { return (100 + configPage3.lnchFuelAdd); }
+  if(currentStatus.launchingHard || currentStatus.launchingSoft) { return (100 + configPage3.lnchFuelAdd); }
   else { return 100; }
 }
 
