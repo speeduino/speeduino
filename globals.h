@@ -317,9 +317,11 @@ struct config3 {
   byte lnchRetard;
   byte lnchHardLim;
   byte lnchFuelAdd;
-  byte unused53;
-  byte unused54;
-  byte unused55;
+
+  //PID values for idle needed to go here as out of room in the idle page
+  byte idleKP;
+  byte idleKI;
+  byte idleKD;
   byte unused56;
   byte unused57;
   byte unused58;

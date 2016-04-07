@@ -1,3 +1,5 @@
+#include "globals.h"
+
 #define STEPPER_FORWARD 0
 #define STEPPER_BACKWARD 1
 #define IDLE_TABLE_SIZE 10
@@ -30,7 +32,8 @@ volatile byte idle2_pin_mask;
 volatile bool idle_pwm_state;
 unsigned int idle_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int idle_pwm_cur_value;
-unsigned int idle_pwm_target_value;
+long idle_pwm_target_value;
+long idle_cl_target_rpm;
 
 void initialiseIdle();
 

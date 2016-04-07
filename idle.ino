@@ -12,6 +12,9 @@ These functions cover the PWM and stepper idle control
 Idle Control
 Currently limited to on/off control and open loop PWM and stepper drive
 */
+long longRPM;
+PID idlePID(&longRPM, &idle_pwm_target_value, &idle_cl_target_rpm, configPage3.idleKP, configPage3.idleKI, configPage3.idleKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+
 void initialiseIdle()
 {
 //By default, turn off the PWM interrupt (It gets turned on below if needed)  
@@ -62,6 +65,14 @@ void initialiseIdle()
       iacCrankDutyTable.xSize = 4;
       iacCrankDutyTable.values = configPage4.iacCrankDuty;
       iacCrankDutyTable.axisX = configPage4.iacCrankBins;
+
+      idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
+      idle_pin_mask = digitalPinToBitMask(pinIdle1);
+      idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
+      idle2_pin_mask = digitalPinToBitMask(pinIdle2);
+      idle_pwm_max_count = 1000000L / (16 * configPage3.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      idlePID.SetOutputLimits(0, idle_pwm_max_count);
+      TIMSK4 |= (1 << OCIE4C); //Turn on the C compare unit (ie turn on the interrupt)
       break;
       
     case 4:
@@ -133,7 +144,13 @@ void idleControl()
       else if (idleOn) { digitalWrite(pinIdle1, LOW); idleOn = false; }
       break;
       
-    case 3:    //Case 3 is PWM closed loop (Not currently implemented)
+    case 3:    //Case 3 is PWM closed loop
+        //No cranking specific value for closed loop (yet?)
+        idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 2; //All temps are offset by 40 degrees
+        longRPM = currentStatus.RPM; //The PID object needs a long as the RPM input. A separate variable is used for this
+        //idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
+
+        idlePID.Compute();
       break;
       
     case 4:    //Case 4 is open loop stepper control

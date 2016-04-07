@@ -207,7 +207,7 @@ This continues until either:
 PID (Best suited to wideband sensors):
  
 */
-double PID_O2, PID_output, PID_AFRTarget;
+long PID_O2, PID_output, PID_AFRTarget;
 PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage3.egoKP, configPage3.egoKI, configPage3.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 byte correctionsAFRClosedLoop()
@@ -255,10 +255,10 @@ byte correctionsAFRClosedLoop()
       {
         //*************************************************************************************************************************************
         //PID algorithm
-        egoPID.SetOutputLimits((double)(-configPage3.egoLimit), (double)(configPage3.egoLimit)); //Set the limits again, just incase the user has changed them since the last loop. Note that these are sent to the PID library as (Eg:) -15 and +15
+        egoPID.SetOutputLimits((long)(-configPage3.egoLimit), (long)(configPage3.egoLimit)); //Set the limits again, just incase the user has changed them since the last loop. Note that these are sent to the PID library as (Eg:) -15 and +15
         egoPID.SetTunings(configPage3.egoKP, configPage3.egoKI, configPage3.egoKD); //Set the PID values again, just incase the user has changed them since the last loop
-        PID_O2 = (double)(currentStatus.O2);
-        PID_AFRTarget = (double)(currentStatus.afrTarget);
+        PID_O2 = (long)(currentStatus.O2);
+        PID_AFRTarget = (long)(currentStatus.afrTarget);
         
         egoPID.Compute();
         //currentStatus.egoCorrection = 100 + PID_output;
