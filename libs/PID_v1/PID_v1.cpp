@@ -17,8 +17,8 @@
  *    The parameters specified here are those for for which we can't set up 
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
-PID::PID(double* Input, double* Output, double* Setpoint,
-        double Kp, double Ki, double Kd, int ControllerDirection)
+PID::PID(long* Input, long* Output, long* Setpoint,
+        byte Kp, byte Ki, byte Kd, byte ControllerDirection)
 {
 	
     myOutput = Output;
@@ -52,15 +52,15 @@ bool PID::Compute()
    //if(timeChange>=SampleTime)
    {
       /*Compute all the working error variables*/
-	  double input = *myInput;
-      double error = *mySetpoint - input;
-      ITerm+= (ki * error);
+	  long input = *myInput;
+      long error = *mySetpoint - input;
+      ITerm+= (ki * error)/100;
       if(ITerm > outMax) ITerm= outMax;
       else if(ITerm < outMin) ITerm= outMin;
-      double dInput = (input - lastInput);
+      long dInput = (input - lastInput);
  
       /*Compute PID Output*/
-      double output = kp * error + ITerm- kd * dInput;
+      long output = (kp * error)/100 + ITerm- (kd * dInput)/100;
       
 	  if(output > outMax) output = outMax;
       else if(output < outMin) output = outMin;
@@ -80,16 +80,22 @@ bool PID::Compute()
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/ 
-void PID::SetTunings(double Kp, double Ki, double Kd)
+void PID::SetTunings(byte Kp, byte Ki, byte Kd)
 {
    if (Kp<0 || Ki<0 || Kd<0) return;
  
    dispKp = Kp; dispKi = Ki; dispKd = Kd;
    
+   /*
    double SampleTimeInSec = ((double)SampleTime)/1000;  
    kp = Kp;
    ki = Ki * SampleTimeInSec;
    kd = Kd / SampleTimeInSec;
+   */
+  long InverseSampleTimeInSec = 100000 / SampleTime;
+  kp = Kp;
+  ki = (Ki * 100) / InverseSampleTimeInSec;
+  kd = (Kd * InverseSampleTimeInSec) / 100;
  
   if(controllerDirection ==REVERSE)
    {
@@ -106,10 +112,10 @@ void PID::SetSampleTime(int NewSampleTime)
 {
    if (NewSampleTime > 0)
    {
-      double ratio  = (double)NewSampleTime
-                      / (double)SampleTime;
-      ki *= ratio;
-      kd /= ratio;
+      unsigned long ratioX1000  = (unsigned long)(NewSampleTime * 1000) / (unsigned long)SampleTime;
+      ki = (ki * ratioX1000) / 1000;
+      //kd /= ratio;
+      kd = (kd * 1000) / ratioX1000;
       SampleTime = (unsigned long)NewSampleTime;
    }
 }
@@ -122,7 +128,7 @@ void PID::SetSampleTime(int NewSampleTime)
  *  want to clamp it from 0-125.  who knows.  at any rate, that can all be done
  *  here.
  **************************************************************************/
-void PID::SetOutputLimits(double Min, double Max)
+void PID::SetOutputLimits(long Min, long Max)
 {
    if(Min >= Max) return;
    outMin = Min;
@@ -171,7 +177,7 @@ void PID::Initialize()
  * know which one, because otherwise we may increase the output when we should
  * be decreasing.  This is called from the constructor.
  ******************************************************************************/
-void PID::SetControllerDirection(int Direction)
+void PID::SetControllerDirection(byte Direction)
 {
    if(inAuto && Direction !=controllerDirection)
    {
@@ -187,9 +193,9 @@ void PID::SetControllerDirection(int Direction)
  * functions query the internal state of the PID.  they're here for display 
  * purposes.  this are the functions the PID Front-end uses for example
  ******************************************************************************/
-double PID::GetKp(){ return  dispKp; }
-double PID::GetKi(){ return  dispKi;}
-double PID::GetKd(){ return  dispKd;}
+byte PID::GetKp(){ return  dispKp; }
+byte PID::GetKi(){ return  dispKi;}
+byte PID::GetKd(){ return  dispKd;}
 int PID::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
 int PID::GetDirection(){ return controllerDirection;}
 
