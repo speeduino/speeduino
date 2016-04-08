@@ -16,6 +16,14 @@ Flood clear mode etc.
 #include "corrections.h"
 #include "globals.h"
 
+long PID_O2, PID_output, PID_AFRTarget;
+PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage3.egoKP, configPage3.egoKI, configPage3.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+
+void initialiseCorrections()
+{
+  egoPID.SetMode(AUTOMATIC); //Turn O2 PID on
+}
+
 /*
 correctionsTotal() calls all the other corrections functions and combines their results.
 This is the only function that should be called from anywhere outside the file
@@ -207,8 +215,6 @@ This continues until either:
 PID (Best suited to wideband sensors):
  
 */
-long PID_O2, PID_output, PID_AFRTarget;
-PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage3.egoKP, configPage3.egoKI, configPage3.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 byte correctionsAFRClosedLoop()
 {
