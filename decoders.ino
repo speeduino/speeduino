@@ -129,7 +129,7 @@ int getCrankAngle_missingTooth(int timePerDegree)
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
 
     if (crankAngle >= 720) { crankAngle -= 720; } 
-    else if (crankAngle > 360) { crankAngle -= 360; }
+    else if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
@@ -214,7 +214,7 @@ int getCrankAngle_DualWheel(int timePerDegree)
     
     
     if (crankAngle >= 720) { crankAngle -= 720; } 
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
@@ -286,7 +286,7 @@ int getCrankAngle_BasicDistributor(int timePerDegree)
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
     if (crankAngle >= 720) { crankAngle -= 720; } 
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
@@ -371,7 +371,9 @@ int getCrankAngle_GM7X(int timePerDegree)
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+    if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
 }
@@ -490,8 +492,8 @@ int getCrankAngle_4G63(int timePerDegree)
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
-    if (crankAngle >= 720) { crankAngle -= 720; }  
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
@@ -590,8 +592,9 @@ int getCrankAngle_24X(int timePerDegree)
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
-    
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+    if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
 }
@@ -677,8 +680,9 @@ int getCrankAngle_Jeep2000(int timePerDegree)
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
-    
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+    if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
 }
@@ -765,9 +769,8 @@ int getCrankAngle_Audi135(int timePerDegree)
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
-    
     if (crankAngle >= 720) { crankAngle -= 720; } 
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
@@ -853,7 +856,9 @@ int getCrankAngle_HondaD17(int timePerDegree)
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+    if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
 }
@@ -972,8 +977,8 @@ int getCrankAngle_Miata9905(int timePerDegree)
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
-    if (crankAngle >= 720) { crankAngle -= 720; }  
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
