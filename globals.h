@@ -28,8 +28,8 @@ const int map_page_size = 288;
 #define BIT_SQUIRT_INJ2          1  //inj2 Squirt
 #define BIT_SQUIRT_INJ3          2  //inj3 Squirt
 #define BIT_SQUIRT_INJ4          3  //inj4 Squirt
-#define BIT_SQUIRT_DFCO          4
-#define BIT_SQUIRT_INJ2SQRT       5  //Injector2 (Schedule2)
+#define BIT_SQUIRT_DFCO          4 //Decelleration fuel cutoff
+#define BIT_SQUIRT_BOOSTCUT      5  //Fuel component of MAP based boost cut out 
 #define BIT_SQUIRT_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
 #define BIT_SQUIRT_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
 
@@ -38,7 +38,7 @@ const int map_page_size = 288;
 #define BIT_SPARK_SLAUNCH         1  //Soft Launch indicator
 #define BIT_SPARK_HRDLIM          2  //Hard limiter indicator
 #define BIT_SPARK_SFTLIM          3  //Soft limiter indicator
-#define BIT_SPARK_UNUSED2          4  //
+#define BIT_SPARK_BOOSTCUT        4  //Spark component of MAP based boost cut out
 #define BIT_SPARK_UNUSED3          5  //
 #define BIT_SPARK_UNUSED4          6  //
 #define BIT_SPARK_UNUSED5          7  //
@@ -285,7 +285,7 @@ struct config3 {
   byte egoType : 2;
   byte boostEnabled : 1;
   byte vvtEnabled : 1;
-  byte unused : 2;
+  byte boostCutType : 2;
   
   byte egoKP;
   byte egoKI;
@@ -322,7 +322,8 @@ struct config3 {
   byte idleKP;
   byte idleKI;
   byte idleKD;
-  byte unused56;
+  
+  byte boostLimit; //Is divided by 2, allowing kPa values up to 511
   byte unused57;
   byte unused58;
   byte unused59;

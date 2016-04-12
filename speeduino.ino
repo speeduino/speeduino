@@ -681,6 +681,31 @@ void loop()
       else { currentStatus.launchingSoft = false; BIT_CLEAR(currentStatus.spark, BIT_SPARK_SLAUNCH); }
       if (configPage3.launchEnabled && launchTrigger && (currentStatus.RPM > ((unsigned int)(configPage3.lnchHardLim) * 100)) ) { currentStatus.launchingHard = true; BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); } //HardCut rev limit for 2-step launch control. 
       else { currentStatus.launchingHard = false; BIT_CLEAR(currentStatus.spark, BIT_SPARK_HLAUNCH); }
+
+      //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
+      if(configPage3.boostCutType && currentStatus.MAP > (configPage3.boostLimit * 2) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
+      {
+        switch(configPage3.boostCutType)
+        {
+          case 1:
+            BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
+            BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+            break;
+          case 2:
+            BIT_SET(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+            BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
+            break;
+          case 3:
+            BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
+            BIT_SET(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+            break;
+        }
+      }
+      else
+      {
+        BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
+        BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+      }
       
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
@@ -697,9 +722,9 @@ void loop()
        
        vvtControl();
        boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
-       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient. 
+       
     }
-
+idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient. 
     //Always check for sync
     //Main loop runs within this clause
     if (currentStatus.hasSync && (currentStatus.RPM > 0))
