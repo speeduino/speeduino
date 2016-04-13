@@ -722,9 +722,9 @@ void loop()
        
        vvtControl();
        boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
-       
+       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.        
     }
-idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient. 
+
     //Always check for sync
     //Main loop runs within this clause
     if (currentStatus.hasSync && (currentStatus.RPM > 0))
@@ -957,7 +957,7 @@ idleControl(); //Perform any idle related actions. Even at higher frequencies, r
       //Determine the current crank angle
       int crankAngle = getCrankAngle(timePerDegree);
       
-      if (fuelOn && currentStatus.PW > 0)
+      if (fuelOn && currentStatus.PW > 0 && !BIT_CHECK(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT))
       {
         if (injector1StartAngle > crankAngle)
         { 
@@ -1047,7 +1047,7 @@ idleControl(); //Perform any idle related actions. Even at higher frequencies, r
       //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
       //crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
       
-      if(ignitionOn && !currentStatus.launchingHard)
+      if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT))
       {
         //if ( (ignition1StartAngle > crankAngle))// && ign1LastRev != startRevolutions)
         //if ((ignition1StartAngle > crankAngle) == 0)
