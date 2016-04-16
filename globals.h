@@ -250,7 +250,8 @@ struct config2 {
   byte useDwellLim : 1; //Whether the dwell limiter is off or on
   byte sparkMode : 2; //Spark output mode (Eg Wasted spark, single channel or Wasted COP)
   byte dfcoEnabled : 1; //Whether or not DFCO is turned on
-  byte dwellUnused : 3;
+  byte triggerFilter : 2; //The mode of trigger filter being used (0=Off, 1=Light (Not currently used), 2=Normal, 3=Aggressive)
+  byte dwellUnused : 1;
   
   byte dwellCrank; //Dwell time whilst cranking
   byte dwellRun; //Dwell time whilst running 
