@@ -46,6 +46,17 @@ inline int stdGetRPM()
 }
 
 /*
+ * Sets the new filter time based on the current settings. 
+ * This ONLY works for even spaced decoders
+ */
+inline void setFilter(unsigned long curGap)
+{
+   if(configPage2.triggerFilter == 1) { triggerFilterTime = curGap >> 2; } //Lite filter level is 50% of previous gap
+   else if(configPage2.triggerFilter == 2) { triggerFilterTime = curGap >> 1; } //Medium filter level is 50% of previous gap
+   else if (configPage2.triggerFilter == 3) { triggerFilterTime = (curGap * 3) >> 2; } //Aggressive filter level is 75% of previous gap
+}
+
+/*
 This is a special case of RPM measure that is based on the time between the last 2 teeth rather than the time of the last full revolution
 This gives much more volatile reading, but is quite useful during cranking, particularly on low resolution patterns.
 It can only be used on patterns where the teeth are evently spaced
@@ -98,7 +109,12 @@ void triggerPri_missingTooth()
      toothOneTime = curTime;
      currentStatus.hasSync = true;
      startRevolutions++; //Counter 
-   } 
+   }
+   else
+   {
+     //Filter can only be recalc'd for the regular teeth, not the missing one.
+     setFilter(curGap);
+   }
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
@@ -169,9 +185,7 @@ void triggerPri_DualWheel()
      //if ((startRevolutions & 63) == 1) { currentStatus.hasSync = false; } //Every 64 revolutions, force a resync with the cam
    }
 
-   //Filter
-   if(configPage2.triggerFilter == 2) { triggerFilterTime = curGap >> 1; } //Normal filter level is 50% of previous gap
-   else if (configPage2.triggerFilter == 3) { triggerFilterTime = (curGap * 3) >> 2; } //Aggressive filter level is 75% of previous gap
+   setFilter(curGap); //Recalc the new filter value
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
@@ -245,7 +259,7 @@ void triggerPri_BasicDistributor()
 {
   curTime = micros();
   curGap = curTime - toothLastToothTime;
-  if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime
+  if ( curGap < triggerFilterTime ) { return; } //Noise rejection check. Pulses should never be less than triggerFilterTime
   
   if(toothCurrentCount == triggerActualTeeth ) //Check if we're back to the beginning of a revolution
   { 
@@ -255,7 +269,12 @@ void triggerPri_BasicDistributor()
      currentStatus.hasSync = true;
      startRevolutions++; //Counter 
   }
-  else { toothCurrentCount++; } //Increment the tooth counter 
+  else 
+  { 
+    toothCurrentCount++; //Increment the tooth counter 
+  }
+  
+  setFilter(curGap); //Recalc the new filter value
   
   addToothLogEntry(curGap);
   
@@ -636,6 +655,7 @@ void triggerPri_Jeep2000()
   if(toothCurrentCount == 13) { currentStatus.hasSync = false; return; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
   curTime = micros();
   curGap = curTime - toothLastToothTime;
+  if ( curGap < triggerFilterTime ) { return; } //Noise rejection check. Pulses should never be less than triggerFilterTime
   
   if(toothCurrentCount == 0)
   { 
@@ -649,6 +669,8 @@ void triggerPri_Jeep2000()
   {
     toothCurrentCount++; //Increment the tooth counter
   }
+
+  setFilter(curGap); //Recalc the new filter value
   
   addToothLogEntry(curGap);
    
@@ -728,6 +750,8 @@ void triggerPri_Audi135()
      toothOneTime = curTime;
      startRevolutions++; //Counter
    } 
+
+   setFilter(curGap); //Recalc the new filter value
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
@@ -782,8 +806,8 @@ int getCrankAngle_Audi135(int timePerDegree)
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Honda D17
-Desc: GM 7X trigger wheel. It has six equally spaced teeth and a seventh tooth for cylinder identification.
-Note: Within the code below, the sync tooth is referred to as tooth #3 rather than tooth #7. This makes for simpler angle calculations
+Desc: 
+Note: 
 */
 void triggerSetup_HondaD17()
 {
