@@ -8,7 +8,7 @@ modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
 of the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
+This program is distributed in the hope that it will be useful,la
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -216,6 +216,7 @@ void setup()
   initialiseIdle();
   initialiseFan();
   initialiseAuxPWM();
+  initialiseCorrections();
   
   //Once the configs have been loaded, a number of one time calculations can be completed
   req_fuel_uS = configPage1.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations
@@ -673,13 +674,44 @@ void loop()
       readTPS();
      
       //Check for launching (clutch) can be done around here too
-      if(configPage3.launchHiLo) { currentStatus.launching = digitalRead(pinLaunch); }
-      else { currentStatus.launching = !digitalRead(pinLaunch); } 
+      bool launchTrigger;
+      if(configPage3.launchHiLo) { launchTrigger = digitalRead(pinLaunch); }
+      else { launchTrigger = !digitalRead(pinLaunch); } 
+      if (configPage3.launchEnabled && launchTrigger && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) ) { currentStatus.launchingSoft = true; BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH); } //SoftCut rev limit for 2-step launch control. 
+      else { currentStatus.launchingSoft = false; BIT_CLEAR(currentStatus.spark, BIT_SPARK_SLAUNCH); }
+      if (configPage3.launchEnabled && launchTrigger && (currentStatus.RPM > ((unsigned int)(configPage3.lnchHardLim) * 100)) ) { currentStatus.launchingHard = true; BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); } //HardCut rev limit for 2-step launch control. 
+      else { currentStatus.launchingHard = false; BIT_CLEAR(currentStatus.spark, BIT_SPARK_HLAUNCH); }
+
+      //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
+      if(configPage3.boostCutType && currentStatus.MAP > (configPage3.boostLimit * 2) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
+      {
+        switch(configPage3.boostCutType)
+        {
+          case 1:
+            BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
+            BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+            break;
+          case 2:
+            BIT_SET(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+            BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
+            break;
+          case 3:
+            BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
+            BIT_SET(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+            break;
+        }
+      }
+      else
+      {
+        BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
+        BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+      }
+      
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
     }
     
-    //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
+    //The IAT and CLT readings can be done less frequently. This still runs about 4 times per secondl
     if ((mainLoopCount & 255) == 1)
     {
 
@@ -690,7 +722,7 @@ void loop()
        
        vvtControl();
        boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
-       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient. 
+       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.        
     }
 
     //Always check for sync
@@ -855,8 +887,9 @@ void loop()
     
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
-      if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { currentStatus.advance = configPage2.SoftLimRetard; } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
-      if (configPage3.launchEnabled && currentStatus.launching && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) ) { currentStatus.advance = configPage3.lnchRetard; } //SoftCut rev limit for 2-step launch control
+      BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
+      if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { currentStatus.advance = configPage2.SoftLimRetard; BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+      if (currentStatus.launchingSoft) { currentStatus.advance = configPage3.lnchRetard; } //SoftCut rev limit for 2-step launch control
       
       //Set dwell
        //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
@@ -924,7 +957,7 @@ void loop()
       //Determine the current crank angle
       int crankAngle = getCrankAngle(timePerDegree);
       
-      if (fuelOn && currentStatus.PW > 0)
+      if (fuelOn && currentStatus.PW > 0 && !BIT_CHECK(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT))
       {
         if (injector1StartAngle > crankAngle)
         { 
@@ -1013,10 +1046,8 @@ void loop()
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
       //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
       //crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
-      bool hardLimitOff = (currentStatus.RPM < ((unsigned int)(configPage2.HardRevLim) * 100) );
-      if (configPage3.launchEnabled && currentStatus.launching) { hardLimitOff = hardLimitOff && (currentStatus.RPM < ((unsigned int)(configPage3.lnchHardLim) * 100)); } 
       
-      if(ignitionOn && hardLimitOff)
+      if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT))
       {
         //if ( (ignition1StartAngle > crankAngle))// && ign1LastRev != startRevolutions)
         //if ((ignition1StartAngle > crankAngle) == 0)
@@ -1140,23 +1171,23 @@ void loop()
 #else */
   void openInjector1() { digitalWrite(pinInjector1, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
   void closeInjector1() { digitalWrite(pinInjector1, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
-  void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); BIT_SET(currentStatus.spark, 0); digitalWrite(pinTachOut, LOW); }
-  void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); BIT_CLEAR(currentStatus.spark, 0); }
+  void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinTachOut, LOW); }
+  void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); }
   
   void openInjector2() { digitalWrite(pinInjector2, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ2); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
   void closeInjector2() { digitalWrite(pinInjector2, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ2); } 
-  void beginCoil2Charge() { digitalWrite(pinCoil2, coilHIGH); BIT_SET(currentStatus.spark, 1); digitalWrite(pinTachOut, LOW); }
-  void endCoil2Charge() { digitalWrite(pinCoil2, coilLOW); BIT_CLEAR(currentStatus.spark, 1);}
+  void beginCoil2Charge() { digitalWrite(pinCoil2, coilHIGH); digitalWrite(pinTachOut, LOW); }
+  void endCoil2Charge() { digitalWrite(pinCoil2, coilLOW); }
   
   void openInjector3() { digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ3); } //Sets the relevant pin HIGH and changes the current status bit for injector 3 (3rd bit of currentStatus.squirt)
   void closeInjector3() { digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ3); } 
-  void beginCoil3Charge() { digitalWrite(pinCoil3, coilHIGH); BIT_SET(currentStatus.spark, 2); digitalWrite(pinTachOut, LOW); }
-  void endCoil3Charge() { digitalWrite(pinCoil3, coilLOW); BIT_CLEAR(currentStatus.spark, 2); }
+  void beginCoil3Charge() { digitalWrite(pinCoil3, coilHIGH); digitalWrite(pinTachOut, LOW); }
+  void endCoil3Charge() { digitalWrite(pinCoil3, coilLOW); }
   
   void openInjector4() { digitalWrite(pinInjector4, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ4); } //Sets the relevant pin HIGH and changes the current status bit for injector 4 (4th bit of currentStatus.squirt)
   void closeInjector4() { digitalWrite(pinInjector4, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ4); } 
-  void beginCoil4Charge() { digitalWrite(pinCoil4, coilHIGH); BIT_SET(currentStatus.spark, 3); digitalWrite(pinTachOut, LOW); }
-  void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); BIT_CLEAR(currentStatus.spark, 3); }
+  void beginCoil4Charge() { digitalWrite(pinCoil4, coilHIGH); digitalWrite(pinTachOut, LOW); }
+  void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); }
 
 //#endif
 
@@ -1168,10 +1199,10 @@ void openInjector2and3() { digitalWrite(pinInjector2, HIGH); digitalWrite(pinInj
 void closeInjector2and3() { digitalWrite(pinInjector2, LOW); digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
 
 //As above but for ignition (Wasted COP mode)
-void beginCoil1and3Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinCoil3, coilHIGH); BIT_SET(currentStatus.spark, 0); BIT_SET(currentStatus.spark, 2); digitalWrite(pinTachOut, LOW); }
-void endCoil1and3Charge() { digitalWrite(pinCoil1, coilLOW); digitalWrite(pinCoil3, coilLOW); BIT_CLEAR(currentStatus.spark, 0); BIT_CLEAR(currentStatus.spark, 2); }
-void beginCoil2and4Charge() { digitalWrite(pinCoil2, coilHIGH); digitalWrite(pinCoil4, coilHIGH); BIT_SET(currentStatus.spark, 1); BIT_SET(currentStatus.spark, 3); digitalWrite(pinTachOut, LOW); }
-void endCoil2and4Charge() { digitalWrite(pinCoil2, coilLOW); digitalWrite(pinCoil4, coilLOW); BIT_CLEAR(currentStatus.spark, 1); BIT_CLEAR(currentStatus.spark, 3); }
+void beginCoil1and3Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinCoil3, coilHIGH); digitalWrite(pinTachOut, LOW); }
+void endCoil1and3Charge() { digitalWrite(pinCoil1, coilLOW); digitalWrite(pinCoil3, coilLOW); }
+void beginCoil2and4Charge() { digitalWrite(pinCoil2, coilHIGH); digitalWrite(pinCoil4, coilHIGH); digitalWrite(pinTachOut, LOW); }
+void endCoil2and4Charge() { digitalWrite(pinCoil2, coilLOW); digitalWrite(pinCoil4, coilLOW); }
 
 void nullCallback() { return; }
   

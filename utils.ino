@@ -98,6 +98,7 @@ void setPinMapping(byte boardID)
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinFan = A13; //Pin for the fan output
+      pinLaunch = 12; //Can be overwritten below
       break;
 
     case 3:
@@ -126,6 +127,7 @@ void setPinMapping(byte boardID)
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
+      pinLaunch = 12; //Can be overwritten below
       break;
 
     case 10:

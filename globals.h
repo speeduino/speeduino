@@ -28,17 +28,17 @@ const int map_page_size = 288;
 #define BIT_SQUIRT_INJ2          1  //inj2 Squirt
 #define BIT_SQUIRT_INJ3          2  //inj3 Squirt
 #define BIT_SQUIRT_INJ4          3  //inj4 Squirt
-#define BIT_SQUIRT_DFCO          4
-#define BIT_SQUIRT_INJ2SQRT       5  //Injector2 (Schedule2)
+#define BIT_SQUIRT_DFCO          4 //Decelleration fuel cutoff
+#define BIT_SQUIRT_BOOSTCUT      5  //Fuel component of MAP based boost cut out 
 #define BIT_SQUIRT_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
 #define BIT_SQUIRT_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
 
 //Define masks for spark variable
-#define BIT_SPARK_LAUNCH          0  //Launch indicator
-#define BIT_SPARK_SFTLIM          1  //Soft limiter indicator
+#define BIT_SPARK_HLAUNCH         0  //Hard Launch indicator
+#define BIT_SPARK_SLAUNCH         1  //Soft Launch indicator
 #define BIT_SPARK_HRDLIM          2  //Hard limiter indicator
-#define BIT_SPARK_UNUSED1          3  //
-#define BIT_SPARK_UNUSED2          4  //
+#define BIT_SPARK_SFTLIM          3  //Soft limiter indicator
+#define BIT_SPARK_BOOSTCUT        4  //Spark component of MAP based boost cut out
 #define BIT_SPARK_UNUSED3          5  //
 #define BIT_SPARK_UNUSED4          6  //
 #define BIT_SPARK_UNUSED5          7  //
@@ -126,7 +126,8 @@ struct statuses {
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
   volatile int loopsPerSecond;
-  boolean launching; //True when in launch control mode
+  boolean launchingSoft; //True when in launch control soft limit mode
+  boolean launchingHard; //True when in launch control hard limit mode
   int freeRAM;
   
   //Helpful bitwise operations:
@@ -249,7 +250,8 @@ struct config2 {
   byte useDwellLim : 1; //Whether the dwell limiter is off or on
   byte sparkMode : 2; //Spark output mode (Eg Wasted spark, single channel or Wasted COP)
   byte dfcoEnabled : 1; //Whether or not DFCO is turned on
-  byte dwellUnused : 3;
+  byte triggerFilter : 2; //The mode of trigger filter being used (0=Off, 1=Light (Not currently used), 2=Normal, 3=Aggressive)
+  byte dwellUnused : 1;
   
   byte dwellCrank; //Dwell time whilst cranking
   byte dwellRun; //Dwell time whilst running 
@@ -284,7 +286,7 @@ struct config3 {
   byte egoType : 2;
   byte boostEnabled : 1;
   byte vvtEnabled : 1;
-  byte unused : 2;
+  byte boostCutType : 2;
   
   byte egoKP;
   byte egoKI;
@@ -316,10 +318,13 @@ struct config3 {
   byte lnchRetard;
   byte lnchHardLim;
   byte lnchFuelAdd;
-  byte unused53;
-  byte unused54;
-  byte unused55;
-  byte unused56;
+
+  //PID values for idle needed to go here as out of room in the idle page
+  byte idleKP;
+  byte idleKI;
+  byte idleKD;
+  
+  byte boostLimit; //Is divided by 2, allowing kPa values up to 511
   byte unused57;
   byte unused58;
   byte unused59;

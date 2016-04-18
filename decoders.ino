@@ -46,6 +46,17 @@ inline int stdGetRPM()
 }
 
 /*
+ * Sets the new filter time based on the current settings. 
+ * This ONLY works for even spaced decoders
+ */
+inline void setFilter(unsigned long curGap)
+{
+   if(configPage2.triggerFilter == 1) { triggerFilterTime = curGap >> 2; } //Lite filter level is 50% of previous gap
+   else if(configPage2.triggerFilter == 2) { triggerFilterTime = curGap >> 1; } //Medium filter level is 50% of previous gap
+   else if (configPage2.triggerFilter == 3) { triggerFilterTime = (curGap * 3) >> 2; } //Aggressive filter level is 75% of previous gap
+}
+
+/*
 This is a special case of RPM measure that is based on the time between the last 2 teeth rather than the time of the last full revolution
 This gives much more volatile reading, but is quite useful during cranking, particularly on low resolution patterns.
 It can only be used on patterns where the teeth are evently spaced
@@ -98,7 +109,12 @@ void triggerPri_missingTooth()
      toothOneTime = curTime;
      currentStatus.hasSync = true;
      startRevolutions++; //Counter 
-   } 
+   }
+   else
+   {
+     //Filter can only be recalc'd for the regular teeth, not the missing one.
+     setFilter(curGap);
+   }
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
@@ -129,7 +145,7 @@ int getCrankAngle_missingTooth(int timePerDegree)
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
 
     if (crankAngle >= 720) { crankAngle -= 720; } 
-    else if (crankAngle > 360) { crankAngle -= 360; }
+    else if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
@@ -155,7 +171,7 @@ void triggerPri_DualWheel()
 { 
    curTime = micros();
    curGap = curTime - toothLastToothTime;
-   if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+   if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger.
    toothCurrentCount++; //Increment the tooth counter
    addToothLogEntry(curGap);
    if ( !currentStatus.hasSync ) { return; }
@@ -167,7 +183,9 @@ void triggerPri_DualWheel()
      toothOneTime = curTime;
      startRevolutions++; //Counter
      //if ((startRevolutions & 63) == 1) { currentStatus.hasSync = false; } //Every 64 revolutions, force a resync with the cam
-   } 
+   }
+
+   setFilter(curGap); //Recalc the new filter value
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
@@ -214,7 +232,7 @@ int getCrankAngle_DualWheel(int timePerDegree)
     
     
     if (crankAngle >= 720) { crankAngle -= 720; } 
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
@@ -241,7 +259,7 @@ void triggerPri_BasicDistributor()
 {
   curTime = micros();
   curGap = curTime - toothLastToothTime;
-  if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime
+  if ( curGap < triggerFilterTime ) { return; } //Noise rejection check. Pulses should never be less than triggerFilterTime
   
   if(toothCurrentCount == triggerActualTeeth ) //Check if we're back to the beginning of a revolution
   { 
@@ -251,7 +269,12 @@ void triggerPri_BasicDistributor()
      currentStatus.hasSync = true;
      startRevolutions++; //Counter 
   }
-  else { toothCurrentCount++; } //Increment the tooth counter 
+  else 
+  { 
+    toothCurrentCount++; //Increment the tooth counter 
+  }
+  
+  setFilter(curGap); //Recalc the new filter value
   
   addToothLogEntry(curGap);
   
@@ -286,7 +309,7 @@ int getCrankAngle_BasicDistributor(int timePerDegree)
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
     if (crankAngle >= 720) { crankAngle -= 720; } 
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
@@ -371,7 +394,9 @@ int getCrankAngle_GM7X(int timePerDegree)
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+    if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
 }
@@ -490,8 +515,8 @@ int getCrankAngle_4G63(int timePerDegree)
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
-    if (crankAngle >= 720) { crankAngle -= 720; }  
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
@@ -590,8 +615,9 @@ int getCrankAngle_24X(int timePerDegree)
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
-    
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+    if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
 }
@@ -629,6 +655,7 @@ void triggerPri_Jeep2000()
   if(toothCurrentCount == 13) { currentStatus.hasSync = false; return; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
   curTime = micros();
   curGap = curTime - toothLastToothTime;
+  if ( curGap < triggerFilterTime ) { return; } //Noise rejection check. Pulses should never be less than triggerFilterTime
   
   if(toothCurrentCount == 0)
   { 
@@ -642,6 +669,8 @@ void triggerPri_Jeep2000()
   {
     toothCurrentCount++; //Increment the tooth counter
   }
+
+  setFilter(curGap); //Recalc the new filter value
   
   addToothLogEntry(curGap);
    
@@ -677,8 +706,9 @@ int getCrankAngle_Jeep2000(int timePerDegree)
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
-    
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+    if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
 }
@@ -720,6 +750,8 @@ void triggerPri_Audi135()
      toothOneTime = curTime;
      startRevolutions++; //Counter
    } 
+
+   setFilter(curGap); //Recalc the new filter value
    
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
@@ -765,9 +797,8 @@ int getCrankAngle_Audi135(int timePerDegree)
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
-    
     if (crankAngle >= 720) { crankAngle -= 720; } 
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
@@ -775,8 +806,8 @@ int getCrankAngle_Audi135(int timePerDegree)
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Honda D17
-Desc: GM 7X trigger wheel. It has six equally spaced teeth and a seventh tooth for cylinder identification.
-Note: Within the code below, the sync tooth is referred to as tooth #3 rather than tooth #7. This makes for simpler angle calculations
+Desc: 
+Note: 
 */
 void triggerSetup_HondaD17()
 {
@@ -853,7 +884,9 @@ int getCrankAngle_HondaD17(int timePerDegree)
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+    if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
 }
@@ -972,8 +1005,8 @@ int getCrankAngle_Miata9905(int timePerDegree)
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     
-    if (crankAngle >= 720) { crankAngle -= 720; }  
-    if (crankAngle > 360) { crankAngle -= 360; }
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
     
     return crankAngle;
