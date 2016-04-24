@@ -491,7 +491,9 @@ int getRPM_4G63()
     revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen  
     interrupts();
     revolutionTime = revolutionTime * 36;
-    return (tempToothAngle * 60000000L) / revolutionTime;
+    int tempRPM = (tempToothAngle * 60000000L) / revolutionTime;
+    if(tempRPM >= 1000) { return currentStatus.RPM; } //Hack, but works well at avoiding erratic starting RPM. 
+    return tempRPM;
   }
   else { return stdGetRPM(); }
 }
