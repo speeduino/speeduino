@@ -273,7 +273,10 @@ struct config2 {
   byte dfcoRPM; //RPM at which DFCO turns off/on at
   byte dfcoHyster; //Hysteris RPM for DFCO
   byte dfcoTPSThresh; //TPS must be below this figure for DFCO to engage
-  byte unused63;
+
+  byte ignBypassEnabled : 1; //Whether or not the ignition bypass is enabled
+  byte ignBypassPin : 6; //Pin the ignition bypass is activated on
+  byte ignBypassHiLo : 1; //Whether this should be active high or low. 
 
   
 };
@@ -417,6 +420,7 @@ byte pinFan;       // Cooling fan output
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
 byte pinLaunch;
+byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino

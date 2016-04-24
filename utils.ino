@@ -256,7 +256,7 @@ void setPinMapping(byte boardID)
   
   //Setup any devices that are using selectable pins
   if(configPage3.launchPin != 0) { pinLaunch = configPage3.launchPin; }
-  
+  if(configPage2.ignBypassPin != 0) { pinIgnBypass = configPage2.ignBypassPin; }
   
 
   //Finally, set the relevant pin modes for outputs
@@ -272,6 +272,7 @@ void setPinMapping(byte boardID)
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
+  pinMode(pinIgnBypass, OUTPUT);
   if (configPage3.launchHiLo) { pinMode(pinLaunch, INPUT); }
   else { pinMode(pinLaunch, INPUT_PULLUP); } //If launch triggers on LOW signal, then set a pull up as the default
   
