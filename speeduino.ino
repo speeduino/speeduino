@@ -111,6 +111,7 @@ byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 byte ignitionCount;
 unsigned long secCounter; //The next time to incremen 'runSecs' counter.
+unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less. 
 int channel1IgnDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
 int channel2IgnDegrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
 int channel3IgnDegrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
@@ -631,7 +632,7 @@ void loop()
     previousLoopTime = currentLoopTime;
     currentLoopTime = micros();
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
-    if ( (timeToLastTooth < 500000L) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
+    if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
       int lastRPM = currentStatus.RPM; //Need to record this for rpmDOT calculation
       currentStatus.RPM = getRPM();

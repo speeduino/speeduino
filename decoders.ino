@@ -82,6 +82,7 @@ void triggerSetup_missingTooth()
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   secondDerivEnabled = false;
   decoderIsSequential = false;
+  MAX_STALL_TIME = (3333UL * triggerToothAngle * (configPage2.triggerMissingTeeth + 1)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 }
 
 void triggerPri_missingTooth()
@@ -164,6 +165,7 @@ void triggerSetup_DualWheel()
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   secondDerivEnabled = false;
   decoderIsSequential = true;
+  MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 }
 
 
@@ -253,6 +255,7 @@ void triggerSetup_BasicDistributor()
   triggerFilterTime = triggerFilterTime / 2; //Safety margin
   secondDerivEnabled = false;
   decoderIsSequential = false;
+  MAX_STALL_TIME = (1851UL * triggerToothAngle); //Minimum 90rpm. (1851uS is the time per degree at 90rpm). This decoder uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long. 
 }
 
 void triggerPri_BasicDistributor()
@@ -325,6 +328,7 @@ void triggerSetup_GM7X()
   triggerToothAngle = 360 / 6; //The number of degrees that passes from tooth to tooth
   secondDerivEnabled = false;
   decoderIsSequential = false;
+  MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 }
 
 void triggerPri_GM7X()
@@ -415,6 +419,7 @@ void triggerSetup_4G63()
   toothCurrentCount = 99; //Fake tooth count represents no sync
   secondDerivEnabled = false;
   decoderIsSequential = true;
+  MAX_STALL_TIME = 366667UL; //Minimum 50rpm based on the 110 degree tooth spacing
   
   //Note that these angles are for every rising and falling edge
   
@@ -558,7 +563,8 @@ void triggerSetup_24X()
   toothAngles[21] = 327;
   toothAngles[22] = 342;
   toothAngles[23] = 357;
-  
+
+  MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   toothCurrentCount = 25; //We set the initial tooth value to be something that should never be reached. This indicates no sync
   secondDerivEnabled = false;
   decoderIsSequential = true;
@@ -646,10 +652,11 @@ void triggerSetup_Jeep2000()
   toothAngles[9] = 434;
   toothAngles[10] = 454;
   toothAngles[11] = 474;
-  
+
+  MAX_STALL_TIME = (3333UL * 60); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 60 degrees. 
   toothCurrentCount = 13; //We set the initial tooth value to be something that should never be reached. This indicates no sync
   secondDerivEnabled = false;
-  decoderIsSequential = true;
+  decoderIsSequential = false;
 }
 
 void triggerPri_Jeep2000()
@@ -727,6 +734,7 @@ void triggerSetup_Audi135()
   toothSystemCount = 0;
   triggerFilterTime = (unsigned long)(1000000 / (MAX_RPM / 60 * 135UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   secondDerivEnabled = false;
   decoderIsSequential = true;
 }
@@ -814,6 +822,7 @@ Note:
 void triggerSetup_HondaD17()
 {
   triggerToothAngle = 360 / 12; //The number of degrees that passes from tooth to tooth
+  MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   secondDerivEnabled = false;
   decoderIsSequential = false;
 }
@@ -913,7 +922,8 @@ void triggerSetup_Miata9905()
   toothAngles[1] = 100; //Rising edge of tooth #2
   toothAngles[2] = 170; //Falling edge of tooth #2
   toothAngles[3] = 280; //Rising edge of tooth #1
-  
+
+  MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth. 
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
 }
