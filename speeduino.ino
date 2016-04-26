@@ -737,7 +737,7 @@ void loop()
             BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); //Sets the engine running bit
             BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //clears the engine cranking bit
             if(startRevolutions >= configPage2.StgCycles) { ignitionOn = true; fuelOn = true;}
-            if(configPage2.ignBypassEnabled) { digitalWrite(pinIgnBypass, LOW); }
+            if(configPage2.ignBypassEnabled) { digitalWrite(pinIgnBypass, HIGH); }
           }
         } 
         else 
