@@ -51,9 +51,10 @@ inline int stdGetRPM()
  */
 inline void setFilter(unsigned long curGap)
 {
-   if(configPage2.triggerFilter == 1) { triggerFilterTime = curGap >> 2; } //Lite filter level is 50% of previous gap
+   if(configPage2.triggerFilter == 1) { triggerFilterTime = curGap >> 2; } //Lite filter level is 25% of previous gap
    else if(configPage2.triggerFilter == 2) { triggerFilterTime = curGap >> 1; } //Medium filter level is 50% of previous gap
    else if (configPage2.triggerFilter == 3) { triggerFilterTime = (curGap * 3) >> 2; } //Aggressive filter level is 75% of previous gap
+   else { triggerFilterTime = 0; } //trigger filter is turned off. 
 }
 
 /*
@@ -173,9 +174,13 @@ void triggerPri_DualWheel()
 { 
    curTime = micros();
    curGap = curTime - toothLastToothTime;
-   if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime, so if they are it means a false trigger.
+   if ( curGap < triggerFilterTime ) { return; } //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger.
    toothCurrentCount++; //Increment the tooth counter
    addToothLogEntry(curGap);
+
+   toothLastMinusOneToothTime = toothLastToothTime;
+   toothLastToothTime = curTime;
+   
    if ( !currentStatus.hasSync ) { return; }
    
    if ( toothCurrentCount == 1 || toothCurrentCount > configPage2.triggerTeeth )
@@ -189,8 +194,7 @@ void triggerPri_DualWheel()
 
    setFilter(curGap); //Recalc the new filter value
    
-   toothLastMinusOneToothTime = toothLastToothTime;
-   toothLastToothTime = curTime;
+
 }
 
 void triggerSec_DualWheel()
