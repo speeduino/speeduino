@@ -207,13 +207,19 @@ void triggerSec_DualWheel()
   if(!currentStatus.hasSync)
   {
     toothCurrentCount = 0;
+
+    toothOneTime = micros();
+    toothOneMinusOneTime = toothOneTime - 6000000; //Fixes RPM at 10rpm until a full revolution has taken place
+    
     currentStatus.hasSync = true;
   }
 } 
 
 int getRPM_DualWheel()
 {
-   return stdGetRPM();
+  if( !currentStatus.hasSync || toothCurrentCount == 0 ) { return 0; }
+  if(currentStatus.RPM < configPage2.crankRPM) { return crankingGetRPM(configPage2.triggerTeeth); }
+  return stdGetRPM();
 }
 
 int getCrankAngle_DualWheel(int timePerDegree)
