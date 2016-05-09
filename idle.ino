@@ -135,14 +135,15 @@ void idleControl()
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         idleOn = true;
       }
-      else if( currentStatus.coolant < (iacPWMTable.values[IDLE_TABLE_SIZE-1] + CALIBRATION_TEMPERATURE_OFFSET))
+      else
       {
         //Standard running
         currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        if( currentStatus.idleDuty == 0 ) { TIMSK4 &= ~(1 << OCIE4C); digitalWrite(pinIdle1, LOW); break; }
+        TIMSK4 |= (1 << OCIE4C); //Turn on the C compare unit (ie turn on the interrupt)
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         idleOn = true;
       }
-      else if (idleOn) { digitalWrite(pinIdle1, LOW); idleOn = false; }
       break;
       
     case 3:    //Case 3 is PWM closed loop

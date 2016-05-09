@@ -18,7 +18,6 @@ void initialiseSchedulers()
     TCCR3A = 0x00;          //Timer3 Control Reg A: Wave Gen Mode normal
     TCCR3B = (1 << CS12);   //Timer3 Control Reg B: Timer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
     //TCCR3B = 0x03;   //Timer3 Control Reg B: Timer Prescaler set to 64. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
-    //Timer 3 compare channel A is reserved for idle control, therefore there are only 2 fuel channels here
     fuelSchedule1.Status = OFF; 
     fuelSchedule2.Status = OFF;
     fuelSchedule3.Status = OFF;
