@@ -208,8 +208,8 @@ void triggerSec_DualWheel()
   {
     toothCurrentCount = 0;
 
-    toothOneTime = micros();
-    toothOneMinusOneTime = toothOneTime - 6000000; //Fixes RPM at 10rpm until a full revolution has taken place
+    toothLastToothTime = micros();
+    toothLastMinusOneToothTime = (toothOneTime - 6000000) / configPage2.triggerTeeth; //Fixes RPM at 10rpm until a full revolution has taken place
     
     currentStatus.hasSync = true;
   }
