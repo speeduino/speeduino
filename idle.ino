@@ -152,7 +152,6 @@ void idleControl()
         //No cranking specific value for closed loop (yet?)
         idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
         longRPM = currentStatus.RPM; //The PID object needs a long as the RPM input. A separate variable is used for this
-        idlePID.SetOutputLimits(0, idle_pwm_max_count);
         idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
 
         idlePID.Compute();
@@ -249,7 +248,8 @@ ISR(TIMER4_COMPC_vect)
     *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
     if(configPage4.iacChannels) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     OCR4C = TCNT4 + (idle_pwm_max_count - idle_pwm_cur_value);
-    idle_pwm_state = false;
+    if (configPage4.iacPWMdir == 0) { idle_pwm_state = false; }
+    else { idle_pwm_state = true; }
   }
   else
   {
@@ -257,7 +257,8 @@ ISR(TIMER4_COMPC_vect)
     if(configPage4.iacChannels) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     OCR4C = TCNT4 + idle_pwm_target_value;
     idle_pwm_cur_value = idle_pwm_target_value;
-    idle_pwm_state = true;
+    if (configPage4.iacPWMdir == 0) { idle_pwm_state = true; } 
+    else { idle_pwm_state = false; }
   }
     
 }
