@@ -3,6 +3,7 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
+integerPID boostPID(&currentStatus.longRPM, &boost_pwm_target_value, &boost_cl_target_boost, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 /*
 Fan control
@@ -44,6 +45,8 @@ void boostControl()
   if(configPage3.boostEnabled)
   {
     byte boostDuty = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM);
+    if( boostDuty == 0 ) { TIMSK1 &= ~(1 << OCIE1A); digitalWrite(pinBoost, LOW); return; }
+    TIMSK1 |= (1 << OCIE1A); //Turn on the compare unit (ie turn on the interrupt)
     boost_pwm_target_value = percentage(boostDuty, boost_pwm_max_count);
   }
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)

@@ -12,8 +12,7 @@ These functions cover the PWM and stepper idle control
 Idle Control
 Currently limited to on/off control and open loop PWM and stepper drive
 */
-long longRPM;
-integerPID idlePID(&longRPM, &idle_pwm_target_value, &idle_cl_target_rpm, configPage3.idleKP, configPage3.idleKI, configPage3.idleKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPID idlePID(&currentStatus.longRPM, &idle_pwm_target_value, &idle_cl_target_rpm, configPage3.idleKP, configPage3.idleKI, configPage3.idleKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 void initialiseIdle()
 {
@@ -151,7 +150,6 @@ void idleControl()
     case 3:    //Case 3 is PWM closed loop
         //No cranking specific value for closed loop (yet?)
         idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
-        longRPM = currentStatus.RPM; //The PID object needs a long as the RPM input. A separate variable is used for this
         idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
 
         idlePID.Compute();

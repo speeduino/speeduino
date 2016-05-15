@@ -86,6 +86,7 @@ volatile byte ign4_pin_mask;
 struct statuses {
   volatile boolean hasSync;
   unsigned int RPM;
+  long longRPM;
   int mapADC;
   int MAP;
   byte TPS; //The current TPS reading (0% - 100%)
@@ -328,9 +329,9 @@ struct config3 {
   byte idleKD;
   
   byte boostLimit; //Is divided by 2, allowing kPa values up to 511
-  byte unused57;
-  byte unused58;
-  byte unused59;
+  byte boostKP;
+  byte boostKI;
+  byte boostKD;
   byte unused60;
   byte unused61;
   byte unused62;
