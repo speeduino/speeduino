@@ -203,12 +203,12 @@ int PID::GetDirection(){ return controllerDirection;}
  *    The parameters specified here are those for for which we can't set up 
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
-integerPID::integerPID(long* Input, long* Output, long* Setpoint,
+integerPID::integerPID(unsigned int* Input, long* Output, long* Setpoint,
         byte Kp, byte Ki, byte Kd, byte ControllerDirection)
 {
 	
     myOutput = Output;
-    myInput = Input;
+    myInput = (long*)Input;
     mySetpoint = Setpoint;
 	inAuto = false;
 	

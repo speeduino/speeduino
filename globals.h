@@ -88,7 +88,7 @@ struct statuses {
   unsigned int RPM;
   long longRPM;
   int mapADC;
-  int MAP;
+  unsigned int MAP;
   byte TPS; //The current TPS reading (0% - 100%)
   byte TPSlast; //The previous TPS reading
   unsigned long TPS_time; //The time the TPS sample was taken
