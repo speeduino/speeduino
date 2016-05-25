@@ -459,6 +459,12 @@ void triggerPri_4G63()
      //if ((startRevolutions & 15) == 1) { currentStatus.hasSync = false; } //Every 64 revolutions, force a resync with the cam
   }
   else if (!currentStatus.hasSync) { return; }
+
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+  {
+    if( toothCurrentCount == 1 ) { endCoil1Charge(); }
+    else if( toothCurrentCount == 3 ) { endCoil2Charge(); }
+  }
   
   addToothLogEntry(curGap);
    

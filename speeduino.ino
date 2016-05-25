@@ -110,6 +110,7 @@ volatile int mainLoopCount;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 byte ignitionCount;
+byte fixedCrankingOverride = 0;
 unsigned long secCounter; //The next time to incremen 'runSecs' counter.
 unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less. 
 int channel1IgnDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
@@ -1053,6 +1054,8 @@ void loop()
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
       //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
       //crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
+
+      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { fixedCrankingOverride = currentStatus.dwell; }
       
       if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT))
       {
@@ -1068,7 +1071,7 @@ void loop()
             if(ignition1StartTime > 0) {
             setIgnitionSchedule1(ign1StartFunction, 
                       ignition1StartTime,
-                      currentStatus.dwell,
+                      currentStatus.dwell + fixedCrankingOverride,
                       ign1EndFunction
                       );
             }
@@ -1089,7 +1092,7 @@ void loop()
             if(ignition2StartTime > 0) {
             setIgnitionSchedule2(ign2StartFunction, 
                       ignition2StartTime,
-                      currentStatus.dwell,
+                      currentStatus.dwell + fixedCrankingOverride,
                       ign2EndFunction
                       );
             }
