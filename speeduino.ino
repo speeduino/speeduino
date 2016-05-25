@@ -897,6 +897,8 @@ void loop()
       //| BEGIN IGNITION CALCULATIONS
       BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
       if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { currentStatus.advance = configPage2.SoftLimRetard; BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+      BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM);
+      if (currentStatus.RPM > ((unsigned int)(configPage2.HardRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); } //Hardcut RPM limit
       if (currentStatus.launchingSoft) { currentStatus.advance = configPage3.lnchRetard; } //SoftCut rev limit for 2-step launch control
       
       //Set dwell
@@ -1055,9 +1057,10 @@ void loop()
       //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
       //crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
 
+      //fixedCrankingOverride is used to extend the dwell during cranking so that the decoder can trigger the spark upon seeing a certain tooth. Currently only available on the basic distributor and 4g63 decoders. 
       if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { fixedCrankingOverride = currentStatus.dwell; }
       
-      if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT))
+      if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) && !BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM))
       {
         //if ( (ignition1StartAngle > crankAngle))// && ign1LastRev != startRevolutions)
         //if ((ignition1StartAngle > crankAngle) == 0)
