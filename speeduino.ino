@@ -731,6 +731,7 @@ void loop()
     //Main loop runs within this clause
     if (currentStatus.hasSync && (currentStatus.RPM > 0))
     {
+        if(startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;} //Enable the fuel and ignition, assuming staging revolutions are complete
         //If it is, check is we're running or cranking
         if(currentStatus.RPM > ((unsigned int)configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100 
         {
@@ -739,7 +740,6 @@ void loop()
           {
             BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); //Sets the engine running bit
             BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //clears the engine cranking bit
-            if(startRevolutions >= configPage2.StgCycles) { ignitionOn = true; fuelOn = true;}
             if(configPage2.ignBypassEnabled) { digitalWrite(pinIgnBypass, HIGH); }
           }
         } 
@@ -748,8 +748,6 @@ void loop()
           BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK); 
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); 
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
-          //Check whether enough cranking revolutions have been performed to turn the ignition on
-          if(startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;}
           if(configPage2.ignBypassEnabled) { digitalWrite(pinIgnBypass, LOW); }
         } 
       
