@@ -243,20 +243,38 @@ ISR(TIMER4_COMPC_vect)
 {
   if (idle_pwm_state)
   {
-    *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
-    if(configPage4.iacChannels) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    if (configPage4.iacPWMdir == 0) 
+    { 
+      //Normal direction
+      *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
+      if(configPage4.iacChannels) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    }
+    else
+    {
+      //Reversed direction
+      *idle_pin_port |= (idle_pin_mask);  // Switch pin high
+      if(configPage4.iacChannels) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    }
     OCR4C = TCNT4 + (idle_pwm_max_count - idle_pwm_cur_value);
-    if (configPage4.iacPWMdir == 0) { idle_pwm_state = false; }
-    else { idle_pwm_state = true; }
+    idle_pwm_state = false; 
   }
   else
   {
-    *idle_pin_port |= (idle_pin_mask);  // Switch pin high
-    if(configPage4.iacChannels) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    if (configPage4.iacPWMdir == 0) 
+    { 
+      //Normal direction
+      *idle_pin_port |= (idle_pin_mask);  // Switch pin high
+      if(configPage4.iacChannels) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    }
+    else
+    {
+      //Reversed direction
+      *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
+      if(configPage4.iacChannels) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    }
     OCR4C = TCNT4 + idle_pwm_target_value;
     idle_pwm_cur_value = idle_pwm_target_value;
-    if (configPage4.iacPWMdir == 0) { idle_pwm_state = true; } 
-    else { idle_pwm_state = false; }
+    idle_pwm_state = true; 
   }
     
 }

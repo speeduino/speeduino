@@ -76,7 +76,7 @@ unsigned long divu100(unsigned long n) {
 //This is a relatively fast approximation of a percentage value. 
 unsigned long percentage(byte x, unsigned long y)
 {
-  return divu100(y) * x;
+  return divu100(y * x);
 }
 
 #endif // MATH_H
