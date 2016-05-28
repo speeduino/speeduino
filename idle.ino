@@ -12,7 +12,7 @@ These functions cover the PWM and stepper idle control
 Idle Control
 Currently limited to on/off control and open loop PWM and stepper drive
 */
-integerPID idlePID(&currentStatus.RPM, &idle_pwm_target_value, &idle_cl_target_rpm, configPage3.idleKP, configPage3.idleKI, configPage3.idleKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPID idlePID(&currentStatus.longRPM, &idle_pwm_target_value, &idle_cl_target_rpm, configPage3.idleKP, configPage3.idleKI, configPage3.idleKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 void initialiseIdle()
 {
@@ -74,6 +74,7 @@ void initialiseIdle()
       idle2_pin_mask = digitalPinToBitMask(pinIdle2);
       idle_pwm_max_count = 1000000L / (16 * configPage3.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       idlePID.SetOutputLimits(0, idle_pwm_max_count);
+      idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       break;
       
@@ -150,7 +151,7 @@ void idleControl()
     case 3:    //Case 3 is PWM closed loop
         //No cranking specific value for closed loop (yet?)
         idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
-        idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
+        //idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
 
         idlePID.Compute();
         if( idle_pwm_target_value == 0 ) { TIMSK4 &= ~(1 << OCIE4C); digitalWrite(pinIdle1, LOW); }

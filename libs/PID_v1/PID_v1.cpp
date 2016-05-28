@@ -203,7 +203,7 @@ int PID::GetDirection(){ return controllerDirection;}
  *    The parameters specified here are those for for which we can't set up 
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
-integerPID::integerPID(unsigned int* Input, long* Output, long* Setpoint,
+integerPID::integerPID(long* Input, long* Output, long* Setpoint,
         byte Kp, byte Ki, byte Kd, byte ControllerDirection)
 {
 	
@@ -215,12 +215,12 @@ integerPID::integerPID(unsigned int* Input, long* Output, long* Setpoint,
 	integerPID::SetOutputLimits(0, 255);				//default output limit corresponds to 
 												//the arduino pwm limits
 
-    //SampleTime = 100;							//default Controller Sample Time is 0.1 seconds
+    SampleTime = 100;							//default Controller Sample Time is 0.1 seconds
 
     integerPID::SetControllerDirection(ControllerDirection);
     integerPID::SetTunings(Kp, Ki, Kd);
 
-    //lastTime = millis()-SampleTime;				
+    lastTime = millis()-SampleTime;				
 }
  
  
@@ -234,21 +234,20 @@ bool integerPID::Compute()
 {
    if(!inAuto) return false;
    unsigned long now = millis();
-   SampleTime = (now - lastTime);
-   //if(timeChange>=SampleTime)
+   //SampleTime = (now - lastTime);
+   unsigned long timeChange = (now - lastTime);
+   if(timeChange>=SampleTime)
    {
       /*Compute all the working error variables*/
 	  long input = *myInput;
       long error = *mySetpoint - input;
-      ITerm+= (ki * error)/100;
-      //ITerm+= divs100(ki * error);
+      ITerm+= (ki * error)/1000; //Note that ki is multiplied by 1000 rather than 100, so it must be divided by 1000 here
       if(ITerm > outMax) ITerm= outMax;
       else if(ITerm < outMin) ITerm= outMin;
       long dInput = (input - lastInput);
  
       /*Compute PID Output*/
-      long output = (kp * error)/100 + ITerm- (kd * dInput)/100;
-      //long output = divs100(kp * error) + ITerm- divs100(kd * dInput);
+      long output = (kp * error)/100 + ITerm - (kd * dInput)/100;
       
 	  if(output > outMax) output = outMax;
       else if(output < outMin) output = outMin;
@@ -256,10 +255,10 @@ bool integerPID::Compute()
 	  
       /*Remember some variables for next time*/
       lastInput = input;
-      //lastTime = now;
+      lastTime = now;
 	  return true;
    }
-   //else return false;
+   else return false;
 }
 
 
@@ -282,8 +281,8 @@ void integerPID::SetTunings(byte Kp, byte Ki, byte Kd)
    */
   long InverseSampleTimeInSec = 100000 / SampleTime;
   kp = Kp;
-  ki = (Ki * 100) / InverseSampleTimeInSec;
-  kd = (Kd * InverseSampleTimeInSec) / 100;
+  ki = (long)((long)Ki * 1000) / InverseSampleTimeInSec;
+  kd = ((long)Kd * InverseSampleTimeInSec) / 100;
  
   if(controllerDirection ==REVERSE)
    {

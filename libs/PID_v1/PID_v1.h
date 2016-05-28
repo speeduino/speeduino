@@ -90,7 +90,7 @@ class integerPID
   #define REVERSE  1
 
   //commonly used functions **************************************************************************
-    integerPID(unsigned int*, long*, long*,        // * constructor.  links the PID to the Input, Output, and 
+    integerPID(long*, long*, long*,        // * constructor.  links the PID to the Input, Output, and 
         byte, byte, byte, byte);     //   Setpoint.  Initial tuning parameters are also set here
 	
     void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
@@ -133,9 +133,9 @@ class integerPID
 	byte dispKi;				//   format for display purposes
 	byte dispKd;				//
     
-	byte kp;                  // * (P)roportional Tuning Parameter
-    byte ki;                  // * (I)ntegral Tuning Parameter
-    byte kd;                  // * (D)erivative Tuning Parameter
+	int kp;                  // * (P)roportional Tuning Parameter
+    int ki;                  // * (I)ntegral Tuning Parameter
+    int kd;                  // * (D)erivative Tuning Parameter
 
 	int controllerDirection;
 
