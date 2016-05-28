@@ -100,10 +100,10 @@ int CRANK_ANGLE_MAX = 360; // The number of crank degrees that the system track 
 bool useSequentialFuel; // Whether sequential fueling is to be used (1 squirt per cycle)
 bool useSequentialIgnition; // Whether sequential ignition is used (1 spark per cycle)
 
-byte coilHIGH = HIGH;
-byte coilLOW = LOW;
-byte fanHIGH = HIGH;             // Used to invert the cooling fan output
-byte fanLOW = LOW;               // Used to invert the cooling fan output
+static byte coilHIGH = HIGH;
+static byte coilLOW = LOW;
+static byte fanHIGH = HIGH;             // Used to invert the cooling fan output
+static byte fanLOW = LOW;               // Used to invert the cooling fan output
 
 struct statuses currentStatus;
 volatile int mainLoopCount;
@@ -620,7 +620,7 @@ void loop()
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
       // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
-      if ( ((mainLoopCount & 63) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) ) 
+      if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) ) 
       {
         if (Serial.available() > 0) 
         {
@@ -735,10 +735,10 @@ void loop()
         //If it is, check is we're running or cranking
         if(currentStatus.RPM > ((unsigned int)configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100 
         {
+          BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); //Sets the engine running bit
           //Only need to do anything if we're transitioning from cranking to running
           if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
           {
-            BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); //Sets the engine running bit
             BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //clears the engine cranking bit
             if(configPage2.ignBypassEnabled) { digitalWrite(pinIgnBypass, HIGH); }
           }
@@ -1180,25 +1180,25 @@ void loop()
   void endCoil4Charge() { *ign4_pin_port &= ~(ign4_pin_mask); BIT_CLEAR(currentStatus.spark, 3);}
 
 #else */
-  void openInjector1() { digitalWrite(pinInjector1, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
-  void closeInjector1() { digitalWrite(pinInjector1, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
-  void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinTachOut, LOW); }
-  void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); }
+  inline void openInjector1() { digitalWrite(pinInjector1, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
+  inline void closeInjector1() { digitalWrite(pinInjector1, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
+  inline void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinTachOut, LOW); }
+  inline void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); }
   
-  void openInjector2() { digitalWrite(pinInjector2, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ2); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
-  void closeInjector2() { digitalWrite(pinInjector2, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ2); } 
-  void beginCoil2Charge() { digitalWrite(pinCoil2, coilHIGH); digitalWrite(pinTachOut, LOW); }
-  void endCoil2Charge() { digitalWrite(pinCoil2, coilLOW); }
+  inline void openInjector2() { digitalWrite(pinInjector2, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ2); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
+  inline void closeInjector2() { digitalWrite(pinInjector2, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ2); } 
+  inline void beginCoil2Charge() { digitalWrite(pinCoil2, coilHIGH); digitalWrite(pinTachOut, LOW); }
+  inline void endCoil2Charge() { digitalWrite(pinCoil2, coilLOW); }
   
-  void openInjector3() { digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ3); } //Sets the relevant pin HIGH and changes the current status bit for injector 3 (3rd bit of currentStatus.squirt)
-  void closeInjector3() { digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ3); } 
-  void beginCoil3Charge() { digitalWrite(pinCoil3, coilHIGH); digitalWrite(pinTachOut, LOW); }
-  void endCoil3Charge() { digitalWrite(pinCoil3, coilLOW); }
+  inline void openInjector3() { digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ3); } //Sets the relevant pin HIGH and changes the current status bit for injector 3 (3rd bit of currentStatus.squirt)
+  inline void closeInjector3() { digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ3); } 
+  inline void beginCoil3Charge() { digitalWrite(pinCoil3, coilHIGH); digitalWrite(pinTachOut, LOW); }
+  inline void endCoil3Charge() { digitalWrite(pinCoil3, coilLOW); }
   
-  void openInjector4() { digitalWrite(pinInjector4, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ4); } //Sets the relevant pin HIGH and changes the current status bit for injector 4 (4th bit of currentStatus.squirt)
-  void closeInjector4() { digitalWrite(pinInjector4, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ4); } 
-  void beginCoil4Charge() { digitalWrite(pinCoil4, coilHIGH); digitalWrite(pinTachOut, LOW); }
-  void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); }
+  inline void openInjector4() { digitalWrite(pinInjector4, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ4); } //Sets the relevant pin HIGH and changes the current status bit for injector 4 (4th bit of currentStatus.squirt)
+  inline void closeInjector4() { digitalWrite(pinInjector4, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ4); } 
+  inline void beginCoil4Charge() { digitalWrite(pinCoil4, coilHIGH); digitalWrite(pinTachOut, LOW); }
+  inline void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); }
 
 //#endif
 

@@ -7,7 +7,6 @@ A full copy of the license may be found in the projects root directory
 #include "scheduler.h"
 #include "globals.h"
 
-
 void initialiseSchedulers()
   {
    // Much help in this from http://arduinomega.blogspot.com.au/2011/05/timer2-and-overflow-interrupt-lets-get.html

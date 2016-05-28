@@ -21,7 +21,7 @@ toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
 
 */
 
-inline void addToothLogEntry(unsigned long time)
+static inline void addToothLogEntry(unsigned long time)
 {
   //High speed tooth logging history
   toothHistory[toothHistoryIndex] = time;
@@ -35,7 +35,7 @@ inline void addToothLogEntry(unsigned long time)
 As nearly all the decoders use a common method of determining RPM (The time the last full revolution took)
 A common function is simpler
 */
-inline int stdGetRPM()
+static inline int stdGetRPM()
 {
   noInterrupts();
   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
@@ -49,7 +49,7 @@ inline int stdGetRPM()
  * Sets the new filter time based on the current settings. 
  * This ONLY works for even spaced decoders
  */
-inline void setFilter(unsigned long curGap)
+static inline void setFilter(unsigned long curGap)
 {
    if(configPage2.triggerFilter == 1) { triggerFilterTime = curGap >> 2; } //Lite filter level is 25% of previous gap
    else if(configPage2.triggerFilter == 2) { triggerFilterTime = curGap >> 1; } //Medium filter level is 50% of previous gap

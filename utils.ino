@@ -335,6 +335,7 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, b
   int iCorrections = (corrections << 7) / 100;
   //int iTPS = ((int)TPS << 7) / 100;
 
+
   unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
   //intermediate = (intermediate * iMAP) >> 7;
   intermediate = (intermediate * iCorrections) >> 7;

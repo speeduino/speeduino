@@ -43,11 +43,7 @@ ISR(TIMER2_OVF_vect, ISR_NOBLOCK)
   if(ignitionSchedule1.Status == RUNNING) { if(ignitionSchedule1.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil1Charge(); } if(ignitionSchedule1.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
   if(ignitionSchedule2.Status == RUNNING) { if(ignitionSchedule2.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil2Charge(); } if(ignitionSchedule2.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
   if(ignitionSchedule3.Status == RUNNING) { if(ignitionSchedule3.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil3Charge(); } if(ignitionSchedule3.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
-  if(ignitionSchedule4.Status == RUNNING) { if(ignitionSchedule4.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil4Charge(); } if(ignitionSchedule4.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
-  
-  //Check if there's any actions pending for a stepper idle
-  
-    
+  if(ignitionSchedule4.Status == RUNNING) { if(ignitionSchedule4.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil4Charge(); } if(ignitionSchedule4.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }  
   
   //Loop executed every 250ms loop (1ms x 250 = 250ms)
   //Anything inside this if statement will run every 250ms.
