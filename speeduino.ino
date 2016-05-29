@@ -1056,7 +1056,8 @@ void loop()
       //crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
 
       //fixedCrankingOverride is used to extend the dwell during cranking so that the decoder can trigger the spark upon seeing a certain tooth. Currently only available on the basic distributor and 4g63 decoders. 
-      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { fixedCrankingOverride = currentStatus.dwell; }
+      if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) { fixedCrankingOverride = currentStatus.dwell; }
+      else { fixedCrankingOverride = 0; }
       
       if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) && !BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM))
       {
@@ -1113,7 +1114,7 @@ void loop()
             if(ignition3StartTime > 0) {
             setIgnitionSchedule3(ign3StartFunction, 
                       ignition3StartTime,
-                      currentStatus.dwell,
+                      currentStatus.dwell + fixedCrankingOverride,
                       ign3EndFunction
                       );
             }
@@ -1134,7 +1135,7 @@ void loop()
             if(ignition4StartTime > 0) {
             setIgnitionSchedule4(ign4StartFunction, 
                       ignition4StartTime,
-                      currentStatus.dwell,
+                      currentStatus.dwell + fixedCrankingOverride,
                       ign4EndFunction
                       );
             }

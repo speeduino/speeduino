@@ -288,8 +288,15 @@ void triggerPri_BasicDistributor()
   }
   
   setFilter(curGap); //Recalc the new filter value
-  
   addToothLogEntry(curGap);
+
+  if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+  {
+    endCoil1Charge();
+    endCoil2Charge();
+    endCoil3Charge();
+    endCoil4Charge();
+  }
   
   toothLastMinusOneToothTime = toothLastToothTime;
   toothLastToothTime = curTime;
@@ -460,7 +467,7 @@ void triggerPri_4G63()
   }
   else if (!currentStatus.hasSync) { return; }
 
-  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+  if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
   {
     if( toothCurrentCount == 1 ) { endCoil1Charge(); }
     else if( toothCurrentCount == 3 ) { endCoil2Charge(); }
