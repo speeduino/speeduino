@@ -210,7 +210,12 @@ void setup()
   
   //Set the tacho output default state
   digitalWrite(pinTachOut, HIGH);
-  
+
+  //Lookup the current MAP reading for barometric pressure
+  readMAP();
+  currentStatus.baro = currentStatus.MAP;
+
+  //Perform all initialisations
   initialiseSchedulers();
   initialiseTimers();
   //initialiseDisplay();
