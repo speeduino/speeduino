@@ -270,7 +270,7 @@ bool integerPID::Compute()
 void integerPID::SetTunings(byte Kp, byte Ki, byte Kd)
 {
    if (Kp<0 || Ki<0 || Kd<0) return;
- 
+   if ( dispKp == Kp && dispKi == Ki && dispKd == Kd ) return; //Only do anything if one of the values has changed
    dispKp = Kp; dispKi = Ki; dispKd = Kd;
    
    /*
@@ -284,7 +284,7 @@ void integerPID::SetTunings(byte Kp, byte Ki, byte Kd)
   ki = (long)((long)Ki * 1000) / InverseSampleTimeInSec;
   kd = ((long)Kd * InverseSampleTimeInSec) / 100;
  
-  if(controllerDirection ==REVERSE)
+  if(controllerDirection == REVERSE)
    {
       kp = (0 - kp);
       ki = (0 - ki);
@@ -297,6 +297,7 @@ void integerPID::SetTunings(byte Kp, byte Ki, byte Kd)
  ******************************************************************************/
 void integerPID::SetSampleTime(int NewSampleTime)
 {
+   if (SampleTime == (unsigned long)NewSampleTime) return; //If new value = old value, no action required. 
    if (NewSampleTime > 0)
    {
       unsigned long ratioX1000  = (unsigned long)(NewSampleTime * 1000) / (unsigned long)SampleTime;
