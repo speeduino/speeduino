@@ -58,13 +58,30 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(signature);
+      //Serial.print(signature);
+      //break;
+      
+      char titleString[19];
+      strcat(titleString, displaySignature);
+      strcat(titleString, " ");
+      strcat(titleString, TSfirmwareVersion);
+      
+      Serial.write(titleString,19);
       break;
 
     case 'Q': // send code version
       Serial.print(signature);
-      //Serial.write("speeduino");
       break;
+
+      //The following requires TunerStudio 3
+      /*
+      strcat(titleString, signature);
+      strcat(titleString, " ");
+      strcat(titleString, TSfirmwareVersion);
+      
+      Serial.write(titleString,19);
+      break;
+      */
 
     case 'V': // send VE table and constants in binary
       sendPage(false);

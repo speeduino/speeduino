@@ -2,8 +2,13 @@
 #define GLOBALS_H
 #include <Arduino.h>
 
-const byte ms_version = 20;
+//const byte ms_version = 20;
 const byte signature = 20;
+
+//const char signature[] = "speeduino";
+const char displaySignature[] = "Speeduino";
+const char TSfirmwareVersion[] = "2016.05";
+
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing. 
 const byte page_size = 64;
 const int map_page_size = 288;
@@ -88,7 +93,8 @@ struct statuses {
   unsigned int RPM;
   long longRPM;
   int mapADC;
-  long MAP;
+  long MAP; //Has to be a long for PID calcs (Boost control)
+  int baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running
   byte TPS; //The current TPS reading (0% - 100%)
   byte TPSlast; //The previous TPS reading
   unsigned long TPS_time; //The time the TPS sample was taken
@@ -171,7 +177,8 @@ struct config1 {
   
   byte reqFuel;
   byte divider;
-  byte injTiming : 2;
+  byte injTiming : 1;
+  byte multiplyMAP : 1;
   byte unused26 : 6;
   byte injOpen; //Injector opening time (ms * 10)
   unsigned int inj1Ang;
