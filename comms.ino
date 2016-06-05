@@ -61,12 +61,14 @@ void command()
       //Serial.print(signature);
       //break;
       
-      char titleString[19];
+      char titleString[18];
       strcat(titleString, displaySignature);
       strcat(titleString, " ");
       strcat(titleString, TSfirmwareVersion);
-      
-      Serial.write(titleString,19);
+
+      Serial.print(titleString);
+      //Serial.write(titleString,16);
+      //Serial.write("Speeduino 2016.05",18);
       break;
 
     case 'Q': // send code version
