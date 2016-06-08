@@ -718,7 +718,7 @@ void loop()
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
     }
     
-    //The IAT and CLT readings can be done less frequently. This still runs about 4 times per secondl
+    //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
     if ((mainLoopCount & 255) == 1)
     {
 
