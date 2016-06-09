@@ -72,7 +72,8 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(signature);
+      //Serial.print(signature);
+      Serial.write(signature);
       break;
 
       //The following requires TunerStudio 3
@@ -257,8 +258,9 @@ void sendValues(int length)
   response[31] = lowByte(currentStatus.rpmDOT);
   response[32] = highByte(currentStatus.rpmDOT);
 
+cli();
   Serial.write(response, (size_t)packetSize);
-
+sei();
   //if(Serial.available()) { command(); }
   //Serial.flush();
   return;
