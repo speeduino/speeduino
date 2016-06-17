@@ -60,15 +60,17 @@ void command()
     case 'S': // send code version
       //Serial.print(signature);
       //break;
-      
+
+      /*
       char titleString[18];
       strcat(titleString, displaySignature);
       strcat(titleString, " ");
       strcat(titleString, TSfirmwareVersion);
 
-      Serial.print(titleString);
+      //Serial.print(titleString);
       //Serial.write(titleString,16);
-      //Serial.write("Speeduino 2016.05",18);
+      */
+      Serial.print("Speeduino 2016.06-pre");
       break;
 
     case 'Q': // send code version
@@ -170,6 +172,8 @@ void command()
       sendToothLog(true); //Sends tooth log values as chars
       break;
 
+      
+
     case '?':
       Serial.println
       (F(
@@ -261,8 +265,6 @@ void sendValues(int length)
 cli();
   Serial.write(response, (size_t)packetSize);
 sei();
-  //if(Serial.available()) { command(); }
-  //Serial.flush();
   return;
 }
 
