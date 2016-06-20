@@ -499,7 +499,7 @@ void setup()
         channel1InjDegrees = 0;
         channel2InjDegrees = 180;
         channel3InjDegrees = 360;
-        channel2InjDegrees = 540;
+        channel4InjDegrees = 540;
       }
       else { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       break;
