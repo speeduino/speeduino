@@ -332,7 +332,7 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, b
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
   iVE = ((int)VE << 7) / 100;
   if( configPage1.multiplyMAP ) { iMAP = ((int)MAP << 7) / currentStatus.baro; } //Include multiply MAP (vs baro) if enabled
-  if( configPage1.includeAFR ) { iAFR = ((int)currentStatus.O2 << 7) / configPage1.stoich; } //Include AFR (vs stoich) if enabled
+  if( configPage1.includeAFR ) { iAFR = ((int)currentStatus.O2 << 7) / currentStatus.afrTarget; } //Include AFR (vs target) if enabled
   iCorrections = (corrections << 7) / 100;
   //int iTPS = ((int)TPS << 7) / 100;
 
