@@ -327,17 +327,19 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, b
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
-  int iVE, iMAP, iCorrections, iTPS;
+  int iVE, iMAP, iAFR, iCorrections, iTPS;
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
   iVE = ((int)VE << 7) / 100;
-  if( configPage1.multiplyMAP ) { iMAP = ((int)MAP << 7) / currentStatus.baro; }
+  if( configPage1.multiplyMAP ) { iMAP = ((int)MAP << 7) / currentStatus.baro; } //Include multiply MAP (vs baro) if enabled
+  if( configPage1.includeAFR ) { iAFR = ((int)currentStatus.O2 << 7) / configPage1.stoich; } //Include AFR (vs stoich) if enabled
   iCorrections = (corrections << 7) / 100;
   //int iTPS = ((int)TPS << 7) / 100;
 
 
   unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
   if( configPage1.multiplyMAP ) { intermediate = (intermediate * iMAP) >> 7; }
+  if( configPage1.includeAFR ) { intermediate = (intermediate * iAFR) >> 7; }
   intermediate = (intermediate * iCorrections) >> 7;
   //intermediate = (intermediate * iTPS) >> 7;
   if(intermediate == 0) { return 0; } //If the pulsewidth is 0, we return here before the opening time gets added
