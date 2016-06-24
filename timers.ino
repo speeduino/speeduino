@@ -12,9 +12,11 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 */
 #include "timers.h"
 #include "globals.h"
+#include "sensors.h"
 
 void initialiseTimers() 
 {  
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
    //Configure Timer2 for our low-freq interrupt code. 
    TCCR2B = 0x00;          //Disbale Timer2 while we set it up
    TCNT2  = 131;           //Preload timer2 with 131 cycles, leaving 125 till overflow. As the timer runs at 125Khz, this causes overflow to occur at 1Khz = 1ms
@@ -24,12 +26,17 @@ void initialiseTimers()
    /* Now configure the prescaler to CPU clock divided by 128 = 125Khz */
    TCCR2B |= (1<<CS22)  | (1<<CS20); // Set bits
    TCCR2B &= ~(1<<CS21);             // Clear bit
+#endif
 }
 
 
 //Timer2 Overflow Interrupt Vector, called when the timer overflows.
 //Executes every ~1ms.
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
 ISR(TIMER2_OVF_vect, ISR_NOBLOCK) 
+#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+void timer2Overflowinterrupt() //Most ARM chips can simply call a function
+#endif
 {
   
   //Increment Loop Counters
@@ -72,7 +79,7 @@ ISR(TIMER2_OVF_vect, ISR_NOBLOCK)
     //**************************************************************************************************************************************************
     //increament secl (secl is simply a counter that increments every second and is used to track whether the system has unexpectedly reset
     currentStatus.secl++;
-    
+    //**************************************************************************************************************************************************
     //Check the fan output status
     if (configPage4.fanEnable == 1)
     { 
@@ -88,10 +95,26 @@ ISR(TIMER2_OVF_vect, ISR_NOBLOCK)
         if(currentStatus.RPM == 0) { digitalWrite(pinFuelPump, LOW); fuelPumpOn = false; } //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
       }
     }
+    //**************************************************************************************************************************************************
+    //Set the flex reading (if enabled). The flexCounter is updated with every pulse from the sensor. If cleared once per second, we get a frequency reading
+    if(configPage1.flexEnabled)
+    {
+      if(flexCounter > 150 || flexCounter < 50)
+      {
+        //This indicated an error condition. Spec of the sensor is that errors are above 170Hz)
+      }
+      else
+      {
+        currentStatus.flex = flexCounter - 50; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
+        flexCounter = 0;
+      }
+      
+    }
 
   }
-      //Reset Timer2 to trigger in another ~1ms 
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
+    //Reset Timer2 to trigger in another ~1ms 
     TCNT2 = 131;            //Preload timer2 with 100 cycles, leaving 156 till overflow.
     TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
-  
+#endif  
 }

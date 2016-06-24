@@ -32,6 +32,7 @@ void setPinMapping(byte boardID)
       pinCoil3 = 12; //Pin for coil 3
       pinCoil4 = 13; //Pin for coil 4
       pinTrigger = 2; //The CAS pin
+      pinTrigger2 = 3; //The CAS pin
       pinTPS = A0; //TPS input pin
       pinMAP = A1; //MAP sensor pin
       pinIAT = A2; //IAT sensor pin
@@ -44,6 +45,7 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
+      pinFlex = 19; // Flex sensor (Must be external interrupt enabled)
       break;
     case 1:
       //Pin mappings as per the v0.2 shield
@@ -71,6 +73,7 @@ void setPinMapping(byte boardID)
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
+      pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       break;
     case 2:
       //Pin mappings as per the v0.3 shield
@@ -99,6 +102,7 @@ void setPinMapping(byte boardID)
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinFan = A13; //Pin for the fan output
       pinLaunch = 12; //Can be overwritten below
+      pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       break;
 
     case 3:
@@ -128,6 +132,7 @@ void setPinMapping(byte boardID)
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       pinLaunch = 12; //Can be overwritten below
+      pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       break;
 
     case 10:
@@ -160,6 +165,7 @@ void setPinMapping(byte boardID)
       pinFuelPump = 42; //Fuel pump output 2n2222
       pinFan = 47; //Pin for the fan output
       pinTachOut = 49; //Tacho output pin
+      pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       break;
 
     case 20:
@@ -273,8 +279,6 @@ void setPinMapping(byte boardID)
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
   pinMode(pinIgnBypass, OUTPUT);
-  if (configPage3.launchHiLo) { pinMode(pinLaunch, INPUT); }
-  else { pinMode(pinLaunch, INPUT_PULLUP); } //If launch triggers on LOW signal, then set a pull up as the default
   
   inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
   inj1_pin_mask = digitalPinToBitMask(pinInjector1);
@@ -305,7 +309,11 @@ void setPinMapping(byte boardID)
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
-  //
+  pinMode(pinFlex, INPUT_PULLUP); //Standard GM / Continental flex sensor requires pullup
+  if (configPage3.launchHiLo) { pinMode(pinLaunch, INPUT); }
+  else { pinMode(pinLaunch, INPUT_PULLUP); } //If launch triggers on LOW signal, then set a pull up as the default
+
+  //Set default values
   digitalWrite(pinMAP, HIGH);
   //digitalWrite(pinO2, LOW);
   digitalWrite(pinTPS, LOW);

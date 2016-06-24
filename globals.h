@@ -125,6 +125,7 @@ struct statuses {
   byte launchCorrection; //The amount of correction being applied if launch control is active
   byte afrTarget;
   byte idleDuty;
+  byte flex; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. 
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte squirt;
   volatile byte spark;
@@ -191,7 +192,8 @@ struct config1 {
   byte mapSample : 2;
   byte strokes : 1;
   byte injType : 1;
-  byte nCylinders : 4; //Number of cylinders
+  byte nCylinders : 3; //Number of cylinders
+  byte flexEnabled : 1;
 
   //config2 in ini  
   byte cltType1 : 2;
@@ -430,6 +432,7 @@ byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
 byte pinLaunch;
 byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
+byte pinFlex; //Pin with the flex sensor attached
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino

@@ -87,7 +87,6 @@ byte mapErrorCount = 0;
 byte iatErrorCount = 0;
 byte cltErrorCount = 0;
 
-
 unsigned long counter;
 unsigned long currentLoopTime; //The time the current loop started (uS)
 unsigned long previousLoopTime; //The time the previous loop started (uS)
@@ -223,6 +222,13 @@ void setup()
   initialiseFan();
   initialiseAuxPWM();
   initialiseCorrections();
+
+  //Check whether the flex sensor is enabled and if so, attach an interupt for it
+  if(configPage1.flexEnabled)
+  { 
+    attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, RISING);
+    currentStatus.flex = 0;
+  }
   
   //Once the configs have been loaded, a number of one time calculations can be completed
   req_fuel_uS = configPage1.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations
