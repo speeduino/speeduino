@@ -47,6 +47,7 @@ enum ScheduleStatus {OFF, PENDING, RUNNING}; //The 3 statuses that a schedule ca
 struct Schedule {
   volatile unsigned long duration;
   volatile ScheduleStatus Status;
+  volatile byte schedulesSet; //A counter of how many times the schedule has been set
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
   volatile unsigned long startTime;

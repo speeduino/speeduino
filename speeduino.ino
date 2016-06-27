@@ -978,6 +978,7 @@ void loop()
       
       if (fuelOn && currentStatus.PW > 0 && !BIT_CHECK(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT))
       {
+        if (injector1StartAngle <= crankAngle && fuelSchedule1.schedulesSet == 0) { injector1StartAngle += 360; }
         if (injector1StartAngle > crankAngle)
         { 
           if (configPage1.injLayout == 1)
@@ -1013,6 +1014,7 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX; }
         tempStartAngle = injector2StartAngle - channel2InjDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX; }
+        if (tempStartAngle <= tempCrankAngle && fuelSchedule2.schedulesSet == 0) { tempStartAngle += 360; }
         if (tempStartAngle > tempCrankAngle)
         { 
           if (configPage1.injLayout == 1)
@@ -1037,6 +1039,7 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX; }
         tempStartAngle = injector3StartAngle - channel3InjDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX; }
+        if (tempStartAngle <= tempCrankAngle && fuelSchedule3.schedulesSet == 0) { tempStartAngle += 360; }
         if (tempStartAngle > tempCrankAngle)
         { 
           setFuelSchedule3(openInjector3, 
@@ -1050,6 +1053,7 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX; }
         tempStartAngle = injector4StartAngle - channel4InjDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX; }
+        if (tempStartAngle <= tempCrankAngle && fuelSchedule4.schedulesSet == 0) { tempStartAngle += 360; }
         if (tempStartAngle > tempCrankAngle)
         { 
           setFuelSchedule4(openInjector4, 
