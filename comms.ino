@@ -262,7 +262,8 @@ void sendValues(int length)
   response[31] = lowByte(currentStatus.rpmDOT);
   response[32] = highByte(currentStatus.rpmDOT);
 
-  response[33] = currentStatus.flex;
+  response[33] = currentStatus.flex; //Flex sensor value (or 0 if not used)
+  
 cli();
   Serial.write(response, (size_t)packetSize);
 sei();

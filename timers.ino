@@ -99,9 +99,25 @@ void timer2Overflowinterrupt() //Most ARM chips can simply call a function
     //Set the flex reading (if enabled). The flexCounter is updated with every pulse from the sensor. If cleared once per second, we get a frequency reading
     if(configPage1.flexEnabled)
     {
-      if(flexCounter > 150 || flexCounter < 50)
+      if(flexCounter < 50)
       {
-        //This indicated an error condition. Spec of the sensor is that errors are above 170Hz)
+        currentStatus.flex = 0; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
+        flexCounter = 0;
+      }
+      else if (flexCounter > 151) //1 pulse buffer
+      {
+        
+        if(flexCounter < 169)
+        {
+          currentStatus.flex = 100; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
+          flexCounter = 0;
+        }
+        else
+        {
+          //This indicates an error condition. Spec of the sensor is that errors are above 170Hz)
+          currentStatus.flex = 0;
+          flexCounter = 0;
+        }
       }
       else
       {
