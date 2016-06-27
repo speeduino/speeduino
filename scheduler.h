@@ -37,10 +37,18 @@ void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned l
 void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setFuelSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setFuelSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setFuelSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 
 enum ScheduleStatus {OFF, PENDING, RUNNING}; //The 3 statuses that a schedule can have
 
@@ -50,16 +58,35 @@ struct Schedule {
   volatile byte schedulesSet; //A counter of how many times the schedule has been set
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
-  volatile unsigned long startTime;
+  volatile unsigned long startTime; //The system time (in uS) that the schedule started
+  unsigned int startCompare; //The counter value of the timer when this will start
+  unsigned int endCompare;
+};
+
+struct timerCompareManager {
+  volatile Schedule *currentSchedule;
+  volatile Schedule *nextSchedule;
 };
 
 Schedule fuelSchedule1;
 Schedule fuelSchedule2;
 Schedule fuelSchedule3;
 Schedule fuelSchedule4;
+Schedule fuelSchedule5;
+Schedule fuelSchedule6;
+Schedule fuelSchedule7;
+Schedule fuelSchedule8;
 Schedule ignitionSchedule1;
 Schedule ignitionSchedule2;
 Schedule ignitionSchedule3;
 Schedule ignitionSchedule4;
+Schedule ignitionSchedule5;
+Schedule ignitionSchedule6;
+Schedule ignitionSchedule7;
+Schedule ignitionSchedule8;
+
+timerCompareManager timer3compareA;
+timerCompareManager timer3compareB;
+timerCompareManager timer3compareC;
 
 #endif // SCHEDULER_H
