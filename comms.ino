@@ -57,6 +57,10 @@ void command()
       sendValues(39);
       break;
 
+    case 'F': // send serial protocol version
+      Serial.print("001");
+      break;
+
     case 'S': // send code version
       //Serial.print(signature);
       //break;
@@ -71,11 +75,13 @@ void command()
       //Serial.write(titleString,16);
       */
       Serial.print("Speeduino 2016.06-pre");
+      currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      //Serial.print(signature);
-      Serial.write(signature);
+      //Serial.print("speeduino 2016.06");
+      Serial.print(signature);
+      //Serial.write(signature);
       break;
 
       //The following requires TunerStudio 3
@@ -264,9 +270,10 @@ void sendValues(int length)
 
   response[33] = currentStatus.flex; //Flex sensor value (or 0 if not used)
   
-cli();
+//cli();
   Serial.write(response, (size_t)packetSize);
-sei();
+  //Serial.flush();
+//sei();
   return;
 }
 
