@@ -37,6 +37,7 @@ A common function is simpler
 */
 static inline int stdGetRPM()
 {
+  if( !currentStatus.hasSync ) { return 0; } //Safety check
   noInterrupts();
   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
   interrupts();
@@ -1090,7 +1091,7 @@ void triggerPri_MazdaAU()
   else if (!currentStatus.hasSync) { return; }
 
   // Locked cranking timing is available, fixed at 12* BTDC
-  if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage2.ignCranklock )
   {
     if( toothCurrentCount == 1 ) { endCoil1Charge(); }
     else if( toothCurrentCount == 3 ) { endCoil2Charge(); }
@@ -1134,8 +1135,9 @@ void triggerSec_MazdaAU()
         secondaryToothCount = 2;
       }
     }
+    secondaryToothCount++;
   }
-  secondaryToothCount++;
+
   return; 
 }
 
