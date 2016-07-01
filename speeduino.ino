@@ -411,6 +411,17 @@ void setup()
         attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, RISING);
       }
       break;
+
+    case 10:
+      triggerSetup_MazdaAU();
+      trigger = triggerPri_MazdaAU;
+      getRPM = getRPM_MazdaAU;
+      getCrankAngle = getCrankAngle_MazdaAU;
+      
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to 
+      attachInterrupt(triggerInterrupt2, triggerSec_MazdaAU, RISING);
+      break;
       
     default:
       trigger = triggerPri_missingTooth;

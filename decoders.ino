@@ -1046,3 +1046,143 @@ int getCrankAngle_Miata9905(int timePerDegree)
     return crankAngle;
 }
 
+/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Name: Mazda AU version
+Desc: 
+Note: 
+Tooth #2 is defined as the next crank tooth after the single cam tooth
+Tooth number one is at 348* ATDC
+*/
+void triggerSetup_MazdaAU()
+{
+  triggerToothAngle = 108; //The number of degrees that passes from tooth to tooth (primary). This is the maximum gap
+  toothCurrentCount = 99; //Fake tooth count represents no sync
+  secondaryToothCount = 0; //Needed for the cam tooth tracking
+  secondDerivEnabled = false;
+  decoderIsSequential = true;
+  
+  toothAngles[0] = 348; //tooth #1
+  toothAngles[1] = 96; //tooth #2
+  toothAngles[2] = 168; //tooth #3
+  toothAngles[3] = 276; //tooth #4
+
+  MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth. 
+  triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+}
+
+void triggerPri_MazdaAU()
+{
+  curTime = micros();
+  curGap = curTime - toothLastToothTime;
+  if ( curGap < triggerFilterTime ) { return; } //Filter check. Pulses should never be less than triggerFilterTime
+  
+  toothCurrentCount++;
+  if(toothCurrentCount == 1 || toothCurrentCount == 5) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
+  { 
+     toothCurrentCount = 1; //Reset the counter
+     toothOneMinusOneTime = toothOneTime;
+     toothOneTime = curTime;
+     currentStatus.hasSync = true;
+     startRevolutions++; //Counter
+     //if ((startRevolutions & 15) == 1) { currentStatus.hasSync = false; } //Every 64 revolutions, force a resync with the cam. For testing only!
+  }
+  else if (!currentStatus.hasSync) { return; }
+
+  // Locked cranking timing is available, fixed at 12* BTDC
+  if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+  {
+    if( toothCurrentCount == 1 ) { endCoil1Charge(); }
+    else if( toothCurrentCount == 3 ) { endCoil2Charge(); }
+  }
+  
+  addToothLogEntry(curGap);
+   
+  //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
+  if(toothCurrentCount == 1 || toothCurrentCount == 3) { triggerToothAngle = 72; triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 72 degrees (Next trigger is 108 degrees away)
+  else { triggerToothAngle = 108; triggerFilterTime = (curGap * 3) >> 3; } //Trigger filter is set to (108*3)/8=40 degrees (Next trigger is 70 degrees away).
+  
+  //curGap = curGap >> 1;
+  
+  toothLastMinusOneToothTime = toothLastToothTime;
+  toothLastToothTime = curTime;
+}
+void triggerSec_MazdaAU()
+{ 
+  curTime2 = micros();
+  curGap2 = curTime2 - toothLastSecToothTime;
+  //if ( curGap2 < triggerSecFilterTime ) { return; } 
+  toothLastSecToothTime = curTime2;
+  lastGap = curGap2;
+  
+  if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) || !currentStatus.hasSync)
+  {
+    //we find sync by looking for the 2 teeth that are close together. The next crank tooth after that is the one we're looking for.
+    //For the sake of this decoder, the lone cam tooth will be designated #1
+    if(secondaryToothCount == 2)
+    { 
+      toothCurrentCount = 1; 
+      currentStatus.hasSync = true;
+    }
+    else
+    {
+      triggerFilterTime = 1500;
+      //Check the status of the crank trigger
+      targetGap = (lastGap) >> 1; //The target gap is set at half the last tooth gap
+      if ( curGap < targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the extra (3rd) tooth on the cam). This tooth is located at 421 crank degrees (aka 61 degrees) and therefore the last crank tooth seen was number 1 (At 350 degrees)
+      {
+        secondaryToothCount = 2;
+      }
+    }
+  }
+  secondaryToothCount++;
+  return; 
+}
+
+
+int getRPM_MazdaAU()
+{
+  if (!currentStatus.hasSync) { return 0; }
+  
+  //During cranking, RPM is calculated 4 times per revolution, once for each tooth on the crank signal. 
+  //Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
+  if(currentStatus.RPM < configPage2.crankRPM) 
+  { 
+    int tempToothAngle;
+    noInterrupts();
+    tempToothAngle = triggerToothAngle;
+    revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen  
+    interrupts();
+    revolutionTime = revolutionTime * 36;
+    return (tempToothAngle * 60000000L) / revolutionTime;
+  }
+  else { return stdGetRPM(); }
+}
+
+int getCrankAngle_MazdaAU(int timePerDegree)
+{
+    if(!currentStatus.hasSync) { return 0;}
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables. 
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    interrupts();
+    
+    int crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was. 
+    //Estimate the number of degrees travelled since the last tooth}
+    
+    long elapsedTime = micros() - tempToothLastToothTime;
+    if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
+    else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
+    
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+    if (crankAngle < 0) { crankAngle += 360; }
+    
+    return crankAngle;
+}
+
+
