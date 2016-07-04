@@ -121,6 +121,11 @@ int channel2InjDegrees; //The number of crank degrees until cylinder 2 (and 5/6/
 int channel3InjDegrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
 int channel4InjDegrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
 
+bool channel1InjEnabled;
+bool channel2InjEnabled;
+bool channel3InjEnabled;
+bool channel4InjEnabled;
+
 //These are the functions the get called to begin and end the ignition coil charging. They are required for the various spark output modes
 void (*ign1StartFunction)();
 void (*ign1EndFunction)();
@@ -462,6 +467,11 @@ void setup()
     case 1:
       channel1IgnDegrees = 0;
       channel1InjDegrees = 0;
+
+      channel1InjEnabled = true;
+      channel2InjEnabled = false;
+      channel3InjEnabled = false;
+      channel4InjEnabled = false;
       break;
     case 2:
       channel1IgnDegrees = 0;
@@ -474,6 +484,11 @@ void setup()
         channel2InjDegrees = 180;
       }
       else { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+
+      channel1InjEnabled = true;
+      channel2InjEnabled = true;
+      channel3InjEnabled = false;
+      channel4InjEnabled = false;
       break;
     case 3:
       channel1IgnDegrees = 0;
@@ -494,6 +509,11 @@ void setup()
         channel3InjDegrees = 480;
       }
       else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+
+      channel1InjEnabled = true;
+      channel2InjEnabled = true;
+      channel3InjEnabled = true;
+      channel4InjEnabled = false;
       break;
     case 4:
       channel1IgnDegrees = 0;
@@ -519,6 +539,11 @@ void setup()
         channel4InjDegrees = 540;
       }
       else { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+
+      channel1InjEnabled = true;
+      channel2InjEnabled = true;
+      channel3InjEnabled = false;
+      channel4InjEnabled = false;
       break;
     case 6:
       channel1IgnDegrees = 0;
@@ -535,6 +560,11 @@ void setup()
       else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       
       configPage1.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
+
+      channel1InjEnabled = true;
+      channel2InjEnabled = true;
+      channel3InjEnabled = true;
+      channel4InjEnabled = false;
       break;
     case 8:
       channel1IgnDegrees = 0;
@@ -553,6 +583,11 @@ void setup()
       else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       
       configPage1.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
+
+      channel1InjEnabled = true;
+      channel2InjEnabled = true;
+      channel3InjEnabled = true;
+      channel4InjEnabled = true;
       break;
     default: //Handle this better!!!
       channel1InjDegrees = 0;
@@ -1026,7 +1061,7 @@ void loop()
         tempStartAngle = injector2StartAngle - channel2InjDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX; }
         if (tempStartAngle <= tempCrankAngle && fuelSchedule2.schedulesSet == 0) { tempStartAngle += 360; }
-        if (tempStartAngle > tempCrankAngle)
+        if ( (tempStartAngle > tempCrankAngle) && channel2InjEnabled)
         { 
           if (configPage1.injLayout == 1)
           {
@@ -1051,7 +1086,7 @@ void loop()
         tempStartAngle = injector3StartAngle - channel3InjDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX; }
         if (tempStartAngle <= tempCrankAngle && fuelSchedule3.schedulesSet == 0) { tempStartAngle += 360; }
-        if (tempStartAngle > tempCrankAngle)
+        if ( (tempStartAngle > tempCrankAngle) && channel3InjEnabled)
         { 
           setFuelSchedule3(openInjector3, 
                     ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
@@ -1065,7 +1100,7 @@ void loop()
         tempStartAngle = injector4StartAngle - channel4InjDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX; }
         if (tempStartAngle <= tempCrankAngle && fuelSchedule4.schedulesSet == 0) { tempStartAngle += 360; }
-        if (tempStartAngle > tempCrankAngle)
+        if ( (tempStartAngle > tempCrankAngle) && channel4InjEnabled)
         { 
           setFuelSchedule4(openInjector4, 
                     ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
