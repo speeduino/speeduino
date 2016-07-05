@@ -8,7 +8,7 @@
 #define afrMapPage   5
 #define afrSetPage   6//Config Page 3
 #define iacPage      7//Config Page 4
-#define boostvvtPage 8
+#define boostvvtPage 8//also has E85 enrichment
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 boolean isMap = true;

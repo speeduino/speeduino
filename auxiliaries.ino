@@ -23,12 +23,15 @@ void fanControl()
 
 void initialiseAuxPWM()
 {
-  TCCR1B = 0x00;          //Disbale Timer1 while we set it up
-  TCNT1  = 0;             //Reset Timer Count
-  TIFR1  = 0x00;          //Timer1 INT Flag Reg: Clear Timer Overflow Flag
-  TCCR1A = 0x00;          //Timer1 Control Reg A: Wave Gen Mode normal (Simply counts up from 0 to 65535 (16-bit int)
-  TCCR1B = (1 << CS12);   //Timer1 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg 
-  
+  #if defined (__MK20DX256__)
+  #else
+    TCCR1B = 0x00;          //Disbale Timer1 while we set it up
+    TCNT1  = 0;             //Reset Timer Count
+    TIFR1  = 0x00;          //Timer1 INT Flag Reg: Clear Timer Overflow Flag
+    TCCR1A = 0x00;          //Timer1 Control Reg A: Wave Gen Mode normal (Simply counts up from 0 to 65535 (16-bit int) 
+    TCCR1B = (1 << CS12);   //Timer1 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg 
+  #endif
+
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
   boost_pin_mask = digitalPinToBitMask(pinBoost);
   vvt_pin_port = portOutputRegister(digitalPinToPort(pinVVT_1));
@@ -36,8 +39,12 @@ void initialiseAuxPWM()
   
   boost_pwm_max_count = 1000000L / (16 * configPage3.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
   vvt_pwm_max_count = 1000000L / (16 * configPage3.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
-  //TIMSK1 |= (1 << OCIE1A); //Turn on the A compare unit (ie turn on the interrupt)  //Shouldn't be needed with closed loop as its turned on below
-  TIMSK1 |= (1 << OCIE1B); //Turn on the B compare unit (ie turn on the interrupt)
+  
+  #if defined (__MK20DX256__)
+  #else
+    //TIMSK1 |= (1 << OCIE1A); //Turn on the A compare unit (ie turn on the interrupt)  //Shouldn't be needed with closed loop as its turned on below
+    TIMSK1 |= (1 << OCIE1B); //Turn on the B compare unit (ie turn on the interrupt)
+  #endif
 
   boostPID.SetOutputLimits(0, boost_pwm_max_count);
   boostPID.SetMode(AUTOMATIC); //Turn PID on
@@ -46,12 +53,25 @@ void initialiseAuxPWM()
 void boostControl()
 {
   if(configPage3.boostEnabled)
-  {
-    if(currentStatus.MAP < 100) { TIMSK1 &= ~(1 << OCIE1A); digitalWrite(pinBoost, LOW); return; } //Set duty to 0 and turn off timer compare
+  {    
+    if(currentStatus.MAP < 100) //Set duty to 0 and turn off timer compare
+    { 
+      #if defined (__MK20DX256__)
+      #else
+        TIMSK1 &= ~(1 << OCIE1A); 
+      #endif
+      digitalWrite(pinBoost, LOW); 
+      return; 
+    } 
+
     boost_cl_target_boost = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; //Boost target table is in kpa and divided by 2
     boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD);
     boostPID.Compute();
-    TIMSK1 |= (1 << OCIE1A); //Turn on the compare unit (ie turn on the interrupt)
+
+    #if defined (__MK20DX256__)
+    #else
+      TIMSK1 |= (1 << OCIE1A); //Turn on the compare unit (ie turn on the interrupt)
+    #endif
   }
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   else { TIMSK1 &= ~(1 << OCIE1A); } // Disable timer channel

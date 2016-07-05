@@ -5,7 +5,7 @@ A full copy of the license may be found in the projects root directory
 */
 
 /*
-Because the size of the table is dynamic, this functino is required to reallocate the array sizes
+Because the size of the table is dynamic, this function is required to reallocate the array sizes
 Note that this may clear some of the existing values of the table
 */
 #include "table.h"

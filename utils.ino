@@ -11,10 +11,14 @@ Returns how much free dynamic memory exists (between heap and stack)
 #include "utils.h"
 
 int freeRam ()
-{
-  extern int __heap_start, *__brkval;
-  int v;
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+{  
+  #if defined (__MK20DX256__)
+    return ram.adj_free();
+  #else
+    extern int __heap_start, *__brkval;
+    int v;
+    return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+  #endif
 }
 
 void setPinMapping(byte boardID)

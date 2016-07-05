@@ -15,23 +15,34 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 
 void initialiseTimers() 
 {  
-   //Configure Timer2 for our low-freq interrupt code. 
-   TCCR2B = 0x00;          //Disbale Timer2 while we set it up
-   TCNT2  = 131;           //Preload timer2 with 131 cycles, leaving 125 till overflow. As the timer runs at 125Khz, this causes overflow to occur at 1Khz = 1ms
-   TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
-   TIMSK2 = 0x01;          //Timer2 Set Overflow Interrupt enabled.
-   TCCR2A = 0x00;          //Timer2 Control Reg A: Wave Gen Mode normal
-   /* Now configure the prescaler to CPU clock divided by 128 = 125Khz */
-   TCCR2B |= (1<<CS22)  | (1<<CS20); // Set bits
-   TCCR2B &= ~(1<<CS21);             // Clear bit
+  #if defined (__MK20DX256__)
+    Timer2.begin(Timer2ISR, 1000);
+  #else
+    //Configure Timer2 for our low-freq interrupt code. 
+    TCCR2B = 0x00;          //Disbale Timer2 while we set it up
+    TCNT2  = 131;           //Preload timer2 with 131 cycles, leaving 125 till overflow. As the timer runs at 125Khz, this causes overflow to occur at 1Khz = 1ms
+    TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
+    TIMSK2 = 0x01;          //Timer2 Set Overflow Interrupt enabled.
+    TCCR2A = 0x00;          //Timer2 Control Reg A: Wave Gen Mode normal
+    /* Now configure the prescaler to CPU clock divided by 128 = 125Khz */
+    TCCR2B |= (1<<CS22)  | (1<<CS20); // Set bits
+    TCCR2B &= ~(1<<CS21);             // Clear bit
+  #endif
 }
-
 
 //Timer2 Overflow Interrupt Vector, called when the timer overflows.
 //Executes every ~1ms.
-ISR(TIMER2_OVF_vect, ISR_NOBLOCK) 
-{
-  
+#if defined (__MK20DX256__)
+  void Timer2ISR(){
+    millisecondTimer();
+  }
+#else
+  ISR(TIMER2_OVF_vect, ISR_NOBLOCK) {
+    millisecondTimer();     
+  }
+#endif
+
+void millisecondTimer(){
   //Increment Loop Counters
   loop250ms++;
   loopSec++;
@@ -44,7 +55,7 @@ ISR(TIMER2_OVF_vect, ISR_NOBLOCK)
   if(ignitionSchedule2.Status == RUNNING) { if(ignitionSchedule2.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil2Charge(); } if(ignitionSchedule2.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
   if(ignitionSchedule3.Status == RUNNING) { if(ignitionSchedule3.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil3Charge(); } if(ignitionSchedule3.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
   if(ignitionSchedule4.Status == RUNNING) { if(ignitionSchedule4.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil4Charge(); } if(ignitionSchedule4.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }  
-  
+
   //Loop executed every 250ms loop (1ms x 250 = 250ms)
   //Anything inside this if statement will run every 250ms.
   if (loop250ms == 250) 
@@ -56,7 +67,6 @@ ISR(TIMER2_OVF_vect, ISR_NOBLOCK)
   if (loopSec == 1000) 
   {
     loopSec = 0; //Reset counter.
-
     //**************************************************************************************************************************************************
     //This updates the runSecs variable
     //If the engine is running or cranking, we need ot update the run time counter.
@@ -76,7 +86,7 @@ ISR(TIMER2_OVF_vect, ISR_NOBLOCK)
     //Check the fan output status
     if (configPage4.fanEnable == 1)
     { 
-       fanControl();            // Fucntion to turn the cooling fan on/off 
+      fanControl();            // Fucntion to turn the cooling fan on/off 
     }
     
     //Check whether fuel pump priming is complete
@@ -89,9 +99,17 @@ ISR(TIMER2_OVF_vect, ISR_NOBLOCK)
       }
     }
 
+    //Check if E85 Enrichment is being used and read Flex sensor
+    if (configPage3.E85Enabled)
+    {
+      readFLEX();
+    }
   }
-      //Reset Timer2 to trigger in another ~1ms 
+  //Reset Timer2 to trigger in another ~1ms 
+  #if defined (__MK20DX256__)
+    Timer2.begin(Timer2ISR, 1000);
+  #else
     TCNT2 = 131;            //Preload timer2 with 100 cycles, leaving 156 till overflow.
-    TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
-  
+    TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag 
+  #endif
 }

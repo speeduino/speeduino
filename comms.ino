@@ -72,7 +72,8 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(signature);
+      //Serial.print(signature);
+      Serial.write(signature);
       break;
 
       //The following requires TunerStudio 3
@@ -257,8 +258,9 @@ void sendValues(int length)
   response[31] = lowByte(currentStatus.rpmDOT);
   response[32] = highByte(currentStatus.rpmDOT);
 
+cli();
   Serial.write(response, (size_t)packetSize);
-
+sei();
   //if(Serial.available()) { command(); }
   //Serial.flush();
   return;
@@ -405,11 +407,41 @@ void receiveValue(int offset, byte newValue)
         vvtTable.axisX[offset] = int(newValue) * int(100); //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct
         return;
       }
-      else //New value is on the Y (Load) axis of the vvt table
+      else if (offset < 160)//New value is on the Y (Load) axis of the vvt table
       {
         offset = offset - 152;
         vvtTable.axisY[(7 - offset)] = int(newValue);
         return;
+      }
+      else if (offset < 164) //E85INJ load (MAP)
+      {
+        offset = offset - 160;
+        E85TableINJ.axisY[(3 - offset)] = int(newValue);
+      }
+      else if (offset < 168) //E85INJ RPM
+      {
+        offset = offset - 164;
+        E85TableINJ.axisX[(3 - offset)] = int(newValue) * int(100);
+      }
+      else if (offset < 184) //E85INJ table
+      {
+        offset = offset - 168;
+        E85TableINJ.values[3 - offset / 4][offset % 4] = newValue;
+      }
+      else if (offset < 188) //E85IGN load (MAP)
+      {
+        offset = offset - 184;
+        E85TableIGN.axisY[(3 - offset)] = int(newValue);
+      }
+      else if (offset < 192) //E85IGN RPM
+      {
+        offset = offset - 188;
+        E85TableIGN.axisX[(3 - offset)] = int(newValue) * int(100);
+      }
+      else if (offset < 208) //E85IGN table
+      {
+        offset = offset - 192;
+        E85TableIGN.values[3 - offset / 4][offset % 4] = newValue;
       }
     default:
       break;
@@ -631,12 +663,14 @@ void sendPage(bool useChar)
         break;
       }
 
-    case boostvvtPage:
+    case boostvvtPage: //has E85 in here also
       {
         if(!useChar)
         {
           //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format        
-          byte response[160]; //Bit hacky, but the size is: (8x8 + 8 + 8) + (8x8 + 8 + 8) = 160
+          //Bit hacky, but the size is: (8x8 + 8 + 8) + (8x8 + 8 + 8) = 160
+          //Bit more hacky, size now (added E85 Trim) ^^ 160 + (4x4 + 4 + 4) + (4x4 + 4 + 4) = 208
+          byte response[224]; 
 
           //Boost table
           for (int x = 0; x < 64; x++) { response[x] = boostTable.values[7 - x / 8][x % 8]; }
@@ -646,6 +680,15 @@ void sendPage(bool useChar)
           for (int x = 0; x < 64; x++) { response[x + 80] = vvtTable.values[7 - x / 8][x % 8]; }
           for (int x = 64; x < 72; x++) { response[x + 80] = byte(vvtTable.axisX[(x - 64)] / 100); }
           for (int y = 72; y < 80; y++) { response[y + 80] = byte(vvtTable.axisY[7 - (y - 72)]); }
+          //E85INJ
+          for (int y = 0; y < 4; y++) { response[y + 160] = byte(E85TableINJ.axisY[3 - y]); }
+          for (int x = 0; x < 4; x++) { response[x + 164] = byte(E85TableINJ.axisX[x] / 100); }
+          for (int x = 0; x < 16; x++) { response[x + 168] = E85TableINJ.values[3 - x / 4][x % 4]; }          
+          //E85IGN
+          for (int y = 0; y < 4; y++) { response[y + 184] = byte(E85TableIGN.axisY[3 - y]); }
+          for (int x = 0; x < 4; x++) { response[x + 188] = byte(E85TableIGN.axisX[x] / 100); }
+          for (int x = 0; x < 16; x++) { response[x + 192] = E85TableIGN.values[3 - x / 4][x % 4]; }        
+            
           Serial.write((byte *)&response, sizeof(response));
           return;
         }

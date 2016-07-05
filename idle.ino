@@ -53,7 +53,12 @@ void initialiseIdle()
       idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
       idle2_pin_mask = digitalPinToBitMask(pinIdle2);
       idle_pwm_max_count = 1000000L / (16 * configPage3.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-      TIMSK4 |= (1 << OCIE4C); //Turn on the C compare unit (ie turn on the interrupt)
+      
+      #if defined (__MK20DX256__)
+      #else
+        TIMSK4 |= (1 << OCIE4C); //Turn on the C compare unit (ie turn on the interrupt)
+      #endif
+
       break;
     
     case 3:
@@ -114,6 +119,9 @@ void initialiseIdle()
 
 void idleControl()
 {
+  #if defined (__MK20DX256__)
+  #else
+  
   switch(configPage4.iacAlgorithm)
   {
     case 0:       //Case 0 is no idle control ('None')
@@ -216,6 +224,8 @@ void idleControl()
       
       break;
   }
+
+  #endif
 }
 
 /*

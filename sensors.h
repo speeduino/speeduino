@@ -5,6 +5,7 @@
 #define ADCFILTER_IAT  180
 #define ADCFILTER_O2  128
 #define ADCFILTER_BAT  128
+#define ADCFILTER_FLEX 128
 
 /*
  * Simple low pass IIR filter macro for the analog inputs
