@@ -37,6 +37,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "fastAnalog.h"
 #include "sensors.h"
 #include "libs/PID_v1/PID_v1.h"
+#include "errors.h"
 
 #ifdef __SAM3X8E__
  //Do stuff for ARM based CPUs 

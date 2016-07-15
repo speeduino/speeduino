@@ -19,14 +19,14 @@ const int map_page_size = 288;
 #define BIT_CHECK(var,pos) ((var) & (1<<(pos)))
 
 //Define bit positions within engine virable
-#define BIT_ENGINE_RUN      0     // Engine running
+#define BIT_ENGINE_RUN      0   // Engine running
 #define BIT_ENGINE_CRANK    1   // Engine cranking
-#define BIT_ENGINE_ASE      2    // after start enrichment (ASE)
-#define BIT_ENGINE_WARMUP   3  // Engine in warmup
-#define BIT_ENGINE_ACC      4    // in TPS acceleration model
-#define BIT_ENGINE_DCC      5    // in deceleration mode
-#define BIT_ENGINE_MAP      6    // in MAP acceleration mode
-#define BIT_ENGINE_IDLE     7  // idle on
+#define BIT_ENGINE_ASE      2   // after start enrichment (ASE)
+#define BIT_ENGINE_WARMUP   3   // Engine in warmup
+#define BIT_ENGINE_ACC      4   // in acceleration mode (TPS accel)
+#define BIT_ENGINE_DCC      5   // in deceleration mode
+#define BIT_ENGINE_ERROR    6   // Error is detected
+#define BIT_ENGINE_IDLE     7   // idle on
 
 //Define masks for Squirt
 #define BIT_SQUIRT_INJ1          0  //inj1 Squirt
