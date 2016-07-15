@@ -192,8 +192,7 @@ struct config1 {
   byte mapSample : 2;
   byte strokes : 1;
   byte injType : 1;
-  byte nCylinders : 3; //Number of cylinders
-  byte flexEnabled : 1;
+  byte nCylinders : 4; //Number of cylinders
 
   //config2 in ini  
   byte cltType1 : 2;
@@ -202,8 +201,8 @@ struct config1 {
   
 
   //config3 in ini
-  byte engineType : 1;
-  byte egoType_old : 1;
+  byte engineType : 1; 
+  byte flexEnabled : 1;
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
   byte injLayout : 2;
