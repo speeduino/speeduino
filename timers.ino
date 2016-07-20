@@ -44,8 +44,8 @@ void timer2Overflowinterrupt() //Most ARM chips can simply call a function
   loopSec++;
   
   //Overdwell check
-  targetOverdwellTime = currentLoopTime - (1000 * configPage2.dwellLimit); //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
-  targetTachoPulseTime = currentLoopTime - (1500);
+  targetOverdwellTime = micros() - (1000 * configPage2.dwellLimit); //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
+  targetTachoPulseTime = micros() - (1500);
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
   if(ignitionSchedule1.Status == RUNNING) { if(ignitionSchedule1.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil1Charge(); } if(ignitionSchedule1.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
   if(ignitionSchedule2.Status == RUNNING) { if(ignitionSchedule2.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil2Charge(); } if(ignitionSchedule2.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
