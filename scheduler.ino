@@ -212,6 +212,20 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule4.Status = PENDING; //Turn this schedule on
     TIMSK4 |= (1 << OCIE4A); //Turn on the A compare unit (ie turn on the interrupt)
   }
+void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+  {
+    if(ignitionSchedule1.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
+    
+    //As the timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
+    if (timeout > 262140) { return; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65525), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking. 
+    OCR5A = TCNT5 + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    
+    ignitionSchedule5.duration = duration;
+    ignitionSchedule5.StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule5.EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule5.Status = PENDING; //Turn this schedule on
+    TIMSK5 |= (1 << OCIE5A); //Turn on the A compare unit (ie turn on the interrupt)
+  }
   
   
 

@@ -117,15 +117,18 @@ int channel1IgnDegrees; //The number of crank degrees until cylinder 1 is at TDC
 int channel2IgnDegrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
 int channel3IgnDegrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
 int channel4IgnDegrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
+int channel5IgnDegrees; //The number of crank degrees until cylinder 5 is at TDC
 int channel1InjDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
 int channel2InjDegrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
 int channel3InjDegrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
 int channel4InjDegrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
+int channel5InjDegrees; //The number of crank degrees until cylinder 5 is at TDC
 
-bool channel1InjEnabled;
-bool channel2InjEnabled;
-bool channel3InjEnabled;
-bool channel4InjEnabled;
+bool channel1InjEnabled = true;
+bool channel2InjEnabled = false;
+bool channel3InjEnabled = false;
+bool channel4InjEnabled = false;
+bool channel5InjEnabled = false;
 
 //These are the functions the get called to begin and end the ignition coil charging. They are required for the various spark output modes
 void (*ign1StartFunction)();
@@ -136,6 +139,8 @@ void (*ign3StartFunction)();
 void (*ign3EndFunction)();
 void (*ign4StartFunction)();
 void (*ign4EndFunction)();
+void (*ign5StartFunction)();
+void (*ign5EndFunction)();
 
 int timePerDegree;
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
@@ -206,12 +211,14 @@ void setup()
   digitalWrite(pinCoil2, coilLOW);
   digitalWrite(pinCoil3, coilLOW);
   digitalWrite(pinCoil4, coilLOW);
+  digitalWrite(pinCoil5, coilLOW);
   
   //Similar for injectors, make sure they're turned off
   digitalWrite(pinInjector1, LOW);
   digitalWrite(pinInjector2, LOW);
   digitalWrite(pinInjector3, LOW);
   digitalWrite(pinInjector4, LOW);
+  digitalWrite(pinInjector5, LOW);
   
   //Set the tacho output default state
   digitalWrite(pinTachOut, HIGH);
@@ -470,9 +477,6 @@ void setup()
       channel1InjDegrees = 0;
 
       channel1InjEnabled = true;
-      channel2InjEnabled = false;
-      channel3InjEnabled = false;
-      channel4InjEnabled = false;
       break;
     case 2:
       channel1IgnDegrees = 0;
@@ -488,8 +492,6 @@ void setup()
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
-      channel3InjEnabled = false;
-      channel4InjEnabled = false;
       break;
     case 3:
       channel1IgnDegrees = 0;
@@ -514,7 +516,6 @@ void setup()
       channel1InjEnabled = true;
       channel2InjEnabled = true;
       channel3InjEnabled = true;
-      channel4InjEnabled = false;
       break;
     case 4:
       channel1IgnDegrees = 0;
@@ -543,8 +544,46 @@ void setup()
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
-      channel3InjEnabled = false;
-      channel4InjEnabled = false;
+      break;
+    case 5:
+      channel1IgnDegrees = 0;
+      channel2IgnDegrees = 72;
+      channel3IgnDegrees = 144;
+      channel4IgnDegrees = 216;
+      channel5IgnDegrees = 288;
+
+      if(useSequentialIgnition)
+      {
+        channel2IgnDegrees = 144;
+        channel3IgnDegrees = 288;
+        channel4IgnDegrees = 432;
+        channel5IgnDegrees = 576;
+      }
+
+      //For alternatiing injection, the squirt occurs at different times for each channel
+      if(configPage1.injTiming == INJ_SEMISEQUENTIAL)
+      {
+        channel1InjDegrees = 0;
+        channel2InjDegrees = 72;
+        channel3InjDegrees = 144;
+        channel4InjDegrees = 216;
+        channel5InjDegrees = 288;
+      }
+      else if (useSequentialFuel)
+      {
+        channel1InjDegrees = 0;
+        channel2InjDegrees = 144;
+        channel3InjDegrees = 288;
+        channel4InjDegrees = 432;
+        channel5InjDegrees = 576;
+      }
+      else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = channel5InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+
+      channel1InjEnabled = true;
+      channel2InjEnabled = true;
+      channel3InjEnabled = true;
+      channel4InjEnabled = true;
+      channel5InjEnabled = true;
       break;
     case 6:
       channel1IgnDegrees = 0;
@@ -565,7 +604,6 @@ void setup()
       channel1InjEnabled = true;
       channel2InjEnabled = true;
       channel3InjEnabled = true;
-      channel4InjEnabled = false;
       break;
     case 8:
       channel1IgnDegrees = 0;
@@ -608,6 +646,8 @@ void setup()
       ign3EndFunction = endCoil3Charge;
       ign4StartFunction = beginCoil4Charge;
       ign4EndFunction = endCoil4Charge;
+      ign5StartFunction = beginCoil5Charge;
+      ign5EndFunction = endCoil5Charge;
       break;
       
     case 1:
@@ -620,6 +660,8 @@ void setup()
       ign3EndFunction = endCoil1Charge;
       ign4StartFunction = beginCoil1Charge;
       ign4EndFunction = endCoil1Charge;
+      ign5StartFunction = beginCoil1Charge;
+      ign5EndFunction = endCoil1Charge;
       break;
       
     case 2:
@@ -648,6 +690,8 @@ void setup()
         ign3EndFunction = endCoil3Charge;
         ign4StartFunction = beginCoil4Charge;
         ign4EndFunction = endCoil4Charge;
+        ign5StartFunction = beginCoil5Charge;
+        ign5EndFunction = endCoil5Charge;
       }
       break;
     
@@ -661,6 +705,8 @@ void setup()
       ign3EndFunction = endCoil3Charge;
       ign4StartFunction = beginCoil4Charge;
       ign4EndFunction = endCoil4Charge;
+      ign5StartFunction = beginCoil5Charge;
+      ign5EndFunction = endCoil5Charge;
       break;
   }
   
@@ -843,10 +889,12 @@ void loop()
       int injector2StartAngle = 0;
       int injector3StartAngle = 0; //Currently used for 3 cylinder only
       int injector4StartAngle = 0; //Not used until sequential gets written
+      int injector5StartAngle = 0; //For 5 cylinder testing
       int ignition1StartAngle = 0;
       int ignition2StartAngle = 0;
-      int ignition3StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
+      int ignition3StartAngle = 0; //Currently used for 3 cylinder only
       int ignition4StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
+      int ignition5StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
       //These are used for comparisons on channels above 1 where the starting angle (for injectors or ignition) can be less than a single loop time
       //(Don't ask why this is needed, it will break your head)
       int tempCrankAngle;
@@ -1202,6 +1250,27 @@ void loop()
                       );
             }
         }
+
+        tempCrankAngle = crankAngle - channel5IgnDegrees;
+        if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX; }
+        tempStartAngle = ignition5StartAngle - channel5IgnDegrees;
+        if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX; }
+        //if (tempStartAngle > tempCrankAngle)
+        { 
+          
+            long ignition5StartTime = 0;
+            if(tempStartAngle > tempCrankAngle) { ignition5StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            else { ignition5StartTime = 0; }
+            
+            if(ignition5StartTime > 0) {
+            setIgnitionSchedule5(ign5StartFunction, 
+                      ignition5StartTime,
+                      currentStatus.dwell + fixedCrankingOverride,
+                      ign5EndFunction
+                      );
+            }
+        }
         
       }
       
@@ -1262,6 +1331,11 @@ void loop()
   inline void closeInjector4() { digitalWrite(pinInjector4, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ4); } 
   inline void beginCoil4Charge() { digitalWrite(pinCoil4, coilHIGH); digitalWrite(pinTachOut, LOW); }
   inline void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); }
+
+  inline void openInjector5() { digitalWrite(pinInjector5, HIGH); }
+  inline void closeInjector5() { digitalWrite(pinInjector5, LOW); } 
+  inline void beginCoil5Charge() { digitalWrite(pinCoil5, coilHIGH); digitalWrite(pinTachOut, LOW); }
+  inline void endCoil5Charge() { digitalWrite(pinCoil5, coilLOW); }
 
 //#endif
 

@@ -76,6 +76,8 @@ volatile byte *inj3_pin_port;
 volatile byte inj3_pin_mask;
 volatile byte *inj4_pin_port;
 volatile byte inj4_pin_mask;
+volatile byte *inj5_pin_port;
+volatile byte inj5_pin_mask;
 
 volatile byte *ign1_pin_port;
 volatile byte ign1_pin_mask;
@@ -85,6 +87,8 @@ volatile byte *ign3_pin_port;
 volatile byte ign3_pin_mask;
 volatile byte *ign4_pin_port;
 volatile byte ign4_pin_mask;
+volatile byte *ign5_pin_port;
+volatile byte ign5_pin_mask;
 
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
@@ -392,6 +396,10 @@ byte pinCoil1; //Pin for coil 1
 byte pinCoil2; //Pin for coil 2
 byte pinCoil3; //Pin for coil 3
 byte pinCoil4; //Pin for coil 4
+byte pinCoil5; //Pin for coil 4
+byte pinCoil6; //Pin for coil 4
+byte pinCoil7; //Pin for coil 4
+byte pinCoil8; //Pin for coil 4
 byte pinTrigger; //The CAS pin
 byte pinTrigger2; //The Cam Sensor pin
 byte pinTrigger3;	//the 2nd cam sensor pin

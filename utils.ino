@@ -27,10 +27,12 @@ void setPinMapping(byte boardID)
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 11; //Output pin injector 3 is on
       pinInjector4 = 10; //Output pin injector 4 is on
+      pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 6; //Pin for coil 1
       pinCoil2 = 7; //Pin for coil 2
       pinCoil3 = 12; //Pin for coil 3
       pinCoil4 = 13; //Pin for coil 4
+      pinCoil5 = 14; //Pin for coil 5
       pinTrigger = 2; //The CAS pin
       pinTrigger2 = 3; //The CAS pin
       pinTPS = A0; //TPS input pin
@@ -53,10 +55,12 @@ void setPinMapping(byte boardID)
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
+      pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 28; //Pin for coil 1
       pinCoil2 = 24; //Pin for coil 2
       pinCoil3 = 40; //Pin for coil 3
       pinCoil4 = 36; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 20; //The CAS pin
       pinTrigger2 = 21; //The Cam Sensor pin
       pinTPS = A2; //TPS input pin
@@ -81,10 +85,12 @@ void setPinMapping(byte boardID)
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
+      pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 28; //Pin for coil 1
       pinCoil2 = 24; //Pin for coil 2
       pinCoil3 = 40; //Pin for coil 3
       pinCoil4 = 36; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTPS = A2;//TPS input pin
@@ -111,10 +117,12 @@ void setPinMapping(byte boardID)
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
+      pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 40; //Pin for coil 1
       pinCoil2 = 38; //Pin for coil 2
       pinCoil3 = 52; //Pin for coil 3
       pinCoil4 = 50; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTPS = A2;//TPS input pin
@@ -149,6 +157,7 @@ void setPinMapping(byte boardID)
       pinCoil2 = 28; //Pin for coil 2
       pinCoil3 = 36; //Pin for coil 3
       pinCoil4 = 40; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 18; //The CAS pin
       pinTrigger2 = 19; //The Cam Sensor pin
       pinTPS = A2;//TPS input pin
@@ -174,10 +183,12 @@ void setPinMapping(byte boardID)
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
+      pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 28; //Pin for coil 1
       pinCoil2 = 24; //Pin for coil 2
       pinCoil3 = 40; //Pin for coil 3
       pinCoil4 = 36; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinSpareOut1 = 4; //Spare LSD Output 1(PWM)
       pinSpareOut2 = 5; //Spare LSD Output 2(PWM)
       pinSpareOut3 = 6; //Spare LSD Output 3(PWM)
@@ -204,12 +215,12 @@ void setPinMapping(byte boardID)
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
-      //pinInjector5 = 12; //Placeholder only - NOT USED
-      //pinInjector6 = 13; //Placeholder only - NOT USED
+      pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 40; //Pin for coil 1
       pinCoil2 = 38; //Pin for coil 2
       pinCoil3 = 50; //Pin for coil 3
       pinCoil4 = 52; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTrigger3 = 17; // cam sensor 2 pin
@@ -241,10 +252,12 @@ void setPinMapping(byte boardID)
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
+      pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 28; //Pin for coil 1
       pinCoil2 = 24; //Pin for coil 2
       pinCoil3 = 40; //Pin for coil 3
       pinCoil4 = 36; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 20; //The CAS pin
       pinTrigger2 = 21; //The Cam Sensor pin
       pinTPS = A2; //TPS input pin
@@ -270,10 +283,12 @@ void setPinMapping(byte boardID)
   pinMode(pinCoil2, OUTPUT);
   pinMode(pinCoil3, OUTPUT);
   pinMode(pinCoil4, OUTPUT);
+  pinMode(pinCoil5, OUTPUT);
   pinMode(pinInjector1, OUTPUT);
   pinMode(pinInjector2, OUTPUT);
   pinMode(pinInjector3, OUTPUT);
   pinMode(pinInjector4, OUTPUT);
+  pinMode(pinInjector5, OUTPUT);
   pinMode(pinTachOut, OUTPUT);
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
@@ -288,6 +303,8 @@ void setPinMapping(byte boardID)
   inj3_pin_mask = digitalPinToBitMask(pinInjector3);
   inj4_pin_port = portOutputRegister(digitalPinToPort(pinInjector4));
   inj4_pin_mask = digitalPinToBitMask(pinInjector4);
+  inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
+  inj5_pin_mask = digitalPinToBitMask(pinInjector5);
   
   ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
   ign1_pin_mask = digitalPinToBitMask(pinCoil1);
@@ -297,6 +314,8 @@ void setPinMapping(byte boardID)
   ign3_pin_mask = digitalPinToBitMask(pinCoil3);
   ign4_pin_port = portOutputRegister(digitalPinToPort(pinCoil4));
   ign4_pin_mask = digitalPinToBitMask(pinCoil4);
+  ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
+  ign5_pin_mask = digitalPinToBitMask(pinCoil5);
 
   //And for inputs
   pinMode(pinMAP, INPUT);
