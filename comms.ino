@@ -79,8 +79,9 @@ void command()
       break;
 
     case 'Q': // send code version
-      //Serial.print("speeduino 2016.06");
-      Serial.print(signature);
+      Serial.print("speeduino 201607");
+      
+      //Serial.print(signature);
       //Serial.write(signature);
       break;
 
@@ -98,7 +99,7 @@ void command()
       sendPage(false);
       break;
 
-    case 'W': // receive new VE or constant at 'W'+<offset>+<newbyte>
+    case 'W': // receive new VE obr constant at 'W'+<offset>+<newbyte>
       int offset;
       while (Serial.available() == 0) { }
 
