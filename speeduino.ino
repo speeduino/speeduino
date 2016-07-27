@@ -825,7 +825,7 @@ void loop()
        readIAT();
        readO2();
        readBat();  
-       
+     
        vvtControl();
        boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.        
@@ -976,6 +976,17 @@ void loop()
           injector2StartAngle = (configPage1.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
           if(injector2StartAngle > CRANK_ANGLE_MAX) {injector2StartAngle -= CRANK_ANGLE_MAX;}
           break;
+        //5 cylinders
+        case 5:
+          injector2StartAngle = (configPage1.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
+          if(injector2StartAngle > CRANK_ANGLE_MAX) {injector2StartAngle -= CRANK_ANGLE_MAX;}
+          injector3StartAngle = (configPage1.inj3Ang + channel3InjDegrees - ( PWdivTimerPerDegree ));
+          if(injector3StartAngle > CRANK_ANGLE_MAX) {injector3StartAngle -= CRANK_ANGLE_MAX;}
+          injector4StartAngle = (configPage1.inj4Ang + channel4InjDegrees - ( PWdivTimerPerDegree ));
+          if(injector4StartAngle > CRANK_ANGLE_MAX) {injector4StartAngle -= CRANK_ANGLE_MAX;}
+          injector5StartAngle = (configPage1.inj1Ang + channel5InjDegrees - ( PWdivTimerPerDegree ));
+          if(injector5StartAngle > CRANK_ANGLE_MAX) {injector5StartAngle -= CRANK_ANGLE_MAX;}
+          break;
         //6 cylinders
         case 6: 
           injector2StartAngle = (configPage1.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
@@ -1105,57 +1116,83 @@ void loop()
         |   This will very likely need to be rewritten when sequential is enabled
         |------------------------------------------------------------------------------------------
         */
-        tempCrankAngle = crankAngle - channel2InjDegrees;
-        if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX; }
-        tempStartAngle = injector2StartAngle - channel2InjDegrees;
-        if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX; }
-        if (tempStartAngle <= tempCrankAngle && fuelSchedule2.schedulesSet == 0) { tempStartAngle += 360; }
-        if ( (tempStartAngle > tempCrankAngle) && channel2InjEnabled)
-        { 
-          if (configPage1.injLayout == 1)
-          {
-            setFuelSchedule2(openInjector2and3, 
-                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW,
-                      closeInjector2and3
-                      );
+        if(channel2InjEnabled)
+        {
+          tempCrankAngle = crankAngle - channel2InjDegrees;
+          if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX; }
+          tempStartAngle = injector2StartAngle - channel2InjDegrees;
+          if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX; }
+          if (tempStartAngle <= tempCrankAngle && fuelSchedule2.schedulesSet == 0) { tempStartAngle += 360; }
+          if ( tempStartAngle > tempCrankAngle )
+          { 
+            if (configPage1.injLayout == 1)
+            {
+              setFuelSchedule2(openInjector2and3, 
+                        ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                        (unsigned long)currentStatus.PW,
+                        closeInjector2and3
+                        );
+            }
+            else
+            {
+              setFuelSchedule2(openInjector2, 
+                        ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                        (unsigned long)currentStatus.PW,
+                        closeInjector2
+                        );
+            }
           }
-          else
-          {
-            setFuelSchedule2(openInjector2, 
+        }
+
+        if(channel3InjEnabled)
+        {
+          tempCrankAngle = crankAngle - channel3InjDegrees;
+          if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX; }
+          tempStartAngle = injector3StartAngle - channel3InjDegrees;
+          if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX; }
+          if (tempStartAngle <= tempCrankAngle && fuelSchedule3.schedulesSet == 0) { tempStartAngle += 360; }
+          if ( tempStartAngle > tempCrankAngle )
+          { 
+            setFuelSchedule3(openInjector3, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW,
-                      closeInjector2
+                      closeInjector3
                       );
           }
         }
-        
-        tempCrankAngle = crankAngle - channel3InjDegrees;
-        if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX; }
-        tempStartAngle = injector3StartAngle - channel3InjDegrees;
-        if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX; }
-        if (tempStartAngle <= tempCrankAngle && fuelSchedule3.schedulesSet == 0) { tempStartAngle += 360; }
-        if ( (tempStartAngle > tempCrankAngle) && channel3InjEnabled)
-        { 
-          setFuelSchedule3(openInjector3, 
-                    ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                    (unsigned long)currentStatus.PW,
-                    closeInjector3
-                    );
+
+        if(channel4InjEnabled)
+        {
+          tempCrankAngle = crankAngle - channel4InjDegrees;
+          if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX; }
+          tempStartAngle = injector4StartAngle - channel4InjDegrees;
+          if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX; }
+          if (tempStartAngle <= tempCrankAngle && fuelSchedule4.schedulesSet == 0) { tempStartAngle += 360; }
+          if ( tempStartAngle > tempCrankAngle )
+          { 
+            setFuelSchedule4(openInjector4, 
+                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      (unsigned long)currentStatus.PW,
+                      closeInjector4
+                      );
+          }
         }
-        
-        tempCrankAngle = crankAngle - channel4InjDegrees;
-        if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX; }
-        tempStartAngle = injector4StartAngle - channel4InjDegrees;
-        if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX; }
-        if (tempStartAngle <= tempCrankAngle && fuelSchedule4.schedulesSet == 0) { tempStartAngle += 360; }
-        if ( (tempStartAngle > tempCrankAngle) && channel4InjEnabled)
-        { 
-          setFuelSchedule4(openInjector4, 
-                    ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                    (unsigned long)currentStatus.PW,
-                    closeInjector4
-                    );
+
+        //if(channel5InjEnabled)
+        {
+          tempCrankAngle = crankAngle - channel5InjDegrees;
+          if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX; }
+          tempStartAngle = injector5StartAngle - channel5InjDegrees;
+          if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX; }
+          if (tempStartAngle <= tempCrankAngle && fuelSchedule5.schedulesSet == 0) { tempStartAngle += 360; }
+          if ( tempStartAngle > tempCrankAngle )
+          { 
+            setFuelSchedule5(openInjector5, 
+                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      (unsigned long)currentStatus.PW,
+                      closeInjector5
+                      );
+          }
         }
       }
       //***********************************************************************************************
@@ -1171,6 +1208,7 @@ void loop()
       
       if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) && !BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM))
       {
+        
         //if ( (ignition1StartAngle > crankAngle))// && ign1LastRev != startRevolutions)
         //if ((ignition1StartAngle > crankAngle) == 0)
         //if ((ignition1StartAngle < crankAngle))

@@ -63,10 +63,9 @@ struct Schedule {
   unsigned int endCompare;
 };
 
-struct timerCompareManager {
-  volatile Schedule *currentSchedule;
-  volatile Schedule *nextSchedule;
-};
+Schedule *timer3Aqueue[4];
+Schedule *timer3Bqueue[4];
+Schedule *timer3Cqueue[4];
 
 Schedule fuelSchedule1;
 Schedule fuelSchedule2;
@@ -85,8 +84,51 @@ Schedule ignitionSchedule6;
 Schedule ignitionSchedule7;
 Schedule ignitionSchedule8;
 
-timerCompareManager timer3compareA;
-timerCompareManager timer3compareB;
-timerCompareManager timer3compareC;
+Schedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
+
+static inline unsigned int setQueue(Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned int CNT)
+{
+  //Create an array of all the upcoming targets, relative to the current count on the timer
+  unsigned int tmpQueue[4];
+  tmpQueue[0] = schedule1->startCompare - CNT;
+  tmpQueue[1] = schedule1->endCompare - CNT;
+  tmpQueue[2] = schedule2->startCompare - CNT;
+  tmpQueue[3] = schedule2->endCompare - CNT;
+
+  //Set the initial queue state. This order matches the tmpQueue order
+  queue[0] = schedule1;
+  queue[1] = schedule1;
+  queue[2] = schedule2;
+  queue[3] = schedule2;
+
+  //Sort the queues. Both queues are kept in sync. 
+  //This implementes a sorting networking based on the Bose-Nelson swap algorithm
+  //See: 
+  #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned int tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
+  //SWAP(0, 1); //Likely not needed
+  //SWAP(2, 3); //Likely not needed
+  SWAP(1, 3);
+  SWAP(1, 2);
+
+  //Return the next compare time in the queue
+  return tmpQueue[0] + CNT; //Return the 
+}
+
+/*
+ * Moves all the Schedules in a queue forward one position. 
+ * The current item (0) is discarded
+ * The final queue slot is set to nullSchedule to indicate that no action should be taken
+ */
+static inline unsigned int popQueue(Schedule *queue[])
+{
+  queue[0] = queue[1];
+  queue[1] = queue[2];
+  queue[2] = queue[3];
+  queue[3] = &nullSchedule;
+
+  if( queue[0]->Status == PENDING ) { return queue[0]->startCompare; }
+  else { return queue[0]->endCompare; }
+}
+
 
 #endif // SCHEDULER_H
