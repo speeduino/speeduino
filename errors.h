@@ -16,6 +16,22 @@
 #define ERR_TPS_GND     9 //TPS grounded (Is potentially valid)
 #define ERR_BAT_HIGH    10 //Battery voltage is too high
 #define ERR_BAT_LOW     11 //Battery voltage is too low
+#define ERR_MAP_HIGH    12 //MAP output is too high
+#define ERR_MAP_LOW     13 //MAP output is too low
+
+#define ERR_DEFAULT_IAT_SHORT   80 //Note that the default is 40C. 80 is used due to the -40 offset
+#define ERR_DEFAULT_IAT_GND     80 //Note that the default is 40C. 80 is used due to the -40 offset
+#define ERR_DEFAULT_CKT_SHORT   80 //Note that the default is 40C. 80 is used due to the -40 offset
+#define ERR_DEFAULT_CLT_GND     80 //Note that the default is 40C. 80 is used due to the -40 offset
+#define ERR_DEFAULT_O2_SHORT    147 //14.7
+#define ERR_DEFAULT_O2_GND      147 //14.7
+#define ERR_DEFAULT_TPS_SHORT   50 //50%
+#define ERR_DEFAULT_TPS_GND     50 //50%
+#define ERR_DEFAULT_BAT_HIGH    130 //13v
+#define ERR_DEFAULT_BAT_LOW     130 //13v
+#define ERR_DEFAULT_MAP_HIGH    240
+#define ERR_DEFAULT_MAP_LOW     80
+
 
 #define MAX_ERRORS  4 //The number of errors the system can hold simultaneously. Should be a power of 2
 
