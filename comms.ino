@@ -74,7 +74,7 @@ void command()
       //Serial.print(titleString);
       //Serial.write(titleString,16);
       */
-      Serial.print("Speeduino 2016.06");
+      Serial.print("Speeduino 2016.07");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
