@@ -1077,6 +1077,8 @@ void triggerPri_MazdaAU()
   curTime = micros();
   curGap = curTime - toothLastToothTime;
   if ( curGap < triggerFilterTime ) { return; } //Filter check. Pulses should never be less than triggerFilterTime
+
+  addToothLogEntry(curGap);
   
   toothCurrentCount++;
   if(toothCurrentCount == 1 || toothCurrentCount == 5) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
@@ -1096,14 +1098,10 @@ void triggerPri_MazdaAU()
     if( toothCurrentCount == 1 ) { endCoil1Charge(); }
     else if( toothCurrentCount == 3 ) { endCoil2Charge(); }
   }
-  
-  addToothLogEntry(curGap);
    
   //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
   if(toothCurrentCount == 1 || toothCurrentCount == 3) { triggerToothAngle = 72; triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 72 degrees (Next trigger is 108 degrees away)
   else { triggerToothAngle = 108; triggerFilterTime = (curGap * 3) >> 3; } //Trigger filter is set to (108*3)/8=40 degrees (Next trigger is 70 degrees away).
-  
-  //curGap = curGap >> 1;
   
   toothLastMinusOneToothTime = toothLastToothTime;
   toothLastToothTime = curTime;
@@ -1111,12 +1109,13 @@ void triggerPri_MazdaAU()
 void triggerSec_MazdaAU()
 { 
   curTime2 = micros();
+  lastGap = curGap2;
   curGap2 = curTime2 - toothLastSecToothTime;
   //if ( curGap2 < triggerSecFilterTime ) { return; } 
   toothLastSecToothTime = curTime2;
-  lastGap = curGap2;
   
-  if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) || !currentStatus.hasSync)
+  //if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) || !currentStatus.hasSync) //Not sure if the cranking check is needed here
+  if(!currentStatus.hasSync)
   {
     //we find sync by looking for the 2 teeth that are close together. The next crank tooth after that is the one we're looking for.
     //For the sake of this decoder, the lone cam tooth will be designated #1
@@ -1127,10 +1126,9 @@ void triggerSec_MazdaAU()
     }
     else
     {
-      triggerFilterTime = 1500;
-      //Check the status of the crank trigger
+      triggerFilterTime = 1500; //In case the engine has been running and then lost sync. 
       targetGap = (lastGap) >> 1; //The target gap is set at half the last tooth gap
-      if ( curGap < targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the extra (3rd) tooth on the cam). This tooth is located at 421 crank degrees (aka 61 degrees) and therefore the last crank tooth seen was number 1 (At 350 degrees)
+      if ( curGap2 < targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the extra (3rd) tooth on the cam). This tooth is located at 421 crank degrees (aka 61 degrees) and therefore the last crank tooth seen was number 1 (At 350 degrees)
       {
         secondaryToothCount = 2;
       }
@@ -1147,13 +1145,13 @@ int getRPM_MazdaAU()
   if (!currentStatus.hasSync) { return 0; }
   
   //During cranking, RPM is calculated 4 times per revolution, once for each tooth on the crank signal. 
-  //Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
+  //Because these signals aren't even (Alternating 108 and 72 degrees), this needs a special function
   if(currentStatus.RPM < configPage2.crankRPM) 
   { 
     int tempToothAngle;
     noInterrupts();
     tempToothAngle = triggerToothAngle;
-    revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen  
+    revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 72 and 108 depending on the last tooth that was seen  
     interrupts();
     revolutionTime = revolutionTime * 36;
     return (tempToothAngle * 60000000L) / revolutionTime;
