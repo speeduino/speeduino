@@ -25,8 +25,8 @@ const int map_page_size = 288;
 #define BIT_ENGINE_WARMUP   3   // Engine in warmup
 #define BIT_ENGINE_ACC      4   // in acceleration mode (TPS accel)
 #define BIT_ENGINE_DCC      5   // in deceleration mode
-#define BIT_ENGINE_ERROR    6   // Error is detected
-#define BIT_ENGINE_IDLE     7   // idle on
+#define BIT_ENGINE_MAPACC   6   // MAP acceleration mode
+#define BIT_ENGINE_MAPDCC   7   // MAP decelleration mode
 
 //Define masks for Squirt
 #define BIT_SQUIRT_INJ1          0  //inj1 Squirt
@@ -44,8 +44,8 @@ const int map_page_size = 288;
 #define BIT_SPARK_HRDLIM          2  //Hard limiter indicator
 #define BIT_SPARK_SFTLIM          3  //Soft limiter indicator
 #define BIT_SPARK_BOOSTCUT        4  //Spark component of MAP based boost cut out
-#define BIT_SPARK_UNUSED3          5  //
-#define BIT_SPARK_UNUSED4          6  //
+#define BIT_SPARK_ERROR           5   // Error is detected
+#define BIT_SPARK_IDLE            6   // idle on
 #define BIT_SPARK_UNUSED5          7  //
 
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor

@@ -225,7 +225,7 @@ This function returns the current values of a fixed group of variables
 */
 void sendValues(int length)
 {
-  byte packetSize = 34;
+  byte packetSize = 35;
   byte response[packetSize];
 
   response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
@@ -270,6 +270,7 @@ void sendValues(int length)
   response[32] = highByte(currentStatus.rpmDOT);
 
   response[33] = currentStatus.flex; //Flex sensor value (or 0 if not used)
+  response[34] = getNextError();
   
 //cli();
   Serial.write(response, (size_t)packetSize);
