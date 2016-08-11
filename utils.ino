@@ -366,7 +366,7 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, b
 
   unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
   if( configPage1.multiplyMAP ) { intermediate = (intermediate * iMAP) >> 7; }
-  if( configPage1.includeAFR ) { intermediate = (intermediate * iAFR) >> 7; }
+  if( configPage1.includeAFR && (configPage3.egoType == 2)) { intermediate = (intermediate * iAFR) >> 7; } //EGO type must be set to wideband for this to be used
   intermediate = (intermediate * iCorrections) >> 7;
   //intermediate = (intermediate * iTPS) >> 7;
   if(intermediate == 0) { return 0; } //If the pulsewidth is 0, we return here before the opening time gets added
