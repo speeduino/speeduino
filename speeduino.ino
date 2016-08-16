@@ -1234,7 +1234,7 @@ void loop()
         //if ( (tempStartAngle > tempCrankAngle)  && ign2LastRev != startRevolutions)
         //if ( ign2LastRev != startRevolutions )
         { 
-            long ignition2StartTime = 0;
+            unsigned long ignition2StartTime = 0;
             if(tempStartAngle > tempCrankAngle) { ignition2StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
             //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition2StartTime = 0; }

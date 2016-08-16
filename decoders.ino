@@ -437,6 +437,7 @@ void triggerSetup_4G63()
   secondDerivEnabled = false;
   decoderIsSequential = true;
   MAX_STALL_TIME = 366667UL; //Minimum 50rpm based on the 110 degree tooth spacing
+  toothLastToothTime = micros(); //Set a startup value here to avoid filter errors when starting
   
   //Note that these angles are for every rising and falling edge
   
@@ -454,6 +455,12 @@ void triggerPri_4G63()
   curTime = micros();
   curGap = curTime - toothLastToothTime;
   if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime
+
+  addToothLogEntry(curGap);
+  triggerFilterTime = curGap >> 2; //This only applies during non-sync conditions. If there is sync then triggerFilterTime gets changed again below with a better value. 
+  
+  toothLastMinusOneToothTime = toothLastToothTime;
+  toothLastToothTime = curTime;
   
   toothCurrentCount++;
   if(toothCurrentCount == 1 || toothCurrentCount == 5) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
@@ -467,22 +474,19 @@ void triggerPri_4G63()
   }
   else if (!currentStatus.hasSync) { return; }
 
-  if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage2.ignCranklock)
   {
     if( toothCurrentCount == 1 ) { endCoil1Charge(); }
     else if( toothCurrentCount == 3 ) { endCoil2Charge(); }
   }
-  
-  addToothLogEntry(curGap);
    
   //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
   if(toothCurrentCount == 1 || toothCurrentCount == 3) { triggerToothAngle = 70; triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
   else { triggerToothAngle = 110; triggerFilterTime = (curGap * 3) >> 3; } //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
+
+  //curGap = curGap >> 1;
   
-  curGap = curGap >> 1;
-  
-  toothLastMinusOneToothTime = toothLastToothTime;
-  toothLastToothTime = curTime;
+
 }
 void triggerSec_4G63()
 { 
@@ -493,7 +497,7 @@ void triggerSec_4G63()
   
   if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) || !currentStatus.hasSync)
   {
-    triggerFilterTime = 1500;
+    triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset). 
     //Check the status of the crank trigger
     bool crank = digitalRead(pinTrigger);
     if(crank == HIGH)
@@ -511,16 +515,17 @@ int getRPM_4G63()
 {
   //During cranking, RPM is calculated 4 times per revolution, once for each rising/falling of the crank signal. 
   //Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
+  if(!currentStatus.hasSync) { return 0; }
   if(currentStatus.RPM < configPage2.crankRPM) 
   { 
+    if(startRevolutions < 2) { return 0; } //Need at least 2 full revolutions to prevent crazy initial rpm value
     int tempToothAngle;
     noInterrupts();
     tempToothAngle = triggerToothAngle;
     revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen  
     interrupts();
     revolutionTime = revolutionTime * 36;
-    int tempRPM = (tempToothAngle * 60000000L) / revolutionTime;
-    if(tempRPM >= 1000) { return currentStatus.RPM; } //Hack, but works well at avoiding erratic starting RPM. 
+    int tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / revolutionTime;
     return tempRPM;
   }
   else { return stdGetRPM(); }
@@ -541,7 +546,7 @@ int getCrankAngle_4G63(int timePerDegree)
     int crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was. 
     //Estimate the number of degrees travelled since the last tooth}
     
-    long elapsedTime = micros() - tempToothLastToothTime;
+    unsigned long elapsedTime = micros() - tempToothLastToothTime;
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
     

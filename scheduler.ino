@@ -176,7 +176,7 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
     if(ignitionSchedule1.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
     
     //As the timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    if (timeout > 262140) { return; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65525), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking. 
+    if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking. 
     OCR5A = TCNT5 + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     
     ignitionSchedule1.duration = duration;
@@ -190,7 +190,7 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     if(ignitionSchedule2.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
     
     //As the timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    if (timeout > 262140) { return; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65525), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking. 
+    if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking. This must be set slightly lower than the max of 262140 to avoid strangeness
     OCR5B = TCNT5 + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     
     ignitionSchedule2.duration = duration;
@@ -204,7 +204,7 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
     if(ignitionSchedule3.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
     
     //The timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    if (timeout > 262140) { return; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65525), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking. 
+    if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking. This must be set slightly lower than the max of 262140 to avoid strangeness
     OCR5C = TCNT5 + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     
     ignitionSchedule3.duration = duration;
@@ -235,7 +235,7 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     if(ignitionSchedule1.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
     
     //As the timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    if (timeout > 262140) { return; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65525), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking. 
+    if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking. This must be set slightly lower than the max of 262140 to avoid strangeness
     OCR5A = TCNT5 + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     
     ignitionSchedule5.duration = duration;
