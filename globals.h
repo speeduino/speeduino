@@ -44,9 +44,9 @@ const int map_page_size = 288;
 #define BIT_SPARK_HRDLIM          2  //Hard limiter indicator
 #define BIT_SPARK_SFTLIM          3  //Soft limiter indicator
 #define BIT_SPARK_BOOSTCUT        4  //Spark component of MAP based boost cut out
-#define BIT_SPARK_ERROR           5   // Error is detected
-#define BIT_SPARK_IDLE            6   // idle on
-#define BIT_SPARK_UNUSED5          7  //
+#define BIT_SPARK_ERROR           5  // Error is detected
+#define BIT_SPARK_IDLE            6  // idle on
+#define BIT_SPARK_SYNC            7  // Whether engine has sync or not 
 
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor

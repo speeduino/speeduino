@@ -14,7 +14,7 @@ byte setError(byte errorID)
   {
     errorCodes[errorCount] = errorID;
     errorCount++;
-    if(errorCount == 1) { BIT_SET(currentStatus.engine, BIT_ENGINE_ERROR); } //Enable the error indicator
+    if(errorCount == 1) { BIT_SET(currentStatus.engine, BIT_SPARK_ERROR); } //Enable the error indicator
     return errorCount;
   }
   return 0;
@@ -39,7 +39,7 @@ void clearError(byte errorID)
   }
 
   errorCount--;
-  if(errorCount == 0) { BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ERROR); } //Enable the error indicator
+  if(errorCount == 0) { BIT_CLEAR(currentStatus.engine, BIT_SPARK_ERROR); } //Enable the error indicator
   
 }
 
