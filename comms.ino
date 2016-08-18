@@ -74,7 +74,7 @@ void command()
       //Serial.print(titleString);
       //Serial.write(titleString,16);
       */
-      Serial.print("Speeduino 2016.07");
+      Serial.print("Speeduino 2016.08");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -227,6 +227,9 @@ void sendValues(int length)
 {
   byte packetSize = 35;
   byte response[packetSize];
+
+  if(requestCount == 0) { currentStatus.secl = 0; }
+  requestCount++;
 
   response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   response[1] = currentStatus.squirt; //Squirt Bitfield
