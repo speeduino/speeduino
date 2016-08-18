@@ -354,12 +354,12 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, b
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
-  int iVE, iMAP, iAFR, iCorrections, iTPS;
+  unsigned int iVE, iMAP, iAFR, iCorrections, iTPS;
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
-  iVE = ((int)VE << 7) / 100;
-  if( configPage1.multiplyMAP ) { iMAP = ((int)MAP << 7) / currentStatus.baro; } //Include multiply MAP (vs baro) if enabled
-  if( configPage1.includeAFR ) { iAFR = ((int)currentStatus.O2 << 7) / currentStatus.afrTarget; } //Include AFR (vs target) if enabled
+  iVE = ((unsigned int)VE << 7) / 100;
+  if( configPage1.multiplyMAP ) { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; } //Include multiply MAP (vs baro) if enabled
+  if( configPage1.includeAFR && (configPage3.egoType == 2)) { iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget; } //Include AFR (vs target) if enabled
   iCorrections = (corrections << 7) / 100;
   //int iTPS = ((int)TPS << 7) / 100;
 
