@@ -170,17 +170,6 @@ void setup()
   WUETable.xSize = 10;
   WUETable.values = configPage1.wueValues;
   WUETable.axisX = configPage2.wueBins;
-  //The WUE X axis values are hard coded (Don't ask, they just are)
-  WUETable.axisX[0] = 0;
-  WUETable.axisX[1] = 11;
-  WUETable.axisX[2] = 22;
-  WUETable.axisX[3] = 33;
-  WUETable.axisX[4] = 44;
-  WUETable.axisX[5] = 56;
-  WUETable.axisX[6] = 67;
-  WUETable.axisX[7] = 78;
-  WUETable.axisX[8] = 94;
-  WUETable.axisX[9] = 111;
   
   dwellVCorrectionTable.valueSize = SIZE_BYTE;
   dwellVCorrectionTable.xSize = 6;
