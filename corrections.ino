@@ -235,7 +235,9 @@ PID (Best suited to wideband sensors):
 
 byte correctionsAFRClosedLoop()
 {
-  if( (configPage3.egoAlgorithm == 3) || (configPage3.egoType == 0)) { return 100; } //An egoAlgorithm value of 3 means NO CORRECTION, egoType of 0 means no O2 sensor
+  if( (configPage3.egoType == 0)) { return 100; } //egoType of 0 means no O2 sensor
+
+  currentStatus.afrTarget = currentStatus.O2; //Catch all incase the below doesn't run. This prevents the Include AFR option from doing crazy things if the AFR target conditions aren't met. This value is changed again below if all conditions are met. 
   
   //Check the ignition count to see whether the next step is required
   if( (ignitionCount & (configPage3.egoCount - 1)) == 1 ) //This is the equivalent of ( (ignitionCount % configPage3.egoCount) == 0 ) but without the expensive modulus operation. ie It results in True every <egoCount> ignition loops. Note that it only works for power of two vlaues for egoCount
@@ -287,6 +289,7 @@ byte correctionsAFRClosedLoop()
         //currentStatus.egoCorrection = 100 + PID_output;
         return (100 + PID_output);
       }
+      else { return 100; } // Occurs if the egoAlgorithm is set to 0 (No Correction)
       
     }
   }
