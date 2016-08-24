@@ -162,7 +162,8 @@ struct config1 {
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
-  byte unused16;
+  byte tachoPin : 6; //Custom pin setting for tacho output
+  byte unused16 : 2;
   byte tdePct; // TPS decelleration (%)
   byte taeColdA;
   byte tpsThresh;

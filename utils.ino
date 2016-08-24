@@ -276,7 +276,7 @@ void setPinMapping(byte boardID)
   //Setup any devices that are using selectable pins
   if(configPage3.launchPin != 0) { pinLaunch = configPage3.launchPin; }
   if(configPage2.ignBypassPin != 0) { pinIgnBypass = configPage2.ignBypassPin; }
-  
+  if(configPage1.tachoPin != 0) { pinTachOut = configPage1.tachoPin; }
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinCoil1, OUTPUT);
