@@ -137,8 +137,8 @@ void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned l
     //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
     //As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
     //unsigned int absoluteTimeout = TCNT4 + (timeout / 4); //Each tick occurs every 4uS with the 128 prescaler, so divide the timeout by 4 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
-    fuelSchedule4.startCompare = TCNT4 + (timeout >> 2);
-    fuelSchedule4.endCompare = fuelSchedule4.startCompare + (duration >> 2);
+    fuelSchedule4.startCompare = TCNT4 + (timeout >> 4);
+    fuelSchedule4.endCompare = fuelSchedule4.startCompare + (duration >> 4);
     OCR4B = fuelSchedule4.startCompare; //Use the C copmare unit of timer 3
     fuelSchedule4.duration = duration;
     fuelSchedule4.StartCallback = startCallback; //Name the start callback function
