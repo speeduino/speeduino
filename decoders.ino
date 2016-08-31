@@ -111,6 +111,7 @@ void triggerPri_missingTooth()
      toothOneTime = curTime;
      currentStatus.hasSync = true;
      startRevolutions++; //Counter 
+     triggerFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
    }
    else
    {
