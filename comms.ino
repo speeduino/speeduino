@@ -79,7 +79,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201608-pre");
+      Serial.print("speeduino 201608");
       
       //Serial.print(signature);
       //Serial.write(signature);
