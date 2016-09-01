@@ -62,38 +62,13 @@ void command()
       break;
 
     case 'S': // send code version
-      //Serial.print(signature);
-      //break;
-
-      /*
-      char titleString[18];
-      strcat(titleString, displaySignature);
-      strcat(titleString, " ");
-      strcat(titleString, TSfirmwareVersion);
-
-      //Serial.print(titleString);
-      //Serial.write(titleString,16);
-      */
-      Serial.print("Speeduino 2016.08");
+      Serial.print("Speeduino 2016.09");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
-    case 'Q': // send code version
-      Serial.print("speeduino 201608");
-      
-      //Serial.print(signature);
-      //Serial.write(signature);
+    case 'Q': // send code signature
+      Serial.print("speeduino 201609-dev");
       break;
-
-      //The following requires TunerStudio 3
-      /*
-      strcat(titleString, signature);
-      strcat(titleString, " ");
-      strcat(titleString, TSfirmwareVersion);
-      
-      Serial.write(titleString,19);
-      break;
-      */
 
     case 'V': // send VE table and constants in binary
       sendPage(false);
@@ -230,6 +205,8 @@ void sendValues(int length)
 
   if(requestCount == 0) { currentStatus.secl = 0; }
   requestCount++;
+
+  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
   response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   response[1] = currentStatus.squirt; //Squirt Bitfield
