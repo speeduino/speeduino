@@ -2,8 +2,13 @@
 #define GLOBALS_H
 #include <Arduino.h>
 
-const byte ms_version = 20;
+//const byte ms_version = 20;
 const byte signature = 20;
+
+//const char signature[] = "speeduino";
+const char displaySignature[] = "Speeduino";
+const char TSfirmwareVersion[] = "2016.05";
+
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing. 
 const byte page_size = 64;
 const int map_page_size = 288;
@@ -14,14 +19,14 @@ const int map_page_size = 288;
 #define BIT_CHECK(var,pos) ((var) & (1<<(pos)))
 
 //Define bit positions within engine virable
-#define BIT_ENGINE_RUN      0     // Engine running
+#define BIT_ENGINE_RUN      0   // Engine running
 #define BIT_ENGINE_CRANK    1   // Engine cranking
-#define BIT_ENGINE_ASE      2    // after start enrichment (ASE)
-#define BIT_ENGINE_WARMUP   3  // Engine in warmup
-#define BIT_ENGINE_ACC      4    // in TPS acceleration model
-#define BIT_ENGINE_DCC      5    // in deceleration mode
-#define BIT_ENGINE_MAP      6    // in MAP acceleration mode
-#define BIT_ENGINE_IDLE     7  // idle on
+#define BIT_ENGINE_ASE      2   // after start enrichment (ASE)
+#define BIT_ENGINE_WARMUP   3   // Engine in warmup
+#define BIT_ENGINE_ACC      4   // in acceleration mode (TPS accel)
+#define BIT_ENGINE_DCC      5   // in deceleration mode
+#define BIT_ENGINE_MAPACC   6   // MAP acceleration mode
+#define BIT_ENGINE_MAPDCC   7   // MAP decelleration mode
 
 //Define masks for Squirt
 #define BIT_SQUIRT_INJ1          0  //inj1 Squirt
@@ -39,9 +44,9 @@ const int map_page_size = 288;
 #define BIT_SPARK_HRDLIM          2  //Hard limiter indicator
 #define BIT_SPARK_SFTLIM          3  //Soft limiter indicator
 #define BIT_SPARK_BOOSTCUT        4  //Spark component of MAP based boost cut out
-#define BIT_SPARK_UNUSED3          5  //
-#define BIT_SPARK_UNUSED4          6  //
-#define BIT_SPARK_UNUSED5          7  //
+#define BIT_SPARK_ERROR           5  // Error is detected
+#define BIT_SPARK_IDLE            6  // idle on
+#define BIT_SPARK_SYNC            7  // Whether engine has sync or not 
 
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
@@ -71,6 +76,8 @@ volatile byte *inj3_pin_port;
 volatile byte inj3_pin_mask;
 volatile byte *inj4_pin_port;
 volatile byte inj4_pin_mask;
+volatile byte *inj5_pin_port;
+volatile byte inj5_pin_mask;
 
 volatile byte *ign1_pin_port;
 volatile byte ign1_pin_mask;
@@ -80,14 +87,18 @@ volatile byte *ign3_pin_port;
 volatile byte ign3_pin_mask;
 volatile byte *ign4_pin_port;
 volatile byte ign4_pin_mask;
+volatile byte *ign5_pin_port;
+volatile byte ign5_pin_mask;
 
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
   volatile boolean hasSync;
   unsigned int RPM;
+  long longRPM;
   int mapADC;
-  int MAP;
+  long MAP; //Has to be a long for PID calcs (Boost control)
+  int baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running
   byte TPS; //The current TPS reading (0% - 100%)
   byte TPSlast; //The previous TPS reading
   unsigned long TPS_time; //The time the TPS sample was taken
@@ -118,6 +129,7 @@ struct statuses {
   byte launchCorrection; //The amount of correction being applied if launch control is active
   byte afrTarget;
   byte idleDuty;
+  byte flex; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. 
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte squirt;
   volatile byte spark;
@@ -150,7 +162,8 @@ struct config1 {
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
-  byte unused16;
+  byte tachoPin : 6; //Custom pin setting for tacho output
+  byte unused16 : 2;
   byte tdePct; // TPS decelleration (%)
   byte taeColdA;
   byte tpsThresh;
@@ -170,8 +183,10 @@ struct config1 {
   
   byte reqFuel;
   byte divider;
-  byte injTiming : 2;
-  byte unused26 : 6;
+  byte injTiming : 1;
+  byte multiplyMAP : 1;
+  byte includeAFR : 1;
+  byte unused26 : 5;
   byte injOpen; //Injector opening time (ms * 10)
   unsigned int inj1Ang;
   unsigned int inj2Ang; 
@@ -191,8 +206,8 @@ struct config1 {
   
 
   //config3 in ini
-  byte engineType : 1;
-  byte egoType_old : 1;
+  byte engineType : 1; 
+  byte flexEnabled : 1;
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
   byte injLayout : 2;
@@ -207,7 +222,7 @@ struct config1 {
   byte mapMin;
   unsigned int mapMax;
   byte fpPrime; //Time (In seconds) that the fuel pump should be primed for on power up
-  byte unused50;
+  byte stoich;
   byte unused51;
   byte unused52;
   byte unused53;
@@ -251,7 +266,7 @@ struct config2 {
   byte sparkMode : 2; //Spark output mode (Eg Wasted spark, single channel or Wasted COP)
   byte dfcoEnabled : 1; //Whether or not DFCO is turned on
   byte triggerFilter : 2; //The mode of trigger filter being used (0=Off, 1=Light (Not currently used), 2=Normal, 3=Aggressive)
-  byte dwellUnused : 1;
+  byte ignCranklock : 1; //Whether or not the ignition timing during cranking is locked to a CAS pulse. Only currently valid for Basic distributor and 4G63. 
   
   byte dwellCrank; //Dwell time whilst cranking
   byte dwellRun; //Dwell time whilst running 
@@ -273,7 +288,10 @@ struct config2 {
   byte dfcoRPM; //RPM at which DFCO turns off/on at
   byte dfcoHyster; //Hysteris RPM for DFCO
   byte dfcoTPSThresh; //TPS must be below this figure for DFCO to engage
-  byte unused63;
+
+  byte ignBypassEnabled : 1; //Whether or not the ignition bypass is enabled
+  byte ignBypassPin : 6; //Pin the ignition bypass is activated on
+  byte ignBypassHiLo : 1; //Whether this should be active high or low. 
 
   
 };
@@ -325,9 +343,9 @@ struct config3 {
   byte idleKD;
   
   byte boostLimit; //Is divided by 2, allowing kPa values up to 511
-  byte unused57;
-  byte unused58;
-  byte unused59;
+  byte boostKP;
+  byte boostKI;
+  byte boostKD;
   byte unused60;
   byte unused61;
   byte unused62;
@@ -351,7 +369,7 @@ struct config4 {
   byte iacAlgorithm : 3; //Valid values are: "None", "On/Off", "PWM", "PWM Closed Loop", "Stepper", "Stepper Closed Loop"
   byte iacStepTime : 3; //How long to pulse the stepper for to ensure the step completes (ms)
   byte iacChannels : 1; //How many outputs to use in PWM mode (0 = 1 channel, 1 = 2 channels)
-  byte unused52 : 1;
+  byte iacPWMdir : 1; //Directino of the PWM valve. 0 = Normal = Higher RPM with more duty. 1 = Reverse = Lower RPM with more duty
   
   byte iacFastTemp; //Fast idle temp when using a simple on/off valve
   
@@ -379,6 +397,10 @@ byte pinCoil1; //Pin for coil 1
 byte pinCoil2; //Pin for coil 2
 byte pinCoil3; //Pin for coil 3
 byte pinCoil4; //Pin for coil 4
+byte pinCoil5; //Pin for coil 4
+byte pinCoil6; //Pin for coil 4
+byte pinCoil7; //Pin for coil 4
+byte pinCoil8; //Pin for coil 4
 byte pinTrigger; //The CAS pin
 byte pinTrigger2; //The Cam Sensor pin
 byte pinTrigger3;	//the 2nd cam sensor pin
@@ -417,6 +439,8 @@ byte pinFan;       // Cooling fan output
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
 byte pinLaunch;
+byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
+byte pinFlex; //Pin with the flex sensor attached
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino

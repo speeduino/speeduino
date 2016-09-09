@@ -98,8 +98,8 @@ int table2D_getValue(struct table2D *fromTable, int X)
               {
                 xMaxValue = fromTable->axisX[x];
                 xMinValue = fromTable->axisX[x-1];
-                xMax = x;
-                xMin = x-1;
+                fromTable->lastXMax = xMax = x;
+                fromTable->lastXMin = xMin = x-1;
                 break;
               }   
           }
@@ -130,8 +130,8 @@ int table2D_getValue(struct table2D *fromTable, int X)
               {
                 xMaxValue = fromTable->axisX16[x];
                 xMinValue = fromTable->axisX16[x-1];
-                xMax = x;
-                xMin = x-1;
+                fromTable->lastXMax = xMax = x;
+                fromTable->lastXMin = xMin = x-1;
                 break;
               }    
           }

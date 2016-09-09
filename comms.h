@@ -12,6 +12,8 @@
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 boolean isMap = true;
+unsigned long requestCount = 0; //The number of times the A command has been issued
+
 const char pageTitles[] PROGMEM //This is being stored in the avr flash instead of SRAM which there is not very much of
   {
    "\nVolumetric Efficiancy Map\0"//This is an alternative to using a 2D array which would waste space because of the different lengths of the strings

@@ -49,6 +49,7 @@ int divs10(long n) {
 
 //Signed divide by 100
 int divs100(long n) {
+  return (n / 100); // Amazingly, gcc is producing a better /divide by 100 function than this
  long q, r;
  n = n + (n>>31 & 99);
  q = (n >> 1) + (n >> 3) + (n >> 6) - (n >> 10) +
@@ -62,6 +63,7 @@ int divs100(long n) {
 
 //Unsigned divide by 100
 unsigned long divu100(unsigned long n) {
+  //return (n / 100); // No difference with this on/off
  unsigned long q, r;
  q = (n >> 1) + (n >> 3) + (n >> 6) - (n >> 10) +
  (n >> 12) + (n >> 13) - (n >> 16);
@@ -76,7 +78,19 @@ unsigned long divu100(unsigned long n) {
 //This is a relatively fast approximation of a percentage value. 
 unsigned long percentage(byte x, unsigned long y)
 {
-  return divu100(y) * x;
+  return (y * x) / 100; //For some reason this is faster
+  //return divu100(y * x);
+}
+
+/*
+ * Calculates integer power values. Same as pow() but with ints
+ */
+inline long powint(int factor, unsigned int exponent)
+{
+   long product = 1;
+   while (exponent--)
+      product *= factor;
+   return product;
 }
 
 #endif // MATH_H

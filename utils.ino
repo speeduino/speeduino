@@ -27,11 +27,14 @@ void setPinMapping(byte boardID)
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 11; //Output pin injector 3 is on
       pinInjector4 = 10; //Output pin injector 4 is on
+      pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 6; //Pin for coil 1
       pinCoil2 = 7; //Pin for coil 2
       pinCoil3 = 12; //Pin for coil 3
       pinCoil4 = 13; //Pin for coil 4
+      pinCoil5 = 14; //Pin for coil 5
       pinTrigger = 2; //The CAS pin
+      pinTrigger2 = 3; //The CAS pin
       pinTPS = A0; //TPS input pin
       pinMAP = A1; //MAP sensor pin
       pinIAT = A2; //IAT sensor pin
@@ -44,6 +47,7 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
+      pinFlex = 19; // Flex sensor (Must be external interrupt enabled)
       break;
     case 1:
       //Pin mappings as per the v0.2 shield
@@ -51,10 +55,12 @@ void setPinMapping(byte boardID)
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
+      pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 28; //Pin for coil 1
       pinCoil2 = 24; //Pin for coil 2
       pinCoil3 = 40; //Pin for coil 3
       pinCoil4 = 36; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 20; //The CAS pin
       pinTrigger2 = 21; //The Cam Sensor pin
       pinTPS = A2; //TPS input pin
@@ -71,6 +77,7 @@ void setPinMapping(byte boardID)
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
+      pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       break;
     case 2:
       //Pin mappings as per the v0.3 shield
@@ -78,10 +85,12 @@ void setPinMapping(byte boardID)
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
+      pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 28; //Pin for coil 1
       pinCoil2 = 24; //Pin for coil 2
       pinCoil3 = 40; //Pin for coil 3
       pinCoil4 = 36; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTPS = A2;//TPS input pin
@@ -99,6 +108,7 @@ void setPinMapping(byte boardID)
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinFan = A13; //Pin for the fan output
       pinLaunch = 12; //Can be overwritten below
+      pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       break;
 
     case 3:
@@ -107,10 +117,12 @@ void setPinMapping(byte boardID)
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
+      pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 40; //Pin for coil 1
       pinCoil2 = 38; //Pin for coil 2
       pinCoil3 = 52; //Pin for coil 3
       pinCoil4 = 50; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTPS = A2;//TPS input pin
@@ -128,6 +140,7 @@ void setPinMapping(byte boardID)
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       pinLaunch = 12; //Can be overwritten below
+      pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       break;
 
     case 10:
@@ -144,6 +157,7 @@ void setPinMapping(byte boardID)
       pinCoil2 = 28; //Pin for coil 2
       pinCoil3 = 36; //Pin for coil 3
       pinCoil4 = 40; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 18; //The CAS pin
       pinTrigger2 = 19; //The Cam Sensor pin
       pinTPS = A2;//TPS input pin
@@ -160,6 +174,7 @@ void setPinMapping(byte boardID)
       pinFuelPump = 42; //Fuel pump output 2n2222
       pinFan = 47; //Pin for the fan output
       pinTachOut = 49; //Tacho output pin
+      pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       break;
 
     case 20:
@@ -168,10 +183,12 @@ void setPinMapping(byte boardID)
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
+      pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 28; //Pin for coil 1
       pinCoil2 = 24; //Pin for coil 2
       pinCoil3 = 40; //Pin for coil 3
       pinCoil4 = 36; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinSpareOut1 = 4; //Spare LSD Output 1(PWM)
       pinSpareOut2 = 5; //Spare LSD Output 2(PWM)
       pinSpareOut3 = 6; //Spare LSD Output 3(PWM)
@@ -198,12 +215,12 @@ void setPinMapping(byte boardID)
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
-      //pinInjector5 = 12; //Placeholder only - NOT USED
-      //pinInjector6 = 13; //Placeholder only - NOT USED
+      pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 40; //Pin for coil 1
       pinCoil2 = 38; //Pin for coil 2
       pinCoil3 = 50; //Pin for coil 3
       pinCoil4 = 52; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTrigger3 = 17; // cam sensor 2 pin
@@ -235,10 +252,12 @@ void setPinMapping(byte boardID)
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
+      pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 28; //Pin for coil 1
       pinCoil2 = 24; //Pin for coil 2
       pinCoil3 = 40; //Pin for coil 3
       pinCoil4 = 36; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 20; //The CAS pin
       pinTrigger2 = 21; //The Cam Sensor pin
       pinTPS = A2; //TPS input pin
@@ -256,24 +275,26 @@ void setPinMapping(byte boardID)
   
   //Setup any devices that are using selectable pins
   if(configPage3.launchPin != 0) { pinLaunch = configPage3.launchPin; }
-  
-  
+  if(configPage2.ignBypassPin != 0) { pinIgnBypass = configPage2.ignBypassPin; }
+  if(configPage1.tachoPin != 0) { pinTachOut = configPage1.tachoPin; }
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinCoil1, OUTPUT);
   pinMode(pinCoil2, OUTPUT);
   pinMode(pinCoil3, OUTPUT);
   pinMode(pinCoil4, OUTPUT);
+  pinMode(pinCoil5, OUTPUT);
   pinMode(pinInjector1, OUTPUT);
   pinMode(pinInjector2, OUTPUT);
   pinMode(pinInjector3, OUTPUT);
   pinMode(pinInjector4, OUTPUT);
+  pinMode(pinInjector5, OUTPUT);
   pinMode(pinTachOut, OUTPUT);
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
-  if (configPage3.launchHiLo) { pinMode(pinLaunch, INPUT); }
-  else { pinMode(pinLaunch, INPUT_PULLUP); } //If launch triggers on LOW signal, then set a pull up as the default
+  pinMode(pinIgnBypass, OUTPUT);
+  pinMode(pinFan, OUTPUT);
   
   inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
   inj1_pin_mask = digitalPinToBitMask(pinInjector1);
@@ -283,6 +304,8 @@ void setPinMapping(byte boardID)
   inj3_pin_mask = digitalPinToBitMask(pinInjector3);
   inj4_pin_port = portOutputRegister(digitalPinToPort(pinInjector4));
   inj4_pin_mask = digitalPinToBitMask(pinInjector4);
+  inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
+  inj5_pin_mask = digitalPinToBitMask(pinInjector5);
   
   ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
   ign1_pin_mask = digitalPinToBitMask(pinCoil1);
@@ -292,6 +315,8 @@ void setPinMapping(byte boardID)
   ign3_pin_mask = digitalPinToBitMask(pinCoil3);
   ign4_pin_port = portOutputRegister(digitalPinToPort(pinCoil4));
   ign4_pin_mask = digitalPinToBitMask(pinCoil4);
+  ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
+  ign5_pin_mask = digitalPinToBitMask(pinCoil5);
 
   //And for inputs
   pinMode(pinMAP, INPUT);
@@ -304,7 +329,11 @@ void setPinMapping(byte boardID)
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
-  //
+  pinMode(pinFlex, INPUT_PULLUP); //Standard GM / Continental flex sensor requires pullup
+  if (configPage3.launchHiLo) { pinMode(pinLaunch, INPUT); }
+  else { pinMode(pinLaunch, INPUT_PULLUP); } //If launch triggers on LOW signal, then set a pull up as the default
+
+  //Set default values
   digitalWrite(pinMAP, HIGH);
   //digitalWrite(pinO2, LOW);
   digitalWrite(pinTPS, LOW);
@@ -326,16 +355,19 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, b
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
+  unsigned int iVE, iMAP, iAFR, iCorrections, iTPS;
 
-  //100% float free version, does sacrifice a little bit of accuracy.
-  int iVE = ((int)VE << 7) / 100;
-  //int iVE = divs100( ((int)VE << 7));
-  //int iMAP = ((int)MAP << 7) / 100;
-  int iCorrections = (corrections << 7) / 100;
+  //100% float free version, does sacrifice a little bit of accuracy, but not much.
+  iVE = ((unsigned int)VE << 7) / 100;
+  if( configPage1.multiplyMAP ) { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; } //Include multiply MAP (vs baro) if enabled
+  if( configPage1.includeAFR && (configPage3.egoType == 2)) { iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget; } //Include AFR (vs target) if enabled
+  iCorrections = (corrections << 7) / 100;
   //int iTPS = ((int)TPS << 7) / 100;
 
+
   unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
-  //intermediate = (intermediate * iMAP) >> 7;
+  if( configPage1.multiplyMAP ) { intermediate = (intermediate * iMAP) >> 7; }
+  if( configPage1.includeAFR && (configPage3.egoType == 2)) { intermediate = (intermediate * iAFR) >> 7; } //EGO type must be set to wideband for this to be used
   intermediate = (intermediate * iCorrections) >> 7;
   //intermediate = (intermediate * iTPS) >> 7;
   if(intermediate == 0) { return 0; } //If the pulsewidth is 0, we return here before the opening time gets added

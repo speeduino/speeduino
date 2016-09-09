@@ -57,20 +57,49 @@ void command()
       sendValues(39);
       break;
 
+    case 'F': // send serial protocol version
+      Serial.print("001");
+      break;
+
     case 'S': // send code version
-      Serial.print(signature);
+      //Serial.print(signature);
+      //break;
+
+      /*
+      char titleString[18];
+      strcat(titleString, displaySignature);
+      strcat(titleString, " ");
+      strcat(titleString, TSfirmwareVersion);
+
+      //Serial.print(titleString);
+      //Serial.write(titleString,16);
+      */
+      Serial.print("Speeduino 2016.08");
+      currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print(signature);
-      //Serial.write("speeduino");
+      Serial.print("speeduino 201608");
+      
+      //Serial.print(signature);
+      //Serial.write(signature);
       break;
+
+      //The following requires TunerStudio 3
+      /*
+      strcat(titleString, signature);
+      strcat(titleString, " ");
+      strcat(titleString, TSfirmwareVersion);
+      
+      Serial.write(titleString,19);
+      break;
+      */
 
     case 'V': // send VE table and constants in binary
       sendPage(false);
       break;
 
-    case 'W': // receive new VE or constant at 'W'+<offset>+<newbyte>
+    case 'W': // receive new VE obr constant at 'W'+<offset>+<newbyte>
       int offset;
       while (Serial.available() == 0) { }
 
@@ -150,6 +179,8 @@ void command()
       sendToothLog(true); //Sends tooth log values as chars
       break;
 
+      
+
     case '?':
       Serial.println
       (F(
@@ -194,8 +225,11 @@ This function returns the current values of a fixed group of variables
 */
 void sendValues(int length)
 {
-  byte packetSize = 33;
+  byte packetSize = 35;
   byte response[packetSize];
+
+  if(requestCount == 0) { currentStatus.secl = 0; }
+  requestCount++;
 
   response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   response[1] = currentStatus.squirt; //Squirt Bitfield
@@ -238,10 +272,13 @@ void sendValues(int length)
   response[31] = lowByte(currentStatus.rpmDOT);
   response[32] = highByte(currentStatus.rpmDOT);
 
+  response[33] = currentStatus.flex; //Flex sensor value (or 0 if not used)
+  response[34] = getNextError();
+  
+//cli();
   Serial.write(response, (size_t)packetSize);
-
-  //if(Serial.available()) { command(); }
   //Serial.flush();
+//sei();
   return;
 }
 

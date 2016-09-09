@@ -12,8 +12,7 @@ These functions cover the PWM and stepper idle control
 Idle Control
 Currently limited to on/off control and open loop PWM and stepper drive
 */
-long longRPM;
-PID idlePID(&longRPM, &idle_pwm_target_value, &idle_cl_target_rpm, configPage3.idleKP, configPage3.idleKI, configPage3.idleKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPID idlePID(&currentStatus.longRPM, &idle_pwm_target_value, &idle_cl_target_rpm, configPage3.idleKP, configPage3.idleKI, configPage3.idleKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 void initialiseIdle()
 {
@@ -45,6 +44,7 @@ void initialiseIdle()
       iacPWMTable.axisX = configPage4.iacBins;
       
       iacCrankDutyTable.xSize = 4;
+      iacCrankDutyTable.valueSize = SIZE_BYTE;
       iacCrankDutyTable.values = configPage4.iacCrankDuty;
       iacCrankDutyTable.axisX = configPage4.iacCrankBins;
       
@@ -59,10 +59,12 @@ void initialiseIdle()
     case 3:
       //Case 3 is PWM closed loop
       iacClosedLoopTable.xSize = 10;
+      iacClosedLoopTable.valueSize = SIZE_BYTE;
       iacClosedLoopTable.values = configPage4.iacCLValues;
       iacClosedLoopTable.axisX = configPage4.iacBins;
       
       iacCrankDutyTable.xSize = 4;
+      iacCrankDutyTable.valueSize = SIZE_BYTE;
       iacCrankDutyTable.values = configPage4.iacCrankDuty;
       iacCrankDutyTable.axisX = configPage4.iacCrankBins;
 
@@ -72,7 +74,7 @@ void initialiseIdle()
       idle2_pin_mask = digitalPinToBitMask(pinIdle2);
       idle_pwm_max_count = 1000000L / (16 * configPage3.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       idlePID.SetOutputLimits(0, idle_pwm_max_count);
-      TIMSK4 |= (1 << OCIE4C); //Turn on the C compare unit (ie turn on the interrupt)
+      idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       break;
       
@@ -135,23 +137,26 @@ void idleControl()
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         idleOn = true;
       }
-      else if( currentStatus.coolant < (iacPWMTable.values[IDLE_TABLE_SIZE-1] + CALIBRATION_TEMPERATURE_OFFSET))
+      else
       {
         //Standard running
         currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        if( currentStatus.idleDuty == 0 ) { TIMSK4 &= ~(1 << OCIE4C); digitalWrite(pinIdle1, LOW); break; }
+        TIMSK4 |= (1 << OCIE4C); //Turn on the C compare unit (ie turn on the interrupt)
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         idleOn = true;
       }
-      else if (idleOn) { digitalWrite(pinIdle1, LOW); idleOn = false; }
       break;
       
     case 3:    //Case 3 is PWM closed loop
         //No cranking specific value for closed loop (yet?)
-        idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 2; //All temps are offset by 40 degrees
-        longRPM = currentStatus.RPM; //The PID object needs a long as the RPM input. A separate variable is used for this
-        //idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
+        idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
+        //idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
 
         idlePID.Compute();
+        if( idle_pwm_target_value == 0 ) { TIMSK4 &= ~(1 << OCIE4C); digitalWrite(pinIdle1, LOW); }
+        else{ TIMSK4 |= (1 << OCIE4C); } //Turn on the C compare unit (ie turn on the interrupt)
+        //idle_pwm_target_value = 104;
       break;
       
     case 4:    //Case 4 is open loop stepper control
@@ -239,18 +244,38 @@ ISR(TIMER4_COMPC_vect)
 {
   if (idle_pwm_state)
   {
-    *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
-    if(configPage4.iacChannels) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    if (configPage4.iacPWMdir == 0) 
+    { 
+      //Normal direction
+      *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
+      if(configPage4.iacChannels) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    }
+    else
+    {
+      //Reversed direction
+      *idle_pin_port |= (idle_pin_mask);  // Switch pin high
+      if(configPage4.iacChannels) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    }
     OCR4C = TCNT4 + (idle_pwm_max_count - idle_pwm_cur_value);
-    idle_pwm_state = false;
+    idle_pwm_state = false; 
   }
   else
   {
-    *idle_pin_port |= (idle_pin_mask);  // Switch pin high
-    if(configPage4.iacChannels) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    if (configPage4.iacPWMdir == 0) 
+    { 
+      //Normal direction
+      *idle_pin_port |= (idle_pin_mask);  // Switch pin high
+      if(configPage4.iacChannels) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    }
+    else
+    {
+      //Reversed direction
+      *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
+      if(configPage4.iacChannels) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    }
     OCR4C = TCNT4 + idle_pwm_target_value;
     idle_pwm_cur_value = idle_pwm_target_value;
-    idle_pwm_state = true;
+    idle_pwm_state = true; 
   }
     
 }
