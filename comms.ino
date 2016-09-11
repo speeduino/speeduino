@@ -45,7 +45,7 @@ void command()
       if (currentPage >= '0') {//This converts the ascii number char into binary
         currentPage -= '0';
       }
-      if (currentPage == veMapPage || currentPage == ignMapPage || currentPage == afrMapPage) {// Detecting if the current page is a table/map
+      if (currentPage == veMapPage || currentPage == ignMapPage || currentPage == afrMapPage || currentPage == boostvvtPage) {// Detecting if the current page is a table/map
         isMap = true;
       }
       else {
@@ -628,7 +628,12 @@ void sendPage(bool useChar)
 
     case boostvvtPage:
       {
-        if(!useChar)
+        if(useChar)
+        {
+          currentTable = boostTable;
+          currentTitleIndex = 121;
+        }
+        else
         {
           //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format        
           byte response[160]; //Bit hacky, but the size is: (8x8 + 8 + 8) + (8x8 + 8 + 8) = 160
@@ -644,6 +649,7 @@ void sendPage(bool useChar)
           Serial.write((byte *)&response, sizeof(response));
           return;
         }
+        break;
       }
     default:
       {
@@ -656,49 +662,68 @@ void sendPage(bool useChar)
   {
     if (useChar)
     {
-      const char spaceChar = ' ';
-      /*while(pageTitles[currentTitleIndex])
+      do
       {
-       Serial.print(pageTitles[currentTitleIndex]);
-       currentTitleIndex++;
-      }*/
-      Serial.println((const __FlashStringHelper *)&pageTitles[currentTitleIndex]);// F macro hack
-      Serial.print(F("\n    "));
-      for (int x = 0; x < currentTable.xSize; x++)// Horizontal bins
-      {
-        byte axisX = byte(currentTable.axisX[x] / 100);
-        if (axisX < 100)
+        const char spaceChar = ' ';
+        /*while(pageTitles[currentTitleIndex])
         {
-          Serial.write(spaceChar);
-          if (axisX < 10)
+         Serial.print(pageTitles[currentTitleIndex]);
+         currentTitleIndex++;
+        }*/
+        Serial.println((const __FlashStringHelper *)&pageTitles[currentTitleIndex]);// F macro hack
+        Serial.println();
+        for (int y = 0; y < currentTable.ySize; y++)
+        {
+          byte axisY = byte(currentTable.axisY[y]);
+          if (axisY < 100)
           {
             Serial.write(spaceChar);
-          }
-        }
-        Serial.print(axisX);
-        Serial.write(spaceChar);
-      }
-      Serial.println();
-      for (int y = 0; y < currentTable.ySize; y++)
-      {
-        Serial.print(byte(currentTable.axisY[y]));// Vertical Bins
-        Serial.write(spaceChar);
-        for (int x = 0; x < currentTable.xSize; x++)
-        {
-          byte value = currentTable.values[y][x];
-          if (value < 100)
-          {
-            Serial.write(spaceChar);
-            if (value < 10)
+            if (axisY < 10)
             {
               Serial.write(spaceChar);
             }
           }
-          Serial.print(value);
+          Serial.print(axisY);// Vertical Bins
+          Serial.write(spaceChar);
+          for (int x = 0; x < currentTable.xSize; x++)
+          {
+            byte value = currentTable.values[y][x];
+            if (value < 100)
+            {
+              Serial.write(spaceChar);
+              if (value < 10)
+              {
+                Serial.write(spaceChar);
+              }
+            }
+            Serial.print(value);
+            Serial.write(spaceChar);
+          }
+          Serial.println();
+        }
+        Serial.print(F("    "));
+        for (int x = 0; x < currentTable.xSize; x++)// Horizontal bins
+        {
+          byte axisX = byte(currentTable.axisX[x] / 100);
+          if (axisX < 100)
+          {
+            Serial.write(spaceChar);
+            if (axisX < 10)
+            {
+              Serial.write(spaceChar);
+            }
+          }
+          Serial.print(axisX);
           Serial.write(spaceChar);
         }
         Serial.println();
-      }
+        if(currentTitleIndex == 121)
+        {
+          currentTitleIndex = 132;
+          currentTable = vvtTable;
+        }
+        else currentTitleIndex = 0;
+      }while(currentTitleIndex == 132);
     }
     else
     {
