@@ -22,7 +22,9 @@ const char pageTitles[] PROGMEM //This is being stored in the avr flash instead 
    "\nPage 2 Config\0"
    "\nAir/Fuel Ratio Map\0"
    "\nPage 3 Config\0"
-   "\nPage 4 Config"//No need to put a trailing null because it's the last string and the compliler does it for you.
+   "\nPage 4 Config\0"
+   "\nBoost Map\0"
+   "\nVVT Map"//No need to put a trailing null because it's the last string and the compliler does it for you.
   };
   
 void command();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
