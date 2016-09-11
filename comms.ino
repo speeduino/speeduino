@@ -685,7 +685,7 @@ void sendPage(bool useChar)
   {
     if (useChar)
     {
-      do
+      do //This is a do while loop that kicks in for the boostvvtPage
       {
         const char spaceChar = ' ';
         /*while(pageTitles[currentTitleIndex])
@@ -740,13 +740,13 @@ void sendPage(bool useChar)
           Serial.write(spaceChar);
         }
         Serial.println();
-        if(currentTitleIndex == 121)
+        if(currentTitleIndex == 121) //Check to see if on boostTable
         {
-          currentTitleIndex = 132;
+          currentTitleIndex = 132; //Change over to vvtTable mid display
           currentTable = vvtTable;
         }
         else currentTitleIndex = 0;
-      }while(currentTitleIndex == 132);
+      }while(currentTitleIndex == 132); //Should never loop unless going to display vvtTable
     }
     else
     {
