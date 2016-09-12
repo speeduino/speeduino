@@ -74,7 +74,7 @@ void command()
       //Serial.print(titleString);
       //Serial.write(titleString,16);
       */
-      Serial.print("Speeduino 2016.08");
+      Serial.print("Speeduino 2016.09");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -231,7 +231,7 @@ void sendValues(int length)
   if(requestCount == 0) { currentStatus.secl = 0; }
   requestCount++;
 
-  response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
+  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variableresponse[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   response[1] = currentStatus.squirt; //Squirt Bitfield
   response[2] = currentStatus.engine; //Engine Status Bitfield
   response[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
