@@ -62,38 +62,13 @@ void command()
       break;
 
     case 'S': // send code version
-      //Serial.print(signature);
-      //break;
-
-      /*
-      char titleString[18];
-      strcat(titleString, displaySignature);
-      strcat(titleString, " ");
-      strcat(titleString, TSfirmwareVersion);
-
-      //Serial.print(titleString);
-      //Serial.write(titleString,16);
-      */
       Serial.print("Speeduino 2016.09");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201608");
-      
-      //Serial.print(signature);
-      //Serial.write(signature);
-      break;
-
-      //The following requires TunerStudio 3
-      /*
-      strcat(titleString, signature);
-      strcat(titleString, " ");
-      strcat(titleString, TSfirmwareVersion);
-      
-      Serial.write(titleString,19);
-      break;
-      */
+      Serial.print("speeduino 201609");
+     break;
 
     case 'V': // send VE table and constants in binary
       sendPage(false);
