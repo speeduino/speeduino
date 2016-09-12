@@ -67,7 +67,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201609");
+      Serial.print("speeduino 201609-dev");
      break;
 
     case 'V': // send VE table and constants in binary
@@ -207,6 +207,7 @@ void sendValues(int length)
   requestCount++;
 
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  
   response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   response[1] = currentStatus.squirt; //Squirt Bitfield
   response[2] = currentStatus.engine; //Engine Status Bitfield
