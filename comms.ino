@@ -45,7 +45,7 @@ void command()
       if (currentPage >= '0') {//This converts the ascii number char into binary
         currentPage -= '0';
       }
-      if (currentPage == veMapPage || currentPage == ignMapPage || currentPage == afrMapPage || currentPage == boostvvtPage) {// Detecting if the current page is a table/map
+      if (currentPage == veMapPage || currentPage == ignMapPage || currentPage == afrMapPage) { // Detecting if the current page is a table/map
         isMap = true;
       }
       else {
