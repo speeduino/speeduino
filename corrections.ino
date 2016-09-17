@@ -16,39 +16,62 @@ Flood clear mode etc.
 #include "corrections.h"
 #include "globals.h"
 
+long PID_O2, PID_output, PID_AFRTarget;
+PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage3.egoKP, configPage3.egoKI, configPage3.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+
+void initialiseCorrections()
+{
+  egoPID.SetMode(AUTOMATIC); //Turn O2 PID on
+}
+
 /*
 correctionsTotal() calls all the other corrections functions and combines their results.
 This is the only function that should be called from anywhere outside the file
 */
 byte correctionsTotal()
 {
-  int sumCorrections = 100;
+  unsigned long sumCorrections = 100;
+  byte activeCorrections = 0;
   byte result; //temporary variable to store the result of each corrections function
   
-  //As the 'normal' case will be for each function to return 100, we only perform the division operation if the returned result is not equal to that
+  //The values returned by each of the correction functions are multipled together and then divided back to give a single 0-255 value. 
   currentStatus.wueCorrection = correctionWUE();
-  //if (currentStatus.wueCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.wueCorrection), 100).quot; }
-  if (currentStatus.wueCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.wueCorrection); }
+  if (currentStatus.wueCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.wueCorrection); activeCorrections++; }
+  
   result = correctionASE();
-  //if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
-  if (result != 100) { sumCorrections = divs100(sumCorrections * result); }
+  if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
+  
   result = correctionCranking();
-  if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
+  if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
+  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; } // Need to check this to ensure that sumCorrections doesn't overflow. Can occur when the number of corrections is greater than 3 (Which is 100^4) as 100^5 can overflow
+  
   currentStatus.TAEamount = correctionAccel();
-  if (currentStatus.TAEamount != 100) { sumCorrections = div((sumCorrections * currentStatus.TAEamount), 100).quot; }
+  if (currentStatus.TAEamount != 100) { sumCorrections = (sumCorrections * currentStatus.TAEamount); activeCorrections++; }
+  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  
   result = correctionFloodClear();
-  if (result != 100) { sumCorrections = div((sumCorrections * result), 100).quot; }
+  if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
+  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  
   currentStatus.egoCorrection = correctionsAFRClosedLoop();
-  //if (currentStatus.egoCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.egoCorrection), 100).quot; }
-  if (currentStatus.egoCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.egoCorrection); }
+  if (currentStatus.egoCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.egoCorrection); activeCorrections++; }
+  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  
   currentStatus.batCorrection = correctionsBatVoltage();
-  //if (currentStatus.batCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.batCorrection), 100).quot; }
-  if (currentStatus.batCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.batCorrection); }
+  if (currentStatus.batCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.batCorrection); activeCorrections++; }
+  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  
   currentStatus.iatCorrection = correctionsIATDensity();
-  //if (currentStatus.iatCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.iatCorrection), 100).quot; }
-  if (currentStatus.iatCorrection != 100) { sumCorrections = divs100(sumCorrections * currentStatus.iatCorrection); }
+  if (currentStatus.iatCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.iatCorrection); activeCorrections++; }
+  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  
   currentStatus.launchCorrection = correctionsLaunch();
-  if (currentStatus.launchCorrection != 100) { sumCorrections = div((sumCorrections * currentStatus.launchCorrection), 100).quot; }
+  if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
+  
+  bitWrite(currentStatus.squirt, BIT_SQUIRT_DFCO, correctionsDFCO());
+  if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) ) { sumCorrections = 0; } 
+
+  sumCorrections = sumCorrections / powint(100,activeCorrections);
   
   if(sumCorrections > 255) { sumCorrections = 255; } //This is the maximum allowable increase
   return (byte)sumCorrections;
@@ -182,8 +205,18 @@ This simple check applies the extra fuel if we're currently launching
 */
 byte correctionsLaunch()
 {
-  if(configPage3.launchEnabled && currentStatus.launching) { return (100 + configPage3.lnchFuelAdd); }
+  if(currentStatus.launchingHard || currentStatus.launchingSoft) { return (100 + configPage3.lnchFuelAdd); }
   else { return 100; }
+}
+
+/*
+ * Returns true if decelleration fuel cutoff should be on, false if its off
+ */
+bool correctionsDFCO()
+{
+  if ( !configPage2.dfcoEnabled ) { return false; } //If the DFCO option isn't turned on, always return false (off)
+  if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) ) { return ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
+  else { return ( currentStatus.RPM > ( (configPage2.dfcoRPM * 10) + configPage2.dfcoHyster) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
 }
 
 /*
@@ -199,18 +232,18 @@ This continues until either:
 PID (Best suited to wideband sensors):
  
 */
-double PID_O2, PID_output, PID_AFRTarget;
-PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage3.egoKP, configPage3.egoKI, configPage3.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 byte correctionsAFRClosedLoop()
 {
-  if( (configPage3.egoAlgorithm == 3) || (configPage3.egoType == 0)) { return 100; } //An egoAlgorithm value of 3 means NO CORRECTION, egoType of 0 means no O2 sensor
+  if( (configPage3.egoType == 0)) { return 100; } //egoType of 0 means no O2 sensor
+
+  currentStatus.afrTarget = currentStatus.O2; //Catch all incase the below doesn't run. This prevents the Include AFR option from doing crazy things if the AFR target conditions aren't met. This value is changed again below if all conditions are met. 
   
   //Check the ignition count to see whether the next step is required
   if( (ignitionCount & (configPage3.egoCount - 1)) == 1 ) //This is the equivalent of ( (ignitionCount % configPage3.egoCount) == 0 ) but without the expensive modulus operation. ie It results in True every <egoCount> ignition loops. Note that it only works for power of two vlaues for egoCount
   {
     //Check all other requirements for closed loop adjustments
-    if( (currentStatus.coolant > configPage3.egoTemp) && (currentStatus.RPM > (unsigned int)(configPage3.egoRPM * 100)) && (currentStatus.TPS < configPage3.egoTPSMax) && (currentStatus.O2 < configPage3.ego_max) && (currentStatus.O2 > configPage3.ego_min) && (currentStatus.runSecs > configPage3.ego_sdelay) )
+    if( (currentStatus.coolant > (int)(configPage3.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage3.egoRPM * 100)) && (currentStatus.TPS < configPage3.egoTPSMax) && (currentStatus.O2 < configPage3.ego_max) && (currentStatus.O2 > configPage3.ego_min) && (currentStatus.runSecs > configPage3.ego_sdelay) )
     {
       //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
       byte yValue;
@@ -247,15 +280,16 @@ byte correctionsAFRClosedLoop()
       {
         //*************************************************************************************************************************************
         //PID algorithm
-        egoPID.SetOutputLimits((double)(-configPage3.egoLimit), (double)(configPage3.egoLimit)); //Set the limits again, just incase the user has changed them since the last loop. Note that these are sent to the PID library as (Eg:) -15 and +15
+        egoPID.SetOutputLimits((long)(-configPage3.egoLimit), (long)(configPage3.egoLimit)); //Set the limits again, just incase the user has changed them since the last loop. Note that these are sent to the PID library as (Eg:) -15 and +15
         egoPID.SetTunings(configPage3.egoKP, configPage3.egoKI, configPage3.egoKD); //Set the PID values again, just incase the user has changed them since the last loop
-        PID_O2 = (double)(currentStatus.O2);
-        PID_AFRTarget = (double)(currentStatus.afrTarget);
+        PID_O2 = (long)(currentStatus.O2);
+        PID_AFRTarget = (long)(currentStatus.afrTarget);
         
         egoPID.Compute();
         //currentStatus.egoCorrection = 100 + PID_output;
         return (100 + PID_output);
       }
+      else { return 100; } // Occurs if the egoAlgorithm is set to 0 (No Correction)
       
     }
   }

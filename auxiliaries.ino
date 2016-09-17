@@ -3,6 +3,7 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
+integerPID boostPID(&currentStatus.MAP, &boost_pwm_target_value, &boost_cl_target_boost, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 /*
 Fan control
@@ -33,19 +34,28 @@ void initialiseAuxPWM()
   vvt_pin_port = portOutputRegister(digitalPinToPort(pinVVT_1));
   vvt_pin_mask = digitalPinToBitMask(pinVVT_1);
   
-  boost_pwm_max_count = 1000000L / (16 * configPage3.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte)
+  boost_pwm_max_count = 1000000L / (16 * configPage3.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
   vvt_pwm_max_count = 1000000L / (16 * configPage3.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
-  TIMSK1 |= (1 << OCIE1A); //Turn on the A compare unit (ie turn on the interrupt)
+  //TIMSK1 |= (1 << OCIE1A); //Turn on the A compare unit (ie turn on the interrupt)  //Shouldn't be needed with closed loop as its turned on below
   TIMSK1 |= (1 << OCIE1B); //Turn on the B compare unit (ie turn on the interrupt)
+
+  boostPID.SetOutputLimits(0, boost_pwm_max_count);
+  boostPID.SetMode(AUTOMATIC); //Turn PID on
 }
 
 void boostControl()
 {
   if(configPage3.boostEnabled)
   {
-    byte boostDuty = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM);
-    boost_pwm_target_value = percentage(boostDuty, boost_pwm_max_count);
+    if(currentStatus.MAP < 100) { TIMSK1 &= ~(1 << OCIE1A); digitalWrite(pinBoost, LOW); return; } //Set duty to 0 and turn off timer compare
+    boost_cl_target_boost = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; //Boost target table is in kpa and divided by 2
+    boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD);
+    boostPID.Compute();
+    TIMSK1 |= (1 << OCIE1A); //Turn on the compare unit (ie turn on the interrupt)
   }
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+  else { TIMSK1 &= ~(1 << OCIE1A); } // Disable timer channel
+#endif
 }
 
 void vvtControl()
@@ -55,12 +65,15 @@ void vvtControl()
     byte vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
     vvt_pwm_target_value = percentage(vvtDuty, vvt_pwm_max_count);
   }
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+  else { TIMSK1 &= ~(1 << OCIE1B); } // Disable timer channel
+#endif
 }
   
 //The interrupt to control the Boost PWM
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 ISR(TIMER1_COMPA_vect)
 {
-  if(!configPage3.boostEnabled) { return; }
   if (boost_pwm_state)
   {
     *boost_pin_port &= ~(boost_pin_mask);  // Switch pin to low
@@ -79,7 +92,6 @@ ISR(TIMER1_COMPA_vect)
 //The interrupt to control the VVT PWM
 ISR(TIMER1_COMPB_vect)
 {
-  if(!configPage3.vvtEnabled) { return; }
   if (vvt_pwm_state)
   {
     *vvt_pin_port &= ~(vvt_pin_mask);  // Switch pin to low
@@ -94,3 +106,7 @@ ISR(TIMER1_COMPB_vect)
     vvt_pwm_state = true;
   }  
 }
+
+#elif defined(PROCESSOR_TEENSY_3_1) || defined(PROCESSOR_TEENSY_3_2)
+#endif
+

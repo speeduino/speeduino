@@ -6,8 +6,8 @@ A full copy of the license may be found in the projects root directory
 
 #include <SPI.h>
 #include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include "src/Adafruit_SSD1306/Adafruit_GFX.h"
+#include "src/Adafruit_SSD1306/Adafruit_SSD1306.h"
 
 Adafruit_SSD1306 display(pinDisplayReset);
 

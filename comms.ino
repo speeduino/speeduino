@@ -45,7 +45,7 @@ void command()
       if (currentPage >= '0') {//This converts the ascii number char into binary
         currentPage -= '0';
       }
-      if (currentPage == veMapPage || currentPage == ignMapPage || currentPage == afrMapPage) {// Detecting if the current page is a table/map
+      if (currentPage == veMapPage || currentPage == ignMapPage || currentPage == afrMapPage) { // Detecting if the current page is a table/map
         isMap = true;
       }
       else {
@@ -57,20 +57,24 @@ void command()
       sendValues(39);
       break;
 
+    case 'F': // send serial protocol version
+      Serial.print("001");
+      break;
+
     case 'S': // send code version
-      Serial.print(signature);
+      Serial.print("Speeduino 2016.09");
+      currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print(signature);
-      //Serial.write("Speeduino_0_2");
-      break;
+      Serial.print("speeduino 201609-dev");
+     break;
 
     case 'V': // send VE table and constants in binary
       sendPage(false);
       break;
 
-    case 'W': // receive new VE or constant at 'W'+<offset>+<newbyte>
+    case 'W': // receive new VE obr constant at 'W'+<offset>+<newbyte>
       int offset;
       while (Serial.available() == 0) { }
 
@@ -150,6 +154,8 @@ void command()
       sendToothLog(true); //Sends tooth log values as chars
       break;
 
+      
+
     case '?':
       Serial.println
       (F(
@@ -194,9 +200,14 @@ This function returns the current values of a fixed group of variables
 */
 void sendValues(int length)
 {
-  byte packetSize = 33;
+  byte packetSize = 35;
   byte response[packetSize];
 
+  if(requestCount == 0) { currentStatus.secl = 0; }
+  requestCount++;
+
+  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  
   response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   response[1] = currentStatus.squirt; //Squirt Bitfield
   response[2] = currentStatus.engine; //Engine Status Bitfield
@@ -208,7 +219,7 @@ void sendValues(int length)
   response[8] = currentStatus.battery10; //battery voltage
   response[9] = currentStatus.O2; //O2
   response[10] = currentStatus.egoCorrection; //Exhaust gas correction (%)
-  response[11] = 0x00; //Air Correction (%)
+  response[11] = currentStatus.iatCorrection; //Air temperature Correction (%)
   response[12] = currentStatus.wueCorrection; //Warmup enrichment (%)
   response[13] = lowByte(currentStatus.RPM); //rpm HB
   response[14] = highByte(currentStatus.RPM); //rpm LB
@@ -231,15 +242,20 @@ void sendValues(int length)
   response[27] = highByte(currentStatus.freeRAM);
 
   response[28] = currentStatus.batCorrection; //Battery voltage correction (%)
-  response[29] = (byte)(currentStatus.dwell / 100);
+  response[29] = currentStatus.spark; //Spark related bitfield
   response[30] = currentStatus.O2_2; //O2
   
   //rpmDOT must be sent as a signed integer
   response[31] = lowByte(currentStatus.rpmDOT);
   response[32] = highByte(currentStatus.rpmDOT);
 
+  response[33] = currentStatus.flex; //Flex sensor value (or 0 if not used)
+  response[34] = getNextError();
+  
+//cli();
   Serial.write(response, (size_t)packetSize);
   //Serial.flush();
+//sei();
   return;
 }
 
@@ -612,7 +628,12 @@ void sendPage(bool useChar)
 
     case boostvvtPage:
       {
-        if(!useChar)
+        if(useChar)
+        {
+          currentTable = boostTable;
+          currentTitleIndex = 121;
+        }
+        else
         {
           //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format        
           byte response[160]; //Bit hacky, but the size is: (8x8 + 8 + 8) + (8x8 + 8 + 8) = 160
@@ -628,6 +649,7 @@ void sendPage(bool useChar)
           Serial.write((byte *)&response, sizeof(response));
           return;
         }
+        break;
       }
     default:
       {
@@ -640,49 +662,68 @@ void sendPage(bool useChar)
   {
     if (useChar)
     {
-      const char spaceChar = ' ';
-      /*while(pageTitles[currentTitleIndex])
+      do //This is a do while loop that kicks in for the boostvvtPage
       {
-       Serial.print(pageTitles[currentTitleIndex]);
-       currentTitleIndex++;
-      }*/
-      Serial.println((const __FlashStringHelper *)&pageTitles[currentTitleIndex]);// F macro hack
-      Serial.print(F("\n    "));
-      for (int x = 0; x < currentTable.xSize; x++)// Horizontal bins
-      {
-        byte axisX = byte(currentTable.axisX[x] / 100);
-        if (axisX < 100)
+        const char spaceChar = ' ';
+        /*while(pageTitles[currentTitleIndex])
         {
-          Serial.write(spaceChar);
-          if (axisX < 10)
+         Serial.print(pageTitles[currentTitleIndex]);
+         currentTitleIndex++;
+        }*/
+        Serial.println((const __FlashStringHelper *)&pageTitles[currentTitleIndex]);// F macro hack
+        Serial.println();
+        for (int y = 0; y < currentTable.ySize; y++)
+        {
+          byte axisY = byte(currentTable.axisY[y]);
+          if (axisY < 100)
           {
             Serial.write(spaceChar);
-          }
-        }
-        Serial.print(axisX);
-        Serial.write(spaceChar);
-      }
-      Serial.println();
-      for (int y = 0; y < currentTable.ySize; y++)
-      {
-        Serial.print(byte(currentTable.axisY[y]));// Vertical Bins
-        Serial.write(spaceChar);
-        for (int x = 0; x < currentTable.xSize; x++)
-        {
-          byte value = currentTable.values[y][x];
-          if (value < 100)
-          {
-            Serial.write(spaceChar);
-            if (value < 10)
+            if (axisY < 10)
             {
               Serial.write(spaceChar);
             }
           }
-          Serial.print(value);
+          Serial.print(axisY);// Vertical Bins
+          Serial.write(spaceChar);
+          for (int x = 0; x < currentTable.xSize; x++)
+          {
+            byte value = currentTable.values[y][x];
+            if (value < 100)
+            {
+              Serial.write(spaceChar);
+              if (value < 10)
+              {
+                Serial.write(spaceChar);
+              }
+            }
+            Serial.print(value);
+            Serial.write(spaceChar);
+          }
+          Serial.println();
+        }
+        Serial.print(F("    "));
+        for (int x = 0; x < currentTable.xSize; x++)// Horizontal bins
+        {
+          byte axisX = byte(currentTable.axisX[x] / 100);
+          if (axisX < 100)
+          {
+            Serial.write(spaceChar);
+            if (axisX < 10)
+            {
+              Serial.write(spaceChar);
+            }
+          }
+          Serial.print(axisX);
           Serial.write(spaceChar);
         }
         Serial.println();
-      }
+        if(currentTitleIndex == 121) //Check to see if on boostTable
+        {
+          currentTitleIndex = 132; //Change over to vvtTable mid display
+          currentTable = vvtTable;
+        }
+        else currentTitleIndex = 0;
+      }while(currentTitleIndex == 132); //Should never loop unless going to display vvtTable
     }
     else
     {
@@ -848,7 +889,6 @@ void sendToothLog(bool useChar)
     BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY);
   }
 }
-
 
 void testComm()
 {
