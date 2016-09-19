@@ -1191,4 +1191,102 @@ int getCrankAngle_MazdaAU(int timePerDegree)
     return crankAngle;
 }
 
+/* 
+Name: Non-360 Dual wheel
+Desc: 2 wheels located either both on the crank or with the primary on the crank and the secondary on the cam. 
+Note: There can be no missing teeth on the primary wheel
+*/
+void triggerSetup_non360()
+{
+  triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
+  toothCurrentCount = 255; //Default value
+  triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+  triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  secondDerivEnabled = false;
+  decoderIsSequential = true;
+  MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+}
+
+
+void triggerPri_non360()
+{ 
+   curTime = micros();
+   curGap = curTime - toothLastToothTime;
+   if ( curGap < triggerFilterTime ) { return; } //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger.
+   toothCurrentCount++; //Increment the tooth counter
+   addToothLogEntry(curGap);
+
+   toothLastMinusOneToothTime = toothLastToothTime;
+   toothLastToothTime = curTime;
+   
+   if ( !currentStatus.hasSync ) { return; }
+   
+   if ( toothCurrentCount == 1 || toothCurrentCount > configPage2.triggerTeeth )
+   { 
+     toothCurrentCount = 1; 
+     toothOneMinusOneTime = toothOneTime;
+     toothOneTime = curTime;
+     startRevolutions++; //Counter
+     //if ((startRevolutions & 63) == 1) { currentStatus.hasSync = false; } //Every 64 revolutions, force a resync with the cam
+   }
+
+   setFilter(curGap); //Recalc the new filter value
+   
+
+}
+
+void triggerSec_non360()
+{ 
+  curTime2 = micros();
+  curGap2 = curTime2 - toothLastSecToothTime;
+  if ( curGap2 < triggerSecFilterTime ) { return; } 
+  toothLastSecToothTime = curTime2;
+  
+  if(!currentStatus.hasSync)
+  {
+    toothCurrentCount = 0;
+
+    toothLastToothTime = micros();
+    toothLastMinusOneToothTime = (toothOneTime - 6000000) / configPage2.triggerTeeth; //Fixes RPM at 10rpm until a full revolution has taken place
+    
+    currentStatus.hasSync = true;
+  }
+} 
+
+int getRPM_non360()
+{
+  if( !currentStatus.hasSync || toothCurrentCount == 0 ) { return 0; }
+  if(currentStatus.RPM < configPage2.crankRPM) { return crankingGetRPM(configPage2.triggerTeeth); }
+  return stdGetRPM();
+}
+
+int getCrankAngle_non360(int timePerDegree)
+{
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables. 
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    interrupts();
+    
+    //Handle case where the secondary tooth was the last one seen
+    if(tempToothCurrentCount == 0) { tempToothCurrentCount = configPage2.triggerTeeth; }
+    
+    int crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    //Estimate the number of degrees travelled since the last tooth}
+    long elapsedTime = micros() - tempToothLastToothTime;
+    if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
+    else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
+    
+    
+    if (crankAngle >= 720) { crankAngle -= 720; } 
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+    if (crankAngle < 0) { crankAngle += 360; }
+    
+    return crankAngle;
+}
+
+
 
