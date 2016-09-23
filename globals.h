@@ -61,6 +61,9 @@ const int map_page_size = 288;
 #define SIZE_BYTE   8
 #define SIZE_INT    16
 
+#define EVEN_FIRE         1
+#define ODD_FIRE          0
+
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
 #define CALIBRATION_TEMPERATURE_OFFSET 40 // All temperature measurements are stored offset by 40 degrees. This is so we can use an unsigned byte (0-255) to represent temperature ranges from -40 to 215
@@ -162,7 +165,8 @@ struct config1 {
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
-  byte unused16;
+  byte tachoPin : 6; //Custom pin setting for tacho output
+  byte unused16 : 2;
   byte tdePct; // TPS decelleration (%)
   byte taeColdA;
   byte tpsThresh;
@@ -222,12 +226,9 @@ struct config1 {
   unsigned int mapMax;
   byte fpPrime; //Time (In seconds) that the fuel pump should be primed for on power up
   byte stoich;
-  byte unused51;
-  byte unused52;
-  byte unused53;
-  byte unused54;
-  byte unused55;
-  byte unused56;
+  unsigned int oddfire2; //The ATDC angle of channel 2 for oddfire
+  unsigned int oddfire3; //The ATDC angle of channel 3 for oddfire
+  unsigned int oddfire4; //The ATDC angle of channel 4 for oddfire
   byte unused57;
   byte unused58;
   byte unused59;
@@ -245,7 +246,7 @@ struct config2 {
   int triggerAngle;
   byte FixAng;
   byte CrankAng;
-  byte IgHold;
+  byte TrigAngMul; //Multiplier for non evenly divisible tooth counts. 
   
   byte TrigEdge : 1;
   byte TrigSpeed : 1;
@@ -253,8 +254,8 @@ struct config2 {
   byte oddfire : 1;
   byte TrigPattern : 4;
   
-  byte IdleAdv;
-  byte IdleAdvTPS;
+  byte unused4_6;
+  byte unused4_7;
   byte IdleAdvRPM;
   byte IdleAdvCLT; //The temperature below which the idle is advanced
   byte IdleDelayTime;
