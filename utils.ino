@@ -382,26 +382,24 @@ TPS: Throttle position (0% to 100%)
 
 This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N calculations respectively.
 */
-unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, byte TPS)
+unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
-  unsigned int iVE, iMAP, iAFR, iCorrections, iTPS;
+  unsigned int iVE, iMAP, iAFR, iCorrections;
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
   iVE = ((unsigned int)VE << 7) / 100;
   if( configPage1.multiplyMAP ) { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; } //Include multiply MAP (vs baro) if enabled
   if( configPage1.includeAFR && (configPage3.egoType == 2)) { iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget; } //Include AFR (vs target) if enabled
   iCorrections = (corrections << 7) / 100;
-  //int iTPS = ((int)TPS << 7) / 100;
 
 
   unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
   if( configPage1.multiplyMAP ) { intermediate = (intermediate * iMAP) >> 7; }
   if( configPage1.includeAFR && (configPage3.egoType == 2)) { intermediate = (intermediate * iAFR) >> 7; } //EGO type must be set to wideband for this to be used
   intermediate = (intermediate * iCorrections) >> 7;
-  //intermediate = (intermediate * iTPS) >> 7;
   if(intermediate == 0) { return 0; } //If the pulsewidth is 0, we return here before the opening time gets added
   
   intermediate += injOpen; //Add the injector opening time
@@ -415,14 +413,13 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, b
 //Convenience functions for Speed Density and Alpha-N
 unsigned int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 {
-  //return PW(REQ_FUEL, VE, MAP, corrections, injOpen, 100); //Just use 1 in place of the TPS
-  return PW(REQ_FUEL, VE, 100, corrections, injOpen, 100); //Just use 1 in place of the TPS
+  return PW(REQ_FUEL, VE, MAP, corrections, injOpen); 
+  //return PW(REQ_FUEL, VE, 100, corrections, injOpen); 
 }
 
 unsigned int PW_AN(int REQ_FUEL, byte VE, byte TPS, int corrections, int injOpen)
 {
   //Sanity check
   if(TPS > 100) { TPS = 100; }
-  //return PW(REQ_FUEL, VE, 100, corrections, injOpen, TPS); //Just use 1 in place of the MAP
-  return PW(REQ_FUEL, VE, 100, corrections, injOpen, 100); //Just use 1 in place of the MAP
+  return PW(REQ_FUEL, VE, currentStatus.MAP, corrections, injOpen);
 }
