@@ -61,8 +61,8 @@ const int map_page_size = 288;
 #define SIZE_BYTE   8
 #define SIZE_INT    16
 
-#define EVEN_FIRE         1
-#define ODD_FIRE          0
+#define EVEN_FIRE         0
+#define ODD_FIRE          1
 
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
