@@ -362,9 +362,9 @@ void setPinMapping(byte boardID)
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
   pinMode(pinFlex, INPUT_PULLUP); //Standard GM / Continental flex sensor requires pullup
-  pinMode(pinLaunch, INPUT_PULLUP); //This should work for both NO and NC grounding switches
-//  if (configPage3.launchHiLo) { pinMode(pinLaunch, INPUT); }
-//  else { pinMode(pinLaunch, INPUT_PULLUP); } //If launch triggers on LOW signal, then set a pull up as the default
+//  pinMode(pinLaunch, INPUT_PULLUP); //This should work for both NO and NC grounding switches
+  if (configPage3.lnchPullRes) { pinMode(pinLaunch, INPUT_PULLUP); }
+  else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
 
   //Set default values
   digitalWrite(pinMAP, HIGH);
