@@ -346,7 +346,9 @@ struct config3 {
   byte boostKP;
   byte boostKI;
   byte boostKD;
-  byte unused60;
+  
+  byte lnchPullRes :2;
+  byte unused60 : 6;
   byte unused61;
   byte unused62;
   byte unused63;
