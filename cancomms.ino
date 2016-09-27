@@ -56,7 +56,6 @@ void Cancommand()
       
     case 'S': // send code version
       Serial3.print("Speeduino 2016.09_canio");
-      currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
