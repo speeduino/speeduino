@@ -27,6 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "table.h"
 #include "scheduler.h"
 #include "comms.h"
+#include "cancomms.h"
 #include "math.h"
 #include "corrections.h"
 #include "timers.h"
@@ -160,6 +161,7 @@ void setup()
   table3D_setSize(&vvtTable, 8);
  
   loadConfig();
+    if (configPage1.canenable ==1){Serial3.begin(115200);}
   
   //Repoint the 2D table structs to the config pages that were just loaded
   taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
@@ -752,6 +754,17 @@ void loop()
           command();
         }
       }
+      //if Can interface is enabled then check for serial3 requests.
+      if (configPage1.canenable == 1)
+          {
+            if ( ((mainLoopCount & 31) == 1) or (Serial3.available() > SERIAL_BUFFER_THRESHOLD) ) 
+                {
+                  if (Serial3.available() > 0) 
+                    {
+                    Cancommand();
+                    }
+                }
+          }
 
     // if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();} //Displays currently disabled
     
