@@ -143,6 +143,38 @@ void setPinMapping(byte boardID)
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       break;
 
+    case 9:
+      //Pin mappings as per the MX5 PNP shield
+      pinInjector1 = 11; //Output pin injector 1 is on
+      pinInjector2 = 10; //Output pin injector 2 is on
+      pinInjector3 = 9; //Output pin injector 3 is on
+      pinInjector4 = 8; //Output pin injector 4 is on
+      pinInjector5 = 12; //Output pin injector 5 is on
+      pinCoil1 = 39; //Pin for coil 1
+      pinCoil2 = 41; //Pin for coil 2
+      pinCoil3 = 42; //Pin for coil 3
+      pinCoil4 = 43; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinTPS = A2;//TPS input pin
+      pinMAP = A5; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A3; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinDisplayReset = 48; // OLED reset pin
+      pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
+      pinIdle1 = 2; //Single wire idle control
+      pinIdle2 = 3; //2 wire idle control (Note this is shared with boost!!!)
+      pinFuelPump = 37; //Fuel pump output  (Goes to ULN2803)
+      pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinFan = 47; //Pin for the fan output (Goes to ULN2803)
+      pinLaunch = 12; //Can be overwritten below
+      pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      break;
+
     case 10:
       //Pin mappings for user turtanas PCB
       pinInjector1 = 4; //Output pin injector 1 is on
@@ -330,8 +362,9 @@ void setPinMapping(byte boardID)
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
   pinMode(pinFlex, INPUT_PULLUP); //Standard GM / Continental flex sensor requires pullup
-  if (configPage3.launchHiLo) { pinMode(pinLaunch, INPUT); }
-  else { pinMode(pinLaunch, INPUT_PULLUP); } //If launch triggers on LOW signal, then set a pull up as the default
+//  pinMode(pinLaunch, INPUT_PULLUP); //This should work for both NO and NC grounding switches
+  if (configPage3.lnchPullRes) { pinMode(pinLaunch, INPUT_PULLUP); }
+  else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
 
   //Set default values
   digitalWrite(pinMAP, HIGH);
@@ -350,26 +383,24 @@ TPS: Throttle position (0% to 100%)
 
 This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N calculations respectively.
 */
-unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, byte TPS)
+unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
-  unsigned int iVE, iMAP, iAFR, iCorrections, iTPS;
+  unsigned int iVE, iMAP, iAFR, iCorrections;
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
   iVE = ((unsigned int)VE << 7) / 100;
   if( configPage1.multiplyMAP ) { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; } //Include multiply MAP (vs baro) if enabled
   if( configPage1.includeAFR && (configPage3.egoType == 2)) { iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget; } //Include AFR (vs target) if enabled
   iCorrections = (corrections << 7) / 100;
-  //int iTPS = ((int)TPS << 7) / 100;
 
 
   unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
   if( configPage1.multiplyMAP ) { intermediate = (intermediate * iMAP) >> 7; }
   if( configPage1.includeAFR && (configPage3.egoType == 2)) { intermediate = (intermediate * iAFR) >> 7; } //EGO type must be set to wideband for this to be used
   intermediate = (intermediate * iCorrections) >> 7;
-  //intermediate = (intermediate * iTPS) >> 7;
   if(intermediate == 0) { return 0; } //If the pulsewidth is 0, we return here before the opening time gets added
   
   intermediate += injOpen; //Add the injector opening time
@@ -383,14 +414,13 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen, b
 //Convenience functions for Speed Density and Alpha-N
 unsigned int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 {
-  //return PW(REQ_FUEL, VE, MAP, corrections, injOpen, 100); //Just use 1 in place of the TPS
-  return PW(REQ_FUEL, VE, 100, corrections, injOpen, 100); //Just use 1 in place of the TPS
+  return PW(REQ_FUEL, VE, MAP, corrections, injOpen); 
+  //return PW(REQ_FUEL, VE, 100, corrections, injOpen); 
 }
 
 unsigned int PW_AN(int REQ_FUEL, byte VE, byte TPS, int corrections, int injOpen)
 {
   //Sanity check
   if(TPS > 100) { TPS = 100; }
-  //return PW(REQ_FUEL, VE, 100, corrections, injOpen, TPS); //Just use 1 in place of the MAP
-  return PW(REQ_FUEL, VE, 100, corrections, injOpen, 100); //Just use 1 in place of the MAP
+  return PW(REQ_FUEL, VE, currentStatus.MAP, corrections, injOpen);
 }

@@ -426,6 +426,17 @@ void setup()
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to 
       attachInterrupt(triggerInterrupt2, triggerSec_MazdaAU, FALLING);
       break;
+
+    case 11:
+      triggerSetup_non360();
+      trigger = triggerPri_DualWheel; //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
+      getRPM = getRPM_non360;
+      getCrankAngle = getCrankAngle_non360;
+      
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } 
+      attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, FALLING); //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice. 
+      break;
       
     default:
       trigger = triggerPri_missingTooth;
@@ -471,13 +482,15 @@ void setup()
       break;
     case 2:
       channel1IgnDegrees = 0;
-      channel2IgnDegrees = 180;
+
+      if (configPage1.engineType == EVEN_FIRE ) { channel2IgnDegrees = 180; }
+      else { channel2IgnDegrees = configPage1.oddfire2; } 
       
       //For alternatiing injection, the squirt occurs at different times for each channel
       if(configPage1.injTiming == INJ_SEMISEQUENTIAL)
       {
         channel1InjDegrees = 0;
-        channel2InjDegrees = 180;
+        channel2InjDegrees = channel2IgnDegrees; //Set to the same as the ignition degrees (Means there's no need for another if to check for oddfire)
       }
       else { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
@@ -486,15 +499,24 @@ void setup()
       break;
     case 3:
       channel1IgnDegrees = 0;
-      channel2IgnDegrees = 120;
-      channel3IgnDegrees = 240;
+
+      if (configPage1.engineType == EVEN_FIRE ) 
+      {
+        channel2IgnDegrees = 120;
+        channel3IgnDegrees = 240;
+      }
+      else
+      {
+        channel2IgnDegrees = configPage1.oddfire2;
+        channel3IgnDegrees = configPage1.oddfire3;
+      }
       
       //For alternatiing injection, the squirt occurs at different times for each channel
       if(configPage1.injTiming == INJ_SEMISEQUENTIAL)
       {
         channel1InjDegrees = 0;
-        channel2InjDegrees = 120;
-        channel3InjDegrees = 240;
+        channel2InjDegrees = channel2IgnDegrees;
+        channel3InjDegrees = channel2IgnDegrees;
       }
       else if (configPage1.injTiming == INJ_SEQUENTIAL)
       {
@@ -510,26 +532,36 @@ void setup()
       break;
     case 4:
       channel1IgnDegrees = 0;
-      channel2IgnDegrees = 180;
 
-      if(useSequentialIgnition)
+      if (configPage1.engineType == EVEN_FIRE ) 
       {
-        channel3IgnDegrees = 360;
-        channel4IgnDegrees = 540;
+        channel2IgnDegrees = 180;
+
+        if(useSequentialIgnition)
+        {
+          channel3IgnDegrees = 360;
+          channel4IgnDegrees = 540;
+        }
+      }
+      else
+      {
+        channel2IgnDegrees = configPage1.oddfire2;
+        channel3IgnDegrees = configPage1.oddfire3;
+        channel4IgnDegrees = configPage1.oddfire4;
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
       if(configPage1.injTiming == INJ_SEMISEQUENTIAL)
       {
         channel1InjDegrees = 0;
-        channel2InjDegrees = 180;
+        channel2InjDegrees = channel2IgnDegrees;
       }
       else if (useSequentialFuel)
       {
         channel1InjDegrees = 0;
-        channel2InjDegrees = 180;
-        channel3InjDegrees = 360;
-        channel4InjDegrees = 540;
+        channel2InjDegrees = channel2IgnDegrees;
+        channel3InjDegrees = channel3IgnDegrees;
+        channel4InjDegrees = channel4IgnDegrees;
       }
       else { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
