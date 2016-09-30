@@ -126,7 +126,7 @@ static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedu
   //Sort the queues. Both queues are kept in sync. 
   //This implementes a sorting networking based on the Bose-Nelson sorting network
   //See: http://pages.ripco.net/~jgamble/nw.html
-  #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned int tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
+  #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned int tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; volatile Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
   //SWAP(0, 1); //Likely not needed
   //SWAP(2, 3); //Likely not needed
   SWAP(0, 2);

@@ -215,7 +215,7 @@ struct config1 {
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
   byte injLayout : 2;
-  byte canenable : 1; //is can interface enabled
+  byte canEnable : 1; //is can interface enabled
   
   byte primePulse;
   byte dutyLim;
