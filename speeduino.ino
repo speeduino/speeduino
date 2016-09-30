@@ -1199,7 +1199,7 @@ void loop()
           }
         }
 
-        //if(channel5InjEnabled)
+        if(channel5InjEnabled)
         {
           tempCrankAngle = crankAngle - channel5InjDegrees;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX; }
