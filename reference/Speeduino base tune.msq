@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.05 - EFI Analytics, Inc." tuneComment="" writeDate="Wed Aug 31 16:37:52 AEST 2016"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2016.08" nPages="8" signature="speeduino 201608"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.10.04 - EFI Analytics, Inc." tuneComment="" writeDate="Fri Sep 30 22:35:03 AEST 2016"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2016.09" nPages="8" signature="speeduino 201609"/>
 <page>
 <pcVariable name="tsCanId">"0"</pcVariable>
 </page>
@@ -79,9 +79,9 @@
          100.0 
       </constant>
 <constant digits="0" name="crankingPct" units="%">20.0</constant>
-<constant name="pinLayout">"Speeduino v0.3"</constant>
+<constant name="pinLayout">"Speeduino v0.4"</constant>
 <constant name="tachoPin">"Board Default"</constant>
-<constant name="unused2-16f">0</constant>
+<constant name="unused2-16f">"One"</constant>
 <constant digits="1" name="tdePct" units="ms">3.2</constant>
 <constant digits="1" name="taeColdA" units="ms">0.0</constant>
 <constant digits="0" name="tpsThresh" units="%/s">100.0</constant>
@@ -94,7 +94,7 @@
 <constant name="display5">"RPM"</constant>
 <constant name="displayB1">"RPM"</constant>
 <constant name="displayB2">"RPM"</constant>
-<constant digits="1" name="reqFuel" units="ms">14.4</constant>
+<constant digits="1" name="reqFuel" units="ms">12.8</constant>
 <constant digits="0" name="divider">2.0</constant>
 <constant name="alternate">"Alternating"</constant>
 <constant name="multiplyMAP">"No"</constant>
@@ -127,12 +127,9 @@
 <constant digits="0" name="mapMax" units="kpa">260.0</constant>
 <constant digits="0" name="fpPrime" units="s">3.0</constant>
 <constant digits="1" name="stoich" units=":1">14.7</constant>
-<constant digits="0" name="unused2-51" units="RPM">0.0</constant>
-<constant digits="0" name="unused2-52" units="RPM">0.0</constant>
-<constant digits="0" name="unused2-53" units="RPM">0.0</constant>
-<constant digits="0" name="unused2-54" units="RPM">0.0</constant>
-<constant digits="0" name="unused2-55" units="RPM">0.0</constant>
-<constant digits="0" name="unused2-56" units="RPM">0.0</constant>
+<constant digits="0" name="oddfire2">0.0</constant>
+<constant digits="0" name="oddfire3">0.0</constant>
+<constant digits="0" name="oddfire4">0.0</constant>
 <constant digits="0" name="unused2-57" units="RPM">0.0</constant>
 <constant digits="0" name="unused2-58" units="RPM">0.0</constant>
 <constant digits="0" name="unused2-59" units="RPM">0.0</constant>
@@ -201,14 +198,12 @@
 <constant digits="0" name="TrigAng" units="Deg">0.0</constant>
 <constant digits="0" name="FixAng" units="Deg">0.0</constant>
 <constant digits="0" name="CrankAng" units="Deg">5.0</constant>
-<constant digits="0" name="IgHold">10.0</constant>
+<constant digits="0" name="TrigAngMul">4.0</constant>
 <constant name="TrigEdge">"Leading"</constant>
 <constant name="TrigSpeed">"Crank Speed"</constant>
 <constant name="IgInv">"Going Low"</constant>
 <constant name="oddfire">"Yes"</constant>
 <constant name="TrigPattern">"Missing Tooth"</constant>
-<constant digits="0" name="IdleAdv" units="Deg">-1.9008</constant>
-<constant digits="0" name="IdleAdvTPS" units="ADC">65.0</constant>
 <constant digits="0" name="IdleAdvRPM" units="RPM">3200.0</constant>
 <constant digits="1" name="IdleAdvCLT" units="C">-21.0</constant>
 <constant digits="0" name="IdleDelayTime" units="sec">38.0</constant>
@@ -268,7 +263,7 @@
          93.0 
          104.0 
          116.0 
-         125.0 
+         140.0 
       </constant>
 <constant cols="1" digits="0" name="iatRetRates" rows="6" units="deg">
          0.0 
@@ -276,7 +271,7 @@
          2.0 
          4.0 
          6.0 
-         8.0 
+         10.0 
       </constant>
 <constant digits="0" name="dfcoRPM" units="RPM">1500.0</constant>
 <constant digits="0" name="dfcoHyster" units="RPM">200.0</constant>
@@ -350,7 +345,7 @@
 <constant digits="0" name="egoKP" units="%">100.0</constant>
 <constant digits="0" name="egoKI" units="%">20.0</constant>
 <constant digits="0" name="egoKD" units="%">0.0</constant>
-<constant digits="0" name="egoTemp" units="°C">70.0</constant>
+<constant digits="0" name="egoTemp" units="C">70.0</constant>
 <constant digits="0" name="egoCount">16.0</constant>
 <constant digits="0" name="egoDelta" units="%">1.0</constant>
 <constant digits="0" name="egoLimit">15.0</constant>
@@ -416,7 +411,8 @@
 <constant digits="0" name="boostKP" units="%">100.0</constant>
 <constant digits="0" name="boostKI" units="%">0.0</constant>
 <constant digits="0" name="boostKD" units="%">0.0</constant>
-<constant digits="0" name="unused6-60" units="RPM">24300.0</constant>
+<constant name="lnchPullRes">"Float"</constant>
+<constant name="unused6-60">"ONE"</constant>
 <constant digits="0" name="unused6-61" units="RPM">4500.0</constant>
 <constant digits="0" name="unused6-62" units="RPM">3000.0</constant>
 <constant digits="0" name="unused6-63" units="RPM">6000.0</constant>
@@ -502,8 +498,8 @@
 <constant name="unused7-55d">"No"</constant>
 <constant name="unused7-55e">"No"</constant>
 <constant name="unused7-55f">"No"</constant>
-<constant digits="0" name="fanSP" units="°C">75.0</constant>
-<constant digits="0" name="fanHyster" units="°C">2.0</constant>
+<constant digits="0" name="fanSP" units="C">75.0</constant>
+<constant digits="0" name="fanHyster" units="C">2.0</constant>
 <constant digits="0" name="fanFreq" units="Hz">6.0</constant>
 <constant cols="1" digits="0" name="fanPWMBins" rows="4" units="C">
          60.0 
@@ -576,7 +572,6 @@
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">
 <setting name="SPEED_DENSITY" value="SPEED_DENSITY"/>
-<setting name="BOOSTKPA" value="BOOSTKPA"/>
 <setting name="CAN_COMMANDS_OFF" value="CAN_COMMANDS_OFF"/>
 <setting name="CELSIUS" value="CELSIUS"/>
 </settings>
