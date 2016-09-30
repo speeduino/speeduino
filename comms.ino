@@ -67,7 +67,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201609-dev");
+      Serial.print("speeduino 201609");
      break;
 
     case 'V': // send VE table and constants in binary

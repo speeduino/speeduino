@@ -23,6 +23,8 @@ void initialiseSchedulers()
     fuelSchedule2.Status = OFF;
     fuelSchedule3.Status = OFF;
 
+    fuelSchedule5.Status = OFF;
+
     fuelSchedule1.schedulesSet = 0;
     fuelSchedule2.schedulesSet = 0;
     fuelSchedule3.schedulesSet = 0;
