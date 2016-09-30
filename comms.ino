@@ -18,7 +18,7 @@ void command()
   switch (Serial.read())
   {
     case 'A': // send x bytes of realtime values
-      sendValues(packetSize,0);   //send values to serial0      
+      sendValues(packetSize, 0);   //send values to serial0      
       break;
 
     case 'B': // Burn current values to eeprom
@@ -198,20 +198,21 @@ void command()
 /*
 This function returns the current values of a fixed group of variables
 */
-void sendValues(int packetlength, byte portnum)
+void sendValues(int packetlength, byte portNum)
 {
   byte response[packetlength];
   
-  if (portnum == 3){            //if port number is 3
+  if (portNum == 3)
+  {
+    //CAN serial
     Serial3.write("A");         //confirm cmd type
     Serial3.write(packetlength);      //confirm no of byte to be sent
-    }
-    
+  }
   else
-    {    
-      if(requestCount == 0) { currentStatus.secl = 0; }
-      requestCount++;
-    }
+  {    
+    if(requestCount == 0) { currentStatus.secl = 0; }
+    requestCount++;
+  }
 
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
   
@@ -260,9 +261,8 @@ void sendValues(int packetlength, byte portnum)
   response[34] = getNextError();
   
 //cli();
-  if (portnum == 0){Serial.write(response, (size_t)packetlength);}
-  else if (portnum == 3){Serial3.write(response, (size_t)packetlength);}
-  //Serial.flush();
+  if (portNum == 0) { Serial.write(response, (size_t)packetlength); }
+  else if (portNum == 3) { Serial3.write(response, (size_t)packetlength); }
 //sei();
   return;
 }
