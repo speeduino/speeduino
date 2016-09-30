@@ -27,6 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "table.h"
 #include "scheduler.h"
 #include "comms.h"
+#include "cancomms.h"
 #include "math.h"
 #include "corrections.h"
 #include "timers.h"
@@ -148,7 +149,8 @@ volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming ha
 
 void setup() 
 {
-    Serial.begin(115200);
+  Serial.begin(115200);
+  if (configPage1.canEnable) { Serial3.begin(115200); }
     
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
@@ -752,6 +754,17 @@ void loop()
           command();
         }
       }
+      //if Can interface is enabled then check for serial3 requests.
+      if (configPage1.canEnable)
+          {
+            if ( ((mainLoopCount & 31) == 1) or (Serial3.available() > SERIAL_BUFFER_THRESHOLD) ) 
+                {
+                  if (Serial3.available() > 0) 
+                    {
+                    canCommand();
+                    }
+                }
+          }
 
     // if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();} //Displays currently disabled
     

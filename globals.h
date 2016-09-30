@@ -6,12 +6,13 @@
 const byte signature = 20;
 
 //const char signature[] = "speeduino";
-const char displaySignature[] = "Speeduino";
-const char TSfirmwareVersion[] = "2016.05";
+const char displaySignature[] = "speeduino 201609-dev";
+const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing. 
 const byte page_size = 64;
 const int map_page_size = 288;
+const byte packetSize = 35;
 
 //Handy bitsetting macros
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
@@ -214,6 +215,7 @@ struct config1 {
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
   byte injLayout : 2;
+  byte canEnable : 1; //is can interface enabled
   
   byte primePulse;
   byte dutyLim;
