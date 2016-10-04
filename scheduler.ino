@@ -287,7 +287,7 @@ ISR(TIMER3_COMPB_vect, ISR_NOBLOCK) //fuelSchedule2
     }
   }
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect, ISR_NOBLOCK) //fuelSchedule3
 #elif defined (CORE_TEENSY) && defined (__MK20DX256__)
 void timer3compareCinterrupt() //Most ARM chips can simply call a function
@@ -308,7 +308,7 @@ void timer3compareCinterrupt() //Most ARM chips can simply call a function
     }
   }
   
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect, ISR_NOBLOCK) //fuelSchedule4
 #elif defined (CORE_TEENSY) && defined (__MK20DX256__)
 void timer4compareBinterrupt() //Most ARM chips can simply call a function
@@ -329,7 +329,7 @@ void timer4compareBinterrupt() //Most ARM chips can simply call a function
     }
   }
   
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule1
 #elif defined (CORE_TEENSY) && defined (__MK20DX256__)
 void timer5compareAinterrupt() //Most ARM chips can simply call a function
@@ -353,7 +353,7 @@ void timer5compareAinterrupt() //Most ARM chips can simply call a function
     }
   }
   
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect, ISR_NOBLOCK) //ignitionSchedule2
 #elif defined (CORE_TEENSY) && defined (__MK20DX256__)
 void timer5compareBinterrupt() //Most ARM chips can simply call a function
@@ -377,7 +377,7 @@ void timer5compareBinterrupt() //Most ARM chips can simply call a function
     }
   }
   
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect, ISR_NOBLOCK) //ignitionSchedule3
 #elif defined (CORE_TEENSY) && defined (__MK20DX256__)
 void timer5compareCinterrupt() //Most ARM chips can simply call a function
@@ -401,7 +401,7 @@ void timer5compareCinterrupt() //Most ARM chips can simply call a function
     }
   }
   
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule4
 #elif defined (CORE_TEENSY) && defined (__MK20DX256__)
 void timer4compareAinterrupt() //Most ARM chips can simply call a function

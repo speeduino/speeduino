@@ -150,7 +150,9 @@ volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming ha
 void setup() 
 {
   Serial.begin(115200);
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
   if (configPage1.canEnable) { Serial3.begin(115200); }
+#endif
     
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
@@ -754,6 +756,7 @@ void loop()
           command();
         }
       }
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
       //if Can interface is enabled then check for serial3 requests.
       if (configPage1.canEnable)
           {
@@ -765,6 +768,7 @@ void loop()
                     }
                 }
           }
+#endif
 
     // if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();} //Displays currently disabled
     
