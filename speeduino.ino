@@ -1002,7 +1002,6 @@ void loop()
       if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         unsigned long pwLimit = percentage(configPage1.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
-        if (
         if (currentStatus.PW > pwLimit) { currentStatus.PW = pwLimit; }
       }
       
@@ -1471,5 +1470,3 @@ void beginCoil2and4Charge() { digitalWrite(pinCoil2, coilHIGH); digitalWrite(pin
 void endCoil2and4Charge() { digitalWrite(pinCoil2, coilLOW); digitalWrite(pinCoil4, coilLOW); }
 
 void nullCallback() { return; }
-  
-
