@@ -10,10 +10,34 @@ int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 
 //This is a dedicated function that specifically handles the case of mapping 0-1023 values into a 0 to X range 
 //This is a common case because it means converting from a standard 10-bit analog input to a byte or 10-bit analog into 0-511 (Eg the temperature readings)
-int fastMap1023toX(unsigned long x, int in_min, int in_max, int out_min, int out_max)
+//int fastMap1023toX(unsigned long x, int in_min, int in_max, int out_min, int out_max)
+//removed unused variables, in_min and out_min is aways 0, in_max is aways 1023
+int fastMap1023toX(unsigned long x, int out_max)
 {
  return (x * out_max) >> 10;
 }
+
+/*
+//Unsigned int assembly multiply, result in 20 clocks
+//Need speed test
+unsigned long hwdu16(unsigned int x, unsigned int y){
+ unsigned long result;
+    asm("mul _y, _x");    //arg1l * arg2l - >
+    asm("movw _result+2, r0");
+    asm("movf _y+1,_x+1");//arg1h * arg2h - >
+    asm("movw _result, r0");
+    asm("mul _y, _x+1");  //arg1l * arg2h - >
+    asm("add _result+2,r0");//add cross
+    asm("adc _result+1,r1");//products
+    asm("clr r0");
+    asm("adc _result,r0");
+    asm("mul _y+1, _x");  //arg1h * arg2l - >
+    asm("add _result+2,r0");//add cross
+    asm("adc _result+1,r1");//products
+    asm("clr r0");
+    asm("adc _result,r0");
+  return(result);
+}*/
 
 /*
 The following are all fast versions of specific divisions
