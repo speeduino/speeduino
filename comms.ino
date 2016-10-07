@@ -777,7 +777,7 @@ This function is used to store calibration data sent by Tuner Studio.
 void receiveCalibration(byte tableID)
 {
   byte* pnt_TargetTable; //Pointer that will be used to point to the required target table
-  int OFFSET, DIVISION_FACTOR, BYTES_PER_VALUE;
+  int OFFSET, DIVISION_FACTOR, BYTES_PER_VALUE, EEPROM_START;
 
   switch (tableID)
   {
@@ -787,6 +787,7 @@ void receiveCalibration(byte tableID)
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
       DIVISION_FACTOR = 10;
       BYTES_PER_VALUE = 2;
+      EEPROM_START = EEPROM_CALIBRATION_CLT;
       break;
     case 1:
       //Inlet air temp table
@@ -794,6 +795,7 @@ void receiveCalibration(byte tableID)
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
       DIVISION_FACTOR = 10;
       BYTES_PER_VALUE = 2;
+      EEPROM_START = EEPROM_CALIBRATION_IAT;
       break;
     case 2:
       //O2 table
@@ -801,6 +803,7 @@ void receiveCalibration(byte tableID)
       OFFSET = 0;
       DIVISION_FACTOR = 1;
       BYTES_PER_VALUE = 1;
+      EEPROM_START = EEPROM_CALIBRATION_O2;
       break;
 
     default:
@@ -848,7 +851,10 @@ void receiveCalibration(byte tableID)
       }
 
       pnt_TargetTable[(x / 2)] = (byte)tempValue;
-      int y = EEPROM_CALIBRATION_O2 + counter;
+
+      //From TS3.x onwards, the EEPROM must be written here as TS restarts immediately after the process completes which is before the EEPROM write completes
+      int y = EEPROM_START + (x / 2);
+      EEPROM.update(y, (byte)tempValue); 
 
       every2nd = false;
       analogWrite(13, (counter % 50) );
