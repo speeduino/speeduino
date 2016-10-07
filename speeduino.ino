@@ -460,7 +460,7 @@ void setup()
   currentLoopTime = micros();
 
 
-  
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
   //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS)
   //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
   //Please see chapter 11 of 'Practical Arduino' (http://books.google.com.au/books?id=HsTxON1L6D4C&printsec=frontcover#v=onepage&q&f=false) for more details
@@ -470,6 +470,7 @@ void setup()
     cbi(ADCSRA,ADPS1);
     cbi(ADCSRA,ADPS0);
   #endif
+#endif
 
   
   mainLoopCount = 0;
@@ -817,7 +818,7 @@ void loop()
       fuelOn = false;
       if (fpPrimed) { digitalWrite(pinFuelPump, LOW); } //Turn off the fuel pump, but only if the priming is complete
       fuelPumpOn = false;
-      TIMSK4 &= ~(1 << OCIE4C); digitalWrite(pinIdle1, LOW); //Turns off the idle control PWM. This REALLY needs to be cleaned up into a general PWM controller class
+      disableIdle(); //Turn off the idle PWM
     }
     
     //Uncomment the following for testing
@@ -1002,7 +1003,6 @@ void loop()
       if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         unsigned long pwLimit = percentage(configPage1.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
-        if (
         if (currentStatus.PW > pwLimit) { currentStatus.PW = pwLimit; }
       }
       

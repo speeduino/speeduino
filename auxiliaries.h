@@ -1,4 +1,9 @@
+#ifndef AUX_H
+#define AUX_H
 
+void initialiseAuxPWM();
+void boostControl();
+void vvtControl();
 
 volatile byte *boost_pin_port;
 volatile byte boost_pin_mask;
@@ -16,4 +21,4 @@ unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int vvt_pwm_cur_value;
 long vvt_pwm_target_value;
 
-
+#endif

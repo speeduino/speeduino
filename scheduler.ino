@@ -10,7 +10,8 @@ A full copy of the license may be found in the projects root directory
 void initialiseSchedulers()
   {
     nullSchedule.Status = OFF;
-    
+
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
    // Much help in this from http://arduinomega.blogspot.com.au/2011/05/timer2-and-overflow-interrupt-lets-get.html
     //Fuel Schedules, which uses timer 3
     TCCR3B = 0x00;          //Disable Timer3 while we set it up
@@ -19,15 +20,6 @@ void initialiseSchedulers()
     TCCR3A = 0x00;          //Timer3 Control Reg A: Wave Gen Mode normal
     TCCR3B = (1 << CS12);   //Timer3 Control Reg B: Timer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
     //TCCR3B = 0x03;   //Timer3 Control Reg B: Timer Prescaler set to 64. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
-    fuelSchedule1.Status = OFF; 
-    fuelSchedule2.Status = OFF;
-    fuelSchedule3.Status = OFF;
-
-    fuelSchedule5.Status = OFF;
-
-    fuelSchedule1.schedulesSet = 0;
-    fuelSchedule2.schedulesSet = 0;
-    fuelSchedule3.schedulesSet = 0;
 
     //Ignition Schedules, which uses timer 5
     TCCR5B = 0x00;          //Disable Timer3 while we set it up
@@ -36,26 +28,40 @@ void initialiseSchedulers()
     TCCR5A = 0x00;          //Timer5 Control Reg A: Wave Gen Mode normal
     //TCCR5B = (1 << CS12);   //Timer5 Control Reg B: Timer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
     TCCR5B = 0x03;         //aka Divisor = 64 = 490.1Hz
-    ignitionSchedule1.Status = OFF;
-    ignitionSchedule2.Status = OFF;
-    ignitionSchedule3.Status = OFF;
 
-    ignitionSchedule1.schedulesSet = 0;
-    ignitionSchedule2.schedulesSet = 0;
-    ignitionSchedule3.schedulesSet = 0;
-    
     //The remaining Schedules (Schedules 4 for fuel and ignition) use Timer4
     TCCR4B = 0x00;          //Disable Timer4 while we set it up
     TCNT4  = 0;             //Reset Timer Count
     TIFR4  = 0x00;          //Timer4 INT Flag Reg: Clear Timer Overflow Flag
     TCCR4A = 0x00;          //Timer4 Control Reg A: Wave Gen Mode normal
     TCCR4B = (1 << CS12);   //Timer4 Control Reg B: aka Divisor = 256 = 122.5HzTimer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg 
-    ignitionSchedule4.Status = OFF;
-    fuelSchedule4.Status = OFF;
+#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+//Configure ARM timers here
+#endif
 
-    ignitionSchedule4.schedulesSet = 0;
+    
+    fuelSchedule1.Status = OFF; 
+    fuelSchedule2.Status = OFF;
+    fuelSchedule3.Status = OFF;
+    fuelSchedule4.Status = OFF;
+    fuelSchedule5.Status = OFF;
+
+    fuelSchedule1.schedulesSet = 0;
+    fuelSchedule2.schedulesSet = 0;
+    fuelSchedule3.schedulesSet = 0;
     fuelSchedule4.schedulesSet = 0;
-    //Note that timer4 compare channel C is used by the idle control
+    fuelSchedule5.schedulesSet = 0;
+
+    ignitionSchedule1.Status = OFF;
+    ignitionSchedule2.Status = OFF;
+    ignitionSchedule3.Status = OFF;
+    ignitionSchedule4.Status = OFF;
+    
+    ignitionSchedule1.schedulesSet = 0;
+    ignitionSchedule2.schedulesSet = 0;
+    ignitionSchedule3.schedulesSet = 0;
+    ignitionSchedule4.schedulesSet = 0;
+    
   }
   
 /*
@@ -82,6 +88,7 @@ void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned l
      * As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
      noInterrupts();
      fuelSchedule1.startCompare = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
      fuelSchedule1.endCompare = fuelSchedule1.startCompare + (duration >> 4);
@@ -91,6 +98,7 @@ void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned l
      else { timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1; OCR3A = fuelSchedule1.startCompare; }
      interrupts();
      TIMSK3 |= (1 << OCIE3A); //Turn on the A compare unit (ie turn on the interrupt)
+#endif
   }
 void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
@@ -106,6 +114,7 @@ void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned l
      * As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
      noInterrupts();
      fuelSchedule2.startCompare = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
      fuelSchedule2.endCompare = fuelSchedule2.startCompare + (duration >> 4);
@@ -114,40 +123,57 @@ void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned l
      fuelSchedule2.schedulesSet++; //Increment the number of times this schedule has been set
      interrupts();
      TIMSK3 |= (1 << OCIE3B); //Turn on the B compare unit (ie turn on the interrupt)
+#endif
   }
 void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
     if(fuelSchedule3.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
+
+    fuelSchedule3.StartCallback = startCallback; //Name the start callback function
+    fuelSchedule3.EndCallback = endCallback; //Name the end callback function
+    fuelSchedule3.duration = duration;
     
-    //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
-    //As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    //unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as require
+    /*
+     * The following must be enclosed in the noIntterupts block to avoid contention caused if the relevant interrupts fires before the state is fully set
+     * We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
+     * As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
+     * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
+     */
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+    noInterrupts();
     fuelSchedule3.startCompare = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
     fuelSchedule3.endCompare = fuelSchedule3.startCompare + (duration >> 4);
     OCR3C = fuelSchedule3.startCompare; //Use the C copmare unit of timer 3
-    fuelSchedule3.duration = duration;
-    fuelSchedule3.StartCallback = startCallback; //Name the start callback function
-    fuelSchedule3.EndCallback = endCallback; //Name the end callback function
     fuelSchedule3.Status = PENDING; //Turn this schedule on
     fuelSchedule3.schedulesSet++; //Increment the number of times this schedule has been set
+    interrupts();
     TIMSK3 |= (1 << OCIE3C); //Turn on the C compare unit (ie turn on the interrupt)
+#endif
   }
 void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)()) //Uses timer 4 compare B
   {
     if(fuelSchedule4.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
+        
+    fuelSchedule4.StartCallback = startCallback; //Name the start callback function
+    fuelSchedule4.EndCallback = endCallback; //Name the end callback function
+    fuelSchedule4.duration = duration;
     
-    //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
-    //As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    //unsigned int absoluteTimeout = TCNT4 + (timeout / 4); //Each tick occurs every 4uS with the 128 prescaler, so divide the timeout by 4 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
+    /*
+     * The following must be enclosed in the noIntterupts block to avoid contention caused if the relevant interrupts fires before the state is fully set
+     * We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
+     * As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
+     * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
+     */
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+    noInterrupts();
     fuelSchedule4.startCompare = TCNT4 + (timeout >> 4);
     fuelSchedule4.endCompare = fuelSchedule4.startCompare + (duration >> 4);
     OCR4B = fuelSchedule4.startCompare; //Use the C copmare unit of timer 3
-    fuelSchedule4.duration = duration;
-    fuelSchedule4.StartCallback = startCallback; //Name the start callback function
-    fuelSchedule4.EndCallback = endCallback; //Name the end callback function
     fuelSchedule4.Status = PENDING; //Turn this schedule on
     fuelSchedule4.schedulesSet++; //Increment the number of times this schedule has been set
+    interrupts();
     TIMSK4 |= (1 << OCIE4B); //Turn on the B compare unit (ie turn on the interrupt)
+#endif
   }
 void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
@@ -163,6 +189,7 @@ void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned l
     /*
      * The following must be enclosed in the noIntterupts block to avoid contention caused if the relevant interrupts fires before the state is fully set
      */
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
     noInterrupts();
     fuelSchedule5.startCompare = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
     fuelSchedule5.endCompare = fuelSchedule5.startCompare + (duration >> 4);
@@ -171,6 +198,7 @@ void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned l
     OCR3A = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, TCNT3); //Schedule 1 shares a timer with schedule 5
     interrupts();
     TIMSK3 |= (1 << OCIE3A); //Turn on the A compare unit (ie turn on the interrupt)
+#endif
   }
 //Ignition schedulers use Timer 5
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
@@ -252,7 +280,11 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
 //This calls the relevant callback function (startCallback or endCallback) depending on the status of the schedule.
 //If the startCallback function is called, we put the scheduler into RUNNING state
 //Timer3A (fuel schedule 1) Compare Vector
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPA_vect, ISR_NOBLOCK) //fuelSchedules 1 and 5
+#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+void timer3compareAinterrupt() //Most ARM chips can simply call a function
+#endif
   {
     if (timer3Aqueue[0]->Status == OFF) { TIMSK3 &= ~(1 << OCIE3A); return; } //Safety check. Turn off this output compare unit and return without performing any action
     if (timer3Aqueue[0]->Status == PENDING) //Check to see if this schedule is turn on
@@ -270,7 +302,11 @@ ISR(TIMER3_COMPA_vect, ISR_NOBLOCK) //fuelSchedules 1 and 5
     }
   }
 
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect, ISR_NOBLOCK) //fuelSchedule2
+#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+void timer3compareBinterrupt() //Most ARM chips can simply call a function
+#endif
   {
     if (fuelSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
