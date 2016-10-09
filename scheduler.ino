@@ -88,17 +88,15 @@ void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned l
      * As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
      noInterrupts();
-     fuelSchedule1.startCompare = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
+     fuelSchedule1.startCompare = FUEL1_COUNTER + (timeout >> 4); //As above, but with bit shift instead of / 16
      fuelSchedule1.endCompare = fuelSchedule1.startCompare + (duration >> 4);
      fuelSchedule1.Status = PENDING; //Turn this schedule on
      fuelSchedule1.schedulesSet++; //Increment the number of times this schedule has been set
-     if(channel5InjEnabled) { OCR3A = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, TCNT3); } //Schedule 1 shares a timer with schedule 5
-     else { timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1; OCR3A = fuelSchedule1.startCompare; }
+     if(channel5InjEnabled) { FUEL1_COMPARE = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, FUEL1_COUNTER); } //Schedule 1 shares a timer with schedule 5
+     else { timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1; FUEL1_COMPARE = fuelSchedule1.startCompare; }
      interrupts();
-     TIMSK3 |= (1 << OCIE3A); //Turn on the A compare unit (ie turn on the interrupt)
-#endif
+     FUEL1_TIMER_ENABLE();
   }
 void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
@@ -114,16 +112,14 @@ void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned l
      * As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
      noInterrupts();
-     fuelSchedule2.startCompare = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
+     fuelSchedule2.startCompare = FUEL2_COUNTER + (timeout >> 4); //As above, but with bit shift instead of / 16
      fuelSchedule2.endCompare = fuelSchedule2.startCompare + (duration >> 4);
-     OCR3B = fuelSchedule2.startCompare; //Use the B copmare unit of timer 3
+     FUEL2_COMPARE = fuelSchedule2.startCompare; //Use the B copmare unit of timer 3
      fuelSchedule2.Status = PENDING; //Turn this schedule on
      fuelSchedule2.schedulesSet++; //Increment the number of times this schedule has been set
      interrupts();
-     TIMSK3 |= (1 << OCIE3B); //Turn on the B compare unit (ie turn on the interrupt)
-#endif
+     FUEL2_TIMER_ENABLE();
   }
 void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
@@ -139,16 +135,14 @@ void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned l
      * As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
     noInterrupts();
-    fuelSchedule3.startCompare = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
+    fuelSchedule3.startCompare = FUEL3_COUNTER + (timeout >> 4); //As above, but with bit shift instead of / 16
     fuelSchedule3.endCompare = fuelSchedule3.startCompare + (duration >> 4);
-    OCR3C = fuelSchedule3.startCompare; //Use the C copmare unit of timer 3
+    FUEL3_COMPARE = fuelSchedule3.startCompare; //Use the C copmare unit of timer 3
     fuelSchedule3.Status = PENDING; //Turn this schedule on
     fuelSchedule3.schedulesSet++; //Increment the number of times this schedule has been set
     interrupts();
-    TIMSK3 |= (1 << OCIE3C); //Turn on the C compare unit (ie turn on the interrupt)
-#endif
+    FUEL3_TIMER_ENABLE();
   }
 void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)()) //Uses timer 4 compare B
   {
@@ -164,16 +158,14 @@ void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned l
      * As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
     noInterrupts();
-    fuelSchedule4.startCompare = TCNT4 + (timeout >> 4);
+    fuelSchedule4.startCompare = FUEL4_COUNTER + (timeout >> 4);
     fuelSchedule4.endCompare = fuelSchedule4.startCompare + (duration >> 4);
-    OCR4B = fuelSchedule4.startCompare; //Use the C copmare unit of timer 3
+    FUEL4_COMPARE = fuelSchedule4.startCompare; //Use the C copmare unit of timer 3
     fuelSchedule4.Status = PENDING; //Turn this schedule on
     fuelSchedule4.schedulesSet++; //Increment the number of times this schedule has been set
     interrupts();
-    TIMSK4 |= (1 << OCIE4B); //Turn on the B compare unit (ie turn on the interrupt)
-#endif
+    FUEL4_TIMER_ENABLE();
   }
 void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
@@ -204,60 +196,79 @@ void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned l
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
     if(ignitionSchedule1.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
+
+    ignitionSchedule1.StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule1.EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule1.duration = duration;
     
     //As the timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
     if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking. 
-    OCR5A = TCNT5 + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     
-    ignitionSchedule1.duration = duration;
-    ignitionSchedule1.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule1.EndCallback = endCallback; //Name the start callback function
+    noInterrupts();
+    ignitionSchedule1.startCompare = IGN1_COUNTER + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    ignitionSchedule1.endCompare = ignitionSchedule1.startCompare + (duration >> 2);
+    IGN1_COMPARE = ignitionSchedule1.startCompare;
     ignitionSchedule1.Status = PENDING; //Turn this schedule on
-    TIMSK5 |= (1 << OCIE5A); //Turn on the A compare unit (ie turn on the interrupt)
+    interrupts();
+    IGN1_TIMER_ENABLE();
   }
 void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
     if(ignitionSchedule2.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
     
-    //As the timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking. This must be set slightly lower than the max of 262140 to avoid strangeness
-    OCR5B = TCNT5 + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-    
-    ignitionSchedule2.duration = duration;
     ignitionSchedule2.StartCallback = startCallback; //Name the start callback function
     ignitionSchedule2.EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule2.duration = duration;
+    
+    //As the timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
+    if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking. This must be set slightly lower than the max of 262140 to avoid strangeness
+    
+    noInterrupts();
+    ignitionSchedule2.startCompare = IGN2_COUNTER + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    ignitionSchedule2.endCompare = ignitionSchedule2.startCompare + (duration >> 2);
+    IGN2_COMPARE = ignitionSchedule2.startCompare;
     ignitionSchedule2.Status = PENDING; //Turn this schedule on
-    TIMSK5 |= (1 << OCIE5B); //Turn on the B compare unit (ie turn on the interrupt)
+    interrupts();
+    IGN1_TIMER_ENABLE();
   }
 void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
     if(ignitionSchedule3.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
+
+    ignitionSchedule3.StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule3.EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule3.duration = duration;
     
     //The timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
     if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking. This must be set slightly lower than the max of 262140 to avoid strangeness
-    OCR5C = TCNT5 + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     
-    ignitionSchedule3.duration = duration;
-    ignitionSchedule3.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule3.EndCallback = endCallback; //Name the start callback function
+    noInterrupts();
+    ignitionSchedule3.startCompare = IGN3_COUNTER + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    ignitionSchedule3.endCompare = ignitionSchedule3.startCompare + (duration >> 2);
+    IGN3_COMPARE = ignitionSchedule3.startCompare;
     ignitionSchedule3.Status = PENDING; //Turn this schedule on
-    TIMSK5 |= (1 << OCIE5C); //Turn on the C compare unit (ie turn on the interrupt)
+    interrupts();
+    IGN3_TIMER_ENABLE(); 
   }
 void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
     if(ignitionSchedule4.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
+
+    ignitionSchedule4.StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule4.EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule4.duration = duration;
     
     //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
     //The timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency))
     //Note this is different to the other ignition timers
-    unsigned int absoluteTimeout = TCNT4 + (timeout >> 4); //As above, but with bit shift instead of / 16
-    
-    OCR4A = absoluteTimeout;
-    ignitionSchedule4.duration = duration;
-    ignitionSchedule4.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule4.EndCallback = endCallback; //Name the start callback function
+
+    noInterrupts();
+    ignitionSchedule4.startCompare = IGN4_COUNTER + (timeout >> 4); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + (duration >> 4);
+    IGN4_COMPARE = ignitionSchedule4.startCompare;
     ignitionSchedule4.Status = PENDING; //Turn this schedule on
-    TIMSK4 |= (1 << OCIE4A); //Turn on the A compare unit (ie turn on the interrupt)
+    interrupts();
+    IGN4_TIMER_ENABLE(); 
   }
 void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
@@ -373,19 +384,18 @@ void timer5compareAinterrupt() //Most ARM chips can simply call a function
   {
     if (ignitionSchedule1.Status == PENDING) //Check to see if this schedule is turn on
     {
-      //if ( ign1LastRev == startRevolutions ) { return; }
+      ignitionSchedule1.StartCallback();
       ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule1.startTime = micros();
-      ignitionSchedule1.StartCallback();
       ign1LastRev = startRevolutions;
-      OCR5A = TCNT5 + (ignitionSchedule1.duration >> 2); //Divide by 4
+      IGN1_COMPARE = ignitionSchedule1.endCompare; //OCR5A = TCNT5 + (ignitionSchedule1.duration >> 2); //Divide by 4
     }
     else if (ignitionSchedule1.Status == RUNNING)
     {
       ignitionSchedule1.Status = OFF; //Turn off the schedule
       ignitionSchedule1.EndCallback();
       ignitionCount += 1; //Increment the igintion counter
-      TIMSK5 &= ~(1 << OCIE5A); //Turn off this output compare unit
+      IGN1_TIMER_DISABLE();
     }
   }
   
@@ -397,19 +407,18 @@ void timer5compareBinterrupt() //Most ARM chips can simply call a function
   {
     if (ignitionSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
-      //if ( ign2LastRev == startRevolutions ) { return; }
+      ignitionSchedule2.StartCallback();
       ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule2.startTime = micros();
-      ignitionSchedule2.StartCallback();
       ign2LastRev = startRevolutions;
-      OCR5B = TCNT5 + (ignitionSchedule2.duration >> 2);
+      IGN2_COMPARE = ignitionSchedule2.endCompare; //OCR5B = TCNT5 + (ignitionSchedule2.duration >> 2);
     }
     else if (ignitionSchedule2.Status == RUNNING)
     {
       ignitionSchedule2.Status = OFF; //Turn off the schedule
       ignitionSchedule2.EndCallback();
       ignitionCount += 1; //Increment the igintion counter
-      TIMSK5 &= ~(1 << OCIE5B); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
+      IGN2_TIMER_DISABLE();
     }
   }
   

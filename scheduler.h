@@ -32,6 +32,75 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #include <avr/io.h>
 #endif
 
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+  //Refer to http://svn.savannah.nongnu.org/viewvc/trunk/avr-libc/include/avr/iomxx0_1.h?root=avr-libc&view=markup
+  #define FUEL1_COUNTER TCNT3
+  #define FUEL2_COUNTER TCNT3
+  #define FUEL3_COUNTER TCNT3
+  #define FUEL4_COUNTER TCNT4
+  
+  #define IGN1_COUNTER  TCNT5
+  #define IGN2_COUNTER  TCNT5
+  #define IGN3_COUNTER  TCNT5
+  #define IGN4_COUNTER  TCNT4
+
+  #define FUEL1_COMPARE OCR3A
+  #define FUEL2_COMPARE OCR3B
+  #define FUEL3_COMPARE OCR3C
+  #define FUEL4_COMPARE OCR4B
+  
+  #define IGN1_COMPARE  OCR5A
+  #define IGN2_COMPARE  OCR5B
+  #define IGN3_COMPARE  OCR5C
+  #define IGN4_COMPARE  OCR4A
+
+  #define FUEL1_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3A) //Turn on the A compare unit (ie turn on the interrupt)
+  #define FUEL2_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3B) //Turn on the B compare unit (ie turn on the interrupt)
+  #define FUEL3_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3C) //Turn on the C compare unit (ie turn on the interrupt)
+  #define FUEL4_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4B) //Turn on the B compare unit (ie turn on the interrupt)
+
+  #define IGN1_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5A) //Turn on the A compare unit (ie turn on the interrupt)
+  #define IGN2_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5B) //Turn on the B compare unit (ie turn on the interrupt)
+  #define IGN3_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5C) //Turn on the C compare unit (ie turn on the interrupt)
+  #define IGN4_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4A) //Turn on the A compare unit (ie turn on the interrupt)
+
+  #define IGN1_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5A) //Turn off this output compare unit 
+  #define IGN2_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5B) //Turn off this output compare unit
+  #define IGN3_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C) //Turn off this output compare unit
+
+#elif defined(CORE_TEENSY) 
+  //http://shawnhymel.com/661/learning-the-teensy-lc-interrupt-service-routines/
+  #define FUEL1_COUNTER FTM0_CNT
+  #define FUEL2_COUNTER FTM0_CNT
+  #define FUEL3_COUNTER FTM0_CNT
+  #define FUEL4_COUNTER FTM0_CNT
+
+  #define IGN1_COUNTER  FTM0_CNT
+  #define IGN2_COUNTER  FTM0_CNT
+  #define IGN3_COUNTER  FTM0_CNT
+  #define IGN4_COUNTER  FTM0_CNT
+
+  #define FUEL1_COMPARE FTM0_C0V
+  #define FUEL2_COMPARE FTM0_C1V
+  #define FUEL3_COMPARE FTM0_C2V
+  #define FUEL4_COMPARE FTM0_C3V
+
+  #define IGN1_COMPARE  FTM0_C4V
+  #define IGN2_COMPARE  FTM0_C5V
+  #define IGN3_COMPARE  FTM0_C6V
+  #define IGN4_COMPARE  FTM0_C7V
+
+  #define FUEL1_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL2_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL3_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL4_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+
+  #define IGN1_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN2_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN3_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN4_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+#endif
+
 void initialiseSchedulers();
 void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
