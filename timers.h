@@ -24,7 +24,9 @@ volatile int loopSec;
 volatile unsigned long targetOverdwellTime;
 volatile unsigned long targetTachoPulseTime;
 
-
+#if defined (CORE_TEENSY)
+  IntervalTimer lowResTimer;
+#endif
 void initialiseTimers();
 
 #endif // TIMERS_H

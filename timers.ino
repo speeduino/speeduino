@@ -26,6 +26,9 @@ void initialiseTimers()
    /* Now configure the prescaler to CPU clock divided by 128 = 125Khz */
    TCCR2B |= (1<<CS22)  | (1<<CS20); // Set bits
    TCCR2B &= ~(1<<CS21);             // Clear bit
+#elif defined (CORE_TEENSY)
+   //Uses the PIT timer on Teensy.
+   lowResTimer.begin(oneMSInterval, 1000);
 #endif
 }
 
@@ -35,7 +38,7 @@ void initialiseTimers()
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
 ISR(TIMER2_OVF_vect, ISR_NOBLOCK) 
 #elif defined (CORE_TEENSY)
-void timer2Overflowinterrupt() //Most ARM chips can simply call a function
+void oneMSInterval() //Most ARM chips can simply call a function
 #endif
 {
   
