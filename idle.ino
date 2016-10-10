@@ -293,7 +293,7 @@ ISR(TIMER4_COMPC_vect)
   }
     
 }
-#elif defined(PROCESSOR_TEENSY_3_1) || defined(PROCESSOR_TEENSY_3_2)
+#elif defined (CORE_TEENSY)
 //This function simply turns off the idle PWM and sets the pin low
 static inline void disableIdle()
 {

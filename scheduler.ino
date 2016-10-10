@@ -274,16 +274,19 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
   {
     return;
     if(ignitionSchedule1.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
+
+    ignitionSchedule5.StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule5.EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule5.duration = duration;
     
     //As the timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
     if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking. This must be set slightly lower than the max of 262140 to avoid strangeness
-    OCR5A = TCNT5 + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     
-    ignitionSchedule5.duration = duration;
-    ignitionSchedule5.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule5.EndCallback = endCallback; //Name the start callback function
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+    OCR5A = TCNT5 + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     ignitionSchedule5.Status = PENDING; //Turn this schedule on
     TIMSK5 |= (1 << OCIE5A); //Turn on the A compare unit (ie turn on the interrupt)
+#endif
   }
   
 /*******************************************************************************************************************************************************************************************************/
@@ -293,29 +296,29 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
 //Timer3A (fuel schedule 1) Compare Vector
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPA_vect, ISR_NOBLOCK) //fuelSchedules 1 and 5
-#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+#elif defined (CORE_TEENSY)
 void timer3compareAinterrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (timer3Aqueue[0]->Status == OFF) { TIMSK3 &= ~(1 << OCIE3A); return; } //Safety check. Turn off this output compare unit and return without performing any action
+    if (timer3Aqueue[0]->Status == OFF) { FUEL1_TIMER_DISABLE(); return; } //Safety check. Turn off this output compare unit and return without performing any action
     if (timer3Aqueue[0]->Status == PENDING) //Check to see if this schedule is turn on
     {
       timer3Aqueue[0]->StartCallback();
       timer3Aqueue[0]->Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      OCR3A = popQueue(timer3Aqueue);
+      FUEL1_COMPARE = popQueue(timer3Aqueue);
     }
     else if (timer3Aqueue[0]->Status == RUNNING)
     {
        timer3Aqueue[0]->EndCallback();
        timer3Aqueue[0]->Status = OFF; //Turn off the schedule
        timer3Aqueue[0]->schedulesSet = 0;
-       OCR3A = popQueue(timer3Aqueue);
+       FUEL1_COMPARE = popQueue(timer3Aqueue);
     }
   }
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect, ISR_NOBLOCK) //fuelSchedule2
-#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+#elif defined (CORE_TEENSY)
 void timer3compareBinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -323,20 +326,20 @@ void timer3compareBinterrupt() //Most ARM chips can simply call a function
     {
       fuelSchedule2.StartCallback();
       fuelSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      OCR3B = fuelSchedule2.endCompare;
+      FUEL2_COMPARE = fuelSchedule2.endCompare;
     }
     else if (fuelSchedule2.Status == RUNNING)
     {
        fuelSchedule2.EndCallback();
        fuelSchedule2.Status = OFF; //Turn off the schedule
        fuelSchedule2.schedulesSet = 0;
-       TIMSK3 &= ~(1 << OCIE3B); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
+       FUEL2_TIMER_DISABLE();
     }
   }
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect, ISR_NOBLOCK) //fuelSchedule3
-#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+#elif defined (CORE_TEENSY)
 void timer3compareCinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -344,20 +347,20 @@ void timer3compareCinterrupt() //Most ARM chips can simply call a function
     {
       fuelSchedule3.StartCallback();
       fuelSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      OCR3C = fuelSchedule3.endCompare;
+      FUEL3_COMPARE = fuelSchedule3.endCompare;
     }
     else if (fuelSchedule3.Status == RUNNING)
     {
        fuelSchedule3.EndCallback();
        fuelSchedule3.Status = OFF; //Turn off the schedule
        fuelSchedule3.schedulesSet = 0;
-       TIMSK3 &= ~(1 << OCIE3C); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
+       FUEL3_TIMER_DISABLE();
     }
   }
   
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect, ISR_NOBLOCK) //fuelSchedule4
-#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+#elif defined (CORE_TEENSY)
 void timer4compareBinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -365,20 +368,20 @@ void timer4compareBinterrupt() //Most ARM chips can simply call a function
     {
       fuelSchedule4.StartCallback();
       fuelSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      OCR4B = fuelSchedule4.endCompare;
+      FUEL4_COMPARE = fuelSchedule4.endCompare;
     }
     else if (fuelSchedule4.Status == RUNNING)
     {
        fuelSchedule4.EndCallback();
        fuelSchedule4.Status = OFF; //Turn off the schedule
        fuelSchedule4.schedulesSet = 0;
-       TIMSK4 &= ~(1 << OCIE4B); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
+       FUEL4_TIMER_DISABLE(); 
     }
   }
   
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule1
-#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+#elif defined (CORE_TEENSY)
 void timer5compareAinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -401,7 +404,7 @@ void timer5compareAinterrupt() //Most ARM chips can simply call a function
   
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect, ISR_NOBLOCK) //ignitionSchedule2
-#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+#elif defined (CORE_TEENSY)
 void timer5compareBinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -424,48 +427,46 @@ void timer5compareBinterrupt() //Most ARM chips can simply call a function
   
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect, ISR_NOBLOCK) //ignitionSchedule3
-#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+#elif defined (CORE_TEENSY)
 void timer5compareCinterrupt() //Most ARM chips can simply call a function
 #endif
   {
     if (ignitionSchedule3.Status == PENDING) //Check to see if this schedule is turn on
     {
-      //if ( ign3LastRev == startRevolutions ) { return; }
+      ignitionSchedule3.StartCallback();
       ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule3.startTime = micros();
-      ignitionSchedule3.StartCallback();
       ign3LastRev = startRevolutions;
-      OCR5C = TCNT5 + (ignitionSchedule3.duration >> 2);
+      IGN3_COMPARE = ignitionSchedule3.endCompare; //OCR5C = TCNT5 + (ignitionSchedule3.duration >> 2);
     }
     else if (ignitionSchedule3.Status == RUNNING)
     {
        ignitionSchedule3.Status = OFF; //Turn off the schedule
        ignitionSchedule3.EndCallback();
        ignitionCount += 1; //Increment the igintion counter
-       TIMSK5 &= ~(1 << OCIE5C); //Turn off this output compare unit (This simply writes 0 to the OCIE3A bit of TIMSK3)
+       IGN3_TIMER_DISABLE();
     }
   }
   
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule4
-#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+#elif defined (CORE_TEENSY)
 void timer4compareAinterrupt() //Most ARM chips can simply call a function
 #endif
   {
     if (ignitionSchedule4.Status == PENDING) //Check to see if this schedule is turn on
     {
-      //if ( ign4LastRev == startRevolutions ) { return; }
+      ignitionSchedule4.StartCallback();
       ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule4.startTime = micros();
-      ignitionSchedule4.StartCallback();
       ign4LastRev = startRevolutions;
-      OCR4A = TCNT4 + (ignitionSchedule4.duration >> 4); //Divide by 16
+      IGN4_COMPARE = ignitionSchedule4.endCompare; //OCR4A = TCNT4 + (ignitionSchedule4.duration >> 4); //Divide by 16
     }
     else if (ignitionSchedule4.Status == RUNNING)
     {
        ignitionSchedule4.Status = OFF; //Turn off the schedule
        ignitionSchedule4.EndCallback();
        ignitionCount += 1; //Increment the igintion counter
-       TIMSK4 &= ~(1 << OCIE4A); //Turn off this output compare unit (This simply writes 0 to the OCIE4A bit of TIMSK4)
+       IGN4_TIMER_DISABLE();
     }
   }

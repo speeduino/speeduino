@@ -34,7 +34,7 @@ void initialiseTimers()
 //Executes every ~1ms.
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
 ISR(TIMER2_OVF_vect, ISR_NOBLOCK) 
-#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+#elif defined (CORE_TEENSY)
 void timer2Overflowinterrupt() //Most ARM chips can simply call a function
 #endif
 {

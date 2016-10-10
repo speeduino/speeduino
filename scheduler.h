@@ -59,6 +59,11 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define FUEL3_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3C) //Turn on the C compare unit (ie turn on the interrupt)
   #define FUEL4_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4B) //Turn on the B compare unit (ie turn on the interrupt)
 
+  #define FUEL1_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3A); //Turn off this output compare unit
+  #define FUEL2_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3B); //Turn off this output compare unit
+  #define FUEL3_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3C); //Turn off this output compare unit
+  #define FUEL4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4B); //Turn off this output compare unit
+
   #define IGN1_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5A) //Turn on the A compare unit (ie turn on the interrupt)
   #define IGN2_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5B) //Turn on the B compare unit (ie turn on the interrupt)
   #define IGN3_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5C) //Turn on the C compare unit (ie turn on the interrupt)
@@ -67,6 +72,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN1_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5A) //Turn off this output compare unit 
   #define IGN2_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5B) //Turn off this output compare unit
   #define IGN3_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C) //Turn off this output compare unit
+  #define IGN4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A) //Turn off this output compare unit
 
 #elif defined(CORE_TEENSY) 
   //http://shawnhymel.com/661/learning-the-teensy-lc-interrupt-service-routines/
@@ -95,10 +101,20 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define FUEL3_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
   #define FUEL4_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
 
+  #define FUEL1_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL2_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL3_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL4_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+
   #define IGN1_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
   #define IGN2_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
   #define IGN3_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
   #define IGN4_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+
+  #define IGN1_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN2_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN3_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN4_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
 #endif
 
 void initialiseSchedulers();

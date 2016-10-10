@@ -105,7 +105,7 @@ ISR(TIMER1_COMPB_vect)
   }  
 }
 
-#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+#elif defined (CORE_TEENSY)
 //YET TO BE IMPLEMENTED ON TEENSY
 void initialiseAuxPWM() { }
 void boostControl() { } 
