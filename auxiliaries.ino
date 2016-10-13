@@ -21,6 +21,7 @@ void fanControl()
    else if (currentStatus.coolant <= (configPage4.fanSP - configPage4.fanHyster)) { digitalWrite(pinFan, fanLOW); }
 }
 
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 void initialiseAuxPWM()
 {
   TCCR1B = 0x00;          //Disbale Timer1 while we set it up
@@ -53,9 +54,7 @@ void boostControl()
     boostPID.Compute();
     TIMSK1 |= (1 << OCIE1A); //Turn on the compare unit (ie turn on the interrupt)
   }
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   else { TIMSK1 &= ~(1 << OCIE1A); } // Disable timer channel
-#endif
 }
 
 void vvtControl()
@@ -71,7 +70,6 @@ void vvtControl()
 }
   
 //The interrupt to control the Boost PWM
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 ISR(TIMER1_COMPA_vect)
 {
   if (boost_pwm_state)
@@ -107,6 +105,11 @@ ISR(TIMER1_COMPB_vect)
   }  
 }
 
-#elif defined(PROCESSOR_TEENSY_3_1) || defined(PROCESSOR_TEENSY_3_2)
+#elif defined (CORE_TEENSY)
+//YET TO BE IMPLEMENTED ON TEENSY
+void initialiseAuxPWM() { }
+void boostControl() { } 
+void vvtControl() { }
+
 #endif
 

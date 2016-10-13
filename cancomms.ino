@@ -15,7 +15,7 @@ sendcancommand is called when a comman d is to be sent via serial3 to the Can in
 //#include "globals.h"
 //#include "storage.h"
 
-void Cancommand()
+void canCommand()
 {
   switch (Serial3.read())
   {

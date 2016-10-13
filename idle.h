@@ -36,4 +36,5 @@ long idle_pwm_target_value;
 long idle_cl_target_rpm;
 
 void initialiseIdle();
-
+static inline void disableIdle();
+static inline void enableIdle();

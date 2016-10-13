@@ -107,6 +107,7 @@ void triggerPri_missingTooth()
    if ( curGap > targetGap || toothCurrentCount > triggerActualTeeth)
    { 
      toothCurrentCount = 1; 
+     revolutionOne = !revolutionOne; //Flip sequential revolution tracker
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      currentStatus.hasSync = true;
@@ -123,7 +124,10 @@ void triggerPri_missingTooth()
    toothLastToothTime = curTime;
 }
 
-void triggerSec_missingTooth(){ return; } //This function currently is not used
+void triggerSec_missingTooth()
+{ 
+  if(!currentStatus.hasSync) { revolutionOne = 0; }  //Sequential revolution reset
+}
 
 int getRPM_missingTooth()
 {
@@ -146,6 +150,9 @@ int getCrankAngle_missingTooth(int timePerDegree)
     long elapsedTime = micros() - tempToothLastToothTime;
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
+
+    //Sequential check (simply sets whether we're on the first or 2nd revoltuion of the cycle)
+    if (revolutionOne) { crankAngle += 360; }
 
     if (crankAngle >= 720) { crankAngle -= 720; } 
     else if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }

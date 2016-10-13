@@ -55,9 +55,15 @@ const byte packetSize = 35;
 #define TOOTH_LOG_SIZE      128
 #define TOOTH_LOG_BUFFER    256
 
-#define INJ_SIMULTANEOUS    0
+#define INJ_PAIRED          0
 #define INJ_SEMISEQUENTIAL  1
-#define INJ_SEQUENTIAL      2
+#define INJ_BANKED          2
+#define INJ_SEQUENTIAL      3
+
+#define IGN_MODE_WASTED     0
+#define IGN_MODE_SINGLE     1
+#define IGN_MODE_WASTEDCOP  2
+#define IGN_MODE_SEQUENTIAL 3
 
 #define SIZE_BYTE   8
 #define SIZE_INT    16
@@ -141,7 +147,7 @@ struct statuses {
   unsigned int PW; //In uS
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
-  volatile int loopsPerSecond;
+  volatile unsigned int loopsPerSecond;
   boolean launchingSoft; //True when in launch control soft limit mode
   boolean launchingHard; //True when in launch control hard limit mode
   int freeRAM;
@@ -215,7 +221,7 @@ struct config1 {
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
   byte injLayout : 2;
-  byte canenable : 1; //is can interface enabled
+  byte canEnable : 1; //is can interface enabled
   
   byte primePulse;
   byte dutyLim;

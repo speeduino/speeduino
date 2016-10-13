@@ -32,6 +32,91 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #include <avr/io.h>
 #endif
 
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+  //Refer to http://svn.savannah.nongnu.org/viewvc/trunk/avr-libc/include/avr/iomxx0_1.h?root=avr-libc&view=markup
+  #define FUEL1_COUNTER TCNT3
+  #define FUEL2_COUNTER TCNT3
+  #define FUEL3_COUNTER TCNT3
+  #define FUEL4_COUNTER TCNT4
+  
+  #define IGN1_COUNTER  TCNT5
+  #define IGN2_COUNTER  TCNT5
+  #define IGN3_COUNTER  TCNT5
+  #define IGN4_COUNTER  TCNT4
+
+  #define FUEL1_COMPARE OCR3A
+  #define FUEL2_COMPARE OCR3B
+  #define FUEL3_COMPARE OCR3C
+  #define FUEL4_COMPARE OCR4B
+  
+  #define IGN1_COMPARE  OCR5A
+  #define IGN2_COMPARE  OCR5B
+  #define IGN3_COMPARE  OCR5C
+  #define IGN4_COMPARE  OCR4A
+
+  #define FUEL1_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3A) //Turn on the A compare unit (ie turn on the interrupt)
+  #define FUEL2_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3B) //Turn on the B compare unit (ie turn on the interrupt)
+  #define FUEL3_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3C) //Turn on the C compare unit (ie turn on the interrupt)
+  #define FUEL4_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4B) //Turn on the B compare unit (ie turn on the interrupt)
+
+  #define FUEL1_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3A); //Turn off this output compare unit
+  #define FUEL2_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3B); //Turn off this output compare unit
+  #define FUEL3_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3C); //Turn off this output compare unit
+  #define FUEL4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4B); //Turn off this output compare unit
+
+  #define IGN1_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5A) //Turn on the A compare unit (ie turn on the interrupt)
+  #define IGN2_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5B) //Turn on the B compare unit (ie turn on the interrupt)
+  #define IGN3_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5C) //Turn on the C compare unit (ie turn on the interrupt)
+  #define IGN4_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4A) //Turn on the A compare unit (ie turn on the interrupt)
+
+  #define IGN1_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5A) //Turn off this output compare unit 
+  #define IGN2_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5B) //Turn off this output compare unit
+  #define IGN3_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C) //Turn off this output compare unit
+  #define IGN4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A) //Turn off this output compare unit
+
+#elif defined(CORE_TEENSY) 
+  //http://shawnhymel.com/661/learning-the-teensy-lc-interrupt-service-routines/
+  #define FUEL1_COUNTER FTM0_CNT
+  #define FUEL2_COUNTER FTM0_CNT
+  #define FUEL3_COUNTER FTM0_CNT
+  #define FUEL4_COUNTER FTM0_CNT
+
+  #define IGN1_COUNTER  FTM0_CNT
+  #define IGN2_COUNTER  FTM0_CNT
+  #define IGN3_COUNTER  FTM0_CNT
+  #define IGN4_COUNTER  FTM0_CNT
+
+  #define FUEL1_COMPARE FTM0_C0V
+  #define FUEL2_COMPARE FTM0_C1V
+  #define FUEL3_COMPARE FTM0_C2V
+  #define FUEL4_COMPARE FTM0_C3V
+
+  #define IGN1_COMPARE  FTM0_C4V
+  #define IGN2_COMPARE  FTM0_C5V
+  #define IGN3_COMPARE  FTM0_C6V
+  #define IGN4_COMPARE  FTM0_C7V
+
+  #define FUEL1_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL2_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL3_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL4_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+
+  #define FUEL1_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL2_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL3_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL4_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+
+  #define IGN1_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN2_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN3_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN4_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+
+  #define IGN1_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN2_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN3_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN4_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+#endif
+
 void initialiseSchedulers();
 void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
@@ -63,7 +148,7 @@ struct Schedule {
   unsigned int endCompare;
 };
 
-Schedule *timer3Aqueue[4];
+volatile Schedule *timer3Aqueue[4];
 Schedule *timer3Bqueue[4];
 Schedule *timer3Cqueue[4];
 
@@ -86,27 +171,50 @@ Schedule ignitionSchedule8;
 
 Schedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 
-static inline unsigned int setQueue(Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned int CNT)
+static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned int CNT)
 {
   //Create an array of all the upcoming targets, relative to the current count on the timer
   unsigned int tmpQueue[4];
-  tmpQueue[0] = schedule1->startCompare - CNT;
-  tmpQueue[1] = schedule1->endCompare - CNT;
-  tmpQueue[2] = schedule2->startCompare - CNT;
-  tmpQueue[3] = schedule2->endCompare - CNT;
 
   //Set the initial queue state. This order matches the tmpQueue order
-  queue[0] = schedule1;
-  queue[1] = schedule1;
-  queue[2] = schedule2;
-  queue[3] = schedule2;
+  if(schedule1->Status == OFF)
+  {
+    queue[0] = schedule2;
+    queue[1] = schedule2;
+    tmpQueue[0] = schedule2->startCompare - CNT;
+    tmpQueue[1] = schedule2->endCompare - CNT;
+  }
+  else
+  {
+    queue[0] = schedule1;
+    queue[1] = schedule1;
+    tmpQueue[0] = schedule1->startCompare - CNT;
+    tmpQueue[1] = schedule1->endCompare - CNT;
+  }
+
+  if(schedule2->Status == OFF)
+  {
+    queue[2] = schedule1;
+    queue[3] = schedule1;
+    tmpQueue[2] = schedule1->startCompare - CNT;
+    tmpQueue[3] = schedule1->endCompare - CNT;   
+  }
+  else
+  {
+    queue[2] = schedule2;
+    queue[3] = schedule2;   
+    tmpQueue[2] = schedule2->startCompare - CNT;
+    tmpQueue[3] = schedule2->endCompare - CNT; 
+  }
+
 
   //Sort the queues. Both queues are kept in sync. 
-  //This implementes a sorting networking based on the Bose-Nelson swap algorithm
-  //See: 
-  #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned int tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
+  //This implementes a sorting networking based on the Bose-Nelson sorting network
+  //See: http://pages.ripco.net/~jgamble/nw.html
+  #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned int tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; volatile Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
   //SWAP(0, 1); //Likely not needed
   //SWAP(2, 3); //Likely not needed
+  SWAP(0, 2);
   SWAP(1, 3);
   SWAP(1, 2);
 
@@ -119,7 +227,7 @@ static inline unsigned int setQueue(Schedule *queue[], Schedule *schedule1, Sche
  * The current item (0) is discarded
  * The final queue slot is set to nullSchedule to indicate that no action should be taken
  */
-static inline unsigned int popQueue(Schedule *queue[])
+static inline unsigned int popQueue(volatile Schedule *queue[])
 {
   queue[0] = queue[1];
   queue[1] = queue[2];

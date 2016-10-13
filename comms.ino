@@ -18,7 +18,7 @@ void command()
   switch (Serial.read())
   {
     case 'A': // send x bytes of realtime values
-      sendValues(packetSize,0);   //send values to serial0      
+      sendValues(packetSize, 0);   //send values to serial0      
       break;
 
     case 'B': // Burn current values to eeprom
@@ -62,12 +62,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2016.09");
+      Serial.print("Speeduino 2016.10-dev");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201609-dev");
+      Serial.print("speeduino 201610-dev");
      break;
 
     case 'V': // send VE table and constants in binary
@@ -75,7 +75,7 @@ void command()
       break;
 
     case 'W': // receive new VE obr constant at 'W'+<offset>+<newbyte>
-      int offset;
+      int valueOffset; //cannot use offset as a variable name, it is a reserved word for several teensy libraries
       while (Serial.available() == 0) { }
 
       if (isMap)
@@ -84,15 +84,15 @@ void command()
         offset1 = Serial.read();
         while (Serial.available() == 0) { }
         offset2 = Serial.read();
-        offset = word(offset2, offset1);
+        valueOffset = word(offset2, offset1);
       }
       else
       {
-        offset = Serial.read();
+        valueOffset = Serial.read();
       }
       while (Serial.available() == 0) { }
 
-      receiveValue(offset, Serial.read());
+      receiveValue(valueOffset, Serial.read());
       break;
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
@@ -198,20 +198,21 @@ void command()
 /*
 This function returns the current values of a fixed group of variables
 */
-void sendValues(int packetlength, byte portnum)
+void sendValues(int packetlength, byte portNum)
 {
   byte response[packetlength];
   
-  if (portnum == 3){            //if port number is 3
+  if (portNum == 3)
+  {
+    //CAN serial
     Serial3.write("A");         //confirm cmd type
     Serial3.write(packetlength);      //confirm no of byte to be sent
-    }
-    
+  }
   else
-    {    
-      if(requestCount == 0) { currentStatus.secl = 0; }
-      requestCount++;
-    }
+  {    
+    if(requestCount == 0) { currentStatus.secl = 0; }
+    requestCount++;
+  }
 
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
   
@@ -260,14 +261,13 @@ void sendValues(int packetlength, byte portnum)
   response[34] = getNextError();
   
 //cli();
-  if (portnum == 0){Serial.write(response, (size_t)packetlength);}
-  else if (portnum == 3){Serial3.write(response, (size_t)packetlength);}
-  //Serial.flush();
+  if (portNum == 0) { Serial.write(response, (size_t)packetlength); }
+  else if (portNum == 3) { Serial3.write(response, (size_t)packetlength); }
 //sei();
   return;
 }
 
-void receiveValue(int offset, byte newValue)
+void receiveValue(int valueOffset, byte newValue)
 {
 
   void* pnt_configPage;//This only stores the address of the value that it's pointing to and not the max size
@@ -275,24 +275,24 @@ void receiveValue(int offset, byte newValue)
   switch (currentPage)
   {
     case veMapPage:
-      if (offset < 256) //New value is part of the fuel map
+      if (valueOffset < 256) //New value is part of the fuel map
       {
-        fuelTable.values[15 - offset / 16][offset % 16] = newValue;
+        fuelTable.values[15 - valueOffset / 16][valueOffset % 16] = newValue;
         return;
       }
       else
       {
         //Check whether this is on the X (RPM) or Y (MAP/TPS) axis
-        if (offset < 272)
+        if (valueOffset < 272)
         {
           //X Axis
-          fuelTable.axisX[(offset - 256)] = ((int)(newValue) * 100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+          fuelTable.axisX[(valueOffset - 256)] = ((int)(newValue) * 100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
         }
         else
         {
           //Y Axis
-          offset = 15 - (offset - 272); //Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
-          fuelTable.axisY[offset] = (int)(newValue);
+          valueOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
+          fuelTable.axisY[valueOffset] = (int)(newValue);
         }
         return;
       }
@@ -301,31 +301,31 @@ void receiveValue(int offset, byte newValue)
     case veSetPage:
       pnt_configPage = &configPage1; //Setup a pointer to the relevant config page
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if ( offset < page_size)
+      if (valueOffset < page_size)
       {
-        *((byte *)pnt_configPage + (byte)offset) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
+        *((byte *)pnt_configPage + (byte)valueOffset) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
       }
       break;
 
     case ignMapPage: //Ignition settings page (Page 2)
-      if (offset < 256) //New value is part of the ignition map
+      if (valueOffset < 256) //New value is part of the ignition map
       {
-        ignitionTable.values[15 - offset / 16][offset % 16] = newValue;
+        ignitionTable.values[15 - valueOffset / 16][valueOffset % 16] = newValue;
         return;
       }
       else
       {
         //Check whether this is on the X (RPM) or Y (MAP/TPS) axis
-        if (offset < 272)
+        if (valueOffset < 272)
         {
           //X Axis
-          ignitionTable.axisX[(offset - 256)] = (int)(newValue) * int(100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+          ignitionTable.axisX[(valueOffset - 256)] = (int)(newValue) * int(100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
         }
         else
         {
           //Y Axis
-          offset = 15 - (offset - 272); //Need to do a translation to flip the order
-          ignitionTable.axisY[offset] = (int)(newValue);
+          valueOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order
+          ignitionTable.axisY[valueOffset] = (int)(newValue);
         }
         return;
       }
@@ -333,31 +333,31 @@ void receiveValue(int offset, byte newValue)
     case ignSetPage:
       pnt_configPage = &configPage2;
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if ( offset < page_size)
+      if (valueOffset < page_size)
       {
-        *((byte *)pnt_configPage + (byte)offset) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
+        *((byte *)pnt_configPage + (byte)valueOffset) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
       }
       break;
 
     case afrMapPage: //Air/Fuel ratio target settings page
-      if (offset < 256) //New value is part of the afr map
+      if (valueOffset < 256) //New value is part of the afr map
       {
-        afrTable.values[15 - offset / 16][offset % 16] = newValue;
+        afrTable.values[15 - valueOffset / 16][valueOffset % 16] = newValue;
         return;
       }
       else
       {
         //Check whether this is on the X (RPM) or Y (MAP/TPS) axis
-        if (offset < 272)
+        if (valueOffset < 272)
         {
           //X Axis
-          afrTable.axisX[(offset - 256)] = int(newValue) * int(100); //The RPM values sent by megasquirt are divided by 100, need to multiply it back by 100 to make it correct
+          afrTable.axisX[(valueOffset - 256)] = int(newValue) * int(100); //The RPM values sent by megasquirt are divided by 100, need to multiply it back by 100 to make it correct
         }
         else
         {
           //Y Axis
-          offset = 15 - (offset - 272); //Need to do a translation to flip the order
-          afrTable.axisY[offset] = int(newValue);
+          valueOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order
+          afrTable.axisY[valueOffset] = int(newValue);
 
         }
         return;
@@ -366,52 +366,52 @@ void receiveValue(int offset, byte newValue)
     case afrSetPage:
       pnt_configPage = &configPage3;
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if ( offset < page_size)
+      if (valueOffset < page_size)
       {
-        *((byte *)pnt_configPage + (byte)offset) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
+        *((byte *)pnt_configPage + (byte)valueOffset) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
       }
       break;
 
     case iacPage: //Idle Air Control settings page (Page 4)
       pnt_configPage = &configPage4;
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if ( offset < page_size)
+      if (valueOffset < page_size)
       {
-        *((byte *)pnt_configPage + (byte)offset) = newValue;
+        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
       }
       break;
     case boostvvtPage: //Boost and VVT maps (8x8)
-      if (offset < 64) //New value is part of the boost map
+      if (valueOffset < 64) //New value is part of the boost map
       {
-        boostTable.values[7 - offset / 8][offset % 8] = newValue;
+        boostTable.values[7 - valueOffset / 8][valueOffset % 8] = newValue;
         return;
       }
-      else if (offset < 72) //New value is on the X (RPM) axis of the boost table
+      else if (valueOffset < 72) //New value is on the X (RPM) axis of the boost table
       {
-        boostTable.axisX[(offset - 64)] = int(newValue) * int(100); //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct
+        boostTable.axisX[(valueOffset - 64)] = int(newValue) * int(100); //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct
         return;
       }
-      else if (offset < 80) //New value is on the Y (TPS) axis of the boost table
+      else if (valueOffset < 80) //New value is on the Y (TPS) axis of the boost table
       {
-        boostTable.axisY[(7 - (offset - 72))] = int(newValue);
+        boostTable.axisY[(7 - (valueOffset - 72))] = int(newValue);
         return;
       }
-      else if (offset < 144) //New value is part of the vvt map
+      else if (valueOffset < 144) //New value is part of the vvt map
       {
-        offset = offset - 80;
-        vvtTable.values[7 - offset / 8][offset % 8] = newValue;
+        valueOffset = valueOffset - 80;
+        vvtTable.values[7 - valueOffset / 8][valueOffset % 8] = newValue;
         return;
       }
-      else if (offset < 152) //New value is on the X (RPM) axis of the vvt table
+      else if (valueOffset < 152) //New value is on the X (RPM) axis of the vvt table
       {
-        offset = offset - 144;
-        vvtTable.axisX[offset] = int(newValue) * int(100); //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct
+        valueOffset = valueOffset - 144;
+        vvtTable.axisX[valueOffset] = int(newValue) * int(100); //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct
         return;
       }
       else //New value is on the Y (Load) axis of the vvt table
       {
-        offset = offset - 152;
-        vvtTable.axisY[(7 - offset)] = int(newValue);
+        valueOffset = valueOffset - 152;
+        vvtTable.axisY[(7 - valueOffset)] = int(newValue);
         return;
       }
     default:
@@ -777,7 +777,7 @@ This function is used to store calibration data sent by Tuner Studio.
 void receiveCalibration(byte tableID)
 {
   byte* pnt_TargetTable; //Pointer that will be used to point to the required target table
-  int OFFSET, DIVISION_FACTOR, BYTES_PER_VALUE;
+  int OFFSET, DIVISION_FACTOR, BYTES_PER_VALUE, EEPROM_START;
 
   switch (tableID)
   {
@@ -787,6 +787,7 @@ void receiveCalibration(byte tableID)
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
       DIVISION_FACTOR = 10;
       BYTES_PER_VALUE = 2;
+      EEPROM_START = EEPROM_CALIBRATION_CLT;
       break;
     case 1:
       //Inlet air temp table
@@ -794,6 +795,7 @@ void receiveCalibration(byte tableID)
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
       DIVISION_FACTOR = 10;
       BYTES_PER_VALUE = 2;
+      EEPROM_START = EEPROM_CALIBRATION_IAT;
       break;
     case 2:
       //O2 table
@@ -801,6 +803,7 @@ void receiveCalibration(byte tableID)
       OFFSET = 0;
       DIVISION_FACTOR = 1;
       BYTES_PER_VALUE = 1;
+      EEPROM_START = EEPROM_CALIBRATION_O2;
       break;
 
     default:
@@ -848,7 +851,10 @@ void receiveCalibration(byte tableID)
       }
 
       pnt_TargetTable[(x / 2)] = (byte)tempValue;
-      int y = EEPROM_CALIBRATION_O2 + counter;
+
+      //From TS3.x onwards, the EEPROM must be written here as TS restarts immediately after the process completes which is before the EEPROM write completes
+      int y = EEPROM_START + (x / 2);
+      EEPROM.update(y, (byte)tempValue); 
 
       every2nd = false;
       analogWrite(13, (counter % 50) );
