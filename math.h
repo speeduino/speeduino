@@ -18,28 +18,6 @@ int fastMap1023toX(unsigned long x, int out_max)
 }
 
 /*
-//Unsigned int assembly multiply, result in 20 clocks
-//Need speed test
-unsigned long hwdu16(unsigned int x, unsigned int y){
- unsigned long result;
-    asm("mul _y, _x");    //arg1l * arg2l - >
-    asm("movw _result+2, r0");
-    asm("movf _y+1,_x+1");//arg1h * arg2h - >
-    asm("movw _result, r0");
-    asm("mul _y, _x+1");  //arg1l * arg2h - >
-    asm("add _result+2,r0");//add cross
-    asm("adc _result+1,r1");//products
-    asm("clr r0");
-    asm("adc _result,r0");
-    asm("mul _y+1, _x");  //arg1h * arg2l - >
-    asm("add _result+2,r0");//add cross
-    asm("adc _result+1,r1");//products
-    asm("clr r0");
-    asm("adc _result,r0");
-  return(result);
-}*/
-
-/*
 The following are all fast versions of specific divisions
 Ref: http://www.hackersdelight.org/divcMore.pdf
 */
