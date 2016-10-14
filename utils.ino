@@ -12,11 +12,11 @@ Returns how much free dynamic memory exists (between heap and stack)
 
 int freeRam ()
 {
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#if defined(PROCESSOR_MEGA_ALL)
   extern int __heap_start, *__brkval;
   int v;
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
-#elif defined(CORE_TEENSY)
+#elif defined(PROCESSOR_TEENSY_3_x)
   return 0;
 #endif
 }

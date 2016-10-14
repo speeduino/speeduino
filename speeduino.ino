@@ -151,7 +151,7 @@ volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming ha
 void setup() 
 {
   Serial.begin(115200);
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
+#if defined(PROCESSOR_MEGA_NO61) //ATmega2561 does not have Serial3
   if (configPage1.canEnable) { Serial3.begin(115200); }
 #endif
     
@@ -460,7 +460,7 @@ void setup()
   currentLoopTime = micros();
 
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#if defined(PROCESSOR_MEGA_ALL) //AVR chips use the ISR for this
   //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS)
   //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
   //Please see chapter 11 of 'Practical Arduino' (http://books.google.com.au/books?id=HsTxON1L6D4C&printsec=frontcover#v=onepage&q&f=false) for more details
@@ -775,7 +775,7 @@ void loop()
           command();
         }
       }
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
+#if defined(PROCESSOR_MEGA_NO61)  //ATmega2561 does not have Serial3
       //if Can interface is enabled then check for serial3 requests.
       if (configPage1.canEnable)
           {

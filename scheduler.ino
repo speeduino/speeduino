@@ -11,7 +11,7 @@ void initialiseSchedulers()
   {
     nullSchedule.Status = OFF;
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
    // Much help in this from http://arduinomega.blogspot.com.au/2011/05/timer2-and-overflow-interrupt-lets-get.html
     //Fuel Schedules, which uses timer 3
     TCCR3B = 0x00;          //Disable Timer3 while we set it up
@@ -35,7 +35,7 @@ void initialiseSchedulers()
     TIFR4  = 0x00;          //Timer4 INT Flag Reg: Clear Timer Overflow Flag
     TCCR4A = 0x00;          //Timer4 Control Reg A: Wave Gen Mode normal
     TCCR4B = (1 << CS12);   //Timer4 Control Reg B: aka Divisor = 256 = 122.5HzTimer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg 
-#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+#elif defined (PROCESSOR_TEENSY_3_x)
 //Configure ARM timers here
 #endif
 
@@ -181,7 +181,7 @@ void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned l
     /*
      * The following must be enclosed in the noIntterupts block to avoid contention caused if the relevant interrupts fires before the state is fully set
      */
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+#if defined(PROCESSOR_MEGA_ALL) 
     noInterrupts();
     fuelSchedule5.startCompare = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
     fuelSchedule5.endCompare = fuelSchedule5.startCompare + (duration >> 4);
@@ -282,7 +282,7 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     //As the timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
     if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking. This must be set slightly lower than the max of 262140 to avoid strangeness
     
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+#if defined(PROCESSOR_MEGA_ALL) 
     OCR5A = TCNT5 + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     ignitionSchedule5.Status = PENDING; //Turn this schedule on
     TIMSK5 |= (1 << OCIE5A); //Turn on the A compare unit (ie turn on the interrupt)
@@ -294,9 +294,9 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
 //This calls the relevant callback function (startCallback or endCallback) depending on the status of the schedule.
 //If the startCallback function is called, we put the scheduler into RUNNING state
 //Timer3A (fuel schedule 1) Compare Vector
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
 ISR(TIMER3_COMPA_vect, ISR_NOBLOCK) //fuelSchedules 1 and 5
-#elif defined (CORE_TEENSY)
+#elif defined(PROCESSOR_TEENSY_3_x)
 void timer3compareAinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -316,9 +316,9 @@ void timer3compareAinterrupt() //Most ARM chips can simply call a function
     }
   }
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect, ISR_NOBLOCK) //fuelSchedule2
-#elif defined (CORE_TEENSY)
+#elif defined (PROCESSOR_TEENSY_3_x)
 void timer3compareBinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -337,9 +337,9 @@ void timer3compareBinterrupt() //Most ARM chips can simply call a function
     }
   }
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect, ISR_NOBLOCK) //fuelSchedule3
-#elif defined (CORE_TEENSY)
+#elif defined (PROCESSOR_TEENSY_3_x)
 void timer3compareCinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -358,9 +358,9 @@ void timer3compareCinterrupt() //Most ARM chips can simply call a function
     }
   }
   
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect, ISR_NOBLOCK) //fuelSchedule4
-#elif defined (CORE_TEENSY)
+#elif defined (PROCESSOR_TEENSY_3_x)
 void timer4compareBinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -379,9 +379,9 @@ void timer4compareBinterrupt() //Most ARM chips can simply call a function
     }
   }
   
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
 ISR(TIMER5_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule1
-#elif defined (CORE_TEENSY)
+#elif defined (PROCESSOR_TEENSY_3_x)
 void timer5compareAinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -402,9 +402,9 @@ void timer5compareAinterrupt() //Most ARM chips can simply call a function
     }
   }
   
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect, ISR_NOBLOCK) //ignitionSchedule2
-#elif defined (CORE_TEENSY)
+#elif defined (PROCESSOR_TEENSY_3_x)
 void timer5compareBinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -425,9 +425,9 @@ void timer5compareBinterrupt() //Most ARM chips can simply call a function
     }
   }
   
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#if defined(PROCESSOR_MEGA_ALL) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect, ISR_NOBLOCK) //ignitionSchedule3
-#elif defined (CORE_TEENSY)
+#elif defined (PROCESSOR_TEENSY_3_x)
 void timer5compareCinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -448,9 +448,9 @@ void timer5compareCinterrupt() //Most ARM chips can simply call a function
     }
   }
   
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule4
-#elif defined (CORE_TEENSY)
+#elif defined (PROCESSOR_TEENSY_3_x)
 void timer4compareAinterrupt() //Most ARM chips can simply call a function
 #endif
   {

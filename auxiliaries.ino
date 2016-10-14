@@ -21,7 +21,7 @@ void fanControl()
    else if (currentStatus.coolant <= (configPage4.fanSP - configPage4.fanHyster)) { digitalWrite(pinFan, fanLOW); }
 }
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#if defined(PROCESSOR_MEGA_ALL) 
 void initialiseAuxPWM()
 {
   TCCR1B = 0x00;          //Disbale Timer1 while we set it up
@@ -64,7 +64,7 @@ void vvtControl()
     byte vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
     vvt_pwm_target_value = percentage(vvtDuty, vvt_pwm_max_count);
   }
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#if defined(PROCESSOR_MEGA_ALL)
   else { TIMSK1 &= ~(1 << OCIE1B); } // Disable timer channel
 #endif
 }
@@ -105,7 +105,7 @@ ISR(TIMER1_COMPB_vect)
   }  
 }
 
-#elif defined (CORE_TEENSY)
+#elif defined (PROCESSOR_TEENSY_3_x)
 //YET TO BE IMPLEMENTED ON TEENSY
 void initialiseAuxPWM() { }
 void boostControl() { } 

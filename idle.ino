@@ -17,7 +17,7 @@ integerPID idlePID(&currentStatus.longRPM, &idle_pwm_target_value, &idle_cl_targ
 void initialiseIdle()
 {
 //By default, turn off the PWM interrupt (It gets turned on below if needed)  
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#if defined(PROCESSOR_MEGA_ALL) 
   TIMSK4 &= ~(1 << OCIE4C); // Disable timer channel for idle
 #endif
   
@@ -239,7 +239,7 @@ void homeStepper()
 }
 
 //The interrupt to turn off the idle pwm
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#if defined(PROCESSOR_MEGA_ALL)
 //This function simply turns off the idle PWM and sets the pin low
 static inline void disableIdle()
 {
@@ -293,7 +293,7 @@ ISR(TIMER4_COMPC_vect)
   }
     
 }
-#elif defined (CORE_TEENSY)
+#elif defined (PROCESSOR_TEENSY_3_x)
 //This function simply turns off the idle PWM and sets the pin low
 static inline void disableIdle()
 {

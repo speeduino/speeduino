@@ -2,6 +2,30 @@
 #define GLOBALS_H
 #include <Arduino.h>
 
+#if defined(__arm__)   
+    #if defined(__MK20DX256__) && defined(CORE_TEENSY)      
+        #define PROCESSOR_TEENSY_3_2  1 //compile for teensy 3.1/2 only
+    #elif defined(__MK64FX512__) && defined(CORE_TEENSY)      
+        #define PROCESSOR_TEENSY_3_5  1 //compile for teensy 3.5 only
+    #endif    
+    #if defined(__MK20DX256__) && defined(CORE_TEENSY) || defined(__MK64FX512__) && defined(CORE_TEENSY)
+        #define PROCESSOR_TEENSY_3_x  1 //compile for both teensy 3.1/2 and 3.5 
+    #elif defined (CORE_TEENSY)
+        #error "Unknown Teensy"
+    #elif defined (__arm__)
+        #error "Unknown ARM chip"    
+    #else
+        #error "Unknown board"
+    #endif
+    
+#elif defined(__AVR__)
+    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+        #define PROCESSOR_MEGA_NO61 1
+    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+        #define PROCESSOR_MEGA_ALL  1
+    #endif          
+    #endif
+#endif    
 //const byte ms_version = 20;
 const byte signature = 20;
 
