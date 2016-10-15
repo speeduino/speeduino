@@ -35,8 +35,43 @@ void initialiseSchedulers()
     TIFR4  = 0x00;          //Timer4 INT Flag Reg: Clear Timer Overflow Flag
     TCCR4A = 0x00;          //Timer4 Control Reg A: Wave Gen Mode normal
     TCCR4B = (1 << CS12);   //Timer4 Control Reg B: aka Divisor = 256 = 122.5HzTimer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg 
+    
 #elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+
 //Configure ARM timers here
+    FTM0_MODE |= FTM_MODE_WPDIS;  // Write Protection Disable
+    FTM0_MODE |= FTM_MODE_FTMEN;  // Unrestricted FTM mode
+    FTM0_SC   |= FTM_SC_TOIE;     // enable Overflow Interrupt
+  
+    // enable the clock for FTM0
+    FTM0_SC |= FTM_SC_CLKS(0b10);
+    // 00 No clock selected. This in effect disables the FTM counter.
+    // 01 System clock
+    // 10 Fixed frequency clock
+    // 11 External clock
+
+    // set Prescaler 
+    //FTM0_SC |= FTM_SC_PS(0b111);
+    FTM0_SC |= 0b000;
+    // 000 Divide by 1
+    // 001 Divide by 2
+    // 010 Divide by 4
+    // 011 Divide by 8
+    // 100 Divide by 16
+    // 101 Divide by 32
+    // 110 Divide by 64
+    // 111 Divide by 128
+  
+    // set the counter initial value
+    FTM0_CNT = 0;
+  
+    // enable the clock for FTM0
+    SIM_SCGC6 |= SIM_SCGC6_FTM0;
+  
+    // enable IRQ Interrupt
+    NVIC_ENABLE_IRQ(IRQ_FTM0);
+  
+    FTM0_FMS |= FTM0_WPEN;
 #endif
 
     
@@ -229,7 +264,7 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     IGN2_COMPARE = ignitionSchedule2.startCompare;
     ignitionSchedule2.Status = PENDING; //Turn this schedule on
     interrupts();
-    IGN1_TIMER_ENABLE();
+    IGN2_TIMER_ENABLE();
   }
 void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {

@@ -562,10 +562,10 @@ void setup()
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if(configPage1.injLayout == INJ_SEMISEQUENTIAL)
+      if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injLayout == INJ_PAIRED)
       {
         channel1InjDegrees = 0;
-        channel2InjDegrees = channel2IgnDegrees;
+        channel2InjDegrees = 180;
       }
       else if (configPage1.injLayout == INJ_SEQUENTIAL)
       {
@@ -680,7 +680,7 @@ void setup()
   
   switch(configPage2.sparkMode)
   {
-    case 0:
+    case IGN_MODE_WASTED:
       //Wasted Spark (Normal mode)
       ign1StartFunction = beginCoil1Charge;
       ign1EndFunction = endCoil1Charge;
@@ -694,7 +694,7 @@ void setup()
       ign5EndFunction = endCoil5Charge;
       break;
       
-    case 1:
+    case IGN_MODE_SINGLE:
       //Single channel mode. All ignition pulses are on channel 1
       ign1StartFunction = beginCoil1Charge;
       ign1EndFunction = endCoil1Charge;
@@ -708,7 +708,7 @@ void setup()
       ign5EndFunction = endCoil1Charge;
       break;
       
-    case 2:
+    case IGN_MODE_WASTEDCOP:
       //Wasted COP mode. Ignition channels 1&3 and 2&4 are paired together
       //This is not a valid mode for >4 cylinders
       if( configPage1.nCylinders <= 4 )

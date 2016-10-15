@@ -659,6 +659,15 @@ void sendPage(bool useChar)
         }
         break;
       }
+    case seqFuelPage:
+      {
+        byte response[200]; //Bit hacky, but the size is: (8x8 + 8 + 8) + (8x8 + 8 + 8) = 160
+
+          
+          for (int x = 0; x < 200; x++) { 0; }
+          Serial.write((byte *)&response, sizeof(response));
+          break;
+      }
     default:
       {
         Serial.println(F("\nPage has not been implemented yet. Change to another page."));
