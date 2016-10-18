@@ -22,7 +22,7 @@ void initialiseSchedulers()
     //TCCR3B = 0x03;   //Timer3 Control Reg B: Timer Prescaler set to 64. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
 
     //Ignition Schedules, which uses timer 5
-    TCCR5B = 0x00;          //Disable Timer3 while we set it up
+    TCCR5B = 0x00;          //Disable Timer5 while we set it up
     TCNT5  = 0;             //Reset Timer Count
     TIFR5  = 0x00;          //Timer5 INT Flag Reg: Clear Timer Overflow Flag
     TCCR5A = 0x00;          //Timer5 Control Reg A: Wave Gen Mode normal
