@@ -201,18 +201,18 @@ void setup()
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
   else { coilHIGH = HIGH, coilLOW = LOW; }
-  digitalWrite(pinCoil1, coilLOW);
-  digitalWrite(pinCoil2, coilLOW);
-  digitalWrite(pinCoil3, coilLOW);
-  digitalWrite(pinCoil4, coilLOW);
-  digitalWrite(pinCoil5, coilLOW);
+  endCoil1Charge(); //digitalWrite(pinCoil1, coilLOW);
+  endCoil2Charge(); //digitalWrite(pinCoil2, coilLOW);
+  endCoil3Charge(); //digitalWrite(pinCoil3, coilLOW);
+  endCoil4Charge(); //digitalWrite(pinCoil4, coilLOW);
+  endCoil5Charge(); //digitalWrite(pinCoil5, coilLOW);
   
   //Similar for injectors, make sure they're turned off
-  digitalWrite(pinInjector1, LOW);
-  digitalWrite(pinInjector2, LOW);
-  digitalWrite(pinInjector3, LOW);
-  digitalWrite(pinInjector4, LOW);
-  digitalWrite(pinInjector5, LOW);
+  closeInjector1(); //digitalWrite(pinInjector1, HIGH);
+  closeInjector2(); //digitalWrite(pinInjector2, HIGH);
+  closeInjector3(); //digitalWrite(pinInjector3, HIGH);
+  closeInjector4(); //digitalWrite(pinInjector4, HIGH);
+  closeInjector5(); //digitalWrite(pinInjector5, HIGH);
   
   //Set the tacho output default state
   digitalWrite(pinTachOut, HIGH);
@@ -924,6 +924,7 @@ void loop()
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
         currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
         currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.MAP, currentStatus.RPM); //As above, but for ignition advance
+        currentStatus.adv = get3DTableValue2(&ignitionTable, currentStatus.MAP, currentStatus.RPM); //As above, but for ignition advance
       }
       else
       { 
@@ -931,6 +932,7 @@ void loop()
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
         currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
         currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM); //As above, but for ignition advance
+        currentStatus.adv = get3DTableValue2(&ignitionTable, currentStatus.MAP, currentStatus.RPM); //As above, but for ignition advance
       }
       
       //Check for fixed ignition angles
@@ -1450,7 +1452,7 @@ void loop()
   inline void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); }
 
   inline void openInjector5() { digitalWrite(pinInjector5, HIGH); }
-  inline void closeInjector5() { digitalWrite(pinInjector5, LOW); } 
+  inline void closeInjector5() { digitalWrite(pinInjector5, LOW); }
   inline void beginCoil5Charge() { digitalWrite(pinCoil5, coilHIGH); digitalWrite(pinTachOut, LOW); }
   inline void endCoil5Charge() { digitalWrite(pinCoil5, coilLOW); }
 

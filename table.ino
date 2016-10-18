@@ -213,7 +213,51 @@ int table2D_getValue(struct table2D *fromTable, int X)
 }
 
 
+//This function pulls a value from a 3D table given a target for X and Y coordinates.
+//It fix a 2D linear interpolation as descibred in: http://www.megamanual.com/v22manual/ve_tuner.pdf
+float get3DTableValue2(struct table3D *fromTable, int Y, int X)
+{
+  float m, n, o ,p, q, r;
+  byte xMin, xMax;
+  byte yMin, yMax;
 
+  for (xMin = fromTable->xSize-1; xMin>=0; xMin--) if(X>fromTable->axisX[xMin]) break;
+  for (yMin = fromTable->ySize-1; yMin>=0; yMin--) if(Y>fromTable->axisY[yMin]) break;
+  if (xMin>fromTable->xSize-1) xMin = fromTable->xSize-1;  //Overflow protection
+  if (yMin>fromTable->ySize-1) yMin = fromTable->ySize-1;  //Overflow protection
+  
+  xMax = xMin + 1;
+  yMax = yMin + 1;
+  if (xMax>fromTable->xSize-1) xMax = fromTable->xSize-1;  //Overflow protection
+  if (yMax>fromTable->ySize-1) yMax = fromTable->ySize-1;  //Overflow protection
+
+  p = float(X-fromTable->axisX[xMin]) / float(fromTable->axisX[xMax] - fromTable->axisX[xMin]);
+  q = float(Y-fromTable->axisY[yMin]) / float(fromTable->axisY[yMax] - fromTable->axisY[yMin]);
+
+  /* On  http://www.megamanual.com/v22manual/ve_tuner.pdf the interpolation image is fliped  
+    Eg:  |  ve_turner.pdf  |    |    should be   |  cause y and x axis is in that order
+          VE(1,1)   VE(1,2)      VE(2,1)   VE(2,2)   ^
+                                                    y|
+                                                     |
+          VE(2,1)   VE(2,2)      VE(1,1)   VE(1,2)   +------------> x
+
+    At this point we have the 4 corners of the map where the interpolated value will fall in
+    Eg: A=(yMax,xMin)  B=(yMax,xMax)
+    
+        C=(yMin,xMin)  D=(yMin,xMax)
+  */
+  int A = fromTable->values[yMax][xMin];
+  int B = fromTable->values[yMax][xMax];
+  int C = fromTable->values[yMin][xMin];
+  int D = fromTable->values[yMin][xMax];
+    
+  m = (1.0-p) * (1.0-q);
+  n = p * (1-q);
+  o = (1-p) * q;
+  r = p * q;
+  
+  return ( (A * m) + (B * n) + (C * o) + (D * r) ); 
+}
 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: http://www.megamanual.com/v22manual/ve_tuner.pdf
@@ -358,7 +402,7 @@ int get3DTableValue(struct table3D *fromTable, int Y, int X)
     int B = fromTable->values[yMin][xMax];
     int C = fromTable->values[yMax][xMin];
     int D = fromTable->values[yMax][xMax];
-    
+   
     //Create some normalised position values
     //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
     

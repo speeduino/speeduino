@@ -150,6 +150,7 @@ struct statuses {
   volatile int loopsPerSecond;
   boolean launchingSoft; //True when in launch control soft limit mode
   boolean launchingHard; //True when in launch control hard limit mode
+  float adv;
   int freeRAM;
   
   //Helpful bitwise operations:
