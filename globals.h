@@ -421,7 +421,7 @@ byte pinIAT; //IAT sensor pin
 byte pinCLT; //CLS sensor pin
 byte pinO2; //O2 Sensor pin
 byte pinO2_2; //second O2 pin
-byte pinBat; //O2 Sensor pin
+byte pinBat; //Battery voltage pin
 byte pinDisplayReset; // OLED reset pin
 byte pinTachOut; //Tacho output
 byte pinFuelPump; //Fuel pump on/off
