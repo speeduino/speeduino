@@ -12,13 +12,13 @@ void initialiseFan()
 {
 if(configPage4.fanInv == 1) {fanHIGH = LOW, fanLOW = HIGH; }
 else {fanHIGH = HIGH, fanLOW = LOW;}
-digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
+digitalWriteFast(pinFan, fanLOW);         //Initiallise program with the fan in the off state
 }
 
 void fanControl()
 {
-   if (currentStatus.coolant >= (configPage4.fanSP - CALIBRATION_TEMPERATURE_OFFSET)) { digitalWrite(pinFan,fanHIGH); }
-   else if (currentStatus.coolant <= (configPage4.fanSP - configPage4.fanHyster)) { digitalWrite(pinFan, fanLOW); }
+   if (currentStatus.coolant >= (configPage4.fanSP - CALIBRATION_TEMPERATURE_OFFSET)) { digitalWriteFast(pinFan,fanHIGH); }
+   else if (currentStatus.coolant <= (configPage4.fanSP - configPage4.fanHyster)) { digitalWriteFast(pinFan, fanLOW); }
 }
 
 void initialiseAuxPWM()
@@ -47,7 +47,7 @@ void boostControl()
 {
   if(configPage3.boostEnabled)
   {
-    if(currentStatus.MAP < 100) { TIMSK1 &= ~(1 << OCIE1A); digitalWrite(pinBoost, LOW); return; } //Set duty to 0 and turn off timer compare
+    if(currentStatus.MAP < 100) { TIMSK1 &= ~(1 << OCIE1A); digitalWriteFast(pinBoost, LOW); return; } //Set duty to 0 and turn off timer compare
     boost_cl_target_boost = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; //Boost target table is in kpa and divided by 2
     boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD);
     boostPID.Compute();
