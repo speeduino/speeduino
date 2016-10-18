@@ -98,7 +98,7 @@ unsigned int MAPcount; //Number of samples taken in the current MAP cycle
 byte MAPcurRev = 0; //Tracks which revolution we're sampling on
 
 int CRANK_ANGLE_MAX = 720;
-int CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential 
+int CRANK_ANGLE_MAX_IGN = 360, CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential 
 //bool useSequentialFuel; // Whether sequential fueling is to be used (1 squirt per cycle)
 //bool useSequentialIgnition; // Whether sequential ignition is used (1 spark per cycle)
 
@@ -519,11 +519,11 @@ void setup()
       }
       
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if(configPage1.injLayout == INJ_SEMISEQUENTIAL)
+      if(configPage1.injLayout == INJ_SEMISEQUENTIAL  || configPage1.injLayout == INJ_PAIRED)
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = channel2IgnDegrees;
-        channel3InjDegrees = channel2IgnDegrees;
+        channel3InjDegrees = channel3IgnDegrees;
       }
       else if (configPage1.injLayout == INJ_SEQUENTIAL)
       {
