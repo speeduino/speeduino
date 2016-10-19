@@ -748,9 +748,12 @@ void sendPage(bool useChar)
       //MS format has origin (0,0) in the bottom left corner, we use the top left for efficiency reasons
       byte response[map_page_size];
 
-      for (int x = 0; x < 256; x++) { response[x] = currentTable.values[15 - x / 16][x % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged
+      for (int x = 0; x < 256; x++) { response[x] = currentTable.values[15 - x / 16][x % 16]; if ( (x & 31) == 1) { loop(); } } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged
+      loop();
       for (int x = 256; x < 272; x++) { response[x] = byte(currentTable.axisX[(x - 256)] / 100); }  //RPM Bins for VE table (Need to be dvidied by 100)
+      loop();
       for (int y = 272; y < 288; y++) { response[y] = byte(currentTable.axisY[15 - (y - 272)]); } //MAP or TPS bins for VE table
+      loop();
       Serial.write((byte *)&response, sizeof(response));
     }
   }
@@ -773,6 +776,7 @@ void sendPage(bool useChar)
     for (byte x = 0; x < page_size; x++)
     {
       response[x] = *((byte *)pnt_configPage + x); //Each byte is simply the location in memory of the configPage + the offset + the variable number (x)
+      if ( (x & 31) == 1) { loop(); }
     }
     Serial.write((byte *)&response, sizeof(response));
     // }
