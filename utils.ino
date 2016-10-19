@@ -355,7 +355,7 @@ void setPinMapping(byte boardID)
   ign5_pin_mask = digitalPinToBitMask(pinCoil5);
 
   //And for inputs
-  pinMode(pinMAP, INPUT);
+  pinMode(pinMAP, INPUT_PULLUP);
   pinMode(pinO2, INPUT);
   pinMode(pinO2_2, INPUT);
   pinMode(pinTPS, INPUT);
@@ -371,9 +371,9 @@ void setPinMapping(byte boardID)
   else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
 
   //Set default values
-  digitalWrite(pinMAP, HIGH);
+  //digitalWrite(pinMAP, HIGH);
   //digitalWrite(pinO2, LOW);
-  digitalWrite(pinTPS, LOW);
+  //digitalWrite(pinTPS, LOW);
 }
 
 /*
