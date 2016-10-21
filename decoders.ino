@@ -193,11 +193,11 @@ void triggerPri_DualWheel()
    
    if ( toothCurrentCount == 1 || toothCurrentCount > configPage2.triggerTeeth )
    { 
-     toothCurrentCount = 1; 
+     toothCurrentCount = 1;
+     revolutionOne = !revolutionOne; //Flip sequential revolution tracker
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      startRevolutions++; //Counter
-     //if ((startRevolutions & 63) == 1) { currentStatus.hasSync = false; } //Every 64 revolutions, force a resync with the cam
    }
 
    setFilter(curGap); //Recalc the new filter value
@@ -221,6 +221,8 @@ void triggerSec_DualWheel()
     
     currentStatus.hasSync = true;
   }
+
+  if(!currentStatus.hasSync) { revolutionOne = 0; }  //Sequential revolution reset
 } 
 
 int getRPM_DualWheel()
@@ -249,7 +251,9 @@ int getCrankAngle_DualWheel(int timePerDegree)
     long elapsedTime = micros() - tempToothLastToothTime;
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
-    
+
+    //Sequential check (simply sets whether we're on the first or 2nd revoltuion of the cycle)
+    if (revolutionOne) { crankAngle += 360; }
     
     if (crankAngle >= 720) { crankAngle -= 720; } 
     if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
@@ -506,6 +510,7 @@ void triggerSec_4G63()
   if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) || !currentStatus.hasSync)
   {
     triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset). 
+  
     //Check the status of the crank trigger
     bool crank = digitalRead(pinTrigger);
     if(crank == HIGH)

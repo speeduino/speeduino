@@ -53,7 +53,7 @@ void initialiseIdle()
       idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
       idle2_pin_mask = digitalPinToBitMask(pinIdle2);
       idle_pwm_max_count = 1000000L / (16 * configPage3.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-      TIMSK4 |= (1 << OCIE4C); //Turn on the C compare unit (ie turn on the interrupt)
+      enableIdle();
       break;
     
     case 3:
@@ -141,8 +141,8 @@ void idleControl()
       {
         //Standard running
         currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
-        if( currentStatus.idleDuty == 0 ) { TIMSK4 &= ~(1 << OCIE4C); digitalWrite(pinIdle1, LOW); break; }
-        TIMSK4 |= (1 << OCIE4C); //Turn on the C compare unit (ie turn on the interrupt)
+        if( currentStatus.idleDuty == 0 ) { disableIdle(); break; }
+        enableIdle();
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         idleOn = true;
       }
@@ -154,8 +154,8 @@ void idleControl()
         //idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
 
         idlePID.Compute();
-        if( idle_pwm_target_value == 0 ) { TIMSK4 &= ~(1 << OCIE4C); digitalWrite(pinIdle1, LOW); }
-        else{ TIMSK4 |= (1 << OCIE4C); } //Turn on the C compare unit (ie turn on the interrupt)
+        if( idle_pwm_target_value == 0 ) { disableIdle(); }
+        else{ enableIdle(); } //Turn on the C compare unit (ie turn on the interrupt)
         //idle_pwm_target_value = 104;
       break;
       
@@ -240,6 +240,20 @@ void homeStepper()
 
 //The interrupt to turn off the idle pwm
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+//This function simply turns off the idle PWM and sets the pin low
+static inline void disableIdle()
+{
+  TIMSK4 &= ~(1 << OCIE4C); //Turn off interrupt
+  digitalWrite(pinIdle1, LOW); 
+}
+
+//Any common functions associated with starting the Idle
+//Typically this is enabling the PWM interrupt
+static inline void enableIdle()
+{
+  TIMSK4 |= (1 << OCIE4C); //Turn on the C compare unit (ie turn on the interrupt)
+}
+
 ISR(TIMER4_COMPC_vect)
 {
   if (idle_pwm_state)
@@ -279,6 +293,12 @@ ISR(TIMER4_COMPC_vect)
   }
     
 }
-#elif defined(PROCESSOR_TEENSY_3_1) || defined(PROCESSOR_TEENSY_3_2)
-void idle_off() { }
+#elif defined (CORE_TEENSY)
+//This function simply turns off the idle PWM and sets the pin low
+static inline void disableIdle()
+{
+  digitalWrite(pinIdle1, LOW); 
+}
+
+static inline void enableIdle() { }
 #endif
