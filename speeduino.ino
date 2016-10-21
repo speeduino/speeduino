@@ -23,7 +23,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //**************************************************************************************************
 
 #include "globals.h"
-#include "digitalWriteFast.h"
 #include "utils.h"
 #include "table.h"
 #include "scheduler.h"
@@ -202,21 +201,21 @@ void setup()
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
   else { coilHIGH = HIGH, coilLOW = LOW; }
-  endCoil1Charge(); //digitalWriteFast(pinCoil1, coilLOW);
-  endCoil2Charge(); //digitalWriteFast(pinCoil2, coilLOW);
-  endCoil3Charge(); //digitalWriteFast(pinCoil3, coilLOW);
-  endCoil4Charge(); //digitalWriteFast(pinCoil4, coilLOW);
-  endCoil5Charge(); //digitalWriteFast(pinCoil5, coilLOW);
+  endCoil1Charge(); //digitalWrite(pinCoil1, coilLOW);
+  endCoil2Charge(); //digitalWrite(pinCoil2, coilLOW);
+  endCoil3Charge(); //digitalWrite(pinCoil3, coilLOW);
+  endCoil4Charge(); //digitalWrite(pinCoil4, coilLOW);
+  endCoil5Charge(); //digitalWrite(pinCoil5, coilLOW);
   
   //Similar for injectors, make sure they're turned off
-  closeInjector1(); //digitalWriteFast(pinInjector1, HIGH);
-  closeInjector2(); //digitalWriteFast(pinInjector2, HIGH);
-  closeInjector3(); //digitalWriteFast(pinInjector3, HIGH);
-  closeInjector4(); //digitalWriteFast(pinInjector4, HIGH);
-  closeInjector5(); //digitalWriteFast(pinInjector5, HIGH);
+  closeInjector1(); //digitalWrite(pinInjector1, HIGH);
+  closeInjector2(); //digitalWrite(pinInjector2, HIGH);
+  closeInjector3(); //digitalWrite(pinInjector3, HIGH);
+  closeInjector4(); //digitalWrite(pinInjector4, HIGH);
+  closeInjector5(); //digitalWrite(pinInjector5, HIGH);
   
   //Set the tacho output default state
-  digitalWriteFast(pinTachOut, HIGH);
+  digitalWrite(pinTachOut, HIGH);
 
   //Lookup the current MAP reading for barometric pressure
   readMAP();
@@ -285,10 +284,10 @@ void setup()
       triggerInterrupt2 = 2; break;
      
   }
-  pinModeFast(pinTrigger, INPUT);
-  pinModeFast(pinTrigger2, INPUT);
-  pinModeFast(pinTrigger3, INPUT);
-  //digitalWriteFast(pinTrigger, HIGH);
+  pinMode(pinTrigger, INPUT);
+  pinMode(pinTrigger2, INPUT);
+  pinMode(pinTrigger3, INPUT);
+  //digitalWrite(pinTrigger, HIGH);
 
   
   //Set the trigger function based on the decoder in the config
@@ -755,7 +754,7 @@ void setup()
   }
   
   //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
-  digitalWriteFast(pinFuelPump, HIGH);
+  digitalWrite(pinFuelPump, HIGH);
   fuelPumpOn = true;
   //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
   setFuelSchedule1(openInjector1and4, 100, (unsigned long)(configPage1.primePulse * 100), closeInjector1and4);
@@ -798,7 +797,7 @@ void loop()
     {
       int lastRPM = currentStatus.RPM; //Need to record this for rpmDOT calculation
       currentStatus.RPM = currentStatus.longRPM = getRPM(); //Long RPM is included here
-      if(fuelPumpOn == false) { digitalWriteFast(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't. 
+      if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't. 
       currentStatus.rpmDOT = ldiv(1000000, (currentLoopTime - previousLoopTime)).quot * (currentStatus.RPM - lastRPM); //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     }
     else
@@ -816,9 +815,9 @@ void loop()
       currentStatus.rpmDOT = 0;
       ignitionOn = false;
       fuelOn = false;
-      if (fpPrimed) { digitalWriteFast(pinFuelPump, LOW); } //Turn off the fuel pump, but only if the priming is complete
+      if (fpPrimed) { digitalWrite(pinFuelPump, LOW); } //Turn off the fuel pump, but only if the priming is complete
       fuelPumpOn = false;
-      TIMSK4 &= ~(1 << OCIE4C); digitalWriteFast(pinIdle1, LOW); //Turns off the idle control PWM. This REALLY needs to be cleaned up into a general PWM controller class
+      TIMSK4 &= ~(1 << OCIE4C); digitalWrite(pinIdle1, LOW); //Turns off the idle control PWM. This REALLY needs to be cleaned up into a general PWM controller class
     }
     
     //Uncomment the following for testing
@@ -838,8 +837,8 @@ void loop()
      
       //Check for launching (clutch) can be done around here too
       bool launchTrigger;
-      if(configPage3.launchHiLo) { launchTrigger = digitalReadFast(pinLaunch); }
-      else { launchTrigger = !digitalReadFast(pinLaunch); } 
+      if(configPage3.launchHiLo) { launchTrigger = digitalRead(pinLaunch); }
+      else { launchTrigger = !digitalRead(pinLaunch); } 
       if (configPage3.launchEnabled && launchTrigger && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) ) { currentStatus.launchingSoft = true; BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH); } //SoftCut rev limit for 2-step launch control. 
       else { currentStatus.launchingSoft = false; BIT_CLEAR(currentStatus.spark, BIT_SPARK_SLAUNCH); }
       if (configPage3.launchEnabled && launchTrigger && (currentStatus.RPM > ((unsigned int)(configPage3.lnchHardLim) * 100)) ) { currentStatus.launchingHard = true; BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); } //HardCut rev limit for 2-step launch control. 
@@ -901,7 +900,7 @@ void loop()
           if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
           {
             BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //clears the engine cranking bit
-            if(configPage2.ignBypassEnabled) { digitalWriteFast(pinIgnBypass, HIGH); }
+            if(configPage2.ignBypassEnabled) { digitalWrite(pinIgnBypass, HIGH); }
           }
         } 
         else 
@@ -909,7 +908,7 @@ void loop()
           BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK); 
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); 
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
-          if(configPage2.ignBypassEnabled) { digitalWriteFast(pinIgnBypass, LOW); }
+          if(configPage2.ignBypassEnabled) { digitalWrite(pinIgnBypass, LOW); }
         } 
       
       //END SETTING STATUSES
@@ -1413,63 +1412,63 @@ void loop()
   
   void openInjector1() { *inj1_pin_port |= (inj1_pin_mask); ; BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
   void closeInjector1() { *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ1); }
-  void beginCoil1Charge() { *ign1_pin_port |= (ign1_pin_mask); BIT_SET(currentStatus.spark, 0); digitalWriteFast(pinTachOut, LOW); }
+  void beginCoil1Charge() { *ign1_pin_port |= (ign1_pin_mask); BIT_SET(currentStatus.spark, 0); digitalWrite(pinTachOut, LOW); }
   void endCoil1Charge() { *ign1_pin_port &= ~(ign1_pin_mask); BIT_CLEAR(currentStatus.spark, 0); }
   
   void openInjector2() { *inj2_pin_port |= (inj2_pin_mask); ; BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ2); } 
   void closeInjector2() { *inj2_pin_port &= ~(inj2_pin_mask);  BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ2); }
-  void beginCoil2Charge() { *ign2_pin_port |= (ign2_pin_mask); BIT_SET(currentStatus.spark, 1); digitalWriteFast(pinTachOut, LOW); }
+  void beginCoil2Charge() { *ign2_pin_port |= (ign2_pin_mask); BIT_SET(currentStatus.spark, 1); digitalWrite(pinTachOut, LOW); }
   void endCoil2Charge() { *ign2_pin_port &= ~(ign2_pin_mask); BIT_CLEAR(currentStatus.spark, 1);}
   
   void openInjector3() { *inj3_pin_port |= (inj3_pin_mask); ; BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ3); } 
   void closeInjector3() { *inj3_pin_port &= ~(inj3_pin_mask);  BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ3); }
-  void beginCoil3Charge() { *ign3_pin_port |= (ign3_pin_mask); BIT_SET(currentStatus.spark, 2); digitalWriteFast(pinTachOut, LOW); }
+  void beginCoil3Charge() { *ign3_pin_port |= (ign3_pin_mask); BIT_SET(currentStatus.spark, 2); digitalWrite(pinTachOut, LOW); }
   void endCoil3Charge() { *ign3_pin_port &= ~(ign3_pin_mask); BIT_CLEAR(currentStatus.spark, 2);}
   
   void openInjector4() { *inj4_pin_port |= (inj4_pin_mask); ; BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ4); } 
   void closeInjector4() { *inj4_pin_port &= ~(inj4_pin_mask);  BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ4); }
-  void beginCoil4Charge() { *ign4_pin_port |= (ign4_pin_mask); BIT_SET(currentStatus.spark, 3); digitalWriteFast(pinTachOut, LOW); }
+  void beginCoil4Charge() { *ign4_pin_port |= (ign4_pin_mask); BIT_SET(currentStatus.spark, 3); digitalWrite(pinTachOut, LOW); }
   void endCoil4Charge() { *ign4_pin_port &= ~(ign4_pin_mask); BIT_CLEAR(currentStatus.spark, 3);}
 
 #else */
-  inline void openInjector1() { digitalWriteFast(pinInjector1, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
-  inline void closeInjector1() { digitalWriteFast(pinInjector1, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
-  inline void beginCoil1Charge() { digitalWriteFast(pinCoil1, coilHIGH); digitalWriteFast(pinTachOut, LOW); }
-  inline void endCoil1Charge() { digitalWriteFast(pinCoil1, coilLOW); }
+  inline void openInjector1() { digitalWrite(pinInjector1, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
+  inline void closeInjector1() { digitalWrite(pinInjector1, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ1); } 
+  inline void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinTachOut, LOW); }
+  inline void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); }
   
-  inline void openInjector2() { digitalWriteFast(pinInjector2, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ2); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
-  inline void closeInjector2() { digitalWriteFast(pinInjector2, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ2); } 
-  inline void beginCoil2Charge() { digitalWriteFast(pinCoil2, coilHIGH); digitalWriteFast(pinTachOut, LOW); }
-  inline void endCoil2Charge() { digitalWriteFast(pinCoil2, coilLOW); }
+  inline void openInjector2() { digitalWrite(pinInjector2, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ2); } //Sets the relevant pin HIGH and changes the current status bit for injector 2 (2nd bit of currentStatus.squirt)
+  inline void closeInjector2() { digitalWrite(pinInjector2, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ2); } 
+  inline void beginCoil2Charge() { digitalWrite(pinCoil2, coilHIGH); digitalWrite(pinTachOut, LOW); }
+  inline void endCoil2Charge() { digitalWrite(pinCoil2, coilLOW); }
   
-  inline void openInjector3() { digitalWriteFast(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ3); } //Sets the relevant pin HIGH and changes the current status bit for injector 3 (3rd bit of currentStatus.squirt)
-  inline void closeInjector3() { digitalWriteFast(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ3); } 
-  inline void beginCoil3Charge() { digitalWriteFast(pinCoil3, coilHIGH); digitalWriteFast(pinTachOut, LOW); }
-  inline void endCoil3Charge() { digitalWriteFast(pinCoil3, coilLOW); }
+  inline void openInjector3() { digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ3); } //Sets the relevant pin HIGH and changes the current status bit for injector 3 (3rd bit of currentStatus.squirt)
+  inline void closeInjector3() { digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ3); } 
+  inline void beginCoil3Charge() { digitalWrite(pinCoil3, coilHIGH); digitalWrite(pinTachOut, LOW); }
+  inline void endCoil3Charge() { digitalWrite(pinCoil3, coilLOW); }
   
-  inline void openInjector4() { digitalWriteFast(pinInjector4, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ4); } //Sets the relevant pin HIGH and changes the current status bit for injector 4 (4th bit of currentStatus.squirt)
-  inline void closeInjector4() { digitalWriteFast(pinInjector4, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ4); } 
-  inline void beginCoil4Charge() { digitalWriteFast(pinCoil4, coilHIGH); digitalWriteFast(pinTachOut, LOW); }
-  inline void endCoil4Charge() { digitalWriteFast(pinCoil4, coilLOW); }
+  inline void openInjector4() { digitalWrite(pinInjector4, HIGH); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ4); } //Sets the relevant pin HIGH and changes the current status bit for injector 4 (4th bit of currentStatus.squirt)
+  inline void closeInjector4() { digitalWrite(pinInjector4, LOW); BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ4); } 
+  inline void beginCoil4Charge() { digitalWrite(pinCoil4, coilHIGH); digitalWrite(pinTachOut, LOW); }
+  inline void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); }
 
-  inline void openInjector5() { digitalWriteFast(pinInjector5, HIGH); }
-  inline void closeInjector5() { digitalWriteFast(pinInjector5, LOW); }
-  inline void beginCoil5Charge() { digitalWriteFast(pinCoil5, coilHIGH); digitalWriteFast(pinTachOut, LOW); }
-  inline void endCoil5Charge() { digitalWriteFast(pinCoil5, coilLOW); }
+  inline void openInjector5() { digitalWrite(pinInjector5, HIGH); }
+  inline void closeInjector5() { digitalWrite(pinInjector5, LOW); }
+  inline void beginCoil5Charge() { digitalWrite(pinCoil5, coilHIGH); digitalWrite(pinTachOut, LOW); }
+  inline void endCoil5Charge() { digitalWrite(pinCoil5, coilLOW); }
 
 //#endif
 
 
 //Combination functions for semi-sequential injection
-void openInjector1and4() { digitalWriteFast(pinInjector1, HIGH); digitalWriteFast(pinInjector4, HIGH); BIT_SET(currentStatus.squirt, 0); } 
-void closeInjector1and4() { digitalWriteFast(pinInjector1, LOW); digitalWriteFast(pinInjector4, LOW);BIT_CLEAR(currentStatus.squirt, 0); }
-void openInjector2and3() { digitalWriteFast(pinInjector2, HIGH); digitalWriteFast(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, 1); }
-void closeInjector2and3() { digitalWriteFast(pinInjector2, LOW); digitalWriteFast(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
+void openInjector1and4() { digitalWrite(pinInjector1, HIGH); digitalWrite(pinInjector4, HIGH); BIT_SET(currentStatus.squirt, 0); } 
+void closeInjector1and4() { digitalWrite(pinInjector1, LOW); digitalWrite(pinInjector4, LOW);BIT_CLEAR(currentStatus.squirt, 0); }
+void openInjector2and3() { digitalWrite(pinInjector2, HIGH); digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, 1); }
+void closeInjector2and3() { digitalWrite(pinInjector2, LOW); digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
 
 //As above but for ignition (Wasted COP mode)
-void beginCoil1and3Charge() { digitalWriteFast(pinCoil1, coilHIGH); digitalWriteFast(pinCoil3, coilHIGH); digitalWriteFast(pinTachOut, LOW); }
-void endCoil1and3Charge() { digitalWriteFast(pinCoil1, coilLOW); digitalWriteFast(pinCoil3, coilLOW); }
-void beginCoil2and4Charge() { digitalWriteFast(pinCoil2, coilHIGH); digitalWriteFast(pinCoil4, coilHIGH); digitalWriteFast(pinTachOut, LOW); }
-void endCoil2and4Charge() { digitalWriteFast(pinCoil2, coilLOW); digitalWriteFast(pinCoil4, coilLOW); }
+void beginCoil1and3Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinCoil3, coilHIGH); digitalWrite(pinTachOut, LOW); }
+void endCoil1and3Charge() { digitalWrite(pinCoil1, coilLOW); digitalWrite(pinCoil3, coilLOW); }
+void beginCoil2and4Charge() { digitalWrite(pinCoil2, coilHIGH); digitalWrite(pinCoil4, coilHIGH); digitalWrite(pinTachOut, LOW); }
+void endCoil2and4Charge() { digitalWrite(pinCoil2, coilLOW); digitalWrite(pinCoil4, coilLOW); }
 
 void nullCallback() { return; }

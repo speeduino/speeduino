@@ -8,7 +8,6 @@ A full copy of the license may be found in the projects root directory
 /*
 Returns how much free dynamic memory exists (between heap and stack)
 */
-#include "digitalWriteFast.h"
 #include "utils.h"
 
 int freeRam ()
@@ -312,22 +311,22 @@ void setPinMapping(byte boardID)
   if(configPage1.tachoPin != 0) { pinTachOut = configPage1.tachoPin; }
 
   //Finally, set the relevant pin modes for outputs
-  pinModeFast(pinCoil1, OUTPUT);
-  pinModeFast(pinCoil2, OUTPUT);
-  pinModeFast(pinCoil3, OUTPUT);
-  pinModeFast(pinCoil4, OUTPUT);
-  pinModeFast(pinCoil5, OUTPUT);
-  pinModeFast(pinInjector1, OUTPUT);
-  pinModeFast(pinInjector2, OUTPUT);
-  pinModeFast(pinInjector3, OUTPUT);
-  pinModeFast(pinInjector4, OUTPUT);
-  pinModeFast(pinInjector5, OUTPUT);
-  pinModeFast(pinTachOut, OUTPUT);
-  pinModeFast(pinIdle1, OUTPUT);
-  pinModeFast(pinIdle2, OUTPUT);
-  pinModeFast(pinFuelPump, OUTPUT);
-  pinModeFast(pinIgnBypass, OUTPUT);
-  pinModeFast(pinFan, OUTPUT);
+  pinMode(pinCoil1, OUTPUT);
+  pinMode(pinCoil2, OUTPUT);
+  pinMode(pinCoil3, OUTPUT);
+  pinMode(pinCoil4, OUTPUT);
+  pinMode(pinCoil5, OUTPUT);
+  pinMode(pinInjector1, OUTPUT);
+  pinMode(pinInjector2, OUTPUT);
+  pinMode(pinInjector3, OUTPUT);
+  pinMode(pinInjector4, OUTPUT);
+  pinMode(pinInjector5, OUTPUT);
+  pinMode(pinTachOut, OUTPUT);
+  pinMode(pinIdle1, OUTPUT);
+  pinMode(pinIdle2, OUTPUT);
+  pinMode(pinFuelPump, OUTPUT);
+  pinMode(pinIgnBypass, OUTPUT);
+  pinMode(pinFan, OUTPUT);
   
   inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
   inj1_pin_mask = digitalPinToBitMask(pinInjector1);
@@ -352,25 +351,25 @@ void setPinMapping(byte boardID)
   ign5_pin_mask = digitalPinToBitMask(pinCoil5);
 
   //And for inputs
-  pinModeFast(pinMAP, INPUT);
-  pinModeFast(pinO2, INPUT);
-  pinModeFast(pinO2_2, INPUT);
-  pinModeFast(pinTPS, INPUT);
-  pinModeFast(pinIAT, INPUT);
-  pinModeFast(pinCLT, INPUT);
-  pinModeFast(pinBat, INPUT);
-  pinModeFast(pinTrigger, INPUT);
-  pinModeFast(pinTrigger2, INPUT);
-  pinModeFast(pinTrigger3, INPUT);
-  pinModeFast(pinFlex, INPUT_PULLUP); //Standard GM / Continental flex sensor requires pullup
-//  pinModeFast(pinLaunch, INPUT_PULLUP); //This should work for both NO and NC grounding switches
-  if (configPage3.lnchPullRes) { pinModeFast(pinLaunch, INPUT_PULLUP); }
-  else { pinModeFast(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
+  pinMode(pinMAP, INPUT);
+  pinMode(pinO2, INPUT);
+  pinMode(pinO2_2, INPUT);
+  pinMode(pinTPS, INPUT);
+  pinMode(pinIAT, INPUT);
+  pinMode(pinCLT, INPUT);
+  pinMode(pinBat, INPUT);
+  pinMode(pinTrigger, INPUT);
+  pinMode(pinTrigger2, INPUT);
+  pinMode(pinTrigger3, INPUT);
+  pinMode(pinFlex, INPUT_PULLUP); //Standard GM / Continental flex sensor requires pullup
+//  pinMode(pinLaunch, INPUT_PULLUP); //This should work for both NO and NC grounding switches
+  if (configPage3.lnchPullRes) { pinMode(pinLaunch, INPUT_PULLUP); }
+  else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
 
   //Set default values
-  digitalWriteFast(pinMAP, HIGH);
-  //digitalWriteFast(pinO2, LOW);
-  digitalWriteFast(pinTPS, LOW);
+  digitalWrite(pinMAP, HIGH);
+  //digitalWrite(pinO2, LOW);
+  digitalWrite(pinTPS, LOW);
 }
 
 /*
