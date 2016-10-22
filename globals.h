@@ -147,10 +147,9 @@ struct statuses {
   unsigned int PW; //In uS
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
-  volatile unsigned int loopsPerSecond;
+  volatile int loopsPerSecond;
   boolean launchingSoft; //True when in launch control soft limit mode
   boolean launchingHard; //True when in launch control hard limit mode
-  float adv;
   int freeRAM;
   
   //Helpful bitwise operations:

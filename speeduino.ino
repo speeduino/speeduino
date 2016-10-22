@@ -96,6 +96,7 @@ unsigned long previousLoopTime; //The time the previous loop started (uS)
 unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
 byte MAPcurRev = 0; //Tracks which revolution we're sampling on
+int LastBaro; //Used for ignore correction if powered on a ruuning engine
 
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360, CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential 
@@ -201,25 +202,33 @@ void setup()
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
   else { coilHIGH = HIGH, coilLOW = LOW; }
-  endCoil1Charge(); //digitalWrite(pinCoil1, coilLOW);
-  endCoil2Charge(); //digitalWrite(pinCoil2, coilLOW);
-  endCoil3Charge(); //digitalWrite(pinCoil3, coilLOW);
-  endCoil4Charge(); //digitalWrite(pinCoil4, coilLOW);
-  endCoil5Charge(); //digitalWrite(pinCoil5, coilLOW);
+  endCoil1Charge();
+  endCoil2Charge();
+  endCoil3Charge();
+  endCoil4Charge();
+  endCoil5Charge();
   
   //Similar for injectors, make sure they're turned off
-  closeInjector1(); //digitalWrite(pinInjector1, HIGH);
-  closeInjector2(); //digitalWrite(pinInjector2, HIGH);
-  closeInjector3(); //digitalWrite(pinInjector3, HIGH);
-  closeInjector4(); //digitalWrite(pinInjector4, HIGH);
-  closeInjector5(); //digitalWrite(pinInjector5, HIGH);
+  closeInjector1();
+  closeInjector2();
+  closeInjector3();
+  closeInjector4();
+  closeInjector5();
   
   //Set the tacho output default state
   digitalWrite(pinTachOut, HIGH);
 
   //Lookup the current MAP reading for barometric pressure
   readMAP();
-  currentStatus.baro = currentStatus.MAP;
+  /*
+   * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
+   * with record highs close to 108.5 kPa. 
+   * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
+   */
+  if ((currentStatus.MAP >= 87) && (currentStatus.MAP <= 108)) //Check if engine isn't running
+    LastBaro = currentStatus.baro = currentStatus.MAP;
+  else
+    currentStatus.baro = LastBaro; //last baro correction
 
   //Perform all initialisations
   initialiseSchedulers();
@@ -925,7 +934,6 @@ void loop()
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
         currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
         currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.MAP, currentStatus.RPM); //As above, but for ignition advance
-        currentStatus.adv = get3DTableValue2(&ignitionTable, currentStatus.MAP, currentStatus.RPM); //As above, but for ignition advance
       }
       else
       { 
@@ -933,7 +941,6 @@ void loop()
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
         currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
         currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM); //As above, but for ignition advance
-        currentStatus.adv = get3DTableValue2(&ignitionTable, currentStatus.MAP, currentStatus.RPM); //As above, but for ignition advance
       }
       
       //Check for fixed ignition angles
@@ -1453,7 +1460,7 @@ void loop()
   inline void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); }
 
   inline void openInjector5() { digitalWrite(pinInjector5, HIGH); }
-  inline void closeInjector5() { digitalWrite(pinInjector5, LOW); }
+  inline void closeInjector5() { digitalWrite(pinInjector5, LOW); } 
   inline void beginCoil5Charge() { digitalWrite(pinCoil5, coilHIGH); digitalWrite(pinTachOut, LOW); }
   inline void endCoil5Charge() { digitalWrite(pinCoil5, coilLOW); }
 
@@ -1473,3 +1480,6 @@ void beginCoil2and4Charge() { digitalWrite(pinCoil2, coilHIGH); digitalWrite(pin
 void endCoil2and4Charge() { digitalWrite(pinCoil2, coilLOW); digitalWrite(pinCoil4, coilLOW); }
 
 void nullCallback() { return; }
+  
+
+
