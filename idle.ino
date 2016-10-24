@@ -52,7 +52,8 @@ void initialiseIdle()
       idle_pin_mask = digitalPinToBitMask(pinIdle1);
       idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
       idle2_pin_mask = digitalPinToBitMask(pinIdle2);
-      idle_pwm_max_count = 1000000L / (16 * configPage3.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      //(16 * configPage3.idleFreq * 2) = (configPage3.idleFreq * 16 * 2) = (configPage3.idleFreq * 32) = (configPage3.idleFreq << 5)
+      idle_pwm_max_count = 1000000L / (configPage3.idleFreq << 5); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       enableIdle();
       break;
     
@@ -72,7 +73,7 @@ void initialiseIdle()
       idle_pin_mask = digitalPinToBitMask(pinIdle1);
       idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
       idle2_pin_mask = digitalPinToBitMask(pinIdle2);
-      idle_pwm_max_count = 1000000L / (16 * configPage3.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      idle_pwm_max_count = 1000000L / (configPage3.idleFreq << 5); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       idlePID.SetOutputLimits(0, idle_pwm_max_count);
       idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on

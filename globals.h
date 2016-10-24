@@ -147,7 +147,7 @@ struct statuses {
   unsigned int PW; //In uS
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
-  volatile unsigned int loopsPerSecond;
+  volatile int loopsPerSecond;
   boolean launchingSoft; //True when in launch control soft limit mode
   boolean launchingHard; //True when in launch control hard limit mode
   int freeRAM;
@@ -421,7 +421,7 @@ byte pinIAT; //IAT sensor pin
 byte pinCLT; //CLS sensor pin
 byte pinO2; //O2 Sensor pin
 byte pinO2_2; //second O2 pin
-byte pinBat; //O2 Sensor pin
+byte pinBat; //Battery voltage pin
 byte pinDisplayReset; // OLED reset pin
 byte pinTachOut; //Tacho output
 byte pinFuelPump; //Fuel pump on/off
