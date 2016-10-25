@@ -20,6 +20,7 @@ volatile byte flexCounter = 0;
 
 void instanteneousMAPReading();
 void readMAP();
+void flexPulse();
 
 unsigned int tempReading;
 

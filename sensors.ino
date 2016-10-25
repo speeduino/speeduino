@@ -139,7 +139,7 @@ void readBat()
  * The interrupt function for reading the flex sensor frequency
  * This value is incremented with every pulse and reset back to 0 once per second
  */
- void flexPulse()
+void flexPulse()
  {
    ++flexCounter;
  }
