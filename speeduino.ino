@@ -74,6 +74,10 @@ struct table3D ignitionTable; //16x16 ignition map
 struct table3D afrTable; //16x16 afr target map
 struct table3D boostTable; //8x8 boost map
 struct table3D vvtTable; //8x8 vvt map
+struct table3D trim1Table; //6x6 Fuel trim 1 map
+struct table3D trim2Table; //6x6 Fuel trim 2 map
+struct table3D trim3Table; //6x6 Fuel trim 3 map
+struct table3D trim4Table; //6x6 Fuel trim 4 map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
@@ -163,6 +167,10 @@ void setup()
   table3D_setSize(&afrTable, 16);
   table3D_setSize(&boostTable, 8);
   table3D_setSize(&vvtTable, 8);
+  table3D_setSize(&trim1Table, 6);
+  table3D_setSize(&trim2Table, 6);
+  table3D_setSize(&trim3Table, 6);
+  table3D_setSize(&trim4Table, 6);
  
   loadConfig();
   
@@ -738,6 +746,19 @@ void setup()
         ign5EndFunction = endCoil5Charge;
       }
       break;
+
+    case IGN_MODE_SEQUENTIAL:
+      ign1StartFunction = beginCoil1Charge;
+      ign1EndFunction = endCoil1Charge;
+      ign2StartFunction = beginCoil2Charge;
+      ign2EndFunction = endCoil2Charge;
+      ign3StartFunction = beginCoil3Charge;
+      ign3EndFunction = endCoil3Charge;
+      ign4StartFunction = beginCoil4Charge;
+      ign4EndFunction = endCoil4Charge;
+      ign5StartFunction = beginCoil5Charge;
+      ign5EndFunction = endCoil5Charge;
+      break;      
     
     default:
       //Wasted spark (Shouldn't ever happen anyway)
@@ -873,7 +894,7 @@ void loop()
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
     }
-    
+    if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
     if ((mainLoopCount & 255) == 1)
     {

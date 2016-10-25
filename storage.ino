@@ -196,6 +196,74 @@ void writeConfig()
     if(EEPROM.read(y) != vvtTable.axisY[offset]) { EEPROM.write(y, vvtTable.axisY[offset]); }
     y++;
   }
+
+  /*---------------------------------------------------
+  | Fuel trim tables (See storage.h for data layout) - Page 9
+  | 6x6 tables itself + the 6 values along each of the axis 
+  -----------------------------------------------------*/
+  //Begin writing the 2 tables, basically the same thing as above but we're doing these 2 together (2 tables per page instead of 1)
+  EEPROM.update(EEPROM_CONFIG9_XSIZE1,trim1Table.xSize); //Write the boost Table RPM dimension size
+  EEPROM.update(EEPROM_CONFIG9_YSIZE1,trim1Table.ySize); //Write the boost Table MAP/TPS dimension size
+  EEPROM.update(EEPROM_CONFIG9_XSIZE2,trim2Table.xSize); //Write the boost Table RPM dimension size
+  EEPROM.update(EEPROM_CONFIG9_YSIZE2,trim2Table.ySize); //Write the boost Table MAP/TPS dimension size
+  EEPROM.update(EEPROM_CONFIG9_XSIZE3,trim3Table.xSize); //Write the boost Table RPM dimension size
+  EEPROM.update(EEPROM_CONFIG9_YSIZE3,trim3Table.ySize); //Write the boost Table MAP/TPS dimension size
+  EEPROM.update(EEPROM_CONFIG9_XSIZE4,trim4Table.xSize); //Write the boost Table RPM dimension size
+  EEPROM.update(EEPROM_CONFIG9_YSIZE4,trim4Table.ySize); //Write the boost Table MAP/TPS dimension size
+  
+  y = EEPROM_CONFIG9_MAP2; //We do the 4 maps together in the same loop
+  int z = EEPROM_CONFIG9_MAP3; //We do the 4 maps together in the same loop
+  int i = EEPROM_CONFIG9_MAP4; //We do the 4 maps together in the same loop
+  for(int x=EEPROM_CONFIG9_MAP1; x<EEPROM_CONFIG9_XBINS1; x++) 
+  { 
+    offset = x - EEPROM_CONFIG9_MAP1;
+    EEPROM.update(x, trim1Table.values[5-offset/6][offset%6]);  //Write the 6x6 map
+    offset = y - EEPROM_CONFIG9_MAP2;
+    EEPROM.update(y, trim2Table.values[5-offset/6][offset%6]);  //Write the 6x6 map
+    offset = z - EEPROM_CONFIG9_MAP3;
+    EEPROM.update(z, trim3Table.values[5-offset/6][offset%6]);  //Write the 6x6 map
+    offset = i - EEPROM_CONFIG9_MAP4;
+    EEPROM.update(i, trim4Table.values[5-offset/6][offset%6]);  //Write the 6x6 map
+    y++;
+    z++;
+    i++;
+  }
+  //RPM bins
+  y = EEPROM_CONFIG9_XBINS2;
+  z = EEPROM_CONFIG9_XBINS3;
+  i = EEPROM_CONFIG9_XBINS4;
+  for(int x=EEPROM_CONFIG9_XBINS1; x<EEPROM_CONFIG9_YBINS1; x++) 
+  {
+    offset = x - EEPROM_CONFIG9_XBINS1;
+    EEPROM.update(x, byte(trim1Table.axisX[offset]/100)); //RPM bins are divided by 100 and converted to a byte
+    offset = y - EEPROM_CONFIG9_XBINS2;
+    EEPROM.update(y, byte(trim2Table.axisX[offset]/100)); //RPM bins are divided by 100 and converted to a byte
+    offset = z - EEPROM_CONFIG9_XBINS3;
+    EEPROM.update(z, byte(trim3Table.axisX[offset]/100)); //RPM bins are divided by 100 and converted to a byte
+    offset = i - EEPROM_CONFIG9_XBINS4;
+    EEPROM.update(i, byte(trim4Table.axisX[offset]/100)); //RPM bins are divided by 100 and converted to a byte
+    y++;
+    z++;
+    i++;
+  }
+  //TPS/MAP bins
+  y=EEPROM_CONFIG9_YBINS2;
+  z=EEPROM_CONFIG9_YBINS3;
+  i=EEPROM_CONFIG9_YBINS4;
+  for(int x=EEPROM_CONFIG9_YBINS1; x<EEPROM_CONFIG9_XSIZE2; x++) 
+  {
+    offset = x - EEPROM_CONFIG9_YBINS1;
+    EEPROM.update(x, trim1Table.axisY[offset]);
+    offset = y - EEPROM_CONFIG9_YBINS2;
+    EEPROM.update(y, trim2Table.axisY[offset]);
+    offset = z - EEPROM_CONFIG9_YBINS3;
+    EEPROM.update(z, trim3Table.axisY[offset]);
+    offset = i - EEPROM_CONFIG9_YBINS4;
+    EEPROM.update(i, trim4Table.axisY[offset]);
+    y++;
+    z++;
+    i++;
+  }
 }
 
 void loadConfig()
@@ -341,6 +409,64 @@ void loadConfig()
     offset = y - EEPROM_CONFIG8_YBINS2;
     vvtTable.axisY[offset] = EEPROM.read(y);
     y++;
+  }
+
+  //*********************************************************************************************************************************************************************************
+  // Fuel trim tables load
+  y = EEPROM_CONFIG9_MAP2;
+  int z = EEPROM_CONFIG9_MAP3;
+  int i = EEPROM_CONFIG9_MAP4;
+  for(int x=EEPROM_CONFIG9_MAP1; x<EEPROM_CONFIG9_XBINS1; x++) 
+  { 
+    offset = x - EEPROM_CONFIG9_MAP1;
+    trim1Table.values[5-offset/6][offset%6] = EEPROM.read(x); //Read the 6x6 map
+    offset = y - EEPROM_CONFIG9_MAP2;
+    trim2Table.values[5-offset/6][offset%6] = EEPROM.read(y); //Read the 6x6 map
+    offset = z - EEPROM_CONFIG9_MAP3;
+    trim3Table.values[5-offset/6][offset%6] = EEPROM.read(z); //Read the 6x6 map
+    offset = i - EEPROM_CONFIG9_MAP4;
+    trim4Table.values[5-offset/6][offset%6] = EEPROM.read(i); //Read the 6x6 map
+    y++;
+    z++;
+    i++;
+  }
+
+  //RPM bins
+  y = EEPROM_CONFIG9_XBINS2;
+  z = EEPROM_CONFIG9_XBINS3;
+  i = EEPROM_CONFIG9_XBINS4;
+  for(int x=EEPROM_CONFIG9_XBINS1; x<EEPROM_CONFIG9_YBINS1; x++) 
+  {
+    offset = x - EEPROM_CONFIG9_XBINS1;
+    trim1Table.axisX[offset] = (EEPROM.read(x) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+    offset = y - EEPROM_CONFIG9_XBINS2;
+    trim2Table.axisX[offset] = (EEPROM.read(y) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+    offset = z - EEPROM_CONFIG9_XBINS3;
+    trim3Table.axisX[offset] = (EEPROM.read(z) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+    offset = i - EEPROM_CONFIG9_XBINS4;
+    trim4Table.axisX[offset] = (EEPROM.read(i) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+    y++;
+    z++;
+    i++;
+  }
+    
+  //TPS/MAP bins
+  y = EEPROM_CONFIG9_YBINS2;
+  z = EEPROM_CONFIG9_YBINS3;
+  i = EEPROM_CONFIG9_YBINS4;
+  for(int x=EEPROM_CONFIG9_YBINS1; x<EEPROM_CONFIG9_XSIZE2; x++) 
+  {
+    offset = x - EEPROM_CONFIG9_YBINS1;
+    trim1Table.axisY[offset] = EEPROM.read(x);
+    offset = y - EEPROM_CONFIG9_YBINS2;
+    trim2Table.axisY[offset] = EEPROM.read(y);
+    offset = z - EEPROM_CONFIG9_YBINS3;
+    trim3Table.axisY[offset] = EEPROM.read(z);
+    offset = i - EEPROM_CONFIG9_YBINS4;
+    trim4Table.axisY[offset] = EEPROM.read(i);
+    y++;
+    z++;
+    i++;
   }
 }
 
