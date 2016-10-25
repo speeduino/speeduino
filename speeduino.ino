@@ -38,6 +38,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "fastAnalog.h"
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
+//#include "src/DigitalWriteFast/digitalWriteFast.h"
 #include "errors.h"
 
 #ifdef __SAM3X8E__
