@@ -216,11 +216,11 @@ void setup()
   digitalWrite(pinCoil5, coilLOW);
   
   //Similar for injectors, make sure they're turned off
-  digitalWrite(pinInjector1, HIGH);
-  digitalWrite(pinInjector2, HIGH);
-  digitalWrite(pinInjector3, HIGH);
-  digitalWrite(pinInjector4, HIGH);
-  digitalWrite(pinInjector5, HIGH);
+  digitalWrite(pinInjector1, LOW);
+  digitalWrite(pinInjector2, LOW);
+  digitalWrite(pinInjector3, LOW);
+  digitalWrite(pinInjector4, LOW);
+  digitalWrite(pinInjector5, LOW);
   
   //Set the tacho output default state
   digitalWrite(pinTachOut, HIGH);
