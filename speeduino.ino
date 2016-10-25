@@ -232,12 +232,12 @@ void setup()
    * with record highs close to 108.5 kPa. 
    * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
    */
-  if ((currentStatus.MAP >= 87) && (currentStatus.MAP <= 108)) //Check if engine isn't running
+  if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
   {
     currentStatus.baro = currentStatus.MAP;
     EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
   }
-  else { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); //last baro correction }
+  else { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); } //last baro correction
 
   //Perform all initialisations
   initialiseSchedulers();
