@@ -35,9 +35,8 @@ void initialiseAuxPWM()
   vvt_pin_port = portOutputRegister(digitalPinToPort(pinVVT_1));
   vvt_pin_mask = digitalPinToBitMask(pinVVT_1);
   
-  //(16 * configPage3.boostFreq * 2) = (configPage3.boostFreq * 16 * 2) = (configPage3.boostFreq * 32) = (configPage3.boostFreq << 5)
-  boost_pwm_max_count = 1000000L / (configPage3.boostFreq << 5); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
-  vvt_pwm_max_count = 1000000L / (configPage3.vvtFreq << 5); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
+  boost_pwm_max_count = 1000000L / (16 * configPage3.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+  vvt_pwm_max_count = 1000000L / (16 * configPage3.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
   //TIMSK1 |= (1 << OCIE1A); //Turn on the A compare unit (ie turn on the interrupt)  //Shouldn't be needed with closed loop as its turned on below
   TIMSK1 |= (1 << OCIE1B); //Turn on the B compare unit (ie turn on the interrupt)
 
