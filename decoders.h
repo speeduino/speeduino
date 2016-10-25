@@ -1,4 +1,23 @@
+#ifndef DECODERS_H
+#define DECODERS_H
+
 #include <limits.h>
+
+static inline void addToothLogEntry(unsigned long toothTime);
+static inline int stdGetRPM();
+static inline void setFilter(unsigned long curGap);
+static inline int crankingGetRPM(byte totalTeeth);
+void triggerSetup_missingTooth();
+void triggerPri_missingTooth();
+void triggerSec_missingTooth();
+int getRPM_missingTooth();
+int getCrankAngle_missingTooth(int timePerDegree);
+void triggerSetup_DualWheel();
+void triggerPri_DualWheel();
+void triggerSec_DualWheel();
+int getRPM_DualWheel();
+int getCrankAngle_DualWheel(int timePerDegree);
+
 
 volatile unsigned long curTime;
 volatile unsigned long curGap;
@@ -37,4 +56,4 @@ int toothAngles[24]; //An array for storing fixed tooth angles. Currently sized 
 #define LONG 0;
 #define SHORT 1;
 
-
+#endif
