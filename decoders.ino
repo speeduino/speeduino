@@ -21,12 +21,19 @@ toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
 
 */
 
-static inline void addToothLogEntry(unsigned long time)
+static inline void addToothLogEntry(unsigned long toothTime)
 {
   //High speed tooth logging history
-  toothHistory[toothHistoryIndex] = time;
+  toothHistory[toothHistoryIndex] = toothTime;
   if(toothHistoryIndex == (TOOTH_LOG_BUFFER-1))
-  { toothHistoryIndex = 0; BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); } //The tooth log ready bit is cleared to ensure that we only get a set of concurrent values. 
+  { 
+    if (toothLogRead)
+    {
+      toothHistoryIndex = 0; 
+      BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); 
+      toothLogRead = false; //The tooth log ready bit is cleared to ensure that we only get a set of concurrent values. 
+    }
+  }
   else
   { toothHistoryIndex++; }
 }
@@ -106,6 +113,7 @@ void triggerPri_missingTooth()
    
    if ( curGap > targetGap || toothCurrentCount > triggerActualTeeth)
    { 
+     if(toothCurrentCount < (triggerActualTeeth) && currentStatus.hasSync) { currentStatus.hasSync = false; return; } //This occurs when we're at tooth #1, but haven't seen all the other teeth. This indicates a signal issue so we flag lost sync so this will attempt to resync on the next revolution. 
      toothCurrentCount = 1; 
      revolutionOne = !revolutionOne; //Flip sequential revolution tracker
      toothOneMinusOneTime = toothOneTime;
