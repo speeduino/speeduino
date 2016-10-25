@@ -100,7 +100,6 @@ unsigned long previousLoopTime; //The time the previous loop started (uS)
 unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
 byte MAPcurRev = 0; //Tracks which revolution we're sampling on
-int LastBaro; //Used for ignore correction if powered on a ruuning engine
 
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360, CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential 
@@ -234,9 +233,11 @@ void setup()
    * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
    */
   if ((currentStatus.MAP >= 87) && (currentStatus.MAP <= 108)) //Check if engine isn't running
-    LastBaro = currentStatus.baro = currentStatus.MAP;
-  else
-    currentStatus.baro = LastBaro; //last baro correction
+  {
+    currentStatus.baro = currentStatus.MAP;
+    EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
+  }
+  else { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); //last baro correction }
 
   //Perform all initialisations
   initialiseSchedulers();

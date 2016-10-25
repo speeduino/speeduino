@@ -96,6 +96,7 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG9_YBINS4 1385
 
 //Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
+#define EEPROM_LAST_BARO      2558
 #define EEPROM_CALIBRATION_O2 2559
 #define EEPROM_CALIBRATION_IAT 3071
 #define EEPROM_CALIBRATION_CLT 3583
