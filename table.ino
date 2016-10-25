@@ -9,7 +9,6 @@ Because the size of the table is dynamic, this functino is required to reallocat
 Note that this may clear some of the existing values of the table
 */
 #include "table.h"
-#include "globals.h"
 
 void table2D_setSize(struct table2D* targetTable, byte newSize)
 {
@@ -213,8 +212,6 @@ int table2D_getValue(struct table2D *fromTable, int X)
 }
 
 
-
-
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: http://www.megamanual.com/v22manual/ve_tuner.pdf
 int get3DTableValue(struct table3D *fromTable, int Y, int X)
@@ -358,50 +355,23 @@ int get3DTableValue(struct table3D *fromTable, int Y, int X)
     int B = fromTable->values[yMin][xMax];
     int C = fromTable->values[yMax][xMin];
     int D = fromTable->values[yMax][xMax];
-    
+   
     //Create some normalised position values
     //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
     
-    // Float version
-    /*
-    float p, q;
-    if (xMaxValue == xMinValue)
-    { p = (float)(X-xMinValue); }
-    else { p = ((float)(X - xMinValue)) / (float)(xMaxValue - xMinValue); }
     
-    if (yMaxValue == yMinValue)
-    { q = (float)(Y - yMinValue); }
-    else { q = 1- (((float)(Y - yMaxValue)) / (float)(yMinValue - yMaxValue)); }
-    
-    float m = (1.0-p) * (1.0-q);
-    float n = p * (1-q);
-    float o = (1-p) * q;
-    float r = p * q;
-    
-    
-    return ( (A * m) + (B * n) + (C * o) + (D * r) ); 
-    */
-    
-    // Non-Float version:
     //Initial check incase the values were hit straight on
     long p;
-    if (xMaxValue == xMinValue)
-    { p = ((long)(X - xMinValue) << 8); } //This only occurs if the requested X value was equal to one of the X axis bins
-    else 
-    { 
-      p = ((long)(X - xMinValue) << 8) / (xMaxValue - xMinValue); //This is the standard case
-    } 
+    if (xMaxValue == xMinValue) { p = ((long)(X - xMinValue) << 8); }  //This only occurs if the requested X value was equal to one of the X axis bins
+    else { p = ((long)(X - xMinValue) << 8) / (xMaxValue - xMinValue); } //This is the standard case
     
     long q;
-    if (yMaxValue == yMinValue)
-    { q = ((long)(Y - yMinValue) << 8); }
-    else
-    { 
-      q = 256 - (((long)(Y - yMaxValue) << 8) / (yMinValue - yMaxValue)); 
-    }
+    if (yMaxValue == yMinValue) { q = ((long)(Y - yMinValue) << 8); }
+    else { q = 256 - (((long)(Y - yMaxValue) << 8) / (yMinValue - yMaxValue)); }
+
     int m = ((256-p) * (256-q)) >> 8;
     int n = (p * (256-q)) >> 8;
     int o = ((256-p) * q) >> 8;
     int r = (p * q) >> 8;
     return ( (A * m) + (B * n) + (C * o) + (D * r) ) >> 8;
-  }
+}

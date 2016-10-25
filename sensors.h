@@ -9,6 +9,9 @@
 #define ADCFILTER_O2  128
 #define ADCFILTER_BAT  128
 
+#define BARO_MIN      87
+#define BARO_MAX      108
+
 volatile byte flexCounter = 0;
 
 /*
@@ -20,5 +23,8 @@ volatile byte flexCounter = 0;
 
 void instanteneousMAPReading();
 void readMAP();
+void flexPulse();
+
+unsigned int tempReading;
 
 #endif // SENSORS_H

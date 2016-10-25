@@ -38,6 +38,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "fastAnalog.h"
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
+//#include "src/DigitalWriteFast/digitalWriteFast.h"
 #include "errors.h"
 
 #ifdef __SAM3X8E__
@@ -227,7 +228,17 @@ void setup()
 
   //Lookup the current MAP reading for barometric pressure
   readMAP();
-  currentStatus.baro = currentStatus.MAP;
+  /*
+   * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
+   * with record highs close to 108.5 kPa. 
+   * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
+   */
+  if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
+  {
+    currentStatus.baro = currentStatus.MAP;
+    EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
+  }
+  else { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); } //last baro correction
 
   //Perform all initialisations
   initialiseSchedulers();
@@ -1493,4 +1504,5 @@ void endCoil2and4Charge() { digitalWrite(pinCoil2, coilLOW); digitalWrite(pinCoi
 
 void nullCallback() { return; }
   
+
 

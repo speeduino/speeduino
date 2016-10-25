@@ -71,7 +71,7 @@ This gives much more volatile reading, but is quite useful during cranking, part
 It can only be used on patterns where the teeth are evently spaced
 It takes an argument of the full (COMPLETE) number of teeth per revolution. For a missing tooth wheel, this is the number if the tooth had NOT been missing (Eg 36-1 = 36)
 */
-inline int crankingGetRPM(byte totalTeeth)
+static inline int crankingGetRPM(byte totalTeeth)
 {
   noInterrupts();
   revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth;

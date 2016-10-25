@@ -4,8 +4,6 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 
-unsigned int tempReading;
-
 void instanteneousMAPReading()
 {
   //Instantaneous MAP readings
@@ -16,7 +14,7 @@ void instanteneousMAPReading()
   if(tempReading >= VALID_MAP_MAX || tempReading <= VALID_MAP_MIN) { mapErrorCount += 1; }
   else { currentStatus.mapADC = tempReading; mapErrorCount = 0; }
         
-  currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, 0, 1023, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+  currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
 }
 
 void readMAP()
@@ -51,7 +49,7 @@ void readMAP()
       {
         //Reaching here means that the last cylce has completed and the MAP value should be calculated
         currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
-        currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, 0, 1023, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+        currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
         MAPcurRev = startRevolutions; //Reset the current rev count
         MAPrunningValue = 0;
         MAPcount = 0;
@@ -77,7 +75,7 @@ void readMAP()
       {
         //Reaching here means that the last cylce has completed and the MAP value should be calculated
         currentStatus.mapADC = MAPrunningValue;
-        currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, 0, 1023, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+        currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
         MAPcurRev = startRevolutions; //Reset the current rev count
         MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
       }
@@ -90,7 +88,7 @@ void readTPS()
   currentStatus.TPSlast = currentStatus.TPS;
   currentStatus.TPSlast_time = currentStatus.TPS_time;
   analogRead(pinTPS);
-  byte tempTPS = fastMap1023toX(analogRead(pinTPS), 0, 1023, 0, 255); //Get the current raw TPS ADC value and map it into a byte
+  byte tempTPS = fastMap1023toX(analogRead(pinTPS), 255); //Get the current raw TPS ADC value and map it into a byte
   currentStatus.tpsADC = ADC_FILTER(tempTPS, ADCFILTER_TPS, currentStatus.tpsADC);
   //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range). 
   byte tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
@@ -103,7 +101,7 @@ void readTPS()
 void readCLT()
 {
   tempReading = analogRead(pinCLT);
-  tempReading = fastMap1023toX(analogRead(pinCLT), 0, 1023, 0, 511); //Get the current raw CLT value
+  tempReading = fastMap1023toX(analogRead(pinCLT), 511); //Get the current raw CLT value
   currentStatus.cltADC = ADC_FILTER(tempReading, ADCFILTER_CLT, currentStatus.cltADC);
   currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 }
@@ -111,7 +109,7 @@ void readCLT()
 void readIAT()
 {
   tempReading = analogRead(pinIAT);
-  tempReading = fastMap1023toX(analogRead(pinIAT), 0, 1023, 0, 511); //Get the current raw IAT value
+  tempReading = fastMap1023toX(analogRead(pinIAT), 511); //Get the current raw IAT value
   currentStatus.iatADC = ADC_FILTER(tempReading, ADCFILTER_IAT, currentStatus.iatADC);
   currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
 }
@@ -119,7 +117,7 @@ void readIAT()
 void readO2()
 {
   tempReading = analogRead(pinO2);
-  tempReading = fastMap1023toX(analogRead(pinO2), 0, 1023, 0, 511); //Get the current O2 value. 
+  tempReading = fastMap1023toX(analogRead(pinO2), 511); //Get the current O2 value. 
   currentStatus.O2ADC = ADC_FILTER(tempReading, ADCFILTER_O2, currentStatus.O2ADC);
   currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
 }
@@ -133,7 +131,7 @@ void readO2()
 void readBat()
 {
   tempReading = analogRead(pinBat);
-  tempReading = fastMap1023toX(analogRead(pinBat), 0, 1023, 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
+  tempReading = fastMap1023toX(analogRead(pinBat), 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
   currentStatus.battery10 = ADC_FILTER(tempReading, ADCFILTER_BAT, currentStatus.battery10);
 }
 
@@ -141,7 +139,7 @@ void readBat()
  * The interrupt function for reading the flex sensor frequency
  * This value is incremented with every pulse and reset back to 0 once per second
  */
- void flexPulse()
+void flexPulse()
  {
    ++flexCounter;
  }
