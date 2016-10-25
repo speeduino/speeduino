@@ -21,4 +21,6 @@ volatile byte flexCounter = 0;
 void instanteneousMAPReading();
 void readMAP();
 
+unsigned int tempReading;
+
 #endif // SENSORS_H

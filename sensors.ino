@@ -4,8 +4,6 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 
-int tempReading;
-
 void instanteneousMAPReading()
 {
   //Instantaneous MAP readings
