@@ -773,8 +773,6 @@ void setup()
 
 void loop() 
 {
-do
-{
       mainLoopCount++;    
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
       // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
@@ -1405,8 +1403,7 @@ do
       
     }
     
-  }while(1); //Some tests result this in a 1.2% faster at 8500RPM
-}  
+  }
   
 //************************************************************************************************
 //Interrupts  
