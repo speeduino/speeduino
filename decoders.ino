@@ -465,6 +465,22 @@ void triggerSetup_4G63()
   toothAngles[1] = 105; //Rising edge of tooth #2
   toothAngles[2] = 175; //Falling edge of tooth #2
   toothAngles[3] = 285; //Rising edge of tooth #1
+
+  /*
+   * https://forums.libreems.org/attachment.php?aid=34
+  toothAngles[0] = 715; //Falling edge of tooth #1
+  toothAngles[1] = 49;  //Falling edge of wide cam
+  toothAngles[2] = 105; //Rising edge of tooth #2
+  toothAngles[3] = 175; //Falling edge of tooth #2
+  toothAngles[4] = 229; //Rising edge of narrow cam tooth (??)
+  toothAngles[5] = 285; //Rising edge of tooth #3
+  toothAngles[6] = 319; //Falling edge of narrow cam tooth
+  toothAngles[7] = 355; //falling edge of tooth #3
+  toothAngles[8] = 465; //Rising edge of tooth #4
+  toothAngles[9] = 535; //Falling edge of tooth #4
+  toothAngles[10] = 535; //Rising edge of wide cam tooth
+  toothAngles[11] = 645; //Rising edge of tooth #1
+   */
   
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth. 
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
@@ -474,7 +490,7 @@ void triggerPri_4G63()
 {
   curTime = micros();
   curGap = curTime - toothLastToothTime;
-  if ( curGap < triggerFilterTime ) { return; } //Debounce check. Pulses should never be less than triggerFilterTime
+  if ( curGap < triggerFilterTime ) { return; } //Filter check. Pulses should never be less than triggerFilterTime
 
   addToothLogEntry(curGap);
   triggerFilterTime = curGap >> 2; //This only applies during non-sync conditions. If there is sync then triggerFilterTime gets changed again below with a better value. 
@@ -504,9 +520,6 @@ void triggerPri_4G63()
   if(toothCurrentCount == 1 || toothCurrentCount == 3) { triggerToothAngle = 70; triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
   else { triggerToothAngle = 110; triggerFilterTime = (curGap * 3) >> 3; } //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
 
-  //curGap = curGap >> 1;
-  
-
 }
 void triggerSec_4G63()
 { 
@@ -523,8 +536,12 @@ void triggerSec_4G63()
     bool crank = digitalRead(pinTrigger);
     if(crank == HIGH)
     {
-      //triggerFilterTime = 1; //Effectively turns off the trigger filter for now 
       toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
+      /* High-res mode
+      toothCurrentCount = 7; //If the crank trigger is currently HIGH, it means we're on the falling edge of the narrow crank tooth
+      toothLastMinusOneToothTime = toothLastToothTime;
+      toothLastToothTime = curTime;
+      */
     } 
   }
   //else { triggerFilterTime = 1500; } //reset filter time (ugly)
@@ -543,6 +560,10 @@ int getRPM_4G63()
     int tempToothAngle;
     noInterrupts();
     tempToothAngle = triggerToothAngle;
+    /* High-res mode
+    if(toothCurrentCount == 1) { tempToothAngle = 70; } 
+    else { tempToothAngle = toothAngles[toothCurrentCount-1] - toothAngles[toothCurrentCount-2]; }
+    */
     revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen  
     interrupts();
     revolutionTime = revolutionTime * 36;
