@@ -38,6 +38,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "fastAnalog.h"
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
+//#include "src/DigitalWriteFast/digitalWriteFast.h"
 #include "errors.h"
 
 #ifdef __SAM3X8E__
@@ -74,6 +75,10 @@ struct table3D ignitionTable; //16x16 ignition map
 struct table3D afrTable; //16x16 afr target map
 struct table3D boostTable; //8x8 boost map
 struct table3D vvtTable; //8x8 vvt map
+struct table3D trim1Table; //6x6 Fuel trim 1 map
+struct table3D trim2Table; //6x6 Fuel trim 2 map
+struct table3D trim3Table; //6x6 Fuel trim 3 map
+struct table3D trim4Table; //6x6 Fuel trim 4 map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
@@ -96,7 +101,6 @@ unsigned long previousLoopTime; //The time the previous loop started (uS)
 unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
 byte MAPcurRev = 0; //Tracks which revolution we're sampling on
-int LastBaro; //Used for ignore correction if powered on a ruuning engine
 
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360, CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential 
@@ -164,6 +168,10 @@ void setup()
   table3D_setSize(&afrTable, 16);
   table3D_setSize(&boostTable, 8);
   table3D_setSize(&vvtTable, 8);
+  table3D_setSize(&trim1Table, 6);
+  table3D_setSize(&trim2Table, 6);
+  table3D_setSize(&trim3Table, 6);
+  table3D_setSize(&trim4Table, 6);
  
   loadConfig();
   
@@ -202,18 +210,18 @@ void setup()
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
   else { coilHIGH = HIGH, coilLOW = LOW; }
-  endCoil1Charge();
-  endCoil2Charge();
-  endCoil3Charge();
-  endCoil4Charge();
-  endCoil5Charge();
+  digitalWrite(pinCoil1, coilLOW);
+  digitalWrite(pinCoil2, coilLOW);
+  digitalWrite(pinCoil3, coilLOW);
+  digitalWrite(pinCoil4, coilLOW);
+  digitalWrite(pinCoil5, coilLOW);
   
   //Similar for injectors, make sure they're turned off
-  closeInjector1();
-  closeInjector2();
-  closeInjector3();
-  closeInjector4();
-  closeInjector5();
+  digitalWrite(pinInjector1, LOW);
+  digitalWrite(pinInjector2, LOW);
+  digitalWrite(pinInjector3, LOW);
+  digitalWrite(pinInjector4, LOW);
+  digitalWrite(pinInjector5, LOW);
   
   //Set the tacho output default state
   digitalWrite(pinTachOut, HIGH);
@@ -225,10 +233,12 @@ void setup()
    * with record highs close to 108.5 kPa. 
    * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
    */
-  if ((currentStatus.MAP >= 87) && (currentStatus.MAP <= 108)) //Check if engine isn't running
-    LastBaro = currentStatus.baro = currentStatus.MAP;
-  else
-    currentStatus.baro = LastBaro; //last baro correction
+  if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
+  {
+    currentStatus.baro = currentStatus.MAP;
+    EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
+  }
+  else { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); } //last baro correction
 
   //Perform all initialisations
   initialiseSchedulers();
@@ -747,6 +757,19 @@ void setup()
         ign5EndFunction = endCoil5Charge;
       }
       break;
+
+    case IGN_MODE_SEQUENTIAL:
+      ign1StartFunction = beginCoil1Charge;
+      ign1EndFunction = endCoil1Charge;
+      ign2StartFunction = beginCoil2Charge;
+      ign2EndFunction = endCoil2Charge;
+      ign3StartFunction = beginCoil3Charge;
+      ign3EndFunction = endCoil3Charge;
+      ign4StartFunction = beginCoil4Charge;
+      ign4EndFunction = endCoil4Charge;
+      ign5StartFunction = beginCoil5Charge;
+      ign5EndFunction = endCoil5Charge;
+      break;      
     
     default:
       //Wasted spark (Shouldn't ever happen anyway)
@@ -772,8 +795,6 @@ void setup()
 }
 
 void loop() 
-{
-do
 {
       mainLoopCount++;    
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
@@ -884,7 +905,7 @@ do
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
     }
-    
+    if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
     if ((mainLoopCount & 255) == 1)
     {
@@ -1405,8 +1426,7 @@ do
       
     }
     
-  }while(1); //Some tests result this in a 1.2% faster at 8500RPM
-}  
+  }
   
 //************************************************************************************************
 //Interrupts  

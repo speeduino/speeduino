@@ -4,8 +4,6 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 
-int tempReading;
-
 void instanteneousMAPReading()
 {
   //Instantaneous MAP readings
@@ -141,7 +139,7 @@ void readBat()
  * The interrupt function for reading the flex sensor frequency
  * This value is incremented with every pulse and reset back to 0 once per second
  */
- void flexPulse()
+void flexPulse()
  {
    ++flexCounter;
  }
