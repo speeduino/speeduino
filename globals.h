@@ -146,6 +146,9 @@ struct statuses {
   volatile byte spark;
   byte engine;
   unsigned int PW; //In uS
+  unsigned int PW2; //In uS
+  unsigned int PW3; //In uS
+  unsigned int PW4; //In uS
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
   volatile unsigned int loopsPerSecond;
@@ -356,8 +359,9 @@ struct config3 {
   byte boostKI;
   byte boostKD;
   
-  byte lnchPullRes :2;
-  byte unused60 : 6;
+  byte lnchPullRes : 2;
+  bool fuelTrimEnabled : 1;
+  byte unused60 : 5;
   byte unused61;
   byte unused62;
   byte unused63;

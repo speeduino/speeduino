@@ -1076,6 +1076,12 @@ void loop()
             injector2StartAngle += 360;
             injector3StartAngle += 360;
             injector4StartAngle += 360;
+
+            if(configPage3.fuelTrimEnabled)
+            {
+              
+              //currentStatus.PW = currentStatus.PW * (100 + get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM) ); //Perform lookup into fuel map for RPM vs MAP value
+            }
           }
           break;
         //5 cylinders
