@@ -389,19 +389,19 @@ float get3DTableValue2(struct table3D *fromTable, int Y, int X)
 
   for (xMin = fromTable->xSize-1; xMin>=0; xMin--)
   {
-    if(X>fromTable->axisX[xMin]) {break};
+    if(X>fromTable->axisX[xMin]) {break;}
   }  
   for (yMin = fromTable->ySize-1; yMin>=0; yMin--)
   {
-    if(Y>fromTable->axisY[yMin]) {break};
+    if(Y>fromTable->axisY[yMin]) {break;}
   }  
-  if (xMin>fromTable->xSize-1) (xMin = fromTable->xSize-1};  //Overflow protection
-  if (yMin>fromTable->ySize-1) (yMin = fromTable->ySize-1};  //Overflow protection
+  if (xMin>fromTable->xSize-1) {xMin = fromTable->xSize-1;}  //Overflow protection
+  if (yMin>fromTable->ySize-1) {yMin = fromTable->ySize-1;}  //Overflow protection
   
   xMax = xMin + 1;
   yMax = yMin + 1;
-  if (xMax>fromTable->xSize-1) {xMax = fromTable->xSize-1};  //Overflow protection
-  if (yMax>fromTable->ySize-1) {yMax = fromTable->ySize-1};  //Overflow protection
+  if (xMax>fromTable->xSize-1) {xMax = fromTable->xSize-1;}  //Overflow protection
+  if (yMax>fromTable->ySize-1) {yMax = fromTable->ySize-1;}  //Overflow protection
 
   p = float(X-fromTable->axisX[xMin]) / float(fromTable->axisX[xMax] - fromTable->axisX[xMin]);
   q = float(Y-fromTable->axisY[yMin]) / float(fromTable->axisY[yMax] - fromTable->axisY[yMin]);
@@ -429,19 +429,19 @@ int get3DTableValue3(struct table3D *fromTable, int Y, int X)
 
   for (xMin = fromTable->xSize-1; xMin>=0; xMin--)
   {
-    if(X>fromTable->axisX[xMin]) {break};
+    if(X>fromTable->axisX[xMin]) {break;}
   }  
   for (yMin = fromTable->ySize-1; yMin>=0; yMin--)
   {
-    if(Y>fromTable->axisY[yMin]) {break};
+    if(Y>fromTable->axisY[yMin]) {break;}
   }  
-  if (xMin>fromTable->xSize-1) (xMin = fromTable->xSize-1};  //Overflow protection
-  if (yMin>fromTable->ySize-1) (yMin = fromTable->ySize-1};  //Overflow protection
+  if (xMin>fromTable->xSize-1) {xMin = fromTable->xSize-1;}  //Overflow protection
+  if (yMin>fromTable->ySize-1) {yMin = fromTable->ySize-1;}  //Overflow protection
   
   xMax = xMin + 1;
   yMax = yMin + 1;
-  if (xMax>fromTable->xSize-1) {xMax = fromTable->xSize-1};  //Overflow protection
-  if (yMax>fromTable->ySize-1) {yMax = fromTable->ySize-1};  //Overflow protection
+  if (xMax>fromTable->xSize-1) {xMax = fromTable->xSize-1;}  //Overflow protection
+  if (yMax>fromTable->ySize-1) {yMax = fromTable->ySize-1;}  //Overflow protection
 
   long p, q;
   p = ((long)(X-fromTable->axisX[xMin]) <<8) / (fromTable->axisX[xMax] - fromTable->axisX[xMin]);
