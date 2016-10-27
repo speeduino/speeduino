@@ -837,7 +837,7 @@ void loop()
     {
       //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
       currentStatus.RPM = 0; 
-      currentStatus.PW = 0;
+      currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       toothLastToothTime = 0;
       currentStatus.hasSync = false;
@@ -955,14 +955,14 @@ void loop()
       { 
         //Speed Density
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-        currentStatus.PW = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
+        currentStatus.PW1 = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
         currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.MAP, currentStatus.RPM); //As above, but for ignition advance
       }
       else
       { 
         //Alpha-N
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
-        currentStatus.PW = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
+        currentStatus.PW1 = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
         currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM); //As above, but for ignition advance
       }
       
@@ -1035,14 +1035,15 @@ void loop()
       if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         unsigned long pwLimit = percentage(configPage1.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
-        if (currentStatus.PW > pwLimit) { currentStatus.PW = pwLimit; }
+        if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; }
       }
       
       
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
       //Determine next firing angles
-      int PWdivTimerPerDegree = div(currentStatus.PW, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
+      currentStatus.PW2, currentStatus.PW3, currentStatus.PW4 = currentStatus.PW1; // Initial state is for all pulsewidths to be the same (This gets changed below)
+      int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
       injector1StartAngle = configPage1.inj1Ang - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       if(injector1StartAngle < 0) {injector1StartAngle += CRANK_ANGLE_MAX_INJ;} 
       //Repeat the above for each cylinder
@@ -1072,10 +1073,18 @@ void loop()
             injector4StartAngle = (configPage1.inj4Ang + channel4InjDegrees - ( PWdivTimerPerDegree ));
             if(injector4StartAngle > CRANK_ANGLE_MAX_INJ) {injector4StartAngle -= CRANK_ANGLE_MAX_INJ;}
 
-            injector1StartAngle += 360;
-            injector2StartAngle += 360;
-            injector3StartAngle += 360;
-            injector4StartAngle += 360;
+            if(configPage3.fuelTrimEnabled)
+            {
+              unsigned long pw1percent = 100 + get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM);
+              unsigned long pw2percent = 100 + get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM);
+              unsigned long pw3percent = 100 + get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM);
+              unsigned long pw4percent = 100 + get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM);
+              
+              if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
+              if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
+              if (pw3percent != 100) { currentStatus.PW3 = (pw3percent * currentStatus.PW3) / 100; }
+              if (pw4percent != 100) { currentStatus.PW4 = (pw4percent * currentStatus.PW4) / 100; }
+            }
           }
           break;
         //5 cylinders
@@ -1193,7 +1202,7 @@ void loop()
       int crankAngle = getCrankAngle(timePerDegree);
       if (crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle -= 360; }
       
-      if (fuelOn && currentStatus.PW > 0 && !BIT_CHECK(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT))
+      if (fuelOn && currentStatus.PW1 > 0 && !BIT_CHECK(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT))
       {
         if (injector1StartAngle <= crankAngle && fuelSchedule1.schedulesSet == 0) { injector1StartAngle += CRANK_ANGLE_MAX_INJ; }
         if (injector1StartAngle > crankAngle)
@@ -1202,7 +1211,7 @@ void loop()
           {
             setFuelSchedule1(openInjector1and4, 
                       ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW,
+                      (unsigned long)currentStatus.PW1,
                       closeInjector1and4
                       );
           }
@@ -1210,7 +1219,7 @@ void loop()
           {
             setFuelSchedule1(openInjector1, 
                       ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW,
+                      (unsigned long)currentStatus.PW1,
                       closeInjector1
                       );
           }
@@ -1240,7 +1249,7 @@ void loop()
             {
               setFuelSchedule2(openInjector2and3, 
                         ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                        (unsigned long)currentStatus.PW,
+                        (unsigned long)currentStatus.PW2,
                         closeInjector2and3
                         );
             }
@@ -1248,7 +1257,7 @@ void loop()
             {
               setFuelSchedule2(openInjector2, 
                         ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                        (unsigned long)currentStatus.PW,
+                        (unsigned long)currentStatus.PW2,
                         closeInjector2
                         );
             }
@@ -1266,7 +1275,7 @@ void loop()
           { 
             setFuelSchedule3(openInjector3, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW,
+                      (unsigned long)currentStatus.PW3,
                       closeInjector3
                       );
           }
@@ -1283,7 +1292,7 @@ void loop()
           { 
             setFuelSchedule4(openInjector4, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW,
+                      (unsigned long)currentStatus.PW4,
                       closeInjector4
                       );
           }
@@ -1300,7 +1309,7 @@ void loop()
           { 
             setFuelSchedule5(openInjector5, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW,
+                      (unsigned long)currentStatus.PW1,
                       closeInjector5
                       );
           }

@@ -139,12 +139,16 @@ struct statuses {
   byte launchCorrection; //The amount of correction being applied if launch control is active
   byte afrTarget;
   byte idleDuty;
+  bool fanOn; //Whether or not the fan is turned on
   byte flex; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. 
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte squirt;
   volatile byte spark;
   byte engine;
-  unsigned int PW; //In uS
+  unsigned int PW1; //In uS
+  unsigned int PW2; //In uS
+  unsigned int PW3; //In uS
+  unsigned int PW4; //In uS
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
   volatile unsigned int loopsPerSecond;
@@ -355,8 +359,9 @@ struct config3 {
   byte boostKI;
   byte boostKD;
   
-  byte lnchPullRes :2;
-  byte unused60 : 6;
+  byte lnchPullRes : 2;
+  bool fuelTrimEnabled : 1;
+  byte unused60 : 5;
   byte unused61;
   byte unused62;
   byte unused63;
