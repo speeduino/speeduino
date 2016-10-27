@@ -145,7 +145,7 @@ struct statuses {
   volatile byte squirt;
   volatile byte spark;
   byte engine;
-  unsigned int PW; //In uS
+  unsigned int PW1; //In uS
   unsigned int PW2; //In uS
   unsigned int PW3; //In uS
   unsigned int PW4; //In uS

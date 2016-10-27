@@ -236,7 +236,7 @@ void sendValues(int packetlength, byte portNum)
   response[17] = currentStatus.corrections; //Total GammaE (%)
   response[18] = currentStatus.VE; //Current VE 1 (%)
   response[19] = currentStatus.afrTarget;
-  response[20] = (byte)(currentStatus.PW / 100); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+  response[20] = (byte)(currentStatus.PW1 / 100); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
   response[21] = currentStatus.tpsDOT; //TPS DOT
   response[22] = currentStatus.advance;
   response[23] = currentStatus.TPS; // TPS (0% to 100%)
@@ -679,12 +679,37 @@ void sendPage(bool useChar)
       }
     case seqFuelPage:
       {
-        byte response[200]; //The size is: (6x6 + 6 + 6) * 4 + 8 (Leftover values)
+        if(useChar)
+        {
+          currentTable = trim1Table;
+          currentTitleIndex = 121;
+          //Do.... Something?
+        }
+        else
+        {
+          //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format        
+          byte response[192]; //Bit hacky, but the size is: (6x6 + 6 + 6) * 4 = 192
 
-          
-          for (int x = 0; x < 200; x++) { 0; }
+          //trim1 table
+          for (int x = 0; x < 36; x++) { response[x] = trim1Table.values[5 - x / 6][x % 6]; }
+          for (int x = 36; x < 42; x++) { response[x] = byte(trim1Table.axisX[(x - 36)] / 100); }
+          for (int y = 42; y < 48; y++) { response[y] = byte(trim1Table.axisY[5 - (y - 42)]); }
+          //trim2 table
+          for (int x = 48; x < 84; x++) { response[x] = trim2Table.values[5 - x / 6][x % 6]; }
+          for (int x = 84; x < 90; x++) { response[x] = byte(trim2Table.axisX[(x - 84)] / 100); }
+          for (int y = 90; y < 96; y++) { response[y] = byte(trim2Table.axisY[5 - (y - 90)]); }
+          //trim3 table
+          for (int x = 96; x < 132; x++) { response[x] = trim3Table.values[5 - x / 6][x % 6]; }
+          for (int x = 132; x < 138; x++) { response[x] = byte(trim3Table.axisX[(x - 132)] / 100); }
+          for (int y = 138; y < 144; y++) { response[y] = byte(trim3Table.axisY[5 - (y - 138)]); }
+          //trim4 table
+          for (int x = 144; x < 180; x++) { response[x] = trim4Table.values[5 - x / 6][x % 6]; }
+          for (int x = 180; x < 186; x++) { response[x] = byte(trim4Table.axisX[(x - 180)] / 100); }
+          for (int y = 186; y < 192; y++) { response[y] = byte(trim4Table.axisY[5 - (y - 186)]); }
           Serial.write((byte *)&response, sizeof(response));
-          break;
+          return;
+        }
+        break;
       }
     default:
       {
