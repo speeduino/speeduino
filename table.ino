@@ -376,48 +376,74 @@ int get3DTableValue(struct table3D *fromTable, int Y, int X)
     return ( (A * m) + (B * n) + (C * o) + (D * r) ) >> 8;
 }
 /* Executed a benchmark on all options and this is the results
- * Stadard version:141164 20 float version:57456 20.51 simple version:54196 20, Number of loops:2500
+ * Stadard version:141164 20 float version:29292 20.74 simple version:27568 20, Number of loops:2500
  * 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: http://www.megamanual.com/v22manual/ve_tuner.pdf
 float get3DTableValue2(struct table3D *fromTable, int Y, int X)
 {
   float m, n, o ,p, q, r;
-  long tempVar1, tempVar2;
   byte xMin, xMax;
   byte yMin, yMax;
+  xMin = fromTable->lastXMin + 1;
+  yMin = fromTable->lastYMin + 1;
 
-  for (xMin = fromTable->xSize-1; xMin>=0; xMin--)
-  {
-    if(X>fromTable->axisX[xMin]) {break;}
+  if(xMin>fromTable->xSize-1)
+  { 
+    fromTable->lastXMin = fromTable->xSize-2;
+    xMin = fromTable->xSize-1;
   }  
-  for (yMin = fromTable->ySize-1; yMin>=0; yMin--)
+  if(yMin>fromTable->ySize-1)
+  { 
+    fromTable->lastYMin = fromTable->ySize-2;
+    yMin = fromTable->ySize-1;
+  }    
+  
+  do
   {
-    if(Y>fromTable->axisY[yMin]) {break;}
-  }  
-  if (xMin>fromTable->xSize-1) {xMin = fromTable->xSize-1;}  //Overflow protection
-  if (yMin>fromTable->ySize-1) {yMin = fromTable->ySize-1;}  //Overflow protection
+    if(X>=fromTable->axisX[xMin]) {break;}
+    xMin--;
+  }while(1);
+  fromTable->lastXMin = xMin;
+  do
+  {
+    if(Y>=fromTable->axisY[yMin]) {break;}
+    yMin--;
+  }while(1);
+  fromTable->lastYMin = yMin;
   
   xMax = xMin + 1;
   yMax = yMin + 1;
-  if (xMax>fromTable->xSize-1) {xMax = fromTable->xSize-1;}  //Overflow protection
-  if (yMax>fromTable->ySize-1) {yMax = fromTable->ySize-1;}  //Overflow protection
+  if (xMax>fromTable->xSize-1)  //Overflow protection
+  {
+    xMax = fromTable->xSize-1;
+    xMin = xMax - 1;
+  }
+  if (yMax>fromTable->ySize-1)  //Overflow protection
+  {
+    yMax = fromTable->ySize-1;
+    yMin = yMax - 1;
+  }
+  int yMaxValue = fromTable->axisY[yMax];
+  int yMinValue = fromTable->axisY[yMin];
+  int xMaxValue = fromTable->axisX[xMax];
+  int xMinValue = fromTable->axisX[xMin];
 
-  p = float(X-fromTable->axisX[xMin]) / float(fromTable->axisX[xMax] - fromTable->axisX[xMin]);
-  q = float(Y-fromTable->axisY[yMin]) / float(fromTable->axisY[yMax] - fromTable->axisY[yMin]);
+  p = float(X - xMinValue) / (xMaxValue - xMinValue);
+  q = float(Y - yMinValue) / (yMaxValue - yMinValue);
 
   int A = fromTable->values[yMin][xMin];
   int B = fromTable->values[yMin][xMax];
   int C = fromTable->values[yMax][xMin];
   int D = fromTable->values[yMax][xMax];
- 
+  
   m = (1.0-p) * (1.0-q);
   n = p * (1-q);
   o = (1-p) * q;
   r = p * q;
   
   return ( (A * m) + (B * n) + (C * o) + (D * r) ); 
-  
+   
 }
 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
@@ -426,27 +452,50 @@ int get3DTableValue3(struct table3D *fromTable, int Y, int X)
 {
   byte xMin, xMax;
   byte yMin, yMax;
+  xMin = fromTable->lastXMin + 1;
+  yMin = fromTable->lastYMin + 1;
 
-  for (xMin = fromTable->xSize-1; xMin>=0; xMin--)
-  {
-    if(X>fromTable->axisX[xMin]) {break;}
+  if(xMin>fromTable->xSize-1)
+  { 
+    fromTable->lastXMin = fromTable->xSize-2;
+    xMin = fromTable->xSize-1;
   }  
-  for (yMin = fromTable->ySize-1; yMin>=0; yMin--)
-  {
-    if(Y>fromTable->axisY[yMin]) {break;}
-  }  
-  if (xMin>fromTable->xSize-1) {xMin = fromTable->xSize-1;}  //Overflow protection
-  if (yMin>fromTable->ySize-1) {yMin = fromTable->ySize-1;}  //Overflow protection
+  if(yMin>fromTable->ySize-1)
+  { 
+    fromTable->lastYMin = fromTable->ySize-2;
+    yMin = fromTable->ySize-1;
+  }    
   
+  do
+  {
+    if(X>=fromTable->axisX[xMin]) {break;}
+    xMin--;
+  }while(1);
+  fromTable->lastXMin = xMin;
+  do
+  {
+    if(Y>=fromTable->axisY[yMin]) {break;}
+    yMin--;
+  }while(1);
+  fromTable->lastYMin = yMin;
+
   xMax = xMin + 1;
   yMax = yMin + 1;
-  if (xMax>fromTable->xSize-1) {xMax = fromTable->xSize-1;}  //Overflow protection
-  if (yMax>fromTable->ySize-1) {yMax = fromTable->ySize-1;}  //Overflow protection
+  if (xMax>fromTable->xSize-1)  //Overflow protection
+  {
+    xMax = fromTable->xSize-1;
+    xMin = xMax - 1;
+  }
+  if (yMax>fromTable->ySize-1)  //Overflow protection
+  {
+    yMax = fromTable->ySize-1;
+    yMin = yMax - 1;
+  }
 
   long p, q;
-  p = ((long)(X-fromTable->axisX[xMin]) <<8) / (fromTable->axisX[xMax] - fromTable->axisX[xMin]);
-  q = 256 - (((long)(Y-fromTable->axisY[yMin])<<8) / (fromTable->axisY[yMax] - fromTable->axisY[yMin]));
-
+  p = ((X - fromTable->axisX[xMax]) << 8) / (fromTable->axisX[xMax] - fromTable->axisX[xMin]); //This is the standard case  
+  q = 256 - (((Y - fromTable->axisY[yMax]) << 8) / (fromTable->axisY[yMax] - fromTable->axisY[yMin]));
+  
   int A = fromTable->values[yMin][xMin];
   int B = fromTable->values[yMin][xMax];
   int C = fromTable->values[yMax][xMin];
