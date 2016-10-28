@@ -238,7 +238,13 @@ void setup()
     currentStatus.baro = currentStatus.MAP;
     EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
   }
-  else { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); } //last baro correction
+  else 
+  {
+    //Attempt to use the last known good baro reading from EEPROM
+    if ((EEPROM.read(EEPROM_LAST_BARO) >= BARO_MIN) && (EEPROM.read(EEPROM_LAST_BARO) <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
+    { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); } //last baro correction
+    else { currentStatus.baro = 100; } //Final fall back position. 
+  } 
 
   //Perform all initialisations
   initialiseSchedulers();
