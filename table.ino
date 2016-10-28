@@ -493,8 +493,8 @@ int get3DTableValue3(struct table3D *fromTable, int Y, int X)
   }
 
   long p, q;
-  p = ((X - fromTable->axisX[xMax]) << 8) / (fromTable->axisX[xMax] - fromTable->axisX[xMin]); //This is the standard case  
-  q = 256 - (((Y - fromTable->axisY[yMax]) << 8) / (fromTable->axisY[yMax] - fromTable->axisY[yMin]));
+  p = ((X - fromTable->axisX[xMin]) << 8) / (fromTable->axisX[xMax] - fromTable->axisX[xMin]); //This is the standard case  
+  q = 256 - (((Y - fromTable->axisY[yMin]) << 8) / (fromTable->axisY[yMax] - fromTable->axisY[yMin]));
   
   int A = fromTable->values[yMin][xMin];
   int B = fromTable->values[yMin][xMax];
