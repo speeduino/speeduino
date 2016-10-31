@@ -524,7 +524,7 @@ void setup()
         channel1InjDegrees = 0;
         channel2InjDegrees = channel2IgnDegrees; //Set to the same as the ignition degrees (Means there's no need for another if to check for oddfire)
       }
-      else { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
@@ -558,7 +558,7 @@ void setup()
         CRANK_ANGLE_MAX_INJ = 720;
         req_fuel_uS = req_fuel_uS * 2;
       }
-      else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
@@ -605,7 +605,7 @@ void setup()
         CRANK_ANGLE_MAX_INJ = 720;
         req_fuel_uS = req_fuel_uS * 2;
       }
-      else { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
@@ -628,7 +628,7 @@ void setup()
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if(configPage1.injLayout == INJ_SEMISEQUENTIAL)
+      if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injLayout == INJ_PAIRED)
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = 72;
@@ -646,7 +646,7 @@ void setup()
         
         CRANK_ANGLE_MAX_INJ = 720;
       }
-      else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = channel5InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = channel5InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
@@ -660,13 +660,15 @@ void setup()
       channel3IgnDegrees = 240;
       
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injLayout == INJ_SEQUENTIAL) //No full sequential for more than 4 cylinders
+      /*
+      if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injLayout == INJ_SEQUENTIAL || configPage1.injLayout == INJ_PAIRED) //No full sequential for more than 4 cylinders
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = 120;
         channel3InjDegrees = 240;
       }
-      else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      */
+      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       
       configPage1.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
 
@@ -681,6 +683,7 @@ void setup()
       channel4IgnDegrees = 270;
       
       //For alternatiing injection, the squirt occurs at different times for each channel
+      /*
       if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injTiming == INJ_SEQUENTIAL) //No full sequential for more than 4 cylinders
       {
         channel1InjDegrees = 0;
@@ -688,7 +691,8 @@ void setup()
         channel3InjDegrees = 180;
         channel4InjDegrees = 270;
       }
-      else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      */
+      if (!configPage1.injTiming)  { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       
       configPage1.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
 
