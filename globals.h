@@ -360,7 +360,7 @@ struct config3 {
   byte boostKD;
   
   byte lnchPullRes : 2;
-  bool fuelTrimEnabled : 1;
+  byte fuelTrimEnabled : 1;
   byte unused60 : 5;
   byte unused61;
   byte unused62;
