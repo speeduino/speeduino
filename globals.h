@@ -226,6 +226,7 @@ struct config1 {
   byte baroCorr : 1;
   byte injLayout : 2;
   byte canEnable : 1; //is can interface enabled
+  byte unused2_38h : 1;
   
   byte primePulse;
   byte dutyLim;
