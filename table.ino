@@ -376,41 +376,47 @@ int get3DTableValue(struct table3D *fromTable, int Y, int X)
     return ( (A * m) + (B * n) + (C * o) + (D * r) ) >> 8;
 }
 /* Executed a benchmark on all options and this is the results
- * Stadard version:141164 20 float version:29292 20.74 simple version:27568 20, Number of loops:2500
+ * Stadard:226224 91 |FP Math:32240 91.89 |Clean code:34056 91, Number of loops:2500
  * 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: http://www.megamanual.com/v22manual/ve_tuner.pdf
-float get3DTableValue2(struct table3D *fromTable, int Y, int X)
+float get3DTableValueF(struct table3D *fromTable, int Y, int X)
 {
   float m, n, o ,p, q, r;
   byte xMin, xMax;
   byte yMin, yMax;
-  xMin = fromTable->lastXMin + 1;
-  yMin = fromTable->lastYMin + 1;
+  int yMaxValue, yMinValue;
+  int xMaxValue, xMinValue;
+
+  if(fromTable->lastXMin==0) {fromTable->lastXMin = fromTable->xSize-1;}
+  else {xMin = fromTable->lastXMin;}
+  if(fromTable->lastYMin==0) {fromTable->lastYMin = fromTable->ySize-1;}
+  else {yMin = fromTable->lastYMin;}
+  //yMin = fromTable->lastYMin;
 
   if(xMin>fromTable->xSize-1)
   { 
-    fromTable->lastXMin = fromTable->xSize-2;
+    fromTable->lastXMin = fromTable->xSize-1;
     xMin = fromTable->xSize-1;
   }  
   if(yMin>fromTable->ySize-1)
   { 
-    fromTable->lastYMin = fromTable->ySize-2;
+    fromTable->lastYMin = fromTable->ySize-1;
     yMin = fromTable->ySize-1;
   }    
   
-  do
+  do  //RPM axis
   {
     if(X>=fromTable->axisX[xMin]) {break;}
     xMin--;
   }while(1);
-  fromTable->lastXMin = xMin;
-  do
+  fromTable->lastXMin = xMin + 1;
+  do  //MAP axis
   {
-    if(Y>=fromTable->axisY[yMin]) {break;}
+    if(Y<=fromTable->axisY[yMin]) {break;}
     yMin--;
   }while(1);
-  fromTable->lastYMin = yMin;
+  fromTable->lastYMin = yMin + 1;
   
   xMax = xMin + 1;
   yMax = yMin + 1;
@@ -424,61 +430,67 @@ float get3DTableValue2(struct table3D *fromTable, int Y, int X)
     yMax = fromTable->ySize-1;
     yMin = yMax - 1;
   }
-  int yMaxValue = fromTable->axisY[yMax];
-  int yMinValue = fromTable->axisY[yMin];
-  int xMaxValue = fromTable->axisX[xMax];
-  int xMinValue = fromTable->axisX[xMin];
 
-  p = float(X - xMinValue) / (xMaxValue - xMinValue);
-  q = float(Y - yMinValue) / (yMaxValue - yMinValue);
-
+  yMaxValue = fromTable->axisY[yMax];
+  yMinValue = fromTable->axisY[yMin];
+  xMaxValue = fromTable->axisX[xMax];
+  xMinValue = fromTable->axisX[xMin]; 
+      
   int A = fromTable->values[yMin][xMin];
   int B = fromTable->values[yMin][xMax];
   int C = fromTable->values[yMax][xMin];
   int D = fromTable->values[yMax][xMax];
-  
+     
+  p = float(X - xMinValue) / (xMaxValue - xMinValue); //(RPM - RPM[1])/(RPM[2]- RPM[1])
+  q = float(Y - yMinValue) / (yMaxValue - yMinValue); //(MAP - MAP[1])/(MAP[2]- MAP[1])
+
   m = (1.0-p) * (1.0-q);
   n = p * (1-q);
   o = (1-p) * q;
   r = p * q;
   
-  return ( (A * m) + (B * n) + (C * o) + (D * r) ); 
-   
+  return ( (A * m) + (B * n) + (C * o) + (D * r) );    
 }
 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: http://www.megamanual.com/v22manual/ve_tuner.pdf
-int get3DTableValue3(struct table3D *fromTable, int Y, int X)
+int get3DTableValueS(struct table3D *fromTable, int Y, int X)
 {
   byte xMin, xMax;
   byte yMin, yMax;
-  xMin = fromTable->lastXMin + 1;
-  yMin = fromTable->lastYMin + 1;
+  long p, q;
+  int yMaxValue, yMinValue;
+  int xMaxValue, xMinValue;
+
+  if(fromTable->lastXMin==0) {fromTable->lastXMin=fromTable->xSize-1;}
+  else {xMin = fromTable->lastXMin;}
+  if(fromTable->lastYMin==0) {fromTable->lastYMin=fromTable->ySize-1;}
+  else {yMin = fromTable->lastYMin;}
 
   if(xMin>fromTable->xSize-1)
   { 
-    fromTable->lastXMin = fromTable->xSize-2;
+    fromTable->lastXMin = fromTable->xSize-1;
     xMin = fromTable->xSize-1;
   }  
   if(yMin>fromTable->ySize-1)
   { 
-    fromTable->lastYMin = fromTable->ySize-2;
+    fromTable->lastYMin = fromTable->ySize-1;
     yMin = fromTable->ySize-1;
   }    
-  
-  do
+    
+  do  //RPM axis
   {
     if(X>=fromTable->axisX[xMin]) {break;}
     xMin--;
   }while(1);
-  fromTable->lastXMin = xMin;
-  do
+  fromTable->lastXMin = xMin + 1;
+  do  //MAP axis
   {
-    if(Y>=fromTable->axisY[yMin]) {break;}
+    if(Y<=fromTable->axisY[yMin]) {break;}
     yMin--;
   }while(1);
-  fromTable->lastYMin = yMin;
-
+  fromTable->lastYMin = yMin + 1;
+  
   xMax = xMin + 1;
   yMax = yMin + 1;
   if (xMax>fromTable->xSize-1)  //Overflow protection
@@ -492,19 +504,23 @@ int get3DTableValue3(struct table3D *fromTable, int Y, int X)
     yMin = yMax - 1;
   }
 
-  long p, q;
-  p = ((X - fromTable->axisX[xMin]) << 8) / (fromTable->axisX[xMax] - fromTable->axisX[xMin]); //This is the standard case  
-  q = 256 - (((Y - fromTable->axisY[yMin]) << 8) / (fromTable->axisY[yMax] - fromTable->axisY[yMin]));
+  yMaxValue = fromTable->axisY[yMax];
+  yMinValue = fromTable->axisY[yMin];
+  xMaxValue = fromTable->axisX[xMax];
+  xMinValue = fromTable->axisX[xMin]; 
   
   int A = fromTable->values[yMin][xMin];
   int B = fromTable->values[yMin][xMax];
   int C = fromTable->values[yMax][xMin];
   int D = fromTable->values[yMax][xMax];
 
-    int m = ((256-p) * (256-q)) >> 8;
-    int n = (p * (256-q)) >> 8;
-    int o = ((256-p) * q) >> 8;
-    int r = (p * q) >> 8;
-    return ( (A * m) + (B * n) + (C * o) + (D * r) ) >> 8; 
+  p = ((long)(X - xMinValue) << 8) / (xMaxValue - xMinValue); //(RPM - RPM[1])/(RPM[2]- RPM[1])
+  q = 256 - (((long)(Y - yMaxValue) << 8) / (yMinValue - yMaxValue)); //(MAP - MAP[2])/(MAP[2]- MAP[1])
+
+  int m = ((256-p) * (256-q)) >> 8;
+  int n = (p * (256-q)) >> 8;
+  int o = ((256-p) * q) >> 8;
+  int r = (p * q) >> 8;
+  return ( (A * m) + (B * n) + (C * o) + (D * r) ) >> 8; 
 }
 */
