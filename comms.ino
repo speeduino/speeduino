@@ -683,8 +683,36 @@ void sendPage(bool useChar)
         if(useChar)
         {
           currentTable = trim1Table;
-          currentTitleIndex = 121;
-          return;
+          for (int y = 0; y < currentTable.ySize; y++)
+          {
+            byte axisY = byte(currentTable.axisY[y]);
+            if (axisY < 100)
+            {
+              Serial.write(" ");
+              if (axisY < 10)
+              {
+                Serial.write(" ");
+              }
+            }
+            Serial.print(axisY);// Vertical Bins
+            Serial.write(" ");
+            for (int x = 0; x < currentTable.xSize; x++)
+            {
+              byte value = currentTable.values[y][x];
+              if (value < 100)
+              {
+                Serial.write(" ");
+                if (value < 10)
+                {
+                  Serial.write(" ");
+                }
+              }
+              Serial.print(value);
+              Serial.write(" ");
+            }
+            Serial.println("");
+          }
+            return;
           //Do.... Something?
         }
         else
