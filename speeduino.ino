@@ -238,7 +238,13 @@ void setup()
     currentStatus.baro = currentStatus.MAP;
     EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
   }
-  else { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); } //last baro correction
+  else 
+  {
+    //Attempt to use the last known good baro reading from EEPROM
+    if ((EEPROM.read(EEPROM_LAST_BARO) >= BARO_MIN) && (EEPROM.read(EEPROM_LAST_BARO) <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
+    { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); } //last baro correction
+    else { currentStatus.baro = 100; } //Final fall back position. 
+  } 
 
   //Perform all initialisations
   initialiseSchedulers();
@@ -518,7 +524,7 @@ void setup()
         channel1InjDegrees = 0;
         channel2InjDegrees = channel2IgnDegrees; //Set to the same as the ignition degrees (Means there's no need for another if to check for oddfire)
       }
-      else { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
@@ -552,7 +558,7 @@ void setup()
         CRANK_ANGLE_MAX_INJ = 720;
         req_fuel_uS = req_fuel_uS * 2;
       }
-      else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
@@ -599,7 +605,7 @@ void setup()
         CRANK_ANGLE_MAX_INJ = 720;
         req_fuel_uS = req_fuel_uS * 2;
       }
-      else { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
@@ -622,7 +628,7 @@ void setup()
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if(configPage1.injLayout == INJ_SEMISEQUENTIAL)
+      if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injLayout == INJ_PAIRED)
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = 72;
@@ -640,7 +646,7 @@ void setup()
         
         CRANK_ANGLE_MAX_INJ = 720;
       }
-      else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = channel5InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = channel5InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
@@ -654,13 +660,15 @@ void setup()
       channel3IgnDegrees = 240;
       
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injLayout == INJ_SEQUENTIAL) //No full sequential for more than 4 cylinders
+      /*
+      if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injLayout == INJ_SEQUENTIAL || configPage1.injLayout == INJ_PAIRED) //No full sequential for more than 4 cylinders
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = 120;
         channel3InjDegrees = 240;
       }
-      else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      */
+      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       
       configPage1.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
 
@@ -675,6 +683,7 @@ void setup()
       channel4IgnDegrees = 270;
       
       //For alternatiing injection, the squirt occurs at different times for each channel
+      /*
       if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injTiming == INJ_SEQUENTIAL) //No full sequential for more than 4 cylinders
       {
         channel1InjDegrees = 0;
@@ -682,7 +691,8 @@ void setup()
         channel3InjDegrees = 180;
         channel4InjDegrees = 270;
       }
-      else { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      */
+      if (!configPage1.injTiming)  { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       
       configPage1.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
 
@@ -1042,7 +1052,7 @@ void loop()
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
       //Determine next firing angles
-      currentStatus.PW2, currentStatus.PW3, currentStatus.PW4 = currentStatus.PW1; // Initial state is for all pulsewidths to be the same (This gets changed below)
+      currentStatus.PW2 = currentStatus.PW3 = currentStatus.PW4 = currentStatus.PW1; // Initial state is for all pulsewidths to be the same (This gets changed below)
       int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
       injector1StartAngle = configPage1.inj1Ang - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       if(injector1StartAngle < 0) {injector1StartAngle += CRANK_ANGLE_MAX_INJ;} 
@@ -1075,10 +1085,10 @@ void loop()
 
             if(configPage3.fuelTrimEnabled)
             {
-              unsigned long pw1percent = 100 + get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM);
-              unsigned long pw2percent = 100 + get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM);
-              unsigned long pw3percent = 100 + get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM);
-              unsigned long pw4percent = 100 + get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM);
+              unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
               
               if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
               if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }

@@ -74,6 +74,7 @@ const byte packetSize = 35;
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
 #define CALIBRATION_TEMPERATURE_OFFSET 40 // All temperature measurements are stored offset by 40 degrees. This is so we can use an unsigned byte (0-255) to represent temperature ranges from -40 to 215
+#define OFFSET_FUELTRIM 127 //The fuel trim tables are offset by 128 to allow for -128 to +128 values
 
 #define SERIAL_BUFFER_THRESHOLD 32 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
 
@@ -226,6 +227,7 @@ struct config1 {
   byte baroCorr : 1;
   byte injLayout : 2;
   byte canEnable : 1; //is can interface enabled
+  byte unused2_38h : 1;
   
   byte primePulse;
   byte dutyLim;
@@ -360,7 +362,7 @@ struct config3 {
   byte boostKD;
   
   byte lnchPullRes : 2;
-  bool fuelTrimEnabled : 1;
+  byte fuelTrimEnabled : 1;
   byte unused60 : 5;
   byte unused61;
   byte unused62;

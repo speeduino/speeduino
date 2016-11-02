@@ -303,7 +303,7 @@ void receiveValue(int valueOffset, byte newValue)
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
       if (valueOffset < page_size)
       {
-        *((byte *)pnt_configPage + (byte)valueOffset) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
+        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
       }
       break;
 
@@ -432,6 +432,7 @@ void receiveValue(int valueOffset, byte newValue)
       else if (valueOffset < 192) { valueOffset = valueOffset - 186; trim4Table.axisY[(5 - valueOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
 
       break;
+      
     default:
       break;
   }
@@ -666,11 +667,11 @@ void sendPage(bool useChar)
 
           //Boost table
           for (int x = 0; x < 64; x++) { response[x] = boostTable.values[7 - x / 8][x % 8]; }
-          for (int x = 64; x < 72; x++) { response[x] = byte(boostTable.axisX[(x - 64)] / 100); }
+          for (int x = 64; x < 72; x++) { response[x] = byte(boostTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
           for (int y = 72; y < 80; y++) { response[y] = byte(boostTable.axisY[7 - (y - 72)]); }
           //VVT table
           for (int x = 0; x < 64; x++) { response[x + 80] = vvtTable.values[7 - x / 8][x % 8]; }
-          for (int x = 64; x < 72; x++) { response[x + 80] = byte(vvtTable.axisX[(x - 64)] / 100); }
+          for (int x = 64; x < 72; x++) { response[x + 80] = byte(vvtTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
           for (int y = 72; y < 80; y++) { response[y + 80] = byte(vvtTable.axisY[7 - (y - 72)]); }
           Serial.write((byte *)&response, sizeof(response));
           return;
@@ -678,34 +679,63 @@ void sendPage(bool useChar)
         break;
       }
     case seqFuelPage:
-      {
+      { 
         if(useChar)
         {
           currentTable = trim1Table;
-          currentTitleIndex = 121;
+          for (int y = 0; y < currentTable.ySize; y++)
+          {
+            byte axisY = byte(currentTable.axisY[y]);
+            if (axisY < 100)
+            {
+              Serial.write(" ");
+              if (axisY < 10)
+              {
+                Serial.write(" ");
+              }
+            }
+            Serial.print(axisY);// Vertical Bins
+            Serial.write(" ");
+            for (int x = 0; x < currentTable.xSize; x++)
+            {
+              byte value = currentTable.values[y][x];
+              if (value < 100)
+              {
+                Serial.write(" ");
+                if (value < 10)
+                {
+                  Serial.write(" ");
+                }
+              }
+              Serial.print(value);
+              Serial.write(" ");
+            }
+            Serial.println("");
+          }
+            return;
           //Do.... Something?
         }
         else
         {
           //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format        
           byte response[192]; //Bit hacky, but the size is: (6x6 + 6 + 6) * 4 = 192
-
+          
           //trim1 table
           for (int x = 0; x < 36; x++) { response[x] = trim1Table.values[5 - x / 6][x % 6]; }
           for (int x = 36; x < 42; x++) { response[x] = byte(trim1Table.axisX[(x - 36)] / 100); }
           for (int y = 42; y < 48; y++) { response[y] = byte(trim1Table.axisY[5 - (y - 42)]); }
           //trim2 table
-          for (int x = 48; x < 84; x++) { response[x] = trim2Table.values[5 - x / 6][x % 6]; }
-          for (int x = 84; x < 90; x++) { response[x] = byte(trim2Table.axisX[(x - 84)] / 100); }
-          for (int y = 90; y < 96; y++) { response[y] = byte(trim2Table.axisY[5 - (y - 90)]); }
+          for (int x = 0; x < 36; x++) { response[x + 48] = trim2Table.values[5 - x / 6][x % 6]; }
+          for (int x = 36; x < 42; x++) { response[x + 48] = byte(trim2Table.axisX[(x - 36)] / 100); }
+          for (int y = 42; y < 48; y++) { response[y + 48] = byte(trim2Table.axisY[5 - (y - 42)]); }
           //trim3 table
-          for (int x = 96; x < 132; x++) { response[x] = trim3Table.values[5 - x / 6][x % 6]; }
-          for (int x = 132; x < 138; x++) { response[x] = byte(trim3Table.axisX[(x - 132)] / 100); }
-          for (int y = 138; y < 144; y++) { response[y] = byte(trim3Table.axisY[5 - (y - 138)]); }
+          for (int x = 0; x < 36; x++) { response[x + 96] = trim3Table.values[5 - x / 6][x % 6]; }
+          for (int x = 36; x < 42; x++) { response[x + 96] = byte(trim3Table.axisX[(x - 36)] / 100); }
+          for (int y = 42; y < 48; y++) { response[y + 96] = byte(trim3Table.axisY[5 - (y - 42)]); }
           //trim4 table
-          for (int x = 144; x < 180; x++) { response[x] = trim4Table.values[5 - x / 6][x % 6]; }
-          for (int x = 180; x < 186; x++) { response[x] = byte(trim4Table.axisX[(x - 180)] / 100); }
-          for (int y = 186; y < 192; y++) { response[y] = byte(trim4Table.axisY[5 - (y - 186)]); }
+          for (int x = 0; x < 36; x++) { response[x + 144] = trim4Table.values[5 - x / 6][x % 6]; }
+          for (int x = 36; x < 42; x++) { response[x + 144] = byte(trim4Table.axisX[(x - 36)] / 100); }
+          for (int y = 42; y < 48; y++) { response[y + 144] = byte(trim4Table.axisY[5 - (y - 42)]); }
           Serial.write((byte *)&response, sizeof(response));
           return;
         }
@@ -791,12 +821,12 @@ void sendPage(bool useChar)
       //MS format has origin (0,0) in the bottom left corner, we use the top left for efficiency reasons
       byte response[map_page_size];
 
-      for (int x = 0; x < 256; x++) { response[x] = currentTable.values[15 - x / 16][x % 16]; if ( (x & 15) == 1) { loop(); } } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
-      loop();
-      for (int x = 256; x < 272; x++) { response[x] = byte(currentTable.axisX[(x - 256)] / 100); }  //RPM Bins for VE table (Need to be dvidied by 100)
-      loop();
+      for (int x = 0; x < 256; x++) { response[x] = currentTable.values[15 - x / 16][x % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
+      //loop();
+      for (int x = 256; x < 272; x++) { response[x] = byte(currentTable.axisX[(x - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
+      //loop();
       for (int y = 272; y < 288; y++) { response[y] = byte(currentTable.axisY[15 - (y - 272)]); } //MAP or TPS bins for VE table
-      loop();
+      //loop();
       Serial.write((byte *)&response, sizeof(response));
     }
   }
@@ -819,8 +849,9 @@ void sendPage(bool useChar)
     for (byte x = 0; x < page_size; x++)
     {
       response[x] = *((byte *)pnt_configPage + x); //Each byte is simply the location in memory of the configPage + the offset + the variable number (x)
-      if ( (x & 31) == 1) { loop(); } //Every 32 loops, do a manual call to loop() to ensure that there is no misses
+      //if ( (x & 31) == 1) { loop(); } //Every 32 loops, do a manual call to loop() to ensure that there is no misses
     }
+    
     Serial.write((byte *)&response, sizeof(response));
     // }
   }
