@@ -210,18 +210,18 @@ void setup()
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
   else { coilHIGH = HIGH, coilLOW = LOW; }
-  digitalWrite(pinCoil1, coilLOW);
-  digitalWrite(pinCoil2, coilLOW);
-  digitalWrite(pinCoil3, coilLOW);
-  digitalWrite(pinCoil4, coilLOW);
-  digitalWrite(pinCoil5, coilLOW);
+  endCoil1Charge();
+  endCoil2Charge();
+  endCoil3Charge();
+  endCoil4Charge();
+  endCoil5Charge();
   
   //Similar for injectors, make sure they're turned off
-  digitalWrite(pinInjector1, LOW);
-  digitalWrite(pinInjector2, LOW);
-  digitalWrite(pinInjector3, LOW);
-  digitalWrite(pinInjector4, LOW);
-  digitalWrite(pinInjector5, LOW);
+  closeInjector1();
+  closeInjector2();
+  closeInjector3();
+  closeInjector4();
+  closeInjector5();
   
   //Set the tacho output default state
   digitalWrite(pinTachOut, HIGH);
