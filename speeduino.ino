@@ -485,15 +485,24 @@ void setup()
   currentLoopTime = micros();
 
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-  //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS)
-  //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
-  //Please see chapter 11 of 'Practical Arduino' (http://books.google.com.au/books?id=HsTxON1L6D4C&printsec=frontcover#v=onepage&q&f=false) for more details
-  //Can be disabled by removing the #include "fastAnalog.h" above
-  #ifdef sbi
-    sbi(ADCSRA,ADPS2);
-    cbi(ADCSRA,ADPS1);
-    cbi(ADCSRA,ADPS0);
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+  #if defined(ANALOG_ISR) //ADC interrupt routine
+    //This sets the ADC (Analog to Digitial Converter) to run at 250KHz, greatly reducing analog read times (MAP/TPS)
+    //the code on ISR run each conversion every 25 ADC clock, conversion run about 100KHz effectively
+    //making a 6250 conversions/s on 16 channels and 12500 on 8 channels devices.
+    ADCSRB = 0x00; //ADC Auto Trigger Source is in Free Running mode
+    ADMUX = 0x40;  //Select AREF as reference, ADC Left Adjust Result, Starting at channel 0
+    ADCSRA = 0xEE; // ADC Interrupt Flag enabled and prescaler selected to 250KHz
+  #else
+    //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS)
+    //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
+    //Please see chapter 11 of 'Practical Arduino' (http://books.google.com.au/books?id=HsTxON1L6D4C&printsec=frontcover#v=onepage&q&f=false) for more details
+    //Can be disabled by removing the #include "fastAnalog.h" above
+    #ifdef sbi
+      sbi(ADCSRA,ADPS2);
+      cbi(ADCSRA,ADPS1);
+      cbi(ADCSRA,ADPS0);
+    #endif
   #endif
 #endif
 
@@ -1449,6 +1458,37 @@ void loop()
   
 //************************************************************************************************
 //Interrupts  
+
+#if defined(ANALOG_H)
+//Analog ISR interrupt routine
+ISR(ADC_vect)
+{
+  byte nChannel;
+  int result = ADCL | (ADCH << 8);
+  
+  ADCSRA = 0x6E;  // ADC Auto Trigger disabled by clearing bit 7(ADEN)
+  nChannel = ADMUX & 0x07;
+  #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+    if(ADCSRB & 0x08) { nChannel+=8; }  //8 to 15
+    if(nChannel==15)
+    {
+      ADMUX = 0x40; //channel 0
+      ADCSRB = 0x00; //clear MUX5 bit
+    }
+    else if (nChannel==7) //channel 7
+    { 
+      ADMUX = 0x40;
+      ADCSRB = 0x08; //Set MUX5 bit
+    }
+  #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__)
+    if (nChannel==7) { ADMUX = 0x40; }
+  #endif
+    else { ADMUX++; }
+  AnChannel[nChannel] = result;
+  
+  ADCSRA = 0xEE; // ADC Interrupt Flag enabled
+}
+#endif
 
 //These functions simply trigger the injector/coil driver off or on. 
 //NOTE: squirt status is changed as per http://www.msextra.com/doc/ms1extra/COM_RS232.htm#Acmd
