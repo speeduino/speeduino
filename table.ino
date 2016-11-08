@@ -315,6 +315,7 @@ int get3DTableValue(struct table3D *fromTable, int Y, int X)
     else
     //If it's not caught by one of the above scenarios, give up and just run the loop
     {
+      
       for (byte y = fromTable->ySize-1; y >= 0; y--)
       {
         //Checks the case where the Y value is exactly what was requested
@@ -355,6 +356,9 @@ int get3DTableValue(struct table3D *fromTable, int Y, int X)
     int B = fromTable->values[yMin][xMax];
     int C = fromTable->values[yMax][xMin];
     int D = fromTable->values[yMax][xMax];
+
+    //Check that all values aren't just the same (This regularly happens with things like the fuel trim maps)
+    if(A == B && A == C && A == D) { return A; }
    
     //Create some normalised position values
     //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
