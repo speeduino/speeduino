@@ -45,6 +45,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
   //Increment Loop Counters
   loop250ms++;
   loopSec++;
+
   
   //Overdwell check
   targetOverdwellTime = micros() - (1000 * configPage2.dwellLimit); //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long

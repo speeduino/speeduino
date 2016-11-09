@@ -328,6 +328,7 @@ void setup()
       
       if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+      attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, RISING);
       break;
       
     case 1:
@@ -1065,6 +1066,7 @@ void loop()
       int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
       injector1StartAngle = configPage1.inj1Ang - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       if(injector1StartAngle < 0) {injector1StartAngle += CRANK_ANGLE_MAX_INJ;} 
+      
       //Repeat the above for each cylinder
       switch (configPage1.nCylinders)
       {
@@ -1247,7 +1249,7 @@ void loop()
         /*-----------------------------------------------------------------------------------------
         | A Note on tempCrankAngle and tempStartAngle:
         |   The use of tempCrankAngle/tempStartAngle is described below. It is then used in the same way for channels 2, 3 and 4 on both injectors and ignition
-        |   Essentially, these 2 variables are used to realign the current crank and and the desired start angle around 0 degrees for the given cylinder/output
+        |   Essentially, these 2 variables are used to realign the current crank angle and the desired start angle around 0 degrees for the given cylinder/output
         |   Eg: If cylinder 2 TDC is 180 degrees after cylinder 1 (Eg a standard 4 cylidner engine), then tempCrankAngle is 180* less than the current crank angle and
         |       tempStartAngle is the desired open time less 180*. Thus the cylinder is being treated relative to its own TDC, regardless of its offset
         |
@@ -1341,7 +1343,7 @@ void loop()
       if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
 
       //fixedCrankingOverride is used to extend the dwell during cranking so that the decoder can trigger the spark upon seeing a certain tooth. Currently only available on the basic distributor and 4g63 decoders. 
-      if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) { fixedCrankingOverride = currentStatus.dwell; }
+      if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) { fixedCrankingOverride = currentStatus.dwell * 2; }
       else { fixedCrankingOverride = 0; }
 
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
