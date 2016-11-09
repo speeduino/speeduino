@@ -91,7 +91,7 @@ void triggerSetup_missingTooth()
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   secondDerivEnabled = false;
   decoderIsSequential = false;
-  checkSyncToothCount = (configPage2.triggerTeeth * 3) >> 1; //50% of the total teeth. 
+  checkSyncToothCount = (configPage2.triggerTeeth) >> 1; //50% of the total teeth. 
   MAX_STALL_TIME = (3333UL * triggerToothAngle * (configPage2.triggerMissingTeeth + 1)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 }
 
@@ -107,7 +107,7 @@ void triggerPri_missingTooth()
    
    addToothLogEntry(curGap);
 
-   if(toothCurrentCount > checkSyncToothCount || !currentStatus.hasSync)
+   //if(toothCurrentCount > checkSyncToothCount || !currentStatus.hasSync)
    {
      //Begin the missing tooth detection
      //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
@@ -138,7 +138,8 @@ void triggerPri_missingTooth()
 
 void triggerSec_missingTooth()
 { 
-  if(!currentStatus.hasSync) { revolutionOne = 0; }  //Sequential revolution reset
+  //TODO: This should really have filtering enabled on the secondary input.
+  revolutionOne = 1;
 }
 
 int getRPM_missingTooth()
@@ -151,10 +152,12 @@ int getCrankAngle_missingTooth(int timePerDegree)
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
     int tempToothCurrentCount;
+    bool tempRevolutionOne;
     //Grab some variables that are used in the trigger code and assign them to temp variables. 
     noInterrupts();
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
+    tempRevolutionOne = revolutionOne;
     interrupts();
     
     int crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
@@ -164,7 +167,7 @@ int getCrankAngle_missingTooth(int timePerDegree)
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
 
     //Sequential check (simply sets whether we're on the first or 2nd revoltuion of the cycle)
-    if (revolutionOne) { crankAngle += 360; }
+    if (tempRevolutionOne) { crankAngle += 360; }
 
     if (crankAngle >= 720) { crankAngle -= 720; } 
     else if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
@@ -234,7 +237,7 @@ void triggerSec_DualWheel()
     currentStatus.hasSync = true;
   }
 
-  if(!currentStatus.hasSync) { revolutionOne = 0; }  //Sequential revolution reset
+  revolutionOne = 1; //Sequential revolution reset
 } 
 
 int getRPM_DualWheel()
@@ -249,10 +252,12 @@ int getCrankAngle_DualWheel(int timePerDegree)
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
     int tempToothCurrentCount;
+    bool tempRevolutionOne;
     //Grab some variables that are used in the trigger code and assign them to temp variables. 
     noInterrupts();
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
+    tempRevolutionOne = revolutionOne;
     interrupts();
     
     //Handle case where the secondary tooth was the last one seen
@@ -265,7 +270,7 @@ int getCrankAngle_DualWheel(int timePerDegree)
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
 
     //Sequential check (simply sets whether we're on the first or 2nd revoltuion of the cycle)
-    if (revolutionOne) { crankAngle += 360; }
+    if (tempRevolutionOne) { crankAngle += 360; }
     
     if (crankAngle >= 720) { crankAngle -= 720; } 
     if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
