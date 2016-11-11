@@ -52,6 +52,7 @@ void setPinMapping(byte boardID)
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
       pinFlex = 19; // Flex sensor (Must be external interrupt enabled)
+      MaxAnChannel = A4; //Number of last analog pin channel used
       break;
     case 1:
       //Pin mappings as per the v0.2 shield
@@ -82,6 +83,7 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      MaxAnChannel = A8; //Number of last analog pin channel used
       break;
     case 2:
       //Pin mappings as per the v0.3 shield
@@ -113,6 +115,7 @@ void setPinMapping(byte boardID)
       pinFan = A13; //Pin for the fan output
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      MaxAnChannel = A8; //Number of last analog pin channel used
       break;
 
     case 3:
@@ -145,6 +148,7 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      MaxAnChannel = A8; //Number of last analog pin channel used
       break;
 
     case 9:
@@ -177,6 +181,7 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      MaxAnChannel = A5; //Number of last analog pin channel used
       break;
 
     case 10:
@@ -211,6 +216,7 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinTachOut = 49; //Tacho output pin
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      MaxAnChannel = A8; //Number of last analog pin channel used
       break;
 
     case 20:
@@ -244,6 +250,7 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
+      MaxAnChannel = A8; //Number of last analog pin channel used
 
     case 30:
       //Pin mappings as per the dazv6 shield
@@ -280,6 +287,7 @@ void setPinMapping(byte boardID)
       pinSpareLOut4 = 51;
       pinSpareLOut5 = 53;
       pinFan = 47; //Pin for the fan output
+      MaxAnChannel = A9; //Number of last analog pin channel used
       break; 
       
     default:
@@ -306,9 +314,11 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
+      MaxAnChannel = A8; //Number of last analog pin channel used
       break;
   }
-  
+  MaxAnChannel -= A0; //Number of last analog channel(0-15) used
+
   //Setup any devices that are using selectable pins
   if(configPage3.launchPin != 0) { pinLaunch = configPage3.launchPin; }
   if(configPage2.ignBypassPin != 0) { pinIgnBypass = configPage2.ignBypassPin; }

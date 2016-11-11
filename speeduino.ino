@@ -97,6 +97,7 @@ byte cltErrorCount = 0;
 unsigned long counter;
 unsigned long currentLoopTime; //The time the current loop started (uS)
 unsigned long previousLoopTime; //The time the previous loop started (uS)
+unsigned long OverdwellTime; //Time to limit dwell (uS)
 
 unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
@@ -160,6 +161,7 @@ void setup()
   if (configPage1.canEnable) { Serial3.begin(115200); }
 #endif
     
+
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
   //dummyIgnitionTable(&ignitionTable);
@@ -483,16 +485,19 @@ void setup()
   //Initial values for loop times
   previousLoopTime = 0;
   currentLoopTime = micros();
-
-
+  
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
   #if defined(ANALOG_ISR) //ADC interrupt routine
     //This sets the ADC (Analog to Digitial Converter) to run at 250KHz, greatly reducing analog read times (MAP/TPS)
     //the code on ISR run each conversion every 25 ADC clock, conversion run about 100KHz effectively
-    //making a 6250 conversions/s on 16 channels and 12500 on 8 channels devices.
+    //making a 6250 conversions/s on 16 channels and 12500 on 8 channels devices on FREE_RUNNING mode
     ADCSRB = 0x00; //ADC Auto Trigger Source is in Free Running mode
     ADMUX = 0x40;  //Select AREF as reference, ADC Left Adjust Result, Starting at channel 0
-    ADCSRA = 0xEE; // ADC Interrupt Flag enabled and prescaler selected to 250KHz
+    #if defined(FREE_RUNNING)
+      ADCSRA = 0xEE; // ADC Interrupt Flag enabled and prescaler selected to 250KHz
+    #else
+      ADCSRA = 0x6E; // ADC Interrupt Flag enabled and prescaler selected to 250KHz
+    #endif
   #else
     //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS)
     //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
@@ -506,7 +511,6 @@ void setup()
   #endif
 #endif
 
-  
   mainLoopCount = 0;
   ignitionCount = 0;
   
@@ -844,6 +848,7 @@ void loop()
     
     previousLoopTime = currentLoopTime;
     currentLoopTime = micros();
+    OverdwellTime = (1000 * configPage2.dwellLimit);
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {

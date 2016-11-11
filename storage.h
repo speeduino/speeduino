@@ -33,6 +33,7 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 | 1129  |64   | Boost Map (8x8)                     |
 | 1193  |8    | Boost Table RPM bins                |
 | 1201  |8    | Bost Table TPS bins                 |
+| 2558  |1    | Last good BARO measurement          |
 | 2559  |512  | Calibration data (O2)               |
 | 3071  |512  | Calibration data (IAT)              |
 | 3583  |512  | Calibration data (CLT)              |

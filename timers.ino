@@ -47,13 +47,20 @@ void oneMSInterval() //Most ARM chips can simply call a function
   loopSec++;
   
   //Overdwell check
-  targetOverdwellTime = micros() - (1000 * configPage2.dwellLimit); //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
+  targetOverdwellTime = micros() - OverdwellTime; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
   targetTachoPulseTime = micros() - (1500);
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
-  if(ignitionSchedule1.Status == RUNNING) { if(ignitionSchedule1.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil1Charge(); } if(ignitionSchedule1.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
-  if(ignitionSchedule2.Status == RUNNING) { if(ignitionSchedule2.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil2Charge(); } if(ignitionSchedule2.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
-  if(ignitionSchedule3.Status == RUNNING) { if(ignitionSchedule3.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil3Charge(); } if(ignitionSchedule3.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
-  if(ignitionSchedule4.Status == RUNNING) { if(ignitionSchedule4.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil4Charge(); } if(ignitionSchedule4.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }  
+  if(ignitionSchedule1.Status == RUNNING) { if((ignitionSchedule1.startTime < targetOverdwellTime) && configPage2.useDwellLim) { endCoil1Charge(); } if(ignitionSchedule1.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
+  if(ignitionSchedule2.Status == RUNNING) { if((ignitionSchedule2.startTime < targetOverdwellTime) && configPage2.useDwellLim) { endCoil2Charge(); } if(ignitionSchedule2.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
+  if(ignitionSchedule3.Status == RUNNING) { if((ignitionSchedule3.startTime < targetOverdwellTime) && configPage2.useDwellLim) { endCoil3Charge(); } if(ignitionSchedule3.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
+  if(ignitionSchedule4.Status == RUNNING) { if((ignitionSchedule4.startTime < targetOverdwellTime) && configPage2.useDwellLim) { endCoil4Charge(); } if(ignitionSchedule4.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }  
+
+  #if defined(ANALOG_ISR)
+    //Enable one analog conversion everey ms, it take only 10us to convert
+    #ifndef FREE_RUNNING //see sensor.h
+      ADCSRA = 0xEE;  // ADC conversion and interrupt enabled by setting bit 7(ADEN)
+    #endif
+  #endif  
   
   //Loop executed every 250ms loop (1ms x 250 = 250ms)
   //Anything inside this if statement will run every 250ms.
