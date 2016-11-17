@@ -1,6 +1,14 @@
 Speeduino
 =========
 
+|Branch       |Status   |
+|-------------|---------|
+|master       | [![coverity][coverBadge]][coverlink] |
+
+[coverBadge]: https://scan.coverity.com/projects/10750/badge.svg "Static code analysis of Master branch"
+[coverlink]: https://scan.coverity.com/projects/speeduino
+
+
 FAQ:
 =========
 
