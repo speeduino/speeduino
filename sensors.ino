@@ -7,9 +7,12 @@ A full copy of the license may be found in the projects root directory
 void instanteneousMAPReading()
 {
   //Instantaneous MAP readings
-  tempReading = analogRead(pinMAP);
-  tempReading = analogRead(pinMAP);
-
+  #if defined(ANALOG_ISR) 
+    tempReading = AnChannel[pinMAP-A0];
+  #else
+    tempReading = analogRead(pinMAP);
+    tempReading = analogRead(pinMAP);
+  #endif  
   //Error checking
   if(tempReading >= VALID_MAP_MAX || tempReading <= VALID_MAP_MIN) { mapErrorCount += 1; }
   else { currentStatus.mapADC = tempReading; mapErrorCount = 0; }
@@ -34,8 +37,12 @@ void readMAP()
        
       if( (MAPcurRev == startRevolutions) || (MAPcurRev == startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for. 
       {
-        tempReading = analogRead(pinMAP);
-        tempReading = analogRead(pinMAP);
+        #if defined(ANALOG_ISR) 
+          tempReading = AnChannel[pinMAP-A0];
+        #else
+          tempReading = analogRead(pinMAP);
+          tempReading = analogRead(pinMAP);
+        #endif
         
         //Error check
         if(tempReading < VALID_MAP_MAX && tempReading > VALID_MAP_MIN)
@@ -62,8 +69,12 @@ void readMAP()
         
       if( (MAPcurRev == startRevolutions) || (MAPcurRev == startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for. 
       {
-        tempReading = analogRead(pinMAP);
-        tempReading = analogRead(pinMAP);
+        #if defined(ANALOG_ISR) 
+          tempReading = AnChannel[pinMAP-A0];
+        #else
+          tempReading = analogRead(pinMAP);
+          tempReading = analogRead(pinMAP);
+        #endif
         //Error check
         if(tempReading < VALID_MAP_MAX && tempReading > VALID_MAP_MIN)
         {
@@ -87,8 +98,12 @@ void readTPS()
 {
   currentStatus.TPSlast = currentStatus.TPS;
   currentStatus.TPSlast_time = currentStatus.TPS_time;
-  analogRead(pinTPS);
-  byte tempTPS = fastMap1023toX(analogRead(pinTPS), 255); //Get the current raw TPS ADC value and map it into a byte
+  #if defined(ANALOG_ISR) 
+    byte tempTPS = fastMap1023toX(AnChannel[pinTPS-A0], 255); //Get the current raw TPS ADC value and map it into a byte
+  #else
+    analogRead(pinTPS);
+    byte tempTPS = fastMap1023toX(analogRead(pinTPS), 255); //Get the current raw TPS ADC value and map it into a byte
+  #endif
   currentStatus.tpsADC = ADC_FILTER(tempTPS, ADCFILTER_TPS, currentStatus.tpsADC);
   //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range). 
   byte tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
@@ -100,24 +115,36 @@ void readTPS()
 
 void readCLT()
 {
-  tempReading = analogRead(pinCLT);
-  tempReading = fastMap1023toX(analogRead(pinCLT), 511); //Get the current raw CLT value
+  #if defined(ANALOG_ISR) 
+    tempReading = fastMap1023toX(AnChannel[pinCLT-A0], 511); //Get the current raw CLT value
+  #else
+    tempReading = analogRead(pinCLT);
+    tempReading = fastMap1023toX(analogRead(pinCLT), 511); //Get the current raw CLT value
+  #endif
   currentStatus.cltADC = ADC_FILTER(tempReading, ADCFILTER_CLT, currentStatus.cltADC);
   currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 }
 
 void readIAT()
 {
-  tempReading = analogRead(pinIAT);
-  tempReading = fastMap1023toX(analogRead(pinIAT), 511); //Get the current raw IAT value
+  #if defined(ANALOG_ISR) 
+    tempReading = fastMap1023toX(AnChannel[pinIAT-A0], 511); //Get the current raw IAT value
+  #else
+    tempReading = analogRead(pinIAT);
+    tempReading = fastMap1023toX(analogRead(pinIAT), 511); //Get the current raw IAT value
+  #endif
   currentStatus.iatADC = ADC_FILTER(tempReading, ADCFILTER_IAT, currentStatus.iatADC);
   currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
 }
 
 void readO2()
 {
-  tempReading = analogRead(pinO2);
-  tempReading = fastMap1023toX(analogRead(pinO2), 511); //Get the current O2 value. 
+  #if defined(ANALOG_ISR) 
+    tempReading = fastMap1023toX(AnChannel[pinO2-A0], 511); //Get the current O2 value. 
+  #else
+    tempReading = analogRead(pinO2);
+    tempReading = fastMap1023toX(analogRead(pinO2), 511); //Get the current O2 value. 
+  #endif
   currentStatus.O2ADC = ADC_FILTER(tempReading, ADCFILTER_O2, currentStatus.O2ADC);
   currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
 }
@@ -130,8 +157,12 @@ void readO2()
 
 void readBat()
 {
-  tempReading = analogRead(pinBat);
-  tempReading = fastMap1023toX(analogRead(pinBat), 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
+  #if defined(ANALOG_ISR) 
+    tempReading = fastMap1023toX(AnChannel[pinBat-A0], 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
+  #else
+    tempReading = analogRead(pinBat);
+    tempReading = fastMap1023toX(analogRead(pinBat), 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
+  #endif
   currentStatus.battery10 = ADC_FILTER(tempReading, ADCFILTER_BAT, currentStatus.battery10);
 }
 
