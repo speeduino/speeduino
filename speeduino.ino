@@ -35,7 +35,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "decoders.h"
 #include "idle.h"
 #include "auxiliaries.h"
-#include "fastAnalog.h"
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
 //#include "src/DigitalWriteFast/digitalWriteFast.h"
@@ -254,6 +253,7 @@ void setup()
   initialiseFan();
   initialiseAuxPWM();
   initialiseCorrections();
+  initialiseADC();
 
   //Check whether the flex sensor is enabled and if so, attach an interupt for it
   if(configPage1.flexEnabled)
@@ -484,29 +484,6 @@ void setup()
   //Initial values for loop times
   previousLoopTime = 0;
   currentLoopTime = micros();
-
-
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-  #if defined(ANALOG_ISR) //ADC interrupt routine
-    //This sets the ADC (Analog to Digitial Converter) to run at 250KHz, greatly reducing analog read times (MAP/TPS)
-    //the code on ISR run each conversion every 25 ADC clock, conversion run about 100KHz effectively
-    //making a 6250 conversions/s on 16 channels and 12500 on 8 channels devices.
-    ADCSRB = 0x00; //ADC Auto Trigger Source is in Free Running mode
-    ADMUX = 0x40;  //Select AREF as reference, ADC Left Adjust Result, Starting at channel 0
-    ADCSRA = 0xEE; // ADC Interrupt Flag enabled and prescaler selected to 250KHz
-  #else
-    //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS)
-    //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
-    //Please see chapter 11 of 'Practical Arduino' (http://books.google.com.au/books?id=HsTxON1L6D4C&printsec=frontcover#v=onepage&q&f=false) for more details
-    //Can be disabled by removing the #include "fastAnalog.h" above
-    #ifdef sbi
-      sbi(ADCSRA,ADPS2);
-      cbi(ADCSRA,ADPS1);
-      cbi(ADCSRA,ADPS0);
-    #endif
-  #endif
-#endif
-
   
   mainLoopCount = 0;
   ignitionCount = 0;

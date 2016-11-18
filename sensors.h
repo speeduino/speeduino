@@ -12,16 +12,10 @@
 #define BARO_MIN      87
 #define BARO_MAX      108
 
-volatile byte flexCounter = 0;
+#define ANALOG_ISR
 
-#define ANALOG_ISR  //Comment this line to disable the ADC interrupt routine
-#if defined(ANALOG_ISR)
-  #if defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__)
-    int AnChannel[7];
-  #else
-    int AnChannel[15];
-  #endif
-#endif
+volatile byte flexCounter = 0;
+volatile int AnChannel[15];
 
 /*
  * Simple low pass IIR filter macro for the analog inputs
@@ -42,8 +36,10 @@ ISR(ADC_vect)
 {
   byte nChannel;
   int result = ADCL | (ADCH << 8);
+
+  //ADCSRA = 0x6E;  // ADC disabled by clearing bit 7(ADEN)
+  //BIT_CLEAR(ADCSRA, ADIE);
   
-  ADCSRA = 0x6E;  // ADC disabled by clearing bit 7(ADEN)
   nChannel = ADMUX & 0x07;
   #if defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__)
     if (nChannel==7) { ADMUX = 0x40; }
@@ -61,9 +57,10 @@ ISR(ADC_vect)
     }
   #endif
     else { ADMUX++; }
-  AnChannel[nChannel] = result;
-  
-  ADCSRA = 0xEE; // ADC Interrupt Flag enabled
+  AnChannel[nChannel-1] = result;
+
+  //BIT_SET(ADCSRA, ADIE);
+  //ADCSRA = 0xEE; // ADC Interrupt Flag enabled
 }
 #endif
 
