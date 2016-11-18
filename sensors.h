@@ -44,13 +44,13 @@ ISR(ADC_vect)
   #if defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__)
     if (nChannel==7) { ADMUX = 0x40; }
   #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-    if(ADCSRB & 0x08) { nChannel+=8; }  //8 to 15
-    if(nChannel==15)
+    if(ADCSRB & 0x08) { nChannel += 8; }  //8 to 15
+    if(nChannel == 15)
     {
       ADMUX = 0x40; //channel 0
       ADCSRB = 0x00; //clear MUX5 bit
     }
-    else if (nChannel==7) //channel 7
+    else if (nChannel == 7) //channel 7
     { 
       ADMUX = 0x40;
       ADCSRB = 0x08; //Set MUX5 bit

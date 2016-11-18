@@ -15,7 +15,6 @@ void initialiseADC()
     noInterrupts(); //Interrupts should be turned off when playing with any of these registers
     
     ADCSRB = 0x00; //ADC Auto Trigger Source is in Free Running mode
-    //ADCSRB &= B11111000;
     ADMUX = 0x40;  //Select AREF as reference, ADC Left Adjust Result, Starting at channel 0
 
     //All of the below is the longhand version of: ADCSRA = 0xEE;
@@ -24,7 +23,7 @@ void initialiseADC()
     BIT_SET(ADCSRA,ADIE); //Set ADC interrupt enabled
     BIT_CLEAR(ADCSRA,ADIF); //Clear interrupt flag
 
-    // Set ADC clock to 250KHz (Prescaler = 64)
+    // Set ADC clock to 125KHz (Prescaler = 128)
     BIT_SET(ADCSRA,ADPS2);
     BIT_SET(ADCSRA,ADPS1);
     BIT_SET(ADCSRA,ADPS0);
@@ -35,10 +34,9 @@ void initialiseADC()
     BIT_SET(ADCSRA,ADSC); //Start conversion
     
   #else
-    //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS)
+    //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS) when using the standard analogRead() function
     //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
-    //Please see chapter 11 of 'Practical Arduino' (http://books.google.com.au/books?id=HsTxON1L6D4C&printsec=frontcover#v=onepage&q&f=false) for more details
-    //Can be disabled by removing the #include "fastAnalog.h" above
+    //Please see chapter 11 of 'Practical Arduino' (http://books.google.com.au/books?id=HsTxON1L6D4C&printsec=frontcover#v=onepage&q&f=false) for more detail
      BIT_SET(ADCSRA,ADPS2);
      BIT_CLEAR(ADCSRA,ADPS1);
      BIT_CLEAR(ADCSRA,ADPS0);
