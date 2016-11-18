@@ -267,8 +267,10 @@ struct config2 {
   byte IgInv : 1;
   byte oddfire : 1;
   byte TrigPattern : 4;
+
+  byte TrigEdgeSec : 1;
+  byte unused4_6b : 7;
   
-  byte unused4_6;
   byte unused4_7;
   byte IdleAdvRPM;
   byte IdleAdvCLT; //The temperature below which the idle is advanced

@@ -328,7 +328,8 @@ void setup()
       
       if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-      attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, RISING);
+      if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, RISING); }
+      else { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, FALLING); }
       break;
       
     case 1:
@@ -350,7 +351,8 @@ void setup()
       
       if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-      attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, RISING);
+      if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, RISING); }
+      else { attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, FALLING); }
       break;
       
     case 3:
