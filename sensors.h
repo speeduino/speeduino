@@ -12,7 +12,10 @@
 #define BARO_MIN      87
 #define BARO_MAX      108
 
+#define ANALOG_ISR
+
 volatile byte flexCounter = 0;
+volatile int AnChannel[15];
 
 /*
  * Simple low pass IIR filter macro for the analog inputs
@@ -26,5 +29,39 @@ void readMAP();
 void flexPulse();
 
 unsigned int tempReading;
+
+#if defined(ANALOG_ISR)
+//Analog ISR interrupt routine
+ISR(ADC_vect)
+{
+  byte nChannel;
+  int result = ADCL | (ADCH << 8);
+
+  //ADCSRA = 0x6E;  // ADC disabled by clearing bit 7(ADEN)
+  //BIT_CLEAR(ADCSRA, ADIE);
+  
+  nChannel = ADMUX & 0x07;
+  #if defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__)
+    if (nChannel==7) { ADMUX = 0x40; }
+  #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+    if(ADCSRB & 0x08) { nChannel += 8; }  //8 to 15
+    if(nChannel == 15)
+    {
+      ADMUX = 0x40; //channel 0
+      ADCSRB = 0x00; //clear MUX5 bit
+    }
+    else if (nChannel == 7) //channel 7
+    { 
+      ADMUX = 0x40;
+      ADCSRB = 0x08; //Set MUX5 bit
+    }
+  #endif
+    else { ADMUX++; }
+  AnChannel[nChannel-1] = result;
+
+  //BIT_SET(ADCSRA, ADIE);
+  //ADCSRA = 0xEE; // ADC Interrupt Flag enabled
+}
+#endif
 
 #endif // SENSORS_H

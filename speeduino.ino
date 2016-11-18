@@ -35,7 +35,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "decoders.h"
 #include "idle.h"
 #include "auxiliaries.h"
-#include "fastAnalog.h"
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
 //#include "src/DigitalWriteFast/digitalWriteFast.h"
@@ -210,18 +209,18 @@ void setup()
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
   else { coilHIGH = HIGH, coilLOW = LOW; }
-  digitalWrite(pinCoil1, coilLOW);
-  digitalWrite(pinCoil2, coilLOW);
-  digitalWrite(pinCoil3, coilLOW);
-  digitalWrite(pinCoil4, coilLOW);
-  digitalWrite(pinCoil5, coilLOW);
+  endCoil1Charge();
+  endCoil2Charge();
+  endCoil3Charge();
+  endCoil4Charge();
+  endCoil5Charge();
   
   //Similar for injectors, make sure they're turned off
-  digitalWrite(pinInjector1, LOW);
-  digitalWrite(pinInjector2, LOW);
-  digitalWrite(pinInjector3, LOW);
-  digitalWrite(pinInjector4, LOW);
-  digitalWrite(pinInjector5, LOW);
+  closeInjector1();
+  closeInjector2();
+  closeInjector3();
+  closeInjector4();
+  closeInjector5();
   
   //Set the tacho output default state
   digitalWrite(pinTachOut, HIGH);
@@ -254,6 +253,7 @@ void setup()
   initialiseFan();
   initialiseAuxPWM();
   initialiseCorrections();
+  initialiseADC();
 
   //Check whether the flex sensor is enabled and if so, attach an interupt for it
   if(configPage1.flexEnabled)
@@ -484,20 +484,6 @@ void setup()
   //Initial values for loop times
   previousLoopTime = 0;
   currentLoopTime = micros();
-
-
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-  //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS)
-  //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
-  //Please see chapter 11 of 'Practical Arduino' (http://books.google.com.au/books?id=HsTxON1L6D4C&printsec=frontcover#v=onepage&q&f=false) for more details
-  //Can be disabled by removing the #include "fastAnalog.h" above
-  #ifdef sbi
-    sbi(ADCSRA,ADPS2);
-    cbi(ADCSRA,ADPS1);
-    cbi(ADCSRA,ADPS0);
-  #endif
-#endif
-
   
   mainLoopCount = 0;
   ignitionCount = 0;
@@ -1451,6 +1437,37 @@ void loop()
   
 //************************************************************************************************
 //Interrupts  
+
+#if defined(ANALOG_H)
+//Analog ISR interrupt routine
+ISR(ADC_vect)
+{
+  byte nChannel;
+  int result = ADCL | (ADCH << 8);
+  
+  ADCSRA = 0x6E;  // ADC Auto Trigger disabled by clearing bit 7(ADEN)
+  nChannel = ADMUX & 0x07;
+  #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+    if(ADCSRB & 0x08) { nChannel+=8; }  //8 to 15
+    if(nChannel==15)
+    {
+      ADMUX = 0x40; //channel 0
+      ADCSRB = 0x00; //clear MUX5 bit
+    }
+    else if (nChannel==7) //channel 7
+    { 
+      ADMUX = 0x40;
+      ADCSRB = 0x08; //Set MUX5 bit
+    }
+  #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__)
+    if (nChannel==7) { ADMUX = 0x40; }
+  #endif
+    else { ADMUX++; }
+  AnChannel[nChannel] = result;
+  
+  ADCSRA = 0xEE; // ADC Interrupt Flag enabled
+}
+#endif
 
 //These functions simply trigger the injector/coil driver off or on. 
 //NOTE: squirt status is changed as per http://www.msextra.com/doc/ms1extra/COM_RS232.htm#Acmd
