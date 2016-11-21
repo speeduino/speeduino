@@ -2,30 +2,10 @@
 #define GLOBALS_H
 #include <Arduino.h>
 
-#if defined(__arm__)   
-    #if defined(__MK20DX256__) && defined(CORE_TEENSY)      
-        #define PROCESSOR_TEENSY_3_2  1 //compile for teensy 3.1/2 only
-    #elif defined(__MK64FX512__) && defined(CORE_TEENSY)      
-        #define PROCESSOR_TEENSY_3_5  1 //compile for teensy 3.5 only
-    #endif    
-    #if defined(__MK20DX256__) && defined(CORE_TEENSY) || defined(__MK64FX512__) && defined(CORE_TEENSY)
-        #define PROCESSOR_TEENSY_3_x  1 //compile for both teensy 3.1/2 and 3.5 
-    #elif defined (CORE_TEENSY)
-        #error "Unknown Teensy"
-    #elif defined (__arm__)
-        #error "Unknown ARM chip"    
-    #else
-        #error "Unknown board"
-    #endif
-    
-#elif defined(__AVR__)
-    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-        #define PROCESSOR_MEGA_NO61 1
-    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
-        #define PROCESSOR_MEGA_ALL  1
-    #endif          
-    #endif
-#endif    
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+  #define CORE_AVR
+#endif
+
 //const byte ms_version = 20;
 const byte signature = 20;
 
@@ -98,6 +78,7 @@ const byte packetSize = 35;
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
 #define CALIBRATION_TEMPERATURE_OFFSET 40 // All temperature measurements are stored offset by 40 degrees. This is so we can use an unsigned byte (0-255) to represent temperature ranges from -40 to 215
+#define OFFSET_FUELTRIM 127 //The fuel trim tables are offset by 128 to allow for -128 to +128 values
 
 #define SERIAL_BUFFER_THRESHOLD 32 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
 
@@ -163,12 +144,16 @@ struct statuses {
   byte launchCorrection; //The amount of correction being applied if launch control is active
   byte afrTarget;
   byte idleDuty;
+  bool fanOn; //Whether or not the fan is turned on
   byte flex; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. 
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte squirt;
   volatile byte spark;
   byte engine;
-  unsigned int PW; //In uS
+  unsigned int PW1; //In uS
+  unsigned int PW2; //In uS
+  unsigned int PW3; //In uS
+  unsigned int PW4; //In uS
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
   volatile unsigned int loopsPerSecond;
@@ -246,6 +231,7 @@ struct config1 {
   byte baroCorr : 1;
   byte injLayout : 2;
   byte canEnable : 1; //is can interface enabled
+  byte unused2_38h : 1;
   
   byte primePulse;
   byte dutyLim;
@@ -285,8 +271,10 @@ struct config2 {
   byte IgInv : 1;
   byte oddfire : 1;
   byte TrigPattern : 4;
+
+  byte TrigEdgeSec : 1;
+  byte unused4_6b : 7;
   
-  byte unused4_6;
   byte unused4_7;
   byte IdleAdvRPM;
   byte IdleAdvCLT; //The temperature below which the idle is advanced
@@ -379,8 +367,9 @@ struct config3 {
   byte boostKI;
   byte boostKD;
   
-  byte lnchPullRes :2;
-  byte unused60 : 6;
+  byte lnchPullRes : 2;
+  byte fuelTrimEnabled : 1;
+  byte unused60 : 5;
   byte unused61;
   byte unused62;
   byte unused63;
@@ -423,7 +412,7 @@ byte pinInjector1; //Output pin injector 1
 byte pinInjector2; //Output pin injector 2
 byte pinInjector3; //Output pin injector 3 is on
 byte pinInjector4; //Output pin injector 4 is on
-byte pinInjector5; //Placeholder only - NOT USED
+byte pinInjector5; //Output pin injector 5 NOT USED YET
 byte pinInjector6; //Placeholder only - NOT USED
 byte pinInjector7; //Placeholder only - NOT USED
 byte pinInjector8; //Placeholder only - NOT USED
@@ -431,10 +420,10 @@ byte pinCoil1; //Pin for coil 1
 byte pinCoil2; //Pin for coil 2
 byte pinCoil3; //Pin for coil 3
 byte pinCoil4; //Pin for coil 4
-byte pinCoil5; //Pin for coil 4
-byte pinCoil6; //Pin for coil 4
-byte pinCoil7; //Pin for coil 4
-byte pinCoil8; //Pin for coil 4
+byte pinCoil5; //Pin for coil 5
+byte pinCoil6; //Pin for coil 6
+byte pinCoil7; //Pin for coil 7
+byte pinCoil8; //Pin for coil 8
 byte pinTrigger; //The CAS pin
 byte pinTrigger2; //The Cam Sensor pin
 byte pinTrigger3;	//the 2nd cam sensor pin
@@ -445,7 +434,7 @@ byte pinIAT; //IAT sensor pin
 byte pinCLT; //CLS sensor pin
 byte pinO2; //O2 Sensor pin
 byte pinO2_2; //second O2 pin
-byte pinBat; //O2 Sensor pin
+byte pinBat; //Battery voltage pin
 byte pinDisplayReset; // OLED reset pin
 byte pinTachOut; //Tacho output
 byte pinFuelPump; //Fuel pump on/off

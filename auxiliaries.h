@@ -4,6 +4,7 @@
 void initialiseAuxPWM();
 void boostControl();
 void vvtControl();
+void initialiseFan();
 
 volatile byte *boost_pin_port;
 volatile byte boost_pin_mask;

@@ -9,6 +9,7 @@
 #define afrSetPage   6//Config Page 3
 #define iacPage      7//Config Page 4
 #define boostvvtPage 8
+#define seqFuelPage  9
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 boolean isMap = true;

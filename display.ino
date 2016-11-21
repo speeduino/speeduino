@@ -56,7 +56,7 @@ void updateDisplay()
     case 1:
       display.print("PW: ");
       display.setCursor(28,0);
-      display.print(currentStatus.PW);
+      display.print(currentStatus.PW1);
       break;
     case 2:
       display.print("Adv: ");
@@ -101,7 +101,7 @@ void updateDisplay()
     case 1:
       display.print("PW: ");
       display.setCursor(28,11);
-      display.print(currentStatus.PW);
+      display.print(currentStatus.PW1);
       break;
     case 2:
       display.print("Adv: ");

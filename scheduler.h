@@ -32,7 +32,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #include <avr/io.h>
 #endif
 
-#if defined(PROCESSOR_MEGA_ALL)
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   //Refer to http://svn.savannah.nongnu.org/viewvc/trunk/avr-libc/include/avr/iomxx0_1.h?root=avr-libc&view=markup
   #define FUEL1_COUNTER TCNT3
   #define FUEL2_COUNTER TCNT3
@@ -74,7 +74,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN3_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C) //Turn off this output compare unit
   #define IGN4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A) //Turn off this output compare unit
 
-#elif defined(PROCESSOR_TEENSY_3_x) 
+#elif defined(CORE_TEENSY) 
   //http://shawnhymel.com/661/learning-the-teensy-lc-interrupt-service-routines/
   #define FUEL1_COUNTER FTM0_CNT
   #define FUEL2_COUNTER FTM0_CNT

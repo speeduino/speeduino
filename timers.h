@@ -21,10 +21,10 @@ Hence we will preload the timer with 131 cycles to leave 125 until overflow (1ms
 
 volatile int loop250ms;
 volatile int loopSec;
-volatile unsigned long targetOverdwellTime;
-volatile unsigned long targetTachoPulseTime;
 
-#if defined (PROCESSOR_TEENSY_3_x)
+volatile unsigned int dwellLimit_uS;
+
+#if defined (CORE_TEENSY)
   IntervalTimer lowResTimer;
 #endif
 void initialiseTimers();

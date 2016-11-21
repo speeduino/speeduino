@@ -11,7 +11,7 @@ void initialiseSchedulers()
   {
     nullSchedule.Status = OFF;
 
-#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
    // Much help in this from http://arduinomega.blogspot.com.au/2011/05/timer2-and-overflow-interrupt-lets-get.html
     //Fuel Schedules, which uses timer 3
     TCCR3B = 0x00;          //Disable Timer3 while we set it up
@@ -22,7 +22,7 @@ void initialiseSchedulers()
     //TCCR3B = 0x03;   //Timer3 Control Reg B: Timer Prescaler set to 64. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
 
     //Ignition Schedules, which uses timer 5
-    TCCR5B = 0x00;          //Disable Timer3 while we set it up
+    TCCR5B = 0x00;          //Disable Timer5 while we set it up
     TCNT5  = 0;             //Reset Timer Count
     TIFR5  = 0x00;          //Timer5 INT Flag Reg: Clear Timer Overflow Flag
     TCCR5A = 0x00;          //Timer5 Control Reg A: Wave Gen Mode normal
@@ -35,8 +35,43 @@ void initialiseSchedulers()
     TIFR4  = 0x00;          //Timer4 INT Flag Reg: Clear Timer Overflow Flag
     TCCR4A = 0x00;          //Timer4 Control Reg A: Wave Gen Mode normal
     TCCR4B = (1 << CS12);   //Timer4 Control Reg B: aka Divisor = 256 = 122.5HzTimer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg 
-#elif defined (PROCESSOR_TEENSY_3_x)
+    
+#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+
 //Configure ARM timers here
+    FTM0_MODE |= FTM_MODE_WPDIS;  // Write Protection Disable
+    FTM0_MODE |= FTM_MODE_FTMEN;  // Unrestricted FTM mode
+    FTM0_SC   |= FTM_SC_TOIE;     // enable Overflow Interrupt
+  
+    // enable the clock for FTM0
+    FTM0_SC |= FTM_SC_CLKS(0b10);
+    // 00 No clock selected. This in effect disables the FTM counter.
+    // 01 System clock
+    // 10 Fixed frequency clock
+    // 11 External clock
+
+    // set Prescaler 
+    //FTM0_SC |= FTM_SC_PS(0b111);
+    FTM0_SC |= 0b000;
+    // 000 Divide by 1
+    // 001 Divide by 2
+    // 010 Divide by 4
+    // 011 Divide by 8
+    // 100 Divide by 16
+    // 101 Divide by 32
+    // 110 Divide by 64
+    // 111 Divide by 128
+  
+    // set the counter initial value
+    FTM0_CNT = 0;
+  
+    // enable the clock for FTM0
+    SIM_SCGC6 |= SIM_SCGC6_FTM0;
+  
+    // enable IRQ Interrupt
+    NVIC_ENABLE_IRQ(IRQ_FTM0);
+  
+    FTM0_FMS |= FTM0_WPEN;
 #endif
 
     
@@ -181,7 +216,7 @@ void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned l
     /*
      * The following must be enclosed in the noIntterupts block to avoid contention caused if the relevant interrupts fires before the state is fully set
      */
-#if defined(PROCESSOR_MEGA_ALL) 
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
     noInterrupts();
     fuelSchedule5.startCompare = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
     fuelSchedule5.endCompare = fuelSchedule5.startCompare + (duration >> 4);
@@ -202,13 +237,14 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule1.duration = duration;
     
     //As the timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking. 
-    
+    if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+
     noInterrupts();
     ignitionSchedule1.startCompare = IGN1_COUNTER + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     ignitionSchedule1.endCompare = ignitionSchedule1.startCompare + (duration >> 2);
     IGN1_COMPARE = ignitionSchedule1.startCompare;
     ignitionSchedule1.Status = PENDING; //Turn this schedule on
+    ignitionSchedule1.schedulesSet++;
     interrupts();
     IGN1_TIMER_ENABLE();
   }
@@ -228,8 +264,9 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule2.endCompare = ignitionSchedule2.startCompare + (duration >> 2);
     IGN2_COMPARE = ignitionSchedule2.startCompare;
     ignitionSchedule2.Status = PENDING; //Turn this schedule on
+    ignitionSchedule2.schedulesSet++;
     interrupts();
-    IGN1_TIMER_ENABLE();
+    IGN2_TIMER_ENABLE();
   }
 void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
@@ -247,6 +284,7 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule3.endCompare = ignitionSchedule3.startCompare + (duration >> 2);
     IGN3_COMPARE = ignitionSchedule3.startCompare;
     ignitionSchedule3.Status = PENDING; //Turn this schedule on
+    ignitionSchedule3.schedulesSet++;
     interrupts();
     IGN3_TIMER_ENABLE(); 
   }
@@ -267,6 +305,7 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + (duration >> 4);
     IGN4_COMPARE = ignitionSchedule4.startCompare;
     ignitionSchedule4.Status = PENDING; //Turn this schedule on
+    ignitionSchedule4.schedulesSet++;
     interrupts();
     IGN4_TIMER_ENABLE(); 
   }
@@ -282,7 +321,7 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     //As the timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
     if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking. This must be set slightly lower than the max of 262140 to avoid strangeness
     
-#if defined(PROCESSOR_MEGA_ALL) 
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
     OCR5A = TCNT5 + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     ignitionSchedule5.Status = PENDING; //Turn this schedule on
     TIMSK5 |= (1 << OCIE5A); //Turn on the A compare unit (ie turn on the interrupt)
@@ -294,9 +333,9 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
 //This calls the relevant callback function (startCallback or endCallback) depending on the status of the schedule.
 //If the startCallback function is called, we put the scheduler into RUNNING state
 //Timer3A (fuel schedule 1) Compare Vector
-#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPA_vect, ISR_NOBLOCK) //fuelSchedules 1 and 5
-#elif defined(PROCESSOR_TEENSY_3_x)
+#elif defined (CORE_TEENSY)
 void timer3compareAinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -316,9 +355,9 @@ void timer3compareAinterrupt() //Most ARM chips can simply call a function
     }
   }
 
-#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect, ISR_NOBLOCK) //fuelSchedule2
-#elif defined (PROCESSOR_TEENSY_3_x)
+#elif defined (CORE_TEENSY)
 void timer3compareBinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -337,9 +376,9 @@ void timer3compareBinterrupt() //Most ARM chips can simply call a function
     }
   }
 
-#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect, ISR_NOBLOCK) //fuelSchedule3
-#elif defined (PROCESSOR_TEENSY_3_x)
+#elif defined (CORE_TEENSY)
 void timer3compareCinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -358,9 +397,9 @@ void timer3compareCinterrupt() //Most ARM chips can simply call a function
     }
   }
   
-#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect, ISR_NOBLOCK) //fuelSchedule4
-#elif defined (PROCESSOR_TEENSY_3_x)
+#elif defined (CORE_TEENSY)
 void timer4compareBinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -379,9 +418,9 @@ void timer4compareBinterrupt() //Most ARM chips can simply call a function
     }
   }
   
-#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule1
-#elif defined (PROCESSOR_TEENSY_3_x)
+#elif defined (CORE_TEENSY)
 void timer5compareAinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -395,16 +434,17 @@ void timer5compareAinterrupt() //Most ARM chips can simply call a function
     }
     else if (ignitionSchedule1.Status == RUNNING)
     {
-      ignitionSchedule1.Status = OFF; //Turn off the schedule
       ignitionSchedule1.EndCallback();
+      ignitionSchedule1.Status = OFF; //Turn off the schedule
+      ignitionSchedule1.schedulesSet = 0;
       ignitionCount += 1; //Increment the igintion counter
       IGN1_TIMER_DISABLE();
     }
   }
   
-#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect, ISR_NOBLOCK) //ignitionSchedule2
-#elif defined (PROCESSOR_TEENSY_3_x)
+#elif defined (CORE_TEENSY)
 void timer5compareBinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -420,14 +460,15 @@ void timer5compareBinterrupt() //Most ARM chips can simply call a function
     {
       ignitionSchedule2.Status = OFF; //Turn off the schedule
       ignitionSchedule2.EndCallback();
+      ignitionSchedule2.schedulesSet = 0;
       ignitionCount += 1; //Increment the igintion counter
       IGN2_TIMER_DISABLE();
     }
   }
   
-#if defined(PROCESSOR_MEGA_ALL) //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect, ISR_NOBLOCK) //ignitionSchedule3
-#elif defined (PROCESSOR_TEENSY_3_x)
+#elif defined (CORE_TEENSY)
 void timer5compareCinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -443,14 +484,15 @@ void timer5compareCinterrupt() //Most ARM chips can simply call a function
     {
        ignitionSchedule3.Status = OFF; //Turn off the schedule
        ignitionSchedule3.EndCallback();
+       ignitionSchedule3.schedulesSet = 0;
        ignitionCount += 1; //Increment the igintion counter
        IGN3_TIMER_DISABLE();
     }
   }
   
-#if defined(PROCESSOR_MEGA_ALL)  //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule4
-#elif defined (PROCESSOR_TEENSY_3_x)
+#elif defined (CORE_TEENSY)
 void timer4compareAinterrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -466,6 +508,7 @@ void timer4compareAinterrupt() //Most ARM chips can simply call a function
     {
        ignitionSchedule4.Status = OFF; //Turn off the schedule
        ignitionSchedule4.EndCallback();
+       ignitionSchedule4.schedulesSet = 0;
        ignitionCount += 1; //Increment the igintion counter
        IGN4_TIMER_DISABLE();
     }

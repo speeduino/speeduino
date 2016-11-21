@@ -12,12 +12,24 @@ Returns how much free dynamic memory exists (between heap and stack)
 
 int freeRam ()
 {
-#if defined(PROCESSOR_MEGA_ALL)
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   extern int __heap_start, *__brkval;
   int v;
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
-#elif defined(PROCESSOR_TEENSY_3_x)
-  return 0;
+#elif defined(CORE_TEENSY)
+  uint32_t stackTop;
+  uint32_t heapTop;
+
+  // current position of the stack.
+  stackTop = (uint32_t) &stackTop;
+
+  // current position of heap.
+  void* hTop = malloc(1);
+  heapTop = (uint32_t) hTop;
+  free(hTop);
+
+  // The difference is the free, available ram.
+  return (uint16_t)stackTop - heapTop;
 #endif
 }
 
