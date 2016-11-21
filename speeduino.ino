@@ -1330,22 +1330,14 @@ void loop()
       if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) && !BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM))
       {
         
-        //if ( (ignition1StartAngle > crankAngle))// && ign1LastRev != startRevolutions)
-        //if ((ignition1StartAngle > crankAngle) == 0)
-        //if ((ignition1StartAngle < crankAngle))
+        //if (ignition1StartAngle <= crankAngle && ignition1.schedulesSet == 0) { ignition1StartAngle += CRANK_ANGLE_MAX_IGN; }
+        if (ignition1StartAngle > crankAngle)
         {
-            unsigned long ignition1StartTime = 0;
-            if(ignition1StartAngle > crankAngle) { ignition1StartTime = ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree); }
-            //else if (ignition1StartAngle < crankAngle) { ignition1StartTime = ((unsigned long)(360 - crankAngle + ignition1StartAngle) * (unsigned long)timePerDegree); }
-            else { ignition1StartTime = 0; }
-            
-            if(ignition1StartTime > 0) {
             setIgnitionSchedule1(ign1StartFunction, 
-                      ignition1StartTime,
+                      ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                       currentStatus.dwell + fixedCrankingOverride,
                       ign1EndFunction
                       );
-            }
         }
 
         tempCrankAngle = crankAngle - channel2IgnDegrees;
@@ -1437,39 +1429,6 @@ void loop()
     
   }
   
-//************************************************************************************************
-//Interrupts  
-
-#if defined(ANALOG_H)
-//Analog ISR interrupt routine
-ISR(ADC_vect)
-{
-  byte nChannel;
-  int result = ADCL | (ADCH << 8);
-  
-  ADCSRA = 0x6E;  // ADC Auto Trigger disabled by clearing bit 7(ADEN)
-  nChannel = ADMUX & 0x07;
-  #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-    if(ADCSRB & 0x08) { nChannel+=8; }  //8 to 15
-    if(nChannel==15)
-    {
-      ADMUX = 0x40; //channel 0
-      ADCSRB = 0x00; //clear MUX5 bit
-    }
-    else if (nChannel==7) //channel 7
-    { 
-      ADMUX = 0x40;
-      ADCSRB = 0x08; //Set MUX5 bit
-    }
-  #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__)
-    if (nChannel==7) { ADMUX = 0x40; }
-  #endif
-    else { ADMUX++; }
-  AnChannel[nChannel] = result;
-  
-  ADCSRA = 0xEE; // ADC Interrupt Flag enabled
-}
-#endif
 
 //These functions simply trigger the injector/coil driver off or on. 
 //NOTE: squirt status is changed as per http://www.msextra.com/doc/ms1extra/COM_RS232.htm#Acmd

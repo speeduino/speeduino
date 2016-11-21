@@ -171,7 +171,7 @@ int getCrankAngle_missingTooth(int timePerDegree)
 
     if (crankAngle >= 720) { crankAngle -= 720; } 
     else if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
-    if (crankAngle < 0) { crankAngle += 360; }
+    if (crankAngle < 0) { crankAngle += CRANK_ANGLE_MAX; }
     
     return crankAngle;
 }
@@ -274,7 +274,7 @@ int getCrankAngle_DualWheel(int timePerDegree)
     
     if (crankAngle >= 720) { crankAngle -= 720; } 
     if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
-    if (crankAngle < 0) { crankAngle += 360; }
+    if (crankAngle < 0) { crankAngle += CRANK_ANGLE_MAX; }
     
     return crankAngle;
 }
@@ -540,7 +540,7 @@ void triggerSec_4G63()
   if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) || !currentStatus.hasSync)
   {
     triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset). 
-  
+    
     //Check the status of the crank trigger
     bool crank = digitalRead(pinTrigger);
     if(crank == HIGH)

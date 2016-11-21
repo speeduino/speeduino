@@ -237,13 +237,14 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule1.duration = duration;
     
     //As the timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking. 
-    
+    if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+
     noInterrupts();
     ignitionSchedule1.startCompare = IGN1_COUNTER + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     ignitionSchedule1.endCompare = ignitionSchedule1.startCompare + (duration >> 2);
     IGN1_COMPARE = ignitionSchedule1.startCompare;
     ignitionSchedule1.Status = PENDING; //Turn this schedule on
+    ignitionSchedule1.schedulesSet++;
     interrupts();
     IGN1_TIMER_ENABLE();
   }
@@ -263,6 +264,7 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule2.endCompare = ignitionSchedule2.startCompare + (duration >> 2);
     IGN2_COMPARE = ignitionSchedule2.startCompare;
     ignitionSchedule2.Status = PENDING; //Turn this schedule on
+    ignitionSchedule2.schedulesSet++;
     interrupts();
     IGN2_TIMER_ENABLE();
   }
@@ -282,6 +284,7 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule3.endCompare = ignitionSchedule3.startCompare + (duration >> 2);
     IGN3_COMPARE = ignitionSchedule3.startCompare;
     ignitionSchedule3.Status = PENDING; //Turn this schedule on
+    ignitionSchedule3.schedulesSet++;
     interrupts();
     IGN3_TIMER_ENABLE(); 
   }
@@ -302,6 +305,7 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + (duration >> 4);
     IGN4_COMPARE = ignitionSchedule4.startCompare;
     ignitionSchedule4.Status = PENDING; //Turn this schedule on
+    ignitionSchedule4.schedulesSet++;
     interrupts();
     IGN4_TIMER_ENABLE(); 
   }
@@ -430,8 +434,9 @@ void timer5compareAinterrupt() //Most ARM chips can simply call a function
     }
     else if (ignitionSchedule1.Status == RUNNING)
     {
-      ignitionSchedule1.Status = OFF; //Turn off the schedule
       ignitionSchedule1.EndCallback();
+      ignitionSchedule1.Status = OFF; //Turn off the schedule
+      ignitionSchedule1.schedulesSet = 0;
       ignitionCount += 1; //Increment the igintion counter
       IGN1_TIMER_DISABLE();
     }
@@ -455,6 +460,7 @@ void timer5compareBinterrupt() //Most ARM chips can simply call a function
     {
       ignitionSchedule2.Status = OFF; //Turn off the schedule
       ignitionSchedule2.EndCallback();
+      ignitionSchedule2.schedulesSet = 0;
       ignitionCount += 1; //Increment the igintion counter
       IGN2_TIMER_DISABLE();
     }
@@ -478,6 +484,7 @@ void timer5compareCinterrupt() //Most ARM chips can simply call a function
     {
        ignitionSchedule3.Status = OFF; //Turn off the schedule
        ignitionSchedule3.EndCallback();
+       ignitionSchedule3.schedulesSet = 0;
        ignitionCount += 1; //Increment the igintion counter
        IGN3_TIMER_DISABLE();
     }
@@ -501,6 +508,7 @@ void timer4compareAinterrupt() //Most ARM chips can simply call a function
     {
        ignitionSchedule4.Status = OFF; //Turn off the schedule
        ignitionSchedule4.EndCallback();
+       ignitionSchedule4.schedulesSet = 0;
        ignitionCount += 1; //Increment the igintion counter
        IGN4_TIMER_DISABLE();
     }
