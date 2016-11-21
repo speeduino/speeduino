@@ -17,7 +17,19 @@ int freeRam ()
   int v;
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 #elif defined(CORE_TEENSY)
-  return 0;
+  uint32_t stackTop;
+  uint32_t heapTop;
+
+  // current position of the stack.
+  stackTop = (uint32_t) &stackTop;
+
+  // current position of heap.
+  void* hTop = malloc(1);
+  heapTop = (uint32_t) hTop;
+  free(hTop);
+
+  // The difference is the free, available ram.
+  return (uint16_t)stackTop - heapTop;
 #endif
 }
 
