@@ -2,6 +2,10 @@
 #define GLOBALS_H
 #include <Arduino.h>
 
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+  #define CORE_AVR
+#endif
+
 //const byte ms_version = 20;
 const byte signature = 20;
 

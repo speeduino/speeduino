@@ -16,7 +16,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 
 void initialiseTimers() 
 {  
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
+#if defined(CORE_AVR) //AVR chips use the ISR for this
    //Configure Timer2 for our low-freq interrupt code. 
    TCCR2B = 0x00;          //Disbale Timer2 while we set it up
    TCNT2  = 131;           //Preload timer2 with 131 cycles, leaving 125 till overflow. As the timer runs at 125Khz, this causes overflow to occur at 1Khz = 1ms
