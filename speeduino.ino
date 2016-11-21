@@ -1330,22 +1330,14 @@ void loop()
       if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) && !BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM))
       {
         
-        //if ( (ignition1StartAngle > crankAngle))// && ign1LastRev != startRevolutions)
-        //if ((ignition1StartAngle > crankAngle) == 0)
-        //if ((ignition1StartAngle < crankAngle))
+        //if (ignition1StartAngle <= crankAngle && ignition1.schedulesSet == 0) { ignition1StartAngle += CRANK_ANGLE_MAX_IGN; }
+        if (ignition1StartAngle > crankAngle)
         {
-            unsigned long ignition1StartTime = 0;
-            if(ignition1StartAngle > crankAngle) { ignition1StartTime = ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree); }
-            //else if (ignition1StartAngle < crankAngle) { ignition1StartTime = ((unsigned long)(360 - crankAngle + ignition1StartAngle) * (unsigned long)timePerDegree); }
-            else { ignition1StartTime = 0; }
-            
-            if(ignition1StartTime > 0) {
             setIgnitionSchedule1(ign1StartFunction, 
-                      ignition1StartTime,
+                      ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                       currentStatus.dwell + fixedCrankingOverride,
                       ign1EndFunction
                       );
-            }
         }
 
         tempCrankAngle = crankAngle - channel2IgnDegrees;
