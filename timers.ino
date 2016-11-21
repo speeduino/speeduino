@@ -30,6 +30,8 @@ void initialiseTimers()
    //Uses the PIT timer on Teensy.
    lowResTimer.begin(oneMSInterval, 1000);
 #endif
+
+  dwellLimit_uS = (1000 * configPage2.dwellLimit);
 }
 
 
@@ -46,9 +48,13 @@ void oneMSInterval() //Most ARM chips can simply call a function
   loop250ms++;
   loopSec++;
 
+//volatile unsigned long targetOverdwellTime;
+//volatile unsigned long targetTachoPulseTime;
+unsigned long targetOverdwellTime;
+unsigned long targetTachoPulseTime;
   
   //Overdwell check
-  targetOverdwellTime = micros() - (1000 * configPage2.dwellLimit); //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
+  targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
   targetTachoPulseTime = micros() - (1500);
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
   if(ignitionSchedule1.Status == RUNNING) { if(ignitionSchedule1.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil1Charge(); } if(ignitionSchedule1.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
@@ -68,6 +74,8 @@ void oneMSInterval() //Most ARM chips can simply call a function
   {
     loopSec = 0; //Reset counter.
 
+    dwellLimit_uS = (1000 * configPage2.dwellLimit); //Update uS value incase setting has changed
+    
     //**************************************************************************************************************************************************
     //This updates the runSecs variable
     //If the engine is running or cranking, we need ot update the run time counter.
