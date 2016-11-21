@@ -10,18 +10,25 @@ Fan control
 */
 void initialiseFan()
 {
-if(configPage4.fanInv == 1) {fanHIGH = LOW, fanLOW = HIGH; }
-else {fanHIGH = HIGH, fanLOW = LOW;}
-digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
+  if(configPage4.fanInv) { fanHIGH = LOW, fanLOW = HIGH; }
+  else { fanHIGH = HIGH, fanLOW = LOW; }
+  digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
+  currentStatus.fanOn = false;
 }
 
 void fanControl()
 {
-   if (currentStatus.coolant >= (configPage4.fanSP - CALIBRATION_TEMPERATURE_OFFSET)) { digitalWrite(pinFan,fanHIGH); }
-   else if (currentStatus.coolant <= (configPage4.fanSP - configPage4.fanHyster)) { digitalWrite(pinFan, fanLOW); }
+  if(configPage4.fanEnable)
+  {
+    int onTemp = (int)configPage4.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
+    int offTemp = onTemp - configPage4.fanHyster;
+    
+    if (!currentStatus.fanOn && currentStatus.coolant >= onTemp) { digitalWrite(pinFan,fanHIGH); currentStatus.fanOn = true; }
+    if (currentStatus.fanOn && currentStatus.coolant <= offTemp) { digitalWrite(pinFan, fanLOW); currentStatus.fanOn = false; }
+  }
 }
 
-#if defined(PROCESSOR_MEGA_ALL) 
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 void initialiseAuxPWM()
 {
   TCCR1B = 0x00;          //Disbale Timer1 while we set it up
@@ -64,7 +71,7 @@ void vvtControl()
     byte vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
     vvt_pwm_target_value = percentage(vvtDuty, vvt_pwm_max_count);
   }
-#if defined(PROCESSOR_MEGA_ALL)
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   else { TIMSK1 &= ~(1 << OCIE1B); } // Disable timer channel
 #endif
 }
@@ -105,7 +112,7 @@ ISR(TIMER1_COMPB_vect)
   }  
 }
 
-#elif defined (PROCESSOR_TEENSY_3_x)
+#elif defined (CORE_TEENSY)
 //YET TO BE IMPLEMENTED ON TEENSY
 void initialiseAuxPWM() { }
 void boostControl() { } 

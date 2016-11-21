@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.10.04 - EFI Analytics, Inc." tuneComment="" writeDate="Fri Sep 30 22:35:03 AEST 2016"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2016.09" nPages="8" signature="speeduino 201609"/>
+<bibliography author="TunerStudio MS 3.0.12 - EFI Analytics, Inc." tuneComment="" writeDate="Wed Nov 09 12:59:17 AEDT 2016"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2016.10" nPages="9" signature="speeduino 201610"/>
 <page>
 <pcVariable name="tsCanId">"0"</pcVariable>
 </page>
@@ -99,6 +99,11 @@
 <constant name="alternate">"Alternating"</constant>
 <constant name="multiplyMAP">"No"</constant>
 <constant name="includeAFR">"No"</constant>
+<constant name="unused2-26d">"No"</constant>
+<constant name="unused2-26e">"No"</constant>
+<constant name="unused2-26f">"No"</constant>
+<constant name="unused2-26g">"No"</constant>
+<constant name="unused2-26h">"No"</constant>
 <constant digits="1" name="injOpen" units="ms">1.0</constant>
 <constant digits="0" name="inj1Ang" units="deg">355.0</constant>
 <constant digits="0" name="inj2Ang" units="deg">355.0</constant>
@@ -115,11 +120,13 @@
 <constant name="flexEnabled">"Off"</constant>
 <constant name="algorithm">"Speed Density"</constant>
 <constant name="baroCorr">"Off"</constant>
-<constant name="injLayout">"Bank"</constant>
+<constant name="injLayout">"Paired"</constant>
+<constant name="canEnable">"Disable"</constant>
+<constant name="unused2-38h">"No"</constant>
 <constant digits="1" name="primePulse" units="ms">4.0</constant>
 <constant digits="0" name="dutyLim" units="%">85.0</constant>
 <constant digits="0" name="unused41" units="RPM">4200.0</constant>
-<constant digits="3" name="egoSwitch" units="v">0.0</constant>
+<constant digits="0" name="unused42" units="RPM">0.0</constant>
 <constant digits="0" name="taeColdM" units="%">0.0</constant>
 <constant digits="0" name="tpsMin" units="ADC">26.0</constant>
 <constant digits="0" name="tpsMax" units="ADC">230.0</constant>
@@ -127,9 +134,9 @@
 <constant digits="0" name="mapMax" units="kpa">260.0</constant>
 <constant digits="0" name="fpPrime" units="s">3.0</constant>
 <constant digits="1" name="stoich" units=":1">14.7</constant>
-<constant digits="0" name="oddfire2">0.0</constant>
-<constant digits="0" name="oddfire3">0.0</constant>
-<constant digits="0" name="oddfire4">0.0</constant>
+<constant digits="0" name="oddfire2" units="deg">0.0</constant>
+<constant digits="0" name="oddfire3" units="deg">0.0</constant>
+<constant digits="0" name="oddfire4" units="deg">0.0</constant>
 <constant digits="0" name="unused2-57" units="RPM">0.0</constant>
 <constant digits="0" name="unused2-58" units="RPM">0.0</constant>
 <constant digits="0" name="unused2-59" units="RPM">0.0</constant>
@@ -204,6 +211,8 @@
 <constant name="IgInv">"Going Low"</constant>
 <constant name="oddfire">"Yes"</constant>
 <constant name="TrigPattern">"Missing Tooth"</constant>
+<constant digits="0" name="unused4-6" units="Deg">79.7632</constant>
+<constant digits="0" name="unused4-7" units="ADC">255.0</constant>
 <constant digits="0" name="IdleAdvRPM" units="RPM">3200.0</constant>
 <constant digits="1" name="IdleAdvCLT" units="C">-21.0</constant>
 <constant digits="0" name="IdleDelayTime" units="sec">38.0</constant>
@@ -412,7 +421,12 @@
 <constant digits="0" name="boostKI" units="%">0.0</constant>
 <constant digits="0" name="boostKD" units="%">0.0</constant>
 <constant name="lnchPullRes">"Float"</constant>
-<constant name="unused6-60">"ONE"</constant>
+<constant name="fuelTrimEnabled">"No"</constant>
+<constant name="unused6-60d">"ONE"</constant>
+<constant name="unused6-60e">"ONE"</constant>
+<constant name="unused6-60f">"ONE"</constant>
+<constant name="unused6-60g">"ONE"</constant>
+<constant name="unused6-60h">"ONE"</constant>
 <constant digits="0" name="unused6-61" units="RPM">4500.0</constant>
 <constant digits="0" name="unused6-62" units="RPM">3000.0</constant>
 <constant digits="0" name="unused6-63" units="RPM">6000.0</constant>
@@ -568,6 +582,104 @@
          60.0 
          80.0 
          100.0 
+      </constant>
+</page>
+<page number="8" size="192">
+<constant cols="6" digits="0" name="fuelTrim1Table" rows="6" units="%">
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+      </constant>
+<constant cols="1" digits="0" name="fuelTrim1rpmBins" rows="6" units="RPM">
+         700.0 
+         1500.0 
+         3000.0 
+         4100.0 
+         5500.0 
+         7000.0 
+      </constant>
+<constant cols="1" digits="0" name="fuelTrim1loadBins" rows="6" units="kPa">
+         35.0 
+         50.0 
+         65.0 
+         80.0 
+         100.0 
+         120.0 
+      </constant>
+<constant cols="6" digits="0" name="fuelTrim2Table" rows="6" units="%">
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+      </constant>
+<constant cols="1" digits="0" name="fuelTrim2rpmBins" rows="6" units="RPM">
+         700.0 
+         1500.0 
+         3000.0 
+         4100.0 
+         5500.0 
+         7000.0 
+      </constant>
+<constant cols="1" digits="0" name="fuelTrim2loadBins" rows="6" units="kPa">
+         35.0 
+         50.0 
+         65.0 
+         80.0 
+         100.0 
+         120.0 
+      </constant>
+<constant cols="6" digits="0" name="fuelTrim3Table" rows="6" units="%">
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+      </constant>
+<constant cols="1" digits="0" name="fuelTrim3rpmBins" rows="6" units="RPM">
+         700.0 
+         1500.0 
+         3000.0 
+         4100.0 
+         5500.0 
+         7000.0 
+      </constant>
+<constant cols="1" digits="0" name="fuelTrim3loadBins" rows="6" units="kPa">
+         35.0 
+         50.0 
+         65.0 
+         80.0 
+         100.0 
+         120.0 
+      </constant>
+<constant cols="6" digits="0" name="fuelTrim4Table" rows="6" units="%">
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 
+      </constant>
+<constant cols="1" digits="0" name="fuelTrim4rpmBins" rows="6" units="RPM">
+         700.0 
+         1500.0 
+         3000.0 
+         4100.0 
+         5500.0 
+         7000.0 
+      </constant>
+<constant cols="1" digits="0" name="fuelTrim4loadBins" rows="6" units="kPa">
+         35.0 
+         50.0 
+         65.0 
+         80.0 
+         100.0 
+         120.0 
       </constant>
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">

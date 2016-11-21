@@ -1,4 +1,23 @@
+#ifndef DECODERS_H
+#define DECODERS_H
+
 #include <limits.h>
+
+static inline void addToothLogEntry(unsigned long toothTime);
+static inline int stdGetRPM();
+static inline void setFilter(unsigned long curGap);
+static inline int crankingGetRPM(byte totalTeeth);
+void triggerSetup_missingTooth();
+void triggerPri_missingTooth();
+void triggerSec_missingTooth();
+int getRPM_missingTooth();
+int getCrankAngle_missingTooth(int timePerDegree);
+void triggerSetup_DualWheel();
+void triggerPri_DualWheel();
+void triggerSec_DualWheel();
+int getRPM_DualWheel();
+int getCrankAngle_DualWheel(int timePerDegree);
+
 
 volatile unsigned long curTime;
 volatile unsigned long curGap;
@@ -18,6 +37,7 @@ volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros(
 volatile bool revolutionOne = 0; // For sequential operation, this tracks whether the current revolution is 1 or 2 (not 1)
 volatile unsigned int toothHistory[TOOTH_LOG_BUFFER];
 volatile unsigned int toothHistoryIndex = 0;
+volatile bool toothLogRead = false; //Flag to indicate whether the current tooth log values have been read out yet
 
 volatile byte secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
 volatile unsigned long secondaryLastToothTime = 0; //The time (micros()) that the last tooth was registered (Cam input)
@@ -29,6 +49,7 @@ int triggerToothAngle; //The number of crank degrees that elapse per tooth
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 bool secondDerivEnabled; //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
 bool decoderIsSequential; //Whether or not the decoder supports sequential operation
+byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
 
 int toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 
@@ -36,4 +57,4 @@ int toothAngles[24]; //An array for storing fixed tooth angles. Currently sized 
 #define LONG 0;
 #define SHORT 1;
 
-
+#endif
