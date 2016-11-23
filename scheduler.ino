@@ -459,7 +459,7 @@ void timer4compareBinterrupt() //Most ARM chips can simply call a function
   }
   
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER5_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule1
+ISR(TIMER5_COMPA_vect) //ignitionSchedule1
 #elif defined (CORE_TEENSY)
 void timer5compareAinterrupt() //Most ARM chips can simply call a function
 #endif
@@ -483,7 +483,7 @@ void timer5compareAinterrupt() //Most ARM chips can simply call a function
   }
   
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER5_COMPB_vect, ISR_NOBLOCK) //ignitionSchedule2
+ISR(TIMER5_COMPB_vect) //ignitionSchedule2
 #elif defined (CORE_TEENSY)
 void timer5compareBinterrupt() //Most ARM chips can simply call a function
 #endif
@@ -507,7 +507,7 @@ void timer5compareBinterrupt() //Most ARM chips can simply call a function
   }
   
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER5_COMPC_vect, ISR_NOBLOCK) //ignitionSchedule3
+ISR(TIMER5_COMPC_vect) //ignitionSchedule3
 #elif defined (CORE_TEENSY)
 void timer5compareCinterrupt() //Most ARM chips can simply call a function
 #endif
@@ -531,18 +531,20 @@ void timer5compareCinterrupt() //Most ARM chips can simply call a function
   }
   
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER4_COMPA_vect, ISR_NOBLOCK) //ignitionSchedule4
+ISR(TIMER4_COMPA_vect) //ignitionSchedule4
 #elif defined (CORE_TEENSY)
 void timer4compareAinterrupt() //Most ARM chips can simply call a function
 #endif
   {
     if (ignitionSchedule4.Status == PENDING) //Check to see if this schedule is turn on
     {
+      noInterrupts();
       ignitionSchedule4.StartCallback();
       ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule4.startTime = micros();
       ign4LastRev = startRevolutions;
       IGN4_COMPARE = ignitionSchedule4.endCompare; //OCR4A = TCNT4 + (ignitionSchedule4.duration >> 4); //Divide by 16
+      interrupts();
     }
     else if (ignitionSchedule4.Status == RUNNING)
     {
