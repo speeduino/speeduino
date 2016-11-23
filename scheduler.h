@@ -74,6 +74,9 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN3_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C) //Turn off this output compare unit
   #define IGN4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A) //Turn off this output compare unit
 
+  #define MAX_TIMER_PERIOD 262140 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
+  #define US_TO_TIMER_COMPARE(uS) uS >> 2 //Converts a given number of uS into the required number of timer ticks until that time has passed
+
 #elif defined(CORE_TEENSY) 
   //http://shawnhymel.com/661/learning-the-teensy-lc-interrupt-service-routines/
   #define FUEL1_COUNTER FTM0_CNT
@@ -96,25 +99,28 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN3_COMPARE  FTM0_C6V
   #define IGN4_COMPARE  FTM0_C7V
 
-  #define FUEL1_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
-  #define FUEL2_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
-  #define FUEL3_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
-  #define FUEL4_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL1_TIMER_ENABLE() FTM0_C0SC |= FTM_CSC_CHIE //Write 1 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
+  #define FUEL2_TIMER_ENABLE() FTM0_C1SC |= FTM_CSC_CHIE
+  #define FUEL3_TIMER_ENABLE() FTM0_C2SC |= FTM_CSC_CHIE
+  #define FUEL4_TIMER_ENABLE() FTM0_C3SC |= FTM_CSC_CHIE
 
-  #define FUEL1_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
-  #define FUEL2_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
-  #define FUEL3_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
-  #define FUEL4_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL1_TIMER_DISABLE() FTM0_C0SC &= ~FTM_CSC_CHIE //Write 0 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
+  #define FUEL2_TIMER_DISABLE() FTM0_C1SC &= ~FTM_CSC_CHIE
+  #define FUEL3_TIMER_DISABLE() FTM0_C2SC &= ~FTM_CSC_CHIE
+  #define FUEL4_TIMER_DISABLE() FTM0_C3SC &= ~FTM_CSC_CHIE
 
-  #define IGN1_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
-  #define IGN2_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
-  #define IGN3_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
-  #define IGN4_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN1_TIMER_ENABLE() FTM0_C4SC |= FTM_CSC_CHIE
+  #define IGN2_TIMER_ENABLE() FTM0_C5SC |= FTM_CSC_CHIE
+  #define IGN3_TIMER_ENABLE() FTM0_C6SC |= FTM_CSC_CHIE
+  #define IGN4_TIMER_ENABLE() FTM0_C7SC |= FTM_CSC_CHIE
 
-  #define IGN1_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
-  #define IGN2_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
-  #define IGN3_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
-  #define IGN4_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN1_TIMER_DISABLE() FTM0_C4SC &= ~FTM_CSC_CHIE
+  #define IGN2_TIMER_DISABLE() FTM0_C5SC &= ~FTM_CSC_CHIE
+  #define IGN3_TIMER_DISABLE() FTM0_C6SC &= ~FTM_CSC_CHIE
+  #define IGN4_TIMER_DISABLE() FTM0_C7SC &= ~FTM_CSC_CHIE
+
+  #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
+  #define US_TO_TIMER_COMPARE(uS) (uS * 15) >> 5 //Converts a given number of uS into the required number of timer ticks until that time has passed. 
 #endif
 
 void initialiseSchedulers();

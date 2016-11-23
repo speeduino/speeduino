@@ -38,43 +38,83 @@ void initialiseSchedulers()
     
 #elif defined (CORE_TEENSY) && defined (__MK20DX256__)
 
-//Configure ARM timers here
-    FTM0_MODE |= FTM_MODE_WPDIS;  // Write Protection Disable
-    FTM0_MODE |= FTM_MODE_FTMEN;  // Unrestricted FTM mode
-    FTM0_SC   |= FTM_SC_TOIE;     // enable Overflow Interrupt
-  
-    // enable the clock for FTM0
-    FTM0_SC |= FTM_SC_CLKS(0b10);
-    // 00 No clock selected. This in effect disables the FTM counter.
-    // 01 System clock
-    // 10 Fixed frequency clock
-    // 11 External clock
+  //FlexTimer 0 is used for 4 ignition and 4 injection schedules. There are 8 channels on this module, so no other timers are needed
+  FTM0_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
+  FTM0_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
+  FTM0_MODE |= FTM_MODE_INIT;
 
-    // set Prescaler 
-    //FTM0_SC |= FTM_SC_PS(0b111);
-    FTM0_SC |= 0b000;
-    // 000 Divide by 1
-    // 001 Divide by 2
-    // 010 Divide by 4
-    // 011 Divide by 8
-    // 100 Divide by 16
-    // 101 Divide by 32
-    // 110 Divide by 64
-    // 111 Divide by 128
+  FTM0_SC = 0x00; // Set this to zero before changing the modulus
+  FTM0_CNTIN = 0x0000; //Shouldn't be needed, but just in case
+  FTM0_CNT = 0x0000; // Reset the count to zero
+  FTM0_MOD = 0xFFFF; // max modulus = 65535
   
-    // set the counter initial value
-    FTM0_CNT = 0;
+  /*
+   * Enable the clock for FTM0 
+   * 00 No clock selected. Disables the FTM counter.
+   * 01 System clock
+   * 10 Fixed frequency clock
+   * 11 External clock
+   */  
+  FTM0_SC |= FTM_SC_CLKS(0b1);
+
+  /*  
+   * Set Prescaler 
+   * This is the slowest that the timer can be clocked (Without used the slow timer, which is too slow). It results in ticks of 2.13333uS on the teensy 3.5:
+   * 60000000 Hz = F_BUS
+   * 128 * 1000000uS / F_BUS = 2.133uS
+   * 
+   * 000 = Divide by 1
+   * 001 Divide by 2
+   * 010 Divide by 4
+   * 011 Divide by 8
+   * 100 Divide by 16
+   * 101 Divide by 32
+   * 110 Divide by 64
+   * 111 Divide by 128
+   */
+  FTM0_SC |= FTM_SC_PS(0b111);
+
+  //Setup the channels (See Pg 1014 of K64 DS). 
+  //FTM0_C0SC &= ~FTM_CSC_ELSB; //Probably not needed as power on state should be 0
+  //FTM0_C0SC &= ~FTM_CSC_ELSA; //Probably not needed as power on state should be 0
+  //FTM0_C0SC &= ~FTM_CSC_DMA; //Probably not needed as power on state should be 0
+  FTM0_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM0_C0SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM0_C0SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
   
-    // enable the clock for FTM0
-    SIM_SCGC6 |= SIM_SCGC6_FTM0;
+  FTM0_C1SC &= ~FTM_CSC_MSB; //According to Pg 965 of the datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM0_C1SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM0_C1SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
   
-    // enable IRQ Interrupt
-    NVIC_ENABLE_IRQ(IRQ_FTM0);
+  FTM0_C2SC &= ~FTM_CSC_MSB; //According to Pg 965 of the datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM0_C2SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM0_C2SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
   
-    FTM0_FMS |= FTM0_WPEN;
+  FTM0_C3SC &= ~FTM_CSC_MSB; //According to Pg 965 of the datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM0_C3SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM0_C3SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+  
+  FTM0_C4SC &= ~FTM_CSC_MSB; //According to Pg 965 of the datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM0_C4SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM0_C4SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+  
+  FTM0_C5SC &= ~FTM_CSC_MSB; //According to Pg 965 of the datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM0_C5SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM0_C5SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+  
+  FTM0_C6SC &= ~FTM_CSC_MSB; //According to Pg 965 of the datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM0_C6SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM0_C6SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+  
+  FTM0_C7SC &= ~FTM_CSC_MSB; //According to Pg 965 of the datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM0_C7SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM0_C7SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+  // enable IRQ Interrupt
+  NVIC_ENABLE_IRQ(IRQ_FTM0);
+  
 #endif
 
-    
     fuelSchedule1.Status = OFF; 
     fuelSchedule2.Status = OFF;
     fuelSchedule3.Status = OFF;
@@ -118,7 +158,7 @@ void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned l
     fuelSchedule1.duration = duration;
 
     /*
-     * The following must be enclosed in the noIntterupts block to avoid contention caused if the relevant interrupts fires before the state is fully set
+     * The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupts fires before the state is fully set
      * We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
      * As the timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency)) 
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
@@ -237,7 +277,7 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule1.duration = duration;
     
     //As the timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    if (timeout > MAX_TIMER_PERIOD) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
 
     noInterrupts();
     ignitionSchedule1.startCompare = IGN1_COUNTER + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
