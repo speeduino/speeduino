@@ -75,7 +75,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A) //Turn off this output compare unit
 
   #define MAX_TIMER_PERIOD 262140 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
-  #define uS_TO_TIMER_COMPARE(uS) uS >> 2 //Converts a given number of uS into the required number of timer ticks until that time has passed
+  #define uS_TO_TIMER_COMPARE(uS1) (uS1 >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
 
 #elif defined(CORE_TEENSY) 
   //http://shawnhymel.com/661/learning-the-teensy-lc-interrupt-service-routines/
@@ -120,7 +120,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN4_TIMER_DISABLE() FTM0_C7SC &= ~FTM_CSC_CHIE
 
   #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
-  #define uS_TO_TIMER_COMPARE(uS) (uS * 15) >> 5 //Converts a given number of uS into the required number of timer ticks until that time has passed. 
+  #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
 #endif
 
 void initialiseSchedulers();

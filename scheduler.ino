@@ -554,7 +554,7 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
     }
   }
 
-#ifdef defined (CORE_TEENSY)
+#if defined(CORE_TEENSY)
 void ftm0_isr(void) 
 {
  
