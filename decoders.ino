@@ -226,11 +226,12 @@ void triggerSec_DualWheel()
   curGap2 = curTime2 - toothLastSecToothTime;
   if ( curGap2 < triggerSecFilterTime ) { return; } 
   toothLastSecToothTime = curTime2;
+  triggerSecFilterTime = curGap2 >> 2;
+
+  toothCurrentCount = configPage2.triggerTeeth;
   
   if(!currentStatus.hasSync)
   {
-    toothCurrentCount = 0;
-
     toothLastToothTime = micros();
     toothLastMinusOneToothTime = (toothOneTime - 6000000) / configPage2.triggerTeeth; //Fixes RPM at 10rpm until a full revolution has taken place
     
@@ -242,7 +243,7 @@ void triggerSec_DualWheel()
 
 int getRPM_DualWheel()
 {
-  if( !currentStatus.hasSync || toothCurrentCount == 0 ) { return 0; }
+  if( !currentStatus.hasSync) { return 0; }
   if(currentStatus.RPM < configPage2.crankRPM) { return crankingGetRPM(configPage2.triggerTeeth); }
   return stdGetRPM();
 }
