@@ -283,6 +283,8 @@ void setPinMapping(byte boardID)
       pinTachOut = 49; //Tacho output pin
       pinIdle1 = 5; //Single wire idle control
       pinFuelPump = 45; //Fuel pump output
+      pinStepperDir = 20; //Direction pin  for DRV8825 driver
+      pinStepperStep = 21; //Step pin for DRV8825 driver
       pinSpareHOut1 = 4; // high current output spare1
       pinSpareHOut2 = 6; // high current output spare2
       pinBoost = 7;
@@ -314,6 +316,8 @@ void setPinMapping(byte boardID)
       pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
+      pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pinStepperStep = 17; //Step pin for DRV8825 driver
       pinDisplayReset = 48; // OLED reset pin
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
@@ -343,6 +347,8 @@ void setPinMapping(byte boardID)
   pinMode(pinFuelPump, OUTPUT);
   pinMode(pinIgnBypass, OUTPUT);
   pinMode(pinFan, OUTPUT);
+  pinMode(pinStepperDir, OUTPUT);
+  pinMode(pinStepperStep, OUTPUT);
   
   inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
   inj1_pin_mask = digitalPinToBitMask(pinInjector1);
