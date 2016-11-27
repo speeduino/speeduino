@@ -52,7 +52,7 @@ struct config2 configPage2;
 struct config3 configPage3;
 struct config4 configPage4;
 
-int req_fuel_uS, inj_opentime_uS;
+short req_fuel_uS, inj_opentime_uS;
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
 volatile byte startRevolutions = 0; //A counter for how many revolutions have been completed since sync was achieved.
@@ -66,8 +66,8 @@ bool fuelPumpOn = false; //The current status of the fuel pump
 
 void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
-int (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
-int (*getCrankAngle)(int); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
+short (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
+short (*getCrankAngle)(short); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 
 struct table3D fuelTable; //16x16 fuel map
 struct table3D ignitionTable; //16x16 ignition map
@@ -94,11 +94,11 @@ unsigned long currentLoopTime; //The time the current loop started (uS)
 unsigned long previousLoopTime; //The time the previous loop started (uS)
 
 unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
-unsigned int MAPcount; //Number of samples taken in the current MAP cycle
+unsigned short MAPcount; //Number of samples taken in the current MAP cycle
 byte MAPcurRev = 0; //Tracks which revolution we're sampling on
 
-int CRANK_ANGLE_MAX = 720;
-int CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential 
+short CRANK_ANGLE_MAX = 720;
+short CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential 
 //bool useSequentialFuel; // Whether sequential fueling is to be used (1 squirt per cycle)
 //bool useSequentialIgnition; // Whether sequential ignition is used (1 spark per cycle)
 
@@ -108,23 +108,23 @@ static byte fanHIGH = HIGH;             // Used to invert the cooling fan output
 static byte fanLOW = LOW;               // Used to invert the cooling fan output
 
 struct statuses currentStatus;
-volatile int mainLoopCount;
+volatile short mainLoopCount;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
-int rpmDelta;
+short rpmDelta;
 byte ignitionCount;
 byte fixedCrankingOverride = 0;
 unsigned long secCounter; //The next time to incremen 'runSecs' counter.
 unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less. 
-int channel1IgnDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
-int channel2IgnDegrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
-int channel3IgnDegrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
-int channel4IgnDegrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
-int channel5IgnDegrees; //The number of crank degrees until cylinder 5 is at TDC
-int channel1InjDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
-int channel2InjDegrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
-int channel3InjDegrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
-int channel4InjDegrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
-int channel5InjDegrees; //The number of crank degrees until cylinder 5 is at TDC
+short channel1IgnDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
+short channel2IgnDegrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
+short channel3IgnDegrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
+short channel4IgnDegrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
+short channel5IgnDegrees; //The number of crank degrees until cylinder 5 is at TDC
+short channel1InjDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
+short channel2InjDegrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
+short channel3InjDegrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
+short channel4InjDegrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
+short channel5InjDegrees; //The number of crank degrees until cylinder 5 is at TDC
 
 bool channel1InjEnabled = true;
 bool channel2InjEnabled = false;
@@ -144,7 +144,7 @@ void (*ign4EndFunction)();
 void (*ign5StartFunction)();
 void (*ign5EndFunction)();
 
-int timePerDegree;
+short timePerDegree;
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 
@@ -796,7 +796,7 @@ void loop()
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
-      int lastRPM = currentStatus.RPM; //Need to record this for rpmDOT calculation
+      short lastRPM = currentStatus.RPM; //Need to record this for rpmDOT calculation
       currentStatus.RPM = currentStatus.longRPM = getRPM(); //Long RPM is included here
       if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't. 
       currentStatus.rpmDOT = ldiv(1000000, (currentLoopTime - previousLoopTime)).quot * (currentStatus.RPM - lastRPM); //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
@@ -840,9 +840,9 @@ void loop()
       bool launchTrigger;
       if(configPage3.launchHiLo) { launchTrigger = digitalRead(pinLaunch); }
       else { launchTrigger = !digitalRead(pinLaunch); } 
-      if (configPage3.launchEnabled && launchTrigger && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) ) { currentStatus.launchingSoft = true; BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH); } //SoftCut rev limit for 2-step launch control. 
+      if (configPage3.launchEnabled && launchTrigger && (currentStatus.RPM > ((unsigned short)(configPage3.lnchSoftLim) * 100)) ) { currentStatus.launchingSoft = true; BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH); } //SoftCut rev limit for 2-step launch control. 
       else { currentStatus.launchingSoft = false; BIT_CLEAR(currentStatus.spark, BIT_SPARK_SLAUNCH); }
-      if (configPage3.launchEnabled && launchTrigger && (currentStatus.RPM > ((unsigned int)(configPage3.lnchHardLim) * 100)) ) { currentStatus.launchingHard = true; BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); } //HardCut rev limit for 2-step launch control. 
+      if (configPage3.launchEnabled && launchTrigger && (currentStatus.RPM > ((unsigned short)(configPage3.lnchHardLim) * 100)) ) { currentStatus.launchingHard = true; BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); } //HardCut rev limit for 2-step launch control. 
       else { currentStatus.launchingHard = false; BIT_CLEAR(currentStatus.spark, BIT_SPARK_HLAUNCH); }
 
       //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
@@ -894,7 +894,7 @@ void loop()
     {
         if(startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;} //Enable the fuel and ignition, assuming staging revolutions are complete
         //If it is, check is we're running or cranking
-        if(currentStatus.RPM > ((unsigned int)configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100 
+        if(currentStatus.RPM > ((unsigned short)configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100 
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); //Sets the engine running bit
           //Only need to do anything if we're transitioning from cranking to running
@@ -942,20 +942,20 @@ void loop()
       if (advanceIATadjust <= currentStatus.advance) { currentStatus.advance -= advanceIATadjust; }
       else { currentStatus.advance = 0; } 
 
-      int injector1StartAngle = 0;
-      int injector2StartAngle = 0;
-      int injector3StartAngle = 0; //Currently used for 3 cylinder only
-      int injector4StartAngle = 0; //Not used until sequential gets written
-      int injector5StartAngle = 0; //For 5 cylinder testing
-      int ignition1StartAngle = 0;
-      int ignition2StartAngle = 0;
-      int ignition3StartAngle = 0; //Currently used for 3 cylinder only
-      int ignition4StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
-      int ignition5StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
+      short injector1StartAngle = 0;
+      short injector2StartAngle = 0;
+      short injector3StartAngle = 0; //Currently used for 3 cylinder only
+      short injector4StartAngle = 0; //Not used until sequential gets written
+      short injector5StartAngle = 0; //For 5 cylinder testing
+      short ignition1StartAngle = 0;
+      short ignition2StartAngle = 0;
+      short ignition3StartAngle = 0; //Currently used for 3 cylinder only
+      short ignition4StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
+      short ignition5StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
       //These are used for comparisons on channels above 1 where the starting angle (for injectors or ignition) can be less than a single loop time
       //(Don't ask why this is needed, it will break your head)
-      int tempCrankAngle;
-      int tempStartAngle; 
+      short tempCrankAngle;
+      short tempStartAngle; 
       
       //********************************************************
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
@@ -967,7 +967,7 @@ void loop()
         //if (deltaToothCount != toothCurrentCount)
         {
           deltaToothCount = toothCurrentCount;
-          int angle1, angle2; //These represent the crank angles that are travelled for the last 2 pulses
+          short angle1, angle2; //These represent the crank angles that are travelled for the last 2 pulses
           if(configPage2.TrigPattern == 4)
           {
             //Special case for 70/110 pattern on 4g63
@@ -1010,7 +1010,7 @@ void loop()
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
       //Determine next firing angles
-      int PWdivTimerPerDegree = div(currentStatus.PW, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
+      short PWdivTimerPerDegree = div(currentStatus.PW, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
       injector1StartAngle = configPage1.inj1Ang - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       if(injector1StartAngle < 0) {injector1StartAngle += CRANK_ANGLE_MAX_INJ;} 
       //Repeat the above for each cylinder
@@ -1081,9 +1081,9 @@ void loop()
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
       BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
-      if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { currentStatus.advance = configPage2.SoftLimRetard; BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+      if (currentStatus.RPM > ((unsigned short)(configPage2.SoftRevLim) * 100) ) { currentStatus.advance = configPage2.SoftLimRetard; BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
       BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM);
-      if (currentStatus.RPM > ((unsigned int)(configPage2.HardRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); } //Hardcut RPM limit
+      if (currentStatus.RPM > ((unsigned short)(configPage2.HardRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); } //Hardcut RPM limit
       if (currentStatus.launchingSoft) { currentStatus.advance = configPage3.lnchRetard; } //SoftCut rev limit for 2-step launch control
       
       //Set dwell
@@ -1093,7 +1093,7 @@ void loop()
       //Pull battery voltage based dwell correction and apply if needed
       currentStatus.dwellCorrection = table2D_getValue(&dwellVCorrectionTable, currentStatus.battery10);
       if (currentStatus.dwellCorrection != 100) { currentStatus.dwell = divs100(currentStatus.dwell) * currentStatus.dwellCorrection; }
-      int dwellAngle = (div(currentStatus.dwell, timePerDegree).quot ); //Convert the dwell time to dwell angle based on the current engine speed
+      short dwellAngle = (div(currentStatus.dwell, timePerDegree).quot ); //Convert the dwell time to dwell angle based on the current engine speed
       
       //Calculate start angle for each channel
       //1 cylinder (Everyone gets this)
@@ -1158,7 +1158,7 @@ void loop()
       //This may potentially be called a number of times as we get closer and closer to the opening time
       
       //Determine the current crank angle
-      int crankAngle = getCrankAngle(timePerDegree);
+      short crankAngle = getCrankAngle(timePerDegree);
       if (crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle -= 360; }
       
       if (fuelOn && currentStatus.PW > 0 && !BIT_CHECK(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT))

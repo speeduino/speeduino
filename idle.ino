@@ -225,7 +225,7 @@ void homeStepper()
 {
    //Need to 'home' the stepper on startup
    digitalWrite(pinStepperDir, STEPPER_BACKWARD); //Sets stepper direction to backwards
-   for(int x=0; x < (configPage4.iacStepHome * 3); x++) //Step counts are divided by 3 in TS. Multiply back out here
+   for(short x=0; x < (configPage4.iacStepHome * 3); x++) //Step counts are divided by 3 in TS. Multiply back out here
    {
      digitalWrite(pinStepperStep, HIGH);
      delayMicroseconds(iacStepTime);

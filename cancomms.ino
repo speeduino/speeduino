@@ -55,14 +55,14 @@ void canCommand()
        break;  
       
     case 'S': // send code version
-       for (unsigned int sig = 0; sig < sizeof(displaySignature) - 1; sig++){
+       for (unsigned short sig = 0; sig < sizeof(displaySignature) - 1; sig++){
            Serial3.write(displaySignature[sig]); 
        }
        //Serial3.print("speeduino 201609-dev");
        break;
 
     case 'Q': // send code version
-       for (unsigned int revn = 0; revn < sizeof( TSfirmwareVersion) - 1; revn++){
+       for (unsigned short revn = 0; revn < sizeof( TSfirmwareVersion) - 1; revn++){
            Serial3.write( TSfirmwareVersion[revn]);
        }
        //Serial3.print("speeduino 201609-dev");

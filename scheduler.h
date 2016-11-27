@@ -144,8 +144,8 @@ struct Schedule {
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
   volatile unsigned long startTime; //The system time (in uS) that the schedule started
-  unsigned int startCompare; //The counter value of the timer when this will start
-  unsigned int endCompare;
+  unsigned short startCompare; //The counter value of the timer when this will start
+  unsigned short endCompare;
 };
 
 volatile Schedule *timer3Aqueue[4];
@@ -171,10 +171,10 @@ Schedule ignitionSchedule8;
 
 Schedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 
-static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned int CNT)
+static inline unsigned short setQueue(volatile Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned short CNT)
 {
   //Create an array of all the upcoming targets, relative to the current count on the timer
-  unsigned int tmpQueue[4];
+  unsigned short tmpQueue[4];
 
   //Set the initial queue state. This order matches the tmpQueue order
   if(schedule1->Status == OFF)
@@ -211,7 +211,7 @@ static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedu
   //Sort the queues. Both queues are kept in sync. 
   //This implementes a sorting networking based on the Bose-Nelson sorting network
   //See: http://pages.ripco.net/~jgamble/nw.html
-  #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned int tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; volatile Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
+  #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned short tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; volatile Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
   //SWAP(0, 1); //Likely not needed
   //SWAP(2, 3); //Likely not needed
   SWAP(0, 2);
@@ -227,7 +227,7 @@ static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedu
  * The current item (0) is discarded
  * The final queue slot is set to nullSchedule to indicate that no action should be taken
  */
-static inline unsigned int popQueue(volatile Schedule *queue[])
+static inline unsigned short popQueue(volatile Schedule *queue[])
 {
   queue[0] = queue[1];
   queue[1] = queue[2];

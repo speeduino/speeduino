@@ -6,7 +6,7 @@ This file is used for everything related to maps/tables including their definiti
 #include <Arduino.h>
 
 /*
-The 2D table can contain either 8-bit (byte) or 16-bit (int) values
+The 2D table can contain either 8-bit (byte) or 16-bit (short) values
 The valueSize variable should be set to either 8 or 16 to indicate this BEFORE the table is used
 */
 struct table2D {
@@ -16,11 +16,11 @@ struct table2D {
   byte *values;
   byte *axisX;
   
-  int *values16;
-  int *axisX16;
+  short *values16;
+  short *axisX16;
   
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
-  int lastXMax, lastXMin;
+  short lastXMax, lastXMin;
 };
 
 void table2D_setSize(struct table2D targetTable, byte newSize);
@@ -33,8 +33,8 @@ struct table3D {
   byte ySize;
   
   byte **values;
-  int *axisX;
-  int *axisY;
+  short *axisX;
+  short *axisY;
   
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
   byte lastXMax, lastXMin;
@@ -56,7 +56,7 @@ Eg: 2x2 table
 (1,0) = 1
 
 */
-int get3DTableValue(struct table3D *fromTable, int, int);
-int table2D_getValue(struct table2D *fromTable, int);
+short get3DTableValue(struct table3D *fromTable, short, short);
+short table2D_getValue(struct table2D *fromTable, short);
 
 #endif // TABLE_H

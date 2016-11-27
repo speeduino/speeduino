@@ -185,8 +185,8 @@ void updateDisplay()
       break;
   }
   
-  int barWidth = ldiv(((unsigned long)currentStatus.RPM * 128), 9000).quot;
-  //int barWidth = map(currentStatus.RPM, 0, 9000, 0, 128);
+  short barWidth = ldiv(((unsigned long)currentStatus.RPM * 128), 9000).quot;
+  //short barWidth = map(currentStatus.RPM, 0, 9000, 0, 128);
   display.fillRect(0, 20, barWidth, 10, 1);
   
   display.display();

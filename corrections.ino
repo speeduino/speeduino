@@ -145,7 +145,7 @@ byte correctionAccel()
   if (currentStatus.TPS < currentStatus.TPSlast) { return 100; }
   
   //If TAE isn't currently turned on, need to check whether it needs to be turned on
-  int rateOfChange = ldiv(1000000, (currentStatus.TPS_time - currentStatus.TPSlast_time)).quot * (currentStatus.TPS - currentStatus.TPSlast); //This is the % per second that the TPS has moved
+  short rateOfChange = ldiv(1000000, (currentStatus.TPS_time - currentStatus.TPSlast_time)).quot * (currentStatus.TPS - currentStatus.TPSlast); //This is the % per second that the TPS has moved
   //currentStatus.tpsDOT = divs10(rateOfChange); //The TAE bins are divided by 10 in order to allow them to be stored in a byte. 
   currentStatus.tpsDOT = rateOfChange / 10;
   
@@ -243,7 +243,7 @@ byte correctionsAFRClosedLoop()
   if( (ignitionCount & (configPage3.egoCount - 1)) == 1 ) //This is the equivalent of ( (ignitionCount % configPage3.egoCount) == 0 ) but without the expensive modulus operation. ie It results in True every <egoCount> ignition loops. Note that it only works for power of two vlaues for egoCount
   {
     //Check all other requirements for closed loop adjustments
-    if( (currentStatus.coolant > (int)(configPage3.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage3.egoRPM * 100)) && (currentStatus.TPS < configPage3.egoTPSMax) && (currentStatus.O2 < configPage3.ego_max) && (currentStatus.O2 > configPage3.ego_min) && (currentStatus.runSecs > configPage3.ego_sdelay) )
+    if( (currentStatus.coolant > (short)(configPage3.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned short)(configPage3.egoRPM * 100)) && (currentStatus.TPS < configPage3.egoTPSMax) && (currentStatus.O2 < configPage3.ego_max) && (currentStatus.O2 > configPage3.ego_min) && (currentStatus.runSecs > configPage3.ego_sdelay) )
     {
       //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
       byte yValue;

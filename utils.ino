@@ -10,12 +10,12 @@ Returns how much free dynamic memory exists (between heap and stack)
 */
 #include "utils.h"
 
-int freeRam ()
+short freeRam ()
 {
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-  extern int __heap_start, *__brkval;
-  int v;
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+  extern short __heap_start, *__brkval;
+  short v;
+  return (short) &v - (__brkval == 0 ? (short) &__heap_start : (short) __brkval);
 #elif defined(CORE_TEENSY)
   return 0;
 #endif
@@ -387,17 +387,17 @@ TPS: Throttle position (0% to 100%)
 
 This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N calculations respectively.
 */
-unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
+unsigned short PW(short REQ_FUEL, byte VE, byte MAP, short corrections, short injOpen)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
-  unsigned int iVE, iMAP, iAFR, iCorrections;
+  unsigned short iVE, iMAP, iAFR, iCorrections;
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
-  iVE = ((unsigned int)VE << 7) / 100;
-  if( configPage1.multiplyMAP ) { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; } //Include multiply MAP (vs baro) if enabled
-  if( configPage1.includeAFR && (configPage3.egoType == 2)) { iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget; } //Include AFR (vs target) if enabled
+  iVE = ((unsigned short)VE << 7) / 100;
+  if( configPage1.multiplyMAP ) { iMAP = ((unsigned short)MAP << 7) / currentStatus.baro; } //Include multiply MAP (vs baro) if enabled
+  if( configPage1.includeAFR && (configPage3.egoType == 2)) { iAFR = ((unsigned short)currentStatus.O2 << 7) / currentStatus.afrTarget; } //Include AFR (vs target) if enabled
   iCorrections = (corrections << 7) / 100;
 
 
@@ -411,18 +411,18 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
   if ( intermediate > 65535) {
     intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
   }
-  return (unsigned int)(intermediate);
+  return (unsigned short)(intermediate);
 
 }
 
 //Convenience functions for Speed Density and Alpha-N
-unsigned int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
+unsigned short PW_SD(short REQ_FUEL, byte VE, byte MAP, short corrections, short injOpen)
 {
   return PW(REQ_FUEL, VE, MAP, corrections, injOpen); 
   //return PW(REQ_FUEL, VE, 100, corrections, injOpen); 
 }
 
-unsigned int PW_AN(int REQ_FUEL, byte VE, byte TPS, int corrections, int injOpen)
+unsigned short PW_AN(short REQ_FUEL, byte VE, byte TPS, short corrections, short injOpen)
 {
   //Sanity check
   if(TPS > 100) { TPS = 100; }

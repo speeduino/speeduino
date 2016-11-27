@@ -11,7 +11,7 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing. 
 const byte page_size = 64;
-const int map_page_size = 288;
+const short map_page_size = 288;
 const byte packetSize = 35;
 
 //Handy bitsetting macros
@@ -104,29 +104,29 @@ volatile byte ign5_pin_mask;
 //In current version this is 64 bytes
 struct statuses {
   volatile boolean hasSync;
-  unsigned int RPM;
+  unsigned short RPM;
   long longRPM;
-  int mapADC;
+  short mapADC;
   long MAP; //Has to be a long for PID calcs (Boost control)
-  int baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running
+  short baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running
   byte TPS; //The current TPS reading (0% - 100%)
   byte TPSlast; //The previous TPS reading
   unsigned long TPS_time; //The time the TPS sample was taken
   unsigned long TPSlast_time; //The time the previous TPS sample was taken
   byte tpsADC; //0-255 byte representation of the TPS
   byte tpsDOT;
-  int rpmDOT;
+  short rpmDOT;
   byte VE;
   byte O2;
   byte O2_2;
-  int coolant;
-  int cltADC;
-  int IAT;
-  int iatADC;
-  int batADC;
-  int O2ADC;
-  int O2_2ADC;
-  int dwell;
+  short coolant;
+  short cltADC;
+  short IAT;
+  short iatADC;
+  short batADC;
+  short O2ADC;
+  short O2_2ADC;
+  short dwell;
   byte dwellCorrection; //The amount of correction being applied to the dwell time.
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
   byte advance;
@@ -144,13 +144,13 @@ struct statuses {
   volatile byte squirt;
   volatile byte spark;
   byte engine;
-  unsigned int PW; //In uS
+  unsigned short PW; //In uS
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
-  volatile unsigned int loopsPerSecond;
+  volatile unsigned short loopsPerSecond;
   boolean launchingSoft; //True when in launch control soft limit mode
   boolean launchingHard; //True when in launch control hard limit mode
-  int freeRAM;
+  short freeRAM;
   
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -198,10 +198,10 @@ struct config1 {
   byte includeAFR : 1;
   byte unused26 : 5;
   byte injOpen; //Injector opening time (ms * 10)
-  unsigned int inj1Ang;
-  unsigned int inj2Ang; 
-  unsigned int inj3Ang; 
-  unsigned int inj4Ang; 
+  unsigned short inj1Ang;
+  unsigned short inj2Ang; 
+  unsigned short inj3Ang; 
+  unsigned short inj4Ang; 
 
   //config1 in ini
   byte mapSample : 2;
@@ -231,12 +231,12 @@ struct config1 {
   byte tpsMin;
   byte tpsMax;
   byte mapMin;
-  unsigned int mapMax;
+  unsigned short mapMax;
   byte fpPrime; //Time (In seconds) that the fuel pump should be primed for on power up
   byte stoich;
-  unsigned int oddfire2; //The ATDC angle of channel 2 for oddfire
-  unsigned int oddfire3; //The ATDC angle of channel 3 for oddfire
-  unsigned int oddfire4; //The ATDC angle of channel 4 for oddfire
+  unsigned short oddfire2; //The ATDC angle of channel 2 for oddfire
+  unsigned short oddfire3; //The ATDC angle of channel 3 for oddfire
+  unsigned short oddfire4; //The ATDC angle of channel 4 for oddfire
   byte unused57;
   byte unused58;
   byte unused59;
@@ -251,7 +251,7 @@ struct config1 {
 //This mostly covers off variables that are required for ignition
 struct config2 {
   
-  int triggerAngle;
+  short triggerAngle;
   byte FixAng;
   byte CrankAng;
   byte TrigAngMul; //Multiplier for non evenly divisible tooth counts. 
