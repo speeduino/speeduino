@@ -74,9 +74,6 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN3_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C) //Turn off this output compare unit
   #define IGN4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A) //Turn off this output compare unit
 
-  #define MAX_TIMER_PERIOD 262140 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
-  #define uS_TO_TIMER_COMPARE(uS1) (uS1 >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
-
 #elif defined(CORE_TEENSY) 
   //http://shawnhymel.com/661/learning-the-teensy-lc-interrupt-service-routines/
   #define FUEL1_COUNTER FTM0_CNT
@@ -99,28 +96,25 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN3_COMPARE  FTM0_C6V
   #define IGN4_COMPARE  FTM0_C7V
 
-  #define FUEL1_TIMER_ENABLE() FTM0_C0SC |= FTM_CSC_CHIE //Write 1 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
-  #define FUEL2_TIMER_ENABLE() FTM0_C1SC |= FTM_CSC_CHIE
-  #define FUEL3_TIMER_ENABLE() FTM0_C2SC |= FTM_CSC_CHIE
-  #define FUEL4_TIMER_ENABLE() FTM0_C3SC |= FTM_CSC_CHIE
+  #define FUEL1_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL2_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL3_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL4_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
 
-  #define FUEL1_TIMER_DISABLE() FTM0_C0SC &= ~FTM_CSC_CHIE //Write 0 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
-  #define FUEL2_TIMER_DISABLE() FTM0_C1SC &= ~FTM_CSC_CHIE
-  #define FUEL3_TIMER_DISABLE() FTM0_C2SC &= ~FTM_CSC_CHIE
-  #define FUEL4_TIMER_DISABLE() FTM0_C3SC &= ~FTM_CSC_CHIE
+  #define FUEL1_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL2_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL3_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define FUEL4_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
 
-  #define IGN1_TIMER_ENABLE() FTM0_C4SC |= FTM_CSC_CHIE
-  #define IGN2_TIMER_ENABLE() FTM0_C5SC |= FTM_CSC_CHIE
-  #define IGN3_TIMER_ENABLE() FTM0_C6SC |= FTM_CSC_CHIE
-  #define IGN4_TIMER_ENABLE() FTM0_C7SC |= FTM_CSC_CHIE
+  #define IGN1_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN2_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN3_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN4_TIMER_ENABLE() NVIC_ENABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
 
-  #define IGN1_TIMER_DISABLE() FTM0_C4SC &= ~FTM_CSC_CHIE
-  #define IGN2_TIMER_DISABLE() FTM0_C5SC &= ~FTM_CSC_CHIE
-  #define IGN3_TIMER_DISABLE() FTM0_C6SC &= ~FTM_CSC_CHIE
-  #define IGN4_TIMER_DISABLE() FTM0_C7SC &= ~FTM_CSC_CHIE
-
-  #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
-  #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
+  #define IGN1_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN2_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN3_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
+  #define IGN4_TIMER_DISABLE() NVIC_DISABLE_IRQ(IRQ_FTM1) //THIS IS NOT RIGHT! PLACEHOLDER ONLY!
 #endif
 
 void initialiseSchedulers();
@@ -150,8 +144,8 @@ struct Schedule {
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
   volatile unsigned long startTime; //The system time (in uS) that the schedule started
-  unsigned int startCompare; //The counter value of the timer when this will start
-  unsigned int endCompare;
+  unsigned short startCompare; //The counter value of the timer when this will start
+  unsigned short endCompare;
 };
 
 volatile Schedule *timer3Aqueue[4];
@@ -177,10 +171,10 @@ Schedule ignitionSchedule8;
 
 Schedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 
-static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned int CNT)
+static inline unsigned short setQueue(volatile Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned short CNT)
 {
   //Create an array of all the upcoming targets, relative to the current count on the timer
-  unsigned int tmpQueue[4];
+  unsigned short tmpQueue[4];
 
   //Set the initial queue state. This order matches the tmpQueue order
   if(schedule1->Status == OFF)
@@ -217,7 +211,7 @@ static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedu
   //Sort the queues. Both queues are kept in sync. 
   //This implementes a sorting networking based on the Bose-Nelson sorting network
   //See: http://pages.ripco.net/~jgamble/nw.html
-  #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned int tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; volatile Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
+  #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned short tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; volatile Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
   //SWAP(0, 1); //Likely not needed
   //SWAP(2, 3); //Likely not needed
   SWAP(0, 2);
@@ -233,7 +227,7 @@ static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedu
  * The current item (0) is discarded
  * The final queue slot is set to nullSchedule to indicate that no action should be taken
  */
-static inline unsigned int popQueue(volatile Schedule *queue[])
+static inline unsigned short popQueue(volatile Schedule *queue[])
 {
   queue[0] = queue[1];
   queue[1] = queue[2];

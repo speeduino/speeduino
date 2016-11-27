@@ -62,12 +62,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2016.11-dev");
+      Serial.print("Speeduino 2016.10-dev");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201611-dev");
+      Serial.print("speeduino 201610-dev");
      break;
 
     case 'V': // send VE table and constants in binary
@@ -75,7 +75,7 @@ void command()
       break;
 
     case 'W': // receive new VE obr constant at 'W'+<offset>+<newbyte>
-      int valueOffset; //cannot use offset as a variable name, it is a reserved word for several teensy libraries
+      short valueOffset; //cannot use offset as a variable name, it is a reserved word for several teensy libraries
       while (Serial.available() == 0) { }
 
       if (isMap)
@@ -116,28 +116,28 @@ void command()
       digitalWrite(pinInjector2, LOW);
       return;
       Serial.println(F("Coolant"));
-      for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
+      for (short x = 0; x < CALIBRATION_TABLE_SIZE; x++)
       {
         Serial.print(x);
         Serial.print(", ");
         Serial.println(cltCalibrationTable[x]);
       }
       Serial.println(F("Inlet temp"));
-      for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
+      for (short x = 0; x < CALIBRATION_TABLE_SIZE; x++)
       {
         Serial.print(x);
         Serial.print(", ");
         Serial.println(iatCalibrationTable[x]);
       }
       Serial.println(F("O2"));
-      for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
+      for (short x = 0; x < CALIBRATION_TABLE_SIZE; x++)
       {
         Serial.print(x);
         Serial.print(", ");
         Serial.println(o2CalibrationTable[x]);
       }
       Serial.println(F("WUE"));
-      for (int x = 0; x < 10; x++)
+      for (short x = 0; x < 10; x++)
       {
         Serial.print(configPage2.wueBins[x]);
         Serial.print(", ");
@@ -198,7 +198,7 @@ void command()
 /*
 This function returns the current values of a fixed group of variables
 */
-void sendValues(int packetlength, byte portNum)
+void sendValues(short packetlength, byte portNum)
 {
   byte response[packetlength];
   
@@ -236,11 +236,11 @@ void sendValues(int packetlength, byte portNum)
   response[17] = currentStatus.corrections; //Total GammaE (%)
   response[18] = currentStatus.VE; //Current VE 1 (%)
   response[19] = currentStatus.afrTarget;
-  response[20] = (byte)(currentStatus.PW1 / 100); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+  response[20] = (byte)(currentStatus.PW / 100); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
   response[21] = currentStatus.tpsDOT; //TPS DOT
   response[22] = currentStatus.advance;
   response[23] = currentStatus.TPS; // TPS (0% to 100%)
-  //Need to split the int loopsPerSecond value into 2 bytes
+  //Need to split the short loopsPerSecond value into 2 bytes
   response[24] = lowByte(currentStatus.loopsPerSecond);
   response[25] = highByte(currentStatus.loopsPerSecond);
 
@@ -267,7 +267,7 @@ void sendValues(int packetlength, byte portNum)
   return;
 }
 
-void receiveValue(int valueOffset, byte newValue)
+void receiveValue(short valueOffset, byte newValue)
 {
 
   void* pnt_configPage;//This only stores the address of the value that it's pointing to and not the max size
@@ -286,13 +286,13 @@ void receiveValue(int valueOffset, byte newValue)
         if (valueOffset < 272)
         {
           //X Axis
-          fuelTable.axisX[(valueOffset - 256)] = ((int)(newValue) * TABLE_RPM_MULTIPLIER); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+          fuelTable.axisX[(valueOffset - 256)] = ((short)(newValue) * 100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
         }
         else
         {
           //Y Axis
           valueOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
-          fuelTable.axisY[valueOffset] = (int)(newValue) * TABLE_LOAD_MULTIPLIER;
+          fuelTable.axisY[valueOffset] = (short)(newValue);
         }
         return;
       }
@@ -303,7 +303,7 @@ void receiveValue(int valueOffset, byte newValue)
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
       if (valueOffset < page_size)
       {
-        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
+        *((byte *)pnt_configPage + (byte)valueOffset) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
       }
       break;
 
@@ -319,13 +319,13 @@ void receiveValue(int valueOffset, byte newValue)
         if (valueOffset < 272)
         {
           //X Axis
-          ignitionTable.axisX[(valueOffset - 256)] = (int)(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+          ignitionTable.axisX[(valueOffset - 256)] = (short)(newValue) * short(100); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
         }
         else
         {
           //Y Axis
           valueOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order
-          ignitionTable.axisY[valueOffset] = (int)(newValue) * TABLE_LOAD_MULTIPLIER;
+          ignitionTable.axisY[valueOffset] = (short)(newValue);
         }
         return;
       }
@@ -335,7 +335,7 @@ void receiveValue(int valueOffset, byte newValue)
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
       if (valueOffset < page_size)
       {
-        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
+        *((byte *)pnt_configPage + (byte)valueOffset) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
       }
       break;
 
@@ -351,13 +351,13 @@ void receiveValue(int valueOffset, byte newValue)
         if (valueOffset < 272)
         {
           //X Axis
-          afrTable.axisX[(valueOffset - 256)] = int(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by megasquirt are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+          afrTable.axisX[(valueOffset - 256)] = short(newValue) * short(100); //The RPM values sent by megasquirt are divided by 100, need to multiply it back by 100 to make it correct
         }
         else
         {
           //Y Axis
           valueOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order
-          afrTable.axisY[valueOffset] = int(newValue) * TABLE_LOAD_MULTIPLIER;
+          afrTable.axisY[valueOffset] = short(newValue);
 
         }
         return;
@@ -368,7 +368,7 @@ void receiveValue(int valueOffset, byte newValue)
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
       if (valueOffset < page_size)
       {
-        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
+        *((byte *)pnt_configPage + (byte)valueOffset) = newValue; //Need to subtract 80 because the map and bins (Which make up 80 bytes) aren't part of the config pages
       }
       break;
 
@@ -388,12 +388,12 @@ void receiveValue(int valueOffset, byte newValue)
       }
       else if (valueOffset < 72) //New value is on the X (RPM) axis of the boost table
       {
-        boostTable.axisX[(valueOffset - 64)] = int(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+        boostTable.axisX[(valueOffset - 64)] = short(newValue) * short(100); //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct
         return;
       }
       else if (valueOffset < 80) //New value is on the Y (TPS) axis of the boost table
       {
-        boostTable.axisY[(7 - (valueOffset - 72))] = int(newValue) * TABLE_LOAD_MULTIPLIER;
+        boostTable.axisY[(7 - (valueOffset - 72))] = short(newValue);
         return;
       }
       else if (valueOffset < 144) //New value is part of the vvt map
@@ -405,34 +405,15 @@ void receiveValue(int valueOffset, byte newValue)
       else if (valueOffset < 152) //New value is on the X (RPM) axis of the vvt table
       {
         valueOffset = valueOffset - 144;
-        vvtTable.axisX[valueOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+        vvtTable.axisX[valueOffset] = short(newValue) * short(100); //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct
         return;
       }
       else //New value is on the Y (Load) axis of the vvt table
       {
         valueOffset = valueOffset - 152;
-        vvtTable.axisY[(7 - valueOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER;
+        vvtTable.axisY[(7 - valueOffset)] = short(newValue);
         return;
       }
-    case seqFuelPage:
-      if (valueOffset < 36) { trim1Table.values[5 - valueOffset / 6][valueOffset % 6] = newValue; } //Trim1 values
-      else if (valueOffset < 42) { trim1Table.axisX[(valueOffset - 36)] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the trim1 table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
-      else if (valueOffset < 48) { trim1Table.axisY[(5 - (valueOffset - 42))] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (TPS) axis of the boost table
-      //Trim table 2
-      else if (valueOffset < 84) { valueOffset = valueOffset - 48; trim2Table.values[5 - valueOffset / 6][valueOffset % 6] = newValue; } //New value is part of the trim2 map
-      else if (valueOffset < 90) { valueOffset = valueOffset - 84; trim2Table.axisX[valueOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
-      else if (valueOffset < 96) { valueOffset = valueOffset - 90; trim2Table.axisY[(5 - valueOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
-      //Trim table 3
-      else if (valueOffset < 132) { valueOffset = valueOffset - 96; trim3Table.values[5 - valueOffset / 6][valueOffset % 6] = newValue; } //New value is part of the trim2 map
-      else if (valueOffset < 138) { valueOffset = valueOffset - 132; trim3Table.axisX[valueOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
-      else if (valueOffset < 144) { valueOffset = valueOffset - 138; trim3Table.axisY[(5 - valueOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
-      //Trim table 4
-      else if (valueOffset < 180) { valueOffset = valueOffset - 144; trim4Table.values[5 - valueOffset / 6][valueOffset % 6] = newValue; } //New value is part of the trim2 map
-      else if (valueOffset < 186) { valueOffset = valueOffset - 180; trim4Table.axisX[valueOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
-      else if (valueOffset < 192) { valueOffset = valueOffset - 186; trim4Table.axisY[(5 - valueOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
-
-      break;
-      
     default:
       break;
   }
@@ -477,15 +458,15 @@ void sendPage(bool useChar)
           }
           Serial.println();
           for (pnt_configPage = (byte *)&configPage1.wueValues[9] + 1; pnt_configPage < &configPage1.inj1Ang; pnt_configPage = (byte *)pnt_configPage + 1) {
-            Serial.println(*((byte *)pnt_configPage));// This displays all the byte values between the last array up to but not including the first unsigned int on config page 1
+            Serial.println(*((byte *)pnt_configPage));// This displays all the byte values between the last array up to but not including the first unsigned short on config page 1
           }
           // The following loop displays four unsigned ints
-          for (pnt_configPage = &configPage1.inj1Ang; pnt_configPage < (unsigned int *)&configPage1.inj4Ang + 1; pnt_configPage = (unsigned int *)pnt_configPage + 1) Serial.println(*((unsigned int *)pnt_configPage));
+          for (pnt_configPage = &configPage1.inj1Ang; pnt_configPage < (unsigned short *)&configPage1.inj4Ang + 1; pnt_configPage = (unsigned short *)pnt_configPage + 1) Serial.println(*((unsigned short *)pnt_configPage));
           // Following loop displays byte values between the unsigned ints
-          for (pnt_configPage = (unsigned int *)&configPage1.inj4Ang + 1; pnt_configPage < &configPage1.mapMax; pnt_configPage = (byte *)pnt_configPage + 1) Serial.println(*((byte *)pnt_configPage));
+          for (pnt_configPage = (unsigned short *)&configPage1.inj4Ang + 1; pnt_configPage < &configPage1.mapMax; pnt_configPage = (byte *)pnt_configPage + 1) Serial.println(*((byte *)pnt_configPage));
           Serial.println(configPage1.mapMax);
           // Following loop displays remaining byte values of the page
-          for (pnt_configPage = (unsigned int *)&configPage1.mapMax + 1; pnt_configPage < (byte *)&configPage1 + page_size; pnt_configPage = (byte *)pnt_configPage + 1) Serial.println(*((byte *)pnt_configPage));
+          for (pnt_configPage = (unsigned short *)&configPage1.mapMax + 1; pnt_configPage < (byte *)&configPage1 + page_size; pnt_configPage = (byte *)pnt_configPage + 1) Serial.println(*((byte *)pnt_configPage));
           return;
         }
         else pnt_configPage = &configPage1; //Create a pointer to Page 1 in memory
@@ -506,9 +487,9 @@ void sendPage(bool useChar)
         {
           //To Display Values from Config Page 2
           Serial.println((const __FlashStringHelper *)&pageTitles[56]);
-          Serial.println(configPage2.triggerAngle);// configPsge2.triggerAngle is an int so just display it without complication
-          // Following loop displays byte values after that first int up to but not including the first array in config page 2
-          for (pnt_configPage = (int *)&configPage2 + 1; pnt_configPage < &configPage2.taeBins[0]; pnt_configPage = (byte *)pnt_configPage + 1) Serial.println(*((byte *)pnt_configPage));
+          Serial.println(configPage2.triggerAngle);// configPsge2.triggerAngle is an short so just display it without complication
+          // Following loop displays byte values after that first short up to but not including the first array in config page 2
+          for (pnt_configPage = (short *)&configPage2 + 1; pnt_configPage < &configPage2.taeBins[0]; pnt_configPage = (byte *)pnt_configPage + 1) Serial.println(*((byte *)pnt_configPage));
           for (byte y = 2; y; y--)// Displaying two equal sized arrays
           {
             byte * currentVar;// A placeholder for each array
@@ -666,80 +647,26 @@ void sendPage(bool useChar)
           byte response[160]; //Bit hacky, but the size is: (8x8 + 8 + 8) + (8x8 + 8 + 8) = 160
 
           //Boost table
-          for (int x = 0; x < 64; x++) { response[x] = boostTable.values[7 - x / 8][x % 8]; }
-          for (int x = 64; x < 72; x++) { response[x] = byte(boostTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
-          for (int y = 72; y < 80; y++) { response[y] = byte(boostTable.axisY[7 - (y - 72)]); }
+          for (short x = 0; x < 64; x++) { response[x] = boostTable.values[7 - x / 8][x % 8]; }
+          for (short x = 64; x < 72; x++) { response[x] = byte(boostTable.axisX[(x - 64)] / 100); }
+          for (short y = 72; y < 80; y++) { response[y] = byte(boostTable.axisY[7 - (y - 72)]); }
           //VVT table
-          for (int x = 0; x < 64; x++) { response[x + 80] = vvtTable.values[7 - x / 8][x % 8]; }
-          for (int x = 64; x < 72; x++) { response[x + 80] = byte(vvtTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
-          for (int y = 72; y < 80; y++) { response[y + 80] = byte(vvtTable.axisY[7 - (y - 72)]); }
+          for (short x = 0; x < 64; x++) { response[x + 80] = vvtTable.values[7 - x / 8][x % 8]; }
+          for (short x = 64; x < 72; x++) { response[x + 80] = byte(vvtTable.axisX[(x - 64)] / 100); }
+          for (short y = 72; y < 80; y++) { response[y + 80] = byte(vvtTable.axisY[7 - (y - 72)]); }
           Serial.write((byte *)&response, sizeof(response));
           return;
         }
         break;
       }
     case seqFuelPage:
-      { 
-        if(useChar)
-        {
-          currentTable = trim1Table;
-          for (int y = 0; y < currentTable.ySize; y++)
-          {
-            byte axisY = byte(currentTable.axisY[y]);
-            if (axisY < 100)
-            {
-              Serial.write(" ");
-              if (axisY < 10)
-              {
-                Serial.write(" ");
-              }
-            }
-            Serial.print(axisY);// Vertical Bins
-            Serial.write(" ");
-            for (int x = 0; x < currentTable.xSize; x++)
-            {
-              byte value = currentTable.values[y][x];
-              if (value < 100)
-              {
-                Serial.write(" ");
-                if (value < 10)
-                {
-                  Serial.write(" ");
-                }
-              }
-              Serial.print(value);
-              Serial.write(" ");
-            }
-            Serial.println("");
-          }
-            return;
-          //Do.... Something?
-        }
-        else
-        {
-          //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format        
-          byte response[192]; //Bit hacky, but the size is: (6x6 + 6 + 6) * 4 = 192
+      {
+        byte response[200]; //Bit hacky, but the size is: (8x8 + 8 + 8) + (8x8 + 8 + 8) = 160
+
           
-          //trim1 table
-          for (int x = 0; x < 36; x++) { response[x] = trim1Table.values[5 - x / 6][x % 6]; }
-          for (int x = 36; x < 42; x++) { response[x] = byte(trim1Table.axisX[(x - 36)] / 100); }
-          for (int y = 42; y < 48; y++) { response[y] = byte(trim1Table.axisY[5 - (y - 42)]); }
-          //trim2 table
-          for (int x = 0; x < 36; x++) { response[x + 48] = trim2Table.values[5 - x / 6][x % 6]; }
-          for (int x = 36; x < 42; x++) { response[x + 48] = byte(trim2Table.axisX[(x - 36)] / 100); }
-          for (int y = 42; y < 48; y++) { response[y + 48] = byte(trim2Table.axisY[5 - (y - 42)]); }
-          //trim3 table
-          for (int x = 0; x < 36; x++) { response[x + 96] = trim3Table.values[5 - x / 6][x % 6]; }
-          for (int x = 36; x < 42; x++) { response[x + 96] = byte(trim3Table.axisX[(x - 36)] / 100); }
-          for (int y = 42; y < 48; y++) { response[y + 96] = byte(trim3Table.axisY[5 - (y - 42)]); }
-          //trim4 table
-          for (int x = 0; x < 36; x++) { response[x + 144] = trim4Table.values[5 - x / 6][x % 6]; }
-          for (int x = 36; x < 42; x++) { response[x + 144] = byte(trim4Table.axisX[(x - 36)] / 100); }
-          for (int y = 42; y < 48; y++) { response[y + 144] = byte(trim4Table.axisY[5 - (y - 42)]); }
+          for (short x = 0; x < 200; x++) { 0; }
           Serial.write((byte *)&response, sizeof(response));
-          return;
-        }
-        break;
+          break;
       }
     default:
       {
@@ -762,7 +689,7 @@ void sendPage(bool useChar)
         }*/
         Serial.println((const __FlashStringHelper *)&pageTitles[currentTitleIndex]);// F macro hack
         Serial.println();
-        for (int y = 0; y < currentTable.ySize; y++)
+        for (short y = 0; y < currentTable.ySize; y++)
         {
           byte axisY = byte(currentTable.axisY[y]);
           if (axisY < 100)
@@ -775,7 +702,7 @@ void sendPage(bool useChar)
           }
           Serial.print(axisY);// Vertical Bins
           Serial.write(spaceChar);
-          for (int x = 0; x < currentTable.xSize; x++)
+          for (short x = 0; x < currentTable.xSize; x++)
           {
             byte value = currentTable.values[y][x];
             if (value < 100)
@@ -792,7 +719,7 @@ void sendPage(bool useChar)
           Serial.println();
         }
         Serial.print(F("    "));
-        for (int x = 0; x < currentTable.xSize; x++)// Horizontal bins
+        for (short x = 0; x < currentTable.xSize; x++)// Horizontal bins
         {
           byte axisX = byte(currentTable.axisX[x] / 100);
           if (axisX < 100)
@@ -821,12 +748,9 @@ void sendPage(bool useChar)
       //MS format has origin (0,0) in the bottom left corner, we use the top left for efficiency reasons
       byte response[map_page_size];
 
-      for (int x = 0; x < 256; x++) { response[x] = currentTable.values[15 - x / 16][x % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
-      //loop();
-      for (int x = 256; x < 272; x++) { response[x] = byte(currentTable.axisX[(x - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
-      //loop();
-      for (int y = 272; y < 288; y++) { response[y] = byte(currentTable.axisY[15 - (y - 272)]); } //MAP or TPS bins for VE table
-      //loop();
+      for (short x = 0; x < 256; x++) { response[x] = currentTable.values[15 - x / 16][x % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged
+      for (short x = 256; x < 272; x++) { response[x] = byte(currentTable.axisX[(x - 256)] / 100); }  //RPM Bins for VE table (Need to be dvidied by 100)
+      for (short y = 272; y < 288; y++) { response[y] = byte(currentTable.axisY[15 - (y - 272)]); } //MAP or TPS bins for VE table
       Serial.write((byte *)&response, sizeof(response));
     }
   }
@@ -849,9 +773,7 @@ void sendPage(bool useChar)
     for (byte x = 0; x < page_size; x++)
     {
       response[x] = *((byte *)pnt_configPage + x); //Each byte is simply the location in memory of the configPage + the offset + the variable number (x)
-      //if ( (x & 31) == 1) { loop(); } //Every 32 loops, do a manual call to loop() to ensure that there is no misses
     }
-    
     Serial.write((byte *)&response, sizeof(response));
     // }
   }
@@ -864,7 +786,7 @@ This function is used to store calibration data sent by Tuner Studio.
 void receiveCalibration(byte tableID)
 {
   byte* pnt_TargetTable; //Pointer that will be used to point to the required target table
-  int OFFSET, DIVISION_FACTOR, BYTES_PER_VALUE, EEPROM_START;
+  short OFFSET, DIVISION_FACTOR, BYTES_PER_VALUE, EEPROM_START;
 
   switch (tableID)
   {
@@ -901,11 +823,11 @@ void receiveCalibration(byte tableID)
 
   //1024 value pairs are sent. We have to receive them all, but only use every second one (We only store 512 calibratino table entries to save on EEPROM space)
   //The values are sent as 2 byte ints, but we convert them to single bytes. Any values over 255 are capped at 255.
-  int tempValue;
+  short tempValue;
   byte tempBuffer[2];
   bool every2nd = true;
-  int x;
-  int counter = 0;
+  short x;
+  short counter = 0;
   pinMode(13, OUTPUT);
 
   digitalWrite(13, LOW);
@@ -923,7 +845,7 @@ void receiveCalibration(byte tableID)
       tempBuffer[0] = Serial.read();
       tempBuffer[1] = Serial.read();
 
-      tempValue = div(int(word(tempBuffer[1], tempBuffer[0])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
+      tempValue = div(short(word(tempBuffer[1], tempBuffer[0])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned short), convert to signed int. These values come through * 10 from Tuner Studio
       tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
     }
     tempValue = tempValue + OFFSET;
@@ -940,7 +862,7 @@ void receiveCalibration(byte tableID)
       pnt_TargetTable[(x / 2)] = (byte)tempValue;
 
       //From TS3.x onwards, the EEPROM must be written here as TS restarts immediately after the process completes which is before the EEPROM write completes
-      int y = EEPROM_START + (x / 2);
+      short y = EEPROM_START + (x / 2);
       EEPROM.update(y, (byte)tempValue); 
 
       every2nd = false;
@@ -966,7 +888,7 @@ void sendToothLog(bool useChar)
   if (toothHistoryIndex < TOOTH_LOG_SIZE) {
     return;  //This should no longer ever occur since the flagging system was put in place
   }
-  unsigned int tempToothHistory[TOOTH_LOG_BUFFER]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
+  unsigned short tempToothHistory[TOOTH_LOG_BUFFER]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
 
   //Copy the working history into the temporary buffer array. This is done so that, if the history loops whilst the values are being sent over serial, it doesn't affect the values
   memcpy( (void*)tempToothHistory, (void*)toothHistory, sizeof(tempToothHistory) );
@@ -975,21 +897,20 @@ void sendToothLog(bool useChar)
   //Loop only needs to go to half the buffer size
   if (useChar)
   {
-    for (int x = 0; x < TOOTH_LOG_SIZE; x++)
+    for (short x = 0; x < TOOTH_LOG_SIZE; x++)
     {
       Serial.println(tempToothHistory[x]);
     }
   }
   else
   {
-    for (int x = 0; x < TOOTH_LOG_SIZE; x++)
+    for (short x = 0; x < TOOTH_LOG_SIZE; x++)
     {
       Serial.write(highByte(tempToothHistory[x]));
       Serial.write(lowByte(tempToothHistory[x]));
     }
     BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY);
   }
-  toothLogRead = true;
 }
 
 void testComm()

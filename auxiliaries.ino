@@ -10,22 +10,15 @@ Fan control
 */
 void initialiseFan()
 {
-  if(configPage4.fanInv) { fanHIGH = LOW, fanLOW = HIGH; }
-  else { fanHIGH = HIGH, fanLOW = LOW; }
-  digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
-  currentStatus.fanOn = false;
+if(configPage4.fanInv == 1) {fanHIGH = LOW, fanLOW = HIGH; }
+else {fanHIGH = HIGH, fanLOW = LOW;}
+digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
 }
 
 void fanControl()
 {
-  if(configPage4.fanEnable)
-  {
-    int onTemp = (int)configPage4.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
-    int offTemp = onTemp - configPage4.fanHyster;
-    
-    if (!currentStatus.fanOn && currentStatus.coolant >= onTemp) { digitalWrite(pinFan,fanHIGH); currentStatus.fanOn = true; }
-    if (currentStatus.fanOn && currentStatus.coolant <= offTemp) { digitalWrite(pinFan, fanLOW); currentStatus.fanOn = false; }
-  }
+   if (currentStatus.coolant >= (configPage4.fanSP - CALIBRATION_TEMPERATURE_OFFSET)) { digitalWrite(pinFan,fanHIGH); }
+   else if (currentStatus.coolant <= (configPage4.fanSP - configPage4.fanHyster)) { digitalWrite(pinFan, fanLOW); }
 }
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)

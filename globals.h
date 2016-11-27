@@ -2,10 +2,6 @@
 #define GLOBALS_H
 #include <Arduino.h>
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
-  #define CORE_AVR
-#endif
-
 //const byte ms_version = 20;
 const byte signature = 20;
 
@@ -15,7 +11,7 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing. 
 const byte page_size = 64;
-const int map_page_size = 288;
+const short map_page_size = 288;
 const byte packetSize = 35;
 
 //Handy bitsetting macros
@@ -78,7 +74,6 @@ const byte packetSize = 35;
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
 #define CALIBRATION_TEMPERATURE_OFFSET 40 // All temperature measurements are stored offset by 40 degrees. This is so we can use an unsigned byte (0-255) to represent temperature ranges from -40 to 215
-#define OFFSET_FUELTRIM 127 //The fuel trim tables are offset by 128 to allow for -128 to +128 values
 
 #define SERIAL_BUFFER_THRESHOLD 32 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
 
@@ -109,29 +104,29 @@ volatile byte ign5_pin_mask;
 //In current version this is 64 bytes
 struct statuses {
   volatile boolean hasSync;
-  unsigned int RPM;
+  unsigned short RPM;
   long longRPM;
-  int mapADC;
+  short mapADC;
   long MAP; //Has to be a long for PID calcs (Boost control)
-  int baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running
+  short baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running
   byte TPS; //The current TPS reading (0% - 100%)
   byte TPSlast; //The previous TPS reading
   unsigned long TPS_time; //The time the TPS sample was taken
   unsigned long TPSlast_time; //The time the previous TPS sample was taken
   byte tpsADC; //0-255 byte representation of the TPS
   byte tpsDOT;
-  int rpmDOT;
+  short rpmDOT;
   byte VE;
   byte O2;
   byte O2_2;
-  int coolant;
-  int cltADC;
-  int IAT;
-  int iatADC;
-  int batADC;
-  int O2ADC;
-  int O2_2ADC;
-  int dwell;
+  short coolant;
+  short cltADC;
+  short IAT;
+  short iatADC;
+  short batADC;
+  short O2ADC;
+  short O2_2ADC;
+  short dwell;
   byte dwellCorrection; //The amount of correction being applied to the dwell time.
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
   byte advance;
@@ -144,22 +139,18 @@ struct statuses {
   byte launchCorrection; //The amount of correction being applied if launch control is active
   byte afrTarget;
   byte idleDuty;
-  bool fanOn; //Whether or not the fan is turned on
   byte flex; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. 
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte squirt;
   volatile byte spark;
   byte engine;
-  unsigned int PW1; //In uS
-  unsigned int PW2; //In uS
-  unsigned int PW3; //In uS
-  unsigned int PW4; //In uS
+  unsigned short PW; //In uS
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous 
-  volatile unsigned int loopsPerSecond;
+  volatile unsigned short loopsPerSecond;
   boolean launchingSoft; //True when in launch control soft limit mode
   boolean launchingHard; //True when in launch control hard limit mode
-  int freeRAM;
+  short freeRAM;
   
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -207,10 +198,10 @@ struct config1 {
   byte includeAFR : 1;
   byte unused26 : 5;
   byte injOpen; //Injector opening time (ms * 10)
-  unsigned int inj1Ang;
-  unsigned int inj2Ang; 
-  unsigned int inj3Ang; 
-  unsigned int inj4Ang; 
+  unsigned short inj1Ang;
+  unsigned short inj2Ang; 
+  unsigned short inj3Ang; 
+  unsigned short inj4Ang; 
 
   //config1 in ini
   byte mapSample : 2;
@@ -231,7 +222,6 @@ struct config1 {
   byte baroCorr : 1;
   byte injLayout : 2;
   byte canEnable : 1; //is can interface enabled
-  byte unused2_38h : 1;
   
   byte primePulse;
   byte dutyLim;
@@ -241,12 +231,12 @@ struct config1 {
   byte tpsMin;
   byte tpsMax;
   byte mapMin;
-  unsigned int mapMax;
+  unsigned short mapMax;
   byte fpPrime; //Time (In seconds) that the fuel pump should be primed for on power up
   byte stoich;
-  unsigned int oddfire2; //The ATDC angle of channel 2 for oddfire
-  unsigned int oddfire3; //The ATDC angle of channel 3 for oddfire
-  unsigned int oddfire4; //The ATDC angle of channel 4 for oddfire
+  unsigned short oddfire2; //The ATDC angle of channel 2 for oddfire
+  unsigned short oddfire3; //The ATDC angle of channel 3 for oddfire
+  unsigned short oddfire4; //The ATDC angle of channel 4 for oddfire
   byte unused57;
   byte unused58;
   byte unused59;
@@ -261,7 +251,7 @@ struct config1 {
 //This mostly covers off variables that are required for ignition
 struct config2 {
   
-  int triggerAngle;
+  short triggerAngle;
   byte FixAng;
   byte CrankAng;
   byte TrigAngMul; //Multiplier for non evenly divisible tooth counts. 
@@ -271,10 +261,8 @@ struct config2 {
   byte IgInv : 1;
   byte oddfire : 1;
   byte TrigPattern : 4;
-
-  byte TrigEdgeSec : 1;
-  byte unused4_6b : 7;
   
+  byte unused4_6;
   byte unused4_7;
   byte IdleAdvRPM;
   byte IdleAdvCLT; //The temperature below which the idle is advanced
@@ -367,9 +355,8 @@ struct config3 {
   byte boostKI;
   byte boostKD;
   
-  byte lnchPullRes : 2;
-  byte fuelTrimEnabled : 1;
-  byte unused60 : 5;
+  byte lnchPullRes :2;
+  byte unused60 : 6;
   byte unused61;
   byte unused62;
   byte unused63;
@@ -412,7 +399,7 @@ byte pinInjector1; //Output pin injector 1
 byte pinInjector2; //Output pin injector 2
 byte pinInjector3; //Output pin injector 3 is on
 byte pinInjector4; //Output pin injector 4 is on
-byte pinInjector5; //Output pin injector 5 NOT USED YET
+byte pinInjector5; //Placeholder only - NOT USED
 byte pinInjector6; //Placeholder only - NOT USED
 byte pinInjector7; //Placeholder only - NOT USED
 byte pinInjector8; //Placeholder only - NOT USED
@@ -420,10 +407,10 @@ byte pinCoil1; //Pin for coil 1
 byte pinCoil2; //Pin for coil 2
 byte pinCoil3; //Pin for coil 3
 byte pinCoil4; //Pin for coil 4
-byte pinCoil5; //Pin for coil 5
-byte pinCoil6; //Pin for coil 6
-byte pinCoil7; //Pin for coil 7
-byte pinCoil8; //Pin for coil 8
+byte pinCoil5; //Pin for coil 4
+byte pinCoil6; //Pin for coil 4
+byte pinCoil7; //Pin for coil 4
+byte pinCoil8; //Pin for coil 4
 byte pinTrigger; //The CAS pin
 byte pinTrigger2; //The Cam Sensor pin
 byte pinTrigger3;	//the 2nd cam sensor pin
@@ -434,7 +421,7 @@ byte pinIAT; //IAT sensor pin
 byte pinCLT; //CLS sensor pin
 byte pinO2; //O2 Sensor pin
 byte pinO2_2; //second O2 pin
-byte pinBat; //Battery voltage pin
+byte pinBat; //O2 Sensor pin
 byte pinDisplayReset; // OLED reset pin
 byte pinTachOut; //Tacho output
 byte pinFuelPump; //Fuel pump on/off

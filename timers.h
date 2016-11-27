@@ -19,10 +19,10 @@ Hence we will preload the timer with 131 cycles to leave 125 until overflow (1ms
 #ifndef TIMERS_H
 #define TIMERS_H
 
-volatile int loop250ms;
-volatile int loopSec;
-
-volatile unsigned int dwellLimit_uS;
+volatile short loop250ms;
+volatile short loopSec;
+volatile unsigned long targetOverdwellTime;
+volatile unsigned long targetTachoPulseTime;
 
 #if defined (CORE_TEENSY)
   IntervalTimer lowResTimer;
