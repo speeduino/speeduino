@@ -1034,6 +1034,7 @@ void loop()
       if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         unsigned long pwLimit = percentage(configPage1.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+        if (CRANK_ANGLE_MAX_INJ == 720) { pwLimit = pwLimit * 2; }
         if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; }
       }
       
