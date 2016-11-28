@@ -142,10 +142,11 @@ struct statuses {
   byte batCorrection; //The amount of battery voltage enrichment currently being applied
   byte iatCorrection; //The amount of inlet air temperature adjustment currently being applied
   byte launchCorrection; //The amount of correction being applied if launch control is active
+  byte flexCorrection; //Amount of correction being applied to compensate for ethanol content
   byte afrTarget;
   byte idleDuty;
   bool fanOn; //Whether or not the fan is turned on
-  byte flex; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. 
+  byte ethanolPct; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. 
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte squirt;
   volatile byte spark;
@@ -247,8 +248,6 @@ struct config1 {
   unsigned int oddfire2; //The ATDC angle of channel 2 for oddfire
   unsigned int oddfire3; //The ATDC angle of channel 3 for oddfire
   unsigned int oddfire4; //The ATDC angle of channel 4 for oddfire
-  byte flexEthPctLow; //Ethanol % represented by flexFreqLow
-  byte flexEthPctHigh; //Ethanol % represented by flexFreqHigh
   byte flexFuelLow; //Fuel % to be used for the lowest ethanol reading (Typically 100%)
   byte flexFuelHigh; //Fuel % to be used for the highest ethanol reading (Typically 163%)
   byte flexAdvLow; //Additional advance (in degrees) at lowest ethanol reading (Typically 0)

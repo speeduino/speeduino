@@ -64,6 +64,10 @@ byte correctionsTotal()
   currentStatus.iatCorrection = correctionsIATDensity();
   if (currentStatus.iatCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.iatCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+
+  currentStatus.flexCorrection = correctionsFlex();
+  if (currentStatus.flexCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.flexCorrection); activeCorrections++; }
+  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
   
   currentStatus.launchCorrection = correctionsLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
@@ -217,6 +221,17 @@ bool correctionsDFCO()
   if ( !configPage2.dfcoEnabled ) { return false; } //If the DFCO option isn't turned on, always return false (off)
   if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) ) { return ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
   else { return ( currentStatus.RPM > ( (configPage2.dfcoRPM * 10) + configPage2.dfcoHyster) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
+}
+
+/*
+ * Flex fuel adjustment to vary fuel based on ethanol content
+ * The amount of extra fuel required is a linear relationship based on the % of ethanol. 
+*/
+byte correctionsFlex()
+{
+  if(!configPage1.flexEnabled) { return 100; } //Check for flex being enabled
+  byte flexRange = configPage1.flexFuelHigh - configPage1.flexFuelLow;
+  return percentage(currentStatus.ethanolPct, flexRange) + 100;
 }
 
 /*

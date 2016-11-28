@@ -13,5 +13,6 @@ byte correctionASE(); //After Start Enrichment
 byte correctionAccel(); //Acceleration Enrichment
 byte correctionsFloodClear(); //Check for flood clear on cranking
 byte correctionsAFRClosedLoop(); //Closed loop AFR adjustment
+byte correctionsFlex(); //Flex fuel adjustment
 
 #endif // CORRECTIONS_H

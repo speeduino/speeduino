@@ -259,7 +259,7 @@ void setup()
   if(configPage1.flexEnabled)
   { 
     attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, RISING);
-    currentStatus.flex = 0;
+    currentStatus.ethanolPct = 0;
   }
   
   //Once the configs have been loaded, a number of one time calculations can be completed

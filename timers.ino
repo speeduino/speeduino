@@ -113,7 +113,7 @@ unsigned long targetTachoPulseTime;
     {
       if(flexCounter < 50)
       {
-        currentStatus.flex = 0; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
+        currentStatus.ethanolPct = 0; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
         flexCounter = 0;
       }
       else if (flexCounter > 151) //1 pulse buffer
@@ -121,19 +121,19 @@ unsigned long targetTachoPulseTime;
         
         if(flexCounter < 169)
         {
-          currentStatus.flex = 100; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
+          currentStatus.ethanolPct = 100;
           flexCounter = 0;
         }
         else
         {
           //This indicates an error condition. Spec of the sensor is that errors are above 170Hz)
-          currentStatus.flex = 0;
+          currentStatus.ethanolPct = 0;
           flexCounter = 0;
         }
       }
       else
       {
-        currentStatus.flex = flexCounter - 50; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
+        currentStatus.ethanolPct = flexCounter - 50; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
         flexCounter = 0;
       }
       

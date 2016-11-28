@@ -257,7 +257,7 @@ void sendValues(int packetlength, byte portNum)
   response[31] = lowByte(currentStatus.rpmDOT);
   response[32] = highByte(currentStatus.rpmDOT);
 
-  response[33] = currentStatus.flex; //Flex sensor value (or 0 if not used)
+  response[33] = currentStatus.ethanolPct; //Flex sensor value (or 0 if not used)
   response[34] = getNextError();
   
 //cli();
