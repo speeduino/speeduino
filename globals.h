@@ -235,8 +235,8 @@ struct config1 {
   
   byte primePulse;
   byte dutyLim;
-  byte unused41;
-  byte egoSwitch;
+  byte flexFreqLow; //Lowest valid frequency reading from the flex sensor
+  byte flexFreqHigh; //Highest valid frequency reading from the flex sensor
   byte taeColdM;
   byte tpsMin;
   byte tpsMax;
@@ -247,12 +247,12 @@ struct config1 {
   unsigned int oddfire2; //The ATDC angle of channel 2 for oddfire
   unsigned int oddfire3; //The ATDC angle of channel 3 for oddfire
   unsigned int oddfire4; //The ATDC angle of channel 4 for oddfire
-  byte unused57;
-  byte unused58;
-  byte unused59;
-  byte unused60;
-  byte unused61;
-  byte unused62;
+  byte flexEthPctLow; //Ethanol % represented by flexFreqLow
+  byte flexEthPctHigh; //Ethanol % represented by flexFreqHigh
+  byte flexFuelLow; //Fuel % to be used for the lowest ethanol reading (Typically 100%)
+  byte flexFuelHigh; //Fuel % to be used for the highest ethanol reading (Typically 163%)
+  byte flexAdvLow; //Additional advance (in degrees) at lowest ethanol reading (Typically 0)
+  byte flexAdvHigh; //Additional advance (in degrees) at highest ethanol reading (Varies, usually 10-20)
   byte unused63;
   
 };
