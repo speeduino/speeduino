@@ -226,7 +226,7 @@ void triggerSec_DualWheel()
   curGap2 = curTime2 - toothLastSecToothTime;
   if ( curGap2 < triggerSecFilterTime ) { return; } 
   toothLastSecToothTime = curTime2;
-  triggerSecFilterTime = curGap2 >> 2;
+  triggerSecFilterTime = curGap2 >> 2; //Set filter at 25% of the current speed
 
   toothCurrentCount = configPage2.triggerTeeth;
   
