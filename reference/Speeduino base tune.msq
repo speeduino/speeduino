@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS 3.0.12 - EFI Analytics, Inc." tuneComment="" writeDate="Wed Nov 09 12:59:17 AEDT 2016"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2016.10" nPages="9" signature="speeduino 201610"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.14 - EFI Analytics, Inc." tuneComment="" writeDate="Mon Dec 05 20:48:23 AEDT 2016"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2016.11" nPages="9" signature="speeduino 201611"/>
 <page>
 <pcVariable name="tsCanId">"0"</pcVariable>
 </page>
@@ -125,8 +125,8 @@
 <constant name="unused2-38h">"No"</constant>
 <constant digits="1" name="primePulse" units="ms">4.0</constant>
 <constant digits="0" name="dutyLim" units="%">85.0</constant>
-<constant digits="0" name="unused41" units="RPM">4200.0</constant>
-<constant digits="0" name="unused42" units="RPM">0.0</constant>
+<constant digits="0" name="flexFreqLow" units="Hz">50.0</constant>
+<constant digits="0" name="flexFreqHigh" units="Hz">150.0</constant>
 <constant digits="0" name="taeColdM" units="%">0.0</constant>
 <constant digits="0" name="tpsMin" units="ADC">26.0</constant>
 <constant digits="0" name="tpsMax" units="ADC">230.0</constant>
@@ -137,10 +137,10 @@
 <constant digits="0" name="oddfire2" units="deg">0.0</constant>
 <constant digits="0" name="oddfire3" units="deg">0.0</constant>
 <constant digits="0" name="oddfire4" units="deg">0.0</constant>
-<constant digits="0" name="unused2-57" units="RPM">0.0</constant>
-<constant digits="0" name="unused2-58" units="RPM">0.0</constant>
-<constant digits="0" name="unused2-59" units="RPM">0.0</constant>
-<constant digits="0" name="unused2-60" units="RPM">0.0</constant>
+<constant digits="0" name="flexFuelLow" units="%">100.0</constant>
+<constant digits="0" name="flexFuelHigh" units="%">163.0</constant>
+<constant digits="0" name="flexAdvLow" units="Deg">0.0</constant>
+<constant digits="0" name="flexAdvHigh" units="Deg">13.0</constant>
 <constant digits="0" name="unused2-61" units="RPM">0.0</constant>
 <constant digits="0" name="unused2-62" units="RPM">0.0</constant>
 <constant digits="0" name="unused2-63" units="RPM">0.0</constant>
@@ -211,7 +211,14 @@
 <constant name="IgInv">"Going Low"</constant>
 <constant name="oddfire">"Yes"</constant>
 <constant name="TrigPattern">"Missing Tooth"</constant>
-<constant digits="0" name="unused4-6" units="Deg">79.7632</constant>
+<constant name="TrigEdgeSec">"Trailing"</constant>
+<constant name="unused4-6b">"Yes"</constant>
+<constant name="unused4-6c">"Yes"</constant>
+<constant name="unused4-6d">"Yes"</constant>
+<constant name="unused4-6e">"Yes"</constant>
+<constant name="unused4-6f">"Yes"</constant>
+<constant name="unused4-6g">"Yes"</constant>
+<constant name="unused4-6h">"Yes"</constant>
 <constant digits="0" name="unused4-7" units="ADC">255.0</constant>
 <constant digits="0" name="IdleAdvRPM" units="RPM">3200.0</constant>
 <constant digits="1" name="IdleAdvCLT" units="C">-21.0</constant>
