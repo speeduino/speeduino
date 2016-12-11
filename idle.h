@@ -24,6 +24,7 @@ struct table2D iacCrankDutyTable;
 struct StepperIdle idleStepper;
 bool idleOn; //Simply tracks whether idle was on last time around
 unsigned int iacStepTime;
+unsigned int completedHomeSteps;
 
 volatile byte *idle_pin_port;
 volatile byte idle_pin_mask;

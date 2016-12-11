@@ -918,6 +918,7 @@ void loop()
        boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.        
     }
+    if(configPage4.iacAlgorithm == 4) { idleControl(); } //Run idlecontrol every loop for stepper idle. 
 
     //Always check for sync
     //Main loop runs within this clause
