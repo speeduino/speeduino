@@ -948,7 +948,7 @@ void loop()
       
       //Begin the fuel calculation
       //Calculate an injector pulsewidth from the VE
-      currentStatus.corrections = correctionsTotal();
+      currentStatus.corrections = correctionsFuel();
       //currentStatus.corrections = 100;
       if (configPage1.algorithm == 0) //Check which fuelling algorithm is being used
       { 
@@ -964,6 +964,8 @@ void loop()
         currentStatus.PW1 = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
         currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM); //As above, but for ignition advance
       }
+
+      //currentStatus.advance = correctionsIgn(currentStatus.advance);
       
       //Check for fixed ignition angles
       if (configPage2.FixAng != 0) { currentStatus.advance = configPage2.FixAng; } //Check whether the user has set a fixed timing angle
@@ -1034,7 +1036,7 @@ void loop()
       if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         unsigned long pwLimit = percentage(configPage1.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
-        if (CRANK_ANGLE_MAX_INJ == 720) { pwLimit = pwLimit * 2; }
+        if (CRANK_ANGLE_MAX_INJ == 720) { pwLimit = pwLimit * 2; } //For sequential, the maximum pulse time is double (2 revolutions). Wouldn't work for 2 stroke...
         if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; }
       }
       
@@ -1122,11 +1124,9 @@ void loop()
     
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
-      BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
-      if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { currentStatus.advance = configPage2.SoftLimRetard; BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
       BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM);
       if (currentStatus.RPM > ((unsigned int)(configPage2.HardRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); } //Hardcut RPM limit
-      if (currentStatus.launchingSoft) { currentStatus.advance = configPage3.lnchRetard; } //SoftCut rev limit for 2-step launch control
+      
       
       //Set dwell
        //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS

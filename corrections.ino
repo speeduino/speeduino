@@ -28,7 +28,7 @@ void initialiseCorrections()
 correctionsTotal() calls all the other corrections functions and combines their results.
 This is the only function that should be called from anywhere outside the file
 */
-byte correctionsTotal()
+byte correctionsFuel()
 {
   unsigned long sumCorrections = 100;
   byte activeCorrections = 0;
@@ -85,7 +85,7 @@ byte correctionsTotal()
 Warm Up Enrichment (WUE)
 Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add
 */
-byte correctionWUE()
+static inline byte correctionWUE()
 {
   //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
   if (currentStatus.coolant > (WUETable.axisX[9] - CALIBRATION_TEMPERATURE_OFFSET)) { BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); return 100; } //This prevents us doing the 2D lookup if we're already up to temp
@@ -97,7 +97,7 @@ byte correctionWUE()
 Cranking Enrichment
 Additional fuel % to be added when the engine is cranking
 */
-byte correctionCranking()
+static inline byte correctionCranking()
 {
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { return 100 + configPage1.crankingPct; }
   else { return 100; }
@@ -108,7 +108,7 @@ After Start Enrichment
 This is a short period (Usually <20 seconds) immediately after the engine first fires (But not when cranking)
 where an additional amount of fuel is added (Over and above the WUE amount)
 */
-byte correctionASE()
+static inline byte correctionASE()
 {
   //Two checks are requiredL:
   //1) Is the negine run time less than the configured ase time
@@ -128,7 +128,7 @@ TPS based acceleration enrichment
 Calculates the % change of the throttle over time (%/second) and performs a lookup based on this
 When the enrichment is turned on, it runs at that amount for a fixed period of time (taeTime)
 */
-byte correctionAccel()
+static inline byte correctionAccel()
 {
   //First, check whether the accel. enrichment is already running
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
@@ -169,7 +169,7 @@ Simple check to see whether we are cranking with the TPS above the flood clear t
 This function always returns either 100 or 0
 */
 
-byte correctionFloodClear()
+static inline byte correctionFloodClear()
 {
   if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK))
   {
@@ -187,7 +187,7 @@ byte correctionFloodClear()
 Battery Voltage correction
 Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add
 */
-byte correctionsBatVoltage()
+static inline byte correctionsBatVoltage()
 {
   if (currentStatus.battery10 > (injectorVCorrectionTable.axisX[5])) { return injectorVCorrectionTable.values[injectorVCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the voltage is above maximum 
   return table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
@@ -197,7 +197,7 @@ byte correctionsBatVoltage()
 Simple temperature based corrections lookup based on the inlet air temperature. 
 This corrects for changes in air density from movement of the temperature 
 */
-byte correctionsIATDensity()
+static inline byte correctionsIATDensity()
 {
   if ( (currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) > (IATDensityCorrectionTable.axisX[8])) { return IATDensityCorrectionTable.values[IATDensityCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the intake temp is above maximum 
   return table2D_getValue(&IATDensityCorrectionTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
@@ -207,7 +207,7 @@ byte correctionsIATDensity()
 Launch control has a setting to increase the fuel load to assist in bringing up boost
 This simple check applies the extra fuel if we're currently launching
 */
-byte correctionsLaunch()
+static inline byte correctionsLaunch()
 {
   if(currentStatus.launchingHard || currentStatus.launchingSoft) { return (100 + configPage3.lnchFuelAdd); }
   else { return 100; }
@@ -216,7 +216,7 @@ byte correctionsLaunch()
 /*
  * Returns true if decelleration fuel cutoff should be on, false if its off
  */
-bool correctionsDFCO()
+static inline bool correctionsDFCO()
 {
   if ( !configPage2.dfcoEnabled ) { return false; } //If the DFCO option isn't turned on, always return false (off)
   if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) ) { return ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
@@ -227,7 +227,7 @@ bool correctionsDFCO()
  * Flex fuel adjustment to vary fuel based on ethanol content
  * The amount of extra fuel required is a linear relationship based on the % of ethanol. 
 */
-byte correctionsFlex()
+static inline byte correctionsFlex()
 {
   if(!configPage1.flexEnabled) { return 100; } //Check for flex being enabled
   byte flexRange = configPage1.flexFuelHigh - configPage1.flexFuelLow;
@@ -248,7 +248,7 @@ PID (Best suited to wideband sensors):
  
 */
 
-byte correctionsAFRClosedLoop()
+static inline byte correctionsAFRClosedLoop()
 {
   if( (configPage3.egoType == 0)) { return 100; } //egoType of 0 means no O2 sensor
 
@@ -311,3 +311,60 @@ byte correctionsAFRClosedLoop()
   
   return 100; //Catch all (Includes when AFR target = current AFR
 }
+
+//******************************** IGNITION ADVANCE CORRECTIONS ********************************
+
+byte correctionsIgn(byte advance)
+{
+
+  advance = correctionsFlexTiming(advance);
+  advance = correctionsIATretard(advance);
+  advance = correctionsSoftRevLimit(advance);
+  advance = correctionsSoftLaunch(advance);
+  //Fixed timing check must go last
+  advance = correctionsFixedTiming(advance);
+  advance = correctionsCrankingFixedTiming(advance); //This overrrides the regular fixed timing, must come last
+
+  return advance;
+}
+
+static inline byte correctionsFixedTiming(byte advance)
+{
+  if (configPage2.FixAng != 0) { return configPage2.FixAng; } //Check whether the user has set a fixed timing angle
+  return advance;
+}
+
+static inline byte correctionsCrankingFixedTiming(byte advance)
+{
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { return configPage2.CrankAng; } //Use the fixed cranking ignition angle
+  return advance;
+}
+
+static inline byte correctionsFlexTiming(byte advance)
+{
+  if(!configPage1.flexEnabled) { return advance; } //Check for flex being enabled
+  byte flexRange = configPage1.flexAdvHigh - configPage1.flexAdvLow;
+  return advance + percentage(currentStatus.ethanolPct, flexRange);
+}
+
+static inline byte correctionsIATretard(byte advance)
+{
+  //Adjust the advance based on IAT. If the adjustment amount is greater than the current advance, just set advance to 0
+  byte advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
+  if (advanceIATadjust <= advance) { return (advance - advanceIATadjust); }
+  else { return 0; } 
+}
+
+static inline byte correctionsSoftRevLimit(byte advance)
+{
+  BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
+  if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); return configPage2.SoftLimRetard;  } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+  return advance;
+}
+
+static inline byte correctionsSoftLaunch(byte advance)
+{
+  if (currentStatus.launchingSoft) { return configPage3.lnchRetard; } //SoftCut rev limit for 2-step launch control
+  return advance;
+}
+
