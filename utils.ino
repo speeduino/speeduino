@@ -329,6 +329,8 @@ void setPinMapping(byte boardID)
   if(configPage3.launchPin != 0) { pinLaunch = configPage3.launchPin; }
   if(configPage2.ignBypassPin != 0) { pinIgnBypass = configPage2.ignBypassPin; }
   if(configPage1.tachoPin != 0) { pinTachOut = configPage1.tachoPin; }
+  if(configPage2.fuelPumpPin != 0) { pinFuelPump = configPage2.fuelPumpPin; }
+  if(configPage4.fanPin != 0) { pinFan = configPage4.fanPin; }
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinCoil1, OUTPUT);

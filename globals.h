@@ -274,6 +274,7 @@ struct config2 {
   byte TrigPattern : 4;
 
   byte TrigEdgeSec : 1;
+  byte fuelPumpPin : 5;
   byte unused4_6b : 7;
   
   byte unused4_7;
@@ -401,8 +402,8 @@ struct config4 {
   byte iacStepHyster; //Hysteresis temperature (*10). Eg 2.2C = 22
   
   byte fanInv : 1;        // Fan output inversion bit
-  byte fanEnable : 2;     // Fan enable bit. 0=Off, 1=On/Off, 2=PWM
-  byte unused : 5;
+  byte fanEnable : 1;     // Fan enable bit. 0=Off, 1=On/Off
+  byte fanPin : 5;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis 
   byte fanFreq;           // Fan PWM frequency
