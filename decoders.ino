@@ -87,6 +87,7 @@ Note: This does not currently support dual wheel (ie missing tooth + single toot
 void triggerSetup_missingTooth()
 {
   triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
+  if(configPage2.TrigSpeed) { triggerToothAngle = triggerToothAngle * 2; } //Account for cam speed missing tooth
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   secondDerivEnabled = false;
@@ -144,7 +145,8 @@ void triggerSec_missingTooth()
 
 int getRPM_missingTooth()
 {
-   return stdGetRPM();
+  if(configPage2.TrigSpeed) { return (stdGetRPM() * 2); } //Account for cam speed
+  return stdGetRPM();
 }
 
 int getCrankAngle_missingTooth(int timePerDegree)
