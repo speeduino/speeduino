@@ -75,6 +75,7 @@ unsigned long targetTachoPulseTime;
     loopSec = 0; //Reset counter.
 
     dwellLimit_uS = (1000 * configPage2.dwellLimit); //Update uS value incase setting has changed
+    if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) { dwellLimit_uS = dwellLimit_uS * 3; } //Make sure the overdwell doesn't clobber the fixed ignition cranking if enabled. 
     
     //**************************************************************************************************************************************************
     //This updates the runSecs variable
