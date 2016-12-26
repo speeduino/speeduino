@@ -22,6 +22,7 @@ PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage3.egoKP, configPage3.
 void initialiseCorrections()
 {
   egoPID.SetMode(AUTOMATIC); //Turn O2 PID on
+  currentStatus.flexIgnCorrection = 0;
 }
 
 /*
@@ -344,7 +345,8 @@ static inline byte correctionsFlexTiming(byte advance)
 {
   if(!configPage1.flexEnabled) { return advance; } //Check for flex being enabled
   byte flexRange = configPage1.flexAdvHigh - configPage1.flexAdvLow;
-  return advance + percentage(currentStatus.ethanolPct, flexRange);
+  currentStatus.flexIgnCorrection = percentage(currentStatus.ethanolPct, flexRange);
+  return advance + currentStatus.flexIgnCorrection;
 }
 
 static inline byte correctionsIATretard(byte advance)

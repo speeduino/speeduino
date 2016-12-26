@@ -258,7 +258,9 @@ void sendValues(int packetlength, byte portNum)
   response[32] = highByte(currentStatus.rpmDOT);
 
   response[33] = currentStatus.ethanolPct; //Flex sensor value (or 0 if not used)
-  response[34] = getNextError();
+  response[34] = currentStatus.flexCorrection; //Flex fuel correction (% above or below 100)
+  response[35] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
+  response[36] = getNextError();
   
 //cli();
   if (portNum == 0) { Serial.write(response, (size_t)packetlength); }
