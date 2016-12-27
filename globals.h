@@ -206,7 +206,8 @@ struct config1 {
   byte injTiming : 1;
   byte multiplyMAP : 1;
   byte includeAFR : 1;
-  byte unused26 : 5;
+  byte unused26 : 4;
+  byte indInjAng : 1;
   byte injOpen; //Injector opening time (ms * 10)
   unsigned int inj1Ang;
   unsigned int inj2Ang; 
