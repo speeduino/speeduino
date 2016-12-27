@@ -274,8 +274,8 @@ struct config2 {
   byte TrigPattern : 4;
 
   byte TrigEdgeSec : 1;
-  byte fuelPumpPin : 5;
-  byte unused4_6b : 7;
+  byte fuelPumpPin : 6;
+  byte unused4_6b : 1;
   
   byte unused4_7;
   byte IdleAdvRPM;
