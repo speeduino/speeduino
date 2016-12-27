@@ -16,7 +16,6 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing. 
 const byte page_size = 64;
 const int map_page_size = 288;
-const byte packetSize = 35;
 
 //Handy bitsetting macros
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
