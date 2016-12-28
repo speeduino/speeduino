@@ -169,8 +169,9 @@ void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned l
      fuelSchedule1.endCompare = fuelSchedule1.startCompare + (duration >> 4);
      fuelSchedule1.Status = PENDING; //Turn this schedule on
      fuelSchedule1.schedulesSet++; //Increment the number of times this schedule has been set
-     if(channel5InjEnabled) { FUEL1_COMPARE = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, FUEL1_COUNTER); } //Schedule 1 shares a timer with schedule 5
-     else { timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1; FUEL1_COMPARE = fuelSchedule1.startCompare; }
+     /*if(channel5InjEnabled) { FUEL1_COMPARE = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, FUEL1_COUNTER); } //Schedule 1 shares a timer with schedule 5
+     else { timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1; FUEL1_COMPARE = fuelSchedule1.startCompare; }*/
+     timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1; FUEL1_COMPARE = fuelSchedule1.startCompare;
      interrupts();
      FUEL1_TIMER_ENABLE();
   }
