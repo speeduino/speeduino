@@ -43,6 +43,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN2_COUNTER  TCNT5
   #define IGN3_COUNTER  TCNT5
   #define IGN4_COUNTER  TCNT4
+  #define IGN5_COUNTER  TCNT1
 
   #define FUEL1_COMPARE OCR3A
   #define FUEL2_COMPARE OCR3B
@@ -53,6 +54,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN2_COMPARE  OCR5B
   #define IGN3_COMPARE  OCR5C
   #define IGN4_COMPARE  OCR4A
+  #define IGN5_COMPARE  OCR1C
 
   #define FUEL1_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3A) //Turn on the A compare unit (ie turn on the interrupt)
   #define FUEL2_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3B) //Turn on the B compare unit (ie turn on the interrupt)
@@ -68,11 +70,13 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN2_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5B) //Turn on the B compare unit (ie turn on the interrupt)
   #define IGN3_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5C) //Turn on the C compare unit (ie turn on the interrupt)
   #define IGN4_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4A) //Turn on the A compare unit (ie turn on the interrupt)
+  #define IGN5_TIMER_ENABLE() TIMSK1 |= (1 << OCIE1C) //Turn on the A compare unit (ie turn on the interrupt)
 
   #define IGN1_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5A) //Turn off this output compare unit 
   #define IGN2_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5B) //Turn off this output compare unit
   #define IGN3_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C) //Turn off this output compare unit
   #define IGN4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A) //Turn off this output compare unit
+  #define IGN5_TIMER_DISABLE() TIMSK1 &= ~(1 << OCIE1C) //Turn off this output compare unit
 
   #define MAX_TIMER_PERIOD 262140 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
   #define uS_TO_TIMER_COMPARE(uS1) (uS1 >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed

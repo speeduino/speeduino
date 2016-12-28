@@ -60,6 +60,7 @@ volatile byte ign1LastRev;
 volatile byte ign2LastRev;
 volatile byte ign3LastRev;
 volatile byte ign4LastRev;
+volatile byte ign5LastRev;
 bool ignitionOn = false; //The current state of the ignition system
 bool fuelOn = false; //The current state of the ignition system
 bool fuelPumpOn = false; //The current status of the fuel pump
@@ -639,7 +640,7 @@ void setup()
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
-      channel3InjEnabled = true;
+      channel3InjEnabled = false; //this is disabled as injector 5 function calls 3 & 5 together
       channel4InjEnabled = true;
       channel5InjEnabled = true;
       break;
@@ -1172,6 +1173,22 @@ void loop()
             if(ignition4StartAngle > CRANK_ANGLE_MAX_IGN) {ignition4StartAngle -= CRANK_ANGLE_MAX_IGN;}
           }
           break;
+        //5 cylinders
+        case 5:
+          ignition2StartAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
+          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          if(ignition2StartAngle < 0) {ignition2StartAngle += CRANK_ANGLE_MAX_IGN;}
+
+          ignition3StartAngle = channel3IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
+          if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          
+          ignition4StartAngle = channel4IgnDegrees + CRANK_ANGLE_MAX - currentStatus.advance - dwellAngle;
+          if(ignition4StartAngle > CRANK_ANGLE_MAX_IGN) {ignition4StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          
+          ignition5StartAngle = channel5IgnDegrees + CRANK_ANGLE_MAX - currentStatus.advance - dwellAngle;
+          if(ignition5StartAngle > CRANK_ANGLE_MAX_IGN) {ignition5StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          
+          break;
         //6 cylinders
         case 6:
           ignition2StartAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
@@ -1309,10 +1326,11 @@ void loop()
           if (tempStartAngle <= tempCrankAngle && fuelSchedule5.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           { 
-            setFuelSchedule5(openInjector5, 
+            //Note the hacky use of fuel schedule 3 below
+            setFuelSchedule3(openInjector3and5, 
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW1,
-                      closeInjector5
+                      closeInjector3and5
                       );
           }
         }
@@ -1496,6 +1514,9 @@ void openInjector1and4() { digitalWrite(pinInjector1, HIGH); digitalWrite(pinInj
 void closeInjector1and4() { digitalWrite(pinInjector1, LOW); digitalWrite(pinInjector4, LOW);BIT_CLEAR(currentStatus.squirt, 0); }
 void openInjector2and3() { digitalWrite(pinInjector2, HIGH); digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.squirt, 1); }
 void closeInjector2and3() { digitalWrite(pinInjector2, LOW); digitalWrite(pinInjector3, LOW); BIT_CLEAR(currentStatus.squirt, 1); } 
+//Below functions are used for 5 cylinder support
+void openInjector3and5() { digitalWrite(pinInjector3, HIGH); digitalWrite(pinInjector5, HIGH); BIT_SET(currentStatus.squirt, 0); } 
+void closeInjector3and5() { digitalWrite(pinInjector3, LOW); digitalWrite(pinInjector5, LOW);BIT_CLEAR(currentStatus.squirt, 0); }
 
 //As above but for ignition (Wasted COP mode)
 void beginCoil1and3Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinCoil3, coilHIGH); digitalWrite(pinTachOut, LOW); }

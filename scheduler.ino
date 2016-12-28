@@ -131,11 +131,13 @@ void initialiseSchedulers()
     ignitionSchedule2.Status = OFF;
     ignitionSchedule3.Status = OFF;
     ignitionSchedule4.Status = OFF;
+    ignitionSchedule5.Status = OFF;
     
     ignitionSchedule1.schedulesSet = 0;
     ignitionSchedule2.schedulesSet = 0;
     ignitionSchedule3.schedulesSet = 0;
     ignitionSchedule4.schedulesSet = 0;
+    ignitionSchedule5.schedulesSet = 0;
     
   }
   
@@ -351,21 +353,25 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
   }
 void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
-    return;
-    if(ignitionSchedule1.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
+    if(ignitionSchedule5.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
 
     ignitionSchedule5.StartCallback = startCallback; //Name the start callback function
     ignitionSchedule5.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule5.duration = duration;
     
-    //As the timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency)) 
-    if (timeout > 262140) { timeout = 262100; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking. This must be set slightly lower than the max of 262140 to avoid strangeness
-    
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
-    OCR5A = TCNT5 + (timeout >> 2); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
+    //The timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency))
+    //Note this is different to the other ignition timers
+    if (timeout > MAX_TIMER_PERIOD) { timeout = MAX_TIMER_PERIOD - 1; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+
+    noInterrupts();
+    ignitionSchedule5.startCompare = IGN5_COUNTER + (timeout >> 4); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    ignitionSchedule5.endCompare = ignitionSchedule5.startCompare + (duration >> 4);
+    IGN5_COMPARE = ignitionSchedule5.startCompare;
     ignitionSchedule5.Status = PENDING; //Turn this schedule on
-    TIMSK5 |= (1 << OCIE5A); //Turn on the A compare unit (ie turn on the interrupt)
-#endif
+    ignitionSchedule5.schedulesSet++;
+    interrupts();
+    IGN5_TIMER_ENABLE(); 
   }
   
 /*******************************************************************************************************************************************************************************************************/
@@ -553,6 +559,32 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
        IGN4_TIMER_DISABLE();
     }
   }
+
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+ISR(TIMER1_COMPC_vect) //ignitionSchedule5
+#elif defined (CORE_TEENSY)
+static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call a function
+#endif
+  {
+    if (ignitionSchedule5.Status == PENDING) //Check to see if this schedule is turn on
+    {
+      ignitionSchedule5.StartCallback();
+      ignitionSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule5.startTime = micros();
+      ign5LastRev = startRevolutions;
+      IGN5_COMPARE = ignitionSchedule5.endCompare;
+    }
+    else if (ignitionSchedule5.Status == RUNNING)
+    {
+       ignitionSchedule5.Status = OFF; //Turn off the schedule
+       ignitionSchedule5.EndCallback();
+       ignitionSchedule5.schedulesSet = 0;
+       ignitionCount += 1; //Increment the igintion counter
+       IGN5_TIMER_DISABLE();
+    }
+  }
+
+  
 
 #if defined(CORE_TEENSY)
 void ftm0_isr(void) 
