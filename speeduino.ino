@@ -967,8 +967,8 @@ void loop()
         currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM); //As above, but for ignition advance
       }
 
-      //currentStatus.advance = correctionsIgn(currentStatus.advance);
-      
+      currentStatus.advance = correctionsIgn(currentStatus.advance);
+      /*
       //Check for fixed ignition angles
       if (configPage2.FixAng != 0) { currentStatus.advance = configPage2.FixAng; } //Check whether the user has set a fixed timing angle
       if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { currentStatus.advance = configPage2.CrankAng; } //Use the fixed cranking ignition angle
@@ -976,6 +976,7 @@ void loop()
       byte advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
       if (advanceIATadjust <= currentStatus.advance) { currentStatus.advance -= advanceIATadjust; }
       else { currentStatus.advance = 0; } 
+      */
 
       int injector1StartAngle = 0;
       int injector2StartAngle = 0;
