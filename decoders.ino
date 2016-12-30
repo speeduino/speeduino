@@ -290,9 +290,10 @@ Note: This is a very simple decoder. See http://www.megamanual.com/ms2/GM_7pinHE
 */
 void triggerSetup_BasicDistributor()
 {
-  triggerActualTeeth = configPage1.nCylinders / 2;
+  triggerActualTeeth = configPage1.nCylinders;
   if(triggerActualTeeth == 0) { triggerActualTeeth = 1; }
-  triggerToothAngle = 360 / triggerActualTeeth; //The number of degrees that passes from tooth to tooth
+  //triggerToothAngle = 360 / triggerActualTeeth; //The number of degrees that passes from tooth to tooth
+  triggerToothAngle = 720 / triggerActualTeeth; //The number of degrees that passes from tooth to tooth
   triggerFilterTime = 60000000L / MAX_RPM / configPage1.nCylinders; // Minimum time required between teeth
   triggerFilterTime = triggerFilterTime / 2; //Safety margin
   secondDerivEnabled = false;
@@ -336,8 +337,13 @@ void triggerPri_BasicDistributor()
 void triggerSec_BasicDistributor() { return; } //Not required
 int getRPM_BasicDistributor()
 {
-  if(currentStatus.RPM < configPage2.crankRPM) { return crankingGetRPM(triggerActualTeeth); }
-  else { return stdGetRPM(); }
+  uint16_t tempRPM;
+  if(currentStatus.RPM < configPage2.crankRPM) 
+  { tempRPM = crankingGetRPM(triggerActualTeeth); }
+  else 
+  { tempRPM = stdGetRPM(); }
+
+  return tempRPM << 1; //Multiply RPM by 2 due to tracking over 720 degrees now rather than 360
 }
 int getCrankAngle_BasicDistributor(int timePerDegree)
 {
