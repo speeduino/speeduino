@@ -258,16 +258,15 @@ static inline byte correctionsAFRClosedLoop()
   //Check the ignition count to see whether the next step is required
   if( (ignitionCount & (configPage3.egoCount - 1)) == 1 ) //This is the equivalent of ( (ignitionCount % configPage3.egoCount) == 0 ) but without the expensive modulus operation. ie It results in True every <egoCount> ignition loops. Note that it only works for power of two vlaues for egoCount
   {
+    //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
+    byte yValue;
+    if (configPage1.algorithm == 0) { yValue = currentStatus.MAP; }
+    else  { yValue = currentStatus.TPS; }
+    currentStatus.afrTarget = get3DTableValue(&afrTable, yValue, currentStatus.RPM); //Perform the target lookup
+  
     //Check all other requirements for closed loop adjustments
     if( (currentStatus.coolant > (int)(configPage3.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage3.egoRPM * 100)) && (currentStatus.TPS < configPage3.egoTPSMax) && (currentStatus.O2 < configPage3.ego_max) && (currentStatus.O2 > configPage3.ego_min) && (currentStatus.runSecs > configPage3.ego_sdelay) )
     {
-      //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
-      byte yValue;
-      if (configPage1.algorithm == 0) { yValue = currentStatus.MAP; }
-      else  { yValue = currentStatus.TPS; }
-      
-      currentStatus.afrTarget = get3DTableValue(&afrTable, yValue, currentStatus.RPM); //Perform the target lookup
-      
       //Check which algorithm is used, simple or PID
       if (configPage3.egoAlgorithm == 0)
       {
@@ -345,7 +344,10 @@ static inline byte correctionsFlexTiming(byte advance)
 {
   if(!configPage1.flexEnabled) { return advance; } //Check for flex being enabled
   byte flexRange = configPage1.flexAdvHigh - configPage1.flexAdvLow;
-  currentStatus.flexIgnCorrection = percentage(currentStatus.ethanolPct, flexRange);
+  
+  if (currentStatus.ethanolPct != 0) { currentStatus.flexIgnCorrection = percentage(currentStatus.ethanolPct, flexRange); }
+  else { currentStatus.flexIgnCorrection = 0; }
+  
   return advance + currentStatus.flexIgnCorrection;
 }
 

@@ -137,6 +137,9 @@ unsigned long targetTachoPulseTime;
         currentStatus.ethanolPct = flexCounter - 50; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
         flexCounter = 0;
       }
+
+      //Off by 1 error check
+      if (currentStatus.ethanolPct == 1) { currentStatus.ethanolPct = 0; }
       
     }
 
