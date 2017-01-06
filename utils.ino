@@ -374,6 +374,9 @@ void setPinMapping(byte boardID)
   ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
   ign5_pin_mask = digitalPinToBitMask(pinCoil5);
 
+  tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
+  tach_pin_mask = digitalPinToBitMask(pinTachOut);
+
   //And for inputs
   pinMode(pinMAP, INPUT);
   pinMode(pinO2, INPUT);

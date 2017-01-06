@@ -104,6 +104,9 @@ volatile byte ign4_pin_mask;
 volatile byte *ign5_pin_port;
 volatile byte ign5_pin_mask;
 
+volatile byte *tach_pin_port;
+volatile byte tach_pin_mask;
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
@@ -183,7 +186,7 @@ struct config1 {
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
   byte tachoPin : 6; //Custom pin setting for tacho output
-  byte unused16 : 2;
+  byte tachoDiv : 2; //Whether to change the tacho speed
   byte tdePct; // TPS decelleration (%)
   byte taeColdA;
   byte tpsThresh;
