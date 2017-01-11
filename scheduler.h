@@ -92,6 +92,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN2_COUNTER  FTM0_CNT
   #define IGN3_COUNTER  FTM0_CNT
   #define IGN4_COUNTER  FTM0_CNT
+  #define IGN5_COUNTER  FTM1_CNT
 
   #define FUEL1_COMPARE FTM0_C0V
   #define FUEL2_COMPARE FTM0_C1V
@@ -102,6 +103,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN2_COMPARE  FTM0_C5V
   #define IGN3_COMPARE  FTM0_C6V
   #define IGN4_COMPARE  FTM0_C7V
+  #define IGN5_COMPARE  FTM1_C0V
 
   #define FUEL1_TIMER_ENABLE() FTM0_C0SC |= FTM_CSC_CHIE //Write 1 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
   #define FUEL2_TIMER_ENABLE() FTM0_C1SC |= FTM_CSC_CHIE
@@ -117,11 +119,13 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN2_TIMER_ENABLE() FTM0_C5SC |= FTM_CSC_CHIE
   #define IGN3_TIMER_ENABLE() FTM0_C6SC |= FTM_CSC_CHIE
   #define IGN4_TIMER_ENABLE() FTM0_C7SC |= FTM_CSC_CHIE
+  #define IGN5_TIMER_ENABLE() FTM1_C0SC |= FTM_CSC_CHIE
 
   #define IGN1_TIMER_DISABLE() FTM0_C4SC &= ~FTM_CSC_CHIE
   #define IGN2_TIMER_DISABLE() FTM0_C5SC &= ~FTM_CSC_CHIE
   #define IGN3_TIMER_DISABLE() FTM0_C6SC &= ~FTM_CSC_CHIE
   #define IGN4_TIMER_DISABLE() FTM0_C7SC &= ~FTM_CSC_CHIE
+  #define IGN5_TIMER_DISABLE() FTM1_C0SC &= ~FTM_CSC_CHIE
 
   #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
   #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed. 

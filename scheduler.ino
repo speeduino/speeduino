@@ -47,15 +47,26 @@ void initialiseSchedulers()
   FTM0_CNTIN = 0x0000; //Shouldn't be needed, but just in case
   FTM0_CNT = 0x0000; // Reset the count to zero
   FTM0_MOD = 0xFFFF; // max modulus = 65535
+
+  //FlexTimer 1 is used for schedules on channel 5+. Currently only channel 5 is used, but will likely be expanded later
+  FTM1_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
+  FTM1_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
+  FTM1_MODE |= FTM_MODE_INIT;
+
+  FTM1_SC = 0x00; // Set this to zero before changing the modulus
+  FTM1_CNTIN = 0x0000; //Shouldn't be needed, but just in case
+  FTM1_CNT = 0x0000; // Reset the count to zero
+  FTM1_MOD = 0xFFFF; // max modulus = 65535
   
   /*
-   * Enable the clock for FTM0 
+   * Enable the clock for FTM0/1
    * 00 No clock selected. Disables the FTM counter.
    * 01 System clock
    * 10 Fixed frequency clock
    * 11 External clock
    */  
   FTM0_SC |= FTM_SC_CLKS(0b1);
+  FTM1_SC |= FTM_SC_CLKS(0b1);
 
   /*  
    * Set Prescaler 
@@ -73,6 +84,7 @@ void initialiseSchedulers()
    * 111 Divide by 128
    */
   FTM0_SC |= FTM_SC_PS(0b111);
+  FTM1_SC |= FTM_SC_PS(0b111);
 
   //Setup the channels (See Pg 1014 of K64 DS). 
   //FTM0_C0SC &= ~FTM_CSC_ELSB; //Probably not needed as power on state should be 0
@@ -110,8 +122,14 @@ void initialiseSchedulers()
   FTM0_C7SC |= FTM_CSC_MSA; //Enable Compare mode
   FTM0_C7SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
 
+  //Do the same, but on flex timer 1 (Used for channels 5+)
+  FTM1_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM1_C0SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM1_C0SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
   // enable IRQ Interrupt
   NVIC_ENABLE_IRQ(IRQ_FTM0);
+  NVIC_ENABLE_IRQ(IRQ_FTM1);
   
 #endif
 
