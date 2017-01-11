@@ -56,13 +56,11 @@ void oneMSInterval() //Most ARM chips can simply call a function
   loop250ms++;
   loopSec++;
 
-//volatile unsigned long targetOverdwellTime;
-//volatile unsigned long targetTachoPulseTime;
 unsigned long targetOverdwellTime;
-unsigned long targetTachoPulseTime;
   
   //Overdwell check
   targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
+  //unsigned long targetTachoPulseTime;
   //targetTachoPulseTime = micros() - (1500);
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
   /*

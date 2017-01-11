@@ -54,26 +54,26 @@ byte correctionsFuel()
   if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
   
-  currentStatus.egoCorrection = correctionsAFRClosedLoop();
+  currentStatus.egoCorrection = correctionAFRClosedLoop();
   if (currentStatus.egoCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.egoCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
   
-  currentStatus.batCorrection = correctionsBatVoltage();
+  currentStatus.batCorrection = correctionBatVoltage();
   if (currentStatus.batCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.batCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
   
-  currentStatus.iatCorrection = correctionsIATDensity();
+  currentStatus.iatCorrection = correctionIATDensity();
   if (currentStatus.iatCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.iatCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
-  currentStatus.flexCorrection = correctionsFlex();
+  currentStatus.flexCorrection = correctionFlex();
   if (currentStatus.flexCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.flexCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
   
-  currentStatus.launchCorrection = correctionsLaunch();
+  currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
   
-  bitWrite(currentStatus.squirt, BIT_SQUIRT_DFCO, correctionsDFCO());
+  bitWrite(currentStatus.squirt, BIT_SQUIRT_DFCO, correctionDFCO());
   if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) ) { sumCorrections = 0; } 
 
   sumCorrections = sumCorrections / powint(100,activeCorrections);
@@ -188,7 +188,7 @@ static inline byte correctionFloodClear()
 Battery Voltage correction
 Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add
 */
-static inline byte correctionsBatVoltage()
+static inline byte correctionBatVoltage()
 {
   if (currentStatus.battery10 > (injectorVCorrectionTable.axisX[5])) { return injectorVCorrectionTable.values[injectorVCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the voltage is above maximum 
   return table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
@@ -198,7 +198,7 @@ static inline byte correctionsBatVoltage()
 Simple temperature based corrections lookup based on the inlet air temperature. 
 This corrects for changes in air density from movement of the temperature 
 */
-static inline byte correctionsIATDensity()
+static inline byte correctionIATDensity()
 {
   if ( (currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) > (IATDensityCorrectionTable.axisX[8])) { return IATDensityCorrectionTable.values[IATDensityCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the intake temp is above maximum 
   return table2D_getValue(&IATDensityCorrectionTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
@@ -208,7 +208,7 @@ static inline byte correctionsIATDensity()
 Launch control has a setting to increase the fuel load to assist in bringing up boost
 This simple check applies the extra fuel if we're currently launching
 */
-static inline byte correctionsLaunch()
+static inline byte correctionLaunch()
 {
   if(currentStatus.launchingHard || currentStatus.launchingSoft) { return (100 + configPage3.lnchFuelAdd); }
   else { return 100; }
@@ -217,7 +217,7 @@ static inline byte correctionsLaunch()
 /*
  * Returns true if decelleration fuel cutoff should be on, false if its off
  */
-static inline bool correctionsDFCO()
+static inline bool correctionDFCO()
 {
   if ( !configPage2.dfcoEnabled ) { return false; } //If the DFCO option isn't turned on, always return false (off)
   if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) ) { return ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
@@ -228,7 +228,7 @@ static inline bool correctionsDFCO()
  * Flex fuel adjustment to vary fuel based on ethanol content
  * The amount of extra fuel required is a linear relationship based on the % of ethanol. 
 */
-static inline byte correctionsFlex()
+static inline byte correctionFlex()
 {
   if(!configPage1.flexEnabled) { return 100; } //Check for flex being enabled
   byte flexRange = configPage1.flexFuelHigh - configPage1.flexFuelLow;
@@ -249,7 +249,7 @@ PID (Best suited to wideband sensors):
  
 */
 
-static inline byte correctionsAFRClosedLoop()
+static inline byte correctionAFRClosedLoop()
 {
   if( (configPage3.egoType == 0)) { return 100; } //egoType of 0 means no O2 sensor
 
@@ -317,30 +317,30 @@ static inline byte correctionsAFRClosedLoop()
 byte correctionsIgn(byte advance)
 {
 
-  advance = correctionsFlexTiming(advance);
-  advance = correctionsIATretard(advance);
-  advance = correctionsSoftRevLimit(advance);
-  advance = correctionsSoftLaunch(advance);
+  advance = correctionFlexTiming(advance);
+  advance = correctionIATretard(advance);
+  advance = correctionSoftRevLimit(advance);
+  advance = correctionSoftLaunch(advance);
   //Fixed timing check must go last
-  advance = correctionsFixedTiming(advance);
-  advance = correctionsCrankingFixedTiming(advance); //This overrrides the regular fixed timing, must come last
+  advance = correctionFixedTiming(advance);
+  advance = correctionCrankingFixedTiming(advance); //This overrrides the regular fixed timing, must come last
 
   return advance;
 }
 
-static inline byte correctionsFixedTiming(byte advance)
+static inline byte correctionFixedTiming(byte advance)
 {
   if (configPage2.FixAng != 0) { return configPage2.FixAng; } //Check whether the user has set a fixed timing angle
   return advance;
 }
 
-static inline byte correctionsCrankingFixedTiming(byte advance)
+static inline byte correctionCrankingFixedTiming(byte advance)
 {
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { return configPage2.CrankAng; } //Use the fixed cranking ignition angle
   return advance;
 }
 
-static inline byte correctionsFlexTiming(byte advance)
+static inline byte correctionFlexTiming(byte advance)
 {
   if(!configPage1.flexEnabled) { return advance; } //Check for flex being enabled
   byte flexRange = configPage1.flexAdvHigh - configPage1.flexAdvLow;
@@ -351,7 +351,7 @@ static inline byte correctionsFlexTiming(byte advance)
   return advance + currentStatus.flexIgnCorrection;
 }
 
-static inline byte correctionsIATretard(byte advance)
+static inline byte correctionIATretard(byte advance)
 {
   //Adjust the advance based on IAT. If the adjustment amount is greater than the current advance, just set advance to 0
   byte advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
@@ -359,14 +359,14 @@ static inline byte correctionsIATretard(byte advance)
   else { return 0; } 
 }
 
-static inline byte correctionsSoftRevLimit(byte advance)
+static inline byte correctionSoftRevLimit(byte advance)
 {
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
   if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); return configPage2.SoftLimRetard;  } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
   return advance;
 }
 
-static inline byte correctionsSoftLaunch(byte advance)
+static inline byte correctionSoftLaunch(byte advance)
 {
   if (currentStatus.launchingSoft) { return configPage3.lnchRetard; } //SoftCut rev limit for 2-step launch control
   return advance;

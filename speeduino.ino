@@ -1022,7 +1022,7 @@ void loop()
             
           long toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
           long toothDeltaT = toothHistory[toothHistoryIndex];
-          long timeToLastTooth = micros() - toothLastToothTime; //Cannot be unsigned
+          //long timeToLastTooth = micros() - toothLastToothTime; //Cannot be unsigned
           
           rpmDelta = (toothDeltaV << 10) / (6 * toothDeltaT);
         } 
