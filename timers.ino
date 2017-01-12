@@ -32,7 +32,7 @@ void initialiseTimers()
    TCCR2B &= ~(1<<CS21);             // Clear bit
 
    //Enable the watchdog timer for 2 second resets (Good reference: https://tushev.org/articles/arduino/5/arduino-and-watchdog-timer)
-   wdt_enable(WDTO_2S);
+   //wdt_enable(WDTO_2S); //Boooooooooo WDT is currently broken on Mega 2560 bootloaders :(
    
 #elif defined (CORE_TEENSY)
    //Uses the PIT timer on Teensy.
@@ -60,15 +60,8 @@ unsigned long targetOverdwellTime;
   
   //Overdwell check
   targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
-  //unsigned long targetTachoPulseTime;
-  //targetTachoPulseTime = micros() - (1500);
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
-  /*
-  if(ignitionSchedule1.Status == RUNNING) { if(ignitionSchedule1.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil1Charge(); } if(ignitionSchedule1.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
-  if(ignitionSchedule2.Status == RUNNING) { if(ignitionSchedule2.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil2Charge(); } if(ignitionSchedule2.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
-  if(ignitionSchedule3.Status == RUNNING) { if(ignitionSchedule3.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil3Charge(); } if(ignitionSchedule3.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }
-  if(ignitionSchedule4.Status == RUNNING) { if(ignitionSchedule4.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil4Charge(); } if(ignitionSchedule4.startTime < targetTachoPulseTime) { digitalWrite(pinTachOut, HIGH); } }  
-  */
+  
   if(ignitionSchedule1.Status == RUNNING) { if(ignitionSchedule1.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil1Charge(); } }
   if(ignitionSchedule2.Status == RUNNING) { if(ignitionSchedule2.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil2Charge(); } }
   if(ignitionSchedule3.Status == RUNNING) { if(ignitionSchedule3.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil3Charge(); } }
@@ -81,7 +74,7 @@ unsigned long targetOverdwellTime;
   {
     loop250ms = 0; //Reset Counter.
     #if defined(CORE_AVR)
-      wdt_reset(); //Reset watchdog timer
+      //wdt_reset(); //Reset watchdog timer
     #endif
   }
   
