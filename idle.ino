@@ -110,11 +110,13 @@ void initialiseIdle()
       idleStepper.stepperStatus = SOFF;
       break;
   }
-  
+  idleInitComplete = configPage4.iacAlgorithm; //Sets which idle method was initialised
 }
 
 void idleControl()
 {
+  if(idleInitComplete != configPage4.iacAlgorithm) { initialiseIdle(); }
+  
   switch(configPage4.iacAlgorithm)
   {
     case 0:       //Case 0 is no idle control ('None')
