@@ -232,7 +232,7 @@ void sendValues(int packetlength, byte portNum)
   response[13] = lowByte(currentStatus.RPM); //rpm HB
   response[14] = highByte(currentStatus.RPM); //rpm LB
   response[15] = currentStatus.TAEamount; //acceleration enrichment (%)
-  response[16] = 0x00; //Barometer correction (%)
+  response[16] = currentStatus.baro; //Barometer value
   response[17] = currentStatus.corrections; //Total GammaE (%)
   response[18] = currentStatus.VE; //Current VE 1 (%)
   response[19] = currentStatus.afrTarget;
