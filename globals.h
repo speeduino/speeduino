@@ -343,8 +343,8 @@ struct config3 {
   byte ego_sdelay; //Time in seconds after engine starts that closed loop becomes available
   byte egoRPM; //RPM must be above this for closed loop to function
   byte egoTPSMax; //TPS must be below this for closed loop to function
-  byte egoLoadMax; //Load (TPS or MAP) must be below this for closed loop to function
-  byte egoLoadMin; //Load (TPS or MAP) must be above this for closed loop to function
+  byte unused6_13;
+  byte unused6_14;
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
   byte airDenBins[9];
@@ -374,10 +374,11 @@ struct config3 {
   
   byte lnchPullRes : 2;
   byte fuelTrimEnabled : 1;
-  byte unused60 : 5;
-  byte unused61;
-  byte unused62;
-  byte unused63;
+  byte flatSEnable : 1;
+  byte unused60 : 4;
+  byte flatSSoftWin;
+  byte flatSRetard;
+  byte flatSArm;
 
   
 };
