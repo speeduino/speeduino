@@ -52,6 +52,16 @@ const int map_page_size = 288;
 #define BIT_SPARK_IDLE            6  // idle on
 #define BIT_SPARK_SYNC            7  // Whether engine has sync or not 
 
+#define BIT_SPARK2_FLATSH         0 //Flat shift hard cut
+#define BIT_SPARK2_FLATSS         1 //Flat shift soft cut
+#define BIT_SPARK2_UNUSED3        2
+#define BIT_SPARK2_UNUSED4        3
+#define BIT_SPARK2_UNUSED5        4
+#define BIT_SPARK2_UNUSED6        5
+#define BIT_SPARK2_UNUSED7        6
+#define BIT_SPARK2_UNUSED8        7
+
+
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
@@ -153,6 +163,7 @@ struct statuses {
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte squirt;
   volatile byte spark;
+  volatile byte spark2;
   byte engine;
   unsigned int PW1; //In uS
   unsigned int PW2; //In uS
@@ -164,6 +175,8 @@ struct statuses {
   boolean launchingSoft; //True when in launch control soft limit mode
   boolean launchingHard; //True when in launch control hard limit mode
   int freeRAM;
+  unsigned int flatShiftRPM;
+  bool flatShiftingHard;
   
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath

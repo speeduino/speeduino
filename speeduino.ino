@@ -118,6 +118,9 @@ byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 byte ignitionCount;
 byte fixedCrankingOverride = 0;
+bool clutchTrigger;
+bool previousClutchTrigger;
+
 unsigned long secCounter; //The next time to incremen 'runSecs' counter.
 unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less. 
 int channel1IgnDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
@@ -276,6 +279,8 @@ void setup()
   currentStatus.hasSync = false;
   currentStatus.runSecs = 0; 
   currentStatus.secl = 0;
+  currentStatus.flatShiftingHard = false;
+  currentStatus.launchingHard = false;
   triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
   
   switch (pinTrigger) {  
@@ -869,13 +874,17 @@ void loop()
       readTPS();
      
       //Check for launching (clutch) can be done around here too
-      bool launchTrigger;
-      if(configPage3.launchHiLo) { launchTrigger = digitalRead(pinLaunch); }
-      else { launchTrigger = !digitalRead(pinLaunch); } 
-      if (configPage3.launchEnabled && launchTrigger && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) ) { currentStatus.launchingSoft = true; BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH); } //SoftCut rev limit for 2-step launch control. 
-      else { currentStatus.launchingSoft = false; BIT_CLEAR(currentStatus.spark, BIT_SPARK_SLAUNCH); }
-      if (configPage3.launchEnabled && launchTrigger && (currentStatus.RPM > ((unsigned int)(configPage3.lnchHardLim) * 100)) ) { currentStatus.launchingHard = true; BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); } //HardCut rev limit for 2-step launch control. 
+      previousClutchTrigger = clutchTrigger;
+      if(configPage3.launchHiLo) { clutchTrigger = digitalRead(pinLaunch); }
+      else { clutchTrigger = !digitalRead(pinLaunch); } 
+
+      if(previousClutchTrigger != clutchTrigger) { currentStatus.flatShiftRPM = currentStatus.RPM; }
+      
+      if (configPage3.launchEnabled && clutchTrigger && (currentStatus.RPM > ((unsigned int)(configPage3.lnchHardLim) * 100)) ) { currentStatus.launchingHard = true; BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); } //HardCut rev limit for 2-step launch control. 
       else { currentStatus.launchingHard = false; BIT_CLEAR(currentStatus.spark, BIT_SPARK_HLAUNCH); }
+
+      if(configPage3.flatSEnable && clutchTrigger && (currentStatus.RPM > ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > currentStatus.flatShiftRPM) ) { currentStatus.flatShiftingHard = true; }
+      else { currentStatus.flatShiftingHard = false; } 
 
       //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
       if(configPage3.boostCutType && currentStatus.MAP > (configPage3.boostLimit * 2) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
@@ -1348,7 +1357,7 @@ void loop()
 
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
       //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
-      if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) && !BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM))
+      if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) && !BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) && !currentStatus.flatShiftingHard)
       {
         
         //if (ignition1StartAngle <= crankAngle && ignition1.schedulesSet == 0) { ignition1StartAngle += CRANK_ANGLE_MAX_IGN; }

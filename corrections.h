@@ -26,6 +26,7 @@ static inline byte correctionFlexTiming(byte);
 static inline byte correctionIATretard(byte);
 static inline byte correctionSoftRevLimit(byte);
 static inline byte correctionSoftLaunch(byte);
+static inline byte correctionSoftFlatShift(byte);
 
 
 #endif // CORRECTIONS_H
