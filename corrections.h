@@ -9,6 +9,7 @@ void initialiseCorrections();
 
 byte correctionsFuel();
 static inline byte correctionWUE(); //Warmup enrichment
+static inline byte correctionCranking(); //Cranking enrichment
 static inline byte correctionASE(); //After Start Enrichment
 static inline byte correctionAccel(); //Acceleration Enrichment
 static inline byte correctionFloodClear(); //Check for flood clear on cranking

@@ -494,7 +494,7 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
       ignitionSchedule1.StartCallback();
       ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule1.startTime = micros();
-      ign1LastRev = startRevolutions;
+      ign1LastRev = currentStatus.startRevolutions;
       IGN1_COMPARE = ignitionSchedule1.endCompare; //OCR5A = TCNT5 + (ignitionSchedule1.duration >> 2); //Divide by 4
     }
     else if (ignitionSchedule1.Status == RUNNING)
@@ -518,7 +518,7 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
       ignitionSchedule2.StartCallback();
       ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule2.startTime = micros();
-      ign2LastRev = startRevolutions;
+      ign2LastRev = currentStatus.startRevolutions;
       IGN2_COMPARE = ignitionSchedule2.endCompare; //OCR5B = TCNT5 + (ignitionSchedule2.duration >> 2);
     }
     else if (ignitionSchedule2.Status == RUNNING)
@@ -542,7 +542,7 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
       ignitionSchedule3.StartCallback();
       ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule3.startTime = micros();
-      ign3LastRev = startRevolutions;
+      ign3LastRev = currentStatus.startRevolutions;
       IGN3_COMPARE = ignitionSchedule3.endCompare; //OCR5C = TCNT5 + (ignitionSchedule3.duration >> 2);
     }
     else if (ignitionSchedule3.Status == RUNNING)
@@ -566,7 +566,7 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
       ignitionSchedule4.StartCallback();
       ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule4.startTime = micros();
-      ign4LastRev = startRevolutions;
+      ign4LastRev = currentStatus.startRevolutions;
       IGN4_COMPARE = ignitionSchedule4.endCompare; //OCR4A = TCNT4 + (ignitionSchedule4.duration >> 4); //Divide by 16
     }
     else if (ignitionSchedule4.Status == RUNNING)
@@ -590,7 +590,7 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
       ignitionSchedule5.StartCallback();
       ignitionSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule5.startTime = micros();
-      ign5LastRev = startRevolutions;
+      ign5LastRev = currentStatus.startRevolutions;
       IGN5_COMPARE = ignitionSchedule5.endCompare;
     }
     else if (ignitionSchedule5.Status == RUNNING)

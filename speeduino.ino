@@ -53,9 +53,7 @@ struct config3 configPage3;
 struct config4 configPage4;
 
 int req_fuel_uS, inj_opentime_uS;
-#define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
-volatile byte startRevolutions = 0; //A counter for how many revolutions have been completed since sync was achieved.
 volatile byte ign1LastRev;
 volatile byte ign2LastRev;
 volatile byte ign3LastRev;
@@ -70,21 +68,6 @@ void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets p
 int (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
 int (*getCrankAngle)(int); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 
-struct table3D fuelTable; //16x16 fuel map
-struct table3D ignitionTable; //16x16 ignition map
-struct table3D afrTable; //16x16 afr target map
-struct table3D boostTable; //8x8 boost map
-struct table3D vvtTable; //8x8 vvt map
-struct table3D trim1Table; //6x6 Fuel trim 1 map
-struct table3D trim2Table; //6x6 Fuel trim 2 map
-struct table3D trim3Table; //6x6 Fuel trim 3 map
-struct table3D trim4Table; //6x6 Fuel trim 4 map
-struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
-struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
-struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
-struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
-struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
-struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
 byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
@@ -98,10 +81,6 @@ unsigned long counter;
 unsigned long currentLoopTime; //The time the current loop started (uS)
 unsigned long previousLoopTime; //The time the previous loop started (uS)
 
-unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
-unsigned int MAPcount; //Number of samples taken in the current MAP cycle
-byte MAPcurRev = 0; //Tracks which revolution we're sampling on
-
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360, CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential 
 //bool useSequentialFuel; // Whether sequential fueling is to be used (1 squirt per cycle)
@@ -112,7 +91,6 @@ static byte coilLOW = LOW;
 static byte fanHIGH = HIGH;             // Used to invert the cooling fan output
 static byte fanLOW = LOW;               // Used to invert the cooling fan output
 
-struct statuses currentStatus;
 volatile int mainLoopCount;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
@@ -122,7 +100,6 @@ bool clutchTrigger;
 bool previousClutchTrigger;
 
 unsigned long secCounter; //The next time to incremen 'runSecs' counter.
-unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less. 
 int channel1IgnDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
 int channel2IgnDegrees; //The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC
 int channel3IgnDegrees; //The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC
@@ -848,7 +825,7 @@ void loop()
       currentStatus.hasSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       secCounter = 0; //Reset our seconds counter.
-      startRevolutions = 0;
+      currentStatus.startRevolutions = 0;
       MAPcurRev = 0;
       currentStatus.rpmDOT = 0;
       ignitionOn = false;
@@ -934,7 +911,7 @@ void loop()
     //Main loop runs within this clause
     if (currentStatus.hasSync && (currentStatus.RPM > 0))
     {
-        if(startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;} //Enable the fuel and ignition, assuming staging revolutions are complete
+        if(currentStatus.startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;} //Enable the fuel and ignition, assuming staging revolutions are complete
         //If it is, check is we're running or cranking
         if(currentStatus.RPM > ((unsigned int)configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100 
         {

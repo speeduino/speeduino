@@ -4,11 +4,9 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 
-#include <EEPROM.h>
 #include "storage.h"
 #include "globals.h"
-//#include "table.h"
-
+#include "table.h"
 
 /*
 Takes the current configuration (config pages and maps)

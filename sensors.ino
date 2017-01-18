@@ -3,6 +3,7 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
+#include "sensors.h"
 
 void initialiseADC()
 {
@@ -75,7 +76,7 @@ void readMAP()
       
       if (currentStatus.RPM < 1) {  instanteneousMAPReading(); return; } //If the engine isn't running, fall back to instantaneous reads
        
-      if( (MAPcurRev == startRevolutions) || (MAPcurRev == startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for. 
+      if( (MAPcurRev == currentStatus.startRevolutions) || (MAPcurRev == currentStatus.startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for. 
       {
         #if defined(ANALOG_ISR) 
           tempReading = AnChannel[pinMAP-A0];
@@ -97,7 +98,7 @@ void readMAP()
         //Reaching here means that the last cylce has completed and the MAP value should be calculated
         currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
         currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
-        MAPcurRev = startRevolutions; //Reset the current rev count
+        MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
         MAPrunningValue = 0;
         MAPcount = 0;
       }
@@ -107,7 +108,7 @@ void readMAP()
       //Minimum reading in a cycle
       if (currentStatus.RPM < 1) {  instanteneousMAPReading(); return; } //If the engine isn't running, fall back to instantaneous reads
         
-      if( (MAPcurRev == startRevolutions) || (MAPcurRev == startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for. 
+      if( (MAPcurRev == currentStatus.startRevolutions) || (MAPcurRev == currentStatus.startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for. 
       {
         #if defined(ANALOG_ISR) 
           tempReading = AnChannel[pinMAP-A0];
@@ -127,7 +128,7 @@ void readMAP()
         //Reaching here means that the last cylce has completed and the MAP value should be calculated
         currentStatus.mapADC = MAPrunningValue;
         currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
-        MAPcurRev = startRevolutions; //Reset the current rev count
+        MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
         MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
       }
       break;

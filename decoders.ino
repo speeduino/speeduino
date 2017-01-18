@@ -20,6 +20,7 @@ toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
 * 
 
 */
+#include "decoders.h"
 
 static inline void addToothLogEntry(unsigned long toothTime)
 {
@@ -123,7 +124,7 @@ void triggerPri_missingTooth()
        toothOneMinusOneTime = toothOneTime;
        toothOneTime = curTime;
        currentStatus.hasSync = true;
-       startRevolutions++; //Counter 
+       currentStatus.startRevolutions++; //Counter 
        triggerFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
      }
      else
@@ -214,7 +215,7 @@ void triggerPri_DualWheel()
      revolutionOne = !revolutionOne; //Flip sequential revolution tracker
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
-     startRevolutions++; //Counter
+     currentStatus.startRevolutions++; //Counter
    }
 
    setFilter(curGap); //Recalc the new filter value
@@ -313,7 +314,7 @@ void triggerPri_BasicDistributor()
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      currentStatus.hasSync = true;
-     startRevolutions++; //Counter 
+     currentStatus.startRevolutions++; //Counter 
   }
   else 
   { 
@@ -409,7 +410,7 @@ void triggerPri_GM7X()
      { 
        toothCurrentCount = 3; 
        currentStatus.hasSync = true;
-       startRevolutions++; //Counter 
+       currentStatus.startRevolutions++; //Counter 
        return; //We return here so that the tooth times below don't get set (The magical 3rd tooth should not be considered for any calculations that use those times)
      } 
    }
@@ -523,7 +524,7 @@ void triggerPri_4G63()
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      currentStatus.hasSync = true;
-     startRevolutions++; //Counter
+     currentStatus.startRevolutions++; //Counter
      //if ((startRevolutions & 15) == 1) { currentStatus.hasSync = false; } //Every 64 revolutions, force a resync with the cam
   }
   else if (!currentStatus.hasSync) { return; }
@@ -591,7 +592,7 @@ int getRPM_4G63()
   if(!currentStatus.hasSync) { return 0; }
   if(currentStatus.RPM < configPage2.crankRPM) 
   { 
-    if(startRevolutions < 2) { return 0; } //Need at least 2 full revolutions to prevent crazy initial rpm value
+    if(currentStatus.startRevolutions < 2) { return 0; } //Need at least 2 full revolutions to prevent crazy initial rpm value
     int tempToothAngle;
     noInterrupts();
     tempToothAngle = triggerToothAngle;
@@ -687,7 +688,7 @@ void triggerPri_24X()
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      currentStatus.hasSync = true;
-     startRevolutions++; //Counter 
+     currentStatus.startRevolutions++; //Counter 
   }
   else
   {
@@ -777,7 +778,7 @@ void triggerPri_Jeep2000()
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      currentStatus.hasSync = true;
-     startRevolutions++; //Counter 
+     currentStatus.startRevolutions++; //Counter 
   }
   else
   {
@@ -863,7 +864,7 @@ void triggerPri_Audi135()
      toothCurrentCount = 1;
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
-     startRevolutions++; //Counter
+     currentStatus.startRevolutions++; //Counter
    } 
 
    setFilter(curGap); //Recalc the new filter value
@@ -951,7 +952,7 @@ void triggerPri_HondaD17()
    {
      toothOneMinusOneTime = toothOneTime; 
      toothOneTime = curTime;
-     startRevolutions++; //Counter 
+     currentStatus.startRevolutions++; //Counter 
    }
    else
    {
@@ -1046,7 +1047,7 @@ void triggerPri_Miata9905()
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      currentStatus.hasSync = true;
-     startRevolutions++; //Counter
+     currentStatus.startRevolutions++; //Counter
      //if ((startRevolutions & 15) == 1) { currentStatus.hasSync = false; } //Every 64 revolutions, force a resync with the cam
   }
   else if (!currentStatus.hasSync) { return; }
@@ -1169,7 +1170,7 @@ void triggerPri_MazdaAU()
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
      currentStatus.hasSync = true;
-     startRevolutions++; //Counter
+     currentStatus.startRevolutions++; //Counter
      //if ((startRevolutions & 15) == 1) { currentStatus.hasSync = false; } //Every 64 revolutions, force a resync with the cam. For testing only!
   }
   else if (!currentStatus.hasSync) { return; }

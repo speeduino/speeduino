@@ -1,4 +1,8 @@
+#ifndef IDLE_H
+#define IDLE_H
+
 #include "globals.h"
+#include "table.h"
 
 #define STEPPER_FORWARD 0
 #define STEPPER_BACKWARD 1
@@ -40,3 +44,5 @@ long idle_cl_target_rpm;
 void initialiseIdle();
 static inline void disableIdle();
 static inline void enableIdle();
+
+#endif
