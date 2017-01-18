@@ -175,7 +175,7 @@ struct statuses {
   boolean launchingSoft; //True when in launch control soft limit mode
   boolean launchingHard; //True when in launch control hard limit mode
   int freeRAM;
-  unsigned int flatShiftRPM;
+  unsigned int clutchEngagedRPM;
   bool flatShiftingHard;
   
   //Helpful bitwise operations:

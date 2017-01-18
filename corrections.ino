@@ -256,7 +256,7 @@ static inline byte correctionAFRClosedLoop()
   currentStatus.afrTarget = currentStatus.O2; //Catch all incase the below doesn't run. This prevents the Include AFR option from doing crazy things if the AFR target conditions aren't met. This value is changed again below if all conditions are met. 
   
   //Check the ignition count to see whether the next step is required
-  if( (ignitionCount & (configPage3.egoCount - 1)) == 1 ) //This is the equivalent of ( (ignitionCount % configPage3.egoCount) == 0 ) but without the expensive modulus operation. ie It results in True every <egoCount> ignition loops. Note that it only works for power of two vlaues for egoCount
+  //if( (ignitionCount & (configPage3.egoCount - 1)) == 1 ) //This is the equivalent of ( (ignitionCount % configPage3.egoCount) == 0 ) but without the expensive modulus operation. ie It results in True every <egoCount> ignition loops. Note that it only works for power of two vlaues for egoCount
   {
     //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
     byte yValue;
@@ -321,6 +321,7 @@ byte correctionsIgn(byte advance)
   advance = correctionIATretard(advance);
   advance = correctionSoftRevLimit(advance);
   advance = correctionSoftLaunch(advance);
+  advance = correctionSoftFlatShift(advance);
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
   advance = correctionCrankingFixedTiming(advance); //This overrrides the regular fixed timing, must come last
@@ -368,7 +369,28 @@ static inline byte correctionSoftRevLimit(byte advance)
 
 static inline byte correctionSoftLaunch(byte advance)
 {
-  if (currentStatus.launchingSoft) { return configPage3.lnchRetard; } //SoftCut rev limit for 2-step launch control
+  //SoftCut rev limit for 2-step launch control. 
+  if (configPage3.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) ) 
+  {
+    currentStatus.launchingSoft = true; 
+    BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH);
+    return configPage3.lnchRetard;
+  } 
+
+  currentStatus.launchingSoft = false; 
+  BIT_CLEAR(currentStatus.spark, BIT_SPARK_SLAUNCH);
+  return advance; 
+}
+
+static inline byte correctionSoftFlatShift(byte advance)
+{
+  if(configPage3.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage3.flatSSoftWin) ) ) 
+  { 
+    BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
+    return configPage3.flatSRetard; 
+  }
+
+  BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS);
   return advance;
 }
 
