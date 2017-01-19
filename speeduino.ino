@@ -31,7 +31,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "math.h"
 #include "corrections.h"
 #include "timers.h"
-#include "display.h"
+//#include "display.h"
 #include "decoders.h"
 #include "idle.h"
 #include "auxiliaries.h"
@@ -39,13 +39,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "src/PID_v1/PID_v1.h"
 //#include "src/DigitalWriteFast/digitalWriteFast.h"
 #include "errors.h"
-
-#ifdef __SAM3X8E__
- //Do stuff for ARM based CPUs 
-#else
-  #include "storage.h"
-#endif
-
+#include "storage.h"
+#include <EEPROM.h>
 
 struct config1 configPage1;
 struct config2 configPage2;

@@ -1,6 +1,5 @@
 #ifndef STORAGE_H
 #define STORAGE_H
-#include <EEPROM.h>
 
 void writeConfig();
 void loadConfig();

@@ -26,6 +26,7 @@ volatile unsigned int dwellLimit_uS;
 
 #if defined (CORE_TEENSY)
   IntervalTimer lowResTimer;
+  void oneMSInterval();
 #endif
 void initialiseTimers();
 
