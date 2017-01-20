@@ -290,7 +290,7 @@ void loadConfig()
   for(int x=EEPROM_CONFIG1_YBINS; x<EEPROM_CONFIG2_START; x++) 
   {
     offset = x - EEPROM_CONFIG1_YBINS;
-    fuelTable.axisY[offset] = EEPROM.read(x);
+    fuelTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER;
   }
   
   pnt_configPage = (byte *)&configPage1; //Create a pointer to Page 1 in memory

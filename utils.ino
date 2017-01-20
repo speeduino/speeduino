@@ -154,8 +154,7 @@ void setPinMapping(byte boardID)
       pinIdle1 = 5; //Single wire idle control
       pinIdle2 = 6; //2 wire idle control
       pinBoost = 7; //Boost control
-      pinVVT_1
-      = 4; //Default VVT output
+      pinVVT_1 = 4; //Default VVT output
       pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
