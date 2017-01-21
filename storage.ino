@@ -316,7 +316,7 @@ void loadConfig()
   for(int x=EEPROM_CONFIG3_XBINS; x<EEPROM_CONFIG3_YBINS; x++) 
   {
     offset = x - EEPROM_CONFIG3_XBINS;
-    ignitionTable.axisX[offset] = (EEPROM.read(x) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+    ignitionTable.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
   }
   //TPS/MAP bins
   for(int x=EEPROM_CONFIG3_YBINS; x<EEPROM_CONFIG4_START; x++) 

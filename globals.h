@@ -394,7 +394,7 @@ struct config3 {
   byte launchHiLo : 1;
   
   byte lnchSoftLim;
-  byte lnchRetard;
+  int8_t lnchRetard; //Allow for negative advance value (ATDC)
   byte lnchHardLim;
   byte lnchFuelAdd;
 

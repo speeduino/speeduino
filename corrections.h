@@ -21,13 +21,13 @@ static inline byte correctionLaunch(); //Launch control correction
 static inline bool correctionDFCO(); //Decelleration fuel cutoff
 
 byte correctionsIgn();
-static inline byte correctionFixedTiming(byte);
-static inline byte correctionCrankingFixedTiming(byte);
-static inline byte correctionFlexTiming(byte);
-static inline byte correctionIATretard(byte);
-static inline byte correctionSoftRevLimit(byte);
-static inline byte correctionSoftLaunch(byte);
-static inline byte correctionSoftFlatShift(byte);
+static inline int8_t correctionFixedTiming(int8_t);
+static inline int8_t correctionCrankingFixedTiming(int8_t);
+static inline int8_t correctionFlexTiming(int8_t);
+static inline int8_t correctionIATretard(int8_t);
+static inline int8_t correctionSoftRevLimit(int8_t);
+static inline int8_t correctionSoftLaunch(int8_t);
+static inline int8_t correctionSoftFlatShift(int8_t);
 
 
 #endif // CORRECTIONS_H
