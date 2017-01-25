@@ -5,6 +5,9 @@ This file is used for everything related to maps/tables including their definiti
 #define TABLE_H
 #include <Arduino.h>
 
+#define TABLE_RPM_MULTIPLIER  100
+#define TABLE_LOAD_MULTIPLIER 2
+
 /*
 The 2D table can contain either 8-bit (byte) or 16-bit (int) values
 The valueSize variable should be set to either 8 or 16 to indicate this BEFORE the table is used

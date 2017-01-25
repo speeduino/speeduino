@@ -15,7 +15,7 @@ sendcancommand is called when a comman d is to be sent via serial3 to the Can in
 //#include "globals.h"
 //#include "storage.h"
 
-void Cancommand()
+void canCommand()
 {
   switch (Serial3.read())
   {
@@ -24,15 +24,15 @@ void Cancommand()
         break;
 
     case 'G': // this is the reply command sent by the Can interface
-        uint8_t Gdata;
+        //uint8_t Gdata;
         while (Serial3.available() == 0) { }
         cancmdfail = Serial3.read();
         if (cancmdfail == 0)
-         {
+        {
           //command request failed and/or data/device was not available
-         }
+        }
         while (Serial3.available() == 0) { }
-        Gdata= Serial3.read();
+        //Gdata = Serial3.read();
         break;
 
     case 'L':

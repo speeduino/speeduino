@@ -8,6 +8,8 @@ A full copy of the license may be found in the projects root directory
  * Sets the next available error
  * Returns the error number or 0 if there is no more room for errors
  */
+#include "errors.h"
+ 
 byte setError(byte errorID)
 {
   if(errorCount < MAX_ERRORS)
@@ -30,12 +32,12 @@ void clearError(byte errorID)
   else if(errorID == errorCodes[3]) { clearedError = 3; }
   else return; //Occurs when the error we're being asked to clear is not currently one of the active errors
 
-  errorCodes[clearedError] == ERR_NONE;
+  errorCodes[clearedError] = ERR_NONE;
   //Clear the required error and move any from above it 'down' in the error array
   for (byte x=clearedError; x < (errorCount-1); x++)
   {
-    errorCodes[x] == errorCodes[x+1];
-    errorCodes[x+1] == ERR_NONE;
+    errorCodes[x] = errorCodes[x+1];
+    errorCodes[x+1] = ERR_NONE;
   }
 
   errorCount--;

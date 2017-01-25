@@ -1,4 +1,8 @@
+#ifndef IDLE_H
+#define IDLE_H
+
 #include "globals.h"
+#include "table.h"
 
 #define STEPPER_FORWARD 0
 #define STEPPER_BACKWARD 1
@@ -23,7 +27,9 @@ struct table2D iacCrankDutyTable;
 
 struct StepperIdle idleStepper;
 bool idleOn; //Simply tracks whether idle was on last time around
+byte idleInitComplete = 99; //TRacks which idle method was initialised. 99 is a method that will never exist
 unsigned int iacStepTime;
+unsigned int completedHomeSteps;
 
 volatile byte *idle_pin_port;
 volatile byte idle_pin_mask;
@@ -36,4 +42,7 @@ long idle_pwm_target_value;
 long idle_cl_target_rpm;
 
 void initialiseIdle();
+static inline void disableIdle();
+static inline void enableIdle();
 
+#endif
