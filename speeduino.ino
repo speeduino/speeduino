@@ -31,7 +31,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "math.h"
 #include "corrections.h"
 #include "timers.h"
-//#include "display.h"
+//#include "display.h"  
 #include "decoders.h"
 #include "idle.h"
 #include "auxiliaries.h"
@@ -806,10 +806,8 @@ void loop()
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
-      int lastRPM = currentStatus.RPM; //Need to record this for rpmDOT calculation
       currentStatus.RPM = currentStatus.longRPM = getRPM(); //Long RPM is included here
       if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't. 
-      currentStatus.rpmDOT = ldiv(1000000, (currentLoopTime - previousLoopTime)).quot * (currentStatus.RPM - lastRPM); //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     }
     else
     {
@@ -846,7 +844,7 @@ void loop()
     {
       readTPS();
      
-      //Check for launching (clutch) can be done around here too
+      //Check for launching/flat shift (clutch) can be done around here too
       previousClutchTrigger = clutchTrigger;
       if(configPage3.launchHiLo) { clutchTrigger = digitalRead(pinLaunch); }
       else { clutchTrigger = !digitalRead(pinLaunch); } 

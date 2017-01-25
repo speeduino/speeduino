@@ -40,6 +40,7 @@ void initialiseTimers()
 #endif
 
   dwellLimit_uS = (1000 * configPage2.dwellLimit);
+  lastRPM_100ms = 0;
 }
 
 
@@ -53,10 +54,11 @@ void oneMSInterval() //Most ARM chips can simply call a function
 {
   
   //Increment Loop Counters
+  loop100ms++;
   loop250ms++;
   loopSec++;
 
-unsigned long targetOverdwellTime;
+  unsigned long targetOverdwellTime;
   
   //Overdwell check
   targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
@@ -67,6 +69,16 @@ unsigned long targetOverdwellTime;
   if(ignitionSchedule3.Status == RUNNING) { if(ignitionSchedule3.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil3Charge(); } }
   if(ignitionSchedule4.Status == RUNNING) { if(ignitionSchedule4.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil4Charge(); } }  
   if(ignitionSchedule5.Status == RUNNING) { if(ignitionSchedule5.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil5Charge(); } }
+
+  //Loop executed every 100ms loop
+  //Anything inside this if statement will run every 100ms.
+  if (loop100ms == 100)
+  {
+    loop100ms = 0; //Reset counter
+
+    currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
+    lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
+  }
   
   //Loop executed every 250ms loop (1ms x 250 = 250ms)
   //Anything inside this if statement will run every 250ms.
