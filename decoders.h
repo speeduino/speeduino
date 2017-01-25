@@ -18,6 +18,7 @@ void triggerSec_DualWheel();
 int getRPM_DualWheel();
 int getCrankAngle_DualWheel(int timePerDegree);
 
+unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less. 
 
 volatile unsigned long curTime;
 volatile unsigned long curGap;
@@ -45,7 +46,7 @@ volatile unsigned long secondaryLastToothTime = 0; //The time (micros()) that th
 volatile int triggerActualTeeth;
 volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 unsigned int triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
-int triggerToothAngle; //The number of crank degrees that elapse per tooth
+volatile int triggerToothAngle; //The number of crank degrees that elapse per tooth
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 bool secondDerivEnabled; //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
 bool decoderIsSequential; //Whether or not the decoder supports sequential operation

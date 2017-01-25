@@ -1,27 +1,19 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 #include <Arduino.h>
+#include "table.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define CORE_AVR
 #endif
 
-//const byte ms_version = 20;
-const byte signature = 20;
-
-//const char signature[] = "speeduino";
-const char displaySignature[] = "speeduino 201609-dev";
-const char TSfirmwareVersion[] = "Speeduino 2016.09";
-
-const byte data_structure_version = 2; //This identifies the data structure when reading / writing. 
-const byte page_size = 64;
-const int map_page_size = 288;
-const byte packetSize = 35;
-
 //Handy bitsetting macros
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
 #define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
 #define BIT_CHECK(var,pos) ((var) & (1<<(pos)))
+
+#define MS_IN_MINUTE 60000
+#define US_IN_MINUTE 60000000
 
 //Define bit positions within engine virable
 #define BIT_ENGINE_RUN      0   // Engine running
@@ -53,6 +45,15 @@ const byte packetSize = 35;
 #define BIT_SPARK_IDLE            6  // idle on
 #define BIT_SPARK_SYNC            7  // Whether engine has sync or not 
 
+#define BIT_SPARK2_FLATSH         0 //Flat shift hard cut
+#define BIT_SPARK2_FLATSS         1 //Flat shift soft cut
+#define BIT_SPARK2_UNUSED3        2
+#define BIT_SPARK2_UNUSED4        3
+#define BIT_SPARK2_UNUSED5        4
+#define BIT_SPARK2_UNUSED6        5
+#define BIT_SPARK2_UNUSED7        6
+#define BIT_SPARK2_UNUSED8        7
+
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
@@ -75,12 +76,40 @@ const byte packetSize = 35;
 #define EVEN_FIRE         0
 #define ODD_FIRE          1
 
+#define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
+
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
 #define CALIBRATION_TEMPERATURE_OFFSET 40 // All temperature measurements are stored offset by 40 degrees. This is so we can use an unsigned byte (0-255) to represent temperature ranges from -40 to 215
 #define OFFSET_FUELTRIM 127 //The fuel trim tables are offset by 128 to allow for -128 to +128 values
 
 #define SERIAL_BUFFER_THRESHOLD 32 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
+
+const byte signature = 20;
+
+//const char signature[] = "speeduino";
+const char displaySignature[] = "speeduino 201609-dev";
+const char TSfirmwareVersion[] = "Speeduino 2016.09";
+
+const byte data_structure_version = 2; //This identifies the data structure when reading / writing. 
+const byte page_size = 64;
+const int map_page_size = 288;
+
+struct table3D fuelTable; //16x16 fuel map
+struct table3D ignitionTable; //16x16 ignition map
+struct table3D afrTable; //16x16 afr target map
+struct table3D boostTable; //8x8 boost map
+struct table3D vvtTable; //8x8 vvt map
+struct table3D trim1Table; //6x6 Fuel trim 1 map
+struct table3D trim2Table; //6x6 Fuel trim 2 map
+struct table3D trim3Table; //6x6 Fuel trim 3 map
+struct table3D trim4Table; //6x6 Fuel trim 4 map
+struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
+struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
+struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
+struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
+struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
+struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
 
 //These are for the direct port manipulation of the injectors and coils
 volatile byte *inj1_pin_port;
@@ -105,6 +134,9 @@ volatile byte ign4_pin_mask;
 volatile byte *ign5_pin_port;
 volatile byte ign5_pin_mask;
 
+volatile byte *tach_pin_port;
+volatile byte tach_pin_mask;
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
@@ -120,7 +152,7 @@ struct statuses {
   unsigned long TPSlast_time; //The time the previous TPS sample was taken
   byte tpsADC; //0-255 byte representation of the TPS
   byte tpsDOT;
-  int rpmDOT;
+  volatile int rpmDOT;
   byte VE;
   byte O2;
   byte O2_2;
@@ -134,7 +166,7 @@ struct statuses {
   int dwell;
   byte dwellCorrection; //The amount of correction being applied to the dwell time.
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
-  byte advance;
+  int8_t advance; //Signed 8 bit as advance can now go negative (ATDC)
   byte corrections;
   byte TAEamount; //The amount of accleration enrichment currently being applied
   byte egoCorrection; //The amount of closed loop AFR enrichment currently being applied
@@ -142,13 +174,16 @@ struct statuses {
   byte batCorrection; //The amount of battery voltage enrichment currently being applied
   byte iatCorrection; //The amount of inlet air temperature adjustment currently being applied
   byte launchCorrection; //The amount of correction being applied if launch control is active
+  byte flexCorrection; //Amount of correction being applied to compensate for ethanol content
+  byte flexIgnCorrection; //Amount of additional advance being applied based on flex
   byte afrTarget;
   byte idleDuty;
   bool fanOn; //Whether or not the fan is turned on
-  byte flex; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. 
+  volatile byte ethanolPct; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. 
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte squirt;
   volatile byte spark;
+  volatile byte spark2;
   byte engine;
   unsigned int PW1; //In uS
   unsigned int PW2; //In uS
@@ -160,6 +195,9 @@ struct statuses {
   boolean launchingSoft; //True when in launch control soft limit mode
   boolean launchingHard; //True when in launch control hard limit mode
   int freeRAM;
+  unsigned int clutchEngagedRPM;
+  bool flatShiftingHard;
+  volatile byte startRevolutions = 0; //A counter for how many revolutions have been completed since sync was achieved.
   
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -168,7 +206,7 @@ struct statuses {
   // x |= (1 << n);       // forces nth bit of x to be 1.  all other bits left alone.
   
 };
-
+struct statuses currentStatus; //The global status object
 
 //Page 1 of the config - See the ini file for further reference
 //This mostly covers off variables that are required for fuel
@@ -182,7 +220,7 @@ struct config1 {
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
   byte tachoPin : 6; //Custom pin setting for tacho output
-  byte unused16 : 2;
+  byte tachoDiv : 2; //Whether to change the tacho speed
   byte tdePct; // TPS decelleration (%)
   byte taeColdA;
   byte tpsThresh;
@@ -235,8 +273,8 @@ struct config1 {
   
   byte primePulse;
   byte dutyLim;
-  byte unused41;
-  byte egoSwitch;
+  byte flexFreqLow; //Lowest valid frequency reading from the flex sensor
+  byte flexFreqHigh; //Highest valid frequency reading from the flex sensor
   byte taeColdM;
   byte tpsMin;
   byte tpsMax;
@@ -247,10 +285,10 @@ struct config1 {
   unsigned int oddfire2; //The ATDC angle of channel 2 for oddfire
   unsigned int oddfire3; //The ATDC angle of channel 3 for oddfire
   unsigned int oddfire4; //The ATDC angle of channel 4 for oddfire
-  byte unused57;
-  byte unused58;
-  byte unused59;
-  byte unused60;
+  byte flexFuelLow; //Fuel % to be used for the lowest ethanol reading (Typically 100%)
+  byte flexFuelHigh; //Fuel % to be used for the highest ethanol reading (Typically 163%)
+  byte flexAdvLow; //Additional advance (in degrees) at lowest ethanol reading (Typically 0)
+  byte flexAdvHigh; //Additional advance (in degrees) at highest ethanol reading (Varies, usually 10-20)
   byte unused61;
   byte unused62;
   byte unused63;
@@ -273,7 +311,8 @@ struct config2 {
   byte TrigPattern : 4;
 
   byte TrigEdgeSec : 1;
-  byte unused4_6b : 7;
+  byte fuelPumpPin : 6;
+  byte unused4_6b : 1;
   
   byte unused4_7;
   byte IdleAdvRPM;
@@ -338,8 +377,10 @@ struct config3 {
   byte ego_sdelay; //Time in seconds after engine starts that closed loop becomes available
   byte egoRPM; //RPM must be above this for closed loop to function
   byte egoTPSMax; //TPS must be below this for closed loop to function
-  byte egoLoadMax; //Load (TPS or MAP) must be below this for closed loop to function
-  byte egoLoadMin; //Load (TPS or MAP) must be above this for closed loop to function
+  byte boostPin : 6;
+  byte unused6_13 : 2;
+  byte vvtPin : 6;
+  byte unused6_14 : 2;
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
   byte airDenBins[9];
@@ -353,7 +394,7 @@ struct config3 {
   byte launchHiLo : 1;
   
   byte lnchSoftLim;
-  byte lnchRetard;
+  int8_t lnchRetard; //Allow for negative advance value (ATDC)
   byte lnchHardLim;
   byte lnchFuelAdd;
 
@@ -369,10 +410,11 @@ struct config3 {
   
   byte lnchPullRes : 2;
   byte fuelTrimEnabled : 1;
-  byte unused60 : 5;
-  byte unused61;
-  byte unused62;
-  byte unused63;
+  byte flatSEnable : 1;
+  byte unused60 : 4;
+  byte flatSSoftWin;
+  byte flatSRetard;
+  byte flatSArm;
 
   
 };
@@ -400,8 +442,8 @@ struct config4 {
   byte iacStepHyster; //Hysteresis temperature (*10). Eg 2.2C = 22
   
   byte fanInv : 1;        // Fan output inversion bit
-  byte fanEnable : 2;     // Fan enable bit. 0=Off, 1=On/Off, 2=PWM
-  byte unused : 5;
+  byte fanEnable : 1;     // Fan enable bit. 0=Off, 1=On/Off
+  byte fanPin : 5;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis 
   byte fanFreq;           // Fan PWM frequency

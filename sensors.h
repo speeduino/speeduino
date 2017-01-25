@@ -19,6 +19,10 @@
 volatile byte flexCounter = 0;
 volatile int AnChannel[15];
 
+unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
+unsigned int MAPcount; //Number of samples taken in the current MAP cycle
+byte MAPcurRev = 0; //Tracks which revolution we're sampling on
+
 /*
  * Simple low pass IIR filter macro for the analog inputs
  * This is effectively implementing the smooth filter from http://playground.arduino.cc/Main/Smooth

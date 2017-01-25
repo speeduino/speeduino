@@ -11,6 +11,8 @@
 #define boostvvtPage 8
 #define seqFuelPage  9
 
+#define packetSize   37
+
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 boolean isMap = true;
 unsigned long requestCount = 0; //The number of times the A command has been issued

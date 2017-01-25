@@ -3,6 +3,7 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
+#include "idle.h"
 
 /*
 These functions cover the PWM and stepper idle control
@@ -90,7 +91,8 @@ void initialiseIdle()
       iacCrankStepsTable.axisX = configPage4.iacCrankBins;
       iacStepTime = configPage4.iacStepTime * 1000;
       
-      homeStepper(); //Returns the stepper to the 'home' position
+      //homeStepper(); //Returns the stepper to the 'home' position
+      completedHomeSteps = 0;
       idleStepper.stepperStatus = SOFF;
       break;
       
@@ -109,11 +111,13 @@ void initialiseIdle()
       idleStepper.stepperStatus = SOFF;
       break;
   }
-  
+  idleInitComplete = configPage4.iacAlgorithm; //Sets which idle method was initialised
 }
 
 void idleControl()
 {
+  if(idleInitComplete != configPage4.iacAlgorithm) { initialiseIdle(); }
+  
   switch(configPage4.iacAlgorithm)
   {
     case 0:       //Case 0 is no idle control ('None')
@@ -175,7 +179,7 @@ void idleControl()
           }
           else
           {
-            //Means we're in COOLING status. We need to remain in this state for the step time before the next step can be taken
+            //Means we're in COOLING status but have been in this state long enough to 
             idleStepper.stepperStatus = SOFF;
           }
         }
@@ -185,9 +189,18 @@ void idleControl()
           return;
         }
       }
-      
+
+      if( completedHomeSteps < (configPage4.iacStepHome * 3) ) //Home steps are divided by 3 from TS
+      {
+        digitalWrite(pinStepperDir, STEPPER_BACKWARD); //Sets stepper direction to backwards
+        digitalWrite(pinStepperStep, HIGH);
+        idleStepper.stepStartTime = micros();
+        idleStepper.stepperStatus = STEPPING;
+        completedHomeSteps++;
+        idleOn = true;
+      }
       //Check for cranking pulsewidth
-      if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+      else if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         //Currently cranking. Use the cranking table
         idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
@@ -203,7 +216,11 @@ void idleControl()
       else if( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < iacStepTable.axisX[IDLE_TABLE_SIZE-1])
       {
         //Standard running
-        idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+        if ((mainLoopCount & 255) == 1)
+        {
+          //Only do a lookup of the required value around 4 times per second. Any more than this can create too much jitter and require a hyster value that is too high
+          idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+        }
         if ( idleStepper.targetIdleStep > (idleStepper.curIdleStep - configPage4.iacStepHyster) && idleStepper.targetIdleStep < (idleStepper.curIdleStep + configPage4.iacStepHyster) ) { return; } //Hysteris check
         else if(idleStepper.targetIdleStep < idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_BACKWARD); idleStepper.curIdleStep--; }//Sets stepper direction to backwards
         else if (idleStepper.targetIdleStep > idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_FORWARD); idleStepper.curIdleStep++; }//Sets stepper direction to forwards

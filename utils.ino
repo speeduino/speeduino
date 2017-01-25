@@ -1,12 +1,12 @@
 /*
-Speeduino - Simple engine management for the Arduino Mega 2560 platform
-Copyright (C) Josh Stewart
-A full copy of the license may be found in the projects root directory
+  Speeduino - Simple engine management for the Arduino Mega 2560 platform
+  Copyright (C) Josh Stewart
+  A full copy of the license may be found in the projects root directory
 */
 
 
 /*
-Returns how much free dynamic memory exists (between heap and stack)
+  Returns how much free dynamic memory exists (between heap and stack)
 */
 #include "utils.h"
 
@@ -118,7 +118,9 @@ void setPinMapping(byte boardID)
       pinDisplayReset = 48; // OLED reset pin
       pinTachOut = 49; //Tacho output pin
       pinIdle1 = 5; //Single wire idle control
-      pinIdle2 = 7; //2 wire idle control
+      pinIdle2 = 53; //2 wire idle control
+      pinBoost = 7; //Boost control
+      pinVVT_1 = 6; //Default VVT output
       pinFuelPump = 4; //Fuel pump output
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
@@ -150,7 +152,9 @@ void setPinMapping(byte boardID)
       pinDisplayReset = 48; // OLED reset pin
       pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
       pinIdle1 = 5; //Single wire idle control
-      pinIdle2 = 7; //2 wire idle control (Note this is shared with boost!!!)
+      pinIdle2 = 6; //2 wire idle control
+      pinBoost = 7; //Boost control
+      pinVVT_1 = 4; //Default VVT output
       pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
@@ -283,6 +287,8 @@ void setPinMapping(byte boardID)
       pinTachOut = 49; //Tacho output pin
       pinIdle1 = 5; //Single wire idle control
       pinFuelPump = 45; //Fuel pump output
+      pinStepperDir = 20; //Direction pin  for DRV8825 driver
+      pinStepperStep = 21; //Step pin for DRV8825 driver
       pinSpareHOut1 = 4; // high current output spare1
       pinSpareHOut2 = 6; // high current output spare2
       pinBoost = 7;
@@ -292,8 +298,8 @@ void setPinMapping(byte boardID)
       pinSpareLOut4 = 51;
       pinSpareLOut5 = 53;
       pinFan = 47; //Pin for the fan output
-      break; 
-      
+      break;
+
     default:
       //Pin mappings as per the v0.2 shield
       pinInjector1 = 8; //Output pin injector 1 is on
@@ -314,17 +320,37 @@ void setPinMapping(byte boardID)
       pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
+      pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pinStepperStep = 17; //Step pin for DRV8825 driver
       pinDisplayReset = 48; // OLED reset pin
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
       break;
   }
-  
+
   //Setup any devices that are using selectable pins
-  if(configPage3.launchPin != 0) { pinLaunch = configPage3.launchPin; }
-  if(configPage2.ignBypassPin != 0) { pinIgnBypass = configPage2.ignBypassPin; }
-  if(configPage1.tachoPin != 0) { pinTachOut = configPage1.tachoPin; }
+  if (configPage3.launchPin != 0) {
+    pinLaunch = configPage3.launchPin;
+  }
+  if (configPage2.ignBypassPin != 0) {
+    pinIgnBypass = configPage2.ignBypassPin;
+  }
+  if (configPage1.tachoPin != 0) {
+    pinTachOut = configPage1.tachoPin;
+  }
+  if (configPage2.fuelPumpPin != 0) {
+    pinFuelPump = configPage2.fuelPumpPin;
+  }
+  if (configPage4.fanPin != 0) {
+    pinFan = configPage4.fanPin;
+  }
+  if (configPage3.boostPin != 0) {
+    pinBoost = configPage3.boostPin;
+  }
+  if (configPage3.vvtPin != 0) {
+    pinVVT_1 = configPage3.vvtPin;
+  }
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinCoil1, OUTPUT);
@@ -343,7 +369,9 @@ void setPinMapping(byte boardID)
   pinMode(pinFuelPump, OUTPUT);
   pinMode(pinIgnBypass, OUTPUT);
   pinMode(pinFan, OUTPUT);
-  
+  pinMode(pinStepperDir, OUTPUT);
+  pinMode(pinStepperStep, OUTPUT);
+
   inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
   inj1_pin_mask = digitalPinToBitMask(pinInjector1);
   inj2_pin_port = portOutputRegister(digitalPinToPort(pinInjector2));
@@ -354,7 +382,7 @@ void setPinMapping(byte boardID)
   inj4_pin_mask = digitalPinToBitMask(pinInjector4);
   inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
   inj5_pin_mask = digitalPinToBitMask(pinInjector5);
-  
+
   ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
   ign1_pin_mask = digitalPinToBitMask(pinCoil1);
   ign2_pin_port = portOutputRegister(digitalPinToPort(pinCoil2));
@@ -365,6 +393,9 @@ void setPinMapping(byte boardID)
   ign4_pin_mask = digitalPinToBitMask(pinCoil4);
   ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
   ign5_pin_mask = digitalPinToBitMask(pinCoil5);
+
+  tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
+  tach_pin_mask = digitalPinToBitMask(pinTachOut);
 
   //And for inputs
   pinMode(pinMAP, INPUT);
@@ -378,9 +409,13 @@ void setPinMapping(byte boardID)
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
   pinMode(pinFlex, INPUT_PULLUP); //Standard GM / Continental flex sensor requires pullup
-//  pinMode(pinLaunch, INPUT_PULLUP); //This should work for both NO and NC grounding switches
-  if (configPage3.lnchPullRes) { pinMode(pinLaunch, INPUT_PULLUP); }
-  else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
+  //  pinMode(pinLaunch, INPUT_PULLUP); //This should work for both NO and NC grounding switches
+  if (configPage3.lnchPullRes) {
+    pinMode(pinLaunch, INPUT_PULLUP);
+  }
+  else {
+    pinMode(pinLaunch, INPUT);  //If Launch Pull Resistor is not set make input float.
+  }
 
   //Set default values
   digitalWrite(pinMAP, HIGH);
@@ -389,15 +424,15 @@ void setPinMapping(byte boardID)
 }
 
 /*
-This function retuns a pulsewidth time (in us) using a either Alpha-N or Speed Density algorithms, given the following:
-REQ_FUEL
-VE: Lookup from the main MAP vs RPM fuel table
-MAP: In KPa, read from the sensor
-GammaE: Sum of Enrichment factors (Cold start, acceleration). This is a multiplication factor (Eg to add 10%, this should be 110)
-injDT: Injector dead time. The time the injector take to open minus the time it takes to close (Both in uS)
-TPS: Throttle position (0% to 100%)
+  This function retuns a pulsewidth time (in us) using a either Alpha-N or Speed Density algorithms, given the following:
+  REQ_FUEL
+  VE: Lookup from the main MAP vs RPM fuel table
+  MAP: In KPa, read from the sensor
+  GammaE: Sum of Enrichment factors (Cold start, acceleration). This is a multiplication factor (Eg to add 10%, this should be 110)
+  injDT: Injector dead time. The time the injector take to open minus the time it takes to close (Both in uS)
+  TPS: Throttle position (0% to 100%)
 
-This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N calculations respectively.
+  This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N calculations respectively.
 */
 unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 {
@@ -408,17 +443,27 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
   iVE = ((unsigned int)VE << 7) / 100;
-  if( configPage1.multiplyMAP ) { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; } //Include multiply MAP (vs baro) if enabled
-  if( configPage1.includeAFR && (configPage3.egoType == 2)) { iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget; } //Include AFR (vs target) if enabled
+  if ( configPage1.multiplyMAP ) {
+    iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
+  }
+  if ( configPage1.includeAFR && (configPage3.egoType == 2)) {
+    iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+  }
   iCorrections = (corrections << 7) / 100;
 
 
   unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
-  if( configPage1.multiplyMAP ) { intermediate = (intermediate * iMAP) >> 7; }
-  if( configPage1.includeAFR && (configPage3.egoType == 2)) { intermediate = (intermediate * iAFR) >> 7; } //EGO type must be set to wideband for this to be used
+  if ( configPage1.multiplyMAP ) {
+    intermediate = (intermediate * iMAP) >> 7;
+  }
+  if ( configPage1.includeAFR && (configPage3.egoType == 2)) {
+    intermediate = (intermediate * iAFR) >> 7;  //EGO type must be set to wideband for this to be used
+  }
   intermediate = (intermediate * iCorrections) >> 7;
-  if(intermediate == 0) { return 0; } //If the pulsewidth is 0, we return here before the opening time gets added
-  
+  if (intermediate == 0) {
+    return 0;  //If the pulsewidth is 0, we return here before the opening time gets added
+  }
+
   intermediate += injOpen; //Add the injector opening time
   if ( intermediate > 65535) {
     intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
@@ -430,13 +475,15 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 //Convenience functions for Speed Density and Alpha-N
 unsigned int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 {
-  return PW(REQ_FUEL, VE, MAP, corrections, injOpen); 
-  //return PW(REQ_FUEL, VE, 100, corrections, injOpen); 
+  return PW(REQ_FUEL, VE, MAP, corrections, injOpen);
+  //return PW(REQ_FUEL, VE, 100, corrections, injOpen);
 }
 
 unsigned int PW_AN(int REQ_FUEL, byte VE, byte TPS, int corrections, int injOpen)
 {
   //Sanity check
-  if(TPS > 100) { TPS = 100; }
+  if (TPS > 100) {
+    TPS = 100;
+  }
   return PW(REQ_FUEL, VE, currentStatus.MAP, corrections, injOpen);
 }

@@ -8,6 +8,8 @@ A full copy of the license may be found in the projects root directory
  * Sets the next available error
  * Returns the error number or 0 if there is no more room for errors
  */
+#include "errors.h"
+ 
 byte setError(byte errorID)
 {
   if(errorCount < MAX_ERRORS)
