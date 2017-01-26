@@ -263,6 +263,19 @@ void writeConfig()
     z++;
     i++;
   }
+    //*********************************************************************************************************************************************************************************
+    
+  /*---------------------------------------------------
+  | Config page 10 (See storage.h for data layout)
+  | 128 byte long config table
+  -----------------------------------------------------*/
+  pnt_configPage = (byte *)&configPage10; //Create a pointer to Page 10 in memory
+  for(int x=EEPROM_CONFIG10_START; x<EEPROM_CONFIG10_END; x++) 
+  { 
+    if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG10_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG10_START))); }
+  }
+    //*********************************************************************************************************************************************************************************
+
 }
 
 void loadConfig()
@@ -467,6 +480,16 @@ void loadConfig()
     z++;
     i++;
   }
+  //*********************************************************************************************************************************************************************************
+  //canbus control page load
+    pnt_configPage = (byte *)&configPage10; //Create a pointer to Page 10 in memory
+  for(int x=EEPROM_CONFIG10_START; x<EEPROM_CONFIG10_END; x++) 
+  { 
+    *(pnt_configPage + byte(x - EEPROM_CONFIG10_START)) = EEPROM.read(x);
+  }
+ 
+  //*********************************************************************************************************************************************************************************
+ 
 }
 
 /*

@@ -434,6 +434,15 @@ void receiveValue(int valueOffset, byte newValue)
       else if (valueOffset < 192) { valueOffset = valueOffset - 186; trim4Table.axisY[(5 - valueOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
 
       break;
+
+    case canbusPage:
+      pnt_configPage = &configPage10;
+      //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
+      if (valueOffset < npage_size[currentPage])
+      {
+        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
+      }    
+      break;
       
     default:
       break;
@@ -743,6 +752,24 @@ void sendPage(bool useChar)
         }
         break;
       }
+
+    case canbusPage:
+      {
+        //currentTitleIndex = 141;
+        if (useChar)
+        {
+          //To Display Values from Config Page 10
+          Serial.println((const __FlashStringHelper *)&pageTitles[141]);//special typecasting to enable suroutine that the F macro uses
+          for (pnt_configPage = &configPage10; pnt_configPage < ((byte *)pnt_configPage + 128); pnt_configPage = (byte *)pnt_configPage + 1) 
+          {
+            Serial.println(*((byte *)pnt_configPage));// Displaying byte values of config page 3 up to but not including the first array
+          }
+          return;
+        }
+        else pnt_configPage = &configPage10; //Create a pointer to Page 10 in memory
+        break;
+      }
+            
     default:
       {
         Serial.println(F("\nPage has not been implemented yet. Change to another page."));
@@ -847,8 +874,8 @@ void sendPage(bool useChar)
     else
     {*/
     //All other bytes can simply be copied from the config table
-    byte response[page_size];
-    for (byte x = 0; x < page_size; x++)
+    byte response[npage_size[currentPage]];
+    for (byte x = 0; x < npage_size[currentPage]; x++)
     {
       response[x] = *((byte *)pnt_configPage + x); //Each byte is simply the location in memory of the configPage + the offset + the variable number (x)
       //if ( (x & 31) == 1) { loop(); } //Every 32 loops, do a manual call to loop() to ensure that there is no misses

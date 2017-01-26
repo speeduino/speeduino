@@ -93,6 +93,8 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing. 
 const byte page_size = 64;
+const int npage_size[11] ={0,288,64,288,64,288,64,64,160,192,128};
+//const byte page10_size = 128;
 const int map_page_size = 288;
 
 struct table3D fuelTable; //16x16 fuel map
@@ -450,6 +452,140 @@ struct config4 {
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
 };
 
+//Page 10 of the config mostly deals with CANBUS control
+//See ini file for further info (Config Page 10 in the ini)
+struct config10 {
+  byte unused10_0;
+  byte unused10_1;
+  byte unused10_2;
+  byte unused10_3;
+  byte unused10_4;
+  byte unused10_5;
+  byte unused10_6;
+  byte unused10_7;
+  byte unused10_8;
+  byte unused10_9;
+  byte unused10_10;
+  byte unused10_11;
+  byte unused10_12;
+  byte unused10_13;
+  byte unused10_14;
+  byte unused10_15;
+  byte unused10_16;
+  byte unused10_17;
+  byte unused10_18;
+  byte unused10_19;
+  byte unused10_20;
+  byte unused10_21;
+  byte unused10_22;
+  byte unused10_23;
+  byte unused10_24;
+  byte unused10_25;
+  byte unused10_26;
+  byte unused10_27;
+  byte unused10_28;
+  byte unused10_29;
+  byte unused10_30;
+  byte unused10_31;
+  byte unused10_32;
+  byte unused10_33;
+  byte unused10_34;
+  byte unused10_35;
+  byte unused10_36;
+  byte unused10_37;
+  byte unused10_38;
+  byte unused10_39;
+  byte unused10_40;
+  byte unused10_41;
+  byte unused10_42;
+  byte unused10_43;
+  byte unused10_44;
+  byte unused10_45;
+  byte unused10_46;
+  byte unused10_47;
+  byte unused10_48;
+  byte unused10_49;
+  byte unused10_50;
+  byte unused10_51;
+  byte unused10_52;
+  byte unused10_53;
+  byte unused10_54;
+  byte unused10_55;
+  byte unused10_56;
+  byte unused10_57;
+  byte unused10_58;
+  byte unused10_59;
+  byte unused10_60;
+  byte unused10_61;
+  byte unused10_62;
+  byte unused10_63;
+  byte unused10_64;
+  byte unused10_65;
+  byte unused10_66;
+  byte unused10_67;
+  byte unused10_68;
+  byte unused10_69;
+  byte unused10_70;
+  byte unused10_71;
+  byte unused10_72;
+  byte unused10_73;
+  byte unused10_74;
+  byte unused10_75;
+  byte unused10_76;
+  byte unused10_77;
+  byte unused10_78;
+  byte unused10_79;
+  byte unused10_80;
+  byte unused10_81;
+  byte unused10_82;
+  byte unused10_83;
+  byte unused10_84;
+  byte unused10_85;
+  byte unused10_86;
+  byte unused10_87;
+  byte unused10_88;
+  byte unused10_89;
+  byte unused10_90;
+  byte unused10_91;
+  byte unused10_92;
+  byte unused10_93;
+  byte unused10_94;
+  byte unused10_95;
+  byte unused10_96;
+  byte unused10_97;
+  byte unused10_98;
+  byte unused10_99;
+  byte unused10_100;
+  byte unused10_101;
+  byte unused10_102;
+  byte unused10_103;
+  byte unused10_104;
+  byte unused10_105;
+  byte unused10_106;
+  byte unused10_107;
+  byte unused10_108;
+  byte unused10_109;
+  byte unused10_110;
+  byte unused10_111;
+  byte unused10_112;
+  byte unused10_113;
+  byte unused10_114;
+  byte unused10_115;
+  byte unused10_116;
+  byte unused10_117;
+  byte unused10_118;
+  byte unused10_119;
+  byte unused10_120;
+  byte unused10_121;
+  byte unused10_122;
+  byte unused10_123;
+  byte unused10_124;
+  byte unused10_125;
+  byte unused10_126;
+  byte unused10_127;
+};
+
+
 byte pinInjector1; //Output pin injector 1
 byte pinInjector2; //Output pin injector 2
 byte pinInjector3; //Output pin injector 3 is on
@@ -517,6 +653,7 @@ extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 extern struct config1 configPage1;
 extern struct config2 configPage2;
 extern struct config3 configPage3;
+extern struct config10 configPage10;
 extern unsigned long currentLoopTime; //The time the current loop started (uS)
 extern unsigned long previousLoopTime; //The time the previous loop started (uS)
 extern byte ignitionCount;
