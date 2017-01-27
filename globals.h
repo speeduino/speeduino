@@ -145,7 +145,7 @@ struct statuses {
   long longRPM;
   int mapADC;
   long MAP; //Has to be a long for PID calcs (Boost control)
-  int baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running
+  byte baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running
   byte TPS; //The current TPS reading (0% - 100%)
   byte TPSlast; //The previous TPS reading
   unsigned long TPS_time; //The time the TPS sample was taken
@@ -197,7 +197,7 @@ struct statuses {
   int freeRAM;
   unsigned int clutchEngagedRPM;
   bool flatShiftingHard;
-  volatile byte startRevolutions = 0; //A counter for how many revolutions have been completed since sync was achieved.
+  volatile byte startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
   
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
