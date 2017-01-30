@@ -9,19 +9,25 @@ void initialiseCorrections();
 
 byte correctionsFuel();
 static inline byte correctionWUE(); //Warmup enrichment
+static inline byte correctionCranking(); //Cranking enrichment
 static inline byte correctionASE(); //After Start Enrichment
 static inline byte correctionAccel(); //Acceleration Enrichment
-static inline byte correctionsFloodClear(); //Check for flood clear on cranking
-static inline byte correctionsAFRClosedLoop(); //Closed loop AFR adjustment
-static inline byte correctionsFlex(); //Flex fuel adjustment
+static inline byte correctionFloodClear(); //Check for flood clear on cranking
+static inline byte correctionAFRClosedLoop(); //Closed loop AFR adjustment
+static inline byte correctionFlex(); //Flex fuel adjustment
+static inline byte correctionBatVoltage(); //Battery voltage correction
+static inline byte correctionIATDensity(); //Inlet temp density correction
+static inline byte correctionLaunch(); //Launch control correction
+static inline bool correctionDFCO(); //Decelleration fuel cutoff
 
 byte correctionsIgn();
-static inline byte correctionsFixedTiming(byte);
-static inline byte correctionsCrankingFixedTiming(byte);
-static inline byte correctionsFlexTiming(byte);
-static inline byte correctionsIATretard(byte);
-static inline byte correctionsSoftRevLimit(byte);
-static inline byte correctionsSoftLaunch(byte);
+static inline int8_t correctionFixedTiming(int8_t);
+static inline int8_t correctionCrankingFixedTiming(int8_t);
+static inline int8_t correctionFlexTiming(int8_t);
+static inline int8_t correctionIATretard(int8_t);
+static inline int8_t correctionSoftRevLimit(int8_t);
+static inline int8_t correctionSoftLaunch(int8_t);
+static inline int8_t correctionSoftFlatShift(int8_t);
 
 
 #endif // CORRECTIONS_H

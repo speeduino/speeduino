@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.14 - EFI Analytics, Inc." tuneComment="" writeDate="Mon Dec 05 20:48:23 AEDT 2016"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2016.11" nPages="9" signature="speeduino 201611"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.16 - EFI Analytics, Inc." tuneComment="" writeDate="Thu Jan 05 17:17:26 AEDT 2017"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2016.12-dev" nPages="9" signature="speeduino 201612"/>
 <page>
 <pcVariable name="tsCanId">"0"</pcVariable>
 </page>
@@ -84,7 +84,7 @@
 <constant name="unused2-16f">"One"</constant>
 <constant digits="1" name="tdePct" units="ms">3.2</constant>
 <constant digits="1" name="taeColdA" units="ms">0.0</constant>
-<constant digits="0" name="tpsThresh" units="%/s">100.0</constant>
+<constant digits="0" name="tpsThresh" units="%/s">70.0</constant>
 <constant digits="0" name="taeTime" units="ms">200.0</constant>
 <constant name="display">"Unused"</constant>
 <constant name="display1">"VE"</constant>
@@ -94,15 +94,15 @@
 <constant name="display5">"RPM"</constant>
 <constant name="displayB1">"RPM"</constant>
 <constant name="displayB2">"RPM"</constant>
-<constant digits="1" name="reqFuel" units="ms">12.8</constant>
+<constant digits="1" name="reqFuel" units="ms">12.2</constant>
 <constant digits="0" name="divider">2.0</constant>
 <constant name="alternate">"Alternating"</constant>
-<constant name="multiplyMAP">"No"</constant>
+<constant name="multiplyMAP">"Yes"</constant>
 <constant name="includeAFR">"No"</constant>
 <constant name="unused2-26d">"No"</constant>
 <constant name="unused2-26e">"No"</constant>
 <constant name="unused2-26f">"No"</constant>
-<constant name="unused2-26g">"No"</constant>
+<constant name="unused2-26g">"Yes"</constant>
 <constant name="unused2-26h">"No"</constant>
 <constant digits="1" name="injOpen" units="ms">1.0</constant>
 <constant digits="0" name="inj1Ang" units="deg">355.0</constant>
@@ -123,7 +123,7 @@
 <constant name="injLayout">"Paired"</constant>
 <constant name="canEnable">"Disable"</constant>
 <constant name="unused2-38h">"No"</constant>
-<constant digits="1" name="primePulse" units="ms">4.0</constant>
+<constant digits="1" name="primePulse" units="ms">1.0</constant>
 <constant digits="0" name="dutyLim" units="%">85.0</constant>
 <constant digits="0" name="flexFreqLow" units="Hz">50.0</constant>
 <constant digits="0" name="flexFreqHigh" units="Hz">150.0</constant>
@@ -132,7 +132,7 @@
 <constant digits="0" name="tpsMax" units="ADC">230.0</constant>
 <constant digits="0" name="mapMin" units="kpa">10.0</constant>
 <constant digits="0" name="mapMax" units="kpa">260.0</constant>
-<constant digits="0" name="fpPrime" units="s">3.0</constant>
+<constant digits="0" name="fpPrime" units="s">6.0</constant>
 <constant digits="1" name="stoich" units=":1">14.7</constant>
 <constant digits="0" name="oddfire2" units="deg">0.0</constant>
 <constant digits="0" name="oddfire3" units="deg">0.0</constant>
@@ -205,21 +205,16 @@
 <constant digits="0" name="TrigAng" units="Deg">0.0</constant>
 <constant digits="0" name="FixAng" units="Deg">0.0</constant>
 <constant digits="0" name="CrankAng" units="Deg">5.0</constant>
-<constant digits="0" name="TrigAngMul">4.0</constant>
+<constant digits="0" name="TrigAngMul">0.0</constant>
 <constant name="TrigEdge">"Leading"</constant>
 <constant name="TrigSpeed">"Crank Speed"</constant>
 <constant name="IgInv">"Going Low"</constant>
 <constant name="oddfire">"Yes"</constant>
 <constant name="TrigPattern">"Missing Tooth"</constant>
-<constant name="TrigEdgeSec">"Trailing"</constant>
-<constant name="unused4-6b">"Yes"</constant>
-<constant name="unused4-6c">"Yes"</constant>
-<constant name="unused4-6d">"Yes"</constant>
-<constant name="unused4-6e">"Yes"</constant>
-<constant name="unused4-6f">"Yes"</constant>
-<constant name="unused4-6g">"Yes"</constant>
-<constant name="unused4-6h">"Yes"</constant>
-<constant digits="0" name="unused4-7" units="ADC">255.0</constant>
+<constant name="TrigEdgeSec">"Leading"</constant>
+<constant name="fuelPumpPin">"Board Default"</constant>
+<constant name="unused4-6h">"No"</constant>
+<constant digits="0" name="unused4-7" units="ADC">0.0</constant>
 <constant digits="0" name="IdleAdvRPM" units="RPM">3200.0</constant>
 <constant digits="1" name="IdleAdvCLT" units="C">-21.0</constant>
 <constant digits="0" name="IdleDelayTime" units="sec">38.0</constant>
@@ -241,16 +236,16 @@
 <constant digits="1" name="SoftLimMax" units="s">2.0</constant>
 <constant digits="0" name="HardRevLim" units="rpm">7000.0</constant>
 <constant cols="1" digits="0" name="taeBins" rows="4" units="%/s">
-         80.0 
-         270.0 
-         490.0 
-         880.0 
+         70.0 
+         220.0 
+         430.0 
+         790.0 
       </constant>
 <constant cols="1" digits="0" name="taeRates" rows="4" units="%">
-         5.0 
-         11.0 
-         17.0 
-         32.0 
+         15.0 
+         59.0 
+         74.0 
+         85.0 
       </constant>
 <constant cols="1" digits="0" name="wueBins" rows="10" units="C">
          -40.0 
@@ -514,11 +509,7 @@
 <constant digits="0" name="iacStepHyster" units="Steps">4.0</constant>
 <constant name="fanInv">"No"</constant>
 <constant name="fanEnable">"Off"</constant>
-<constant name="unused7-55b">"No"</constant>
-<constant name="unused7-55c">"No"</constant>
-<constant name="unused7-55d">"No"</constant>
-<constant name="unused7-55e">"No"</constant>
-<constant name="unused7-55f">"No"</constant>
+<constant name="fanPin">"Board Default"</constant>
 <constant digits="0" name="fanSP" units="C">75.0</constant>
 <constant digits="0" name="fanHyster" units="C">2.0</constant>
 <constant digits="0" name="fanFreq" units="Hz">6.0</constant>

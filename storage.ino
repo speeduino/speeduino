@@ -4,11 +4,10 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 
-#include <EEPROM.h>
 #include "storage.h"
 #include "globals.h"
-//#include "table.h"
-
+#include "table.h"
+#include <EEPROM.h>
 
 /*
 Takes the current configuration (config pages and maps)
@@ -44,13 +43,13 @@ void writeConfig()
   for(int x=EEPROM_CONFIG1_XBINS; x<EEPROM_CONFIG1_YBINS; x++) 
   {
     offset = x - EEPROM_CONFIG1_XBINS;
-    if(EEPROM.read(x) != byte(fuelTable.axisX[offset]/100)) { EEPROM.write(x, byte(fuelTable.axisX[offset]/100)); } //RPM bins are divided by 100 and converted to a byte
+    if(EEPROM.read(x) != byte(fuelTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(fuelTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); } //RPM bins are divided by 100 and converted to a byte
   }
   //TPS/MAP bins
   for(int x=EEPROM_CONFIG1_YBINS; x<EEPROM_CONFIG2_START; x++) 
   {
     offset = x - EEPROM_CONFIG1_YBINS;
-    if(EEPROM.read(x) != fuelTable.axisY[offset]) { EEPROM.write(x, fuelTable.axisY[offset]); }
+    EEPROM.update(x, fuelTable.axisY[offset] / TABLE_LOAD_MULTIPLIER); //Table load is divided by 2 (Allows for MAP up to 511)
   }
   //That concludes the writing of the VE table
   //*********************************************************************************************************************************************************************************
@@ -84,13 +83,13 @@ void writeConfig()
   for(int x=EEPROM_CONFIG3_XBINS; x<EEPROM_CONFIG3_YBINS; x++) 
   {
     offset = x - EEPROM_CONFIG3_XBINS;
-    if(EEPROM.read(x) != byte(ignitionTable.axisX[offset]/100)) { EEPROM.write(x, byte(ignitionTable.axisX[offset]/100)); } //RPM bins are divided by 100 and converted to a byte
+    if(EEPROM.read(x) != byte(ignitionTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(ignitionTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); } //RPM bins are divided by 100 and converted to a byte
   }
   //TPS/MAP bins
   for(int x=EEPROM_CONFIG3_YBINS; x<EEPROM_CONFIG4_START; x++) 
   {
     offset = x - EEPROM_CONFIG3_YBINS;
-    if(EEPROM.read(x) != ignitionTable.axisY[offset]) { EEPROM.write(x, ignitionTable.axisY[offset]); }
+    EEPROM.update(x, ignitionTable.axisY[offset]/TABLE_LOAD_MULTIPLIER); //Table load is divided by 2 (Allows for MAP up to 511)
   }
   //That concludes the writing of the IGN table
 //*********************************************************************************************************************************************************************************  
@@ -124,13 +123,13 @@ void writeConfig()
   for(int x=EEPROM_CONFIG5_XBINS; x<EEPROM_CONFIG5_YBINS; x++) 
   {
     offset = x - EEPROM_CONFIG5_XBINS;
-    if(EEPROM.read(x) != byte(afrTable.axisX[offset]/100)) { EEPROM.write(x, byte(afrTable.axisX[offset]/100)); } //RPM bins are divided by 100 and converted to a byte
+    if(EEPROM.read(x) != byte(afrTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(afrTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); } //RPM bins are divided by 100 and converted to a byte
   }
   //TPS/MAP bins
   for(int x=EEPROM_CONFIG5_YBINS; x<EEPROM_CONFIG6_START; x++) 
   {
     offset = x - EEPROM_CONFIG5_YBINS;
-    if(EEPROM.read(x) != afrTable.axisY[offset]) { EEPROM.write(x, afrTable.axisY[offset]); }
+    EEPROM.update(x, afrTable.axisY[offset]/TABLE_LOAD_MULTIPLIER); //Table load is divided by 2 (Allows for MAP up to 511)
   }
   //That concludes the writing of the AFR table
   //*********************************************************************************************************************************************************************************
@@ -181,9 +180,9 @@ void writeConfig()
   for(int x=EEPROM_CONFIG8_XBINS1; x<EEPROM_CONFIG8_YBINS1; x++) 
   {
     offset = x - EEPROM_CONFIG8_XBINS1;
-    if(EEPROM.read(x) != byte(boostTable.axisX[offset]/100)) { EEPROM.write(x, byte(boostTable.axisX[offset]/100)); } //RPM bins are divided by 100 and converted to a byte
+    if(EEPROM.read(x) != byte(boostTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(boostTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); } //RPM bins are divided by 100 and converted to a byte
     offset = y - EEPROM_CONFIG8_XBINS2;
-    if(EEPROM.read(y) != byte(vvtTable.axisX[offset]/100)) { EEPROM.write(y, byte(vvtTable.axisX[offset]/100)); } //RPM bins are divided by 100 and converted to a byte
+    if(EEPROM.read(y) != byte(vvtTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(y, byte(vvtTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); } //RPM bins are divided by 100 and converted to a byte
     y++;
   }
   //TPS/MAP bins
@@ -191,9 +190,9 @@ void writeConfig()
   for(int x=EEPROM_CONFIG8_YBINS1; x<EEPROM_CONFIG8_XSIZE2; x++) 
   {
     offset = x - EEPROM_CONFIG8_YBINS1;
-    if(EEPROM.read(x) != boostTable.axisY[offset]) { EEPROM.write(x, boostTable.axisY[offset]); }
+    EEPROM.update(x, boostTable.axisY[offset]/TABLE_LOAD_MULTIPLIER); //Table load is divided by 2 (Allows for MAP up to 511)
     offset = y - EEPROM_CONFIG8_YBINS2;
-    if(EEPROM.read(y) != vvtTable.axisY[offset]) { EEPROM.write(y, vvtTable.axisY[offset]); }
+    EEPROM.update(y, vvtTable.axisY[offset]/TABLE_LOAD_MULTIPLIER); //Table load is divided by 2 (Allows for MAP up to 511)
     y++;
   }
 
@@ -235,13 +234,13 @@ void writeConfig()
   for(int x=EEPROM_CONFIG9_XBINS1; x<EEPROM_CONFIG9_YBINS1; x++) 
   {
     offset = x - EEPROM_CONFIG9_XBINS1;
-    EEPROM.update(x, byte(trim1Table.axisX[offset]/100)); //RPM bins are divided by 100 and converted to a byte
+    EEPROM.update(x, byte(trim1Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); //RPM bins are divided by 100 and converted to a byte
     offset = y - EEPROM_CONFIG9_XBINS2;
-    EEPROM.update(y, byte(trim2Table.axisX[offset]/100)); //RPM bins are divided by 100 and converted to a byte
+    EEPROM.update(y, byte(trim2Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); //RPM bins are divided by 100 and converted to a byte
     offset = z - EEPROM_CONFIG9_XBINS3;
-    EEPROM.update(z, byte(trim3Table.axisX[offset]/100)); //RPM bins are divided by 100 and converted to a byte
+    EEPROM.update(z, byte(trim3Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); //RPM bins are divided by 100 and converted to a byte
     offset = i - EEPROM_CONFIG9_XBINS4;
-    EEPROM.update(i, byte(trim4Table.axisX[offset]/100)); //RPM bins are divided by 100 and converted to a byte
+    EEPROM.update(i, byte(trim4Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); //RPM bins are divided by 100 and converted to a byte
     y++;
     z++;
     i++;
@@ -253,13 +252,13 @@ void writeConfig()
   for(int x=EEPROM_CONFIG9_YBINS1; x<EEPROM_CONFIG9_XSIZE2; x++) 
   {
     offset = x - EEPROM_CONFIG9_YBINS1;
-    EEPROM.update(x, trim1Table.axisY[offset]);
+    EEPROM.update(x, trim1Table.axisY[offset]/TABLE_LOAD_MULTIPLIER); //Table load is divided by 2 (Allows for MAP up to 511)
     offset = y - EEPROM_CONFIG9_YBINS2;
-    EEPROM.update(y, trim2Table.axisY[offset]);
+    EEPROM.update(y, trim2Table.axisY[offset]/TABLE_LOAD_MULTIPLIER); //Table load is divided by 2 (Allows for MAP up to 511)
     offset = z - EEPROM_CONFIG9_YBINS3;
-    EEPROM.update(z, trim3Table.axisY[offset]);
+    EEPROM.update(z, trim3Table.axisY[offset]/TABLE_LOAD_MULTIPLIER); //Table load is divided by 2 (Allows for MAP up to 511)
     offset = i - EEPROM_CONFIG9_YBINS4;
-    EEPROM.update(i, trim4Table.axisY[offset]);
+    EEPROM.update(i, trim4Table.axisY[offset]/TABLE_LOAD_MULTIPLIER); //Table load is divided by 2 (Allows for MAP up to 511)
     y++;
     z++;
     i++;
@@ -285,13 +284,13 @@ void loadConfig()
   for(int x=EEPROM_CONFIG1_XBINS; x<EEPROM_CONFIG1_YBINS; x++) 
   {
     offset = x - EEPROM_CONFIG1_XBINS;
-    fuelTable.axisX[offset] = (EEPROM.read(x) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+    fuelTable.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
   }
   //TPS/MAP bins
   for(int x=EEPROM_CONFIG1_YBINS; x<EEPROM_CONFIG2_START; x++) 
   {
     offset = x - EEPROM_CONFIG1_YBINS;
-    fuelTable.axisY[offset] = EEPROM.read(x);
+    fuelTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER;
   }
   
   pnt_configPage = (byte *)&configPage1; //Create a pointer to Page 1 in memory
@@ -317,13 +316,13 @@ void loadConfig()
   for(int x=EEPROM_CONFIG3_XBINS; x<EEPROM_CONFIG3_YBINS; x++) 
   {
     offset = x - EEPROM_CONFIG3_XBINS;
-    ignitionTable.axisX[offset] = (EEPROM.read(x) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+    ignitionTable.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
   }
   //TPS/MAP bins
   for(int x=EEPROM_CONFIG3_YBINS; x<EEPROM_CONFIG4_START; x++) 
   {
     offset = x - EEPROM_CONFIG3_YBINS;
-    ignitionTable.axisY[offset] = EEPROM.read(x);
+    ignitionTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER; //Table load is divided by 2 (Allows for MAP up to 511)
   }
   
   pnt_configPage = (byte *)&configPage2; //Create a pointer to Page 2 in memory
@@ -348,13 +347,13 @@ void loadConfig()
   for(int x=EEPROM_CONFIG5_XBINS; x<EEPROM_CONFIG5_YBINS; x++) 
   {
     offset = x - EEPROM_CONFIG5_XBINS;
-    afrTable.axisX[offset] = (EEPROM.read(x) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+    afrTable.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
   }
   //TPS/MAP bins
   for(int x=EEPROM_CONFIG5_YBINS; x<EEPROM_CONFIG6_START; x++) 
   {
     offset = x - EEPROM_CONFIG5_YBINS;
-    afrTable.axisY[offset] = EEPROM.read(x);
+    afrTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER; //Table load is divided by 2 (Allows for MAP up to 511)
   }
   
   pnt_configPage = (byte *)&configPage3; //Create a pointer to Page 2 in memory
@@ -394,9 +393,9 @@ void loadConfig()
   for(int x=EEPROM_CONFIG8_XBINS1; x<EEPROM_CONFIG8_YBINS1; x++) 
   {
     offset = x - EEPROM_CONFIG8_XBINS1;
-    boostTable.axisX[offset] = (EEPROM.read(x) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+    boostTable.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
     offset = y - EEPROM_CONFIG8_XBINS2;
-    vvtTable.axisX[offset] = (EEPROM.read(y) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+    vvtTable.axisX[offset] = (EEPROM.read(y) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
     y++;
   }
     
@@ -405,9 +404,9 @@ void loadConfig()
   for(int x=EEPROM_CONFIG8_YBINS1; x<EEPROM_CONFIG8_XSIZE2; x++) 
   {
     offset = x - EEPROM_CONFIG8_YBINS1;
-    boostTable.axisY[offset] = EEPROM.read(x);
+    boostTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER; //Table load is divided by 2 (Allows for MAP up to 511)
     offset = y - EEPROM_CONFIG8_YBINS2;
-    vvtTable.axisY[offset] = EEPROM.read(y);
+    vvtTable.axisY[offset] = EEPROM.read(y) * TABLE_LOAD_MULTIPLIER; //Table load is divided by 2 (Allows for MAP up to 511)
     y++;
   }
 
@@ -438,13 +437,13 @@ void loadConfig()
   for(int x=EEPROM_CONFIG9_XBINS1; x<EEPROM_CONFIG9_YBINS1; x++) 
   {
     offset = x - EEPROM_CONFIG9_XBINS1;
-    trim1Table.axisX[offset] = (EEPROM.read(x) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+    trim1Table.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
     offset = y - EEPROM_CONFIG9_XBINS2;
-    trim2Table.axisX[offset] = (EEPROM.read(y) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+    trim2Table.axisX[offset] = (EEPROM.read(y) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
     offset = z - EEPROM_CONFIG9_XBINS3;
-    trim3Table.axisX[offset] = (EEPROM.read(z) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+    trim3Table.axisX[offset] = (EEPROM.read(z) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
     offset = i - EEPROM_CONFIG9_XBINS4;
-    trim4Table.axisX[offset] = (EEPROM.read(i) * 100); //RPM bins are divided by 100 when stored. Multiply them back now
+    trim4Table.axisX[offset] = (EEPROM.read(i) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
     y++;
     z++;
     i++;
@@ -457,13 +456,13 @@ void loadConfig()
   for(int x=EEPROM_CONFIG9_YBINS1; x<EEPROM_CONFIG9_XSIZE2; x++) 
   {
     offset = x - EEPROM_CONFIG9_YBINS1;
-    trim1Table.axisY[offset] = EEPROM.read(x);
+    trim1Table.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER; //Table load is divided by 2 (Allows for MAP up to 511)
     offset = y - EEPROM_CONFIG9_YBINS2;
-    trim2Table.axisY[offset] = EEPROM.read(y);
+    trim2Table.axisY[offset] = EEPROM.read(y) * TABLE_LOAD_MULTIPLIER; //Table load is divided by 2 (Allows for MAP up to 511)
     offset = z - EEPROM_CONFIG9_YBINS3;
-    trim3Table.axisY[offset] = EEPROM.read(z);
+    trim3Table.axisY[offset] = EEPROM.read(z) * TABLE_LOAD_MULTIPLIER; //Table load is divided by 2 (Allows for MAP up to 511)
     offset = i - EEPROM_CONFIG9_YBINS4;
-    trim4Table.axisY[offset] = EEPROM.read(i);
+    trim4Table.axisY[offset] = EEPROM.read(i) * TABLE_LOAD_MULTIPLIER; //Table load is divided by 2 (Allows for MAP up to 511)
     y++;
     z++;
     i++;
