@@ -28,10 +28,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "scheduler.h"
 #include "comms.h"
 #include "cancomms.h"
-#include "math.h"
+#include "maths.h"
 #include "corrections.h"
 #include "timers.h"
-//#include "display.h"  
+//#include "display.h"
 #include "decoders.h"
 #include "idle.h"
 #include "auxiliaries.h"
@@ -78,7 +78,7 @@ unsigned long currentLoopTime; //The time the current loop started (uS)
 unsigned long previousLoopTime; //The time the previous loop started (uS)
 
 int CRANK_ANGLE_MAX = 720;
-int CRANK_ANGLE_MAX_IGN = 360, CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential 
+int CRANK_ANGLE_MAX_IGN = 360, CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 //bool useSequentialFuel; // Whether sequential fueling is to be used (1 squirt per cycle)
 //bool useSequentialIgnition; // Whether sequential ignition is used (1 spark per cycle)
 
@@ -129,13 +129,13 @@ int timePerDegree;
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 
-void setup() 
+void setup()
 {
   Serial.begin(115200);
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
   if (configPage1.canEnable) { Serial3.begin(115200); }
 #endif
-    
+
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
   //dummyIgnitionTable(&ignitionTable);
@@ -148,9 +148,9 @@ void setup()
   table3D_setSize(&trim2Table, 6);
   table3D_setSize(&trim3Table, 6);
   table3D_setSize(&trim4Table, 6);
- 
+
   loadConfig();
-  
+
   //Repoint the 2D table structs to the config pages that were just loaded
   taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
   taeTable.xSize = 4;
@@ -160,7 +160,7 @@ void setup()
   WUETable.xSize = 10;
   WUETable.values = configPage1.wueValues;
   WUETable.axisX = configPage2.wueBins;
-  
+
   dwellVCorrectionTable.valueSize = SIZE_BYTE;
   dwellVCorrectionTable.xSize = 6;
   dwellVCorrectionTable.values = configPage2.dwellCorrectionValues;
@@ -177,13 +177,13 @@ void setup()
   IATRetardTable.xSize = 6;
   IATRetardTable.values = configPage2.iatRetValues;
   IATRetardTable.axisX = configPage2.iatRetBins;
-  
+
   //Setup the calibration tables
   loadCalibration();
   //Set the pin mappings
   setPinMapping(configPage1.pinMapping);
 
-  //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup  
+  //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
   else { coilHIGH = HIGH, coilLOW = LOW; }
   endCoil1Charge();
@@ -191,14 +191,14 @@ void setup()
   endCoil3Charge();
   endCoil4Charge();
   endCoil5Charge();
-  
+
   //Similar for injectors, make sure they're turned off
   closeInjector1();
   closeInjector2();
   closeInjector3();
   closeInjector4();
   closeInjector5();
-  
+
   //Set the tacho output default state
   digitalWrite(pinTachOut, HIGH);
 
@@ -206,7 +206,7 @@ void setup()
   readMAP();
   /*
    * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
-   * with record highs close to 108.5 kPa. 
+   * with record highs close to 108.5 kPa.
    * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
    */
   if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
@@ -214,13 +214,13 @@ void setup()
     currentStatus.baro = currentStatus.MAP;
     EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
   }
-  else 
+  else
   {
     //Attempt to use the last known good baro reading from EEPROM
     if ((EEPROM.read(EEPROM_LAST_BARO) >= BARO_MIN) && (EEPROM.read(EEPROM_LAST_BARO) <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
     { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); } //last baro correction
-    else { currentStatus.baro = 100; } //Final fall back position. 
-  } 
+    else { currentStatus.baro = 100; } //Final fall back position.
+  }
 
   //Perform all initialisations
   initialiseSchedulers();
@@ -234,30 +234,30 @@ void setup()
 
   //Check whether the flex sensor is enabled and if so, attach an interupt for it
   if(configPage1.flexEnabled)
-  { 
+  {
     attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, RISING);
     currentStatus.ethanolPct = 0;
   }
-  
+
   //Once the configs have been loaded, a number of one time calculations can be completed
   req_fuel_uS = configPage1.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations
-  inj_opentime_uS = configPage1.injOpen * 100; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155). 
-  
+  inj_opentime_uS = configPage1.injOpen * 100; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155).
+
   //Begin the main crank trigger interrupt pin setup
   //The interrupt numbering is a bit odd - See here for reference: http://arduino.cc/en/Reference/AttachInterrupt
-  //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly. 
+  //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly.
   byte triggerInterrupt = 0; // By default, use the first interrupt
   byte triggerInterrupt2 = 1;
   currentStatus.RPM = 0;
   currentStatus.hasSync = false;
-  currentStatus.runSecs = 0; 
+  currentStatus.runSecs = 0;
   currentStatus.secl = 0;
   currentStatus.startRevolutions = 0;
   currentStatus.flatShiftingHard = false;
   currentStatus.launchingHard = false;
   triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
-  
-  switch (pinTrigger) {  
+
+  switch (pinTrigger) {
     //Arduino Mega 2560 mapping
     case 2:
       triggerInterrupt = 0; break;
@@ -271,9 +271,9 @@ void setup()
       triggerInterrupt = 3; break;
     case 21:
       triggerInterrupt = 2; break;
-     
+
   }
-  switch (pinTrigger2) {  
+  switch (pinTrigger2) {
     //Arduino Mega 2560 mapping
     case 2:
       triggerInterrupt2 = 0; break;
@@ -287,14 +287,14 @@ void setup()
       triggerInterrupt2 = 3; break;
     case 21:
       triggerInterrupt2 = 2; break;
-     
+
   }
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
   //digitalWrite(pinTrigger, HIGH);
 
-  
+
   //Set the trigger function based on the decoder in the config
   switch (configPage2.TrigPattern)
   {
@@ -305,52 +305,52 @@ void setup()
       triggerSecondary = triggerSec_missingTooth;
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
-      
+
       if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, RISING); }
       else { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, FALLING); }
       break;
-      
+
     case 1:
       // Basic distributor
       triggerSetup_BasicDistributor();
       trigger = triggerPri_BasicDistributor;
       getRPM = getRPM_BasicDistributor;
       getCrankAngle = getCrankAngle_BasicDistributor;
-      
+
       if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       break;
-          
+
     case 2:
       triggerSetup_DualWheel();
       trigger = triggerPri_DualWheel;
       getRPM = getRPM_DualWheel;
       getCrankAngle = getCrankAngle_DualWheel;
-      
+
       if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, RISING); }
       else { attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, FALLING); }
       break;
-      
+
     case 3:
       triggerSetup_GM7X();
       trigger = triggerPri_GM7X;
       getRPM = getRPM_GM7X;
       getCrankAngle = getCrankAngle_GM7X;
-      
+
       if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       break;
-      
+
     case 4:
       triggerSetup_4G63();
       trigger = triggerPri_4G63;
       getRPM = getRPM_4G63;
       getCrankAngle = getCrankAngle_4G63;
-      
+
       //These may both need to change, not sure
       if(configPage2.TrigEdge == 0)
       {
@@ -359,39 +359,39 @@ void setup()
       }
       else
       {
-        attachInterrupt(triggerInterrupt, trigger, CHANGE); // Primary trigger connects to 
+        attachInterrupt(triggerInterrupt, trigger, CHANGE); // Primary trigger connects to
         attachInterrupt(triggerInterrupt2, triggerSec_4G63, FALLING);
       }
       break;
-      
+
     case 5:
       triggerSetup_24X();
       trigger = triggerPri_24X;
       getRPM = getRPM_24X;
       getCrankAngle = getCrankAngle_24X;
-      
+
       if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to 
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
       attachInterrupt(triggerInterrupt2, triggerSec_24X, CHANGE);
       break;
-      
+
     case 6:
       triggerSetup_Jeep2000();
       trigger = triggerPri_Jeep2000;
       getRPM = getRPM_Jeep2000;
       getCrankAngle = getCrankAngle_Jeep2000;
-      
+
       if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to 
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
       attachInterrupt(triggerInterrupt2, triggerSec_Jeep2000, CHANGE);
       break;
-              
+
     case 7:
       triggerSetup_Audi135();
       trigger = triggerPri_Audi135;
       getRPM = getRPM_Audi135;
       getCrankAngle = getCrankAngle_Audi135;
-      
+
       if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       attachInterrupt(triggerInterrupt2, triggerSec_Audi135, RISING);
@@ -402,9 +402,9 @@ void setup()
       trigger = triggerPri_HondaD17;
       getRPM = getRPM_HondaD17;
       getCrankAngle = getCrankAngle_HondaD17;
-      
+
       if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to 
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
       attachInterrupt(triggerInterrupt2, triggerSec_HondaD17, CHANGE);
       break;
 
@@ -413,7 +413,7 @@ void setup()
       trigger = triggerPri_Miata9905;
       getRPM = getRPM_Miata9905;
       getCrankAngle = getCrankAngle_Miata9905;
-      
+
       //These may both need to change, not sure
       if(configPage2.TrigEdge == 0)
       {
@@ -422,7 +422,7 @@ void setup()
       }
       else
       {
-        attachInterrupt(triggerInterrupt, trigger, FALLING); // Primary trigger connects to 
+        attachInterrupt(triggerInterrupt, trigger, FALLING); // Primary trigger connects to
         attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, RISING);
       }
       break;
@@ -432,9 +432,9 @@ void setup()
       trigger = triggerPri_MazdaAU;
       getRPM = getRPM_MazdaAU;
       getCrankAngle = getCrankAngle_MazdaAU;
-      
+
       if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to 
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
       attachInterrupt(triggerInterrupt2, triggerSec_MazdaAU, FALLING);
       break;
 
@@ -443,33 +443,33 @@ void setup()
       trigger = triggerPri_DualWheel; //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
       getRPM = getRPM_non360;
       getCrankAngle = getCrankAngle_non360;
-      
+
       if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } 
-      attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, FALLING); //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice. 
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+      attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, FALLING); //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
       break;
-      
+
     default:
       trigger = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
-      
+
       if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       break;
   }
 
   //End crank triger interrupt attachment
-  
+
   req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
-  
+
   //Initial values for loop times
   previousLoopTime = 0;
   currentLoopTime = micros();
-  
+
   mainLoopCount = 0;
   ignitionCount = 0;
-  
+
   //Calculate the number of degrees between cylinders
   switch (configPage1.nCylinders) {
     case 1:
@@ -481,11 +481,11 @@ void setup()
     case 2:
       channel1IgnDegrees = 0;
 
-      if (configPage1.engineType == EVEN_FIRE ) 
+      if (configPage1.engineType == EVEN_FIRE )
       {
         channel2IgnDegrees = 180;
       }
-      else { channel2IgnDegrees = configPage1.oddfire2; } 
+      else { channel2IgnDegrees = configPage1.oddfire2; }
 
       //For alternating injection, the squirt occurs at different times for each channel
       if(configPage1.injLayout == INJ_SEMISEQUENTIAL)
@@ -501,7 +501,7 @@ void setup()
     case 3:
       channel1IgnDegrees = 0;
 
-      if (configPage1.engineType == EVEN_FIRE ) 
+      if (configPage1.engineType == EVEN_FIRE )
       {
         channel2IgnDegrees = 120;
         channel3IgnDegrees = 240;
@@ -511,7 +511,7 @@ void setup()
         channel2IgnDegrees = configPage1.oddfire2;
         channel3IgnDegrees = configPage1.oddfire3;
       }
-      
+
       //For alternatiing injection, the squirt occurs at different times for each channel
       if(configPage1.injLayout == INJ_SEMISEQUENTIAL  || configPage1.injLayout == INJ_PAIRED)
       {
@@ -536,7 +536,7 @@ void setup()
     case 4:
       channel1IgnDegrees = 0;
 
-      if (configPage1.engineType == EVEN_FIRE ) 
+      if (configPage1.engineType == EVEN_FIRE )
       {
         channel2IgnDegrees = 180;
 
@@ -544,7 +544,7 @@ void setup()
         {
           channel3IgnDegrees = 360;
           channel4IgnDegrees = 540;
-          
+
           CRANK_ANGLE_MAX_IGN = 720;
         }
       }
@@ -570,7 +570,7 @@ void setup()
 
         channel3InjEnabled = true;
         channel4InjEnabled = true;
-        
+
         CRANK_ANGLE_MAX_INJ = 720;
         req_fuel_uS = req_fuel_uS * 2;
       }
@@ -592,7 +592,7 @@ void setup()
         channel3IgnDegrees = 288;
         channel4IgnDegrees = 432;
         channel5IgnDegrees = 576;
-        
+
         CRANK_ANGLE_MAX_IGN = 720;
       }
 
@@ -612,7 +612,7 @@ void setup()
         channel3InjDegrees = 288;
         channel4InjDegrees = 432;
         channel5InjDegrees = 576;
-        
+
         CRANK_ANGLE_MAX_INJ = 720;
       }
       if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = channel5InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
@@ -627,7 +627,7 @@ void setup()
       channel1IgnDegrees = 0;
       channel2IgnDegrees = 120;
       channel3IgnDegrees = 240;
-      
+
       //For alternatiing injection, the squirt occurs at different times for each channel
       /*
       if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injLayout == INJ_SEQUENTIAL || configPage1.injLayout == INJ_PAIRED) //No full sequential for more than 4 cylinders
@@ -638,7 +638,7 @@ void setup()
       }
       */
       if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
-      
+
       configPage1.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
 
       channel1InjEnabled = true;
@@ -650,7 +650,7 @@ void setup()
       channel2IgnDegrees = 90;
       channel3IgnDegrees = 180;
       channel4IgnDegrees = 270;
-      
+
       //For alternatiing injection, the squirt occurs at different times for each channel
       /*
       if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injTiming == INJ_SEQUENTIAL) //No full sequential for more than 4 cylinders
@@ -662,7 +662,7 @@ void setup()
       }
       */
       if (!configPage1.injTiming)  { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
-      
+
       configPage1.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
 
       channel1InjEnabled = true;
@@ -675,7 +675,7 @@ void setup()
       channel2InjDegrees = 180;
       break;
   }
-  
+
   switch(configPage2.sparkMode)
   {
     case IGN_MODE_WASTED:
@@ -691,7 +691,7 @@ void setup()
       ign5StartFunction = beginCoil5Charge;
       ign5EndFunction = endCoil5Charge;
       break;
-      
+
     case IGN_MODE_SINGLE:
       //Single channel mode. All ignition pulses are on channel 1
       ign1StartFunction = beginCoil1Charge;
@@ -705,7 +705,7 @@ void setup()
       ign5StartFunction = beginCoil1Charge;
       ign5EndFunction = endCoil1Charge;
       break;
-      
+
     case IGN_MODE_WASTEDCOP:
       //Wasted COP mode. Ignition channels 1&3 and 2&4 are paired together
       //This is not a valid mode for >4 cylinders
@@ -715,7 +715,7 @@ void setup()
         ign1EndFunction = endCoil1and3Charge;
         ign2StartFunction = beginCoil2and4Charge;
         ign2EndFunction = endCoil2and4Charge;
-        
+
         ign3StartFunction = nullCallback;
         ign3EndFunction = nullCallback;
         ign4StartFunction = nullCallback;
@@ -748,8 +748,8 @@ void setup()
       ign4EndFunction = endCoil4Charge;
       ign5StartFunction = beginCoil5Charge;
       ign5EndFunction = endCoil5Charge;
-      break;      
-    
+      break;
+
     default:
       //Wasted spark (Shouldn't ever happen anyway)
       ign1StartFunction = beginCoil1Charge;
@@ -764,7 +764,7 @@ void setup()
       ign5EndFunction = endCoil5Charge;
       break;
   }
-  
+
   //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
   digitalWrite(pinFuelPump, HIGH);
   fuelPumpOn = true;
@@ -773,15 +773,15 @@ void setup()
   setFuelSchedule2(openInjector2and3, 100, (unsigned long)(configPage1.primePulse * 100), closeInjector2and3);
 }
 
-void loop() 
+void loop()
 {
-      mainLoopCount++;    
+      mainLoopCount++;
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
       // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
-      if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) ) 
+      if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       {
-        if (Serial.available() > 0) 
+        if (Serial.available() > 0)
         {
           command();
         }
@@ -790,9 +790,9 @@ void loop()
       //if Can interface is enabled then check for serial3 requests.
       if (configPage1.canEnable)
           {
-            if ( ((mainLoopCount & 31) == 1) or (Serial3.available() > SERIAL_BUFFER_THRESHOLD) ) 
+            if ( ((mainLoopCount & 31) == 1) or (Serial3.available() > SERIAL_BUFFER_THRESHOLD) )
                 {
-                  if (Serial3.available() > 0) 
+                  if (Serial3.available() > 0)
                     {
                     canCommand();
                     }
@@ -801,19 +801,19 @@ void loop()
 #endif
 
     // if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();} //Displays currently disabled
-    
+
     previousLoopTime = currentLoopTime;
     currentLoopTime = micros();
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
       currentStatus.RPM = currentStatus.longRPM = getRPM(); //Long RPM is included here
-      if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't. 
+      if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't.
     }
     else
     {
       //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
-      currentStatus.RPM = 0; 
+      currentStatus.RPM = 0;
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       toothLastToothTime = 0;
@@ -829,34 +829,34 @@ void loop()
       fuelPumpOn = false;
       disableIdle(); //Turn off the idle PWM
     }
-    
+
     //Uncomment the following for testing
     /*
     currentStatus.hasSync = true;
     currentStatus.RPM = 500;
     */
-     
+
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
     readMAP();
-    
+
     //TPS setting to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
     if ((mainLoopCount & 31) == 1)
     {
       readTPS();
-     
+
       //Check for launching/flat shift (clutch) can be done around here too
       previousClutchTrigger = clutchTrigger;
       if(configPage3.launchHiLo) { clutchTrigger = digitalRead(pinLaunch); }
-      else { clutchTrigger = !digitalRead(pinLaunch); } 
+      else { clutchTrigger = !digitalRead(pinLaunch); }
 
       if(previousClutchTrigger != clutchTrigger) { currentStatus.clutchEngagedRPM = currentStatus.RPM; }
-      
-      if (configPage3.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage3.lnchHardLim) * 100)) ) { currentStatus.launchingHard = true; BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); } //HardCut rev limit for 2-step launch control. 
+
+      if (configPage3.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage3.lnchHardLim) * 100)) ) { currentStatus.launchingHard = true; BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); } //HardCut rev limit for 2-step launch control.
       else { currentStatus.launchingHard = false; BIT_CLEAR(currentStatus.spark, BIT_SPARK_HLAUNCH); }
 
       if(configPage3.flatSEnable && clutchTrigger && (currentStatus.RPM > ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > currentStatus.clutchEngagedRPM) ) { currentStatus.flatShiftingHard = true; }
-      else { currentStatus.flatShiftingHard = false; } 
+      else { currentStatus.flatShiftingHard = false; }
 
       //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
       if(configPage3.boostCutType && currentStatus.MAP > (configPage3.boostLimit * 2) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
@@ -882,7 +882,7 @@ void loop()
         BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
         BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
       }
-      
+
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
     }
@@ -894,13 +894,13 @@ void loop()
        readCLT();
        readIAT();
        readO2();
-       readBat();  
-     
+       readBat();
+
        vvtControl();
        boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
-       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.        
+       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
     }
-    if(configPage4.iacAlgorithm == 4) { idleControl(); } //Run idlecontrol every loop for stepper idle. 
+    if(configPage4.iacAlgorithm == 4) { idleControl(); } //Run idlecontrol every loop for stepper idle.
 
     //Always check for sync
     //Main loop runs within this clause
@@ -908,7 +908,7 @@ void loop()
     {
         if(currentStatus.startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;} //Enable the fuel and ignition, assuming staging revolutions are complete
         //If it is, check is we're running or cranking
-        if(currentStatus.RPM > ((unsigned int)configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100 
+        if(currentStatus.RPM > ((unsigned int)configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); //Sets the engine running bit
           //Only need to do anything if we're transitioning from cranking to running
@@ -917,31 +917,31 @@ void loop()
             BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //clears the engine cranking bit
             if(configPage2.ignBypassEnabled) { digitalWrite(pinIgnBypass, HIGH); }
           }
-        } 
-        else 
+        }
+        else
         {  //Sets the engine cranking bit, clears the engine running bit
-          BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK); 
-          BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); 
+          BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+          BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN);
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
           if(configPage2.ignBypassEnabled) { digitalWrite(pinIgnBypass, LOW); }
-        } 
-      
+        }
+
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
-      
+
       //Begin the fuel calculation
       //Calculate an injector pulsewidth from the VE
       currentStatus.corrections = correctionsFuel();
       //currentStatus.corrections = 100;
       if (configPage1.algorithm == 0) //Check which fuelling algorithm is being used
-      { 
+      {
         //Speed Density
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
         currentStatus.PW1 = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
         currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.MAP, currentStatus.RPM); //As above, but for ignition advance
       }
       else
-      { 
+      {
         //Alpha-N
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
         currentStatus.PW1 = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
@@ -956,7 +956,7 @@ void loop()
       //Adjust the advance based on IAT. If the adjustment amount is greater than the current advance, just set advance to 0
       byte advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
       if (advanceIATadjust <= currentStatus.advance) { currentStatus.advance -= advanceIATadjust; }
-      else { currentStatus.advance = 0; } 
+      else { currentStatus.advance = 0; }
       */
 
       int injector1StartAngle = 0;
@@ -972,8 +972,8 @@ void loop()
       //These are used for comparisons on channels above 1 where the starting angle (for injectors or ignition) can be less than a single loop time
       //(Don't ask why this is needed, it will break your head)
       int tempCrankAngle;
-      int tempStartAngle; 
-      
+      int tempStartAngle;
+
       //********************************************************
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       //We use a 1st Deriv accleration prediction, but only when there is an even spacing between primary sensor teeth
@@ -1001,23 +1001,25 @@ void loop()
             else { angle1 = angle2 = triggerToothAngle; }
           }
           else { angle1 = angle2 = triggerToothAngle; }
-            
+
           long toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
           long toothDeltaT = toothHistory[toothHistoryIndex];
           //long timeToLastTooth = micros() - toothLastToothTime; //Cannot be unsigned
-          
+
           rpmDelta = (toothDeltaV << 10) / (6 * toothDeltaT);
-        } 
-        
-        
+        }
+
+
         timePerDegree = ldiv( 166666L, (currentStatus.RPM + rpmDelta)).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       }
       else
       {
         long rpm_adjust = ((long)(micros() - toothOneTime) * (long)currentStatus.rpmDOT) / 1000000; //Take into account any likely accleration that has occurred since the last full revolution completed
+        
+        //timePerDegree = DIV_ROUND_CLOSEST(166666L, (currentStatus.RPM + rpm_adjust));
         timePerDegree = ldiv( 166666L, currentStatus.RPM + rpm_adjust).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       }
-      
+
       //Check that the duty cycle of the chosen pulsewidth isn't too high. This is disabled at cranking
       if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
@@ -1025,16 +1027,16 @@ void loop()
         if (CRANK_ANGLE_MAX_INJ == 720) { pwLimit = pwLimit * 2; } //For sequential, the maximum pulse time is double (2 revolutions). Wouldn't work for 2 stroke...
         if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; }
       }
-      
-      
+
+
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
       //Determine next firing angles
       currentStatus.PW2 = currentStatus.PW3 = currentStatus.PW4 = currentStatus.PW1; // Initial state is for all pulsewidths to be the same (This gets changed below)
       int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
       injector1StartAngle = configPage1.inj1Ang - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
-      if(injector1StartAngle < 0) {injector1StartAngle += CRANK_ANGLE_MAX_INJ;} 
-      
+      if(injector1StartAngle < 0) {injector1StartAngle += CRANK_ANGLE_MAX_INJ;}
+
       //Repeat the above for each cylinder
       switch (configPage1.nCylinders)
       {
@@ -1046,7 +1048,7 @@ void loop()
         //3 cylinders
         case 3:
           injector2StartAngle = (configPage1.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
-          if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) {injector2StartAngle -= CRANK_ANGLE_MAX_INJ;} 
+          if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) {injector2StartAngle -= CRANK_ANGLE_MAX_INJ;}
           injector3StartAngle = (configPage1.inj3Ang + channel3InjDegrees - ( PWdivTimerPerDegree ));
           if(injector3StartAngle > CRANK_ANGLE_MAX_INJ) {injector3StartAngle -= CRANK_ANGLE_MAX_INJ;}
           break;
@@ -1068,7 +1070,7 @@ void loop()
               unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
               unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
               unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-              
+
               if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
               if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
               if (pw3percent != 100) { currentStatus.PW3 = (pw3percent * currentStatus.PW3) / 100; }
@@ -1088,16 +1090,16 @@ void loop()
           if(injector5StartAngle > CRANK_ANGLE_MAX_INJ) {injector5StartAngle -= CRANK_ANGLE_MAX_INJ;}
           break;
         //6 cylinders
-        case 6: 
+        case 6:
           injector2StartAngle = (configPage1.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
-          if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) {injector2StartAngle -= CRANK_ANGLE_MAX_INJ;} 
+          if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) {injector2StartAngle -= CRANK_ANGLE_MAX_INJ;}
           injector3StartAngle = (configPage1.inj3Ang + channel3InjDegrees - ( PWdivTimerPerDegree ));
           if(injector3StartAngle > CRANK_ANGLE_MAX_INJ) {injector3StartAngle -= CRANK_ANGLE_MAX_INJ;}
           break;
         //8 cylinders
-        case 8: 
+        case 8:
           injector2StartAngle = (configPage1.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
-          if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) {injector2StartAngle -= CRANK_ANGLE_MAX_INJ;} 
+          if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) {injector2StartAngle -= CRANK_ANGLE_MAX_INJ;}
           injector3StartAngle = (configPage1.inj3Ang + channel3InjDegrees - ( PWdivTimerPerDegree ));
           if(injector3StartAngle > CRANK_ANGLE_MAX_INJ) {injector3StartAngle -= CRANK_ANGLE_MAX_INJ;}
           injector4StartAngle = (configPage1.inj4Ang + channel4InjDegrees - ( PWdivTimerPerDegree ));
@@ -1107,13 +1109,13 @@ void loop()
         default:
           break;
       }
-    
+
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
       BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM);
       if (currentStatus.RPM > ((unsigned int)(configPage2.HardRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); } //Hardcut RPM limit
-      
-      
+
+
       //Set dwell
        //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
       if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { currentStatus.dwell =  (configPage2.dwellCrank * 100); }
@@ -1122,12 +1124,12 @@ void loop()
       currentStatus.dwellCorrection = table2D_getValue(&dwellVCorrectionTable, currentStatus.battery10);
       if (currentStatus.dwellCorrection != 100) { currentStatus.dwell = divs100(currentStatus.dwell) * currentStatus.dwellCorrection; }
       int dwellAngle = (div(currentStatus.dwell, timePerDegree).quot ); //Convert the dwell time to dwell angle based on the current engine speed
-      
+
       //Calculate start angle for each channel
       //1 cylinder (Everyone gets this)
       ignition1StartAngle = CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
-      if(ignition1StartAngle < 0) {ignition1StartAngle += CRANK_ANGLE_MAX_IGN;} 
-      
+      if(ignition1StartAngle < 0) {ignition1StartAngle += CRANK_ANGLE_MAX_IGN;}
+
       //This test for more cylinders and do the same thing
       switch (configPage1.nCylinders)
       {
@@ -1139,7 +1141,7 @@ void loop()
         //3 cylinders
         case 3:
           ignition2StartAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
-          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;} 
+          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition3StartAngle = channel3IgnDegrees + 360 - currentStatus.advance - dwellAngle;
           if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
           break;
@@ -1165,54 +1167,54 @@ void loop()
 
           ignition3StartAngle = channel3IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
           if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
-          
+
           ignition4StartAngle = channel4IgnDegrees + CRANK_ANGLE_MAX - currentStatus.advance - dwellAngle;
           if(ignition4StartAngle > CRANK_ANGLE_MAX_IGN) {ignition4StartAngle -= CRANK_ANGLE_MAX_IGN;}
-          
+
           ignition5StartAngle = channel5IgnDegrees + CRANK_ANGLE_MAX - currentStatus.advance - dwellAngle;
           if(ignition5StartAngle > CRANK_ANGLE_MAX_IGN) {ignition5StartAngle -= CRANK_ANGLE_MAX_IGN;}
-          
+
           break;
         //6 cylinders
         case 6:
           ignition2StartAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
-          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;} 
+          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition3StartAngle = channel3IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
           if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
           break;
         //8 cylinders
         case 8:
           ignition2StartAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
-          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;} 
+          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition3StartAngle = channel3IgnDegrees + CRANK_ANGLE_MAX - currentStatus.advance - dwellAngle;
           if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition4StartAngle = channel4IgnDegrees + CRANK_ANGLE_MAX - currentStatus.advance - dwellAngle;
           if(ignition4StartAngle > CRANK_ANGLE_MAX_IGN) {ignition4StartAngle -= CRANK_ANGLE_MAX_IGN;}
           break;
-          
+
         //Will hit the default case on 1 cylinder or >8 cylinders. Do nothing in these cases
         default:
           break;
       }
-      
+
       //***********************************************************************************************
       //| BEGIN FUEL SCHEDULES
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
       //We only need to set the shcedule if we're BEFORE the open angle
       //This may potentially be called a number of times as we get closer and closer to the opening time
-      
+
       //Determine the current crank angle
       int crankAngle = getCrankAngle(timePerDegree);
       if (crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle -= 360; }
-      
+
       if (fuelOn && currentStatus.PW1 > 0 && !BIT_CHECK(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT))
       {
         if (injector1StartAngle <= crankAngle && fuelSchedule1.schedulesSet == 0) { injector1StartAngle += CRANK_ANGLE_MAX_INJ; }
         if (injector1StartAngle > crankAngle)
-        { 
+        {
           if (configPage1.injLayout == INJ_SEMISEQUENTIAL)
           {
-            setFuelSchedule1(openInjector1and4, 
+            setFuelSchedule1(openInjector1and4,
                       ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW1,
                       closeInjector1and4
@@ -1220,14 +1222,14 @@ void loop()
           }
           else
           {
-            setFuelSchedule1(openInjector1, 
+            setFuelSchedule1(openInjector1,
                       ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW1,
                       closeInjector1
                       );
           }
         }
-        
+
         /*-----------------------------------------------------------------------------------------
         | A Note on tempCrankAngle and tempStartAngle:
         |   The use of tempCrankAngle/tempStartAngle is described below. It is then used in the same way for channels 2, 3 and 4 on both injectors and ignition
@@ -1235,7 +1237,7 @@ void loop()
         |   Eg: If cylinder 2 TDC is 180 degrees after cylinder 1 (Eg a standard 4 cylidner engine), then tempCrankAngle is 180* less than the current crank angle and
         |       tempStartAngle is the desired open time less 180*. Thus the cylinder is being treated relative to its own TDC, regardless of its offset
         |
-        |   This is done to avoid problems with very short of very long times until tempStartAngle. 
+        |   This is done to avoid problems with very short of very long times until tempStartAngle.
         |   This will very likely need to be rewritten when sequential is enabled
         |------------------------------------------------------------------------------------------
         */
@@ -1247,10 +1249,10 @@ void loop()
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if (tempStartAngle <= tempCrankAngle && fuelSchedule2.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
-          { 
+          {
             if (configPage1.injLayout == 1)
             {
-              setFuelSchedule2(openInjector2and3, 
+              setFuelSchedule2(openInjector2and3,
                         ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                         (unsigned long)currentStatus.PW2,
                         closeInjector2and3
@@ -1258,7 +1260,7 @@ void loop()
             }
             else
             {
-              setFuelSchedule2(openInjector2, 
+              setFuelSchedule2(openInjector2,
                         ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                         (unsigned long)currentStatus.PW2,
                         closeInjector2
@@ -1275,8 +1277,8 @@ void loop()
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if (tempStartAngle <= tempCrankAngle && fuelSchedule3.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
-          { 
-            setFuelSchedule3(openInjector3, 
+          {
+            setFuelSchedule3(openInjector3,
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW3,
                       closeInjector3
@@ -1292,8 +1294,8 @@ void loop()
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if (tempStartAngle <= tempCrankAngle && fuelSchedule4.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
-          { 
-            setFuelSchedule4(openInjector4, 
+          {
+            setFuelSchedule4(openInjector4,
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW4,
                       closeInjector4
@@ -1309,9 +1311,9 @@ void loop()
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if (tempStartAngle <= tempCrankAngle && fuelSchedule5.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
-          { 
+          {
             //Note the hacky use of fuel schedule 3 below
-            setFuelSchedule3(openInjector3and5, 
+            setFuelSchedule3(openInjector3and5,
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW1,
                       closeInjector3and5
@@ -1322,10 +1324,8 @@ void loop()
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
       //Likewise for the ignition
-      crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
-      if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
 
-      //fixedCrankingOverride is used to extend the dwell during cranking so that the decoder can trigger the spark upon seeing a certain tooth. Currently only available on the basic distributor and 4g63 decoders. 
+      //fixedCrankingOverride is used to extend the dwell during cranking so that the decoder can trigger the spark upon seeing a certain tooth. Currently only available on the basic distributor and 4g63 decoders.
       if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) { fixedCrankingOverride = currentStatus.dwell * 2; }
       else { fixedCrankingOverride = 0; }
 
@@ -1333,7 +1333,12 @@ void loop()
       //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
       if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) && !BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) && !currentStatus.flatShiftingHard)
       {
-        
+
+        //Refresh the current crank angle info
+        //ignition1StartAngle = 335;
+        crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
+        if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
+
         //if (ignition1StartAngle <= crankAngle && ignition1.schedulesSet == 0) { ignition1StartAngle += CRANK_ANGLE_MAX_IGN; }
         if (ignition1StartAngle > crankAngle)
         {
@@ -1341,13 +1346,12 @@ void loop()
             long some_time = ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree);
             long newRPM = (long)(some_time * currentStatus.rpmDOT) / 1000000L;
             newRPM = currentStatus.RPM + (newRPM/2);
-            unsigned long timePerDegree_1 = ldiv( 166666L, newRPM).quot;*/
-            
-            setIgnitionSchedule1(ign1StartFunction, 
-                      ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                      //some_time -some_accel,
-                      //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,
-                      currentStatus.dwell + fixedCrankingOverride,
+            unsigned long timePerDegree_1 = ldiv( 166666L, newRPM).quot;
+            unsigned long timeout = (unsigned long)(ignition1StartAngle - crankAngle) * 282UL;
+            */
+            setIgnitionSchedule1(ign1StartFunction,
+                      ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree), //(timeout/10),
+                      currentStatus.dwell + fixedCrankingOverride, //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,
                       ign1EndFunction
                       );
         }
@@ -1358,55 +1362,55 @@ void loop()
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
         //if ( (tempStartAngle > tempCrankAngle)  && ign2LastRev != startRevolutions)
         //if ( ign2LastRev != startRevolutions )
-        { 
+        {
             unsigned long ignition2StartTime = 0;
             if(tempStartAngle > tempCrankAngle) { ignition2StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
             //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition2StartTime = 0; }
-            
+
             if(ignition2StartTime > 0) {
-            setIgnitionSchedule2(ign2StartFunction, 
+            setIgnitionSchedule2(ign2StartFunction,
                       ignition2StartTime,
                       currentStatus.dwell + fixedCrankingOverride,
                       ign2EndFunction
                       );
             }
         }
-        
+
         tempCrankAngle = crankAngle - channel3IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition3StartAngle - channel3IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
         //if (tempStartAngle > tempCrankAngle)
-        { 
+        {
             long ignition3StartTime = 0;
             if(tempStartAngle > tempCrankAngle) { ignition3StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition3StartTime = 0; }
-            
+
             if(ignition3StartTime > 0) {
-            setIgnitionSchedule3(ign3StartFunction, 
+            setIgnitionSchedule3(ign3StartFunction,
                       ignition3StartTime,
                       currentStatus.dwell + fixedCrankingOverride,
                       ign3EndFunction
                       );
             }
         }
-        
+
         tempCrankAngle = crankAngle - channel4IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition4StartAngle - channel4IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
         //if (tempStartAngle > tempCrankAngle)
-        { 
-          
+        {
+
             long ignition4StartTime = 0;
             if(tempStartAngle > tempCrankAngle) { ignition4StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition4StartTime = 0; }
-            
+
             if(ignition4StartTime > 0) {
-            setIgnitionSchedule4(ign4StartFunction, 
+            setIgnitionSchedule4(ign4StartFunction,
                       ignition4StartTime,
                       currentStatus.dwell + fixedCrankingOverride,
                       ign4EndFunction
@@ -1419,23 +1423,23 @@ void loop()
         tempStartAngle = ignition5StartAngle - channel5IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
         //if (tempStartAngle > tempCrankAngle)
-        { 
-          
+        {
+
             long ignition5StartTime = 0;
             if(tempStartAngle > tempCrankAngle) { ignition5StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition5StartTime = 0; }
-            
+
             if(ignition5StartTime > 0) {
-            setIgnitionSchedule5(ign5StartFunction, 
+            setIgnitionSchedule5(ign5StartFunction,
                       ignition5StartTime,
                       currentStatus.dwell + fixedCrankingOverride,
                       ign5EndFunction
                       );
             }
         }
-        
+
       }
-      
+
     }
 }
