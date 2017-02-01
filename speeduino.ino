@@ -1439,6 +1439,6 @@ void loop()
                       );
             }
         }
-      }
-    }
-}
+      } //Ignition schedules on
+    } //Has sync and RPM
+} //loop()

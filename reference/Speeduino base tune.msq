@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.16 - EFI Analytics, Inc." tuneComment="" writeDate="Thu Jan 05 17:17:26 AEDT 2017"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2016.12-dev" nPages="9" signature="speeduino 201612"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.18 - EFI Analytics, Inc." tuneComment="" writeDate="Wed Feb 01 17:41:35 AEDT 2017"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.01" nPages="9" signature="speeduino 201701"/>
 <page>
 <pcVariable name="tsCanId">"0"</pcVariable>
 </page>
@@ -43,21 +43,21 @@
          7000.0 
       </constant>
 <constant cols="1" digits="0" name="mapBins" rows="16" units="kPa">
-         15.0 
-         25.0 
+         16.0 
+         26.0 
          30.0 
-         35.0 
+         36.0 
          40.0 
-         45.0 
+         46.0 
          50.0 
-         55.0 
+         56.0 
          60.0 
-         65.0 
+         66.0 
          70.0 
-         75.0 
-         85.0 
+         76.0 
+         86.0 
          90.0 
-         95.0 
+         96.0 
          100.0 
       </constant>
 </page>
@@ -81,7 +81,7 @@
 <constant digits="0" name="crankingPct" units="%">20.0</constant>
 <constant name="pinLayout">"Speeduino v0.4"</constant>
 <constant name="tachoPin">"Board Default"</constant>
-<constant name="unused2-16f">"One"</constant>
+<constant name="tachoDiv">"Normal"</constant>
 <constant digits="1" name="tdePct" units="ms">3.2</constant>
 <constant digits="1" name="taeColdA" units="ms">0.0</constant>
 <constant digits="0" name="tpsThresh" units="%/s">70.0</constant>
@@ -103,7 +103,7 @@
 <constant name="unused2-26e">"No"</constant>
 <constant name="unused2-26f">"No"</constant>
 <constant name="unused2-26g">"Yes"</constant>
-<constant name="unused2-26h">"No"</constant>
+<constant name="indInjAng">"Enabled"</constant>
 <constant digits="1" name="injOpen" units="ms">1.0</constant>
 <constant digits="0" name="inj1Ang" units="deg">355.0</constant>
 <constant digits="0" name="inj2Ang" units="deg">355.0</constant>
@@ -156,7 +156,7 @@
          17.0 20.0 20.0 20.0 21.0 23.0 23.0 24.0 25.0 26.0 27.0 28.0 29.0 29.0 30.0 31.0 
          17.0 20.0 20.0 20.0 21.0 22.0 22.0 23.0 24.0 25.0 26.0 27.0 28.0 28.0 29.0 30.0 
          18.0 18.0 18.0 18.0 21.0 21.0 21.0 21.0 21.0 21.0 21.0 20.0 19.0 20.0 20.0 20.0 
-         18.0 18.0 18.0 18.0 20.0 20.0 20.0 20.0 19.0 16.0 19.0 18.0 18.0 18.0 18.0 18.0 
+         18.0 18.0 18.0 18.0 20.0 20.0 20.0 20.0 19.0 19.0 19.0 18.0 18.0 18.0 18.0 18.0 
          18.0 18.0 18.0 18.0 18.0 18.0 18.0 18.0 17.0 17.0 17.0 16.0 16.0 16.0 16.0 16.0 
          18.0 18.0 18.0 18.0 17.0 17.0 17.0 17.0 16.0 16.0 16.0 15.0 15.0 15.0 15.0 15.0 
          18.0 18.0 18.0 18.0 16.0 16.0 16.0 16.0 15.0 15.0 15.0 14.0 14.0 14.0 14.0 14.0 
@@ -183,22 +183,22 @@
          7700.0 
       </constant>
 <constant cols="1" digits="0" name="mapBins2" rows="16" units="kPa">
+         10.0 
+         16.0 
          20.0 
+         26.0 
          30.0 
+         36.0 
          40.0 
+         46.0 
          50.0 
-         60.0 
-         70.0 
+         56.0 
+         66.0 
+         74.0 
          80.0 
-         90.0 
-         100.0 
-         115.0 
-         130.0 
-         145.0 
-         160.0 
-         175.0 
-         190.0 
-         205.0 
+         88.0 
+         96.0 
+         104.0 
       </constant>
 </page>
 <page number="3" size="64">
@@ -288,7 +288,7 @@
 <constant digits="0" name="dfcoHyster" units="RPM">200.0</constant>
 <constant digits="0" name="dfcoTPSThresh" units="%">1.0</constant>
 <constant name="ignBypassEnable">"Off"</constant>
-<constant name="ignBypassPin">"1"</constant>
+<constant name="ignBypassPin">"3"</constant>
 <constant name="ignBypassHiLo">"LOW"</constant>
 </page>
 <page number="4" size="288">
@@ -329,21 +329,21 @@
          7000.0 
       </constant>
 <constant cols="1" digits="0" name="mapBinsAFR" rows="16" units="kPa">
-         15.0 
-         25.0 
+         16.0 
+         26.0 
          30.0 
-         35.0 
+         36.0 
          40.0 
-         45.0 
+         46.0 
          50.0 
-         55.0 
+         56.0 
          60.0 
-         65.0 
+         66.0 
          70.0 
-         75.0 
-         85.0 
+         76.0 
+         86.0 
          90.0 
-         95.0 
+         96.0 
          100.0 
       </constant>
 </page>
@@ -365,8 +365,12 @@
 <constant digits="0" name="ego_sdelay" units="sec">15.0</constant>
 <constant digits="0" name="egoRPM" units="rpm">1200.0</constant>
 <constant digits="0" name="egoTPSMax" units="%">70.0</constant>
-<constant digits="0" name="egoLoadMax" units="%">90.0</constant>
-<constant digits="0" name="egoLoadMin" units="%">20.0</constant>
+<constant name="vvtPin">"26"</constant>
+<constant name="unused6-13e">"ONE"</constant>
+<constant name="unused6-13f">"ONE"</constant>
+<constant name="boostPin">"20"</constant>
+<constant name="unused6-14e">"ONE"</constant>
+<constant name="unused6-14f">"ONE"</constant>
 <constant cols="1" digits="1" name="brvBins" rows="6" units="V">
          6.6 
          9.4 
@@ -408,13 +412,13 @@
 <constant digits="0" name="boostFreq" units="Hz">30.0</constant>
 <constant digits="0" name="vvtFreq" units="Hz">300.0</constant>
 <constant digits="0" name="idleFreq" units="Hz">120.0</constant>
-<constant name="launchPin">"1"</constant>
+<constant name="launchPin">"Board Default"</constant>
 <constant name="launchEnable">"No"</constant>
 <constant name="launchHiLo">"LOW"</constant>
 <constant digits="0" name="lnchSoftLim" units="rpm">3500.0</constant>
 <constant digits="0" name="lnchRetard" units="deg">15.0</constant>
 <constant digits="0" name="lnchHardLim" units="rpm">4000.0</constant>
-<constant digits="0" name="lnchFuelAdd" units="%">255.0</constant>
+<constant digits="0" name="lnchFuelAdd" units="%">50.0</constant>
 <constant digits="0" name="idleKP" units="%">10.0</constant>
 <constant digits="0" name="idleKI" units="%">0.0</constant>
 <constant digits="0" name="idleKD" units="%">5.0</constant>
@@ -422,16 +426,16 @@
 <constant digits="0" name="boostKP" units="%">100.0</constant>
 <constant digits="0" name="boostKI" units="%">0.0</constant>
 <constant digits="0" name="boostKD" units="%">0.0</constant>
-<constant name="lnchPullRes">"Float"</constant>
+<constant name="lnchPullRes">"Pullup"</constant>
 <constant name="fuelTrimEnabled">"No"</constant>
-<constant name="unused6-60d">"ONE"</constant>
+<constant name="flatSEnable">"No"</constant>
 <constant name="unused6-60e">"ONE"</constant>
 <constant name="unused6-60f">"ONE"</constant>
 <constant name="unused6-60g">"ONE"</constant>
 <constant name="unused6-60h">"ONE"</constant>
-<constant digits="0" name="unused6-61" units="RPM">4500.0</constant>
-<constant digits="0" name="unused6-62" units="RPM">3000.0</constant>
-<constant digits="0" name="unused6-63" units="RPM">6000.0</constant>
+<constant digits="0" name="flatSSoftWin" units="rpm">400.0</constant>
+<constant digits="0" name="flatSRetard" units="deg">5.0</constant>
+<constant digits="0" name="flatSArm" units="rpm">2000.0</constant>
 </page>
 <page number="6" size="64">
 <constant cols="1" digits="0" name="iacCLValues" rows="10" units="RPM">
@@ -600,9 +604,9 @@
          7000.0 
       </constant>
 <constant cols="1" digits="0" name="fuelTrim1loadBins" rows="6" units="kPa">
-         35.0 
+         36.0 
          50.0 
-         65.0 
+         66.0 
          80.0 
          100.0 
          120.0 
@@ -624,9 +628,9 @@
          7000.0 
       </constant>
 <constant cols="1" digits="0" name="fuelTrim2loadBins" rows="6" units="kPa">
-         35.0 
+         36.0 
          50.0 
-         65.0 
+         66.0 
          80.0 
          100.0 
          120.0 
@@ -648,9 +652,9 @@
          7000.0 
       </constant>
 <constant cols="1" digits="0" name="fuelTrim3loadBins" rows="6" units="kPa">
-         35.0 
+         36.0 
          50.0 
-         65.0 
+         66.0 
          80.0 
          100.0 
          120.0 
@@ -672,9 +676,9 @@
          7000.0 
       </constant>
 <constant cols="1" digits="0" name="fuelTrim4loadBins" rows="6" units="kPa">
-         35.0 
+         36.0 
          50.0 
-         65.0 
+         66.0 
          80.0 
          100.0 
          120.0 
