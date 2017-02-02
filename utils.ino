@@ -371,6 +371,8 @@ void setPinMapping(byte boardID)
   pinMode(pinFan, OUTPUT);
   pinMode(pinStepperDir, OUTPUT);
   pinMode(pinStepperStep, OUTPUT);
+  pinMode(pinBoost, OUTPUT);
+  pinMode(pinVVT_1, OUTPUT);
 
   inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
   inj1_pin_mask = digitalPinToBitMask(pinInjector1);

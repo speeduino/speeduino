@@ -131,10 +131,6 @@ volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming ha
 
 void setup()
 {
-  Serial.begin(115200);
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-  if (configPage1.canEnable) { Serial3.begin(115200); }
-#endif
 
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
@@ -150,6 +146,11 @@ void setup()
   table3D_setSize(&trim4Table, 6);
 
   loadConfig();
+
+  Serial.begin(115200);
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
+  if (configPage1.canEnable) { Serial3.begin(115200); }
+#endif
 
   //Repoint the 2D table structs to the config pages that were just loaded
   taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
