@@ -45,7 +45,7 @@ void command()
       if (currentPage >= '0') {//This converts the ascii number char into binary
         currentPage -= '0';
       }
-      if (currentPage == veMapPage || currentPage == ignMapPage || currentPage == afrMapPage) { // Detecting if the current page is a table/map
+      if (currentPage == veMapPage || currentPage == ignMapPage || currentPage == afrMapPage || currentPage == boostvvtPage) {// Detecting if the current page is a table/map
         isMap = true;
       }
       else {
@@ -78,7 +78,7 @@ void command()
       int valueOffset; //cannot use offset as a variable name, it is a reserved word for several teensy libraries
       while (Serial.available() == 0) { }
 
-      if (isMap)
+      if (isMap && currentPage != boostvvtPage)
       {
         byte offset1, offset2;
         offset1 = Serial.read();
