@@ -47,6 +47,7 @@ struct config1 configPage1;
 struct config2 configPage2;
 struct config3 configPage3;
 struct config4 configPage4;
+struct config10 configPage10;
 
 int req_fuel_uS, inj_opentime_uS;
 

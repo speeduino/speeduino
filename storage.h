@@ -31,7 +31,25 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 | 1127  |2    | X and Y sizes for boost table       |
 | 1129  |64   | Boost Map (8x8)                     |
 | 1193  |8    | Boost Table RPM bins                |
-| 1201  |8    | Bost Table TPS bins                 |
+| 1201  |8    | Boost Table TPS bins                |
+| 1209  |2    | X and Y sizes                       |
+| 1211  |64   | PAGE 8 MAP2                         |
+| 1275  |8    | Xbins Map2                          |
+| 1283  |8    | Ybins Map2                          |
+| 1291  |2    | X and Y sizes1                      |
+| 1293``|36   | PAGE 9 MAP1                         |
+| 1329  |12   | X and Y Bins1                       |
+| 1341  |2    | X and Y size2                       |
+| 1343  |36   | PAGE 9 MAP2                         |
+| 1379  |6    | X and Y Bins2                       |
+| 1391  |2    | X and Y sizes3                      |
+| 1393  |36   | PAGE 9 MAP3                         |
+| 1429  |6    | X and Y Bins3                       |
+| 1441  |2    | X and Y size4                       |
+| 1443  |36   | PAGE 9 MAP4                         |
+| 1479  |6    | X and Y Bins4                       |
+| 1500  |128  | CANBUS config and data              |
+|                                                   |
 | 2559  |512  | Calibration data (O2)               |
 | 3071  |512  | Calibration data (IAT)              |
 | 3583  |512  | Calibration data (CLT)              |
@@ -93,6 +111,8 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG9_MAP4   1443
 #define EEPROM_CONFIG9_XBINS4 1479
 #define EEPROM_CONFIG9_YBINS4 1485
+#define EEPROM_CONFIG10_START 1500
+#define EEPROM_CONFIG10_END   1628
 
 //Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
 #define EEPROM_LAST_BARO      2558
