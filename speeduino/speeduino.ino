@@ -1017,7 +1017,7 @@ void loop()
       else
       {
         long rpm_adjust = ((long)(micros() - toothOneTime) * (long)currentStatus.rpmDOT) / 1000000; //Take into account any likely accleration that has occurred since the last full revolution completed
-        
+
         //timePerDegree = DIV_ROUND_CLOSEST(166666L, (currentStatus.RPM + rpm_adjust));
         timePerDegree = ldiv( 166666L, currentStatus.RPM + rpm_adjust).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       }

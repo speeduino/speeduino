@@ -10,3 +10,7 @@ table.py
 reference/hardware/v0.2/~$schematic v0.2_bom.xlsx
 
 reference/hardware/v0.4/gerbers/Archive.zip
+.pioenvs
+.piolibdeps
+.clang_complete
+.gcc-flags.json
