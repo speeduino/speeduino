@@ -95,6 +95,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
 }
 
 #else
+//Dummy functions for those that can't do Serial3
 void canCommand() { return; }
 void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2) { return; }
 
