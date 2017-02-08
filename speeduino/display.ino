@@ -4,6 +4,8 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 
+#ifdef USE_DISPLAY
+
 #include <SPI.h>
 #include <Wire.h>
 #include "src/Adafruit_SSD1306/Adafruit_GFX.h"
@@ -15,7 +17,7 @@ void initialiseDisplay()
 {
   //Protection against older pin mappings where the crank/cam signals were on the SDA and SCL pins. This will cause the Arduino to lock hard if you try to initialise i2c devices when a crank signal is coming in
   if(pinTrigger == 20 || pinTrigger == 21 || pinTrigger2 == 20 || pinTrigger2 == 21) { return; }
-  
+
    switch(configPage1.displayType)
    {
      case 1:
@@ -29,9 +31,9 @@ void initialiseDisplay()
       break;
      case 4:
        display.SSD1306_SETCOMPINS_V = 0x12;
-      break; 
+      break;
    }
-  
+
    display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C (for the 128x32)
    display.clearDisplay();
    display.setTextSize(1);
@@ -89,7 +91,7 @@ void updateDisplay()
       display.print(currentStatus.coolant);
       break;
   }
-  
+
   display.setCursor(0,11);
   switch(configPage1.display3)
   {
@@ -134,7 +136,7 @@ void updateDisplay()
       display.print(currentStatus.coolant);
       break;
   }
-  
+
   display.setCursor(64,0);
   switch(configPage1.display2)
   {
@@ -159,7 +161,7 @@ void updateDisplay()
       display.print(currentStatus.freeRAM);
       break;
   }
-  
+
   display.setCursor(64,11);
   switch(configPage1.display4)
   {
@@ -184,10 +186,11 @@ void updateDisplay()
       display.print(currentStatus.freeRAM);
       break;
   }
-  
+
   int barWidth = ldiv(((unsigned long)currentStatus.RPM * 128), 9000).quot;
   //int barWidth = map(currentStatus.RPM, 0, 9000, 0, 128);
   display.fillRect(0, 20, barWidth, 10, 1);
-  
+
   display.display();
 }
+#endif
