@@ -15,6 +15,8 @@ sendcancommand is called when a comman d is to be sent via serial3 to the Can in
 //#include "globals.h"
 //#include "storage.h"
 
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+
 void canCommand()
 {
   switch (Serial3.read())
@@ -47,16 +49,16 @@ void canCommand()
        while (Serial3.available() == 0) { }
        Llength= Serial3.read();              // next the number of bytes expected value
          for (uint8_t Lcount = 0; Lcount <Llength ;Lcount++)
-                { 
-                  while (Serial3.available() == 0){} 
+                {
+                  while (Serial3.available() == 0){}
                   // receive all x bytes into "Lbuffer"
                   Lbuffer[Lcount] = Serial3.read();
                 }
-       break;  
-      
+       break;
+
     case 'S': // send code version
        for (unsigned int sig = 0; sig < sizeof(displaySignature) - 1; sig++){
-           Serial3.write(displaySignature[sig]); 
+           Serial3.write(displaySignature[sig]);
        }
        //Serial3.print("speeduino 201609-dev");
        break;
@@ -84,11 +86,16 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
         Serial3.write(candata1);    // table id
         Serial3.write(candata2);    //table memory offset
      break;
-     
+
      case 1:                      //send request to listen for a can message
         Serial3.print("L");
         Serial3.write(canaddress);  //11 bit canaddress of device to listen for
-     break;  
-    }      
+     break;
+    }
 }
 
+#else
+void canCommand() { return; }
+void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2) { return; }
+
+#endif
