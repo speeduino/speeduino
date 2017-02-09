@@ -395,7 +395,7 @@ void receiveValue(int valueOffset, byte newValue)
       }
       else if (valueOffset < 80) //New value is on the Y (TPS) axis of the boost table
       {
-        boostTable.axisY[(7 - (valueOffset - 72))] = int(newValue) * TABLE_LOAD_MULTIPLIER;
+        boostTable.axisY[(7 - (valueOffset - 72))] = int(newValue); //TABLE_LOAD_MULTIPLIER is NOT used for boost as it is TPS based (0-100)
         return;
       }
       else if (valueOffset < 144) //New value is part of the vvt map
@@ -413,7 +413,7 @@ void receiveValue(int valueOffset, byte newValue)
       else //New value is on the Y (Load) axis of the vvt table
       {
         valueOffset = valueOffset - 152;
-        vvtTable.axisY[(7 - valueOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER;
+        vvtTable.axisY[(7 - valueOffset)] = int(newValue); //TABLE_LOAD_MULTIPLIER is NOT used for vvt as it is TPS based (0-100)
         return;
       }
     case seqFuelPage:
