@@ -824,6 +824,7 @@ void loop()
       secCounter = 0; //Reset our seconds counter.
       currentStatus.startRevolutions = 0;
       MAPcurRev = 0;
+      MAPcount = 0;
       currentStatus.rpmDOT = 0;
       ignitionOn = false;
       fuelOn = false;

@@ -43,6 +43,7 @@ void initialiseADC()
      BIT_CLEAR(ADCSRA,ADPS0);
   #endif
   MAPcurRev = 0;
+  MAPcount = 0;
 #endif
 }
 
