@@ -1,5 +1,5 @@
 /*
-This scheduler is designed to maintain 2 schedules for use by the fuel and ignition systems. 
+This scheduler is designed to maintain 2 schedules for use by the fuel and ignition systems.
 It functions by waiting for the overflow vectors from each of the timers in use to overflow, which triggers an interrupt
 
 //Technical
@@ -25,20 +25,17 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#ifdef __SAM3X8E__
- //Do stuff for ARM based CPUs 
-#else
-  #include <avr/interrupt.h> 
-  #include <avr/io.h>
-#endif
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+  #include <avr/interrupt.h>
+  #include <avr/io.h>
+
   //Refer to http://svn.savannah.nongnu.org/viewvc/trunk/avr-libc/include/avr/iomxx0_1.h?root=avr-libc&view=markup
   #define FUEL1_COUNTER TCNT3
   #define FUEL2_COUNTER TCNT3
   #define FUEL3_COUNTER TCNT3
   #define FUEL4_COUNTER TCNT4
-  
+
   #define IGN1_COUNTER  TCNT5
   #define IGN2_COUNTER  TCNT5
   #define IGN3_COUNTER  TCNT5
@@ -49,7 +46,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define FUEL2_COMPARE OCR3B
   #define FUEL3_COMPARE OCR3C
   #define FUEL4_COMPARE OCR4B
-  
+
   #define IGN1_COMPARE  OCR5A
   #define IGN2_COMPARE  OCR5B
   #define IGN3_COMPARE  OCR5C
@@ -72,7 +69,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN4_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4A) //Turn on the A compare unit (ie turn on the interrupt)
   #define IGN5_TIMER_ENABLE() TIMSK1 |= (1 << OCIE1C) //Turn on the A compare unit (ie turn on the interrupt)
 
-  #define IGN1_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5A) //Turn off this output compare unit 
+  #define IGN1_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5A) //Turn off this output compare unit
   #define IGN2_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5B) //Turn off this output compare unit
   #define IGN3_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C) //Turn off this output compare unit
   #define IGN4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A) //Turn off this output compare unit
@@ -81,7 +78,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define MAX_TIMER_PERIOD 262140 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
   #define uS_TO_TIMER_COMPARE(uS1) (uS1 >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
 
-#elif defined(CORE_TEENSY) 
+#elif defined(CORE_TEENSY)
   //http://shawnhymel.com/661/learning-the-teensy-lc-interrupt-service-routines/
   #define FUEL1_COUNTER FTM0_CNT
   #define FUEL2_COUNTER FTM0_CNT
@@ -128,7 +125,12 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN5_TIMER_DISABLE() FTM1_C0SC &= ~FTM_CSC_CHIE
 
   #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
-  #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
+  #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
+
+#elif defined(STM32_MCU_SERIES)
+  //Placeholders ONLY!
+  #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
+  #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
 #endif
 
 void initialiseSchedulers();
@@ -211,18 +213,18 @@ static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedu
     queue[2] = schedule1;
     queue[3] = schedule1;
     tmpQueue[2] = schedule1->startCompare - CNT;
-    tmpQueue[3] = schedule1->endCompare - CNT;   
+    tmpQueue[3] = schedule1->endCompare - CNT;
   }
   else
   {
     queue[2] = schedule2;
-    queue[3] = schedule2;   
+    queue[3] = schedule2;
     tmpQueue[2] = schedule2->startCompare - CNT;
-    tmpQueue[3] = schedule2->endCompare - CNT; 
+    tmpQueue[3] = schedule2->endCompare - CNT;
   }
 
 
-  //Sort the queues. Both queues are kept in sync. 
+  //Sort the queues. Both queues are kept in sync.
   //This implementes a sorting networking based on the Bose-Nelson sorting network
   //See: http://pages.ripco.net/~jgamble/nw.html
   #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned int tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; volatile Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
@@ -233,11 +235,11 @@ static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedu
   SWAP(1, 2);
 
   //Return the next compare time in the queue
-  return tmpQueue[0] + CNT; //Return the 
+  return tmpQueue[0] + CNT; //Return the
 }
 
 /*
- * Moves all the Schedules in a queue forward one position. 
+ * Moves all the Schedules in a queue forward one position.
  * The current item (0) is discarded
  * The final queue slot is set to nullSchedule to indicate that no action should be taken
  */

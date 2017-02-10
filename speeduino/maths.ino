@@ -1,5 +1,7 @@
 #include "maths.h"
 
+#define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d)/2)/(d)) : (((n) + (d)/2)/(d)))
+
 //Replace the standard arduino map() function to use the div function instead
 int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 {

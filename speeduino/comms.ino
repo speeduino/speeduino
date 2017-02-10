@@ -18,7 +18,7 @@ void command()
   switch (Serial.read())
   {
     case 'A': // send x bytes of realtime values
-      sendValues(packetSize, 0);   //send values to serial0      
+      sendValues(packetSize, 0);   //send values to serial0
       break;
 
     case 'B': // Burn current values to eeprom
@@ -62,12 +62,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.01-dev");
+      Serial.print("Speeduino 2017.02-dev");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201701-dev");
+      Serial.print("speeduino 201702-dev");
      break;
 
     case 'V': // send VE table and constants in binary
@@ -154,7 +154,7 @@ void command()
       sendToothLog(true); //Sends tooth log values as chars
       break;
 
-      
+
 
     case '?':
       Serial.println
@@ -201,7 +201,7 @@ This function returns the current values of a fixed group of variables
 void sendValues(int packetlength, byte portNum)
 {
   byte response[packetlength];
-  
+
   if (portNum == 3)
   {
     //CAN serial
@@ -209,13 +209,13 @@ void sendValues(int packetlength, byte portNum)
     Serial3.write(packetlength);      //confirm no of byte to be sent
   }
   else
-  {    
+  {
     if(requestCount == 0) { currentStatus.secl = 0; }
     requestCount++;
   }
 
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
-  
+
   response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   response[1] = currentStatus.squirt; //Squirt Bitfield
   response[2] = currentStatus.engine; //Engine Status Bitfield
@@ -252,7 +252,7 @@ void sendValues(int packetlength, byte portNum)
   response[28] = currentStatus.batCorrection; //Battery voltage correction (%)
   response[29] = currentStatus.spark; //Spark related bitfield
   response[30] = currentStatus.O2_2; //O2
-  
+
   //rpmDOT must be sent as a signed integer
   response[31] = lowByte(currentStatus.rpmDOT);
   response[32] = highByte(currentStatus.rpmDOT);
@@ -261,7 +261,7 @@ void sendValues(int packetlength, byte portNum)
   response[34] = currentStatus.flexCorrection; //Flex fuel correction (% above or below 100)
   response[35] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
   response[36] = getNextError();
-  
+
 //cli();
   if (portNum == 0) { Serial.write(response, (size_t)packetlength); }
   else if (portNum == 3) { Serial3.write(response, (size_t)packetlength); }
@@ -395,7 +395,7 @@ void receiveValue(int valueOffset, byte newValue)
       }
       else if (valueOffset < 80) //New value is on the Y (TPS) axis of the boost table
       {
-        boostTable.axisY[(7 - (valueOffset - 72))] = int(newValue) * TABLE_LOAD_MULTIPLIER;
+        boostTable.axisY[(7 - (valueOffset - 72))] = int(newValue); //TABLE_LOAD_MULTIPLIER is NOT used for boost as it is TPS based (0-100)
         return;
       }
       else if (valueOffset < 144) //New value is part of the vvt map
@@ -413,7 +413,7 @@ void receiveValue(int valueOffset, byte newValue)
       else //New value is on the Y (Load) axis of the vvt table
       {
         valueOffset = valueOffset - 152;
-        vvtTable.axisY[(7 - valueOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER;
+        vvtTable.axisY[(7 - valueOffset)] = int(newValue); //TABLE_LOAD_MULTIPLIER is NOT used for vvt as it is TPS based (0-100)
         return;
       }
     case seqFuelPage:
@@ -441,9 +441,9 @@ void receiveValue(int valueOffset, byte newValue)
       if (valueOffset < npage_size[currentPage])
       {
         *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
-      }    
+      }
       break;
-      
+
     default:
       break;
   }
@@ -574,7 +574,7 @@ void sendPage(bool useChar)
         {
           //To Display Values from Config Page 3
           Serial.println((const __FlashStringHelper *)&pageTitles[91]);//special typecasting to enable suroutine that the F macro uses
-          for (pnt_configPage = &configPage3; pnt_configPage < &configPage3.voltageCorrectionBins[0]; pnt_configPage = (byte *)pnt_configPage + 1) 
+          for (pnt_configPage = &configPage3; pnt_configPage < &configPage3.voltageCorrectionBins[0]; pnt_configPage = (byte *)pnt_configPage + 1)
           {
             Serial.println(*((byte *)pnt_configPage));// Displaying byte values of config page 3 up to but not including the first array
           }
@@ -673,7 +673,7 @@ void sendPage(bool useChar)
         }
         else
         {
-          //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format        
+          //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
           byte response[160]; //Bit hacky, but the size is: (8x8 + 8 + 8) + (8x8 + 8 + 8) = 160
 
           //Boost table
@@ -690,7 +690,7 @@ void sendPage(bool useChar)
         break;
       }
     case seqFuelPage:
-      { 
+      {
         if(useChar)
         {
           currentTable = trim1Table;
@@ -728,9 +728,9 @@ void sendPage(bool useChar)
         }
         else
         {
-          //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format        
+          //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
           byte response[192]; //Bit hacky, but the size is: (6x6 + 6 + 6) * 4 = 192
-          
+
           //trim1 table
           for (int x = 0; x < 36; x++) { response[x] = trim1Table.values[5 - x / 6][x % 6]; }
           for (int x = 36; x < 42; x++) { response[x] = byte(trim1Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
@@ -760,7 +760,7 @@ void sendPage(bool useChar)
         {
           //To Display Values from Config Page 10
           Serial.println((const __FlashStringHelper *)&pageTitles[141]);//special typecasting to enable suroutine that the F macro uses
-          for (pnt_configPage = &configPage10; pnt_configPage < ((byte *)pnt_configPage + 128); pnt_configPage = (byte *)pnt_configPage + 1) 
+          for (pnt_configPage = &configPage10; pnt_configPage < ((byte *)pnt_configPage + 128); pnt_configPage = (byte *)pnt_configPage + 1)
           {
             Serial.println(*((byte *)pnt_configPage));// Displaying byte values of config page 3 up to but not including the first array
           }
@@ -769,7 +769,7 @@ void sendPage(bool useChar)
         else pnt_configPage = &configPage10; //Create a pointer to Page 10 in memory
         break;
       }
-            
+
     default:
       {
         Serial.println(F("\nPage has not been implemented yet. Change to another page."));
@@ -880,7 +880,7 @@ void sendPage(bool useChar)
       response[x] = *((byte *)pnt_configPage + x); //Each byte is simply the location in memory of the configPage + the offset + the variable number (x)
       //if ( (x & 31) == 1) { loop(); } //Every 32 loops, do a manual call to loop() to ensure that there is no misses
     }
-    
+
     Serial.write((byte *)&response, sizeof(response));
     // }
   }
@@ -970,7 +970,7 @@ void receiveCalibration(byte tableID)
 
       //From TS3.x onwards, the EEPROM must be written here as TS restarts immediately after the process completes which is before the EEPROM write completes
       int y = EEPROM_START + (x / 2);
-      EEPROM.update(y, (byte)tempValue); 
+      EEPROM.update(y, (byte)tempValue);
 
       every2nd = false;
       analogWrite(13, (counter % 50) );

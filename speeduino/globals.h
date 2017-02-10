@@ -31,7 +31,7 @@
 #define BIT_SQUIRT_INJ3          2  //inj3 Squirt
 #define BIT_SQUIRT_INJ4          3  //inj4 Squirt
 #define BIT_SQUIRT_DFCO          4 //Decelleration fuel cutoff
-#define BIT_SQUIRT_BOOSTCUT      5  //Fuel component of MAP based boost cut out 
+#define BIT_SQUIRT_BOOSTCUT      5  //Fuel component of MAP based boost cut out
 #define BIT_SQUIRT_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
 #define BIT_SQUIRT_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
 
@@ -43,7 +43,7 @@
 #define BIT_SPARK_BOOSTCUT        4  //Spark component of MAP based boost cut out
 #define BIT_SPARK_ERROR           5  // Error is detected
 #define BIT_SPARK_IDLE            6  // idle on
-#define BIT_SPARK_SYNC            7  // Whether engine has sync or not 
+#define BIT_SPARK_SYNC            7  // Whether engine has sync or not
 
 #define BIT_SPARK2_FLATSH         0 //Flat shift hard cut
 #define BIT_SPARK2_FLATSS         1 //Flat shift soft cut
@@ -91,7 +91,7 @@ const byte signature = 20;
 const char displaySignature[] = "speeduino 201609-dev";
 const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
-const byte data_structure_version = 2; //This identifies the data structure when reading / writing. 
+const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 const byte page_size = 64;
 const int npage_size[11] ={0,288,64,288,64,288,64,64,160,192,128};
 //const byte page10_size = 128;
@@ -147,7 +147,7 @@ struct statuses {
   long longRPM;
   int mapADC;
   long MAP; //Has to be a long for PID calcs (Boost control)
-  int baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running
+  byte baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running
   byte TPS; //The current TPS reading (0% - 100%)
   byte TPSlast; //The previous TPS reading
   unsigned long TPS_time; //The time the TPS sample was taken
@@ -181,7 +181,7 @@ struct statuses {
   byte afrTarget;
   byte idleDuty;
   bool fanOn; //Whether or not the fan is turned on
-  volatile byte ethanolPct; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. 
+  volatile byte ethanolPct; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85.
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte squirt;
   volatile byte spark;
@@ -192,28 +192,28 @@ struct statuses {
   unsigned int PW3; //In uS
   unsigned int PW4; //In uS
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
-  volatile byte secl; //Continous 
+  volatile byte secl; //Continous
   volatile unsigned int loopsPerSecond;
   boolean launchingSoft; //True when in launch control soft limit mode
   boolean launchingHard; //True when in launch control hard limit mode
   int freeRAM;
   unsigned int clutchEngagedRPM;
   bool flatShiftingHard;
-  volatile byte startRevolutions = 0; //A counter for how many revolutions have been completed since sync was achieved.
-  
+  volatile byte startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
+
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
   // y = (x >> n) & 1;    // n=0..15.  stores nth bit of x in y.  y becomes 0 or 1.
   // x &= ~(1 << n);      // forces nth bit of x to be 0.  all other bits left alone.
   // x |= (1 << n);       // forces nth bit of x to be 1.  all other bits left alone.
-  
+
 };
 struct statuses currentStatus; //The global status object
 
 //Page 1 of the config - See the ini file for further reference
 //This mostly covers off variables that are required for fuel
 struct config1 {
-  
+
   byte unused1; //Cold cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking under a certain temp threshold (ms)
   byte unused2; //Warm cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking (ms)
   byte asePct; //Afterstart enrichment (%)
@@ -227,30 +227,31 @@ struct config1 {
   byte taeColdA;
   byte tpsThresh;
   byte taeTime;
-  
+
   //Display config bits
   byte displayType : 3;
   byte display1 : 3;
   byte display2 : 2;
-  
+
   byte display3 : 3;
   byte display4 : 2;
   byte display5 : 3;
-  
+
   byte displayB1 : 4;
   byte displayB2 : 4;
-  
+
   byte reqFuel;
   byte divider;
   byte injTiming : 1;
   byte multiplyMAP : 1;
   byte includeAFR : 1;
-  byte unused26 : 5;
+  byte unused26 : 4;
+  byte indInjAng : 1;
   byte injOpen; //Injector opening time (ms * 10)
   unsigned int inj1Ang;
-  unsigned int inj2Ang; 
-  unsigned int inj3Ang; 
-  unsigned int inj4Ang; 
+  unsigned int inj2Ang;
+  unsigned int inj3Ang;
+  unsigned int inj4Ang;
 
   //config1 in ini
   byte mapSample : 2;
@@ -258,21 +259,21 @@ struct config1 {
   byte injType : 1;
   byte nCylinders : 4; //Number of cylinders
 
-  //config2 in ini  
+  //config2 in ini
   byte cltType1 : 2;
   byte matType1 : 2;
   byte nInjectors : 4; //Number of injectors
-  
+
 
   //config3 in ini
-  byte engineType : 1; 
+  byte engineType : 1;
   byte flexEnabled : 1;
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
   byte injLayout : 2;
   byte canEnable : 1; //is can interface enabled
   byte unused2_38h : 1;
-  
+
   byte primePulse;
   byte dutyLim;
   byte flexFreqLow; //Lowest valid frequency reading from the flex sensor
@@ -294,18 +295,18 @@ struct config1 {
   byte unused61;
   byte unused62;
   byte unused63;
-  
+
 };
 
 //Page 2 of the config - See the ini file for further reference
 //This mostly covers off variables that are required for ignition
 struct config2 {
-  
+
   int triggerAngle;
   byte FixAng;
   byte CrankAng;
-  byte TrigAngMul; //Multiplier for non evenly divisible tooth counts. 
-  
+  byte TrigAngMul; //Multiplier for non evenly divisible tooth counts.
+
   byte TrigEdge : 1;
   byte TrigSpeed : 1;
   byte IgInv : 1;
@@ -315,22 +316,22 @@ struct config2 {
   byte TrigEdgeSec : 1;
   byte fuelPumpPin : 6;
   byte unused4_6b : 1;
-  
+
   byte unused4_7;
   byte IdleAdvRPM;
   byte IdleAdvCLT; //The temperature below which the idle is advanced
   byte IdleDelayTime;
   byte StgCycles; //The number of initial cycles before the ignition should fire when first cranking
-  
+
   byte dwellCont : 1; //Fixed duty dwell control
   byte useDwellLim : 1; //Whether the dwell limiter is off or on
   byte sparkMode : 2; //Spark output mode (Eg Wasted spark, single channel or Wasted COP)
   byte dfcoEnabled : 1; //Whether or not DFCO is turned on
   byte triggerFilter : 2; //The mode of trigger filter being used (0=Off, 1=Light (Not currently used), 2=Normal, 3=Aggressive)
-  byte ignCranklock : 1; //Whether or not the ignition timing during cranking is locked to a CAS pulse. Only currently valid for Basic distributor and 4G63. 
-  
+  byte ignCranklock : 1; //Whether or not the ignition timing during cranking is locked to a CAS pulse. Only currently valid for Basic distributor and 4G63.
+
   byte dwellCrank; //Dwell time whilst cranking
-  byte dwellRun; //Dwell time whilst running 
+  byte dwellRun; //Dwell time whilst running
   byte triggerTeeth; //The full count of teeth on the trigger wheel if there were no gaps
   byte triggerMissingTeeth; //The size of the tooth gap (ie number of missing teeth)
   byte crankRPM; //RPM below which the engine is considered to be cranking
@@ -352,21 +353,21 @@ struct config2 {
 
   byte ignBypassEnabled : 1; //Whether or not the ignition bypass is enabled
   byte ignBypassPin : 6; //Pin the ignition bypass is activated on
-  byte ignBypassHiLo : 1; //Whether this should be active high or low. 
+  byte ignBypassHiLo : 1; //Whether this should be active high or low.
 
-  
+
 };
 
 //Page 3 of the config - See the ini file for further reference
 //This mostly covers off variables that are required for AFR targets and closed loop
 struct config3 {
-  
+
   byte egoAlgorithm : 2;
   byte egoType : 2;
   byte boostEnabled : 1;
   byte vvtEnabled : 1;
   byte boostCutType : 2;
-  
+
   byte egoKP;
   byte egoKI;
   byte egoKD;
@@ -379,9 +380,9 @@ struct config3 {
   byte ego_sdelay; //Time in seconds after engine starts that closed loop becomes available
   byte egoRPM; //RPM must be above this for closed loop to function
   byte egoTPSMax; //TPS must be below this for closed loop to function
-  byte boostPin : 6;
-  byte unused6_13 : 2;
   byte vvtPin : 6;
+  byte unused6_13 : 2;
+  byte boostPin : 6;
   byte unused6_14 : 2;
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
@@ -390,11 +391,11 @@ struct config3 {
   byte boostFreq; //Frequency of the boost PWM valve
   byte vvtFreq; //Frequency of the vvt PWM valve
   byte idleFreq;
-  
+
   byte launchPin : 6;
   byte launchEnabled : 1;
   byte launchHiLo : 1;
-  
+
   byte lnchSoftLim;
   int8_t lnchRetard; //Allow for negative advance value (ATDC)
   byte lnchHardLim;
@@ -404,12 +405,12 @@ struct config3 {
   byte idleKP;
   byte idleKI;
   byte idleKD;
-  
+
   byte boostLimit; //Is divided by 2, allowing kPa values up to 511
   byte boostKP;
   byte boostKI;
   byte boostKD;
-  
+
   byte lnchPullRes : 2;
   byte fuelTrimEnabled : 1;
   byte flatSEnable : 1;
@@ -418,7 +419,7 @@ struct config3 {
   byte flatSRetard;
   byte flatSArm;
 
-  
+
 };
 
 
@@ -432,22 +433,22 @@ struct config4 {
   byte iacCrankSteps[4]; //Steps to use when cranking (Stepper motor)
   byte iacCrankDuty[4]; //Duty cycle to use on PWM valves when cranking
   byte iacCrankBins[4]; //Temperature Bins for the above 2 curves
-  
+
   byte iacAlgorithm : 3; //Valid values are: "None", "On/Off", "PWM", "PWM Closed Loop", "Stepper", "Stepper Closed Loop"
   byte iacStepTime : 3; //How long to pulse the stepper for to ensure the step completes (ms)
   byte iacChannels : 1; //How many outputs to use in PWM mode (0 = 1 channel, 1 = 2 channels)
   byte iacPWMdir : 1; //Directino of the PWM valve. 0 = Normal = Higher RPM with more duty. 1 = Reverse = Lower RPM with more duty
-  
+
   byte iacFastTemp; //Fast idle temp when using a simple on/off valve
-  
+
   byte iacStepHome; //When using a stepper motor, the number of steps to be taken on startup to home the motor
   byte iacStepHyster; //Hysteresis temperature (*10). Eg 2.2C = 22
-  
+
   byte fanInv : 1;        // Fan output inversion bit
   byte fanEnable : 1;     // Fan enable bit. 0=Off, 1=On/Off
   byte fanPin : 5;
   byte fanSP;             // Cooling fan start temperature
-  byte fanHyster;         // Fan hysteresis 
+  byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
 };
