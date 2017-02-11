@@ -22,7 +22,7 @@ void fanControl()
   {
     int onTemp = (int)configPage4.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
     int offTemp = onTemp - configPage4.fanHyster;
-    
+
     if (!currentStatus.fanOn && currentStatus.coolant >= onTemp) { digitalWrite(pinFan,fanHIGH); currentStatus.fanOn = true; }
     if (currentStatus.fanOn && currentStatus.coolant <= offTemp) { digitalWrite(pinFan, fanLOW); currentStatus.fanOn = false; }
   }
@@ -35,13 +35,13 @@ void initialiseAuxPWM()
   TCNT1  = 0;             //Reset Timer Count
   TIFR1  = 0x00;          //Timer1 INT Flag Reg: Clear Timer Overflow Flag
   TCCR1A = 0x00;          //Timer1 Control Reg A: Wave Gen Mode normal (Simply counts up from 0 to 65535 (16-bit int)
-  TCCR1B = (1 << CS12);   //Timer1 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg 
-  
+  TCCR1B = (1 << CS12);   //Timer1 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
+
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
   boost_pin_mask = digitalPinToBitMask(pinBoost);
   vvt_pin_port = portOutputRegister(digitalPinToPort(pinVVT_1));
   vvt_pin_mask = digitalPinToBitMask(pinVVT_1);
-  
+
   boost_pwm_max_count = 1000000L / (16 * configPage3.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
   vvt_pwm_max_count = 1000000L / (16 * configPage3.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
   //TIMSK1 |= (1 << OCIE1A); //Turn on the A compare unit (ie turn on the interrupt)  //Shouldn't be needed with closed loop as its turned on below
@@ -49,6 +49,8 @@ void initialiseAuxPWM()
 
   boostPID.SetOutputLimits(0, boost_pwm_max_count);
   boostPID.SetMode(AUTOMATIC); //Turn PID on
+
+  boostCounter = 0;
 }
 
 void boostControl()
@@ -57,11 +59,13 @@ void boostControl()
   {
     if(currentStatus.MAP < 100) { TIMSK1 &= ~(1 << OCIE1A); digitalWrite(pinBoost, LOW); return; } //Set duty to 0 and turn off timer compare
     boost_cl_target_boost = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; //Boost target table is in kpa and divided by 2
-    boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD);
+    if( (boostCounter & 31) == 1) { boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD); } //This only needs to be run very infrequently, once every 32 calls to boostControl(). This is approx. once per second
     boostPID.Compute();
     TIMSK1 |= (1 << OCIE1A); //Turn on the compare unit (ie turn on the interrupt)
   }
   else { TIMSK1 &= ~(1 << OCIE1A); } // Disable timer channel
+
+  boostCounter++;
 }
 
 void vvtControl()
@@ -75,7 +79,7 @@ void vvtControl()
   else { TIMSK1 &= ~(1 << OCIE1B); } // Disable timer channel
 #endif
 }
-  
+
 //The interrupt to control the Boost PWM
 ISR(TIMER1_COMPA_vect)
 {
@@ -91,7 +95,7 @@ ISR(TIMER1_COMPA_vect)
     OCR1A = TCNT1 + boost_pwm_target_value;
     boost_pwm_cur_value = boost_pwm_target_value;
     boost_pwm_state = true;
-  }  
+  }
 }
 
 //The interrupt to control the VVT PWM
@@ -109,14 +113,13 @@ ISR(TIMER1_COMPB_vect)
     OCR1B = TCNT1 + vvt_pwm_target_value;
     vvt_pwm_cur_value = vvt_pwm_target_value;
     vvt_pwm_state = true;
-  }  
+  }
 }
 
 #elif defined (CORE_TEENSY)
 //YET TO BE IMPLEMENTED ON TEENSY
 void initialiseAuxPWM() { }
-void boostControl() { } 
+void boostControl() { }
 void vvtControl() { }
 
 #endif
-

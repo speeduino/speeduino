@@ -889,7 +889,10 @@ void loop()
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
     }
-    if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
+    if( (mainLoopCount & 63) == 1)
+    {
+      boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
+    }
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
     if ((mainLoopCount & 255) == 1)
     {
@@ -900,7 +903,6 @@ void loop()
        readBat();
 
        vvtControl();
-       boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
     }
     if(configPage4.iacAlgorithm == 4) { idleControl(); } //Run idlecontrol every loop for stepper idle.
