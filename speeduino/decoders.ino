@@ -180,7 +180,7 @@ int getCrankAngle_missingTooth(int timePerDegree)
     return crankAngle;
 }
 
-/*
+/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Dual wheel
 Desc: 2 wheels located either both on the crank or with the primary on the crank and the secondary on the cam.
 Note: There can be no missing teeth on the primary wheel
@@ -1331,4 +1331,122 @@ int getCrankAngle_non360(int timePerDegree)
     if (crankAngle < 0) { crankAngle += 360; }
 
     return crankAngle;
+}
+
+/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Name: Nissan 360 tooth with cam
+Desc:
+Note:
+*/
+void triggerSetup_Nissan360()
+{
+  triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * 360)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+  triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  secondaryToothCount = 0; //Initially set to 0 prior to calculating the secondary window duration
+  secondDerivEnabled = false;
+  decoderIsSequential = true;
+  MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+}
+
+
+void triggerPri_Nissan360()
+{
+   curTime = micros();
+   curGap = curTime - toothLastToothTime;
+   //if ( curGap < triggerFilterTime ) { return; } //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger.
+   toothCurrentCount++; //Increment the tooth counter
+   //addToothLogEntry(curGap); Disable tooth logging on this decoder due to overhead
+
+   toothLastMinusOneToothTime = toothLastToothTime;
+   toothLastToothTime = curTime;
+
+   if ( !currentStatus.hasSync ) { return; }
+
+   if ( toothCurrentCount == 360 )
+   {
+     toothCurrentCount = 1;
+     toothOneMinusOneTime = toothOneTime;
+     toothOneTime = curTime;
+     currentStatus.startRevolutions++; //Counter
+   }
+
+   //setFilter(curGap); //Recalc the new filter value
+}
+
+void triggerSec_Nissan360()
+{
+  curTime2 = micros();
+  curGap2 = curTime2 - toothLastSecToothTime;
+  //if ( curGap2 < triggerSecFilterTime ) { return; }
+  toothLastSecToothTime = curTime2;
+  //triggerSecFilterTime = curGap2 >> 2; //Set filter at 25% of the current speed
+
+
+  //Calculate number of primary teeth that this window has been active for
+  if(secondaryToothCount == 0) { secondaryToothCount = toothCurrentCount; return; } //This occurs on the first rotation upon powerup
+  if(digitalRead(pinTrigger2) == HIGH) { secondaryToothCount = toothCurrentCount; return; } //This represents the start of a secondary window
+
+  //If we reach here, we are at the end of a secondary window
+  byte secondaryDuration = toothCurrentCount - secondaryToothCount; //How many primary teeth have passed during the duration of this secondary window
+
+  if(!currentStatus.hasSync)
+  {
+    if(configPage1.nCylinders == 4)
+    {
+      if(secondaryDuration >= 15 || secondaryDuration <= 17) //Duration of window = 16 primary teeth
+      {
+        toothCurrentCount = 16; //End of first window (The longest) occurs 16 teeth after TDC
+        currentStatus.hasSync == true;
+      }
+      else if(secondaryDuration >= 11 || secondaryDuration <= 13) //Duration of window = 12 primary teeth
+      {
+        toothCurrentCount = 102; //End of second window is after 90+12 primary teeth
+        currentStatus.hasSync == true;
+      }
+      else if(secondaryDuration >= 7 || secondaryDuration <= 9) //Duration of window = 8 primary teeth
+      {
+        toothCurrentCount = 188; //End of third window is after 90+90+8 primary teeth
+        currentStatus.hasSync == true;
+      }
+      else if(secondaryDuration >= 3 || secondaryDuration <= 5) //Duration of window = 4 primary teeth
+      {
+        toothCurrentCount = 274; //End of fourth window is after 90+90+90+4 primary teeth
+        currentStatus.hasSync == true;
+      }
+    }
+    else if(configPage1.nCylinders == 6)
+    {
+        //I don't have this info yet :(
+    }
+    else { currentStatus.hasSync == false; return ;} //This should really never happen
+  }
+  else
+  {
+    //Already have sync, but do a verify every 720 degrees.
+    //Not sure if this works for 6 cylinder???
+    if(secondaryDuration >= 15) //Duration of window = 16 primary teeth
+    {
+      toothCurrentCount = 16; //End of first window (The longest) occurs 16 teeth after TDC
+    }
+  }
+
+}
+
+int getRPM_Nissan360()
+{
+  if( !currentStatus.hasSync) { return 0; }
+  //if(currentStatus.RPM < configPage2.crankRPM) { return crankingGetRPM(configPage2.triggerTeeth); }
+  return stdGetRPM();
+}
+
+int getCrankAngle_Nissan360(int timePerDegree)
+{
+  //As each tooth represents 2 crank degrees, we only need to dtermine whether we're more or less than halfway between teeth to know whether to add another 1 degrees
+  unsigned long halfTooth = (toothLastToothTime - toothLastMinusOneToothTime) >> 1;
+  if ( (micros() - toothLastToothTime) > halfTooth)
+  {
+    //Means we're over halfway to the next tooth, so add on 1 degree
+    return (toothCurrentCount * 2) + 1;
+  }
+  return (toothCurrentCount * 2);
 }

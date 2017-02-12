@@ -451,6 +451,17 @@ void setup()
       attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, FALLING); //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
       break;
 
+    case 12:
+        triggerSetup_Nissan360();
+        trigger = triggerPri_Nissan360; //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
+        getRPM = getRPM_Nissan360;
+        getCrankAngle = getCrankAngle_Nissan360;
+
+        if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+        else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+        attachInterrupt(triggerInterrupt2, triggerSec_Nissan360, CHANGING);
+        break;
+
     default:
       trigger = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;
