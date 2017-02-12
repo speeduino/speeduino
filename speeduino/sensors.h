@@ -6,8 +6,9 @@
 #define ADCFILTER_TPS  128
 #define ADCFILTER_CLT  180
 #define ADCFILTER_IAT  180
-#define ADCFILTER_O2  128
+#define ADCFILTER_O2   128
 #define ADCFILTER_BAT  128
+#define ADCFILTER_MAP   20 //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
 
 #define BARO_MIN      87
 #define BARO_MAX      108
