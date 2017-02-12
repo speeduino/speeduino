@@ -200,6 +200,7 @@ struct statuses {
   unsigned int clutchEngagedRPM;
   bool flatShiftingHard;
   volatile byte startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
+  byte boostTarget;
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath

@@ -12,7 +12,7 @@
 #define seqFuelPage  9
 #define canbusPage   10//Config Page 10
 
-#define packetSize   37
+#define packetSize   38
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 boolean isMap = true;
@@ -31,7 +31,7 @@ const char pageTitles[] PROGMEM //This is being stored in the avr flash instead 
    "\nVVT Map\0"//No need to put a trailing null because it's the last string and the compliler does it for you.
    "\nPage 10 Config"
   };
-  
+
 void command();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
 void sendValues(int packetlength, byte portnum);
 void receiveValue(int offset, byte newValue);

@@ -59,6 +59,7 @@ void boostControl()
   {
     if(currentStatus.MAP < 100) { TIMSK1 &= ~(1 << OCIE1A); digitalWrite(pinBoost, LOW); return; } //Set duty to 0 and turn off timer compare
     boost_cl_target_boost = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; //Boost target table is in kpa and divided by 2
+    currentStatus.boostTarget = boost_cl_target_boost >> 1; //Boost target is sent as a byte value to TS and so is divided by 2
     if( (boostCounter & 31) == 1) { boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD); } //This only needs to be run very infrequently, once every 32 calls to boostControl(). This is approx. once per second
     boostPID.Compute();
     TIMSK1 |= (1 << OCIE1A); //Turn on the compare unit (ie turn on the interrupt)

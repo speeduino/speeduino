@@ -843,10 +843,9 @@ void loop()
     //-----------------------------------------------------------------------------------------------------
     readMAP();
 
-    //TPS setting to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
-    if ((mainLoopCount & 31) == 1)
+    if ((mainLoopCount & 31) == 1) //Every 32 loops
     {
-      readTPS();
+      readTPS(); //TPS reading to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
 
       //Check for launching/flat shift (clutch) can be done around here too
       previousClutchTrigger = clutchTrigger;
@@ -889,12 +888,12 @@ void loop()
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
     }
-    if( (mainLoopCount & 63) == 1)
+    if( (mainLoopCount & 63) == 1) //Every 64 loops
     {
       boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
     }
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
-    if ((mainLoopCount & 255) == 1)
+    if ((mainLoopCount & 255) == 1) //Every 256 loops
     {
 
        readCLT();
