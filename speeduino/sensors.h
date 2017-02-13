@@ -1,6 +1,9 @@
 #ifndef SENSORS_H
 #define SENSORS_H
 
+#include "Arduino.h"
+#include "globals.h"
+
 // The following are alpha values for the ADC filters.
 // Their values are from 0 to 255 with 0 being no filtering and 255 being maximum
 #define ADCFILTER_TPS  128

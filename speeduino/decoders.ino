@@ -1340,7 +1340,7 @@ Note:
 */
 void triggerSetup_Nissan360()
 {
-  triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * 360)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+  triggerFilterTime = (1000000 / (MAX_RPM / 60 * 360UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   secondaryToothCount = 0; //Initially set to 0 prior to calculating the secondary window duration
   secondDerivEnabled = false;

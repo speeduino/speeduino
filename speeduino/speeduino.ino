@@ -459,7 +459,7 @@ void setup()
 
         if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
         else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-        attachInterrupt(triggerInterrupt2, triggerSec_Nissan360, CHANGING);
+        attachInterrupt(triggerInterrupt2, triggerSec_Nissan360, CHANGE);
         break;
 
     default:
