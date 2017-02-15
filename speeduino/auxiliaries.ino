@@ -3,7 +3,8 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
-integerPID boostPID(&currentStatus.MAP, &boost_pwm_target_value, &boost_cl_target_boost, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+//integerPID boostPID(&currentStatus.MAP, &boost_pwm_target_value, &boost_cl_target_boost, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 /*
 Fan control
@@ -48,6 +49,7 @@ void initialiseAuxPWM()
   TIMSK1 |= (1 << OCIE1B); //Turn on the B compare unit (ie turn on the interrupt)
 
   boostPID.SetOutputLimits(0, boost_pwm_max_count);
+  boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD);
   boostPID.SetMode(AUTOMATIC); //Turn PID on
 
   boostCounter = 0;
@@ -58,10 +60,17 @@ void boostControl()
   if(configPage3.boostEnabled)
   {
     if(currentStatus.MAP < 100) { TIMSK1 &= ~(1 << OCIE1A); digitalWrite(pinBoost, LOW); return; } //Set duty to 0 and turn off timer compare
+    MAPx100 = currentStatus.MAP * 100;
+
     boost_cl_target_boost = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; //Boost target table is in kpa and divided by 2
+    boostTargetx100 = boost_cl_target_boost  * 100;
     currentStatus.boostTarget = boost_cl_target_boost >> 1; //Boost target is sent as a byte value to TS and so is divided by 2
+    if(currentStatus.boostTarget == 0) { TIMSK1 &= ~(1 << OCIE1A); digitalWrite(pinBoost, LOW); return; } //Set duty to 0 and turn off timer compare if the target is 0
+
     if( (boostCounter & 31) == 1) { boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD); } //This only needs to be run very infrequently, once every 32 calls to boostControl(). This is approx. once per second
+
     boostPID.Compute();
+
     TIMSK1 |= (1 << OCIE1A); //Turn on the compare unit (ie turn on the interrupt)
   }
   else { TIMSK1 &= ~(1 << OCIE1A); } // Disable timer channel
