@@ -16,9 +16,11 @@
 #define BARO_MIN      87
 #define BARO_MAX      108
 
+/*
 #if defined(CORE_AVR)
   #define ANALOG_ISR
 #endif
+*/
 
 volatile byte flexCounter = 0;
 volatile int AnChannel[15];
