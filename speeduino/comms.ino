@@ -262,6 +262,7 @@ void sendValues(int packetlength, byte portNum)
   response[35] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
   response[36] = getNextError();
   response[37] = currentStatus.boostTarget;
+  response[38] = currentStatus.status;
 
 //cli();
   if (portNum == 0) { Serial.write(response, (size_t)packetlength); }

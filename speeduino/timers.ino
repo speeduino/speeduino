@@ -126,7 +126,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
       if(currentStatus.secl >= configPage1.fpPrime) 
       {
         fpPrimed = true; //Mark the priming as being completed
-        if(currentStatus.RPM == 0) { digitalWrite(pinFuelPump, LOW); fuelPumpOn = false; } //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
+        if(currentStatus.RPM == 0) { digitalWrite(pinFuelPump, LOW); fuelPumpOn = false; BIT_CLEAR(currentStatus.status, BIT_FUEL_ONOFF);} //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
       }
     }
     //**************************************************************************************************************************************************

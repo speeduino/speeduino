@@ -15,7 +15,9 @@ void initialiseFan()
   else { fanHIGH = HIGH, fanLOW = LOW; }
   digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
   currentStatus.fanOn = false;
+  BIT_CLEAR(currentStatus.status, BIT_FAN_ONOFF);
 }
+
 
 void fanControl()
 {
@@ -24,8 +26,8 @@ void fanControl()
     int onTemp = (int)configPage4.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
     int offTemp = onTemp - configPage4.fanHyster;
 
-    if (!currentStatus.fanOn && currentStatus.coolant >= onTemp) { digitalWrite(pinFan,fanHIGH); currentStatus.fanOn = true; }
-    if (currentStatus.fanOn && currentStatus.coolant <= offTemp) { digitalWrite(pinFan, fanLOW); currentStatus.fanOn = false; }
+    if (!currentStatus.fanOn && currentStatus.coolant >= onTemp) { digitalWrite(pinFan,fanHIGH); currentStatus.fanOn = true; BIT_SET(currentStatus.status, BIT_FAN_ONOFF);}
+    if (currentStatus.fanOn && currentStatus.coolant <= offTemp) { digitalWrite(pinFan, fanLOW); currentStatus.fanOn = false; BIT_CLEAR(currentStatus.status, BIT_FAN_ONOFF);}
   }
 }
 

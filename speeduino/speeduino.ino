@@ -780,6 +780,7 @@ void setup()
 
   //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
   digitalWrite(pinFuelPump, HIGH);
+  BIT_SET(currentStatus.status, BIT_FUEL_ONOFF);
   fuelPumpOn = true;
   //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
   setFuelSchedule1(openInjector1and4, 100, (unsigned long)(configPage1.primePulse * 100), closeInjector1and4);
@@ -821,7 +822,7 @@ void loop()
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
       currentStatus.RPM = currentStatus.longRPM = getRPM(); //Long RPM is included here
-      if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't.
+      if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; BIT_SET(currentStatus.status, BIT_FUEL_ONOFF);} //Check if the fuel pump is on and turn it on if it isn't.
     }
     else
     {
@@ -839,7 +840,7 @@ void loop()
       currentStatus.rpmDOT = 0;
       ignitionOn = false;
       fuelOn = false;
-      if (fpPrimed) { digitalWrite(pinFuelPump, LOW); } //Turn off the fuel pump, but only if the priming is complete
+      if (fpPrimed) { digitalWrite(pinFuelPump, LOW); BIT_CLEAR(currentStatus.status, BIT_FUEL_ONOFF);} //Turn off the fuel pump, but only if the priming is complete
       fuelPumpOn = false;
       disableIdle(); //Turn off the idle PWM
     }

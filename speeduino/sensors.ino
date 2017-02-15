@@ -156,6 +156,10 @@ void readTPS()
   currentStatus.tpsADC = ADC_FILTER(tempTPS, ADCFILTER_TPS, currentStatus.tpsADC);
   //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
   byte tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
+  if (configPage1.tpsADCAdj == 1 & currentLoopTime > 2000000) { // if tps ADC is set to autoadjust, then change the tpsmin and tpsmax RAW values if they fall out of the range but wait 2 seconds to filter the RAW value first
+    if (currentStatus.tpsADC < configPage1.tpsMin) configPage1.tpsMin = currentStatus.tpsADC;
+    if (currentStatus.tpsADC > configPage1.tpsMax) configPage1.tpsMax = currentStatus.tpsADC;
+  }
   if (currentStatus.tpsADC < configPage1.tpsMin) { tempADC = configPage1.tpsMin; }
   else if(currentStatus.tpsADC > configPage1.tpsMax) { tempADC = configPage1.tpsMax; }
   currentStatus.TPS = map(tempADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values

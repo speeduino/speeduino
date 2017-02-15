@@ -54,6 +54,10 @@
 #define BIT_SPARK2_UNUSED7        6
 #define BIT_SPARK2_UNUSED8        7
 
+// for pin status's
+#define BIT_FAN_ONOFF             0
+#define BIT_FUEL_ONOFF            1
+
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
@@ -201,6 +205,7 @@ struct statuses {
   bool flatShiftingHard;
   volatile byte startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
   byte boostTarget;
+  byte status;
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -293,7 +298,8 @@ struct config1 {
   byte flexFuelHigh; //Fuel % to be used for the highest ethanol reading (Typically 163%)
   byte flexAdvLow; //Additional advance (in degrees) at lowest ethanol reading (Typically 0)
   byte flexAdvHigh; //Additional advance (in degrees) at highest ethanol reading (Varies, usually 10-20)
-  byte unused61;
+  byte tpsADCAdj : 1;
+  byte unused61 : 7;
   byte unused62;
   byte unused63;
 
