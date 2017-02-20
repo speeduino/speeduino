@@ -48,7 +48,7 @@ void initialiseAuxPWM()
   //TIMSK1 |= (1 << OCIE1A); //Turn on the A compare unit (ie turn on the interrupt)  //Shouldn't be needed with closed loop as its turned on below
   TIMSK1 |= (1 << OCIE1B); //Turn on the B compare unit (ie turn on the interrupt)
 
-  boostPID.SetOutputLimits(0, boost_pwm_max_count);
+  boostPID.SetOutputLimits(percentage(configPage1.boostMinDuty, boost_pwm_max_count) , percentage(configPage1.boostMaxDuty, boost_pwm_max_count));
   boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD);
   boostPID.SetMode(AUTOMATIC); //Turn PID on
 

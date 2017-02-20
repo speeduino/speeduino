@@ -279,7 +279,6 @@ struct config1 {
   byte dutyLim;
   byte flexFreqLow; //Lowest valid frequency reading from the flex sensor
   byte flexFreqHigh; //Highest valid frequency reading from the flex sensor
-  byte taeColdM;
   byte tpsMin;
   byte tpsMax;
   byte mapMin;
@@ -293,9 +292,11 @@ struct config1 {
   byte flexFuelHigh; //Fuel % to be used for the highest ethanol reading (Typically 163%)
   byte flexAdvLow; //Additional advance (in degrees) at lowest ethanol reading (Typically 0)
   byte flexAdvHigh; //Additional advance (in degrees) at highest ethanol reading (Varies, usually 10-20)
-  byte unused61;
-  byte unused62;
-  byte unused63;
+
+  byte iacCLminDuty;
+  byte iacCLmaxDuty;
+  byte boostMinDuty;
+  byte boostMaxDuty;
 
 };
 
