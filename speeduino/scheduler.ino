@@ -122,10 +122,38 @@ void initialiseSchedulers()
   FTM0_C7SC |= FTM_CSC_MSA; //Enable Compare mode
   FTM0_C7SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
 
-  //Do the same, but on flex timer 1 (Used for channels 5+)
-  FTM1_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM1_C0SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM1_C0SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+  //Do the same, but on flex timer 3 (Used for channels 5-8)
+  FTM3_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C0SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C0SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+  FTM3_C1SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C1SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C1SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+  FTM3_C2SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C2SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C2SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+  FTM3_C3SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C3SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C3SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+  FTM3_C4SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C4SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C4SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+  FTM3_C5SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C5SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C5SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+  FTM3_C6SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C6SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C6SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+  FTM3_C7SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C7SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C7SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
 
   // enable IRQ Interrupt
   NVIC_ENABLE_IRQ(IRQ_FTM0);
