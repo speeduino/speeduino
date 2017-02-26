@@ -139,6 +139,9 @@ volatile byte ign5_pin_mask;
 volatile byte *tach_pin_port;
 volatile byte tach_pin_mask;
 
+volatile byte *triggerPri_pin_port;
+volatile byte triggerPri_pin_mask;
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
@@ -279,6 +282,8 @@ struct config1 {
   byte dutyLim;
   byte flexFreqLow; //Lowest valid frequency reading from the flex sensor
   byte flexFreqHigh; //Highest valid frequency reading from the flex sensor
+
+  byte boostMaxDuty;
   byte tpsMin;
   byte tpsMax;
   byte mapMin;
@@ -296,7 +301,7 @@ struct config1 {
   byte iacCLminDuty;
   byte iacCLmaxDuty;
   byte boostMinDuty;
-  byte boostMaxDuty;
+
 
 };
 
