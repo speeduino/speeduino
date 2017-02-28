@@ -519,7 +519,7 @@ void triggerPri_4G63()
   toothLastToothTime = curTime;
 
   toothCurrentCount++;
-  if(toothCurrentCount == 1 || toothCurrentCount == 5) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
+  if(toothCurrentCount == 1 || toothCurrentCount > 4) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
   {
      toothCurrentCount = 1; //Reset the counter
      toothOneMinusOneTime = toothOneTime;
@@ -560,6 +560,7 @@ void triggerPri_4G63()
 }
 void triggerSec_4G63()
 {
+  //byte crankState = READ_PRI_TRIGGER();
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
   if ( curGap2 < triggerSecFilterTime ) { return; }
@@ -571,7 +572,7 @@ void triggerSec_4G63()
 
     //Check the status of the crank trigger
     bool crank = digitalRead(pinTrigger);
-    if(crank == HIGH)
+    if(crank)
     {
       toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
       /* High-res mode
@@ -581,6 +582,19 @@ void triggerSec_4G63()
       */
     }
   }
+/*
+  else
+  {
+    //triggerSecFilterTime = curGap2 >> 1; //Only set the filter when we have sync
+    //if(toothCurrentCount != 2)
+    {
+      if(crankState)// && (crankState == digitalRead(pinTrigger)))
+      {
+        toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
+      }
+    }
+  }
+*/
   //else { triggerFilterTime = 1500; } //reset filter time (ugly)
   return;
 }
@@ -865,6 +879,7 @@ void triggerPri_Audi135()
      toothCurrentCount = 1;
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
+     revolutionOne = !revolutionOne;
      currentStatus.startRevolutions++; //Counter
    }
 
@@ -887,6 +902,10 @@ void triggerSec_Audi135()
     currentStatus.hasSync = true;
     toothSystemCount = 3; //Need to set this to 3 so that the next primary tooth is counted
   }
+  else{
+    toothCurrentCount = 0;
+  }
+  revolutionOne = 1; //Sequential revolution reset
 }
 
 int getRPM_Audi135()
@@ -896,13 +915,15 @@ int getRPM_Audi135()
 
 int getCrankAngle_Audi135(int timePerDegree)
 {
-        //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
     int tempToothCurrentCount;
+    bool tempRevolutionOne;
     //Grab some variables that are used in the trigger code and assign them to temp variables.
     noInterrupts();
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
+    tempRevolutionOne = revolutionOne;
     interrupts();
 
     //Handle case where the secondary tooth was the last one seen
@@ -914,9 +935,12 @@ int getCrankAngle_Audi135(int timePerDegree)
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
 
+    //Sequential check (simply sets whether we're on the first or 2nd revoltuion of the cycle)
+    if (tempRevolutionOne) { crankAngle += 360; }
+
     if (crankAngle >= 720) { crankAngle -= 720; }
-    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
-    if (crankAngle < 0) { crankAngle += 360; }
+    else if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+    if (crankAngle < 0) { crankAngle += CRANK_ANGLE_MAX; }
 
     return crankAngle;
 }

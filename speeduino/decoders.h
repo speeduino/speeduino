@@ -3,10 +3,12 @@
 
 #include <limits.h>
 
-static inline void addToothLogEntry(unsigned long toothTime);
+#define READ_PRI_TRIGGER() (*triggerPri_pin_port & (1 << triggerPri_pin_mask) ? HIGH : LOW)
+
+static inline void addToothLogEntry(unsigned long);
 static inline int stdGetRPM();
-static inline void setFilter(unsigned long curGap);
-static inline int crankingGetRPM(byte totalTeeth);
+static inline void setFilter(unsigned long);
+static inline int crankingGetRPM(byte);
 void triggerSetup_missingTooth();
 void triggerPri_missingTooth();
 void triggerSec_missingTooth();
@@ -18,14 +20,14 @@ void triggerSec_DualWheel();
 int getRPM_DualWheel();
 int getCrankAngle_DualWheel(int timePerDegree);
 
-unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less. 
+unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
 
 volatile unsigned long curTime;
 volatile unsigned long curGap;
 volatile unsigned long curTime2;
 volatile unsigned long curGap2;
 volatile unsigned long lastGap;
-volatile unsigned long targetGap; 
+volatile unsigned long targetGap;
 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
 volatile byte toothSystemCount = 0; //Used for decoders such as Audi 135 where not every tooth is used for calculating crank angle. This variable stores the actual number of teeth, not the number being used to calculate crank angle
