@@ -17,10 +17,65 @@ integerPID idlePID(&currentStatus.longRPM, &idle_pwm_target_value, &idle_cl_targ
 
 void initialiseIdle()
 {
-//By default, turn off the PWM interrupt (It gets turned on below if needed)
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-  TIMSK4 &= ~(1 << OCIE4C); // Disable timer channel for idle
-#endif
+  //By default, turn off the PWM interrupt (It gets turned on below if needed)
+  IDLE_TIMER_DISABLE();
+  #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+    //No timer work required for AVRs. Timer is shared with the schedules and setup in there.
+
+  #elif defined (CORE_TEENSY)
+
+    //FlexTimer 2 is used for idle
+    FTM2_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
+    FTM2_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
+    FTM2_MODE |= FTM_MODE_INIT;
+
+    FTM2_SC = 0x00; // Set this to zero before changing the modulus
+    FTM2_CNTIN = 0x0000; //Shouldn't be needed, but just in case
+    FTM2_CNT = 0x0000; // Reset the count to zero
+    FTM2_MOD = 0xFFFF; // max modulus = 65535
+
+    /*
+     * Enable the clock for FTM0/1
+     * 00 No clock selected. Disables the FTM counter.
+     * 01 System clock
+     * 10 Fixed frequency clock (32kHz)
+     * 11 External clock
+     */
+    FTM2_SC |= FTM_SC_CLKS(0b10);
+
+    /*
+    * Trim the slow clock from 32kHz down to 31.25kHz (The slowest it will go)
+    * This is somewhat imprecise and documentation is not good.
+    * I poked the chip until I figured out the values associated with 31.25kHz
+    */
+    MCG_C3 = 0x9B;
+
+    /*
+     * Set Prescaler
+     * This is the slowest that the timer can be clocked (Without used the slow timer, which is too slow). It results in ticks of 2.13333uS on the teensy 3.5:
+     * 32000 Hz = F_BUS
+     * 128 * 1000000uS / F_BUS = 2.133uS
+     *
+     * 000 = Divide by 1
+     * 001 Divide by 2
+     * 010 Divide by 4
+     * 011 Divide by 8
+     * 100 Divide by 16
+     * 101 Divide by 32
+     * 110 Divide by 64
+     * 111 Divide by 128
+     */
+    FTM2_SC |= FTM_SC_PS(0b0); //No prescaler
+
+    //Setup the channels (See Pg 1014 of K64 DS).
+    FTM2_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+    FTM2_C0SC |= FTM_CSC_MSA; //Enable Compare mode
+    FTM2_C0SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+    // enable IRQ Interrupt
+    NVIC_ENABLE_IRQ(IRQ_FTM2);
+
+  #endif
 
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
   switch(configPage4.iacAlgorithm)
@@ -255,12 +310,10 @@ void homeStepper()
    idleStepper.stepperStatus = SOFF;
 }
 
-//The interrupt to turn off the idle pwm
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 //This function simply turns off the idle PWM and sets the pin low
 static inline void disableIdle()
 {
-  TIMSK4 &= ~(1 << OCIE4C); //Turn off interrupt
+  IDLE_TIMER_DISABLE();
   digitalWrite(pinIdle1, LOW);
 }
 
@@ -268,10 +321,14 @@ static inline void disableIdle()
 //Typically this is enabling the PWM interrupt
 static inline void enableIdle()
 {
-  TIMSK4 |= (1 << OCIE4C); //Turn on the C compare unit (ie turn on the interrupt)
+  IDLE_TIMER_ENABLE();
 }
 
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPC_vect)
+#elif defined (CORE_TEENSY)
+static inline void idleInterrupt() //Most ARM chips can simply call a function
+#endif
 {
   if (idle_pwm_state)
   {
@@ -287,7 +344,7 @@ ISR(TIMER4_COMPC_vect)
       *idle_pin_port |= (idle_pin_mask);  // Switch pin high
       if(configPage4.iacChannels) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
-    OCR4C = TCNT4 + (idle_pwm_max_count - idle_pwm_cur_value);
+    IDLE_COMPARE = IDLE_COUNTER + (idle_pwm_max_count - idle_pwm_cur_value);
     idle_pwm_state = false;
   }
   else
@@ -304,18 +361,9 @@ ISR(TIMER4_COMPC_vect)
       *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
       if(configPage4.iacChannels) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
-    OCR4C = TCNT4 + idle_pwm_target_value;
+    IDLE_COMPARE = IDLE_COUNTER + idle_pwm_target_value;
     idle_pwm_cur_value = idle_pwm_target_value;
     idle_pwm_state = true;
   }
 
 }
-#elif defined (CORE_TEENSY)
-//This function simply turns off the idle PWM and sets the pin low
-static inline void disableIdle()
-{
-  digitalWrite(pinIdle1, LOW);
-}
-
-static inline void enableIdle() { }
-#endif

@@ -14,9 +14,25 @@ struct StepperIdle
 {
   unsigned int curIdleStep; //Tracks the current location of the stepper
   unsigned int targetIdleStep; //What the targetted step is
-  volatile StepperStatus stepperStatus; 
+  volatile StepperStatus stepperStatus;
   volatile unsigned long stepStartTime; //The time the curren
 };
+
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+  #define IDLE_COUNTER TCNT4
+  #define IDLE_COMPARE OCR4C
+
+  #define IDLE_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4C)
+  #define IDLE_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4C)
+
+#elif defined(CORE_TEENSY)
+  #define IDLE_COUNTER FTM2_CNT
+  #define IDLE_COMPARE FTM2_C0V
+
+  #define IDLE_TIMER_ENABLE() FTM2_C0SC |= FTM_CSC_CHIE
+  #define IDLE_TIMER_DISABLE() FTM2_C0SC &= ~FTM_CSC_CHIE
+
+#endif
 
 struct table2D iacClosedLoopTable;
 struct table2D iacPWMTable;
