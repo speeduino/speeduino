@@ -3,7 +3,8 @@
 
 #include <limits.h>
 
-#define READ_PRI_TRIGGER() (*triggerPri_pin_port & (1 << triggerPri_pin_mask) ? HIGH : LOW)
+#define READ_PRI_TRIGGER() ((*triggerPri_pin_port & triggerPri_pin_mask) ? HIGH : LOW)
+#define READ_SEC_TRIGGER() ((*triggerSec_pin_port & triggerSec_pin_mask) ? HIGH : LOW)
 
 static inline void addToothLogEntry(unsigned long);
 static inline int stdGetRPM();
@@ -42,7 +43,7 @@ volatile unsigned int toothHistory[TOOTH_LOG_BUFFER];
 volatile unsigned int toothHistoryIndex = 0;
 volatile bool toothLogRead = false; //Flag to indicate whether the current tooth log values have been read out yet
 
-volatile byte secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
+volatile unsigned int secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
 volatile unsigned long secondaryLastToothTime = 0; //The time (micros()) that the last tooth was registered (Cam input)
 
 volatile int triggerActualTeeth;

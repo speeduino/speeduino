@@ -1369,6 +1369,8 @@ void triggerSetup_Nissan360()
   secondaryToothCount = 0; //Initially set to 0 prior to calculating the secondary window duration
   secondDerivEnabled = false;
   decoderIsSequential = true;
+  toothCurrentCount = 1;
+  triggerToothAngle = 2;
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 }
 
@@ -1386,7 +1388,13 @@ void triggerPri_Nissan360()
 
    if ( !currentStatus.hasSync ) { return; }
 
-   if ( toothCurrentCount == 360 )
+   if ( toothCurrentCount == 181) //1 complete crank revolution
+   {
+     toothOneMinusOneTime = toothOneTime;
+     toothOneTime = curTime;
+     currentStatus.startRevolutions++; //2 complete crank revolutions
+   }
+   else if ( toothCurrentCount == 361 )
    {
      toothCurrentCount = 1;
      toothOneMinusOneTime = toothOneTime;
@@ -1408,7 +1416,7 @@ void triggerSec_Nissan360()
 
   //Calculate number of primary teeth that this window has been active for
   if(secondaryToothCount == 0) { secondaryToothCount = toothCurrentCount; return; } //This occurs on the first rotation upon powerup
-  if(digitalRead(pinTrigger2) == HIGH) { secondaryToothCount = toothCurrentCount; return; } //This represents the start of a secondary window
+  if(READ_SEC_TRIGGER() == LOW) { secondaryToothCount = toothCurrentCount; return; } //This represents the start of a secondary window
 
   //If we reach here, we are at the end of a secondary window
   byte secondaryDuration = toothCurrentCount - secondaryToothCount; //How many primary teeth have passed during the duration of this secondary window
@@ -1420,37 +1428,76 @@ void triggerSec_Nissan360()
       if(secondaryDuration >= 15 || secondaryDuration <= 17) //Duration of window = 16 primary teeth
       {
         toothCurrentCount = 16; //End of first window (The longest) occurs 16 teeth after TDC
-        currentStatus.hasSync == true;
+        currentStatus.hasSync = true;
       }
       else if(secondaryDuration >= 11 || secondaryDuration <= 13) //Duration of window = 12 primary teeth
       {
         toothCurrentCount = 102; //End of second window is after 90+12 primary teeth
-        currentStatus.hasSync == true;
+        currentStatus.hasSync = true;
       }
       else if(secondaryDuration >= 7 || secondaryDuration <= 9) //Duration of window = 8 primary teeth
       {
         toothCurrentCount = 188; //End of third window is after 90+90+8 primary teeth
-        currentStatus.hasSync == true;
+        currentStatus.hasSync = true;
       }
       else if(secondaryDuration >= 3 || secondaryDuration <= 5) //Duration of window = 4 primary teeth
       {
         toothCurrentCount = 274; //End of fourth window is after 90+90+90+4 primary teeth
-        currentStatus.hasSync == true;
+        currentStatus.hasSync = true;
       }
     }
     else if(configPage1.nCylinders == 6)
     {
-        //I don't have this info yet :(
+      if(secondaryDuration >= 23 || secondaryDuration <= 25) //Duration of window = 16 primary teeth
+      {
+        toothCurrentCount = 24; //End of first window (The longest) occurs 24 teeth after TDC
+        currentStatus.hasSync = true;
+      }
+      else if(secondaryDuration >= 19 || secondaryDuration <= 21) //Duration of window = 12 primary teeth
+      {
+        toothCurrentCount = 84; //End of second window is after 60+20 primary teeth
+        currentStatus.hasSync = true;
+      }
+      else if(secondaryDuration >= 15 || secondaryDuration <= 17) //Duration of window = 16 primary teeth
+      {
+        toothCurrentCount = 136; //End of third window is after 60+60+16 primary teeth
+        currentStatus.hasSync = true;
+      }
+      else if(secondaryDuration >= 11 || secondaryDuration <= 13) //Duration of window = 12 primary teeth
+      {
+        toothCurrentCount = 192; //End of fourth window is after 60+60+60+12 primary teeth
+        currentStatus.hasSync = true;
+      }
+      else if(secondaryDuration >= 7 || secondaryDuration <= 9) //Duration of window = 8 primary teeth
+      {
+        toothCurrentCount = 248; //End of fifth window is after 60+60+60+60+8 primary teeth
+        currentStatus.hasSync = true;
+      }
+      else if(secondaryDuration >= 3 || secondaryDuration <= 5) //Duration of window = 4 primary teeth
+      {
+        toothCurrentCount = 304; //End of sixth window is after 60+60+60+60+60+4 primary teeth
+        currentStatus.hasSync = true;
+      }
     }
-    else { currentStatus.hasSync == false; return ;} //This should really never happen
+    //else { currentStatus.hasSync = false; return ;} //This should really never happen
   }
   else
   {
     //Already have sync, but do a verify every 720 degrees.
     //Not sure if this works for 6 cylinder???
-    if(secondaryDuration >= 15) //Duration of window = 16 primary teeth
+    if(configPage1.nCylinders == 4)
     {
-      toothCurrentCount = 16; //End of first window (The longest) occurs 16 teeth after TDC
+      if(secondaryDuration >= 15) //Duration of window = 16 primary teeth
+      {
+        toothCurrentCount = 16; //End of first window (The longest) occurs 16 teeth after TDC
+      }
+    }
+    else if(configPage1.nCylinders == 6)
+    {
+      if(secondaryDuration >= 23) //Duration of window = 24 primary teeth
+      {
+        toothCurrentCount = 24; //End of first window (The longest) occurs 24 teeth after TDC
+      }
     }
   }
 
@@ -1458,19 +1505,18 @@ void triggerSec_Nissan360()
 
 int getRPM_Nissan360()
 {
-  if( !currentStatus.hasSync) { return 0; }
   //if(currentStatus.RPM < configPage2.crankRPM) { return crankingGetRPM(configPage2.triggerTeeth); }
   return stdGetRPM();
 }
 
 int getCrankAngle_Nissan360(int timePerDegree)
 {
-  //As each tooth represents 2 crank degrees, we only need to dtermine whether we're more or less than halfway between teeth to know whether to add another 1 degrees
+  //As each tooth represents 2 crank degrees, we only need to determine whether we're more or less than halfway between teeth to know whether to add another 1 degrees
   unsigned long halfTooth = (toothLastToothTime - toothLastMinusOneToothTime) >> 1;
   if ( (micros() - toothLastToothTime) > halfTooth)
   {
     //Means we're over halfway to the next tooth, so add on 1 degree
-    return (toothCurrentCount * 2) + 1;
+    return (toothCurrentCount * triggerToothAngle) + 1;
   }
-  return (toothCurrentCount * 2);
+  return (toothCurrentCount * triggerToothAngle);
 }

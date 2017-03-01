@@ -453,7 +453,7 @@ void setup()
 
     case 12:
         triggerSetup_Nissan360();
-        trigger = triggerPri_Nissan360; //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
+        trigger = triggerPri_Nissan360;
         getRPM = getRPM_Nissan360;
         getCrankAngle = getCrankAngle_Nissan360;
 

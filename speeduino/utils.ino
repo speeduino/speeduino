@@ -399,9 +399,6 @@ void setPinMapping(byte boardID)
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
 
-  triggerPri_pin_port = portOutputRegister(digitalPinToPort(pinTrigger));
-  triggerPri_pin_mask = digitalPinToBitMask(pinTrigger);
-
   //And for inputs
   pinMode(pinMAP, INPUT);
   pinMode(pinO2, INPUT);
@@ -421,6 +418,12 @@ void setPinMapping(byte boardID)
   else {
     pinMode(pinLaunch, INPUT);  //If Launch Pull Resistor is not set make input float.
   }
+
+  //These must come after the above pinMode statements
+  triggerPri_pin_port = portInputRegister(digitalPinToPort(pinTrigger));
+  triggerPri_pin_mask = digitalPinToBitMask(pinTrigger);
+  triggerSec_pin_port = portInputRegister(digitalPinToPort(pinTrigger2));
+  triggerSec_pin_mask = digitalPinToBitMask(pinTrigger2);
 
   //Set default values
   digitalWrite(pinMAP, HIGH);

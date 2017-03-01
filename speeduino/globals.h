@@ -141,6 +141,8 @@ volatile byte tach_pin_mask;
 
 volatile byte *triggerPri_pin_port;
 volatile byte triggerPri_pin_mask;
+volatile byte *triggerSec_pin_port;
+volatile byte triggerSec_pin_mask;
 
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
