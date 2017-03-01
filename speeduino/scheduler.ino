@@ -36,7 +36,7 @@ void initialiseSchedulers()
     TCCR4A = 0x00;          //Timer4 Control Reg A: Wave Gen Mode normal
     TCCR4B = (1 << CS12);   //Timer4 Control Reg B: aka Divisor = 256 = 122.5HzTimer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
 
-#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+#elif defined (CORE_TEENSY)
 
   //FlexTimer 0 is used for 4 ignition and 4 injection schedules. There are 8 channels on this module, so no other timers are needed
   FTM0_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
