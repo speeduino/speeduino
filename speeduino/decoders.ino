@@ -1378,7 +1378,7 @@ void triggerSetup_Nissan360()
 void triggerPri_Nissan360()
 {
    curTime = micros();
-   curGap = curTime - toothLastToothTime;
+   //curGap = curTime - toothLastToothTime;
    //if ( curGap < triggerFilterTime ) { return; } //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger.
    toothCurrentCount++; //Increment the tooth counter
    //addToothLogEntry(curGap); Disable tooth logging on this decoder due to overhead
@@ -1386,7 +1386,7 @@ void triggerPri_Nissan360()
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
 
-   if ( !currentStatus.hasSync ) { return; }
+   //if ( !currentStatus.hasSync ) { return; }
 
    if ( toothCurrentCount == 181) //1 complete crank revolution
    {
@@ -1479,12 +1479,11 @@ void triggerSec_Nissan360()
         currentStatus.hasSync = true;
       }
     }
-    //else { currentStatus.hasSync = false; return ;} //This should really never happen
+    else { currentStatus.hasSync = false; return ;} //This should really never happen
   }
   else
   {
     //Already have sync, but do a verify every 720 degrees.
-    //Not sure if this works for 6 cylinder???
     if(configPage1.nCylinders == 4)
     {
       if(secondaryDuration >= 15) //Duration of window = 16 primary teeth
