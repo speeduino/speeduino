@@ -172,8 +172,8 @@ void setPinMapping(byte boardID)
       pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 39; //Pin for coil 1
       pinCoil2 = 41; //Pin for coil 2
-      pinCoil3 = 42; //Pin for coil 3
-      pinCoil4 = 43; //Pin for coil 4
+      pinCoil3 = 35; //Pin for coil 3
+      pinCoil4 = 37; //Pin for coil 4
       pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
@@ -398,6 +398,9 @@ void setPinMapping(byte boardID)
 
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
+
+  triggerPri_pin_port = portOutputRegister(digitalPinToPort(pinTrigger));
+  triggerPri_pin_mask = digitalPinToBitMask(pinTrigger);
 
   //And for inputs
   pinMode(pinMAP, INPUT);
