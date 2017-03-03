@@ -44,6 +44,7 @@ unsigned int tempReading;
 
 #if defined(ANALOG_ISR)
 //Analog ISR interrupt routine
+/*
 ISR(ADC_vect)
 {
   byte nChannel;
@@ -73,6 +74,34 @@ ISR(ADC_vect)
 
   //BIT_SET(ADCSRA, ADIE);
   //ADCSRA = 0xEE; // ADC Interrupt Flag enabled
+}
+*/
+ISR(ADC_vect)
+{
+  byte nChannel = ADMUX & 0x07;
+  int result = ADCL | (ADCH << 8);
+
+  BIT_CLEAR(ADCSRA, ADEN); //Disable ADC for Changing Channel (see chapter 26.5 of datasheet)
+
+  #if defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__)
+    if (nChannel==7) { ADMUX = 0x40; }
+  #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+    if(ADCSRB & 0x08) { nChannel += 8; }  //8 to 15
+    if(nChannel == 15)
+    {
+      ADMUX = 0x40; //channel 0
+      ADCSRB = 0x00; //clear MUX5 bit
+    }
+    else if (nChannel == 7) //channel 7
+    {
+      ADMUX = 0x40;
+      ADCSRB = 0x08; //Set MUX5 bit
+    }
+  #endif
+    else { ADMUX++; }
+  AnChannel[nChannel] = result;
+
+  BIT_SET(ADCSRA, ADEN); //Enable ADC
 }
 #endif
 

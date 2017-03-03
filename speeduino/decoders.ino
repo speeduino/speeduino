@@ -1392,9 +1392,9 @@ void triggerPri_Nissan360()
    {
      toothOneMinusOneTime = toothOneTime;
      toothOneTime = curTime;
-     currentStatus.startRevolutions++; //2 complete crank revolutions
+     currentStatus.startRevolutions++;
    }
-   else if ( toothCurrentCount == 361 )
+   else if ( toothCurrentCount == 361 ) //2 complete crank revolutions
    {
      toothCurrentCount = 1;
      toothOneMinusOneTime = toothOneTime;
