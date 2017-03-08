@@ -571,8 +571,8 @@ void triggerSec_4G63()
     triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset).
 
     //Check the status of the crank trigger
-    bool crank = digitalRead(pinTrigger);
-    if(crank)
+    //bool crank = digitalRead(pinTrigger);
+    if(READ_PRI_TRIGGER())
     {
       toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
       /* High-res mode
@@ -588,7 +588,7 @@ void triggerSec_4G63()
     //triggerSecFilterTime = curGap2 >> 1; //Only set the filter when we have sync
     //if(toothCurrentCount != 2)
     {
-      if(crankState)// && (crankState == digitalRead(pinTrigger)))
+      if(READ_PRI_TRIGGER())// && (crankState == digitalRead(pinTrigger)))
       {
         toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
       }
@@ -868,7 +868,7 @@ void triggerPri_Audi135()
    toothSystemCount++;
    toothSystemLastToothTime = curTime;
    addToothLogEntry(curGap);
-   if ( !currentStatus.hasSync ) { return; }
+   if ( !currentStatus.hasSync ) { toothLastToothTime = curTime; return; }
    if ( toothSystemCount < 3 ) { return; } //We only proceed for every third tooth
 
    toothSystemCount = 0;
@@ -891,10 +891,12 @@ void triggerPri_Audi135()
 
 void triggerSec_Audi135()
 {
+  /*
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
   if ( curGap2 < triggerSecFilterTime ) { return; }
   toothLastSecToothTime = curTime2;
+  */
 
   if( !currentStatus.hasSync )
   {
