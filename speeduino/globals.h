@@ -206,7 +206,10 @@ struct statuses {
   bool flatShiftingHard;
   volatile byte startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
   byte boostTarget;
-
+  byte testoutputs;
+  bool testenabled;
+  bool testactive;
+  
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
   // y = (x >> n) & 1;    // n=0..15.  stores nth bit of x in y.  y becomes 0 or 1.
