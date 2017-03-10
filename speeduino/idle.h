@@ -54,11 +54,15 @@ volatile byte idle2_pin_mask;
 volatile bool idle_pwm_state;
 unsigned int idle_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int idle_pwm_cur_value;
+long idle_pid_target_value;
 long idle_pwm_target_value;
 long idle_cl_target_rpm;
 
 void initialiseIdle();
 static inline void disableIdle();
 static inline void enableIdle();
+static inline byte isStepperHomed();
+static inline byte checkForStepping();
+static inline void doStep();
 
 #endif

@@ -13,7 +13,7 @@ These functions cover the PWM and stepper idle control
 Idle Control
 Currently limited to on/off control and open loop PWM and stepper drive
 */
-integerPID idlePID(&currentStatus.longRPM, &idle_pwm_target_value, &idle_cl_target_rpm, configPage3.idleKP, configPage3.idleKI, configPage3.idleKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPID idlePID(&currentStatus.longRPM, &idle_pid_target_value, &idle_cl_target_rpm, configPage3.idleKP, configPage3.idleKI, configPage3.idleKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 void initialiseIdle()
 {
@@ -154,6 +154,7 @@ void initialiseIdle()
     case 5:
       //Case 5 is Stepper closed loop
       iacClosedLoopTable.xSize = 10;
+      iacClosedLoopTable.valueSize = SIZE_BYTE;
       iacClosedLoopTable.values = configPage4.iacCLValues;
       iacClosedLoopTable.axisX = configPage4.iacBins;
 
@@ -162,8 +163,12 @@ void initialiseIdle()
       iacCrankStepsTable.axisX = configPage4.iacCrankBins;
       iacStepTime = configPage4.iacStepTime * 1000;
 
-      homeStepper(); //Returns the stepper to the 'home' position
+      completedHomeSteps = 0;
       idleStepper.stepperStatus = SOFF;
+
+      idlePID.SetOutputLimits(0, (configPage4.iacStepHome * 3)); //Maximum number of steps probably needs its own setting
+      idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
+      idlePID.SetMode(AUTOMATIC); //Turn PID on
       break;
   }
   idleInitComplete = configPage4.iacAlgorithm; //Sets which idle method was initialised
@@ -213,6 +218,7 @@ void idleControl()
         //idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
 
         idlePID.Compute();
+        idle_pwm_target_value = idle_pid_target_value;
         if( idle_pwm_target_value == 0 ) { disableIdle(); }
         else{ enableIdle(); } //Turn on the C compare unit (ie turn on the interrupt)
         //idle_pwm_target_value = 104;
@@ -220,53 +226,15 @@ void idleControl()
 
     case 4:    //Case 4 is open loop stepper control
       //First thing to check is whether there is currently a step going on and if so, whether it needs to be turned off
-      if(idleStepper.stepperStatus == STEPPING || idleStepper.stepperStatus == COOLING)
-      {
-        if(micros() > (idleStepper.stepStartTime + iacStepTime) )
-        {
-          if(idleStepper.stepperStatus == STEPPING)
-          {
-            //Means we're currently in a step, but it needs to be turned off
-            digitalWrite(pinStepperStep, LOW); //Turn off the step
-            idleStepper.stepStartTime = micros();
-            idleStepper.stepperStatus = COOLING; //'Cooling' is the time the stepper needs to sit in LOW state before the next step can be made
-            return;
-          }
-          else
-          {
-            //Means we're in COOLING status but have been in this state long enough to
-            idleStepper.stepperStatus = SOFF;
-          }
-        }
-        else
-        {
-          //Means we're in a step, but it doesn't need to turn off yet. No further action at this time
-          return;
-        }
-      }
+      if( checkForStepping() ) { return; } //If this is true it means there's either a step taking place or
+      if( !isStepperHomed() ) { return; } //Check whether homing is completed yet.
 
-      if( completedHomeSteps < (configPage4.iacStepHome * 3) ) //Home steps are divided by 3 from TS
-      {
-        digitalWrite(pinStepperDir, STEPPER_BACKWARD); //Sets stepper direction to backwards
-        digitalWrite(pinStepperStep, HIGH);
-        idleStepper.stepStartTime = micros();
-        idleStepper.stepperStatus = STEPPING;
-        completedHomeSteps++;
-        idleOn = true;
-      }
       //Check for cranking pulsewidth
-      else if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+      if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         //Currently cranking. Use the cranking table
         idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
-        if ( idleStepper.targetIdleStep > (idleStepper.curIdleStep - configPage4.iacStepHyster) && idleStepper.targetIdleStep < (idleStepper.curIdleStep + configPage4.iacStepHyster) ) { return; } //Hysteris check
-        else if(idleStepper.targetIdleStep < idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_BACKWARD); idleStepper.curIdleStep--; }//Sets stepper direction to backwards
-        else if (idleStepper.targetIdleStep > idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_FORWARD); idleStepper.curIdleStep++; }//Sets stepper direction to forwards
-
-        digitalWrite(pinStepperStep, HIGH);
-        idleStepper.stepStartTime = micros();
-        idleStepper.stepperStatus = STEPPING;
-        idleOn = true;
+        doStep();
       }
       else if( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < iacStepTable.axisX[IDLE_TABLE_SIZE-1])
       {
@@ -276,38 +244,93 @@ void idleControl()
           //Only do a lookup of the required value around 4 times per second. Any more than this can create too much jitter and require a hyster value that is too high
           idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
         }
-        if ( idleStepper.targetIdleStep > (idleStepper.curIdleStep - configPage4.iacStepHyster) && idleStepper.targetIdleStep < (idleStepper.curIdleStep + configPage4.iacStepHyster) ) { return; } //Hysteris check
-        else if(idleStepper.targetIdleStep < idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_BACKWARD); idleStepper.curIdleStep--; }//Sets stepper direction to backwards
-        else if (idleStepper.targetIdleStep > idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_FORWARD); idleStepper.curIdleStep++; }//Sets stepper direction to forwards
-
-        digitalWrite(pinStepperStep, HIGH);
-        idleStepper.stepStartTime = micros();
-        idleStepper.stepperStatus = STEPPING;
-        idleOn = true;
+        doStep();
       }
+      break;
 
+    case 5://Case 5 is closed loop stepper control
+      //First thing to check is whether there is currently a step going on and if so, whether it needs to be turned off
+      if( checkForStepping() ) { return; } //If this is true it means there's either a step taking place or
+      if( !isStepperHomed() ) { return; } //Check whether homing is completed yet.
+
+      idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
+      idlePID.Compute();
+      idleStepper.targetIdleStep = idle_pid_target_value;
+
+      doStep();
       break;
   }
 }
 
 /*
-A simple function to home the stepper motor (If in use)
+Checks whether the stepper has been homed yet. If it hasn't, will handle the next step
+Returns:
+True: If the system has been homed. No other action is taken
+False: If the motor has not yet been homed. Will also perform another homing step.
 */
-void homeStepper()
+static inline byte isStepperHomed()
 {
-   //Need to 'home' the stepper on startup
-   digitalWrite(pinStepperDir, STEPPER_BACKWARD); //Sets stepper direction to backwards
-   for(int x=0; x < (configPage4.iacStepHome * 3); x++) //Step counts are divided by 3 in TS. Multiply back out here
-   {
-     digitalWrite(pinStepperStep, HIGH);
-     delayMicroseconds(iacStepTime);
-     digitalWrite(pinStepperStep, LOW);
-     delayMicroseconds(iacStepTime);
-   }
-   digitalWrite(pinStepperDir, STEPPER_FORWARD);
-   idleStepper.curIdleStep = 0;
-   idleStepper.targetIdleStep = 0;
-   idleStepper.stepperStatus = SOFF;
+  if( completedHomeSteps < (configPage4.iacStepHome * 3) ) //Home steps are divided by 3 from TS
+  {
+    digitalWrite(pinStepperDir, STEPPER_BACKWARD); //Sets stepper direction to backwards
+    digitalWrite(pinStepperStep, HIGH);
+    idleStepper.stepStartTime = micros();
+    idleStepper.stepperStatus = STEPPING;
+    completedHomeSteps++;
+    idleOn = true;
+    return false;
+  }
+  return true;
+}
+
+/*
+Checks whether a step is currently underway or whether the motor is in 'cooling' state (ie whether it's ready to begin another step or not)
+Returns:
+True: If a step is underway or motor is 'cooling'
+False: If the motor is ready for another step
+*/
+static inline byte checkForStepping()
+{
+  if(idleStepper.stepperStatus == STEPPING || idleStepper.stepperStatus == COOLING)
+  {
+    if(micros() > (idleStepper.stepStartTime + iacStepTime) )
+    {
+      if(idleStepper.stepperStatus == STEPPING)
+      {
+        //Means we're currently in a step, but it needs to be turned off
+        digitalWrite(pinStepperStep, LOW); //Turn off the step
+        idleStepper.stepStartTime = micros();
+        idleStepper.stepperStatus = COOLING; //'Cooling' is the time the stepper needs to sit in LOW state before the next step can be made
+        return true;
+      }
+      else
+      {
+        //Means we're in COOLING status but have been in this state long enough to
+        idleStepper.stepperStatus = SOFF;
+      }
+    }
+    else
+    {
+      //Means we're in a step, but it doesn't need to turn off yet. No further action at this time
+      return true;
+    }
+  }
+  return false;
+}
+
+/*
+Performs a step
+*/
+static inline void doStep()
+{
+  if ( idleStepper.targetIdleStep > (idleStepper.curIdleStep - configPage4.iacStepHyster) && idleStepper.targetIdleStep < (idleStepper.curIdleStep + configPage4.iacStepHyster) ) { return; } //Hysteris check
+  else if(idleStepper.targetIdleStep < idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_BACKWARD); idleStepper.curIdleStep--; }//Sets stepper direction to backwards
+  else if (idleStepper.targetIdleStep > idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_FORWARD); idleStepper.curIdleStep++; }//Sets stepper direction to forwards
+
+  digitalWrite(pinStepperStep, HIGH);
+  idleStepper.stepStartTime = micros();
+  idleStepper.stepperStatus = STEPPING;
+  idleOn = true;
 }
 
 //This function simply turns off the idle PWM and sets the pin low
