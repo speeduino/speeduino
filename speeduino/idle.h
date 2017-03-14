@@ -4,6 +4,13 @@
 #include "globals.h"
 #include "table.h"
 
+#define IAC_ALGORITHM_NONE    0
+#define IAC_ALGORITHM_ONOFF   1
+#define IAC_ALGORITHM_PWM_OL  2
+#define IAC_ALGORITHM_PWM_CL  3
+#define IAC_ALGORITHM_STEP_OL 4
+#define IAC_ALGORITHM_STEP_CL 5
+
 #define STEPPER_FORWARD 0
 #define STEPPER_BACKWARD 1
 #define IDLE_TABLE_SIZE 10
@@ -57,6 +64,7 @@ volatile unsigned int idle_pwm_cur_value;
 long idle_pid_target_value;
 long idle_pwm_target_value;
 long idle_cl_target_rpm;
+byte idleCounter; //Used for tracking the number of calls to the idle control function
 
 void initialiseIdle();
 static inline void disableIdle();

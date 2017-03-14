@@ -132,6 +132,8 @@ void initialiseIdle()
       idlePID.SetOutputLimits(percentage(configPage1.iacCLminDuty, idle_pwm_max_count), percentage(configPage1.iacCLmaxDuty, idle_pwm_max_count));
       idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
+
+      idleCounter = 0;
       break;
 
     case 4:
@@ -164,6 +166,7 @@ void initialiseIdle()
       iacStepTime = configPage4.iacStepTime * 1000;
 
       completedHomeSteps = 0;
+      idleCounter = 0;
       idleStepper.stepperStatus = SOFF;
 
       idlePID.SetOutputLimits(0, (configPage4.iacStepHome * 3)); //Maximum number of steps probably needs its own setting
@@ -180,10 +183,10 @@ void idleControl()
 
   switch(configPage4.iacAlgorithm)
   {
-    case 0:       //Case 0 is no idle control ('None')
+    case IAC_ALGORITHM_NONE:       //Case 0 is no idle control ('None')
       break;
 
-    case 1:      //Case 1 is on/off idle control
+    case IAC_ALGORITHM_ONOFF:      //Case 1 is on/off idle control
       if ( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < configPage4.iacFastTemp) //All temps are offset by 40 degrees
       {
         digitalWrite(pinIdle1, HIGH);
@@ -192,7 +195,7 @@ void idleControl()
       else if (idleOn) { digitalWrite(pinIdle1, LOW); idleOn = false; }
       break;
 
-    case 2:      //Case 2 is PWM open loop
+    case IAC_ALGORITHM_PWM_OL:      //Case 2 is PWM open loop
       //Check for cranking pulsewidth
       if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
@@ -212,19 +215,21 @@ void idleControl()
       }
       break;
 
-    case 3:    //Case 3 is PWM closed loop
+    case IAC_ALGORITHM_PWM_CL:    //Case 3 is PWM closed loop
         //No cranking specific value for closed loop (yet?)
         idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
-        //idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
+        if( (idleCounter & 31) == 1) { idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD); } //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
 
         idlePID.Compute();
         idle_pwm_target_value = idle_pid_target_value;
         if( idle_pwm_target_value == 0 ) { disableIdle(); }
         else{ enableIdle(); } //Turn on the C compare unit (ie turn on the interrupt)
         //idle_pwm_target_value = 104;
+
+        idleCounter++;
       break;
 
-    case 4:    //Case 4 is open loop stepper control
+    case IAC_ALGORITHM_STEP_OL:    //Case 4 is open loop stepper control
       //First thing to check is whether there is currently a step going on and if so, whether it needs to be turned off
       if( checkForStepping() ) { return; } //If this is true it means there's either a step taking place or
       if( !isStepperHomed() ) { return; } //Check whether homing is completed yet.
@@ -248,16 +253,19 @@ void idleControl()
       }
       break;
 
-    case 5://Case 5 is closed loop stepper control
+    case IAC_ALGORITHM_STEP_CL://Case 5 is closed loop stepper control
       //First thing to check is whether there is currently a step going on and if so, whether it needs to be turned off
       if( checkForStepping() ) { return; } //If this is true it means there's either a step taking place or
       if( !isStepperHomed() ) { return; } //Check whether homing is completed yet.
+      if( (idleCounter & 31) == 1) { idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD); } //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
+
 
       idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
       idlePID.Compute();
-      idleStepper.targetIdleStep = idle_pid_target_value;
+      idleStepper.targetIdleStep = (idle_pid_target_value >> 7); //Target is scalled down by 128 to bring it inline with most stepper motors range. Allows a sane range of around 300 steps (Maximum RPM error of 600, P=64)
 
       doStep();
+      idleCounter++;
       break;
   }
 }
