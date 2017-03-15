@@ -906,14 +906,6 @@ void loop()
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
     if ((mainLoopCount & 255) == 1) //Every 256 loops
     {
-      if (currentStatus.RPM == 0)
-      {
-        BIT_CLEAR(currentStatus.testenabled, 0);  //cleared when engine is off or stalled
-      }
-      else
-      {
-        BIT_SET(currentStatus.testenabled, 0);    //set if engine is running/cranking
-      }
        readCLT();
        readIAT();
        readO2();
