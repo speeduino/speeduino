@@ -80,11 +80,10 @@ void initialiseIdle()
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
   switch(configPage4.iacAlgorithm)
   {
-    case 0:
-      //Case 0 is no idle control ('None')
+    case IAC_ALGORITHM_NONE:       //Case 0 is no idle control ('None')
       break;
 
-    case 1:
+    case IAC_ALGORITHM_ONOFF:
       //Case 1 is on/off idle control
       if (currentStatus.coolant < configPage4.iacFastTemp)
       {
@@ -92,7 +91,7 @@ void initialiseIdle()
       }
       break;
 
-    case 2:
+    case IAC_ALGORITHM_PWM_OL:
       //Case 2 is PWM open loop
       iacPWMTable.xSize = 10;
       iacPWMTable.valueSize = SIZE_BYTE;
@@ -112,7 +111,7 @@ void initialiseIdle()
       enableIdle();
       break;
 
-    case 3:
+    case IAC_ALGORITHM_PWM_CL:
       //Case 3 is PWM closed loop
       iacClosedLoopTable.xSize = 10;
       iacClosedLoopTable.valueSize = SIZE_BYTE;
@@ -136,7 +135,7 @@ void initialiseIdle()
       idleCounter = 0;
       break;
 
-    case 4:
+    case IAC_ALGORITHM_STEP_OL:
       //Case 2 is Stepper open loop
       iacStepTable.xSize = 10;
       iacStepTable.valueSize = SIZE_BYTE;
@@ -150,10 +149,11 @@ void initialiseIdle()
 
       //homeStepper(); //Returns the stepper to the 'home' position
       completedHomeSteps = 0;
+      idleStepper.curIdleStep = 0;
       idleStepper.stepperStatus = SOFF;
       break;
 
-    case 5:
+    case IAC_ALGORITHM_STEP_CL:
       //Case 5 is Stepper closed loop
       iacClosedLoopTable.xSize = 10;
       iacClosedLoopTable.valueSize = SIZE_BYTE;
@@ -167,6 +167,7 @@ void initialiseIdle()
 
       completedHomeSteps = 0;
       idleCounter = 0;
+      idleStepper.curIdleStep = 0;
       idleStepper.stepperStatus = SOFF;
 
       idlePID.SetOutputLimits(0, (configPage4.iacStepHome * 3)); //Maximum number of steps probably needs its own setting
@@ -175,6 +176,7 @@ void initialiseIdle()
       break;
   }
   idleInitComplete = configPage4.iacAlgorithm; //Sets which idle method was initialised
+  currentStatus.idleLoad = 0;
 }
 
 void idleControl()
@@ -211,6 +213,7 @@ void idleControl()
         if( currentStatus.idleDuty == 0 ) { disableIdle(); break; }
         enableIdle();
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
+        currentStatus.idleLoad = currentStatus.idleDuty >> 1;
         idleOn = true;
       }
       break;
@@ -224,6 +227,7 @@ void idleControl()
         idle_pwm_target_value = idle_pid_target_value;
         if( idle_pwm_target_value == 0 ) { disableIdle(); }
         else{ enableIdle(); } //Turn on the C compare unit (ie turn on the interrupt)
+        currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count) >> 1;
         //idle_pwm_target_value = 104;
 
         idleCounter++;
@@ -251,6 +255,7 @@ void idleControl()
         }
         doStep();
       }
+      currentStatus.idleLoad = idleStepper.curIdleStep >> 1; //Current step count (Divided by 2 for byte)
       break;
 
     case IAC_ALGORITHM_STEP_CL://Case 5 is closed loop stepper control
@@ -262,9 +267,10 @@ void idleControl()
 
       idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
       idlePID.Compute();
-      idleStepper.targetIdleStep = (idle_pid_target_value >> 7); //Target is scalled down by 128 to bring it inline with most stepper motors range. Allows a sane range of around 300 steps (Maximum RPM error of 600, P=64)
+      idleStepper.targetIdleStep = (idle_pid_target_value >> 7); //Target is scaled down by 128 to bring it inline with most stepper motors range. Allows a sane range of around 300 steps (Maximum RPM error of 600, P=64)
 
       doStep();
+      currentStatus.idleLoad = idleStepper.curIdleStep >> 1; //Current step count (Divided by 2 for byte)
       idleCounter++;
       break;
   }
@@ -344,15 +350,31 @@ static inline void doStep()
 //This function simply turns off the idle PWM and sets the pin low
 static inline void disableIdle()
 {
-  IDLE_TIMER_DISABLE();
-  digitalWrite(pinIdle1, LOW);
+  if(configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_CL || configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_OL)
+  {
+    IDLE_TIMER_DISABLE();
+    digitalWrite(pinIdle1, LOW);
+  }
+  else if (configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL || configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL)
+  {
+    idleStepper.targetIdleStep = 1; //Home the stepper
+    doStep();
+  }
 }
 
 //Any common functions associated with starting the Idle
 //Typically this is enabling the PWM interrupt
 static inline void enableIdle()
 {
-  IDLE_TIMER_ENABLE();
+  if(configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_CL || configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_OL)
+  {
+    IDLE_TIMER_ENABLE();
+  }
+  else if (configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL || configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL)
+  {
+
+  }
+
 }
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this

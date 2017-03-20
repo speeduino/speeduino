@@ -263,6 +263,7 @@ void sendValues(int packetlength, byte portNum)
   response[36] = getNextError();
   response[37] = currentStatus.boostTarget;
   response[38] = currentStatus.boostDuty;
+  response[39] = currentStatus.idleLoad;
 
 //cli();
   if (portNum == 0) { Serial.write(response, (size_t)packetlength); }

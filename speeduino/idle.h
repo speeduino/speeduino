@@ -19,8 +19,8 @@ enum StepperStatus {SOFF, STEPPING, COOLING}; //The 2 statuses that a stepper ca
 
 struct StepperIdle
 {
-  unsigned int curIdleStep; //Tracks the current location of the stepper
-  unsigned int targetIdleStep; //What the targetted step is
+  int curIdleStep; //Tracks the current location of the stepper
+  int targetIdleStep; //What the targetted step is
   volatile StepperStatus stepperStatus;
   volatile unsigned long stepStartTime; //The time the curren
 };
