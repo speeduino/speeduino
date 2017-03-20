@@ -170,7 +170,7 @@ void initialiseIdle()
       idleStepper.curIdleStep = 0;
       idleStepper.stepperStatus = SOFF;
 
-      idlePID.SetOutputLimits(0, (configPage4.iacStepHome * 3)); //Maximum number of steps probably needs its own setting
+      idlePID.SetOutputLimits(0, (configPage4.iacStepHome * 3) << 7); //Maximum number of steps probably needs its own setting
       idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       break;
@@ -358,6 +358,8 @@ static inline void disableIdle()
   else if (configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL || configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL)
   {
     idleStepper.targetIdleStep = 1; //Home the stepper
+    if( checkForStepping() ) { return; } //If this is true it means there's either a step taking place or
+    if( !isStepperHomed() ) { return; } //Check whether homing is completed yet.
     doStep();
   }
 }
