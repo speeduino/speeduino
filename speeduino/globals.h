@@ -207,7 +207,7 @@ struct statuses {
   volatile byte startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
   byte boostTarget;
   byte boostDuty;
-  byte idleLoad; //Either the current steps or current duty cycle for the idle control. 
+  byte idleLoad; //Either the current steps or current duty cycle for the idle control.
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -326,7 +326,7 @@ struct config2 {
 
   byte TrigEdgeSec : 1;
   byte fuelPumpPin : 6;
-  byte unused4_6b : 1;
+  byte useResync : 1;
 
   byte unused4_7;
   byte IdleAdvRPM;
