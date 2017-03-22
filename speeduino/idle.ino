@@ -170,7 +170,7 @@ void initialiseIdle()
       idleStepper.curIdleStep = 0;
       idleStepper.stepperStatus = SOFF;
 
-      idlePID.SetOutputLimits(0, (configPage4.iacStepHome * 3) << 7); //Maximum number of steps probably needs its own setting
+      idlePID.SetOutputLimits(0, (configPage4.iacStepHome * 3)); //Maximum number of steps probably needs its own setting
       idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       break;
@@ -267,7 +267,7 @@ void idleControl()
 
       idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
       idlePID.Compute();
-      idleStepper.targetIdleStep = (idle_pid_target_value >> 7); //Target is scaled down by 128 to bring it inline with most stepper motors range. Allows a sane range of around 300 steps (Maximum RPM error of 600, P=64)
+      idleStepper.targetIdleStep = idle_pid_target_value;
 
       doStep();
       currentStatus.idleLoad = idleStepper.curIdleStep >> 1; //Current step count (Divided by 2 for byte)
