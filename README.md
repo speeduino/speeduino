@@ -13,7 +13,7 @@ The important ideas though remain the same and the priority is still SIMPLICITY!
 
 Q: Arduino ECU,pffft, heard THAT before. Does this one actually work?
 
-A: Yep! 1, 2, 4, 6 and 8 cylinder engines have all run, fuel and ignition, off Speeduino. 
+A: Yep! 1, 2, 4, 5, 6 and 8 cylinder engines have all run, fuel and ignition, off Speeduino. 
 
 ========================================================================
 
