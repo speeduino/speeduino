@@ -30,11 +30,31 @@ int freeRam ()
 
   // The difference is the free, available ram.
   return (uint16_t)stackTop - heapTop;
+#elif defined(CORE_STM32)
+  //Figure this out some_time
+  return 0;
 #endif
 }
 
 void setPinMapping(byte boardID)
 {
+  //This is dumb, but it'll do for now to get things compiling
+  #if defined(CORE_STM32)
+    #define A0  0
+    #define A1  1
+    #define A2  2
+    #define A3  3
+    #define A4  4
+    #define A5  5
+    #define A6  6
+    #define A7  7
+    #define A8  8
+    #define A9  9
+    #define A13  13
+    #define A14  14
+    #define A15  15
+  #endif
+
   switch (boardID)
   {
     case 0:
@@ -172,8 +192,8 @@ void setPinMapping(byte boardID)
       pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 39; //Pin for coil 1
       pinCoil2 = 41; //Pin for coil 2
-      pinCoil3 = 42; //Pin for coil 3
-      pinCoil4 = 43; //Pin for coil 4
+      pinCoil3 = 35; //Pin for coil 3
+      pinCoil4 = 37; //Pin for coil 4
       pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
@@ -418,6 +438,12 @@ void setPinMapping(byte boardID)
   else {
     pinMode(pinLaunch, INPUT);  //If Launch Pull Resistor is not set make input float.
   }
+
+  //These must come after the above pinMode statements
+  triggerPri_pin_port = portInputRegister(digitalPinToPort(pinTrigger));
+  triggerPri_pin_mask = digitalPinToBitMask(pinTrigger);
+  triggerSec_pin_port = portInputRegister(digitalPinToPort(pinTrigger2));
+  triggerSec_pin_mask = digitalPinToBitMask(pinTrigger2);
 
   //Set default values
   digitalWrite(pinMAP, HIGH);

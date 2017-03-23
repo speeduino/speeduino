@@ -5,6 +5,12 @@
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define CORE_AVR
+#elif defined(STM32_MCU_SERIES)
+  #define CORE_STM32
+
+  inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
+  #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+  #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
 #endif
 
 //Handy bitsetting macros
@@ -139,6 +145,11 @@ volatile byte ign5_pin_mask;
 volatile byte *tach_pin_port;
 volatile byte tach_pin_mask;
 
+volatile byte *triggerPri_pin_port;
+volatile byte triggerPri_pin_mask;
+volatile byte *triggerSec_pin_port;
+volatile byte triggerSec_pin_mask;
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
@@ -201,6 +212,8 @@ struct statuses {
   bool flatShiftingHard;
   volatile byte startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
   byte boostTarget;
+  byte boostDuty;
+  byte idleLoad; //Either the current steps or current duty cycle for the idle control.
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -279,7 +292,8 @@ struct config1 {
   byte dutyLim;
   byte flexFreqLow; //Lowest valid frequency reading from the flex sensor
   byte flexFreqHigh; //Highest valid frequency reading from the flex sensor
-  byte taeColdM;
+
+  byte boostMaxDuty;
   byte tpsMin;
   byte tpsMax;
   byte mapMin;
@@ -293,9 +307,11 @@ struct config1 {
   byte flexFuelHigh; //Fuel % to be used for the highest ethanol reading (Typically 163%)
   byte flexAdvLow; //Additional advance (in degrees) at lowest ethanol reading (Typically 0)
   byte flexAdvHigh; //Additional advance (in degrees) at highest ethanol reading (Varies, usually 10-20)
-  byte unused61;
-  byte unused62;
-  byte unused63;
+
+  byte iacCLminDuty;
+  byte iacCLmaxDuty;
+  byte boostMinDuty;
+
 
 };
 
@@ -316,7 +332,7 @@ struct config2 {
 
   byte TrigEdgeSec : 1;
   byte fuelPumpPin : 6;
-  byte unused4_6b : 1;
+  byte useResync : 1;
 
   byte unused4_7;
   byte IdleAdvRPM;

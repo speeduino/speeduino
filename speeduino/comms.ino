@@ -62,12 +62,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.02-dev");
+      Serial.print("Speeduino 2017.03-dev");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201702-dev");
+      Serial.print("speeduino 201703-dev");
      break;
 
     case 'V': // send VE table and constants in binary
@@ -205,8 +205,13 @@ void sendValues(int packetlength, byte portNum)
   if (portNum == 3)
   {
     //CAN serial
-    Serial3.write("A");         //confirm cmd type
-    Serial3.write(packetlength);      //confirm no of byte to be sent
+    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
+      Serial3.write("A");         //confirm cmd type
+      Serial3.write(packetlength);      //confirm no of byte to be sent
+    #elif defined(CORE_STM32)
+      Serial2.write("A");         //confirm cmd type
+      Serial2.write(packetlength);      //confirm no of byte to be sent
+    #endif
   }
   else
   {
@@ -262,10 +267,16 @@ void sendValues(int packetlength, byte portNum)
   response[35] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
   response[36] = getNextError();
   response[37] = currentStatus.boostTarget;
+  response[38] = currentStatus.boostDuty;
+  response[39] = currentStatus.idleLoad;
 
 //cli();
   if (portNum == 0) { Serial.write(response, (size_t)packetlength); }
-  else if (portNum == 3) { Serial3.write(response, (size_t)packetlength); }
+  #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
+    else if (portNum == 3) { Serial3.write(response, (size_t)packetlength); }
+  #elif defined(CORE_STM32)
+    else if (portNum == 3) { Serial2.write(response, (size_t)packetlength); }
+  #endif
 //sei();
   return;
 }

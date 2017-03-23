@@ -12,7 +12,7 @@
 #define seqFuelPage  9
 #define canbusPage   10//Config Page 10
 
-#define packetSize   38
+#define packetSize   40
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 boolean isMap = true;

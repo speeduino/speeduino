@@ -453,7 +453,7 @@ void setup()
 
     case 12:
         triggerSetup_Nissan360();
-        trigger = triggerPri_Nissan360; //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
+        trigger = triggerPri_Nissan360;
         getRPM = getRPM_Nissan360;
         getCrankAngle = getCrankAngle_Nissan360;
 
@@ -915,7 +915,7 @@ void loop()
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
     }
-    if(configPage4.iacAlgorithm == 4) { idleControl(); } //Run idlecontrol every loop for stepper idle.
+    if(configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL || configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL) { idleControl(); } //Run idlecontrol every loop for stepper idle.
 
     //Always check for sync
     //Main loop runs within this clause
