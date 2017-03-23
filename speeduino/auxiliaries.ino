@@ -127,7 +127,7 @@ ISR(TIMER1_COMPB_vect)
   }
 }
 
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 //YET TO BE IMPLEMENTED ON TEENSY
 void initialiseAuxPWM() { }
 void boostControl() { }
