@@ -428,7 +428,7 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
 //Timer3A (fuel schedule 1) Compare Vector
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPA_vect, ISR_NOBLOCK) //fuelSchedules 1 and 5
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -450,7 +450,7 @@ static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a f
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect, ISR_NOBLOCK) //fuelSchedule2
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -471,7 +471,7 @@ static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a f
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect, ISR_NOBLOCK) //fuelSchedule3
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -492,7 +492,7 @@ static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a f
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect, ISR_NOBLOCK) //fuelSchedule4
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -513,7 +513,7 @@ static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a f
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPA_vect) //ignitionSchedule1
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -537,7 +537,7 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //ignitionSchedule2
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -561,7 +561,7 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //ignitionSchedule3
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -585,7 +585,7 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //ignitionSchedule4
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -609,7 +609,7 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER1_COMPC_vect) //ignitionSchedule5
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call a function
 #endif
   {

@@ -157,8 +157,56 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 
 #elif defined(STM32_MCU_SERIES)
   //Placeholders ONLY!
+
+  //https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/master/STM32F4/cores/maple/libmaple/timer.h#L51
   #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
   #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
+
+  #define FUEL1_COUNTER (TIMER2->regs).gen->CNT
+  #define FUEL2_COUNTER (TIMER2->regs).gen->CNT
+  #define FUEL3_COUNTER (TIMER2->regs).gen->CNT
+  #define FUEL4_COUNTER (TIMER2->regs).gen->CNT
+
+  #define IGN1_COUNTER  (TIMER3->regs).gen->CNT
+  #define IGN2_COUNTER  (TIMER3->regs).gen->CNT
+  #define IGN3_COUNTER  (TIMER3->regs).gen->CNT
+  #define IGN4_COUNTER  (TIMER3->regs).gen->CNT
+  #define IGN5_COUNTER  (TIMER1->regs).gen->CNT
+
+  #define FUEL1_COMPARE (TIMER2->regs).gen->CCR1
+  #define FUEL2_COMPARE (TIMER2->regs).gen->CCR2
+  #define FUEL3_COMPARE (TIMER2->regs).gen->CCR3
+  #define FUEL4_COMPARE (TIMER2->regs).gen->CCR4
+
+  #define IGN1_COMPARE (TIMER3->regs).gen->CCR1
+  #define IGN2_COMPARE (TIMER3->regs).gen->CCR2
+  #define IGN3_COMPARE (TIMER3->regs).gen->CCR3
+  #define IGN4_COMPARE (TIMER3->regs).gen->CCR4
+  #define IGN5_COMPARE (TIMER1->regs).gen->CCR1
+
+  //https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
+  #define FUEL1_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC1E
+  #define FUEL2_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC2E
+  #define FUEL3_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC3E
+  #define FUEL4_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC4E
+
+  #define IGN1_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC1E
+  #define IGN2_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC2E
+  #define IGN3_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC3E
+  #define IGN4_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC4E
+  #define IGN5_TIMER_ENABLE() (TIMER1->regs).gen->CCER |= TIMER_CCER_CC1E
+
+  #define FUEL1_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC1E
+  #define FUEL2_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC2E
+  #define FUEL3_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC3E
+  #define FUEL4_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC4E
+
+  #define IGN1_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC1E
+  #define IGN2_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC2E
+  #define IGN3_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC3E
+  #define IGN4_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC4E
+  #define IGN5_TIMER_DISABLE() (TIMER1->regs).gen->CCER &= ~TIMER_CCER_CC1E
+
 #endif
 
 void initialiseSchedulers();
