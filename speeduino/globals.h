@@ -99,9 +99,9 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 const byte page_size = 64;
-const int npage_size[11] ={0,288,64,288,64,288,64,64,160,192,128};
+const int16_t npage_size[11] ={0,288,64,288,64,288,64,64,160,192,128};
 //const byte page10_size = 128;
-const int map_page_size = 288;
+const int16_t map_page_size = 288;
 
 struct table3D fuelTable; //16x16 fuel map
 struct table3D ignitionTable; //16x16 ignition map
@@ -154,9 +154,9 @@ volatile byte triggerSec_pin_mask;
 //In current version this is 64 bytes
 struct statuses {
   volatile boolean hasSync;
-  unsigned int RPM;
+  uint16_t RPM;
   long longRPM;
-  int mapADC;
+  int16_t mapADC;
   long MAP; //Has to be a long for PID calcs (Boost control)
   byte baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running
   byte TPS; //The current TPS reading (0% - 100%)
@@ -165,18 +165,18 @@ struct statuses {
   unsigned long TPSlast_time; //The time the previous TPS sample was taken
   byte tpsADC; //0-255 byte representation of the TPS
   byte tpsDOT;
-  volatile int rpmDOT;
+  volatile int16_t rpmDOT;
   byte VE;
   byte O2;
   byte O2_2;
-  int coolant;
-  int cltADC;
-  int IAT;
-  int iatADC;
-  int batADC;
-  int O2ADC;
-  int O2_2ADC;
-  int dwell;
+  int16_t coolant;
+  int16_t cltADC;
+  int16_t IAT;
+  int16_t iatADC;
+  int16_t batADC;
+  int16_t O2ADC;
+  int16_t O2_2ADC;
+  int16_t dwell;
   byte dwellCorrection; //The amount of correction being applied to the dwell time.
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
   int8_t advance; //Signed 8 bit as advance can now go negative (ATDC)
@@ -198,17 +198,17 @@ struct statuses {
   volatile byte spark;
   volatile byte spark2;
   byte engine;
-  unsigned int PW1; //In uS
-  unsigned int PW2; //In uS
-  unsigned int PW3; //In uS
-  unsigned int PW4; //In uS
+  uint16_t PW1; //In uS
+  uint16_t PW2; //In uS
+  uint16_t PW3; //In uS
+  uint16_t PW4; //In uS
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous
-  volatile unsigned int loopsPerSecond;
+  volatile uint16_t loopsPerSecond;
   boolean launchingSoft; //True when in launch control soft limit mode
   boolean launchingHard; //True when in launch control hard limit mode
-  int freeRAM;
-  unsigned int clutchEngagedRPM;
+  int16_t freeRAM;
+  uint16_t clutchEngagedRPM;
   bool flatShiftingHard;
   volatile byte startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
   byte boostTarget;
@@ -262,10 +262,10 @@ struct config1 {
   byte unused26 : 4;
   byte indInjAng : 1;
   byte injOpen; //Injector opening time (ms * 10)
-  unsigned int inj1Ang;
-  unsigned int inj2Ang;
-  unsigned int inj3Ang;
-  unsigned int inj4Ang;
+  uint16_t inj1Ang;
+  uint16_t inj2Ang;
+  uint16_t inj3Ang;
+  uint16_t inj4Ang;
 
   //config1 in ini
   byte mapSample : 2;
@@ -297,12 +297,12 @@ struct config1 {
   byte tpsMin;
   byte tpsMax;
   byte mapMin;
-  unsigned int mapMax;
+  uint16_t mapMax;
   byte fpPrime; //Time (In seconds) that the fuel pump should be primed for on power up
   byte stoich;
-  unsigned int oddfire2; //The ATDC angle of channel 2 for oddfire
-  unsigned int oddfire3; //The ATDC angle of channel 3 for oddfire
-  unsigned int oddfire4; //The ATDC angle of channel 4 for oddfire
+  uint16_t oddfire2; //The ATDC angle of channel 2 for oddfire
+  uint16_t oddfire3; //The ATDC angle of channel 3 for oddfire
+  uint16_t oddfire4; //The ATDC angle of channel 4 for oddfire
   byte flexFuelLow; //Fuel % to be used for the lowest ethanol reading (Typically 100%)
   byte flexFuelHigh; //Fuel % to be used for the highest ethanol reading (Typically 163%)
   byte flexAdvLow; //Additional advance (in degrees) at lowest ethanol reading (Typically 0)
@@ -319,7 +319,7 @@ struct config1 {
 //This mostly covers off variables that are required for ignition
 struct config2 {
 
-  int triggerAngle;
+  int16_t triggerAngle;
   byte FixAng;
   byte CrankAng;
   byte TrigAngMul; //Multiplier for non evenly divisible tooth counts.

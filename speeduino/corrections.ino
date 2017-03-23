@@ -221,7 +221,7 @@ static inline bool correctionDFCO()
 {
   if ( !configPage2.dfcoEnabled ) { return false; } //If the DFCO option isn't turned on, always return false (off)
   if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) ) { return ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
-  else { return ( currentStatus.RPM > (unsigned int)( (configPage2.dfcoRPM * 10) + configPage2.dfcoHyster) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
+  else { return ( currentStatus.RPM > (uint16_t)( (configPage2.dfcoRPM * 10) + configPage2.dfcoHyster) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
 }
 
 /*
@@ -265,7 +265,7 @@ static inline byte correctionAFRClosedLoop()
     currentStatus.afrTarget = get3DTableValue(&afrTable, yValue, currentStatus.RPM); //Perform the target lookup
 
     //Check all other requirements for closed loop adjustments
-    if( (currentStatus.coolant > (int)(configPage3.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage3.egoRPM * 100)) && (currentStatus.TPS < configPage3.egoTPSMax) && (currentStatus.O2 < configPage3.ego_max) && (currentStatus.O2 > configPage3.ego_min) && (currentStatus.runSecs > configPage3.ego_sdelay) )
+    if( (currentStatus.coolant > (int)(configPage3.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (uint16_t)(configPage3.egoRPM * 100)) && (currentStatus.TPS < configPage3.egoTPSMax) && (currentStatus.O2 < configPage3.ego_max) && (currentStatus.O2 > configPage3.ego_min) && (currentStatus.runSecs > configPage3.ego_sdelay) )
     {
       //Check which algorithm is used, simple or PID
       if (configPage3.egoAlgorithm == 0)
@@ -363,14 +363,14 @@ static inline int8_t correctionIATretard(int8_t advance)
 static inline int8_t correctionSoftRevLimit(int8_t advance)
 {
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
-  if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); return configPage2.SoftLimRetard;  } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+  if (currentStatus.RPM > ((uint16_t)(configPage2.SoftRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); return configPage2.SoftLimRetard;  } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
   return advance;
 }
 
 static inline int8_t correctionSoftLaunch(int8_t advance)
 {
   //SoftCut rev limit for 2-step launch control.
-  if (configPage3.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) )
+  if (configPage3.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((uint16_t)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > ((uint16_t)(configPage3.lnchSoftLim) * 100)) )
   {
     currentStatus.launchingSoft = true;
     BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH);
@@ -384,7 +384,7 @@ static inline int8_t correctionSoftLaunch(int8_t advance)
 
 static inline int8_t correctionSoftFlatShift(int8_t advance)
 {
-  if(configPage3.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage3.flatSSoftWin) ) )
+  if(configPage3.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((uint16_t)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage3.flatSSoftWin) ) )
   {
     BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
     return configPage3.flatSRetard;

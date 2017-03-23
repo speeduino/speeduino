@@ -6,10 +6,10 @@ These are some utility functions and variables used through the main code
 
 #include <Arduino.h>
 
-int freeRam ();
+int16_t freeRam ();
 void setPinMapping(byte boardID);
-unsigned int PW();
-unsigned int PW_SD();
-unsigned int PW_AN();
+uint16_t PW();
+uint16_t PW_SD();
+uint16_t PW_AN();
 
 #endif // UTILS_H

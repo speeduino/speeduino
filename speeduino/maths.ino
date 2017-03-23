@@ -3,7 +3,7 @@
 #define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d)/2)/(d)) : (((n) + (d)/2)/(d)))
 
 //Replace the standard arduino map() function to use the div function instead
-int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
+int16_t fastMap(unsigned long x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max)
 {
   return ldiv( ((x - in_min) * (out_max - out_min)) , (in_max - in_min) ).quot + out_min;
   //return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -11,9 +11,9 @@ int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 
 //This is a dedicated function that specifically handles the case of mapping 0-1023 values into a 0 to X range 
 //This is a common case because it means converting from a standard 10-bit analog input to a byte or 10-bit analog into 0-511 (Eg the temperature readings)
-//int fastMap1023toX(unsigned long x, int in_min, int in_max, int out_min, int out_max)
+//int16_t fastMap1023toX(unsigned long x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max)
 //removed ununsed variables, in_min and out_min is aways 0, in_max is aways 1023
-int fastMap1023toX(unsigned long x, int out_max)
+int16_t fastMap1023toX(unsigned long x, int16_t out_max)
 {
  return (x * out_max) >> 10;
 }
@@ -24,7 +24,7 @@ Ref: http://www.hackersdelight.org/divcMore.pdf
 */
 
 //Unsigned divide by 10
-unsigned int divu10(unsigned int n) {
+uint16_t divu10(uint16_t n) {
  unsigned long q, r;
  q = (n >> 1) + (n >> 2);
  q = q + (q >> 4);
@@ -37,7 +37,7 @@ unsigned int divu10(unsigned int n) {
 }
 
 //Signed divide by 10
-int divs10(long n) {
+int16_t divs10(long n) {
  long q, r;
  n = n + (n>>31 & 9);
  q = (n >> 1) + (n >> 2);
@@ -51,7 +51,7 @@ int divs10(long n) {
 }
 
 //Signed divide by 100
-int divs100(long n) {
+int16_t divs100(long n) {
   return (n / 100); // Amazingly, gcc is producing a better /divide by 100 function than this
  long q, r;
  n = n + (n>>31 & 99);
@@ -88,7 +88,7 @@ unsigned long percentage(byte x, unsigned long y)
 /*
  * Calculates integer power values. Same as pow() but with ints
  */
-inline long powint(int factor, unsigned int exponent)
+inline long powint(int16_t factor, uint16_t exponent)
 {
    long product = 1;
    while (exponent--)

@@ -10,12 +10,12 @@
 */
 #include "utils.h"
 
-int freeRam ()
+int16_t freeRam ()
 {
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-  extern int __heap_start, *__brkval;
-  int v;
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+  extern int16_t __heap_start, *__brkval;
+  int16_t v;
+  return (int16_t) &v - (__brkval == 0 ? (int16_t) &__heap_start : (int16_t) __brkval);
 #elif defined(CORE_TEENSY)
   uint32_t stackTop;
   uint32_t heapTop;
@@ -320,7 +320,36 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       break;
 
+    //case 32:
     default:
+    #if defined(CORE_STM32)
+      pinInjector1 = D11; //Output pin injector 1 is on
+      pinInjector2 = D10; //Output pin injector 2 is on
+      pinInjector3 = D9; //Output pin injector 3 is on
+      pinInjector4 = D8; //Output pin injector 4 is on
+      pinInjector5 = D27; //Output pin injector 5 is on
+      pinCoil1 = D5; //Pin for coil 1
+      pinCoil2 = D4; //Pin for coil 2
+      pinCoil3 = D3; //Pin for coil 3
+      pinCoil4 = D33; //Pin for coil 4
+      pinCoil5 = D27; //Pin for coil 5 PLACEHOLDER value for now
+      pinTrigger = D15; //The CAS pin
+      pinTrigger2 = D26; //The Cam Sensor pin
+      pinTPS = A2; //TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A8; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinStepperDir = D0; //Direction pin  for DRV8825 driver
+      pinStepperStep = D1; //Step pin for DRV8825 driver
+      pinDisplayReset = D2; // OLED reset pin
+      pinFan = D6; //Pin for the fan output
+      pinFuelPump = D7; //Fuel pump output
+      pinTachOut = D12; //Tacho output pin
+      pinFlex = D32; // Flex sensor (Must be external interrupt enabled)
+      break;
+    #else  
       //Pin mappings as per the v0.2 shield
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on
@@ -347,6 +376,7 @@ void setPinMapping(byte boardID)
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
       break;
+    #endif  
   }
 
   //Setup any devices that are using selectable pins
@@ -462,20 +492,20 @@ void setPinMapping(byte boardID)
 
   This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N calculations respectively.
 */
-unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
+uint16_t PW(int16_t REQ_FUEL, byte VE, byte MAP, int16_t corrections, int16_t injOpen)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
-  unsigned int iVE, iMAP, iAFR, iCorrections;
+  uint16_t iVE, iMAP, iAFR, iCorrections;
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
-  iVE = ((unsigned int)VE << 7) / 100;
+  iVE = ((uint16_t)VE << 7) / 100;
   if ( configPage1.multiplyMAP ) {
-    iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
+    iMAP = ((uint16_t)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
   }
   if ( configPage1.includeAFR && (configPage3.egoType == 2)) {
-    iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+    iAFR = ((uint16_t)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
   }
   iCorrections = (corrections << 7) / 100;
 
@@ -496,18 +526,18 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
   if ( intermediate > 65535) {
     intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
   }
-  return (unsigned int)(intermediate);
+  return (uint16_t)(intermediate);
 
 }
 
 //Convenience functions for Speed Density and Alpha-N
-unsigned int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
+uint16_t PW_SD(int16_t REQ_FUEL, byte VE, byte MAP, int16_t corrections, int16_t injOpen)
 {
   return PW(REQ_FUEL, VE, MAP, corrections, injOpen);
   //return PW(REQ_FUEL, VE, 100, corrections, injOpen);
 }
 
-unsigned int PW_AN(int REQ_FUEL, byte VE, byte TPS, int corrections, int injOpen)
+uint16_t PW_AN(int16_t REQ_FUEL, byte VE, byte TPS, int16_t corrections, int16_t injOpen)
 {
   //Sanity check
   if (TPS > 100) {

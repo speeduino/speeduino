@@ -21,8 +21,8 @@ void table2D_setSize(struct table2D* targetTable, byte newSize)
   }
   else
   {
-    targetTable->values16 = (int *)realloc(targetTable->values16, newSize * sizeof(int));
-    targetTable->axisX16 = (int *)realloc(targetTable->axisX16, newSize * sizeof(int));
+    targetTable->values16 = (int16_t *)realloc(targetTable->values16, newSize * sizeof(int16_t));
+    targetTable->axisX16 = (int16_t *)realloc(targetTable->axisX16, newSize * sizeof(int16_t));
     targetTable->xSize = newSize;
   }
 }
@@ -33,23 +33,23 @@ void table3D_setSize(struct table3D *targetTable, byte newSize)
     targetTable->values = (byte **)malloc(newSize * sizeof(byte*));
     for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)malloc(newSize * sizeof(byte)); }
       
-    targetTable->axisX = (int *)malloc(newSize * sizeof(int));
-    targetTable->axisY = (int *)malloc(newSize * sizeof(int));
+    targetTable->axisX = (int16_t *)malloc(newSize * sizeof(int16_t));
+    targetTable->axisY = (int16_t *)malloc(newSize * sizeof(int16_t));
     targetTable->xSize = newSize;
     targetTable->ySize = newSize;
 }
 
 /*
 This function simply pulls a 1D linear interpolated (ie averaged) value from a 2D table
-ie: Given a value on the X axis, it returns a Y value that coresponds to the point on the curve between the nearest two defined X values
+ie: Given a value on the X axis, it returns a Y value that coresponds to the point16_t on the curve between the nearest two defined X values
 
 This function must take into account whether a table contains 8-bit or 16-bit values. 
 Unfortunately this means many of the lines are duplicated depending on this
 */
-int table2D_getValue(struct table2D *fromTable, int X)
+int16_t table2D_getValue(struct table2D *fromTable, int16_t X)
 {
 
-    int xMinValue, xMaxValue;
+    int16_t xMinValue, xMaxValue;
     if (fromTable->valueSize == SIZE_BYTE)
     {
       //Byte version
@@ -58,12 +58,12 @@ int table2D_getValue(struct table2D *fromTable, int X)
     }
     else
     {
-      //int version
+      //int16_t version
       xMinValue = fromTable->axisX16[0];
       xMaxValue = fromTable->axisX16[fromTable->xSize-1];
     }
-    int xMin = 0;
-    int xMax = 0;
+    int16_t xMin = 0;
+    int16_t xMax = 0;
     
     //If the requested X value is greater/small than the maximum/minimum bin, reset X to be that value
     if(X > xMaxValue) { X = xMaxValue; }
@@ -85,7 +85,7 @@ int table2D_getValue(struct table2D *fromTable, int X)
        else
        {
           //
-          for (int x = fromTable->xSize-1; x >= 0; x--)
+          for (int16_t x = fromTable->xSize-1; x >= 0; x--)
           {
               //Checks the case where the X value is exactly what was requested
               if ( (X == fromTable->axisX[x]) || (x == 0) )
@@ -117,7 +117,7 @@ int table2D_getValue(struct table2D *fromTable, int X)
        else
        {
           //
-          for (int x = fromTable->xSize-1; x >= 0; x--)
+          for (int16_t x = fromTable->xSize-1; x >= 0; x--)
           {
               //Checks the case where the X value is exactly what was requested
               if ( (X == fromTable->axisX16[x]) || (x == 0) )
@@ -139,7 +139,7 @@ int table2D_getValue(struct table2D *fromTable, int X)
     }
 
 /*
-    for (int x = fromTable->xSize-1; x >= 0; x--)
+    for (int16_t x = fromTable->xSize-1; x >= 0; x--)
     {
        if (fromTable->valueSize == SIZE_BYTE)
        {
@@ -161,7 +161,7 @@ int table2D_getValue(struct table2D *fromTable, int X)
        }
        else
        {
-         //int version
+         //int16_t version
          if ( (X == fromTable->axisX16[x]) || (x == 0) )
           {
             return fromTable->values16[x]; //Simply return the coresponding value
@@ -179,16 +179,16 @@ int table2D_getValue(struct table2D *fromTable, int X)
     }
     */
     
-    unsigned int m = X - xMinValue;
-    unsigned int n = xMaxValue - xMinValue;
+    uint16_t m = X - xMinValue;
+    uint16_t n = xMaxValue - xMinValue;
     
     //Float version
     /*
-    int yVal = (m / n) * (abs(fromTable.values[xMax] - fromTable.values[xMin]));
+    int16_t yVal = (m / n) * (abs(fromTable.values[xMax] - fromTable.values[xMin]));
     */
     
     //Non-Float version
-    int yVal;
+    int16_t yVal;
     if (fromTable->valueSize == SIZE_BYTE)
     {
        //Byte version
@@ -200,7 +200,7 @@ int table2D_getValue(struct table2D *fromTable, int X)
     }
     else
     {
-       //int version
+       //int16_t version
        yVal = ((long)(m << 6) / n) * (abs(fromTable->values16[xMax] - fromTable->values16[xMin]));
        yVal = (yVal >> 6);
         
@@ -214,13 +214,13 @@ int table2D_getValue(struct table2D *fromTable, int X)
 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: http://www.megamanual.com/v22manual/ve_tuner.pdf
-int get3DTableValue(struct table3D *fromTable, int Y, int X)
+int16_t get3DTableValue(struct table3D *fromTable, int16_t Y, int16_t X)
   {
     //Loop through the X axis bins for the min/max pair
     //Note: For the X axis specifically, rather than looping from tableAxisX[0] up to tableAxisX[max], we start at tableAxisX[Max] and go down. 
     //      This is because the important tables (fuel and injection) will have the highest RPM at the top of the X axis, so starting there will mean the best case occurs when the RPM is highest (And hence the CPU is needed most)
-    int xMinValue = fromTable->axisX[0];
-    int xMaxValue = fromTable->axisX[fromTable->xSize-1];
+    int16_t xMinValue = fromTable->axisX[0];
+    int16_t xMaxValue = fromTable->axisX[fromTable->xSize-1];
     byte xMin = 0;
     byte xMax = 0;
     
@@ -279,8 +279,8 @@ int get3DTableValue(struct table3D *fromTable, int Y, int X)
     }
     
     //Loop through the Y axis bins for the min/max pair
-    int yMaxValue = fromTable->axisY[0];
-    int yMinValue = fromTable->axisY[fromTable->ySize-1];
+    int16_t yMaxValue = fromTable->axisY[0];
+    int16_t yMinValue = fromTable->axisY[fromTable->ySize-1];
     byte yMin = 0;
     byte yMax = 0;
     
@@ -341,7 +341,7 @@ int get3DTableValue(struct table3D *fromTable, int Y, int X)
         
     
     /* 
-    At this point we have the 4 corners of the map where the interpolated value will fall in
+    At this point16_t we have the 4 corners of the map where the interpolated value will fall in
     Eg: (yMin,xMin)  (yMin,xMax)
     
         (yMax,xMin)  (yMax,xMax)
@@ -352,10 +352,10 @@ int get3DTableValue(struct table3D *fromTable, int Y, int X)
               C          D
     
     */
-    int A = fromTable->values[yMin][xMin];
-    int B = fromTable->values[yMin][xMax];
-    int C = fromTable->values[yMax][xMin];
-    int D = fromTable->values[yMax][xMax];
+    int16_t A = fromTable->values[yMin][xMin];
+    int16_t B = fromTable->values[yMin][xMax];
+    int16_t C = fromTable->values[yMax][xMin];
+    int16_t D = fromTable->values[yMax][xMax];
 
     //Check that all values aren't just the same (This regularly happens with things like the fuel trim maps)
     if(A == B && A == C && A == D) { return A; }
@@ -373,10 +373,10 @@ int get3DTableValue(struct table3D *fromTable, int Y, int X)
     if (yMaxValue == yMinValue) { q = ((long)(Y - yMinValue) << 8); }
     else { q = 256 - (((long)(Y - yMaxValue) << 8) / (yMinValue - yMaxValue)); }
 
-    int m = ((256-p) * (256-q)) >> 8;
-    int n = (p * (256-q)) >> 8;
-    int o = ((256-p) * q) >> 8;
-    int r = (p * q) >> 8;
+    int16_t m = ((256-p) * (256-q)) >> 8;
+    int16_t n = (p * (256-q)) >> 8;
+    int16_t o = ((256-p) * q) >> 8;
+    int16_t r = (p * q) >> 8;
     return ( (A * m) + (B * n) + (C * o) + (D * r) ) >> 8;
 }
 /* Executed a benchmark on all options and this is the results
@@ -384,13 +384,13 @@ int get3DTableValue(struct table3D *fromTable, int Y, int X)
  * 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: http://www.megamanual.com/v22manual/ve_tuner.pdf
-float get3DTableValueF(struct table3D *fromTable, int Y, int X)
+float get3DTableValueF(struct table3D *fromTable, int16_t Y, int16_t X)
 {
   float m, n, o ,p, q, r;
   byte xMin, xMax;
   byte yMin, yMax;
-  int yMaxValue, yMinValue;
-  int xMaxValue, xMinValue;
+  int16_t yMaxValue, yMinValue;
+  int16_t xMaxValue, xMinValue;
 
   if(fromTable->lastXMin==0) {fromTable->lastXMin = fromTable->xSize-1;}
   else {xMin = fromTable->lastXMin;}
@@ -440,10 +440,10 @@ float get3DTableValueF(struct table3D *fromTable, int Y, int X)
   xMaxValue = fromTable->axisX[xMax];
   xMinValue = fromTable->axisX[xMin]; 
       
-  int A = fromTable->values[yMin][xMin];
-  int B = fromTable->values[yMin][xMax];
-  int C = fromTable->values[yMax][xMin];
-  int D = fromTable->values[yMax][xMax];
+  int16_t A = fromTable->values[yMin][xMin];
+  int16_t B = fromTable->values[yMin][xMax];
+  int16_t C = fromTable->values[yMax][xMin];
+  int16_t D = fromTable->values[yMax][xMax];
      
   p = float(X - xMinValue) / (xMaxValue - xMinValue); //(RPM - RPM[1])/(RPM[2]- RPM[1])
   q = float(Y - yMinValue) / (yMaxValue - yMinValue); //(MAP - MAP[1])/(MAP[2]- MAP[1])
@@ -458,13 +458,13 @@ float get3DTableValueF(struct table3D *fromTable, int Y, int X)
 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: http://www.megamanual.com/v22manual/ve_tuner.pdf
-int get3DTableValueS(struct table3D *fromTable, int Y, int X)
+int16_t get3DTableValueS(struct table3D *fromTable, int16_t Y, int16_t X)
 {
   byte xMin, xMax;
   byte yMin, yMax;
   long p, q;
-  int yMaxValue, yMinValue;
-  int xMaxValue, xMinValue;
+  int16_t yMaxValue, yMinValue;
+  int16_t xMaxValue, xMinValue;
 
   if(fromTable->lastXMin==0) {fromTable->lastXMin=fromTable->xSize-1;}
   else {xMin = fromTable->lastXMin;}
@@ -513,18 +513,18 @@ int get3DTableValueS(struct table3D *fromTable, int Y, int X)
   xMaxValue = fromTable->axisX[xMax];
   xMinValue = fromTable->axisX[xMin]; 
   
-  int A = fromTable->values[yMin][xMin];
-  int B = fromTable->values[yMin][xMax];
-  int C = fromTable->values[yMax][xMin];
-  int D = fromTable->values[yMax][xMax];
+  int16_t A = fromTable->values[yMin][xMin];
+  int16_t B = fromTable->values[yMin][xMax];
+  int16_t C = fromTable->values[yMax][xMin];
+  int16_t D = fromTable->values[yMax][xMax];
 
   p = ((long)(X - xMinValue) << 8) / (xMaxValue - xMinValue); //(RPM - RPM[1])/(RPM[2]- RPM[1])
   q = 256 - (((long)(Y - yMaxValue) << 8) / (yMinValue - yMaxValue)); //(MAP - MAP[2])/(MAP[2]- MAP[1])
 
-  int m = ((256-p) * (256-q)) >> 8;
-  int n = (p * (256-q)) >> 8;
-  int o = ((256-p) * q) >> 8;
-  int r = (p * q) >> 8;
+  int16_t m = ((256-p) * (256-q)) >> 8;
+  int16_t n = (p * (256-q)) >> 8;
+  int16_t o = ((256-p) * q) >> 8;
+  int16_t r = (p * q) >> 8;
   return ( (A * m) + (B * n) + (C * o) + (D * r) ) >> 8; 
 }
 */
