@@ -204,9 +204,11 @@ void sendValues(int packetlength, byte portNum)
 
   if (portNum == 3)
   {
-    //CAN serial
-    Serial3.write("A");         //confirm cmd type
-    Serial3.write(packetlength);      //confirm no of byte to be sent
+    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
+      //CAN serial
+      Serial3.write("A");         //confirm cmd type
+      Serial3.write(packetlength);      //confirm no of byte to be sent
+    #endif
   }
   else
   {
@@ -267,7 +269,9 @@ void sendValues(int packetlength, byte portNum)
 
 //cli();
   if (portNum == 0) { Serial.write(response, (size_t)packetlength); }
-  else if (portNum == 3) { Serial3.write(response, (size_t)packetlength); }
+  #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
+    else if (portNum == 3) { Serial3.write(response, (size_t)packetlength); }
+  #endif
 //sei();
   return;
 }

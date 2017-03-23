@@ -5,6 +5,11 @@
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define CORE_AVR
+#elif defined(STM32_MCU_SERIES)
+  #define CORE_STM32
+
+  inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
+  #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //Seems to be missing from stm32duino. Not even sure it's correct yet
 #endif
 
 //Handy bitsetting macros

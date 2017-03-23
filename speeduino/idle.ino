@@ -75,6 +75,8 @@ void initialiseIdle()
     // enable IRQ Interrupt
     NVIC_ENABLE_IRQ(IRQ_FTM2);
 
+  #elif defined(MCU_STM32F103RB)
+
   #endif
 
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
@@ -97,6 +99,7 @@ void initialiseIdle()
       iacPWMTable.valueSize = SIZE_BYTE;
       iacPWMTable.values = configPage4.iacOLPWMVal;
       iacPWMTable.axisX = configPage4.iacBins;
+
 
       iacCrankDutyTable.xSize = 4;
       iacCrankDutyTable.valueSize = SIZE_BYTE;
@@ -376,14 +379,14 @@ static inline void enableIdle()
   {
 
   }
-
 }
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPC_vect)
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined (CORE_STM32)
 static inline void idleInterrupt() //Most ARM chips can simply call a function
 #endif
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) || defined (CORE_TEENSY)
 {
   if (idle_pwm_state)
   {
@@ -422,3 +425,8 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
   }
 
 }
+#elif defined (CORE_STM32)
+{
+  //No PWM idle for STM32 yet
+}
+#endif

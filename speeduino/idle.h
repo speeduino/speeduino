@@ -39,6 +39,15 @@ struct StepperIdle
   #define IDLE_TIMER_ENABLE() FTM2_C0SC |= FTM_CSC_CHIE
   #define IDLE_TIMER_DISABLE() FTM2_C0SC &= ~FTM_CSC_CHIE
 
+#elif defined(CORE_STM32)
+
+  //Placeholders only
+  #define IDLE_COUNTER 0
+  #define IDLE_COMPARE 0
+
+  #define IDLE_TIMER_ENABLE()
+  #define IDLE_TIMER_DISABLE() 
+
 #endif
 
 struct table2D iacClosedLoopTable;
