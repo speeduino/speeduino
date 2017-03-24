@@ -212,6 +212,8 @@ struct statuses {
   bool flatShiftingHard;
   volatile byte startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
   byte boostTarget;
+  byte testOutputs;
+  bool testActive;
   byte boostDuty;
   byte idleLoad; //Either the current steps or current duty cycle for the idle control.
 

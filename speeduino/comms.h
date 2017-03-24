@@ -12,11 +12,15 @@
 #define seqFuelPage  9
 #define canbusPage   10//Config Page 10
 
-#define packetSize   40
+#define packetSize   41
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 boolean isMap = true;
 unsigned long requestCount = 0; //The number of times the A command has been issued
+byte cmdGroup = 0;
+byte cmdValue = 0;
+int cmdCombined = 0;  //the cmdgroup as high byte and cmdvalue as low byte
+byte cmdStore[8];     //array storing pre test values
 
 const char pageTitles[] PROGMEM //This is being stored in the avr flash instead of SRAM which there is not very much of
   {
@@ -40,5 +44,6 @@ void sendPage(bool useChar);
 void receiveCalibration(byte tableID);
 void sendToothLog(bool useChar);
 void testComm();
+void commandButtons();
 
 #endif // COMMS_H

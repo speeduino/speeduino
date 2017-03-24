@@ -906,7 +906,6 @@ void loop()
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
     if ((mainLoopCount & 255) == 1) //Every 256 loops
     {
-
        readCLT();
        readIAT();
        readO2();
@@ -940,7 +939,6 @@ void loop()
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
           if(configPage2.ignBypassEnabled) { digitalWrite(pinIgnBypass, LOW); }
         }
-
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
 
