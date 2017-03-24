@@ -52,6 +52,7 @@ void initialiseAuxPWM()
   boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD);
   boostPID.SetMode(AUTOMATIC); //Turn PID on
 
+  currentStatus.boostDuty = 0;
   boostCounter = 0;
 }
 
@@ -70,7 +71,7 @@ void boostControl()
     if( (boostCounter & 31) == 1) { boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD); } //This only needs to be run very infrequently, once every 32 calls to boostControl(). This is approx. once per second
 
     boostPID.Compute();
-
+    currentStatus.boostDuty = (unsigned long)(boost_pwm_target_value * 100UL) / boost_pwm_max_count;
     TIMSK1 |= (1 << OCIE1A); //Turn on the compare unit (ie turn on the interrupt)
   }
   else { TIMSK1 &= ~(1 << OCIE1A); } // Disable timer channel
@@ -126,7 +127,7 @@ ISR(TIMER1_COMPB_vect)
   }
 }
 
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 //YET TO BE IMPLEMENTED ON TEENSY
 void initialiseAuxPWM() { }
 void boostControl() { }

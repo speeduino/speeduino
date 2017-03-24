@@ -4,6 +4,13 @@
 #include "globals.h"
 #include "table.h"
 
+#define IAC_ALGORITHM_NONE    0
+#define IAC_ALGORITHM_ONOFF   1
+#define IAC_ALGORITHM_PWM_OL  2
+#define IAC_ALGORITHM_PWM_CL  3
+#define IAC_ALGORITHM_STEP_OL 4
+#define IAC_ALGORITHM_STEP_CL 5
+
 #define STEPPER_FORWARD 0
 #define STEPPER_BACKWARD 1
 #define IDLE_TABLE_SIZE 10
@@ -12,8 +19,8 @@ enum StepperStatus {SOFF, STEPPING, COOLING}; //The 2 statuses that a stepper ca
 
 struct StepperIdle
 {
-  unsigned int curIdleStep; //Tracks the current location of the stepper
-  unsigned int targetIdleStep; //What the targetted step is
+  int curIdleStep; //Tracks the current location of the stepper
+  int targetIdleStep; //What the targetted step is
   volatile StepperStatus stepperStatus;
   volatile unsigned long stepStartTime; //The time the curren
 };
@@ -31,6 +38,15 @@ struct StepperIdle
 
   #define IDLE_TIMER_ENABLE() FTM2_C0SC |= FTM_CSC_CHIE
   #define IDLE_TIMER_DISABLE() FTM2_C0SC &= ~FTM_CSC_CHIE
+
+#elif defined(CORE_STM32)
+
+  //Placeholders only
+  #define IDLE_COUNTER 0
+  #define IDLE_COMPARE 0
+
+  #define IDLE_TIMER_ENABLE()
+  #define IDLE_TIMER_DISABLE() 
 
 #endif
 
@@ -54,11 +70,16 @@ volatile byte idle2_pin_mask;
 volatile bool idle_pwm_state;
 unsigned int idle_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int idle_pwm_cur_value;
+long idle_pid_target_value;
 long idle_pwm_target_value;
 long idle_cl_target_rpm;
+byte idleCounter; //Used for tracking the number of calls to the idle control function
 
 void initialiseIdle();
 static inline void disableIdle();
 static inline void enableIdle();
+static inline byte isStepperHomed();
+static inline byte checkForStepping();
+static inline void doStep();
 
 #endif

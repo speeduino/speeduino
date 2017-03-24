@@ -88,7 +88,7 @@ Note: This does not currently support dual wheel (ie missing tooth + single toot
 void triggerSetup_missingTooth()
 {
   triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
-  if(configPage2.TrigSpeed) { triggerToothAngle = triggerToothAngle * 2; } //Account for cam speed missing tooth
+  if(configPage2.TrigSpeed) { triggerToothAngle = 720 / configPage2.triggerTeeth; } //Account for cam speed missing tooth
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   secondDerivEnabled = false;
@@ -232,15 +232,15 @@ void triggerSec_DualWheel()
   toothLastSecToothTime = curTime2;
   triggerSecFilterTime = curGap2 >> 2; //Set filter at 25% of the current speed
 
-  toothCurrentCount = configPage2.triggerTeeth;
-
   if(!currentStatus.hasSync)
   {
     toothLastToothTime = micros();
     toothLastMinusOneToothTime = (toothOneTime - 6000000) / configPage2.triggerTeeth; //Fixes RPM at 10rpm until a full revolution has taken place
+    toothCurrentCount = configPage2.triggerTeeth;
 
     currentStatus.hasSync = true;
   }
+  else if (configPage2.useResync) { toothCurrentCount = configPage2.triggerTeeth; }
 
   revolutionOne = 1; //Sequential revolution reset
 }
@@ -504,6 +504,8 @@ void triggerSetup_4G63()
 
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  triggerSecFilterTime_duration = 4000;
+  secondaryLastToothTime = 0;
 }
 
 void triggerPri_4G63()
@@ -561,20 +563,40 @@ void triggerPri_4G63()
 void triggerSec_4G63()
 {
   //byte crankState = READ_PRI_TRIGGER();
+  //First filter is a duration based one to ensure the pulse was of sufficient length (time)
+  //if(READ_SEC_TRIGGER()) { secondaryLastToothTime1 = micros(); return; }
+  if(currentStatus.hasSync)
+  {
+  //if ( (micros() - secondaryLastToothTime1) < triggerSecFilterTime_duration ) { return; } //1166 is the time taken to cross 70 degrees at 10k rpm
+  //triggerSecFilterTime_duration = (micros() - secondaryLastToothTime1) >> 1;
+  }
+
+
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
   if ( curGap2 < triggerSecFilterTime ) { return; }
   toothLastSecToothTime = curTime2;
 
+  triggerSecFilterTime = curGap2 >> 1; //Basic 50% filter for the secondary reading
+  //triggerSecFilterTime = (curGap2 * 9) >> 5; //62.5%
+  //triggerSecFilterTime = (curGap2 * 6) >> 3; //75%
+
   if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) || !currentStatus.hasSync)
   {
     triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset).
-
-    //Check the status of the crank trigger
-    //bool crank = digitalRead(pinTrigger);
-    if(READ_PRI_TRIGGER())
+    if(READ_PRI_TRIGGER())// && (crankState == digitalRead(pinTrigger)))
     {
       toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
+    }
+}
+
+  if ( (micros() - secondaryLastToothTime1) < triggerSecFilterTime_duration )
+  {
+    triggerSecFilterTime_duration = (micros() - secondaryLastToothTime1) >> 1;
+    if(READ_PRI_TRIGGER())// && (crankState == digitalRead(pinTrigger)))
+    {
+      //toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
+
       /* High-res mode
       toothCurrentCount = 7; //If the crank trigger is currently HIGH, it means we're on the falling edge of the narrow crank tooth
       toothLastMinusOneToothTime = toothLastToothTime;
@@ -582,20 +604,7 @@ void triggerSec_4G63()
       */
     }
   }
-/*
-  else
-  {
-    //triggerSecFilterTime = curGap2 >> 1; //Only set the filter when we have sync
-    //if(toothCurrentCount != 2)
-    {
-      if(READ_PRI_TRIGGER())// && (crankState == digitalRead(pinTrigger)))
-      {
-        toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
-      }
-    }
-  }
-*/
-  //else { triggerFilterTime = 1500; } //reset filter time (ugly)
+
   return;
 }
 
@@ -866,11 +875,12 @@ void triggerPri_Audi135()
    curGap = curTime - toothSystemLastToothTime;
    if ( curGap < triggerFilterTime ) { return; }
    toothSystemCount++;
-   toothSystemLastToothTime = curTime;
-   addToothLogEntry(curGap);
+
    if ( !currentStatus.hasSync ) { toothLastToothTime = curTime; return; }
    if ( toothSystemCount < 3 ) { return; } //We only proceed for every third tooth
 
+   addToothLogEntry(curGap);
+   toothSystemLastToothTime = curTime;
    toothSystemCount = 0;
    toothCurrentCount++; //Increment the tooth counter
 
@@ -904,9 +914,7 @@ void triggerSec_Audi135()
     currentStatus.hasSync = true;
     toothSystemCount = 3; //Need to set this to 3 so that the next primary tooth is counted
   }
-  else{
-    toothCurrentCount = 0;
-  }
+  else if (configPage2.useResync) { toothCurrentCount = 0; }
   revolutionOne = 1; //Sequential revolution reset
 }
 
