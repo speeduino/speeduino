@@ -87,9 +87,10 @@ void initialiseIdle()
 
     case IAC_ALGORITHM_ONOFF:
       //Case 1 is on/off idle control
-      if (currentStatus.coolant < configPage4.iacFastTemp)
+      if ((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < configPage4.iacFastTemp)
       {
         digitalWrite(pinIdle1, HIGH);
+        idleOn = true;
       }
       break;
 
