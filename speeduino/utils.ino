@@ -181,6 +181,16 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+
+      #if defined(CORE_TEENSY)
+        pinTrigger = 23;
+        pinStepperDir = 33;
+        pinCoil1 = 31;
+        pinTachOut = 28;
+        pinFan = 27;
+        pinCoil4 = 29;
+        pinCoil3 = 30;
+      #endif
       break;
 
     case 9:

@@ -259,38 +259,45 @@ void setup()
   currentStatus.launchingHard = false;
   triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
 
-  switch (pinTrigger) {
-    //Arduino Mega 2560 mapping
-    case 2:
-      triggerInterrupt = 0; break;
-    case 3:
-      triggerInterrupt = 1; break;
-    case 18:
-      triggerInterrupt = 5; break;
-    case 19:
-      triggerInterrupt = 4; break;
-    case 20:
-      triggerInterrupt = 3; break;
-    case 21:
-      triggerInterrupt = 2; break;
+  #if defined(CORE_AVR)
+    switch (pinTrigger) {
+      //Arduino Mega 2560 mapping
+      case 2:
+        triggerInterrupt = 0; break;
+      case 3:
+        triggerInterrupt = 1; break;
+      case 18:
+        triggerInterrupt = 5; break;
+      case 19:
+        triggerInterrupt = 4; break;
+      case 20:
+        triggerInterrupt = 3; break;
+      case 21:
+        triggerInterrupt = 2; break;
+    }
+  #else
+    triggerInterrupt = pinTrigger;
+  #endif
 
-  }
-  switch (pinTrigger2) {
-    //Arduino Mega 2560 mapping
-    case 2:
-      triggerInterrupt2 = 0; break;
-    case 3:
-      triggerInterrupt2 = 1; break;
-    case 18:
-      triggerInterrupt2 = 5; break;
-    case 19:
-      triggerInterrupt2 = 4; break;
-    case 20:
-      triggerInterrupt2 = 3; break;
-    case 21:
-      triggerInterrupt2 = 2; break;
-
-  }
+  #if defined(CORE_AVR)
+    switch (pinTrigger2) {
+      //Arduino Mega 2560 mapping
+      case 2:
+        triggerInterrupt2 = 0; break;
+      case 3:
+        triggerInterrupt2 = 1; break;
+      case 18:
+        triggerInterrupt2 = 5; break;
+      case 19:
+        triggerInterrupt2 = 4; break;
+      case 20:
+        triggerInterrupt2 = 3; break;
+      case 21:
+        triggerInterrupt2 = 2; break;
+    }
+  #else
+    triggerInterrupt2 = pinTrigger2;
+  #endif
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
