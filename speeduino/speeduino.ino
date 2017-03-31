@@ -469,6 +469,17 @@ void setup()
         attachInterrupt(triggerInterrupt2, triggerSec_Nissan360, CHANGE);
         break;
 
+    case 13:
+            triggerSetup_Subaru67();
+            trigger = triggerPri_Subaru67;
+            getRPM = getRPM_Subaru67;
+            getCrankAngle = getCrankAngle_Subaru67;
+
+            if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+            else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+            attachInterrupt(triggerInterrupt2, triggerSec_Subaru67, FALLING);
+            break;
+
     default:
       trigger = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;
