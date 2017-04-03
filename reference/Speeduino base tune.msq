@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.18 - EFI Analytics, Inc." tuneComment="" writeDate="Fri Mar 03 12:50:33 AEDT 2017"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.02" nPages="10" signature="speeduino 201702"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.18.08 - EFI Analytics, Inc." tuneComment="" writeDate="Mon Apr 03 16:10:18 AEST 2017"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.03" nPages="10" signature="speeduino 201703"/>
 <page>
 <pcVariable name="tsCanId">"0"</pcVariable>
 </page>
@@ -140,16 +140,10 @@
 <constant digits="0" name="flexFuelLow" units="%">100.0</constant>
 <constant digits="0" name="flexFuelHigh" units="%">163.0</constant>
 <constant digits="0" name="flexAdvLow" units="Deg">0.0</constant>
-<constant digits="0" name="flexAdvHigh" units="Deg">85.0</constant>
+<constant digits="0" name="flexAdvHigh" units="Deg">10.0</constant>
 <constant digits="0" name="iacCLminDuty" units="%">0.0</constant>
 <constant digits="0" name="iacCLmaxDuty" units="%">0.0</constant>
 <constant digits="0" name="boostMinDuty" units="%">0.0</constant>
-<constant digits="0" name="UNALLOCATED_SPACE_1_0" units="RAW">
-         0.0 
-      </constant>
-<constant digits="0" name="UNALLOCATED_TOP_1" units="RAW">
-         0.0 
-      </constant>
 </page>
 <page number="2" size="288">
 <constant cols="16" digits="0" name="advTable1" rows="16" units="deg">
@@ -219,7 +213,7 @@
 <constant name="TrigPattern">"Missing Tooth"</constant>
 <constant name="TrigEdgeSec">"Leading"</constant>
 <constant name="fuelPumpPin">"Board Default"</constant>
-<constant name="unused4-6h">"No"</constant>
+<constant name="useResync">"No"</constant>
 <constant digits="0" name="unused4-7" units="ADC">0.0</constant>
 <constant digits="0" name="IdleAdvRPM" units="RPM">3200.0</constant>
 <constant digits="1" name="IdleAdvCLT" units="C">-21.0</constant>
@@ -230,7 +224,7 @@
 <constant name="sparkMode">"Wasted Spark"</constant>
 <constant name="dfcoEnabled">"Off"</constant>
 <constant name="TrigFilter">"Off"</constant>
-<constant name="ignCranklock">"Off"</constant>
+<constant name="ignCranklock">"On"</constant>
 <constant digits="1" name="dwellcrank" units="ms">4.5</constant>
 <constant digits="1" name="dwellrun" units="ms">3.0</constant>
 <constant digits="0" name="numteeth" units="teeth">36.0</constant>

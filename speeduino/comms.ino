@@ -72,12 +72,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.03-dev");
+      Serial.print("Speeduino 2017.03");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201703-dev");
+      Serial.print("speeduino 201703");
      break;
 
     case 'V': // send VE table and constants in binary
