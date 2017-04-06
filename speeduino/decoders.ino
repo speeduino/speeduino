@@ -88,14 +88,14 @@ Note: This does not currently support dual wheel (ie missing tooth + single toot
 */
 void triggerSetup_missingTooth()
 {
-  triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
-  if(configPage2.TrigSpeed) { triggerToothAngle = 720 / configPage2.triggerTeeth; } //Account for cam speed missing tooth
+  triggerToothAngle = 3600 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
+  if(configPage2.TrigSpeed) { triggerToothAngle = 7200 / configPage2.triggerTeeth; } //Account for cam speed missing tooth
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   secondDerivEnabled = false;
   decoderIsSequential = false;
   checkSyncToothCount = (configPage2.triggerTeeth) >> 1; //50% of the total teeth.
-  MAX_STALL_TIME = (3333UL * triggerToothAngle * (configPage2.triggerMissingTeeth + 1)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  MAX_STALL_TIME = (3333UL * (triggerToothAngle / 10) * (configPage2.triggerMissingTeeth + 1)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 }
 
 void triggerPri_missingTooth()
@@ -164,7 +164,7 @@ int getCrankAngle_missingTooth(int timePerDegree)
     tempRevolutionOne = revolutionOne;
     interrupts();
 
-    int crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    int crankAngle = (tempToothCurrentCount - 1) * triggerToothAngle + (configPage2.triggerAngle * 10); //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
     //Estimate the number of degrees travelled since the last tooth}
     long elapsedTime = (micros() - tempToothLastToothTime);
     //crankAngle += DIV_ROUND_CLOSEST(elapsedTime, timePerDegree);
@@ -172,9 +172,9 @@ int getCrankAngle_missingTooth(int timePerDegree)
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
 
     //Sequential check (simply sets whether we're on the first or 2nd revoltuion of the cycle)
-    if (tempRevolutionOne) { crankAngle += 360; }
+    if (tempRevolutionOne) { crankAngle += 3600; }
 
-    if (crankAngle >= 720) { crankAngle -= 720; }
+    if (crankAngle >= 7200) { crankAngle -= 7200; }
     else if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += CRANK_ANGLE_MAX; }
 
@@ -1545,7 +1545,7 @@ void triggerSetup_Subaru67()
   secondDerivEnabled = false;
   decoderIsSequential = true;
   toothCurrentCount = 1;
-  triggerToothAngle = 2;
+  //triggerToothAngle = 2;
   MAX_STALL_TIME = (3333UL * 93); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 
   toothAngles[0] = 710; //tooth #1
