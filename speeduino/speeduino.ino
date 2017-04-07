@@ -135,6 +135,9 @@ volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming ha
 
 void setup()
 {
+  #if defined(CORE_STM32)
+    pinMode(LED_BUILTIN, OUTPUT);
+  #endif
 
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
@@ -149,16 +152,19 @@ void setup()
   table3D_setSize(&trim3Table, 6);
   table3D_setSize(&trim4Table, 6);
 
+  #if defined(CORE_STM32)
+    while ( !Serial.isConnected() ) ; // wait till serial connection is setup, or serial monitor started
+  #endif
   loadConfig();
 
   Serial.begin(115200);
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
   if (configPage1.canEnable) { Serial3.begin(115200); }
-#elif defined(CORE_SMT32)
+#elif defined(CORE_STM32)
   if (configPage1.canEnable) { Serial2.begin(115200); }
 #endif
 
-  //Repoint16_t the 2D table structs to the config pages that were just loaded
+  //Repoint the 2D table structs to the config pages that were just loaded
   taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
   taeTable.xSize = 4;
   taeTable.values = configPage2.taeValues;
@@ -188,6 +194,10 @@ void setup()
   //Setup the calibration tables
   loadCalibration();
   //Set the pin mappings
+  #if defined(CORE_STM32)
+    configPage1.pinMapping = 32;
+  #endif
+
   setPinMapping(configPage1.pinMapping);
 
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
@@ -264,38 +274,46 @@ void setup()
   currentStatus.launchingHard = false;
   triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
 
-  switch (pinTrigger) {
-    //Arduino Mega 2560 mapping
-    case 2:
-      triggerInterrupt = 0; break;
-    case 3:
-      triggerInterrupt = 1; break;
-    case 18:
-      triggerInterrupt = 5; break;
-    case 19:
-      triggerInterrupt = 4; break;
-    case 20:
-      triggerInterrupt = 3; break;
-    case 21:
-      triggerInterrupt = 2; break;
-
-  }
-  switch (pinTrigger2) {
-    //Arduino Mega 2560 mapping
-    case 2:
-      triggerInterrupt2 = 0; break;
-    case 3:
-      triggerInterrupt2 = 1; break;
-    case 18:
-      triggerInterrupt2 = 5; break;
-    case 19:
-      triggerInterrupt2 = 4; break;
-    case 20:
-      triggerInterrupt2 = 3; break;
-    case 21:
-      triggerInterrupt2 = 2; break;
-
-  }
+    #if defined(CORE_AVR)
+      switch (pinTrigger) {
+      //Arduino Mega 2560 mapping
+      case 2:
+        triggerInterrupt = 0; break;
+      case 3:
+        triggerInterrupt = 1; break;
+      case 18:
+        triggerInterrupt = 5; break;
+      case 19:
+        triggerInterrupt = 4; break;
+      case 20:
+        triggerInterrupt = 3; break;
+      case 21:
+        triggerInterrupt = 2; break;
+      }
+    #else
+      triggerInterrupt = pinTrigger;
+    #endif
+    
+  #if defined(CORE_AVR)
+    switch (pinTrigger2) {
+      //Arduino Mega 2560 mapping
+      case 2:
+        triggerInterrupt2 = 0; break;
+      case 3:
+        triggerInterrupt2 = 1; break;
+      case 18:
+        triggerInterrupt2 = 5; break;
+      case 19:
+        triggerInterrupt2 = 4; break;
+      case 20:
+        triggerInterrupt2 = 3; break;
+      case 21:
+        triggerInterrupt2 = 2; break;
+    }
+  #else
+    triggerInterrupt2 = pinTrigger2;
+  #endif
+  
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
@@ -782,7 +800,6 @@ void setup()
       ign5EndFunction = endCoil5Charge;
       break;
   }
-
   //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
   digitalWrite(pinFuelPump, HIGH);
   fuelPumpOn = true;
@@ -904,6 +921,7 @@ void loop()
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
     }
+    
     if( (mainLoopCount & 63) == 1) //Every 64 loops
     {
       boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
@@ -1350,6 +1368,9 @@ void loop()
       if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) { fixedCrankingOverride = currentStatus.dwell * 2; }
       else { fixedCrankingOverride = 0; }
 
+  #if defined(CORE_STM32)
+    while ( !Serial.isConnected() ) ; // wait till serial connection is setup, or serial monitor started
+  #endif
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
       //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
       if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) && !BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) && !currentStatus.flatShiftingHard)

@@ -320,9 +320,9 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       break;
 
-    //case 32:
-    default:
     #if defined(CORE_STM32)
+    case 32:
+      //http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/0.0.12/hardware/maple-mini.html#master-pin-map
       pinInjector1 = D11; //Output pin injector 1 is on
       pinInjector2 = D10; //Output pin injector 2 is on
       pinInjector3 = D9; //Output pin injector 3 is on
@@ -332,7 +332,7 @@ void setPinMapping(byte boardID)
       pinCoil2 = D4; //Pin for coil 2
       pinCoil3 = D3; //Pin for coil 3
       pinCoil4 = D33; //Pin for coil 4
-      pinCoil5 = D27; //Pin for coil 5 PLACEHOLDER value for now
+      pinCoil5 = D16; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = D15; //The CAS pin
       pinTrigger2 = D26; //The Cam Sensor pin
       pinTPS = A2; //TPS input pin
@@ -346,10 +346,12 @@ void setPinMapping(byte boardID)
       pinDisplayReset = D2; // OLED reset pin
       pinFan = D6; //Pin for the fan output
       pinFuelPump = D7; //Fuel pump output
-      pinTachOut = D12; //Tacho output pin
+      pinTachOut = D31; //Tacho output pin
       pinFlex = D32; // Flex sensor (Must be external interrupt enabled)
       break;
-    #else  
+    #endif  
+
+    default:
       //Pin mappings as per the v0.2 shield
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on
@@ -376,7 +378,6 @@ void setPinMapping(byte boardID)
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
       break;
-    #endif  
   }
 
   //Setup any devices that are using selectable pins
@@ -448,15 +449,24 @@ void setPinMapping(byte boardID)
 
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
-
   //And for inputs
-  pinMode(pinMAP, INPUT);
-  pinMode(pinO2, INPUT);
-  pinMode(pinO2_2, INPUT);
-  pinMode(pinTPS, INPUT);
-  pinMode(pinIAT, INPUT);
-  pinMode(pinCLT, INPUT);
-  pinMode(pinBat, INPUT);
+  #if defined(CORE_STM32)
+    pinMode(pinMAP, INPUT_ANALOG);
+    pinMode(pinO2, INPUT_ANALOG);
+    pinMode(pinO2_2, INPUT_ANALOG);
+    pinMode(pinTPS, INPUT_ANALOG);
+    pinMode(pinIAT, INPUT_ANALOG);
+    pinMode(pinCLT, INPUT_ANALOG);
+    pinMode(pinBat, INPUT_ANALOG);
+  #else
+    pinMode(pinMAP, INPUT);
+    pinMode(pinO2, INPUT);
+    pinMode(pinO2_2, INPUT);
+    pinMode(pinTPS, INPUT);
+    pinMode(pinIAT, INPUT);
+    pinMode(pinCLT, INPUT);
+    pinMode(pinBat, INPUT);
+  #endif
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
@@ -475,10 +485,13 @@ void setPinMapping(byte boardID)
   triggerSec_pin_port = portInputRegister(digitalPinToPort(pinTrigger2));
   triggerSec_pin_mask = digitalPinToBitMask(pinTrigger2);
 
-  //Set default values
-  digitalWrite(pinMAP, HIGH);
-  //digitalWrite(pinO2, LOW);
-  digitalWrite(pinTPS, LOW);
+  #if defined(CORE_STM32)
+  #else
+    //Set default values
+    digitalWrite(pinMAP, HIGH);
+    //digitalWrite(pinO2, LOW);
+    digitalWrite(pinTPS, LOW);
+  #endif
 }
 
 /*

@@ -159,6 +159,15 @@ void initialiseSchedulers()
   NVIC_ENABLE_IRQ(IRQ_FTM0);
   NVIC_ENABLE_IRQ(IRQ_FTM1);
 
+#elif defined(CORE_STM32)
+  timer_set_prescaler(TIMER1,8); //4us resolution
+  timer_set_prescaler(TIMER2,8); //4us resolution
+  timer_set_prescaler(TIMER3,8); //4us resolution
+  
+  //Timer2.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
+  //(TIMER2->regs).gen->CCMR1 &= ~TIM_CCMR1_OC1M; //Select channel 1 output Compare and Mode
+  //TIM3->CR1 |= TIM_CR1_CEN
+
 #endif
 
     fuelSchedule1.Status = OFF;
