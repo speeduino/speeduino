@@ -30,11 +30,31 @@ int freeRam ()
 
   // The difference is the free, available ram.
   return (uint16_t)stackTop - heapTop;
+#elif defined(CORE_STM32)
+  //Figure this out some_time
+  return 0;
 #endif
 }
 
 void setPinMapping(byte boardID)
 {
+  //This is dumb, but it'll do for now to get things compiling
+  #if defined(CORE_STM32)
+    #define A0  0
+    #define A1  1
+    #define A2  2
+    #define A3  3
+    #define A4  4
+    #define A5  5
+    #define A6  6
+    #define A7  7
+    #define A8  8
+    #define A9  9
+    #define A13  13
+    #define A14  14
+    #define A15  15
+  #endif
+
   switch (boardID)
   {
     case 0:
@@ -124,6 +144,7 @@ void setPinMapping(byte boardID)
       pinFuelPump = 4; //Fuel pump output
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinStepperEnable = 26; //Enable pin for DRV8825
       pinFan = A13; //Pin for the fan output
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
@@ -158,9 +179,20 @@ void setPinMapping(byte boardID)
       pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinStepperEnable = 24; //Enable pin for DRV8825
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+
+      #if defined(CORE_TEENSY)
+        pinTrigger = 23;
+        pinStepperDir = 33;
+        pinCoil1 = 31;
+        pinTachOut = 28;
+        pinFan = 27;
+        pinCoil4 = 29;
+        pinCoil3 = 30;
+      #endif
       break;
 
     case 9:
@@ -172,8 +204,8 @@ void setPinMapping(byte boardID)
       pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 39; //Pin for coil 1
       pinCoil2 = 41; //Pin for coil 2
-      pinCoil3 = 42; //Pin for coil 3
-      pinCoil4 = 43; //Pin for coil 4
+      pinCoil3 = 35; //Pin for coil 3
+      pinCoil4 = 37; //Pin for coil 4
       pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
@@ -371,6 +403,7 @@ void setPinMapping(byte boardID)
   pinMode(pinFan, OUTPUT);
   pinMode(pinStepperDir, OUTPUT);
   pinMode(pinStepperStep, OUTPUT);
+  pinMode(pinStepperEnable, OUTPUT);
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
 
@@ -418,6 +451,12 @@ void setPinMapping(byte boardID)
   else {
     pinMode(pinLaunch, INPUT);  //If Launch Pull Resistor is not set make input float.
   }
+
+  //These must come after the above pinMode statements
+  triggerPri_pin_port = portInputRegister(digitalPinToPort(pinTrigger));
+  triggerPri_pin_mask = digitalPinToBitMask(pinTrigger);
+  triggerSec_pin_port = portInputRegister(digitalPinToPort(pinTrigger2));
+  triggerSec_pin_mask = digitalPinToBitMask(pinTrigger2);
 
   //Set default values
   digitalWrite(pinMAP, HIGH);

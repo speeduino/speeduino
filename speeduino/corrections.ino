@@ -8,7 +8,7 @@ A full copy of the license may be found in the projects root directory
 The corrections functions in this file affect the fuel pulsewidth (Either increasing or decreasing)
 based on factors other than the VE lookup.
 
-These factors include temperature (Warmup Enrichment and After Start Enrichment), Acceleration/Decelleration, 
+These factors include temperature (Warmup Enrichment and After Start Enrichment), Acceleration/Decelleration,
 Flood clear mode etc.
 */
 //************************************************************************************************************
@@ -34,34 +34,34 @@ byte correctionsFuel()
   unsigned long sumCorrections = 100;
   byte activeCorrections = 0;
   byte result; //temporary variable to store the result of each corrections function
-  
-  //The values returned by each of the correction functions are multipled together and then divided back to give a single 0-255 value. 
+
+  //The values returned by each of the correction functions are multipled together and then divided back to give a single 0-255 value.
   currentStatus.wueCorrection = correctionWUE();
   if (currentStatus.wueCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.wueCorrection); activeCorrections++; }
-  
+
   result = correctionASE();
   if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
-  
+
   result = correctionCranking();
   if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; } // Need to check this to ensure that sumCorrections doesn't overflow. Can occur when the number of corrections is greater than 3 (Which is 100^4) as 100^5 can overflow
-  
+
   currentStatus.TAEamount = correctionAccel();
   if (currentStatus.TAEamount != 100) { sumCorrections = (sumCorrections * currentStatus.TAEamount); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
-  
+
   result = correctionFloodClear();
   if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
-  
+
   currentStatus.egoCorrection = correctionAFRClosedLoop();
   if (currentStatus.egoCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.egoCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
-  
+
   currentStatus.batCorrection = correctionBatVoltage();
   if (currentStatus.batCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.batCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
-  
+
   currentStatus.iatCorrection = correctionIATDensity();
   if (currentStatus.iatCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.iatCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
@@ -69,15 +69,15 @@ byte correctionsFuel()
   currentStatus.flexCorrection = correctionFlex();
   if (currentStatus.flexCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.flexCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
-  
+
   currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
-  
+
   bitWrite(currentStatus.squirt, BIT_SQUIRT_DFCO, correctionDFCO());
-  if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) ) { sumCorrections = 0; } 
+  if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) ) { sumCorrections = 0; }
 
   sumCorrections = sumCorrections / powint(100,activeCorrections);
-  
+
   if(sumCorrections > 255) { sumCorrections = 255; } //This is the maximum allowable increase
   return (byte)sumCorrections;
 }
@@ -119,7 +119,7 @@ static inline byte correctionASE()
     BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
     return 100 + configPage1.asePct;
   }
-  
+
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
   return 100;
 }
@@ -143,24 +143,24 @@ static inline byte correctionAccel()
       return 100;
     }
     //Enrichment still needs to keep running. Simply return the total TAE amount
-    return currentStatus.TAEamount; 
+    return currentStatus.TAEamount;
   }
-  
+
   //Check for deceleration (Deceleration adjustment not yet supported)
   if (currentStatus.TPS < currentStatus.TPSlast) { return 100; }
-  
+
   //If TAE isn't currently turned on, need to check whether it needs to be turned on
   int rateOfChange = ldiv(1000000, (currentStatus.TPS_time - currentStatus.TPSlast_time)).quot * (currentStatus.TPS - currentStatus.TPSlast); //This is the % per second that the TPS has moved
-  //currentStatus.tpsDOT = divs10(rateOfChange); //The TAE bins are divided by 10 in order to allow them to be stored in a byte. 
+  //currentStatus.tpsDOT = divs10(rateOfChange); //The TAE bins are divided by 10 in order to allow them to be stored in a byte.
   currentStatus.tpsDOT = rateOfChange / 10;
-  
+
   if (rateOfChange > configPage1.tpsThresh)
   {
     BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
     currentStatus.TAEEndTime = micros() + ((unsigned long)configPage1.taeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
     return 100 + table2D_getValue(&taeTable, currentStatus.tpsDOT);
   }
-  
+
   //If we reach here then TAE is neither on, nor does it need to be turned on.
   return 100;
 }
@@ -190,17 +190,17 @@ Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y 
 */
 static inline byte correctionBatVoltage()
 {
-  if (currentStatus.battery10 > (injectorVCorrectionTable.axisX[5])) { return injectorVCorrectionTable.values[injectorVCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the voltage is above maximum 
+  if (currentStatus.battery10 > (injectorVCorrectionTable.axisX[5])) { return injectorVCorrectionTable.values[injectorVCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the voltage is above maximum
   return table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
 }
 
 /*
-Simple temperature based corrections lookup based on the inlet air temperature. 
-This corrects for changes in air density from movement of the temperature 
+Simple temperature based corrections lookup based on the inlet air temperature.
+This corrects for changes in air density from movement of the temperature
 */
 static inline byte correctionIATDensity()
 {
-  if ( (currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) > (IATDensityCorrectionTable.axisX[8])) { return IATDensityCorrectionTable.values[IATDensityCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the intake temp is above maximum 
+  if ( (currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) > (IATDensityCorrectionTable.axisX[8])) { return IATDensityCorrectionTable.values[IATDensityCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the intake temp is above maximum
   return table2D_getValue(&IATDensityCorrectionTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
 }
 
@@ -221,12 +221,12 @@ static inline bool correctionDFCO()
 {
   if ( !configPage2.dfcoEnabled ) { return false; } //If the DFCO option isn't turned on, always return false (off)
   if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) ) { return ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
-  else { return ( currentStatus.RPM > ( (configPage2.dfcoRPM * 10) + configPage2.dfcoHyster) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
+  else { return ( currentStatus.RPM > (unsigned int)( (configPage2.dfcoRPM * 10) + configPage2.dfcoHyster) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
 }
 
 /*
  * Flex fuel adjustment to vary fuel based on ethanol content
- * The amount of extra fuel required is a linear relationship based on the % of ethanol. 
+ * The amount of extra fuel required is a linear relationship based on the % of ethanol.
 */
 static inline byte correctionFlex()
 {
@@ -244,17 +244,17 @@ It then waits <egoDelta> number of ignition events and compares O2 against the t
 This continues until either:
   a) the O2 reading flips from lean to rich, at which point the adjustment cycle starts again at 1% or
   b) the adjustment amount increases to <egoLimit> at which point it stays at this level until the O2 state (rich/lean) changes
- 
+
 PID (Best suited to wideband sensors):
- 
+
 */
 
 static inline byte correctionAFRClosedLoop()
 {
   if( (configPage3.egoType == 0)) { return 100; } //egoType of 0 means no O2 sensor
 
-  currentStatus.afrTarget = currentStatus.O2; //Catch all incase the below doesn't run. This prevents the Include AFR option from doing crazy things if the AFR target conditions aren't met. This value is changed again below if all conditions are met. 
-  
+  currentStatus.afrTarget = currentStatus.O2; //Catch all incase the below doesn't run. This prevents the Include AFR option from doing crazy things if the AFR target conditions aren't met. This value is changed again below if all conditions are met.
+
   //Check the ignition count to see whether the next step is required
   //if( (ignitionCount & (configPage3.egoCount - 1)) == 1 ) //This is the equivalent of ( (ignitionCount % configPage3.egoCount) == 0 ) but without the expensive modulus operation. ie It results in True every <egoCount> ignition loops. Note that it only works for power of two vlaues for egoCount
   {
@@ -263,7 +263,7 @@ static inline byte correctionAFRClosedLoop()
     if (configPage1.algorithm == 0) { yValue = currentStatus.MAP; }
     else  { yValue = currentStatus.TPS; }
     currentStatus.afrTarget = get3DTableValue(&afrTable, yValue, currentStatus.RPM); //Perform the target lookup
-  
+
     //Check all other requirements for closed loop adjustments
     if( (currentStatus.coolant > (int)(configPage3.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage3.egoRPM * 100)) && (currentStatus.TPS < configPage3.egoTPSMax) && (currentStatus.O2 < configPage3.ego_max) && (currentStatus.O2 > configPage3.ego_min) && (currentStatus.runSecs > configPage3.ego_sdelay) )
     {
@@ -299,16 +299,16 @@ static inline byte correctionAFRClosedLoop()
         egoPID.SetTunings(configPage3.egoKP, configPage3.egoKI, configPage3.egoKD); //Set the PID values again, just incase the user has changed them since the last loop
         PID_O2 = (long)(currentStatus.O2);
         PID_AFRTarget = (long)(currentStatus.afrTarget);
-        
+
         egoPID.Compute();
         //currentStatus.egoCorrection = 100 + PID_output;
         return (100 + PID_output);
       }
       else { return 100; } // Occurs if the egoAlgorithm is set to 0 (No Correction)
-      
+
     }
   }
-  
+
   return 100; //Catch all (Includes when AFR target = current AFR
 }
 
@@ -345,10 +345,10 @@ static inline int8_t correctionFlexTiming(int8_t advance)
 {
   if(!configPage1.flexEnabled) { return advance; } //Check for flex being enabled
   byte flexRange = configPage1.flexAdvHigh - configPage1.flexAdvLow;
-  
+
   if (currentStatus.ethanolPct != 0) { currentStatus.flexIgnCorrection = percentage(currentStatus.ethanolPct, flexRange); }
   else { currentStatus.flexIgnCorrection = 0; }
-  
+
   return advance + currentStatus.flexIgnCorrection;
 }
 
@@ -357,7 +357,7 @@ static inline int8_t correctionIATretard(int8_t advance)
   //Adjust the advance based on IAT. If the adjustment amount is greater than the current advance, just set advance to 0
   byte advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
   if (advanceIATadjust <= advance) { return (advance - advanceIATadjust); }
-  else { return 0; } 
+  else { return 0; }
 }
 
 static inline int8_t correctionSoftRevLimit(int8_t advance)
@@ -369,28 +369,27 @@ static inline int8_t correctionSoftRevLimit(int8_t advance)
 
 static inline int8_t correctionSoftLaunch(int8_t advance)
 {
-  //SoftCut rev limit for 2-step launch control. 
-  if (configPage3.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) ) 
+  //SoftCut rev limit for 2-step launch control.
+  if (configPage3.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) )
   {
-    currentStatus.launchingSoft = true; 
+    currentStatus.launchingSoft = true;
     BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH);
     return configPage3.lnchRetard;
-  } 
+  }
 
-  currentStatus.launchingSoft = false; 
+  currentStatus.launchingSoft = false;
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SLAUNCH);
-  return advance; 
+  return advance;
 }
 
 static inline int8_t correctionSoftFlatShift(int8_t advance)
 {
-  if(configPage3.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage3.flatSSoftWin) ) ) 
-  { 
+  if(configPage3.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage3.flatSSoftWin) ) )
+  {
     BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
-    return configPage3.flatSRetard; 
+    return configPage3.flatSRetard;
   }
 
   BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS);
   return advance;
 }
-

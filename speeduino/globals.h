@@ -5,6 +5,12 @@
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define CORE_AVR
+#elif defined(STM32_MCU_SERIES)
+  #define CORE_STM32
+
+  inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
+  #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+  #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
 #endif
 
 //Handy bitsetting macros
@@ -139,6 +145,11 @@ volatile byte ign5_pin_mask;
 volatile byte *tach_pin_port;
 volatile byte tach_pin_mask;
 
+volatile byte *triggerPri_pin_port;
+volatile byte triggerPri_pin_mask;
+volatile byte *triggerSec_pin_port;
+volatile byte triggerSec_pin_mask;
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
@@ -200,6 +211,11 @@ struct statuses {
   unsigned int clutchEngagedRPM;
   bool flatShiftingHard;
   volatile byte startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
+  byte boostTarget;
+  byte testOutputs;
+  bool testActive;
+  byte boostDuty;
+  byte idleLoad; //Either the current steps or current duty cycle for the idle control.
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -248,10 +264,10 @@ struct config1 {
   byte unused26 : 4;
   byte indInjAng : 1;
   byte injOpen; //Injector opening time (ms * 10)
-  unsigned int inj1Ang;
-  unsigned int inj2Ang;
-  unsigned int inj3Ang;
-  unsigned int inj4Ang;
+  uint16_t inj1Ang;
+  uint16_t inj2Ang;
+  uint16_t inj3Ang;
+  uint16_t inj4Ang;
 
   //config1 in ini
   byte mapSample : 2;
@@ -278,23 +294,26 @@ struct config1 {
   byte dutyLim;
   byte flexFreqLow; //Lowest valid frequency reading from the flex sensor
   byte flexFreqHigh; //Highest valid frequency reading from the flex sensor
-  byte taeColdM;
+
+  byte boostMaxDuty;
   byte tpsMin;
   byte tpsMax;
   byte mapMin;
-  unsigned int mapMax;
+  uint16_t mapMax;
   byte fpPrime; //Time (In seconds) that the fuel pump should be primed for on power up
   byte stoich;
-  unsigned int oddfire2; //The ATDC angle of channel 2 for oddfire
-  unsigned int oddfire3; //The ATDC angle of channel 3 for oddfire
-  unsigned int oddfire4; //The ATDC angle of channel 4 for oddfire
+  uint16_t oddfire2; //The ATDC angle of channel 2 for oddfire
+  uint16_t oddfire3; //The ATDC angle of channel 3 for oddfire
+  uint16_t oddfire4; //The ATDC angle of channel 4 for oddfire
   byte flexFuelLow; //Fuel % to be used for the lowest ethanol reading (Typically 100%)
   byte flexFuelHigh; //Fuel % to be used for the highest ethanol reading (Typically 163%)
   byte flexAdvLow; //Additional advance (in degrees) at lowest ethanol reading (Typically 0)
   byte flexAdvHigh; //Additional advance (in degrees) at highest ethanol reading (Varies, usually 10-20)
-  byte unused61;
-  byte unused62;
-  byte unused63;
+
+  byte iacCLminDuty;
+  byte iacCLmaxDuty;
+  byte boostMinDuty;
+
 
 };
 
@@ -302,7 +321,7 @@ struct config1 {
 //This mostly covers off variables that are required for ignition
 struct config2 {
 
-  int triggerAngle;
+  int16_t triggerAngle;
   byte FixAng;
   byte CrankAng;
   byte TrigAngMul; //Multiplier for non evenly divisible tooth counts.
@@ -315,7 +334,7 @@ struct config2 {
 
   byte TrigEdgeSec : 1;
   byte fuelPumpPin : 6;
-  byte unused4_6b : 1;
+  byte useResync : 1;
 
   byte unused4_7;
   byte IdleAdvRPM;
@@ -640,6 +659,7 @@ byte pinVVt_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
+byte pinStepperEnable; //Turning the DRV8825 driver on/off
 byte pinLaunch;
 byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached

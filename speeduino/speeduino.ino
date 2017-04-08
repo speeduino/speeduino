@@ -259,38 +259,45 @@ void setup()
   currentStatus.launchingHard = false;
   triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
 
-  switch (pinTrigger) {
-    //Arduino Mega 2560 mapping
-    case 2:
-      triggerInterrupt = 0; break;
-    case 3:
-      triggerInterrupt = 1; break;
-    case 18:
-      triggerInterrupt = 5; break;
-    case 19:
-      triggerInterrupt = 4; break;
-    case 20:
-      triggerInterrupt = 3; break;
-    case 21:
-      triggerInterrupt = 2; break;
+  #if defined(CORE_AVR)
+    switch (pinTrigger) {
+      //Arduino Mega 2560 mapping
+      case 2:
+        triggerInterrupt = 0; break;
+      case 3:
+        triggerInterrupt = 1; break;
+      case 18:
+        triggerInterrupt = 5; break;
+      case 19:
+        triggerInterrupt = 4; break;
+      case 20:
+        triggerInterrupt = 3; break;
+      case 21:
+        triggerInterrupt = 2; break;
+    }
+  #else
+    triggerInterrupt = pinTrigger;
+  #endif
 
-  }
-  switch (pinTrigger2) {
-    //Arduino Mega 2560 mapping
-    case 2:
-      triggerInterrupt2 = 0; break;
-    case 3:
-      triggerInterrupt2 = 1; break;
-    case 18:
-      triggerInterrupt2 = 5; break;
-    case 19:
-      triggerInterrupt2 = 4; break;
-    case 20:
-      triggerInterrupt2 = 3; break;
-    case 21:
-      triggerInterrupt2 = 2; break;
-
-  }
+  #if defined(CORE_AVR)
+    switch (pinTrigger2) {
+      //Arduino Mega 2560 mapping
+      case 2:
+        triggerInterrupt2 = 0; break;
+      case 3:
+        triggerInterrupt2 = 1; break;
+      case 18:
+        triggerInterrupt2 = 5; break;
+      case 19:
+        triggerInterrupt2 = 4; break;
+      case 20:
+        triggerInterrupt2 = 3; break;
+      case 21:
+        triggerInterrupt2 = 2; break;
+    }
+  #else
+    triggerInterrupt2 = pinTrigger2;
+  #endif
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
@@ -450,6 +457,28 @@ void setup()
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, FALLING); //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
       break;
+
+    case 12:
+        triggerSetup_Nissan360();
+        trigger = triggerPri_Nissan360;
+        getRPM = getRPM_Nissan360;
+        getCrankAngle = getCrankAngle_Nissan360;
+
+        if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+        else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+        attachInterrupt(triggerInterrupt2, triggerSec_Nissan360, CHANGE);
+        break;
+
+    case 13:
+            triggerSetup_Subaru67();
+            trigger = triggerPri_Subaru67;
+            getRPM = getRPM_Subaru67;
+            getCrankAngle = getCrankAngle_Subaru67;
+
+            if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+            else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+            attachInterrupt(triggerInterrupt2, triggerSec_Subaru67, FALLING);
+            break;
 
     default:
       trigger = triggerPri_missingTooth;
@@ -843,10 +872,9 @@ void loop()
     //-----------------------------------------------------------------------------------------------------
     readMAP();
 
-    //TPS setting to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
-    if ((mainLoopCount & 31) == 1)
+    if ((mainLoopCount & 31) == 1) //Every 32 loops
     {
-      readTPS();
+      readTPS(); //TPS reading to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
 
       //Check for launching/flat shift (clutch) can be done around here too
       previousClutchTrigger = clutchTrigger;
@@ -889,21 +917,22 @@ void loop()
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
     }
-    if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
-    //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
-    if ((mainLoopCount & 255) == 1)
+    if( (mainLoopCount & 63) == 1) //Every 64 loops
     {
-
+      boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
+    }
+    //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
+    if ((mainLoopCount & 255) == 1) //Every 256 loops
+    {
        readCLT();
        readIAT();
        readO2();
        readBat();
 
        vvtControl();
-       boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
     }
-    if(configPage4.iacAlgorithm == 4) { idleControl(); } //Run idlecontrol every loop for stepper idle.
+    if(configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL || configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL) { idleControl(); } //Run idlecontrol every loop for stepper idle.
 
     //Always check for sync
     //Main loop runs within this clause
@@ -928,7 +957,6 @@ void loop()
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
           if(configPage2.ignBypassEnabled) { digitalWrite(pinIgnBypass, LOW); }
         }
-
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
 

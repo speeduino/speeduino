@@ -9,14 +9,14 @@ A full copy of the license may be found in the projects root directory
  * Returns the error number or 0 if there is no more room for errors
  */
 #include "errors.h"
- 
+
 byte setError(byte errorID)
 {
   if(errorCount < MAX_ERRORS)
   {
     errorCodes[errorCount] = errorID;
     errorCount++;
-    if(errorCount == 1) { BIT_SET(currentStatus.engine, BIT_SPARK_ERROR); } //Enable the error indicator
+    if(errorCount == 1) { BIT_SET(currentStatus.spark, BIT_SPARK_ERROR); } //Enable the error indicator
     return errorCount;
   }
   return 0;
@@ -25,7 +25,7 @@ byte setError(byte errorID)
 void clearError(byte errorID)
 {
   byte clearedError;
-  
+
   if (errorID == errorCodes[0]) { clearedError = 0; }
   else if(errorID == errorCodes[1]) { clearedError = 1; }
   else if(errorID == errorCodes[2]) { clearedError = 2; }
@@ -41,20 +41,19 @@ void clearError(byte errorID)
   }
 
   errorCount--;
-  if(errorCount == 0) { BIT_CLEAR(currentStatus.engine, BIT_SPARK_ERROR); } //Enable the error indicator
+  if(errorCount == 0) { BIT_CLEAR(currentStatus.spark, BIT_SPARK_ERROR); } //Enable the error indicator
   
 }
 
 byte getNextError()
 {
   packedError currentError;
-  
+
   //We alternate through the errors once per second
-  byte currentErrorNum = currentStatus.secl % MAX_ERRORS; //Which error number will be returned. This changes once per second. Note that as long as MAX_ERRORS is a power of 2, this % operation is performed very quickly. 
-  
+  byte currentErrorNum = currentStatus.secl % MAX_ERRORS; //Which error number will be returned. This changes once per second. Note that as long as MAX_ERRORS is a power of 2, this % operation is performed very quickly.
+
   currentError.errorNum = currentErrorNum;
   currentError.errorID = errorCodes[currentErrorNum];
 
-  return *(byte*)&currentError; //Ugly, but this forces the cast of the currentError struct to a byte. 
+  return *(byte*)&currentError; //Ugly, but this forces the cast of the currentError struct to a byte.
 }
-

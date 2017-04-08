@@ -36,7 +36,7 @@ void initialiseSchedulers()
     TCCR4A = 0x00;          //Timer4 Control Reg A: Wave Gen Mode normal
     TCCR4B = (1 << CS12);   //Timer4 Control Reg B: aka Divisor = 256 = 122.5HzTimer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
 
-#elif defined (CORE_TEENSY) && defined (__MK20DX256__)
+#elif defined (CORE_TEENSY)
 
   //FlexTimer 0 is used for 4 ignition and 4 injection schedules. There are 8 channels on this module, so no other timers are needed
   FTM0_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
@@ -122,14 +122,47 @@ void initialiseSchedulers()
   FTM0_C7SC |= FTM_CSC_MSA; //Enable Compare mode
   FTM0_C7SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
 
-  //Do the same, but on flex timer 1 (Used for channels 5+)
-  FTM1_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM1_C0SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM1_C0SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+  //Do the same, but on flex timer 3 (Used for channels 5-8)
+  FTM3_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C0SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C0SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+  FTM3_C1SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C1SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C1SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+  FTM3_C2SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C2SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C2SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+  FTM3_C3SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C3SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C3SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+  FTM3_C4SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C4SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C4SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+  FTM3_C5SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C5SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C5SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+  FTM3_C6SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C6SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C6SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+  FTM3_C7SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+  FTM3_C7SC |= FTM_CSC_MSA; //Enable Compare mode
+  FTM3_C7SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
 
   // enable IRQ Interrupt
   NVIC_ENABLE_IRQ(IRQ_FTM0);
   NVIC_ENABLE_IRQ(IRQ_FTM1);
+
+#elif defined(CORE_STM32)
+  (TIMER2->regs).gen->CCMR1 &= ~TIM_CCMR1_OC1M; //Select channel 1 output Compare and Mode
+
+  TIM3->CR1 |= TIM_CR1_CEN
 
 #endif
 
@@ -183,8 +216,8 @@ void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned l
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
      noInterrupts();
-     fuelSchedule1.startCompare = FUEL1_COUNTER + (timeout >> 4); //As above, but with bit shift instead of / 16
-     fuelSchedule1.endCompare = fuelSchedule1.startCompare + (duration >> 4);
+     fuelSchedule1.startCompare = FUEL1_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+     fuelSchedule1.endCompare = fuelSchedule1.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
      fuelSchedule1.Status = PENDING; //Turn this schedule on
      fuelSchedule1.schedulesSet++; //Increment the number of times this schedule has been set
      /*if(channel5InjEnabled) { FUEL1_COMPARE = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, FUEL1_COUNTER); } //Schedule 1 shares a timer with schedule 5
@@ -208,8 +241,8 @@ void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned l
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
      noInterrupts();
-     fuelSchedule2.startCompare = FUEL2_COUNTER + (timeout >> 4); //As above, but with bit shift instead of / 16
-     fuelSchedule2.endCompare = fuelSchedule2.startCompare + (duration >> 4);
+     fuelSchedule2.startCompare = FUEL2_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+     fuelSchedule2.endCompare = fuelSchedule2.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
      FUEL2_COMPARE = fuelSchedule2.startCompare; //Use the B copmare unit of timer 3
      fuelSchedule2.Status = PENDING; //Turn this schedule on
      fuelSchedule2.schedulesSet++; //Increment the number of times this schedule has been set
@@ -231,8 +264,8 @@ void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned l
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
     noInterrupts();
-    fuelSchedule3.startCompare = FUEL3_COUNTER + (timeout >> 4); //As above, but with bit shift instead of / 16
-    fuelSchedule3.endCompare = fuelSchedule3.startCompare + (duration >> 4);
+    fuelSchedule3.startCompare = FUEL3_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    fuelSchedule3.endCompare = fuelSchedule3.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     FUEL3_COMPARE = fuelSchedule3.startCompare; //Use the C copmare unit of timer 3
     fuelSchedule3.Status = PENDING; //Turn this schedule on
     fuelSchedule3.schedulesSet++; //Increment the number of times this schedule has been set
@@ -254,8 +287,8 @@ void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned l
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
     noInterrupts();
-    fuelSchedule4.startCompare = FUEL4_COUNTER + (timeout >> 4);
-    fuelSchedule4.endCompare = fuelSchedule4.startCompare + (duration >> 4);
+    fuelSchedule4.startCompare = FUEL4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    fuelSchedule4.endCompare = fuelSchedule4.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     FUEL4_COMPARE = fuelSchedule4.startCompare; //Use the C copmare unit of timer 3
     fuelSchedule4.Status = PENDING; //Turn this schedule on
     fuelSchedule4.schedulesSet++; //Increment the number of times this schedule has been set
@@ -362,8 +395,8 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout = MAX_TIMER_PERIOD - 1; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
 
     noInterrupts();
-    ignitionSchedule4.startCompare = IGN4_COUNTER + (timeout >> 4); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-    ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + (duration >> 4);
+    ignitionSchedule4.startCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     IGN4_COMPARE = ignitionSchedule4.startCompare;
     ignitionSchedule4.Status = PENDING; //Turn this schedule on
     ignitionSchedule4.schedulesSet++;
@@ -384,8 +417,8 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout = MAX_TIMER_PERIOD - 1; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
 
     noInterrupts();
-    ignitionSchedule5.startCompare = IGN5_COUNTER + (timeout >> 4); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-    ignitionSchedule5.endCompare = ignitionSchedule5.startCompare + (duration >> 4);
+    ignitionSchedule5.startCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    ignitionSchedule5.endCompare = ignitionSchedule5.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     IGN5_COMPARE = ignitionSchedule5.startCompare;
     ignitionSchedule5.Status = PENDING; //Turn this schedule on
     ignitionSchedule5.schedulesSet++;
@@ -400,7 +433,7 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
 //Timer3A (fuel schedule 1) Compare Vector
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPA_vect, ISR_NOBLOCK) //fuelSchedules 1 and 5
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -422,7 +455,7 @@ static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a f
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect, ISR_NOBLOCK) //fuelSchedule2
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -443,7 +476,7 @@ static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a f
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect, ISR_NOBLOCK) //fuelSchedule3
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -464,7 +497,7 @@ static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a f
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect, ISR_NOBLOCK) //fuelSchedule4
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -485,7 +518,7 @@ static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a f
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPA_vect) //ignitionSchedule1
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -509,7 +542,7 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //ignitionSchedule2
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -533,7 +566,7 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //ignitionSchedule3
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -557,7 +590,7 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //ignitionSchedule4
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -581,7 +614,7 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER1_COMPC_vect) //ignitionSchedule5
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call a function
 #endif
   {

@@ -58,8 +58,10 @@ void instanteneousMAPReading()
   #endif
   //Error checking
   if(tempReading >= VALID_MAP_MAX || tempReading <= VALID_MAP_MIN) { mapErrorCount += 1; }
-  else { currentStatus.mapADC = tempReading; mapErrorCount = 0; }
+  else { mapErrorCount = 0; }
 
+  currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC); //Very weak filter
+  
   currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
 }
 

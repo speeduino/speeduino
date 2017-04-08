@@ -29,6 +29,16 @@ void command()
       testComm();
       break;
 
+    case 'E': // receive command button commands
+      while (Serial.available() == 0) { }
+      cmdGroup = Serial.read();
+      while (Serial.available() == 0) { }
+      cmdValue = Serial.read();
+      cmdCombined = word(cmdGroup, cmdValue);
+      if (currentStatus.RPM == 0) { commandButtons(); }
+
+      break;
+
     case 'L': // List the contents of current page in human readable form
       sendPage(true);
       break;
@@ -62,12 +72,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.02-dev");
+      Serial.print("Speeduino 2017.03");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201702-dev");
+      Serial.print("speeduino 201703");
      break;
 
     case 'V': // send VE table and constants in binary
@@ -205,8 +215,13 @@ void sendValues(int packetlength, byte portNum)
   if (portNum == 3)
   {
     //CAN serial
-    Serial3.write("A");         //confirm cmd type
-    Serial3.write(packetlength);      //confirm no of byte to be sent
+    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
+      Serial3.write("A");         //confirm cmd type
+      Serial3.write(packetlength);      //confirm no of byte to be sent
+    #elif defined(CORE_STM32)
+      Serial2.write("A");         //confirm cmd type
+      Serial2.write(packetlength);      //confirm no of byte to be sent
+    #endif
   }
   else
   {
@@ -261,10 +276,18 @@ void sendValues(int packetlength, byte portNum)
   response[34] = currentStatus.flexCorrection; //Flex fuel correction (% above or below 100)
   response[35] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
   response[36] = getNextError();
+  response[37] = currentStatus.boostTarget;
+  response[38] = currentStatus.boostDuty;
+  response[39] = currentStatus.idleLoad;
+  response[40] = currentStatus.testOutputs;
 
 //cli();
   if (portNum == 0) { Serial.write(response, (size_t)packetlength); }
-  else if (portNum == 3) { Serial3.write(response, (size_t)packetlength); }
+  #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
+    else if (portNum == 3) { Serial3.write(response, (size_t)packetlength); }
+  #elif defined(CORE_STM32)
+    else if (portNum == 3) { Serial2.write(response, (size_t)packetlength); }
+  #endif
 //sei();
   return;
 }
@@ -1025,4 +1048,105 @@ void testComm()
 {
   Serial.write(1);
   return;
+}
+
+void commandButtons()
+{
+  switch (cmdCombined)
+  {
+    case 256: // cmd is stop
+      BIT_CLEAR(currentStatus.testOutputs, 1);
+      digitalWrite(pinInjector1, LOW);
+      digitalWrite(pinInjector2, LOW);
+      digitalWrite(pinInjector3, LOW);
+      digitalWrite(pinInjector4, LOW);
+      digitalWrite(pinCoil1, LOW);
+      digitalWrite(pinCoil2, LOW);
+      digitalWrite(pinCoil3, LOW);
+      digitalWrite(pinCoil4, LOW);
+      break;
+
+    case 257: // cmd is enable
+      // currentStatus.testactive = 1;
+      BIT_SET(currentStatus.testOutputs, 1);
+      break;
+    case 513: // cmd group is for injector1 on actions
+      if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinInjector1, HIGH);}
+      break;
+    case 514: // cmd group is for injector1 off actions
+      if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinInjector1, LOW);}
+      break;
+    case 515: // cmd group is for injector1 50% dc actions
+      //for (byte dcloop = 0; dcloop < 11; dcloop++)
+      //{
+      //  digitalWrite(pinInjector1, HIGH);
+      //  delay(500);
+      //  digitalWrite(pinInjector1, LOW);
+      //  delay(500);
+      //}
+      break;
+    case 516: // cmd group is for injector2 on actions
+        if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinInjector2, HIGH);}
+      break;
+    case 517: // cmd group is for injector2 off actions
+        if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinInjector2, LOW);}
+      break;
+    case 518: // cmd group is for injector2 50%dc actions
+
+      break;
+    case 519: // cmd group is for injector3 on actions
+        if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinInjector3, HIGH);}
+      break;
+    case 520: // cmd group is for injector3 off actions
+        if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinInjector3, LOW);}
+      break;
+    case 521: // cmd group is for injector3 50%dc actions
+
+      break;
+    case 522: // cmd group is for injector4 on actions
+        if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinInjector4, HIGH);}
+      break;
+    case 523: // cmd group is for injector4 off actions
+        if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinInjector4, LOW);}
+      break;
+    case 524: // cmd group is for injector4 50% dc actions
+
+      break;
+    case 769: // cmd group is for spark1 on actions
+        if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinCoil1, HIGH);}
+      break;
+    case 770: // cmd group is for spark1 off actions
+        if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinCoil1, LOW);}
+      break;
+    case 771: // cmd group is for spark1 50%dc actions
+
+      break;
+    case 772: // cmd group is for spark2 on actions
+        if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinCoil2, HIGH);}
+      break;
+    case 773: // cmd group is for spark2 off actions
+        if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinCoil2, LOW);}
+      break;
+    case 774: // cmd group is for spark2 50%dc actions
+
+      break;
+    case 775: // cmd group is for spark3 on actions
+        if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinCoil3, HIGH);}
+      break;
+    case 776: // cmd group is for spark3 off actions
+        if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinCoil3, LOW);}
+      break;
+    case 777: // cmd group is for spark3 50%dc actions
+
+      break;
+    case 778: // cmd group is for spark4 on actions
+        if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinCoil4, HIGH);}
+      break;
+    case 779: // cmd group is for spark4 off actions
+        if(BIT_CHECK(currentStatus.testOutputs, 1)){digitalWrite(pinCoil4, LOW);}
+      break;
+    case 780: // cmd group is for spark4 50%dc actions
+
+      break;
+  }
 }
