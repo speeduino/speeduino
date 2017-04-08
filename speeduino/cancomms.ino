@@ -29,12 +29,41 @@ void canCommand()
         //uint8_t Gdata;
         while (Serial3.available() == 0) { }
         cancmdfail = Serial3.read();
-        if (cancmdfail == 0)
+        if (cancmdfail != 0)
         {
-          //command request failed and/or data/device was not available
+          for (byte Gx = 0; Gx < 8; Gx++) //read all 8 bytes of data
+            {
+              while (Serial3.available() == 0) { }
+              Gdata[Gx] = Serial3.read();
+            }
+
+          Glow = Gdata[(configPage10.caninput_param_start_byte[currentStatus.current_caninchannel])];
+          if (configPage10.caninput_param_num_bytes[currentStatus.current_caninchannel] == 2)
+             {
+              if ((configPage10.caninput_param_start_byte[currentStatus.current_caninchannel]) != 7)   //you cant have a 2 byte value starting at byte 7(8 on the list)
+                 {
+                  Ghigh = Gdata[((configPage10.caninput_param_start_byte[currentStatus.current_caninchannel])+1)];
+                 }
+             }
+          else
+             {
+              Ghigh = 0;     
+             }
+                
+          currentStatus.canin[currentStatus.current_caninchannel] = word(Ghigh, Glow);   
         }
-        while (Serial3.available() == 0) { }
-        //Gdata = Serial3.read();
+        
+        else{}  //continue as command request failed and/or data/device was not available  
+        
+        if (currentStatus.current_caninchannel <= 6)     // if channel is 0-7
+           {
+            currentStatus.current_caninchannel++;       //inc to next channel
+           }
+        else  
+           {
+            currentStatus.current_caninchannel = 0;      //reset to start
+           }   
+             
         break;
 
     case 'L':
@@ -76,7 +105,7 @@ void canCommand()
 }
 
 // this routine sends a request(either "0" for a "G" or "1" for a "L" to the Can interface
-void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2)
+void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t paramgroup)
 {
     switch (cmdtype)
     {
@@ -91,12 +120,18 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
         Serial3.print("L");
         Serial3.write(canaddress);  //11 bit canaddress of device to listen for
      break;
+
+     case 2:
+        Serial3.print("R");
+        Serial3.write( lowByte(paramgroup) );       //send lsb first
+        Serial3.write( lowByte(paramgroup >> 8) );
+     break;   
     }
 }
 
 #else
 //Dummy functions for those that can't do Serial3
 void canCommand() { return; }
-void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2) { return; }
+void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t paramgroup) { return; }
 
 #endif

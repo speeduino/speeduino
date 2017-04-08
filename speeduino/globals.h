@@ -216,7 +216,9 @@ struct statuses {
   bool testActive;
   byte boostDuty;
   byte idleLoad; //Either the current steps or current duty cycle for the idle control.
-
+  int canin[9];   //16bit raw value of selected canin data for channel 1-8
+  uint8_t current_caninchannel = 0; //start off at channel 0
+  
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
   // y = (x >> n) & 1;    // n=0..15.  stores nth bit of x in y.  y becomes 0 or 1.
@@ -475,47 +477,11 @@ struct config4 {
 //Page 10 of the config mostly deals with CANBUS control
 //See ini file for further info (Config Page 10 in the ini)
 struct config10 {
-  byte unused10_0;
-  byte unused10_1;
-  byte unused10_2;
-  byte unused10_3;
-  byte unused10_4;
-  byte unused10_5;
-  byte unused10_6;
-  byte unused10_7;
-  byte unused10_8;
-  byte unused10_9;
-  byte unused10_10;
-  byte unused10_11;
-  byte unused10_12;
-  byte unused10_13;
-  byte unused10_14;
-  byte unused10_15;
-  byte unused10_16;
-  byte unused10_17;
-  byte unused10_18;
-  byte unused10_19;
-  byte unused10_20;
-  byte unused10_21;
-  byte unused10_22;
-  byte unused10_23;
-  byte unused10_24;
-  byte unused10_25;
-  byte unused10_26;
-  byte unused10_27;
-  byte unused10_28;
-  byte unused10_29;
-  byte unused10_30;
-  byte unused10_31;
-  byte unused10_32;
-  byte unused10_33;
-  byte unused10_34;
-  byte unused10_35;
-  byte unused10_36;
-  byte unused10_37;
-  byte unused10_38;
-  byte unused10_39;
-  byte unused10_40;
+  byte enable_candata_in:1;
+  byte caninput_sel[8];
+  uint16_t caninput_param_group[8];
+  uint8_t caninput_param_start_byte[8];
+  byte caninput_param_num_bytes[8];
   byte unused10_41;
   byte unused10_42;
   byte unused10_43;
@@ -525,7 +491,7 @@ struct config10 {
   byte unused10_47;
   byte unused10_48;
   byte unused10_49;
-  byte unused10_50;
+  byte enable_candata_out : 1;
   byte unused10_51;
   byte unused10_52;
   byte unused10_53;

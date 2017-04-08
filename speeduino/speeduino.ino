@@ -928,7 +928,30 @@ void loop()
        readIAT();
        readO2();
        readBat();
-
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
+      //if Can interface is enabled then check for serial3 requests.
+      if (configPage1.canEnable)
+          {
+            if (configPage10.enable_candata_in)
+              {
+                if (configPage10.caninput_sel[currentStatus.current_caninchannel])  //if current input channel is enabled
+                  {
+                    sendCancommand(2,0,0,0,configPage10.caninput_param_group[currentStatus.current_caninchannel]);    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
+                  }
+                else
+                  {
+                    if (currentStatus.current_caninchannel <= 6)
+                        {
+                          currentStatus.current_caninchannel++;   //step to next input channel if under 9
+                        }      
+                    else  
+                        {
+                          currentStatus.current_caninchannel = 0;   //reset input channel back to 1
+                        }
+                  }          
+              }  
+          }
+#endif
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
     }
