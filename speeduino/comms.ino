@@ -280,7 +280,23 @@ void sendValues(int packetlength, byte portNum)
   response[38] = currentStatus.boostDuty;
   response[39] = currentStatus.idleLoad;
   response[40] = currentStatus.testOutputs;
-
+  response[41] = lowByte(currentStatus.canin[0]);
+  response[42] = highByte(currentStatus.canin[0]);
+  response[43] = lowByte(currentStatus.canin[1]);
+  response[44] = highByte(currentStatus.canin[1]);
+  response[45] = lowByte(currentStatus.canin[2]);
+  response[46] = highByte(currentStatus.canin[2]);
+  response[47] = lowByte(currentStatus.canin[3]);
+  response[48] = highByte(currentStatus.canin[3]);
+  response[49] = lowByte(currentStatus.canin[4]);
+  response[50] = highByte(currentStatus.canin[4]);
+  response[51] = lowByte(currentStatus.canin[5]);
+  response[52] = highByte(currentStatus.canin[5]);
+  response[53] = lowByte(currentStatus.canin[6]);
+  response[54] = highByte(currentStatus.canin[6]);
+  response[55] = lowByte(currentStatus.canin[7]);
+  response[56] = highByte(currentStatus.canin[7]);
+  
 //cli();
   if (portNum == 0) { Serial.write(response, (size_t)packetlength); }
   #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
