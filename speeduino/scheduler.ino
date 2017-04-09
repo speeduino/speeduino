@@ -160,9 +160,10 @@ void initialiseSchedulers()
   NVIC_ENABLE_IRQ(IRQ_FTM1);
 
 #elif defined(CORE_STM32)
-  Timer1.setPrescaleFactor(288); //4us resolution
-  Timer2.setPrescaleFactor(288); //4us resolution
-  Timer3.setPrescaleFactor(288); //4us resolution
+  //see Documents\Arduino\hardware\Arduino_STM32\STM32F1\variants\maple_mini\board\board.h
+  Timer1.setPrescaleFactor(CYCLES_PER_MICROSECOND * 4U); //4us resolution
+  Timer2.setPrescaleFactor(CYCLES_PER_MICROSECOND * 4U); //4us resolution
+  Timer3.setPrescaleFactor(CYCLES_PER_MICROSECOND * 4U); //4us resolution
 
   Timer2.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
   Timer2.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
