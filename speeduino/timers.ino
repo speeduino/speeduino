@@ -43,7 +43,7 @@ void initialiseTimers()
   Timer4.setPeriod(1000);  // Set up period
   // Set up an interrupt
   Timer4.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
-  Timer4.attachCompare1Interrupt(oneMSInterval);
+  Timer4.attachInterrupt(1, oneMSInterval);
 #endif
 
   dwellLimit_uS = (1000 * configPage2.dwellLimit);
@@ -60,6 +60,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
 #endif
 {
 
+  #if defined(CORE_STM32)
+    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+  #endif
   //Increment Loop Counters
   loop100ms++;
   loop250ms++;
@@ -82,9 +85,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if (loop100ms == 100)
   {
     loop100ms = 0; //Reset counter
-    #if defined(CORE_STM32)
-      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    #endif
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc

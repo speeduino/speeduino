@@ -152,9 +152,6 @@ void setup()
   table3D_setSize(&trim3Table, 6);
   table3D_setSize(&trim4Table, 6);
 
-  #if defined(CORE_STM32)
-    while ( !Serial.isConnected() ) ; // wait till serial connection is setup, or serial monitor started
-  #endif
   loadConfig();
 
   Serial.begin(115200);
@@ -193,11 +190,12 @@ void setup()
 
   //Setup the calibration tables
   loadCalibration();
+  initialiseTimers();
+  
   //Set the pin mappings
   #if defined(CORE_STM32)
     configPage1.pinMapping = 32;
   #endif
-
   setPinMapping(configPage1.pinMapping);
 
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
@@ -1368,9 +1366,6 @@ void loop()
       if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) { fixedCrankingOverride = currentStatus.dwell * 2; }
       else { fixedCrankingOverride = 0; }
 
-  #if defined(CORE_STM32)
-    while ( !Serial.isConnected() ) ; // wait till serial connection is setup, or serial monitor started
-  #endif
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
       //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
       if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) && !BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) && !currentStatus.flatShiftingHard)

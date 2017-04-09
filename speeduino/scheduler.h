@@ -155,7 +155,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
   #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
 
-#elif defined(STM32_MCU_SERIES)
+#elif defined(CORE_STM32)
   //Placeholders ONLY!
 
   //https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/master/STM32F4/cores/maple/libmaple/timer.h#L51

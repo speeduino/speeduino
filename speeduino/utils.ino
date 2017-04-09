@@ -447,8 +447,17 @@ void setPinMapping(byte boardID)
   ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
   ign5_pin_mask = digitalPinToBitMask(pinCoil5);
 
+  #if defined(CORE_STM32)
+    while ( !Serial.isConnected() ) ; // wait till serial connection is setup, or serial monitor started
+  #endif
+  
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
+
+  #if defined(CORE_STM32)
+    while ( Serial.isConnected() ) ; // wait till serial connection is setup, or serial monitor started
+  #endif
+
   //And for inputs
   #if defined(CORE_STM32)
     pinMode(pinMAP, INPUT_ANALOG);
