@@ -264,10 +264,10 @@ struct config1 {
   byte unused26 : 4;
   byte indInjAng : 1;
   byte injOpen; //Injector opening time (ms * 10)
-  unsigned int inj1Ang;
-  unsigned int inj2Ang;
-  unsigned int inj3Ang;
-  unsigned int inj4Ang;
+  uint16_t inj1Ang;
+  uint16_t inj2Ang;
+  uint16_t inj3Ang;
+  uint16_t inj4Ang;
 
   //config1 in ini
   byte mapSample : 2;
@@ -299,12 +299,12 @@ struct config1 {
   byte tpsMin;
   byte tpsMax;
   byte mapMin;
-  unsigned int mapMax;
+  uint16_t mapMax;
   byte fpPrime; //Time (In seconds) that the fuel pump should be primed for on power up
   byte stoich;
-  unsigned int oddfire2; //The ATDC angle of channel 2 for oddfire
-  unsigned int oddfire3; //The ATDC angle of channel 3 for oddfire
-  unsigned int oddfire4; //The ATDC angle of channel 4 for oddfire
+  uint16_t oddfire2; //The ATDC angle of channel 2 for oddfire
+  uint16_t oddfire3; //The ATDC angle of channel 3 for oddfire
+  uint16_t oddfire4; //The ATDC angle of channel 4 for oddfire
   byte flexFuelLow; //Fuel % to be used for the lowest ethanol reading (Typically 100%)
   byte flexFuelHigh; //Fuel % to be used for the highest ethanol reading (Typically 163%)
   byte flexAdvLow; //Additional advance (in degrees) at lowest ethanol reading (Typically 0)
@@ -321,7 +321,7 @@ struct config1 {
 //This mostly covers off variables that are required for ignition
 struct config2 {
 
-  int triggerAngle;
+  int16_t triggerAngle;
   byte FixAng;
   byte CrankAng;
   byte TrigAngMul; //Multiplier for non evenly divisible tooth counts.
@@ -659,6 +659,7 @@ byte pinVVt_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
+byte pinStepperEnable; //Turning the DRV8825 driver on/off
 byte pinLaunch;
 byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached

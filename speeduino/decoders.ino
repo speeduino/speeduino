@@ -46,6 +46,7 @@ A common function is simpler
 static inline int stdGetRPM()
 {
   if( !currentStatus.hasSync ) { return 0; } //Safety check
+  if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && currentStatus.startRevolutions == 0) { return 0; } //Prevents crazy RPM spike when there has been less than 1 full revolution
   noInterrupts();
   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
   interrupts();
@@ -914,7 +915,8 @@ void triggerSec_Audi135()
     currentStatus.hasSync = true;
     toothSystemCount = 3; //Need to set this to 3 so that the next primary tooth is counted
   }
-  else if (configPage2.useResync) { toothCurrentCount = 0; }
+  else if (configPage2.useResync) { toothCurrentCount = 0; toothSystemCount = 3; }
+  else if ( currentStatus.startRevolutions < 100 && toothCurrentCount != 45 ) { toothCurrentCount = 0; }
   revolutionOne = 1; //Sequential revolution reset
 }
 
@@ -1528,4 +1530,140 @@ int getCrankAngle_Nissan360(int timePerDegree)
     return (toothCurrentCount * triggerToothAngle) + 1;
   }
   return (toothCurrentCount * triggerToothAngle);
+}
+
+/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Name: Nissan 360 tooth with cam
+Desc:
+Note:
+*/
+void triggerSetup_Subaru67()
+{
+  triggerFilterTime = (1000000 / (MAX_RPM / 60 * 360UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+  triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  secondaryToothCount = 0; //Initially set to 0 prior to calculating the secondary window duration
+  secondDerivEnabled = false;
+  decoderIsSequential = true;
+  toothCurrentCount = 1;
+  triggerToothAngle = 2;
+  MAX_STALL_TIME = (3333UL * 93); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+
+  toothAngles[0] = 710; //tooth #1
+  toothAngles[1] = 83; //tooth #2
+  toothAngles[2] = 115; //tooth #3
+  toothAngles[3] = 170; //tooth #4
+  toothAngles[4] = toothAngles[1] + 180;
+  toothAngles[5] = toothAngles[2] + 180;
+  toothAngles[6] = toothAngles[3] + 180;
+  toothAngles[7] = toothAngles[1] + 360;
+  toothAngles[8] = toothAngles[2] + 360;
+  toothAngles[9] = toothAngles[3] + 360;
+  toothAngles[10] = toothAngles[1] + 540;
+  toothAngles[11] = toothAngles[2] + 540;
+}
+
+
+void triggerPri_Subaru67()
+{
+   curTime = micros();
+   //curGap = curTime - toothLastToothTime;
+   //if ( curGap < triggerFilterTime ) { return; } //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger.
+   toothCurrentCount++; //Increment the tooth counter
+   addToothLogEntry(curGap);
+
+   toothLastMinusOneToothTime = toothLastToothTime;
+   toothLastToothTime = curTime;
+
+   if ( !currentStatus.hasSync || configPage2.useResync)
+   {
+     //Sync is determined by counting the number of cam teeth that have passed between the crank teeth
+     switch(secondaryToothCount)
+     {
+        case 0:
+          //If no teeth have passed, we can't do anything
+          break;
+
+        case 1:
+          //Can't do anything with a single pulse from the cam either (We need either 2 or 3 pulses)
+          secondaryToothCount = 0;
+          break;
+
+        case 2:
+          toothCurrentCount = 8;
+          currentStatus.hasSync = true;
+          secondaryToothCount = 0;
+          break;
+
+        case 3:
+          toothCurrentCount = 2;
+          currentStatus.hasSync = true;
+          secondaryToothCount = 0;
+          break;
+
+        default:
+          //Almost certainly due to noise
+          break;
+
+     }
+   }
+   if ( !currentStatus.hasSync ) { return; } //Check again if we have sync and return if not
+
+   //Locked timing during cranking. This is fixed at 10* BTDC.
+   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage2.ignCranklock)
+   {
+     if( toothCurrentCount == 1 || toothCurrentCount == 7 ) { endCoil1Charge(); endCoil3Charge(); }
+     else if( toothCurrentCount == 4 || toothCurrentCount == 10 ) { endCoil2Charge(); endCoil4Charge(); }
+   }
+
+   if ( toothCurrentCount > 12 ) //2 complete crank revolutions
+   {
+     toothCurrentCount = 1;
+     toothOneMinusOneTime = toothOneTime;
+     toothOneTime = curTime;
+     currentStatus.startRevolutions++; //Counter
+   }
+
+   //setFilter(curGap); //Recalc the new filter value
+}
+
+void triggerSec_Subaru67()
+{
+  curTime2 = micros();
+  curGap2 = curTime2 - toothLastSecToothTime;
+  //if ( curGap2 < triggerSecFilterTime ) { return; }
+  toothLastSecToothTime = curTime2;
+  //triggerSecFilterTime = curGap2 >> 2; //Set filter at 25% of the current speed
+  secondaryToothCount++;
+}
+
+int getRPM_Subaru67()
+{
+  //if(currentStatus.RPM < configPage2.crankRPM) { return crankingGetRPM(configPage2.triggerTeeth); }
+  return stdGetRPM();
+}
+
+int getCrankAngle_Subaru67(int timePerDegree)
+{
+  if(!currentStatus.hasSync) { return 0; }
+  //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+  unsigned long tempToothLastToothTime;
+  int tempToothCurrentCount;
+  //Grab some variables that are used in the trigger code and assign them to temp variables.
+  noInterrupts();
+  tempToothCurrentCount = toothCurrentCount;
+  tempToothLastToothTime = toothLastToothTime;
+  interrupts();
+
+  int crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
+  //Estimate the number of degrees travelled since the last tooth}
+
+  unsigned long elapsedTime = micros() - tempToothLastToothTime;
+  if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
+  else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
+
+  if (crankAngle >= 720) { crankAngle -= 720; }
+  if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+  if (crankAngle < 0) { crankAngle += 360; }
+
+  return crankAngle;
 }

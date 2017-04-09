@@ -159,6 +159,11 @@ void initialiseSchedulers()
   NVIC_ENABLE_IRQ(IRQ_FTM0);
   NVIC_ENABLE_IRQ(IRQ_FTM1);
 
+#elif defined(CORE_STM32)
+  (TIMER2->regs).gen->CCMR1 &= ~TIM_CCMR1_OC1M; //Select channel 1 output Compare and Mode
+
+  TIM3->CR1 |= TIM_CR1_CEN
+
 #endif
 
     fuelSchedule1.Status = OFF;
@@ -211,8 +216,8 @@ void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned l
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
      noInterrupts();
-     fuelSchedule1.startCompare = FUEL1_COUNTER + (timeout >> 4); //As above, but with bit shift instead of / 16
-     fuelSchedule1.endCompare = fuelSchedule1.startCompare + (duration >> 4);
+     fuelSchedule1.startCompare = FUEL1_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+     fuelSchedule1.endCompare = fuelSchedule1.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
      fuelSchedule1.Status = PENDING; //Turn this schedule on
      fuelSchedule1.schedulesSet++; //Increment the number of times this schedule has been set
      /*if(channel5InjEnabled) { FUEL1_COMPARE = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, FUEL1_COUNTER); } //Schedule 1 shares a timer with schedule 5
@@ -236,8 +241,8 @@ void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned l
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
      noInterrupts();
-     fuelSchedule2.startCompare = FUEL2_COUNTER + (timeout >> 4); //As above, but with bit shift instead of / 16
-     fuelSchedule2.endCompare = fuelSchedule2.startCompare + (duration >> 4);
+     fuelSchedule2.startCompare = FUEL2_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+     fuelSchedule2.endCompare = fuelSchedule2.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
      FUEL2_COMPARE = fuelSchedule2.startCompare; //Use the B copmare unit of timer 3
      fuelSchedule2.Status = PENDING; //Turn this schedule on
      fuelSchedule2.schedulesSet++; //Increment the number of times this schedule has been set
@@ -259,8 +264,8 @@ void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned l
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
     noInterrupts();
-    fuelSchedule3.startCompare = FUEL3_COUNTER + (timeout >> 4); //As above, but with bit shift instead of / 16
-    fuelSchedule3.endCompare = fuelSchedule3.startCompare + (duration >> 4);
+    fuelSchedule3.startCompare = FUEL3_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    fuelSchedule3.endCompare = fuelSchedule3.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     FUEL3_COMPARE = fuelSchedule3.startCompare; //Use the C copmare unit of timer 3
     fuelSchedule3.Status = PENDING; //Turn this schedule on
     fuelSchedule3.schedulesSet++; //Increment the number of times this schedule has been set
@@ -282,8 +287,8 @@ void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned l
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
     noInterrupts();
-    fuelSchedule4.startCompare = FUEL4_COUNTER + (timeout >> 4);
-    fuelSchedule4.endCompare = fuelSchedule4.startCompare + (duration >> 4);
+    fuelSchedule4.startCompare = FUEL4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    fuelSchedule4.endCompare = fuelSchedule4.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     FUEL4_COMPARE = fuelSchedule4.startCompare; //Use the C copmare unit of timer 3
     fuelSchedule4.Status = PENDING; //Turn this schedule on
     fuelSchedule4.schedulesSet++; //Increment the number of times this schedule has been set
@@ -390,8 +395,8 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout = MAX_TIMER_PERIOD - 1; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
 
     noInterrupts();
-    ignitionSchedule4.startCompare = IGN4_COUNTER + (timeout >> 4); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-    ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + (duration >> 4);
+    ignitionSchedule4.startCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     IGN4_COMPARE = ignitionSchedule4.startCompare;
     ignitionSchedule4.Status = PENDING; //Turn this schedule on
     ignitionSchedule4.schedulesSet++;
@@ -412,8 +417,8 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout = MAX_TIMER_PERIOD - 1; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
 
     noInterrupts();
-    ignitionSchedule5.startCompare = IGN5_COUNTER + (timeout >> 4); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-    ignitionSchedule5.endCompare = ignitionSchedule5.startCompare + (duration >> 4);
+    ignitionSchedule5.startCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    ignitionSchedule5.endCompare = ignitionSchedule5.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     IGN5_COMPARE = ignitionSchedule5.startCompare;
     ignitionSchedule5.Status = PENDING; //Turn this schedule on
     ignitionSchedule5.schedulesSet++;
