@@ -164,25 +164,25 @@ void initialiseSchedulers()
   Timer2.setPrescaleFactor(288); //4us resolution
   Timer3.setPrescaleFactor(288); //4us resolution
 
-  Timer1.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
-  Timer1.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
-  Timer1.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
-  Timer1.setMode(TIMER_CH4, TIMER_OUTPUT_COMPARE);
-  
   Timer2.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
   Timer2.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
   Timer2.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
   Timer2.setMode(TIMER_CH4, TIMER_OUTPUT_COMPARE);
+  
+  Timer3.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
+  Timer3.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
+  Timer3.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
+  Timer3.setMode(TIMER_CH4, TIMER_OUTPUT_COMPARE);
 
-  Timer1.attachInterrupt(1, fuelSchedule1Interrupt);
-  Timer1.attachInterrupt(2, fuelSchedule2Interrupt);
-  Timer1.attachInterrupt(3, fuelSchedule3Interrupt);
-  Timer1.attachInterrupt(4, fuelSchedule4Interrupt);
+  Timer2.attachInterrupt(1, fuelSchedule1Interrupt);
+  Timer2.attachInterrupt(2, fuelSchedule2Interrupt);
+  Timer2.attachInterrupt(3, fuelSchedule3Interrupt);
+  Timer2.attachInterrupt(4, fuelSchedule4Interrupt);
 
-  Timer2.attachInterrupt(1, ignitionSchedule1Interrupt);
-  Timer2.attachInterrupt(2, ignitionSchedule2Interrupt);
-  Timer2.attachInterrupt(3, ignitionSchedule3Interrupt);
-  Timer2.attachInterrupt(4, ignitionSchedule4Interrupt);
+  Timer3.attachInterrupt(1, ignitionSchedule1Interrupt);
+  Timer3.attachInterrupt(2, ignitionSchedule2Interrupt);
+  Timer3.attachInterrupt(3, ignitionSchedule3Interrupt);
+  Timer3.attachInterrupt(4, ignitionSchedule4Interrupt);
 
   //(TIMER2->regs).gen->CCMR1 &= ~TIM_CCMR1_OC1M; //Select channel 1 output Compare and Mode
   //TIM3->CR1 |= TIM_CR1_CEN

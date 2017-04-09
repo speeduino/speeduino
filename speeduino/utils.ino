@@ -327,12 +327,10 @@ void setPinMapping(byte boardID)
       pinInjector2 = D10; //Output pin injector 2 is on
       pinInjector3 = D9; //Output pin injector 3 is on
       pinInjector4 = D8; //Output pin injector 4 is on
-      pinInjector5 = D27; //Output pin injector 5 is on
       pinCoil1 = D5; //Pin for coil 1
       pinCoil2 = D4; //Pin for coil 2
       pinCoil3 = D3; //Pin for coil 3
       pinCoil4 = D33; //Pin for coil 4
-      pinCoil5 = D16; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = D15; //The CAS pin
       pinTrigger2 = D26; //The Cam Sensor pin
       pinTPS = A2; //TPS input pin
@@ -433,9 +431,11 @@ void setPinMapping(byte boardID)
   inj3_pin_mask = digitalPinToBitMask(pinInjector3);
   inj4_pin_port = portOutputRegister(digitalPinToPort(pinInjector4));
   inj4_pin_mask = digitalPinToBitMask(pinInjector4);
+  #ifndef CORE_STM32
   inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
   inj5_pin_mask = digitalPinToBitMask(pinInjector5);
-
+  #endif
+  
   ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
   ign1_pin_mask = digitalPinToBitMask(pinCoil1);
   ign2_pin_port = portOutputRegister(digitalPinToPort(pinCoil2));
@@ -444,8 +444,10 @@ void setPinMapping(byte boardID)
   ign3_pin_mask = digitalPinToBitMask(pinCoil3);
   ign4_pin_port = portOutputRegister(digitalPinToPort(pinCoil4));
   ign4_pin_mask = digitalPinToBitMask(pinCoil4);
+  #ifndef CORE_STM32
   ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
   ign5_pin_mask = digitalPinToBitMask(pinCoil5);
+  #endif
 
   #if defined(CORE_STM32)
     while ( !Serial.isConnected() ) ; // wait till serial connection is setup, or serial monitor started

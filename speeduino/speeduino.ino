@@ -190,7 +190,6 @@ void setup()
 
   //Setup the calibration tables
   loadCalibration();
-  initialiseTimers();
   
   //Set the pin mappings
   #if defined(CORE_STM32)
