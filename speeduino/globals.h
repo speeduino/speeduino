@@ -5,12 +5,16 @@
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define CORE_AVR
+#elif defined(CORE_TEENSY)
+  //Currently nothing to do here
 #elif defined(STM32_MCU_SERIES)
   #define CORE_STM32
 
   inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
   #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
   #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+#else
+  #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif
 
 //Handy bitsetting macros
