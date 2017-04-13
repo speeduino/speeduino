@@ -134,7 +134,6 @@ volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming ha
 
 void setup()
 {
-
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
   //dummyIgnitionTable(&ignitionTable);
@@ -188,9 +187,6 @@ void setup()
   loadCalibration();
 
   //Set the pin mappings
-  #if defined(CORE_STM32)
-    configPage1.pinMapping = 32;
-  #endif
   setPinMapping(configPage1.pinMapping);
 
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
@@ -477,6 +473,17 @@ void setup()
         else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
         attachInterrupt(triggerInterrupt2, triggerSec_Nissan360, CHANGE);
         break;
+
+    case 13:
+      triggerSetup_Subaru67();
+      trigger = triggerPri_Subaru67;
+      getRPM = getRPM_Subaru67;
+      getCrankAngle = getCrankAngle_Subaru67;
+
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+      attachInterrupt(triggerInterrupt2, triggerSec_Subaru67, FALLING);
+      break;
 
     default:
       trigger = triggerPri_missingTooth;

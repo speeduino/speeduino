@@ -163,12 +163,12 @@ void initialiseSchedulers()
   //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
   (TIMER1->regs).bas->PSC = (TIMER2->regs).bas->PSC = (TIMER3->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
   //TimerX.setPrescaleFactor(CYCLES_PER_MICROSECOND * 2U); //2us resolution
- 
+
   Timer2.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
   Timer2.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
   Timer2.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
   Timer2.setMode(TIMER_CH4, TIMER_OUTPUT_COMPARE);
-  
+
   Timer3.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
   Timer3.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
   Timer3.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
@@ -239,8 +239,8 @@ void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned l
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
      noInterrupts();
-     fuelSchedule1.startCompare = FUEL1_COUNTER + (timeout >> 4); //As above, but with bit shift instead of / 16
-     fuelSchedule1.endCompare = fuelSchedule1.startCompare + (duration >> 4);
+     fuelSchedule1.startCompare = FUEL1_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+     fuelSchedule1.endCompare = fuelSchedule1.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
      fuelSchedule1.Status = PENDING; //Turn this schedule on
      fuelSchedule1.schedulesSet++; //Increment the number of times this schedule has been set
      /*if(channel5InjEnabled) { FUEL1_COMPARE = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, FUEL1_COUNTER); } //Schedule 1 shares a timer with schedule 5
@@ -264,8 +264,8 @@ void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned l
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
      noInterrupts();
-     fuelSchedule2.startCompare = FUEL2_COUNTER + (timeout >> 4); //As above, but with bit shift instead of / 16
-     fuelSchedule2.endCompare = fuelSchedule2.startCompare + (duration >> 4);
+     fuelSchedule2.startCompare = FUEL2_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+     fuelSchedule2.endCompare = fuelSchedule2.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
      FUEL2_COMPARE = fuelSchedule2.startCompare; //Use the B copmare unit of timer 3
      fuelSchedule2.Status = PENDING; //Turn this schedule on
      fuelSchedule2.schedulesSet++; //Increment the number of times this schedule has been set
@@ -287,8 +287,8 @@ void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned l
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
     noInterrupts();
-    fuelSchedule3.startCompare = FUEL3_COUNTER + (timeout >> 4); //As above, but with bit shift instead of / 16
-    fuelSchedule3.endCompare = fuelSchedule3.startCompare + (duration >> 4);
+    fuelSchedule3.startCompare = FUEL3_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    fuelSchedule3.endCompare = fuelSchedule3.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     FUEL3_COMPARE = fuelSchedule3.startCompare; //Use the C copmare unit of timer 3
     fuelSchedule3.Status = PENDING; //Turn this schedule on
     fuelSchedule3.schedulesSet++; //Increment the number of times this schedule has been set
@@ -310,8 +310,8 @@ void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned l
      * unsigned int absoluteTimeout = TCNT3 + (timeout / 16); //Each tick occurs every 16uS with the 256 prescaler, so divide the timeout by 16 to get ther required number of ticks. Add this to the current tick count to get the target time. This will automatically overflow as required
      */
     noInterrupts();
-    fuelSchedule4.startCompare = FUEL4_COUNTER + (timeout >> 4);
-    fuelSchedule4.endCompare = fuelSchedule4.startCompare + (duration >> 4);
+    fuelSchedule4.startCompare = FUEL4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    fuelSchedule4.endCompare = fuelSchedule4.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     FUEL4_COMPARE = fuelSchedule4.startCompare; //Use the C copmare unit of timer 3
     fuelSchedule4.Status = PENDING; //Turn this schedule on
     fuelSchedule4.schedulesSet++; //Increment the number of times this schedule has been set
@@ -334,8 +334,8 @@ void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned l
      */
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
     noInterrupts();
-    fuelSchedule5.startCompare = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
-    fuelSchedule5.endCompare = fuelSchedule5.startCompare + (duration >> 4);
+    fuelSchedule5.startCompare = TCNT3 + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    fuelSchedule5.endCompare = fuelSchedule5.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     fuelSchedule5.Status = PENDING; //Turn this schedule on
     fuelSchedule5.schedulesSet++; //Increment the number of times this schedule has been set
     OCR3A = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, TCNT3); //Schedule 1 shares a timer with schedule 5

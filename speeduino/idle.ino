@@ -87,9 +87,10 @@ void initialiseIdle()
 
     case IAC_ALGORITHM_ONOFF:
       //Case 1 is on/off idle control
-      if (currentStatus.coolant < configPage4.iacFastTemp)
+      if ((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < configPage4.iacFastTemp)
       {
         digitalWrite(pinIdle1, HIGH);
+        idleOn = true;
       }
       break;
 
@@ -255,6 +256,7 @@ void idleControl()
         {
           //Only do a lookup of the required value around 4 times per second. Any more than this can create too much jitter and require a hyster value that is too high
           idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+          iacStepTime = configPage4.iacStepTime * 1000;
         }
         doStep();
       }
@@ -265,8 +267,12 @@ void idleControl()
       //First thing to check is whether there is currently a step going on and if so, whether it needs to be turned off
       if( checkForStepping() ) { return; } //If this is true it means there's either a step taking place or
       if( !isStepperHomed() ) { return; } //Check whether homing is completed yet.
-      if( (idleCounter & 31) == 1) { idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD); } //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
-
+      if( (idleCounter & 31) == 1)
+      {
+        //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
+        idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
+        iacStepTime = configPage4.iacStepTime * 1000;
+      }
 
       idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
       idlePID.Compute();
@@ -322,8 +328,9 @@ static inline byte checkForStepping()
       }
       else
       {
-        //Means we're in COOLING status but have been in this state long enough to
+        //Means we're in COOLING status but have been in this state long enough. Go into off state
         idleStepper.stepperStatus = SOFF;
+        digitalWrite(pinStepperEnable, HIGH); //Disable the DRV8825
       }
     }
     else
@@ -344,6 +351,7 @@ static inline void doStep()
   else if(idleStepper.targetIdleStep < idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_BACKWARD); idleStepper.curIdleStep--; }//Sets stepper direction to backwards
   else if (idleStepper.targetIdleStep > idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_FORWARD); idleStepper.curIdleStep++; }//Sets stepper direction to forwards
 
+  digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
   digitalWrite(pinStepperStep, HIGH);
   idleStepper.stepStartTime = micros();
   idleStepper.stepperStatus = STEPPING;
@@ -360,10 +368,15 @@ static inline void disableIdle()
   }
   else if (configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL || configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL)
   {
+    digitalWrite(pinStepperEnable, HIGH); //Disable the DRV8825
+    idleStepper.targetIdleStep = idleStepper.curIdleStep; //Don't try to move anymore
+    //The below appears to be causing issues, so for now this will simply halt the stepper entirely rather than taking it back to step 1
+    /*
     idleStepper.targetIdleStep = 1; //Home the stepper
     if( checkForStepping() ) { return; } //If this is true it means there's either a step taking place or
     if( !isStepperHomed() ) { return; } //Check whether homing is completed yet.
     doStep();
+    */
   }
 }
 

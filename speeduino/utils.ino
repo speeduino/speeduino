@@ -40,19 +40,24 @@ void setPinMapping(byte boardID)
 {
   //This is dumb, but it'll do for now to get things compiling
   #if defined(CORE_STM32)
-    #define A0  0
-    #define A1  1
-    #define A2  2
-    #define A3  3
-    #define A4  4
-    #define A5  5
-    #define A6  6
-    #define A7  7
-    #define A8  8
-    #define A9  9
-    #define A13  13
-    #define A14  14
-    #define A15  15
+    //STM32F1/variants/.../board.cpp
+    #define A0  boardADCPins[0]
+    #define A1  boardADCPins[1]
+    #define A2  boardADCPins[2]
+    #define A3  boardADCPins[3]
+    #define A4  boardADCPins[4]
+    #define A5  boardADCPins[5]
+    #define A6  boardADCPins[6]
+    #define A7  boardADCPins[7]
+    #define A8  boardADCPins[8]
+    #define A9  boardADCPins[9]
+    //STM32F1 have only 9 12bit adc
+    #define A10  boardADCPins[0]
+    #define A11  boardADCPins[1]
+    #define A12  boardADCPins[2]
+    #define A13  boardADCPins[3]
+    #define A14  boardADCPins[4]
+    #define A15  boardADCPins[5]
   #endif
 
   switch (boardID)
@@ -129,12 +134,12 @@ void setPinMapping(byte boardID)
       pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
-      pinTPS = A2;//TPS input pin
-      pinMAP = A3; //MAP sensor pin
+      pinTPS = A0;//TPS input pin
+      pinMAP = A4; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLS sensor pin
-      pinO2 = A8; //O2 Sensor pin
-      pinBat = A4; //Battery reference voltage pin
+      pinCLT = A5; //CLS sensor pin
+      pinO2 = A4; //O2 Sensor pin
+      pinBat = A5; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
       pinTachOut = 49; //Tacho output pin
       pinIdle1 = 5; //Single wire idle control
@@ -144,6 +149,7 @@ void setPinMapping(byte boardID)
       pinFuelPump = 4; //Fuel pump output
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinStepperEnable = 26; //Enable pin for DRV8825
       pinFan = A13; //Pin for the fan output
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
@@ -178,9 +184,45 @@ void setPinMapping(byte boardID)
       pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinStepperEnable = 24; //Enable pin for DRV8825
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+
+      #if defined(CORE_TEENSY)
+        pinTrigger = 23;
+        pinStepperDir = 33;
+        pinCoil1 = 31;
+        pinTachOut = 28;
+        pinFan = 27;
+        pinCoil4 = 29;
+        pinCoil3 = 30;
+      #elif defined(CORE_STM32)
+        //http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/0.0.12/hardware/maple-mini.html#master-pin-map
+        pinInjector1 = 11; //Output pin injector 1 is on
+        pinInjector2 = 10; //Output pin injector 2 is on
+        pinInjector3 = 9; //Output pin injector 3 is on
+        pinInjector4 = 8; //Output pin injector 4 is on
+        pinCoil1 = 5; //Pin for coil 1
+        pinCoil2 = 4; //Pin for coil 2
+        pinCoil3 = 3; //Pin for coil 3
+        pinCoil4 = 33; //Pin for coil 4
+        pinTrigger = 15; //The CAS pin
+        pinTrigger2 = 26; //The Cam Sensor pin
+        pinTPS = A2; //TPS input pin
+        pinMAP = A3; //MAP sensor pin
+        pinIAT = A0; //IAT sensor pin
+        pinCLT = A1; //CLS sensor pin
+        pinO2 = A8; //O2 Sensor pin
+        pinBat = A4; //Battery reference voltage pin
+        pinStepperDir = 0; //Direction pin  for DRV8825 driver
+        pinStepperStep = 1; //Step pin for DRV8825 driver
+        pinDisplayReset = 2; // OLED reset pin
+        pinFan = 6; //Pin for the fan output
+        pinFuelPump = 7; //Fuel pump output
+        pinTachOut = 31; //Tacho output pin
+        pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
+      #endif
       break;
 
     case 9:
@@ -320,35 +362,6 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       break;
 
-    #if defined(CORE_STM32)
-    case 32:
-      //http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/0.0.12/hardware/maple-mini.html#master-pin-map
-      pinInjector1 = D11; //Output pin injector 1 is on
-      pinInjector2 = D10; //Output pin injector 2 is on
-      pinInjector3 = D9; //Output pin injector 3 is on
-      pinInjector4 = D8; //Output pin injector 4 is on
-      pinCoil1 = D5; //Pin for coil 1
-      pinCoil2 = D4; //Pin for coil 2
-      pinCoil3 = D3; //Pin for coil 3
-      pinCoil4 = D33; //Pin for coil 4
-      pinTrigger = D15; //The CAS pin
-      pinTrigger2 = D26; //The Cam Sensor pin
-      pinTPS = A2; //TPS input pin
-      pinMAP = A3; //MAP sensor pin
-      pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLS sensor pin
-      pinO2 = A8; //O2 Sensor pin
-      pinBat = A4; //Battery reference voltage pin
-      pinStepperDir = D0; //Direction pin  for DRV8825 driver
-      pinStepperStep = D1; //Step pin for DRV8825 driver
-      pinDisplayReset = D2; // OLED reset pin
-      pinFan = D6; //Pin for the fan output
-      pinFuelPump = D7; //Fuel pump output
-      pinTachOut = D31; //Tacho output pin
-      pinFlex = D32; // Flex sensor (Must be external interrupt enabled)
-      break;
-    #endif
-
     default:
       //Pin mappings as per the v0.2 shield
       pinInjector1 = 8; //Output pin injector 1 is on
@@ -420,6 +433,7 @@ void setPinMapping(byte boardID)
   pinMode(pinFan, OUTPUT);
   pinMode(pinStepperDir, OUTPUT);
   pinMode(pinStepperStep, OUTPUT);
+  pinMode(pinStepperEnable, OUTPUT);
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
 
@@ -444,22 +458,15 @@ void setPinMapping(byte boardID)
   ign3_pin_mask = digitalPinToBitMask(pinCoil3);
   ign4_pin_port = portOutputRegister(digitalPinToPort(pinCoil4));
   ign4_pin_mask = digitalPinToBitMask(pinCoil4);
-  #ifndef CORE_STM32
   ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
   ign5_pin_mask = digitalPinToBitMask(pinCoil5);
-  #endif
-/*
-  #if defined(CORE_STM32)
-    while ( !Serial.isConnected() ) ; // wait till serial connection is setup, or serial monitor started
-  #endif
-*/
+
+  //this line is breaking the stack on STM32
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
+  //while ( !Serial.isConnected() ) ; // wait till serial connection is setup, or serial monitor started
+  //debug
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
-/*
-  #if defined(CORE_STM32)
-    while ( Serial.isConnected() ) ; // wait till serial connection is setup, or serial monitor started
-  #endif
-*/
+
   //And for inputs
   #if defined(CORE_STM32)
     pinMode(pinMAP, INPUT_ANALOG);
