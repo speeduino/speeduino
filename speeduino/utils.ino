@@ -197,6 +197,7 @@ void setPinMapping(byte boardID)
         pinFan = 27;
         pinCoil4 = 29;
         pinCoil3 = 30;
+
       #elif defined(CORE_STM32)
         //http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/0.0.12/hardware/maple-mini.html#master-pin-map
         pinInjector1 = 11; //Output pin injector 1 is on
@@ -222,6 +223,7 @@ void setPinMapping(byte boardID)
         pinFuelPump = 7; //Fuel pump output
         pinTachOut = 31; //Tacho output pin
         pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
+
       #endif
       break;
 

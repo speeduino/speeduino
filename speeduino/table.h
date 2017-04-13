@@ -13,15 +13,16 @@ The 2D table can contain either 8-bit (byte) or 16-bit (int) values
 The valueSize variable should be set to either 8 or 16 to indicate this BEFORE the table is used
 */
 struct table2D {
-  byte valueSize; 
+  byte valueSize;
   byte xSize;
-  
+
   byte *values;
   byte *axisX;
   
   int16_t *values16;
   int16_t *axisX16;
   
+
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
   int16_t lastXMax, lastXMin;
 };
@@ -29,16 +30,16 @@ struct table2D {
 void table2D_setSize(struct table2D targetTable, byte newSize);
 
 struct table3D {
-  
+
   //All tables must be the same size for simplicity
-  
+
   byte xSize;
   byte ySize;
-  
+
   byte **values;
   int16_t *axisX;
   int16_t *axisY;
-  
+
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
   byte lastXMax, lastXMin;
   byte lastYMax, lastYMin;
