@@ -93,7 +93,6 @@ static byte fanLOW = LOW;               // Used to invert the cooling fan output
 
 volatile int16_t mainLoopCount;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
-int16_t rpmDelta;
 byte ignitionCount;
 byte fixedCrankingOverride = 0;
 bool clutchTrigger;
@@ -135,9 +134,6 @@ volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming ha
 
 void setup()
 {
-  #if defined(CORE_STM32)
-    pinMode(LED_BUILTIN, OUTPUT);
-  #endif
 
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
@@ -190,7 +186,7 @@ void setup()
 
   //Setup the calibration tables
   loadCalibration();
-  
+
   //Set the pin mappings
   #if defined(CORE_STM32)
     configPage1.pinMapping = 32;
@@ -290,7 +286,7 @@ void setup()
     #else
       triggerInterrupt = pinTrigger;
     #endif
-    
+
   #if defined(CORE_AVR)
     switch (pinTrigger2) {
       //Arduino Mega 2560 mapping
@@ -310,7 +306,7 @@ void setup()
   #else
     triggerInterrupt2 = pinTrigger2;
   #endif
-  
+
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
@@ -918,7 +914,7 @@ void loop()
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
     }
-    
+
     if( (mainLoopCount & 63) == 1) //Every 64 loops
     {
       boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
@@ -1006,6 +1002,7 @@ void loop()
       int16_t ignition5StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
       //These are used for comparisons on channels above 1 where the starting angle (for injectors or ignition) can be less than a single loop time
       //(Don't ask why this is needed, it will break your head)
+      int16_t rpmDelta;
       int16_t tempCrankAngle;
       int16_t tempStartAngle;
 
@@ -1043,17 +1040,11 @@ void loop()
 
           rpmDelta = (toothDeltaV << 10) / (6 * toothDeltaT);
         }
-
-
-        timePerDegree = ldiv( 166666L, (currentStatus.RPM + rpmDelta)).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
       }
-      else
-      {
-        long rpm_adjust = ((long)(micros() - toothOneTime) * (long)currentStatus.rpmDOT) / 1000000; //Take into account any likely accleration that has occurred since the last full revolution completed
+      //Take into account any likely accleration that has occurred since the last full revolution completed
+      else { rpmDelta = ((long)(micros() - toothOneTime) * (long)currentStatus.rpmDOT) / 1000000; }
 
-        //timePerDegree = DIV_ROUND_CLOSEST(166666L, (currentStatus.RPM + rpm_adjust));
-        timePerDegree = ldiv( 166666L, currentStatus.RPM + rpm_adjust).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
-      }
+      timePerDegree = ldiv( 166666L, (currentStatus.RPM + rpmDelta)).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
 
       //Check that the duty cycle of the chosen pulsewidth isn't too high. This is disabled at cranking
       if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
@@ -1385,6 +1376,7 @@ void loop()
             unsigned long timePerDegree_1 = ldiv( 166666L, newRPM).quot;
             unsigned long timeout = (unsigned long)(ignition1StartAngle - crankAngle) * 282UL;
             */
+            //void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
             setIgnitionSchedule1(ign1StartFunction,
                       ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree), //(timeout/10),
                       currentStatus.dwell + fixedCrankingOverride, //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,

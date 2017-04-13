@@ -347,7 +347,7 @@ void setPinMapping(byte boardID)
       pinTachOut = D31; //Tacho output pin
       pinFlex = D32; // Flex sensor (Must be external interrupt enabled)
       break;
-    #endif  
+    #endif
 
     default:
       //Pin mappings as per the v0.2 shield
@@ -435,7 +435,7 @@ void setPinMapping(byte boardID)
   inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
   inj5_pin_mask = digitalPinToBitMask(pinInjector5);
   #endif
-  
+
   ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
   ign1_pin_mask = digitalPinToBitMask(pinCoil1);
   ign2_pin_port = portOutputRegister(digitalPinToPort(pinCoil2));
@@ -448,18 +448,18 @@ void setPinMapping(byte boardID)
   ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
   ign5_pin_mask = digitalPinToBitMask(pinCoil5);
   #endif
-
+/*
   #if defined(CORE_STM32)
     while ( !Serial.isConnected() ) ; // wait till serial connection is setup, or serial monitor started
   #endif
-  
+*/
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
-
+/*
   #if defined(CORE_STM32)
     while ( Serial.isConnected() ) ; // wait till serial connection is setup, or serial monitor started
   #endif
-
+*/
   //And for inputs
   #if defined(CORE_STM32)
     pinMode(pinMAP, INPUT_ANALOG);
