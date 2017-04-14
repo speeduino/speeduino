@@ -159,13 +159,14 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   //Hack compatibility with AVR timers that run at different speeds
   #define uS_TO_TIMER_COMPARE_SLOW(uS) ((uS * 15) >> 5)
 
-#elif defined(STM32_MCU_SERIES)
+#elif defined(CORE_STM32)
   //Placeholders ONLY!
 
   //https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/master/STM32F4/cores/maple/libmaple/timer.h#L51
-  #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
-  #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
-  #define uS_TO_TIMER_COMPARE_SLOW(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
+  #define MAX_TIMER_PERIOD 131070 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
+  #define uS_TO_TIMER_COMPARE(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
+  #define uS_TO_TIMER_COMPARE_SLOW(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
+
 
   #define FUEL1_COUNTER (TIMER2->regs).gen->CNT
   #define FUEL2_COUNTER (TIMER2->regs).gen->CNT
@@ -232,6 +233,20 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
 void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 
+//Needed for STM32 interrupt handlers
+#if defined (CORE_TEENSY) || defined(CORE_STM32)
+  static inline void fuelSchedule1Interrupt();
+  static inline void fuelSchedule2Interrupt();
+  static inline void fuelSchedule3Interrupt();
+  static inline void fuelSchedule4Interrupt();
+  static inline void fuelSchedule5Interrupt();
+  static inline void ignitionSchedule1Interrupt();
+  static inline void ignitionSchedule2Interrupt();
+  static inline void ignitionSchedule3Interrupt();
+  static inline void ignitionSchedule4Interrupt();
+  static inline void ignitionSchedule5Interrupt();
+#endif
+
 enum ScheduleStatus {OFF, PENDING, RUNNING}; //The 3 statuses that a schedule can have
 
 struct Schedule {
@@ -241,8 +256,8 @@ struct Schedule {
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
   volatile unsigned long startTime; //The system time (in uS) that the schedule started
-  unsigned int startCompare; //The counter value of the timer when this will start
-  unsigned int endCompare;
+  uint16_t startCompare; //The counter value of the timer when this will start
+  uint16_t endCompare;
 };
 
 volatile Schedule *timer3Aqueue[4];
@@ -268,10 +283,10 @@ Schedule ignitionSchedule8;
 
 Schedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 
-static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned int CNT)
+static inline uint16_t setQueue(volatile Schedule *queue[], Schedule *schedule1, Schedule *schedule2, uint16_t CNT)
 {
   //Create an array of all the upcoming targets, relative to the current count on the timer
-  unsigned int tmpQueue[4];
+  uint16_t tmpQueue[4];
 
   //Set the initial queue state. This order matches the tmpQueue order
   if(schedule1->Status == OFF)
@@ -308,7 +323,7 @@ static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedu
   //Sort the queues. Both queues are kept in sync.
   //This implementes a sorting networking based on the Bose-Nelson sorting network
   //See: http://pages.ripco.net/~jgamble/nw.html
-  #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned int tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; volatile Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
+  #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { uint16_t tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; volatile Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
   //SWAP(0, 1); //Likely not needed
   //SWAP(2, 3); //Likely not needed
   SWAP(0, 2);
@@ -324,7 +339,7 @@ static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedu
  * The current item (0) is discarded
  * The final queue slot is set to nullSchedule to indicate that no action should be taken
  */
-static inline unsigned int popQueue(volatile Schedule *queue[])
+static inline uint16_t popQueue(volatile Schedule *queue[])
 {
   queue[0] = queue[1];
   queue[1] = queue[2];

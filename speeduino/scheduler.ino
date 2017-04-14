@@ -160,9 +160,34 @@ void initialiseSchedulers()
   NVIC_ENABLE_IRQ(IRQ_FTM1);
 
 #elif defined(CORE_STM32)
-  (TIMER2->regs).gen->CCMR1 &= ~TIM_CCMR1_OC1M; //Select channel 1 output Compare and Mode
 
-  TIM3->CR1 |= TIM_CR1_CEN
+  //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
+  (TIMER1->regs).bas->PSC = (TIMER2->regs).bas->PSC = (TIMER3->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
+  //TimerX.setPrescaleFactor(CYCLES_PER_MICROSECOND * 2U); //2us resolution
+
+  Timer2.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
+  Timer2.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
+  Timer2.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
+  Timer2.setMode(TIMER_CH4, TIMER_OUTPUT_COMPARE);
+
+  Timer3.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
+  Timer3.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
+  Timer3.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
+  Timer3.setMode(TIMER_CH4, TIMER_OUTPUT_COMPARE);
+
+  Timer2.attachInterrupt(1, fuelSchedule1Interrupt);
+  Timer2.attachInterrupt(2, fuelSchedule2Interrupt);
+  Timer2.attachInterrupt(3, fuelSchedule3Interrupt);
+  Timer2.attachInterrupt(4, fuelSchedule4Interrupt);
+
+  Timer3.attachInterrupt(1, ignitionSchedule1Interrupt);
+  Timer3.attachInterrupt(2, ignitionSchedule2Interrupt);
+  Timer3.attachInterrupt(3, ignitionSchedule3Interrupt);
+  Timer3.attachInterrupt(4, ignitionSchedule4Interrupt);
+
+  //(TIMER2->regs).gen->CCMR1 &= ~TIM_CCMR1_OC1M; //Select channel 1 output Compare and Mode
+  //TIM3->CR1 |= TIM_CR1_CEN
+
 
 #endif
 
@@ -311,8 +336,8 @@ void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned l
      */
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
     noInterrupts();
-    fuelSchedule5.startCompare = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
-    fuelSchedule5.endCompare = fuelSchedule5.startCompare + (duration >> 4);
+    fuelSchedule5.startCompare = TCNT3 + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    fuelSchedule5.endCompare = fuelSchedule5.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     fuelSchedule5.Status = PENDING; //Turn this schedule on
     fuelSchedule5.schedulesSet++; //Increment the number of times this schedule has been set
     OCR3A = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, TCNT3); //Schedule 1 shares a timer with schedule 5

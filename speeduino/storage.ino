@@ -20,7 +20,7 @@ void writeConfig()
   This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
   */
 
-  int offset;
+  int16_t offset;
   //Create a pointer to the config page
   byte* pnt_configPage;
 
@@ -33,20 +33,20 @@ void writeConfig()
   -----------------------------------------------------*/
   if(EEPROM.read(EEPROM_CONFIG1_XSIZE) != fuelTable.xSize) { EEPROM.write(EEPROM_CONFIG1_XSIZE, fuelTable.xSize); } //Write the VE Tables RPM dimension size
   if(EEPROM.read(EEPROM_CONFIG1_YSIZE) != fuelTable.ySize) { EEPROM.write(EEPROM_CONFIG1_YSIZE, fuelTable.ySize); } //Write the VE Tables MAP/TPS dimension size
-  for(int x=EEPROM_CONFIG1_MAP; x<EEPROM_CONFIG1_XBINS; x++)
+  for(int16_t x=EEPROM_CONFIG1_MAP; x<EEPROM_CONFIG1_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG1_MAP;
     if(EEPROM.read(x) != fuelTable.values[15-offset/16][offset%16]) { EEPROM.write(x, fuelTable.values[15-offset/16][offset%16]); }  //Write the 16x16 map
   }
 
   //RPM bins
-  for(int x=EEPROM_CONFIG1_XBINS; x<EEPROM_CONFIG1_YBINS; x++)
+  for(int16_t x=EEPROM_CONFIG1_XBINS; x<EEPROM_CONFIG1_YBINS; x++)
   {
     offset = x - EEPROM_CONFIG1_XBINS;
     if(EEPROM.read(x) != byte(fuelTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(fuelTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); } //RPM bins are divided by 100 and converted to a byte
   }
   //TPS/MAP bins
-  for(int x=EEPROM_CONFIG1_YBINS; x<EEPROM_CONFIG2_START; x++)
+  for(int16_t x=EEPROM_CONFIG1_YBINS; x<EEPROM_CONFIG2_START; x++)
   {
     offset = x - EEPROM_CONFIG1_YBINS;
     EEPROM.update(x, fuelTable.axisY[offset] / TABLE_LOAD_MULTIPLIER); //Table load is divided by 2 (Allows for MAP up to 511)
@@ -59,7 +59,7 @@ void writeConfig()
   | 64 byte long config table
   -----------------------------------------------------*/
   pnt_configPage = (byte *)&configPage1; //Create a pointer to Page 2 in memory
-  for(int x=EEPROM_CONFIG2_START; x<EEPROM_CONFIG2_END; x++)
+  for(int16_t x=EEPROM_CONFIG2_START; x<EEPROM_CONFIG2_END; x++)
   {
     if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG2_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG2_START))); }
   }
@@ -74,19 +74,19 @@ void writeConfig()
   if(EEPROM.read(EEPROM_CONFIG3_XSIZE) != ignitionTable.xSize) { EEPROM.write(EEPROM_CONFIG3_XSIZE,ignitionTable.xSize); } //Write the ignition Table RPM dimension size
   if(EEPROM.read(EEPROM_CONFIG3_YSIZE) != ignitionTable.ySize) { EEPROM.write(EEPROM_CONFIG3_YSIZE,ignitionTable.ySize); } //Write the ignition Table MAP/TPS dimension size
 
-  for(int x=EEPROM_CONFIG3_MAP; x<EEPROM_CONFIG3_XBINS; x++)
+  for(int16_t x=EEPROM_CONFIG3_MAP; x<EEPROM_CONFIG3_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG3_MAP;
     if(EEPROM.read(x) != ignitionTable.values[15-offset/16][offset%16]) { EEPROM.write(x, ignitionTable.values[15-offset/16][offset%16]); }  //Write the 16x16 map with translation
   }
   //RPM bins
-  for(int x=EEPROM_CONFIG3_XBINS; x<EEPROM_CONFIG3_YBINS; x++)
+  for(int16_t x=EEPROM_CONFIG3_XBINS; x<EEPROM_CONFIG3_YBINS; x++)
   {
     offset = x - EEPROM_CONFIG3_XBINS;
     if(EEPROM.read(x) != byte(ignitionTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(ignitionTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); } //RPM bins are divided by 100 and converted to a byte
   }
   //TPS/MAP bins
-  for(int x=EEPROM_CONFIG3_YBINS; x<EEPROM_CONFIG4_START; x++)
+  for(int16_t x=EEPROM_CONFIG3_YBINS; x<EEPROM_CONFIG4_START; x++)
   {
     offset = x - EEPROM_CONFIG3_YBINS;
     EEPROM.update(x, ignitionTable.axisY[offset]/TABLE_LOAD_MULTIPLIER); //Table load is divided by 2 (Allows for MAP up to 511)
@@ -99,7 +99,7 @@ void writeConfig()
   | 64 byte long config table
   -----------------------------------------------------*/
   pnt_configPage = (byte *)&configPage2; //Create a pointer to Page 2 in memory
-  for(int x=EEPROM_CONFIG4_START; x<EEPROM_CONFIG4_END; x++)
+  for(int16_t x=EEPROM_CONFIG4_START; x<EEPROM_CONFIG4_END; x++)
   {
     if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG4_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG4_START))); }
   }
@@ -114,19 +114,19 @@ void writeConfig()
   if(EEPROM.read(EEPROM_CONFIG5_XSIZE) != afrTable.xSize) { EEPROM.write(EEPROM_CONFIG5_XSIZE,afrTable.xSize); } //Write the ignition Table RPM dimension size
   if(EEPROM.read(EEPROM_CONFIG5_YSIZE) != afrTable.ySize) { EEPROM.write(EEPROM_CONFIG5_YSIZE,afrTable.ySize); } //Write the ignition Table MAP/TPS dimension size
 
-  for(int x=EEPROM_CONFIG5_MAP; x<EEPROM_CONFIG5_XBINS; x++)
+  for(int16_t x=EEPROM_CONFIG5_MAP; x<EEPROM_CONFIG5_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG5_MAP;
     if(EEPROM.read(x) != afrTable.values[15-offset/16][offset%16]) { EEPROM.write(x, afrTable.values[15-offset/16][offset%16]); }  //Write the 16x16 map
   }
   //RPM bins
-  for(int x=EEPROM_CONFIG5_XBINS; x<EEPROM_CONFIG5_YBINS; x++)
+  for(int16_t x=EEPROM_CONFIG5_XBINS; x<EEPROM_CONFIG5_YBINS; x++)
   {
     offset = x - EEPROM_CONFIG5_XBINS;
     if(EEPROM.read(x) != byte(afrTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(afrTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); } //RPM bins are divided by 100 and converted to a byte
   }
   //TPS/MAP bins
-  for(int x=EEPROM_CONFIG5_YBINS; x<EEPROM_CONFIG6_START; x++)
+  for(int16_t x=EEPROM_CONFIG5_YBINS; x<EEPROM_CONFIG6_START; x++)
   {
     offset = x - EEPROM_CONFIG5_YBINS;
     EEPROM.update(x, afrTable.axisY[offset]/TABLE_LOAD_MULTIPLIER); //Table load is divided by 2 (Allows for MAP up to 511)
@@ -139,7 +139,7 @@ void writeConfig()
   | 64 byte long config table
   -----------------------------------------------------*/
   pnt_configPage = (byte *)&configPage3; //Create a pointer to Page 3 in memory
-  for(int x=EEPROM_CONFIG6_START; x<EEPROM_CONFIG6_END; x++)
+  for(int16_t x=EEPROM_CONFIG6_START; x<EEPROM_CONFIG6_END; x++)
   {
     if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG6_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG6_START))); }
   }
@@ -151,7 +151,7 @@ void writeConfig()
   -----------------------------------------------------*/
   pnt_configPage = (byte *)&configPage4; //Create a pointer to Page 4 in memory
   //The next 128 bytes can simply be pulled straight from the configTable
-  for(int x=EEPROM_CONFIG7_START; x<EEPROM_CONFIG7_END; x++)
+  for(int16_t x=EEPROM_CONFIG7_START; x<EEPROM_CONFIG7_END; x++)
   {
     if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG7_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG7_START))); }
   }
@@ -166,8 +166,8 @@ void writeConfig()
   if(EEPROM.read(EEPROM_CONFIG8_XSIZE2) != vvtTable.xSize) { EEPROM.write(EEPROM_CONFIG8_XSIZE2,vvtTable.xSize); } //Write the vvt Table RPM dimension size
   if(EEPROM.read(EEPROM_CONFIG8_YSIZE2) != vvtTable.ySize) { EEPROM.write(EEPROM_CONFIG8_YSIZE2,vvtTable.ySize); } //Write the vvt Table MAP/TPS dimension size
 
-  int y = EEPROM_CONFIG8_MAP2; //We do the 2 maps together in the same loop
-  for(int x=EEPROM_CONFIG8_MAP1; x<EEPROM_CONFIG8_XBINS1; x++)
+  int16_t y = EEPROM_CONFIG8_MAP2; //We do the 2 maps together in the same loop
+  for(int16_t x=EEPROM_CONFIG8_MAP1; x<EEPROM_CONFIG8_XBINS1; x++)
   {
     offset = x - EEPROM_CONFIG8_MAP1;
     if(EEPROM.read(x) != boostTable.values[7-offset/8][offset%8]) { EEPROM.write(x, boostTable.values[7-offset/8][offset%8]); }  //Write the 8x8 map
@@ -177,7 +177,7 @@ void writeConfig()
   }
   //RPM bins
   y = EEPROM_CONFIG8_XBINS2;
-  for(int x=EEPROM_CONFIG8_XBINS1; x<EEPROM_CONFIG8_YBINS1; x++)
+  for(int16_t x=EEPROM_CONFIG8_XBINS1; x<EEPROM_CONFIG8_YBINS1; x++)
   {
     offset = x - EEPROM_CONFIG8_XBINS1;
     if(EEPROM.read(x) != byte(boostTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(boostTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); } //RPM bins are divided by 100 and converted to a byte
@@ -187,7 +187,7 @@ void writeConfig()
   }
   //TPS/MAP bins
   y=EEPROM_CONFIG8_YBINS2;
-  for(int x=EEPROM_CONFIG8_YBINS1; x<EEPROM_CONFIG8_XSIZE2; x++)
+  for(int16_t x=EEPROM_CONFIG8_YBINS1; x<EEPROM_CONFIG8_XSIZE2; x++)
   {
     offset = x - EEPROM_CONFIG8_YBINS1;
     EEPROM.update(x, boostTable.axisY[offset]); //TABLE_LOAD_MULTIPLIER is NOT used for boost as it is TPS based (0-100)
@@ -211,9 +211,9 @@ void writeConfig()
   EEPROM.update(EEPROM_CONFIG9_YSIZE4,trim4Table.ySize); //Write the boost Table MAP/TPS dimension size
 
   y = EEPROM_CONFIG9_MAP2; //We do the 4 maps together in the same loop
-  int z = EEPROM_CONFIG9_MAP3; //We do the 4 maps together in the same loop
-  int i = EEPROM_CONFIG9_MAP4; //We do the 4 maps together in the same loop
-  for(int x=EEPROM_CONFIG9_MAP1; x<EEPROM_CONFIG9_XBINS1; x++)
+  int16_t z = EEPROM_CONFIG9_MAP3; //We do the 4 maps together in the same loop
+  int16_t i = EEPROM_CONFIG9_MAP4; //We do the 4 maps together in the same loop
+  for(int16_t x=EEPROM_CONFIG9_MAP1; x<EEPROM_CONFIG9_XBINS1; x++)
   {
     offset = x - EEPROM_CONFIG9_MAP1;
     EEPROM.update(x, trim1Table.values[5-offset/6][offset%6]);  //Write the 6x6 map
@@ -231,7 +231,7 @@ void writeConfig()
   y = EEPROM_CONFIG9_XBINS2;
   z = EEPROM_CONFIG9_XBINS3;
   i = EEPROM_CONFIG9_XBINS4;
-  for(int x=EEPROM_CONFIG9_XBINS1; x<EEPROM_CONFIG9_YBINS1; x++)
+  for(int16_t x=EEPROM_CONFIG9_XBINS1; x<EEPROM_CONFIG9_YBINS1; x++)
   {
     offset = x - EEPROM_CONFIG9_XBINS1;
     EEPROM.update(x, byte(trim1Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); //RPM bins are divided by 100 and converted to a byte
@@ -249,7 +249,7 @@ void writeConfig()
   y=EEPROM_CONFIG9_YBINS2;
   z=EEPROM_CONFIG9_YBINS3;
   i=EEPROM_CONFIG9_YBINS4;
-  for(int x=EEPROM_CONFIG9_YBINS1; x<EEPROM_CONFIG9_XSIZE2; x++)
+  for(int16_t x=EEPROM_CONFIG9_YBINS1; x<EEPROM_CONFIG9_XSIZE2; x++)
   {
     offset = x - EEPROM_CONFIG9_YBINS1;
     EEPROM.update(x, trim1Table.axisY[offset]/TABLE_LOAD_MULTIPLIER); //Table load is divided by 2 (Allows for MAP up to 511)
@@ -270,7 +270,7 @@ void writeConfig()
   | 128 byte long config table
   -----------------------------------------------------*/
   pnt_configPage = (byte *)&configPage10; //Create a pointer to Page 10 in memory
-  for(int x=EEPROM_CONFIG10_START; x<EEPROM_CONFIG10_END; x++)
+  for(int16_t x=EEPROM_CONFIG10_START; x<EEPROM_CONFIG10_END; x++)
   {
     if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG10_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG10_START))); }
   }
@@ -280,7 +280,7 @@ void writeConfig()
 
 void loadConfig()
 {
-  int offset;
+  int16_t offset;
   //Create a pointer to the config page
   byte* pnt_configPage;
 
@@ -288,26 +288,26 @@ void loadConfig()
   //Fuel table (See storage.h for data layout)
   //fuelTable.xSize = EEPROM.read(EEPROM_CONFIG1_XSIZE); //Read the VE Tables RPM dimension size
   //fuelTable.ySize = EEPROM.read(EEPROM_CONFIG1_YSIZE); //Read the VE Tables MAP/TPS dimension size
-  for(int x=EEPROM_CONFIG1_MAP; x<EEPROM_CONFIG1_XBINS; x++)
+  for(int16_t x=EEPROM_CONFIG1_MAP; x<EEPROM_CONFIG1_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG1_MAP;
     fuelTable.values[15-offset/16][offset%16] = EEPROM.read(x); //Read the 8x8 map
   }
   //RPM bins
-  for(int x=EEPROM_CONFIG1_XBINS; x<EEPROM_CONFIG1_YBINS; x++)
+  for(int16_t x=EEPROM_CONFIG1_XBINS; x<EEPROM_CONFIG1_YBINS; x++)
   {
     offset = x - EEPROM_CONFIG1_XBINS;
     fuelTable.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
   }
   //TPS/MAP bins
-  for(int x=EEPROM_CONFIG1_YBINS; x<EEPROM_CONFIG2_START; x++)
+  for(int16_t x=EEPROM_CONFIG1_YBINS; x<EEPROM_CONFIG2_START; x++)
   {
     offset = x - EEPROM_CONFIG1_YBINS;
     fuelTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER;
   }
 
   pnt_configPage = (byte *)&configPage1; //Create a pointer to Page 1 in memory
-  for(int x=EEPROM_CONFIG2_START; x<EEPROM_CONFIG2_END; x++)
+  for(int16_t x=EEPROM_CONFIG2_START; x<EEPROM_CONFIG2_END; x++)
   {
     *(pnt_configPage + byte(x - EEPROM_CONFIG2_START)) = EEPROM.read(x);
   }
@@ -320,26 +320,26 @@ void loadConfig()
   //ignitionTable.xSize = EEPROM.read(EEPROM_CONFIG2_XSIZE); //Read the ignition Table RPM dimension size (Currently not supproted)
   //ignitionTable.ySize = EEPROM.read(EEPROM_CONFIG2_YSIZE); //Read the ignition Table MAP/TPS dimension size (Currently not supproted)
 
-  for(int x=EEPROM_CONFIG3_MAP; x<EEPROM_CONFIG3_XBINS; x++)
+  for(int16_t x=EEPROM_CONFIG3_MAP; x<EEPROM_CONFIG3_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG3_MAP;
     ignitionTable.values[15-offset/16][offset%16] = EEPROM.read(x); //Read the 8x8 map
   }
   //RPM bins
-  for(int x=EEPROM_CONFIG3_XBINS; x<EEPROM_CONFIG3_YBINS; x++)
+  for(int16_t x=EEPROM_CONFIG3_XBINS; x<EEPROM_CONFIG3_YBINS; x++)
   {
     offset = x - EEPROM_CONFIG3_XBINS;
     ignitionTable.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
   }
   //TPS/MAP bins
-  for(int x=EEPROM_CONFIG3_YBINS; x<EEPROM_CONFIG4_START; x++)
+  for(int16_t x=EEPROM_CONFIG3_YBINS; x<EEPROM_CONFIG4_START; x++)
   {
     offset = x - EEPROM_CONFIG3_YBINS;
     ignitionTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER; //Table load is divided by 2 (Allows for MAP up to 511)
   }
 
   pnt_configPage = (byte *)&configPage2; //Create a pointer to Page 2 in memory
-  for(int x=EEPROM_CONFIG4_START; x<EEPROM_CONFIG4_END; x++)
+  for(int16_t x=EEPROM_CONFIG4_START; x<EEPROM_CONFIG4_END; x++)
   {
     *(pnt_configPage + byte(x - EEPROM_CONFIG4_START)) = EEPROM.read(x);
   }
@@ -351,26 +351,26 @@ void loadConfig()
   //ignitionTable.xSize = EEPROM.read(EEPROM_CONFIG2_XSIZE); //Read the ignition Table RPM dimension size (Currently not supproted)
   //ignitionTable.ySize = EEPROM.read(EEPROM_CONFIG2_YSIZE); //Read the ignition Table MAP/TPS dimension size (Currently not supproted)
 
-  for(int x=EEPROM_CONFIG5_MAP; x<EEPROM_CONFIG5_XBINS; x++)
+  for(int16_t x=EEPROM_CONFIG5_MAP; x<EEPROM_CONFIG5_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG5_MAP;
     afrTable.values[15-offset/16][offset%16] = EEPROM.read(x); //Read the 16x16 map
   }
   //RPM bins
-  for(int x=EEPROM_CONFIG5_XBINS; x<EEPROM_CONFIG5_YBINS; x++)
+  for(int16_t x=EEPROM_CONFIG5_XBINS; x<EEPROM_CONFIG5_YBINS; x++)
   {
     offset = x - EEPROM_CONFIG5_XBINS;
     afrTable.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
   }
   //TPS/MAP bins
-  for(int x=EEPROM_CONFIG5_YBINS; x<EEPROM_CONFIG6_START; x++)
+  for(int16_t x=EEPROM_CONFIG5_YBINS; x<EEPROM_CONFIG6_START; x++)
   {
     offset = x - EEPROM_CONFIG5_YBINS;
     afrTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER; //Table load is divided by 2 (Allows for MAP up to 511)
   }
 
   pnt_configPage = (byte *)&configPage3; //Create a pointer to Page 2 in memory
-  for(int x=EEPROM_CONFIG6_START; x<EEPROM_CONFIG6_END; x++)
+  for(int16_t x=EEPROM_CONFIG6_START; x<EEPROM_CONFIG6_END; x++)
   {
     *(pnt_configPage + byte(x - EEPROM_CONFIG6_START)) = EEPROM.read(x);
   }
@@ -384,15 +384,15 @@ void loadConfig()
   //ignitionTable.ySize = EEPROM.read(EEPROM_CONFIG2_YSIZE); //Read the ignition Table MAP/TPS dimension size (Currently not supproted)
 
   //The next 64 bytes can simply be pulled straight from the configTable
-  for(int x=EEPROM_CONFIG7_START; x<EEPROM_CONFIG7_END; x++)
+  for(int16_t x=EEPROM_CONFIG7_START; x<EEPROM_CONFIG7_END; x++)
   {
     *(pnt_configPage + byte(x - EEPROM_CONFIG7_START)) = EEPROM.read(x);
   }
 
   //*********************************************************************************************************************************************************************************
   // Boost and vvt tables load
-  int y = EEPROM_CONFIG8_MAP2;
-  for(int x=EEPROM_CONFIG8_MAP1; x<EEPROM_CONFIG8_XBINS1; x++)
+  int16_t y = EEPROM_CONFIG8_MAP2;
+  for(int16_t x=EEPROM_CONFIG8_MAP1; x<EEPROM_CONFIG8_XBINS1; x++)
   {
     offset = x - EEPROM_CONFIG8_MAP1;
     boostTable.values[7-offset/8][offset%8] = EEPROM.read(x); //Read the 8x8 map
@@ -403,7 +403,7 @@ void loadConfig()
 
   //RPM bins
   y = EEPROM_CONFIG8_XBINS2;
-  for(int x=EEPROM_CONFIG8_XBINS1; x<EEPROM_CONFIG8_YBINS1; x++)
+  for(int16_t x=EEPROM_CONFIG8_XBINS1; x<EEPROM_CONFIG8_YBINS1; x++)
   {
     offset = x - EEPROM_CONFIG8_XBINS1;
     boostTable.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
@@ -414,7 +414,7 @@ void loadConfig()
 
   //TPS/MAP bins
   y = EEPROM_CONFIG8_YBINS2;
-  for(int x=EEPROM_CONFIG8_YBINS1; x<EEPROM_CONFIG8_XSIZE2; x++)
+  for(int16_t x=EEPROM_CONFIG8_YBINS1; x<EEPROM_CONFIG8_XSIZE2; x++)
   {
     offset = x - EEPROM_CONFIG8_YBINS1;
     boostTable.axisY[offset] = EEPROM.read(x); //TABLE_LOAD_MULTIPLIER is NOT used for boost as it is TPS based (0-100)
@@ -426,9 +426,9 @@ void loadConfig()
   //*********************************************************************************************************************************************************************************
   // Fuel trim tables load
   y = EEPROM_CONFIG9_MAP2;
-  int z = EEPROM_CONFIG9_MAP3;
-  int i = EEPROM_CONFIG9_MAP4;
-  for(int x=EEPROM_CONFIG9_MAP1; x<EEPROM_CONFIG9_XBINS1; x++)
+  int16_t z = EEPROM_CONFIG9_MAP3;
+  int16_t i = EEPROM_CONFIG9_MAP4;
+  for(int16_t x=EEPROM_CONFIG9_MAP1; x<EEPROM_CONFIG9_XBINS1; x++)
   {
     offset = x - EEPROM_CONFIG9_MAP1;
     trim1Table.values[5-offset/6][offset%6] = EEPROM.read(x); //Read the 6x6 map
@@ -447,7 +447,7 @@ void loadConfig()
   y = EEPROM_CONFIG9_XBINS2;
   z = EEPROM_CONFIG9_XBINS3;
   i = EEPROM_CONFIG9_XBINS4;
-  for(int x=EEPROM_CONFIG9_XBINS1; x<EEPROM_CONFIG9_YBINS1; x++)
+  for(int16_t x=EEPROM_CONFIG9_XBINS1; x<EEPROM_CONFIG9_YBINS1; x++)
   {
     offset = x - EEPROM_CONFIG9_XBINS1;
     trim1Table.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
@@ -466,7 +466,7 @@ void loadConfig()
   y = EEPROM_CONFIG9_YBINS2;
   z = EEPROM_CONFIG9_YBINS3;
   i = EEPROM_CONFIG9_YBINS4;
-  for(int x=EEPROM_CONFIG9_YBINS1; x<EEPROM_CONFIG9_XSIZE2; x++)
+  for(int16_t x=EEPROM_CONFIG9_YBINS1; x<EEPROM_CONFIG9_XSIZE2; x++)
   {
     offset = x - EEPROM_CONFIG9_YBINS1;
     trim1Table.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER; //Table load is divided by 2 (Allows for MAP up to 511)
@@ -483,7 +483,7 @@ void loadConfig()
   //*********************************************************************************************************************************************************************************
   //canbus control page load
     pnt_configPage = (byte *)&configPage10; //Create a pointer to Page 10 in memory
-  for(int x=EEPROM_CONFIG10_START; x<EEPROM_CONFIG10_END; x++)
+  for(int16_t x=EEPROM_CONFIG10_START; x<EEPROM_CONFIG10_END; x++)
   {
     *(pnt_configPage + byte(x - EEPROM_CONFIG10_START)) = EEPROM.read(x);
   }
@@ -499,9 +499,9 @@ This is separate from the config load as the calibrations do not exist as pages 
 void loadCalibration()
 {
 
-  for(int x=0; x<CALIBRATION_TABLE_SIZE; x++) //Each calibration table is 512 bytes long
+  for(int16_t x=0; x<CALIBRATION_TABLE_SIZE; x++) //Each calibration table is 512 bytes long
   {
-    int y = EEPROM_CALIBRATION_CLT + x;
+    int16_t y = EEPROM_CALIBRATION_CLT + x;
     cltCalibrationTable[x] = EEPROM.read(y);
 
     y = EEPROM_CALIBRATION_IAT + x;
@@ -520,9 +520,9 @@ and saves them to the EEPROM.
 void writeCalibration()
 {
 
-  for(int x=0; x<CALIBRATION_TABLE_SIZE; x++) //Each calibration table is 512 bytes long
+  for(int16_t x=0; x<CALIBRATION_TABLE_SIZE; x++) //Each calibration table is 512 bytes long
   {
-    int y = EEPROM_CALIBRATION_CLT + x;
+    int16_t y = EEPROM_CALIBRATION_CLT + x;
     if(EEPROM.read(y) != cltCalibrationTable[x]) { EEPROM.write(y, cltCalibrationTable[x]); }
 
     y = EEPROM_CALIBRATION_IAT + x;

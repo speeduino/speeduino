@@ -19,7 +19,9 @@ boolean isMap = true;
 unsigned long requestCount = 0; //The number of times the A command has been issued
 byte cmdGroup = 0;
 byte cmdValue = 0;
-int cmdCombined = 0;  //the cmdgroup as high byte and cmdvalue as low byte
+
+int16_t cmdCombined = 0;  //the cmdgroup as high byte and cmdvalue as low byte
+
 byte cmdStore[8];     //array storing pre test values
 
 const char pageTitles[] PROGMEM //This is being stored in the avr flash instead of SRAM which there is not very much of
@@ -37,8 +39,8 @@ const char pageTitles[] PROGMEM //This is being stored in the avr flash instead 
   };
 
 void command();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
-void sendValues(int packetlength, byte portnum);
-void receiveValue(int offset, byte newValue);
+void sendValues(int16_t packetlength, byte portnum);
+void receiveValue(int16_t offset, byte newValue);
 void saveConfig();
 void sendPage(bool useChar);
 void receiveCalibration(byte tableID);

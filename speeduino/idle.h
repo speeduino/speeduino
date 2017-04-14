@@ -19,8 +19,8 @@ enum StepperStatus {SOFF, STEPPING, COOLING}; //The 2 statuses that a stepper ca
 
 struct StepperIdle
 {
-  int curIdleStep; //Tracks the current location of the stepper
-  int targetIdleStep; //What the targetted step is
+  int16_t curIdleStep; //Tracks the current location of the stepper
+  int16_t targetIdleStep; //What the targetted step is
   volatile StepperStatus stepperStatus;
   volatile unsigned long stepStartTime; //The time the curren
 };
@@ -60,16 +60,16 @@ struct table2D iacCrankDutyTable;
 struct StepperIdle idleStepper;
 bool idleOn; //Simply tracks whether idle was on last time around
 byte idleInitComplete = 99; //TRacks which idle method was initialised. 99 is a method that will never exist
-unsigned int iacStepTime;
-unsigned int completedHomeSteps;
+uint16_t iacStepTime;
+uint16_t completedHomeSteps;
 
 volatile byte *idle_pin_port;
 volatile byte idle_pin_mask;
 volatile byte *idle2_pin_port;
 volatile byte idle2_pin_mask;
 volatile bool idle_pwm_state;
-unsigned int idle_pwm_max_count; //Used for variable PWM frequency
-volatile unsigned int idle_pwm_cur_value;
+uint16_t idle_pwm_max_count; //Used for variable PWM frequency
+volatile uint16_t idle_pwm_cur_value;
 long idle_pid_target_value;
 long idle_pwm_target_value;
 long idle_cl_target_rpm;

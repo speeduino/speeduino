@@ -10,12 +10,12 @@
 */
 #include "utils.h"
 
-int freeRam ()
+int16_t freeRam ()
 {
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-  extern int __heap_start, *__brkval;
-  int v;
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+  extern int16_t __heap_start, *__brkval;
+  int16_t v;
+  return (int16_t) &v - (__brkval == 0 ? (int16_t) &__heap_start : (int16_t) __brkval);
 #elif defined(CORE_TEENSY)
   uint32_t stackTop;
   uint32_t heapTop;
@@ -40,19 +40,24 @@ void setPinMapping(byte boardID)
 {
   //This is dumb, but it'll do for now to get things compiling
   #if defined(CORE_STM32)
-    #define A0  0
-    #define A1  1
-    #define A2  2
-    #define A3  3
-    #define A4  4
-    #define A5  5
-    #define A6  6
-    #define A7  7
-    #define A8  8
-    #define A9  9
-    #define A13  13
-    #define A14  14
-    #define A15  15
+    //STM32F1/variants/.../board.cpp
+    #define A0  boardADCPins[0]
+    #define A1  boardADCPins[1]
+    #define A2  boardADCPins[2]
+    #define A3  boardADCPins[3]
+    #define A4  boardADCPins[4]
+    #define A5  boardADCPins[5]
+    #define A6  boardADCPins[6]
+    #define A7  boardADCPins[7]
+    #define A8  boardADCPins[8]
+    #define A9  boardADCPins[9]
+    //STM32F1 have only 9 12bit adc
+    #define A10  boardADCPins[0]
+    #define A11  boardADCPins[1]
+    #define A12  boardADCPins[2]
+    #define A13  boardADCPins[3]
+    #define A14  boardADCPins[4]
+    #define A15  boardADCPins[5]
   #endif
 
   switch (boardID)
@@ -192,6 +197,33 @@ void setPinMapping(byte boardID)
         pinFan = 27;
         pinCoil4 = 29;
         pinCoil3 = 30;
+
+      #elif defined(CORE_STM32)
+        //http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/0.0.12/hardware/maple-mini.html#master-pin-map
+        pinInjector1 = 11; //Output pin injector 1 is on
+        pinInjector2 = 10; //Output pin injector 2 is on
+        pinInjector3 = 9; //Output pin injector 3 is on
+        pinInjector4 = 8; //Output pin injector 4 is on
+        pinCoil1 = 5; //Pin for coil 1
+        pinCoil2 = 4; //Pin for coil 2
+        pinCoil3 = 3; //Pin for coil 3
+        pinCoil4 = 33; //Pin for coil 4
+        pinTrigger = 15; //The CAS pin
+        pinTrigger2 = 26; //The Cam Sensor pin
+        pinTPS = A0; //TPS input pin
+        pinMAP = A1; //MAP sensor pin
+        pinIAT = A5; //IAT sensor pin
+        pinCLT = A7; //CLS sensor pin
+        pinO2 = A0; //O2 Sensor pin
+        pinBat = A1; //Battery reference voltage pin
+        pinStepperDir = 0; //Direction pin  for DRV8825 driver
+        pinStepperStep = 1; //Step pin for DRV8825 driver
+        pinDisplayReset = 2; // OLED reset pin
+        pinFan = 6; //Pin for the fan output
+        pinFuelPump = 7; //Fuel pump output
+        pinTachOut = 31; //Tacho output pin
+        pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
+
       #endif
       break;
 
@@ -415,8 +447,10 @@ void setPinMapping(byte boardID)
   inj3_pin_mask = digitalPinToBitMask(pinInjector3);
   inj4_pin_port = portOutputRegister(digitalPinToPort(pinInjector4));
   inj4_pin_mask = digitalPinToBitMask(pinInjector4);
+  #ifndef CORE_STM32
   inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
   inj5_pin_mask = digitalPinToBitMask(pinInjector5);
+  #endif
 
   ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
   ign1_pin_mask = digitalPinToBitMask(pinCoil1);
@@ -429,17 +463,30 @@ void setPinMapping(byte boardID)
   ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
   ign5_pin_mask = digitalPinToBitMask(pinCoil5);
 
+  //this line is breaking the stack on STM32
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
+  //while ( !Serial.isConnected() ) ; // wait till serial connection is setup, or serial monitor started
+  //debug
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
 
   //And for inputs
-  pinMode(pinMAP, INPUT);
-  pinMode(pinO2, INPUT);
-  pinMode(pinO2_2, INPUT);
-  pinMode(pinTPS, INPUT);
-  pinMode(pinIAT, INPUT);
-  pinMode(pinCLT, INPUT);
-  pinMode(pinBat, INPUT);
+  #if defined(CORE_STM32)
+    pinMode(pinMAP, INPUT_ANALOG);
+    pinMode(pinO2, INPUT_ANALOG);
+    pinMode(pinO2_2, INPUT_ANALOG);
+    pinMode(pinTPS, INPUT_ANALOG);
+    pinMode(pinIAT, INPUT_ANALOG);
+    pinMode(pinCLT, INPUT_ANALOG);
+    pinMode(pinBat, INPUT_ANALOG);
+  #else
+    pinMode(pinMAP, INPUT);
+    pinMode(pinO2, INPUT);
+    pinMode(pinO2_2, INPUT);
+    pinMode(pinTPS, INPUT);
+    pinMode(pinIAT, INPUT);
+    pinMode(pinCLT, INPUT);
+    pinMode(pinBat, INPUT);
+  #endif
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
@@ -458,10 +505,13 @@ void setPinMapping(byte boardID)
   triggerSec_pin_port = portInputRegister(digitalPinToPort(pinTrigger2));
   triggerSec_pin_mask = digitalPinToBitMask(pinTrigger2);
 
-  //Set default values
-  digitalWrite(pinMAP, HIGH);
-  //digitalWrite(pinO2, LOW);
-  digitalWrite(pinTPS, LOW);
+  #if defined(CORE_STM32)
+  #else
+    //Set default values
+    digitalWrite(pinMAP, HIGH);
+    //digitalWrite(pinO2, LOW);
+    digitalWrite(pinTPS, LOW);
+  #endif
 }
 
 /*
@@ -475,20 +525,20 @@ void setPinMapping(byte boardID)
 
   This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N calculations respectively.
 */
-unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
+uint16_t PW(int16_t REQ_FUEL, byte VE, byte MAP, int16_t corrections, int16_t injOpen)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
-  unsigned int iVE, iMAP, iAFR, iCorrections;
+  uint16_t iVE, iMAP, iAFR, iCorrections;
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
-  iVE = ((unsigned int)VE << 7) / 100;
+  iVE = ((uint16_t)VE << 7) / 100;
   if ( configPage1.multiplyMAP ) {
-    iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
+    iMAP = ((uint16_t)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
   }
   if ( configPage1.includeAFR && (configPage3.egoType == 2)) {
-    iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+    iAFR = ((uint16_t)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
   }
   iCorrections = (corrections << 7) / 100;
 
@@ -509,18 +559,18 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
   if ( intermediate > 65535) {
     intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
   }
-  return (unsigned int)(intermediate);
+  return (uint16_t)(intermediate);
 
 }
 
 //Convenience functions for Speed Density and Alpha-N
-unsigned int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
+uint16_t PW_SD(int16_t REQ_FUEL, byte VE, byte MAP, int16_t corrections, int16_t injOpen)
 {
   return PW(REQ_FUEL, VE, MAP, corrections, injOpen);
   //return PW(REQ_FUEL, VE, 100, corrections, injOpen);
 }
 
-unsigned int PW_AN(int REQ_FUEL, byte VE, byte TPS, int corrections, int injOpen)
+uint16_t PW_AN(int16_t REQ_FUEL, byte VE, byte TPS, int16_t corrections, int16_t injOpen)
 {
   //Sanity check
   if (TPS > 100) {

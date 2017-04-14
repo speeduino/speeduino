@@ -1,5 +1,3 @@
-
-
 /*
 NOTE - This file and it's associated functions need a CLEARER NAME
 
@@ -19,11 +17,11 @@ Hence we will preload the timer with 131 cycles to leave 125 until overflow (1ms
 #ifndef TIMERS_H
 #define TIMERS_H
 
-volatile int loop100ms;
-volatile int loop250ms;
-volatile int loopSec;
+volatile int16_t loop100ms;
+volatile int16_t loop250ms;
+volatile int16_t loopSec;
 
-volatile unsigned int dwellLimit_uS;
+volatile uint16_t dwellLimit_uS;
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
 
 #if defined (CORE_TEENSY)

@@ -39,9 +39,10 @@ void initialiseTimers()
    lowResTimer.begin(oneMSInterval, 1000);
 
 #elif defined(CORE_STM32)
-  Timer4.setChannel1Mode(TIMER_OUTPUTCOMPARE);
-  Timer4.setPeriod(1000);
-  Timer4.attachCompare1Interrupt(oneMSInterval);
+  Timer4.setPeriod(1000);  // Set up period
+  // Set up an interrupt
+  Timer4.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
+  Timer4.attachInterrupt(1, oneMSInterval);
 #endif
 
   dwellLimit_uS = (1000 * configPage2.dwellLimit);
