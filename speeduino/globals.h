@@ -4,9 +4,10 @@
 #include "table.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+  #define BOARD_NR_GPIO_PINS 54
   #define CORE_AVR
 #elif defined(CORE_TEENSY)
-  //Currently nothing to do here
+  #define BOARD_NR_GPIO_PINS 34
 #elif defined(STM32_MCU_SERIES)
   #define CORE_STM32
 
@@ -104,7 +105,7 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 const byte page_size = 64;
-const int16_t npage_size[11] ={0,288,64,288,64,288,64,64,160,192,128};
+const int16_t npage_size[11] = {0,288,64,288,64,288,64,64,160,192,128};
 //const byte page10_size = 128;
 const int16_t map_page_size = 288;
 
@@ -319,8 +320,11 @@ struct config1 {
   byte iacCLmaxDuty;
   byte boostMinDuty;
 
-
-};
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bi systems require all structs to be fully packed
+#endif
 
 //Page 2 of the config - See the ini file for further reference
 //This mostly covers off variables that are required for ignition
@@ -379,8 +383,11 @@ struct config2 {
   byte ignBypassPin : 6; //Pin the ignition bypass is activated on
   byte ignBypassHiLo : 1; //Whether this should be active high or low.
 
-
-};
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bi systems require all structs to be fully packed
+#endif
 
 //Page 3 of the config - See the ini file for further reference
 //This mostly covers off variables that are required for AFR targets and closed loop
@@ -444,7 +451,11 @@ struct config3 {
   byte flatSArm;
 
 
-};
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bi systems require all structs to be fully packed
+#endif
 
 
 //Page 4 of the config mostly deals with idle control
@@ -475,7 +486,12 @@ struct config4 {
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
-};
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bi systems require all structs to be fully packed
+#endif
+
 
 //Page 10 of the config mostly deals with CANBUS control
 //See ini file for further info (Config Page 10 in the ini)
@@ -608,7 +624,12 @@ struct config10 {
   byte unused10_125;
   byte unused10_126;
   byte unused10_127;
-};
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bi systems require all structs to be fully packed
+#endif
+
 
 
 byte pinInjector1; //Output pin injector 1

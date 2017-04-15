@@ -197,33 +197,35 @@ void setPinMapping(byte boardID)
         pinFan = 27;
         pinCoil4 = 29;
         pinCoil3 = 30;
-
       #elif defined(CORE_STM32)
         //http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/0.0.12/hardware/maple-mini.html#master-pin-map
-        pinInjector1 = 11; //Output pin injector 1 is on
-        pinInjector2 = 10; //Output pin injector 2 is on
-        pinInjector3 = 9; //Output pin injector 3 is on
-        pinInjector4 = 8; //Output pin injector 4 is on
-        pinCoil1 = 5; //Pin for coil 1
-        pinCoil2 = 4; //Pin for coil 2
-        pinCoil3 = 3; //Pin for coil 3
-        pinCoil4 = 33; //Pin for coil 4
-        pinTrigger = 15; //The CAS pin
-        pinTrigger2 = 26; //The Cam Sensor pin
+        //pins 23, 24 and 33 couldn't be used
+        pinInjector1 = 15; //Output pin injector 1 is on
+        pinInjector2 = 16; //Output pin injector 2 is on
+        pinInjector3 = 17; //Output pin injector 3 is on
+        pinInjector4 = 18; //Output pin injector 4 is on
+        pinCoil1 = 19; //Pin for coil 1
+        pinCoil2 = 20; //Pin for coil 2
+        pinCoil3 = 21; //Pin for coil 3
+        pinCoil4 = 26; //Pin for coil 4
+        pinCoil5 = 27; //Pin for coil 4
         pinTPS = A0; //TPS input pin
         pinMAP = A1; //MAP sensor pin
-        pinIAT = A5; //IAT sensor pin
-        pinCLT = A7; //CLS sensor pin
-        pinO2 = A0; //O2 Sensor pin
-        pinBat = A1; //Battery reference voltage pin
-        pinStepperDir = 0; //Direction pin  for DRV8825 driver
-        pinStepperStep = 1; //Step pin for DRV8825 driver
+        pinIAT = A2; //IAT sensor pin
+        pinCLT = A3; //CLS sensor pin
+        pinO2 = A4; //O2 Sensor pin
+        pinBat = A5; //Battery reference voltage pin
+        pinStepperDir = 12; //Direction pin  for DRV8825 driver
+        pinStepperStep = 13; //Step pin for DRV8825 driver
+        pinStepperEnable = 14; //Enable pin for DRV8825
         pinDisplayReset = 2; // OLED reset pin
-        pinFan = 6; //Pin for the fan output
-        pinFuelPump = 7; //Fuel pump output
+        pinFan = 1; //Pin for the fan output
+        pinFuelPump = 0; //Fuel pump output
         pinTachOut = 31; //Tacho output pin
+        //external interrupt enabled pins
         pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
-
+        pinTrigger = 25; //The CAS pin
+        pinTrigger2 = 22; //The Cam Sensor pin
       #endif
       break;
 
@@ -393,27 +395,17 @@ void setPinMapping(byte boardID)
       break;
   }
 
-  //Setup any devices that are using selectable pins
-  if (configPage3.launchPin != 0) {
-    pinLaunch = configPage3.launchPin;
-  }
-  if (configPage2.ignBypassPin != 0) {
-    pinIgnBypass = configPage2.ignBypassPin;
-  }
-  if (configPage1.tachoPin != 0) {
-    pinTachOut = configPage1.tachoPin;
-  }
-  if (configPage2.fuelPumpPin != 0) {
-    pinFuelPump = configPage2.fuelPumpPin;
-  }
-  if (configPage4.fanPin != 0) {
-    pinFan = configPage4.fanPin;
-  }
-  if (configPage3.boostPin != 0) {
-    pinBoost = configPage3.boostPin;
-  }
-  if (configPage3.vvtPin != 0) {
-    pinVVT_1 = configPage3.vvtPin;
+  //First time running?
+  if (configPage3.launchPin < BOARD_NR_GPIO_PINS)
+  {
+    //Setup any devices that are using selectable pins
+    if (configPage3.launchPin != 0) { pinLaunch = configPage3.launchPin; }
+    if (configPage2.ignBypassPin != 0) { pinIgnBypass = configPage2.ignBypassPin; }
+    if (configPage1.tachoPin != 0) { pinTachOut = configPage1.tachoPin; }
+    if (configPage2.fuelPumpPin != 0) { pinFuelPump = configPage2.fuelPumpPin; }
+    if (configPage4.fanPin != 0) { pinFan = configPage4.fanPin; }
+    if (configPage3.boostPin != 0) { pinBoost = configPage3.boostPin; }
+    if (configPage3.vvtPin != 0) { pinVVT_1 = configPage3.vvtPin; }
   }
 
   //Finally, set the relevant pin modes for outputs
@@ -447,10 +439,8 @@ void setPinMapping(byte boardID)
   inj3_pin_mask = digitalPinToBitMask(pinInjector3);
   inj4_pin_port = portOutputRegister(digitalPinToPort(pinInjector4));
   inj4_pin_mask = digitalPinToBitMask(pinInjector4);
-  #ifndef CORE_STM32
   inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
   inj5_pin_mask = digitalPinToBitMask(pinInjector5);
-  #endif
 
   ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
   ign1_pin_mask = digitalPinToBitMask(pinCoil1);
@@ -465,8 +455,6 @@ void setPinMapping(byte boardID)
 
   //this line is breaking the stack on STM32
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
-  //while ( !Serial.isConnected() ) ; // wait till serial connection is setup, or serial monitor started
-  //debug
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
 
   //And for inputs

@@ -160,7 +160,6 @@ void initialiseSchedulers()
   NVIC_ENABLE_IRQ(IRQ_FTM1);
 
 #elif defined(CORE_STM32)
-
   //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
   (TIMER1->regs).bas->PSC = (TIMER2->regs).bas->PSC = (TIMER3->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
   //TimerX.setPrescaleFactor(CYCLES_PER_MICROSECOND * 2U); //2us resolution
@@ -187,7 +186,6 @@ void initialiseSchedulers()
 
   //(TIMER2->regs).gen->CCMR1 &= ~TIM_CCMR1_OC1M; //Select channel 1 output Compare and Mode
   //TIM3->CR1 |= TIM_CR1_CEN
-
 
 #endif
 
@@ -420,8 +418,8 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout = MAX_TIMER_PERIOD - 1; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
 
     noInterrupts();
-    ignitionSchedule4.startCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
-    ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+    ignitionSchedule4.startCompare = IGN4_COUNTER + (timeout >> 4); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + (duration >> 4);
     IGN4_COMPARE = ignitionSchedule4.startCompare;
     ignitionSchedule4.Status = PENDING; //Turn this schedule on
     ignitionSchedule4.schedulesSet++;
@@ -442,8 +440,8 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout = MAX_TIMER_PERIOD - 1; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
 
     noInterrupts();
-    ignitionSchedule5.startCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
-    ignitionSchedule5.endCompare = ignitionSchedule5.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+    ignitionSchedule5.startCompare = IGN5_COUNTER + (timeout >> 4); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    ignitionSchedule5.endCompare = ignitionSchedule5.startCompare + (duration >> 4);
     IGN5_COMPARE = ignitionSchedule5.startCompare;
     ignitionSchedule5.Status = PENDING; //Turn this schedule on
     ignitionSchedule5.schedulesSet++;

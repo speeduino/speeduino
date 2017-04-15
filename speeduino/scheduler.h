@@ -79,7 +79,6 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define uS_TO_TIMER_COMPARE(uS1) (uS1 >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
   //This is a hack until I make all the AVR timers run at the same speed
   #define uS_TO_TIMER_COMPARE_SLOW(uS1) (uS1 >> 4)
-
 #elif defined(CORE_TEENSY)
   //http://shawnhymel.com/661/learning-the-teensy-lc-interrupt-service-routines/
   #define FUEL1_COUNTER FTM0_CNT
@@ -158,7 +157,6 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
   //Hack compatibility with AVR timers that run at different speeds
   #define uS_TO_TIMER_COMPARE_SLOW(uS) ((uS * 15) >> 5)
-
 #elif defined(CORE_STM32)
   //Placeholders ONLY!
 
@@ -166,7 +164,6 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define MAX_TIMER_PERIOD 131070 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
   #define uS_TO_TIMER_COMPARE(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
   #define uS_TO_TIMER_COMPARE_SLOW(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
-
 
   #define FUEL1_COUNTER (TIMER2->regs).gen->CNT
   #define FUEL2_COUNTER (TIMER2->regs).gen->CNT
