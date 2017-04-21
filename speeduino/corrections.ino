@@ -314,7 +314,7 @@ static inline byte correctionAFRClosedLoop()
 
 //******************************** IGNITION ADVANCE CORRECTIONS ********************************
 
-int8_t correctionsIgn(int8_t advance)
+byte correctionsIgn(byte advance)
 {
 
   advance = correctionFlexTiming(advance);
@@ -329,19 +329,19 @@ int8_t correctionsIgn(int8_t advance)
   return advance;
 }
 
-static inline int8_t correctionFixedTiming(int8_t advance)
+static inline byte correctionFixedTiming(byte advance)
 {
   if (configPage2.FixAng != 0) { return configPage2.FixAng; } //Check whether the user has set a fixed timing angle
   return advance;
 }
 
-static inline int8_t correctionCrankingFixedTiming(int8_t advance)
+static inline byte correctionCrankingFixedTiming(byte advance)
 {
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { return configPage2.CrankAng; } //Use the fixed cranking ignition angle
   return advance;
 }
 
-static inline int8_t correctionFlexTiming(int8_t advance)
+static inline byte correctionFlexTiming(byte advance)
 {
   if(!configPage1.flexEnabled) { return advance; } //Check for flex being enabled
   byte flexRange = configPage1.flexAdvHigh - configPage1.flexAdvLow;
@@ -352,7 +352,7 @@ static inline int8_t correctionFlexTiming(int8_t advance)
   return advance + currentStatus.flexIgnCorrection;
 }
 
-static inline int8_t correctionIATretard(int8_t advance)
+static inline byte correctionIATretard(byte advance)
 {
   //Adjust the advance based on IAT. If the adjustment amount is greater than the current advance, just set advance to 0
   byte advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
@@ -360,14 +360,14 @@ static inline int8_t correctionIATretard(int8_t advance)
   else { return 0; }
 }
 
-static inline int8_t correctionSoftRevLimit(int8_t advance)
+static inline byte correctionSoftRevLimit(byte advance)
 {
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
   if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); return configPage2.SoftLimRetard;  } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
   return advance;
 }
 
-static inline int8_t correctionSoftLaunch(int8_t advance)
+static inline byte correctionSoftLaunch(byte advance)
 {
   //SoftCut rev limit for 2-step launch control.
   if (configPage3.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) )
@@ -382,7 +382,7 @@ static inline int8_t correctionSoftLaunch(int8_t advance)
   return advance;
 }
 
-static inline int8_t correctionSoftFlatShift(int8_t advance)
+static inline byte correctionSoftFlatShift(byte  advance)
 {
   if(configPage3.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage3.flatSSoftWin) ) )
   {
@@ -392,4 +392,30 @@ static inline int8_t correctionSoftFlatShift(int8_t advance)
 
   BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS);
   return advance;
+}
+
+//******************************** DWELL CORRECTIONS ********************************
+uint16_t correctionsDwell(uint16_t dwell)
+{
+
+  //Pull battery voltage based dwell correction and apply if needed
+  currentStatus.dwellCorrection = table2D_getValue(&dwellVCorrectionTable, currentStatus.battery10);
+  if (currentStatus.dwellCorrection != 100) { dwell = divs100(dwell) * currentStatus.dwellCorrection; }
+
+  //Dwell limiter
+  uint16_t dwellPerRevolution = dwell + (uint16_t)(configPage2.sparkDur * 100);
+  byte pulsesPerRevolution = 1;
+  //Single channel spark mode is the only time there will be more than 1 pulse per revolution on any given output
+  if(configPage2.sparkMode == IGN_MODE_SINGLE && configPage1.nCylinders > 1) //No point in running this for 1 cylinder engines
+  {
+    pulsesPerRevolution = (configPage1.nCylinders >> 1);
+    dwellPerRevolution = dwellPerRevolution * pulsesPerRevolution;
+  }
+
+  if(dwellPerRevolution > revolutionTime)
+  {
+    //Possibly need some method of reducing spark duration here as well, but this is a start
+    dwell = (revolutionTime / pulsesPerRevolution) - (configPage2.sparkDur * 100);
+  }
+  return dwell;
 }

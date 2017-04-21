@@ -343,7 +343,7 @@ struct config2 {
   byte fuelPumpPin : 6;
   byte useResync : 1;
 
-  byte unused4_7;
+  byte sparkDur; //Spark duration in ms * 10
   byte IdleAdvRPM;
   byte IdleAdvCLT; //The temperature below which the idle is advanced
   byte IdleDelayTime;
