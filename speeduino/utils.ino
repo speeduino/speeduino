@@ -148,6 +148,17 @@ void setPinMapping(byte boardID)
       pinFan = A13; //Pin for the fan output
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+
+      #if defined(CORE_TEENSY)
+        pinTrigger = 23;
+        pinStepperDir = 33;
+        pinCoil1 = 31;
+        pinTachOut = 28;
+        pinFan = 27;
+        pinCoil4 = 21;
+        pinCoil3 = 30;
+        pinO2 = A22;
+      #endif
       break;
 
     case 3:
@@ -186,12 +197,14 @@ void setPinMapping(byte boardID)
 
       #if defined(CORE_TEENSY)
         pinTrigger = 23;
+        pinTrigger2 = 35;
         pinStepperDir = 33;
         pinCoil1 = 31;
         pinTachOut = 28;
         pinFan = 27;
         pinCoil4 = 29;
         pinCoil3 = 30;
+        pinO2 = A22;
       #endif
       break;
 
