@@ -19,8 +19,8 @@ struct table2D {
   byte *values;
   byte *axisX;
 
-  int16_t *values16;
-  int16_t *axisX16;
+  int *values16;
+  int *axisX16;
 
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
   int lastXMax, lastXMin;
@@ -36,8 +36,8 @@ struct table3D {
   byte ySize;
 
   byte **values;
-  int16_t *axisX;
-  int16_t *axisY;
+  int *axisX;
+  int *axisY;
 
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
   byte lastXMax, lastXMin;

@@ -42,9 +42,9 @@ void initialiseADC()
      BIT_CLEAR(ADCSRA,ADPS1);
      BIT_CLEAR(ADCSRA,ADPS0);
   #endif
-  MAPcurRev = 0;
-  MAPcount = 0;
 #endif
+MAPcurRev = 0;
+MAPcount = 0;
 }
 
 void instanteneousMAPReading()
@@ -61,8 +61,10 @@ void instanteneousMAPReading()
   else { mapErrorCount = 0; }
 
   currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC); //Very weak filter
-  
+
   currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
+
+
 }
 
 void readMAP()
