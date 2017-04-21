@@ -619,16 +619,18 @@ int getRPM_4G63()
   {
     if(currentStatus.startRevolutions < 2) { return 0; } //Need at least 2 full revolutions to prevent crazy initial rpm value
     int tempToothAngle;
+    unsigned long toothTime;
     noInterrupts();
     tempToothAngle = triggerToothAngle;
     /* High-res mode
     if(toothCurrentCount == 1) { tempToothAngle = 70; }
     else { tempToothAngle = toothAngles[toothCurrentCount-1] - toothAngles[toothCurrentCount-2]; }
     */
-    revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen
+    revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+    toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen
     interrupts();
-    revolutionTime = revolutionTime * 36;
-    int tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / revolutionTime;
+    toothTime = toothTime * 36;
+    int tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / toothTime;
     return tempRPM;
   }
   else { return stdGetRPM(); }
