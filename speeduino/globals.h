@@ -4,11 +4,14 @@
 #include "table.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+  #define BOARD_NR_GPIO_PINS 54
+  #define LED_BUILTIN 13
   #define CORE_AVR
 #elif defined(CORE_TEENSY)
-  //Currently nothing to do here
-#elif defined(STM32_MCU_SERIES)
+  #define BOARD_NR_GPIO_PINS 34
+#elif defined(STM32_MCU_SERIES) || defined(_VARIANT_ARDUINO_STM32_)
   #define CORE_STM32
+  #define LED_BUILTIN 33
 
   inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
   #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
@@ -103,7 +106,7 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 const byte page_size = 64;
-const int npage_size[11] ={0,288,64,288,64,288,64,64,160,192,128};
+const int npage_size[11] = {0,288,64,288,64,288,64,64,160,192,128};
 //const byte page10_size = 128;
 const int map_page_size = 288;
 
