@@ -159,13 +159,13 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   //Hack compatibility with AVR timers that run at different speeds
   #define uS_TO_TIMER_COMPARE_SLOW(uS) ((uS * 15) >> 5)
 
-#elif defined(STM32_MCU_SERIES)
+#elif defined(CORE_STM32)
   //Placeholders ONLY!
 
   //https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/master/STM32F4/cores/maple/libmaple/timer.h#L51
-  #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
-  #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
-  #define uS_TO_TIMER_COMPARE_SLOW(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
+  #define MAX_TIMER_PERIOD 131070 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
+  #define uS_TO_TIMER_COMPARE(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
+  #define uS_TO_TIMER_COMPARE_SLOW(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
 
   #define FUEL1_COUNTER (TIMER2->regs).gen->CNT
   #define FUEL2_COUNTER (TIMER2->regs).gen->CNT
@@ -231,6 +231,20 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
 void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+
+//Needed for STM32 interrupt handlers
+#if defined(CORE_STM32)
+  static inline void fuelSchedule1Interrupt();
+  static inline void fuelSchedule2Interrupt();
+  static inline void fuelSchedule3Interrupt();
+  static inline void fuelSchedule4Interrupt();
+  static inline void fuelSchedule5Interrupt();
+  static inline void ignitionSchedule1Interrupt();
+  static inline void ignitionSchedule2Interrupt();
+  static inline void ignitionSchedule3Interrupt();
+  static inline void ignitionSchedule4Interrupt();
+  static inline void ignitionSchedule5Interrupt();
+#endif
 
 enum ScheduleStatus {OFF, PENDING, RUNNING}; //The 3 statuses that a schedule can have
 

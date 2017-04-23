@@ -936,10 +936,9 @@ void sendPage(bool useChar)
     for (byte x = 0; x < npage_size[currentPage]; x++)
     {
       response[x] = *((byte *)pnt_configPage + x); //Each byte is simply the location in memory of the configPage + the offset + the variable number (x)
-      //if ( (x & 31) == 1) { loop(); } //Every 32 loops, do a manual call to loop() to ensure that there is no misses
     }
 
-    Serial.write((byte *)&response, sizeof(response));
+    Serial.write((byte *)&response, npage_size[currentPage]);
     // }
   }
   return;
@@ -993,9 +992,9 @@ void receiveCalibration(byte tableID)
   bool every2nd = true;
   int x;
   int counter = 0;
-  pinMode(13, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT); //pinMode(13, OUTPUT);
 
-  digitalWrite(13, LOW);
+  digitalWrite(LED_BUILTIN, LOW); //digitalWrite(13, LOW);
   for (x = 0; x < 1024; x++)
   {
     //UNlike what is listed in the protocol documentation, the O2 sensor values are sent as bytes rather than ints
@@ -1031,7 +1030,11 @@ void receiveCalibration(byte tableID)
       EEPROM.update(y, (byte)tempValue);
 
       every2nd = false;
-      analogWrite(13, (counter % 50) );
+      #if defined(CORE_STM32)
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+      #else
+        analogWrite(LED_BUILTIN, (counter % 50) ); //analogWrite(13, (counter % 50) );
+      #endif
       counter++;
     }
     else {

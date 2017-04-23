@@ -22,6 +22,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 //**************************************************************************************************
 
+//https://developer.mbed.org/handbook/C-Data-Types
+#include <stdint.h>
+//************************************************
 #include "globals.h"
 #include "utils.h"
 #include "table.h"
@@ -182,8 +185,10 @@ void setup()
 
   //Setup the calibration tables
   loadCalibration();
+
   //Set the pin mappings
-  setPinMapping(configPage1.pinMapping);
+  if(configPage1.pinMapping > BOARD_NR_GPIO_PINS) { setPinMapping(3); } //First time running? set to v0.4
+  else { setPinMapping(configPage1.pinMapping); }
 
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
