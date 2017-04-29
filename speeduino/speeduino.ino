@@ -156,6 +156,43 @@ void setup()
   if (configPage1.canEnable) { Serial3.begin(115200); }
 #endif
 
+  configPage1.inj1Ang=0;
+  configPage1.inj2Ang=90;
+  configPage1.inj3Ang=180;
+  configPage1.inj4Ang=360;
+  configPage1.injTiming=0;
+  configPage1.stoich=147;
+  configPage1.injOpen=100; //Injector opening time (ms * 10)
+  configPage1.tachoPin=31;
+  configPage1.tpsMin=0;
+  configPage1.tpsMax=250;
+  configPage1.pinMapping = 3;
+  configPage1.mapSample = 2;
+  configPage1.strokes = 0;
+  configPage1.injType = 0;
+  configPage1.nCylinders = 4; //Number of cylinders
+  configPage1.cltType1 = 2;
+  configPage1.matType1 = 2;
+  configPage1.nInjectors = 4; //Number of injectors
+  configPage1.engineType = 0;
+  configPage1.flexEnabled = 0;
+  configPage1.algorithm = 0; //"Speed Density", "Alpha-N"
+  configPage1.baroCorr = 1;
+  configPage1.injLayout = 0;
+  //configPage2.sparkMode = 2; //Spark output mode (Eg Wasted spark, single channel or Wasted COP)
+  configPage2.sparkDur= 40;
+  configPage2.FixAng=10;
+  configPage2.CrankAng=10;
+  configPage2.TrigPattern = 0;
+  configPage2.TrigSpeed = 0;
+  configPage2.triggerTeeth = 60;
+  configPage2.triggerMissingTeeth = 2;
+  configPage2.TrigEdge = 0;
+  configPage2.TrigEdgeSec = 0;
+  configPage2.StgCycles = 2;
+  configPage2.triggerFilter = 2;
+  configPage2.triggerAngle = 0;
+
   //Repoint the 2D table structs to the config pages that were just loaded
   taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
   taeTable.xSize = 4;

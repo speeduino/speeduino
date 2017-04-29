@@ -41,23 +41,23 @@ void setPinMapping(byte boardID)
   //This is dumb, but it'll do for now to get things compiling
   #if defined(CORE_STM32)
     //STM32F1/variants/.../board.cpp
-    #define A0  boardADCPins[0]
-    #define A1  boardADCPins[1]
-    #define A2  boardADCPins[2]
-    #define A3  boardADCPins[3]
-    #define A4  boardADCPins[4]
-    #define A5  boardADCPins[5]
-    #define A6  boardADCPins[6]
-    #define A7  boardADCPins[7]
-    #define A8  boardADCPins[8]
-    #define A9  boardADCPins[9]
+    #define A0  boardADCPins[0] //pin 3
+    #define A1  boardADCPins[1] //pin 4
+    #define A2  boardADCPins[2] //pin 5
+    #define A3  boardADCPins[3] //pin 6
+    #define A4  boardADCPins[4] //pin 7
+    #define A5  boardADCPins[5] //pin 8
+    #define A6  boardADCPins[6] //pin 9
+    #define A7  boardADCPins[7] //pin 10
+    #define A8  boardADCPins[8] //pin 11
     //STM32F1 have only 9 12bit adc
-    #define A10  boardADCPins[0]
-    #define A11  boardADCPins[1]
-    #define A12  boardADCPins[2]
-    #define A13  boardADCPins[3]
-    #define A14  boardADCPins[4]
-    #define A15  boardADCPins[5]
+    #define A9  boardADCPins[0] //pin 3
+    #define A10  boardADCPins[1] //pin 4
+    #define A11  boardADCPins[2] //pin 5
+    #define A12  boardADCPins[3] //pin 6
+    #define A13  boardADCPins[4] //pin 7
+    #define A14  boardADCPins[5] //pin 8
+    #define A15  boardADCPins[6] //pin 9
   #endif
 
   switch (boardID)

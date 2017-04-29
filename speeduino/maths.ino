@@ -9,13 +9,17 @@ int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
   //return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-//This is a dedicated function that specifically handles the case of mapping 0-1023 values into a 0 to X range 
+//This is a dedicated function that specifically handles the case of mapping 0-1023 values into a 0 to X range
 //This is a common case because it means converting from a standard 10-bit analog input to a byte or 10-bit analog into 0-511 (Eg the temperature readings)
 //int fastMap1023toX(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 //removed ununsed variables, in_min and out_min is aways 0, in_max is aways 1023
-int fastMap1023toX(unsigned long x, int out_max)
+int fastResize(unsigned int x, int out_max)
 {
- return (x * out_max) >> 10;
+  #if defined(CORE_STM32)
+    return (x * out_max) >> 12;
+  #else
+    return (x * out_max) >> 10;
+  #endif
 }
 
 /*
@@ -66,19 +70,22 @@ int divs100(long n) {
 
 //Unsigned divide by 100
 unsigned long divu100(unsigned long n) {
-  //return (n / 100); // No difference with this on/off
- unsigned long q, r;
- q = (n >> 1) + (n >> 3) + (n >> 6) - (n >> 10) +
- (n >> 12) + (n >> 13) - (n >> 16);
- q = q + (q >> 20);
- q = q >> 6;
- r = n - q*100;
- return q + ((r + 28) >> 7);
+  #if defined(CORE_STM32)
+    return (n / 100); // No difference with this on/off
+  #else
+    unsigned long q, r;
+    q = (n >> 1) + (n >> 3) + (n >> 6) - (n >> 10) +
+    (n >> 12) + (n >> 13) - (n >> 16);
+    q = q + (q >> 20);
+    q = q >> 6;
+    r = n - q*100;
+    return q + ((r + 28) >> 7);
+  #endif
 // return q + (r > 99);
 }
 
 //Return x percent of y
-//This is a relatively fast approximation of a percentage value. 
+//This is a relatively fast approximation of a percentage value.
 unsigned long percentage(byte x, unsigned long y)
 {
   return (y * x) / 100; //For some reason this is faster
