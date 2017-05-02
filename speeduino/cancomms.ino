@@ -22,7 +22,7 @@ void canCommand()
   switch (Serial3.read())
   {
     case 'A': // sends the bytes of realtime values
-        sendValues(packetSize,3); //send values to serial3
+        sendValues(0, packetSize,3); //send values to serial3
         break;
 
     case 'G': // this is the reply command sent by the Can interface

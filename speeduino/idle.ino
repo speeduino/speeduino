@@ -24,6 +24,8 @@ void initialiseIdle()
 
   #elif defined (CORE_TEENSY)
 
+    if(configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_OL || configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_CL)
+    {
     //FlexTimer 2 is used for idle
     FTM2_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
     FTM2_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
@@ -74,6 +76,7 @@ void initialiseIdle()
 
     // enable IRQ Interrupt
     NVIC_ENABLE_IRQ(IRQ_FTM2);
+  }
 
   #elif defined(MCU_STM32F103RB)
 
