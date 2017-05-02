@@ -299,36 +299,6 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   fullStatus[30] = currentStatus.O2_2; //O2
 
   //rpmDOT must be sent as a signed integer
-<<<<<<< HEAD
-  response[31] = lowByte(currentStatus.rpmDOT);
-  response[32] = highByte(currentStatus.rpmDOT);
-
-  response[33] = currentStatus.ethanolPct; //Flex sensor value (or 0 if not used)
-  response[34] = currentStatus.flexCorrection; //Flex fuel correction (% above or below 100)
-  response[35] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
-  response[36] = getNextError();
-  response[37] = currentStatus.boostTarget;
-  response[38] = currentStatus.boostDuty;
-  response[39] = currentStatus.idleLoad;
-  response[40] = currentStatus.testOutputs;
-  response[41] = lowByte(currentStatus.canin[0]);
-  response[42] = highByte(currentStatus.canin[0]);
-  response[43] = lowByte(currentStatus.canin[1]);
-  response[44] = highByte(currentStatus.canin[1]);
-  response[45] = lowByte(currentStatus.canin[2]);
-  response[46] = highByte(currentStatus.canin[2]);
-  response[47] = lowByte(currentStatus.canin[3]);
-  response[48] = highByte(currentStatus.canin[3]);
-  response[49] = lowByte(currentStatus.canin[4]);
-  response[50] = highByte(currentStatus.canin[4]);
-  response[51] = lowByte(currentStatus.canin[5]);
-  response[52] = highByte(currentStatus.canin[5]);
-  response[53] = lowByte(currentStatus.canin[6]);
-  response[54] = highByte(currentStatus.canin[6]);
-  response[55] = lowByte(currentStatus.canin[7]);
-  response[56] = highByte(currentStatus.canin[7]);
-  
-=======
   fullStatus[31] = lowByte(currentStatus.rpmDOT);
   fullStatus[32] = highByte(currentStatus.rpmDOT);
 
@@ -340,13 +310,28 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   fullStatus[38] = currentStatus.boostDuty;
   fullStatus[39] = currentStatus.idleLoad;
   fullStatus[40] = currentStatus.testOutputs;
+  fullStatus[41] = lowByte(currentStatus.canin[0]);
+  fullStatus[42] = highByte(currentStatus.canin[0]);
+  fullStatus[43] = lowByte(currentStatus.canin[1]);
+  fullStatus[44] = highByte(currentStatus.canin[1]);
+  fullStatus[45] = lowByte(currentStatus.canin[2]);
+  fullStatus[46] = highByte(currentStatus.canin[2]);
+  fullStatus[47] = lowByte(currentStatus.canin[3]);
+  fullStatus[48] = highByte(currentStatus.canin[3]);
+  fullStatus[49] = lowByte(currentStatus.canin[4]);
+  fullStatus[50] = highByte(currentStatus.canin[4]);
+  fullStatus[51] = lowByte(currentStatus.canin[5]);
+  fullStatus[52] = highByte(currentStatus.canin[5]);
+  fullStatus[53] = lowByte(currentStatus.canin[6]);
+  fullStatus[54] = highByte(currentStatus.canin[6]);
+  fullStatus[55] = lowByte(currentStatus.canin[7]);
+  fullStatus[56] = highByte(currentStatus.canin[7]);
 
   for(byte x=0; x<packetLength; x++)
   {
     response[x] = fullStatus[offset+x];
   }
 
->>>>>>> master
 //cli();
   if (portNum == 0) { Serial.write(response, (size_t)packetLength); }
   #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
