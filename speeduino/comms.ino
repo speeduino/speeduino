@@ -310,6 +310,22 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   fullStatus[38] = currentStatus.boostDuty;
   fullStatus[39] = currentStatus.idleLoad;
   fullStatus[40] = currentStatus.testOutputs;
+  fullStatus[41] = lowByte(currentStatus.canin[0]);
+  fullStatus[42] = highByte(currentStatus.canin[0]);
+  fullStatus[43] = lowByte(currentStatus.canin[1]);
+  fullStatus[44] = highByte(currentStatus.canin[1]);
+  fullStatus[45] = lowByte(currentStatus.canin[2]);
+  fullStatus[46] = highByte(currentStatus.canin[2]);
+  fullStatus[47] = lowByte(currentStatus.canin[3]);
+  fullStatus[48] = highByte(currentStatus.canin[3]);
+  fullStatus[49] = lowByte(currentStatus.canin[4]);
+  fullStatus[50] = highByte(currentStatus.canin[4]);
+  fullStatus[51] = lowByte(currentStatus.canin[5]);
+  fullStatus[52] = highByte(currentStatus.canin[5]);
+  fullStatus[53] = lowByte(currentStatus.canin[6]);
+  fullStatus[54] = highByte(currentStatus.canin[6]);
+  fullStatus[55] = lowByte(currentStatus.canin[7]);
+  fullStatus[56] = highByte(currentStatus.canin[7]);
 
   for(byte x=0; x<packetLength; x++)
   {
