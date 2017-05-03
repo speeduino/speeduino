@@ -1,5 +1,5 @@
 /*
-All functions in the gamma file return 
+All functions in the gamma file return
 
 */
 #ifndef CORRECTIONS_H
@@ -20,14 +20,15 @@ static inline byte correctionIATDensity(); //Inlet temp density correction
 static inline byte correctionLaunch(); //Launch control correction
 static inline bool correctionDFCO(); //Decelleration fuel cutoff
 
-byte correctionsIgn();
-static inline int8_t correctionFixedTiming(int8_t);
-static inline int8_t correctionCrankingFixedTiming(int8_t);
-static inline int8_t correctionFlexTiming(int8_t);
-static inline int8_t correctionIATretard(int8_t);
-static inline int8_t correctionSoftRevLimit(int8_t);
-static inline int8_t correctionSoftLaunch(int8_t);
-static inline int8_t correctionSoftFlatShift(int8_t);
+byte correctionsIgn(byte advance);
+static inline byte correctionFixedTiming(byte);
+static inline byte correctionCrankingFixedTiming(byte);
+static inline byte correctionFlexTiming(byte);
+static inline byte correctionIATretard(byte);
+static inline byte correctionSoftRevLimit(byte);
+static inline byte correctionSoftLaunch(byte);
+static inline byte correctionSoftFlatShift(byte);
 
+uint16_t correctionsDwell(uint16_t dwell);
 
 #endif // CORRECTIONS_H

@@ -22,6 +22,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 //**************************************************************************************************
 
+//https://developer.mbed.org/handbook/C-Data-Types
+#include <stdint.h>
+//************************************************
 #include "globals.h"
 #include "utils.h"
 #include "table.h"
@@ -182,8 +185,10 @@ void setup()
 
   //Setup the calibration tables
   loadCalibration();
+
   //Set the pin mappings
-  setPinMapping(configPage1.pinMapping);
+  if(configPage1.pinMapping > BOARD_NR_GPIO_PINS) { setPinMapping(3); } //First time running? set to v0.4
+  else { setPinMapping(configPage1.pinMapping); }
 
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
@@ -1175,9 +1180,8 @@ void loop()
        //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
       if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { currentStatus.dwell =  (configPage2.dwellCrank * 100); }
       else { currentStatus.dwell =  (configPage2.dwellRun * 100); }
-      //Pull battery voltage based dwell correction and apply if needed
-      currentStatus.dwellCorrection = table2D_getValue(&dwellVCorrectionTable, currentStatus.battery10);
-      if (currentStatus.dwellCorrection != 100) { currentStatus.dwell = divs100(currentStatus.dwell) * currentStatus.dwellCorrection; }
+      currentStatus.dwell = correctionsDwell(currentStatus.dwell);
+
       int dwellAngle = (div(currentStatus.dwell, timePerDegree).quot ); //Convert the dwell time to dwell angle based on the current engine speed
 
       //Calculate start angle for each channel
