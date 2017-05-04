@@ -95,7 +95,7 @@ volatile int mainLoopCount;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 byte ignitionCount;
-byte fixedCrankingOverride = 0;
+uint16_t fixedCrankingOverride = 0;
 bool clutchTrigger;
 bool previousClutchTrigger;
 
@@ -948,13 +948,13 @@ void loop()
                     if (currentStatus.current_caninchannel <= 6)
                         {
                           currentStatus.current_caninchannel++;   //step to next input channel if under 9
-                        }      
-                    else  
+                        }
+                    else
                         {
                           currentStatus.current_caninchannel = 0;   //reset input channel back to 1
                         }
-                  }          
-              }  
+                  }
+              }
           }
 #endif
        vvtControl();
