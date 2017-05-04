@@ -189,7 +189,9 @@ void setup()
   //Set the pin mappings
   if(configPage1.pinMapping > BOARD_NR_GPIO_PINS) { setPinMapping(3); } //First time running? set to v0.4
   else { setPinMapping(configPage1.pinMapping); }
-
+  //Set the pin mappings
+  setmcuMapping(configPage10.mcuMapping);
+  
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
   else { coilHIGH = HIGH, coilLOW = LOW; }

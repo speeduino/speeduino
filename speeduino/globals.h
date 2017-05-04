@@ -157,6 +157,9 @@ volatile byte triggerPri_pin_mask;
 volatile byte *triggerSec_pin_port;
 volatile byte triggerSec_pin_mask;
 
+byte boardoutput[16];
+byte mcuBoardPin[100];
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
@@ -498,6 +501,7 @@ struct config4 {
 //See ini file for further info (Config Page 10 in the ini)
 struct config10 {
   byte enable_candata_in:1;
+  uint8_t mcuMapping:6;
   byte caninput_sel[8];
   uint16_t caninput_param_group[8];
   uint8_t caninput_param_start_byte[8];
