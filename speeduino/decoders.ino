@@ -625,9 +625,10 @@ int getRPM_4G63()
   if(!currentStatus.hasSync) { return 0; }
   if( currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100) )
   {
-    if(currentStatus.startRevolutions < 2) { return 0; } //Need at least 2 full revolutions to prevent crazy initial rpm value
+    //if(currentStatus.startRevolutions < 2) { return 0; } //Need at least 2 full revolutions to prevent crazy initial rpm value
     int tempToothAngle;
     unsigned long toothTime;
+    if(toothLastToothTime == 0 || toothLastMinusOneToothTime == 0) { return; }
 
     noInterrupts();
     tempToothAngle = triggerToothAngle;
@@ -635,7 +636,7 @@ int getRPM_4G63()
     if(toothCurrentCount == 1) { tempToothAngle = 70; }
     else { tempToothAngle = toothAngles[toothCurrentCount-1] - toothAngles[toothCurrentCount-2]; }
     */
-    revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+    //revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
     toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen
     interrupts();
     toothTime = toothTime * 36;
