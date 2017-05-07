@@ -3,8 +3,13 @@
 
 #include <limits.h>
 
-#define READ_PRI_TRIGGER() ((*triggerPri_pin_port & triggerPri_pin_mask) ? HIGH : LOW)
-#define READ_SEC_TRIGGER() ((*triggerSec_pin_port & triggerSec_pin_mask) ? HIGH : LOW)
+#if defined(CORE_AVR)
+  #define READ_PRI_TRIGGER() ((*triggerPri_pin_port & triggerPri_pin_mask) ? HIGH : LOW)
+  #define READ_SEC_TRIGGER() ((*triggerSec_pin_port & triggerSec_pin_mask) ? HIGH : LOW)
+#elif defined(CORE_TEENSY) || defined(CORE_STM32)
+  #define READ_PRI_TRIGGER() digitalRead(pinTrigger)
+  #define READ_SEC_TRIGGER() digitalRead(pinTrigger2)
+#endif
 
 static inline void addToothLogEntry(unsigned long);
 static inline int stdGetRPM();

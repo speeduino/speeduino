@@ -22,6 +22,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 //**************************************************************************************************
 
+//https://developer.mbed.org/handbook/C-Data-Types
+#include <stdint.h>
+//************************************************
 #include "globals.h"
 #include "utils.h"
 #include "table.h"
@@ -92,7 +95,7 @@ volatile int mainLoopCount;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 byte ignitionCount;
-byte fixedCrankingOverride = 0;
+uint16_t fixedCrankingOverride = 0;
 bool clutchTrigger;
 bool previousClutchTrigger;
 
@@ -182,8 +185,10 @@ void setup()
 
   //Setup the calibration tables
   loadCalibration();
+
   //Set the pin mappings
-  setPinMapping(configPage1.pinMapping);
+  if(configPage1.pinMapping > BOARD_NR_GPIO_PINS) { setPinMapping(3); } //First time running? set to v0.4
+  else { setPinMapping(configPage1.pinMapping); }
 
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
   if(configPage2.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
@@ -928,7 +933,30 @@ void loop()
        readIAT();
        readO2();
        readBat();
-
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
+      //if Can interface is enabled then check for serial3 requests.
+      if (configPage1.canEnable)
+          {
+            if (configPage10.enable_candata_in)
+              {
+                if (configPage10.caninput_sel[currentStatus.current_caninchannel])  //if current input channel is enabled
+                  {
+                    sendCancommand(2,0,0,0,configPage10.caninput_param_group[currentStatus.current_caninchannel]);    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
+                  }
+                else
+                  {
+                    if (currentStatus.current_caninchannel <= 6)
+                        {
+                          currentStatus.current_caninchannel++;   //step to next input channel if under 9
+                        }
+                    else
+                        {
+                          currentStatus.current_caninchannel = 0;   //reset input channel back to 1
+                        }
+                  }
+              }
+          }
+#endif
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
     }
@@ -1152,9 +1180,8 @@ void loop()
        //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage2. This number therefore needs to be multiplied by 100 to get dwell in uS
       if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { currentStatus.dwell =  (configPage2.dwellCrank * 100); }
       else { currentStatus.dwell =  (configPage2.dwellRun * 100); }
-      //Pull battery voltage based dwell correction and apply if needed
-      currentStatus.dwellCorrection = table2D_getValue(&dwellVCorrectionTable, currentStatus.battery10);
-      if (currentStatus.dwellCorrection != 100) { currentStatus.dwell = divs100(currentStatus.dwell) * currentStatus.dwellCorrection; }
+      currentStatus.dwell = correctionsDwell(currentStatus.dwell);
+
       int dwellAngle = (div(currentStatus.dwell, timePerDegree).quot ); //Convert the dwell time to dwell angle based on the current engine speed
 
       //Calculate start angle for each channel

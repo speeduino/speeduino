@@ -4,13 +4,20 @@
 #include "table.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+  #define BOARD_NR_GPIO_PINS 54
+  #define LED_BUILTIN 13
   #define CORE_AVR
-#elif defined(STM32_MCU_SERIES)
+#elif defined(CORE_TEENSY)
+  #define BOARD_NR_GPIO_PINS 34
+#elif defined(STM32_MCU_SERIES) || defined(_VARIANT_ARDUINO_STM32_)
   #define CORE_STM32
+  #define LED_BUILTIN 33
 
   inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
   #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
   #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+#else
+  #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif
 
 //Handy bitsetting macros
@@ -99,7 +106,7 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 const byte page_size = 64;
-const int npage_size[11] ={0,288,64,288,64,288,64,64,160,192,128};
+const int npage_size[11] = {0,288,64,288,64,288,64,64,160,192,128};
 //const byte page10_size = 128;
 const int map_page_size = 288;
 
@@ -216,7 +223,9 @@ struct statuses {
   bool testActive;
   byte boostDuty;
   byte idleLoad; //Either the current steps or current duty cycle for the idle control.
-
+  int canin[9];   //16bit raw value of selected canin data for channel 1-8
+  uint8_t current_caninchannel = 0; //start off at channel 0
+  
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
   // y = (x >> n) & 1;    // n=0..15.  stores nth bit of x in y.  y becomes 0 or 1.
@@ -232,7 +241,7 @@ struct config1 {
 
   byte unused1; //Cold cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking under a certain temp threshold (ms)
   byte unused2; //Warm cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking (ms)
-  byte asePct; //Afterstart enrichment (%)
+  byte asePct;  //Afterstart enrichment (%)
   byte aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
@@ -245,18 +254,18 @@ struct config1 {
   byte taeTime;
 
   //Display config bits
-  byte displayType : 3;
+  byte displayType : 3; //21
   byte display1 : 3;
   byte display2 : 2;
 
-  byte display3 : 3;
+  byte display3 : 3;    //22
   byte display4 : 2;
   byte display5 : 3;
 
-  byte displayB1 : 4;
+  byte displayB1 : 4;   //23
   byte displayB2 : 4;
 
-  byte reqFuel;
+  byte reqFuel;       //24
   byte divider;
   byte injTiming : 1;
   byte multiplyMAP : 1;
@@ -314,8 +323,11 @@ struct config1 {
   byte iacCLmaxDuty;
   byte boostMinDuty;
 
-
-};
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bi systems require all structs to be fully packed
+#endif
 
 //Page 2 of the config - See the ini file for further reference
 //This mostly covers off variables that are required for ignition
@@ -336,7 +348,7 @@ struct config2 {
   byte fuelPumpPin : 6;
   byte useResync : 1;
 
-  byte unused4_7;
+  byte sparkDur; //Spark duration in ms * 10
   byte IdleAdvRPM;
   byte IdleAdvCLT; //The temperature below which the idle is advanced
   byte IdleDelayTime;
@@ -374,8 +386,11 @@ struct config2 {
   byte ignBypassPin : 6; //Pin the ignition bypass is activated on
   byte ignBypassHiLo : 1; //Whether this should be active high or low.
 
-
-};
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bi systems require all structs to be fully packed
+#endif
 
 //Page 3 of the config - See the ini file for further reference
 //This mostly covers off variables that are required for AFR targets and closed loop
@@ -438,8 +453,11 @@ struct config3 {
   byte flatSRetard;
   byte flatSArm;
 
-
-};
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+#endif
 
 
 //Page 4 of the config mostly deals with idle control
@@ -470,52 +488,20 @@ struct config4 {
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
-};
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+#endif
 
 //Page 10 of the config mostly deals with CANBUS control
 //See ini file for further info (Config Page 10 in the ini)
 struct config10 {
-  byte unused10_0;
-  byte unused10_1;
-  byte unused10_2;
-  byte unused10_3;
-  byte unused10_4;
-  byte unused10_5;
-  byte unused10_6;
-  byte unused10_7;
-  byte unused10_8;
-  byte unused10_9;
-  byte unused10_10;
-  byte unused10_11;
-  byte unused10_12;
-  byte unused10_13;
-  byte unused10_14;
-  byte unused10_15;
-  byte unused10_16;
-  byte unused10_17;
-  byte unused10_18;
-  byte unused10_19;
-  byte unused10_20;
-  byte unused10_21;
-  byte unused10_22;
-  byte unused10_23;
-  byte unused10_24;
-  byte unused10_25;
-  byte unused10_26;
-  byte unused10_27;
-  byte unused10_28;
-  byte unused10_29;
-  byte unused10_30;
-  byte unused10_31;
-  byte unused10_32;
-  byte unused10_33;
-  byte unused10_34;
-  byte unused10_35;
-  byte unused10_36;
-  byte unused10_37;
-  byte unused10_38;
-  byte unused10_39;
-  byte unused10_40;
+  byte enable_candata_in:1;
+  byte caninput_sel[8];
+  uint16_t caninput_param_group[8];
+  uint8_t caninput_param_start_byte[8];
+  byte caninput_param_num_bytes[8];
   byte unused10_41;
   byte unused10_42;
   byte unused10_43;
@@ -525,7 +511,7 @@ struct config10 {
   byte unused10_47;
   byte unused10_48;
   byte unused10_49;
-  byte unused10_50;
+  byte enable_candata_out : 1;
   byte unused10_51;
   byte unused10_52;
   byte unused10_53;
@@ -603,7 +589,11 @@ struct config10 {
   byte unused10_125;
   byte unused10_126;
   byte unused10_127;
-};
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+#endif
 
 
 byte pinInjector1; //Output pin injector 1
