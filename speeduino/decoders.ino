@@ -628,7 +628,7 @@ int getRPM_4G63()
     //if(currentStatus.startRevolutions < 2) { return 0; } //Need at least 2 full revolutions to prevent crazy initial rpm value
     int tempToothAngle;
     unsigned long toothTime;
-    if(toothLastToothTime == 0 || toothLastMinusOneToothTime == 0) { return; }
+    if(toothLastToothTime == 0 || toothLastMinusOneToothTime == 0) { return 0; }
 
     noInterrupts();
     tempToothAngle = triggerToothAngle;
