@@ -50,7 +50,7 @@ static inline int stdGetRPM()
   noInterrupts();
   revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
   interrupts();
-  int tempRPM = (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
+  uint16_t tempRPM = (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
   if(tempRPM >= MAX_RPM) { return currentStatus.RPM; } //Sanity check
   return tempRPM;
 }
@@ -75,10 +75,13 @@ It takes an argument of the full (COMPLETE) number of teeth per revolution. For 
 */
 static inline int crankingGetRPM(byte totalTeeth)
 {
+  if(toothLastToothTime == 0 || toothLastMinusOneToothTime == 0) { return 0; } //Startup check
   noInterrupts();
   revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth;
   interrupts();
-  return (US_IN_MINUTE / revolutionTime);
+  uint16_t tempRPM = (US_IN_MINUTE / revolutionTime);
+  if(tempRPM >= MAX_RPM) { return currentStatus.RPM; } //Sanity check
+  return tempRPM;
 }
 
 /*
@@ -301,7 +304,10 @@ void triggerSetup_BasicDistributor()
   triggerFilterTime = triggerFilterTime / 2; //Safety margin
   secondDerivEnabled = false;
   decoderIsSequential = false;
-  MAX_STALL_TIME = (1851UL * triggerToothAngle); //Minimum 90rpm. (1851uS is the time per degree at 90rpm). This decoder uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
+
+  if(configPage1.nCylinders <= 4) { MAX_STALL_TIME = (1851UL * triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
+  else { MAX_STALL_TIME = (3200UL * triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
+
 }
 
 void triggerPri_BasicDistributor()
@@ -310,7 +316,7 @@ void triggerPri_BasicDistributor()
   curGap = curTime - toothLastToothTime;
   if ( curGap < triggerFilterTime ) { return; } //Noise rejection check. Pulses should never be less than triggerFilterTime
 
-  if(toothCurrentCount == triggerActualTeeth ) //Check if we're back to the beginning of a revolution
+  if( toothCurrentCount == triggerActualTeeth || !currentStatus.hasSync ) //Check if we're back to the beginning of a revolution
   {
      toothCurrentCount = 1; //Reset the counter
      toothOneMinusOneTime = toothOneTime;
@@ -341,12 +347,13 @@ void triggerSec_BasicDistributor() { return; } //Not required
 int getRPM_BasicDistributor()
 {
   uint16_t tempRPM;
-  if(currentStatus.RPM < configPage2.crankRPM)
-  { tempRPM = crankingGetRPM(triggerActualTeeth); }
+  if( currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100) )
+  { tempRPM = crankingGetRPM(triggerActualTeeth >> 1); } //crankGetRPM uses teeth per 360 degrees. As triggerActualTeeh is total teeth in 720 degrees, we divide the tooth count by 2
   else
-  { tempRPM = stdGetRPM(); }
+  { tempRPM = stdGetRPM() << 1; } //Multiply RPM by 2 due to tracking over 720 degrees now rather than 360
 
-  return tempRPM << 1; //Multiply RPM by 2 due to tracking over 720 degrees now rather than 360
+  return tempRPM;
+
 }
 int getCrankAngle_BasicDistributor(int timePerDegree)
 {
@@ -591,12 +598,13 @@ void triggerSec_4G63()
     }
 }
 
-  if ( (micros() - secondaryLastToothTime1) < triggerSecFilterTime_duration )
+  //if ( (micros() - secondaryLastToothTime1) < triggerSecFilterTime_duration && configPage2.useResync )
+  if ( configPage2.useResync )
   {
     triggerSecFilterTime_duration = (micros() - secondaryLastToothTime1) >> 1;
     if(READ_PRI_TRIGGER())// && (crankState == digitalRead(pinTrigger)))
     {
-      //toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
+      toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
 
       /* High-res mode
       toothCurrentCount = 7; //If the crank trigger is currently HIGH, it means we're on the falling edge of the narrow crank tooth
@@ -615,18 +623,20 @@ int getRPM_4G63()
   //During cranking, RPM is calculated 4 times per revolution, once for each rising/falling of the crank signal.
   //Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
   if(!currentStatus.hasSync) { return 0; }
-  if(currentStatus.RPM < configPage2.crankRPM)
+  if( currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100) )
   {
-    if(currentStatus.startRevolutions < 2) { return 0; } //Need at least 2 full revolutions to prevent crazy initial rpm value
+    //if(currentStatus.startRevolutions < 2) { return 0; } //Need at least 2 full revolutions to prevent crazy initial rpm value
     int tempToothAngle;
     unsigned long toothTime;
+    if(toothLastToothTime == 0 || toothLastMinusOneToothTime == 0) { return; }
+
     noInterrupts();
     tempToothAngle = triggerToothAngle;
     /* High-res mode
     if(toothCurrentCount == 1) { tempToothAngle = 70; }
     else { tempToothAngle = toothAngles[toothCurrentCount-1] - toothAngles[toothCurrentCount-2]; }
     */
-    revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+    //revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
     toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen
     interrupts();
     toothTime = toothTime * 36;

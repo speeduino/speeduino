@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.18.08 - EFI Analytics, Inc." tuneComment="" writeDate="Mon Apr 03 16:10:18 AEST 2017"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.03" nPages="10" signature="speeduino 201703"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.22 - EFI Analytics, Inc." tuneComment="" writeDate="Sat May 06 23:43:36 AEST 2017"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.03" nPages="10" signature="speeduino 201704"/>
 <page>
 <pcVariable name="tsCanId">"0"</pcVariable>
 </page>
@@ -58,7 +58,7 @@
          86.0 
          90.0 
          96.0 
-         100.0 
+         500.0 
       </constant>
 </page>
 <page number="1" size="64">
@@ -214,7 +214,6 @@
 <constant name="TrigEdgeSec">"Leading"</constant>
 <constant name="fuelPumpPin">"Board Default"</constant>
 <constant name="useResync">"No"</constant>
-<constant digits="0" name="unused4-7" units="ADC">0.0</constant>
 <constant digits="0" name="IdleAdvRPM" units="RPM">3200.0</constant>
 <constant digits="1" name="IdleAdvCLT" units="C">-21.0</constant>
 <constant digits="0" name="IdleDelayTime" units="sec">38.0</constant>
@@ -685,47 +684,6 @@
       </constant>
 </page>
 <page number="9" size="128">
-<constant digits="0" name="unused10_0">255.0</constant>
-<constant digits="0" name="unused10_1">255.0</constant>
-<constant digits="0" name="unused10_2">255.0</constant>
-<constant digits="0" name="unused10_3">255.0</constant>
-<constant digits="0" name="unused10_4">255.0</constant>
-<constant digits="0" name="unused10_5">255.0</constant>
-<constant digits="0" name="unused10_6">255.0</constant>
-<constant digits="0" name="unused10_7">255.0</constant>
-<constant digits="0" name="unused10_8">255.0</constant>
-<constant digits="0" name="unused10_9">255.0</constant>
-<constant digits="0" name="unused10_10">255.0</constant>
-<constant digits="0" name="unused10_11">255.0</constant>
-<constant digits="0" name="unused10_12">255.0</constant>
-<constant digits="0" name="unused10_13">255.0</constant>
-<constant digits="0" name="unused10_14">255.0</constant>
-<constant digits="0" name="unused10_15">255.0</constant>
-<constant digits="0" name="unused10_16">255.0</constant>
-<constant digits="0" name="unused10_17">255.0</constant>
-<constant digits="0" name="unused10_18">255.0</constant>
-<constant digits="0" name="unused10_19">255.0</constant>
-<constant digits="0" name="unused10_20">255.0</constant>
-<constant digits="0" name="unused10_21">255.0</constant>
-<constant digits="0" name="unused10_22">255.0</constant>
-<constant digits="0" name="unused10_23">255.0</constant>
-<constant digits="0" name="unused10_24">255.0</constant>
-<constant digits="0" name="unused10_25">255.0</constant>
-<constant digits="0" name="unused10_26">255.0</constant>
-<constant digits="0" name="unused10_27">255.0</constant>
-<constant digits="0" name="unused10_28">255.0</constant>
-<constant digits="0" name="unused10_29">255.0</constant>
-<constant digits="0" name="unused10_30">255.0</constant>
-<constant digits="0" name="unused10_31">255.0</constant>
-<constant digits="0" name="unused10_32">255.0</constant>
-<constant digits="0" name="unused10_33">255.0</constant>
-<constant digits="0" name="unused10_34">255.0</constant>
-<constant digits="0" name="unused10_35">255.0</constant>
-<constant digits="0" name="unused10_36">255.0</constant>
-<constant digits="0" name="unused10_37">255.0</constant>
-<constant digits="0" name="unused10_38">255.0</constant>
-<constant digits="0" name="unused10_39">255.0</constant>
-<constant digits="0" name="unused10_40">255.0</constant>
 <constant digits="0" name="unused10_41">255.0</constant>
 <constant digits="0" name="unused10_42">255.0</constant>
 <constant digits="0" name="unused10_43">255.0</constant>
@@ -735,7 +693,6 @@
 <constant digits="0" name="unused10_47">255.0</constant>
 <constant digits="0" name="unused10_48">255.0</constant>
 <constant digits="0" name="unused10_49">255.0</constant>
-<constant digits="0" name="unused10_50">255.0</constant>
 <constant digits="0" name="unused10_51">255.0</constant>
 <constant digits="0" name="unused10_52">255.0</constant>
 <constant digits="0" name="unused10_53">255.0</constant>
@@ -815,6 +772,7 @@
 <constant digits="0" name="unused10_127">255.0</constant>
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">
+<setting name="enablehardware_test_OFF" value="enablehardware_test_OFF"/>
 <setting name="SPEED_DENSITY" value="SPEED_DENSITY"/>
 <setting name="CAN_COMMANDS_OFF" value="CAN_COMMANDS_OFF"/>
 <setting name="CELSIUS" value="CELSIUS"/>
