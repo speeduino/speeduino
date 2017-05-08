@@ -45,6 +45,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "storage.h"
 #include "scheduledIO.h"
 #include <EEPROM.h>
+#if defined (CORE_TEENSY)
+#include <FlexCAN.h>
+#endif
 
 struct config1 configPage1;
 struct config2 configPage2;
@@ -153,7 +156,22 @@ void setup()
 
   Serial.begin(115200);
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-  if (configPage1.canEnable) { Serial3.begin(115200); }
+  if (configPage10.enable_canbus == 1) { Serial3.begin(115200); }
+#elif defined(CORE_STM32)
+  if (configPage10.enable_canbus == 1) { Serial2.begin(115200); }
+  else if (configPage10.enable_canbus == 2) 
+  {
+    //enable local can interface 
+  }
+#elif defined(CORE_TEESNY)
+  if (configPage10.enable_canbus == 1) { Serial2.begin(115200); }
+  else if (configPage10.enable_canbus == 2) 
+  {
+    //enable local can interface 
+    FlexCAN CANbus0(2500000, 0);   //setup can interface to 250k
+    static CAN_message_t txmsg,rxmsg;
+    CANbus0.begin();
+  }
 #endif
 
   //Repoint the 2D table structs to the config pages that were just loaded
@@ -822,10 +840,11 @@ void loop()
           command();
         }
       }
+     
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-      //if Can interface is enabled then check for serial3 requests.
-      if (configPage1.canEnable)
-          {
+      //if serial3 interface is enabled then check for serial3 requests.
+      if (configPage10.enable_canbus == 1)
+          { 
             if ( ((mainLoopCount & 31) == 1) or (Serial3.available() > SERIAL_BUFFER_THRESHOLD) )
                 {
                   if (Serial3.available() > 0)
@@ -833,6 +852,43 @@ void loop()
                     canCommand();
                     }
                 }
+          }
+
+#elif defined(CORE_STM32)
+      //if can or secondary serial interface is enabled then check for requests.
+      if (configPage10.enable_canbus == 1)  //secondary serial interface enabled
+          {
+            if ( ((mainLoopCount & 31) == 1) or (Serial2.available() > SERIAL_BUFFER_THRESHOLD) )
+                {
+                  if (Serial2.available() > 0)
+                    {
+                    canCommand();
+                    }
+                }
+          } 
+      else if (configPage10.enable_canbus == 2) // can module enabled
+          {    
+            //check local can module
+          }             
+#elif defined(CORE_TEENSY)
+      //if can or secondary serial interface is enabled then check for requests.
+      if (configPage10.enable_canbus == 1)  //secondary serial interface enabled
+          {
+            if ( ((mainLoopCount & 31) == 1) or (Serial2.available() > SERIAL_BUFFER_THRESHOLD) )
+                {
+                  if (Serial2.available() > 0)
+                    {
+                    canCommand();
+                    }
+                }
+          } 
+      else if (configPage10.enable_canbus == 2) // can module enabled
+          {    
+            //check local can module
+            // if ( ((mainLoopCount & 31) == 1) or (CANbus0.available()) 
+            //    {
+            //      CANbus0.read(rx_msg);
+            //    }  
           }
 #endif
 
@@ -935,7 +991,7 @@ void loop()
        readBat();
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
       //if Can interface is enabled then check for serial3 requests.
-      if (configPage1.canEnable)
+      if (configPage10.enable_canbus == 1)  // megas only support can via secondary serial
           {
             if (configPage10.enable_candata_in)
               {
@@ -956,6 +1012,34 @@ void loop()
                   }
               }
           }
+#elif defined(CORE_STM32) || defined(CORE_TEENSY)
+      //if serial3io is enabled then check for serial3 requests.
+            if (configPage10.enable_candata_in)
+              {
+                if (configPage10.caninput_sel[currentStatus.current_caninchannel])  //if current input channel is enabled
+                  {
+                    if (configPage10.enable_canbus == 1)  //can via secondary serial
+                    {
+                      sendCancommand(2,0,0,0,configPage10.caninput_param_group[currentStatus.current_caninchannel]);    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
+                    }
+                    else if (configPage10.enable_canbus == 2) // can via internal can module
+                    {
+                      sendCancommand(3,configPage10.speeduino_tsCanId,0,0,configPage10.caninput_param_group[currentStatus.current_caninchannel]);    //send via localcanbus the command for data from paramgroup[currentStatus.current_caninchannel]
+                    }
+                  }
+                else
+                  {
+                    if (currentStatus.current_caninchannel <= 6)
+                        {
+                          currentStatus.current_caninchannel++;   //step to next input channel if under 9
+                        }
+                    else
+                        {
+                          currentStatus.current_caninchannel = 0;   //reset input channel back to 1
+                        }
+                  }
+              }
+          
 #endif
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
