@@ -316,12 +316,12 @@ static inline byte correctionAFRClosedLoop()
 
 int8_t correctionsIgn(int8_t advance)
 {
-
   advance = correctionFlexTiming(advance);
   advance = correctionIATretard(advance);
   advance = correctionSoftRevLimit(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
+
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
   advance = correctionCrankingFixedTiming(advance); //This overrrides the regular fixed timing, must come last
@@ -356,8 +356,9 @@ static inline int8_t correctionIATretard(int8_t advance)
 {
   //Adjust the advance based on IAT. If the adjustment amount is greater than the current advance, just set advance to 0
   int8_t advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
-  if (advanceIATadjust <= advance) { return (advance - advanceIATadjust); }
-  else { return 0; }
+  int tempAdvance = (advance - advanceIATadjust);
+  if (tempAdvance >= -OFFSET_IGNITION) { return  tempAdvance; }
+  else { return -OFFSET_IGNITION; }
 }
 
 static inline int8_t correctionSoftRevLimit(int8_t advance)

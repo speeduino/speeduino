@@ -159,15 +159,15 @@ void setup()
   if (configPage10.enable_canbus == 1) { Serial3.begin(115200); }
 #elif defined(CORE_STM32)
   if (configPage10.enable_canbus == 1) { Serial2.begin(115200); }
-  else if (configPage10.enable_canbus == 2) 
+  else if (configPage10.enable_canbus == 2)
   {
-    //enable local can interface 
+    //enable local can interface
   }
 #elif defined(CORE_TEESNY)
   if (configPage10.enable_canbus == 1) { Serial2.begin(115200); }
-  else if (configPage10.enable_canbus == 2) 
+  else if (configPage10.enable_canbus == 2)
   {
-    //enable local can interface 
+    //enable local can interface
     FlexCAN CANbus0(2500000, 0);   //setup can interface to 250k
     static CAN_message_t txmsg,rxmsg;
     CANbus0.begin();
@@ -840,11 +840,11 @@ void loop()
           command();
         }
       }
-     
+
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
       //if serial3 interface is enabled then check for serial3 requests.
       if (configPage10.enable_canbus == 1)
-          { 
+          {
             if ( ((mainLoopCount & 31) == 1) or (Serial3.available() > SERIAL_BUFFER_THRESHOLD) )
                 {
                   if (Serial3.available() > 0)
@@ -865,11 +865,11 @@ void loop()
                     canCommand();
                     }
                 }
-          } 
+          }
       else if (configPage10.enable_canbus == 2) // can module enabled
-          {    
+          {
             //check local can module
-          }             
+          }
 #elif defined(CORE_TEENSY)
       //if can or secondary serial interface is enabled then check for requests.
       if (configPage10.enable_canbus == 1)  //secondary serial interface enabled
@@ -881,14 +881,14 @@ void loop()
                     canCommand();
                     }
                 }
-          } 
+          }
       else if (configPage10.enable_canbus == 2) // can module enabled
-          {    
+          {
             //check local can module
-            // if ( ((mainLoopCount & 31) == 1) or (CANbus0.available()) 
+            // if ( ((mainLoopCount & 31) == 1) or (CANbus0.available())
             //    {
             //      CANbus0.read(rx_msg);
-            //    }  
+            //    }
           }
 #endif
 
@@ -1039,7 +1039,7 @@ void loop()
                         }
                   }
               }
-          
+
 #endif
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
@@ -1090,7 +1090,7 @@ void loop()
         currentStatus.PW1 = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
         currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
       }
-
+      
       currentStatus.advance = correctionsIgn(currentStatus.advance);
       /*
       //Check for fixed ignition angles
