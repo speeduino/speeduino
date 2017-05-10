@@ -76,12 +76,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.04");
+      Serial.print("Speeduino 2017.05-dev");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201704");
+      Serial.print("speeduino 201705-dev");
      break;
 
     case 'V': // send VE table and constants in binary
@@ -253,7 +253,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
       else
         {
           Serial3.write("r");         //confirm cmd type
-        }    
+        }
       Serial3.write(packetLength);      //confirm no of byte to be sent
     #elif defined(CORE_STM32) || defined (CORE_TEENSY)
       if (offset == 0)
@@ -263,7 +263,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
       else
         {
           Serial2.write("r");         //confirm cmd type
-        }    
+        }
       Serial2.write(packetLength);      //confirm no of byte to be sent
     #endif
   }
