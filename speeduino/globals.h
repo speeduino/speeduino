@@ -297,7 +297,7 @@ struct config1 {
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
   byte injLayout : 2;
-  byte canEnable : 1; //is can interface enabled
+  byte unused2_38g : 1; 
   byte unused2_38h : 1;
 
   byte primePulse;
@@ -498,6 +498,7 @@ struct config4 {
 //Page 10 of the config mostly deals with CANBUS control
 //See ini file for further info (Config Page 10 in the ini)
 struct config10 {
+  byte enable_canbus:2;
   byte enable_candata_in:1;
   byte caninput_sel[8];
   uint16_t caninput_param_group[8];
@@ -513,31 +514,10 @@ struct config10 {
   byte unused10_48;
   byte unused10_49;
   byte enable_candata_out : 1;
-  byte unused10_51;
-  byte unused10_52;
-  byte unused10_53;
-  byte unused10_54;
-  byte unused10_55;
-  byte unused10_56;
-  byte unused10_57;
-  byte unused10_58;
-  byte unused10_59;
-  byte unused10_60;
-  byte unused10_61;
-  byte unused10_62;
-  byte unused10_63;
-  byte unused10_64;
-  byte unused10_65;
-  byte unused10_66;
-  byte unused10_67;
-  byte unused10_68;
-  byte unused10_69;
-  byte unused10_70;
-  byte unused10_71;
-  byte unused10_72;
-  byte unused10_73;
-  byte unused10_74;
-  byte unused10_75;
+  byte canoutput_sel[8];
+  uint16_t canoutput_param_group[8];
+  uint8_t canoutput_param_start_byte[8];
+  byte canoutput_param_num_bytes[8];
   byte unused10_76;
   byte unused10_77;
   byte unused10_78;
@@ -562,13 +542,10 @@ struct config10 {
   byte unused10_97;
   byte unused10_98;
   byte unused10_99;
-  byte unused10_100;
-  byte unused10_101;
-  byte unused10_102;
-  byte unused10_103;
-  byte unused10_104;
-  byte unused10_105;
-  byte unused10_106;
+  byte speeduino_tsCanId:4;         //speeduino TS canid (0-14)
+  uint16_t true_address;            //speeduino 11bit can address
+  uint16_t realtime_base_address;   //speeduino 11 bit realtime base address
+  uint16_t obd_address;             //speeduino OBD diagnostic address
   byte unused10_107;
   byte unused10_108;
   byte unused10_109;

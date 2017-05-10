@@ -84,7 +84,31 @@ void canCommand()
                   Lbuffer[Lcount] = Serial3.read();
                 }
        break;
+       
+    case 'r': //New format for the optimised OutputChannels
+     // cmdPending = true;
+      byte cmd;
+      if (Serial.available() < 6) { return; }
+      Serial.read(); //Read the $tsCanId
+      cmd = Serial.read();
 
+      uint16_t offset, length;
+      if(cmd == 0x30) //Send output channels command 0x30 is 48dec
+      {
+        byte tmp;
+        tmp = Serial.read();
+        offset = word(Serial.read(), tmp);
+        tmp = Serial.read();
+        length = word(Serial.read(), tmp);
+        sendValues(offset, length, 3);
+      }
+      else
+      {
+        //No other r/ commands should be called
+      }
+      cmdPending = false;
+      break;
+      
     case 'S': // send code version
        for (unsigned int sig = 0; sig < sizeof(displaySignature) - 1; sig++){
            Serial3.write(displaySignature[sig]);
@@ -104,7 +128,7 @@ void canCommand()
   }
 }
 
-// this routine sends a request(either "0" for a "G" or "1" for a "L" to the Can interface
+// this routine sends a request(either "0" for a "G" , "1" for a "L" , "2" for a "R" to the Can interface or "3" sends the request via the actual local canbus
 void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t paramgroup)
 {
     switch (cmdtype)
@@ -125,7 +149,11 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
         Serial3.print("R");
         Serial3.write( lowByte(paramgroup) );       //send lsb first
         Serial3.write( lowByte(paramgroup >> 8) );
-     break;   
+     break;
+
+     case 3:
+        //send to truecan send routine
+     break;
     }
 }
 
