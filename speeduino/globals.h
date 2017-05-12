@@ -240,8 +240,8 @@ struct statuses currentStatus; //The global status object
 //This mostly covers off variables that are required for fuel
 struct config1 {
 
-  byte unused1; //Cold cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking under a certain temp threshold (ms)
-  byte unused2; //Warm cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking (ms)
+  int8_t flexBoostLow;
+  byte flexBoostHigh;
   byte asePct;  //Afterstart enrichment (%)
   byte aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
@@ -297,7 +297,7 @@ struct config1 {
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
   byte injLayout : 2;
-  byte unused2_38g : 1; 
+  byte unused2_38g : 1;
   byte unused2_38h : 1;
 
   byte primePulse;
