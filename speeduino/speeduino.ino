@@ -922,6 +922,8 @@ void loop()
       if (fpPrimed) { digitalWrite(pinFuelPump, LOW); } //Turn off the fuel pump, but only if the priming is complete
       fuelPumpOn = false;
       disableIdle(); //Turn off the idle PWM
+      BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
+      BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE
     }
 
     //Uncomment the following for testing
