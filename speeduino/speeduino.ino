@@ -153,6 +153,7 @@ void setup()
   table3D_setSize(&trim4Table, 6);
 
   loadConfig();
+  doUpdates(); //Check if any data items need updating (Occurs ith firmware updates)
 
   Serial.begin(115200);
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
@@ -1090,7 +1091,7 @@ void loop()
         currentStatus.PW1 = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
         currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
       }
-      
+
       currentStatus.advance = correctionsIgn(currentStatus.advance);
       /*
       //Check for fixed ignition angles
