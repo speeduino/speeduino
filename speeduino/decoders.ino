@@ -150,6 +150,11 @@ void triggerSec_missingTooth()
 
 int getRPM_missingTooth()
 {
+  if( currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100) )
+  {
+    if(configPage2.TrigSpeed) { crankingGetRPM(configPage2.triggerTeeth/2); } //Account for cam speed
+    else { return crankingGetRPM(configPage2.triggerTeeth); }
+  }
   if(configPage2.TrigSpeed) { return (stdGetRPM() * 2); } //Account for cam speed
   return stdGetRPM();
 }
