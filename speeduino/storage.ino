@@ -24,9 +24,6 @@ void writeConfig()
   //Create a pointer to the config page
   byte* pnt_configPage;
 
-  if(EEPROM.read(0) != data_structure_version) { EEPROM.write(0,data_structure_version); }   //Write the data structure version
-
-
   /*---------------------------------------------------
   | Fuel table (See storage.h for data layout) - Page 1
   | 16x16 table itself + the 16 values along each of the axis

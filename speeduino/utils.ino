@@ -41,23 +41,23 @@ void setPinMapping(byte boardID)
   //This is dumb, but it'll do for now to get things compiling
   #if defined(CORE_STM32)
     //STM32F1/variants/.../board.cpp
-    #define A0  boardADCPins[0] //pin 3
-    #define A1  boardADCPins[1] //pin 4
-    #define A2  boardADCPins[2] //pin 5
-    #define A3  boardADCPins[3] //pin 6
-    #define A4  boardADCPins[4] //pin 7
-    #define A5  boardADCPins[5] //pin 8
-    #define A6  boardADCPins[6] //pin 9
-    #define A7  boardADCPins[7] //pin 10
-    #define A8  boardADCPins[8] //pin 11
+    #define A0  boardADCPins[0]
+    #define A1  boardADCPins[1]
+    #define A2  boardADCPins[2]
+    #define A3  boardADCPins[3]
+    #define A4  boardADCPins[4]
+    #define A5  boardADCPins[5]
+    #define A6  boardADCPins[6]
+    #define A7  boardADCPins[7]
+    #define A8  boardADCPins[8]
+    #define A9  boardADCPins[9]
     //STM32F1 have only 9 12bit adc
-    #define A9  boardADCPins[0] //pin 3
-    #define A10  boardADCPins[1] //pin 4
-    #define A11  boardADCPins[2] //pin 5
-    #define A12  boardADCPins[3] //pin 6
-    #define A13  boardADCPins[4] //pin 7
-    #define A14  boardADCPins[5] //pin 8
-    #define A15  boardADCPins[6] //pin 9
+    #define A10  boardADCPins[0]
+    #define A11  boardADCPins[1]
+    #define A12  boardADCPins[2]
+    #define A13  boardADCPins[3]
+    #define A14  boardADCPins[4]
+    #define A15  boardADCPins[5]
   #endif
 
   switch (boardID)
@@ -79,7 +79,7 @@ void setPinMapping(byte boardID)
       pinTPS = A0; //TPS input pin
       pinMAP = A1; //MAP sensor pin
       pinIAT = A2; //IAT sensor pin
-      pinCLT = A3; //CLT sensor pin
+      pinCLT = A3; //CLS sensor pin
       pinO2 = A4; //O2 Sensor pin
       pinIdle1 = 46; //Single wire idle control
       pinIdle2 = 47; //2 wire idle control
@@ -107,7 +107,7 @@ void setPinMapping(byte boardID)
       pinTPS = A2; //TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLT sensor pin
+      pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
@@ -137,7 +137,7 @@ void setPinMapping(byte boardID)
       pinTPS = A2;//TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLT sensor pin
+      pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
@@ -178,7 +178,7 @@ void setPinMapping(byte boardID)
         pinTPS = A0; //TPS input pin
         pinMAP = A1; //MAP sensor pin
         pinIAT = A2; //IAT sensor pin
-        pinCLT = A3; //CLT sensor pin
+        pinCLT = A3; //CLS sensor pin
         pinO2 = A4; //O2 Sensor pin
         pinBat = A5; //Battery reference voltage pin
         pinStepperDir = 12; //Direction pin  for DRV8825 driver
@@ -212,7 +212,7 @@ void setPinMapping(byte boardID)
       pinTPS = A2;//TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLT sensor pin
+      pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
@@ -254,7 +254,7 @@ void setPinMapping(byte boardID)
         pinTPS = A0; //TPS input pin
         pinMAP = A1; //MAP sensor pin
         pinIAT = A2; //IAT sensor pin
-        pinCLT = A3; //CLT sensor pin
+        pinCLT = A3; //CLS sensor pin
         pinO2 = A4; //O2 Sensor pin
         pinBat = A5; //Battery reference voltage pin
         pinStepperDir = 12; //Direction pin  for DRV8825 driver
@@ -288,7 +288,7 @@ void setPinMapping(byte boardID)
       pinTPS = A2;//TPS input pin
       pinMAP = A5; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLT sensor pin
+      pinCLT = A1; //CLS sensor pin
       pinO2 = A3; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
@@ -324,7 +324,7 @@ void setPinMapping(byte boardID)
       pinMAP = A3; //MAP sensor pin
       pinMAP2 = A8; //MAP2 sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLT sensor pin
+      pinCLT = A1; //CLS sensor pin
       pinO2 = A4; //O2 Sensor pin
       pinBat = A7; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
@@ -363,7 +363,7 @@ void setPinMapping(byte boardID)
       pinBat = A4; //Battery reference voltage pin
       pinMAP = A3; //MAP sensor pin
       pinTPS = A2;//TPS input pin
-      pinCLT = A1; //CLT sensor pin
+      pinCLT = A1; //CLS sensor pin
       pinIAT = A0; //IAT sensor pin
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
@@ -387,7 +387,7 @@ void setPinMapping(byte boardID)
       pinTPS = A2;//TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLT sensor pin
+      pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinO2_2 = A9; //O2 sensor pin (second sensor)
       pinBat = A4; //Battery reference voltage pin
@@ -425,7 +425,7 @@ void setPinMapping(byte boardID)
       pinTPS = A2; //TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLT sensor pin
+      pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinStepperDir = 16; //Direction pin  for DRV8825 driver

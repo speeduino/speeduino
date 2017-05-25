@@ -10,23 +10,45 @@ void doUpdates()
 {
   #define CURRENT_DATA_VERSION    3
 
-  //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
-  {
-    for(int x=0; x<16; x++)
+  #if defined(CORE_AVR) | defined(CORE_TEENSY)
+    //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
+    if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
     {
-      for(int y=0; y<16; y++)
+      for(int x=0; x<16; x++)
       {
-        ignitionTable.values[x][y] = ignitionTable.values[x][y] + 40;
+        for(int y=0; y<16; y++)
+        {
+          ignitionTable.values[x][y] = ignitionTable.values[x][y] + 40;
+        }
       }
+      writeConfig();
+      EEPROM.write(EEPROM_DATA_VERSION, 3);
     }
-    writeConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 3);
-  }
 
-  //Final check is always for 255 and 0 (Brand new arduino)
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 0 || EEPROM.read(EEPROM_DATA_VERSION) == 255)
-  {
-    EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION);
-  }
+    //Final check is always for 255 and 0 (Brand new arduino)
+    if(EEPROM.read(EEPROM_DATA_VERSION) == 0 || EEPROM.read(EEPROM_DATA_VERSION) == 255)
+    {
+      EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION);
+    }
+  #elif defined(CORE_STM)
+    //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
+    if(EEPROM_read(EEPROM_DATA_VERSION) == 2)
+    {
+      for(int x=0; x<16; x++)
+      {
+        for(int y=0; y<16; y++)
+        {
+          ignitionTable.values[x][y] = ignitionTable.values[x][y] + 40;
+        }
+      }
+      writeConfig_STM();
+      EEPROM_write(EEPROM_DATA_VERSION, 3);
+    }
+
+    //Final check is always for 255 and 0 (Brand new arduino)
+    if(EEPROM_read(EEPROM_DATA_VERSION) == 0 || EEPROM_read(EEPROM_DATA_VERSION) == 255)
+    {
+      EEPROM_write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION);
+    }
+  #endif
 }

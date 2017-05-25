@@ -31,7 +31,7 @@ void table2D_setSize(struct table2D* targetTable, byte newSize)
 void table3D_setSize(struct table3D *targetTable, byte newSize)
 {
     targetTable->values = (byte **)malloc(newSize * sizeof(byte*));
-    for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)malloc(newSize * sizeof(byte)); } //(byte *)malloc(newSize * sizeof(byte))
+    for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)malloc(newSize * sizeof(byte)); }
       
     targetTable->axisX = (int *)malloc(newSize * sizeof(int));
     targetTable->axisY = (int *)malloc(newSize * sizeof(int));
@@ -358,7 +358,7 @@ int get3DTableValue(struct table3D *fromTable, int Y, int X)
     int D = fromTable->values[yMax][xMax];
 
     //Check that all values aren't just the same (This regularly happens with things like the fuel trim maps)
-    if(A == B && A == C && A == D) { return A; }
+    if(A == D) { return A; } //yMin = yMax and xMin = xMax
    
     //Create some normalised position values
     //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis

@@ -3,17 +3,11 @@
 #if defined(CORE_STM32)
   #include <SPI.h>
 #endif
-  
+
 void writeConfig();
 void loadConfig();
 void loadCalibration();
 void writeCalibration();
-
-byte EEPROM_read(int EEPROM_address);
-void EEPROM_write(int EEPROM_address, byte data);
-void EEPROM_update(int EEPROM_address, byte data);
-void writeConfig_STM();
-void loadConfig_STM();
 
 #if defined(CORE_STM32)
   // Based on code by Heather Dewey-Hagborg
@@ -30,12 +24,14 @@ void loadConfig_STM();
   #define WRSR 1 //Write Status Register
   #define READ 3 //Read Data
   #define WRITE 2 //Page Program
+  //not sure if this will work on STM32F407
   #if !defined (STM32_HIGH_DENSITY)
     SPIClass Spi(2); //STM32F103 series share SPI1 with analogic channels, use 2 instead.
   #else
     SPIClass Spi(1); //STM32F407 eeprom is on SPI1 port
   #endif
 #endif
+
 /*
 Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes):
 |---------------------------------------------------|
@@ -85,6 +81,8 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 | 3583  |512  | Calibration data (CLT)              |
 -----------------------------------------------------
 */
+
+#define EEPROM_DATA_VERSION   0
 
 #define EEPROM_CONFIG1_XSIZE  1
 #define EEPROM_CONFIG1_YSIZE  2

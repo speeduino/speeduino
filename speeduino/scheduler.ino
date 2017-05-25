@@ -186,9 +186,6 @@ void initialiseSchedulers()
   Timer3.attachInterrupt(4, ignitionSchedule4Interrupt);
   Timer1.attachInterrupt(1, ignitionSchedule5Interrupt);
 
-  //(TIMER2->regs).gen->CCMR1 &= ~TIM_CCMR1_OC1M; //Select channel 1 output Compare and Mode
-  //TIM3->CR1 |= TIM_CR1_CEN
-
 #endif
 
     fuelSchedule1.Status = OFF;

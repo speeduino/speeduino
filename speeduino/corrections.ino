@@ -314,14 +314,14 @@ static inline byte correctionAFRClosedLoop()
 
 //******************************** IGNITION ADVANCE CORRECTIONS ********************************
 
-byte correctionsIgn(byte advance)
+int8_t correctionsIgn(int8_t advance)
 {
-
   advance = correctionFlexTiming(advance);
   advance = correctionIATretard(advance);
   advance = correctionSoftRevLimit(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
+
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
   advance = correctionCrankingFixedTiming(advance); //This overrrides the regular fixed timing, must come last
@@ -329,19 +329,19 @@ byte correctionsIgn(byte advance)
   return advance;
 }
 
-static inline byte correctionFixedTiming(byte advance)
+static inline int8_t correctionFixedTiming(int8_t advance)
 {
   if (configPage2.FixAng != 0) { return configPage2.FixAng; } //Check whether the user has set a fixed timing angle
   return advance;
 }
 
-static inline byte correctionCrankingFixedTiming(byte advance)
+static inline int8_t correctionCrankingFixedTiming(int8_t advance)
 {
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { return configPage2.CrankAng; } //Use the fixed cranking ignition angle
   return advance;
 }
 
-static inline byte correctionFlexTiming(byte advance)
+static inline int8_t correctionFlexTiming(int8_t advance)
 {
   if(!configPage1.flexEnabled) { return advance; } //Check for flex being enabled
   byte flexRange = configPage1.flexAdvHigh - configPage1.flexAdvLow;
@@ -352,22 +352,23 @@ static inline byte correctionFlexTiming(byte advance)
   return advance + currentStatus.flexIgnCorrection;
 }
 
-static inline byte correctionIATretard(byte advance)
+static inline int8_t correctionIATretard(int8_t advance)
 {
   //Adjust the advance based on IAT. If the adjustment amount is greater than the current advance, just set advance to 0
-  byte advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
-  if (advanceIATadjust <= advance) { return (advance - advanceIATadjust); }
-  else { return 0; }
+  int8_t advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
+  int tempAdvance = (advance - advanceIATadjust);
+  if (tempAdvance >= -OFFSET_IGNITION) { return  tempAdvance; }
+  else { return -OFFSET_IGNITION; }
 }
 
-static inline byte correctionSoftRevLimit(byte advance)
+static inline int8_t correctionSoftRevLimit(int8_t advance)
 {
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
   if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); return configPage2.SoftLimRetard;  } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
   return advance;
 }
 
-static inline byte correctionSoftLaunch(byte advance)
+static inline int8_t correctionSoftLaunch(int8_t advance)
 {
   //SoftCut rev limit for 2-step launch control.
   if (configPage3.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) )
@@ -382,7 +383,7 @@ static inline byte correctionSoftLaunch(byte advance)
   return advance;
 }
 
-static inline byte correctionSoftFlatShift(byte  advance)
+static inline int8_t correctionSoftFlatShift(int8_t  advance)
 {
   if(configPage3.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage3.flatSSoftWin) ) )
   {
@@ -404,7 +405,7 @@ uint16_t correctionsDwell(uint16_t dwell)
 
   //Dwell limiter
   uint16_t dwellPerRevolution = dwell + (uint16_t)(configPage2.sparkDur * 100); //Spark duration is in mS*10. Multiple it by 100 to get spark duration in uS
-  byte pulsesPerRevolution = 1;
+  int8_t pulsesPerRevolution = 1;
   //Single channel spark mode is the only time there will be more than 1 pulse per revolution on any given output
   if(configPage2.sparkMode == IGN_MODE_SINGLE && configPage1.nCylinders > 1) //No point in running this for 1 cylinder engines
   {
