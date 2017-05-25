@@ -26,7 +26,11 @@ void command()
 
 
     case 'B': // Burn current values to eeprom
-      writeConfig();
+      #if defined(CORE_STM32)
+        writeConfig_STM();
+      #else
+        writeConfig();
+      #endif
       break;
 
     case 'C': // test communications. This is used by Tunerstudio to see whether there is an ECU on a given serial port
@@ -39,7 +43,11 @@ void command()
       if(Serial.available() < 2) { return; }
       cmdGroup = Serial.read();
       cmdValue = Serial.read();
-      cmdCombined = word(cmdGroup, cmdValue);
+      #if defined(CORE_STM32)
+        cmdCombined = (cmdGroup <<8) | cmdValue;
+      #else
+        cmdCombined = word(cmdGroup, cmdValue);
+      #endif
       if (currentStatus.RPM == 0) { commandButtons(); }
 
       cmdPending = false;
@@ -76,12 +84,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.05-dev");
+      Serial.print("Speeduino 2017.04-dev");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201705-dev");
+      Serial.print("speeduino 201704-dev");
      break;
 
     case 'V': // send VE table and constants in binary
@@ -98,7 +106,11 @@ void command()
         byte offset1, offset2;
         offset1 = Serial.read();
         offset2 = Serial.read();
-        valueOffset = word(offset2, offset1);
+        #if defined(CORE_STM32)
+          valueOffset = (offset2<<8) | offset1;
+        #else
+          valueOffset = word(offset2, offset1);
+        #endif
       }
       else
       {
@@ -173,17 +185,23 @@ void command()
       cmdPending = true;
       byte cmd;
       if (Serial.available() < 6) { return; }
-      tsCanId = Serial.read(); //Read the $tsCanId
-      cmd = Serial.read(); // read the command
+      Serial.read(); //Read the $tsCanId
+      cmd = Serial.read();
 
       uint16_t offset, length;
-      if(cmd == 0x30) //Send output channels command 0x30 is 48dec
+      if(cmd == 0x07) //Send output channels command
       {
         byte tmp;
         tmp = Serial.read();
-        offset = word(Serial.read(), tmp);
-        tmp = Serial.read();
-        length = word(Serial.read(), tmp);
+        #if defined(CORE_STM32)
+          offset = (Serial.read()<<8) | tmp;
+          tmp = Serial.read();
+          length = (Serial.read()<<8) | tmp;
+        #else
+          offset = word(Serial.read(), tmp);
+          tmp = Serial.read();
+          length = word(Serial.read(), tmp);
+        #endif
         sendValues(offset, length, 0);
       }
       else
@@ -246,24 +264,10 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   {
     //CAN serial
     #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-      if (offset == 0)
-        {
-          Serial3.write("A");         //confirm cmd type
-        }
-      else
-        {
-          Serial3.write("r");         //confirm cmd type
-        }
+      Serial3.write("A");         //confirm cmd type
       Serial3.write(packetLength);      //confirm no of byte to be sent
-    #elif defined(CORE_STM32) || defined (CORE_TEENSY)
-      if (offset == 0)
-        {
-          Serial2.write("A");         //confirm cmd type
-        }
-      else
-        {
-          Serial2.write("r");         //confirm cmd type
-        }
+    #elif defined(CORE_STM32)
+      Serial2.write("A");         //confirm cmd type
       Serial2.write(packetLength);      //confirm no of byte to be sent
     #endif
   }
@@ -324,22 +328,6 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   fullStatus[38] = currentStatus.boostDuty;
   fullStatus[39] = currentStatus.idleLoad;
   fullStatus[40] = currentStatus.testOutputs;
-  fullStatus[41] = lowByte(currentStatus.canin[0]);
-  fullStatus[42] = highByte(currentStatus.canin[0]);
-  fullStatus[43] = lowByte(currentStatus.canin[1]);
-  fullStatus[44] = highByte(currentStatus.canin[1]);
-  fullStatus[45] = lowByte(currentStatus.canin[2]);
-  fullStatus[46] = highByte(currentStatus.canin[2]);
-  fullStatus[47] = lowByte(currentStatus.canin[3]);
-  fullStatus[48] = highByte(currentStatus.canin[3]);
-  fullStatus[49] = lowByte(currentStatus.canin[4]);
-  fullStatus[50] = highByte(currentStatus.canin[4]);
-  fullStatus[51] = lowByte(currentStatus.canin[5]);
-  fullStatus[52] = highByte(currentStatus.canin[5]);
-  fullStatus[53] = lowByte(currentStatus.canin[6]);
-  fullStatus[54] = highByte(currentStatus.canin[6]);
-  fullStatus[55] = lowByte(currentStatus.canin[7]);
-  fullStatus[56] = highByte(currentStatus.canin[7]);
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -351,8 +339,6 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
     else if (portNum == 3) { Serial3.write(response, (size_t)packetLength); }
   #elif defined(CORE_STM32)
-    else if (portNum == 3) { Serial2.write(response, (size_t)packetLength); }
-  #elif defined(CORE_TEENSY)
     else if (portNum == 3) { Serial2.write(response, (size_t)packetLength); }
   #endif
 //sei();
@@ -775,6 +761,7 @@ void sendPage(bool useChar)
           for (int x = 64; x < 72; x++) { response[x + 80] = byte(vvtTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
           for (int y = 72; y < 80; y++) { response[y + 80] = byte(vvtTable.axisY[7 - (y - 72)]); }
           Serial.write((byte *)&response, sizeof(response));
+          Serial.flush();
           return;
         }
         break;
@@ -838,6 +825,7 @@ void sendPage(bool useChar)
           for (int x = 36; x < 42; x++) { response[x + 144] = byte(trim4Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
           for (int y = 42; y < 48; y++) { response[y + 144] = byte(trim4Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
           Serial.write((byte *)&response, sizeof(response));
+          Serial.flush();
           return;
         }
         break;
@@ -947,6 +935,7 @@ void sendPage(bool useChar)
       for (int y = 272; y < 288; y++) { response[y] = byte(currentTable.axisY[15 - (y - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
       //loop();
       Serial.write((byte *)&response, sizeof(response));
+      Serial.flush();
     }
   }
   else
@@ -967,10 +956,11 @@ void sendPage(bool useChar)
     byte response[npage_size[currentPage]];
     for (byte x = 0; x < npage_size[currentPage]; x++)
     {
-      response[x] = *((byte *)pnt_configPage + x); //Each byte is simply the location in memory of the configPage + the offset + the variable number (x)
+      response[x] = *((int *)pnt_configPage + x); //Each byte is simply the location in memory of the configPage + the offset + the variable number (x)
     }
 
     Serial.write((byte *)&response, npage_size[currentPage]);
+    Serial.flush();
     // }
   }
   return;
@@ -1020,7 +1010,7 @@ void receiveCalibration(byte tableID)
   //1024 value pairs are sent. We have to receive them all, but only use every second one (We only store 512 calibratino table entries to save on EEPROM space)
   //The values are sent as 2 byte ints, but we convert them to single bytes. Any values over 255 are capped at 255.
   int tempValue;
-  byte tempBuffer[2];
+  int tempBuffer;
   bool every2nd = true;
   int x;
   int counter = 0;
@@ -1038,10 +1028,14 @@ void receiveCalibration(byte tableID)
     else
     {
       while ( Serial.available() < 2 ) {}
-      tempBuffer[0] = Serial.read();
-      tempBuffer[1] = Serial.read();
+      tempBuffer = byte(Serial.read())<<8;
+      tempBuffer |= byte(Serial.read());
 
-      tempValue = div(int(word(tempBuffer[1], tempBuffer[0])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
+      #if defined(CORE_STM32)
+        tempValue = div(tempBuffer, DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
+      #else
+        tempValue = div(tempBuffer, DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
+      #endif
       tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
     }
     tempValue = tempValue + OFFSET;

@@ -31,7 +31,7 @@ void table2D_setSize(struct table2D* targetTable, byte newSize)
 void table3D_setSize(struct table3D *targetTable, byte newSize)
 {
     targetTable->values = (byte **)malloc(newSize * sizeof(byte*));
-    for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)malloc(newSize * sizeof(byte)); }
+    for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)malloc(newSize * sizeof(byte)); } //(byte *)malloc(newSize * sizeof(byte))
       
     targetTable->axisX = (int *)malloc(newSize * sizeof(int));
     targetTable->axisY = (int *)malloc(newSize * sizeof(int));

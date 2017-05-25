@@ -79,7 +79,7 @@ void setPinMapping(byte boardID)
       pinTPS = A0; //TPS input pin
       pinMAP = A1; //MAP sensor pin
       pinIAT = A2; //IAT sensor pin
-      pinCLT = A3; //CLS sensor pin
+      pinCLT = A3; //CLT sensor pin
       pinO2 = A4; //O2 Sensor pin
       pinIdle1 = 46; //Single wire idle control
       pinIdle2 = 47; //2 wire idle control
@@ -107,7 +107,7 @@ void setPinMapping(byte boardID)
       pinTPS = A2; //TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLS sensor pin
+      pinCLT = A1; //CLT sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
@@ -137,7 +137,7 @@ void setPinMapping(byte boardID)
       pinTPS = A2;//TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLS sensor pin
+      pinCLT = A1; //CLT sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
@@ -178,15 +178,15 @@ void setPinMapping(byte boardID)
         pinTPS = A0; //TPS input pin
         pinMAP = A1; //MAP sensor pin
         pinIAT = A2; //IAT sensor pin
-        pinCLT = A3; //CLS sensor pin
+        pinCLT = A3; //CLT sensor pin
         pinO2 = A4; //O2 Sensor pin
         pinBat = A5; //Battery reference voltage pin
         pinStepperDir = 12; //Direction pin  for DRV8825 driver
         pinStepperStep = 13; //Step pin for DRV8825 driver
         pinStepperEnable = 14; //Enable pin for DRV8825
         pinDisplayReset = 2; // OLED reset pin
-        pinFan = 1; //Pin for the fan output
-        pinFuelPump = 0; //Fuel pump output
+        pinFan = 0; //Pin for the fan output
+        pinFuelPump = 1; //Fuel pump output
         pinTachOut = 31; //Tacho output pin
         //external interrupt enabled pins
         pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
@@ -212,7 +212,7 @@ void setPinMapping(byte boardID)
       pinTPS = A2;//TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLS sensor pin
+      pinCLT = A1; //CLT sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
@@ -254,15 +254,15 @@ void setPinMapping(byte boardID)
         pinTPS = A0; //TPS input pin
         pinMAP = A1; //MAP sensor pin
         pinIAT = A2; //IAT sensor pin
-        pinCLT = A3; //CLS sensor pin
+        pinCLT = A3; //CLT sensor pin
         pinO2 = A4; //O2 Sensor pin
         pinBat = A5; //Battery reference voltage pin
         pinStepperDir = 12; //Direction pin  for DRV8825 driver
         pinStepperStep = 13; //Step pin for DRV8825 driver
         pinStepperEnable = 14; //Enable pin for DRV8825
         pinDisplayReset = 2; // OLED reset pin
-        pinFan = 1; //Pin for the fan output
-        pinFuelPump = 0; //Fuel pump output
+        pinFan = 0; //Pin for the fan output
+        pinFuelPump = 1; //Fuel pump output
         pinTachOut = 31; //Tacho output pin
         //external interrupt enabled pins
         pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
@@ -288,7 +288,7 @@ void setPinMapping(byte boardID)
       pinTPS = A2;//TPS input pin
       pinMAP = A5; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLS sensor pin
+      pinCLT = A1; //CLT sensor pin
       pinO2 = A3; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
@@ -324,7 +324,7 @@ void setPinMapping(byte boardID)
       pinMAP = A3; //MAP sensor pin
       pinMAP2 = A8; //MAP2 sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLS sensor pin
+      pinCLT = A1; //CLT sensor pin
       pinO2 = A4; //O2 Sensor pin
       pinBat = A7; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
@@ -363,7 +363,7 @@ void setPinMapping(byte boardID)
       pinBat = A4; //Battery reference voltage pin
       pinMAP = A3; //MAP sensor pin
       pinTPS = A2;//TPS input pin
-      pinCLT = A1; //CLS sensor pin
+      pinCLT = A1; //CLT sensor pin
       pinIAT = A0; //IAT sensor pin
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
@@ -387,7 +387,7 @@ void setPinMapping(byte boardID)
       pinTPS = A2;//TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLS sensor pin
+      pinCLT = A1; //CLT sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinO2_2 = A9; //O2 sensor pin (second sensor)
       pinBat = A4; //Battery reference voltage pin
@@ -425,7 +425,7 @@ void setPinMapping(byte boardID)
       pinTPS = A2; //TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLS sensor pin
+      pinCLT = A1; //CLT sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
