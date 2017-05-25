@@ -15,11 +15,15 @@ A detailed description of each call can be found at: http://www.msextra.com/doc/
 
 void command()
 {
-  switch (Serial.read())
+  if (!cmdPending) { currentCommand = Serial.read(); }
+
+  switch (currentCommand)
   {
+
     case 'A': // send x bytes of realtime values
-      sendValues(packetSize, 0);   //send values to serial0
+      sendValues(0, packetSize, 0);   //send values to serial0
       break;
+
 
     case 'B': // Burn current values to eeprom
       writeConfig();
@@ -30,13 +34,15 @@ void command()
       break;
 
     case 'E': // receive command button commands
-      while (Serial.available() == 0) { }
+      cmdPending = true;
+
+      if(Serial.available() < 2) { return; }
       cmdGroup = Serial.read();
-      while (Serial.available() == 0) { }
       cmdValue = Serial.read();
       cmdCombined = word(cmdGroup, cmdValue);
       if (currentStatus.RPM == 0) { commandButtons(); }
 
+      cmdPending = false;
       break;
 
     case 'L': // List the contents of current page in human readable form
@@ -49,8 +55,9 @@ void command()
 
     case 'P': // set the current page
       //A 2nd byte of data is required after the 'P' specifying the new page number.
-      //This loop should never need to run as the byte should already be in the buffer, but is here just in case
-      while (Serial.available() == 0) { }
+      cmdPending = true;
+
+      if (Serial.available() == 0) { return; }
       currentPage = Serial.read();
       if (currentPage >= '0') {//This converts the ascii number char into binary
         currentPage -= '0';
@@ -61,10 +68,7 @@ void command()
       else {
         isMap = false;
       }
-      break;
-
-    case 'R': // send 39 bytes of realtime values
-      sendValues(39,0);
+      cmdPending = false;
       break;
 
     case 'F': // send serial protocol version
@@ -72,12 +76,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.04-dev");
+      Serial.print("Speeduino 2017.05-dev");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201704-dev");
+      Serial.print("speeduino 201705-dev");
      break;
 
     case 'V': // send VE table and constants in binary
@@ -85,24 +89,25 @@ void command()
       break;
 
     case 'W': // receive new VE obr constant at 'W'+<offset>+<newbyte>
+      cmdPending = true;
       int valueOffset; //cannot use offset as a variable name, it is a reserved word for several teensy libraries
-      while (Serial.available() == 0) { }
 
       if (isMap)
       {
+        if(Serial.available()< 3) { return; } // 1 additional byte is required on the MAP pages which are larger than 255 bytes
         byte offset1, offset2;
         offset1 = Serial.read();
-        while (Serial.available() == 0) { }
         offset2 = Serial.read();
         valueOffset = word(offset2, offset1);
       }
       else
       {
+        if(Serial.available()< 2) { return; }
         valueOffset = Serial.read();
       }
-      while (Serial.available() == 0) { }
 
       receiveValue(valueOffset, Serial.read());
+      cmdPending = false;
       break;
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
@@ -160,10 +165,33 @@ void command()
       sendToothLog(false); //Sends tooth log values as ints
       break;
 
-    case 'r': //Send 256 tooth log entries to a terminal emulator
+    case 'z': //Send 256 tooth log entries to a terminal emulator
       sendToothLog(true); //Sends tooth log values as chars
       break;
 
+    case 'r': //New format for the optimised OutputChannels
+      cmdPending = true;
+      byte cmd;
+      if (Serial.available() < 6) { return; }
+      tsCanId = Serial.read(); //Read the $tsCanId
+      cmd = Serial.read(); // read the command
+
+      uint16_t offset, length;
+      if(cmd == 0x30) //Send output channels command 0x30 is 48dec
+      {
+        byte tmp;
+        tmp = Serial.read();
+        offset = word(Serial.read(), tmp);
+        tmp = Serial.read();
+        length = word(Serial.read(), tmp);
+        sendValues(offset, length, 0);
+      }
+      else
+      {
+        //No other r/ commands should be called
+      }
+      cmdPending = false;
+      break;
 
 
     case '?':
@@ -208,19 +236,35 @@ void command()
 /*
 This function returns the current values of a fixed group of variables
 */
-void sendValues(int packetlength, byte portNum)
+//void sendValues(int packetlength, byte portNum)
+void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
 {
-  byte response[packetlength];
+  byte fullStatus[packetSize];
+  byte response[packetLength];
 
   if (portNum == 3)
   {
     //CAN serial
     #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-      Serial3.write("A");         //confirm cmd type
-      Serial3.write(packetlength);      //confirm no of byte to be sent
-    #elif defined(CORE_STM32)
-      Serial2.write("A");         //confirm cmd type
-      Serial2.write(packetlength);      //confirm no of byte to be sent
+      if (offset == 0)
+        {
+          Serial3.write("A");         //confirm cmd type
+        }
+      else
+        {
+          Serial3.write("r");         //confirm cmd type
+        }
+      Serial3.write(packetLength);      //confirm no of byte to be sent
+    #elif defined(CORE_STM32) || defined (CORE_TEENSY)
+      if (offset == 0)
+        {
+          Serial2.write("A");         //confirm cmd type
+        }
+      else
+        {
+          Serial2.write("r");         //confirm cmd type
+        }
+      Serial2.write(packetLength);      //confirm no of byte to be sent
     #endif
   }
   else
@@ -231,62 +275,85 @@ void sendValues(int packetlength, byte portNum)
 
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
-  response[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
-  response[1] = currentStatus.squirt; //Squirt Bitfield
-  response[2] = currentStatus.engine; //Engine Status Bitfield
-  response[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
-  response[4] = (byte)(currentStatus.MAP >> 1); //map value is divided by 2
-  response[5] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
-  response[6] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
-  response[7] = currentStatus.tpsADC; //TPS (Raw 0-255)
-  response[8] = currentStatus.battery10; //battery voltage
-  response[9] = currentStatus.O2; //O2
-  response[10] = currentStatus.egoCorrection; //Exhaust gas correction (%)
-  response[11] = currentStatus.iatCorrection; //Air temperature Correction (%)
-  response[12] = currentStatus.wueCorrection; //Warmup enrichment (%)
-  response[13] = lowByte(currentStatus.RPM); //rpm HB
-  response[14] = highByte(currentStatus.RPM); //rpm LB
-  response[15] = currentStatus.TAEamount; //acceleration enrichment (%)
-  response[16] = currentStatus.baro; //Barometer value
-  response[17] = currentStatus.corrections; //Total GammaE (%)
-  response[18] = currentStatus.VE; //Current VE 1 (%)
-  response[19] = currentStatus.afrTarget;
-  response[20] = (byte)(currentStatus.PW1 / 100); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-  response[21] = currentStatus.tpsDOT; //TPS DOT
-  response[22] = currentStatus.advance;
-  response[23] = currentStatus.TPS; // TPS (0% to 100%)
+  fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
+  fullStatus[1] = currentStatus.squirt; //Squirt Bitfield
+  fullStatus[2] = currentStatus.engine; //Engine Status Bitfield
+  fullStatus[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
+  fullStatus[4] = (byte)(currentStatus.MAP >> 1); //map value is divided by 2
+  fullStatus[5] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
+  fullStatus[6] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
+  fullStatus[7] = currentStatus.tpsADC; //TPS (Raw 0-255)
+  fullStatus[8] = currentStatus.battery10; //battery voltage
+  fullStatus[9] = currentStatus.O2; //O2
+  fullStatus[10] = currentStatus.egoCorrection; //Exhaust gas correction (%)
+  fullStatus[11] = currentStatus.iatCorrection; //Air temperature Correction (%)
+  fullStatus[12] = currentStatus.wueCorrection; //Warmup enrichment (%)
+  fullStatus[13] = lowByte(currentStatus.RPM); //rpm HB
+  fullStatus[14] = highByte(currentStatus.RPM); //rpm LB
+  fullStatus[15] = currentStatus.TAEamount; //acceleration enrichment (%)
+  fullStatus[16] = currentStatus.baro; //Barometer value
+  fullStatus[17] = currentStatus.corrections; //Total GammaE (%)
+  fullStatus[18] = currentStatus.VE; //Current VE 1 (%)
+  fullStatus[19] = currentStatus.afrTarget;
+  fullStatus[20] = (byte)(currentStatus.PW1 / 100); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[21] = currentStatus.tpsDOT; //TPS DOT
+  fullStatus[22] = currentStatus.advance;
+  fullStatus[23] = currentStatus.TPS; // TPS (0% to 100%)
   //Need to split the int loopsPerSecond value into 2 bytes
-  response[24] = lowByte(currentStatus.loopsPerSecond);
-  response[25] = highByte(currentStatus.loopsPerSecond);
+  fullStatus[24] = lowByte(currentStatus.loopsPerSecond);
+  fullStatus[25] = highByte(currentStatus.loopsPerSecond);
 
   //The following can be used to show the amount of free memory
   currentStatus.freeRAM = freeRam();
-  response[26] = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
-  response[27] = highByte(currentStatus.freeRAM);
+  fullStatus[26] = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
+  fullStatus[27] = highByte(currentStatus.freeRAM);
 
-  response[28] = currentStatus.batCorrection; //Battery voltage correction (%)
-  response[29] = currentStatus.spark; //Spark related bitfield
-  response[30] = currentStatus.O2_2; //O2
+  fullStatus[28] = currentStatus.batCorrection; //Battery voltage correction (%)
+  fullStatus[29] = currentStatus.spark; //Spark related bitfield
+  fullStatus[30] = currentStatus.O2_2; //O2
 
   //rpmDOT must be sent as a signed integer
-  response[31] = lowByte(currentStatus.rpmDOT);
-  response[32] = highByte(currentStatus.rpmDOT);
+  fullStatus[31] = lowByte(currentStatus.rpmDOT);
+  fullStatus[32] = highByte(currentStatus.rpmDOT);
 
-  response[33] = currentStatus.ethanolPct; //Flex sensor value (or 0 if not used)
-  response[34] = currentStatus.flexCorrection; //Flex fuel correction (% above or below 100)
-  response[35] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
-  response[36] = getNextError();
-  response[37] = currentStatus.boostTarget;
-  response[38] = currentStatus.boostDuty;
-  response[39] = currentStatus.idleLoad;
-  response[40] = currentStatus.testOutputs;
+  fullStatus[33] = currentStatus.ethanolPct; //Flex sensor value (or 0 if not used)
+  fullStatus[34] = currentStatus.flexCorrection; //Flex fuel correction (% above or below 100)
+  fullStatus[35] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
+  fullStatus[36] = getNextError();
+  fullStatus[37] = currentStatus.boostTarget;
+  fullStatus[38] = currentStatus.boostDuty;
+  fullStatus[39] = currentStatus.idleLoad;
+  fullStatus[40] = currentStatus.testOutputs;
+  fullStatus[41] = lowByte(currentStatus.canin[0]);
+  fullStatus[42] = highByte(currentStatus.canin[0]);
+  fullStatus[43] = lowByte(currentStatus.canin[1]);
+  fullStatus[44] = highByte(currentStatus.canin[1]);
+  fullStatus[45] = lowByte(currentStatus.canin[2]);
+  fullStatus[46] = highByte(currentStatus.canin[2]);
+  fullStatus[47] = lowByte(currentStatus.canin[3]);
+  fullStatus[48] = highByte(currentStatus.canin[3]);
+  fullStatus[49] = lowByte(currentStatus.canin[4]);
+  fullStatus[50] = highByte(currentStatus.canin[4]);
+  fullStatus[51] = lowByte(currentStatus.canin[5]);
+  fullStatus[52] = highByte(currentStatus.canin[5]);
+  fullStatus[53] = lowByte(currentStatus.canin[6]);
+  fullStatus[54] = highByte(currentStatus.canin[6]);
+  fullStatus[55] = lowByte(currentStatus.canin[7]);
+  fullStatus[56] = highByte(currentStatus.canin[7]);
+
+  for(byte x=0; x<packetLength; x++)
+  {
+    response[x] = fullStatus[offset+x];
+  }
 
 //cli();
-  if (portNum == 0) { Serial.write(response, (size_t)packetlength); }
+  if (portNum == 0) { Serial.write(response, (size_t)packetLength); }
   #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-    else if (portNum == 3) { Serial3.write(response, (size_t)packetlength); }
+    else if (portNum == 3) { Serial3.write(response, (size_t)packetLength); }
   #elif defined(CORE_STM32)
-    else if (portNum == 3) { Serial2.write(response, (size_t)packetlength); }
+    else if (portNum == 3) { Serial2.write(response, (size_t)packetLength); }
+  #elif defined(CORE_TEENSY)
+    else if (portNum == 3) { Serial2.write(response, (size_t)packetLength); }
   #endif
 //sei();
   return;
@@ -901,10 +968,9 @@ void sendPage(bool useChar)
     for (byte x = 0; x < npage_size[currentPage]; x++)
     {
       response[x] = *((byte *)pnt_configPage + x); //Each byte is simply the location in memory of the configPage + the offset + the variable number (x)
-      //if ( (x & 31) == 1) { loop(); } //Every 32 loops, do a manual call to loop() to ensure that there is no misses
     }
 
-    Serial.write((byte *)&response, sizeof(response));
+    Serial.write((byte *)&response, npage_size[currentPage]);
     // }
   }
   return;
@@ -958,9 +1024,9 @@ void receiveCalibration(byte tableID)
   bool every2nd = true;
   int x;
   int counter = 0;
-  pinMode(13, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT); //pinMode(13, OUTPUT);
 
-  digitalWrite(13, LOW);
+  digitalWrite(LED_BUILTIN, LOW); //digitalWrite(13, LOW);
   for (x = 0; x < 1024; x++)
   {
     //UNlike what is listed in the protocol documentation, the O2 sensor values are sent as bytes rather than ints
@@ -996,7 +1062,11 @@ void receiveCalibration(byte tableID)
       EEPROM.update(y, (byte)tempValue);
 
       every2nd = false;
-      analogWrite(13, (counter % 50) );
+      #if defined(CORE_STM32)
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+      #else
+        analogWrite(LED_BUILTIN, (counter % 50) ); //analogWrite(13, (counter % 50) );
+      #endif
       counter++;
     }
     else {

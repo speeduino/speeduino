@@ -4,11 +4,14 @@
 #include "table.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+  #define BOARD_NR_GPIO_PINS 54
+  #define LED_BUILTIN 13
   #define CORE_AVR
 #elif defined(CORE_TEENSY)
-  //Currently nothing to do here
-#elif defined(STM32_MCU_SERIES)
+  #define BOARD_NR_GPIO_PINS 34
+#elif defined(STM32_MCU_SERIES) || defined(_VARIANT_ARDUINO_STM32_)
   #define CORE_STM32
+  #define LED_BUILTIN 33
 
   inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
   #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
@@ -92,6 +95,7 @@
 #define CALIBRATION_TABLE_SIZE 512
 #define CALIBRATION_TEMPERATURE_OFFSET 40 // All temperature measurements are stored offset by 40 degrees. This is so we can use an unsigned byte (0-255) to represent temperature ranges from -40 to 215
 #define OFFSET_FUELTRIM 127 //The fuel trim tables are offset by 128 to allow for -128 to +128 values
+#define OFFSET_IGNITION 40 //Ignition values from the main spark table are offset 40 degrees downards to allow for negative spark timing
 
 #define SERIAL_BUFFER_THRESHOLD 32 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
 
@@ -103,7 +107,7 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 const byte page_size = 64;
-const int npage_size[11] ={0,288,64,288,64,288,64,64,160,192,128};
+const int npage_size[11] = {0,288,64,288,64,288,64,64,160,192,128};
 //const byte page10_size = 128;
 const int map_page_size = 288;
 
@@ -220,6 +224,8 @@ struct statuses {
   bool testActive;
   byte boostDuty;
   byte idleLoad; //Either the current steps or current duty cycle for the idle control.
+  int canin[9];   //16bit raw value of selected canin data for channel 1-8
+  uint8_t current_caninchannel = 0; //start off at channel 0
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -234,8 +240,8 @@ struct statuses currentStatus; //The global status object
 //This mostly covers off variables that are required for fuel
 struct config1 {
 
-  byte unused1; //Cold cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking under a certain temp threshold (ms)
-  byte unused2; //Warm cranking pulsewidth modifier. This is added to the fuel pulsewidth when cranking (ms)
+  int8_t flexBoostLow;
+  byte flexBoostHigh;
   byte asePct;  //Afterstart enrichment (%)
   byte aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
@@ -291,7 +297,7 @@ struct config1 {
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
   byte injLayout : 2;
-  byte canEnable : 1; //is can interface enabled
+  byte unused2_38g : 1;
   byte unused2_38h : 1;
 
   byte primePulse;
@@ -492,47 +498,12 @@ struct config4 {
 //Page 10 of the config mostly deals with CANBUS control
 //See ini file for further info (Config Page 10 in the ini)
 struct config10 {
-  byte unused10_0;
-  byte unused10_1;
-  byte unused10_2;
-  byte unused10_3;
-  byte unused10_4;
-  byte unused10_5;
-  byte unused10_6;
-  byte unused10_7;
-  byte unused10_8;
-  byte unused10_9;
-  byte unused10_10;
-  byte unused10_11;
-  byte unused10_12;
-  byte unused10_13;
-  byte unused10_14;
-  byte unused10_15;
-  byte unused10_16;
-  byte unused10_17;
-  byte unused10_18;
-  byte unused10_19;
-  byte unused10_20;
-  byte unused10_21;
-  byte unused10_22;
-  byte unused10_23;
-  byte unused10_24;
-  byte unused10_25;
-  byte unused10_26;
-  byte unused10_27;
-  byte unused10_28;
-  byte unused10_29;
-  byte unused10_30;
-  byte unused10_31;
-  byte unused10_32;
-  byte unused10_33;
-  byte unused10_34;
-  byte unused10_35;
-  byte unused10_36;
-  byte unused10_37;
-  byte unused10_38;
-  byte unused10_39;
-  byte unused10_40;
+  byte enable_canbus:2;
+  byte enable_candata_in:1;
+  byte caninput_sel[8];
+  uint16_t caninput_param_group[8];
+  uint8_t caninput_param_start_byte[8];
+  byte caninput_param_num_bytes[8];
   byte unused10_41;
   byte unused10_42;
   byte unused10_43;
@@ -542,32 +513,11 @@ struct config10 {
   byte unused10_47;
   byte unused10_48;
   byte unused10_49;
-  byte unused10_50;
-  byte unused10_51;
-  byte unused10_52;
-  byte unused10_53;
-  byte unused10_54;
-  byte unused10_55;
-  byte unused10_56;
-  byte unused10_57;
-  byte unused10_58;
-  byte unused10_59;
-  byte unused10_60;
-  byte unused10_61;
-  byte unused10_62;
-  byte unused10_63;
-  byte unused10_64;
-  byte unused10_65;
-  byte unused10_66;
-  byte unused10_67;
-  byte unused10_68;
-  byte unused10_69;
-  byte unused10_70;
-  byte unused10_71;
-  byte unused10_72;
-  byte unused10_73;
-  byte unused10_74;
-  byte unused10_75;
+  byte enable_candata_out : 1;
+  byte canoutput_sel[8];
+  uint16_t canoutput_param_group[8];
+  uint8_t canoutput_param_start_byte[8];
+  byte canoutput_param_num_bytes[8];
   byte unused10_76;
   byte unused10_77;
   byte unused10_78;
@@ -592,13 +542,10 @@ struct config10 {
   byte unused10_97;
   byte unused10_98;
   byte unused10_99;
-  byte unused10_100;
-  byte unused10_101;
-  byte unused10_102;
-  byte unused10_103;
-  byte unused10_104;
-  byte unused10_105;
-  byte unused10_106;
+  byte speeduino_tsCanId:4;         //speeduino TS canid (0-14)
+  uint16_t true_address;            //speeduino 11bit can address
+  uint16_t realtime_base_address;   //speeduino 11 bit realtime base address
+  uint16_t obd_address;             //speeduino OBD diagnostic address
   byte unused10_107;
   byte unused10_108;
   byte unused10_109;

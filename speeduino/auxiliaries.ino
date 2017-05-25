@@ -64,6 +64,14 @@ void boostControl()
     MAPx100 = currentStatus.MAP * 100;
 
     boost_cl_target_boost = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; //Boost target table is in kpa and divided by 2
+    //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
+    if(configPage1.flexEnabled)
+    {
+      int16_t boostAdder = (((int16_t)configPage1.flexBoostHigh - (int16_t)configPage1.flexBoostLow) * currentStatus.ethanolPct) / 100;
+      boostAdder = boostAdder + configPage1.flexBoostLow; //Required in case flexBoostLow is less than 0
+      boost_cl_target_boost = boost_cl_target_boost + boostAdder;
+    }
+
     boostTargetx100 = boost_cl_target_boost  * 100;
     currentStatus.boostTarget = boost_cl_target_boost >> 1; //Boost target is sent as a byte value to TS and so is divided by 2
     if(currentStatus.boostTarget == 0) { TIMSK1 &= ~(1 << OCIE1A); digitalWrite(pinBoost, LOW); return; } //Set duty to 0 and turn off timer compare if the target is 0
