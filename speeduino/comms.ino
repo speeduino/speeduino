@@ -76,12 +76,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.04-dev");
+      Serial.print("Speeduino 2017.05-dev");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201704-dev");
+      Serial.print("speeduino 201705-dev");
      break;
 
     case 'V': // send VE table and constants in binary
@@ -173,11 +173,11 @@ void command()
       cmdPending = true;
       byte cmd;
       if (Serial.available() < 6) { return; }
-      Serial.read(); //Read the $tsCanId
-      cmd = Serial.read();
+      tsCanId = Serial.read(); //Read the $tsCanId
+      cmd = Serial.read(); // read the command
 
       uint16_t offset, length;
-      if(cmd == 0x07) //Send output channels command
+      if(cmd == 0x30) //Send output channels command 0x30 is 48dec
       {
         byte tmp;
         tmp = Serial.read();
@@ -246,10 +246,24 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   {
     //CAN serial
     #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-      Serial3.write("A");         //confirm cmd type
+      if (offset == 0)
+        {
+          Serial3.write("A");         //confirm cmd type
+        }
+      else
+        {
+          Serial3.write("r");         //confirm cmd type
+        }
       Serial3.write(packetLength);      //confirm no of byte to be sent
-    #elif defined(CORE_STM32)
-      Serial2.write("A");         //confirm cmd type
+    #elif defined(CORE_STM32) || defined (CORE_TEENSY)
+      if (offset == 0)
+        {
+          Serial2.write("A");         //confirm cmd type
+        }
+      else
+        {
+          Serial2.write("r");         //confirm cmd type
+        }
       Serial2.write(packetLength);      //confirm no of byte to be sent
     #endif
   }
@@ -310,6 +324,22 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   fullStatus[38] = currentStatus.boostDuty;
   fullStatus[39] = currentStatus.idleLoad;
   fullStatus[40] = currentStatus.testOutputs;
+  fullStatus[41] = lowByte(currentStatus.canin[0]);
+  fullStatus[42] = highByte(currentStatus.canin[0]);
+  fullStatus[43] = lowByte(currentStatus.canin[1]);
+  fullStatus[44] = highByte(currentStatus.canin[1]);
+  fullStatus[45] = lowByte(currentStatus.canin[2]);
+  fullStatus[46] = highByte(currentStatus.canin[2]);
+  fullStatus[47] = lowByte(currentStatus.canin[3]);
+  fullStatus[48] = highByte(currentStatus.canin[3]);
+  fullStatus[49] = lowByte(currentStatus.canin[4]);
+  fullStatus[50] = highByte(currentStatus.canin[4]);
+  fullStatus[51] = lowByte(currentStatus.canin[5]);
+  fullStatus[52] = highByte(currentStatus.canin[5]);
+  fullStatus[53] = lowByte(currentStatus.canin[6]);
+  fullStatus[54] = highByte(currentStatus.canin[6]);
+  fullStatus[55] = lowByte(currentStatus.canin[7]);
+  fullStatus[56] = highByte(currentStatus.canin[7]);
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -321,6 +351,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
     else if (portNum == 3) { Serial3.write(response, (size_t)packetLength); }
   #elif defined(CORE_STM32)
+    else if (portNum == 3) { Serial2.write(response, (size_t)packetLength); }
+  #elif defined(CORE_TEENSY)
     else if (portNum == 3) { Serial2.write(response, (size_t)packetLength); }
   #endif
 //sei();
