@@ -679,9 +679,9 @@ void setup()
       channel5InjEnabled = true;
       break;
     case 6:
-      channel1IgnDegrees = 0;
-      channel2IgnDegrees = 120;
-      channel3IgnDegrees = 240;
+      channel1IgnDegrees = channel1InjDegrees = 0;
+      channel2IgnDegrees = channel2InjDegrees = 120;
+      channel3IgnDegrees = channel3InjDegrees = 240;
 
       //For alternatiing injection, the squirt occurs at different times for each channel
       /*
@@ -701,10 +701,10 @@ void setup()
       channel3InjEnabled = true;
       break;
     case 8:
-      channel1IgnDegrees = 0;
-      channel2IgnDegrees = 90;
-      channel3IgnDegrees = 180;
-      channel4IgnDegrees = 270;
+      channel1IgnDegrees = channel1InjDegrees = 0;
+      channel2IgnDegrees = channel2InjDegrees = 90;
+      channel3IgnDegrees = channel3InjDegrees = 180;
+      channel4IgnDegrees = channel3InjDegrees = 270;
 
       //For alternatiing injection, the squirt occurs at different times for each channel
       /*
