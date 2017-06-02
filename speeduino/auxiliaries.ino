@@ -3,7 +3,6 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
-//integerPID boostPID(&currentStatus.MAP, &boost_pwm_target_value, &boost_cl_target_boost, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 /*
@@ -11,21 +10,21 @@ Fan control
 */
 void initialiseFan()
 {
-  if(configPage4.fanInv) { fanHIGH = LOW, fanLOW = HIGH; }
-  else { fanHIGH = HIGH, fanLOW = LOW; }
+  if( configPage4.fanInv == 1 ) { fanHIGH = LOW; fanLOW = HIGH; }
+  else { fanHIGH = HIGH; fanLOW = LOW; }
   digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
   currentStatus.fanOn = false;
 }
 
 void fanControl()
 {
-  if(configPage4.fanEnable)
+  if( configPage4.fanEnable == 1 )
   {
     int onTemp = (int)configPage4.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
     int offTemp = onTemp - configPage4.fanHyster;
 
-    if (!currentStatus.fanOn && currentStatus.coolant >= onTemp) { digitalWrite(pinFan,fanHIGH); currentStatus.fanOn = true; }
-    if (currentStatus.fanOn && currentStatus.coolant <= offTemp) { digitalWrite(pinFan, fanLOW); currentStatus.fanOn = false; }
+    if ( (!currentStatus.fanOn) && (currentStatus.coolant >= onTemp) ) { digitalWrite(pinFan,fanHIGH); currentStatus.fanOn = true; }
+    if ( (currentStatus.fanOn) && (currentStatus.coolant <= offTemp) ) { digitalWrite(pinFan, fanLOW); currentStatus.fanOn = false; }
   }
 }
 
@@ -45,7 +44,7 @@ void initialiseAuxPWM()
 
   boost_pwm_max_count = 1000000L / (16 * configPage3.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
   vvt_pwm_max_count = 1000000L / (16 * configPage3.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
-  //TIMSK1 |= (1 << OCIE1A); //Turn on the A compare unit (ie turn on the interrupt)  //Shouldn't be needed with closed loop as its turned on below
+  //TIMSK1 |= (1 << OCIE1A); <---- Not required as compare A is turned on when needed by boost control
   TIMSK1 |= (1 << OCIE1B); //Turn on the B compare unit (ie turn on the interrupt)
 
   boostPID.SetOutputLimits(percentage(configPage1.boostMinDuty, boost_pwm_max_count) , percentage(configPage1.boostMaxDuty, boost_pwm_max_count));
@@ -58,29 +57,44 @@ void initialiseAuxPWM()
 
 void boostControl()
 {
-  if(configPage3.boostEnabled)
+  if( configPage3.boostEnabled==1 )
   {
-    if(currentStatus.MAP < 100) { TIMSK1 &= ~(1 << OCIE1A); digitalWrite(pinBoost, LOW); return; } //Set duty to 0 and turn off timer compare
-    MAPx100 = currentStatus.MAP * 100;
-
-    boost_cl_target_boost = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; //Boost target table is in kpa and divided by 2
-    //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
-    if(configPage1.flexEnabled)
+    if(currentStatus.MAP >= 100)
     {
-      int16_t boostAdder = (((int16_t)configPage1.flexBoostHigh - (int16_t)configPage1.flexBoostLow) * currentStatus.ethanolPct) / 100;
-      boostAdder = boostAdder + configPage1.flexBoostLow; //Required in case flexBoostLow is less than 0
-      boost_cl_target_boost = boost_cl_target_boost + boostAdder;
+      MAPx100 = currentStatus.MAP * 100;
+
+      boost_cl_target_boost = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; //Boost target table is in kpa and divided by 2
+      //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
+      if( configPage1.flexEnabled == 1 )
+      {
+        int16_t boostAdder = (((int16_t)configPage1.flexBoostHigh - (int16_t)configPage1.flexBoostLow) * currentStatus.ethanolPct) / 100;
+        boostAdder = boostAdder + configPage1.flexBoostLow; //Required in case flexBoostLow is less than 0
+        boost_cl_target_boost = boost_cl_target_boost + boostAdder;
+      }
+
+      boostTargetx100 = boost_cl_target_boost  * 100;
+      currentStatus.boostTarget = boost_cl_target_boost >> 1; //Boost target is sent as a byte value to TS and so is divided by 2
+      if(currentStatus.boostTarget > 0)
+      {
+        if( (boostCounter & 31) == 1) { boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD); } //This only needs to be run very infrequently, once every 32 calls to boostControl(). This is approx. once per second
+
+        boostPID.Compute();
+        currentStatus.boostDuty = (unsigned long)(boost_pwm_target_value * 100UL) / boost_pwm_max_count;
+        TIMSK1 |= (1 << OCIE1A); //Turn on the compare unit (ie turn on the interrupt)
+      }
+      else
+      {
+        //If boost target is 0, turn everything off
+        TIMSK1 &= ~(1 << OCIE1A); //Turn off timer
+        digitalWrite(pinBoost, LOW);
+      }
     }
-
-    boostTargetx100 = boost_cl_target_boost  * 100;
-    currentStatus.boostTarget = boost_cl_target_boost >> 1; //Boost target is sent as a byte value to TS and so is divided by 2
-    if(currentStatus.boostTarget == 0) { TIMSK1 &= ~(1 << OCIE1A); digitalWrite(pinBoost, LOW); return; } //Set duty to 0 and turn off timer compare if the target is 0
-
-    if( (boostCounter & 31) == 1) { boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD); } //This only needs to be run very infrequently, once every 32 calls to boostControl(). This is approx. once per second
-
-    boostPID.Compute();
-    currentStatus.boostDuty = (unsigned long)(boost_pwm_target_value * 100UL) / boost_pwm_max_count;
-    TIMSK1 |= (1 << OCIE1A); //Turn on the compare unit (ie turn on the interrupt)
+    else
+    {
+      //Boost control does nothing if kPa below 100
+      TIMSK1 &= ~(1 << OCIE1A); //Turn off timer
+      digitalWrite(pinBoost, LOW); //Make sure solenoid is off (0% duty)
+    }
   }
   else { TIMSK1 &= ~(1 << OCIE1A); } // Disable timer channel
 
@@ -89,7 +103,7 @@ void boostControl()
 
 void vvtControl()
 {
-  if(configPage3.vvtEnabled)
+  if( configPage3.vvtEnabled == 1 )
   {
     byte vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
     vvt_pwm_target_value = percentage(vvtDuty, vvt_pwm_max_count);
@@ -142,3 +156,4 @@ void boostControl() { }
 void vvtControl() { }
 
 #endif
+

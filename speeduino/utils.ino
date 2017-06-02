@@ -31,8 +31,8 @@ int freeRam ()
   // The difference is the free, available ram.
   return (uint16_t)stackTop - heapTop;
 #elif defined(CORE_STM32)
-  //Figure this out some_time
-  return 0;
+  char top = 't';
+  return &top - reinterpret_cast<char*>(sbrk(0));
 #endif
 }
 
@@ -51,13 +51,22 @@ void setPinMapping(byte boardID)
     #define A7  boardADCPins[7]
     #define A8  boardADCPins[8]
     #define A9  boardADCPins[9]
-    //STM32F1 have only 9 12bit adc
-    #define A10  boardADCPins[0]
-    #define A11  boardADCPins[1]
-    #define A12  boardADCPins[2]
-    #define A13  boardADCPins[3]
-    #define A14  boardADCPins[4]
-    #define A15  boardADCPins[5]
+    #if defined (ARDUINO_ARCH_STM32F4)
+      #define A10  boardADCPins[10]
+      #define A11  boardADCPins[11]
+      #define A12  boardADCPins[12]
+      #define A13  boardADCPins[13]
+      #define A14  boardADCPins[14]
+      #define A15  boardADCPins[15]
+    #else
+      //STM32F1 have only 9 12bit adc
+      #define A10  boardADCPins[0]
+      #define A11  boardADCPins[1]
+      #define A12  boardADCPins[2]
+      #define A13  boardADCPins[3]
+      #define A14  boardADCPins[4]
+      #define A15  boardADCPins[5]
+    #endif
   #endif
 
   switch (boardID)
@@ -185,8 +194,8 @@ void setPinMapping(byte boardID)
         pinStepperStep = 13; //Step pin for DRV8825 driver
         pinStepperEnable = 14; //Enable pin for DRV8825
         pinDisplayReset = 2; // OLED reset pin
-        pinFan = 1; //Pin for the fan output
-        pinFuelPump = 0; //Fuel pump output
+        pinFan = 0; //Pin for the fan output
+        pinFuelPump = 1; //Fuel pump output
         pinTachOut = 31; //Tacho output pin
         //external interrupt enabled pins
         pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
@@ -261,8 +270,8 @@ void setPinMapping(byte boardID)
         pinStepperStep = 13; //Step pin for DRV8825 driver
         pinStepperEnable = 14; //Enable pin for DRV8825
         pinDisplayReset = 2; // OLED reset pin
-        pinFan = 1; //Pin for the fan output
-        pinFuelPump = 0; //Fuel pump output
+        pinFan = 0; //Pin for the fan output
+        pinFuelPump = 1; //Fuel pump output
         pinTachOut = 31; //Tacho output pin
         //external interrupt enabled pins
         pinFlex = 32; // Flex sensor (Must be external interrupt enabled)

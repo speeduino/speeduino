@@ -20,6 +20,7 @@ static inline byte correctionIATDensity(); //Inlet temp density correction
 static inline byte correctionLaunch(); //Launch control correction
 static inline bool correctionDFCO(); //Decelleration fuel cutoff
 
+int SetIgnStartAngle(int IgnDegrees);
 int8_t correctionsIgn(int8_t advance);
 static inline int8_t correctionFixedTiming(int8_t);
 static inline int8_t correctionCrankingFixedTiming(int8_t);

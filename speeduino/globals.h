@@ -11,8 +11,13 @@
   #define BOARD_NR_GPIO_PINS 34
 #elif defined(STM32_MCU_SERIES) || defined(_VARIANT_ARDUINO_STM32_)
   #define CORE_STM32
-  #define LED_BUILTIN 33
-
+  #if defined (ARDUINO_ARCH_STM32F1)
+    #define LED_BUILTIN 33
+  #elif defined (ARDUINO_ARCH_STM32F4)
+    #define LED_BUILTIN PA6
+  #endif
+  
+  extern "C" char* sbrk(int incr); //Used to freeRam
   inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
   #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
   #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
@@ -109,7 +114,7 @@ const byte data_structure_version = 2; //This identifies the data structure when
 const byte page_size = 64;
 const int npage_size[11] = {0,288,64,288,64,288,64,64,160,192,128};
 //const byte page10_size = 128;
-const int map_page_size = 288;
+#define MAP_PAGE_SIZE 288
 
 struct table3D fuelTable; //16x16 fuel map
 struct table3D ignitionTable; //16x16 ignition map

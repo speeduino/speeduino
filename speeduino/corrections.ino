@@ -313,6 +313,12 @@ static inline byte correctionAFRClosedLoop()
 }
 
 //******************************** IGNITION ADVANCE CORRECTIONS ********************************
+int SetIgnStartAngle(int IgnDegrees)
+{
+  IgnDegrees += CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
+  if(IgnDegrees > CRANK_ANGLE_MAX_IGN) { return IgnDegrees - CRANK_ANGLE_MAX_IGN; }
+  else { return IgnDegrees; }
+}
 
 int8_t correctionsIgn(int8_t advance)
 {

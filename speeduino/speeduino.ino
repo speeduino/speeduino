@@ -133,6 +133,7 @@ void (*ign5StartFunction)();
 void (*ign5EndFunction)();
 
 int timePerDegree;
+int dwellAngle;
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 
@@ -152,7 +153,14 @@ void setup()
   table3D_setSize(&trim3Table, 6);
   table3D_setSize(&trim4Table, 6);
 
-  loadConfig();
+  #if defined(CORE_STM32)
+    pinMode(CS, OUTPUT);
+    digitalWrite(CS, HIGH); // disable
+    Spi.begin();
+    loadConfig_STM();
+  #else  
+    loadConfig();
+  #endif
   doUpdates(); //Check if any data items need updating (Occurs ith firmware updates)
 
   Serial.begin(115200);
@@ -1269,7 +1277,7 @@ void loop()
       else { currentStatus.dwell =  (configPage2.dwellRun * 100); }
       currentStatus.dwell = correctionsDwell(currentStatus.dwell);
 
-      int dwellAngle = (div(currentStatus.dwell, timePerDegree).quot ); //Convert the dwell time to dwell angle based on the current engine speed
+      dwellAngle = (div(currentStatus.dwell, timePerDegree).quot ); //Convert the dwell time to dwell angle based on the current engine speed
 
       //Calculate start angle for each channel
       //1 cylinder (Everyone gets this)
@@ -1281,61 +1289,45 @@ void loop()
       {
         //2 cylinders
         case 2:
-          ignition2StartAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
-          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          ignition2StartAngle = SetIgnStartAngle(channel2IgnDegrees);
           break;
         //3 cylinders
         case 3:
-          ignition2StartAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
-          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          ignition2StartAngle = SetIgnStartAngle(channel2IgnDegrees);
           ignition3StartAngle = channel3IgnDegrees + 360 - currentStatus.advance - dwellAngle;
           if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
           break;
         //4 cylinders
         case 4:
-          ignition2StartAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
-          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          ignition2StartAngle = SetIgnStartAngle(channel2IgnDegrees);
           if(ignition2StartAngle < 0) {ignition2StartAngle += CRANK_ANGLE_MAX_IGN;}
 
           if(configPage2.sparkMode == IGN_MODE_SEQUENTIAL)
           {
-            ignition3StartAngle = channel3IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
-            if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
-            ignition4StartAngle = channel4IgnDegrees + CRANK_ANGLE_MAX - currentStatus.advance - dwellAngle;
-            if(ignition4StartAngle > CRANK_ANGLE_MAX_IGN) {ignition4StartAngle -= CRANK_ANGLE_MAX_IGN;}
+            ignition3StartAngle = SetIgnStartAngle(channel3IgnDegrees);
+            ignition4StartAngle = SetIgnStartAngle(channel4IgnDegrees);
           }
           break;
         //5 cylinders
         case 5:
-          ignition2StartAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
-          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          ignition2StartAngle = SetIgnStartAngle(channel2IgnDegrees);
           if(ignition2StartAngle < 0) {ignition2StartAngle += CRANK_ANGLE_MAX_IGN;}
 
-          ignition3StartAngle = channel3IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
-          if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
-
-          ignition4StartAngle = channel4IgnDegrees + CRANK_ANGLE_MAX - currentStatus.advance - dwellAngle;
-          if(ignition4StartAngle > CRANK_ANGLE_MAX_IGN) {ignition4StartAngle -= CRANK_ANGLE_MAX_IGN;}
-
-          ignition5StartAngle = channel5IgnDegrees + CRANK_ANGLE_MAX - currentStatus.advance - dwellAngle;
-          if(ignition5StartAngle > CRANK_ANGLE_MAX_IGN) {ignition5StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          ignition3StartAngle = SetIgnStartAngle(channel3IgnDegrees);
+          ignition4StartAngle = SetIgnStartAngle(channel4IgnDegrees);
+          ignition5StartAngle = SetIgnStartAngle(channel5IgnDegrees);
 
           break;
         //6 cylinders
         case 6:
-          ignition2StartAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
-          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
-          ignition3StartAngle = channel3IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
-          if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          ignition2StartAngle = SetIgnStartAngle(channel2IgnDegrees);
+          ignition3StartAngle = SetIgnStartAngle(channel3IgnDegrees);
           break;
         //8 cylinders
         case 8:
-          ignition2StartAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance - dwellAngle;
-          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
-          ignition3StartAngle = channel3IgnDegrees + CRANK_ANGLE_MAX - currentStatus.advance - dwellAngle;
-          if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
-          ignition4StartAngle = channel4IgnDegrees + CRANK_ANGLE_MAX - currentStatus.advance - dwellAngle;
-          if(ignition4StartAngle > CRANK_ANGLE_MAX_IGN) {ignition4StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          ignition2StartAngle = SetIgnStartAngle(channel2IgnDegrees);
+          ignition3StartAngle = SetIgnStartAngle(channel3IgnDegrees);
+          ignition4StartAngle = SetIgnStartAngle(channel4IgnDegrees);
           break;
 
         //Will hit the default case on 1 cylinder or >8 cylinders. Do nothing in these cases
@@ -1587,3 +1579,4 @@ void loop()
       } //Ignition schedules on
     } //Has sync and RPM
 } //loop()
+
