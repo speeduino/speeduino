@@ -109,7 +109,7 @@ const byte data_structure_version = 2; //This identifies the data structure when
 const byte page_size = 64;
 const int npage_size[11] = {0,288,64,288,64,288,64,64,160,192,128};
 //const byte page10_size = 128;
-const int map_page_size = 288;
+#define MAP_PAGE_SIZE 288
 
 struct table3D fuelTable; //16x16 fuel map
 struct table3D ignitionTable; //16x16 ignition map

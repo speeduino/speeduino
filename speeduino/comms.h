@@ -15,7 +15,7 @@
 #define packetSize   57//41
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
-boolean isMap = true;
+bool isMap = true;
 unsigned long requestCount = 0; //The number of times the A command has been issued
 byte currentCommand;
 bool cmdPending = false;
