@@ -33,6 +33,9 @@ cache:
     directories:
         - "~/.platformio"
 
+env:
+    - PLATFORMIO_CI_SRC=speeduino
+
 install:
     - pip install -U platformio
 
