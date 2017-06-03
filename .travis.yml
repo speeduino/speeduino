@@ -33,14 +33,11 @@ cache:
     directories:
         - "~/.platformio"
 
-env:
-    - PLATFORMIO_CI_SRC=speeduino
-
 install:
     - pip install -U platformio
 
 script:
-    - platformio ci --board=megaatmega2560 --board=teensy35 --board=genericSTM32F103RB --board=bluepill_f103c8
+    - platformio run
 
 
 #
