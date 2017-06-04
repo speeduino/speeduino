@@ -23,7 +23,7 @@
 //Handy bitsetting macros
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
 #define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
-#define BIT_CHECK(var,pos) ((var) & (1<<(pos)))
+#define BIT_CHECK(var,pos) !!((var) & (1<<(pos)))
 
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000

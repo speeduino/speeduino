@@ -112,7 +112,7 @@ Additional fuel % to be added when the engine is cranking
 static inline byte correctionCranking()
 {
   byte crankingValue = 100;
-  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) == 1 ) { crankingValue = 100 + configPage1.crankingPct; }
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage1.crankingPct; }
   return crankingValue;
 }
 
@@ -149,7 +149,7 @@ static inline byte correctionAccel()
 {
   byte accelValue = 100;
   //First, check whether the accel. enrichment is already running
-  if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) == 1 )
+  if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
   {
     //If it is currently running, check whether it should still be running or whether it's reached it's end time
     if( currentLoopTime >= currentStatus.TAEEndTime )
@@ -198,7 +198,7 @@ This function always returns either 100 or 0
 static inline byte correctionFloodClear()
 {
   byte floodValue = 100;
-  if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) == 1)
+  if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
   {
     //Engine is currently cranking, check what the TPS is
     if(currentStatus.TPS >= configPage2.floodClear)
@@ -385,7 +385,7 @@ static inline int8_t correctionFixedTiming(int8_t advance)
 static inline int8_t correctionCrankingFixedTiming(int8_t advance)
 {
   byte ignCrankFixValue = advance;
-  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) == 1 ) { ignCrankFixValue = configPage2.CrankAng; } //Use the fixed cranking ignition angle
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { ignCrankFixValue = configPage2.CrankAng; } //Use the fixed cranking ignition angle
   return ignCrankFixValue;
 }
 
