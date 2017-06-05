@@ -298,6 +298,8 @@ void setup()
         triggerInterrupt = 3; break;
       case 21:
         triggerInterrupt = 2; break;
+      default:
+        triggerInterrupt = 0; break; //This should NEVER happen
     }
   #else
     triggerInterrupt = pinTrigger;
@@ -318,6 +320,8 @@ void setup()
         triggerInterrupt2 = 3; break;
       case 21:
         triggerInterrupt2 = 2; break;
+      default:
+        triggerInterrupt2 = 0; break; //This should NEVER happen
     }
   #else
     triggerInterrupt2 = pinTrigger2;
@@ -533,6 +537,7 @@ void setup()
 
       channel1InjEnabled = true;
       break;
+      
     case 2:
       channel1IgnDegrees = 0;
 
@@ -553,6 +558,7 @@ void setup()
       channel1InjEnabled = true;
       channel2InjEnabled = true;
       break;
+
     case 3:
       channel1IgnDegrees = 0;
 
