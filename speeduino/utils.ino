@@ -277,7 +277,7 @@ void setPinMapping(byte boardID)
       pinInjector2 = 10; //Output pin injector 2 is on
       pinInjector3 = 9; //Output pin injector 3 is on
       pinInjector4 = 8; //Output pin injector 4 is on
-      pinInjector5 = 12; //Output pin injector 5 is on
+      pinInjector5 = 14; //Output pin injector 5 is on
       pinCoil1 = 39; //Pin for coil 1
       pinCoil2 = 41; //Pin for coil 2
       pinCoil3 = 35; //Pin for coil 3
