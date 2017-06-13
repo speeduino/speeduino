@@ -164,14 +164,16 @@ void setup()
   {
     //enable local can interface
   }
-#elif defined(CORE_TEESNY)
+#elif defined(CORE_TEENSY)
   if (configPage10.enable_canbus == 1) { Serial2.begin(115200); }
   else if (configPage10.enable_canbus == 2)
   {
+    //Teensy onboard CAN not used currently
     //enable local can interface
-    FlexCAN CANbus0(2500000, 0);   //setup can interface to 250k
-    static CAN_message_t txmsg,rxmsg;
-    CANbus0.begin();
+    //setup can interface to 250k
+    //FlexCAN CANbus0(2500000, 0);
+    //static CAN_message_t txmsg,rxmsg;
+    //CANbus0.begin();
   }
 #endif
 
@@ -537,7 +539,7 @@ void setup()
 
       channel1InjEnabled = true;
       break;
-      
+
     case 2:
       channel1IgnDegrees = 0;
 

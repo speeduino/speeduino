@@ -157,6 +157,7 @@ void setPinMapping(byte boardID)
       #if defined(CORE_TEENSY)
         pinTrigger = 23;
         pinStepperDir = 33;
+        pinStepperStep = 34;
         pinCoil1 = 31;
         pinTachOut = 28;
         pinFan = 27;
