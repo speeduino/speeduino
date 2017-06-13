@@ -852,9 +852,9 @@ void loop()
       //if serial3 interface is enabled then check for serial3 requests.
       if (configPage10.enable_canbus == 1)
           {
-            if ( ((mainLoopCount & 31) == 1) or (Serial3.available() > SERIAL_BUFFER_THRESHOLD) )
+            if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
                 {
-                  if (Serial3.available() > 0)
+                  if (CANSerial.available() > 0)
                     {
                     canCommand();
                     }
