@@ -279,8 +279,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[5] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
   fullStatus[6] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
   fullStatus[7] = currentStatus.tpsADC; //TPS (Raw 0-255)
-  fullStatus[8] = 121;//currentStatus.battery10; //battery voltage
-  fullStatus[9] = 54;//currentStatus.O2; //O2
+  fullStatus[8] = currentStatus.battery10; //battery voltage
+  fullStatus[9] = currentStatus.O2; //O2
   fullStatus[10] = currentStatus.egoCorrection; //Exhaust gas correction (%)
   fullStatus[11] = currentStatus.iatCorrection; //Air temperature Correction (%)
   fullStatus[12] = currentStatus.wueCorrection; //Warmup enrichment (%)
@@ -341,22 +341,6 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   {
     if (portNum == 0) { Serial.write(fullStatus[offset+x]); }
     else if (portNum == 3){ CANSerial.write(fullStatus[offset+x]); }
-    
-<<<<<<< HEAD
-    //if (portNum == 3)               //TESTING USE!
-    //{ 
-    //  Serial.print("r");         //confirm cmd type 
-    //  Serial.print(cmd);
-    //  Serial.print(fullStatus[offset+x]);
-    //}
-=======
-    if (portNum == 3)               //TESTING USE!
-    { 
-      Serial.print("r");         //confirm cmd type 
-      Serial.print(cmd);
-      Serial.print(fullStatus[offset+x]);
-    }
->>>>>>> b62f943bb340de45be584a0ea12be9cddabda82a
   }
 
 }
