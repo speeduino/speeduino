@@ -18,7 +18,7 @@ void canCommand()
   switch (currentcanCommand)
   {
     case 'A': // sends the bytes of realtime values
-        sendValues(0, packetSize,3); //send values to serial3
+        sendValues(0, packetSize,0x30,3); //send values to serial3
         break;
 
     case 'G': // this is the reply command sent by the Can interface
@@ -86,23 +86,22 @@ void canCommand()
          break;
 
     case 'r': //New format for the optimised OutputChannels
-      byte cmd;
-
+      byte Cmd; 
       if (CANSerial.available() >= 6)
       {
         CANSerial.read(); //Read the $tsCanId
-        cmd = CANSerial.read();
+        Cmd = CANSerial.read();
 
         uint16_t offset, length;
-        if(cmd == 0x30) //Send output channels command 0x30 is 48dec
+        if((Cmd == 0x30) || (Cmd >= 0x40 && Cmd <0x50) ) //Send output channels command 0x30 is 48dec, 0x40(64dec)-0x4F are external can request
         {
           byte tmp;
           tmp = CANSerial.read();
           offset = word(CANSerial.read(), tmp);
           tmp = CANSerial.read();
           length = word(CANSerial.read(), tmp);
+          sendValues(offset, length,Cmd, 3);
 
-          sendValues(offset, length, 3);
         }
         else
         {

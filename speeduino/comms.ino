@@ -21,7 +21,7 @@ void command()
   {
 
     case 'A': // send x bytes of realtime values
-      sendValues(0, packetSize, 0);   //send values to serial0
+      sendValues(0, packetSize,0x30, 0);   //send values to serial0
       break;
 
 
@@ -190,7 +190,7 @@ void command()
           offset = word(Serial.read(), tmp);
           tmp = Serial.read();
           length = word(Serial.read(), tmp);
-          sendValues(offset, length, 0);
+          sendValues(offset, length,cmd, 0);
         }
         else
         {
@@ -244,33 +244,23 @@ void command()
 This function returns the current values of a fixed group of variables
 */
 //void sendValues(int packetlength, byte portNum)
-void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 {
   byte fullStatus[packetSize];
 
   if (portNum == 3)
   {
     //CAN serial
-    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
+    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)|| defined(CORE_STM32) || defined (CORE_TEENSY) //ATmega2561 does not have Serial3
       if (offset == 0)
         {
-          Serial3.write("A");         //confirm cmd type
+          CANSerial.write("A");         //confirm cmd type
         }
       else
         {
-          Serial3.write("r");         //confirm cmd type
+      CANSerial.write("r");         //confirm cmd type 
+      CANSerial.write(cmd);  
         }
-      Serial3.write(packetLength);      //confirm no of byte to be sent
-    #elif defined(CORE_STM32) || defined (CORE_TEENSY)
-      if (offset == 0)
-        {
-          Serial2.write("A");         //confirm cmd type
-        }
-      else
-        {
-          Serial2.write("r");         //confirm cmd type
-        }
-      Serial2.write(packetLength);      //confirm no of byte to be sent
     #endif
   }
   else
@@ -289,8 +279,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   fullStatus[5] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
   fullStatus[6] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
   fullStatus[7] = currentStatus.tpsADC; //TPS (Raw 0-255)
-  fullStatus[8] = currentStatus.battery10; //battery voltage
-  fullStatus[9] = currentStatus.O2; //O2
+  fullStatus[8] = 121;//currentStatus.battery10; //battery voltage
+  fullStatus[9] = 54;//currentStatus.O2; //O2
   fullStatus[10] = currentStatus.egoCorrection; //Exhaust gas correction (%)
   fullStatus[11] = currentStatus.iatCorrection; //Air temperature Correction (%)
   fullStatus[12] = currentStatus.wueCorrection; //Warmup enrichment (%)
@@ -350,7 +340,14 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   for(byte x=0; x<packetLength; x++)
   {
     if (portNum == 0) { Serial.write(fullStatus[offset+x]); }
-    else if (portNum == 3) { CANSerial.write(fullStatus[offset+x]); }
+    else if (portNum == 3){ CANSerial.write(fullStatus[offset+x]); }
+    
+    if (portNum == 3)               //TESTING USE!
+    { 
+      Serial.print("r");         //confirm cmd type 
+      Serial.print(cmd);
+      Serial.print(fullStatus[offset+x]);
+    }
   }
 
 }
