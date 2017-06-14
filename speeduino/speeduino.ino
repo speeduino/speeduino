@@ -1368,23 +1368,6 @@ void loop()
         if (injector1StartAngle <= crankAngle && fuelSchedule1.schedulesSet == 0) { injector1StartAngle += CRANK_ANGLE_MAX_INJ; }
         if (injector1StartAngle > crankAngle)
         {
-          /*
-          if (configPage1.injLayout == INJ_SEMISEQUENTIAL)
-          {
-            setFuelSchedule1(openInjector1and4,
-                      ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW1,
-                      closeInjector1and4
-                      );
-          }
-          else
-          {
-            setFuelSchedule1(openInjector1,
-                      ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW1,
-                      closeInjector1
-                      );
-          }*/
           setFuelSchedule1(
                     ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                     (unsigned long)currentStatus.PW1
@@ -1411,24 +1394,6 @@ void loop()
           if (tempStartAngle <= tempCrankAngle && fuelSchedule2.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            /*
-            if (configPage1.injLayout == INJ_SEMISEQUENTIAL)
-            {
-              setFuelSchedule2(openInjector2and3,
-                        ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                        (unsigned long)currentStatus.PW2,
-                        closeInjector2and3
-                        );
-            }
-            else
-            {
-              setFuelSchedule2(openInjector2,
-                        ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                        (unsigned long)currentStatus.PW2,
-                        closeInjector2
-                        );
-            }
-            */
             setFuelSchedule2(
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW2
@@ -1445,12 +1410,6 @@ void loop()
           if (tempStartAngle <= tempCrankAngle && fuelSchedule3.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            /*
-            setFuelSchedule3(openInjector3,
-                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW3,
-                      closeInjector3
-                    );*/
             setFuelSchedule3(
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW3
@@ -1467,13 +1426,6 @@ void loop()
           if (tempStartAngle <= tempCrankAngle && fuelSchedule4.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            /*
-            setFuelSchedule4(openInjector4,
-                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW4,
-                      closeInjector4
-                      );
-                      */
             setFuelSchedule4(
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW4
