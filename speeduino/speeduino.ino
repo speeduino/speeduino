@@ -68,7 +68,7 @@ bool fuelPumpOn = false; //The current status of the fuel pump
 
 void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
-int (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
+uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
 int (*getCrankAngle)(int); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 
 byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
