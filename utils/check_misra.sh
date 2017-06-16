@@ -15,5 +15,10 @@ cat results.txt
 # wc -l results.txt
 
 errors=`wc -l < results.txt | tr -d ' '`
-echo $errors
-exit $errors
+echo $errors + " MISRA violations"
+
+if [ $errors -gt 0 ]; then
+	exit 1
+else
+	exit 0
+fi
