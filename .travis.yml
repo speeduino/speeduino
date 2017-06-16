@@ -36,7 +36,6 @@ cache:
 before_install:
 - sudo apt-get update -qq
 - sudo apt-get build-dep -qq cppcheck
-- git clone --depth=20 https://github.com/noisymime/cppcheck.git noisymime/cppcheck
 - wget https://github.com/danmar/cppcheck/archive/1.79.zip
 - unzip 1.79.zip
 - cd cppcheck-1.79
@@ -47,7 +46,9 @@ install:
     - pip install -U platformio
 
 script:
-    - cd /home/travis/build/noisymime/speeduino
+    - cd /home/travis/build
+    - git clone --depth=20 https://github.com/noisymime/cppcheck.git noisymime/cppcheck
+    - cd noisymime/speeduino
     - platformio run
     - cd ..
     - speeduino/utils/check_misra.sh
