@@ -47,6 +47,7 @@ install:
     - pip install -U platformio
 
 script:
+    - cd /home/travis/build/noisymime/speeduino
     - platformio run
     - cd ..
     - speeduino/utils/check_misra.sh
