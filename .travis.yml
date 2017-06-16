@@ -40,8 +40,8 @@ before_install:
 - wget https://github.com/danmar/cppcheck/archive/1.79.zip
 - unzip 1.79.zip
 - cd cppcheck-1.79
-- make
-- sudo make install
+- make SRCDIR=build CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
+- sudo make install CFGDIR=/usr/share/cppcheck/
 
 install:
     - pip install -U platformio
