@@ -9,7 +9,9 @@ done
 mv speeduino/speeduino/*.dump ./
 
 python cppcheck/addons/misra.py *.dump 2> results.txt
+rm *.dump
 
+cat results.txt
 # wc -l results.txt
 
 errors=`wc -l < results.txt | tr -d ' '`
