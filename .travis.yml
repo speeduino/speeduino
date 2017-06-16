@@ -33,11 +33,18 @@ cache:
     directories:
         - "~/.platformio"
 
+before_install:
+- sudo apt-get update -qq
+- sudo apt-get install -qq cppcheck
+- git clone --depth=20 https://github.com/noisymime/cppcheck.git noisymime/cppcheck
+
 install:
     - pip install -U platformio
 
 script:
     - platformio run
+    - cd ~/noisymime
+    - speeduino/utils/check_misra.sh
 
 
 #
