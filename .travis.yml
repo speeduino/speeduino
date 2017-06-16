@@ -43,7 +43,7 @@ install:
 
 script:
     - platformio run
-    - cd ~/noisymime
+    - cd ..
     - speeduino/utils/check_misra.sh
 
 
