@@ -1,6 +1,3 @@
-if ls *.dump 1> /dev/null 2>&1; then
-	rm *.dump
-fi
 if [ -f ./results.txt ]; then
 	rm results.txt
 fi
