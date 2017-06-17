@@ -38,10 +38,7 @@ cache:
 addons:
   apt:
     sources:
-      - sourceline: 'deb http://us.archive.ubuntu.com/ubuntu/ trusty multiverse'
-      - sourceline: 'deb http://us.archive.ubuntu.com/ubuntu/ trusty-backports multiverse'
-      - sourceline: 'deb http://security.ubuntu.com/ubuntu trusty-security multiverse'
-      - sourceline: 'deb http://us.archive.ubuntu.com/ubuntu/ trusty-updates multiverse'
+      - sourceline: 'deb http://archive.ubuntu.com/ubuntu trusty-backports trusty-updates main restricted multiverse'
     packages:
       - cppcheck
 

@@ -383,7 +383,7 @@ void loadConfig()
     offset = x - EEPROM_CONFIG8_MAP1;
     boostTable.values[7-(offset/8)][offset%8] = EEPROM.read(x); //Read the 8x8 map
     offset = y - EEPROM_CONFIG8_MAP2;
-    vvtTable.values[7-(offset/)][offset%8] = EEPROM.read(y); //Read the 8x8 map
+    vvtTable.values[7-(offset/8)][offset%8] = EEPROM.read(y); //Read the 8x8 map
     y++;
   }
 
