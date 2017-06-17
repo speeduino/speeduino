@@ -38,12 +38,13 @@ cache:
 addons:
   apt:
     sources:
-      - sourceline: 'deb http://archive.ubuntu.com/ubuntu trusty-backports trusty-updates main restricted multiverse'
+      - sourceline: 'deb http://archive.ubuntu.com/ubuntu trusty-backports main restricted universe multiverse'
     packages:
       - cppcheck
 
 before_install:
 - sudo apt-get update -qq
+- sudo apt-get install cppcheck
 #- sudo apt-get build-dep -qq cppcheck
 #- wget https://github.com/danmar/cppcheck/archive/1.79.zip
 #- unzip 1.79.zip
