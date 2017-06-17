@@ -45,6 +45,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "storage.h"
 #include "scheduledIO.h"
 #include <EEPROM.h>
+#if defined (CORE_TEENSY)
+#include <FlexCAN.h>
+#endif
 
 struct config1 configPage1;
 struct config2 configPage2;
@@ -65,7 +68,7 @@ bool fuelPumpOn = false; //The current status of the fuel pump
 
 void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
-int (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
+uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
 int (*getCrankAngle)(int); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 
 byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
@@ -150,10 +153,28 @@ void setup()
   table3D_setSize(&trim4Table, 6);
 
   loadConfig();
+  doUpdates(); //Check if any data items need updating (Occurs ith firmware updates)
 
   Serial.begin(115200);
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-  if (configPage1.canEnable) { Serial3.begin(115200); }
+  if (configPage10.enable_canbus == 1) { Serial3.begin(115200); }
+#elif defined(CORE_STM32)
+  if (configPage10.enable_canbus == 1) { Serial2.begin(115200); }
+  else if (configPage10.enable_canbus == 2)
+  {
+    //enable local can interface
+  }
+#elif defined(CORE_TEENSY)
+  if (configPage10.enable_canbus == 1) { Serial2.begin(115200); }
+  else if (configPage10.enable_canbus == 2)
+  {
+    //Teensy onboard CAN not used currently
+    //enable local can interface
+    //setup can interface to 250k
+    //FlexCAN CANbus0(2500000, 0);
+    //static CAN_message_t txmsg,rxmsg;
+    //CANbus0.begin();
+  }
 #endif
 
   //Repoint the 2D table structs to the config pages that were just loaded
@@ -279,6 +300,8 @@ void setup()
         triggerInterrupt = 3; break;
       case 21:
         triggerInterrupt = 2; break;
+      default:
+        triggerInterrupt = 0; break; //This should NEVER happen
     }
   #else
     triggerInterrupt = pinTrigger;
@@ -299,6 +322,8 @@ void setup()
         triggerInterrupt2 = 3; break;
       case 21:
         triggerInterrupt2 = 2; break;
+      default:
+        triggerInterrupt2 = 0; break; //This should NEVER happen
     }
   #else
     triggerInterrupt2 = pinTrigger2;
@@ -514,6 +539,7 @@ void setup()
 
       channel1InjEnabled = true;
       break;
+
     case 2:
       channel1IgnDegrees = 0;
 
@@ -534,6 +560,7 @@ void setup()
       channel1InjEnabled = true;
       channel2InjEnabled = true;
       break;
+
     case 3:
       channel1IgnDegrees = 0;
 
@@ -660,9 +687,9 @@ void setup()
       channel5InjEnabled = true;
       break;
     case 6:
-      channel1IgnDegrees = 0;
-      channel2IgnDegrees = 120;
-      channel3IgnDegrees = 240;
+      channel1IgnDegrees = channel1InjDegrees = 0;
+      channel2IgnDegrees = channel2InjDegrees = 120;
+      channel3IgnDegrees = channel3InjDegrees = 240;
 
       //For alternatiing injection, the squirt occurs at different times for each channel
       /*
@@ -682,10 +709,10 @@ void setup()
       channel3InjEnabled = true;
       break;
     case 8:
-      channel1IgnDegrees = 0;
-      channel2IgnDegrees = 90;
-      channel3IgnDegrees = 180;
-      channel4IgnDegrees = 270;
+      channel1IgnDegrees = channel1InjDegrees = 0;
+      channel2IgnDegrees = channel2InjDegrees = 90;
+      channel3IgnDegrees = channel3InjDegrees = 180;
+      channel4IgnDegrees = channel4InjDegrees = 270;
 
       //For alternatiing injection, the squirt occurs at different times for each channel
       /*
@@ -805,8 +832,10 @@ void setup()
   digitalWrite(pinFuelPump, HIGH);
   fuelPumpOn = true;
   //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
-  setFuelSchedule1(openInjector1and4, 100, (unsigned long)(configPage1.primePulse * 100), closeInjector1and4);
-  setFuelSchedule2(openInjector2and3, 100, (unsigned long)(configPage1.primePulse * 100), closeInjector2and3);
+  setFuelSchedule1(100, (unsigned long)(configPage1.primePulse * 100));
+  setFuelSchedule2(100, (unsigned long)(configPage1.primePulse * 100));
+  setFuelSchedule3(100, (unsigned long)(configPage1.primePulse * 100));
+  setFuelSchedule4(100, (unsigned long)(configPage1.primePulse * 100));
 }
 
 void loop()
@@ -822,9 +851,10 @@ void loop()
           command();
         }
       }
+
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-      //if Can interface is enabled then check for serial3 requests.
-      if (configPage1.canEnable)
+      //if serial3 interface is enabled then check for serial3 requests.
+      if (configPage10.enable_canbus == 1)
           {
             if ( ((mainLoopCount & 31) == 1) or (Serial3.available() > SERIAL_BUFFER_THRESHOLD) )
                 {
@@ -833,6 +863,43 @@ void loop()
                     canCommand();
                     }
                 }
+          }
+
+#elif defined(CORE_STM32)
+      //if can or secondary serial interface is enabled then check for requests.
+      if (configPage10.enable_canbus == 1)  //secondary serial interface enabled
+          {
+            if ( ((mainLoopCount & 31) == 1) or (Serial2.available() > SERIAL_BUFFER_THRESHOLD) )
+                {
+                  if (Serial2.available() > 0)
+                    {
+                    canCommand();
+                    }
+                }
+          }
+      else if (configPage10.enable_canbus == 2) // can module enabled
+          {
+            //check local can module
+          }
+#elif defined(CORE_TEENSY)
+      //if can or secondary serial interface is enabled then check for requests.
+      if (configPage10.enable_canbus == 1)  //secondary serial interface enabled
+          {
+            if ( ((mainLoopCount & 31) == 1) or (Serial2.available() > SERIAL_BUFFER_THRESHOLD) )
+                {
+                  if (Serial2.available() > 0)
+                    {
+                    canCommand();
+                    }
+                }
+          }
+      else if (configPage10.enable_canbus == 2) // can module enabled
+          {
+            //check local can module
+            // if ( ((mainLoopCount & 31) == 1) or (CANbus0.available())
+            //    {
+            //      CANbus0.read(rx_msg);
+            //    }
           }
 #endif
 
@@ -865,6 +932,8 @@ void loop()
       if (fpPrimed) { digitalWrite(pinFuelPump, LOW); } //Turn off the fuel pump, but only if the priming is complete
       fuelPumpOn = false;
       disableIdle(); //Turn off the idle PWM
+      BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
+      BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE
     }
 
     //Uncomment the following for testing
@@ -935,7 +1004,7 @@ void loop()
        readBat();
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
       //if Can interface is enabled then check for serial3 requests.
-      if (configPage1.canEnable)
+      if (configPage10.enable_canbus == 1)  // megas only support can via secondary serial
           {
             if (configPage10.enable_candata_in)
               {
@@ -956,6 +1025,34 @@ void loop()
                   }
               }
           }
+#elif defined(CORE_STM32) || defined(CORE_TEENSY)
+      //if serial3io is enabled then check for serial3 requests.
+            if (configPage10.enable_candata_in)
+              {
+                if (configPage10.caninput_sel[currentStatus.current_caninchannel])  //if current input channel is enabled
+                  {
+                    if (configPage10.enable_canbus == 1)  //can via secondary serial
+                    {
+                      sendCancommand(2,0,0,0,configPage10.caninput_param_group[currentStatus.current_caninchannel]);    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
+                    }
+                    else if (configPage10.enable_canbus == 2) // can via internal can module
+                    {
+                      sendCancommand(3,configPage10.speeduino_tsCanId,0,0,configPage10.caninput_param_group[currentStatus.current_caninchannel]);    //send via localcanbus the command for data from paramgroup[currentStatus.current_caninchannel]
+                    }
+                  }
+                else
+                  {
+                    if (currentStatus.current_caninchannel <= 6)
+                        {
+                          currentStatus.current_caninchannel++;   //step to next input channel if under 9
+                        }
+                    else
+                        {
+                          currentStatus.current_caninchannel = 0;   //reset input channel back to 1
+                        }
+                  }
+              }
+
 #endif
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
@@ -997,14 +1094,14 @@ void loop()
         //Speed Density
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
         currentStatus.PW1 = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
-        currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.MAP, currentStatus.RPM); //As above, but for ignition advance
+        currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.MAP, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
       }
       else
       {
         //Alpha-N
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
         currentStatus.PW1 = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
-        currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM); //As above, but for ignition advance
+        currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
       }
 
       currentStatus.advance = correctionsIgn(currentStatus.advance);
@@ -1271,22 +1368,10 @@ void loop()
         if (injector1StartAngle <= crankAngle && fuelSchedule1.schedulesSet == 0) { injector1StartAngle += CRANK_ANGLE_MAX_INJ; }
         if (injector1StartAngle > crankAngle)
         {
-          if (configPage1.injLayout == INJ_SEMISEQUENTIAL)
-          {
-            setFuelSchedule1(openInjector1and4,
-                      ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW1,
-                      closeInjector1and4
-                      );
-          }
-          else
-          {
-            setFuelSchedule1(openInjector1,
-                      ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW1,
-                      closeInjector1
-                      );
-          }
+          setFuelSchedule1(
+                    ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                    (unsigned long)currentStatus.PW1
+                    );
         }
 
         /*-----------------------------------------------------------------------------------------
@@ -1309,22 +1394,10 @@ void loop()
           if (tempStartAngle <= tempCrankAngle && fuelSchedule2.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            if (configPage1.injLayout == 1)
-            {
-              setFuelSchedule2(openInjector2and3,
-                        ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                        (unsigned long)currentStatus.PW2,
-                        closeInjector2and3
-                        );
-            }
-            else
-            {
-              setFuelSchedule2(openInjector2,
-                        ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                        (unsigned long)currentStatus.PW2,
-                        closeInjector2
-                        );
-            }
+            setFuelSchedule2(
+                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      (unsigned long)currentStatus.PW2
+                      );
           }
         }
 
@@ -1337,10 +1410,9 @@ void loop()
           if (tempStartAngle <= tempCrankAngle && fuelSchedule3.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule3(openInjector3,
+            setFuelSchedule3(
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW3,
-                      closeInjector3
+                      (unsigned long)currentStatus.PW3
                       );
           }
         }
@@ -1354,10 +1426,9 @@ void loop()
           if (tempStartAngle <= tempCrankAngle && fuelSchedule4.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule4(openInjector4,
+            setFuelSchedule4(
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW4,
-                      closeInjector4
+                      (unsigned long)currentStatus.PW4
                       );
           }
         }
@@ -1372,10 +1443,15 @@ void loop()
           if ( tempStartAngle > tempCrankAngle )
           {
             //Note the hacky use of fuel schedule 3 below
+            /*
             setFuelSchedule3(openInjector3and5,
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW1,
                       closeInjector3and5
+                    );*/
+            setFuelSchedule3(
+                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      (unsigned long)currentStatus.PW1
                       );
           }
         }
