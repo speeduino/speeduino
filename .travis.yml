@@ -61,7 +61,7 @@ script:
     - cd noisymime/speeduino
     - platformio run
     - cd ..
-    - speeduino/misra/check_misra.sh
+#    - speeduino/misra/check_misra.sh
 
 
 #
