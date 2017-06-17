@@ -28,19 +28,31 @@ language: python
 python:
     - "2.7"
 
+dist: trusty
 sudo: required
+
 cache:
     directories:
         - "~/.platformio"
 
+addons:
+  apt:
+    sources:
+      - sourceline: 'deb http://us.archive.ubuntu.com/ubuntu/ trusty multiverse'
+      - sourceline: 'deb http://us.archive.ubuntu.com/ubuntu/ trusty-backports multiverse'
+      - sourceline: 'deb http://security.ubuntu.com/ubuntu trusty-security multiverse'
+      - sourceline: 'deb http://us.archive.ubuntu.com/ubuntu/ trusty-updates multiverse'
+    packages:
+      - cppcheck
+
 before_install:
 - sudo apt-get update -qq
-- sudo apt-get build-dep -qq cppcheck
-- wget https://github.com/danmar/cppcheck/archive/1.79.zip
-- unzip 1.79.zip
-- cd cppcheck-1.79
-- make SRCDIR=build CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
-- sudo make install CFGDIR=/usr/share/cppcheck/
+#- sudo apt-get build-dep -qq cppcheck
+#- wget https://github.com/danmar/cppcheck/archive/1.79.zip
+#- unzip 1.79.zip
+#- cd cppcheck-1.79
+#- make SRCDIR=build CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
+#- sudo make install CFGDIR=/usr/share/cppcheck/
 
 install:
     - pip install -U platformio
@@ -51,7 +63,7 @@ script:
     - cd noisymime/speeduino
     - platformio run
     - cd ..
-#    - speeduino/misra/check_misra.sh
+    - speeduino/misra/check_misra.sh
 
 
 #
