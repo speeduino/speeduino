@@ -5,7 +5,12 @@
 //Replace the standard arduino map() function to use the div function instead
 int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 {
-  return ldiv( ((x - in_min) * (out_max - out_min)) , (in_max - in_min) ).quot + out_min;
+  unsigned long a = (x - (unsigned long)in_min);
+  int b = (out_max - out_min);
+  int c = (in_max - in_min);
+  int d = (ldiv( (a * (long)b) , (long)c ).quot);
+  return d + out_min;
+  //return ldiv( ((x - in_min) * (out_max - out_min)) , (in_max - in_min) ).quot + out_min;
   //return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
@@ -13,7 +18,7 @@ int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 //This is a common case because it means converting from a standard 10-bit analog input to a byte or 10-bit analog into 0-511 (Eg the temperature readings)
 //int fastMap1023toX(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 //removed ununsed variables, in_min and out_min is aways 0, in_max is aways 1023
-int fastMap1023toX(unsigned long x, int out_max)
+int fastMap1023toX(int x, int out_max)
 {
  return (x * out_max) >> 10;
 }
@@ -40,7 +45,7 @@ unsigned int divu10(unsigned int n)
 int divs10(long n)
 {
   long q, r, p;
-  p = n + (n>>31 & 9);
+  p = n + ( (n>>31) & 9);
   q = (p >> 1) + (p >> 2);
   q = q + (q >> 4);
   q = q + (q >> 8);
@@ -94,7 +99,6 @@ inline long powint(int factor, unsigned int exponent)
 {
    long product = 1;
    unsigned int counter = exponent;
-   while ( (counter--) > 0)
-      product *= factor;
+   while ( (counter--) > 0) { product *= factor; }
    return product;
 }
