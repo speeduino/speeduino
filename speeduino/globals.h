@@ -161,8 +161,8 @@ volatile byte triggerSec_pin_mask;
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
-  volatile boolean hasSync;
-  unsigned int RPM;
+  volatile bool hasSync;
+  uint16_t RPM;
   long longRPM;
   int mapADC;
   long MAP; //Has to be a long for PID calcs (Boost control)

@@ -25,7 +25,7 @@ struct StepperIdle
   volatile unsigned long stepStartTime; //The time the curren
 };
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+#if defined(CORE_AVR)
   #define IDLE_COUNTER TCNT4
   #define IDLE_COMPARE OCR4C
 
@@ -46,7 +46,7 @@ struct StepperIdle
   #define IDLE_COMPARE 0
 
   #define IDLE_TIMER_ENABLE()
-  #define IDLE_TIMER_DISABLE() 
+  #define IDLE_TIMER_DISABLE()
 
 #endif
 
