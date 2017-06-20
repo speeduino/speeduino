@@ -1004,15 +1004,15 @@ void loop()
           {
             if (configPage10.enable_candata_in)
               {
-                if (configPage10.caninput_sel[currentStatus.current_caninchannel])  //if current input channel is enabled
+                if (BIT_CHECK(configPage10.caninput_sel,currentStatus.current_caninchannel))  //if current input channel bit is enabled
                   {
-                    sendCancommand(2,0,0,0,configPage10.caninput_param_group[currentStatus.current_caninchannel]);    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
+                    sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage10.caninput_param_group[currentStatus.current_caninchannel]&2047)+256));    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
                   }
                 else
                   {
-                    if (currentStatus.current_caninchannel <= 6)
+                    if (currentStatus.current_caninchannel < 15)
                         {
-                          currentStatus.current_caninchannel++;   //step to next input channel if under 9
+                          currentStatus.current_caninchannel++;   //step to next input channel if under 15
                         }
                     else
                         {
@@ -1025,26 +1025,26 @@ void loop()
       //if serial3io is enabled then check for serial3 requests.
             if (configPage10.enable_candata_in)
               {
-                if (configPage10.caninput_sel[currentStatus.current_caninchannel])  //if current input channel is enabled
+                if (BIT_CHECK(configPage10.caninput_sel,currentStatus.current_caninchannel))  //if current input channel is enabled
                   {
                     if (configPage10.enable_canbus == 1)  //can via secondary serial
                     {
-                      sendCancommand(2,0,0,0,configPage10.caninput_param_group[currentStatus.current_caninchannel]);    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
+                      sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage10.caninput_param_group[currentStatus.current_caninchannel]&2047)+256));    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
                     }
                     else if (configPage10.enable_canbus == 2) // can via internal can module
                     {
-                      sendCancommand(3,configPage10.speeduino_tsCanId,0,0,configPage10.caninput_param_group[currentStatus.current_caninchannel]);    //send via localcanbus the command for data from paramgroup[currentStatus.current_caninchannel]
+                      sendCancommand(3,configPage10.speeduino_tsCanId,currentStatus.current_caninchannel,0,configPage10.caninput_param_group[currentStatus.current_caninchannel]);    //send via localcanbus the command for data from paramgroup[currentStatus.current_caninchannel]
                     }
                   }
                 else
                   {
-                    if (currentStatus.current_caninchannel <= 6)
+                    if (currentStatus.current_caninchannel < 15)
                         {
-                          currentStatus.current_caninchannel++;   //step to next input channel if under 9
+                          currentStatus.current_caninchannel++;   //step to next input channel if under 15
                         }
                     else
                         {
-                          currentStatus.current_caninchannel = 0;   //reset input channel back to 1
+                          currentStatus.current_caninchannel = 0;   //reset input channel back to 0
                         }
                   }
               }

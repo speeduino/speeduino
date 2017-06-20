@@ -336,7 +336,23 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[54] = highByte(currentStatus.canin[6]);
   fullStatus[55] = lowByte(currentStatus.canin[7]);
   fullStatus[56] = highByte(currentStatus.canin[7]);
-
+  fullStatus[57] = lowByte(currentStatus.canin[8]);
+  fullStatus[58] = highByte(currentStatus.canin[8]);
+  fullStatus[59] = lowByte(currentStatus.canin[9]);
+  fullStatus[60] = highByte(currentStatus.canin[9]);
+  fullStatus[61] = lowByte(currentStatus.canin[10]);
+  fullStatus[62] = highByte(currentStatus.canin[10]);
+  fullStatus[63] = lowByte(currentStatus.canin[11]);
+  fullStatus[64] = highByte(currentStatus.canin[11]);
+  fullStatus[65] = lowByte(currentStatus.canin[12]);
+  fullStatus[66] = highByte(currentStatus.canin[12]);
+  fullStatus[67] = lowByte(currentStatus.canin[13]);
+  fullStatus[68] = highByte(currentStatus.canin[13]);
+  fullStatus[69] = lowByte(currentStatus.canin[14]);
+  fullStatus[70] = highByte(currentStatus.canin[14]);
+  fullStatus[71] = lowByte(currentStatus.canin[15]);
+  fullStatus[72] = highByte(currentStatus.canin[15]);
+  
   for(byte x=0; x<packetLength; x++)
   {
     if (portNum == 0) { Serial.write(fullStatus[offset+x]); }

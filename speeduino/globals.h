@@ -224,7 +224,7 @@ struct statuses {
   bool testActive;
   byte boostDuty;
   byte idleLoad; //Either the current steps or current duty cycle for the idle control.
-  int canin[9];   //16bit raw value of selected canin data for channel 1-8
+  uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
   uint8_t current_caninchannel = 0; //start off at channel 0
 
   //Helpful bitwise operations:
@@ -500,45 +500,18 @@ struct config4 {
 struct config10 {
   byte enable_canbus:2;
   byte enable_candata_in:1;
-  byte caninput_sel[8];
-  uint16_t caninput_param_group[8];
-  uint8_t caninput_param_start_byte[8];
-  byte caninput_param_num_bytes[8];
-  byte unused10_41;
-  byte unused10_42;
-  byte unused10_43;
-  byte unused10_44;
-  byte unused10_45;
-  byte unused10_46;
-  byte unused10_47;
-  byte unused10_48;
-  byte unused10_49;
+  uint16_t caninput_sel;                    //bit status on/off if input is enabled
+  uint16_t caninput_param_group[16];        //u16 [15] array holding can address of input
+  uint8_t caninput_param_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)
+  uint16_t caninput_param_num_bytes;     //u16 bit status of the number of bytes length 1 or 2
+  byte unused10_53;
+  byte unused10_54;
   byte enable_candata_out : 1;
   byte canoutput_sel[8];
   uint16_t canoutput_param_group[8];
   uint8_t canoutput_param_start_byte[8];
   byte canoutput_param_num_bytes[8];
-  byte unused10_76;
-  byte unused10_77;
-  byte unused10_78;
-  byte unused10_79;
-  byte unused10_80;
-  byte unused10_81;
-  byte unused10_82;
-  byte unused10_83;
-  byte unused10_84;
-  byte unused10_85;
-  byte unused10_86;
-  byte unused10_87;
-  byte unused10_88;
-  byte unused10_89;
-  byte unused10_90;
-  byte unused10_91;
-  byte unused10_92;
-  byte unused10_93;
-  byte unused10_94;
-  byte unused10_95;
-  byte unused10_96;
+  
   byte unused10_97;
   byte unused10_98;
   byte unused10_99;
