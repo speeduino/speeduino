@@ -18,10 +18,7 @@ int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 //This is a common case because it means converting from a standard 10-bit analog input to a byte or 10-bit analog into 0-511 (Eg the temperature readings)
 //int fastMap1023toX(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 //removed ununsed variables, in_min and out_min is aways 0, in_max is aways 1023
-int fastMap1023toX(int x, int out_max)
-{
- return (x * out_max) >> 10;
-}
+#define fastMap1023toX(x, out_max) ( ((unsigned long)x * out_max) >> 10)
 
 /*
 The following are all fast versions of specific divisions
