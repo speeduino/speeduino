@@ -35,6 +35,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define FUEL2_COUNTER TCNT3
   #define FUEL3_COUNTER TCNT3
   #define FUEL4_COUNTER TCNT4
+  #define FUEL5_COUNTER TCNT3
 
   #define IGN1_COUNTER  TCNT5
   #define IGN2_COUNTER  TCNT5
@@ -46,6 +47,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define FUEL2_COMPARE OCR3B
   #define FUEL3_COMPARE OCR3C
   #define FUEL4_COMPARE OCR4B
+  #define FUEL5_COMPARE OCR3A //Shared with FUEL1
 
   #define IGN1_COMPARE  OCR5A
   #define IGN2_COMPARE  OCR5B
@@ -255,8 +257,12 @@ struct Schedule {
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
   volatile unsigned long startTime; //The system time (in uS) that the schedule started
-  unsigned int startCompare; //The counter value of the timer when this will start
-  unsigned int endCompare;
+  volatile unsigned int startCompare; //The counter value of the timer when this will start
+  volatile unsigned int endCompare;
+
+  unsigned int nextStartCompare;
+  unsigned int nextEndCompare;
+  volatile bool hasNextSchedule = false;
 };
 
 volatile Schedule *timer3Aqueue[4];

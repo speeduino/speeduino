@@ -158,6 +158,16 @@ volatile byte triggerPri_pin_mask;
 volatile byte *triggerSec_pin_port;
 volatile byte triggerSec_pin_mask;
 
+//These need to be here as they are used in both speeduino.ino and scheduler.ino
+bool channel1InjEnabled = true;
+bool channel2InjEnabled = false;
+bool channel3InjEnabled = false;
+bool channel4InjEnabled = false;
+bool channel5InjEnabled = false;
+
+//This is used across multiple files
+unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {

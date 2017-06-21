@@ -29,8 +29,8 @@ inline void endCoil5Charge();
 
 #define openInjector1and4() openInjector1(); openInjector4()
 #define closeInjector1and4() closeInjector1(); closeInjector4()
-#define openInjector2and3() openInjector2(); openInjector2()
-#define closeInjector2and3() closeInjector2(); closeInjector2()
+#define openInjector2and3() openInjector2(); openInjector3()
+#define closeInjector2and3() closeInjector2(); closeInjector3()
 
 //5 cylinder support doubles up injector 3 as being closese to inj 5 (Crank angle)
 #define openInjector3and5() openInjector3(); openInjector5()
