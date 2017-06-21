@@ -162,7 +162,9 @@ void initialiseSchedulers()
 
 #elif defined(CORE_STM32)
   //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
-  (TIMER1->regs).bas->PSC = (TIMER2->regs).bas->PSC = (TIMER3->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
+  (TIMER1->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
+  (TIMER2->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
+  (TIMER3->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
   // Alternative 2us resolution:
   //TimerX.setPrescaleFactor(CYCLES_PER_MICROSECOND * 2U);
 
@@ -405,11 +407,13 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule2.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule2.duration = duration;
 
-    //As the timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency))
-    if (timeout > MAX_TIMER_PERIOD) { timeout = MAX_TIMER_PERIOD - 1; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
     noInterrupts();
-    ignitionSchedule2.startCompare = IGN2_COUNTER + uS_TO_TIMER_COMPARE(timeout); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    ignitionSchedule2.startCompare = IGN2_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     ignitionSchedule2.endCompare = ignitionSchedule2.startCompare + uS_TO_TIMER_COMPARE(duration);
     IGN2_COMPARE = ignitionSchedule2.startCompare;
     ignitionSchedule2.Status = PENDING; //Turn this schedule on
@@ -427,11 +431,13 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule3.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule3.duration = duration;
 
-    //The timer is ticking every 4uS (Time per Tick = (Prescale)*(1/Frequency))
-    if (timeout > MAX_TIMER_PERIOD) { timeout = MAX_TIMER_PERIOD - 1; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
     noInterrupts();
-    ignitionSchedule3.startCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE(timeout); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    ignitionSchedule3.startCompare = IGN3_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     ignitionSchedule3.endCompare = ignitionSchedule3.startCompare + uS_TO_TIMER_COMPARE(duration);
     IGN3_COMPARE = ignitionSchedule3.startCompare;
     ignitionSchedule3.Status = PENDING; //Turn this schedule on
@@ -449,13 +455,13 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule4.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule4.duration = duration;
 
-    //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
-    //The timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency))
-    //Note this is different to the other ignition timers
-    if (timeout > MAX_TIMER_PERIOD) { timeout = MAX_TIMER_PERIOD - 1; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
 
     noInterrupts();
-    ignitionSchedule4.startCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    ignitionSchedule4.startCompare = IGN4_COUNTER + timeout_timer_compare;
     ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     IGN4_COMPARE = ignitionSchedule4.startCompare;
     ignitionSchedule4.Status = PENDING; //Turn this schedule on
@@ -473,13 +479,13 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule5.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule5.duration = duration;
 
-    //We need to calculate the value to reset the timer to (preload) in order to achieve the desired overflow time
-    //The timer is ticking every 16uS (Time per Tick = (Prescale)*(1/Frequency))
-    //Note this is different to the other ignition timers
-    if (timeout > MAX_TIMER_PERIOD) { timeout = MAX_TIMER_PERIOD - 1; } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
 
     noInterrupts();
-    ignitionSchedule5.startCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    ignitionSchedule5.startCompare = IGN5_COUNTER + timeout_timer_compare;
     ignitionSchedule5.endCompare = ignitionSchedule5.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     IGN5_COMPARE = ignitionSchedule5.startCompare;
     ignitionSchedule5.Status = PENDING; //Turn this schedule on
@@ -518,7 +524,7 @@ static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a f
        //FUEL1_COMPARE = fuelSchedule1.endCompare;
 
        //If there is a next schedule queued up, activate it
-       if(fuelSchedule1.hasNextSchedule)
+       if(fuelSchedule1.hasNextSchedule == true)
        {
          FUEL1_COMPARE = fuelSchedule1.nextStartCompare;
          fuelSchedule1.endCompare = fuelSchedule1.nextEndCompare;
@@ -554,7 +560,7 @@ static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a f
        fuelSchedule2.schedulesSet = 0;
 
        //If there is a next schedule queued up, activate it
-       if(fuelSchedule2.hasNextSchedule)
+       if(fuelSchedule2.hasNextSchedule == true)
        {
          FUEL2_COMPARE = fuelSchedule2.nextStartCompare;
          fuelSchedule2.endCompare = fuelSchedule2.nextEndCompare;
@@ -591,7 +597,7 @@ static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a f
        fuelSchedule3.schedulesSet = 0;
 
        //If there is a next schedule queued up, activate it
-       if(fuelSchedule3.hasNextSchedule)
+       if(fuelSchedule3.hasNextSchedule == true)
        {
          FUEL3_COMPARE = fuelSchedule3.nextStartCompare;
          fuelSchedule3.endCompare = fuelSchedule3.nextEndCompare;
@@ -624,7 +630,7 @@ static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a f
        fuelSchedule4.schedulesSet = 0;
 
        //If there is a next schedule queued up, activate it
-       if(fuelSchedule4.hasNextSchedule)
+       if(fuelSchedule4.hasNextSchedule == true)
        {
          FUEL4_COMPARE = fuelSchedule4.nextStartCompare;
          fuelSchedule4.endCompare = fuelSchedule4.nextEndCompare;

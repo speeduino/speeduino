@@ -173,6 +173,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define FUEL2_COUNTER (TIMER2->regs).gen->CNT
   #define FUEL3_COUNTER (TIMER2->regs).gen->CNT
   #define FUEL4_COUNTER (TIMER2->regs).gen->CNT
+  #define FUEL5_COUNTER (TIMER1->regs).gen->CNT
 
   #define IGN1_COUNTER  (TIMER3->regs).gen->CNT
   #define IGN2_COUNTER  (TIMER3->regs).gen->CNT
@@ -351,8 +352,11 @@ static inline unsigned int popQueue(volatile Schedule *queue[])
   queue[2] = queue[3];
   queue[3] = &nullSchedule;
 
-  if( queue[0]->Status == PENDING ) { return queue[0]->startCompare; }
-  else { return queue[0]->endCompare; }
+  unsigned int returnCompare;
+  if( queue[0]->Status == PENDING ) { returnCompare = queue[0]->startCompare; }
+  else { returnCompare = queue[0]->endCompare; }
+
+  return returnCompare;
 }
 
 
