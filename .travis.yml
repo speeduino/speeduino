@@ -59,12 +59,12 @@ script:
     - cd /home/travis/build
     - git clone --depth=20 https://github.com/noisymime/cppcheck.git noisymime/cppcheck
     - cd noisymime/speeduino
-    - platformio run
+    - platformio run -e megaatmega2560 -e teensy35 -e genericSTM32F103RB
     - cd ..
 
 notifications:
     slack: speeduino:Y8Bhhviu4r7HFF3abMYDnH3p
-    
+
 #    - speeduino/misra/check_misra.sh
 
 
