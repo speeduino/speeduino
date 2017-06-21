@@ -61,6 +61,10 @@ script:
     - cd noisymime/speeduino
     - platformio run
     - cd ..
+
+notifications:
+    slack: speeduino:Y8Bhhviu4r7HFF3abMYDnH3p
+    
 #    - speeduino/misra/check_misra.sh
 
 
