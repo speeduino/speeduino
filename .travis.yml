@@ -59,7 +59,7 @@ script:
     - cd /home/travis/build
     - git clone --depth=20 https://github.com/noisymime/cppcheck.git noisymime/cppcheck
     - cd noisymime/speeduino
-    - platformio run -e megaatmega2560 -e teensy35 -e genericSTM32F103RB
+    - platformio run -e megaatmega2560 -e teensy35
     - cd ..
 
 notifications:
