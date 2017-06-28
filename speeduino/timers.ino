@@ -32,7 +32,8 @@ void initialiseTimers()
    TCCR2B &= ~(1<<CS21);             // Clear bit
 
    //Enable the watchdog timer for 2 second resets (Good reference: https://tushev.org/articles/arduino/5/arduino-and-watchdog-timer)
-   //wdt_enable(WDTO_2S); //Boooooooooo WDT is currently broken on Mega 2560 bootloaders :(
+   //Boooooooooo WDT is currently broken on Mega 2560 bootloaders :(
+   //wdt_enable(WDTO_2S);
 
 #elif defined (CORE_TEENSY)
    //Uses the PIT timer on Teensy.
@@ -70,11 +71,11 @@ void oneMSInterval() //Most ARM chips can simply call a function
   targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
 
-  if(ignitionSchedule1.Status == RUNNING) { if(ignitionSchedule1.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil1Charge(); } }
-  if(ignitionSchedule2.Status == RUNNING) { if(ignitionSchedule2.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil2Charge(); } }
-  if(ignitionSchedule3.Status == RUNNING) { if(ignitionSchedule3.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil3Charge(); } }
-  if(ignitionSchedule4.Status == RUNNING) { if(ignitionSchedule4.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil4Charge(); } }
-  if(ignitionSchedule5.Status == RUNNING) { if(ignitionSchedule5.startTime < targetOverdwellTime && configPage2.useDwellLim) { endCoil5Charge(); } }
+  if(ignitionSchedule1.Status == RUNNING) { if( (ignitionSchedule1.startTime < targetOverdwellTime) && (configPage2.useDwellLim) ) { endCoil1Charge(); } }
+  if(ignitionSchedule2.Status == RUNNING) { if( (ignitionSchedule2.startTime < targetOverdwellTime) && (configPage2.useDwellLim) ) { endCoil2Charge(); } }
+  if(ignitionSchedule3.Status == RUNNING) { if( (ignitionSchedule3.startTime < targetOverdwellTime) && (configPage2.useDwellLim) ) { endCoil3Charge(); } }
+  if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage2.useDwellLim) ) { endCoil4Charge(); } }
+  if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage2.useDwellLim) ) { endCoil5Charge(); } }
 
   //Loop executed every 100ms loop
   //Anything inside this if statement will run every 100ms.
@@ -92,7 +93,8 @@ void oneMSInterval() //Most ARM chips can simply call a function
   {
     loop250ms = 0; //Reset Counter.
     #if defined(CORE_AVR)
-      //wdt_reset(); //Reset watchdog timer
+      //Reset watchdog timer (Not active currently)
+      //wdt_reset();
     #endif
   }
 
@@ -137,7 +139,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     }
     //**************************************************************************************************************************************************
     //Set the flex reading (if enabled). The flexCounter is updated with every pulse from the sensor. If cleared once per second, we get a frequency reading
-    if(configPage1.flexEnabled)
+    if(configPage1.flexEnabled == true)
     {
       if(flexCounter < 50)
       {
