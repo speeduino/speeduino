@@ -1917,14 +1917,12 @@ void triggerSec_Daihatsu() { return; } //Not required (Should never be called in
 
 uint16_t getRPM_Daihatsu()
 {
-  uint16_t tempRPM;
-  if( currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100) && false)
+  uint16_t tempRPM = 0;
+  if( currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100) && false) //Disable special cranking processing for now
   {
     //Cn't use standard cranking RPM functin due to extra tooth
-    uint16_t tempRPM = 0;
     if( currentStatus.hasSync == true )
     {
-      byte multiplier = 1;
       if(toothCurrentCount == 2) { tempRPM = currentStatus.RPM; }
       else if (toothCurrentCount == 3) { tempRPM = currentStatus.RPM; }
       else
