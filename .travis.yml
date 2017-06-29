@@ -35,16 +35,16 @@ cache:
     directories:
         - "~/.platformio"
 
-addons:
-  apt:
-    sources:
-      - sourceline: 'deb http://ports.ubuntu.com/ubuntu-ports trusty-backports main restricted universe multiverse'
-    packages:
-      - cppcheck/trusty-backports
+#addons:
+#  apt:
+#    sources:
+#      - sourceline: 'deb http://ports.ubuntu.com/ubuntu-ports trusty-backports main restricted universe multiverse'
+#    packages:
+#      - cppcheck/trusty-backports
 
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -t trusty-backports cppcheck
+#  - sudo apt-get install -t trusty-backports cppcheck
   - sudo apt-get build-dep -qq cppcheck
   - wget https://github.com/danmar/cppcheck/archive/1.79.zip
   - unzip 1.79.zip
