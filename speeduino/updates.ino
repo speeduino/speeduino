@@ -25,7 +25,7 @@ void doUpdates()
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 0 || EEPROM.read(EEPROM_DATA_VERSION) == 255)
+  if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
   {
     configPage10.true_address = 0x200;
     EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION);
