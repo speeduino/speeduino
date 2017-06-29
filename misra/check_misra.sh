@@ -7,6 +7,7 @@ for i in speeduino/speeduino/*.ino; do
   cppcheck --dump --suppress=syntaxError:speeduino/speeduino/src/PID_v1/PID_v1.h --include=${i%.*}.h --include=speeduino/speeduino/globals.h $i > /dev/null
 done
 mv speeduino/speeduino/*.dump ./
+rm ./utils.*.dump
 
 python cppcheck/addons/misra.py *.dump 2> results.txt
 rm *.dump
