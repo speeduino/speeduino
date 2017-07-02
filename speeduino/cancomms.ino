@@ -26,9 +26,9 @@ void canCommand()
       if (CANSerial.available() >= 10)
       {
         cancmdfail = CANSerial.read();
-        destcaninchannel = CANSerial.read(); 
+        destcaninchannel = CANSerial.read();
         if (cancmdfail != 0)
-           {                                 // read all 8 bytes of data.      
+           {                                 // read all 8 bytes of data.
             for (byte Gx = 0; Gx < 8; Gx++) // first two are the can address the data is from. next two are the can address the data is for.then next 1 or two bytes of data
               {
                 Gdata[Gx] = CANSerial.read();
@@ -40,16 +40,14 @@ void canCommand()
                    {
                     Ghigh = Gdata[((configPage10.caninput_param_start_byte[destcaninchannel]&7)+1)];
                    }
-            else{Ghigh = 0;}       
+            else{Ghigh = 0;}
                }
           else
                {
                  Ghigh = 0;
                }
-            //currentStatus.canin[1] = (configPage10.caninput_param_num_bytes[currentStatus.current_caninchannel]);//Glow;
-           // currentStatus.canin[2] = Ghigh;
-      //    currentStatus.canin[currentStatus.current_caninchannel] = word(Ghigh, Glow);    //combine Ghigh and low to make the word and set the relavent canin value
-          currentStatus.canin[destcaninchannel] = Ghigh<<8 | Glow;
+
+          currentStatus.canin[destcaninchannel] = (Ghigh<<8) | Glow;
         }
 
         else{}  //continue as command request failed and/or data/device was not available
@@ -88,14 +86,14 @@ void canCommand()
          break;
 
     case 'r': //New format for the optimised OutputChannels
-      byte Cmd; 
+      byte Cmd;
       if (CANSerial.available() >= 6)
       {
         CANSerial.read(); //Read the $tsCanId
         Cmd = CANSerial.read();
 
         uint16_t offset, length;
-        if((Cmd == 0x30) || (Cmd >= 0x40 && Cmd <0x50) ) //Send output channels command 0x30 is 48dec, 0x40(64dec)-0x4F(79dec) are external can request
+        if( (Cmd == 0x30) || ( (Cmd >= 0x40) && (Cmd <0x50) ) ) //Send output channels command 0x30 is 48dec, 0x40(64dec)-0x4F(79dec) are external can request
         {
           byte tmp;
           tmp = CANSerial.read();
