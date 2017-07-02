@@ -18,41 +18,43 @@ void canCommand()
   switch (currentcanCommand)
   {
     case 'A': // sends the bytes of realtime values
-        sendValues(0, packetSize,3); //send values to serial3
+        sendValues(0, packetSize,0x30,3); //send values to serial3
         break;
 
     case 'G': // this is the reply command sent by the Can interface
-        //uint8_t Gdata;
-        while (CANSerial.available() == 0) { }
+       byte destcaninchannel;
+      if (CANSerial.available() >= 10)
+      {
         cancmdfail = CANSerial.read();
-
+        destcaninchannel = CANSerial.read(); 
         if (cancmdfail != 0)
-        {
-          for (byte Gx = 0; Gx < 8; Gx++) //read all 8 bytes of data
-            {
-              while (CANSerial.available() == 0) { }
-              Gdata[Gx] = CANSerial.read();
-            }
-
-          Glow = Gdata[(configPage10.caninput_param_start_byte[currentStatus.current_caninchannel])];
-          if (configPage10.caninput_param_num_bytes[currentStatus.current_caninchannel] == 2)
-             {
-              if ((configPage10.caninput_param_start_byte[currentStatus.current_caninchannel]) != 7)   //you cant have a 2 byte value starting at byte 7(8 on the list)
-                 {
-                  Ghigh = Gdata[((configPage10.caninput_param_start_byte[currentStatus.current_caninchannel])+1)];
-                 }
-             }
+           {                                 // read all 8 bytes of data.      
+            for (byte Gx = 0; Gx < 8; Gx++) // first two are the can address the data is from. next two are the can address the data is for.then next 1 or two bytes of data
+              {
+                Gdata[Gx] = CANSerial.read();
+              }
+            Glow = Gdata[(configPage10.caninput_param_start_byte[destcaninchannel]&7)];
+            if ((BIT_CHECK(configPage10.caninput_param_num_bytes,destcaninchannel)))  //if true then num bytes is 2
+               {
+                if ((configPage10.caninput_param_start_byte[destcaninchannel]&7) < 8)   //you cant have a 2 byte value starting at byte 7(8 on the list)
+                   {
+                    Ghigh = Gdata[((configPage10.caninput_param_start_byte[destcaninchannel]&7)+1)];
+                   }
+            else{Ghigh = 0;}       
+               }
           else
-             {
-              Ghigh = 0;
-             }
-
-          currentStatus.canin[currentStatus.current_caninchannel] = word(Ghigh, Glow);
+               {
+                 Ghigh = 0;
+               }
+            //currentStatus.canin[1] = (configPage10.caninput_param_num_bytes[currentStatus.current_caninchannel]);//Glow;
+           // currentStatus.canin[2] = Ghigh;
+      //    currentStatus.canin[currentStatus.current_caninchannel] = word(Ghigh, Glow);    //combine Ghigh and low to make the word and set the relavent canin value
+          currentStatus.canin[destcaninchannel] = Ghigh<<8 | Glow;
         }
 
         else{}  //continue as command request failed and/or data/device was not available
 
-        if (currentStatus.current_caninchannel <= 6)     // if channel is 0-7
+        if (currentStatus.current_caninchannel < 15)     // if channel is < 15 then we can do another one
            {
             currentStatus.current_caninchannel++;       //inc to next channel
            }
@@ -60,7 +62,7 @@ void canCommand()
            {
             currentStatus.current_caninchannel = 0;      //reset to start
            }
-
+      }
         break;
 
     case 'L':
@@ -86,23 +88,22 @@ void canCommand()
          break;
 
     case 'r': //New format for the optimised OutputChannels
-      byte cmd;
-
+      byte Cmd; 
       if (CANSerial.available() >= 6)
       {
         CANSerial.read(); //Read the $tsCanId
-        cmd = CANSerial.read();
+        Cmd = CANSerial.read();
 
         uint16_t offset, length;
-        if(cmd == 0x30) //Send output channels command 0x30 is 48dec
+        if((Cmd == 0x30) || (Cmd >= 0x40 && Cmd <0x50) ) //Send output channels command 0x30 is 48dec, 0x40(64dec)-0x4F(79dec) are external can request
         {
           byte tmp;
           tmp = CANSerial.read();
           offset = word(CANSerial.read(), tmp);
           tmp = CANSerial.read();
           length = word(CANSerial.read(), tmp);
-
-          sendValues(offset, length, 3);
+          sendValues(offset, length,Cmd, 3);
+//Serial.print(Cmd);
         }
         else
         {
@@ -152,14 +153,16 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
         CANSerial.write(canaddress);  //11 bit canaddress of device to listen for
         break;
 
-     case 2:
-        CANSerial.print("R");                         //send "R" to request data from the parmagroup whos value is sent next
-        CANSerial.write( lowByte(paramgroup) );       //send lsb first
-        CANSerial.write( lowByte(paramgroup >> 8) );
+     case 2:                                          // requests via serial3
+        CANSerial.print("R");                         //send "R" to request data from the parmagroup can address whos value is sent next
+        CANSerial.write(candata1);                    //the currentStatus.current_caninchannel
+        CANSerial.write(lowByte(paramgroup) );       //send lsb first
+        CANSerial.write(highByte(paramgroup) );
         break;
 
      case 3:
         //send to truecan send routine
+        //canaddress == speeduino canid, candata1 == canin channel dest, paramgroup == can address  to request from
         break;
 
      default:
