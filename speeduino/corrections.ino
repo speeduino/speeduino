@@ -169,7 +169,7 @@ static inline byte correctionAccel()
   {
     int8_t TPS_change = (currentStatus.TPS - currentStatus.TPSlast);
     //Check for deceleration (Deceleration adjustment not yet supported)
-    //Also check for only very small movement (Movement less than or equal to 2 is ignored)
+    //Also check for only very small movement (Movement less than or equal to 2% is ignored). This not only means we can skip the lookup, but helps reduce false triggering around 0-2% throttle openings
     if (TPS_change <= 2)
     {
       accelValue = 100;

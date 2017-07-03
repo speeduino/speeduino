@@ -23,7 +23,8 @@ struct table2D {
   int *axisX16;
 
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
-  int lastXMax, lastXMin;
+  int lastXMax;
+  int lastXMin;
 };
 
 void table2D_setSize(struct table2D targetTable, byte newSize);
