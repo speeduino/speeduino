@@ -164,16 +164,16 @@ void triggerPri_missingTooth()
      //EXPERIMENTAL!
      if(configPage1.perToothIgn == true)
      {
-       uint16_t crankAngle = (toothCurrentCount-1) * triggerToothAngle + configPage2.triggerAngle;
+       uint16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage2.triggerAngle;
        if ( (toothCurrentCount == ignition1EndTooth) && (ignitionSchedule1.Status == RUNNING) )
        {
          IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( (ignition1EndAngle - crankAngle) * timePerDegree );
-         //IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( (ignition1EndAngle - crankAngle)*my_timePerDegree - micros_compensation ); //OCR5A = TCNT5 + (ignitionSchedule1.duration >> 2); //Divide by 4
+         //IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( (ignition1EndAngle - crankAngle)*my_timePerDegree - micros_compensation );
 
        }
-       else if ( toothCurrentCount == ignition2EndTooth && (ignitionSchedule2.Status == RUNNING) ) { IGN2_COMPARE = IGN2_COUNTER + uS_TO_TIMER_COMPARE( (ignition2EndAngle - crankAngle) * timePerDegree ); }
-       else if ( toothCurrentCount == ignition3EndTooth && (ignitionSchedule3.Status == RUNNING) ) { IGN3_COMPARE = IGN3_COUNTER + uS_TO_TIMER_COMPARE( (ignition3EndAngle - crankAngle) * timePerDegree ); }
-       else if ( toothCurrentCount == ignition4EndTooth && (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE( (ignition4EndAngle - crankAngle) * timePerDegree ); }
+       else if ( (toothCurrentCount == ignition2EndTooth) && (ignitionSchedule2.Status == RUNNING) ) { IGN2_COMPARE = IGN2_COUNTER + uS_TO_TIMER_COMPARE( (ignition2EndAngle - crankAngle) * timePerDegree ); }
+       else if ( (toothCurrentCount == ignition3EndTooth) && (ignitionSchedule3.Status == RUNNING) ) { IGN3_COMPARE = IGN3_COUNTER + uS_TO_TIMER_COMPARE( (ignition3EndAngle - crankAngle) * timePerDegree ); }
+       else if ( (toothCurrentCount == ignition4EndTooth) && (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE( (ignition4EndAngle - crankAngle) * timePerDegree ); }
      }
    }
 }
@@ -232,10 +232,10 @@ int getCrankAngle_missingTooth(int timePerDegree)
 
 void triggerSetEndTeeth_missingTooth()
 {
-  ignition1EndTooth = (ignition1EndAngle - configPage2.triggerAngle) / triggerToothAngle - 1;
-  ignition2EndTooth = (ignition2EndAngle - configPage2.triggerAngle) / triggerToothAngle - 1;
-  ignition3EndTooth = (ignition3EndAngle - configPage2.triggerAngle) / triggerToothAngle - 1;
-  ignition4EndTooth = (ignition4EndAngle - configPage2.triggerAngle) / triggerToothAngle - 1;
+  ignition1EndTooth = ( (ignition1EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
+  ignition2EndTooth = ( (ignition2EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
+  ignition3EndTooth = ( (ignition3EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
+  ignition4EndTooth = ( (ignition4EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
 }
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
