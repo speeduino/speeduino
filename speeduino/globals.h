@@ -165,6 +165,11 @@ bool channel3InjEnabled = false;
 bool channel4InjEnabled = false;
 bool channel5InjEnabled = false;
 
+int ignition1EndAngle = 0;
+int ignition2EndAngle = 0;
+int ignition3EndAngle = 0;
+int ignition4EndAngle = 0;
+
 //This is used across multiple files
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 
@@ -307,7 +312,7 @@ struct config1 {
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
   byte injLayout : 2;
-  byte unused2_38g : 1;
+  byte perToothIgn : 1;
   byte unused2_38h : 1;
 
   byte primePulse;
@@ -521,7 +526,7 @@ struct config10 {
   uint16_t canoutput_param_group[8];
   uint8_t canoutput_param_start_byte[8];
   byte canoutput_param_num_bytes[8];
-  
+
   byte unused10_97;
   byte unused10_98;
   byte unused10_99;
