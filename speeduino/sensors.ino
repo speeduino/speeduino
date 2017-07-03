@@ -49,6 +49,7 @@ MAPcount = 0;
 
 void instanteneousMAPReading()
 {
+  unsigned int tempReading;
   //Instantaneous MAP readings
   #if defined(ANALOG_ISR_MAP)
     tempReading = AnChannel[pinMAP-A0];
@@ -69,6 +70,7 @@ void instanteneousMAPReading()
 
 void readMAP()
 {
+  unsigned int tempReading;
   //MAP Sampling system
   switch(configPage1.mapSample)
   {
@@ -176,6 +178,7 @@ void readTPS()
 
 void readCLT()
 {
+  unsigned int tempReading;
   #if defined(ANALOG_ISR)
     tempReading = fastMap1023toX(AnChannel[pinCLT-A0], 511); //Get the current raw CLT value
   #else
@@ -188,6 +191,7 @@ void readCLT()
 
 void readIAT()
 {
+  unsigned int tempReading;
   #if defined(ANALOG_ISR)
     tempReading = fastMap1023toX(AnChannel[pinIAT-A0], 511); //Get the current raw IAT value
   #else
@@ -200,6 +204,7 @@ void readIAT()
 
 void readO2()
 {
+  unsigned int tempReading;
   #if defined(ANALOG_ISR)
     tempReading = fastMap1023toX(AnChannel[pinO2-A0], 511); //Get the current O2 value.
   #else
@@ -218,6 +223,7 @@ void readO2()
 
 void readBat()
 {
+  unsigned int tempReading;
   #if defined(ANALOG_ISR)
     tempReading = fastMap1023toX(AnChannel[pinBat-A0], 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
   #else

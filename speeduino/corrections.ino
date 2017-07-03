@@ -167,15 +167,17 @@ static inline byte correctionAccel()
   }
   else
   {
+    int8_t TPS_change = (currentStatus.TPS - currentStatus.TPSlast);
     //Check for deceleration (Deceleration adjustment not yet supported)
-    if (currentStatus.TPS < currentStatus.TPSlast)
+    //Also check for only very small movement (Movement less than or equal to 2 is ignored)
+    if (TPS_change <= 2)
     {
       accelValue = 100;
     }
     else
     {
       //If TAE isn't currently turned on, need to check whether it needs to be turned on
-      int rateOfChange = ldiv(1000000, (currentStatus.TPS_time - currentStatus.TPSlast_time)).quot * (currentStatus.TPS - currentStatus.TPSlast); //This is the % per second that the TPS has moved
+      int rateOfChange = ldiv(1000000, (currentStatus.TPS_time - currentStatus.TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
       currentStatus.tpsDOT = rateOfChange / 10; //The TAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
 
       if (rateOfChange > configPage1.tpsThresh)
