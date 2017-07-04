@@ -224,13 +224,12 @@ timeout: The number of uS in the future that the startCallback should be trigger
 duration: The number of uS after startCallback is called before endCallback is called
 endCallback: This function is called once the duration time has been reached
 */
-//void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-void setFuelSchedule1(unsigned long timeout, unsigned long duration)
+void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
     if(fuelSchedule1.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
 
-    //fuelSchedule1.StartCallback = startCallback; //Name the start callback function
-    //fuelSchedule1.EndCallback = endCallback; //Name the end callback function
+    fuelSchedule1.StartCallback = startCallback; //Name the start callback function
+    fuelSchedule1.EndCallback = endCallback; //Name the end callback function
     fuelSchedule1.duration = duration;
 
     /*
@@ -250,12 +249,12 @@ void setFuelSchedule1(unsigned long timeout, unsigned long duration)
      interrupts();
      FUEL1_TIMER_ENABLE();
   }
-void setFuelSchedule2(unsigned long timeout, unsigned long duration)
+void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
     if(fuelSchedule2.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
 
-    //fuelSchedule2.StartCallback = startCallback; //Name the start callback function
-    //fuelSchedule2.EndCallback = endCallback; //Name the end callback function
+    fuelSchedule2.StartCallback = startCallback; //Name the start callback function
+    fuelSchedule2.EndCallback = endCallback; //Name the end callback function
     fuelSchedule2.duration = duration;
 
     /*
@@ -273,13 +272,12 @@ void setFuelSchedule2(unsigned long timeout, unsigned long duration)
      interrupts();
      FUEL2_TIMER_ENABLE();
   }
-//void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-void setFuelSchedule3(unsigned long timeout, unsigned long duration)
+void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
   {
     if(fuelSchedule3.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
 
-    //fuelSchedule3.StartCallback = startCallback; //Name the start callback function
-    //fuelSchedule3.EndCallback = endCallback; //Name the end callback function
+    fuelSchedule3.StartCallback = startCallback; //Name the start callback function
+    fuelSchedule3.EndCallback = endCallback; //Name the end callback function
     fuelSchedule3.duration = duration;
 
     /*
@@ -297,13 +295,12 @@ void setFuelSchedule3(unsigned long timeout, unsigned long duration)
     interrupts();
     FUEL3_TIMER_ENABLE();
   }
-//void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)()) //Uses timer 4 compare B
-void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses timer 4 compare B
+void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)()) //Uses timer 4 compare B
   {
     if(fuelSchedule4.Status == RUNNING) { return; } //Check that we're not already part way through a schedule
 
-    //fuelSchedule4.StartCallback = startCallback; //Name the start callback function
-    //fuelSchedule4.EndCallback = endCallback; //Name the end callback function
+    fuelSchedule4.StartCallback = startCallback; //Name the start callback function
+    fuelSchedule4.EndCallback = endCallback; //Name the end callback function
     fuelSchedule4.duration = duration;
 
     /*
@@ -466,17 +463,13 @@ static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a f
     if (timer3Aqueue[0]->Status == OFF) { FUEL1_TIMER_DISABLE(); return; } //Safety check. Turn off this output compare unit and return without performing any action
     if (timer3Aqueue[0]->Status == PENDING) //Check to see if this schedule is turn on
     {
-      //timer3Aqueue[0]->StartCallback();
-      if (configPage1.injLayout == INJ_SEMISEQUENTIAL) { openInjector1and4(); }
-      else { openInjector1(); }
+      timer3Aqueue[0]->StartCallback();
       timer3Aqueue[0]->Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       FUEL1_COMPARE = popQueue(timer3Aqueue);
     }
     else if (timer3Aqueue[0]->Status == RUNNING)
     {
-       //timer3Aqueue[0]->EndCallback();
-       if (configPage1.injLayout == INJ_SEMISEQUENTIAL) { closeInjector1and4(); }
-       else { closeInjector1(); }
+       timer3Aqueue[0]->EndCallback();
        timer3Aqueue[0]->Status = OFF; //Turn off the schedule
        timer3Aqueue[0]->schedulesSet = 0;
        FUEL1_COMPARE = popQueue(timer3Aqueue);
@@ -491,17 +484,13 @@ static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a f
   {
     if (fuelSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
-      //fuelSchedule2.StartCallback();
-      if (configPage1.injLayout == INJ_SEMISEQUENTIAL) { openInjector2and3(); }
-      else { openInjector2(); }
+      fuelSchedule2.StartCallback();
       fuelSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       FUEL2_COMPARE = fuelSchedule2.endCompare;
     }
     else if (fuelSchedule2.Status == RUNNING)
     {
-       //fuelSchedule2.EndCallback();
-       if (configPage1.injLayout == INJ_SEMISEQUENTIAL) { closeInjector2and3(); }
-       else { closeInjector2(); }
+       fuelSchedule2.EndCallback();
        fuelSchedule2.Status = OFF; //Turn off the schedule
        fuelSchedule2.schedulesSet = 0;
        FUEL2_TIMER_DISABLE();
@@ -516,19 +505,13 @@ static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a f
   {
     if (fuelSchedule3.Status == PENDING) //Check to see if this schedule is turn on
     {
-      //fuelSchedule3.StartCallback();
-      //Hack for 5 cylinder
-      if(channel5InjEnabled) { openInjector3and5(); }
-      else { openInjector3(); }
+      fuelSchedule3.StartCallback();
       fuelSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       FUEL3_COMPARE = fuelSchedule3.endCompare;
     }
     else if (fuelSchedule3.Status == RUNNING)
     {
-       //fuelSchedule3.EndCallback();
-       //Hack for 5 cylinder
-       if(channel5InjEnabled) { closeInjector3and5(); }
-       else { closeInjector3and5(); }
+       fuelSchedule3.EndCallback();
        fuelSchedule3.Status = OFF; //Turn off the schedule
        fuelSchedule3.schedulesSet = 0;
        FUEL3_TIMER_DISABLE();
@@ -543,15 +526,13 @@ static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a f
   {
     if (fuelSchedule4.Status == PENDING) //Check to see if this schedule is turn on
     {
-      //fuelSchedule4.StartCallback();
-      openInjector4();
+      fuelSchedule4.StartCallback();
       fuelSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       FUEL4_COMPARE = fuelSchedule4.endCompare;
     }
     else if (fuelSchedule4.Status == RUNNING)
     {
-       //fuelSchedule4.EndCallback();
-       closeInjector4();
+       fuelSchedule4.EndCallback();
        fuelSchedule4.Status = OFF; //Turn off the schedule
        fuelSchedule4.schedulesSet = 0;
        FUEL4_TIMER_DISABLE();

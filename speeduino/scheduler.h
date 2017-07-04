@@ -26,7 +26,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define SCHEDULER_H
 
 
-#if defined(CORE_AVR)
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #include <avr/interrupt.h>
   #include <avr/io.h>
 

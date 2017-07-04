@@ -33,14 +33,14 @@ void writeConfig()
   for(int x=EEPROM_CONFIG1_MAP; x<EEPROM_CONFIG1_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG1_MAP;
-    if( EEPROM.read(x) != (fuelTable.values[15-(offset/16)][offset%16]) ) { EEPROM.write(x, fuelTable.values[15-(offset/16)][offset%16]); }  //Write the 16x16 map
+    if(EEPROM.read(x) != fuelTable.values[15-offset/16][offset%16]) { EEPROM.write(x, fuelTable.values[15-offset/16][offset%16]); }  //Write the 16x16 map
   }
 
   //RPM bins
   for(int x=EEPROM_CONFIG1_XBINS; x<EEPROM_CONFIG1_YBINS; x++)
   {
     offset = x - EEPROM_CONFIG1_XBINS;
-    if( EEPROM.read(x) != (byte(fuelTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) ) { EEPROM.write(x, byte(fuelTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); } //RPM bins are divided by 100 and converted to a byte
+    if(EEPROM.read(x) != byte(fuelTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(fuelTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); } //RPM bins are divided by 100 and converted to a byte
   }
   //TPS/MAP bins
   for(int x=EEPROM_CONFIG1_YBINS; x<EEPROM_CONFIG2_START; x++)
@@ -74,7 +74,7 @@ void writeConfig()
   for(int x=EEPROM_CONFIG3_MAP; x<EEPROM_CONFIG3_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG3_MAP;
-    if(EEPROM.read(x) != (ignitionTable.values[15-(offset/16)][offset%16]) ) { EEPROM.write(x, ignitionTable.values[15-(offset/16)][offset%16]); }  //Write the 16x16 map with translation
+    if(EEPROM.read(x) != ignitionTable.values[15-offset/16][offset%16]) { EEPROM.write(x, ignitionTable.values[15-offset/16][offset%16]); }  //Write the 16x16 map with translation
   }
   //RPM bins
   for(int x=EEPROM_CONFIG3_XBINS; x<EEPROM_CONFIG3_YBINS; x++)
@@ -114,7 +114,7 @@ void writeConfig()
   for(int x=EEPROM_CONFIG5_MAP; x<EEPROM_CONFIG5_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG5_MAP;
-    if(EEPROM.read(x) != (afrTable.values[15-(offset/16)][offset%16]) ) { EEPROM.write(x, afrTable.values[15-(offset/16)][offset%16]); }  //Write the 16x16 map
+    if(EEPROM.read(x) != afrTable.values[15-offset/16][offset%16]) { EEPROM.write(x, afrTable.values[15-offset/16][offset%16]); }  //Write the 16x16 map
   }
   //RPM bins
   for(int x=EEPROM_CONFIG5_XBINS; x<EEPROM_CONFIG5_YBINS; x++)
@@ -167,9 +167,9 @@ void writeConfig()
   for(int x=EEPROM_CONFIG8_MAP1; x<EEPROM_CONFIG8_XBINS1; x++)
   {
     offset = x - EEPROM_CONFIG8_MAP1;
-    if(EEPROM.read(x) != (boostTable.values[7-(offset/8)][offset%8]) ) { EEPROM.write(x, boostTable.values[7-(offset/8)][offset%8]); }  //Write the 8x8 map
+    if(EEPROM.read(x) != boostTable.values[7-offset/8][offset%8]) { EEPROM.write(x, boostTable.values[7-offset/8][offset%8]); }  //Write the 8x8 map
     offset = y - EEPROM_CONFIG8_MAP2;
-    if(EEPROM.read(y) != (vvtTable.values[7-(offset/8)][offset%8]) ) { EEPROM.write(y, vvtTable.values[7-(offset/8)][offset%8]); }  //Write the 8x8 map
+    if(EEPROM.read(y) != vvtTable.values[7-offset/8][offset%8]) { EEPROM.write(y, vvtTable.values[7-offset/8][offset%8]); }  //Write the 8x8 map
     y++;
   }
   //RPM bins
@@ -213,13 +213,13 @@ void writeConfig()
   for(int x=EEPROM_CONFIG9_MAP1; x<EEPROM_CONFIG9_XBINS1; x++)
   {
     offset = x - EEPROM_CONFIG9_MAP1;
-    EEPROM.update(x, (trim1Table.values[5-(offset/6)][offset%6]) );  //Write the 6x6 map
+    EEPROM.update(x, trim1Table.values[5-offset/6][offset%6]);  //Write the 6x6 map
     offset = y - EEPROM_CONFIG9_MAP2;
-    EEPROM.update(y, trim2Table.values[5-(offset/6)][offset%6]);  //Write the 6x6 map
+    EEPROM.update(y, trim2Table.values[5-offset/6][offset%6]);  //Write the 6x6 map
     offset = z - EEPROM_CONFIG9_MAP3;
-    EEPROM.update(z, trim3Table.values[5-(offset/6)][offset%6]);  //Write the 6x6 map
+    EEPROM.update(z, trim3Table.values[5-offset/6][offset%6]);  //Write the 6x6 map
     offset = i - EEPROM_CONFIG9_MAP4;
-    EEPROM.update(i, trim4Table.values[5-(offset/6)][offset%6]);  //Write the 6x6 map
+    EEPROM.update(i, trim4Table.values[5-offset/6][offset%6]);  //Write the 6x6 map
     y++;
     z++;
     i++;
@@ -283,10 +283,12 @@ void loadConfig()
 
 
   //Fuel table (See storage.h for data layout)
+  //fuelTable.xSize = EEPROM.read(EEPROM_CONFIG1_XSIZE); //Read the VE Tables RPM dimension size
+  //fuelTable.ySize = EEPROM.read(EEPROM_CONFIG1_YSIZE); //Read the VE Tables MAP/TPS dimension size
   for(int x=EEPROM_CONFIG1_MAP; x<EEPROM_CONFIG1_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG1_MAP;
-    fuelTable.values[15-(offset/16)][offset%16] = EEPROM.read(x); //Read the 8x8 map
+    fuelTable.values[15-offset/16][offset%16] = EEPROM.read(x); //Read the 8x8 map
   }
   //RPM bins
   for(int x=EEPROM_CONFIG1_XBINS; x<EEPROM_CONFIG1_YBINS; x++)
@@ -312,10 +314,13 @@ void loadConfig()
   //IGNITION CONFIG PAGE (2)
 
   //Begin writing the Ignition table, basically the same thing as above
+  //ignitionTable.xSize = EEPROM.read(EEPROM_CONFIG2_XSIZE); //Read the ignition Table RPM dimension size (Currently not supproted)
+  //ignitionTable.ySize = EEPROM.read(EEPROM_CONFIG2_YSIZE); //Read the ignition Table MAP/TPS dimension size (Currently not supproted)
+
   for(int x=EEPROM_CONFIG3_MAP; x<EEPROM_CONFIG3_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG3_MAP;
-    ignitionTable.values[15-(offset/16)][offset%16] = EEPROM.read(x); //Read the 8x8 map
+    ignitionTable.values[15-offset/16][offset%16] = EEPROM.read(x); //Read the 8x8 map
   }
   //RPM bins
   for(int x=EEPROM_CONFIG3_XBINS; x<EEPROM_CONFIG3_YBINS; x++)
@@ -340,10 +345,13 @@ void loadConfig()
   //AFR TARGET CONFIG PAGE (3)
 
   //Begin writing the Ignition table, basically the same thing as above
+  //ignitionTable.xSize = EEPROM.read(EEPROM_CONFIG2_XSIZE); //Read the ignition Table RPM dimension size (Currently not supproted)
+  //ignitionTable.ySize = EEPROM.read(EEPROM_CONFIG2_YSIZE); //Read the ignition Table MAP/TPS dimension size (Currently not supproted)
+
   for(int x=EEPROM_CONFIG5_MAP; x<EEPROM_CONFIG5_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG5_MAP;
-    afrTable.values[15-(offset/16)][offset%16] = EEPROM.read(x); //Read the 16x16 map
+    afrTable.values[15-offset/16][offset%16] = EEPROM.read(x); //Read the 16x16 map
   }
   //RPM bins
   for(int x=EEPROM_CONFIG5_XBINS; x<EEPROM_CONFIG5_YBINS; x++)
@@ -366,10 +374,13 @@ void loadConfig()
 
   //*********************************************************************************************************************************************************************************
 
-  //CONFIG PAGE (4)
+  //CONFIG PAGE (4)                                                                                                                                           //############
   pnt_configPage = (byte *)&configPage4; //Create a pointer to Page 3 in memory
   //Begin writing the Ignition table, basically the same thing as above
-  //The first 64 bytes can simply be pulled straight from the configTable
+  //ignitionTable.xSize = EEPROM.read(EEPROM_CONFIG2_XSIZE); //Read the ignition Table RPM dimension size (Currently not supproted)
+  //ignitionTable.ySize = EEPROM.read(EEPROM_CONFIG2_YSIZE); //Read the ignition Table MAP/TPS dimension size (Currently not supproted)
+
+  //The next 64 bytes can simply be pulled straight from the configTable
   for(int x=EEPROM_CONFIG7_START; x<EEPROM_CONFIG7_END; x++)
   {
     *(pnt_configPage + byte(x - EEPROM_CONFIG7_START)) = EEPROM.read(x);
@@ -381,9 +392,9 @@ void loadConfig()
   for(int x=EEPROM_CONFIG8_MAP1; x<EEPROM_CONFIG8_XBINS1; x++)
   {
     offset = x - EEPROM_CONFIG8_MAP1;
-    boostTable.values[7-(offset/8)][offset%8] = EEPROM.read(x); //Read the 8x8 map
+    boostTable.values[7-offset/8][offset%8] = EEPROM.read(x); //Read the 8x8 map
     offset = y - EEPROM_CONFIG8_MAP2;
-    vvtTable.values[7-(offset/8)][offset%8] = EEPROM.read(y); //Read the 8x8 map
+    vvtTable.values[7-offset/8][offset%8] = EEPROM.read(y); //Read the 8x8 map
     y++;
   }
 
@@ -417,13 +428,13 @@ void loadConfig()
   for(int x=EEPROM_CONFIG9_MAP1; x<EEPROM_CONFIG9_XBINS1; x++)
   {
     offset = x - EEPROM_CONFIG9_MAP1;
-    trim1Table.values[5-(offset/6)][offset%6] = EEPROM.read(x); //Read the 6x6 map
+    trim1Table.values[5-offset/6][offset%6] = EEPROM.read(x); //Read the 6x6 map
     offset = y - EEPROM_CONFIG9_MAP2;
-    trim2Table.values[5-(offset/6)][offset%6] = EEPROM.read(y); //Read the 6x6 map
+    trim2Table.values[5-offset/6][offset%6] = EEPROM.read(y); //Read the 6x6 map
     offset = z - EEPROM_CONFIG9_MAP3;
-    trim3Table.values[5-(offset/6)][offset%6] = EEPROM.read(z); //Read the 6x6 map
+    trim3Table.values[5-offset/6][offset%6] = EEPROM.read(z); //Read the 6x6 map
     offset = i - EEPROM_CONFIG9_MAP4;
-    trim4Table.values[5-(offset/6)][offset%6] = EEPROM.read(i); //Read the 6x6 map
+    trim4Table.values[5-offset/6][offset%6] = EEPROM.read(i); //Read the 6x6 map
     y++;
     z++;
     i++;

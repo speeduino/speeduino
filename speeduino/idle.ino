@@ -19,12 +19,12 @@ void initialiseIdle()
 {
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
   IDLE_TIMER_DISABLE();
-  #if defined(CORE_AVR) //AVR chips use the ISR for this
+  #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
     //No timer work required for AVRs. Timer is shared with the schedules and setup in there.
 
   #elif defined (CORE_TEENSY)
 
-    if( (configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
+    if(configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_OL || configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_CL)
     {
     //FlexTimer 2 is used for idle
     FTM2_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
@@ -154,6 +154,7 @@ void initialiseIdle()
       iacCrankStepsTable.axisX = configPage4.iacCrankBins;
       iacStepTime = configPage4.iacStepTime * 1000;
 
+      //homeStepper(); //Returns the stepper to the 'home' position
       completedHomeSteps = 0;
       idleStepper.curIdleStep = 0;
       idleStepper.stepperStatus = SOFF;
@@ -179,10 +180,6 @@ void initialiseIdle()
       idlePID.SetOutputLimits(0, (configPage4.iacStepHome * 3)); //Maximum number of steps probably needs its own setting
       idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
-      break;
-
-    default:
-      //Well this just shouldn't happen
       break;
   }
   idleInitComplete = configPage4.iacAlgorithm; //Sets which idle method was initialised
@@ -245,53 +242,48 @@ void idleControl()
 
     case IAC_ALGORITHM_STEP_OL:    //Case 4 is open loop stepper control
       //First thing to check is whether there is currently a step going on and if so, whether it needs to be turned off
-      if( isStepperHomed() && !checkForStepping() ) //Check that homing is complete and that there's not currently a step already taking place
+      if( checkForStepping() ) { return; } //If this is true it means there's either a step taking place or
+      if( !isStepperHomed() ) { return; } //Check whether homing is completed yet.
+
+      //Check for cranking pulsewidth
+      if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
-        //Check for cranking pulsewidth
-        if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
-        {
-          //Currently cranking. Use the cranking table
-          idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
-          doStep();
-        }
-        else if( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < iacStepTable.axisX[IDLE_TABLE_SIZE-1])
-        {
-          //Standard running
-          if ((mainLoopCount & 255) == 1)
-          {
-            //Only do a lookup of the required value around 4 times per second. Any more than this can create too much jitter and require a hyster value that is too high
-            idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
-            iacStepTime = configPage4.iacStepTime * 1000;
-          }
-          doStep();
-        }
-        currentStatus.idleLoad = idleStepper.curIdleStep >> 1; //Current step count (Divided by 2 for byte)
+        //Currently cranking. Use the cranking table
+        idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+        doStep();
       }
+      else if( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < iacStepTable.axisX[IDLE_TABLE_SIZE-1])
+      {
+        //Standard running
+        if ((mainLoopCount & 255) == 1)
+        {
+          //Only do a lookup of the required value around 4 times per second. Any more than this can create too much jitter and require a hyster value that is too high
+          idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+          iacStepTime = configPage4.iacStepTime * 1000;
+        }
+        doStep();
+      }
+      currentStatus.idleLoad = idleStepper.curIdleStep >> 1; //Current step count (Divided by 2 for byte)
       break;
 
     case IAC_ALGORITHM_STEP_CL://Case 5 is closed loop stepper control
       //First thing to check is whether there is currently a step going on and if so, whether it needs to be turned off
-      if( isStepperHomed() && !checkForStepping() ) //Check that homing is complete and that there's not currently a step already taking place
+      if( checkForStepping() ) { return; } //If this is true it means there's either a step taking place or
+      if( !isStepperHomed() ) { return; } //Check whether homing is completed yet.
+      if( (idleCounter & 31) == 1)
       {
-        if( (idleCounter & 31) == 1)
-        {
-          //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
-          idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
-          iacStepTime = configPage4.iacStepTime * 1000;
-        }
-
-        idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
-        idlePID.Compute();
-        idleStepper.targetIdleStep = idle_pid_target_value;
-
-        doStep();
-        currentStatus.idleLoad = idleStepper.curIdleStep >> 1; //Current step count (Divided by 2 for byte)
-        idleCounter++;
+        //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
+        idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
+        iacStepTime = configPage4.iacStepTime * 1000;
       }
-      break;
 
-    default:
-      //There really should be a valid idle type
+      idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
+      idlePID.Compute();
+      idleStepper.targetIdleStep = idle_pid_target_value;
+
+      doStep();
+      currentStatus.idleLoad = idleStepper.curIdleStep >> 1; //Current step count (Divided by 2 for byte)
+      idleCounter++;
       break;
   }
 }
@@ -304,7 +296,6 @@ False: If the motor has not yet been homed. Will also perform another homing ste
 */
 static inline byte isStepperHomed()
 {
-  bool isHomed = true; //As it's the most common scenario, default value is true
   if( completedHomeSteps < (configPage4.iacStepHome * 3) ) //Home steps are divided by 3 from TS
   {
     digitalWrite(pinStepperDir, STEPPER_BACKWARD); //Sets stepper direction to backwards
@@ -313,9 +304,9 @@ static inline byte isStepperHomed()
     idleStepper.stepperStatus = STEPPING;
     completedHomeSteps++;
     idleOn = true;
-    isHomed = false;
+    return false;
   }
-  return isHomed;
+  return true;
 }
 
 /*
@@ -326,8 +317,7 @@ False: If the motor is ready for another step
 */
 static inline byte checkForStepping()
 {
-  bool isStepping = false;
-  if( (idleStepper.stepperStatus == STEPPING) || (idleStepper.stepperStatus == COOLING) )
+  if(idleStepper.stepperStatus == STEPPING || idleStepper.stepperStatus == COOLING)
   {
     if(micros() > (idleStepper.stepStartTime + iacStepTime) )
     {
@@ -337,7 +327,7 @@ static inline byte checkForStepping()
         digitalWrite(pinStepperStep, LOW); //Turn off the step
         idleStepper.stepStartTime = micros();
         idleStepper.stepperStatus = COOLING; //'Cooling' is the time the stepper needs to sit in LOW state before the next step can be made
-        isStepping = true;
+        return true;
       }
       else
       {
@@ -349,10 +339,10 @@ static inline byte checkForStepping()
     else
     {
       //Means we're in a step, but it doesn't need to turn off yet. No further action at this time
-      isStepping = true;
+      return true;
     }
   }
-  return isStepping;
+  return false;
 }
 
 /*
@@ -360,31 +350,36 @@ Performs a step
 */
 static inline void doStep()
 {
-  if ( (idleStepper.targetIdleStep <= (idleStepper.curIdleStep - configPage4.iacStepHyster)) || (idleStepper.targetIdleStep >= (idleStepper.curIdleStep + configPage4.iacStepHyster)) ) //Hysteris check
-  {
-    if(idleStepper.targetIdleStep < idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_BACKWARD); idleStepper.curIdleStep--; }//Sets stepper direction to backwards
-    else if (idleStepper.targetIdleStep > idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_FORWARD); idleStepper.curIdleStep++; }//Sets stepper direction to forwards
+  if ( idleStepper.targetIdleStep > (idleStepper.curIdleStep - configPage4.iacStepHyster) && idleStepper.targetIdleStep < (idleStepper.curIdleStep + configPage4.iacStepHyster) ) { return; } //Hysteris check
+  else if(idleStepper.targetIdleStep < idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_BACKWARD); idleStepper.curIdleStep--; }//Sets stepper direction to backwards
+  else if (idleStepper.targetIdleStep > idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_FORWARD); idleStepper.curIdleStep++; }//Sets stepper direction to forwards
 
-    digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
-    digitalWrite(pinStepperStep, HIGH);
-    idleStepper.stepStartTime = micros();
-    idleStepper.stepperStatus = STEPPING;
-    idleOn = true;
-  }
+  digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
+  digitalWrite(pinStepperStep, HIGH);
+  idleStepper.stepStartTime = micros();
+  idleStepper.stepperStatus = STEPPING;
+  idleOn = true;
 }
 
 //This function simply turns off the idle PWM and sets the pin low
 static inline void disableIdle()
 {
-  if( (configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
+  if(configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_CL || configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_OL)
   {
     IDLE_TIMER_DISABLE();
     digitalWrite(pinIdle1, LOW);
   }
-  else if ( (configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
+  else if (configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL || configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL)
   {
     digitalWrite(pinStepperEnable, HIGH); //Disable the DRV8825
     idleStepper.targetIdleStep = idleStepper.curIdleStep; //Don't try to move anymore
+    //The below appears to be causing issues, so for now this will simply halt the stepper entirely rather than taking it back to step 1
+    /*
+    idleStepper.targetIdleStep = 1; //Home the stepper
+    if( checkForStepping() ) { return; } //If this is true it means there's either a step taking place or
+    if( !isStepperHomed() ) { return; } //Check whether homing is completed yet.
+    doStep();
+    */
   }
 }
 
@@ -392,22 +387,22 @@ static inline void disableIdle()
 //Typically this is enabling the PWM interrupt
 static inline void enableIdle()
 {
-  if( (configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
+  if(configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_CL || configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_OL)
   {
     IDLE_TIMER_ENABLE();
   }
-  else if ( (configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
+  else if (configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL || configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL)
   {
 
   }
 }
 
-#if defined(CORE_AVR) //AVR chips use the ISR for this
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPC_vect)
 #elif defined (CORE_TEENSY) || defined (CORE_STM32)
 static inline void idleInterrupt() //Most ARM chips can simply call a function
 #endif
-#if defined(CORE_AVR) || defined (CORE_TEENSY)
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) || defined (CORE_TEENSY)
 {
   if (idle_pwm_state)
   {
@@ -415,13 +410,13 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
     {
       //Normal direction
       *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
-      if(configPage4.iacChannels == 1) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      if(configPage4.iacChannels) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
     else
     {
       //Reversed direction
       *idle_pin_port |= (idle_pin_mask);  // Switch pin high
-      if(configPage4.iacChannels == 1) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      if(configPage4.iacChannels) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
     IDLE_COMPARE = IDLE_COUNTER + (idle_pwm_max_count - idle_pwm_cur_value);
     idle_pwm_state = false;
@@ -432,13 +427,13 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
     {
       //Normal direction
       *idle_pin_port |= (idle_pin_mask);  // Switch pin high
-      if(configPage4.iacChannels == 1) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      if(configPage4.iacChannels) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
     else
     {
       //Reversed direction
       *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
-      if(configPage4.iacChannels == 1) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      if(configPage4.iacChannels) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
     IDLE_COMPARE = IDLE_COUNTER + idle_pwm_target_value;
     idle_pwm_cur_value = idle_pwm_target_value;
