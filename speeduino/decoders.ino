@@ -94,7 +94,7 @@ static inline int crankingGetRPM(byte totalTeeth)
     revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth;
     interrupts();
     tempRPM = (US_IN_MINUTE / revolutionTime);
-    if(tempRPM >= MAX_RPM) { tempRPM = currentStatus.RPM; } //Sanity check
+    if( tempRPM >= (configPage2.crankRPM * 400) ) { tempRPM = currentStatus.RPM; } //Sanity check. This can prevent spiking caused by noise on individual teeth. The new RPM should never be above 4x the cranking setting value (Remembering that this function is only called is the current RPM is less than the cranking setting)
   }
   return tempRPM;
 }
