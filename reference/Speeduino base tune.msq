@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.23 - EFI Analytics, Inc." tuneComment="" writeDate="Sat Jun 10 23:42:28 BST 2017"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.26 - EFI Analytics, Inc." tuneComment="" writeDate="Wed Jul 05 15:59:26 BST 2017"/>
 <versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.06-dev" nPages="10" signature="speeduino 201706-dev"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
@@ -121,7 +121,7 @@
 <constant name="algorithm">"Speed Density"</constant>
 <constant name="baroCorr">"Off"</constant>
 <constant name="injLayout">"Paired"</constant>
-<constant name="unused2-38f">"ONE"</constant>
+<constant name="perToothIgn">"No"</constant>
 <constant name="unused2-38h">"No"</constant>
 <constant digits="1" name="primePulse" units="ms">1.0</constant>
 <constant digits="0" name="dutyLim" units="%">85.0</constant>
@@ -686,33 +686,56 @@
 </page>
 <page number="9" size="128">
 <constant name="enable_canbus">"Disable"</constant>
-<constant name="enable_candata_in">"On"</constant>
-<constant name="caninput_sel1">"On"</constant>
-<constant name="caninput_sel2">"On"</constant>
-<constant name="caninput_sel3">"On"</constant>
-<constant name="caninput_sel4">"On"</constant>
-<constant name="caninput_sel5">"On"</constant>
-<constant name="caninput_sel6">"On"</constant>
-<constant name="caninput_sel7">"On"</constant>
-<constant name="caninput_sel8">"On"</constant>
-<constant cols="1" digits="0" name="caninput_param_group" rows="8">
-         65535.0 
-         65535.0 
-         65535.0 
-         65535.0 
-         65535.0 
-         65535.0 
-         65535.0 
-         65535.0 
-      </constant>
-<constant name="caninput_param_start_byte1">"8"</constant>
-<constant name="caninput_param_start_byte2">"8"</constant>
-<constant name="caninput_param_start_byte3">"8"</constant>
-<constant name="caninput_param_start_byte4">"8"</constant>
-<constant name="caninput_param_start_byte5">"8"</constant>
-<constant name="caninput_param_start_byte6">"8"</constant>
-<constant name="caninput_param_start_byte7">"8"</constant>
-<constant name="caninput_param_start_byte8">"8"</constant>
+<constant name="enable_candata_in">"Off"</constant>
+<constant name="caninput_sel0">"Off"</constant>
+<constant name="caninput_sel1">"Off"</constant>
+<constant name="caninput_sel2">"Off"</constant>
+<constant name="caninput_sel3">"Off"</constant>
+<constant name="caninput_sel4">"Off"</constant>
+<constant name="caninput_sel5">"Off"</constant>
+<constant name="caninput_sel6">"Off"</constant>
+<constant name="caninput_sel7">"Off"</constant>
+<constant name="caninput_sel8">"Off"</constant>
+<constant name="caninput_sel9">"Off"</constant>
+<constant name="caninput_sel10">"Off"</constant>
+<constant name="caninput_sel11">"Off"</constant>
+<constant name="caninput_sel12">"Off"</constant>
+<constant name="caninput_sel13">"Off"</constant>
+<constant name="caninput_sel14">"Off"</constant>
+<constant name="caninput_sel15">"Off"</constant>
+<constant name="caninput_param_group0">"0x200"</constant>
+<constant name="caninput_param_group1">"0x200"</constant>
+<constant name="caninput_param_group2">"0x200"</constant>
+<constant name="caninput_param_group3">"0x200"</constant>
+<constant name="caninput_param_group4">"0x200"</constant>
+<constant name="caninput_param_group5">"0x200"</constant>
+<constant name="caninput_param_group6">"0x200"</constant>
+<constant name="caninput_param_group7">"0x200"</constant>
+<constant name="caninput_param_group8">"0x200"</constant>
+<constant name="caninput_param_group9">"0x200"</constant>
+<constant name="caninput_param_group10">"0x200"</constant>
+<constant name="caninput_param_group11">"0x200"</constant>
+<constant name="caninput_param_group12">"0x200"</constant>
+<constant name="caninput_param_group13">"0x200"</constant>
+<constant name="caninput_param_group14">"0x200"</constant>
+<constant name="caninput_param_group15">"0x200"</constant>
+<constant name="caninput_param_start_byte0">"7"</constant>
+<constant name="caninput_param_start_byte1">"0"</constant>
+<constant name="caninput_param_start_byte2">"0"</constant>
+<constant name="caninput_param_start_byte3">"0"</constant>
+<constant name="caninput_param_start_byte4">"0"</constant>
+<constant name="caninput_param_start_byte5">"0"</constant>
+<constant name="caninput_param_start_byte6">"0"</constant>
+<constant name="caninput_param_start_byte7">"0"</constant>
+<constant name="caninput_param_start_byte8">"0"</constant>
+<constant name="caninput_param_start_byte9">"0"</constant>
+<constant name="caninput_param_start_byte10">"0"</constant>
+<constant name="caninput_param_start_byte11">"0"</constant>
+<constant name="caninput_param_start_byte12">"0"</constant>
+<constant name="caninput_param_start_byte13">"0"</constant>
+<constant name="caninput_param_start_byte14">"0"</constant>
+<constant name="caninput_param_start_byte15">"0"</constant>
+<constant name="caninput_param_num_bytes0">"1"</constant>
 <constant name="caninput_param_num_bytes1">"1"</constant>
 <constant name="caninput_param_num_bytes2">"1"</constant>
 <constant name="caninput_param_num_bytes3">"1"</constant>
@@ -721,16 +744,17 @@
 <constant name="caninput_param_num_bytes6">"1"</constant>
 <constant name="caninput_param_num_bytes7">"1"</constant>
 <constant name="caninput_param_num_bytes8">"1"</constant>
-<constant digits="0" name="unused10_41">255.0</constant>
-<constant digits="0" name="unused10_42">255.0</constant>
-<constant digits="0" name="unused10_43">255.0</constant>
-<constant digits="0" name="unused10_44">255.0</constant>
-<constant digits="0" name="unused10_45">255.0</constant>
-<constant digits="0" name="unused10_46">255.0</constant>
-<constant digits="0" name="unused10_47">255.0</constant>
-<constant digits="0" name="unused10_48">255.0</constant>
-<constant digits="0" name="unused10_49">255.0</constant>
+<constant name="caninput_param_num_bytes9">"1"</constant>
+<constant name="caninput_param_num_bytes10">"1"</constant>
+<constant name="caninput_param_num_bytes11">"1"</constant>
+<constant name="caninput_param_num_bytes12">"1"</constant>
+<constant name="caninput_param_num_bytes13">"1"</constant>
+<constant name="caninput_param_num_bytes14">"1"</constant>
+<constant name="caninput_param_num_bytes15">"1"</constant>
+<constant digits="0" name="unused10_53">255.0</constant>
+<constant digits="0" name="unused10_54">255.0</constant>
 <constant name="enable_candata_out">"On"</constant>
+<constant name="canoutput_sel0">"On"</constant>
 <constant name="canoutput_sel1">"On"</constant>
 <constant name="canoutput_sel2">"On"</constant>
 <constant name="canoutput_sel3">"On"</constant>
@@ -738,7 +762,6 @@
 <constant name="canoutput_sel5">"On"</constant>
 <constant name="canoutput_sel6">"On"</constant>
 <constant name="canoutput_sel7">"On"</constant>
-<constant name="canoutput_sel8">"On"</constant>
 <constant cols="1" digits="0" name="canoutput_param_group" rows="8">
          65535.0 
          65535.0 
@@ -749,41 +772,22 @@
          65535.0 
          65535.0 
       </constant>
-<constant name="canoutput_param_start_byte1">"8"</constant>
-<constant name="canoutput_param_start_byte2">"8"</constant>
-<constant name="canoutput_param_start_byte3">"8"</constant>
-<constant name="canoutput_param_start_byte4">"8"</constant>
-<constant name="canoutput_param_start_byte5">"8"</constant>
-<constant name="canoutput_param_start_byte6">"8"</constant>
-<constant name="canoutput_param_start_byte7">"8"</constant>
-<constant name="canoutput_param_start_byte8">"8"</constant>
-<constant digits="0" name="unused10_77">255.0</constant>
-<constant digits="0" name="unused10_78">255.0</constant>
-<constant digits="0" name="unused10_79">255.0</constant>
-<constant digits="0" name="unused10_80">255.0</constant>
-<constant digits="0" name="unused10_81">255.0</constant>
-<constant digits="0" name="unused10_82">255.0</constant>
-<constant digits="0" name="unused10_83">255.0</constant>
-<constant digits="0" name="unused10_84">255.0</constant>
-<constant digits="0" name="unused10_85">255.0</constant>
-<constant digits="0" name="unused10_86">255.0</constant>
-<constant digits="0" name="unused10_87">255.0</constant>
-<constant digits="0" name="unused10_88">255.0</constant>
-<constant digits="0" name="unused10_89">255.0</constant>
-<constant digits="0" name="unused10_90">255.0</constant>
-<constant digits="0" name="unused10_91">255.0</constant>
-<constant digits="0" name="unused10_92">255.0</constant>
-<constant digits="0" name="unused10_93">255.0</constant>
-<constant digits="0" name="unused10_94">255.0</constant>
-<constant digits="0" name="unused10_95">255.0</constant>
+<constant name="canoutput_param_start_byte0">"7"</constant>
+<constant name="canoutput_param_start_byte1">"0"</constant>
+<constant name="canoutput_param_start_byte2">"0"</constant>
+<constant name="canoutput_param_start_byte3">"0"</constant>
+<constant name="canoutput_param_start_byte4">"0"</constant>
+<constant name="canoutput_param_start_byte5">"0"</constant>
+<constant name="canoutput_param_start_byte6">"0"</constant>
+<constant name="canoutput_param_start_byte7">"0"</constant>
 <constant digits="0" name="unused10_96">255.0</constant>
 <constant digits="0" name="unused10_97">255.0</constant>
 <constant digits="0" name="unused10_98">255.0</constant>
 <constant digits="0" name="unused10_99">255.0</constant>
 <constant name="speeduino_tsCanId">"CAN ID 0"</constant>
-<constant digits="0" name="unused10_101">255.0</constant>
-<constant digits="0" name="unused10_103">255.0</constant>
-<constant digits="0" name="unused10_105">255.0</constant>
+<constant name="true_address">"0x100"</constant>
+<constant name="realtime_base_address">"0x150"</constant>
+<constant name="obd_address">"0x7FF"</constant>
 <constant digits="0" name="unused10_107">255.0</constant>
 <constant digits="0" name="unused10_108">255.0</constant>
 <constant digits="0" name="unused10_109">255.0</constant>
@@ -810,7 +814,7 @@
 <setting name="enablehardware_test_OFF" value="enablehardware_test_OFF"/>
 <setting name="FAHRENHEIT" value="FAHRENHEIT"/>
 <setting name="SPEED_DENSITY" value="SPEED_DENSITY"/>
-<setting name="CAN_COMMANDS_OFF" value="CAN_COMMANDS_OFF"/>
+<setting name="CAN_COMMANDS" value="CAN_COMMANDS"/>
 <setting name="AFR" value="AFR"/>
 </settings>
 <userComments Comment="These are user comments that can be related to a particular setting or dialog."/>
