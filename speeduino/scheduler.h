@@ -26,7 +26,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define SCHEDULER_H
 
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+#if defined(CORE_AVR)
   #include <avr/interrupt.h>
   #include <avr/io.h>
 
@@ -35,6 +35,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define FUEL2_COUNTER TCNT3
   #define FUEL3_COUNTER TCNT3
   #define FUEL4_COUNTER TCNT4
+  #define FUEL5_COUNTER TCNT3
 
   #define IGN1_COUNTER  TCNT5
   #define IGN2_COUNTER  TCNT5
@@ -46,6 +47,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define FUEL2_COMPARE OCR3B
   #define FUEL3_COMPARE OCR3C
   #define FUEL4_COMPARE OCR4B
+  #define FUEL5_COMPARE OCR3A //Shared with FUEL1
 
   #define IGN1_COMPARE  OCR5A
   #define IGN2_COMPARE  OCR5B
@@ -171,6 +173,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define FUEL2_COUNTER (TIMER2->regs).gen->CNT
   #define FUEL3_COUNTER (TIMER2->regs).gen->CNT
   #define FUEL4_COUNTER (TIMER2->regs).gen->CNT
+  #define FUEL5_COUNTER (TIMER1->regs).gen->CNT
 
   #define IGN1_COUNTER  (TIMER3->regs).gen->CNT
   #define IGN2_COUNTER  (TIMER3->regs).gen->CNT
@@ -255,8 +258,12 @@ struct Schedule {
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
   volatile unsigned long startTime; //The system time (in uS) that the schedule started
-  unsigned int startCompare; //The counter value of the timer when this will start
-  unsigned int endCompare;
+  volatile unsigned int startCompare; //The counter value of the timer when this will start
+  volatile unsigned int endCompare;
+
+  unsigned int nextStartCompare;
+  unsigned int nextEndCompare;
+  volatile bool hasNextSchedule = false;
 };
 
 volatile Schedule *timer3Aqueue[4];
@@ -345,8 +352,11 @@ static inline unsigned int popQueue(volatile Schedule *queue[])
   queue[2] = queue[3];
   queue[3] = &nullSchedule;
 
-  if( queue[0]->Status == PENDING ) { return queue[0]->startCompare; }
-  else { return queue[0]->endCompare; }
+  unsigned int returnCompare;
+  if( queue[0]->Status == PENDING ) { returnCompare = queue[0]->startCompare; }
+  else { returnCompare = queue[0]->endCompare; }
+
+  return returnCompare;
 }
 
 
