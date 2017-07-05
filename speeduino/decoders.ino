@@ -232,10 +232,17 @@ int getCrankAngle_missingTooth(int timePerDegree)
 
 void triggerSetEndTeeth_missingTooth()
 {
+
   ignition1EndTooth = ( (ignition1EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
+  if(ignition1EndTooth > configPage2.triggerTeeth) { ignition1EndTooth -= configPage2.triggerTeeth; }
+  if(ignition1EndTooth <= 0) { ignition1EndTooth -= configPage2.triggerTeeth; }
+  if(ignition1EndTooth > triggerActualTeeth) { ignition1EndTooth = triggerActualTeeth; }
+
   ignition2EndTooth = ( (ignition2EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
   ignition3EndTooth = ( (ignition3EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
   ignition4EndTooth = ( (ignition4EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
+
+
 }
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -86,7 +86,8 @@ unsigned long currentLoopTime; //The time the current loop started (uS)
 unsigned long previousLoopTime; //The time the previous loop started (uS)
 
 int CRANK_ANGLE_MAX = 720;
-int CRANK_ANGLE_MAX_IGN = 360, CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+int CRANK_ANGLE_MAX_IGN = 360;
+int CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 
 static byte coilHIGH = HIGH;
 static byte coilLOW = LOW;
@@ -98,6 +99,7 @@ byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 byte ignitionCount;
 uint16_t fixedCrankingOverride = 0;
+int16_t lastAdvance; //Stores the previous advance figure to track changes.
 bool clutchTrigger;
 bool previousClutchTrigger;
 
@@ -1106,7 +1108,7 @@ void loop()
       //Begin the fuel calculation
       //Calculate an injector pulsewidth from the VE
       currentStatus.corrections = correctionsFuel();
-      //currentStatus.corrections = 100;
+      lastAdvance = currentStatus.advance; //Store the previous advance value
       if (configPage1.algorithm == 0) //Check which fuelling algorithm is being used
       {
         //Speed Density
@@ -1380,7 +1382,9 @@ void loop()
         default:
           break;
       }
-      if(configPage1.perToothIgn == true) { triggerSetEndTeeth(); } //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
+      //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
+      //This only needs to be run if the advance figure has changed, otherwise the end teeth will still be the same
+      if( (configPage1.perToothIgn == true) && (lastAdvance != currentStatus.advance) ) { triggerSetEndTeeth(); }
 
       //***********************************************************************************************
       //| BEGIN FUEL SCHEDULES
