@@ -443,18 +443,14 @@ void setPinMapping(byte boardID)
       break;
   }
 
-  //First time running?
-  if (configPage3.launchPin < BOARD_NR_GPIO_PINS)
-  {
-    //Setup any devices that are using selectable pins
-    if (configPage3.launchPin != 0) { pinLaunch = configPage3.launchPin; }
-    if (configPage2.ignBypassPin != 0) { pinIgnBypass = configPage2.ignBypassPin; }
-    if (configPage1.tachoPin != 0) { pinTachOut = configPage1.tachoPin; }
-    if (configPage2.fuelPumpPin != 0) { pinFuelPump = configPage2.fuelPumpPin; }
-    if (configPage4.fanPin != 0) { pinFan = configPage4.fanPin; }
-    if (configPage3.boostPin != 0) { pinBoost = configPage3.boostPin; }
-    if (configPage3.vvtPin != 0) { pinVVT_1 = configPage3.vvtPin; }
-  }
+  //Setup any devices that are using selectable pins
+  if ( (configPage3.launchPin != 0) && (configPage3.launchPin < BOARD_NR_GPIO_PINS) ) { pinLaunch = configPage3.launchPin; }
+  if ( (configPage2.ignBypassPin != 0) && (configPage2.ignBypassPin < BOARD_NR_GPIO_PINS) ) { pinIgnBypass = configPage2.ignBypassPin; }
+  if ( (configPage1.tachoPin != 0) && (configPage1.tachoPin < BOARD_NR_GPIO_PINS) ) { pinTachOut = configPage1.tachoPin; }
+  if ( (configPage2.fuelPumpPin != 0) && (configPage2.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = configPage2.fuelPumpPin; }
+  if ( (configPage4.fanPin != 0) && (configPage4.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = configPage4.fanPin; }
+  if ( (configPage3.boostPin != 0) && (configPage3.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = configPage3.boostPin; }
+  if ( (configPage3.vvtPin != 0) && (configPage3.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = configPage3.vvtPin; }
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinCoil1, OUTPUT);
