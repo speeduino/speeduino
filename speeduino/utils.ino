@@ -34,8 +34,9 @@ uint16_t freeRam ()
   // The difference is the free, available ram.
   return (uint16_t)stackTop - heapTop;
 #elif defined(CORE_STM32)
-  //Figure this out some_time
-  return 0;
+  char top = 't';
+  return &top - reinterpret_cast<char*>(sbrk(0));
+
 #endif
 }
 
