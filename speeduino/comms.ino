@@ -80,12 +80,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.06-dev");
+      Serial.print("Speeduino 2017.06");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201706-dev");
+      Serial.print("speeduino 201706");
      break;
 
     case 'V': // send VE table and constants in binary
@@ -258,8 +258,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
         }
       else
         {
-      CANSerial.write("r");         //confirm cmd type 
-      CANSerial.write(cmd);  
+      CANSerial.write("r");         //confirm cmd type
+      CANSerial.write(cmd);
         }
     #endif
   }
@@ -352,7 +352,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[70] = highByte(currentStatus.canin[14]);
   fullStatus[71] = lowByte(currentStatus.canin[15]);
   fullStatus[72] = highByte(currentStatus.canin[15]);
-  
+
   for(byte x=0; x<packetLength; x++)
   {
     if (portNum == 0) { Serial.write(fullStatus[offset+x]); }
