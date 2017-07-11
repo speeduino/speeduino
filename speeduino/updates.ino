@@ -30,6 +30,9 @@ void doUpdates()
     configPage10.true_address = 256;
     configPage10.realtime_base_address = 336;
 
+    //There was a bad value in the May base tune for the spark duration setting, fix it here if it's a problem
+    if(configPage2.sparkDur == 255) { configPage2.sparkDur = 10; }
+
     writeConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 4);
   }
