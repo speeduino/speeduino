@@ -103,6 +103,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
               {
                 returnValue = fromTable->values[x]; //Simply return the coresponding value
                 valueFound = true;
+                break;
               }
               else
               {
@@ -143,6 +144,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
               {
                 returnValue = fromTable->values16[x]; //Simply return the coresponding value
                 valueFound = true;
+                break;
               }
               else
               {
