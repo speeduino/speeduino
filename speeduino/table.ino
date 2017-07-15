@@ -376,13 +376,25 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
 
 
       //Initial check incase the values were hit straight on
+      /*
       long p = (long)X - xMinValue;
       if (xMaxValue == xMinValue) { p = (p << 8); }  //This only occurs if the requested X value was equal to one of the X axis bins
       else { p = ( (p << 8) / (xMaxValue - xMinValue) ); } //This is the standard case
+      */
 
+      long p;
+      if (xMaxValue == xMinValue) { p = ((long)(X - xMinValue) << 8); }  //This only occurs if the requested X value was equal to one of the X axis bins
+      else { p = ((long)(X - xMinValue) << 8) / (xMaxValue - xMinValue); } //This is the standard case
+
+      /*
       long q = (long)Y - yMinValue;
       if (yMaxValue == yMinValue) { q = (q << 8); }
       else { q = 256 - ( (q << 8) / (yMinValue - yMaxValue) ); }
+      */
+
+      long q;
+      if (yMaxValue == yMinValue) { q = ((long)(Y - yMinValue) << 8); }
+      else { q = 256 - (((long)(Y - yMaxValue) << 8) / (yMinValue - yMaxValue)); }
 
       int m = ((256-p) * (256-q)) >> 8;
       int n = (p * (256-q)) >> 8;
