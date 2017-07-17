@@ -228,22 +228,31 @@ void setup()
 
   //Lookup the current MAP reading for barometric pressure
   readMAP();
-  /*
-   * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
-   * with record highs close to 108.5 kPa.
-   * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
-   */
-  if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
+  //barometric reading can be taken from either an external sensor if enabled, or simply by using the initial MAP value
+  if ( configPage3.useExtBaro != 0 )
   {
-    currentStatus.baro = currentStatus.MAP;
+    readBaro();
     EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
   }
   else
   {
-    //Attempt to use the last known good baro reading from EEPROM
-    if ((EEPROM.read(EEPROM_LAST_BARO) >= BARO_MIN) && (EEPROM.read(EEPROM_LAST_BARO) <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
-    { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); } //last baro correction
-    else { currentStatus.baro = 100; } //Final fall back position.
+    /*
+     * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
+     * with record highs close to 108.5 kPa.
+     * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
+     */
+    if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
+    {
+      currentStatus.baro = currentStatus.MAP;
+      EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
+    }
+    else
+    {
+      //Attempt to use the last known good baro reading from EEPROM
+      if ((EEPROM.read(EEPROM_LAST_BARO) >= BARO_MIN) && (EEPROM.read(EEPROM_LAST_BARO) <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
+      { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); } //last baro correction
+      else { currentStatus.baro = 100; } //Final fall back position.
+    }
   }
 
   //Perform all initialisations
@@ -1077,6 +1086,12 @@ void loop()
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
     }
+    if ((mainLoopCount & 1023) == 1) //Every 1024 loops
+    {
+      //Approx. once per second
+      readBaro();
+    }
+
     if(configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL || configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL) { idleControl(); } //Run idlecontrol every loop for stepper idle.
 
     //Always check for sync

@@ -181,8 +181,9 @@ struct statuses {
   uint16_t RPM;
   long longRPM;
   int mapADC;
+  int baroADC;
   long MAP; //Has to be a long for PID calcs (Boost control)
-  byte baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running
+  byte baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
   byte TPS; //The current TPS reading (0% - 100%)
   byte TPSlast; //The previous TPS reading
   unsigned long TPS_time; //The time the TPS sample was taken
@@ -432,7 +433,8 @@ struct config3 {
   byte egoRPM; //RPM must be above this for closed loop to function
   byte egoTPSMax; //TPS must be below this for closed loop to function
   byte vvtPin : 6;
-  byte unused6_13 : 2;
+  byte useExtBaro : 1;
+  byte unused6_13f : 1;
   byte boostPin : 6;
   byte unused6_14 : 2;
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
@@ -465,7 +467,7 @@ struct config3 {
   byte lnchPullRes : 2;
   byte fuelTrimEnabled : 1;
   byte flatSEnable : 1;
-  byte unused60 : 4;
+  byte baroPin : 4;
   byte flatSSoftWin;
   byte flatSRetard;
   byte flatSArm;
@@ -620,6 +622,7 @@ byte pinStepperEnable; //Turning the DRV8825 driver on/off
 byte pinLaunch;
 byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached
+byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino

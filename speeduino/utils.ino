@@ -452,6 +452,7 @@ void setPinMapping(byte boardID)
   if ( (configPage4.fanPin != 0) && (configPage4.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = configPage4.fanPin; }
   if ( (configPage3.boostPin != 0) && (configPage3.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = configPage3.boostPin; }
   if ( (configPage3.vvtPin != 0) && (configPage3.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = configPage3.vvtPin; }
+  if ( (configPage3.useExtBaro != 0) ) { pinBaro = configPage3.baroPin + A0; }
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinCoil1, OUTPUT);
@@ -510,6 +511,7 @@ void setPinMapping(byte boardID)
     pinMode(pinIAT, INPUT_ANALOG);
     pinMode(pinCLT, INPUT_ANALOG);
     pinMode(pinBat, INPUT_ANALOG);
+    pinMode(pinBaro, INPUT_ANALOG);
   #else
     pinMode(pinMAP, INPUT);
     pinMode(pinO2, INPUT);
@@ -518,6 +520,7 @@ void setPinMapping(byte boardID)
     pinMode(pinIAT, INPUT);
     pinMode(pinCLT, INPUT);
     pinMode(pinBat, INPUT);
+    pinMode(pinBaro, INPUT);
   #endif
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);

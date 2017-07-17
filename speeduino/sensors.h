@@ -12,6 +12,7 @@
 #define ADCFILTER_O2   128
 #define ADCFILTER_BAT  128
 #define ADCFILTER_MAP   20 //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
+#define ADCFILTER_BARO  64
 
 #define BARO_MIN      87
 #define BARO_MAX      108

@@ -202,6 +202,25 @@ void readIAT()
   currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
 }
 
+void readBaro()
+{
+  if ( configPage3.useExtBaro != 0 )
+  {
+    int tempReading;
+    // readings
+    #if defined(ANALOG_ISR_MAP)
+      tempReading = AnChannel[pinBaro-A0];
+    #else
+      tempReading = analogRead(pinBaro);
+      tempReading = analogRead(pinBaro);
+    #endif
+
+    currentStatus.baroADC = ADC_FILTER(tempReading, ADCFILTER_BARO, currentStatus.baroADC); //Very weak filter
+
+    currentStatus.baro = fastMap1023toX(currentStatus.baroADC, configPage1.mapMax); //Get the current MAP value
+  }
+}
+
 void readO2()
 {
   unsigned int tempReading;
