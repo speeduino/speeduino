@@ -436,7 +436,10 @@ uint16_t getRPM_BasicDistributor()
   if( currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100) )
   { tempRPM = crankingGetRPM(triggerActualTeeth >> 1); } //crankGetRPM uses teeth per 360 degrees. As triggerActualTeeh is total teeth in 720 degrees, we divide the tooth count by 2
   else
-  { tempRPM = stdGetRPM() << 1; } //Multiply RPM by 2 due to tracking over 720 degrees now rather than 360
+  {
+    tempRPM = stdGetRPM() << 1;
+    revolutionTime = revolutionTime >> 1; //Revolution time has to be divided by 2 as otherwise it would be over 720 degrees (triggerActualTeeth = nCylinders)
+  } //Multiply RPM by 2 due to tracking over 720 degrees now rather than 360
 
   return tempRPM;
 
