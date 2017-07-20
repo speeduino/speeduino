@@ -54,6 +54,7 @@ struct config2 configPage2;
 struct config3 configPage3;
 struct config4 configPage4;
 struct config10 configPage10;
+struct config11 configPage11;
 
 int req_fuel_uS, inj_opentime_uS;
 
@@ -182,6 +183,10 @@ void setup()
   WUETable.xSize = 10;
   WUETable.values = configPage1.wueValues;
   WUETable.axisX = configPage2.wueBins;
+  crankingEnrichTable.valueSize = SIZE_BYTE;
+  crankingEnrichTable.xSize = 4;
+  crankingEnrichTable.values = configPage11.crankingEnrichValues;
+  crankingEnrichTable.axisX = configPage11.crankingEnrichBins;
 
   dwellVCorrectionTable.valueSize = SIZE_BYTE;
   dwellVCorrectionTable.xSize = 6;
@@ -1086,7 +1091,7 @@ void loop()
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
     }
-    if ((mainLoopCount & 1023) == 1) //Every 1024 loops
+    if ((mainLoopCount & 1023) == 1) //Every 1024 loops (Approx. 1 per second)
     {
       //Approx. once per second
       readBaro();

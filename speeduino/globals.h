@@ -109,7 +109,7 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 const byte page_size = 64;
 const int npage_size[11] = {0,288,64,288,64,288,64,64,160,192,128};
-//const byte page10_size = 128;
+//const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
 struct table3D fuelTable; //16x16 fuel map
@@ -123,6 +123,7 @@ struct table3D trim3Table; //6x6 Fuel trim 3 map
 struct table3D trim4Table; //6x6 Fuel trim 4 map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
+struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
 struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
@@ -564,6 +565,64 @@ struct config10 {
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
 
+/*
+Page 11 - No specific purpose. Created initially for the cranking enrich curve
+192 bytes long
+See ini file for further info (Config Page 11 in the ini)
+*/
+struct config11 {
+  byte crankingEnrichBins[4];
+  byte crankingEnrichValues[4];
+  byte unused11_8;
+  byte unused11_9;
+  byte unused11_10;
+  byte unused11_11;
+  byte unused11_12;
+  byte unused11_13;
+  byte unused11_14;
+  byte unused11_15;
+  byte unused11_16;
+  byte unused11_17;
+  byte unused11_18;
+  byte unused11_19;
+  byte unused11_20;
+  byte unused10_21;
+  byte unused11_22;
+  byte unused11_23;
+  byte unused11_24;
+  byte unused11_25;
+  byte unused11_26;
+  byte unused11_27;
+  byte unused11_28;
+  byte unused11_29;
+  byte unused11_107;
+  byte unused11_108;
+  byte unused11_109;
+  byte unused11_110;
+  byte unused11_111;
+  byte unused11_112;
+  byte unused11_113;
+  byte unused11_114;
+  byte unused11_115;
+  byte unused11_116;
+  byte unused11_117;
+  byte unused11_118;
+  byte unused11_119;
+  byte unused11_120;
+  byte unused11_121;
+  byte unused11_122;
+  byte unused11_123;
+  byte unused11_124;
+  byte unused11_125;
+  byte unused11_126;
+  byte unused11_127;
+  byte unused11_128_192[64];
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+#endif
+
 
 byte pinInjector1; //Output pin injector 1
 byte pinInjector2; //Output pin injector 2
@@ -631,10 +690,12 @@ extern struct table3D ignitionTable; //16x16 ignition map
 extern struct table3D afrTable; //16x16 afr target map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
+extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 extern struct config1 configPage1;
 extern struct config2 configPage2;
 extern struct config3 configPage3;
 extern struct config10 configPage10;
+extern struct config11 configPage11;
 extern unsigned long currentLoopTime; //The time the current loop started (uS)
 extern unsigned long previousLoopTime; //The time the previous loop started (uS)
 extern byte ignitionCount;
