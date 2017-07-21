@@ -68,7 +68,7 @@ bool fuelPumpOn = false; //The current status of the fuel pump
 
 void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
-int (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
+uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
 int (*getCrankAngle)(int); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 
 byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
@@ -86,8 +86,6 @@ unsigned long previousLoopTime; //The time the previous loop started (uS)
 
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360, CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
-//bool useSequentialFuel; // Whether sequential fueling is to be used (1 squirt per cycle)
-//bool useSequentialIgnition; // Whether sequential ignition is used (1 spark per cycle)
 
 static byte coilHIGH = HIGH;
 static byte coilLOW = LOW;
@@ -114,12 +112,6 @@ int channel3InjDegrees; //The number of crank degrees until cylinder 3 (and 5/6/
 int channel4InjDegrees; //The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC
 int channel5InjDegrees; //The number of crank degrees until cylinder 5 is at TDC
 
-bool channel1InjEnabled = true;
-bool channel2InjEnabled = false;
-bool channel3InjEnabled = false;
-bool channel4InjEnabled = false;
-bool channel5InjEnabled = false;
-
 //These are the functions the get called to begin and end the ignition coil charging. They are required for the various spark output modes
 void (*ign1StartFunction)();
 void (*ign1EndFunction)();
@@ -135,10 +127,12 @@ void (*ign5EndFunction)();
 int timePerDegree;
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
+bool initialisationComplete = false; //Tracks whether the setup() functino has run completely
 
 void setup()
 {
 
+  Serial.begin(115200);  
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
   //dummyIgnitionTable(&ignitionTable);
@@ -152,17 +146,12 @@ void setup()
   table3D_setSize(&trim3Table, 6);
   table3D_setSize(&trim4Table, 6);
 
-  #if defined(CORE_STM32)
-    pinMode(CS, OUTPUT);
-    digitalWrite(CS, HIGH); // disable
-    Spi.begin();
-    loadConfig_STM();
-  #else  
-    loadConfig();
-  #endif
+  EEPROM.init();
+  loadConfig();
   doUpdates(); //Check if any data items need updating (Occurs ith firmware updates)
 
-  Serial.begin(115200);
+  pinMode(PA7, OUTPUT);
+  //Serial.begin(115200);
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
   if (configPage10.enable_canbus == 1) { Serial3.begin(115200); }
 #elif defined(CORE_STM32)
@@ -171,14 +160,16 @@ void setup()
   {
     //enable local can interface
   }
-#elif defined(CORE_TEESNY)
+#elif defined(CORE_TEENSY)
   if (configPage10.enable_canbus == 1) { Serial2.begin(115200); }
   else if (configPage10.enable_canbus == 2)
   {
+    //Teensy onboard CAN not used currently
     //enable local can interface
-    FlexCAN CANbus0(2500000, 0);   //setup can interface to 250k
-    static CAN_message_t txmsg,rxmsg;
-    CANbus0.begin();
+    //setup can interface to 250k
+    //FlexCAN CANbus0(2500000, 0);
+    //static CAN_message_t txmsg,rxmsg;
+    //CANbus0.begin();
   }
 #endif
 
@@ -305,6 +296,8 @@ void setup()
         triggerInterrupt = 3; break;
       case 21:
         triggerInterrupt = 2; break;
+      default:
+        triggerInterrupt = 0; break; //This should NEVER happen
     }
   #else
     triggerInterrupt = pinTrigger;
@@ -325,6 +318,8 @@ void setup()
         triggerInterrupt2 = 3; break;
       case 21:
         triggerInterrupt2 = 2; break;
+      default:
+        triggerInterrupt2 = 0; break; //This should NEVER happen
     }
   #else
     triggerInterrupt2 = pinTrigger2;
@@ -511,6 +506,17 @@ void setup()
             attachInterrupt(triggerInterrupt2, triggerSec_Subaru67, FALLING);
             break;
 
+    case 14:
+            triggerSetup_Daihatsu();
+            trigger = triggerPri_Daihatsu;
+            getRPM = getRPM_Daihatsu;
+            getCrankAngle = getCrankAngle_Daihatsu;
+
+            if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+            else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+            //No secondary input required for this pattern
+            break;
+
     default:
       trigger = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;
@@ -540,6 +546,7 @@ void setup()
 
       channel1InjEnabled = true;
       break;
+
     case 2:
       channel1IgnDegrees = 0;
 
@@ -560,13 +567,24 @@ void setup()
       channel1InjEnabled = true;
       channel2InjEnabled = true;
       break;
+
     case 3:
       channel1IgnDegrees = 0;
 
       if (configPage1.engineType == EVEN_FIRE )
       {
-        channel2IgnDegrees = 120;
-        channel3IgnDegrees = 240;
+        if(configPage2.sparkMode == IGN_MODE_SEQUENTIAL)
+        {
+          channel2IgnDegrees = 240;
+          channel3IgnDegrees = 480;
+
+          CRANK_ANGLE_MAX_IGN = 720;
+        }
+        else
+        {
+          channel2IgnDegrees = 120;
+          channel3IgnDegrees = 240;
+        }
       }
       else
       {
@@ -578,8 +596,8 @@ void setup()
       if(configPage1.injLayout == INJ_SEMISEQUENTIAL  || configPage1.injLayout == INJ_PAIRED)
       {
         channel1InjDegrees = 0;
-        channel2InjDegrees = channel2IgnDegrees;
-        channel3InjDegrees = channel3IgnDegrees;
+        channel2InjDegrees = 120;
+        channel3InjDegrees = 240;
       }
       else if (configPage1.injLayout == INJ_SEQUENTIAL)
       {
@@ -687,18 +705,12 @@ void setup()
       break;
     case 6:
       channel1IgnDegrees = 0;
+      channel1InjDegrees = 0;
       channel2IgnDegrees = 120;
+      channel2InjDegrees = 120;
       channel3IgnDegrees = 240;
+      channel3InjDegrees = 240;
 
-      //For alternatiing injection, the squirt occurs at different times for each channel
-      /*
-      if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injLayout == INJ_SEQUENTIAL || configPage1.injLayout == INJ_PAIRED) //No full sequential for more than 4 cylinders
-      {
-        channel1InjDegrees = 0;
-        channel2InjDegrees = 120;
-        channel3InjDegrees = 240;
-      }
-      */
       if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       configPage1.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
@@ -708,21 +720,11 @@ void setup()
       channel3InjEnabled = true;
       break;
     case 8:
-      channel1IgnDegrees = 0;
-      channel2IgnDegrees = 90;
-      channel3IgnDegrees = 180;
-      channel4IgnDegrees = 270;
+      channel1IgnDegrees = channel1InjDegrees = 0;
+      channel2IgnDegrees = channel2InjDegrees = 90;
+      channel3IgnDegrees = channel3InjDegrees = 180;
+      channel4IgnDegrees = channel4InjDegrees = 270;
 
-      //For alternatiing injection, the squirt occurs at different times for each channel
-      /*
-      if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injTiming == INJ_SEQUENTIAL) //No full sequential for more than 4 cylinders
-      {
-        channel1InjDegrees = 0;
-        channel2InjDegrees = 90;
-        channel3InjDegrees = 180;
-        channel4InjDegrees = 270;
-      }
-      */
       if (!configPage1.injTiming)  { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       configPage1.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
@@ -831,8 +833,12 @@ void setup()
   digitalWrite(pinFuelPump, HIGH);
   fuelPumpOn = true;
   //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
-  setFuelSchedule1(openInjector1and4, 100, (unsigned long)(configPage1.primePulse * 100), closeInjector1and4);
-  setFuelSchedule2(openInjector2and3, 100, (unsigned long)(configPage1.primePulse * 100), closeInjector2and3);
+  setFuelSchedule1(100, (unsigned long)(configPage1.primePulse * 100));
+  setFuelSchedule2(100, (unsigned long)(configPage1.primePulse * 100));
+  setFuelSchedule3(100, (unsigned long)(configPage1.primePulse * 100));
+  setFuelSchedule4(100, (unsigned long)(configPage1.primePulse * 100));
+
+  initialisationComplete = true;
 }
 
 void loop()
@@ -900,7 +906,8 @@ void loop()
           }
 #endif
 
-    // if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();} //Displays currently disabled
+    //Displays currently disabled
+    // if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
 
     previousLoopTime = currentLoopTime;
     currentLoopTime = micros();
@@ -921,6 +928,7 @@ void loop()
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       secCounter = 0; //Reset our seconds counter.
       currentStatus.startRevolutions = 0;
+      toothSystemCount = 0;
       MAPcurRev = 0;
       MAPcount = 0;
       currentStatus.rpmDOT = 0;
@@ -1102,15 +1110,6 @@ void loop()
       }
 
       currentStatus.advance = correctionsIgn(currentStatus.advance);
-      /*
-      //Check for fixed ignition angles
-      if (configPage2.FixAng != 0) { currentStatus.advance = configPage2.FixAng; } //Check whether the user has set a fixed timing angle
-      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { currentStatus.advance = configPage2.CrankAng; } //Use the fixed cranking ignition angle
-      //Adjust the advance based on IAT. If the adjustment amount is greater than the current advance, just set advance to 0
-      byte advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
-      if (advanceIATadjust <= currentStatus.advance) { currentStatus.advance -= advanceIATadjust; }
-      else { currentStatus.advance = 0; }
-      */
 
       int injector1StartAngle = 0;
       int injector2StartAngle = 0;
@@ -1157,7 +1156,7 @@ void loop()
 
           long toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
           long toothDeltaT = toothHistory[toothHistoryIndex];
-          //long timeToLastTooth = micros() - toothLastToothTime; //Cannot be unsigned
+          //long timeToLastTooth = micros() - toothLastToothTime;
 
           rpmDelta = (toothDeltaV << 10) / (6 * toothDeltaT);
         }
@@ -1362,25 +1361,13 @@ void loop()
 
       if (fuelOn && currentStatus.PW1 > 0 && !BIT_CHECK(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT))
       {
-        if (injector1StartAngle <= crankAngle && fuelSchedule1.schedulesSet == 0) { injector1StartAngle += CRANK_ANGLE_MAX_INJ; }
+        if ( (injector1StartAngle <= crankAngle) && (fuelSchedule1.Status == RUNNING) ) { injector1StartAngle += CRANK_ANGLE_MAX_INJ; }
         if (injector1StartAngle > crankAngle)
         {
-          if (configPage1.injLayout == INJ_SEMISEQUENTIAL)
-          {
-            setFuelSchedule1(openInjector1and4,
-                      ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW1,
-                      closeInjector1and4
-                      );
-          }
-          else
-          {
-            setFuelSchedule1(openInjector1,
-                      ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW1,
-                      closeInjector1
-                      );
-          }
+          setFuelSchedule1(
+                    ((unsigned long)(injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                    (unsigned long)currentStatus.PW1
+                    );
         }
 
         /*-----------------------------------------------------------------------------------------
@@ -1400,25 +1387,13 @@ void loop()
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
           tempStartAngle = injector2StartAngle - channel2InjDegrees;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
-          if (tempStartAngle <= tempCrankAngle && fuelSchedule2.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule2.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            if (configPage1.injLayout == 1)
-            {
-              setFuelSchedule2(openInjector2and3,
-                        ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                        (unsigned long)currentStatus.PW2,
-                        closeInjector2and3
-                        );
-            }
-            else
-            {
-              setFuelSchedule2(openInjector2,
-                        ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                        (unsigned long)currentStatus.PW2,
-                        closeInjector2
-                        );
-            }
+            setFuelSchedule2(
+                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      (unsigned long)currentStatus.PW2
+                      );
           }
         }
 
@@ -1428,13 +1403,12 @@ void loop()
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
           tempStartAngle = injector3StartAngle - channel3InjDegrees;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
-          if (tempStartAngle <= tempCrankAngle && fuelSchedule3.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule3.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule3(openInjector3,
+            setFuelSchedule3(
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW3,
-                      closeInjector3
+                      (unsigned long)currentStatus.PW3
                       );
           }
         }
@@ -1445,13 +1419,12 @@ void loop()
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
           tempStartAngle = injector4StartAngle - channel4InjDegrees;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
-          if (tempStartAngle <= tempCrankAngle && fuelSchedule4.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule4.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule4(openInjector4,
+            setFuelSchedule4(
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW4,
-                      closeInjector4
+                      (unsigned long)currentStatus.PW4
                       );
           }
         }
@@ -1466,10 +1439,15 @@ void loop()
           if ( tempStartAngle > tempCrankAngle )
           {
             //Note the hacky use of fuel schedule 3 below
+            /*
             setFuelSchedule3(openInjector3and5,
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW1,
                       closeInjector3and5
+                    );*/
+            setFuelSchedule3(
+                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      (unsigned long)currentStatus.PW1
                       );
           }
         }

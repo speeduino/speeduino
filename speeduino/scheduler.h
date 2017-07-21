@@ -26,7 +26,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define SCHEDULER_H
 
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+#if defined(CORE_AVR)
   #include <avr/interrupt.h>
   #include <avr/io.h>
 
@@ -35,6 +35,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define FUEL2_COUNTER TCNT3
   #define FUEL3_COUNTER TCNT3
   #define FUEL4_COUNTER TCNT4
+  #define FUEL5_COUNTER TCNT3
 
   #define IGN1_COUNTER  TCNT5
   #define IGN2_COUNTER  TCNT5
@@ -46,6 +47,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define FUEL2_COMPARE OCR3B
   #define FUEL3_COMPARE OCR3C
   #define FUEL4_COMPARE OCR4B
+  #define FUEL5_COMPARE OCR3A //Shared with FUEL1
 
   #define IGN1_COMPARE  OCR5A
   #define IGN2_COMPARE  OCR5B
@@ -160,57 +162,59 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define uS_TO_TIMER_COMPARE_SLOW(uS) ((uS * 15) >> 5)
 
 #elif defined(CORE_STM32)
+  #include "HardwareTimer.h"
   //Placeholders ONLY!
-
+  //https://visualgdb.com/tutorials/arm/stm32/timers/hal/
   //https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/master/STM32F4/cores/maple/libmaple/timer.h#L51
   #define MAX_TIMER_PERIOD 131070 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
   #define uS_TO_TIMER_COMPARE(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
   #define uS_TO_TIMER_COMPARE_SLOW(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
 
-  #define FUEL1_COUNTER (TIMER2->regs).gen->CNT
-  #define FUEL2_COUNTER (TIMER2->regs).gen->CNT
-  #define FUEL3_COUNTER (TIMER2->regs).gen->CNT
-  #define FUEL4_COUNTER (TIMER2->regs).gen->CNT
+  #define FUEL1_COUNTER (TIM2)->CNT
+  #define FUEL2_COUNTER (TIM2)->CNT
+  #define FUEL3_COUNTER (TIM2)->CNT
+  #define FUEL4_COUNTER (TIM2)->CNT
+  #define FUEL5_COUNTER (TIM2)->CNT
 
-  #define IGN1_COUNTER  (TIMER3->regs).gen->CNT
-  #define IGN2_COUNTER  (TIMER3->regs).gen->CNT
-  #define IGN3_COUNTER  (TIMER3->regs).gen->CNT
-  #define IGN4_COUNTER  (TIMER3->regs).gen->CNT
-  #define IGN5_COUNTER  (TIMER1->regs).gen->CNT
+  #define IGN1_COUNTER  (TIM3)->CNT
+  #define IGN2_COUNTER  (TIM3)->CNT
+  #define IGN3_COUNTER  (TIM3)->CNT
+  #define IGN4_COUNTER  (TIM3)->CNT
+  #define IGN5_COUNTER  (TIM3)->CNT
 
-  #define FUEL1_COMPARE (TIMER2->regs).gen->CCR1
-  #define FUEL2_COMPARE (TIMER2->regs).gen->CCR2
-  #define FUEL3_COMPARE (TIMER2->regs).gen->CCR3
-  #define FUEL4_COMPARE (TIMER2->regs).gen->CCR4
+  #define FUEL1_COMPARE (TIM2)->CCR1
+  #define FUEL2_COMPARE (TIM2)->CCR2
+  #define FUEL3_COMPARE (TIM2)->CCR3
+  #define FUEL4_COMPARE (TIM2)->CCR4
 
-  #define IGN1_COMPARE (TIMER3->regs).gen->CCR1
-  #define IGN2_COMPARE (TIMER3->regs).gen->CCR2
-  #define IGN3_COMPARE (TIMER3->regs).gen->CCR3
-  #define IGN4_COMPARE (TIMER3->regs).gen->CCR4
-  #define IGN5_COMPARE (TIMER1->regs).gen->CCR1
+  #define IGN1_COMPARE (TIM3)->CCR1
+  #define IGN2_COMPARE (TIM3)->CCR2
+  #define IGN3_COMPARE (TIM3)->CCR3
+  #define IGN4_COMPARE (TIM3)->CCR4
+  #define IGN5_COMPARE (TIM3)->CCR1
 
   //https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
-  #define FUEL1_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC1E
-  #define FUEL2_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC2E
-  #define FUEL3_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC3E
-  #define FUEL4_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC4E
+  #define FUEL1_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC1E
+  #define FUEL2_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC2E
+  #define FUEL3_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC3E
+  #define FUEL4_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC4E
 
-  #define IGN1_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC1E
-  #define IGN2_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC2E
-  #define IGN3_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC3E
-  #define IGN4_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC4E
-  #define IGN5_TIMER_ENABLE() (TIMER1->regs).gen->CCER |= TIMER_CCER_CC1E
+  #define IGN1_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC1E
+  #define IGN2_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC2E
+  #define IGN3_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC3E
+  #define IGN4_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC4E
+  #define IGN5_TIMER_ENABLE() (TIM1)->CCER |= TIM_CCER_CC1E
 
-  #define FUEL1_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC1E
-  #define FUEL2_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC2E
-  #define FUEL3_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC3E
-  #define FUEL4_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC4E
+  #define FUEL1_TIMER_DISABLE() (TIM2)->CCER &= ~TIM_CCER_CC1E
+  #define FUEL2_TIMER_DISABLE() (TIM2)->CCER &= ~TIM_CCER_CC2E
+  #define FUEL3_TIMER_DISABLE() (TIM2)->CCER &= ~TIM_CCER_CC3E
+  #define FUEL4_TIMER_DISABLE() (TIM2)->CCER &= ~TIM_CCER_CC4E
 
-  #define IGN1_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC1E
-  #define IGN2_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC2E
-  #define IGN3_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC3E
-  #define IGN4_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC4E
-  #define IGN5_TIMER_DISABLE() (TIMER1->regs).gen->CCER &= ~TIMER_CCER_CC1E
+  #define IGN1_TIMER_DISABLE() (TIM3)->CCER &= ~TIM_CCER_CC1E
+  #define IGN2_TIMER_DISABLE() (TIM3)->CCER &= ~TIM_CCER_CC2E
+  #define IGN3_TIMER_DISABLE() (TIM3)->CCER &= ~TIM_CCER_CC3E
+  #define IGN4_TIMER_DISABLE() (TIM3)->CCER &= ~TIM_CCER_CC4E
+  #define IGN5_TIMER_DISABLE() (TIM1)->CCER &= ~TIM_CCER_CC1E
 
 #endif
 
@@ -255,8 +259,12 @@ struct Schedule {
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
   volatile unsigned long startTime; //The system time (in uS) that the schedule started
-  unsigned int startCompare; //The counter value of the timer when this will start
-  unsigned int endCompare;
+  volatile unsigned int startCompare; //The counter value of the timer when this will start
+  volatile unsigned int endCompare;
+
+  unsigned int nextStartCompare;
+  unsigned int nextEndCompare;
+  volatile bool hasNextSchedule = false;
 };
 
 volatile Schedule *timer3Aqueue[4];
@@ -345,8 +353,11 @@ static inline unsigned int popQueue(volatile Schedule *queue[])
   queue[2] = queue[3];
   queue[3] = &nullSchedule;
 
-  if( queue[0]->Status == PENDING ) { return queue[0]->startCompare; }
-  else { return queue[0]->endCompare; }
+  unsigned int returnCompare;
+  if( queue[0]->Status == PENDING ) { returnCompare = queue[0]->startCompare; }
+  else { returnCompare = queue[0]->endCompare; }
+
+  return returnCompare;
 }
 
 

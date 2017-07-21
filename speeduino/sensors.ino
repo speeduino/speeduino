@@ -50,14 +50,14 @@ MAPcount = 0;
 void instanteneousMAPReading()
 {
   //Instantaneous MAP readings
-  #if defined(ANALOG_ISR)
+  #if defined(ANALOG_ISR_MAP)
     tempReading = AnChannel[pinMAP-A0];
   #else
     tempReading = analogRead(pinMAP);
     tempReading = analogRead(pinMAP);
   #endif
   //Error checking
-  if(tempReading >= VALID_MAP_MAX || tempReading <= VALID_MAP_MIN) { mapErrorCount += 1; }
+  if( (tempReading >= VALID_MAP_MAX) || (tempReading <= VALID_MAP_MIN) ) { mapErrorCount += 1; }
   else { mapErrorCount = 0; }
 
   currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC); //Very weak filter
@@ -80,68 +80,78 @@ void readMAP()
     case 1:
       //Average of a cycle
 
-      if (currentStatus.RPM < 1 || !currentStatus.hasSync) {  instanteneousMAPReading(); return; } //If the engine isn't running, fall back to instantaneous reads
-
-      if( (MAPcurRev == currentStatus.startRevolutions) || (MAPcurRev == currentStatus.startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
+      if ( (currentStatus.RPM > 0) && (currentStatus.hasSync == true) ) //If the engine isn't running, fall back to instantaneous reads
       {
-        #if defined(ANALOG_ISR)
-          tempReading = AnChannel[pinMAP-A0];
-        #else
-          tempReading = analogRead(pinMAP);
-          tempReading = analogRead(pinMAP);
-        #endif
-
-        //Error check
-        if(tempReading < VALID_MAP_MAX && tempReading > VALID_MAP_MIN)
+        if( (MAPcurRev == currentStatus.startRevolutions) || (MAPcurRev == (currentStatus.startRevolutions+1)) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
-          MAPrunningValue = MAPrunningValue + tempReading; //Add the current reading onto the total
-          MAPcount++;
+          #if defined(ANALOG_ISR_MAP)
+            tempReading = AnChannel[pinMAP-A0];
+          #else
+            tempReading = analogRead(pinMAP);
+            tempReading = analogRead(pinMAP);
+          #endif
+
+          //Error check
+          if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
+          {
+            MAPrunningValue = MAPrunningValue + (unsigned long)tempReading; //Add the current reading onto the total
+            MAPcount++;
+          }
+          else { mapErrorCount += 1; }
         }
-        else { mapErrorCount += 1; }
+        else
+        {
+          //Reaching here means that the last cylce has completed and the MAP value should be calculated
+          //Sanity check
+          if( (MAPrunningValue != 0) && (MAPcount != 0) )
+          {
+            currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
+            currentStatus.MAP = fastResize(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
+            MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
+            MAPrunningValue = 0;
+            MAPcount = 0;
+          }
+          else { instanteneousMAPReading(); }
+        }
       }
-      else
-      {
-        //Reaching here means that the last cylce has completed and the MAP value should be calculated
-
-        //Sanity check
-        if (MAPrunningValue == 0 || MAPcount == 0) {  instanteneousMAPReading(); return; }
-
-        currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
-        currentStatus.MAP = fastResize(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
-        MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
-        MAPrunningValue = 0;
-        MAPcount = 0;
-      }
+      else {  instanteneousMAPReading(); }
       break;
 
     case 2:
       //Minimum reading in a cycle
-      if (currentStatus.RPM < 1) {  instanteneousMAPReading(); return; } //If the engine isn't running, fall back to instantaneous reads
-
-      if( (MAPcurRev == currentStatus.startRevolutions) || (MAPcurRev == currentStatus.startRevolutions+1) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
+      if (currentStatus.RPM > 0 ) //If the engine isn't running, fall back to instantaneous reads
       {
-        #if defined(ANALOG_ISR)
-          tempReading = AnChannel[pinMAP-A0];
-        #else
-          tempReading = analogRead(pinMAP);
-          tempReading = analogRead(pinMAP);
-        #endif
-        //Error check
-        if(tempReading < VALID_MAP_MAX && tempReading > VALID_MAP_MIN)
+        if( (MAPcurRev == currentStatus.startRevolutions) || (MAPcurRev == (currentStatus.startRevolutions+1)) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
-          if( tempReading < MAPrunningValue) { MAPrunningValue = tempReading; } //Check whether the current reading is lower than the running minimum
+          #if defined(ANALOG_ISR_MAP)
+            tempReading = AnChannel[pinMAP-A0];
+          #else
+            tempReading = analogRead(pinMAP);
+            tempReading = analogRead(pinMAP);
+          #endif
+          //Error check
+          if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
+          {
+            if( (unsigned long)tempReading < MAPrunningValue ) { MAPrunningValue = (unsigned long)tempReading; } //Check whether the current reading is lower than the running minimum
+          }
+          else { mapErrorCount += 1; }
         }
-        else { mapErrorCount += 1; }
+        else
+        {
+          //Reaching here means that the last cylce has completed and the MAP value should be calculated
+          currentStatus.mapADC = MAPrunningValue;
+          currentStatus.MAP = fastResize(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
+          MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
+          MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
+        }
       }
-      else
-      {
-        //Reaching here means that the last cylce has completed and the MAP value should be calculated
-        currentStatus.mapADC = MAPrunningValue;
-        currentStatus.MAP = fastResize(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
-        MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
-        MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
-      }
+      else { instanteneousMAPReading(); }
       break;
+
+    default:
+    //Instantaneous MAP readings (Just in case)
+    instanteneousMAPReading();
+    break;
   }
 }
 
@@ -200,11 +210,11 @@ void readO2()
   currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
 }
 
-/* Second O2 currently disabled as its not being used
-  currentStatus.O2_2ADC = map(analogRead(pinO2_2), 0, 1023, 0, 511); //Get the current O2 value.
-  currentStatus.O2_2ADC = ADC_FILTER(tempReading, ADCFILTER_O2, currentStatus.O2_2ADC);
-  currentStatus.O2_2 = o2CalibrationTable[currentStatus.O2_2ADC];
-*/
+  //Second O2 currently disabled as its not being used
+  //Get the current O2 value.
+  //currentStatus.O2_2ADC = map(analogRead(pinO2_2), 0, 1023, 0, 511);
+  //currentStatus.O2_2ADC = ADC_FILTER(tempReading, ADCFILTER_O2, currentStatus.O2_2ADC);
+  //currentStatus.O2_2 = o2CalibrationTable[currentStatus.O2_2ADC];
 
 void readBat()
 {

@@ -9,13 +9,24 @@
   #define CORE_AVR
 #elif defined(CORE_TEENSY)
   #define BOARD_NR_GPIO_PINS 34
-#elif defined(STM32_MCU_SERIES) || defined(_VARIANT_ARDUINO_STM32_)
+#elif defined(STM32_MCU_SERIES) || defined(STM32F1) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
-  #define LED_BUILTIN 33
-
+  #if defined (STM32F1) || defined(__STM32F1__)
+    #define LED_BUILTIN 33
+  #elif defined(ARDUINO_BLACK_F407VE)
+    #define BOARD_NR_GPIO_PINS 78
+    #define LED_BUILTIN PA7
+  #endif
+  
+  extern "C" char* sbrk(int incr); //Used to freeRam
   inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
-  #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
-  #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+  #if defined(ARDUINO_BLACK_F407VE)
+    #define portOutputRegister(port) (volatile byte *)( &(port->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+    #define portInputRegister(port) (volatile byte *)( &(port->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+  #else  
+    #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+    #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+  #endif
 #else
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif
@@ -23,7 +34,7 @@
 //Handy bitsetting macros
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
 #define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
-#define BIT_CHECK(var,pos) ((var) & (1<<(pos)))
+#define BIT_CHECK(var,pos) !!((var) & (1<<(pos)))
 
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000
@@ -109,7 +120,7 @@ const byte data_structure_version = 2; //This identifies the data structure when
 const byte page_size = 64;
 const int npage_size[11] = {0,288,64,288,64,288,64,64,160,192,128};
 //const byte page10_size = 128;
-const int map_page_size = 288;
+#define MAP_PAGE_SIZE 288
 
 struct table3D fuelTable; //16x16 fuel map
 struct table3D ignitionTable; //16x16 ignition map
@@ -158,11 +169,21 @@ volatile byte triggerPri_pin_mask;
 volatile byte *triggerSec_pin_port;
 volatile byte triggerSec_pin_mask;
 
+//These need to be here as they are used in both speeduino.ino and scheduler.ino
+bool channel1InjEnabled = true;
+bool channel2InjEnabled = false;
+bool channel3InjEnabled = false;
+bool channel4InjEnabled = false;
+bool channel5InjEnabled = false;
+
+//This is used across multiple files
+unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
-  volatile boolean hasSync;
-  unsigned int RPM;
+  volatile bool hasSync;
+  uint16_t RPM;
   long longRPM;
   int mapADC;
   long MAP; //Has to be a long for PID calcs (Boost control)
@@ -215,7 +236,7 @@ struct statuses {
   volatile unsigned int loopsPerSecond;
   boolean launchingSoft; //True when in launch control soft limit mode
   boolean launchingHard; //True when in launch control hard limit mode
-  int freeRAM;
+  unsigned int freeRAM;
   unsigned int clutchEngagedRPM;
   bool flatShiftingHard;
   volatile byte startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
@@ -240,7 +261,7 @@ struct statuses currentStatus; //The global status object
 //This mostly covers off variables that are required for fuel
 struct config1 {
 
-  int8_t flexBoostLow;
+  int8_t flexBoostLow; //Must be signed to allow for negatives
   byte flexBoostHigh;
   byte asePct;  //Afterstart enrichment (%)
   byte aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for

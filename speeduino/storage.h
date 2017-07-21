@@ -1,36 +1,22 @@
 #ifndef STORAGE_H
 #define STORAGE_H
+
 #if defined(CORE_STM32)
-  #include <SPI.h>
+  #if defined(STM32F4)
+    #define CS PB0
+  #else
+    #define CS PB12
+  #endif
+  #include <SPIFlash.h> //https://github.com/Marzogh/SPIFlash
+  SPIFlash ExtMem(CS); //Initialize external EEPROM
+  inline unsigned char EEPROM_read(uint32_t EEPROM_address) { return ExtMem.readByte(EEPROM_address); }
+  inline void EEPROM_write(uint32_t EEPROM_address, uint8_t data) { ExtMem.writeByte(EEPROM_address, data, false); }
 #endif
 
 void writeConfig();
 void loadConfig();
 void loadCalibration();
 void writeCalibration();
-
-#if defined(CORE_STM32)
-  // Based on code by Heather Dewey-Hagborg
-  // http://arduino.cc/en/Tutorial/SPIEEPROM
-
-  #define PAGE_SIZE 256 //W25Q16
-  #define SPI_MODE 0
-  #define CS 10 // chip select
-
-  // EEPROM opcodes
-  #define WREN 6 //Write Enable
-  #define WRDI 4 //Write Disable
-  #define RDSR 5 //Read Status Register-1
-  #define WRSR 1 //Write Status Register
-  #define READ 3 //Read Data
-  #define WRITE 2 //Page Program
-  //not sure if this will work on STM32F407
-  #if !defined (STM32_HIGH_DENSITY)
-    SPIClass Spi(2); //STM32F103 series share SPI1 with analogic channels, use 2 instead.
-  #else
-    SPIClass Spi(1); //STM32F407 eeprom is on SPI1 port
-  #endif
-#endif
 
 /*
 Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes):

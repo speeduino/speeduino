@@ -10,7 +10,7 @@
 */
 #include "utils.h"
 
-int freeRam ()
+unsigned int freeRam ()
 {
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   extern int __heap_start, *__brkval;
@@ -31,8 +31,8 @@ int freeRam ()
   // The difference is the free, available ram.
   return (uint16_t)stackTop - heapTop;
 #elif defined(CORE_STM32)
-  //Figure this out some_time
-  return 0;
+  char top = 't';
+  return &top - reinterpret_cast<char*>(sbrk(0));
 #endif
 }
 
@@ -41,23 +41,42 @@ void setPinMapping(byte boardID)
   //This is dumb, but it'll do for now to get things compiling
   #if defined(CORE_STM32)
     //STM32F1/variants/.../board.cpp
-    #define A0  boardADCPins[0]
-    #define A1  boardADCPins[1]
-    #define A2  boardADCPins[2]
-    #define A3  boardADCPins[3]
-    #define A4  boardADCPins[4]
-    #define A5  boardADCPins[5]
-    #define A6  boardADCPins[6]
-    #define A7  boardADCPins[7]
-    #define A8  boardADCPins[8]
-    #define A9  boardADCPins[9]
-    //STM32F1 have only 9 12bit adc
-    #define A10  boardADCPins[0]
-    #define A11  boardADCPins[1]
-    #define A12  boardADCPins[2]
-    #define A13  boardADCPins[3]
-    #define A14  boardADCPins[4]
-    #define A15  boardADCPins[5]
+    #if defined (STM32F4)
+      #define A0  PA0
+      #define A1  PA1
+      #define A2  PA2
+      #define A3  PA3
+      #define A4  PA4
+      #define A5  PA5
+      #define A6  PA6
+      #define A7  PA7
+      #define A8  PB0
+      #define A9  PB1
+      #define A10  PC0
+      #define A11  PC1
+      #define A12  PC2
+      #define A13  PC3
+      #define A14  PC4
+      #define A15  PC5
+    #else
+      #define A0  boardADCPins[0]
+      #define A1  boardADCPins[1]
+      #define A2  boardADCPins[2]
+      #define A3  boardADCPins[3]
+      #define A4  boardADCPins[4]
+      #define A5  boardADCPins[5]
+      #define A6  boardADCPins[6]
+      #define A7  boardADCPins[7]
+      #define A8  boardADCPins[8]
+      #define A9  boardADCPins[9]
+      //STM32F1 have only 9 12bit adc
+      #define A10  boardADCPins[0]
+      #define A11  boardADCPins[1]
+      #define A12  boardADCPins[2]
+      #define A13  boardADCPins[3]
+      #define A14  boardADCPins[4]
+      #define A15  boardADCPins[5]
+    #endif
   #endif
 
   switch (boardID)
@@ -157,6 +176,7 @@ void setPinMapping(byte boardID)
       #if defined(CORE_TEENSY)
         pinTrigger = 23;
         pinStepperDir = 33;
+        pinStepperStep = 34;
         pinCoil1 = 31;
         pinTachOut = 28;
         pinFan = 27;
@@ -185,8 +205,8 @@ void setPinMapping(byte boardID)
         pinStepperStep = 13; //Step pin for DRV8825 driver
         pinStepperEnable = 14; //Enable pin for DRV8825
         pinDisplayReset = 2; // OLED reset pin
-        pinFan = 0; //Pin for the fan output
-        pinFuelPump = 1; //Fuel pump output
+        pinFan = 1; //Pin for the fan output
+        pinFuelPump = 0; //Fuel pump output
         pinTachOut = 31; //Tacho output pin
         //external interrupt enabled pins
         pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
@@ -233,12 +253,41 @@ void setPinMapping(byte boardID)
         pinTrigger = 23;
         pinTrigger2 = 35;
         pinStepperDir = 33;
+        pinStepperStep = 34;
         pinCoil1 = 31;
         pinTachOut = 28;
         pinFan = 27;
         pinCoil4 = 29;
         pinCoil3 = 30;
         pinO2 = A22;
+      #elif defined(STM32F4)
+        pinInjector1 = PE11; //Output pin injector 1 is on
+        pinInjector2 = PE12; //Output pin injector 2 is on
+        pinInjector3 = PE13; //Output pin injector 3 is on
+        pinInjector4 = PE14; //Output pin injector 4 is on
+        pinInjector5 = PE15; //Output pin injector 4 is on
+        pinCoil1 = PB10; //Pin for coil 1
+        pinCoil2 = PB11; //Pin for coil 2
+        pinCoil3 = PB12; //Pin for coil 3
+        pinCoil4 = PB13; //Pin for coil 4
+        pinCoil5 = PB14; //Pin for coil 5
+        pinTPS = PA0; //TPS input pin
+        pinMAP = PA1; //MAP sensor pin
+        pinIAT = PA2; //IAT sensor pin
+        pinCLT = PA3; //CLS sensor pin
+        pinO2 = PA4; //O2 Sensor pin
+        pinBat = PA5; //Battery reference voltage pin
+        pinStepperDir = PD8; //Direction pin  for DRV8825 driver
+        pinStepperStep = PB15; //Step pin for DRV8825 driver
+        pinStepperEnable = PD9; //Enable pin for DRV8825
+        pinDisplayReset = PE1; // OLED reset pin
+        pinFan = PE2; //Pin for the fan output
+        pinFuelPump = PA6; //Fuel pump output
+        pinTachOut = PA7; //Tacho output pin
+        //external interrupt enabled pins
+        pinFlex = PC4; // Flex sensor (Must be external interrupt enabled)
+        pinTrigger = PC5; //The CAS pin
+        pinTrigger2 = PC6; //The Cam Sensor pin
       #elif defined(CORE_STM32)
         //http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/0.0.12/hardware/maple-mini.html#master-pin-map
         //pins 23, 24 and 33 couldn't be used
@@ -261,8 +310,8 @@ void setPinMapping(byte boardID)
         pinStepperStep = 13; //Step pin for DRV8825 driver
         pinStepperEnable = 14; //Enable pin for DRV8825
         pinDisplayReset = 2; // OLED reset pin
-        pinFan = 0; //Pin for the fan output
-        pinFuelPump = 1; //Fuel pump output
+        pinFan = 1; //Pin for the fan output
+        pinFuelPump = 0; //Fuel pump output
         pinTachOut = 31; //Tacho output pin
         //external interrupt enabled pins
         pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
@@ -277,7 +326,7 @@ void setPinMapping(byte boardID)
       pinInjector2 = 10; //Output pin injector 2 is on
       pinInjector3 = 9; //Output pin injector 3 is on
       pinInjector4 = 8; //Output pin injector 4 is on
-      pinInjector5 = 12; //Output pin injector 5 is on
+      pinInjector5 = 14; //Output pin injector 5 is on
       pinCoil1 = 39; //Pin for coil 1
       pinCoil2 = 41; //Pin for coil 2
       pinCoil3 = 35; //Pin for coil 3
@@ -499,23 +548,13 @@ void setPinMapping(byte boardID)
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
 
   //And for inputs
-  #if defined(CORE_STM32)
-    pinMode(pinMAP, INPUT_ANALOG);
-    pinMode(pinO2, INPUT_ANALOG);
-    pinMode(pinO2_2, INPUT_ANALOG);
-    pinMode(pinTPS, INPUT_ANALOG);
-    pinMode(pinIAT, INPUT_ANALOG);
-    pinMode(pinCLT, INPUT_ANALOG);
-    pinMode(pinBat, INPUT_ANALOG);
-  #else
-    pinMode(pinMAP, INPUT);
-    pinMode(pinO2, INPUT);
-    pinMode(pinO2_2, INPUT);
-    pinMode(pinTPS, INPUT);
-    pinMode(pinIAT, INPUT);
-    pinMode(pinCLT, INPUT);
-    pinMode(pinBat, INPUT);
-  #endif
+  pinMode(pinMAP, INPUT);
+  pinMode(pinO2, INPUT);
+  pinMode(pinO2_2, INPUT);
+  pinMode(pinTPS, INPUT);
+  pinMode(pinIAT, INPUT);
+  pinMode(pinCLT, INPUT);
+  pinMode(pinBat, INPUT);
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
