@@ -1,18 +1,6 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
-#if defined(CORE_STM32)
-  #if defined(STM32F4)
-    #define CS PB0
-  #else
-    #define CS PB12
-  #endif
-  #include <SPIFlash.h> //https://github.com/Marzogh/SPIFlash
-  SPIFlash ExtMem(CS); //Initialize external EEPROM
-  inline unsigned char EEPROM_read(uint32_t EEPROM_address) { return ExtMem.readByte(EEPROM_address); }
-  inline void EEPROM_write(uint32_t EEPROM_address, uint8_t data) { ExtMem.writeByte(EEPROM_address, data, false); }
-#endif
-
 void writeConfig();
 void loadConfig();
 void loadCalibration();

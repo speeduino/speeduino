@@ -92,7 +92,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
   //Anything inside this if statement will run every 250ms.
   if (loop250ms == 250)
   {
-    digitalWrite(PA7, !digitalRead(PA7));
     loop250ms = 0; //Reset Counter.
     #if defined(CORE_AVR)
       //Reset watchdog timer (Not active currently)

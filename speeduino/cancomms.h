@@ -16,7 +16,6 @@ uint8_t Glow, Ghigh;
   HardwareSerial &CANSerial = Serial3;
 #elif defined(CORE_STM32)
   SerialUART &CANSerial = Serial2;
-  //HardwareSerial &CANSerial = Serial2;
 #elif defined(CORE_TEENSY)
   HardwareSerial &CANSerial = Serial2;
 #endif

@@ -40,8 +40,6 @@ void instanteneousMAPReading();
 void readMAP();
 void flexPulse();
 
-unsigned int tempReading;
-
 #if defined(ANALOG_ISR)
 //Analog ISR interrupt routine
 /*

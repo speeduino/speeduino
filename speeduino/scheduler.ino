@@ -191,7 +191,6 @@ void initialiseSchedulers()
   Timer1.resume();
   Timer2.resume();
   Timer3.resume();
-
 #endif
 
     fuelSchedule1.Status = OFF;

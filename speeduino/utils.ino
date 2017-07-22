@@ -7,15 +7,18 @@
 
 /*
   Returns how much free dynamic memory exists (between heap and stack)
+  This function is one big MISRA violation. MISRA advisories forbid directly poking at memory addresses, however there is no other way of determining heap size on embedded systems.
 */
 #include "utils.h"
 
-unsigned int freeRam ()
+uint16_t freeRam ()
 {
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   extern int __heap_start, *__brkval;
-  int v;
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+  uint16_t v;
+
+  return (uint16_t) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+
 #elif defined(CORE_TEENSY)
   uint32_t stackTop;
   uint32_t heapTop;
@@ -417,6 +420,7 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
+      break;
 
     case 30:
       //Pin mappings as per the dazv6 shield
@@ -486,18 +490,14 @@ void setPinMapping(byte boardID)
       break;
   }
 
-  //First time running?
-  if (configPage3.launchPin < BOARD_NR_GPIO_PINS)
-  {
-    //Setup any devices that are using selectable pins
-    if (configPage3.launchPin != 0) { pinLaunch = configPage3.launchPin; }
-    if (configPage2.ignBypassPin != 0) { pinIgnBypass = configPage2.ignBypassPin; }
-    if (configPage1.tachoPin != 0) { pinTachOut = configPage1.tachoPin; }
-    if (configPage2.fuelPumpPin != 0) { pinFuelPump = configPage2.fuelPumpPin; }
-    if (configPage4.fanPin != 0) { pinFan = configPage4.fanPin; }
-    if (configPage3.boostPin != 0) { pinBoost = configPage3.boostPin; }
-    if (configPage3.vvtPin != 0) { pinVVT_1 = configPage3.vvtPin; }
-  }
+  //Setup any devices that are using selectable pins
+  if ( (configPage3.launchPin != 0) && (configPage3.launchPin < BOARD_NR_GPIO_PINS) ) { pinLaunch = configPage3.launchPin; }
+  if ( (configPage2.ignBypassPin != 0) && (configPage2.ignBypassPin < BOARD_NR_GPIO_PINS) ) { pinIgnBypass = configPage2.ignBypassPin; }
+  if ( (configPage1.tachoPin != 0) && (configPage1.tachoPin < BOARD_NR_GPIO_PINS) ) { pinTachOut = configPage1.tachoPin; }
+  if ( (configPage2.fuelPumpPin != 0) && (configPage2.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = configPage2.fuelPumpPin; }
+  if ( (configPage4.fanPin != 0) && (configPage4.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = configPage4.fanPin; }
+  if ( (configPage3.boostPin != 0) && (configPage3.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = configPage3.boostPin; }
+  if ( (configPage3.vvtPin != 0) && (configPage3.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = configPage3.vvtPin; }
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinCoil1, OUTPUT);
@@ -559,8 +559,7 @@ void setPinMapping(byte boardID)
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
   pinMode(pinFlex, INPUT_PULLUP); //Standard GM / Continental flex sensor requires pullup
-  //  pinMode(pinLaunch, INPUT_PULLUP); //This should work for both NO and NC grounding switches
-  if (configPage3.lnchPullRes) {
+  if (configPage3.lnchPullRes == true) {
     pinMode(pinLaunch, INPUT_PULLUP);
   }
   else {
@@ -602,30 +601,31 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
   iVE = ((unsigned int)VE << 7) / 100;
-  if ( configPage1.multiplyMAP ) {
+  if ( configPage1.multiplyMAP == true ) {
     iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
   }
-  if ( configPage1.includeAFR && (configPage3.egoType == 2)) {
+  if ( (configPage1.includeAFR == true) && (configPage3.egoType == 2)) {
     iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
   }
   iCorrections = (corrections << 7) / 100;
 
 
   unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
-  if ( configPage1.multiplyMAP ) {
-    intermediate = (intermediate * iMAP) >> 7;
+  if ( configPage1.multiplyMAP == true ) {
+    intermediate = (intermediate * (unsigned long)iMAP) >> 7;
   }
-  if ( configPage1.includeAFR && (configPage3.egoType == 2)) {
-    intermediate = (intermediate * iAFR) >> 7;  //EGO type must be set to wideband for this to be used
+  if ( (configPage1.includeAFR == true) && (configPage3.egoType == 2) ) {
+    intermediate = (intermediate * (unsigned long)iAFR) >> 7;  //EGO type must be set to wideband for this to be used
   }
-  intermediate = (intermediate * iCorrections) >> 7;
-  if (intermediate == 0) {
-    return 0;  //If the pulsewidth is 0, we return here before the opening time gets added
-  }
-
-  intermediate += injOpen; //Add the injector opening time
-  if ( intermediate > 65535) {
-    intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
+  intermediate = (intermediate * (unsigned long)iCorrections) >> 7;
+  if (intermediate != 0)
+  {
+    //If intermeditate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
+    intermediate += injOpen; //Add the injector opening time
+    if ( intermediate > 65535)
+    {
+      intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
+    }
   }
   return (unsigned int)(intermediate);
 
@@ -640,9 +640,5 @@ unsigned int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen
 
 unsigned int PW_AN(int REQ_FUEL, byte VE, byte TPS, int corrections, int injOpen)
 {
-  //Sanity check
-  if (TPS > 100) {
-    TPS = 100;
-  }
   return PW(REQ_FUEL, VE, currentStatus.MAP, corrections, injOpen);
 }

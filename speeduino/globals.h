@@ -9,24 +9,21 @@
   #define CORE_AVR
 #elif defined(CORE_TEENSY)
   #define BOARD_NR_GPIO_PINS 34
-#elif defined(STM32_MCU_SERIES) || defined(STM32F1) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
+#elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
   #if defined (STM32F1) || defined(__STM32F1__)
     #define LED_BUILTIN 33
+    #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+    #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
   #elif defined(ARDUINO_BLACK_F407VE)
     #define BOARD_NR_GPIO_PINS 78
     #define LED_BUILTIN PA7
+    #define portOutputRegister(port) (volatile byte *)( &(port->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+    #define portInputRegister(port) (volatile byte *)( &(port->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
   #endif
   
   extern "C" char* sbrk(int incr); //Used to freeRam
   inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
-  #if defined(ARDUINO_BLACK_F407VE)
-    #define portOutputRegister(port) (volatile byte *)( &(port->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
-    #define portInputRegister(port) (volatile byte *)( &(port->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
-  #else  
-    #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
-    #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
-  #endif
 #else
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif
@@ -176,6 +173,11 @@ bool channel3InjEnabled = false;
 bool channel4InjEnabled = false;
 bool channel5InjEnabled = false;
 
+int ignition1EndAngle = 0;
+int ignition2EndAngle = 0;
+int ignition3EndAngle = 0;
+int ignition4EndAngle = 0;
+
 //This is used across multiple files
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 
@@ -236,7 +238,7 @@ struct statuses {
   volatile unsigned int loopsPerSecond;
   boolean launchingSoft; //True when in launch control soft limit mode
   boolean launchingHard; //True when in launch control hard limit mode
-  unsigned int freeRAM;
+  uint16_t freeRAM;
   unsigned int clutchEngagedRPM;
   bool flatShiftingHard;
   volatile byte startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
@@ -245,7 +247,7 @@ struct statuses {
   bool testActive;
   byte boostDuty;
   byte idleLoad; //Either the current steps or current duty cycle for the idle control.
-  int canin[9];   //16bit raw value of selected canin data for channel 1-8
+  uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
   uint8_t current_caninchannel = 0; //start off at channel 0
 
   //Helpful bitwise operations:
@@ -318,7 +320,7 @@ struct config1 {
   byte algorithm : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
   byte injLayout : 2;
-  byte unused2_38g : 1;
+  byte perToothIgn : 1;
   byte unused2_38h : 1;
 
   byte primePulse;
@@ -521,45 +523,18 @@ struct config4 {
 struct config10 {
   byte enable_canbus:2;
   byte enable_candata_in:1;
-  byte caninput_sel[8];
-  uint16_t caninput_param_group[8];
-  uint8_t caninput_param_start_byte[8];
-  byte caninput_param_num_bytes[8];
-  byte unused10_41;
-  byte unused10_42;
-  byte unused10_43;
-  byte unused10_44;
-  byte unused10_45;
-  byte unused10_46;
-  byte unused10_47;
-  byte unused10_48;
-  byte unused10_49;
+  uint16_t caninput_sel;                    //bit status on/off if input is enabled
+  uint16_t caninput_param_group[16];        //u16 [15] array holding can address of input
+  uint8_t caninput_param_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)
+  uint16_t caninput_param_num_bytes;     //u16 bit status of the number of bytes length 1 or 2
+  byte unused10_53;
+  byte unused10_54;
   byte enable_candata_out : 1;
   byte canoutput_sel[8];
   uint16_t canoutput_param_group[8];
   uint8_t canoutput_param_start_byte[8];
   byte canoutput_param_num_bytes[8];
-  byte unused10_76;
-  byte unused10_77;
-  byte unused10_78;
-  byte unused10_79;
-  byte unused10_80;
-  byte unused10_81;
-  byte unused10_82;
-  byte unused10_83;
-  byte unused10_84;
-  byte unused10_85;
-  byte unused10_86;
-  byte unused10_87;
-  byte unused10_88;
-  byte unused10_89;
-  byte unused10_90;
-  byte unused10_91;
-  byte unused10_92;
-  byte unused10_93;
-  byte unused10_94;
-  byte unused10_95;
-  byte unused10_96;
+
   byte unused10_97;
   byte unused10_98;
   byte unused10_99;

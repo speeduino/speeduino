@@ -61,6 +61,11 @@ bool secondDerivEnabled; //The use of the 2nd derivative calculation is limited 
 bool decoderIsSequential; //Whether or not the decoder supports sequential operation
 byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
 
+int16_t ignition1EndTooth = 0;
+int16_t ignition2EndTooth = 0;
+int16_t ignition3EndTooth = 0;
+int16_t ignition4EndTooth = 0;
+
 int toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 
 //Used for identifying long and short pulses on the 4G63 (And possibly other) trigger patterns

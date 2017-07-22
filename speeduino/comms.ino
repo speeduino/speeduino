@@ -21,13 +21,10 @@ void command()
   {
 
     case 'A': // send x bytes of realtime values
-      sendValues(0, packetSize, 0);   //send values to serial0
+      sendValues(0, packetSize,0x30, 0);   //send values to serial0
       break;
 
-    case 'a':
-      ExtMem.error(1);
-      break;
-      
+
     case 'B': // Burn current values to eeprom
       writeConfig();
       break;
@@ -83,12 +80,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.06-dev");
+      Serial.print("Speeduino 2017.06");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201706-dev");
+      Serial.print("speeduino 201706");
      break;
 
     case 'V': // send VE table and constants in binary
@@ -193,7 +190,7 @@ void command()
           offset = word(Serial.read(), tmp);
           tmp = Serial.read();
           length = word(Serial.read(), tmp);
-          sendValues(offset, length, 0);
+          sendValues(offset, length,cmd, 0);
         }
         else
         {
@@ -247,33 +244,23 @@ void command()
 This function returns the current values of a fixed group of variables
 */
 //void sendValues(int packetlength, byte portNum)
-void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 {
   byte fullStatus[packetSize];
 
   if (portNum == 3)
   {
     //CAN serial
-    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
+    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)|| defined(CORE_STM32) || defined (CORE_TEENSY) //ATmega2561 does not have Serial3
       if (offset == 0)
         {
-          Serial3.write("A");         //confirm cmd type
+          CANSerial.write("A");         //confirm cmd type
         }
       else
         {
-          Serial3.write("r");         //confirm cmd type
+      CANSerial.write("r");         //confirm cmd type
+      CANSerial.write(cmd);
         }
-      Serial3.write(packetLength);      //confirm no of byte to be sent
-    #elif defined(CORE_STM32) || defined (CORE_TEENSY)
-      if (offset == 0)
-        {
-          Serial2.write("A");         //confirm cmd type
-        }
-      else
-        {
-          Serial2.write("r");         //confirm cmd type
-        }
-      Serial2.write(packetLength);      //confirm no of byte to be sent
     #endif
   }
   else
@@ -349,11 +336,27 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   fullStatus[54] = highByte(currentStatus.canin[6]);
   fullStatus[55] = lowByte(currentStatus.canin[7]);
   fullStatus[56] = highByte(currentStatus.canin[7]);
+  fullStatus[57] = lowByte(currentStatus.canin[8]);
+  fullStatus[58] = highByte(currentStatus.canin[8]);
+  fullStatus[59] = lowByte(currentStatus.canin[9]);
+  fullStatus[60] = highByte(currentStatus.canin[9]);
+  fullStatus[61] = lowByte(currentStatus.canin[10]);
+  fullStatus[62] = highByte(currentStatus.canin[10]);
+  fullStatus[63] = lowByte(currentStatus.canin[11]);
+  fullStatus[64] = highByte(currentStatus.canin[11]);
+  fullStatus[65] = lowByte(currentStatus.canin[12]);
+  fullStatus[66] = highByte(currentStatus.canin[12]);
+  fullStatus[67] = lowByte(currentStatus.canin[13]);
+  fullStatus[68] = highByte(currentStatus.canin[13]);
+  fullStatus[69] = lowByte(currentStatus.canin[14]);
+  fullStatus[70] = highByte(currentStatus.canin[14]);
+  fullStatus[71] = lowByte(currentStatus.canin[15]);
+  fullStatus[72] = highByte(currentStatus.canin[15]);
 
   for(byte x=0; x<packetLength; x++)
   {
     if (portNum == 0) { Serial.write(fullStatus[offset+x]); }
-    else if (portNum == 3) { CANSerial.write(fullStatus[offset+x]); }
+    else if (portNum == 3){ CANSerial.write(fullStatus[offset+x]); }
   }
 
 }
@@ -1019,7 +1022,7 @@ void receiveCalibration(byte tableID)
   //1024 value pairs are sent. We have to receive them all, but only use every second one (We only store 512 calibratino table entries to save on EEPROM space)
   //The values are sent as 2 byte ints, but we convert them to single bytes. Any values over 255 are capped at 255.
   int tempValue;
-  int tempBuffer;
+  byte tempBuffer[2];
   bool every2nd = true;
   int x;
   int counter = 0;
@@ -1037,10 +1040,10 @@ void receiveCalibration(byte tableID)
     else
     {
       while ( Serial.available() < 2 ) {}
-      tempBuffer = Serial.read();
-      tempBuffer |= Serial.read() << 8;
+      tempBuffer[0] = Serial.read();
+      tempBuffer[1] = Serial.read();
 
-      tempValue = div(int(tempBuffer), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
+      tempValue = div(int(word(tempBuffer[1], tempBuffer[0])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
       tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
     }
     tempValue = tempValue + OFFSET;
