@@ -531,6 +531,15 @@ void receiveValue(int valueOffset, byte newValue)
       }
       break;
 
+    case warmupPage: //Idle Air Control settings page (Page 4)
+      pnt_configPage = &configPage11;
+      //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
+      if (valueOffset < page_size)
+      {
+        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
+      }
+      break;
+
     default:
       break;
   }
@@ -544,22 +553,19 @@ useChar - If true, all values are send as chars, this is for the serial command 
 */
 void sendPage(bool useChar)
 {
-  void* pnt_configPage;
-  struct table3D currentTable;
+  void* pnt_configPage = &configPage1; //Default value is for safety only. Will be changed below if needed.
+  struct table3D currentTable = fuelTable; //Default value is for safety only. Will be changed below if needed.
   byte currentTitleIndex = 0;// This corresponds to the count up to the first char of a string in pageTitles
   bool sendComplete = false; //Used to track whether all send operations are complete
 
   switch (currentPage)
   {
     case veMapPage:
-      {
         currentTitleIndex = 0;
         currentTable = fuelTable;
         break;
-      }
 
     case veSetPage:
-      {
         // currentTitleIndex = 27;
         if (useChar)
         {
@@ -591,17 +597,13 @@ void sendPage(bool useChar)
         }
         else { pnt_configPage = &configPage1; } //Create a pointer to Page 1 in memory
         break;
-      }
 
     case ignMapPage:
-      {
         currentTitleIndex = 42;// the index to the first char of the third string in pageTitles
         currentTable = ignitionTable;
         break;
-      }
 
     case ignSetPage:
-      {
         //currentTitleIndex = 56;
         if (useChar)
         {
@@ -648,17 +650,13 @@ void sendPage(bool useChar)
         }
         else { pnt_configPage = &configPage2; } //Create a pointer to Page 2 in memory
         break;
-      }
 
     case afrMapPage:
-      {
         currentTitleIndex = 71;//Array index to next string
         currentTable = afrTable;
         break;
-      }
 
     case afrSetPage:
-      {
         //currentTitleIndex = 91;
         if (useChar)
         {
@@ -703,10 +701,8 @@ void sendPage(bool useChar)
         }
         else { pnt_configPage = &configPage3; } //Create a pointer to Page 3 in memory
         break;
-      }
 
     case iacPage:
-      {
         //currentTitleIndex = 106;
         //To Display Values from Config Page 4
         if (useChar)
@@ -753,10 +749,8 @@ void sendPage(bool useChar)
         }
         else { pnt_configPage = &configPage4; } //Create a pointer to Page 4 in memory
         break;
-      }
 
     case boostvvtPage:
-      {
         if(useChar)
         {
           currentTable = boostTable;
@@ -779,9 +773,8 @@ void sendPage(bool useChar)
           sendComplete = true;
         }
         break;
-      }
+
     case seqFuelPage:
-      {
         if(useChar)
         {
           currentTable = trim1Table;
@@ -842,10 +835,8 @@ void sendPage(bool useChar)
           sendComplete = true;
         }
         break;
-      }
 
     case canbusPage:
-      {
         //currentTitleIndex = 141;
         if (useChar)
         {
@@ -859,14 +850,22 @@ void sendPage(bool useChar)
         }
         else { pnt_configPage = &configPage10; } //Create a pointer to Page 10 in memory
         break;
-      }
+
+    case warmupPage:
+        if (useChar)
+        {
+          sendComplete = true;
+        }
+        else { pnt_configPage = &configPage11; } //Create a pointer to Page 4 in memory
+        break;
 
     default:
-      {
         Serial.println(F("\nPage has not been implemented yet. Change to another page."));
+        //Just set default Values to avoid warnings
+        pnt_configPage = &configPage11;
+        currentTable = fuelTable;
         sendComplete = true;
         break;
-      }
   }
   if(!sendComplete)
   {
@@ -1016,6 +1015,11 @@ void receiveCalibration(byte tableID)
       break;
 
     default:
+      OFFSET = 0;
+      pnt_TargetTable = (byte *)&o2CalibrationTable;
+      DIVISION_FACTOR = 1;
+      BYTES_PER_VALUE = 1;
+      EEPROM_START = EEPROM_CALIBRATION_O2;
       break; //Should never get here, but if we do, just fail back to main loop
   }
 
