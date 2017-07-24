@@ -106,11 +106,25 @@ void vvtControl()
   if( configPage3.vvtEnabled == 1 )
   {
     byte vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
-    vvt_pwm_target_value = percentage(vvtDuty, vvt_pwm_max_count);
+    if(vvtDuty == 0)
+    {
+      //Make sure solenoid is off (0% duty)
+      VVT_PIN_LOW();
+      DISABLE_VVT_TIMER();
+    }
+    else if (vvtDuty >= 100)
+    {
+      //Make sure solenoid is on (100% duty)
+      VVT_PIN_HIGH();
+      DISABLE_VVT_TIMER();
+    }
+    else
+    {
+      vvt_pwm_target_value = percentage(vvtDuty, vvt_pwm_max_count);
+      ENABLE_VVT_TIMER();
+    }
   }
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-  else { TIMSK1 &= ~(1 << OCIE1B); } // Disable timer channel
-#endif
+  else { DISABLE_VVT_TIMER(); } // Disable timer channel
 }
 
 //The interrupt to control the Boost PWM

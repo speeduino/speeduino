@@ -6,6 +6,18 @@ void boostControl();
 void vvtControl();
 void initialiseFan();
 
+#if defined(CORE_AVR)
+  #define ENABLE_BOOST_TIMER() TIMSK1 |= (1 << OCIE1A)
+  #define DISABLE_BOOST_TIMER() TIMSK1 &= ~(1 << OCIE1A)
+  #define ENABLE_VVT_TIMER() TIMSK1 |= (1 << OCIE1B)
+  #define DISABLE_VVT_TIMER() TIMSK1 &= ~(1 << OCIE1B)
+
+  #define BOOST_PIN_LOW() *boost_pin_port &= ~(boost_pin_mask)
+  #define BOOST_PIN_HIGH() *boost_pin_port |= (boost_pin_mask)
+  #define VVT_PIN_LOW() *vvt_pin_port &= ~(vvt_pin_mask)
+  #define VVT_PIN_HIGH() *vvt_pin_port |= (vvt_pin_mask)
+#endif
+
 volatile byte *boost_pin_port;
 volatile byte boost_pin_mask;
 volatile byte *vvt_pin_port;
