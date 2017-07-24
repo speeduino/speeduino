@@ -510,7 +510,7 @@ int get3DTableValueS(struct table3D *fromTable, int Y, int X)
       break;
     }
     xMin--;
-  }while(TRUE);
+  }while(true);
 
   do  //MAP axis
   {
@@ -526,7 +526,7 @@ int get3DTableValueS(struct table3D *fromTable, int Y, int X)
       break;
     }
     yMin--;
-  }while(TRUE);
+  }while(true);
 
   fromTable->lastXMin = xMax;
   fromTable->lastYMin = yMax;
