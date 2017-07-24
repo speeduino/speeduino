@@ -84,7 +84,9 @@ void boostControl()
 
         boostPID.Compute();
         currentStatus.boostDuty = (unsigned long)(boost_pwm_target_value * 100UL) / boost_pwm_max_count;
-        ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt)
+        if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
+        else { ENABLE_BOOST_TIMER(); } //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
+
       }
       else
       {
