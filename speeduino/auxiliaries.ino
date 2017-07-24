@@ -28,14 +28,15 @@ void fanControl()
   }
 }
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 void initialiseAuxPWM()
 {
-  TCCR1B = 0x00;          //Disbale Timer1 while we set it up
-  TCNT1  = 0;             //Reset Timer Count
-  TIFR1  = 0x00;          //Timer1 INT Flag Reg: Clear Timer Overflow Flag
-  TCCR1A = 0x00;          //Timer1 Control Reg A: Wave Gen Mode normal (Simply counts up from 0 to 65535 (16-bit int)
-  TCCR1B = (1 << CS12);   //Timer1 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
+  #if defined(CORE_AVR)
+    TCCR1B = 0x00;          //Disbale Timer1 while we set it up
+    TCNT1  = 0;             //Reset Timer Count
+    TIFR1  = 0x00;          //Timer1 INT Flag Reg: Clear Timer Overflow Flag
+    TCCR1A = 0x00;          //Timer1 Control Reg A: Wave Gen Mode normal (Simply counts up from 0 to 65535 (16-bit int)
+    TCCR1B = (1 << CS12);   //Timer1 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
+  #endif
 
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
   boost_pin_mask = digitalPinToBitMask(pinBoost);
@@ -45,7 +46,7 @@ void initialiseAuxPWM()
   boost_pwm_max_count = 1000000L / (16 * configPage3.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
   vvt_pwm_max_count = 1000000L / (16 * configPage3.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
   //TIMSK1 |= (1 << OCIE1A); <---- Not required as compare A is turned on when needed by boost control
-  TIMSK1 |= (1 << OCIE1B); //Turn on the B compare unit (ie turn on the interrupt)
+  ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
 
   boostPID.SetOutputLimits(percentage(configPage1.boostMinDuty, boost_pwm_max_count) , percentage(configPage1.boostMaxDuty, boost_pwm_max_count));
   boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD);
@@ -80,23 +81,23 @@ void boostControl()
 
         boostPID.Compute();
         currentStatus.boostDuty = (unsigned long)(boost_pwm_target_value * 100UL) / boost_pwm_max_count;
-        TIMSK1 |= (1 << OCIE1A); //Turn on the compare unit (ie turn on the interrupt)
+        ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt)
       }
       else
       {
         //If boost target is 0, turn everything off
-        TIMSK1 &= ~(1 << OCIE1A); //Turn off timer
-        digitalWrite(pinBoost, LOW);
+        DISABLE_BOOST_TIMER(); //Turn off timer
+        BOOST_PIN_LOW();
       }
     }
     else
     {
       //Boost control does nothing if kPa below 100
-      TIMSK1 &= ~(1 << OCIE1A); //Turn off timer
-      digitalWrite(pinBoost, LOW); //Make sure solenoid is off (0% duty)
+      DISABLE_BOOST_TIMER(); //Turn off timer
+      BOOST_PIN_LOW(); //Make sure solenoid is off (0% duty)
     }
   }
-  else { TIMSK1 &= ~(1 << OCIE1A); } // Disable timer channel
+  else { DISABLE_BOOST_TIMER(); } // Disable timer channel
 
   boostCounter++;
 }
@@ -128,43 +129,51 @@ void vvtControl()
 }
 
 //The interrupt to control the Boost PWM
-ISR(TIMER1_COMPA_vect)
+#if defined(CORE_AVR)
+  ISR(TIMER1_COMPA_vect)
+#elif defined (CORE_TEENSY)
+  static inline void boostInterrupt() //Most ARM chips can simply call a function
+#endif
 {
   if (boost_pwm_state)
   {
-    *boost_pin_port &= ~(boost_pin_mask);  // Switch pin to low
-    OCR1A = TCNT1 + (boost_pwm_max_count - boost_pwm_cur_value);
+    BOOST_PIN_LOW();  // Switch pin to low
+    BOOST_TIMER_COMPARE = BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value);
     boost_pwm_state = false;
   }
   else
   {
-    *boost_pin_port |= (boost_pin_mask);  // Switch pin high
-    OCR1A = TCNT1 + boost_pwm_target_value;
+    BOOST_PIN_HIGH();  // Switch pin high
+    BOOST_TIMER_COMPARE = BOOST_TIMER_COUNTER + boost_pwm_target_value;
     boost_pwm_cur_value = boost_pwm_target_value;
     boost_pwm_state = true;
   }
 }
 
 //The interrupt to control the VVT PWM
-ISR(TIMER1_COMPB_vect)
+#if defined(CORE_AVR)
+  ISR(TIMER1_COMPB_vect)
+#elif defined (CORE_TEENSY)
+  static inline void vvtInterrupt() //Most ARM chips can simply call a function
+#endif
 {
   if (vvt_pwm_state)
   {
-    *vvt_pin_port &= ~(vvt_pin_mask);  // Switch pin to low
-    OCR1B = TCNT1 + (vvt_pwm_max_count - vvt_pwm_cur_value);
+    VVT_PIN_LOW();  // Switch pin to low
+    VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt_pwm_cur_value);
     vvt_pwm_state = false;
   }
   else
   {
-    *vvt_pin_port |= (vvt_pin_mask);  // Switch pin high
-    OCR1B = TCNT1 + vvt_pwm_target_value;
+    VVT_PIN_HIGH();  // Switch pin high
+    VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt_pwm_target_value;
     vvt_pwm_cur_value = vvt_pwm_target_value;
     vvt_pwm_state = true;
   }
 }
 
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
-//YET TO BE IMPLEMENTED ON TEENSY
+#if defined(CORE_STM32)
+//YET TO BE IMPLEMENTED ON STM32
 void initialiseAuxPWM() { }
 void boostControl() { }
 void vvtControl() { }
