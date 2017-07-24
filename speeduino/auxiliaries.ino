@@ -28,6 +28,7 @@ void fanControl()
   }
 }
 
+#if defined(CORE_AVR) || defined(CORE_TEENSY)
 void initialiseAuxPWM()
 {
   #if defined(CORE_AVR)
@@ -36,6 +37,8 @@ void initialiseAuxPWM()
     TIFR1  = 0x00;          //Timer1 INT Flag Reg: Clear Timer Overflow Flag
     TCCR1A = 0x00;          //Timer1 Control Reg A: Wave Gen Mode normal (Simply counts up from 0 to 65535 (16-bit int)
     TCCR1B = (1 << CS12);   //Timer1 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
+  #elif defined(CORE_TEENSY)
+    //REALLY NEED TO DO THIS!
   #endif
 
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
@@ -172,7 +175,7 @@ void vvtControl()
   }
 }
 
-#if defined(CORE_STM32)
+#elif defined(CORE_STM32)
 //YET TO BE IMPLEMENTED ON STM32
 void initialiseAuxPWM() { }
 void boostControl() { }
