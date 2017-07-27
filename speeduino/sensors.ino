@@ -63,8 +63,8 @@ void instanteneousMAPReading()
 
   currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC); //Very weak filter
 
-  currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
-
+  currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+  if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
 
 }
 
@@ -108,7 +108,8 @@ void readMAP()
           if( (MAPrunningValue != 0) && (MAPcount != 0) )
           {
             currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
-            currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
+            currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+            if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
             MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
             MAPrunningValue = 0;
             MAPcount = 0;
@@ -142,7 +143,8 @@ void readMAP()
         {
           //Reaching here means that the last cylce has completed and the MAP value should be calculated
           currentStatus.mapADC = MAPrunningValue;
-          currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
+          currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+          if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
           MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
           MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
         }

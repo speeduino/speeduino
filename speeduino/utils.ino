@@ -501,6 +501,8 @@ void setPinMapping(byte boardID)
 
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
+  pump_pin_port = portOutputRegister(digitalPinToPort(pinFuelPump));
+  pump_pin_mask = digitalPinToBitMask(pinFuelPump);
 
   //And for inputs
   #if defined(CORE_STM32)
