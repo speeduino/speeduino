@@ -192,7 +192,7 @@ void triggerSec_missingTooth()
 uint16_t getRPM_missingTooth()
 {
   uint16_t tempRPM = 0;
-  if( currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100) )
+  if( (currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100)) && (toothCurrentCount != 1) ) //Can't do per tooth RPM if we're at tooth #1 as the missing tooth messes the calculation
   {
     if(configPage2.TrigSpeed == 1) { crankingGetRPM(configPage2.triggerTeeth/2); } //Account for cam speed
     else { tempRPM = crankingGetRPM(configPage2.triggerTeeth); }
