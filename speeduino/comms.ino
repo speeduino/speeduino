@@ -275,19 +275,19 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[1] = currentStatus.squirt; //Squirt Bitfield
   fullStatus[2] = currentStatus.engine; //Engine Status Bitfield
   fullStatus[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
-  fullStatus[4] = (byte)(currentStatus.MAP >> 1); //map value is divided by 2
-  fullStatus[5] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
-  fullStatus[6] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
-  fullStatus[7] = currentStatus.tpsADC; //TPS (Raw 0-255)
-  fullStatus[8] = currentStatus.battery10; //battery voltage
-  fullStatus[9] = currentStatus.O2; //O2
-  fullStatus[10] = currentStatus.egoCorrection; //Exhaust gas correction (%)
-  fullStatus[11] = currentStatus.iatCorrection; //Air temperature Correction (%)
-  fullStatus[12] = currentStatus.wueCorrection; //Warmup enrichment (%)
-  fullStatus[13] = lowByte(currentStatus.RPM); //rpm HB
-  fullStatus[14] = highByte(currentStatus.RPM); //rpm LB
-  fullStatus[15] = currentStatus.TAEamount; //acceleration enrichment (%)
-  fullStatus[16] = currentStatus.baro; //Barometer value
+  fullStatus[4] = lowByte(currentStatus.MAP); //2 bytes for MAP
+  fullStatus[5] = highByte(currentStatus.MAP);
+  fullStatus[6] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
+  fullStatus[7] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
+  fullStatus[8] = currentStatus.batCorrection; //Battery voltage correction (%)
+  fullStatus[9] = currentStatus.battery10; //battery voltage
+  fullStatus[10] = currentStatus.O2; //O2
+  fullStatus[11] = currentStatus.egoCorrection; //Exhaust gas correction (%)
+  fullStatus[12] = currentStatus.iatCorrection; //Air temperature Correction (%)
+  fullStatus[13] = currentStatus.wueCorrection; //Warmup enrichment (%)
+  fullStatus[14] = lowByte(currentStatus.RPM); //rpm HB
+  fullStatus[15] = highByte(currentStatus.RPM); //rpm LB
+  fullStatus[16] = currentStatus.TAEamount; //acceleration enrichment (%)
   fullStatus[17] = currentStatus.corrections; //Total GammaE (%)
   fullStatus[18] = currentStatus.VE; //Current VE 1 (%)
   fullStatus[19] = currentStatus.afrTarget;
@@ -304,9 +304,9 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[26] = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
   fullStatus[27] = highByte(currentStatus.freeRAM);
 
-  fullStatus[28] = currentStatus.batCorrection; //Battery voltage correction (%)
-  fullStatus[29] = currentStatus.spark; //Spark related bitfield
-  fullStatus[30] = currentStatus.O2_2; //O2
+  fullStatus[28] = currentStatus.boostTarget;
+  fullStatus[29] = currentStatus.boostDuty;
+  fullStatus[30] = currentStatus.spark; //Spark related bitfield
 
   //rpmDOT must be sent as a signed integer
   fullStatus[31] = lowByte(currentStatus.rpmDOT);
@@ -316,10 +316,13 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[34] = currentStatus.flexCorrection; //Flex fuel correction (% above or below 100)
   fullStatus[35] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
   fullStatus[36] = getNextError();
-  fullStatus[37] = currentStatus.boostTarget;
-  fullStatus[38] = currentStatus.boostDuty;
-  fullStatus[39] = currentStatus.idleLoad;
-  fullStatus[40] = currentStatus.testOutputs;
+
+  fullStatus[37] = currentStatus.idleLoad;
+  fullStatus[38] = currentStatus.testOutputs;
+
+  fullStatus[39] = currentStatus.O2_2; //O2
+  fullStatus[40] = currentStatus.baro; //Barometer value
+
   fullStatus[41] = lowByte(currentStatus.canin[0]);
   fullStatus[42] = highByte(currentStatus.canin[0]);
   fullStatus[43] = lowByte(currentStatus.canin[1]);
