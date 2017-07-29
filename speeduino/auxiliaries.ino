@@ -3,7 +3,8 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
-integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+//integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPIDnew boostPID(&currentStatus.MAP, &boost_pwm_target_value, &boost_cl_target_boost, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 /*
 Fan control
@@ -67,7 +68,8 @@ void boostControl()
     {
       MAPx100 = currentStatus.MAP * 100;
 
-      boost_cl_target_boost = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; //Boost target table is in kpa and divided by 2
+      if( (boostCounter & 3) == 1) { boost_cl_target_boost = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; } //Boost target table is in kpa and divided by 2
+
       //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
       if( configPage1.flexEnabled == 1 )
       {

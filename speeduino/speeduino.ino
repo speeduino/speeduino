@@ -944,7 +944,8 @@ void loop()
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
       currentStatus.RPM = currentStatus.longRPM = getRPM(); //Long RPM is included here
-      if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't.
+      //if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't.
+      FUEL_PUMP_ON();
     }
     else
     {
@@ -1024,10 +1025,13 @@ void loop()
 
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
+
+      //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
+      boostControl();
     }
     if( (mainLoopCount & 63) == 1) //Every 64 loops
     {
-      boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
+      //Nothing here currently
     }
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
     if ((mainLoopCount & 255) == 1) //Every 256 loops
@@ -1104,6 +1108,7 @@ void loop()
     if (currentStatus.hasSync && (currentStatus.RPM > 0))
     {
         if(currentStatus.startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;} //Enable the fuel and ignition, assuming staging revolutions are complete
+        else { ignitionOn = false; fuelOn = false;}
         //If it is, check is we're running or cranking
         if(currentStatus.RPM > ((unsigned int)configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100
         {
