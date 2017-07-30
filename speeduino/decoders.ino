@@ -88,14 +88,18 @@ It takes an argument of the full (COMPLETE) number of teeth per revolution. For 
 static inline int crankingGetRPM(byte totalTeeth)
 {
   uint16_t tempRPM = 0;
-  if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) )
+  if( currentStatus.startRevolutions >= 2 )
   {
-    noInterrupts();
-    revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth;
-    interrupts();
-    tempRPM = (US_IN_MINUTE / revolutionTime);
-    if( tempRPM >= MAX_RPM ) { tempRPM = currentStatus.RPM; } //Sanity check. This can prevent spiking caused by noise on individual teeth. The new RPM should never be above 4x the cranking setting value (Remembering that this function is only called is the current RPM is less than the cranking setting)
+    if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) )
+    {
+      noInterrupts();
+      revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth;
+      interrupts();
+      tempRPM = (US_IN_MINUTE / revolutionTime);
+      if( tempRPM >= MAX_RPM ) { tempRPM = currentStatus.RPM; } //Sanity check. This can prevent spiking caused by noise on individual teeth. The new RPM should never be above 4x the cranking setting value (Remembering that this function is only called is the current RPM is less than the cranking setting)
+    }
   }
+
   return tempRPM;
 }
 
@@ -152,6 +156,8 @@ void triggerPri_missingTooth()
        if ( (curGap > targetGap) || (toothCurrentCount > triggerActualTeeth) )
        {
          if(toothCurrentCount < (triggerActualTeeth) && (currentStatus.hasSync == true) ) { currentStatus.hasSync = false; } //This occurs when we're at tooth #1, but haven't seen all the other teeth. This indicates a signal issue so we flag lost sync so this will attempt to resync on the next revolution.
+         //This is to handle a special case on startup where sync can be obtained and the system immediately thinks the revs have jumped:
+         //else if (currentStatus.hasSync == false && toothCurrentCount < checkSyncToothCount ) { triggerFilterTime = 0; } 
          else
          {
            toothCurrentCount = 1;
