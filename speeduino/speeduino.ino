@@ -242,7 +242,6 @@ void setup()
   initialiseADC();
 
   //Lookup the current MAP reading for barometric pressure
-  //readMAP();
   instanteneousMAPReading();
   //barometric reading can be taken from either an external sensor if enabled, or simply by using the initial MAP value
   if ( configPage3.useExtBaro != 0 )
@@ -268,7 +267,6 @@ void setup()
       if ((EEPROM.read(EEPROM_LAST_BARO) >= BARO_MIN) && (EEPROM.read(EEPROM_LAST_BARO) <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
       { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); } //last baro correction
       else { currentStatus.baro = 100; } //Final fall back position.
-
     }
   }
 
@@ -947,8 +945,8 @@ void loop()
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
       currentStatus.RPM = currentStatus.longRPM = getRPM(); //Long RPM is included here
-      //if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't.
       FUEL_PUMP_ON();
+      fuelPumpOn = true; //Not sure if this is needed.
     }
     else
     {
