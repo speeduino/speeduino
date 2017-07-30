@@ -231,8 +231,19 @@ void setup()
   //Set the tacho output default state
   digitalWrite(pinTachOut, HIGH);
 
+  //Perform all initialisations
+  initialiseSchedulers();
+  initialiseTimers();
+  //initialiseDisplay();
+  initialiseIdle();
+  initialiseFan();
+  initialiseAuxPWM();
+  initialiseCorrections();
+  initialiseADC();
+
   //Lookup the current MAP reading for barometric pressure
-  readMAP();
+  //readMAP();
+  instanteneousMAPReading();
   //barometric reading can be taken from either an external sensor if enabled, or simply by using the initial MAP value
   if ( configPage3.useExtBaro != 0 )
   {
@@ -257,18 +268,10 @@ void setup()
       if ((EEPROM.read(EEPROM_LAST_BARO) >= BARO_MIN) && (EEPROM.read(EEPROM_LAST_BARO) <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
       { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); } //last baro correction
       else { currentStatus.baro = 100; } //Final fall back position.
+
     }
   }
 
-  //Perform all initialisations
-  initialiseSchedulers();
-  initialiseTimers();
-  //initialiseDisplay();
-  initialiseIdle();
-  initialiseFan();
-  initialiseAuxPWM();
-  initialiseCorrections();
-  initialiseADC();
 
   //Check whether the flex sensor is enabled and if so, attach an interupt for it
   if(configPage1.flexEnabled)
