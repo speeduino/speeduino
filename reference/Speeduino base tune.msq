@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.26 - EFI Analytics, Inc." tuneComment="" writeDate="Tue Jul 11 16:20:48 AEST 2017"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.06" nPages="10" signature="speeduino 201706"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.27 - EFI Analytics, Inc." tuneComment="" writeDate="Sun Jul 30 23:07:21 AEST 2017"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.06" nPages="11" signature="speeduino 201707"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
 </page>
@@ -366,7 +366,7 @@
 <constant digits="0" name="egoRPM" units="rpm">1200.0</constant>
 <constant digits="0" name="egoTPSMax" units="%">70.0</constant>
 <constant name="vvtPin">"Board Default"</constant>
-<constant name="unused6-13e">"ONE"</constant>
+<constant name="useExtBaro">"No"</constant>
 <constant name="unused6-13f">"ONE"</constant>
 <constant name="boostPin">"Board Default"</constant>
 <constant name="unused6-14e">"ONE"</constant>
@@ -429,10 +429,7 @@
 <constant name="lnchPullRes">"Pullup"</constant>
 <constant name="fuelTrimEnabled">"No"</constant>
 <constant name="flatSEnable">"No"</constant>
-<constant name="unused6-60e">"ONE"</constant>
-<constant name="unused6-60f">"ONE"</constant>
-<constant name="unused6-60g">"ONE"</constant>
-<constant name="unused6-60h">"ONE"</constant>
+<constant name="baroPin">"A0"</constant>
 <constant digits="0" name="flatSSoftWin" units="rpm">400.0</constant>
 <constant digits="0" name="flatSRetard" units="deg">5.0</constant>
 <constant digits="0" name="flatSArm" units="rpm">2000.0</constant>
@@ -809,6 +806,20 @@
 <constant digits="0" name="unused10_125">255.0</constant>
 <constant digits="0" name="unused10_126">255.0</constant>
 <constant digits="0" name="unused10_127">255.0</constant>
+</page>
+<page number="10" size="192">
+<constant cols="1" digits="0" name="crankingEnrichBins" rows="4" units="C">
+         -40.0 
+         0.0 
+         30.0 
+         70.0 
+      </constant>
+<constant cols="1" digits="0" name="crankingEnrichValues" rows="4" units="%">
+         138.0 
+         115.0 
+         105.0 
+         100.0 
+      </constant>
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">
 <setting name="enablehardware_test_OFF" value="enablehardware_test_OFF"/>
