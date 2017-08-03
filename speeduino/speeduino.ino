@@ -209,7 +209,12 @@ void setup()
   loadCalibration();
 
   //Set the pin mappings
-  if(configPage1.pinMapping > BOARD_NR_GPIO_PINS) { setPinMapping(3); } //First time running? set to v0.4
+  if(configPage1.pinMapping > BOARD_NR_GPIO_PINS)
+  {
+    //First time running on this board
+    setPinMapping(3); //Force board to v0.4
+    configPage1.flexEnabled = false; //Have to disable flex. If this isn't done and the wrong flex pin is interrupt attached below, system can hang.
+  }
   else { setPinMapping(configPage1.pinMapping); }
 
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
@@ -269,7 +274,6 @@ void setup()
       else { currentStatus.baro = 100; } //Final fall back position.
     }
   }
-
 
   //Check whether the flex sensor is enabled and if so, attach an interupt for it
   if(configPage1.flexEnabled)
@@ -343,7 +347,6 @@ void setup()
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
   //digitalWrite(pinTrigger, HIGH);
-
 
   //Set the trigger function based on the decoder in the config
   switch (configPage2.TrigPattern)
@@ -955,6 +958,7 @@ void loop()
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       toothLastToothTime = 0;
+      //toothLastMinusOneToothTime = 0;
       currentStatus.hasSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       secCounter = 0; //Reset our seconds counter.

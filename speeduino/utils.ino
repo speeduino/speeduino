@@ -300,13 +300,14 @@ void setPinMapping(byte boardID)
       pinDisplayReset = 48; // OLED reset pin
       pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
       pinIdle1 = 2; //Single wire idle control
-      pinIdle2 = 3; //2 wire idle control (Note this is shared with boost!!!)
+      pinBoost = 4;
+      pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
       pinFuelPump = 37; //Fuel pump output  (Goes to ULN2803)
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       pinLaunch = 12; //Can be overwritten below
-      pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
       break;
 
     case 10:
@@ -441,6 +442,9 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
+      pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+      pinBoost = 5;
+      pinIdle1 = 6;
       break;
   }
 
