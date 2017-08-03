@@ -1,7 +1,7 @@
 #ifndef MATH_H
 #define MATH_H
 
-int fastResize(unsigned int, int);
+int fastResize(int, int);
 unsigned long percentage(byte, unsigned long);
 
 #endif

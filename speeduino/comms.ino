@@ -15,7 +15,7 @@ A detailed description of each call can be found at: http://www.msextra.com/doc/
 
 void command()
 {
-  if (!cmdPending) { currentCommand = Serial.read(); }
+  if (cmdPending == 0) { currentCommand = Serial.read(); }
 
   switch (currentCommand)
   {
@@ -23,8 +23,7 @@ void command()
     case 'A': // send x bytes of realtime values
       sendValues(0, packetSize, 0);   //send values to serial0
       break;
-
-
+      
     case 'B': // Burn current values to eeprom
       writeConfig();
       break;
@@ -80,12 +79,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.05-dev");
+      Serial.print(displaySignature);Serial.print(".");Serial.print(TSfirmwareVersion);
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201705-dev");
+      Serial.print(displaySignature);Serial.print(TSfirmwareVersion);
      break;
 
     case 'V': // send VE table and constants in binary
@@ -182,15 +181,15 @@ void command()
         tsCanId = Serial.read(); //Read the $tsCanId
         cmd = Serial.read(); // read the command
 
-        uint16_t offset, length;
+        uint16_t valueOffset, length;
         if(cmd == 0x30) //Send output channels command 0x30 is 48dec
         {
           byte tmp;
           tmp = Serial.read();
-          offset = word(Serial.read(), tmp);
+          valueOffset = word(Serial.read(), tmp);
           tmp = Serial.read();
           length = word(Serial.read(), tmp);
-          sendValues(offset, length, 0);
+          sendValues(valueOffset, length, 0);
         }
         else
         {
@@ -347,11 +346,12 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   fullStatus[55] = lowByte(currentStatus.canin[7]);
   fullStatus[56] = highByte(currentStatus.canin[7]);
 
-  for(byte x=0; x<packetLength; x++)
-  {
-    if (portNum == 0) { Serial.write(fullStatus[offset+x]); }
-    else if (portNum == 3) { CANSerial.write(fullStatus[offset+x]); }
-  }
+  Serial.write((byte *)&fullStatus+offset, packetLength);
+  //for(byte x=0; x<packetLength; x++)
+  //{
+  //  if (portNum == 0) { Serial.write(fullStatus[offset+x]); }
+  //  else if (portNum == 3) { CANSerial.write(fullStatus[offset+x]); }
+  //}
 
 }
 
@@ -1016,7 +1016,7 @@ void receiveCalibration(byte tableID)
   //1024 value pairs are sent. We have to receive them all, but only use every second one (We only store 512 calibratino table entries to save on EEPROM space)
   //The values are sent as 2 byte ints, but we convert them to single bytes. Any values over 255 are capped at 255.
   int tempValue;
-  byte tempBuffer[2];
+  int tempBuffer;
   bool every2nd = true;
   int x;
   int counter = 0;
@@ -1034,10 +1034,10 @@ void receiveCalibration(byte tableID)
     else
     {
       while ( Serial.available() < 2 ) {}
-      tempBuffer[0] = Serial.read();
-      tempBuffer[1] = Serial.read();
+      tempBuffer = Serial.read();
+      tempBuffer |= Serial.read() << 8;
 
-      tempValue = div(int(word(tempBuffer[1], tempBuffer[0])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
+      tempValue = div(int(tempBuffer), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
       tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
     }
     tempValue = tempValue + OFFSET;
@@ -1137,10 +1137,10 @@ void commandButtons()
       BIT_SET(currentStatus.testOutputs, 1);
       break;
     case 513: // cmd group is for injector1 on actions
-      if( BIT_CHECK(currentStatus.testOutputs, 1) == 1 ){ digitalWrite(pinInjector1, HIGH); }
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector1, HIGH); }
       break;
     case 514: // cmd group is for injector1 off actions
-      if( BIT_CHECK(currentStatus.testOutputs, 1) == 1 ){digitalWrite(pinInjector1, LOW);}
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){digitalWrite(pinInjector1, LOW);}
       break;
     case 515: // cmd group is for injector1 50% dc actions
       //for (byte dcloop = 0; dcloop < 11; dcloop++)
@@ -1152,64 +1152,64 @@ void commandButtons()
       //}
       break;
     case 516: // cmd group is for injector2 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) == 1){ digitalWrite(pinInjector2, HIGH); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector2, HIGH); }
       break;
     case 517: // cmd group is for injector2 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) == 1 ){ digitalWrite(pinInjector2, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector2, LOW); }
       break;
     case 518: // cmd group is for injector2 50%dc actions
 
       break;
     case 519: // cmd group is for injector3 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) == 1 ) { digitalWrite(pinInjector3, HIGH); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinInjector3, HIGH); }
       break;
     case 520: // cmd group is for injector3 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) == 1 ) { digitalWrite(pinInjector3, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinInjector3, LOW); }
       break;
     case 521: // cmd group is for injector3 50%dc actions
 
       break;
     case 522: // cmd group is for injector4 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) == 1 ){ digitalWrite(pinInjector4, HIGH); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector4, HIGH); }
       break;
     case 523: // cmd group is for injector4 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) == 1 ){ digitalWrite(pinInjector4, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector4, LOW); }
       break;
     case 524: // cmd group is for injector4 50% dc actions
 
       break;
     case 769: // cmd group is for spark1 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) == 1 ) { digitalWrite(pinCoil1, HIGH); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil1, HIGH); }
       break;
     case 770: // cmd group is for spark1 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) == 1 ) { digitalWrite(pinCoil1, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil1, LOW); }
       break;
     case 771: // cmd group is for spark1 50%dc actions
 
       break;
     case 772: // cmd group is for spark2 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) == 1 ) { digitalWrite(pinCoil2, HIGH); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil2, HIGH); }
       break;
     case 773: // cmd group is for spark2 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) == 1 ) { digitalWrite(pinCoil2, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil2, LOW); }
       break;
     case 774: // cmd group is for spark2 50%dc actions
 
       break;
     case 775: // cmd group is for spark3 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) == 1 ) { digitalWrite(pinCoil3, HIGH); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil3, HIGH); }
       break;
     case 776: // cmd group is for spark3 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) == 1 ) { digitalWrite(pinCoil3, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil3, LOW); }
       break;
     case 777: // cmd group is for spark3 50%dc actions
 
       break;
     case 778: // cmd group is for spark4 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) == 1 ) { digitalWrite(pinCoil4, HIGH); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil4, HIGH); }
       break;
     case 779: // cmd group is for spark4 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) == 1 ) { digitalWrite(pinCoil4, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil4, LOW); }
       break;
     case 780: // cmd group is for spark4 50%dc actions
 
@@ -1217,4 +1217,3 @@ void commandButtons()
       break;
   }
 }
-

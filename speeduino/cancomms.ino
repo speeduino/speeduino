@@ -101,6 +101,7 @@ void canCommand()
           offset = word(CANSerial.read(), tmp);
           tmp = CANSerial.read();
           length = word(CANSerial.read(), tmp);
+
           sendValues(offset, length, 3);
         }
         else
@@ -165,4 +166,3 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
         break;
     }
 }
-

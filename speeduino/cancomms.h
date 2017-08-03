@@ -15,7 +15,8 @@ uint8_t Glow, Ghigh;
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   HardwareSerial &CANSerial = Serial3;
 #elif defined(CORE_STM32)
-  HardwareSerial &CANSerial = Serial2;
+  SerialUART &CANSerial = Serial2;
+  //HardwareSerial &CANSerial = Serial2;
 #elif defined(CORE_TEENSY)
   HardwareSerial &CANSerial = Serial2;
 #endif
@@ -24,4 +25,3 @@ void canCommand();//This is the heart of the Command Line Interpeter.  All that 
 void sendCancommand(uint8_t cmdtype , uint16_t canadddress, uint8_t candata1, uint8_t candata2, uint16_t paramgroup);
 
 #endif // CANCOMMS_H
-
