@@ -271,8 +271,19 @@ void writeConfig()
   {
     if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG10_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG10_START))); }
   }
-    //*********************************************************************************************************************************************************************************
 
+  //*********************************************************************************************************************************************************************************
+
+  /*---------------------------------------------------
+  | Config page 11 (See storage.h for data layout)
+  | 192 byte long config table
+  -----------------------------------------------------*/
+  pnt_configPage = (byte *)&configPage11; //Create a pointer to Page 11 in memory
+  //As there are no 3d tables in this page, all 192 bytes can simply be read in
+  for(int x=EEPROM_CONFIG11_START; x<EEPROM_CONFIG11_END; x++)
+  {
+    if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG11_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG11_START))); }
+  }
 }
 
 void loadConfig()
@@ -476,6 +487,14 @@ void loadConfig()
 
   //*********************************************************************************************************************************************************************************
 
+  //CONFIG PAGE (11)
+  pnt_configPage = (byte *)&configPage11; //Create a pointer to Page 11 in memory
+  //All 192 bytes can simply be pulled straight from the configTable
+  for(int x=EEPROM_CONFIG11_START; x<EEPROM_CONFIG11_END; x++)
+  {
+    *(pnt_configPage + byte(x - EEPROM_CONFIG11_START)) = EEPROM.read(x);
+  }
+
 }
 
 /*
@@ -519,5 +538,3 @@ void writeCalibration()
   }
 
 }
-
-

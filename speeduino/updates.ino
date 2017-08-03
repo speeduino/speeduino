@@ -8,7 +8,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    3
+  #define CURRENT_DATA_VERSION    4
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -22,6 +22,19 @@ void doUpdates()
     }
     writeConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 3);
+  }
+  //June 2017 required the forced addition of some CAN values to avoid weird errors
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 3)
+  {
+    configPage10.speeduino_tsCanId = 0;
+    configPage10.true_address = 256;
+    configPage10.realtime_base_address = 336;
+
+    //There was a bad value in the May base tune for the spark duration setting, fix it here if it's a problem
+    if(configPage2.sparkDur == 255) { configPage2.sparkDur = 10; }
+
+    writeConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 4);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)

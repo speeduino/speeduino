@@ -7,15 +7,18 @@
 
 /*
   Returns how much free dynamic memory exists (between heap and stack)
+  This function is one big MISRA violation. MISRA advisories forbid directly poking at memory addresses, however there is no other way of determining heap size on embedded systems.
 */
 #include "utils.h"
 
-unsigned int freeRam ()
+uint16_t freeRam ()
 {
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   extern int __heap_start, *__brkval;
-  int v;
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+  uint16_t v;
+
+  return (uint16_t) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+
 #elif defined(CORE_TEENSY)
   uint32_t stackTop;
   uint32_t heapTop;
@@ -33,52 +36,13 @@ unsigned int freeRam ()
 #elif defined(CORE_STM32)
   char top = 't';
   return &top - reinterpret_cast<char*>(sbrk(0));
+
 #endif
 }
 
 void setPinMapping(byte boardID)
 {
   //This is dumb, but it'll do for now to get things compiling
-  #if defined(CORE_STM32)
-    //STM32F1/variants/.../board.cpp
-    #if defined (STM32F4)
-      #define A0  PA0
-      #define A1  PA1
-      #define A2  PA2
-      #define A3  PA3
-      #define A4  PA4
-      #define A5  PA5
-      #define A6  PA6
-      #define A7  PA7
-      #define A8  PB0
-      #define A9  PB1
-      #define A10  PC0
-      #define A11  PC1
-      #define A12  PC2
-      #define A13  PC3
-      #define A14  PC4
-      #define A15  PC5
-    #else
-      #define A0  PB0
-      #define A1  PA7
-      #define A2  PA6
-      #define A3  PA5
-      #define A4  PA4
-      #define A5  PA3
-      #define A6  PA2
-      #define A7  PA1
-      #define A8  PA0
-      //STM32F1 have only 9 12bit adc
-      #define A9  PB0
-      #define A10  PA7
-      #define A11  PA6
-      #define A12  PA5
-      #define A13  PA4
-      #define A14  PA3
-      #define A15  PA2
-    #endif
-  #endif
-
   switch (boardID)
   {
     case 0:
@@ -183,35 +147,6 @@ void setPinMapping(byte boardID)
         pinCoil4 = 21;
         pinCoil3 = 30;
         pinO2 = A22;
-      #elif defined(CORE_STM32)
-        //http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/0.0.12/hardware/maple-mini.html#master-pin-map
-        //pins 23, 24 and 33 couldn't be used
-        pinInjector1 = 15; //Output pin injector 1 is on
-        pinInjector2 = 16; //Output pin injector 2 is on
-        pinInjector3 = 17; //Output pin injector 3 is on
-        pinInjector4 = 18; //Output pin injector 4 is on
-        pinCoil1 = 19; //Pin for coil 1
-        pinCoil2 = 20; //Pin for coil 2
-        pinCoil3 = 21; //Pin for coil 3
-        pinCoil4 = 26; //Pin for coil 4
-        pinCoil5 = 27; //Pin for coil 5
-        pinTPS = A0; //TPS input pin
-        pinMAP = A1; //MAP sensor pin
-        pinIAT = A2; //IAT sensor pin
-        pinCLT = A3; //CLS sensor pin
-        pinO2 = A4; //O2 Sensor pin
-        pinBat = A5; //Battery reference voltage pin
-        pinStepperDir = 12; //Direction pin  for DRV8825 driver
-        pinStepperStep = 13; //Step pin for DRV8825 driver
-        pinStepperEnable = 14; //Enable pin for DRV8825
-        pinDisplayReset = 2; // OLED reset pin
-        pinFan = 1; //Pin for the fan output
-        pinFuelPump = 0; //Fuel pump output
-        pinTachOut = 31; //Tacho output pin
-        //external interrupt enabled pins
-        pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = 25; //The CAS pin
-        pinTrigger2 = 22; //The Cam Sensor pin
       #endif
       break;
 
@@ -271,12 +206,13 @@ void setPinMapping(byte boardID)
         pinCoil3 = PB12; //Pin for coil 3
         pinCoil4 = PB13; //Pin for coil 4
         pinCoil5 = PB14; //Pin for coil 5
-        pinTPS = PA0; //TPS input pin
-        pinMAP = PA1; //MAP sensor pin
-        pinIAT = PA2; //IAT sensor pin
-        pinCLT = PA3; //CLS sensor pin
-        pinO2 = PA4; //O2 Sensor pin
-        pinBat = PA5; //Battery reference voltage pin
+        pinTPS = A0; //TPS input pin
+        pinMAP = A1; //MAP sensor pin
+        pinIAT = A2; //IAT sensor pin
+        pinCLT = A3; //CLS sensor pin
+        pinO2 = A4; //O2 Sensor pin
+        pinBat = A5; //Battery reference voltage pin
+        pinBaro = A6;        
         pinStepperDir = PD8; //Direction pin  for DRV8825 driver
         pinStepperStep = PB15; //Step pin for DRV8825 driver
         pinStepperEnable = PD9; //Enable pin for DRV8825
@@ -317,6 +253,7 @@ void setPinMapping(byte boardID)
         pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
         pinTrigger = 25; //The CAS pin
         pinTrigger2 = 22; //The Cam Sensor pin
+        pinBaro = pinMAP;
       #endif
       break;
 
@@ -324,8 +261,8 @@ void setPinMapping(byte boardID)
       //Pin mappings as per the MX5 PNP shield
       pinInjector1 = 11; //Output pin injector 1 is on
       pinInjector2 = 10; //Output pin injector 2 is on
-      pinInjector3 = 9; //Output pin injector 3 is on
-      pinInjector4 = 8; //Output pin injector 4 is on
+      pinInjector3 = 8; //Output pin injector 3 is on
+      pinInjector4 = 9; //Output pin injector 4 is on
       pinInjector5 = 14; //Output pin injector 5 is on
       pinCoil1 = 39; //Pin for coil 1
       pinCoil2 = 41; //Pin for coil 2
@@ -417,6 +354,7 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
+      break;
 
     case 30:
       //Pin mappings as per the dazv6 shield
@@ -486,18 +424,15 @@ void setPinMapping(byte boardID)
       break;
   }
 
-  //First time running?
-  if (configPage3.launchPin < BOARD_NR_GPIO_PINS)
-  {
-    //Setup any devices that are using selectable pins
-    if (configPage3.launchPin != 0) { pinLaunch = configPage3.launchPin; }
-    if (configPage2.ignBypassPin != 0) { pinIgnBypass = configPage2.ignBypassPin; }
-    if (configPage1.tachoPin != 0) { pinTachOut = configPage1.tachoPin; }
-    if (configPage2.fuelPumpPin != 0) { pinFuelPump = configPage2.fuelPumpPin; }
-    if (configPage4.fanPin != 0) { pinFan = configPage4.fanPin; }
-    if (configPage3.boostPin != 0) { pinBoost = configPage3.boostPin; }
-    if (configPage3.vvtPin != 0) { pinVVT_1 = configPage3.vvtPin; }
-  }
+  //Setup any devices that are using selectable pins
+  if ( (configPage3.launchPin != 0) && (configPage3.launchPin < BOARD_NR_GPIO_PINS) ) { pinLaunch = configPage3.launchPin; }
+  if ( (configPage2.ignBypassPin != 0) && (configPage2.ignBypassPin < BOARD_NR_GPIO_PINS) ) { pinIgnBypass = configPage2.ignBypassPin; }
+  if ( (configPage1.tachoPin != 0) && (configPage1.tachoPin < BOARD_NR_GPIO_PINS) ) { pinTachOut = configPage1.tachoPin; }
+  if ( (configPage2.fuelPumpPin != 0) && (configPage2.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = configPage2.fuelPumpPin; }
+  if ( (configPage4.fanPin != 0) && (configPage4.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = configPage4.fanPin; }
+  if ( (configPage3.boostPin != 0) && (configPage3.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = configPage3.boostPin; }
+  if ( (configPage3.vvtPin != 0) && (configPage3.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = configPage3.vvtPin; }
+  if ( (configPage3.useExtBaro != 0) && (configPage3.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage3.baroPin + A0; }
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinCoil1, OUTPUT);
@@ -546,6 +481,8 @@ void setPinMapping(byte boardID)
 
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
+  pump_pin_port = portOutputRegister(digitalPinToPort(pinFuelPump));
+  pump_pin_mask = digitalPinToBitMask(pinFuelPump);
 
   //And for inputs
   pinMode(pinMAP, INPUT);
@@ -555,12 +492,12 @@ void setPinMapping(byte boardID)
   pinMode(pinIAT, INPUT);
   pinMode(pinCLT, INPUT);
   pinMode(pinBat, INPUT);
+  pinMode(pinBaro, INPUT);
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
   pinMode(pinFlex, INPUT_PULLUP); //Standard GM / Continental flex sensor requires pullup
-  //  pinMode(pinLaunch, INPUT_PULLUP); //This should work for both NO and NC grounding switches
-  if (configPage3.lnchPullRes) {
+  if (configPage3.lnchPullRes == true) {
     pinMode(pinLaunch, INPUT_PULLUP);
   }
   else {
@@ -598,34 +535,37 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
-  unsigned int iVE, iMAP, iAFR, iCorrections;
+  uint16_t iVE, iCorrections;
+  uint16_t iMAP = 100;
+  uint16_t iAFR = 147;
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
   iVE = ((unsigned int)VE << 7) / 100;
-  if ( configPage1.multiplyMAP ) {
+  if ( configPage1.multiplyMAP == true ) {
     iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
   }
-  if ( configPage1.includeAFR && (configPage3.egoType == 2)) {
+  if ( (configPage1.includeAFR == true) && (configPage3.egoType == 2)) {
     iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
   }
   iCorrections = (corrections << 7) / 100;
 
 
   unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
-  if ( configPage1.multiplyMAP ) {
-    intermediate = (intermediate * iMAP) >> 7;
+  if ( configPage1.multiplyMAP == true ) {
+    intermediate = (intermediate * (unsigned long)iMAP) >> 7;
   }
-  if ( configPage1.includeAFR && (configPage3.egoType == 2)) {
-    intermediate = (intermediate * iAFR) >> 7;  //EGO type must be set to wideband for this to be used
+  if ( (configPage1.includeAFR == true) && (configPage3.egoType == 2) ) {
+    intermediate = (intermediate * (unsigned long)iAFR) >> 7;  //EGO type must be set to wideband for this to be used
   }
-  intermediate = (intermediate * iCorrections) >> 7;
-  if (intermediate == 0) {
-    return 0;  //If the pulsewidth is 0, we return here before the opening time gets added
-  }
-
-  intermediate += injOpen; //Add the injector opening time
-  if ( intermediate > 65535) {
-    intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
+  intermediate = (intermediate * (unsigned long)iCorrections) >> 7;
+  if (intermediate != 0)
+  {
+    //If intermeditate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
+    intermediate += injOpen; //Add the injector opening time
+    if ( intermediate > 65535)
+    {
+      intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
+    }
   }
   return (unsigned int)(intermediate);
 
@@ -640,9 +580,5 @@ unsigned int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen
 
 unsigned int PW_AN(int REQ_FUEL, byte VE, byte TPS, int corrections, int injOpen)
 {
-  //Sanity check
-  if (TPS > 100) {
-    TPS = 100;
-  }
   return PW(REQ_FUEL, VE, currentStatus.MAP, corrections, injOpen);
 }

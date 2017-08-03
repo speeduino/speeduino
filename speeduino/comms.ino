@@ -15,15 +15,16 @@ A detailed description of each call can be found at: http://www.msextra.com/doc/
 
 void command()
 {
-  if (cmdPending == 0) { currentCommand = Serial.read(); }
+  if (!cmdPending) { currentCommand = Serial.read(); }
 
   switch (currentCommand)
   {
 
     case 'A': // send x bytes of realtime values
-      sendValues(0, packetSize, 0);   //send values to serial0
+      sendValues(0, packetSize,0x30, 0);   //send values to serial0
       break;
-      
+
+
     case 'B': // Burn current values to eeprom
       writeConfig();
       break;
@@ -79,12 +80,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(displaySignature);Serial.print(".");Serial.print(TSfirmwareVersion);
+      Serial.print("Speeduino 2017.07-dev");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print(displaySignature);Serial.print(TSfirmwareVersion);
+      Serial.print("speeduino 201707-dev");
      break;
 
     case 'V': // send VE table and constants in binary
@@ -181,15 +182,15 @@ void command()
         tsCanId = Serial.read(); //Read the $tsCanId
         cmd = Serial.read(); // read the command
 
-        uint16_t valueOffset, length;
+        uint16_t offset, length;
         if(cmd == 0x30) //Send output channels command 0x30 is 48dec
         {
           byte tmp;
           tmp = Serial.read();
-          valueOffset = word(Serial.read(), tmp);
+          offset = word(Serial.read(), tmp);
           tmp = Serial.read();
           length = word(Serial.read(), tmp);
-          sendValues(valueOffset, length, 0);
+          sendValues(offset, length,cmd, 0);
         }
         else
         {
@@ -243,33 +244,23 @@ void command()
 This function returns the current values of a fixed group of variables
 */
 //void sendValues(int packetlength, byte portNum)
-void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 {
   byte fullStatus[packetSize];
 
   if (portNum == 3)
   {
     //CAN serial
-    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
+    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)|| defined(CORE_STM32) || defined (CORE_TEENSY) //ATmega2561 does not have Serial3
       if (offset == 0)
         {
-          Serial3.write("A");         //confirm cmd type
+          CANSerial.write("A");         //confirm cmd type
         }
       else
         {
-          Serial3.write("r");         //confirm cmd type
+      CANSerial.write("r");         //confirm cmd type
+      CANSerial.write(cmd);
         }
-      Serial3.write(packetLength);      //confirm no of byte to be sent
-    #elif defined(CORE_STM32) || defined (CORE_TEENSY)
-      if (offset == 0)
-        {
-          Serial2.write("A");         //confirm cmd type
-        }
-      else
-        {
-          Serial2.write("r");         //confirm cmd type
-        }
-      Serial2.write(packetLength);      //confirm no of byte to be sent
     #endif
   }
   else
@@ -284,19 +275,19 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   fullStatus[1] = currentStatus.squirt; //Squirt Bitfield
   fullStatus[2] = currentStatus.engine; //Engine Status Bitfield
   fullStatus[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
-  fullStatus[4] = (byte)(currentStatus.MAP >> 1); //map value is divided by 2
-  fullStatus[5] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
-  fullStatus[6] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
-  fullStatus[7] = currentStatus.tpsADC; //TPS (Raw 0-255)
-  fullStatus[8] = currentStatus.battery10; //battery voltage
-  fullStatus[9] = currentStatus.O2; //O2
-  fullStatus[10] = currentStatus.egoCorrection; //Exhaust gas correction (%)
-  fullStatus[11] = currentStatus.iatCorrection; //Air temperature Correction (%)
-  fullStatus[12] = currentStatus.wueCorrection; //Warmup enrichment (%)
-  fullStatus[13] = lowByte(currentStatus.RPM); //rpm HB
-  fullStatus[14] = highByte(currentStatus.RPM); //rpm LB
-  fullStatus[15] = currentStatus.TAEamount; //acceleration enrichment (%)
-  fullStatus[16] = currentStatus.baro; //Barometer value
+  fullStatus[4] = lowByte(currentStatus.MAP); //2 bytes for MAP
+  fullStatus[5] = highByte(currentStatus.MAP);
+  fullStatus[6] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
+  fullStatus[7] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
+  fullStatus[8] = currentStatus.batCorrection; //Battery voltage correction (%)
+  fullStatus[9] = currentStatus.battery10; //battery voltage
+  fullStatus[10] = currentStatus.O2; //O2
+  fullStatus[11] = currentStatus.egoCorrection; //Exhaust gas correction (%)
+  fullStatus[12] = currentStatus.iatCorrection; //Air temperature Correction (%)
+  fullStatus[13] = currentStatus.wueCorrection; //Warmup enrichment (%)
+  fullStatus[14] = lowByte(currentStatus.RPM); //rpm HB
+  fullStatus[15] = highByte(currentStatus.RPM); //rpm LB
+  fullStatus[16] = currentStatus.TAEamount; //acceleration enrichment (%)
   fullStatus[17] = currentStatus.corrections; //Total GammaE (%)
   fullStatus[18] = currentStatus.VE; //Current VE 1 (%)
   fullStatus[19] = currentStatus.afrTarget;
@@ -313,9 +304,9 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   fullStatus[26] = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
   fullStatus[27] = highByte(currentStatus.freeRAM);
 
-  fullStatus[28] = currentStatus.batCorrection; //Battery voltage correction (%)
-  fullStatus[29] = currentStatus.spark; //Spark related bitfield
-  fullStatus[30] = currentStatus.O2_2; //O2
+  fullStatus[28] = currentStatus.boostTarget;
+  fullStatus[29] = currentStatus.boostDuty;
+  fullStatus[30] = currentStatus.spark; //Spark related bitfield
 
   //rpmDOT must be sent as a signed integer
   fullStatus[31] = lowByte(currentStatus.rpmDOT);
@@ -325,10 +316,13 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   fullStatus[34] = currentStatus.flexCorrection; //Flex fuel correction (% above or below 100)
   fullStatus[35] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
   fullStatus[36] = getNextError();
-  fullStatus[37] = currentStatus.boostTarget;
-  fullStatus[38] = currentStatus.boostDuty;
-  fullStatus[39] = currentStatus.idleLoad;
-  fullStatus[40] = currentStatus.testOutputs;
+
+  fullStatus[37] = currentStatus.idleLoad;
+  fullStatus[38] = currentStatus.testOutputs;
+
+  fullStatus[39] = currentStatus.O2_2; //O2
+  fullStatus[40] = currentStatus.baro; //Barometer value
+
   fullStatus[41] = lowByte(currentStatus.canin[0]);
   fullStatus[42] = highByte(currentStatus.canin[0]);
   fullStatus[43] = lowByte(currentStatus.canin[1]);
@@ -345,13 +339,28 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte portNum)
   fullStatus[54] = highByte(currentStatus.canin[6]);
   fullStatus[55] = lowByte(currentStatus.canin[7]);
   fullStatus[56] = highByte(currentStatus.canin[7]);
+  fullStatus[57] = lowByte(currentStatus.canin[8]);
+  fullStatus[58] = highByte(currentStatus.canin[8]);
+  fullStatus[59] = lowByte(currentStatus.canin[9]);
+  fullStatus[60] = highByte(currentStatus.canin[9]);
+  fullStatus[61] = lowByte(currentStatus.canin[10]);
+  fullStatus[62] = highByte(currentStatus.canin[10]);
+  fullStatus[63] = lowByte(currentStatus.canin[11]);
+  fullStatus[64] = highByte(currentStatus.canin[11]);
+  fullStatus[65] = lowByte(currentStatus.canin[12]);
+  fullStatus[66] = highByte(currentStatus.canin[12]);
+  fullStatus[67] = lowByte(currentStatus.canin[13]);
+  fullStatus[68] = highByte(currentStatus.canin[13]);
+  fullStatus[69] = lowByte(currentStatus.canin[14]);
+  fullStatus[70] = highByte(currentStatus.canin[14]);
+  fullStatus[71] = lowByte(currentStatus.canin[15]);
+  fullStatus[72] = highByte(currentStatus.canin[15]);
 
-  Serial.write((byte *)&fullStatus+offset, packetLength);
-  //for(byte x=0; x<packetLength; x++)
-  //{
-  //  if (portNum == 0) { Serial.write(fullStatus[offset+x]); }
-  //  else if (portNum == 3) { CANSerial.write(fullStatus[offset+x]); }
-  //}
+  for(byte x=0; x<packetLength; x++)
+  {
+    if (portNum == 0) { Serial.write(fullStatus[offset+x]); }
+    else if (portNum == 3){ CANSerial.write(fullStatus[offset+x]); }
+  }
 
 }
 
@@ -525,6 +534,15 @@ void receiveValue(int valueOffset, byte newValue)
       }
       break;
 
+    case warmupPage: //Idle Air Control settings page (Page 4)
+      pnt_configPage = &configPage11;
+      //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
+      if (valueOffset < page_size)
+      {
+        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
+      }
+      break;
+
     default:
       break;
   }
@@ -538,22 +556,19 @@ useChar - If true, all values are send as chars, this is for the serial command 
 */
 void sendPage(bool useChar)
 {
-  void* pnt_configPage;
-  struct table3D currentTable;
+  void* pnt_configPage = &configPage1; //Default value is for safety only. Will be changed below if needed.
+  struct table3D currentTable = fuelTable; //Default value is for safety only. Will be changed below if needed.
   byte currentTitleIndex = 0;// This corresponds to the count up to the first char of a string in pageTitles
   bool sendComplete = false; //Used to track whether all send operations are complete
 
   switch (currentPage)
   {
     case veMapPage:
-      {
         currentTitleIndex = 0;
         currentTable = fuelTable;
         break;
-      }
 
     case veSetPage:
-      {
         // currentTitleIndex = 27;
         if (useChar)
         {
@@ -585,17 +600,13 @@ void sendPage(bool useChar)
         }
         else { pnt_configPage = &configPage1; } //Create a pointer to Page 1 in memory
         break;
-      }
 
     case ignMapPage:
-      {
         currentTitleIndex = 42;// the index to the first char of the third string in pageTitles
         currentTable = ignitionTable;
         break;
-      }
 
     case ignSetPage:
-      {
         //currentTitleIndex = 56;
         if (useChar)
         {
@@ -642,17 +653,13 @@ void sendPage(bool useChar)
         }
         else { pnt_configPage = &configPage2; } //Create a pointer to Page 2 in memory
         break;
-      }
 
     case afrMapPage:
-      {
         currentTitleIndex = 71;//Array index to next string
         currentTable = afrTable;
         break;
-      }
 
     case afrSetPage:
-      {
         //currentTitleIndex = 91;
         if (useChar)
         {
@@ -697,10 +704,8 @@ void sendPage(bool useChar)
         }
         else { pnt_configPage = &configPage3; } //Create a pointer to Page 3 in memory
         break;
-      }
 
     case iacPage:
-      {
         //currentTitleIndex = 106;
         //To Display Values from Config Page 4
         if (useChar)
@@ -747,10 +752,8 @@ void sendPage(bool useChar)
         }
         else { pnt_configPage = &configPage4; } //Create a pointer to Page 4 in memory
         break;
-      }
 
     case boostvvtPage:
-      {
         if(useChar)
         {
           currentTable = boostTable;
@@ -773,9 +776,8 @@ void sendPage(bool useChar)
           sendComplete = true;
         }
         break;
-      }
+
     case seqFuelPage:
-      {
         if(useChar)
         {
           currentTable = trim1Table;
@@ -836,10 +838,8 @@ void sendPage(bool useChar)
           sendComplete = true;
         }
         break;
-      }
 
     case canbusPage:
-      {
         //currentTitleIndex = 141;
         if (useChar)
         {
@@ -853,14 +853,22 @@ void sendPage(bool useChar)
         }
         else { pnt_configPage = &configPage10; } //Create a pointer to Page 10 in memory
         break;
-      }
+
+    case warmupPage:
+        if (useChar)
+        {
+          sendComplete = true;
+        }
+        else { pnt_configPage = &configPage11; } //Create a pointer to Page 4 in memory
+        break;
 
     default:
-      {
         Serial.println(F("\nPage has not been implemented yet. Change to another page."));
+        //Just set default Values to avoid warnings
+        pnt_configPage = &configPage11;
+        currentTable = fuelTable;
         sendComplete = true;
         break;
-      }
   }
   if(!sendComplete)
   {
@@ -1010,13 +1018,18 @@ void receiveCalibration(byte tableID)
       break;
 
     default:
+      OFFSET = 0;
+      pnt_TargetTable = (byte *)&o2CalibrationTable;
+      DIVISION_FACTOR = 1;
+      BYTES_PER_VALUE = 1;
+      EEPROM_START = EEPROM_CALIBRATION_O2;
       break; //Should never get here, but if we do, just fail back to main loop
   }
 
   //1024 value pairs are sent. We have to receive them all, but only use every second one (We only store 512 calibratino table entries to save on EEPROM space)
   //The values are sent as 2 byte ints, but we convert them to single bytes. Any values over 255 are capped at 255.
   int tempValue;
-  int tempBuffer;
+  byte tempBuffer[2];
   bool every2nd = true;
   int x;
   int counter = 0;
@@ -1034,10 +1047,10 @@ void receiveCalibration(byte tableID)
     else
     {
       while ( Serial.available() < 2 ) {}
-      tempBuffer = Serial.read();
-      tempBuffer |= Serial.read() << 8;
+      tempBuffer[0] = Serial.read();
+      tempBuffer[1] = Serial.read();
 
-      tempValue = div(int(tempBuffer), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
+      tempValue = div(int(word(tempBuffer[1], tempBuffer[0])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
       tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
     }
     tempValue = tempValue + OFFSET;

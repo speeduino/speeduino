@@ -94,9 +94,22 @@ static inline int crankingGetRPM(byte totalTeeth)
     revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth;
     interrupts();
     tempRPM = (US_IN_MINUTE / revolutionTime);
-    if(tempRPM >= MAX_RPM) { tempRPM = currentStatus.RPM; } //Sanity check
+    if( tempRPM >= MAX_RPM ) { tempRPM = currentStatus.RPM; } //Sanity check. This can prevent spiking caused by noise on individual teeth. The new RPM should never be above 4x the cranking setting value (Remembering that this function is only called is the current RPM is less than the cranking setting)
   }
   return tempRPM;
+}
+
+/*
+On decoders that are enabled for per tooth based timing adjustments, this function performs the timer compare changes on the schedules themselves
+For each ignition channel, a check is made whether we're at the relevant tooth and whether that ignition schedule is currently running
+Only if both these conditions are met will the schedule be updated with the latest timing information.
+*/
+static inline void doPerToothTiming(uint16_t crankAngle)
+{
+  if ( (toothCurrentCount == ignition1EndTooth) && (ignitionSchedule1.Status == RUNNING) ) { IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( (ignition1EndAngle - crankAngle) * timePerDegree ); }
+  else if ( (toothCurrentCount == ignition2EndTooth) && (ignitionSchedule2.Status == RUNNING) ) { IGN2_COMPARE = IGN2_COUNTER + uS_TO_TIMER_COMPARE( (ignition2EndAngle - crankAngle) * timePerDegree ); }
+  else if ( (toothCurrentCount == ignition3EndTooth) && (ignitionSchedule3.Status == RUNNING) ) { IGN3_COMPARE = IGN3_COUNTER + uS_TO_TIMER_COMPARE( (ignition3EndAngle - crankAngle) * timePerDegree ); }
+  else if ( (toothCurrentCount == ignition4EndTooth) && (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE( (ignition4EndAngle - crankAngle) * timePerDegree ); }
 }
 
 /*
@@ -161,7 +174,12 @@ void triggerPri_missingTooth()
        }
      }
 
-
+     //EXPERIMENTAL!
+     if(configPage1.perToothIgn == true)
+     {
+       uint16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage2.triggerAngle;
+       doPerToothTiming(crankAngle);
+     }
    }
 }
 
@@ -174,7 +192,7 @@ void triggerSec_missingTooth()
 uint16_t getRPM_missingTooth()
 {
   uint16_t tempRPM = 0;
-  if( currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100) )
+  if( (currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100)) && (toothCurrentCount != 1) ) //Can't do per tooth RPM if we're at tooth #1 as the missing tooth messes the calculation
   {
     if(configPage2.TrigSpeed == 1) { crankingGetRPM(configPage2.triggerTeeth/2); } //Account for cam speed
     else { tempRPM = crankingGetRPM(configPage2.triggerTeeth); }
@@ -217,6 +235,32 @@ int getCrankAngle_missingTooth(int timePerDegree)
     return crankAngle;
 }
 
+void triggerSetEndTeeth_missingTooth()
+{
+
+  ignition1EndTooth = ( (ignition1EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
+  if(ignition1EndTooth > configPage2.triggerTeeth) { ignition1EndTooth -= configPage2.triggerTeeth; }
+  if(ignition1EndTooth <= 0) { ignition1EndTooth -= configPage2.triggerTeeth; }
+  if(ignition1EndTooth > triggerActualTeeth) { ignition1EndTooth = triggerActualTeeth; }
+
+  ignition2EndTooth = ( (ignition2EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
+  if(ignition2EndTooth > configPage2.triggerTeeth) { ignition2EndTooth -= configPage2.triggerTeeth; }
+  if(ignition2EndTooth <= 0) { ignition2EndTooth -= configPage2.triggerTeeth; }
+  if(ignition2EndTooth > triggerActualTeeth) { ignition2EndTooth = triggerActualTeeth; }
+
+  ignition3EndTooth = ( (ignition3EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
+  if(ignition3EndTooth > configPage2.triggerTeeth) { ignition3EndTooth -= configPage2.triggerTeeth; }
+  if(ignition3EndTooth <= 0) { ignition3EndTooth -= configPage2.triggerTeeth; }
+  if(ignition3EndTooth > triggerActualTeeth) { ignition3EndTooth = triggerActualTeeth; }
+
+  ignition4EndTooth = ( (ignition4EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
+  if(ignition4EndTooth > configPage2.triggerTeeth) { ignition4EndTooth -= configPage2.triggerTeeth; }
+  if(ignition4EndTooth <= 0) { ignition4EndTooth -= configPage2.triggerTeeth; }
+  if(ignition4EndTooth > triggerActualTeeth) { ignition4EndTooth = triggerActualTeeth; }
+
+
+}
+
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Dual wheel
 Desc: 2 wheels located either both on the crank or with the primary on the crank and the secondary on the cam.
@@ -225,6 +269,7 @@ Note: There can be no missing teeth on the primary wheel
 void triggerSetup_DualWheel()
 {
   triggerToothAngle = 360 / configPage2.triggerTeeth; //The number of degrees that passes from tooth to tooth
+  if(configPage2.TrigSpeed == 1) { triggerToothAngle = 720 / configPage2.triggerTeeth; } //Account for cam speed missing tooth
   toothCurrentCount = 255; //Default value
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
@@ -258,6 +303,13 @@ void triggerPri_DualWheel()
        }
 
        setFilter(curGap); //Recalc the new filter value
+     }
+
+     //EXPERIMENTAL!
+     if(configPage1.perToothIgn == true)
+     {
+       uint16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage2.triggerAngle;
+       doPerToothTiming(crankAngle);
      }
    } //TRigger filter
 
@@ -330,6 +382,29 @@ int getCrankAngle_DualWheel(int timePerDegree)
     return crankAngle;
 }
 
+void triggerSetEndTeeth_DualWheel()
+{
+  ignition1EndTooth = ( (ignition1EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
+  if(ignition1EndTooth > configPage2.triggerTeeth) { ignition1EndTooth -= configPage2.triggerTeeth; }
+  if(ignition1EndTooth <= 0) { ignition1EndTooth -= configPage2.triggerTeeth; }
+  if(ignition1EndTooth > triggerActualTeeth) { ignition1EndTooth = triggerActualTeeth; }
+
+  ignition2EndTooth = ( (ignition2EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
+  if(ignition2EndTooth > configPage2.triggerTeeth) { ignition2EndTooth -= configPage2.triggerTeeth; }
+  if(ignition2EndTooth <= 0) { ignition2EndTooth -= configPage2.triggerTeeth; }
+  if(ignition2EndTooth > triggerActualTeeth) { ignition2EndTooth = triggerActualTeeth; }
+
+  ignition3EndTooth = ( (ignition3EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
+  if(ignition3EndTooth > configPage2.triggerTeeth) { ignition3EndTooth -= configPage2.triggerTeeth; }
+  if(ignition3EndTooth <= 0) { ignition3EndTooth -= configPage2.triggerTeeth; }
+  if(ignition3EndTooth > triggerActualTeeth) { ignition3EndTooth = triggerActualTeeth; }
+
+  ignition4EndTooth = ( (ignition4EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
+  if(ignition4EndTooth > configPage2.triggerTeeth) { ignition4EndTooth -= configPage2.triggerTeeth; }
+  if(ignition4EndTooth <= 0) { ignition4EndTooth -= configPage2.triggerTeeth; }
+  if(ignition4EndTooth > triggerActualTeeth) { ignition4EndTooth = triggerActualTeeth; }
+}
+
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Basic Distributor
@@ -343,8 +418,10 @@ void triggerSetup_BasicDistributor()
   triggerToothAngle = 720 / triggerActualTeeth; //The number of degrees that passes from tooth to tooth
   triggerFilterTime = 60000000L / MAX_RPM / configPage1.nCylinders; // Minimum time required between teeth
   triggerFilterTime = triggerFilterTime / 2; //Safety margin
+  triggerFilterTime = 0;
   secondDerivEnabled = false;
   decoderIsSequential = false;
+  toothCurrentCount = 0; //Default value
 
   if(configPage1.nCylinders <= 4) { MAX_STALL_TIME = (1851UL * triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
   else { MAX_STALL_TIME = (3200UL * triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
@@ -355,7 +432,7 @@ void triggerPri_BasicDistributor()
 {
   curTime = micros();
   curGap = curTime - toothLastToothTime;
-  if ( curGap >= triggerFilterTime )
+  if ( (curGap >= triggerFilterTime) )
   {
     if( (toothCurrentCount == triggerActualTeeth) || (currentStatus.hasSync == false) ) //Check if we're back to the beginning of a revolution
     {
@@ -381,6 +458,20 @@ void triggerPri_BasicDistributor()
       endCoil4Charge();
     }
 
+    if(configPage1.perToothIgn == true)
+    {
+      uint16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage2.triggerAngle;
+      if ( (toothCurrentCount == ignition1EndTooth) && (ignitionSchedule1.Status == RUNNING) )
+      {
+        IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( (ignition1EndAngle - crankAngle) * timePerDegree );
+        //IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( (ignition1EndAngle - crankAngle)*my_timePerDegree - micros_compensation );
+
+      }
+      else if ( (toothCurrentCount == ignition2EndTooth) && (ignitionSchedule2.Status == RUNNING) ) { IGN2_COMPARE = IGN2_COUNTER + uS_TO_TIMER_COMPARE( (ignition2EndAngle - crankAngle) * timePerDegree ); }
+      else if ( (toothCurrentCount == ignition3EndTooth) && (ignitionSchedule3.Status == RUNNING) ) { IGN3_COMPARE = IGN3_COUNTER + uS_TO_TIMER_COMPARE( (ignition3EndAngle - crankAngle) * timePerDegree ); }
+      else if ( (toothCurrentCount == ignition4EndTooth) && (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE( (ignition4EndAngle - crankAngle) * timePerDegree ); }
+    }
+
     toothLastMinusOneToothTime = toothLastToothTime;
     toothLastToothTime = curTime;
   } //Trigger filter
@@ -392,7 +483,10 @@ uint16_t getRPM_BasicDistributor()
   if( currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100) )
   { tempRPM = crankingGetRPM(triggerActualTeeth >> 1); } //crankGetRPM uses teeth per 360 degrees. As triggerActualTeeh is total teeth in 720 degrees, we divide the tooth count by 2
   else
-  { tempRPM = stdGetRPM() << 1; } //Multiply RPM by 2 due to tracking over 720 degrees now rather than 360
+  {
+    tempRPM = stdGetRPM() << 1;
+    revolutionTime = revolutionTime >> 1; //Revolution time has to be divided by 2 as otherwise it would be over 720 degrees (triggerActualTeeth = nCylinders)
+  } //Multiply RPM by 2 due to tracking over 720 degrees now rather than 360
 
   return tempRPM;
 
@@ -419,6 +513,14 @@ int getCrankAngle_BasicDistributor(int timePerDegree)
     if (crankAngle < 0) { crankAngle += CRANK_ANGLE_MAX; }
 
     return crankAngle;
+}
+
+void triggerSetEndTeeth_BasicDistributor()
+{
+  ignition1EndTooth = ( (ignition1EndAngle - configPage2.triggerAngle) / triggerToothAngle ) - 1;
+  if(ignition1EndTooth > configPage2.triggerTeeth) { ignition1EndTooth -= configPage2.triggerTeeth; }
+  if(ignition1EndTooth <= 0) { ignition1EndTooth -= configPage2.triggerTeeth; }
+  if(ignition1EndTooth > triggerActualTeeth) { ignition1EndTooth = triggerActualTeeth; }
 }
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -512,6 +614,11 @@ int getCrankAngle_GM7X(int timePerDegree)
     return crankAngle;
 }
 
+void triggerSetEndTeeth_GM7X()
+{
+
+}
+
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Mitsubishi 4G63 / NA/NB Miata + MX-5 / 4/2
@@ -574,7 +681,7 @@ void triggerPri_4G63()
 {
   curTime = micros();
   curGap = curTime - toothLastToothTime;
-  if ( curGap >= triggerFilterTime )
+  if ( (curGap >= triggerFilterTime) || (currentStatus.startRevolutions == 0) )
   {
     addToothLogEntry(curGap);
     triggerFilterTime = curGap >> 2; //This only applies during non-sync conditions. If there is sync then triggerFilterTime gets changed again below with a better value.
@@ -657,7 +764,7 @@ void triggerSec_4G63()
 
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
-  if ( curGap2 >= triggerSecFilterTime )
+  if ( (curGap2 >= triggerSecFilterTime) || (currentStatus.startRevolutions == 0) )
   {
     toothLastSecToothTime = curTime2;
 
@@ -744,6 +851,11 @@ int getCrankAngle_4G63(int timePerDegree)
       if (crankAngle < 0) { crankAngle += 360; }
     }
     return crankAngle;
+}
+
+void triggerSetEndTeeth_4G63()
+{
+
 }
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -851,6 +963,11 @@ int getCrankAngle_24X(int timePerDegree)
     return crankAngle;
 }
 
+void triggerSetEndTeeth_24X()
+{
+
+}
+
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Jeep 2000
 Desc: For '91 to 2000 6 cylinder Jeep engines
@@ -947,7 +1064,12 @@ int getCrankAngle_Jeep2000(int timePerDegree)
     return crankAngle;
 }
 
-/*
+void triggerSetEndTeeth_Jeep2000()
+{
+
+}
+
+/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Audi 135
 Desc: 135 teeth on the crank and 1 tooth on the cam.
 Note: This is very similar to the dual wheel decoder, however due to the 135 teeth not dividing evenly into 360, only every 3rd crank tooth is used in calculating the crank angle. This effectively makes it a 45 tooth dual wheel setup
@@ -1059,6 +1181,11 @@ int getCrankAngle_Audi135(int timePerDegree)
     return crankAngle;
 }
 
+void triggerSetEndTeeth_Audi135()
+{
+
+}
+
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Honda D17
 Desc:
@@ -1152,6 +1279,11 @@ int getCrankAngle_HondaD17(int timePerDegree)
     return crankAngle;
 }
 
+void triggerSetEndTeeth_HondaD17()
+{
+
+}
+
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Miata '99 to '05
 Desc: TBA (See: http://forum.diyefi.org/viewtopic.php?f=56&t=1077)
@@ -1233,7 +1365,6 @@ void triggerSec_Miata9905()
   }
 }
 
-
 uint16_t getRPM_Miata9905()
 {
   //During cranking, RPM is calculated 4 times per revolution, once for each tooth on the crank signal.
@@ -1281,6 +1412,11 @@ int getCrankAngle_Miata9905(int timePerDegree)
     }
 
     return crankAngle;
+}
+
+void triggerSetEndTeeth_Miata9905()
+{
+
 }
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1431,6 +1567,11 @@ int getCrankAngle_MazdaAU(int timePerDegree)
     return crankAngle;
 }
 
+void triggerSetEndTeeth_MazdaAU()
+{
+
+}
+
 /*
 Name: Non-360 Dual wheel
 Desc: 2 wheels located either both on the crank or with the primary on the crank and the secondary on the cam.
@@ -1497,6 +1638,11 @@ int getCrankAngle_non360(int timePerDegree)
     if (crankAngle < 0) { crankAngle += 360; }
 
     return crankAngle;
+}
+
+void triggerSetEndTeeth_Non360()
+{
+
 }
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1666,8 +1812,13 @@ int getCrankAngle_Nissan360(int timePerDegree)
   return crankAngle;
 }
 
+void triggerSetEndTeeth_Nissan360()
+{
+
+}
+
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: Nissan 360 tooth with cam
+Name: Subary 6/7
 Desc:
 Note:
 */
@@ -1808,6 +1959,11 @@ int getCrankAngle_Subaru67(int timePerDegree)
   }
 
   return crankAngle;
+}
+
+void triggerSetEndTeeth_Subaru67()
+{
+
 }
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1965,4 +2121,9 @@ int getCrankAngle_Daihatsu(int timePerDegree)
     if (crankAngle < 0) { crankAngle += CRANK_ANGLE_MAX; }
 
     return crankAngle;
+}
+
+void triggerSetEndTeeth_Daihatsu()
+{
+
 }

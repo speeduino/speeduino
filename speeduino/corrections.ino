@@ -112,7 +112,11 @@ Additional fuel % to be added when the engine is cranking
 static inline byte correctionCranking()
 {
   byte crankingValue = 100;
-  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage1.crankingPct; }
+  //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage1.crankingPct; }
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+  { 
+    crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  }
   return crankingValue;
 }
 
@@ -152,12 +156,13 @@ static inline byte correctionAccel()
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
   {
     //If it is currently running, check whether it should still be running or whether it's reached it's end time
-    if( currentLoopTime >= currentStatus.TAEEndTime )
+    if( micros() >= currentStatus.TAEEndTime )
     {
       //Time to turn enrichment off
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
       currentStatus.TAEamount = 0;
       accelValue = 100;
+      currentStatus.tpsDOT = 0;
     }
     else
     {
@@ -167,15 +172,18 @@ static inline byte correctionAccel()
   }
   else
   {
+    int8_t TPS_change = (currentStatus.TPS - currentStatus.TPSlast);
     //Check for deceleration (Deceleration adjustment not yet supported)
-    if (currentStatus.TPS < currentStatus.TPSlast)
+    //Also check for only very small movement (Movement less than or equal to 2% is ignored). This not only means we can skip the lookup, but helps reduce false triggering around 0-2% throttle openings
+    if (TPS_change <= 2)
     {
       accelValue = 100;
+      currentStatus.tpsDOT = 0;
     }
     else
     {
       //If TAE isn't currently turned on, need to check whether it needs to be turned on
-      int rateOfChange = ldiv(1000000, (currentStatus.TPS_time - currentStatus.TPSlast_time)).quot * (currentStatus.TPS - currentStatus.TPSlast); //This is the % per second that the TPS has moved
+      int rateOfChange = ldiv(1000000, (currentStatus.TPS_time - currentStatus.TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
       currentStatus.tpsDOT = rateOfChange / 10; //The TAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
 
       if (rateOfChange > configPage1.tpsThresh)
