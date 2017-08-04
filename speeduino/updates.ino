@@ -8,7 +8,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    4
+  #define CURRENT_DATA_VERSION    5
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -36,6 +36,23 @@ void doUpdates()
     writeConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 4);
   }
+  //July 2017 adds a cranking enrichment curve in place of the single value. This converts that single value to the curve
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 4)
+  {
+    //Some default values for the bins (Doesn't matter too much here as the values against them will all be identical)
+    configPage11.crankingEnrichBins[0] = 0;
+    configPage11.crankingEnrichBins[1] = 40;
+    configPage11.crankingEnrichBins[2] = 70;
+    configPage11.crankingEnrichBins[3] = 100;
+
+    configPage11.crankingEnrichValues[0] = 100 + configPage1.crankingPct;
+    configPage11.crankingEnrichValues[1] = 100 + configPage1.crankingPct;
+    configPage11.crankingEnrichValues[2] = 100 + configPage1.crankingPct;
+    configPage11.crankingEnrichValues[3] = 100 + configPage1.crankingPct;
+
+    writeConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 5);
+  }
 
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
@@ -45,3 +62,4 @@ void doUpdates()
 
   }
 }
+

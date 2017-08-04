@@ -39,7 +39,6 @@ byte MAPcurRev; //Tracks which revolution we're sampling on
 
 void instanteneousMAPReading();
 void readMAP();
-void readBaro();
 void flexPulse();
 
 #if defined(ANALOG_ISR)
@@ -106,3 +105,4 @@ ISR(ADC_vect)
 #endif
 
 #endif // SENSORS_H
+

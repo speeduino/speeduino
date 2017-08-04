@@ -88,14 +88,18 @@ It takes an argument of the full (COMPLETE) number of teeth per revolution. For 
 static inline int crankingGetRPM(byte totalTeeth)
 {
   uint16_t tempRPM = 0;
-  if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) )
+  if( currentStatus.startRevolutions >= 2 )
   {
-    noInterrupts();
-    revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth;
-    interrupts();
-    tempRPM = (US_IN_MINUTE / revolutionTime);
-    if( tempRPM >= MAX_RPM ) { tempRPM = currentStatus.RPM; } //Sanity check. This can prevent spiking caused by noise on individual teeth. The new RPM should never be above 4x the cranking setting value (Remembering that this function is only called is the current RPM is less than the cranking setting)
+    if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) )
+    {
+      noInterrupts();
+      revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth;
+      interrupts();
+      tempRPM = (US_IN_MINUTE / revolutionTime);
+      if( tempRPM >= MAX_RPM ) { tempRPM = currentStatus.RPM; } //Sanity check. This can prevent spiking caused by noise on individual teeth. The new RPM should never be above 4x the cranking setting value (Remembering that this function is only called is the current RPM is less than the cranking setting)
+    }
   }
+
   return tempRPM;
 }
 
@@ -152,6 +156,8 @@ void triggerPri_missingTooth()
        if ( (curGap > targetGap) || (toothCurrentCount > triggerActualTeeth) )
        {
          if(toothCurrentCount < (triggerActualTeeth) && (currentStatus.hasSync == true) ) { currentStatus.hasSync = false; } //This occurs when we're at tooth #1, but haven't seen all the other teeth. This indicates a signal issue so we flag lost sync so this will attempt to resync on the next revolution.
+         //This is to handle a special case on startup where sync can be obtained and the system immediately thinks the revs have jumped:
+         //else if (currentStatus.hasSync == false && toothCurrentCount < checkSyncToothCount ) { triggerFilterTime = 0; }
          else
          {
            toothCurrentCount = 1;
@@ -804,7 +810,7 @@ uint16_t getRPM_4G63()
   //Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
   if(currentStatus.hasSync == true)
   {
-    if( currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100) )
+    if( currentStatus.RPM < ((unsigned int)configPage2.crankRPM * 100) )
     {
       int tempToothAngle;
       unsigned long toothTime;
@@ -817,6 +823,8 @@ uint16_t getRPM_4G63()
         interrupts();
         toothTime = toothTime * 36;
         tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / toothTime;
+        revolutionTime = (10UL * toothTime) / tempToothAngle;
+
       }
     }
     else { tempRPM = stdGetRPM(); }
@@ -1090,7 +1098,7 @@ void triggerPri_Audi135()
 {
    curTime = micros();
    curGap = curTime - toothSystemLastToothTime;
-   if ( curGap > triggerFilterTime )
+   if ( (curGap > triggerFilterTime) || (currentStatus.startRevolutions == 0) )
    {
      toothSystemCount++;
 
@@ -1859,7 +1867,7 @@ void triggerPri_Subaru67()
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
 
-   if ( (currentStatus.hasSync == false) || configPage2.useResync)
+   if ( (currentStatus.hasSync == false) || configPage2.useResync || (currentStatus.startRevolutions == 0) )
    {
      //Sync is determined by counting the number of cam teeth that have passed between the crank teeth
      switch(secondaryToothCount)
@@ -1929,7 +1937,15 @@ void triggerSec_Subaru67()
 uint16_t getRPM_Subaru67()
 {
   //if(currentStatus.RPM < configPage2.crankRPM) { return crankingGetRPM(configPage2.triggerTeeth); }
-  return stdGetRPM();
+
+  uint16_t tempRPM = 0;
+  if(currentStatus.startRevolutions > 0)
+  {
+    //As the tooth count is over 720 degrees, we need to double the RPM value and halve the revolution time
+    tempRPM = stdGetRPM() << 1;
+    revolutionTime = revolutionTime >> 1; //Revolution time has to be divided by 2 as otherwise it would be over 720 degrees (triggerActualTeeth = nCylinders)
+  }
+  return tempRPM;
 }
 
 int getCrankAngle_Subaru67(int timePerDegree)
@@ -2005,7 +2021,7 @@ void triggerPri_Daihatsu()
   curTime = micros();
   curGap = curTime - toothLastToothTime;
 
-  //if ( curGap >= triggerFilterTime )
+  //if ( curGap >= triggerFilterTime || (currentStatus.startRevolutions == 0 )
   {
     toothSystemCount++;
 
@@ -2127,3 +2143,4 @@ void triggerSetEndTeeth_Daihatsu()
 {
 
 }
+

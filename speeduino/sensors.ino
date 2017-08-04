@@ -61,7 +61,9 @@ void instanteneousMAPReading()
   if( (tempReading >= VALID_MAP_MAX) || (tempReading <= VALID_MAP_MIN) ) { mapErrorCount += 1; }
   else { mapErrorCount = 0; }
 
-  currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC); //Very weak filter
+  //During startup a call is made here to get the baro reading. In this case, we can't apply the ADC filter
+  if(initialisationComplete == true) { currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC); } //Very weak filter
+  else { currentStatus.mapADC = tempReading; } //Baro reading (No filter)
 
   currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
   if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
@@ -219,7 +221,7 @@ void readBaro()
 
     currentStatus.baroADC = ADC_FILTER(tempReading, ADCFILTER_BARO, currentStatus.baroADC); //Very weak filter
 
-    currentStatus.baro = fastMap1023toX(currentStatus.baroADC, configPage1.mapMax); //Get the current MAP value
+    currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
   }
 }
 
@@ -262,3 +264,4 @@ void flexPulse()
  {
    ++flexCounter;
  }
+

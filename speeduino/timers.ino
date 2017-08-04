@@ -47,7 +47,6 @@ void initialiseTimers()
   Timer4.resume(); //Start Timer
 #endif
 
-  pinMode(LED_BUILTIN, OUTPUT); //pinMode(13, OUTPUT);  
   dwellLimit_uS = (1000 * configPage2.dwellLimit);
   lastRPM_100ms = 0;
 }
@@ -101,7 +100,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
   {
     loop100ms = 0; //Reset counter
     BIT_SET(TIMER_mask, BIT_TIMER_10HZ);
-    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
