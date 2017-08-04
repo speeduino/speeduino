@@ -152,7 +152,7 @@ void setup()
 
   #if defined(CORE_STM32)
     EEPROM.init();
-  #endif  
+  #endif
   loadConfig();
   doUpdates(); //Check if any data items need updating (Occurs ith firmware updates)
 

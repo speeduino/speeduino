@@ -29,7 +29,6 @@ void fanControl()
   }
 }
 
-#if defined(CORE_AVR) || defined(CORE_TEENSY)
 void initialiseAuxPWM()
 {
   #if defined(CORE_AVR)
@@ -40,15 +39,24 @@ void initialiseAuxPWM()
     TCCR1B = (1 << CS12);   //Timer1 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
   #elif defined(CORE_TEENSY)
     //REALLY NEED TO DO THIS!
+  #elif defined(CORE_STM32)
+    Timer1.attachInterrupt(2, boostControl);
+    Timer1.attachInterrupt(3, vvtControl); 
+    Timer1.resume(); 
   #endif
 
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
   boost_pin_mask = digitalPinToBitMask(pinBoost);
   vvt_pin_port = portOutputRegister(digitalPinToPort(pinVVT_1));
   vvt_pin_mask = digitalPinToBitMask(pinVVT_1);
-
-  boost_pwm_max_count = 1000000L / (16 * configPage3.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
-  vvt_pwm_max_count = 1000000L / (16 * configPage3.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
+  
+  #if defined(CORE_STM32) //2uS resolution Min 8Hz, Max 5KHz
+    boost_pwm_max_count = 1000000L / (configPage3.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+    vvt_pwm_max_count = 1000000L / (configPage3.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
+  #else
+    boost_pwm_max_count = 1000000L / (16 * configPage3.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+    vvt_pwm_max_count = 1000000L / (16 * configPage3.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
+  #endif
   //TIMSK1 |= (1 << OCIE1A); <---- Not required as compare A is turned on when needed by boost control
   ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
 
@@ -138,7 +146,7 @@ void vvtControl()
 //The interrupt to control the Boost PWM
 #if defined(CORE_AVR)
   ISR(TIMER1_COMPA_vect)
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
   static inline void boostInterrupt() //Most ARM chips can simply call a function
 #endif
 {
@@ -160,7 +168,7 @@ void vvtControl()
 //The interrupt to control the VVT PWM
 #if defined(CORE_AVR)
   ISR(TIMER1_COMPB_vect)
-#elif defined (CORE_TEENSY)
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
   static inline void vvtInterrupt() //Most ARM chips can simply call a function
 #endif
 {
@@ -179,10 +187,3 @@ void vvtControl()
   }
 }
 
-#elif defined(CORE_STM32)
-//YET TO BE IMPLEMENTED ON STM32
-void initialiseAuxPWM() { }
-void boostControl() { }
-void vvtControl() { }
-
-#endif

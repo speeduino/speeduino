@@ -165,7 +165,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define MAX_TIMER_PERIOD 131070 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
   #define uS_TO_TIMER_COMPARE(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
   #define uS_TO_TIMER_COMPARE_SLOW(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
-  #if defined(ARDUINO_ARCH_STM32)
+  #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
     #include "HardwareTimer.h"
     #define FUEL1_COUNTER (TIM2)->CNT
     #define FUEL2_COUNTER (TIM2)->CNT
@@ -212,7 +212,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
     #define IGN3_TIMER_DISABLE() (TIM3)->CCER &= ~TIM_CCER_CC3E
     #define IGN4_TIMER_DISABLE() (TIM3)->CCER &= ~TIM_CCER_CC4E
     #define IGN5_TIMER_DISABLE() (TIM1)->CCER &= ~TIM_CCER_CC1E
-  #else
+  #else //libmaple core aka STM32DUINO
     #define FUEL1_COUNTER (TIMER2->regs).gen->CNT
     #define FUEL2_COUNTER (TIMER2->regs).gen->CNT
     #define FUEL3_COUNTER (TIMER2->regs).gen->CNT

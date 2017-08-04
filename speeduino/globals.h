@@ -14,17 +14,17 @@
   #if defined (STM32F1) || defined(__STM32F1__)
     #define BOARD_NR_GPIO_PINS 34
     #define LED_BUILTIN 33
-  #elif defined(ARDUINO_BLACK_F407VE)
-    #define BOARD_NR_GPIO_PINS 78
+  #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
+    #define BOARD_NR_GPIO_PINS 80
     #define LED_BUILTIN PA7
   #endif
 
   extern "C" char* sbrk(int incr); //Used to freeRam
   inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
-  #if defined(ARDUINO_ARCH_STM32)
+  #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
     #define portOutputRegister(port) (volatile byte *)( &(port->ODR) )
     #define portInputRegister(port) (volatile byte *)( &(port->IDR) )
-  #else
+  #else //libmaple core aka STM32DUINO
     #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
     #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
   #endif
@@ -36,6 +36,10 @@
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
 #define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
 #define BIT_CHECK(var,pos) !!((var) & (1<<(pos)))
+#define Lo(param) ((char *)&param)[0]
+#define Hi(param) ((char *)&param)[1]
+#define Higher(param) ((char *)&param)[2]
+#define Highest(param) ((char *)&param)[3]
 
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000

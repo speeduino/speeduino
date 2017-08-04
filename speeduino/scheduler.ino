@@ -161,12 +161,11 @@ void initialiseSchedulers()
   NVIC_ENABLE_IRQ(IRQ_FTM1);
 
 #elif defined(CORE_STM32)
-  #if defined(ARDUINO_ARCH_STM32)
+  Timer1.setPeriod(2); //2us resolution
+  Timer2.setPeriod(2); //2us resolution
+  Timer3.setPeriod(2); //2us resolution
+  #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
     //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
-    Timer1.setPrescaleFactor(((Timer1.getBaseFrequency()  / 1000000) << 1) -1);  //2us resolution
-    Timer2.setPrescaleFactor(((Timer2.getBaseFrequency()  / 1000000) << 1) -1);  //2us resolution
-    Timer3.setPrescaleFactor(((Timer3.getBaseFrequency()  / 1000000) << 1) -1);  //2us resolution
-
     Timer2.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer2.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer2.setMode(3, TIMER_OUTPUT_COMPARE);
@@ -178,14 +177,8 @@ void initialiseSchedulers()
     Timer3.setMode(4, TIMER_OUTPUT_COMPARE);
     Timer1.setMode(1, TIMER_OUTPUT_COMPARE); 
 
-  #else
+  #else //libmaple core aka STM32DUINO
     //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
-    (TIMER1->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
-    (TIMER2->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
-    (TIMER3->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
-    // Alternative 2us resolution:
-    //TimerX.setPrescaleFactor(CYCLES_PER_MICROSECOND * 2U);
-
     Timer2.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
     Timer2.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
     Timer2.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
