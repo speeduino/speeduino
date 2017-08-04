@@ -86,5 +86,6 @@ static inline void enableIdle();
 static inline byte isStepperHomed();
 static inline byte checkForStepping();
 static inline void doStep();
+static inline void idleInterrupt();
 
 #endif
