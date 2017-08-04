@@ -112,7 +112,11 @@ Additional fuel % to be added when the engine is cranking
 static inline byte correctionCranking()
 {
   byte crankingValue = 100;
-  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage1.crankingPct; }
+  //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage1.crankingPct; }
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+  { 
+    crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  }
   return crankingValue;
 }
 
@@ -152,12 +156,13 @@ static inline byte correctionAccel()
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
   {
     //If it is currently running, check whether it should still be running or whether it's reached it's end time
-    if( currentLoopTime >= currentStatus.TAEEndTime )
+    if( micros() >= currentStatus.TAEEndTime )
     {
       //Time to turn enrichment off
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
       currentStatus.TAEamount = 0;
       accelValue = 100;
+      currentStatus.tpsDOT = 0;
     }
     else
     {
@@ -173,6 +178,7 @@ static inline byte correctionAccel()
     if (TPS_change <= 2)
     {
       accelValue = 100;
+      currentStatus.tpsDOT = 0;
     }
     else
     {

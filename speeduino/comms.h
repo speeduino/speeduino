@@ -11,6 +11,7 @@
 #define boostvvtPage 8
 #define seqFuelPage  9
 #define canbusPage   10//Config Page 10
+#define warmupPage   11 //Config Page 11
 
 #define packetSize   73
 

@@ -15,7 +15,11 @@ uint8_t Glow, Ghigh;
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   HardwareSerial &CANSerial = Serial3;
 #elif defined(CORE_STM32)
-  SerialUART &CANSerial = Serial2;
+  #if defined(ARDUINO_ARCH_STM32)
+    SerialUART &CANSerial = Serial2;
+  #else
+    HardwareSerial &CANSerial = Serial2;
+  #endif
 #elif defined(CORE_TEENSY)
   HardwareSerial &CANSerial = Serial2;
 #endif

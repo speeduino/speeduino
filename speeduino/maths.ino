@@ -18,11 +18,9 @@ int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 //This is a common case because it means converting from a standard 10-bit analog input to a byte or 10-bit analog into 0-511 (Eg the temperature readings)
 //int fastMap1023toX(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 //removed ununsed variables, in_min and out_min is aways 0, in_max is aways 1023
-#if defined(CORE_STM32)
-  #define fastResize(x, out_max) ( ((unsigned long)x * out_max) >> 12)
-#else  
-  #define fastResize(x, out_max) ( ((unsigned long)x * out_max) >> 10)
-#endif
+#define fastMap1023toX(x, out_max) ( ((unsigned long)x * out_max) >> 10)
+//This is a new version that allows for out_min
+#define fastMap10Bit(x, out_min, out_max) ( ( ((unsigned long)x * (out_max-out_min)) >> 10 ) + out_min)
 
 /*
 The following are all fast versions of specific divisions

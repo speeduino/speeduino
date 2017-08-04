@@ -54,6 +54,7 @@ struct config2 configPage2;
 struct config3 configPage3;
 struct config4 configPage4;
 struct config10 configPage10;
+struct config11 configPage11;
 
 int req_fuel_uS, inj_opentime_uS;
 
@@ -135,7 +136,6 @@ bool initialisationComplete = false; //Tracks whether the setup() functino has r
 void setup()
 {
 
-  Serial.begin(115200);
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
   //dummyIgnitionTable(&ignitionTable);
@@ -148,21 +148,24 @@ void setup()
   table3D_setSize(&trim2Table, 6);
   table3D_setSize(&trim3Table, 6);
   table3D_setSize(&trim4Table, 6);
+  Serial.begin(115200);
 
-  EEPROM.init();
+  #if defined(CORE_STM32)
+    EEPROM.init();
+  #endif
   loadConfig();
   doUpdates(); //Check if any data items need updating (Occurs ith firmware updates)
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-  if (configPage10.enable_canbus == 1) { Serial3.begin(115200); }
+  if (configPage10.enable_canbus == 1) { CANSerial.begin(115200); }
 #elif defined(CORE_STM32)
-  if (configPage10.enable_canbus == 1) { Serial2.begin(115200); }
+  if (configPage10.enable_canbus == 1) { CANSerial.begin(115200); }
   else if (configPage10.enable_canbus == 2)
   {
     //enable local can interface
   }
 #elif defined(CORE_TEENSY)
-  if (configPage10.enable_canbus == 1) { Serial2.begin(115200); }
+  if (configPage10.enable_canbus == 1) { CANSerial.begin(115200); }
   else if (configPage10.enable_canbus == 2)
   {
     //Teensy onboard CAN not used currently
@@ -183,6 +186,10 @@ void setup()
   WUETable.xSize = 10;
   WUETable.values = configPage1.wueValues;
   WUETable.axisX = configPage2.wueBins;
+  crankingEnrichTable.valueSize = SIZE_BYTE;
+  crankingEnrichTable.xSize = 4;
+  crankingEnrichTable.values = configPage11.crankingEnrichValues;
+  crankingEnrichTable.axisX = configPage11.crankingEnrichBins;
 
   dwellVCorrectionTable.valueSize = SIZE_BYTE;
   dwellVCorrectionTable.xSize = 6;
@@ -205,7 +212,12 @@ void setup()
   loadCalibration();
 
   //Set the pin mappings
-  if((configPage1.pinMapping > BOARD_NR_GPIO_PINS) || (configPage1.pinMapping==0)) { setPinMapping(3); } //First time running? set to v0.4
+  if(configPage1.pinMapping > BOARD_NR_GPIO_PINS)
+  {
+    //First time running on this board
+    setPinMapping(3); //Force board to v0.4
+    configPage1.flexEnabled = false; //Have to disable flex. If this isn't done and the wrong flex pin is interrupt attached below, system can hang.
+  }
   else { setPinMapping(configPage1.pinMapping); }
 
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
@@ -229,22 +241,31 @@ void setup()
 
   //Lookup the current MAP reading for barometric pressure
   readMAP();
-  /*
-   * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
-   * with record highs close to 108.5 kPa.
-   * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
-   */
-  if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
+  //barometric reading can be taken from either an external sensor if enabled, or simply by using the initial MAP value
+  if ( configPage3.useExtBaro != 0 )
   {
-    currentStatus.baro = currentStatus.MAP;
+    readBaro();
     EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
   }
   else
   {
-    //Attempt to use the last known good baro reading from EEPROM
-    if ((EEPROM.read(EEPROM_LAST_BARO) >= BARO_MIN) && (EEPROM.read(EEPROM_LAST_BARO) <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
-    { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); } //last baro correction
-    else { currentStatus.baro = 100; } //Final fall back position.
+    /*
+     * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
+     * with record highs close to 108.5 kPa.
+     * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
+     */
+    if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
+    {
+      currentStatus.baro = currentStatus.MAP;
+      EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
+    }
+    else
+    {
+      //Attempt to use the last known good baro reading from EEPROM
+      if ((EEPROM.read(EEPROM_LAST_BARO) >= BARO_MIN) && (EEPROM.read(EEPROM_LAST_BARO) <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
+      { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); } //last baro correction
+      else { currentStatus.baro = 100; } //Final fall back position.
+    }
   }
 
   //Perform all initialisations
@@ -860,10 +881,12 @@ void setup()
 void loop()
 {
       mainLoopCount++;
+      LOOP_TIMER = TIMER_mask;
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
       // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
-      if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+      //if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+      if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       {
         if (Serial.available() > 0)
         {
@@ -871,56 +894,28 @@ void loop()
         }
       }
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-      //if serial3 interface is enabled then check for serial3 requests.
-      if (configPage10.enable_canbus == 1)
-          {
-            if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-                {
-                  if (CANSerial.available() > 0)
-                    {
-                    canCommand();
-                    }
-                }
-          }
-
-#elif defined(CORE_STM32)
-      //if can or secondary serial interface is enabled then check for requests.
-      if (configPage10.enable_canbus == 1)  //secondary serial interface enabled
-          {
-            if ( ((mainLoopCount & 31) == 1) or (Serial2.available() > SERIAL_BUFFER_THRESHOLD) )
-                {
-                  if (Serial2.available() > 0)
-                    {
-                    canCommand();
-                    }
-                }
-          }
-      else if (configPage10.enable_canbus == 2) // can module enabled
-          {
-            //check local can module
-          }
-#elif defined(CORE_TEENSY)
-      //if can or secondary serial interface is enabled then check for requests.
-      if (configPage10.enable_canbus == 1)  //secondary serial interface enabled
-          {
-            if ( ((mainLoopCount & 31) == 1) or (Serial2.available() > SERIAL_BUFFER_THRESHOLD) )
-                {
-                  if (Serial2.available() > 0)
-                    {
-                    canCommand();
-                    }
-                }
-          }
-      else if (configPage10.enable_canbus == 2) // can module enabled
-          {
-            //check local can module
-            // if ( ((mainLoopCount & 31) == 1) or (CANbus0.available())
-            //    {
-            //      CANbus0.read(rx_msg);
-            //    }
-          }
-#endif
+    //if serial3 interface is enabled then check for serial3 requests.
+    if (configPage10.enable_canbus == 1)
+    {
+      //if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+      if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+      {
+        if (CANSerial.available() > 0)
+        {
+          canCommand();
+        }
+      }
+    }
+  #if defined(CORE_TEENSY) || defined(CORE_STM32)
+    else if (configPage10.enable_canbus == 2) // can module enabled
+    {
+      //check local can module
+      // if ( ((mainLoopCount & 31) == 1) or (CANbus0.available())
+      //    {
+      //      CANbus0.read(rx_msg);
+      //    }
+    }
+  #endif
 
     //Displays currently disabled
     // if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
@@ -931,7 +926,8 @@ void loop()
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
       currentStatus.RPM = currentStatus.longRPM = getRPM(); //Long RPM is included here
-      if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't.
+      //if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't.
+      FUEL_PUMP_ON();
     }
     else
     {
@@ -940,6 +936,7 @@ void loop()
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       toothLastToothTime = 0;
+      //toothLastMinusOneToothTime = 0;
       currentStatus.hasSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       secCounter = 0; //Reset our seconds counter.
@@ -967,8 +964,9 @@ void loop()
     //-----------------------------------------------------------------------------------------------------
     readMAP();
 
-    if ((mainLoopCount & 31) == 1) //Every 32 loops
+    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
+      BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
       readTPS(); //TPS reading to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
 
       //Check for launching/flat shift (clutch) can be done around here too
@@ -1011,14 +1009,19 @@ void loop()
 
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
+
+      //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
+      boostControl();
     }
-    if( (mainLoopCount & 63) == 1) //Every 64 loops
+    if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //Every 64 loops
     {
-      boostControl(); //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
+      //Nothing here currently
+      BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
     }
     //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
-    if ((mainLoopCount & 255) == 1) //Every 256 loops
+    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ)) //Every 256 loops
     {
+       BIT_CLEAR(TIMER_mask, BIT_TIMER_4HZ);
        readCLT();
        readIAT();
        readO2();
@@ -1078,6 +1081,13 @@ void loop()
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
     }
+    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Every 1024 loops (Approx. 1 per second)
+    {
+      //Approx. once per second
+      readBaro();
+      BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
+    }
+
     if(configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL || configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL) { idleControl(); } //Run idlecontrol every loop for stepper idle.
 
     //Always check for sync
@@ -1085,6 +1095,7 @@ void loop()
     if (currentStatus.hasSync && (currentStatus.RPM > 0))
     {
         if(currentStatus.startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;} //Enable the fuel and ignition, assuming staging revolutions are complete
+        else { ignitionOn = false; fuelOn = false;}
         //If it is, check is we're running or cranking
         if(currentStatus.RPM > ((unsigned int)configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100
         {

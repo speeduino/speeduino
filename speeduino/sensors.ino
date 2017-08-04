@@ -61,10 +61,12 @@ void instanteneousMAPReading()
   if( (tempReading >= VALID_MAP_MAX) || (tempReading <= VALID_MAP_MIN) ) { mapErrorCount += 1; }
   else { mapErrorCount = 0; }
 
-  currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC); //Very weak filter
+  //During startup a call is made here to get the baro reading. In this case, we can't apply the ADC filter
+  if(initialisationComplete == true) { currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC); } //Very weak filter
+  else { currentStatus.mapADC = tempReading; } //Baro reading (No filter)
 
-  currentStatus.MAP = fastResize(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
-
+  currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+  if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
 
 }
 
@@ -108,7 +110,8 @@ void readMAP()
           if( (MAPrunningValue != 0) && (MAPcount != 0) )
           {
             currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
-            currentStatus.MAP = fastResize(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
+            currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+            if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
             MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
             MAPrunningValue = 0;
             MAPcount = 0;
@@ -142,7 +145,8 @@ void readMAP()
         {
           //Reaching here means that the last cylce has completed and the MAP value should be calculated
           currentStatus.mapADC = MAPrunningValue;
-          currentStatus.MAP = fastResize(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
+          currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+          if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
           MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
           MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
         }
@@ -162,10 +166,10 @@ void readTPS()
   currentStatus.TPSlast = currentStatus.TPS;
   currentStatus.TPSlast_time = currentStatus.TPS_time;
   #if defined(ANALOG_ISR)
-    byte tempTPS = fastResize(AnChannel[pinTPS-A0], 255); //Get the current raw TPS ADC value and map it into a byte
+    byte tempTPS = fastMap1023toX(AnChannel[pinTPS-A0], 255); //Get the current raw TPS ADC value and map it into a byte
   #else
     analogRead(pinTPS);
-    byte tempTPS = fastResize(analogRead(pinTPS), 255); //Get the current raw TPS ADC value and map it into a byte
+    byte tempTPS = fastMap1023toX(analogRead(pinTPS), 255); //Get the current raw TPS ADC value and map it into a byte
   #endif
   currentStatus.tpsADC = ADC_FILTER(tempTPS, ADCFILTER_TPS, currentStatus.tpsADC);
   //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
@@ -180,10 +184,10 @@ void readCLT()
 {
   unsigned int tempReading;
   #if defined(ANALOG_ISR)
-    tempReading = fastResize(AnChannel[pinCLT-A0], 511); //Get the current raw CLT value
+    tempReading = fastMap1023toX(AnChannel[pinCLT-A0], 511); //Get the current raw CLT value
   #else
     tempReading = analogRead(pinCLT);
-    tempReading = fastResize(analogRead(pinCLT), 511); //Get the current raw CLT value
+    tempReading = fastMap1023toX(analogRead(pinCLT), 511); //Get the current raw CLT value
   #endif
   currentStatus.cltADC = ADC_FILTER(tempReading, ADCFILTER_CLT, currentStatus.cltADC);
   currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
@@ -193,23 +197,42 @@ void readIAT()
 {
   unsigned int tempReading;
   #if defined(ANALOG_ISR)
-    tempReading = fastResize(AnChannel[pinIAT-A0], 511); //Get the current raw IAT value
+    tempReading = fastMap1023toX(AnChannel[pinIAT-A0], 511); //Get the current raw IAT value
   #else
     tempReading = analogRead(pinIAT);
-    tempReading = fastResize(analogRead(pinIAT), 511); //Get the current raw IAT value
+    tempReading = fastMap1023toX(analogRead(pinIAT), 511); //Get the current raw IAT value
   #endif
   currentStatus.iatADC = ADC_FILTER(tempReading, ADCFILTER_IAT, currentStatus.iatADC);
   currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
+}
+
+void readBaro()
+{
+  if ( configPage3.useExtBaro != 0 )
+  {
+    int tempReading;
+    // readings
+    #if defined(ANALOG_ISR_MAP)
+      tempReading = AnChannel[pinBaro-A0];
+    #else
+      tempReading = analogRead(pinBaro);
+      tempReading = analogRead(pinBaro);
+    #endif
+
+    currentStatus.baroADC = ADC_FILTER(tempReading, ADCFILTER_BARO, currentStatus.baroADC); //Very weak filter
+
+    currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+  }
 }
 
 void readO2()
 {
   unsigned int tempReading;
   #if defined(ANALOG_ISR)
-    tempReading = fastResize(AnChannel[pinO2-A0], 511); //Get the current O2 value.
+    tempReading = fastMap1023toX(AnChannel[pinO2-A0], 511); //Get the current O2 value.
   #else
     tempReading = analogRead(pinO2);
-    tempReading = fastResize(analogRead(pinO2), 511); //Get the current O2 value.
+    tempReading = fastMap1023toX(analogRead(pinO2), 511); //Get the current O2 value.
   #endif
   currentStatus.O2ADC = ADC_FILTER(tempReading, ADCFILTER_O2, currentStatus.O2ADC);
   currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
@@ -225,10 +248,10 @@ void readBat()
 {
   unsigned int tempReading;
   #if defined(ANALOG_ISR)
-    tempReading = fastResize(AnChannel[pinBat-A0], 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
+    tempReading = fastMap1023toX(AnChannel[pinBat-A0], 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
   #else
     tempReading = analogRead(pinBat);
-    tempReading = fastResize(analogRead(pinBat), 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
+    tempReading = fastMap1023toX(analogRead(pinBat), 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
   #endif
   currentStatus.battery10 = ADC_FILTER(tempReading, ADCFILTER_BAT, currentStatus.battery10);
 }

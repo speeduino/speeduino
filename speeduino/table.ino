@@ -376,25 +376,22 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
 
 
       //Initial check incase the values were hit straight on
-      /*
       long p = (long)X - xMinValue;
       if (xMaxValue == xMinValue) { p = (p << 8); }  //This only occurs if the requested X value was equal to one of the X axis bins
       else { p = ( (p << 8) / (xMaxValue - xMinValue) ); } //This is the standard case
-      */
-
-      long p;
-      if (xMaxValue == xMinValue) { p = ((long)(X - xMinValue) << 8); }  //This only occurs if the requested X value was equal to one of the X axis bins
-      else { p = ((long)(X - xMinValue) << 8) / (xMaxValue - xMinValue); } //This is the standard case
-
-      /*
-      long q = (long)Y - yMinValue;
-      if (yMaxValue == yMinValue) { q = (q << 8); }
-      else { q = 256 - ( (q << 8) / (yMinValue - yMaxValue) ); }
-      */
 
       long q;
-      if (yMaxValue == yMinValue) { q = ((long)(Y - yMinValue) << 8); }
-      else { q = 256 - (((long)(Y - yMaxValue) << 8) / (yMinValue - yMaxValue)); }
+      if (yMaxValue == yMinValue)
+      {
+        q = (long)Y - yMinValue;
+        q = (q << 8);
+      }
+      //Standard case
+      else
+      {
+        q = long(Y) - yMaxValue;
+        q = 256 - ( (q << 8) / (yMinValue - yMaxValue) );
+      }
 
       int m = ((256-p) * (256-q)) >> 8;
       int n = (p * (256-q)) >> 8;
@@ -408,6 +405,7 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
  * @Mega:   Stadard:464276 92 |FP Math:893104 92.57 |Clean code:641280 92  , Number of loops:5000
  * @STM32F1: Stadard:21449 92 |FP Math:125707 92.57  |Clean code:11634 92  , Number of loops:5000
  * @STM32F4: Stadard:7275 92  |FP Math:5724 92.57  |Clean code:4742 92    , Number of loops:5000
+
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: http://www.megamanual.com/v22manual/ve_tuner.pdf
 float get3DTableValueF(struct table3D *fromTable, int Y, int X)
@@ -461,14 +459,22 @@ float get3DTableValueF(struct table3D *fromTable, int Y, int X)
   int C = fromTable->values[yMax][xMin];
   int D = fromTable->values[yMax][xMax];
   if( (A == B) && (A == C) && (A == D) ) { tableResult = A; }
-  else if(yMin == yMax) // Same MAP axys do a simple 2D
+  else if(xMin == xMax) // Same RPM axys do a simple 2D (27% faster on Mega on worst case, up to 500%)
+  {
+    int yMaxValue = fromTable->axisY[yMax];
+    int yMinValue = fromTable->axisY[yMin];
+    float q;
+    q = ((float)(Y - yMinValue) * (C - A)) / (yMaxValue - yMinValue);
+    tableResult = A + q;
+  }
+  else if(yMin == yMax) // Same MAP axys do a simple 2D (27% faster on Mega on worst case, up to 500%)
   {
     int xMaxValue = fromTable->axisX[xMax];
     int xMinValue = fromTable->axisX[xMin];
-    long q;
-    q = (((long)(X - xMinValue) << 4) * (B - A)) / (xMaxValue - xMinValue);
-    tableResult = A + (q >> 4);
-  } 
+    float q;
+    q = ((float)(X - xMinValue) * (B - A)) / (xMaxValue - xMinValue);
+    tableResult = A + q;
+  }
   else
   {
     int yMaxValue = fromTable->axisY[yMax];
@@ -490,7 +496,7 @@ float get3DTableValueF(struct table3D *fromTable, int Y, int X)
   }
   return tableResult;
 }
-
+*/
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: http://www.megamanual.com/v22manual/ve_tuner.pdf
 int get3DTableValueS(struct table3D *fromTable, int Y, int X)
@@ -544,13 +550,21 @@ int get3DTableValueS(struct table3D *fromTable, int Y, int X)
   int C = fromTable->values[yMax][xMin];
   int D = fromTable->values[yMax][xMax];
   if( (A == B) && (A == C) && (A == D) ) { tableResult = A; }
-  else if(yMin == yMax) // Same MAP axys do a simple 2D
+  else if(xMin == xMax) // Same RPM axys do a simple 2D (27% faster on Mega on worst case, up to 500%)
+  {
+    int yMaxValue = fromTable->axisY[yMax];
+    int yMinValue = fromTable->axisY[yMin];
+    long q;
+    q = (((long)(Y - yMinValue) << 6)  * (C - A)) / (yMaxValue - yMinValue);
+    tableResult = A + (q >> 6);
+  }
+  else if(yMin == yMax) // Same MAP axys do a simple 2D (27% faster on Mega on worst case, up to 500%)
   {
     int xMaxValue = fromTable->axisX[xMax];
     int xMinValue = fromTable->axisX[xMin];
     long q;
-    q = (((long)(X - xMinValue) << 4) * (B - A)) / (xMaxValue - xMinValue);
-    tableResult = A + (q >> 4);
+    q = (((long)(X - xMinValue) << 6) * (B - A)) / (xMaxValue - xMinValue);
+    tableResult = A + (q >> 6);
   }
   else
   {
@@ -559,11 +573,22 @@ int get3DTableValueS(struct table3D *fromTable, int Y, int X)
     int xMaxValue = fromTable->axisX[xMax];
     int xMinValue = fromTable->axisX[xMin];
 
-    long p, q;
-    if (xMaxValue == xMinValue) { p = ((long)(X - xMinValue) << 8); }
-    else { p = ((long)(X - xMinValue) << 8) / (xMaxValue - xMinValue); }
-    if (yMaxValue == yMinValue) { q = ((long)(Y - yMinValue) << 8); }
-    else { q = 256 - (((long)(Y - yMaxValue) << 8) / (yMinValue - yMaxValue)); }
+    long p = (long)X - xMinValue;
+    if (xMaxValue == xMinValue) { p = (p << 8); }  //This only occurs if the requested X value was equal to one of the X axis bins
+    else { p = ( (p << 8) / (xMaxValue - xMinValue) ); } //This is the standard case
+
+    long q;
+    if (yMaxValue == yMinValue)
+    {
+      q = (long)Y - yMinValue;
+      q = (q << 8);
+    }
+    //Standard case
+    else
+    {
+      q = long(Y) - yMaxValue;
+      q = 256 - ( (q << 8) / (yMinValue - yMaxValue) );
+    }
 
     int m = ((256-p) * (256-q)) >> 8;
     int n = (p * (256-q)) >> 8;
@@ -573,4 +598,4 @@ int get3DTableValueS(struct table3D *fromTable, int Y, int X)
  }
   return tableResult;
 }
-*/
+

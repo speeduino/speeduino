@@ -15,6 +15,8 @@ static inline void addToothLogEntry(unsigned long);
 static inline uint16_t stdGetRPM();
 static inline void setFilter(unsigned long);
 static inline int crankingGetRPM(byte);
+static inline void doPerToothTiming(uint16_t crankAngle);
+
 void triggerSetup_missingTooth();
 void triggerPri_missingTooth();
 void triggerSec_missingTooth();

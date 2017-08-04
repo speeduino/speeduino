@@ -36,52 +36,13 @@ uint16_t freeRam ()
 #elif defined(CORE_STM32)
   char top = 't';
   return &top - reinterpret_cast<char*>(sbrk(0));
+
 #endif
 }
 
 void setPinMapping(byte boardID)
 {
   //This is dumb, but it'll do for now to get things compiling
-  #if defined(CORE_STM32)
-    //STM32F1/variants/.../board.cpp
-    #if defined (STM32F4)
-      #define A0  PA0
-      #define A1  PA1
-      #define A2  PA2
-      #define A3  PA3
-      #define A4  PA4
-      #define A5  PA5
-      #define A6  PA6
-      #define A7  PA7
-      #define A8  PB0
-      #define A9  PB1
-      #define A10  PC0
-      #define A11  PC1
-      #define A12  PC2
-      #define A13  PC3
-      #define A14  PC4
-      #define A15  PC5
-    #else
-      #define A0  boardADCPins[0]
-      #define A1  boardADCPins[1]
-      #define A2  boardADCPins[2]
-      #define A3  boardADCPins[3]
-      #define A4  boardADCPins[4]
-      #define A5  boardADCPins[5]
-      #define A6  boardADCPins[6]
-      #define A7  boardADCPins[7]
-      #define A8  boardADCPins[8]
-      #define A9  boardADCPins[9]
-      //STM32F1 have only 9 12bit adc
-      #define A10  boardADCPins[0]
-      #define A11  boardADCPins[1]
-      #define A12  boardADCPins[2]
-      #define A13  boardADCPins[3]
-      #define A14  boardADCPins[4]
-      #define A15  boardADCPins[5]
-    #endif
-  #endif
-
   switch (boardID)
   {
     case 0:
@@ -186,35 +147,6 @@ void setPinMapping(byte boardID)
         pinCoil4 = 21;
         pinCoil3 = 30;
         pinO2 = A22;
-      #elif defined(CORE_STM32)
-        //http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/0.0.12/hardware/maple-mini.html#master-pin-map
-        //pins 23, 24 and 33 couldn't be used
-        pinInjector1 = 15; //Output pin injector 1 is on
-        pinInjector2 = 16; //Output pin injector 2 is on
-        pinInjector3 = 17; //Output pin injector 3 is on
-        pinInjector4 = 18; //Output pin injector 4 is on
-        pinCoil1 = 19; //Pin for coil 1
-        pinCoil2 = 20; //Pin for coil 2
-        pinCoil3 = 21; //Pin for coil 3
-        pinCoil4 = 26; //Pin for coil 4
-        pinCoil5 = 27; //Pin for coil 5
-        pinTPS = A0; //TPS input pin
-        pinMAP = A1; //MAP sensor pin
-        pinIAT = A2; //IAT sensor pin
-        pinCLT = A3; //CLS sensor pin
-        pinO2 = A4; //O2 Sensor pin
-        pinBat = A5; //Battery reference voltage pin
-        pinStepperDir = 12; //Direction pin  for DRV8825 driver
-        pinStepperStep = 13; //Step pin for DRV8825 driver
-        pinStepperEnable = 14; //Enable pin for DRV8825
-        pinDisplayReset = 2; // OLED reset pin
-        pinFan = 1; //Pin for the fan output
-        pinFuelPump = 0; //Fuel pump output
-        pinTachOut = 31; //Tacho output pin
-        //external interrupt enabled pins
-        pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = 25; //The CAS pin
-        pinTrigger2 = 22; //The Cam Sensor pin
       #endif
       break;
 
@@ -274,12 +206,13 @@ void setPinMapping(byte boardID)
         pinCoil3 = PB12; //Pin for coil 3
         pinCoil4 = PB13; //Pin for coil 4
         pinCoil5 = PB14; //Pin for coil 5
-        pinTPS = PA0; //TPS input pin
-        pinMAP = PA1; //MAP sensor pin
-        pinIAT = PA2; //IAT sensor pin
-        pinCLT = PA3; //CLS sensor pin
-        pinO2 = PA4; //O2 Sensor pin
-        pinBat = PA5; //Battery reference voltage pin
+        pinTPS = A0; //TPS input pin
+        pinMAP = A1; //MAP sensor pin
+        pinIAT = A2; //IAT sensor pin
+        pinCLT = A3; //CLS sensor pin
+        pinO2 = A4; //O2 Sensor pin
+        pinBat = A5; //Battery reference voltage pin
+        pinBaro = A6;        
         pinStepperDir = PD8; //Direction pin  for DRV8825 driver
         pinStepperStep = PB15; //Step pin for DRV8825 driver
         pinStepperEnable = PD9; //Enable pin for DRV8825
@@ -320,6 +253,7 @@ void setPinMapping(byte boardID)
         pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
         pinTrigger = 25; //The CAS pin
         pinTrigger2 = 22; //The Cam Sensor pin
+        pinBaro = pinMAP;
       #endif
       break;
 
@@ -327,8 +261,8 @@ void setPinMapping(byte boardID)
       //Pin mappings as per the MX5 PNP shield
       pinInjector1 = 11; //Output pin injector 1 is on
       pinInjector2 = 10; //Output pin injector 2 is on
-      pinInjector3 = 9; //Output pin injector 3 is on
-      pinInjector4 = 8; //Output pin injector 4 is on
+      pinInjector3 = 8; //Output pin injector 3 is on
+      pinInjector4 = 9; //Output pin injector 4 is on
       pinInjector5 = 14; //Output pin injector 5 is on
       pinCoil1 = 39; //Pin for coil 1
       pinCoil2 = 41; //Pin for coil 2
@@ -346,13 +280,14 @@ void setPinMapping(byte boardID)
       pinDisplayReset = 48; // OLED reset pin
       pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
       pinIdle1 = 2; //Single wire idle control
-      pinIdle2 = 3; //2 wire idle control (Note this is shared with boost!!!)
+      pinBoost = 4;
+      pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
       pinFuelPump = 37; //Fuel pump output  (Goes to ULN2803)
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       pinLaunch = 12; //Can be overwritten below
-      pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
       break;
 
     case 10:
@@ -386,7 +321,9 @@ void setPinMapping(byte boardID)
       pinFuelPump = 42; //Fuel pump output 2n2222
       pinFan = 47; //Pin for the fan output
       pinTachOut = 49; //Tacho output pin
-      pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+      pinBoost = 5;
+      pinIdle1 = 6;
       break;
 
     case 20:
@@ -498,6 +435,7 @@ void setPinMapping(byte boardID)
   if ( (configPage4.fanPin != 0) && (configPage4.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = configPage4.fanPin; }
   if ( (configPage3.boostPin != 0) && (configPage3.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = configPage3.boostPin; }
   if ( (configPage3.vvtPin != 0) && (configPage3.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = configPage3.vvtPin; }
+  if ( (configPage3.useExtBaro != 0) && (configPage3.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage3.baroPin + A0; }
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinCoil1, OUTPUT);
@@ -546,6 +484,8 @@ void setPinMapping(byte boardID)
 
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
+  pump_pin_port = portOutputRegister(digitalPinToPort(pinFuelPump));
+  pump_pin_mask = digitalPinToBitMask(pinFuelPump);
 
   //And for inputs
   pinMode(pinMAP, INPUT);
@@ -555,6 +495,7 @@ void setPinMapping(byte boardID)
   pinMode(pinIAT, INPUT);
   pinMode(pinCLT, INPUT);
   pinMode(pinBat, INPUT);
+  pinMode(pinBaro, INPUT);
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
@@ -597,7 +538,9 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
-  unsigned int iVE, iMAP, iAFR, iCorrections;
+  uint16_t iVE, iCorrections;
+  uint16_t iMAP = 100;
+  uint16_t iAFR = 147;
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
   iVE = ((unsigned int)VE << 7) / 100;

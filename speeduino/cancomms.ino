@@ -154,8 +154,8 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
      case 2:                                          // requests via serial3
         CANSerial.print("R");                         //send "R" to request data from the parmagroup can address whos value is sent next
         CANSerial.write(candata1);                    //the currentStatus.current_caninchannel
-        CANSerial.write(lowByte(paramgroup) );       //send lsb first
-        CANSerial.write(highByte(paramgroup) );
+        CANSerial.write(Lo(paramgroup) );       //send lsb first
+        CANSerial.write(Hi(paramgroup) );
         break;
 
      case 3:
