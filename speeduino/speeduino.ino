@@ -152,7 +152,7 @@ void setup()
 
   #if defined(CORE_STM32)
     EEPROM.init();
-  #endif
+  #endif  
   loadConfig();
   doUpdates(); //Check if any data items need updating (Occurs ith firmware updates)
 
@@ -212,7 +212,12 @@ void setup()
   loadCalibration();
 
   //Set the pin mappings
-  if(configPage1.pinMapping > BOARD_NR_GPIO_PINS) { setPinMapping(3); } //First time running? set to v0.4
+  if(configPage1.pinMapping > BOARD_NR_GPIO_PINS)
+  {
+    //First time running on this board
+    setPinMapping(3); //Force board to v0.4
+    configPage1.flexEnabled = false; //Have to disable flex. If this isn't done and the wrong flex pin is interrupt attached below, system can hang.
+  }
   else { setPinMapping(configPage1.pinMapping); }
 
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
@@ -234,8 +239,18 @@ void setup()
   //Set the tacho output default state
   digitalWrite(pinTachOut, HIGH);
 
+  //Perform all initialisations
+  initialiseSchedulers();
+  initialiseTimers();
+  //initialiseDisplay();
+  initialiseIdle();
+  initialiseFan();
+  initialiseAuxPWM();
+  initialiseCorrections();
+  initialiseADC();
+
   //Lookup the current MAP reading for barometric pressure
-  readMAP();
+  instanteneousMAPReading();
   //barometric reading can be taken from either an external sensor if enabled, or simply by using the initial MAP value
   if ( configPage3.useExtBaro != 0 )
   {
@@ -262,16 +277,6 @@ void setup()
       else { currentStatus.baro = 100; } //Final fall back position.
     }
   }
-
-  //Perform all initialisations
-  initialiseSchedulers();
-  initialiseTimers();
-  //initialiseDisplay();
-  initialiseIdle();
-  initialiseFan();
-  initialiseAuxPWM();
-  initialiseCorrections();
-  initialiseADC();
 
   //Check whether the flex sensor is enabled and if so, attach an interupt for it
   if(configPage1.flexEnabled)
@@ -345,7 +350,6 @@ void setup()
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
   //digitalWrite(pinTrigger, HIGH);
-
 
   //Set the trigger function based on the decoder in the config
   switch (configPage2.TrigPattern)
@@ -880,8 +884,7 @@ void loop()
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
       // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
-      //if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
-      if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+      if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       {
         if (Serial.available() > 0)
         {
@@ -889,28 +892,56 @@ void loop()
         }
       }
 
-    //if serial3 interface is enabled then check for serial3 requests.
-    if (configPage10.enable_canbus == 1)
-    {
-      //if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-      if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-      {
-        if (CANSerial.available() > 0)
-        {
-          canCommand();
-        }
-      }
-    }
-  #if defined(CORE_TEENSY) || defined(CORE_STM32)
-    else if (configPage10.enable_canbus == 2) // can module enabled
-    {
-      //check local can module
-      // if ( ((mainLoopCount & 31) == 1) or (CANbus0.available())
-      //    {
-      //      CANbus0.read(rx_msg);
-      //    }
-    }
-  #endif
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
+      //if serial3 interface is enabled then check for serial3 requests.
+      if (configPage10.enable_canbus == 1)
+          {
+            if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+                {
+                  if (CANSerial.available() > 0)
+                    {
+                    canCommand();
+                    }
+                }
+          }
+
+#elif defined(CORE_STM32)
+      //if can or secondary serial interface is enabled then check for requests.
+      if (configPage10.enable_canbus == 1)  //secondary serial interface enabled
+          {
+            if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+                {
+                  if (CANSerial.available() > 0)
+                    {
+                    canCommand();
+                    }
+                }
+          }
+      else if (configPage10.enable_canbus == 2) // can module enabled
+          {
+            //check local can module
+          }
+#elif defined(CORE_TEENSY)
+      //if can or secondary serial interface is enabled then check for requests.
+      if (configPage10.enable_canbus == 1)  //secondary serial interface enabled
+          {
+            if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+                {
+                  if (CANSerial.available() > 0)
+                    {
+                    canCommand();
+                    }
+                }
+          }
+      else if (configPage10.enable_canbus == 2) // can module enabled
+          {
+            //check local can module
+            // if ( ((mainLoopCount & 31) == 1) or (CANbus0.available())
+            //    {
+            //      CANbus0.read(rx_msg);
+            //    }
+          }
+#endif
 
     //Displays currently disabled
     // if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
@@ -921,8 +952,8 @@ void loop()
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
       currentStatus.RPM = currentStatus.longRPM = getRPM(); //Long RPM is included here
-      //if(fuelPumpOn == false) { digitalWrite(pinFuelPump, HIGH); fuelPumpOn = true; } //Check if the fuel pump is on and turn it on if it isn't.
       FUEL_PUMP_ON();
+      fuelPumpOn = true; //Not sure if this is needed.
     }
     else
     {
@@ -931,6 +962,7 @@ void loop()
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       toothLastToothTime = 0;
+      //toothLastMinusOneToothTime = 0;
       currentStatus.hasSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       secCounter = 0; //Reset our seconds counter.
@@ -958,7 +990,8 @@ void loop()
     //-----------------------------------------------------------------------------------------------------
     readMAP();
 
-    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
+    //if ((mainLoopCount & 31) == 1) //Every 32 loops
+    if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ))
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
       readTPS(); //TPS reading to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
@@ -1007,7 +1040,7 @@ void loop()
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
       boostControl();
     }
-    if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //Every 64 loops
+    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //Every 64 loops
     {
       //Nothing here currently
       BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
@@ -1078,8 +1111,8 @@ void loop()
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Every 1024 loops (Approx. 1 per second)
     {
       //Approx. once per second
-      readBaro();
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
+      readBaro();
     }
 
     if(configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL || configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL) { idleControl(); } //Run idlecontrol every loop for stepper idle.
