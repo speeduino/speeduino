@@ -101,7 +101,7 @@
 #define SERIAL_BUFFER_THRESHOLD 32 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
 
 #define FUEL_PUMP_ON() *pump_pin_port |= (pump_pin_mask)
-#define FUEL_PUMP_OFF() *tach_pin_port &= ~(tach_pin_mask)
+#define FUEL_PUMP_OFF() *pump_pin_port &= ~(pump_pin_mask)
 
 const byte signature = 20;
 
