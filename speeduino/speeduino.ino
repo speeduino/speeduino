@@ -58,11 +58,6 @@ struct config11 configPage11;
 
 int req_fuel_uS, inj_opentime_uS;
 
-volatile byte ign1LastRev;
-volatile byte ign2LastRev;
-volatile byte ign3LastRev;
-volatile byte ign4LastRev;
-volatile byte ign5LastRev;
 bool ignitionOn = false; //The current state of the ignition system
 bool fuelOn = false; //The current state of the ignition system
 bool fuelPumpOn = false; //The current status of the fuel pump
@@ -1536,7 +1531,6 @@ void loop()
         crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
         if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
 
-        //if (ignition1StartAngle <= crankAngle && ignition1.schedulesSet == 0) { ignition1StartAngle += CRANK_ANGLE_MAX_IGN; }
         if (ignition1StartAngle > crankAngle)
         {
             /*
@@ -1557,8 +1551,6 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition2StartAngle - channel2IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
-        //if ( (tempStartAngle > tempCrankAngle)  && ign2LastRev != startRevolutions)
-        //if ( ign2LastRev != startRevolutions )
         {
             unsigned long ignition2StartTime = 0;
             if(tempStartAngle > tempCrankAngle) { ignition2StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
