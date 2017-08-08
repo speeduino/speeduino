@@ -990,7 +990,6 @@ void loop()
     //-----------------------------------------------------------------------------------------------------
     readMAP();
 
-    //if ((mainLoopCount & 31) == 1) //Every 32 loops
     if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ))
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
@@ -1121,7 +1120,7 @@ void loop()
     //Main loop runs within this clause
     if (currentStatus.hasSync && (currentStatus.RPM > 0))
     {
-        if(currentStatus.startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true; } //Enable the fuel and ignition, assuming staging revolutions are complete
+        if(currentStatus.startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;} //Enable the fuel and ignition, assuming staging revolutions are complete
         //If it is, check is we're running or cranking
         if(currentStatus.RPM > ((unsigned int)configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100
         {

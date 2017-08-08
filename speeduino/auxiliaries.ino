@@ -3,7 +3,8 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
-//integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+//Old PID method. Retained incase the new one has issues
+//integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT);
 integerPIDnew boostPID(&currentStatus.MAP, &boost_pwm_target_value, &boost_cl_target_boost, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 /*
