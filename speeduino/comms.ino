@@ -356,6 +356,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[71] = lowByte(currentStatus.canin[15]);
   fullStatus[72] = highByte(currentStatus.canin[15]);
 
+  fullStatus[73] = currentStatus.tpsADC;
+
   for(byte x=0; x<packetLength; x++)
   {
     if (portNum == 0) { Serial.write(fullStatus[offset+x]); }

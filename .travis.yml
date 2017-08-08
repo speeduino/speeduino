@@ -62,6 +62,7 @@ script:
   - platformio update
   - platformio run -e megaatmega2560 -e teensy35 -e bluepill_f103c8 -e genericSTM32F103RB
   - cd ..
+  - chmod +x speeduino/misra/check_misra.sh
   - speeduino/misra/check_misra.sh
 
 notifications:
