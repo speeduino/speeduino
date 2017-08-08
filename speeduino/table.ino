@@ -503,7 +503,7 @@ float get3DTableValueF(struct table3D *fromTable, int Y, int X)
   }
   return tableResult;
 }
-*/
+
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: http://www.megamanual.com/v22manual/ve_tuner.pdf
 int get3DTableValueS(struct table3D *fromTable, int Y, int X)
@@ -605,4 +605,4 @@ int get3DTableValueS(struct table3D *fromTable, int Y, int X)
  }
   return tableResult;
 }
-
+*/

@@ -157,15 +157,15 @@ void setup()
   doUpdates(); //Check if any data items need updating (Occurs ith firmware updates)
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-  if (configPage10.enable_canbus == 1) { Serial3.begin(115200); }
+  if (configPage10.enable_canbus == 1) { CANSerial.begin(115200); }
 #elif defined(CORE_STM32)
-  if (configPage10.enable_canbus == 1) { Serial2.begin(115200); }
+  if (configPage10.enable_canbus == 1) { CANSerial.begin(115200); }
   else if (configPage10.enable_canbus == 2)
   {
     //enable local can interface
   }
 #elif defined(CORE_TEENSY)
-  if (configPage10.enable_canbus == 1) { Serial2.begin(115200); }
+  if (configPage10.enable_canbus == 1) { CANSerial.begin(115200); }
   else if (configPage10.enable_canbus == 2)
   {
     //Teensy onboard CAN not used currently
@@ -1122,7 +1122,6 @@ void loop()
     if (currentStatus.hasSync && (currentStatus.RPM > 0))
     {
         if(currentStatus.startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;} //Enable the fuel and ignition, assuming staging revolutions are complete
-        else { ignitionOn = false; fuelOn = false;}
         //If it is, check is we're running or cranking
         if(currentStatus.RPM > ((unsigned int)configPage2.crankRPM * 100)) //Crank RPM stored in byte as RPM / 100
         {

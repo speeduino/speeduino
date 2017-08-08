@@ -79,8 +79,8 @@ void initialiseIdle()
   }
 
   #elif defined(CORE_STM32)
-    Timer1.attachInterrupt(4, idleInterrupt); 
-    Timer1.resume(); 
+    Timer1.attachInterrupt(4, idleInterrupt);
+    Timer1.resume();
   #endif
 
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages

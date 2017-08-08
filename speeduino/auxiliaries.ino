@@ -40,9 +40,9 @@ void initialiseAuxPWM()
   #elif defined(CORE_TEENSY)
     //REALLY NEED TO DO THIS!
   #elif defined(CORE_STM32)
-    Timer1.attachInterrupt(2, boostControl);
-    Timer1.attachInterrupt(3, vvtControl); 
-    Timer1.resume(); 
+    Timer1.attachInterrupt(2, boostInterrupt);
+    Timer1.attachInterrupt(3, vvtInterrupt);
+    Timer1.resume();
   #endif
 
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));

@@ -81,6 +81,9 @@ volatile bool vvt_pwm_state;
 unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int vvt_pwm_cur_value;
 long vvt_pwm_target_value;
-
+#if defined (CORE_TEENSY) || defined(CORE_STM32)
+  static inline void boostInterrupt();
+  static inline void vvtInterrupt();
+#endif
 
 #endif

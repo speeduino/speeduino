@@ -86,6 +86,8 @@ static inline void enableIdle();
 static inline byte isStepperHomed();
 static inline byte checkForStepping();
 static inline void doStep();
-static inline void idleInterrupt();
+#if defined (CORE_TEENSY) || defined(CORE_STM32)
+  static inline void idleInterrupt();
+#endif
 
 #endif

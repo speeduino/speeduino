@@ -196,11 +196,11 @@ void setPinMapping(byte boardID)
         pinCoil3 = 30;
         pinO2 = A22;
       #elif defined(STM32F4)
-        pinInjector1 = PE11; //Output pin injector 1 is on
-        pinInjector2 = PE12; //Output pin injector 2 is on
-        pinInjector3 = PE13; //Output pin injector 3 is on
-        pinInjector4 = PE14; //Output pin injector 4 is on
-        pinInjector5 = PE15; //Output pin injector 4 is on
+        pinInjector1 = PE7; //Output pin injector 1 is on
+        pinInjector2 = PE8; //Output pin injector 2 is on
+        pinInjector3 = PE9; //Output pin injector 3 is on
+        pinInjector4 = PE10; //Output pin injector 4 is on
+        pinInjector5 = PE11; //Output pin injector 5 is on
         pinCoil1 = PB10; //Pin for coil 1
         pinCoil2 = PB11; //Pin for coil 2
         pinCoil3 = PB12; //Pin for coil 3
@@ -224,6 +224,8 @@ void setPinMapping(byte boardID)
         pinFlex = PC4; // Flex sensor (Must be external interrupt enabled)
         pinTrigger = PC5; //The CAS pin
         pinTrigger2 = PC6; //The Cam Sensor pin
+        pinBoost = PE0; //Boost control
+        pinVVT_1 = PE1; //Default VVT output
       #elif defined(CORE_STM32)
         //http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/0.0.12/hardware/maple-mini.html#master-pin-map
         //pins 23, 24 and 33 couldn't be used
@@ -254,6 +256,8 @@ void setPinMapping(byte boardID)
         pinTrigger = 25; //The CAS pin
         pinTrigger2 = 22; //The Cam Sensor pin
         pinBaro = pinMAP;
+        pinBoost = 1; //Boost control
+        pinVVT_1 = 0; //Default VVT output
       #endif
       break;
 
