@@ -198,7 +198,7 @@ void triggerSec_missingTooth()
 uint16_t getRPM_missingTooth()
 {
   uint16_t tempRPM = 0;
-  if( (currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100)) && (toothCurrentCount != 1) ) //Can't do per tooth RPM if we're at tooth #1 as the missing tooth messes the calculation
+  if( (currentStatus.RPM < currentStatus.crankRPM) && (toothCurrentCount != 1) ) //Can't do per tooth RPM if we're at tooth #1 as the missing tooth messes the calculation
   {
     if(configPage2.TrigSpeed == 1) { crankingGetRPM(configPage2.triggerTeeth/2); } //Account for cam speed
     else { tempRPM = crankingGetRPM(configPage2.triggerTeeth); }
@@ -350,7 +350,7 @@ uint16_t getRPM_DualWheel()
   uint16_t tempRPM = 0;
   if( currentStatus.hasSync == true )
   {
-    if(currentStatus.RPM < configPage2.crankRPM) { tempRPM = crankingGetRPM(configPage2.triggerTeeth); }
+    if(currentStatus.RPM < currentStatus.crankRPM) { tempRPM = crankingGetRPM(configPage2.triggerTeeth); }
     else { tempRPM = stdGetRPM(); }
   }
   return tempRPM;
@@ -486,7 +486,7 @@ void triggerSec_BasicDistributor() { return; } //Not required
 uint16_t getRPM_BasicDistributor()
 {
   uint16_t tempRPM;
-  if( currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100) )
+  if( currentStatus.RPM < currentStatus.crankRPM )
   { tempRPM = crankingGetRPM(triggerActualTeeth >> 1); } //crankGetRPM uses teeth per 360 degrees. As triggerActualTeeh is total teeth in 720 degrees, we divide the tooth count by 2
   else
   {
@@ -810,7 +810,7 @@ uint16_t getRPM_4G63()
   //Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
   if(currentStatus.hasSync == true)
   {
-    if( currentStatus.RPM < ((unsigned int)configPage2.crankRPM * 100) )
+    if( currentStatus.RPM < currentStatus.crankRPM )
     {
       int tempToothAngle;
       unsigned long toothTime;
@@ -1378,7 +1378,7 @@ uint16_t getRPM_Miata9905()
   //During cranking, RPM is calculated 4 times per revolution, once for each tooth on the crank signal.
   //Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
   uint16_t tempRPM = 0;
-  if(currentStatus.RPM < configPage2.crankRPM)
+  if(currentStatus.RPM < currentStatus.crankRPM)
   {
     int tempToothAngle;
     noInterrupts();
@@ -1531,7 +1531,7 @@ uint16_t getRPM_MazdaAU()
   {
     //During cranking, RPM is calculated 4 times per revolution, once for each tooth on the crank signal.
     //Because these signals aren't even (Alternating 108 and 72 degrees), this needs a special function
-    if(currentStatus.RPM < configPage2.crankRPM)
+    if(currentStatus.RPM < currentStatus.crankRPM)
     {
       int tempToothAngle;
       noInterrupts();
@@ -1612,7 +1612,7 @@ uint16_t getRPM_non360()
   uint16_t tempRPM = 0;
   if( (currentStatus.hasSync == true) && (toothCurrentCount != 0) )
   {
-    if(currentStatus.RPM < configPage2.crankRPM) { tempRPM = crankingGetRPM(configPage2.triggerTeeth); }
+    if(currentStatus.RPM < currentStatus.crankRPM) { tempRPM = crankingGetRPM(configPage2.triggerTeeth); }
     else { tempRPM = stdGetRPM(); }
   }
   return tempRPM;
@@ -1936,7 +1936,7 @@ void triggerSec_Subaru67()
 
 uint16_t getRPM_Subaru67()
 {
-  //if(currentStatus.RPM < configPage2.crankRPM) { return crankingGetRPM(configPage2.triggerTeeth); }
+  //if(currentStatus.RPM < currentStatus.crankRPM) { return crankingGetRPM(configPage2.triggerTeeth); }
 
   uint16_t tempRPM = 0;
   if(currentStatus.startRevolutions > 0)
@@ -2090,7 +2090,7 @@ void triggerSec_Daihatsu() { return; } //Not required (Should never be called in
 uint16_t getRPM_Daihatsu()
 {
   uint16_t tempRPM = 0;
-  if( currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100) && false) //Disable special cranking processing for now
+  if( (currentStatus.RPM < currentStatus.crankRPM) && false) //Disable special cranking processing for now
   {
     //Cn't use standard cranking RPM functin due to extra tooth
     if( currentStatus.hasSync == true )

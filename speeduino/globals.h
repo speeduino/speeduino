@@ -241,7 +241,7 @@ struct statuses {
   uint16_t freeRAM;
   unsigned int clutchEngagedRPM;
   bool flatShiftingHard;
-  volatile byte startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
+  volatile uint16_t startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
   byte boostTarget;
   byte testOutputs;
   bool testActive;
@@ -249,6 +249,7 @@ struct statuses {
   byte idleLoad; //Either the current steps or current duty cycle for the idle control.
   uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
   uint8_t current_caninchannel = 0; //start off at channel 0
+  uint16_t crankRPM = 400; //The actual cranking RPM limit. Saves us multiplying it everytime from the config page
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath

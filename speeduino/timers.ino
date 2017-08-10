@@ -69,8 +69,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
   //Overdwell check
   targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
-  //bool isCrankLocked = configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK);
-  bool isCrankLocked = configPage2.ignCranklock && (currentStatus.RPM < ((unsigned int)configPage2.crankRPM * 100));
+  bool isCrankLocked = configPage2.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
 
   if(ignitionSchedule1.Status == RUNNING) { if( (ignitionSchedule1.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil1Charge(); } }
@@ -106,6 +105,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     loopSec = 0; //Reset counter.
 
     dwellLimit_uS = (1000 * configPage2.dwellLimit); //Update uS value incase setting has changed
+    currentStatus.crankRPM = ((unsigned int)configPage2.crankRPM * 100);
     //if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) { dwellLimit_uS = dwellLimit_uS * 4; } //Make sure the overdwell doesn't clobber the fixed ignition cranking if enabled.
 
     //**************************************************************************************************************************************************
