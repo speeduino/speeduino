@@ -98,7 +98,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //Reset watchdog timer (Not active currently)
       //wdt_reset();
       //DIY watchdog
-      if(initialisationComplete == true && last250msLoopCount == mainLoopCount) { setup(); } //This is a sign of a crash.
+      if( (initialisationComplete == true) && (last250msLoopCount == mainLoopCount) ) { setup(); } //This is a sign of a crash.
       else { last250msLoopCount = mainLoopCount; }
     #endif
   }
@@ -110,7 +110,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
     dwellLimit_uS = (1000 * configPage2.dwellLimit); //Update uS value incase setting has changed
     currentStatus.crankRPM = ((unsigned int)configPage2.crankRPM * 100);
-    //if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) { dwellLimit_uS = dwellLimit_uS * 4; } //Make sure the overdwell doesn't clobber the fixed ignition cranking if enabled.
 
     //**************************************************************************************************************************************************
     //This updates the runSecs variable

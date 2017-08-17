@@ -1060,7 +1060,7 @@ void loop()
       else { currentStatus.dwell =  (configPage2.dwellRun * 100); }
       currentStatus.dwell = correctionsDwell(currentStatus.dwell);
 
-      int dwellAngle = (div(currentStatus.dwell, timePerDegree).quot ); //Convert the dwell time to dwell angle based on the current engine speed
+      int dwellAngle = uSToDegrees(currentStatus.dwell); //Convert the dwell time to dwell angle based on the current engine speed
 
       //Calculate start angle for each channel
       //1 cylinder (Everyone gets this)
@@ -1287,7 +1287,8 @@ void loop()
             unsigned long timeout = (unsigned long)(ignition1StartAngle - crankAngle) * 282UL;
             */
             setIgnitionSchedule1(ign1StartFunction,
-                      ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree), //(timeout/10),
+                      //((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                      degreesToUS((ignition1StartAngle - crankAngle)),
                       currentStatus.dwell + fixedCrankingOverride, //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,
                       ign1EndFunction
                       );
@@ -1299,7 +1300,7 @@ void loop()
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
         {
             unsigned long ignition2StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition2StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
+            if(tempStartAngle > tempCrankAngle) { ignition2StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
             //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition2StartTime = 0; }
 
@@ -1319,7 +1320,7 @@ void loop()
         //if (tempStartAngle > tempCrankAngle)
         {
             long ignition3StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition3StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
+            if(tempStartAngle > tempCrankAngle) { ignition3StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition3StartTime = 0; }
 
@@ -1340,7 +1341,7 @@ void loop()
         {
 
             long ignition4StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition4StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
+            if(tempStartAngle > tempCrankAngle) { ignition4StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition4StartTime = 0; }
 
@@ -1361,7 +1362,7 @@ void loop()
         {
 
             long ignition5StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition5StartTime = ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree); }
+            if(tempStartAngle > tempCrankAngle) { ignition5StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition5StartTime = 0; }
 

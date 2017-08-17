@@ -641,6 +641,7 @@ void triggerSetup_4G63()
   decoderIsSequential = true;
   MAX_STALL_TIME = 366667UL; //Minimum 50rpm based on the 110 degree tooth spacing
   toothLastToothTime = micros(); //Set a startup value here to avoid filter errors when starting
+  //decoderIsLowRes = true;
 
   //Note that these angles are for every rising and falling edge
   if(configPage1.nCylinders == 6)
@@ -750,7 +751,20 @@ void triggerPri_4G63()
         if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) ) { triggerToothAngle = 70; triggerFilterTime = (curGap * 11) >> 3 ; } //96.26 degrees with a target of 110
         else { triggerToothAngle = 110; triggerFilterTime = (curGap * 9) >> 5; } //61.87 degrees with a target of 70
       }
-      else { triggerFilterTime = 0; } //trigger filter is turned off.
+      else
+      {
+        //trigger filter is turned off.
+        triggerFilterTime = 0;
+        if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) ) { triggerToothAngle = 70; } //96.26 degrees with a target of 110
+        else { triggerToothAngle = 110; } //61.87 degrees with a target of 70
+      }
+
+      //EXPERIMENTAL!
+      if(configPage1.perToothIgn == true)
+      {
+        uint16_t crankAngle = toothAngles[(toothCurrentCount-1)];
+        doPerToothTiming(crankAngle);
+      }
     } //Has sync
   } //Filter time
 
@@ -810,7 +824,7 @@ uint16_t getRPM_4G63()
   //Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
   if(currentStatus.hasSync == true)
   {
-    if( currentStatus.RPM < currentStatus.crankRPM )
+    if( (currentStatus.RPM < currentStatus.crankRPM) || (configPage1.perToothIgn == true) )
     {
       int tempToothAngle;
       unsigned long toothTime;
@@ -824,10 +838,14 @@ uint16_t getRPM_4G63()
         toothTime = toothTime * 36;
         tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / toothTime;
         revolutionTime = (10UL * toothTime) / tempToothAngle;
-
+        MAX_STALL_TIME = revolutionTime << 3;
       }
     }
-    else { tempRPM = stdGetRPM(); }
+    else
+    {
+      tempRPM = stdGetRPM();
+      MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+    }
   }
 
   return tempRPM;
@@ -851,8 +869,7 @@ int getCrankAngle_4G63(int timePerDegree)
       //Estimate the number of degrees travelled since the last tooth}
 
       unsigned long elapsedTime = micros() - tempToothLastToothTime;
-      if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
-      else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
+      crankAngle += uSToDegrees(elapsedTime);
 
       if (crankAngle >= 720) { crankAngle -= 720; }
       if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
@@ -863,7 +880,10 @@ int getCrankAngle_4G63(int timePerDegree)
 
 void triggerSetEndTeeth_4G63()
 {
-
+  if((ignition1EndAngle - configPage2.triggerAngle) > 355) { ignition1EndTooth = 1; }
+  else { ignition1EndTooth = 4; }
+  //ignition1EndTooth = 1;
+  //ignition1EndTooth = ( (ignition1EndAngle - configPage2.triggerAngle) /
 }
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
