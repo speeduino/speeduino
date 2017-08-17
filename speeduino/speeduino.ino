@@ -90,7 +90,7 @@ static byte coilLOW = LOW;
 static byte fanHIGH = HIGH;             // Used to invert the cooling fan output
 static byte fanLOW = LOW;               // Used to invert the cooling fan output
 
-volatile int mainLoopCount;
+volatile uint16_t mainLoopCount;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 byte ignitionCount;
@@ -130,7 +130,7 @@ bool initialisationComplete = false; //Tracks whether the setup() functino has r
 
 void setup()
 {
-
+  digitalWrite(LED_BUILTIN, LOW);
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
   //dummyIgnitionTable(&ignitionTable);
@@ -284,8 +284,6 @@ void setup()
   //Begin the main crank trigger interrupt pin setup
   //The interrupt numbering is a bit odd - See here for reference: http://arduino.cc/en/Reference/AttachInterrupt
   //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly.
-  byte triggerInterrupt = 0; // By default, use the first interrupt
-  byte triggerInterrupt2 = 1;
   currentStatus.RPM = 0;
   currentStatus.hasSync = false;
   currentStatus.runSecs = 0;
@@ -296,265 +294,8 @@ void setup()
   currentStatus.crankRPM = ((unsigned int)configPage2.crankRPM * 100); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
   triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
 
-  #if defined(CORE_AVR)
-    switch (pinTrigger) {
-      //Arduino Mega 2560 mapping
-      case 2:
-        triggerInterrupt = 0; break;
-      case 3:
-        triggerInterrupt = 1; break;
-      case 18:
-        triggerInterrupt = 5; break;
-      case 19:
-        triggerInterrupt = 4; break;
-      case 20:
-        triggerInterrupt = 3; break;
-      case 21:
-        triggerInterrupt = 2; break;
-      default:
-        triggerInterrupt = 0; break; //This should NEVER happen
-    }
-  #else
-    triggerInterrupt = pinTrigger;
-  #endif
-
-  #if defined(CORE_AVR)
-    switch (pinTrigger2) {
-      //Arduino Mega 2560 mapping
-      case 2:
-        triggerInterrupt2 = 0; break;
-      case 3:
-        triggerInterrupt2 = 1; break;
-      case 18:
-        triggerInterrupt2 = 5; break;
-      case 19:
-        triggerInterrupt2 = 4; break;
-      case 20:
-        triggerInterrupt2 = 3; break;
-      case 21:
-        triggerInterrupt2 = 2; break;
-      default:
-        triggerInterrupt2 = 0; break; //This should NEVER happen
-    }
-  #else
-    triggerInterrupt2 = pinTrigger2;
-  #endif
-  pinMode(pinTrigger, INPUT);
-  pinMode(pinTrigger2, INPUT);
-  pinMode(pinTrigger3, INPUT);
-  //digitalWrite(pinTrigger, HIGH);
-
-  //Set the trigger function based on the decoder in the config
-  switch (configPage2.TrigPattern)
-  {
-    case 0:
-      //Missing tooth decoder
-      triggerSetup_missingTooth();
-      trigger = triggerPri_missingTooth;
-      triggerSecondary = triggerSec_missingTooth;
-      getRPM = getRPM_missingTooth;
-      getCrankAngle = getCrankAngle_missingTooth;
-      triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
-
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-      if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, RISING); }
-      else { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, FALLING); }
-      break;
-
-    case 1:
-      // Basic distributor
-      triggerSetup_BasicDistributor();
-      trigger = triggerPri_BasicDistributor;
-      getRPM = getRPM_BasicDistributor;
-      getCrankAngle = getCrankAngle_BasicDistributor;
-      triggerSetEndTeeth = triggerSetEndTeeth_BasicDistributor;
-
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-      break;
-
-    case 2:
-      triggerSetup_DualWheel();
-      trigger = triggerPri_DualWheel;
-      getRPM = getRPM_DualWheel;
-      getCrankAngle = getCrankAngle_DualWheel;
-      triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
-
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-      if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, RISING); }
-      else { attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, FALLING); }
-      break;
-
-    case 3:
-      triggerSetup_GM7X();
-      trigger = triggerPri_GM7X;
-      getRPM = getRPM_GM7X;
-      getCrankAngle = getCrankAngle_GM7X;
-      triggerSetEndTeeth = triggerSetEndTeeth_GM7X;
-
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-      break;
-
-    case 4:
-      triggerSetup_4G63();
-      trigger = triggerPri_4G63;
-      getRPM = getRPM_4G63;
-      getCrankAngle = getCrankAngle_4G63;
-      triggerSetEndTeeth = triggerSetEndTeeth_4G63;
-
-      //These may both need to change, not sure
-      if(configPage2.TrigEdge == 0)
-      {
-        attachInterrupt(triggerInterrupt, trigger, CHANGE);  // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-        attachInterrupt(triggerInterrupt2, triggerSec_4G63, FALLING); //changed
-      }
-      else
-      {
-        attachInterrupt(triggerInterrupt, trigger, CHANGE); // Primary trigger connects to
-        attachInterrupt(triggerInterrupt2, triggerSec_4G63, FALLING);
-      }
-      break;
-
-    case 5:
-      triggerSetup_24X();
-      trigger = triggerPri_24X;
-      getRPM = getRPM_24X;
-      getCrankAngle = getCrankAngle_24X;
-      triggerSetEndTeeth = triggerSetEndTeeth_24X;
-
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
-      attachInterrupt(triggerInterrupt2, triggerSec_24X, CHANGE);
-      break;
-
-    case 6:
-      triggerSetup_Jeep2000();
-      trigger = triggerPri_Jeep2000;
-      getRPM = getRPM_Jeep2000;
-      getCrankAngle = getCrankAngle_Jeep2000;
-      triggerSetEndTeeth = triggerSetEndTeeth_Jeep2000;
-
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
-      attachInterrupt(triggerInterrupt2, triggerSec_Jeep2000, CHANGE);
-      break;
-
-    case 7:
-      triggerSetup_Audi135();
-      trigger = triggerPri_Audi135;
-      getRPM = getRPM_Audi135;
-      getCrankAngle = getCrankAngle_Audi135;
-      triggerSetEndTeeth = triggerSetEndTeeth_Audi135;
-
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-      attachInterrupt(triggerInterrupt2, triggerSec_Audi135, RISING);
-      break;
-
-    case 8:
-      triggerSetup_HondaD17();
-      trigger = triggerPri_HondaD17;
-      getRPM = getRPM_HondaD17;
-      getCrankAngle = getCrankAngle_HondaD17;
-      triggerSetEndTeeth = triggerSetEndTeeth_HondaD17;
-
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
-      attachInterrupt(triggerInterrupt2, triggerSec_HondaD17, CHANGE);
-      break;
-
-    case 9:
-      triggerSetup_Miata9905();
-      trigger = triggerPri_Miata9905;
-      getRPM = getRPM_Miata9905;
-      getCrankAngle = getCrankAngle_Miata9905;
-      triggerSetEndTeeth = triggerSetEndTeeth_Miata9905;
-
-      //These may both need to change, not sure
-      if(configPage2.TrigEdge == 0)
-      {
-        attachInterrupt(triggerInterrupt, trigger, RISING);  // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-        attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, FALLING); //changed
-      }
-      else
-      {
-        attachInterrupt(triggerInterrupt, trigger, FALLING); // Primary trigger connects to
-        attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, RISING);
-      }
-      break;
-
-    case 10:
-      triggerSetup_MazdaAU();
-      trigger = triggerPri_MazdaAU;
-      getRPM = getRPM_MazdaAU;
-      getCrankAngle = getCrankAngle_MazdaAU;
-      triggerSetEndTeeth = triggerSetEndTeeth_MazdaAU;
-
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
-      attachInterrupt(triggerInterrupt2, triggerSec_MazdaAU, FALLING);
-      break;
-
-    case 11:
-      triggerSetup_non360();
-      trigger = triggerPri_DualWheel; //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
-      getRPM = getRPM_non360;
-      getCrankAngle = getCrankAngle_non360;
-      triggerSetEndTeeth = triggerSetEndTeeth_Non360;
-
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-      attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, FALLING); //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
-      break;
-
-    case 12:
-        triggerSetup_Nissan360();
-        trigger = triggerPri_Nissan360;
-        getRPM = getRPM_Nissan360;
-        getCrankAngle = getCrankAngle_Nissan360;
-        triggerSetEndTeeth = triggerSetEndTeeth_Nissan360;
-
-        if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-        else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-        attachInterrupt(triggerInterrupt2, triggerSec_Nissan360, CHANGE);
-        break;
-
-    case 13:
-            triggerSetup_Subaru67();
-            trigger = triggerPri_Subaru67;
-            getRPM = getRPM_Subaru67;
-            getCrankAngle = getCrankAngle_Subaru67;
-            triggerSetEndTeeth = triggerSetEndTeeth_Subaru67;
-
-            if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-            else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-            attachInterrupt(triggerInterrupt2, triggerSec_Subaru67, FALLING);
-            break;
-
-    case 14:
-            triggerSetup_Daihatsu();
-            trigger = triggerPri_Daihatsu;
-            getRPM = getRPM_Daihatsu;
-            getCrankAngle = getCrankAngle_Daihatsu;
-            triggerSetEndTeeth = triggerSetEndTeeth_Daihatsu;
-
-            if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-            else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-            //No secondary input required for this pattern
-            break;
-
-    default:
-      trigger = triggerPri_missingTooth;
-      getRPM = getRPM_missingTooth;
-      getCrankAngle = getCrankAngle_missingTooth;
-
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-      break;
-  }
+  noInterrupts();
+  initialiseTriggers();
 
   //End crank triger interrupt attachment
   req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
@@ -860,13 +601,14 @@ void setup()
   //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
   digitalWrite(pinFuelPump, HIGH);
   fuelPumpOn = true;
+  interrupts();
   //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
   setFuelSchedule1(100, (unsigned long)(configPage1.primePulse * 100));
   setFuelSchedule2(100, (unsigned long)(configPage1.primePulse * 100));
   setFuelSchedule3(100, (unsigned long)(configPage1.primePulse * 100));
   setFuelSchedule4(100, (unsigned long)(configPage1.primePulse * 100));
-
   initialisationComplete = true;
+  digitalWrite(LED_BUILTIN, HIGH);
 }
 
 void loop()
@@ -969,6 +711,10 @@ void loop()
       disableIdle(); //Turn off the idle PWM
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE
+
+      //This is a safety check. If for some reason the interrupts have got screwed up (Leading to 0rpm), this resets them.
+      //It can possibly be run much less frequently.
+      initialiseTriggers();
     }
 
     //Uncomment the following for testing

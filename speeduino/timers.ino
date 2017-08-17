@@ -92,10 +92,14 @@ void oneMSInterval() //Most ARM chips can simply call a function
   //Anything inside this if statement will run every 250ms.
   if (loop250ms == 250)
   {
-    loop250ms = 0; //Reset Counter.
+    loop250ms = 0; //Reset Counter
+
     #if defined(CORE_AVR)
       //Reset watchdog timer (Not active currently)
       //wdt_reset();
+      //DIY watchdog
+      if(initialisationComplete == true && last250msLoopCount == mainLoopCount) { setup(); } //This is a sign of a crash.
+      else { last250msLoopCount = mainLoopCount; }
     #endif
   }
 
