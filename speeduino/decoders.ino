@@ -2163,3 +2163,143 @@ void triggerSetEndTeeth_Daihatsu()
 {
 
 }
+
+/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Code for decoder.ino
+  Name: Harley
+  Desc: 2 uneven Spaced Tooth
+  Note: Within the code below, the sync tooth is referred to as tooth #1.
+  Derived from GMX7 and adapted for Harley
+  Only rising Edge is used for simplisity.The second input is ignored, as it does not help to desolve cam position
+*/
+void triggerSetup_Harley()
+{
+  triggerToothAngle = 0; // The number of degrees that passes from tooth to tooth, ev. 0. It alternates uneven
+  secondDerivEnabled = false;
+  decoderIsSequential = false;
+  MAX_STALL_TIME = (3333UL * 60); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  toothLastToothTime = micros();
+  triggerFilterTime = 1500;
+}
+
+void triggerPri_Harley()
+{
+  lastGap = curGap;
+  curTime = micros();
+  curGap = curTime - toothLastToothTime;
+  setFilter(curGap); // Filtering adjusted according to setting
+  if (curGap > triggerFilterTime)
+  {
+    if ( READ_PRI_TRIGGER() == HIGH) // Has to be the same as in main() trigger-attach, for readability we do it this way.
+    {
+        addToothLogEntry(curGap);
+        targetGap = lastGap ; //Gap is the Time to next toothtrigger, so we know where we are
+        toothCurrentCount++;
+        if (curGap > targetGap)
+        {
+          toothCurrentCount = 1;
+          triggerToothAngle = 0;// Has to be equal to Angle Routine
+          toothOneMinusOneTime = toothOneTime;
+          toothOneTime = curTime;
+          currentStatus.hasSync = true;
+        }
+        else
+        {
+          toothCurrentCount = 2;
+          triggerToothAngle = 157;
+          //     toothOneMinusOneTime = toothOneTime;
+          //     toothOneTime = curTime;
+        }
+        toothLastMinusOneToothTime = toothLastToothTime;
+        toothLastToothTime = curTime;
+        currentStatus.startRevolutions++; //Counter
+    }
+    else
+    {
+      currentStatus.hasSync = false;
+      toothCurrentCount = 0;
+    } //Primary trigger high
+  } //Trigger filter
+}
+
+
+void triggerSec_Harley()
+// Needs to be enabled in main()
+{
+  return;// No need for now. The only thing it could help to sync more quikly or confirm position.
+} // End Sec Trigger
+
+
+uint16_t getRPM_Harley()
+{
+  uint16_t tempRPM = 0;
+  if (currentStatus.hasSync == true)
+  {
+    if ( currentStatus.RPM < (unsigned int)(configPage2.crankRPM * 100) )
+    {
+      // Kein Unterschied mit dieser Option
+      int tempToothAngle;
+      unsigned long toothTime;
+      if ( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
+      else
+      {
+        noInterrupts();
+        tempToothAngle = triggerToothAngle;
+        /* High-res mode
+          if(toothCurrentCount == 1) { tempToothAngle = 129; }
+          else { tempToothAngle = toothAngles[toothCurrentCount-1] - toothAngles[toothCurrentCount-2]; }
+        */
+        revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+        toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 129 and 332 depending on the last tooth that was seen
+        interrupts();
+        toothTime = toothTime * 36;
+        tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / toothTime;
+      }
+    }
+    else {
+      tempRPM = stdGetRPM();
+    }
+  }
+  return tempRPM;
+}
+
+
+int getCrankAngle_Harley(int timePerDegree)
+{
+  //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+  unsigned long tempToothLastToothTime;
+  int tempToothCurrentCount;
+  //Grab some variables that are used in the trigger code and assign them to temp variables.
+  noInterrupts();
+  tempToothCurrentCount = toothCurrentCount;
+  tempToothLastToothTime = toothLastToothTime;
+  interrupts();
+
+  //Check if the last tooth seen was the reference tooth (Number 3). All others can be calculated, but tooth 3 has a unique angle
+  int crankAngle;
+  if ( (tempToothCurrentCount == 1) || (tempToothCurrentCount == 3) )
+  {
+    crankAngle = 0 + configPage2.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+  }
+  else {
+    crankAngle = 157 + configPage2.triggerAngle;
+  }
+
+  //Estimate the number of degrees travelled since the last tooth}
+  long elapsedTime = micros() - tempToothLastToothTime;
+  if (elapsedTime < SHRT_MAX ) {
+    crankAngle += div((int)elapsedTime, timePerDegree).quot;  //This option is much faster, but only available for smaller values of elapsedTime
+  }
+  else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
+
+  if (crankAngle >= 720) { crankAngle -= 720; }
+  if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+  if (crankAngle < 0) { crankAngle += 360; }
+
+  return crankAngle;
+}
+
+void triggerSetEndTeeth_Harley()
+{
+
+}

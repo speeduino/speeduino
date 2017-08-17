@@ -810,6 +810,17 @@ void initialiseTriggers()
             //No secondary input required for this pattern
             break;
 
+    case 15:
+            triggerSetup_Harley();
+            trigger = triggerPri_Harley;
+            //triggerSecondary = triggerSec_Harley;
+            getRPM = getRPM_Harley;
+            getCrankAngle = getCrankAngle_Harley;
+            triggerSetEndTeeth = triggerSetEndTeeth_Harley;
+            attachInterrupt(triggerInterrupt, trigger, RISING);
+            // attachInterrupt(triggerInterrupt2, triggerSec_Harley, FALLING);
+            break;
+
     default:
       trigger = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;
