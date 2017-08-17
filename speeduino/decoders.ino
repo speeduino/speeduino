@@ -1914,7 +1914,9 @@ void triggerPri_Subaru67()
           break;
 
         default:
-          //Almost certainly due to noise
+          //Almost certainly due to noise or cranking stop/start
+          currentStatus.hasSync = false;
+          secondaryToothCount = 0;
           break;
 
      }
