@@ -708,7 +708,7 @@ void triggerPri_4G63()
 
     if (currentStatus.hasSync == true)
     {
-      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage2.ignCranklock)
+      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage2.ignCranklock && (currentStatus.startRevolutions >= configPage2.StgCycles))
       {
         if( toothCurrentCount == 1 ) { endCoil1Charge(); }
         else if( toothCurrentCount == 3 ) { endCoil2Charge(); }
@@ -784,7 +784,7 @@ void triggerSec_4G63()
 
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
-  if ( (curGap2 >= triggerSecFilterTime) || (currentStatus.startRevolutions == 0) )
+  if ( (curGap2 >= triggerSecFilterTime) )//|| (currentStatus.startRevolutions == 0) )
   {
     toothLastSecToothTime = curTime2;
 
@@ -797,6 +797,7 @@ void triggerSec_4G63()
 
     if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) || (currentStatus.hasSync == false) )
     {
+
       triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset).
       if(READ_PRI_TRIGGER() == true)// && (crankState == digitalRead(pinTrigger)))
       {
@@ -810,7 +811,15 @@ void triggerSec_4G63()
       triggerSecFilterTime_duration = (micros() - secondaryLastToothTime1) >> 1;
       if(READ_PRI_TRIGGER() == true)// && (crankState == digitalRead(pinTrigger)))
       {
-        toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
+        if( (currentStatus.RPM < currentStatus.crankRPM) && (currentStatus.hasSync == true) )
+        {
+
+          //Whilst we're cranking and have sync, we need to watch for noise pulses.
+          if(toothCurrentCount != 4) { currentStatus.hasSync = false; } // This should never be true, except when there's noise
+          else { toothCurrentCount = 4; }
+        }
+        else { toothCurrentCount = 4; } //If the crank trigger is currently HIGH, it means we're on tooth #1
+
       }
     } // Use resync
   } //Trigger filter
@@ -838,7 +847,7 @@ uint16_t getRPM_4G63()
         toothTime = toothTime * 36;
         tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / toothTime;
         revolutionTime = (10UL * toothTime) / tempToothAngle;
-        MAX_STALL_TIME = revolutionTime << 3;
+        //MAX_STALL_TIME = revolutionTime << 3;
       }
     }
     else

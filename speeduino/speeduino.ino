@@ -695,6 +695,7 @@ void loop()
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       toothLastToothTime = 0;
+      toothLastSecToothTime = 0;
       //toothLastMinusOneToothTime = 0;
       currentStatus.hasSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
