@@ -83,6 +83,7 @@
 #define IGN_MODE_SINGLE     1
 #define IGN_MODE_WASTEDCOP  2
 #define IGN_MODE_SEQUENTIAL 3
+#define IGN_MODE_ROTARY     4
 
 #define SIZE_BYTE   8
 #define SIZE_INT    16
@@ -322,7 +323,7 @@ struct config1 {
   byte baroCorr : 1;
   byte injLayout : 2;
   byte perToothIgn : 1;
-  byte unused2_38h : 1;
+  byte dfcoEnabled : 1; //Whether or not DFCO is turned on
 
   byte primePulse;
   byte dutyLim;
@@ -381,8 +382,7 @@ struct config2 {
 
   byte dwellCont : 1; //Fixed duty dwell control
   byte useDwellLim : 1; //Whether the dwell limiter is off or on
-  byte sparkMode : 2; //Spark output mode (Eg Wasted spark, single channel or Wasted COP)
-  byte dfcoEnabled : 1; //Whether or not DFCO is turned on
+  byte sparkMode : 3; //Spark output mode (Eg Wasted spark, single channel or Wasted COP)
   byte triggerFilter : 2; //The mode of trigger filter being used (0=Off, 1=Light (Not currently used), 2=Normal, 3=Aggressive)
   byte ignCranklock : 1; //Whether or not the ignition timing during cranking is locked to a CAS pulse. Only currently valid for Basic distributor and 4G63.
 

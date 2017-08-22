@@ -583,6 +583,13 @@ void setup()
       ign5EndFunction = endCoil5Charge;
       break;
 
+    case IGN_MODE_ROTARY:
+      ign1StartFunction = beginCoil1Charge;
+      ign1EndFunction = endCoil1Charge;
+      ign2StartFunction = beginCoil1Charge;
+      ign2EndFunction = endCoil1Charge;
+
+
     default:
       //Wasted spark (Shouldn't ever happen anyway)
       ign1StartFunction = beginCoil1Charge;
