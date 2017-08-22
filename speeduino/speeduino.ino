@@ -716,6 +716,11 @@ void loop()
       //This is a safety check. If for some reason the interrupts have got screwed up (Leading to 0rpm), this resets them.
       //It can possibly be run much less frequently.
       initialiseTriggers();
+
+      VVT_PIN_LOW();
+      DISABLE_VVT_TIMER();
+      DISABLE_BOOST_TIMER(); //Turn off timer
+      BOOST_PIN_LOW();
     }
 
     //Uncomment the following for testing
