@@ -30,6 +30,11 @@ void initialiseFan();
   #define VVT_TIMER_COUNTER     FTM1_CNT
 
 #elif defined(CORE_STM32)
+  #define ENABLE_VVT_TIMER()
+  #define DISABLE_VVT_TIMER()
+
+  #define ENABLE_BOOST_TIMER()
+  #define DISABLE_BOOST_TIMER()
 
 #endif
 
