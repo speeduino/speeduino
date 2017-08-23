@@ -100,7 +100,8 @@ void readMAP()
           {
             currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC);
             MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
-            //MAPrunningValue = MAPrunningValue + (unsigned long)tempReading; //Add the current reading onto the total
+            //Old method (No filter)
+            //MAPrunningValue = MAPrunningValue + (unsigned long)tempReading;
             MAPcount++;
           }
           else { mapErrorCount += 1; }
