@@ -539,7 +539,7 @@ void receiveValue(int valueOffset, byte newValue)
     case warmupPage: //Idle Air Control settings page (Page 4)
       pnt_configPage = &configPage11;
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if (valueOffset < page_size)
+      if (valueOffset < npage_size[currentPage])
       {
         *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
       }
@@ -861,7 +861,7 @@ void sendPage(bool useChar)
         {
           sendComplete = true;
         }
-        else { pnt_configPage = &configPage11; } //Create a pointer to Page 4 in memory
+        else { pnt_configPage = &configPage11; } //Create a pointer to Page 11 in memory
         break;
 
     default:
