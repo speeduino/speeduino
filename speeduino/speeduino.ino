@@ -596,9 +596,9 @@ void setup()
         ign2EndFunction = endCoil1Charge;
 
         ign3StartFunction = beginTrailingCoilCharge;
-        ign3EndFunction = endTrailingCoilCharge;
+        ign3EndFunction = endTrailingCoilCharge1;
         ign4StartFunction = beginTrailingCoilCharge;
-        ign4EndFunction = endTrailingCoilCharge;
+        ign4EndFunction = endTrailingCoilCharge2;
       }
       break;
 
@@ -1143,19 +1143,6 @@ void loop()
               ignition3StartAngle = ignition1EndAngle - dwellAngle;
               ignition4EndAngle = ignition2EndAngle + splitDegrees;
               ignition4StartAngle = ignition2EndAngle - dwellAngle;
-
-              //This is a mess. Basically we need to figure out which one is going to fire next and set the select pin appropiately
-              int crankAngle = getCrankAngle(timePerDegree);
-              if(ignition3EndAngle < ignition4EndAngle)
-              {
-                if(ignition3EndAngle > crankAngle) { digitalWrite(pinCoil3, coilLOW); }
-                else { digitalWrite(pinCoil3, coilHIGH); }
-              }
-              else
-              {
-                if(ignition4EndAngle > crankAngle) { digitalWrite(pinCoil3, coilHIGH); }
-                else { digitalWrite(pinCoil3, coilLOW); }
-              }
             }
           }
           break;

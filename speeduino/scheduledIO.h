@@ -18,7 +18,9 @@ inline void endCoil5Charge();
 
 //The following functions are used specifically for the trailing coil on rotary engines. They are separate as they also control the switching of the trailing select pin
 inline void beginTrailingCoilCharge();
-inline void endTrailingCoilCharge();
+inline void endTrailingCoilCharge1();
+inline void endTrailingCoilCharge2();
+
 
 #define openInjector1() *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ1)
 #define closeInjector1() *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ1)
