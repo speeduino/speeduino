@@ -18,7 +18,8 @@ volatile bool tachoAlt = true;
   inline void beginCoil5Charge() { digitalWrite(pinCoil5, coilHIGH); TACH_PULSE_LOW(); }
   inline void endCoil5Charge() { digitalWrite(pinCoil5, coilLOW); TACH_PULSE_HIGH(); }
 
-
+  inline void beginTrailingCoilCharge() { digitalWrite(pinCoil2, coilHIGH); }
+  inline void endTrailingCoilCharge() { digitalWrite(pinCoil2, coilLOW); *ign3_pin_port ^= (1 << ign3_pin_mask); } //Flip the select pin
 
 //As above but for ignition (Wasted COP mode)
 void beginCoil1and3Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinCoil3, coilHIGH); TACH_PULSE_LOW();  }

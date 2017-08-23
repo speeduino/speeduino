@@ -114,7 +114,7 @@ static inline byte correctionCranking()
   byte crankingValue = 100;
   //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage1.crankingPct; }
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
-  { 
+  {
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
   }
   return crankingValue;
@@ -262,7 +262,7 @@ static inline byte correctionLaunch()
 static inline bool correctionDFCO()
 {
   bool DFCOValue = false;
-  if ( configPage2.dfcoEnabled == 1 )
+  if ( configPage1.dfcoEnabled == 1 )
   {
     if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
     else { DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage2.dfcoRPM * 10) + configPage2.dfcoHyster) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }

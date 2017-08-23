@@ -29,6 +29,10 @@
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000
 
+//Define the load algorithm
+#define LOAD_SOURCE_MAP         0
+#define LOAD_SOURCE_TPS         1
+
 //Define bit positions within engine virable
 #define BIT_ENGINE_RUN      0   // Engine running
 #define BIT_ENGINE_CRANK    1   // Engine cranking
@@ -85,6 +89,10 @@
 #define IGN_MODE_SEQUENTIAL 3
 #define IGN_MODE_ROTARY     4
 
+#define ROTARY_IGN_FC       0
+#define ROTARY_IGN_FD       1
+#define ROTARY_IGN_RX8      2
+
 #define SIZE_BYTE   8
 #define SIZE_INT    16
 
@@ -132,6 +140,7 @@ struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
 struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
+struct table2D rotarySplitTable; //8 bin ignition split curve for rotary leading/trailing  (2D)
 
 //These are for the direct port manipulation of the injectors and coils
 volatile byte *inj1_pin_port;
@@ -579,23 +588,12 @@ See ini file for further info (Config Page 11 in the ini)
 struct config11 {
   byte crankingEnrichBins[4];
   byte crankingEnrichValues[4];
-  byte unused11_8;
-  byte unused11_9;
-  byte unused11_10;
-  byte unused11_11;
-  byte unused11_12;
-  byte unused11_13;
-  byte unused11_14;
-  byte unused11_15;
-  byte unused11_16;
-  byte unused11_17;
-  byte unused11_18;
-  byte unused11_19;
-  byte unused11_20;
-  byte unused10_21;
-  byte unused11_22;
-  byte unused11_23;
-  byte unused11_24;
+
+  byte rotaryType : 2;
+  byte unused11_8c : 6;
+
+  byte rotarySplitValues[8];
+  byte rotarySplitBins[8];
   byte unused11_25;
   byte unused11_26;
   byte unused11_27;

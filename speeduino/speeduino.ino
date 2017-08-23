@@ -199,6 +199,10 @@ void setup()
   IATRetardTable.xSize = 6;
   IATRetardTable.values = configPage2.iatRetValues;
   IATRetardTable.axisX = configPage2.iatRetBins;
+  rotarySplitTable.valueSize = SIZE_BYTE;
+  rotarySplitTable.xSize = 8;
+  rotarySplitTable.values = configPage11.rotarySplitValues;
+  rotarySplitTable.axisX = configPage11.rotarySplitBins;
 
   //Setup the calibration tables
   loadCalibration();
@@ -584,10 +588,20 @@ void setup()
       break;
 
     case IGN_MODE_ROTARY:
-      ign1StartFunction = beginCoil1Charge;
-      ign1EndFunction = endCoil1Charge;
-      ign2StartFunction = beginCoil1Charge;
-      ign2EndFunction = endCoil1Charge;
+      if(configPage11.rotaryType == ROTARY_IGN_FC)
+      {
+        ign1StartFunction = beginCoil1Charge;
+        ign1EndFunction = endCoil1Charge;
+        ign2StartFunction = beginCoil1Charge;
+        ign2EndFunction = endCoil1Charge;
+
+        ign3StartFunction = beginTrailingCoilCharge;
+        ign3EndFunction = endTrailingCoilCharge;
+        ign4StartFunction = beginTrailingCoilCharge;
+        ign4EndFunction = endTrailingCoilCharge;
+      }
+      break;
+
 
 
     default:
@@ -892,7 +906,7 @@ void loop()
       //Calculate an injector pulsewidth from the VE
       currentStatus.corrections = correctionsFuel();
       lastAdvance = currentStatus.advance; //Store the previous advance value
-      if (configPage1.algorithm == 0) //Check which fuelling algorithm is being used
+      if (configPage1.algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
       {
         //Speed Density
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
@@ -1115,6 +1129,34 @@ void loop()
             ignition4EndAngle = channel4IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance;
             ignition4StartAngle = ignition4EndAngle - dwellAngle;
             if(ignition4StartAngle > CRANK_ANGLE_MAX_IGN) {ignition4StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          }
+          else if(configPage2.sparkMode == IGN_MODE_ROTARY)
+          {
+            if(configPage11.rotaryType == ROTARY_IGN_FC)
+            {
+              byte splitDegrees = 0;
+              if (configPage1.algorithm == LOAD_SOURCE_MAP) { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.MAP/2); }
+              else { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.TPS/2); }
+
+              //The trailing angles are set relative to the leading ones
+              ignition3EndAngle = ignition1EndAngle + splitDegrees;
+              ignition3StartAngle = ignition1EndAngle - dwellAngle;
+              ignition4EndAngle = ignition2EndAngle + splitDegrees;
+              ignition4StartAngle = ignition2EndAngle - dwellAngle;
+
+              //This is a mess. Basically we need to figure out which one is going to fire next and set the select pin appropiately
+              int crankAngle = getCrankAngle(timePerDegree);
+              if(ignition3EndAngle < ignition4EndAngle)
+              {
+                if(ignition3EndAngle > crankAngle) { digitalWrite(pinCoil3, coilLOW); }
+                else { digitalWrite(pinCoil3, coilHIGH); }
+              }
+              else
+              {
+                if(ignition4EndAngle > crankAngle) { digitalWrite(pinCoil3, coilHIGH); }
+                else { digitalWrite(pinCoil3, coilLOW); }
+              }
+            }
           }
           break;
         //5 cylinders
