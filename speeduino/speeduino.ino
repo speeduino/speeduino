@@ -1140,9 +1140,14 @@ void loop()
 
               //The trailing angles are set relative to the leading ones
               ignition3EndAngle = ignition1EndAngle + splitDegrees;
-              ignition3StartAngle = ignition1EndAngle - dwellAngle;
+              ignition3StartAngle = ignition3EndAngle - dwellAngle;
+              if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
+              if(ignition3StartAngle < 0) {ignition3StartAngle += CRANK_ANGLE_MAX_IGN;}
+
               ignition4EndAngle = ignition2EndAngle + splitDegrees;
-              ignition4StartAngle = ignition2EndAngle - dwellAngle;
+              ignition4StartAngle = ignition4EndAngle - dwellAngle;
+              if(ignition4StartAngle > CRANK_ANGLE_MAX_IGN) {ignition4StartAngle -= CRANK_ANGLE_MAX_IGN;}
+              if(ignition4StartAngle < 0) {ignition4StartAngle += CRANK_ANGLE_MAX_IGN;}
             }
           }
           break;
