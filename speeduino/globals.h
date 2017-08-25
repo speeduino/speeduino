@@ -594,33 +594,9 @@ struct config11 {
 
   byte rotarySplitValues[8];
   byte rotarySplitBins[8];
-  byte unused11_25;
-  byte unused11_26;
-  byte unused11_27;
-  byte unused11_28;
-  byte unused11_29;
-  byte unused11_107;
-  byte unused11_108;
-  byte unused11_109;
-  byte unused11_110;
-  byte unused11_111;
-  byte unused11_112;
-  byte unused11_113;
-  byte unused11_114;
-  byte unused11_115;
-  byte unused11_116;
-  byte unused11_117;
-  byte unused11_118;
-  byte unused11_119;
-  byte unused11_120;
-  byte unused11_121;
-  byte unused11_122;
-  byte unused11_123;
-  byte unused11_124;
-  byte unused11_125;
-  byte unused11_126;
-  byte unused11_127;
-  byte unused11_128_192[64];
+
+  byte unused11_25_192[167];
+  
 #if defined(CORE_AVR)
   };
 #else
