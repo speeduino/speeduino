@@ -723,6 +723,7 @@ void loop()
       secCounter = 0; //Reset our seconds counter.
       currentStatus.startRevolutions = 0;
       toothSystemCount = 0;
+      secondaryToothCount = 0;
       MAPcurRev = 0;
       MAPcount = 0;
       currentStatus.rpmDOT = 0;
@@ -1001,6 +1002,7 @@ void loop()
       int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
       injector1StartAngle = configPage1.inj1Ang - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       if(injector1StartAngle < 0) {injector1StartAngle += CRANK_ANGLE_MAX_INJ;}
+      if(injector1StartAngle > CRANK_ANGLE_MAX_INJ) {injector1StartAngle -= CRANK_ANGLE_MAX_INJ;}
 
       //Repeat the above for each cylinder
       switch (configPage1.nCylinders)
@@ -1009,25 +1011,33 @@ void loop()
         case 2:
           injector2StartAngle = (configPage1.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
           if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) {injector2StartAngle -= CRANK_ANGLE_MAX_INJ;}
+          if(injector2StartAngle < 0) {injector2StartAngle += CRANK_ANGLE_MAX_INJ;}
           break;
         //3 cylinders
         case 3:
           injector2StartAngle = (configPage1.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
           if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) {injector2StartAngle -= CRANK_ANGLE_MAX_INJ;}
+          if(injector2StartAngle < 0) {injector2StartAngle += CRANK_ANGLE_MAX_INJ;}
+
           injector3StartAngle = (configPage1.inj3Ang + channel3InjDegrees - ( PWdivTimerPerDegree ));
           if(injector3StartAngle > CRANK_ANGLE_MAX_INJ) {injector3StartAngle -= CRANK_ANGLE_MAX_INJ;}
+          if(injector3StartAngle < 0) {injector3StartAngle += CRANK_ANGLE_MAX_INJ;}
           break;
         //4 cylinders
         case 4:
           injector2StartAngle = (configPage1.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
           if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) {injector2StartAngle -= CRANK_ANGLE_MAX_INJ;}
+          if(injector2StartAngle < 0) {injector2StartAngle += CRANK_ANGLE_MAX_INJ;}
 
           if(configPage1.injLayout == INJ_SEQUENTIAL)
           {
             injector3StartAngle = (configPage1.inj3Ang + channel3InjDegrees - ( PWdivTimerPerDegree ));
             if(injector3StartAngle > CRANK_ANGLE_MAX_INJ) {injector3StartAngle -= CRANK_ANGLE_MAX_INJ;}
+            if(injector3StartAngle < 0) {injector3StartAngle += CRANK_ANGLE_MAX_INJ;}
+
             injector4StartAngle = (configPage1.inj4Ang + channel4InjDegrees - ( PWdivTimerPerDegree ));
             if(injector4StartAngle > CRANK_ANGLE_MAX_INJ) {injector4StartAngle -= CRANK_ANGLE_MAX_INJ;}
+            if(injector4StartAngle < 0) {injector4StartAngle += CRANK_ANGLE_MAX_INJ;}
 
             if(configPage3.fuelTrimEnabled)
             {

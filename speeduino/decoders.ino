@@ -1334,17 +1334,30 @@ void triggerSetup_Miata9905()
   toothCurrentCount = 99; //Fake tooth count represents no sync
   secondDerivEnabled = false;
   decoderIsSequential = true;
+  triggerActualTeeth = 8;
+  secondaryToothCount = 0;
 
   //Note that these angles are for every rising and falling edge
 
-  toothAngles[0] = 350; //Falling edge of tooth #1
-  toothAngles[1] = 100; //Rising edge of tooth #2
-  toothAngles[2] = 170; //Falling edge of tooth #2
-  toothAngles[3] = 280; //Rising edge of tooth #1
+  /*
+  toothAngles[0] = 350;
+  toothAngles[1] = 100;
+  toothAngles[2] = 170;
+  toothAngles[3] = 280;
+  */
+
+  toothAngles[0] = 710; //
+  toothAngles[1] = 100; //First crank pulse after the SINGLE cam pulse
+  toothAngles[2] = 170; //
+  toothAngles[3] = 280; //
+  toothAngles[4] = 350; //
+  toothAngles[5] = 460; //First crank pulse AFTER the DOUBLE cam pulse
+  toothAngles[6] = 530; //
+  toothAngles[7] = 640; //
 
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
-  triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  triggerSecFilterTime = 0; //(int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
 }
 
 void triggerPri_Miata9905()
@@ -1354,7 +1367,7 @@ void triggerPri_Miata9905()
   if ( curGap >= triggerFilterTime )
   {
     toothCurrentCount++;
-    if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
+    if( (toothCurrentCount == 1) || (toothCurrentCount == (triggerActualTeeth+1)) )
     {
        toothCurrentCount = 1; //Reset the counter
        toothOneMinusOneTime = toothOneTime;
@@ -1362,13 +1375,21 @@ void triggerPri_Miata9905()
        currentStatus.hasSync = true;
        currentStatus.startRevolutions++; //Counter
     }
+    else
+    {
+        if(secondaryToothCount == 2)
+        {
+          toothCurrentCount = 6;
+          currentStatus.hasSync = true;
+        }
+    }
 
     if (currentStatus.hasSync == true)
     {
       addToothLogEntry(curGap);
 
       //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
-      if( (toothCurrentCount == 1) || (toothCurrentCount == 3) ) { triggerToothAngle = 70; triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
+      if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
       else { triggerToothAngle = 110; triggerFilterTime = (curGap * 3) >> 3; } //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
 
       curGap = curGap >> 1;
@@ -1376,7 +1397,16 @@ void triggerPri_Miata9905()
       toothLastMinusOneToothTime = toothLastToothTime;
       toothLastToothTime = curTime;
     } //Has sync
+
+    if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage2.ignCranklock)
+    {
+      if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) { endCoil1Charge(); }
+      else if( (toothCurrentCount == 2) || (toothCurrentCount == 6) ) { endCoil2Charge(); }
+      else if( (toothCurrentCount == 3) || (toothCurrentCount == 7) ) { endCoil3Charge(); }
+      else if( (toothCurrentCount == 4) || (toothCurrentCount == 8) ) { endCoil4Charge(); }
+    }
   } //Trigger filter
+  secondaryToothCount = 0;
 }
 
 void triggerSec_Miata9905()
@@ -1387,18 +1417,9 @@ void triggerSec_Miata9905()
   {
     toothLastSecToothTime = curTime2;
     lastGap = curGap2;
+    secondaryToothCount++;
 
-    if( (BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) || (currentStatus.hasSync == false) )
-    {
-      triggerFilterTime = 1500;
-      //Check the status of the crank trigger
-      targetGap = (lastGap) >> 1; //The target gap is set at half the last tooth gap
-      if ( curGap < targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the extra (3rd) tooth on the cam). This tooth is located at 421 crank degrees (aka 61 degrees) and therefore the last crank tooth seen was number 1 (At 350 degrees)
-      {
-        toothCurrentCount = 1;
-        currentStatus.hasSync = true;
-      }
-    }
+    //TODO Add some secondary filtering here
   }
 }
 
