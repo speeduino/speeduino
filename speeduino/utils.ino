@@ -494,25 +494,25 @@ void setPinMapping(byte boardID)
 
   //And for inputs
   #if defined(CORE_STM32)
-  #ifndef ARDUINO_ARCH_STM32 //libmaple core aka STM32DUINO
-    pinMode(pinMAP, INPUT_ANALOG);
-    pinMode(pinO2, INPUT_ANALOG);
-    pinMode(pinO2_2, INPUT_ANALOG);
-    pinMode(pinTPS, INPUT_ANALOG);
-    pinMode(pinIAT, INPUT_ANALOG);
-    pinMode(pinCLT, INPUT_ANALOG);
-    pinMode(pinBat, INPUT_ANALOG);
-    pinMode(pinBaro, INPUT_ANALOG);
-  #else
-    pinMode(pinMAP, INPUT);
-    pinMode(pinO2, INPUT);
-    pinMode(pinO2_2, INPUT);
-    pinMode(pinTPS, INPUT);
-    pinMode(pinIAT, INPUT);
-    pinMode(pinCLT, INPUT);
-    pinMode(pinBat, INPUT);
-    pinMode(pinBaro, INPUT);
-  #endif
+    #ifndef ARDUINO_ARCH_STM32 //libmaple core aka STM32DUINO
+      pinMode(pinMAP, INPUT_ANALOG);
+      pinMode(pinO2, INPUT_ANALOG);
+      pinMode(pinO2_2, INPUT_ANALOG);
+      pinMode(pinTPS, INPUT_ANALOG);
+      pinMode(pinIAT, INPUT_ANALOG);
+      pinMode(pinCLT, INPUT_ANALOG);
+      pinMode(pinBat, INPUT_ANALOG);
+      pinMode(pinBaro, INPUT_ANALOG);
+    #else
+      pinMode(pinMAP, INPUT);
+      pinMode(pinO2, INPUT);
+      pinMode(pinO2_2, INPUT);
+      pinMode(pinTPS, INPUT);
+      pinMode(pinIAT, INPUT);
+      pinMode(pinCLT, INPUT);
+      pinMode(pinBat, INPUT);
+      pinMode(pinBaro, INPUT);
+    #endif
   #endif
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);

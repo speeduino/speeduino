@@ -119,7 +119,11 @@
 #define OFFSET_FUELTRIM 127 //The fuel trim tables are offset by 128 to allow for -128 to +128 values
 #define OFFSET_IGNITION 40 //Ignition values from the main spark table are offset 40 degrees downards to allow for negative spark timing
 
-#define SERIAL_BUFFER_THRESHOLD 32 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
+#if defined(CORE_STM32)
+  #define SERIAL_BUFFER_THRESHOLD 64 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 128 bytes long, so the threshold is set at half this as a reasonable figure
+#else
+  #define SERIAL_BUFFER_THRESHOLD 32 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
+#endif
 
 #define FUEL_PUMP_ON() *pump_pin_port |= (pump_pin_mask)
 #define FUEL_PUMP_OFF() *pump_pin_port &= ~(pump_pin_mask)
