@@ -207,6 +207,9 @@ int ignition4EndAngle = 0;
 //This is used across multiple files
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 
+volatile byte TIMER_mask;
+volatile byte LOOP_TIMER;
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
