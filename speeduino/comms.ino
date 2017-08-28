@@ -62,15 +62,11 @@ void command()
       if (Serial.available() > 0)
       {
         currentPage = Serial.read();
-        if (currentPage >= '0') {//This converts the ascii number char into binary
-          currentPage -= '0';
-        }
-        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) ) { // Detecting if the current page is a table/map
-          isMap = true;
-        }
-        else {
-          isMap = false;
-        }
+        //This converts the ascii number char into binary. Note that this will break everyything if there are ever more than 48 pages (48 = asci code for '0')
+        if (currentPage >= '0') { currentPage -= '0'; }
+        // Detecting if the current page is a table/map
+        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) ) { isMap = true; }
+        else { isMap = false; }
         cmdPending = false;
       }
       break;
@@ -80,12 +76,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.07");
+      Serial.print("Speeduino 2017.08-dev");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201707");
+      Serial.print("speeduino 201708-dev");
      break;
 
     case 'V': // send VE table and constants in binary
@@ -536,10 +532,10 @@ void receiveValue(int valueOffset, byte newValue)
       }
       break;
 
-    case warmupPage: //Idle Air Control settings page (Page 4)
+    case warmupPage:
       pnt_configPage = &configPage11;
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if (valueOffset < page_size)
+      if (valueOffset < npage_size[currentPage])
       {
         *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
       }
@@ -861,7 +857,7 @@ void sendPage(bool useChar)
         {
           sendComplete = true;
         }
-        else { pnt_configPage = &configPage11; } //Create a pointer to Page 4 in memory
+        else { pnt_configPage = &configPage11; } //Create a pointer to Page 11 in memory
         break;
 
     default:
@@ -940,7 +936,7 @@ void sendPage(bool useChar)
           }
           else currentTitleIndex = 0;
         }while(currentTitleIndex == 132); //Should never loop unless going to display vvtTable
-      }
+      } //use char
       else
       {
         //Need to perform a translation of the values[yaxis][xaxis] into the MS expected format
@@ -955,7 +951,7 @@ void sendPage(bool useChar)
         //loop();
         Serial.write((byte *)&response, sizeof(response));
       }
-    }
+    } //is map
     else
     {
       /*if(useChar)

@@ -1,7 +1,5 @@
 #include "maths.h"
 
-#define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d)/2)/(d)) : (((n) + (d)/2)/(d)))
-
 //Replace the standard arduino map() function to use the div function instead
 int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 {
@@ -13,14 +11,6 @@ int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
   //return ldiv( ((x - in_min) * (out_max - out_min)) , (in_max - in_min) ).quot + out_min;
   //return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
-
-//This is a dedicated function that specifically handles the case of mapping 0-1023 values into a 0 to X range
-//This is a common case because it means converting from a standard 10-bit analog input to a byte or 10-bit analog into 0-511 (Eg the temperature readings)
-//int fastMap1023toX(unsigned long x, int in_min, int in_max, int out_min, int out_max)
-//removed ununsed variables, in_min and out_min is aways 0, in_max is aways 1023
-#define fastMap1023toX(x, out_max) ( ((unsigned long)x * out_max) >> 10)
-//This is a new version that allows for out_min
-#define fastMap10Bit(x, out_min, out_max) ( ( ((unsigned long)x * (out_max-out_min)) >> 10 ) + out_min)
 
 /*
 The following are all fast versions of specific divisions

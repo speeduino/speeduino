@@ -2,7 +2,7 @@
 Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
-*/
+*/ 
 
 /*
 Timers are used for having actions performed repeatedly at a fixed interval (Eg every 100ms)
@@ -75,13 +75,14 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
   //Overdwell check
   targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
+  bool isCrankLocked = configPage2.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
 
-  if(ignitionSchedule1.Status == RUNNING) { if( (ignitionSchedule1.startTime < targetOverdwellTime) && (configPage2.useDwellLim) ) { endCoil1Charge(); } }
-  if(ignitionSchedule2.Status == RUNNING) { if( (ignitionSchedule2.startTime < targetOverdwellTime) && (configPage2.useDwellLim) ) { endCoil2Charge(); } }
-  if(ignitionSchedule3.Status == RUNNING) { if( (ignitionSchedule3.startTime < targetOverdwellTime) && (configPage2.useDwellLim) ) { endCoil3Charge(); } }
-  if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage2.useDwellLim) ) { endCoil4Charge(); } }
-  if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage2.useDwellLim) ) { endCoil5Charge(); } }
+  if(ignitionSchedule1.Status == RUNNING) { if( (ignitionSchedule1.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil1Charge(); } }
+  if(ignitionSchedule2.Status == RUNNING) { if( (ignitionSchedule2.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil2Charge(); } }
+  if(ignitionSchedule3.Status == RUNNING) { if( (ignitionSchedule3.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil3Charge(); } }
+  if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil4Charge(); } }
+  if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil5Charge(); } }
 
   //15Hz loop
   if (loop66ms == 66)
@@ -115,11 +116,15 @@ void oneMSInterval() //Most ARM chips can simply call a function
   //Anything inside this if statement will run every 250ms.
   if (loop250ms == 250)
   {
-    loop250ms = 0; //Reset Counter.
+    loop250ms = 0; //Reset Counter
     BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
+
     #if defined(CORE_AVR)
       //Reset watchdog timer (Not active currently)
       //wdt_reset();
+      //DIY watchdog
+      if( (initialisationComplete == true) && (last250msLoopCount == mainLoopCount) ) { setup(); } //This is a sign of a crash.
+      else { last250msLoopCount = mainLoopCount; }
     #endif
   }
 
@@ -128,8 +133,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
   {
     loopSec = 0; //Reset counter.
     BIT_SET(TIMER_mask, BIT_TIMER_1HZ);
+
     dwellLimit_uS = (1000 * configPage2.dwellLimit); //Update uS value incase setting has changed
-    if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) { dwellLimit_uS = dwellLimit_uS * 3; } //Make sure the overdwell doesn't clobber the fixed ignition cranking if enabled.
+    currentStatus.crankRPM = ((unsigned int)configPage2.crankRPM * 100);
 
     //**************************************************************************************************************************************************
     //This updates the runSecs variable

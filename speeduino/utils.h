@@ -12,6 +12,7 @@ unsigned int PW();
 unsigned int PW_SD();
 unsigned int PW_AN();
 
+//This is dumb, but it'll do for now to get things compiling
 #if defined(CORE_STM32)
   //STM32F1/variants/.../board.cpp
   #if defined (STM32F4)

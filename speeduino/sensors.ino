@@ -98,7 +98,10 @@ void readMAP()
           //Error check
           if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
           {
-            MAPrunningValue = MAPrunningValue + (unsigned long)tempReading; //Add the current reading onto the total
+            currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC);
+            MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
+            //Old method (No filter)
+            //MAPrunningValue = MAPrunningValue + (unsigned long)tempReading;
             MAPcount++;
           }
           else { mapErrorCount += 1; }
@@ -111,6 +114,7 @@ void readMAP()
           {
             currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+            //currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax);
             if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
             MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
             MAPrunningValue = 0;
@@ -264,4 +268,3 @@ void flexPulse()
  {
    ++flexCounter;
  }
-
