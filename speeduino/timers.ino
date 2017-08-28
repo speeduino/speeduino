@@ -47,6 +47,9 @@ void initialiseTimers()
   Timer4.resume(); //Start Timer
 #endif
 
+  #if defined(CORE_STM32)
+    pinMode(LED_BUILTIN, OUTPUT);
+  #endif
   dwellLimit_uS = (1000 * configPage2.dwellLimit);
   lastRPM_100ms = 0;
 }

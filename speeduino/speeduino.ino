@@ -642,7 +642,8 @@ void loop()
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
       // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
-      if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+      if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+
       {
         if (Serial.available() > 0)
         {
@@ -654,7 +655,8 @@ void loop()
       //if serial3 interface is enabled then check for serial3 requests.
       if (configPage10.enable_canbus == 1)
           {
-            if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+            if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+
                 {
                   if (CANSerial.available() > 0)
                     {
@@ -668,6 +670,7 @@ void loop()
       if (configPage10.enable_canbus == 1)  //secondary serial interface enabled
           {
             if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+
                 {
                   if (CANSerial.available() > 0)
                     {
@@ -743,7 +746,7 @@ void loop()
     //-----------------------------------------------------------------------------------------------------
     readMAP();
 
-    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
+    if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ))
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
       readTPS(); //TPS reading to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
@@ -873,7 +876,7 @@ void loop()
     //Main loop runs within this clause
     if (currentStatus.hasSync && (currentStatus.RPM > 0))
     {
-        if(currentStatus.startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true; } //Enable the fuel and ignition, assuming staging revolutions are complete
+        if(currentStatus.startRevolutions >= configPage2.StgCycles)  { ignitionOn = true; fuelOn = true;} //Enable the fuel and ignition, assuming staging revolutions are complete
         //If it is, check is we're running or cranking
         if(currentStatus.RPM > currentStatus.crankRPM) //Crank RPM stored in byte as RPM / 100
         {
