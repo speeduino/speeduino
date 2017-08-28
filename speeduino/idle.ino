@@ -78,8 +78,9 @@ void initialiseIdle()
     NVIC_ENABLE_IRQ(IRQ_FTM2);
   }
 
-  #elif defined(MCU_STM32F103RB)
-
+  #elif defined(CORE_STM32)
+    Timer1.attachInterrupt(4, idleInterrupt);
+    Timer1.resume();
   #endif
 
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
@@ -114,7 +115,11 @@ void initialiseIdle()
       idle_pin_mask = digitalPinToBitMask(pinIdle1);
       idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
       idle2_pin_mask = digitalPinToBitMask(pinIdle2);
-      idle_pwm_max_count = 1000000L / (16 * configPage3.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      #if defined(CORE_STM32)
+        idle_pwm_max_count = 1000000L / (configPage3.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
+      #else
+        idle_pwm_max_count = 1000000L / (16 * configPage3.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      #endif
       enableIdle();
       break;
 
@@ -134,7 +139,11 @@ void initialiseIdle()
       idle_pin_mask = digitalPinToBitMask(pinIdle1);
       idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
       idle2_pin_mask = digitalPinToBitMask(pinIdle2);
-      idle_pwm_max_count = 1000000L / (16 * configPage3.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      #if defined(CORE_STM32)
+        idle_pwm_max_count = 1000000L / (configPage3.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
+      #else
+        idle_pwm_max_count = 1000000L / (16 * configPage3.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      #endif
       idlePID.SetOutputLimits(percentage(configPage1.iacCLminDuty, idle_pwm_max_count), percentage(configPage1.iacCLmaxDuty, idle_pwm_max_count));
       idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
@@ -407,7 +416,6 @@ ISR(TIMER4_COMPC_vect)
 #elif defined (CORE_TEENSY) || defined (CORE_STM32)
 static inline void idleInterrupt() //Most ARM chips can simply call a function
 #endif
-#if defined(CORE_AVR) || defined (CORE_TEENSY)
 {
   if (idle_pwm_state)
   {
@@ -446,8 +454,3 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
   }
 
 }
-#elif defined (CORE_STM32)
-{
-  //No PWM idle for STM32 yet
-}
-#endif

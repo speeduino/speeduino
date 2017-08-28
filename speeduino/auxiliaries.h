@@ -30,12 +30,29 @@ void initialiseFan();
   #define VVT_TIMER_COUNTER     FTM1_CNT
 
 #elif defined(CORE_STM32)
-  #define ENABLE_VVT_TIMER()
-  #define DISABLE_VVT_TIMER()
+  #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
+    #define ENABLE_BOOST_TIMER()  (TIM1)->CCER |= TIM_CCER_CC2E
+    #define DISABLE_BOOST_TIMER() (TIM1)->CCER &= ~TIM_CCER_CC2E
 
-  #define ENABLE_BOOST_TIMER()
-  #define DISABLE_BOOST_TIMER()
+    #define ENABLE_VVT_TIMER()    (TIM1)->CCER |= TIM_CCER_CC3E
+    #define DISABLE_VVT_TIMER()   (TIM1)->CCER &= ~TIM_CCER_CC3E
 
+    #define BOOST_TIMER_COMPARE   (TIM1)->CCR2
+    #define BOOST_TIMER_COUNTER   (TIM1)->CNT
+    #define VVT_TIMER_COMPARE     (TIM1)->CCR3
+    #define VVT_TIMER_COUNTER     (TIM1)->CNT
+  #else //libmaple core aka STM32DUINO
+    #define ENABLE_BOOST_TIMER()  (TIMER1->regs).gen->CCER |= TIMER_CCER_CC2E
+    #define DISABLE_BOOST_TIMER() (TIMER1->regs).gen->CCER &= ~TIMER_CCER_CC2E
+
+    #define ENABLE_VVT_TIMER()    (TIMER1->regs).gen->CCER |= TIMER_CCER_CC3E
+    #define DISABLE_VVT_TIMER()   (TIMER1->regs).gen->CCER &= ~TIMER_CCER_CC3E
+
+    #define BOOST_TIMER_COMPARE   (TIMER1->regs).gen->CCR2
+    #define BOOST_TIMER_COUNTER   (TIMER1->regs).gen->CNT
+    #define VVT_TIMER_COMPARE     (TIMER1->regs).gen->CCR3
+    #define VVT_TIMER_COUNTER     (TIMER1->regs).gen->CNT
+  #endif
 #endif
 
 #define BOOST_PIN_LOW()  *boost_pin_port &= ~(boost_pin_mask)
@@ -64,6 +81,10 @@ volatile bool vvt_pwm_state;
 unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int vvt_pwm_cur_value;
 long vvt_pwm_target_value;
+#if defined (CORE_TEENSY) || defined(CORE_STM32)
+  static inline void boostInterrupt();
+  static inline void vvtInterrupt();
+#endif
 
 
 #endif

@@ -9,14 +9,25 @@
   #define CORE_AVR
 #elif defined(CORE_TEENSY)
   #define BOARD_NR_GPIO_PINS 34
-#elif defined(STM32_MCU_SERIES) || defined(_VARIANT_ARDUINO_STM32_)
+#elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
-  #define LED_BUILTIN 33
+  #if defined (STM32F1) || defined(__STM32F1__)
+    #define BOARD_NR_GPIO_PINS 34
+    #define LED_BUILTIN 33
+  #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
+    #define BOARD_NR_GPIO_PINS 80
+    #define LED_BUILTIN PA7
+  #endif
 
   extern "C" char* sbrk(int incr); //Used to freeRam
   inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
-  #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
-  #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+  #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
+    #define portOutputRegister(port) (volatile byte *)( &(port->ODR) )
+    #define portInputRegister(port) (volatile byte *)( &(port->IDR) )
+  #else //libmaple core aka STM32DUINO
+    #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+    #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+  #endif
 #else
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif
@@ -71,6 +82,12 @@
 #define BIT_SPARK2_UNUSED6        5
 #define BIT_SPARK2_UNUSED7        6
 #define BIT_SPARK2_UNUSED8        7
+
+#define BIT_TIMER_1HZ             0
+#define BIT_TIMER_4HZ             1
+#define BIT_TIMER_10HZ            2
+#define BIT_TIMER_15HZ            3
+#define BIT_TIMER_30HZ            4
 
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
