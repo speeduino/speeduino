@@ -1436,6 +1436,12 @@ void triggerSec_Miata9905()
 {
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
+
+  if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) || (currentStatus.hasSync == false) )
+  {
+    triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset).
+  }
+
   if ( curGap2 >= triggerSecFilterTime )
   {
     toothLastSecToothTime = curTime2;
@@ -1454,14 +1460,16 @@ uint16_t getRPM_Miata9905()
   if(currentStatus.RPM < currentStatus.crankRPM)
   {
     int tempToothAngle;
+    int toothTime;
     noInterrupts();
     tempToothAngle = triggerToothAngle;
-    revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen
+    toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen
     interrupts();
-    revolutionTime = revolutionTime * 36;
-    tempRPM = (tempToothAngle * 60000000L) / revolutionTime;
+    toothTime = toothTime * 36;
+    tempRPM = ((unsigned long)tempToothAngle * 60000000L) / toothTime;
+    revolutionTime = (10UL * toothTime) / tempToothAngle;
   }
-  else { tempRPM = stdGetRPM(); }
+  else { tempRPM = stdGetRPM() >> 1; }
 
   return tempRPM;
 }
@@ -1483,9 +1491,8 @@ int getCrankAngle_Miata9905(int timePerDegree)
       crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
       //Estimate the number of degrees travelled since the last tooth}
 
-      long elapsedTime = micros() - tempToothLastToothTime;
-      if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
-      else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
+      unsigned long elapsedTime = micros() - tempToothLastToothTime;
+      crankAngle += uSToDegrees(elapsedTime);
 
       if (crankAngle >= 720) { crankAngle -= 720; }
       if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
