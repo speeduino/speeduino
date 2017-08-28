@@ -268,4 +268,3 @@ void flexPulse()
  {
    ++flexCounter;
  }
-

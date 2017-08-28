@@ -36,10 +36,6 @@
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
 #define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
 #define BIT_CHECK(var,pos) !!((var) & (1<<(pos)))
-#define Lo(param) ((char *)&param)[0]
-#define Hi(param) ((char *)&param)[1]
-#define Higher(param) ((char *)&param)[2]
-#define Highest(param) ((char *)&param)[3]
 
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000
@@ -128,11 +124,7 @@
 #define OFFSET_FUELTRIM 127 //The fuel trim tables are offset by 128 to allow for -128 to +128 values
 #define OFFSET_IGNITION 40 //Ignition values from the main spark table are offset 40 degrees downards to allow for negative spark timing
 
-#if defined(CORE_STM32)
-  #define SERIAL_BUFFER_THRESHOLD 64 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 128 bytes long, so the threshold is set at half this as a reasonable figure
-#else
-  #define SERIAL_BUFFER_THRESHOLD 32 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
-#endif
+#define SERIAL_BUFFER_THRESHOLD 32 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
 
 #define FUEL_PUMP_ON() *pump_pin_port |= (pump_pin_mask)
 #define FUEL_PUMP_OFF() *pump_pin_port &= ~(pump_pin_mask)
@@ -214,9 +206,6 @@ int ignition4EndAngle = 0;
 
 //This is used across multiple files
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-
-volatile byte TIMER_mask;
-volatile byte LOOP_TIMER;
 
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
