@@ -1357,7 +1357,7 @@ void triggerSetup_Miata9905()
 
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
-  triggerSecFilterTime = 0; //(int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  triggerSecFilterTime = 0; // (int)(1000000 / (MAX_RPM / 60 * 2)) / 2;
 }
 
 void triggerPri_Miata9905()
