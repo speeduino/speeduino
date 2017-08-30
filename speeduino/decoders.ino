@@ -1336,6 +1336,8 @@ void triggerSetup_Miata9905()
   decoderIsSequential = true;
   triggerActualTeeth = 8;
   secondaryToothCount = 0;
+  toothLastToothTime = micros(); //Set a startup value here to avoid filter errors when starting
+  toothLastMinusOneToothTime = 0;
 
   //Note that these angles are for every rising and falling edge
 
@@ -1364,10 +1366,10 @@ void triggerPri_Miata9905()
 {
   curTime = micros();
   curGap = curTime - toothLastToothTime;
-  if ( curGap >= triggerFilterTime )
+  if ( curGap >= triggerFilterTime || (currentStatus.startRevolutions == 0) )
   {
     toothCurrentCount++;
-    if( (toothCurrentCount == 1) || (toothCurrentCount == (triggerActualTeeth+1)) )
+    if( (toothCurrentCount == (triggerActualTeeth + 1)) )
     {
        toothCurrentCount = 1; //Reset the counter
        toothOneMinusOneTime = toothOneTime;
@@ -1380,7 +1382,7 @@ void triggerPri_Miata9905()
         if(secondaryToothCount == 2)
         {
           toothCurrentCount = 6;
-          currentStatus.hasSync = true;
+          //currentStatus.hasSync = true;
         }
     }
 
@@ -1389,7 +1391,7 @@ void triggerPri_Miata9905()
       addToothLogEntry(curGap);
 
       //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
-      if( (configPage2.triggerFilter == 1) || (currentStatus.RPM < 1400) )
+      if( (configPage2.triggerFilter == 1) )
       {
         //Lite filter
         if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
@@ -1407,15 +1409,16 @@ void triggerPri_Miata9905()
         if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; triggerFilterTime = (curGap * 11) >> 3 ; } //96.26 degrees with a target of 110
         else { triggerToothAngle = 110; triggerFilterTime = (curGap * 9) >> 5; } //61.87 degrees with a target of 70
       }
-      else
+      else if (configPage2.triggerFilter == 0)
       {
         //trigger filter is turned off.
         triggerFilterTime = 0;
+        triggerSecFilterTime = 0;
         if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; } //96.26 degrees with a target of 110
         else { triggerToothAngle = 110; } //61.87 degrees with a target of 70
       }
 
-      curGap = curGap >> 1;  //Why is this here?
+      //curGap = curGap >> 1;  //Why is this here?
 
       toothLastMinusOneToothTime = toothLastToothTime;
       toothLastToothTime = curTime;
@@ -1459,17 +1462,21 @@ uint16_t getRPM_Miata9905()
   uint16_t tempRPM = 0;
   if(currentStatus.RPM < currentStatus.crankRPM)
   {
-    int tempToothAngle;
-    int toothTime;
-    noInterrupts();
-    tempToothAngle = triggerToothAngle;
-    toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen
-    interrupts();
-    toothTime = toothTime * 36;
-    tempRPM = ((unsigned long)tempToothAngle * 60000000L) / toothTime;
-    revolutionTime = (10UL * toothTime) / tempToothAngle;
+    if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
+    else
+    {
+      int tempToothAngle;
+      unsigned long toothTime;
+      noInterrupts();
+      tempToothAngle = triggerToothAngle;
+      toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen
+      interrupts();
+      toothTime = toothTime * 36;
+      tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / toothTime;
+      revolutionTime = (10UL * toothTime) / tempToothAngle;
+    }
   }
-  else { tempRPM = stdGetRPM() >> 1; }
+  else { tempRPM = stdGetRPM() << 1; }
 
   return tempRPM;
 }
