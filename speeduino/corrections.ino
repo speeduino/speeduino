@@ -478,7 +478,7 @@ uint16_t correctionsDwell(uint16_t dwell)
   uint16_t dwellPerRevolution = tempDwell + (uint16_t)(configPage2.sparkDur * 100); //Spark duration is in mS*10. Multiple it by 100 to get spark duration in uS
   int8_t pulsesPerRevolution = 1;
   //Single channel spark mode is the only time there will be more than 1 pulse per revolution on any given output
-  if( (configPage2.sparkMode == IGN_MODE_SINGLE) && (configPage1.nCylinders > 1) ) //No point in running this for 1 cylinder engines
+  if( ( (configPage2.sparkMode == IGN_MODE_SINGLE) || (configPage2.sparkMode == IGN_MODE_ROTARY) ) && (configPage1.nCylinders > 1) ) //No point in running this for 1 cylinder engines
   {
     pulsesPerRevolution = (configPage1.nCylinders >> 1);
     dwellPerRevolution = dwellPerRevolution * pulsesPerRevolution;
