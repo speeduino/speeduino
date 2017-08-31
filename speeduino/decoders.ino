@@ -113,7 +113,7 @@ static inline void doPerToothTiming(uint16_t crankAngle)
   if ( (toothCurrentCount == ignition1EndTooth) && (ignitionSchedule1.Status == RUNNING) ) { IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( (ignition1EndAngle - crankAngle) * timePerDegree ); }
   else if ( (toothCurrentCount == ignition2EndTooth) && (ignitionSchedule2.Status == RUNNING) ) { IGN2_COMPARE = IGN2_COUNTER + uS_TO_TIMER_COMPARE( (ignition2EndAngle - crankAngle) * timePerDegree ); }
   else if ( (toothCurrentCount == ignition3EndTooth) && (ignitionSchedule3.Status == RUNNING) ) { IGN3_COMPARE = IGN3_COUNTER + uS_TO_TIMER_COMPARE( (ignition3EndAngle - crankAngle) * timePerDegree ); }
-  else if ( (toothCurrentCount == ignition4EndTooth) && (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE( (ignition4EndAngle - crankAngle) * timePerDegree ); }
+  else if ( (toothCurrentCount == ignition4EndTooth) && (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW( (ignition4EndAngle - crankAngle) * timePerDegree ); }
 }
 
 /*
@@ -1769,7 +1769,6 @@ void triggerPri_Nissan360()
 
    if ( currentStatus.hasSync == true )
    {
-
      if ( toothCurrentCount == 361 ) //2 complete crank revolutions
      {
        toothCurrentCount = 1;
@@ -1779,6 +1778,13 @@ void triggerPri_Nissan360()
      }
      //Recalc the new filter value
      //setFilter(curGap);
+
+     //EXPERIMENTAL!
+     if(configPage1.perToothIgn == true)
+     {
+       uint16_t crankAngle = ( (toothCurrentCount-1) * 2 ) + configPage2.triggerAngle;
+       doPerToothTiming(crankAngle);
+     }
    }
 }
 
@@ -1807,77 +1813,60 @@ void triggerSec_Nissan360()
     {
       if(configPage1.nCylinders == 4)
       {
-        if( (secondaryDuration >= 15) || (secondaryDuration <= 17) ) //Duration of window = 16 primary teeth
+        if( (secondaryDuration >= 15) && (secondaryDuration <= 17) ) //Duration of window = 16 primary teeth
         {
           toothCurrentCount = 16; //End of first window (The longest) occurs 16 teeth after TDC
           currentStatus.hasSync = true;
         }
-        else if( (secondaryDuration >= 11) || (secondaryDuration <= 13) ) //Duration of window = 12 primary teeth
+        else if( (secondaryDuration >= 11) && (secondaryDuration <= 13) ) //Duration of window = 12 primary teeth
         {
           toothCurrentCount = 102; //End of second window is after 90+12 primary teeth
           currentStatus.hasSync = true;
         }
-        else if( (secondaryDuration >= 7) || (secondaryDuration <= 9) ) //Duration of window = 8 primary teeth
+        else if( (secondaryDuration >= 7) && (secondaryDuration <= 9) ) //Duration of window = 8 primary teeth
         {
           toothCurrentCount = 188; //End of third window is after 90+90+8 primary teeth
           currentStatus.hasSync = true;
         }
-        else if( (secondaryDuration >= 3) || (secondaryDuration <= 5) ) //Duration of window = 4 primary teeth
+        else if( (secondaryDuration >= 3) && (secondaryDuration <= 5) ) //Duration of window = 4 primary teeth
         {
           toothCurrentCount = 274; //End of fourth window is after 90+90+90+4 primary teeth
           currentStatus.hasSync = true;
         }
+        else { currentStatus.hasSync = false; } //This should really never happen
       }
       else if(configPage1.nCylinders == 6)
       {
-        if( (secondaryDuration >= 23) || (secondaryDuration <= 25) ) //Duration of window = 16 primary teeth
-        {
-          toothCurrentCount = 24; //End of first window (The longest) occurs 24 teeth after TDC
-          currentStatus.hasSync = true;
-        }
-        else if( (secondaryDuration >= 19) || (secondaryDuration <= 21) ) //Duration of window = 12 primary teeth
-        {
-          toothCurrentCount = 84; //End of second window is after 60+20 primary teeth
-          currentStatus.hasSync = true;
-        }
-        else if( (secondaryDuration >= 15) || (secondaryDuration <= 17) ) //Duration of window = 16 primary teeth
+        //Pattern on the 6 cylinders is 4-8-12-16-12-8
+        //We can therefore only get sync on the 4 and 16 pulses as they are the only unique ones
+        if( (secondaryDuration >= 15) && (secondaryDuration <= 17) ) //Duration of window = 16 primary teeth
         {
           toothCurrentCount = 136; //End of third window is after 60+60+16 primary teeth
           currentStatus.hasSync = true;
         }
-        else if( (secondaryDuration >= 11) || (secondaryDuration <= 13) ) //Duration of window = 12 primary teeth
-        {
-          toothCurrentCount = 192; //End of fourth window is after 60+60+60+12 primary teeth
-          currentStatus.hasSync = true;
-        }
-        else if( (secondaryDuration >= 7) || (secondaryDuration <= 9) ) //Duration of window = 8 primary teeth
-        {
-          toothCurrentCount = 248; //End of fifth window is after 60+60+60+60+8 primary teeth
-          currentStatus.hasSync = true;
-        }
-        else if( (secondaryDuration >= 3) || (secondaryDuration <= 5) ) //Duration of window = 4 primary teeth
+        else if( (secondaryDuration >= 3) && (secondaryDuration <= 5) ) //Duration of window = 4 primary teeth
         {
           toothCurrentCount = 304; //End of sixth window is after 60+60+60+60+60+4 primary teeth
           currentStatus.hasSync = true;
         }
       }
-      else { currentStatus.hasSync = false; } //This should really never happen
+      else { currentStatus.hasSync = false; } //This should really never happen (Only 4 and 6 cylinder engines for this patter)
     }
     else
     {
       //Already have sync, but do a verify every 720 degrees.
       if(configPage1.nCylinders == 4)
       {
-        if(secondaryDuration >= 15) //Duration of window = 16 primary teeth
+        if(secondaryDuration >= 15 && (secondaryDuration <= 17)) //Duration of window = 16 primary teeth
         {
           toothCurrentCount = 16; //End of first window (The longest) occurs 16 teeth after TDC
         }
       }
       else if(configPage1.nCylinders == 6)
       {
-        if(secondaryDuration >= 23) //Duration of window = 24 primary teeth
+        if(secondaryDuration == 4)
         {
-          toothCurrentCount = 24; //End of first window (The longest) occurs 24 teeth after TDC
+          toothCurrentCount = 304;
         }
       } //Cylinder count
     } //Has sync
@@ -1925,13 +1914,13 @@ int getCrankAngle_Nissan360(int timePerDegree)
   tempToothCurrentCount = toothCurrentCount;
   interrupts();
 
+  crankAngle = ( (tempToothCurrentCount - 1) * 2) + configPage2.triggerAngle;
   unsigned long halfTooth = (tempToothLastToothTime - tempToothLastMinusOneToothTime) >> 1;
   if ( (micros() - tempToothLastToothTime) > halfTooth)
   {
     //Means we're over halfway to the next tooth, so add on 1 degree
-    crankAngle = (tempToothCurrentCount * triggerToothAngle) + 1;
+    crankAngle += 1;
   }
-  else { crankAngle = (tempToothCurrentCount * triggerToothAngle); }
 
   if (crankAngle >= 720) { crankAngle -= 720; }
   if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
@@ -1942,7 +1931,10 @@ int getCrankAngle_Nissan360(int timePerDegree)
 
 void triggerSetEndTeeth_Nissan360()
 {
-
+  ignition1EndTooth = ( (ignition1EndAngle - configPage2.triggerAngle) / 2 ) - 1;
+  ignition2EndTooth = ( (ignition2EndAngle - configPage2.triggerAngle) / 2 ) - 4;
+  ignition3EndTooth = ( (ignition3EndAngle - configPage2.triggerAngle) / 2 ) - 1;
+  ignition4EndTooth = ( (ignition4EndAngle - configPage2.triggerAngle) / 2 ) - 1;
 }
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
