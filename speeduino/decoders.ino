@@ -1336,6 +1336,8 @@ void triggerSetup_Miata9905()
   decoderIsSequential = true;
   triggerActualTeeth = 8;
   secondaryToothCount = 0;
+  toothLastToothTime = micros(); //Set a startup value here to avoid filter errors when starting
+  toothLastMinusOneToothTime = 0;
 
   //Note that these angles are for every rising and falling edge
 
@@ -1357,17 +1359,17 @@ void triggerSetup_Miata9905()
 
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
-  triggerSecFilterTime = 0; // (int)(1000000 / (MAX_RPM / 60 * 2)) / 2;
+  triggerSecFilterTime = 0; //Need to figure out something better for this
 }
 
 void triggerPri_Miata9905()
 {
   curTime = micros();
   curGap = curTime - toothLastToothTime;
-  if ( curGap >= triggerFilterTime )
+  if ( curGap >= triggerFilterTime || (currentStatus.startRevolutions == 0) )
   {
     toothCurrentCount++;
-    if( (toothCurrentCount == 1) || (toothCurrentCount == (triggerActualTeeth+1)) )
+    if( (toothCurrentCount == (triggerActualTeeth + 1)) )
     {
        toothCurrentCount = 1; //Reset the counter
        toothOneMinusOneTime = toothOneTime;
@@ -1380,7 +1382,7 @@ void triggerPri_Miata9905()
         if(secondaryToothCount == 2)
         {
           toothCurrentCount = 6;
-          currentStatus.hasSync = true;
+          //currentStatus.hasSync = true;
         }
     }
 
@@ -1389,10 +1391,34 @@ void triggerPri_Miata9905()
       addToothLogEntry(curGap);
 
       //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
-      if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
-      else { triggerToothAngle = 110; triggerFilterTime = (curGap * 3) >> 3; } //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
+      if( (configPage2.triggerFilter == 1) )
+      {
+        //Lite filter
+        if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
+        else { triggerToothAngle = 110; triggerFilterTime = (curGap * 3) >> 3; } //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
+      }
+      else if(configPage2.triggerFilter == 2)
+      {
+        //Medium filter level
+        if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; triggerFilterTime = (curGap * 5) >> 2 ; } //87.5 degrees with a target of 110
+        else { triggerToothAngle = 110; triggerFilterTime = (curGap >> 1); } //55 degrees with a target of 70
+      }
+      else if (configPage2.triggerFilter == 3)
+      {
+        //Aggressive filter level
+        if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; triggerFilterTime = (curGap * 11) >> 3 ; } //96.26 degrees with a target of 110
+        else { triggerToothAngle = 110; triggerFilterTime = (curGap * 9) >> 5; } //61.87 degrees with a target of 70
+      }
+      else if (configPage2.triggerFilter == 0)
+      {
+        //trigger filter is turned off.
+        triggerFilterTime = 0;
+        triggerSecFilterTime = 0;
+        if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; } //96.26 degrees with a target of 110
+        else { triggerToothAngle = 110; } //61.87 degrees with a target of 70
+      }
 
-      curGap = curGap >> 1;
+      //curGap = curGap >> 1;  //Why is this here?
 
       toothLastMinusOneToothTime = toothLastToothTime;
       toothLastToothTime = curTime;
@@ -1413,6 +1439,12 @@ void triggerSec_Miata9905()
 {
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
+
+  if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) || (currentStatus.hasSync == false) )
+  {
+    triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset).
+  }
+
   if ( curGap2 >= triggerSecFilterTime )
   {
     toothLastSecToothTime = curTime2;
@@ -1430,15 +1462,21 @@ uint16_t getRPM_Miata9905()
   uint16_t tempRPM = 0;
   if(currentStatus.RPM < currentStatus.crankRPM)
   {
-    int tempToothAngle;
-    noInterrupts();
-    tempToothAngle = triggerToothAngle;
-    revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen
-    interrupts();
-    revolutionTime = revolutionTime * 36;
-    tempRPM = (tempToothAngle * 60000000L) / revolutionTime;
+    if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
+    else
+    {
+      int tempToothAngle;
+      unsigned long toothTime;
+      noInterrupts();
+      tempToothAngle = triggerToothAngle;
+      toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen
+      interrupts();
+      toothTime = toothTime * 36;
+      tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / toothTime;
+      revolutionTime = (10UL * toothTime) / tempToothAngle;
+    }
   }
-  else { tempRPM = stdGetRPM(); }
+  else { tempRPM = stdGetRPM() << 1; }
 
   return tempRPM;
 }
@@ -1460,9 +1498,8 @@ int getCrankAngle_Miata9905(int timePerDegree)
       crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
       //Estimate the number of degrees travelled since the last tooth}
 
-      long elapsedTime = micros() - tempToothLastToothTime;
-      if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
-      else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
+      unsigned long elapsedTime = micros() - tempToothLastToothTime;
+      crankAngle += uSToDegrees(elapsedTime);
 
       if (crankAngle >= 720) { crankAngle -= 720; }
       if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
@@ -1706,7 +1743,7 @@ void triggerSetEndTeeth_Non360()
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Nissan 360 tooth with cam
 Desc:
-Note:
+Note: https://wiki.r31skylineclub.com/index.php/Crank_Angle_Sensor
 */
 void triggerSetup_Nissan360()
 {

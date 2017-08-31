@@ -466,6 +466,14 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
     interrupts();
     IGN3_TIMER_ENABLE();
   }
+  else
+  {
+    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    ignitionSchedule3.nextStartCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+    ignitionSchedule3.nextEndCompare = ignitionSchedule3.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+    ignitionSchedule3.hasNextSchedule = true;
+  }
 }
 void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
@@ -489,6 +497,14 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule4.schedulesSet++;
     interrupts();
     IGN4_TIMER_ENABLE();
+  }
+  else
+  {
+    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    ignitionSchedule4.nextStartCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    ignitionSchedule4.nextEndCompare = ignitionSchedule4.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+    ignitionSchedule4.hasNextSchedule = true;
   }
 }
 void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
@@ -728,7 +744,17 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
        ignitionSchedule3.EndCallback();
        ignitionSchedule3.schedulesSet = 0;
        ignitionCount += 1; //Increment the igintion counter
-       IGN3_TIMER_DISABLE();
+
+       //If there is a next schedule queued up, activate it
+       if(ignitionSchedule3.hasNextSchedule == true)
+       {
+         IGN3_COMPARE = ignitionSchedule3.nextStartCompare;
+         ignitionSchedule3.endCompare = ignitionSchedule3.nextEndCompare;
+         ignitionSchedule3.Status = PENDING;
+         ignitionSchedule3.schedulesSet = 1;
+         ignitionSchedule3.hasNextSchedule = false;
+       }
+       else { IGN3_TIMER_DISABLE(); }
     }
   }
 
@@ -751,7 +777,17 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
        ignitionSchedule4.EndCallback();
        ignitionSchedule4.schedulesSet = 0;
        ignitionCount += 1; //Increment the igintion counter
-       IGN4_TIMER_DISABLE();
+
+       //If there is a next schedule queued up, activate it
+       if(ignitionSchedule4.hasNextSchedule == true)
+       {
+         IGN4_COMPARE = ignitionSchedule4.nextStartCompare;
+         ignitionSchedule4.endCompare = ignitionSchedule4.nextEndCompare;
+         ignitionSchedule4.Status = PENDING;
+         ignitionSchedule4.schedulesSet = 1;
+         ignitionSchedule4.hasNextSchedule = false;
+       }
+       else { IGN4_TIMER_DISABLE(); }
     }
   }
 

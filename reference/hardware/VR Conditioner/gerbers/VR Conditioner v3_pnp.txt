@@ -1,0 +1,67 @@
+*Pick And Place List
+*Company=
+*Author=
+*eMail=
+*
+*Project=VR Conditioner v3
+*Date=19:16:10
+*CreatedBy=Fritzing 0.9.3b.04.19.5c895d327c44a3114e5fcc9d8260daf0cbb52806
+*
+*
+*Coordinates in mm, always center of component
+*Origin 0/0=Lower left corner of PCB
+*Rotation in degree (0-360, math. pos.)
+*
+*No;Value;Package;X;Y;Rotation;Side;Name
+1;;DIP (Dual Inline) [THT];14.4059;-14.3144;0;Bottom;IC1
+2;;;15.9512;-14.2933;0;Bottom;Copper Fill24
+3;;;22.1742;-8.04494;0;Bottom;Copper Fill20
+4;4.7k;THT;20.1209;-20.6644;0;Bottom;R12
+5;;;19.4858;-7.96443;0;Bottom;Via14
+6;;;6.0564;-7.14176;0;Bottom;TXT5
+7;;;12.7;-19.3987;0;Bottom;Copper Fill2
+8;1k;0805 [SMD];23.6134;-9.79692;90;Top;R4
+9;4.7k;THT;20.1209;-23.2044;180;Bottom;R10
+10;;;19.2786;-11.7787;0;Bottom;Copper Fill10
+11;;;11.4554;-6.76224;0;Bottom;Copper Fill25
+12;1nF;0805 [SMD, multilayer];6.15085;-24.2294;-90;Top;C4
+13;;;16.9926;-11.4485;0;Bottom;Copper Fill9
+14;;;13.9954;-14.4965;0;Bottom;Copper Fill1
+15;10k;0805 [SMD];20.5109;-25.4269;0;Top;R7
+16;;;19.2786;-14.1663;0;Bottom;Copper Fill8
+17;;;17.1704;-14.2933;0;Bottom;Copper Fill7
+18;;;17.5514;-6.76224;0;Bottom;Copper Fill29
+19;;;18.5928;-4.28574;0;Bottom;Copper Fill23
+20;;;4.572;-23.9707;0;Bottom;Copper Fill11
+21;;;25.6196;-12.6698;-90;Bottom;TXT3
+22;;;7.47786;-7.22642;0;Bottom;TXT4
+23;;;17.9832;-16.3761;0;Bottom;Copper Fill3
+24;10k;0805 [SMD];7.17586;-16.8544;0;Top;R13
+25;0.01µF;0805 [SMD, multilayer];22.0984;-15.5844;0;Top;C2
+26;;;13.7708;-4.78943;0;Bottom;Via15
+27;;;21.082;-12.2613;0;Bottom;Copper Fill5
+28;;;24.2316;-15.3601;0;Bottom;Copper Fill16
+29;;;9.6012;-13.7091;0;Bottom;Copper Fill12
+30;1k;0805 [SMD];21.0734;-9.79692;90;Top;R6
+31;1nF;0805 [SMD, multilayer];7.03084;-14.3144;180;Top;C5
+32;0.1µF;0805 [SMD, multilayer];22.0984;-13.0444;0;Top;C1
+33;;THT;21.3909;-3.83692;90;Bottom;J1
+34;;;17.1704;-16.8333;0;Bottom;Copper Fill6
+35;;QSOP16;14.5583;-5.41172;180;Top;MAX9926
+36;;;14.2735;-25.0931;0;Bottom;TXT1
+37;;;20.701;-15.1061;0;Bottom;Copper Fill15
+38;10k;0805 [SMD];7.17586;-11.7744;0;Top;R11
+39;;;17.5514;-4.83184;0;Bottom;Copper Fill27
+40;;;11.6586;-14.4711;0;Bottom;Copper Fill18
+41;;;20.2946;-7.13054;0;Bottom;Copper Fill22
+42;;;11.4554;-5.49224;0;Bottom;Copper Fill28
+43;;;12.9286;-16.9349;0;Bottom;Copper Fill4
+44;10k;0805 [SMD];9.08086;-23.2044;0;Top;R9
+45;;;7.2644;-19.3733;0;Bottom;Copper Fill13
+46;;;10.287;-19.0685;0;Bottom;Copper Fill14
+47;;;17.2085;-3.37134;0;Bottom;Copper Fill26
+48;;;9.9568;-14.2933;0;Bottom;Copper Fill19
+49;;;22.4815;-12.723;-90;Bottom;IMG1
+50;1µF;0805 [SMD, multilayer];22.0984;-18.1244;0;Top;C3
+51;;;8.2804;-14.3187;0;Bottom;Copper Fill17
+52;;;24.4094;-6.57174;0;Bottom;Copper Fill21
