@@ -1767,24 +1767,19 @@ void triggerPri_Nissan360()
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
 
-   //if ( currentStatus.hasSync == false ) { return; }
-
-   if ( toothCurrentCount == 181) //1 complete crank revolution
+   if ( currentStatus.hasSync == true )
    {
-     toothOneMinusOneTime = toothOneTime;
-     toothOneTime = curTime;
-     currentStatus.startRevolutions++;
-   }
-   else if ( toothCurrentCount == 361 ) //2 complete crank revolutions
-   {
-     toothCurrentCount = 1;
-     toothOneMinusOneTime = toothOneTime;
-     toothOneTime = curTime;
-     currentStatus.startRevolutions++; //Counter
-   }
 
-   //Recalc the new filter value
-   //setFilter(curGap);
+     if ( toothCurrentCount == 361 ) //2 complete crank revolutions
+     {
+       toothCurrentCount = 1;
+       toothOneMinusOneTime = toothOneTime;
+       toothOneTime = curTime;
+       currentStatus.startRevolutions++; //Counter
+     }
+     //Recalc the new filter value
+     //setFilter(curGap);
+   }
 }
 
 void triggerSec_Nissan360()
@@ -1798,7 +1793,11 @@ void triggerSec_Nissan360()
 
 
   //Calculate number of primary teeth that this window has been active for
-  if( (secondaryToothCount == 0) || (READ_SEC_TRIGGER() == LOW) ) { secondaryToothCount = toothCurrentCount; } //This occurs on the first rotation upon powerup OR the start of a secondary window
+  byte trigEdge;
+  if(configPage2.TrigEdgeSec == 0) { trigEdge = LOW; }
+  else { trigEdge = HIGH; }
+
+  if( (secondaryToothCount == 0) || (READ_SEC_TRIGGER() == trigEdge) ) { secondaryToothCount = toothCurrentCount; } //This occurs on the first rotation upon powerup OR the start of a secondary window
   else
   {
     //If we reach here, we are at the end of a secondary window
@@ -1887,7 +1886,29 @@ void triggerSec_Nissan360()
 
 uint16_t getRPM_Nissan360()
 {
-  return stdGetRPM();
+  //Can't use stdGetRPM as there is no separate cranking RPM calc (stdGetRPM returns 0 if cranking)
+  uint16_t tempRPM;
+  if( (currentStatus.hasSync == true) && (toothLastToothTime != 0) && (toothLastMinusOneToothTime != 0) )
+  {
+    if(currentStatus.startRevolutions < 2)
+    {
+      noInterrupts();
+      revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * 180;
+      interrupts();
+    }
+    else
+    {
+      noInterrupts();
+      revolutionTime = (toothOneTime - toothOneMinusOneTime) >> 2; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+      interrupts();
+    }
+    tempRPM = (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
+    if(tempRPM >= MAX_RPM) { tempRPM = currentStatus.RPM; } //Sanity check
+    MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  }
+  else { tempRPM = 0; }
+
+  return tempRPM;
 }
 
 int getCrankAngle_Nissan360(int timePerDegree)
@@ -1901,6 +1922,10 @@ int getCrankAngle_Nissan360(int timePerDegree)
     crankAngle = (toothCurrentCount * triggerToothAngle) + 1;
   }
   else { crankAngle = (toothCurrentCount * triggerToothAngle); }
+
+  if (crankAngle >= 720) { crankAngle -= 720; }
+  if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+  if (crankAngle < 0) { crankAngle += 360; }
 
   return crankAngle;
 }
