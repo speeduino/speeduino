@@ -1366,7 +1366,7 @@ void triggerPri_Miata9905()
 {
   curTime = micros();
   curGap = curTime - toothLastToothTime;
-  if ( curGap >= triggerFilterTime || (currentStatus.startRevolutions == 0) )
+  if ( (curGap >= triggerFilterTime) || (currentStatus.startRevolutions == 0) )
   {
     toothCurrentCount++;
     if( (toothCurrentCount == (triggerActualTeeth + 1)) )
@@ -1417,8 +1417,6 @@ void triggerPri_Miata9905()
         if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; } //96.26 degrees with a target of 110
         else { triggerToothAngle = 110; } //61.87 degrees with a target of 70
       }
-
-      //curGap = curGap >> 1;  //Why is this here?
 
       toothLastMinusOneToothTime = toothLastToothTime;
       toothLastToothTime = curTime;
