@@ -40,10 +40,6 @@ void initialiseAuxPWM()
     TCCR1B = (1 << CS12);   //Timer1 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
   #elif defined(CORE_TEENSY)
     //REALLY NEED TO DO THIS!
-  #elif defined(CORE_STM32)
-    Timer1.attachInterrupt(2, boostInterrupt);
-    Timer1.attachInterrupt(3, vvtInterrupt);
-    Timer1.resume();
   #endif
 
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
@@ -67,6 +63,11 @@ void initialiseAuxPWM()
 
   currentStatus.boostDuty = 0;
   boostCounter = 0;
+  #if defined(CORE_STM32) //Need to be initialised last due to instant interrupt
+    Timer1.attachInterrupt(2, boostInterrupt);
+    Timer1.attachInterrupt(3, vvtInterrupt);
+    Timer1.resume();
+  #endif
 }
 
 void boostControl()

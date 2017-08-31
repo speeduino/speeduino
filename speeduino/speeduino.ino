@@ -130,6 +130,7 @@ bool initialisationComplete = false; //Tracks whether the setup() functino has r
 
 void setup()
 {
+  pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
@@ -143,14 +144,14 @@ void setup()
   table3D_setSize(&trim2Table, 6);
   table3D_setSize(&trim3Table, 6);
   table3D_setSize(&trim4Table, 6);
-
+  Serial.begin(115200);
+  
   #if defined(CORE_STM32)
     EEPROM.init();
   #endif
   loadConfig();
   doUpdates(); //Check if any data items need updating (Occurs ith firmware updates)
 
-  Serial.begin(115200);
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
   if (configPage10.enable_canbus == 1) { CANSerial.begin(115200); }
 #elif defined(CORE_STM32)

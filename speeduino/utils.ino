@@ -223,6 +223,8 @@ void setPinMapping(byte boardID)
         pinFlex = PC4; // Flex sensor (Must be external interrupt enabled)
         pinTrigger = PC5; //The CAS pin
         pinTrigger2 = PC6; //The Cam Sensor pin
+        pinIdle1 = PB8; //Single wire idle control
+        pinIdle2 = PB9; //2 wire idle control
         pinBoost = PE0; //Boost control
         pinVVT_1 = PE1; //Default VVT output
       #elif defined(CORE_STM32)
@@ -255,8 +257,10 @@ void setPinMapping(byte boardID)
         pinTrigger = 25; //The CAS pin
         pinTrigger2 = 22; //The Cam Sensor pin
         pinBaro = pinMAP;
-        pinBoost = 1; //Boost control
-        pinVVT_1 = 0; //Default VVT output
+        pinIdle1 = 2; //Single wire idle control
+        pinIdle2 = 9; //2 wire idle control
+        pinBoost = 10; //Boost control
+        pinVVT_1 = 11; //Default VVT output
       #endif
       break;
 
