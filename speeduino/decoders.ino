@@ -1899,7 +1899,7 @@ uint16_t getRPM_Nissan360()
     else
     {
       noInterrupts();
-      revolutionTime = (toothOneTime - toothOneMinusOneTime) >> 2; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+      revolutionTime = (toothOneTime - toothOneMinusOneTime) >> 1; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
       interrupts();
     }
     tempRPM = (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
@@ -1915,13 +1915,23 @@ int getCrankAngle_Nissan360(int timePerDegree)
 {
   //As each tooth represents 2 crank degrees, we only need to determine whether we're more or less than halfway between teeth to know whether to add another 1 degrees
   int crankAngle = 0;
-  unsigned long halfTooth = (toothLastToothTime - toothLastMinusOneToothTime) >> 1;
-  if ( (micros() - toothLastToothTime) > halfTooth)
+  int tempToothLastToothTime;
+  int tempToothLastMinusOneToothTime;
+  int tempToothCurrentCount;
+
+  noInterrupts();
+  tempToothLastToothTime = toothLastToothTime;
+  tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
+  tempToothCurrentCount = toothCurrentCount;
+  interrupts();
+
+  unsigned long halfTooth = (tempToothLastToothTime - tempToothLastMinusOneToothTime) >> 1;
+  if ( (micros() - tempToothLastToothTime) > halfTooth)
   {
     //Means we're over halfway to the next tooth, so add on 1 degree
-    crankAngle = (toothCurrentCount * triggerToothAngle) + 1;
+    crankAngle = (tempToothCurrentCount * triggerToothAngle) + 1;
   }
-  else { crankAngle = (toothCurrentCount * triggerToothAngle); }
+  else { crankAngle = (tempToothCurrentCount * triggerToothAngle); }
 
   if (crankAngle >= 720) { crankAngle -= 720; }
   if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
