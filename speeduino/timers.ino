@@ -2,7 +2,7 @@
 Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
-*/
+*/ 
 
 /*
 Timers are used for having actions performed repeatedly at a fixed interval (Eg every 100ms)
@@ -42,10 +42,14 @@ void initialiseTimers()
 #elif defined(CORE_STM32)
   Timer4.setPeriod(1000);  // Set up period
   // Set up an interrupt
-  Timer4.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
+  Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
   Timer4.attachInterrupt(1, oneMSInterval);
+  Timer4.resume(); //Start Timer
 #endif
 
+  #if defined(CORE_STM32)
+    pinMode(LED_BUILTIN, OUTPUT);
+  #endif
   dwellLimit_uS = (1000 * configPage2.dwellLimit);
   lastRPM_100ms = 0;
 }
@@ -61,6 +65,8 @@ void oneMSInterval() //Most ARM chips can simply call a function
 {
 
   //Increment Loop Counters
+  loop33ms++;
+  loop66ms++;
   loop100ms++;
   loop250ms++;
   loopSec++;
@@ -78,11 +84,29 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil4Charge(); } }
   if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil5Charge(); } }
 
+  //15Hz loop
+  if (loop66ms == 66)
+  {
+    loop66ms = 0;
+    BIT_SET(TIMER_mask, BIT_TIMER_15HZ);
+  }
+
+  //30Hz loop
+  if (loop33ms == 33)
+  {
+    loop33ms = 0;
+    BIT_SET(TIMER_mask, BIT_TIMER_30HZ);
+  }
+  
   //Loop executed every 100ms loop
   //Anything inside this if statement will run every 100ms.
   if (loop100ms == 100)
   {
     loop100ms = 0; //Reset counter
+    BIT_SET(TIMER_mask, BIT_TIMER_10HZ);
+    #if defined(CORE_STM32) //debug purpose, only visal for running code
+      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+    #endif  
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
@@ -93,6 +117,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if (loop250ms == 250)
   {
     loop250ms = 0; //Reset Counter
+    BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
 
     #if defined(CORE_AVR)
       //Reset watchdog timer (Not active currently)
@@ -107,6 +132,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if (loopSec == 1000)
   {
     loopSec = 0; //Reset counter.
+    BIT_SET(TIMER_mask, BIT_TIMER_1HZ);
 
     dwellLimit_uS = (1000 * configPage2.dwellLimit); //Update uS value incase setting has changed
     currentStatus.crankRPM = ((unsigned int)configPage2.crankRPM * 100);

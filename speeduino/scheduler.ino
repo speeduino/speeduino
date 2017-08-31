@@ -161,23 +161,40 @@ void initialiseSchedulers()
   NVIC_ENABLE_IRQ(IRQ_FTM1);
 
 #elif defined(CORE_STM32)
-  //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
-  (TIMER1->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
-  (TIMER2->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
-  (TIMER3->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
-  // Alternative 2us resolution:
-  //TimerX.setPrescaleFactor(CYCLES_PER_MICROSECOND * 2U);
+  #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
+    //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
+    Timer1.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
+    Timer2.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
+    Timer3.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
+    Timer2.setMode(1, TIMER_OUTPUT_COMPARE);
+    Timer2.setMode(2, TIMER_OUTPUT_COMPARE);
+    Timer2.setMode(3, TIMER_OUTPUT_COMPARE);
+    Timer2.setMode(4, TIMER_OUTPUT_COMPARE);
 
-  Timer2.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
-  Timer2.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
-  Timer2.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
-  Timer2.setMode(TIMER_CH4, TIMER_OUTPUT_COMPARE);
+    Timer3.setMode(1, TIMER_OUTPUT_COMPARE);
+    Timer3.setMode(2, TIMER_OUTPUT_COMPARE);
+    Timer3.setMode(3, TIMER_OUTPUT_COMPARE);
+    Timer3.setMode(4, TIMER_OUTPUT_COMPARE);
+    Timer1.setMode(1, TIMER_OUTPUT_COMPARE); 
 
-  Timer3.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
-  Timer3.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
-  Timer3.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
-  Timer3.setMode(TIMER_CH4, TIMER_OUTPUT_COMPARE);
+  #else //libmaple core aka STM32DUINO
+    //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
+    //(CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
+    //Timer2 to 4 is on APB1, Timer1 on APB2.   http://www.st.com/resource/en/datasheet/stm32f103cb.pdf sheet 12
+    Timer1.setPrescaleFactor((72 * 2U)-1); //2us resolution
+    Timer2.setPrescaleFactor((36 * 2U)-1); //2us resolution
+    Timer3.setPrescaleFactor((36 * 2U)-1); //2us resolution
+    Timer2.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
+    Timer2.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
+    Timer2.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
+    Timer2.setMode(TIMER_CH4, TIMER_OUTPUT_COMPARE);
 
+    Timer3.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
+    Timer3.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
+    Timer3.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
+    Timer3.setMode(TIMER_CH4, TIMER_OUTPUT_COMPARE);
+
+  #endif
   Timer2.attachInterrupt(1, fuelSchedule1Interrupt);
   Timer2.attachInterrupt(2, fuelSchedule2Interrupt);
   Timer2.attachInterrupt(3, fuelSchedule3Interrupt);
@@ -187,7 +204,11 @@ void initialiseSchedulers()
   Timer3.attachInterrupt(2, ignitionSchedule2Interrupt);
   Timer3.attachInterrupt(3, ignitionSchedule3Interrupt);
   Timer3.attachInterrupt(4, ignitionSchedule4Interrupt);
+  Timer1.attachInterrupt(1, ignitionSchedule5Interrupt);
 
+  Timer1.resume();
+  Timer2.resume();
+  Timer3.resume();
 #endif
 
     fuelSchedule1.Status = OFF;
