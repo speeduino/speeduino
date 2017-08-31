@@ -728,16 +728,12 @@ void initialiseTriggers()
       triggerSetEndTeeth = triggerSetEndTeeth_Miata9905;
 
       //These may both need to change, not sure
-      if(configPage2.TrigEdge == 0)
-      {
-        attachInterrupt(triggerInterrupt, trigger, RISING);  // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-        attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, FALLING); //changed
-      }
-      else
-      {
-        attachInterrupt(triggerInterrupt, trigger, FALLING); // Primary trigger connects to
-        attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, RISING);
-      }
+      // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); }
+      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+
+      if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, RISING); }
+      else { attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, FALLING); }
       break;
 
     case 10:

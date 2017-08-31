@@ -404,6 +404,12 @@ void setup()
 
           CRANK_ANGLE_MAX_IGN = 720;
         }
+        else if(configPage2.sparkMode == IGN_MODE_ROTARY)
+        {
+          //Rotary uses the ign 3 and 4 schedules for the trailing spark. They are offset from the ign 1 and 2 channels respectively and so use the same degrees as them
+          channel3IgnDegrees = 0;
+          channel4IgnDegrees = 180;
+        }
       }
       else
       {
@@ -924,9 +930,9 @@ void loop()
       int injector5StartAngle = 0; //For 5 cylinder testing
       int ignition1StartAngle = 0;
       int ignition2StartAngle = 0;
-      int ignition3StartAngle = 0; //Currently used for 3 cylinder only
-      int ignition4StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
-      int ignition5StartAngle = 0; //Not used until sequential or 4+ cylinders support gets written
+      int ignition3StartAngle = 0;
+      int ignition4StartAngle = 0;
+      int ignition5StartAngle = 0;
       //These are used for comparisons on channels above 1 where the starting angle (for injectors or ignition) can be less than a single loop time
       //(Don't ask why this is needed, it will break your head)
       int tempCrankAngle;
