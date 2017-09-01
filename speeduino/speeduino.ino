@@ -212,7 +212,7 @@ void setup()
   loadCalibration();
 
   //Set the pin mappings
-  if(configPage1.pinMapping > BOARD_NR_GPIO_PINS)
+  if((configPage1.pinMapping == 0) || (configPage1.pinMapping > BOARD_NR_GPIO_PINS))
   {
     //First time running on this board
     setPinMapping(3); //Force board to v0.4
@@ -665,7 +665,7 @@ void loop()
                 {
                   if (CANSerial.available() > 0)
                     {
-                    canCommand();
+                      canCommand();
                     }
                 }
           }
@@ -678,7 +678,7 @@ void loop()
                 {
                   if (CANSerial.available() > 0)
                     {
-                    canCommand();
+                      canCommand();
                     }
                 }
           }

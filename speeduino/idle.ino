@@ -194,7 +194,7 @@ void initialiseIdle()
   idleInitComplete = configPage4.iacAlgorithm; //Sets which idle method was initialised
   currentStatus.idleLoad = 0;
   #if defined(CORE_STM32) //Need to be initialised last due to instant interrupt
-    Timer1.attachInterrupt(4, idleInterrupt);
+    if(idle_pwm_max_count > 0) { Timer1.attachInterrupt(4, idleInterrupt);} //on first flash the configPage4.iacAlgorithm is invalid
     Timer1.resume();
   #endif
 }

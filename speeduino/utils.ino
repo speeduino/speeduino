@@ -496,7 +496,6 @@ void setPinMapping(byte boardID)
   pump_pin_mask = digitalPinToBitMask(pinFuelPump);
 
   //And for inputs
-  //And for inputs
   #if defined(CORE_STM32)
     #ifndef ARDUINO_ARCH_STM32 //libmaple core aka STM32DUINO
       pinMode(pinMAP, INPUT_ANALOG);
