@@ -195,6 +195,7 @@ void setPinMapping(byte boardID)
         pinCoil3 = 30;
         pinO2 = A22;
       #elif defined(STM32F4)
+        //Black F407VE http://wiki.stm32duino.com/index.php?title=STM32F407
         pinInjector1 = PE7; //Output pin injector 1 is on
         pinInjector2 = PE8; //Output pin injector 2 is on
         pinInjector3 = PE9; //Output pin injector 3 is on
@@ -212,6 +213,10 @@ void setPinMapping(byte boardID)
         pinO2 = A4; //O2 Sensor pin
         pinBat = A5; //Battery reference voltage pin
         pinBaro = A6;        
+        pinIdle1 = PB8; //Single wire idle control
+        pinIdle2 = PB9; //2 wire idle control
+        pinBoost = PE0; //Boost control
+        pinVVT_1 = PE1; //Default VVT output
         pinStepperDir = PD8; //Direction pin  for DRV8825 driver
         pinStepperStep = PB15; //Step pin for DRV8825 driver
         pinStepperEnable = PD9; //Enable pin for DRV8825
@@ -223,44 +228,41 @@ void setPinMapping(byte boardID)
         pinFlex = PC4; // Flex sensor (Must be external interrupt enabled)
         pinTrigger = PC5; //The CAS pin
         pinTrigger2 = PC6; //The Cam Sensor pin
-        pinIdle1 = PB8; //Single wire idle control
-        pinIdle2 = PB9; //2 wire idle control
-        pinBoost = PE0; //Boost control
-        pinVVT_1 = PE1; //Default VVT output
       #elif defined(CORE_STM32)
-        //http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/0.0.12/hardware/maple-mini.html#master-pin-map
-        //pins 23, 24 and 33 couldn't be used
-        pinInjector1 = 15; //Output pin injector 1 is on
-        pinInjector2 = 16; //Output pin injector 2 is on
-        pinInjector3 = 17; //Output pin injector 3 is on
-        pinInjector4 = 18; //Output pin injector 4 is on
-        pinCoil1 = 19; //Pin for coil 1
-        pinCoil2 = 20; //Pin for coil 2
-        pinCoil3 = 21; //Pin for coil 3
-        pinCoil4 = 26; //Pin for coil 4
-        pinCoil5 = 27; //Pin for coil 5
+        //blue pill http://wiki.stm32duino.com/index.php?title=Blue_Pill
+        //Maple mini http://wiki.stm32duino.com/index.php?title=Maple_Mini
+        //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
+        pinInjector1 = PB7; //Output pin injector 1 is on
+        pinInjector2 = PB6; //Output pin injector 2 is on
+        pinInjector3 = PB5; //Output pin injector 3 is on
+        pinInjector4 = PB4; //Output pin injector 4 is on
+        pinCoil1 = PB3; //Pin for coil 1
+        pinCoil2 = PA15; //Pin for coil 2
+        pinCoil3 = PA14; //Pin for coil 3
+        pinCoil4 = PA9; //Pin for coil 4
+        pinCoil5 = PA8; //Pin for coil 5
         pinTPS = A0; //TPS input pin
         pinMAP = A1; //MAP sensor pin
         pinIAT = A2; //IAT sensor pin
         pinCLT = A3; //CLS sensor pin
         pinO2 = A4; //O2 Sensor pin
         pinBat = A5; //Battery reference voltage pin
-        pinStepperDir = 12; //Direction pin  for DRV8825 driver
-        pinStepperStep = 13; //Step pin for DRV8825 driver
-        pinStepperEnable = 14; //Enable pin for DRV8825
-        pinDisplayReset = 2; // OLED reset pin
-        pinFan = 1; //Pin for the fan output
-        pinFuelPump = 0; //Fuel pump output
-        pinTachOut = 31; //Tacho output pin
-        //external interrupt enabled pins
-        pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = 25; //The CAS pin
-        pinTrigger2 = 22; //The Cam Sensor pin
         pinBaro = pinMAP;
-        pinIdle1 = 2; //Single wire idle control
-        pinIdle2 = 9; //2 wire idle control
-        pinBoost = 10; //Boost control
-        pinVVT_1 = 11; //Default VVT output
+        pinIdle1 = PB2; //Single wire idle control
+        pinIdle2 = PA2; //2 wire idle control
+        pinBoost = PA1; //Boost control
+        pinVVT_1 = PA0; //Default VVT output
+        pinStepperDir = PC15; //Direction pin  for DRV8825 driver
+        pinStepperStep = PC14; //Step pin for DRV8825 driver
+        pinStepperEnable = PC13; //Enable pin for DRV8825
+        pinDisplayReset = PB2; // OLED reset pin
+        pinFan = PB1; //Pin for the fan output
+        pinFuelPump = PB11; //Fuel pump output
+        pinTachOut = PB10; //Tacho output pin
+        //external interrupt enabled pins
+        pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
+        pinTrigger = PA10; //The CAS pin
+        pinTrigger2 = PA13; //The Cam Sensor pin
       #endif
       break;
 
