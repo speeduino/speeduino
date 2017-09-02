@@ -64,6 +64,8 @@ void initialiseAuxPWM()
   currentStatus.boostDuty = 0;
   boostCounter = 0;
   #if defined(CORE_STM32) //Need to be initialised last due to instant interrupt
+    Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
+    Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
     if(boost_pwm_max_count > 0) { Timer1.attachInterrupt(2, boostInterrupt);}
     if(vvt_pwm_max_count > 0) { Timer1.attachInterrupt(3, vvtInterrupt);}
     Timer1.resume();
@@ -152,7 +154,7 @@ void vvtControl()
   static inline void boostInterrupt() //Most ARM chips can simply call a function
 #endif
 {
-  if (boost_pwm_state)
+  if ((boost_pwm_state) && (boost_pwm_target_value<=2))
   {
     BOOST_PIN_LOW();  // Switch pin to low
     BOOST_TIMER_COMPARE = BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value);
@@ -174,7 +176,7 @@ void vvtControl()
   static inline void vvtInterrupt() //Most ARM chips can simply call a function
 #endif
 {
-  if (vvt_pwm_state)
+  if ((vvt_pwm_state) && (vvt_pwm_target_value<=2))
   {
     VVT_PIN_LOW();  // Switch pin to low
     VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt_pwm_cur_value);
