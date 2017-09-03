@@ -389,32 +389,31 @@ int integerPID::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
 int integerPID::GetDirection(){ return controllerDirection;}
 
 //************************************************************************************************************************
-#define PID_P_FACTOR  128
-#define PID_I_FACTOR  1024
-#define PID_D_FACTOR  128
 
 /*Constructor (...)*********************************************************
  *    The parameters specified here are those for for which we can't set up
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
-integerPIDnew::integerPIDnew(long* Input, long* Output, long* Setpoint,
-        byte Kp, byte Ki, byte Kd, byte ControllerDirection)
+integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity, byte* SampleTime,
+                                   byte Kp, byte Ki, byte Kd, byte ControllerDirection)
 {
 
     myOutput = Output;
     myInput = (long*)Input;
     mySetpoint = Setpoint;
-	inAuto = false;
+    mySensitivity = Sensitivity;
+    mySampleTime = SampleTime;
+	  inAuto = false;
 
-	integerPIDnew::SetOutputLimits(0, 255);				//default output limit corresponds to
+
+	  integerPID_ideal::SetOutputLimits(0, 255);				//default output limit corresponds to
 												//the arduino pwm limits
 
-    SampleTime = 50;							//default Controller Sample Time is 0.05 seconds
+    integerPID_ideal::SetControllerDirection(ControllerDirection);
+    integerPID_ideal::SetTunings(Kp, Ki, Kd);
 
-    integerPIDnew::SetControllerDirection(ControllerDirection);
-    integerPIDnew::SetTunings(Kp, Ki, Kd);
-
-    lastTime = millis()-SampleTime;
+    lastTime = millis()- *mySampleTime;
+    lastError = 0;
 }
 
 /* Compute() **********************************************************************
@@ -423,32 +422,53 @@ integerPIDnew::integerPIDnew(long* Input, long* Output, long* Setpoint,
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool integerPIDnew::Compute()
+bool integerPID_ideal::Compute()
 {
    if(!inAuto) return false;
    unsigned long now = millis();
    //SampleTime = (now - lastTime);
    unsigned long timeChange = (now - lastTime);
-   if(timeChange >= SampleTime)
+   if(timeChange >= *mySampleTime)
    {
       /*Compute all the working error variables*/
-	    long input = *myInput;
-      long error = (*mySetpoint - input) * 100; //Error is multiplied by 100 in order to allow use of 0-100% rather than 0-1
-      ITerm += (ki * error)/PID_I_FACTOR; //Note that ki is multiplied by 1024 to avoid floats. It is divided back here AFTER being multiplied by error
-      if(ITerm > outMax) { ITerm = outMax; }
-      else if(ITerm < outMin) { ITerm = outMin; }
-      long dInput = (input - lastInput);
+      uint16_t sensitivity = 5001 - *mySensitivity;
+      long limitMultiplier = 100; //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
+      long unitless_setpoint = (((long)*mySetpoint - 0) * 10000L) / (sensitivity - 0);
+      long unitless_input = (((long)*myInput - 0) * 10000L) / (sensitivity - 0);
+      long error = unitless_setpoint - unitless_input;
+
+      ITerm += error;
+
+      uint16_t bias = 20; //Base target DC%
+      long output = 0;
+
+      if(ki != 0)
+      {
+        output = ((outMax - bias) * limitMultiplier * 100) / (long)ki;
+        if (output < 0) { output = 0; }
+      }
+      if (ITerm > output) { ITerm = output; }
+
+      if(ki != 0)
+      {
+        output = ((bias - outMin) * limitMultiplier * 100) / (long)ki;
+        if (output < 0) { output = 0; }
+      }
+      else { output = 0; }
+      if (ITerm < -output) { ITerm = -output; }
 
       /*Compute PID Output*/
-      long output = (kp * error)/100 + ITerm - (kd * dInput)/100; //100 is used to allow 0-100% rather than 0-1
+      output = (kp * error) + (ki * ITerm) + (kd * (error - lastError));
+      output = (bias * 100) + (output / 10);
 
-	    if(output > outMax) output = outMax;
-      else if(output < outMin) output = outMin;
+      if(output > (outMax * limitMultiplier)) { output  = (outMax * limitMultiplier);  }
+      if(output < (outMin * limitMultiplier)) { output  = (outMin * limitMultiplier);  }
+
 	    *myOutput = output;
 
       /*Remember some variables for next time*/
-      lastInput = input;
       lastTime = now;
+      lastError = error;
 
       return true;
    }
@@ -461,44 +481,21 @@ bool integerPIDnew::Compute()
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/
-void integerPIDnew::SetTunings(byte Kp, byte Ki, byte Kd)
+void integerPID_ideal::SetTunings(byte Kp, byte Ki, byte Kd)
 {
    if (Kp<0 || Ki<0 || Kd<0) return;
    if ( dispKp == Kp && dispKi == Ki && dispKd == Kd ) return; //Only do anything if one of the values has changed
    dispKp = Kp; dispKi = Ki; dispKd = Kd;
 
-   /*
-   double SampleTimeInSec = ((double)SampleTime)/1000;
-   kp = Kp;
-   ki = Ki * SampleTimeInSec;
-   kd = Kd / SampleTimeInSec;
-   */
-  long InverseSampleTimeInSec = 1000 / SampleTime;
   kp = Kp;
-  ki = (long)((long)Ki * PID_I_FACTOR) / InverseSampleTimeInSec;
-  kd = (long)Kd * InverseSampleTimeInSec;
+  ki = Ki;
+  kd = Kd;
 
   if(controllerDirection == REVERSE)
    {
       kp = (0 - kp);
       ki = (0 - ki);
       kd = (0 - kd);
-   }
-}
-
-/* SetSampleTime(...) *********************************************************
- * sets the period, in Milliseconds, at which the calculation is performed
- ******************************************************************************/
-void integerPIDnew::SetSampleTime(int NewSampleTime)
-{
-   if (SampleTime == (unsigned long)NewSampleTime) return; //If new value = old value, no action required.
-   if (NewSampleTime > 0)
-   {
-      unsigned long ratioX1000  = (unsigned long)(NewSampleTime * 1000) / (unsigned long)SampleTime;
-      ki = ((unsigned long)ki * ratioX1000) / 1000;
-      //kd /= ratio;
-      kd = ((unsigned long)kd * 1000) / ratioX1000;
-      SampleTime = (unsigned long)NewSampleTime;
    }
 }
 
@@ -510,7 +507,7 @@ void integerPIDnew::SetSampleTime(int NewSampleTime)
  *  want to clamp it from 0-125.  who knows.  at any rate, that can all be done
  *  here.
  **************************************************************************/
-void integerPIDnew::SetOutputLimits(long Min, long Max)
+void integerPID_ideal::SetOutputLimits(long Min, long Max)
 {
    if(Min >= Max) return;
    outMin = Min;
@@ -531,12 +528,12 @@ void integerPIDnew::SetOutputLimits(long Min, long Max)
  * when the transition from manual to auto occurs, the controller is
  * automatically initialized
  ******************************************************************************/
-void integerPIDnew::SetMode(int Mode)
+void integerPID_ideal::SetMode(int Mode)
 {
     bool newAuto = (Mode == AUTOMATIC);
     if(newAuto == !inAuto)
     {  /*we just went from manual to auto*/
-        integerPIDnew::Initialize();
+        integerPID_ideal::Initialize();
     }
     inAuto = newAuto;
 }
@@ -545,12 +542,10 @@ void integerPIDnew::SetMode(int Mode)
  *	does all the things that need to happen to ensure a bumpless transfer
  *  from manual to automatic mode.
  ******************************************************************************/
-void integerPIDnew::Initialize()
+void integerPID_ideal::Initialize()
 {
-   ITerm = *myOutput;
+   ITerm = 0;
    lastInput = *myInput;
-   if(ITerm > outMax) ITerm = outMax;
-   else if(ITerm < outMin) ITerm = outMin;
 }
 
 /* SetControllerDirection(...)*************************************************
@@ -559,7 +554,7 @@ void integerPIDnew::Initialize()
  * know which one, because otherwise we may increase the output when we should
  * be decreasing.  This is called from the constructor.
  ******************************************************************************/
-void integerPIDnew::SetControllerDirection(byte Direction)
+void integerPID_ideal::SetControllerDirection(byte Direction)
 {
    if(inAuto && Direction !=controllerDirection)
    {
@@ -575,8 +570,8 @@ void integerPIDnew::SetControllerDirection(byte Direction)
  * functions query the internal state of the PID.  they're here for display
  * purposes.  this are the functions the PID Front-end uses for example
  ******************************************************************************/
-byte integerPIDnew::GetKp(){ return  dispKp; }
-byte integerPIDnew::GetKi(){ return  dispKi;}
-byte integerPIDnew::GetKd(){ return  dispKd;}
-int integerPIDnew::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
-int integerPIDnew::GetDirection(){ return controllerDirection;}
+byte integerPID_ideal::GetKp(){ return  dispKp; }
+byte integerPID_ideal::GetKi(){ return  dispKi;}
+byte integerPID_ideal::GetKd(){ return  dispKd;}
+int integerPID_ideal::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
+int integerPID_ideal::GetDirection(){ return controllerDirection;}

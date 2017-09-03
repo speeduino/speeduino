@@ -5,7 +5,7 @@ A full copy of the license may be found in the projects root directory
 */
 //Old PID method. Retained incase the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT);
-integerPIDnew boostPID(&currentStatus.MAP, &boost_pwm_target_value, &boost_cl_target_boost, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage11.boostSens, &configPage11.boostIntv, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 /*
 Fan control
@@ -61,7 +61,7 @@ void initialiseAuxPWM()
   //TIMSK1 |= (1 << OCIE1A); <---- Not required as compare A is turned on when needed by boost control
   ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
 
-  boostPID.SetOutputLimits(percentage(configPage1.boostMinDuty, boost_pwm_max_count) , percentage(configPage1.boostMaxDuty, boost_pwm_max_count));
+  boostPID.SetOutputLimits(configPage1.boostMinDuty, configPage1.boostMaxDuty);
   boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD);
   boostPID.SetMode(AUTOMATIC); //Turn PID on
 
@@ -73,30 +73,36 @@ void boostControl()
 {
   if( configPage3.boostEnabled==1 )
   {
-    if(currentStatus.MAP >= 100)
+    if(currentStatus.MAP >= 50)
     {
-      MAPx100 = currentStatus.MAP * 100;
-
-      if( (boostCounter & 3) == 1) { boost_cl_target_boost = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; } //Boost target table is in kpa and divided by 2
+      if( (boostCounter & 3) == 1) { currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; } //Boost target table is in kpa and divided by 2
 
       //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
       if( configPage1.flexEnabled == 1 )
       {
         int16_t boostAdder = (((int16_t)configPage1.flexBoostHigh - (int16_t)configPage1.flexBoostLow) * currentStatus.ethanolPct) / 100;
         boostAdder = boostAdder + configPage1.flexBoostLow; //Required in case flexBoostLow is less than 0
-        boost_cl_target_boost = boost_cl_target_boost + boostAdder;
+        currentStatus.boostTarget += boostAdder;
       }
 
-      boostTargetx100 = boost_cl_target_boost  * 100;
-      currentStatus.boostTarget = boost_cl_target_boost >> 1; //Boost target is sent as a byte value to TS and so is divided by 2
+      //boostTargetx100 = boost_cl_target_boost  * 100;
+      //currentStatus.boostTarget = boost_cl_target_boost >> 1; //Boost target is sent as a byte value to TS and so is divided by 2
       if(currentStatus.boostTarget > 0)
       {
-        if( (boostCounter & 31) == 1) { boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD); } //This only needs to be run very infrequently, once every 32 calls to boostControl(). This is approx. once per second
+        //This only needs to be run very infrequently, once every 16 calls to boostControl(). This is approx. once per second
+        if( (boostCounter & 15) == 1)
+        {
+          boostPID.SetOutputLimits(configPage1.boostMinDuty, configPage1.boostMaxDuty);
+          boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD);
+        }
 
         boostPID.Compute();
-        currentStatus.boostDuty = (unsigned long)(boost_pwm_target_value * 100UL) / boost_pwm_max_count;
         if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
-        else { ENABLE_BOOST_TIMER(); } //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
+        else
+        {
+          boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
+          ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
+        }
 
       }
       else
@@ -187,4 +193,3 @@ void vvtControl()
     vvt_pwm_state = true;
   }
 }
-

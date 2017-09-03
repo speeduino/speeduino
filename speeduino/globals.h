@@ -272,10 +272,10 @@ struct statuses {
   unsigned int clutchEngagedRPM;
   bool flatShiftingHard;
   volatile uint16_t startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
-  byte boostTarget;
+  uint16_t boostTarget;
   byte testOutputs;
   bool testActive;
-  byte boostDuty;
+  uint16_t boostDuty; //Percentage value * 100 to give 2 points of precision
   byte idleLoad; //Either the current steps or current duty cycle for the idle control.
   uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
   uint8_t current_caninchannel = 0; //start off at channel 0
@@ -470,7 +470,7 @@ struct config3 {
   byte egoTPSMax; //TPS must be below this for closed loop to function
   byte vvtPin : 6;
   byte useExtBaro : 1;
-  byte unused6_13f : 1;
+  byte boostMode : 1; //Simple of full boost contrl
   byte boostPin : 6;
   byte unused6_14 : 2;
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
@@ -615,8 +615,10 @@ struct config11 {
   byte rotarySplitValues[8];
   byte rotarySplitBins[8];
 
-  byte unused11_25_192[167];
-  
+  uint16_t boostSens;
+  byte boostIntv;
+  byte unused11_28_192[164];
+
 #if defined(CORE_AVR)
   };
 #else

@@ -300,8 +300,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[26] = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
   fullStatus[27] = highByte(currentStatus.freeRAM);
 
-  fullStatus[28] = currentStatus.boostTarget;
-  fullStatus[29] = currentStatus.boostDuty;
+  fullStatus[28] = (byte)(currentStatus.boostTarget >> 1); //Divide boost target by 2 to fit in a byte
+  fullStatus[29] = (byte)(currentStatus.boostDuty / 100);
   fullStatus[30] = currentStatus.spark; //Spark related bitfield
 
   //rpmDOT must be sent as a signed integer
