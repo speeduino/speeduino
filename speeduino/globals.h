@@ -110,6 +110,9 @@
 #define ROTARY_IGN_FD       1
 #define ROTARY_IGN_RX8      2
 
+#define BOOST_MODE_SIMPLE   0
+#define BOOST_MODE_FULL     1
+
 #define SIZE_BYTE   8
 #define SIZE_INT    16
 

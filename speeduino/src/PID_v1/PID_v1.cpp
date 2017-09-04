@@ -389,6 +389,7 @@ int integerPID::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
 int integerPID::GetDirection(){ return controllerDirection;}
 
 //************************************************************************************************************************
+#define limitMultiplier 100 //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
 
 /*Constructor (...)*********************************************************
  *    The parameters specified here are those for for which we can't set up
@@ -403,11 +404,8 @@ integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setp
     mySetpoint = Setpoint;
     mySensitivity = Sensitivity;
     mySampleTime = SampleTime;
-	  inAuto = false;
 
-
-	  integerPID_ideal::SetOutputLimits(0, 255);				//default output limit corresponds to
-												//the arduino pwm limits
+	  integerPID_ideal::SetOutputLimits(20, 80);				//default output limits
 
     integerPID_ideal::SetControllerDirection(ControllerDirection);
     integerPID_ideal::SetTunings(Kp, Ki, Kd);
@@ -424,7 +422,6 @@ integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setp
  **********************************************************************************/
 bool integerPID_ideal::Compute()
 {
-   if(!inAuto) return false;
    unsigned long now = millis();
    //SampleTime = (now - lastTime);
    unsigned long timeChange = (now - lastTime);
@@ -432,14 +429,13 @@ bool integerPID_ideal::Compute()
    {
       /*Compute all the working error variables*/
       uint16_t sensitivity = 5001 - *mySensitivity;
-      long limitMultiplier = 100; //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
       long unitless_setpoint = (((long)*mySetpoint - 0) * 10000L) / (sensitivity - 0);
       long unitless_input = (((long)*myInput - 0) * 10000L) / (sensitivity - 0);
       long error = unitless_setpoint - unitless_input;
 
       ITerm += error;
 
-      uint16_t bias = 20; //Base target DC%
+      uint16_t bias = 50; //Base target DC%
       long output = 0;
 
       if(ki != 0)
@@ -459,7 +455,7 @@ bool integerPID_ideal::Compute()
 
       /*Compute PID Output*/
       output = (kp * error) + (ki * ITerm) + (kd * (error - lastError));
-      output = (bias * 100) + (output / 10);
+      output = (bias * limitMultiplier) + (output / 10); //output is % multipled by 1000. To get % with 2 decimal places, divide it by 10. Likewise, bias is % in whole numbers. Multiply it by 100 to get it with 2 places.
 
       if(output > (outMax * limitMultiplier)) { output  = (outMax * limitMultiplier);  }
       if(output < (outMin * limitMultiplier)) { output  = (outMin * limitMultiplier);  }
@@ -509,33 +505,21 @@ void integerPID_ideal::SetTunings(byte Kp, byte Ki, byte Kd)
  **************************************************************************/
 void integerPID_ideal::SetOutputLimits(long Min, long Max)
 {
-   if(Min >= Max) return;
-   outMin = Min;
-   outMax = Max;
-
-   if(inAuto)
+   if(Min < Max)
    {
-	   if(*myOutput > outMax) *myOutput = outMax;
-	   else if(*myOutput < outMin) *myOutput = outMin;
-
-	   if(ITerm > outMax) ITerm= outMax;
-	   else if(ITerm < outMin) ITerm= outMin;
+     outMin = Min;
+     outMax = Max;
    }
-}
+/*
+   long outMax_resized = outMax * limitMultiplier;
+   long outMin_resized = outMin * limitMultiplier;
 
-/* SetMode(...)****************************************************************
- * Allows the controller Mode to be set to manual (0) or Automatic (non-zero)
- * when the transition from manual to auto occurs, the controller is
- * automatically initialized
- ******************************************************************************/
-void integerPID_ideal::SetMode(int Mode)
-{
-    bool newAuto = (Mode == AUTOMATIC);
-    if(newAuto == !inAuto)
-    {  /*we just went from manual to auto*/
-        integerPID_ideal::Initialize();
-    }
-    inAuto = newAuto;
+   if(*myOutput > outMax_resized) { *myOutput  = outMax_resized;  }
+   else if(*myOutput < outMin_resized) { *myOutput  = outMin_resized;  }
+
+   if(ITerm > outMax_resized) ITerm = outMax_resized;
+   else if(ITerm < outMin_resized) ITerm = outMin_resized;
+*/
 }
 
 /* Initialize()****************************************************************
@@ -556,7 +540,7 @@ void integerPID_ideal::Initialize()
  ******************************************************************************/
 void integerPID_ideal::SetControllerDirection(byte Direction)
 {
-   if(inAuto && Direction !=controllerDirection)
+   if(Direction != controllerDirection)
    {
 	    kp = (0 - kp);
       ki = (0 - ki);
@@ -573,5 +557,4 @@ void integerPID_ideal::SetControllerDirection(byte Direction)
 byte integerPID_ideal::GetKp(){ return  dispKp; }
 byte integerPID_ideal::GetKi(){ return  dispKi;}
 byte integerPID_ideal::GetKd(){ return  dispKd;}
-int integerPID_ideal::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
 int integerPID_ideal::GetDirection(){ return controllerDirection;}

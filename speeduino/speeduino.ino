@@ -123,7 +123,7 @@ void (*ign4EndFunction)();
 void (*ign5StartFunction)();
 void (*ign5EndFunction)();
 
-int timePerDegree;
+volatile int timePerDegree;
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 bool initialisationComplete = false; //Tracks whether the setup() functino has run completely
@@ -723,8 +723,7 @@ void loop()
       currentStatus.rpmDOT = 0;
       ignitionOn = false;
       fuelOn = false;
-      if (fpPrimed) { digitalWrite(pinFuelPump, LOW); } //Turn off the fuel pump, but only if the priming is complete
-      fuelPumpOn = false;
+      if (fpPrimed == true) { digitalWrite(pinFuelPump, LOW); fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete
       disableIdle(); //Turn off the idle PWM
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE
@@ -735,8 +734,7 @@ void loop()
 
       VVT_PIN_LOW();
       DISABLE_VVT_TIMER();
-      DISABLE_BOOST_TIMER(); //Turn off timer
-      BOOST_PIN_LOW();
+      boostDisable();
     }
 
     //Uncomment the following for testing
@@ -794,9 +792,10 @@ void loop()
 
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
-
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
+      //currentStatus.RPM = 3000;
       boostControl();
+
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //Every 64 loops
     {
