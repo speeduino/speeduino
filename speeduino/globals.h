@@ -13,7 +13,9 @@
   #define CORE_STM32
   #if defined (STM32F1) || defined(__STM32F1__)
     #define BOARD_NR_GPIO_PINS 34
-    #define LED_BUILTIN 33
+    #ifndef LED_BUILTIN
+      #define LED_BUILTIN PB1 //Maple Mini
+    #endif
   #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
     #define BOARD_NR_GPIO_PINS 80
     #define LED_BUILTIN PA7

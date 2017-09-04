@@ -104,9 +104,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
   {
     loop100ms = 0; //Reset counter
     BIT_SET(TIMER_mask, BIT_TIMER_10HZ);
-    #if defined(CORE_STM32) //debug purpose, only visal for running code
-      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    #endif  
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
@@ -118,6 +115,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
   {
     loop250ms = 0; //Reset Counter
     BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
+    #if defined(CORE_STM32) //debug purpose, only visal for running code
+      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+    #endif  
 
     #if defined(CORE_AVR)
       //Reset watchdog timer (Not active currently)
