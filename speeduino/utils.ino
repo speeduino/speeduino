@@ -211,7 +211,7 @@ void setPinMapping(byte boardID)
         pinCLT = A3; //CLS sensor pin
         pinO2 = A4; //O2 Sensor pin
         pinBat = A5; //Battery reference voltage pin
-        pinBaro = A6;        
+        pinBaro = A6;
         pinStepperDir = PD8; //Direction pin  for DRV8825 driver
         pinStepperStep = PB15; //Step pin for DRV8825 driver
         pinStepperEnable = PD9; //Enable pin for DRV8825
@@ -285,7 +285,7 @@ void setPinMapping(byte boardID)
       pinIdle1 = 2; //Single wire idle control
       pinBoost = 4;
       pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
-      pinFuelPump = 37; //Fuel pump output  (Goes to ULN2803)
+      pinFuelPump = 37; //Fuel pump output
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
@@ -824,7 +824,7 @@ void initialiseTriggers()
 
   This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N calculations respectively.
 */
-unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
+unsigned int PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
@@ -866,7 +866,7 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 }
 
 //Convenience functions for Speed Density and Alpha-N
-unsigned int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
+unsigned int PW_SD(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
 {
   return PW(REQ_FUEL, VE, MAP, corrections, injOpen);
   //return PW(REQ_FUEL, VE, 100, corrections, injOpen);
