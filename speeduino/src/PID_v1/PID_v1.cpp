@@ -428,7 +428,7 @@ bool integerPID_ideal::Compute()
    if(timeChange >= *mySampleTime)
    {
       /*Compute all the working error variables*/
-      uint16_t sensitivity = 5001 - *mySensitivity;
+      uint16_t sensitivity = 10001 - (*mySensitivity * 2);
       long unitless_setpoint = (((long)*mySetpoint - 0) * 10000L) / (sensitivity - 0);
       long unitless_input = (((long)*myInput - 0) * 10000L) / (sensitivity - 0);
       long error = unitless_setpoint - unitless_input;
@@ -530,6 +530,7 @@ void integerPID_ideal::Initialize()
 {
    ITerm = 0;
    lastInput = *myInput;
+   lastError = 0;
 }
 
 /* SetControllerDirection(...)*************************************************
