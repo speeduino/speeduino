@@ -747,6 +747,14 @@ void loop()
     //-----------------------------------------------------------------------------------------------------
     readMAP();
 
+    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ))
+    {
+      BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
+      //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
+      //currentStatus.RPM = 3000;
+      boostControl();
+    }
+
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
@@ -792,9 +800,6 @@ void loop()
 
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
-      //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
-      //currentStatus.RPM = 3000;
-      boostControl();
 
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //Every 64 loops

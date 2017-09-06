@@ -2,7 +2,7 @@
 Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
-*/ 
+*/
 
 /*
 Timers are used for having actions performed repeatedly at a fixed interval (Eg every 100ms)
@@ -97,7 +97,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     loop33ms = 0;
     BIT_SET(TIMER_mask, BIT_TIMER_30HZ);
   }
-  
+
   //Loop executed every 100ms loop
   //Anything inside this if statement will run every 100ms.
   if (loop100ms == 100)
@@ -106,7 +106,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     BIT_SET(TIMER_mask, BIT_TIMER_10HZ);
     #if defined(CORE_STM32) //debug purpose, only visal for running code
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    #endif  
+    #endif
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
@@ -160,12 +160,17 @@ void oneMSInterval() //Most ARM chips can simply call a function
     }
 
     //Check whether fuel pump priming is complete
-    if(!fpPrimed)
+    if(fpPrimed == false)
     {
       if(currentStatus.secl >= configPage1.fpPrime)
       {
         fpPrimed = true; //Mark the priming as being completed
-        if(currentStatus.RPM == 0) { digitalWrite(pinFuelPump, LOW); fuelPumpOn = false; } //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
+        if(currentStatus.RPM == 0)
+        {
+          //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
+          digitalWrite(pinFuelPump, LOW);
+          fuelPumpOn = false;
+        }
       }
     }
     //**************************************************************************************************************************************************

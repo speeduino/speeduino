@@ -74,7 +74,7 @@ void boostControl()
 {
   if( configPage3.boostEnabled==1 )
   {
-    if( (boostCounter & 3) == 1) { currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; } //Boost target table is in kpa and divided by 2
+    if( (boostCounter & 7) == 1) { currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; } //Boost target table is in kpa and divided by 2
     if(currentStatus.MAP >= (currentStatus.boostTarget - BOOST_HYSTER) )
     {
       //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
@@ -96,7 +96,7 @@ void boostControl()
           else { boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD); }
         }
 
-        byte PIDcomputed = boostPID.Compute(); //Compute() returns false if the required interval has not yet passed.
+        bool PIDcomputed = boostPID.Compute(); //Compute() returns false if the required interval has not yet passed.
         if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
         else
         {
