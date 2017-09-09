@@ -853,6 +853,8 @@ uint16_t getRPM_4G63()
     else
     {
       tempRPM = stdGetRPM();
+      //EXPERIMENTAL! Add/subtract RPM based on the last rpmDOT calc
+      //tempRPM += (micros() - toothOneTime) * currentStatus.rpmDOT
       MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
     }
   }
@@ -1415,7 +1417,7 @@ void triggerPri_Miata9905()
         triggerFilterTime = 0;
         triggerSecFilterTime = 0;
         if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; } //96.26 degrees with a target of 110
-        else { triggerToothAngle = 110; } //61.87 degrees with a target of 70
+        else { triggerToothAngle = 110; }
       }
 
       toothLastMinusOneToothTime = toothLastToothTime;
@@ -1458,7 +1460,7 @@ uint16_t getRPM_Miata9905()
   //During cranking, RPM is calculated 4 times per revolution, once for each tooth on the crank signal.
   //Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
   uint16_t tempRPM = 0;
-  if(currentStatus.RPM < currentStatus.crankRPM)
+  if( (currentStatus.RPM < currentStatus.crankRPM) && (currentStatus.hasSync == true) )
   {
     if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
     else
@@ -1759,7 +1761,7 @@ void triggerSetup_Nissan360()
 void triggerPri_Nissan360()
 {
    curTime = micros();
-   //curGap = curTime - toothLastToothTime;
+   curGap = curTime - toothLastToothTime;
    //if ( curGap < triggerFilterTime ) { return; }
    toothCurrentCount++; //Increment the tooth counter
    //addToothLogEntry(curGap); Disable tooth logging on this decoder due to overhead
@@ -1782,9 +1784,13 @@ void triggerPri_Nissan360()
      //EXPERIMENTAL!
      if(configPage1.perToothIgn == true)
      {
-       uint16_t crankAngle = ( (toothCurrentCount-1) * 2 ) + configPage2.triggerAngle;
+       int16_t crankAngle = ( (toothCurrentCount-1) * 2 ) + configPage2.triggerAngle;
+       //if(crankAngle > CRANK_ANGLE_MAX_IGN) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
+       //if(crankAngle < CRANK_ANGLE_MAX_IGN) {
        doPerToothTiming(crankAngle);
      }
+
+     timePerDegree = curGap >> 1;; //The time per crank degree is simply the time between this tooth and the last one divided by 2
    }
 }
 
@@ -1854,21 +1860,24 @@ void triggerSec_Nissan360()
     }
     else
     {
-      //Already have sync, but do a verify every 720 degrees.
-      if(configPage1.nCylinders == 4)
+      if (configPage2.useResync == true)
       {
-        if(secondaryDuration >= 15 && (secondaryDuration <= 17)) //Duration of window = 16 primary teeth
+        //Already have sync, but do a verify every 720 degrees.
+        if(configPage1.nCylinders == 4)
         {
-          toothCurrentCount = 16; //End of first window (The longest) occurs 16 teeth after TDC
+          if( (secondaryDuration >= 15) && (secondaryDuration <= 17) ) //Duration of window = 16 primary teeth
+          {
+            toothCurrentCount = 16; //End of first window (The longest) occurs 16 teeth after TDC
+          }
         }
-      }
-      else if(configPage1.nCylinders == 6)
-      {
-        if(secondaryDuration == 4)
+        else if(configPage1.nCylinders == 6)
         {
-          toothCurrentCount = 304;
-        }
-      } //Cylinder count
+          if(secondaryDuration == 4)
+          {
+            toothCurrentCount = 304;
+          }
+        } //Cylinder count
+      } //use resync
     } //Has sync
   } //First getting sync or not
 }
@@ -1931,10 +1940,11 @@ int getCrankAngle_Nissan360(int timePerDegree)
 
 void triggerSetEndTeeth_Nissan360()
 {
-  ignition1EndTooth = ( (ignition1EndAngle - configPage2.triggerAngle) / 2 ) - 1;
+  //This uses 4 prior teeth, just to ensure there is sufficient time to set the schedule etc
+  ignition1EndTooth = ( (ignition1EndAngle - configPage2.triggerAngle) / 2 ) - 4;
   ignition2EndTooth = ( (ignition2EndAngle - configPage2.triggerAngle) / 2 ) - 4;
-  ignition3EndTooth = ( (ignition3EndAngle - configPage2.triggerAngle) / 2 ) - 1;
-  ignition4EndTooth = ( (ignition4EndAngle - configPage2.triggerAngle) / 2 ) - 1;
+  ignition3EndTooth = ( (ignition3EndAngle - configPage2.triggerAngle) / 2 ) - 4;
+  ignition4EndTooth = ( (ignition4EndAngle - configPage2.triggerAngle) / 2 ) - 4;
 }
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
