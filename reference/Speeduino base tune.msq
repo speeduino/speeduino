@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.27 - EFI Analytics, Inc." tuneComment="" writeDate="Sun Jul 30 23:07:21 AEST 2017"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.06" nPages="11" signature="speeduino 201707"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.28 - EFI Analytics, Inc." tuneComment="" writeDate="Sat Sep 09 21:28:59 AEST 2017"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.07" nPages="11" signature="speeduino 201708"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
 </page>
@@ -122,7 +122,7 @@
 <constant name="baroCorr">"Off"</constant>
 <constant name="injLayout">"Paired"</constant>
 <constant name="perToothIgn">"No"</constant>
-<constant name="unused2-38h">"No"</constant>
+<constant name="dfcoEnabled">"Off"</constant>
 <constant digits="1" name="primePulse" units="ms">1.0</constant>
 <constant digits="0" name="dutyLim" units="%">90.0</constant>
 <constant digits="0" name="flexFreqLow" units="Hz">50.0</constant>
@@ -222,7 +222,6 @@
 <constant name="dwellcont">"Dwell control"</constant>
 <constant name="useDwellLim">"On"</constant>
 <constant name="sparkMode">"Wasted Spark"</constant>
-<constant name="dfcoEnabled">"Off"</constant>
 <constant name="TrigFilter">"Off"</constant>
 <constant name="ignCranklock">"On"</constant>
 <constant digits="1" name="dwellcrank" units="ms">4.5</constant>
@@ -367,7 +366,7 @@
 <constant digits="0" name="egoTPSMax" units="%">70.0</constant>
 <constant name="vvtPin">"Board Default"</constant>
 <constant name="useExtBaro">"No"</constant>
-<constant name="unused6-13f">"ONE"</constant>
+<constant name="boostMode">"Simple"</constant>
 <constant name="boostPin">"Board Default"</constant>
 <constant name="unused6-14e">"ONE"</constant>
 <constant name="unused6-14f">"ONE"</constant>
@@ -805,7 +804,7 @@
 <constant digits="0" name="unused10_124">255.0</constant>
 <constant digits="0" name="unused10_125">255.0</constant>
 <constant digits="0" name="unused10_126">255.0</constant>
-<constant digits="0" name="unused10_127">255.0</constant>
+<constant digits="0" name="unused10_127">1.0</constant>
 </page>
 <page number="10" size="192">
 <constant cols="1" digits="0" name="crankingEnrichBins" rows="4" units="C">
