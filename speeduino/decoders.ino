@@ -697,12 +697,13 @@ void triggerPri_4G63()
     toothLastToothTime = curTime;
 
     toothCurrentCount++;
+
     if( (toothCurrentCount == 1) || (toothCurrentCount > configPage1.nCylinders) ) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
     {
        toothCurrentCount = 1; //Reset the counter
        toothOneMinusOneTime = toothOneTime;
        toothOneTime = curTime;
-       currentStatus.hasSync = true;
+       //currentStatus.hasSync = true;
        currentStatus.startRevolutions++; //Counter
     }
 
@@ -766,6 +767,20 @@ void triggerPri_4G63()
         doPerToothTiming(crankAngle);
       }
     } //Has sync
+    else
+    {
+      triggerSecFilterTime = 0;
+      //New secondary method of determining sync
+      if(READ_PRI_TRIGGER() == true)
+      {
+        if(READ_SEC_TRIGGER() == true) { revolutionOne = true; }
+        else { revolutionOne = false; }
+      }
+      else
+      {
+        if( (READ_SEC_TRIGGER() == false) && (revolutionOne == true) ) { toothCurrentCount = 1; } //Crank is low, cam is low and the crank pulse STARTED when the cam was high. Means we're at 5* BTDC
+      }
+    }
   } //Filter time
 
 }
@@ -795,28 +810,32 @@ void triggerSec_4G63()
     //75%:
     //triggerSecFilterTime = (curGap2 * 6) >> 3;
 
-    if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) || (currentStatus.hasSync == false) )
+    //if( (currentStatus.RPM < currentStatus.crankRPM) || (currentStatus.hasSync == false) )
+    if( (currentStatus.hasSync == false) )
     {
 
       triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset).
+      triggerSecFilterTime = triggerSecFilterTime >> 1; //Divide the secondary filter time by 2 again, making it 25%. Only needed when cranking
       if(READ_PRI_TRIGGER() == true)// && (crankState == digitalRead(pinTrigger)))
       {
-        toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
+        //if( (currentStatus.hasSync == true) && (toothCurrentCount != 4) ) { currentStatus.hasSync = false; }
+        //toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
+        if(toothCurrentCount == 4) { currentStatus.hasSync = true; }
+
       }
     }
 
     //if ( (micros() - secondaryLastToothTime1) < triggerSecFilterTime_duration && configPage2.useResync )
-    if ( configPage2.useResync == 1 )
+    if ( (configPage2.useResync == 1) && (currentStatus.hasSync == true) )
     {
       triggerSecFilterTime_duration = (micros() - secondaryLastToothTime1) >> 1;
       if(READ_PRI_TRIGGER() == true)// && (crankState == digitalRead(pinTrigger)))
       {
-        if( (currentStatus.RPM < currentStatus.crankRPM) && (currentStatus.hasSync == true) )
+        if( (currentStatus.RPM < currentStatus.crankRPM) || true )
         {
-
           //Whilst we're cranking and have sync, we need to watch for noise pulses.
           if(toothCurrentCount != 4) { currentStatus.hasSync = false; } // This should never be true, except when there's noise
-          else { toothCurrentCount = 4; }
+          else { toothCurrentCount = 4; } //Why? Just why?
         }
         else { toothCurrentCount = 4; } //If the crank trigger is currently HIGH, it means we're on tooth #1
 
@@ -847,7 +866,7 @@ uint16_t getRPM_4G63()
         toothTime = toothTime * 36;
         tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / toothTime;
         revolutionTime = (10UL * toothTime) / tempToothAngle;
-        //MAX_STALL_TIME = revolutionTime << 3;
+        MAX_STALL_TIME = 366667UL; // 50RPM
       }
     }
     else
@@ -856,6 +875,7 @@ uint16_t getRPM_4G63()
       //EXPERIMENTAL! Add/subtract RPM based on the last rpmDOT calc
       //tempRPM += (micros() - toothOneTime) * currentStatus.rpmDOT
       MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+      if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
     }
   }
 
