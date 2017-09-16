@@ -270,7 +270,7 @@ void setPinMapping(byte boardID)
       pinCoil1 = 39; //Pin for coil 1
       pinCoil2 = 41; //Pin for coil 2
       pinCoil3 = 35; //Pin for coil 3
-      pinCoil4 = 37; //Pin for coil 4
+      pinCoil4 = 33; //Pin for coil 4
       pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
@@ -432,6 +432,7 @@ void setPinMapping(byte boardID)
   }
 
   //Setup any devices that are using selectable pins
+
   if ( (configPage3.launchPin != 0) && (configPage3.launchPin < BOARD_NR_GPIO_PINS) ) { pinLaunch = configPage3.launchPin; }
   if ( (configPage2.ignBypassPin != 0) && (configPage2.ignBypassPin < BOARD_NR_GPIO_PINS) ) { pinIgnBypass = configPage2.ignBypassPin; }
   if ( (configPage1.tachoPin != 0) && (configPage1.tachoPin < BOARD_NR_GPIO_PINS) ) { pinTachOut = configPage1.tachoPin; }
@@ -544,6 +545,7 @@ void initialiseTriggers()
 {
   byte triggerInterrupt = 0; // By default, use the first interrupt
   byte triggerInterrupt2 = 1;
+
   #if defined(CORE_AVR)
     switch (pinTrigger) {
       //Arduino Mega 2560 mapping
@@ -587,6 +589,7 @@ void initialiseTriggers()
   #else
     triggerInterrupt2 = pinTrigger2;
   #endif
+
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);

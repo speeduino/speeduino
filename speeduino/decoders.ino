@@ -640,7 +640,7 @@ void triggerSetup_4G63()
   secondDerivEnabled = false;
   decoderIsSequential = true;
   MAX_STALL_TIME = 366667UL; //Minimum 50rpm based on the 110 degree tooth spacing
-  toothLastToothTime = micros(); //Set a startup value here to avoid filter errors when starting
+  if(initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
   //decoderIsLowRes = true;
 
   //Note that these angles are for every rising and falling edge
@@ -1358,7 +1358,7 @@ void triggerSetup_Miata9905()
   decoderIsSequential = true;
   triggerActualTeeth = 8;
   secondaryToothCount = 0;
-  toothLastToothTime = micros(); //Set a startup value here to avoid filter errors when starting
+  if(initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
   toothLastMinusOneToothTime = 0;
 
   //Note that these angles are for every rising and falling edge
@@ -2302,7 +2302,7 @@ void triggerSetup_Harley()
   secondDerivEnabled = false;
   decoderIsSequential = false;
   MAX_STALL_TIME = (3333UL * 60); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  toothLastToothTime = micros();
+  if(initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
   triggerFilterTime = 1500;
 }
 
