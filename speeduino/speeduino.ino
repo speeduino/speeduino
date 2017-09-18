@@ -648,39 +648,30 @@ void loop()
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
       // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
-      if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+      if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) || (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       {
-        if (Serial.available() > 0)
-        {
-          command();
-        }
+        if (Serial.available() > 0) { command(); }
       }
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
       //if serial3 interface is enabled then check for serial3 requests.
       if (configPage10.enable_canbus == 1)
-          {
-            if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-                {
-                  if (CANSerial.available() > 0)
-                    {
-                    canCommand();
-                    }
-                }
-          }
+      {
+        if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) || (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+        {
+          if (CANSerial.available() > 0) { canCommand(); }
+        }
+      }
 
 #elif  defined(CORE_TEENSY) || defined(CORE_STM32)
       //if can or secondary serial interface is enabled then check for requests.
       if (configPage10.enable_canbus == 1)  //secondary serial interface enabled
-          {
-            if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-                {
-                  if (CANSerial.available() > 0)
-                    {
-                    canCommand();
-                    }
-                }
-          }
+      {
+        if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) || (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+        {
+          if (CANSerial.available() > 0) { canCommand(); }
+        }
+      }
       else if (configPage10.enable_canbus == 2) // can module enabled
           {
             //check local can module
@@ -727,7 +718,6 @@ void loop()
       disableIdle(); //Turn off the idle PWM
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE
-
       //This is a safety check. If for some reason the interrupts have got screwed up (Leading to 0rpm), this resets them.
       //It can possibly be run much less frequently.
       initialiseTriggers();
@@ -802,13 +792,13 @@ void loop()
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
 
     }
-    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //Every 64 loops
+    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
       //Nothing here currently
       BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
     }
-    //The IAT and CLT readings can be done less frequently. This still runs about 4 times per second
-    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ)) //Every 256 loops
+    //The IAT and CLT readings can be done less frequently (4 times per second)
+    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
        BIT_CLEAR(TIMER_mask, BIT_TIMER_4HZ);
        readCLT();
@@ -870,11 +860,10 @@ void loop()
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
     }
-    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Every 1024 loops (Approx. 1 per second)
+    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
-      //Approx. once per second
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
-      readBaro();
+      readBaro(); //Infrequent baro readings are not an issue.
     }
 
     if(configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL || configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL) { idleControl(); } //Run idlecontrol every loop for stepper idle.
