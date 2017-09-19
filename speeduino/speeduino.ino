@@ -805,6 +805,8 @@ void loop()
        readIAT();
        readO2();
        readBat();
+       if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
+
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
       //if Can interface is enabled then check for serial3 requests.
       if (configPage10.enable_canbus == 1)  // megas only support can via secondary serial

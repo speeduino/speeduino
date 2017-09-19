@@ -20,7 +20,7 @@ void doUpdates()
         ignitionTable.values[x][y] = ignitionTable.values[x][y] + 40;
       }
     }
-    writeConfig();
+    writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 3);
   }
   //June 2017 required the forced addition of some CAN values to avoid weird errors
@@ -33,7 +33,7 @@ void doUpdates()
     //There was a bad value in the May base tune for the spark duration setting, fix it here if it's a problem
     if(configPage2.sparkDur == 255) { configPage2.sparkDur = 10; }
 
-    writeConfig();
+    writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 4);
   }
   //July 2017 adds a cranking enrichment curve in place of the single value. This converts that single value to the curve
@@ -50,7 +50,7 @@ void doUpdates()
     configPage11.crankingEnrichValues[2] = 100 + configPage1.crankingPct;
     configPage11.crankingEnrichValues[3] = 100 + configPage1.crankingPct;
 
-    writeConfig();
+    writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 5);
   }
 

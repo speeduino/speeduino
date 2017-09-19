@@ -1,10 +1,14 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
+void writeAllConfig();
 void writeConfig();
 void loadConfig();
 void loadCalibration();
 void writeCalibration();
+
+#define EEPROM_MAX_WRITE_BLOCK 50 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
+bool eepromWritesPending = false;
 
 /*
 Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes):
