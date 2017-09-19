@@ -15,7 +15,7 @@ A detailed description of each call can be found at: http://www.msextra.com/doc/
 
 void command()
 {
-  if (!cmdPending) { currentCommand = Serial.read(); }
+  if (cmdPending == false) { currentCommand = Serial.read(); }
 
   switch (currentCommand)
   {
@@ -26,7 +26,18 @@ void command()
 
 
     case 'B': // Burn current values to eeprom
-      writeConfig();
+      writeAllConfig();
+      break;
+
+    case 'b': // New EEPROM burn command to only burn a single page at a time
+      cmdPending = true;
+
+      if (Serial.available() >= 2)
+      {
+        Serial.read(); //Ignore the first table value, it's always 0
+        writeConfig(Serial.read());
+        cmdPending = false;
+      }
       break;
 
     case 'C': // test communications. This is used by Tunerstudio to see whether there is an ECU on a given serial port
@@ -82,7 +93,7 @@ void command()
 
     case 'Q': // send code version
       Serial.print("speeduino 201709-dev");
-     break;
+      break;
 
     case 'V': // send VE table and constants in binary
       sendPage(false);
@@ -115,6 +126,76 @@ void command()
         }
       }
 
+      break;
+
+    /*
+    * New method for sending page values
+    */
+    case 'p':
+      cmdPending = true;
+
+      //6 bytes required:
+      //2 - Page identifier
+      //2 - offset
+      //2 - Length
+      if(Serial.available() >= 6)
+      {
+        byte offset1, offset2, length1, length2;
+        int length;
+        byte tempPage;
+
+        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+        tempPage = Serial.read();
+        //currentPage = 1;
+        offset1 = Serial.read();
+        offset2 = Serial.read();
+        valueOffset = word(offset2, offset1);
+        length1 = Serial.read();
+        length2 = Serial.read();
+        length = word(length2, length1);
+        for(int x = 0; x < length; x++)
+        {
+          Serial.write( getPageValue(tempPage, valueOffset + x) );
+        }
+
+        cmdPending = false;
+      }
+      break;
+
+    case 'w':
+      cmdPending = true;
+
+      if(chunkPending == false)
+      {
+        //This means it's a new request
+        //7 bytes required:
+        //2 - Page identifier
+        //2 - offset
+        //2 - Length (Should always be 1 until chunk write is setup)
+        //1 - New value
+        if(Serial.available() >= 7)
+        {
+          byte offset1, offset2, length1, length2;
+
+          Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+          currentPage = Serial.read();
+          //currentPage = 1;
+          offset1 = Serial.read();
+          offset2 = Serial.read();
+          valueOffset = word(offset2, offset1);
+          length1 = Serial.read(); // Length to be written (Should always be 1)
+          length2 = Serial.read(); // Length to be written (Should always be 1)
+          chunkSize = word(length2, length1);
+
+          //chunkPending = true;
+          for(uint16_t x = 0; x < chunkSize; x++)
+          {
+            while(Serial.available() == 0) { }
+            receiveValue( (valueOffset + x), Serial.read());
+          }
+          cmdPending = false;
+        }
+      }
       break;
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
@@ -382,11 +463,15 @@ void receiveValue(int valueOffset, byte newValue)
           //X Axis
           fuelTable.axisX[(valueOffset - 256)] = ((int)(newValue) * TABLE_RPM_MULTIPLIER); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
         }
-        else
+        else if(valueOffset < 288)
         {
           //Y Axis
           int tempOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
           fuelTable.axisY[tempOffset] = (int)(newValue) * TABLE_LOAD_MULTIPLIER;
+        }
+        else
+        {
+          //This should never happen. It means there's an invalid offset value coming through
         }
       }
       break;
@@ -413,7 +498,7 @@ void receiveValue(int valueOffset, byte newValue)
           //X Axis
           ignitionTable.axisX[(valueOffset - 256)] = (int)(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
         }
-        else
+        else if(valueOffset < 288)
         {
           //Y Axis
           int tempOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order
@@ -544,6 +629,7 @@ void receiveValue(int valueOffset, byte newValue)
     default:
       break;
   }
+  //if(Serial.available() > 16) { command(); }
 }
 
 /*
@@ -978,6 +1064,130 @@ void sendPage(bool useChar)
       // }
     } //isMap
   } //sendComplete
+}
+
+byte getPageValue(byte page, uint16_t valueAddress)
+{
+  void* pnt_configPage = &configPage1; //Default value is for safety only. Will be changed below if needed.
+  byte returnValue = 0;
+
+  switch (page)
+  {
+    case veMapPage:
+        if( valueAddress < 256) { returnValue = fuelTable.values[15 - (valueAddress / 16)][valueAddress % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
+        else if(valueAddress < 272) { returnValue =  byte(fuelTable.axisX[(valueAddress - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
+        else if (valueAddress < 288) { returnValue = byte(fuelTable.axisY[15 - (valueAddress - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
+        break;
+
+    case veSetPage:
+        pnt_configPage = &configPage1; //Create a pointer to Page 1 in memory
+        returnValue = *((byte *)pnt_configPage + valueAddress);
+        break;
+
+    case ignMapPage:
+        if( valueAddress < 256) { returnValue = ignitionTable.values[15 - (valueAddress / 16)][valueAddress % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
+        else if(valueAddress < 272) { returnValue =  byte(ignitionTable.axisX[(valueAddress - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
+        else if (valueAddress < 288) { returnValue = byte(ignitionTable.axisY[15 - (valueAddress - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
+        break;
+
+    case ignSetPage:
+        pnt_configPage = &configPage2; //Create a pointer to Page 2 in memory
+        returnValue = *((byte *)pnt_configPage + valueAddress);
+        break;
+
+    case afrMapPage:
+        if( valueAddress < 256) { returnValue = afrTable.values[15 - (valueAddress / 16)][valueAddress % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
+        else if(valueAddress < 272) { returnValue =  byte(afrTable.axisX[(valueAddress - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
+        else if (valueAddress < 288) { returnValue = byte(afrTable.axisY[15 - (valueAddress - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
+        break;
+
+    case afrSetPage:
+        pnt_configPage = &configPage3; //Create a pointer to Page 3 in memory
+        returnValue = *((byte *)pnt_configPage + valueAddress);
+        break;
+
+    case iacPage:
+        pnt_configPage = &configPage4; //Create a pointer to Page 4 in memory
+        returnValue = *((byte *)pnt_configPage + valueAddress);
+        break;
+
+    case boostvvtPage:
+
+        {
+          //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
+          if(valueAddress < 80)
+          {
+            //Boost table
+            if(valueAddress < 64) { returnValue = boostTable.values[7 - (valueAddress / 8)][valueAddress % 8]; }
+            else if(valueAddress < 72) { returnValue = byte(boostTable.axisX[(valueAddress - 64)] / TABLE_RPM_MULTIPLIER); }
+            else if(valueAddress < 80) { returnValue = byte(boostTable.axisY[7 - (valueAddress - 72)]); }
+          }
+          else
+          {
+            valueAddress -= 80;
+            //VVT table
+            if(valueAddress < 64) { returnValue = vvtTable.values[7 - (valueAddress / 8)][valueAddress % 8]; }
+            else if(valueAddress < 72) { returnValue = byte(vvtTable.axisX[(valueAddress - 64)] / TABLE_RPM_MULTIPLIER); }
+            else if(valueAddress < 80) { returnValue = byte(vvtTable.axisY[7 - (valueAddress - 72)]); }
+          }
+        }
+        break;
+
+    case seqFuelPage:
+
+        {
+          //Need to perform a translation of the values[MAP/TPS][RPM] into the TS expected format
+          if(valueAddress < 48)
+          {
+            //trim1 table
+            if(valueAddress < 36) { returnValue = trim1Table.values[5 - (valueAddress / 6)][valueAddress % 6]; }
+            else if(valueAddress < 42) { returnValue = byte(trim1Table.axisX[(valueAddress - 36)] / TABLE_RPM_MULTIPLIER); }
+            else if(valueAddress < 48) { returnValue = byte(trim1Table.axisY[5 - (valueAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
+          }
+          else if(valueAddress < 96)
+          {
+            valueAddress -= 48;
+            //trim2 table
+            if(valueAddress < 36) { returnValue = trim2Table.values[5 - (valueAddress / 6)][valueAddress % 6]; }
+            else if(valueAddress < 42) { returnValue = byte(trim2Table.axisX[(valueAddress - 36)] / TABLE_RPM_MULTIPLIER); }
+            else if(valueAddress < 48) { returnValue = byte(trim2Table.axisY[5 - (valueAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
+          }
+          else if(valueAddress < 144)
+          {
+            valueAddress -= 96;
+            //trim3 table
+            if(valueAddress < 36) { returnValue = trim3Table.values[5 - (valueAddress / 6)][valueAddress % 6]; }
+            else if(valueAddress < 42) { returnValue = byte(trim3Table.axisX[(valueAddress - 36)] / TABLE_RPM_MULTIPLIER); }
+            else if(valueAddress < 48) { returnValue = byte(trim3Table.axisY[5 - (valueAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
+          }
+          else if(valueAddress < 192)
+          {
+            valueAddress -= 144;
+            //trim4 table
+            if(valueAddress < 36) { returnValue = trim4Table.values[5 - (valueAddress / 6)][valueAddress % 6]; }
+            else if(valueAddress < 42) { returnValue = byte(trim4Table.axisX[(valueAddress - 36)] / TABLE_RPM_MULTIPLIER); }
+            else if(valueAddress < 48) { returnValue = byte(trim4Table.axisY[5 - (valueAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
+          }
+        }
+        break;
+
+    case canbusPage:
+        pnt_configPage = &configPage10; //Create a pointer to Page 10 in memory
+        returnValue = *((byte *)pnt_configPage + valueAddress);
+        break;
+
+    case warmupPage:
+        pnt_configPage = &configPage11; //Create a pointer to Page 11 in memory
+        returnValue = *((byte *)pnt_configPage + valueAddress);
+        break;
+
+    default:
+        Serial.println(F("\nPage has not been implemented yet. Change to another page."));
+        //Just set default Values to avoid warnings
+        pnt_configPage = &configPage11;
+        break;
+  }
+  return returnValue;
 }
 
 /*

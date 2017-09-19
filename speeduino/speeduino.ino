@@ -130,6 +130,7 @@ bool initialisationComplete = false; //Tracks whether the setup() functino has r
 
 void setup()
 {
+  initialiseTimers();
   digitalWrite(LED_BUILTIN, LOW);
   //Setup the dummy fuel and ignition tables
   //dummyFuelTable(&fuelTable);
@@ -237,10 +238,8 @@ void setup()
 
   //Set the tacho output default state
   digitalWrite(pinTachOut, HIGH);
-
   //Perform all initialisations
   initialiseSchedulers();
-  initialiseTimers();
   //initialiseDisplay();
   initialiseIdle();
   initialiseFan();
@@ -300,6 +299,7 @@ void setup()
   currentStatus.launchingHard = false;
   currentStatus.crankRPM = ((unsigned int)configPage2.crankRPM * 100); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
   triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
+  dwellLimit_uS = (1000 * configPage2.dwellLimit);
 
   noInterrupts();
   initialiseTriggers();
@@ -648,10 +648,14 @@ void loop()
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
       // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
-      if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) || (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+      //if ( (BIT_CHECK(TIMER_mask, BIT_TIMER_15HZ)) || (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+      //if ( (timer15Hz == true) )
+      if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       {
         if (Serial.available() > 0) { command(); }
       }
+
+
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
       //if serial3 interface is enabled then check for serial3 requests.
