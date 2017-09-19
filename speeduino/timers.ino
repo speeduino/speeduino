@@ -50,14 +50,19 @@ void initialiseTimers()
   #if defined(CORE_STM32)
     pinMode(LED_BUILTIN, OUTPUT);
   #endif
-  dwellLimit_uS = (1000 * configPage2.dwellLimit);
+
   lastRPM_100ms = 0;
+  loop33ms = 0;
+  loop66ms = 0;
+  loop100ms = 0;
+  loop250ms = 0;
+  loopSec = 0;
 }
 
 
 //Timer2 Overflow Interrupt Vector, called when the timer overflows.
 //Executes every ~1ms.
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
+#if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER2_OVF_vect, ISR_NOBLOCK)
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
 void oneMSInterval() //Most ARM chips can simply call a function
@@ -84,18 +89,20 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil4Charge(); } }
   if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil5Charge(); } }
 
-  //15Hz loop
-  if (loop66ms == 66)
-  {
-    loop66ms = 0;
-    BIT_SET(TIMER_mask, BIT_TIMER_15HZ);
-  }
+
 
   //30Hz loop
   if (loop33ms == 33)
   {
     loop33ms = 0;
     BIT_SET(TIMER_mask, BIT_TIMER_30HZ);
+  }
+
+  //15Hz loop
+  if (loop66ms == 66)
+  {
+    loop66ms = 0;
+    BIT_SET(TIMER_mask, BIT_TIMER_15HZ);
   }
 
   //Loop executed every 100ms loop
@@ -123,8 +130,8 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //Reset watchdog timer (Not active currently)
       //wdt_reset();
       //DIY watchdog
-      if( (initialisationComplete == true) && (last250msLoopCount == mainLoopCount) ) { setup(); } //This is a sign of a crash.
-      else { last250msLoopCount = mainLoopCount; }
+      //if( (initialisationComplete == true) && (last250msLoopCount == mainLoopCount) ) { setup(); } //This is a sign of a crash.
+      //else { last250msLoopCount = mainLoopCount; }
     #endif
   }
 
@@ -209,7 +216,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     }
 
   }
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
+#if defined(CORE_AVR) //AVR chips use the ISR for this
     //Reset Timer2 to trigger in another ~1ms
     TCNT2 = 131;            //Preload timer2 with 100 cycles, leaving 156 till overflow.
     TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
