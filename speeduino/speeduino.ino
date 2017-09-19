@@ -52,7 +52,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 struct config1 configPage1;
 struct config2 configPage2;
 struct config3 configPage3;
-struct config4 configPage4;
 struct config10 configPage10;
 struct config11 configPage11;
 
@@ -872,7 +871,7 @@ void loop()
       readBaro(); //Infrequent baro readings are not an issue.
     }
 
-    if(configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL || configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL) { idleControl(); } //Run idlecontrol every loop for stepper idle.
+    if(configPage3.iacAlgorithm == IAC_ALGORITHM_STEP_OL || configPage3.iacAlgorithm == IAC_ALGORITHM_STEP_CL) { idleControl(); } //Run idlecontrol every loop for stepper idle.
 
     //Always check for sync
     //Main loop runs within this clause

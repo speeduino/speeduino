@@ -7,11 +7,10 @@
 #define ignSetPage   4//Config Page 2
 #define afrMapPage   5
 #define afrSetPage   6//Config Page 3
-#define iacPage      7//Config Page 4
-#define boostvvtPage 8
-#define seqFuelPage  9
-#define canbusPage   10//Config Page 10
-#define warmupPage   11 //Config Page 11
+#define boostvvtPage 7
+#define seqFuelPage  8
+#define canbusPage   9//Config Page 9
+#define warmupPage   10 //Config Page 10
 
 #define packetSize   74
 

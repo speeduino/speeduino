@@ -22,7 +22,6 @@ void writeAllConfig()
   writeConfig(8);
   writeConfig(9);
   writeConfig(10);
-  writeConfig(11);
 }
 
 
@@ -174,20 +173,6 @@ void writeConfig(byte tableNum)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { eepromWritesPending = true; break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
         if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG6_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG6_START))); writeCounter++; }
-      }
-      break;
-
-    case iacPage:
-      /*---------------------------------------------------
-      | Config page 4 (See storage.h for data layout)
-      | 64 byte long config table
-      -----------------------------------------------------*/
-      pnt_configPage = (byte *)&configPage4; //Create a pointer to Page 4 in memory
-      //The next 128 bytes can simply be pulled straight from the configTable
-      for(int x=EEPROM_CONFIG7_START; x<EEPROM_CONFIG7_END; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { eepromWritesPending = true; break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG7_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG7_START))); writeCounter++; }
       }
       break;
 
@@ -432,17 +417,6 @@ void loadConfig()
   for(int x=EEPROM_CONFIG6_START; x<EEPROM_CONFIG6_END; x++)
   {
     *(pnt_configPage + byte(x - EEPROM_CONFIG6_START)) = EEPROM.read(x);
-  }
-
-  //*********************************************************************************************************************************************************************************
-
-  //CONFIG PAGE (4)
-  pnt_configPage = (byte *)&configPage4; //Create a pointer to Page 3 in memory
-  //Begin writing the Ignition table, basically the same thing as above
-  //The first 64 bytes can simply be pulled straight from the configTable
-  for(int x=EEPROM_CONFIG7_START; x<EEPROM_CONFIG7_END; x++)
-  {
-    *(pnt_configPage + byte(x - EEPROM_CONFIG7_START)) = EEPROM.read(x);
   }
 
   //*********************************************************************************************************************************************************************************

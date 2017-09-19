@@ -139,8 +139,8 @@ const char displaySignature[] = "speeduino 201609-dev";
 const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
-const byte page_size = 64;
-const int npage_size[12] = {0,288,64,288,64,288,64,64,160,192,128,192};
+//const byte page_size = 64;
+const int npage_size[11] = {0,288,64,288,64,288,128,160,192,128,192};
 //const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
@@ -511,16 +511,6 @@ struct config3 {
   byte flatSRetard;
   byte flatSArm;
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
-#endif
-
-
-//Page 4 of the config mostly deals with idle control
-//See ini file for further info (Config Page 7 in the ini)
-struct config4 {
   byte iacCLValues[10]; //Closed loop target RPM value
   byte iacOLStepVal[10]; //Open loop step values for stepper motors
   byte iacOLPWMVal[10]; //Open loop duty values for PMWM valves

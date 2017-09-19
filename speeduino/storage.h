@@ -83,9 +83,7 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG5_XBINS  967
 #define EEPROM_CONFIG5_YBINS  983
 #define EEPROM_CONFIG6_START  999
-#define EEPROM_CONFIG6_END    1063
-#define EEPROM_CONFIG7_START  1063
-#define EEPROM_CONFIG7_END    1127
+#define EEPROM_CONFIG6_END    1127
 #define EEPROM_CONFIG8_XSIZE1 1127
 #define EEPROM_CONFIG8_YSIZE1 1128
 #define EEPROM_CONFIG8_MAP1   1129

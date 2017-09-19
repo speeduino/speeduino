@@ -12,7 +12,7 @@ Fan control
 */
 void initialiseFan()
 {
-  if( configPage4.fanInv == 1 ) { fanHIGH = LOW; fanLOW = HIGH; }
+  if( configPage3.fanInv == 1 ) { fanHIGH = LOW; fanLOW = HIGH; }
   else { fanHIGH = HIGH; fanLOW = LOW; }
   digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
   currentStatus.fanOn = false;
@@ -20,10 +20,10 @@ void initialiseFan()
 
 void fanControl()
 {
-  if( configPage4.fanEnable == 1 )
+  if( configPage3.fanEnable == 1 )
   {
-    int onTemp = (int)configPage4.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
-    int offTemp = onTemp - configPage4.fanHyster;
+    int onTemp = (int)configPage3.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
+    int offTemp = onTemp - configPage3.fanHyster;
 
     if ( (!currentStatus.fanOn) && (currentStatus.coolant >= onTemp) ) { digitalWrite(pinFan,fanHIGH); currentStatus.fanOn = true; }
     if ( (currentStatus.fanOn) && (currentStatus.coolant <= offTemp) ) { digitalWrite(pinFan, fanLOW); currentStatus.fanOn = false; }

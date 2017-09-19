@@ -437,7 +437,7 @@ void setPinMapping(byte boardID)
   if ( (configPage2.ignBypassPin != 0) && (configPage2.ignBypassPin < BOARD_NR_GPIO_PINS) ) { pinIgnBypass = configPage2.ignBypassPin; }
   if ( (configPage1.tachoPin != 0) && (configPage1.tachoPin < BOARD_NR_GPIO_PINS) ) { pinTachOut = configPage1.tachoPin; }
   if ( (configPage2.fuelPumpPin != 0) && (configPage2.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = configPage2.fuelPumpPin; }
-  if ( (configPage4.fanPin != 0) && (configPage4.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = configPage4.fanPin; }
+  if ( (configPage3.fanPin != 0) && (configPage3.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = configPage3.fanPin; }
   if ( (configPage3.boostPin != 0) && (configPage3.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = configPage3.boostPin; }
   if ( (configPage3.vvtPin != 0) && (configPage3.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = configPage3.vvtPin; }
   if ( (configPage3.useExtBaro != 0) && (configPage3.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage3.baroPin + A0; }

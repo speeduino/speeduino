@@ -479,7 +479,7 @@ void receiveValue(int valueOffset, byte newValue)
     case veSetPage:
       pnt_configPage = &configPage1; //Setup a pointer to the relevant config page
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if (valueOffset < page_size)
+      if (valueOffset < npage_size[veSetPage])
       {
         *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
       }
@@ -510,7 +510,7 @@ void receiveValue(int valueOffset, byte newValue)
     case ignSetPage:
       pnt_configPage = &configPage2;
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if (valueOffset < page_size)
+      if (valueOffset < npage_size[ignSetPage])
       {
         *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
       }
@@ -542,16 +542,7 @@ void receiveValue(int valueOffset, byte newValue)
     case afrSetPage:
       pnt_configPage = &configPage3;
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if (valueOffset < page_size)
-      {
-        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
-      }
-      break;
-
-    case iacPage: //Idle Air Control settings page (Page 4)
-      pnt_configPage = &configPage4;
-      //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if (valueOffset < page_size)
+      if (valueOffset < npage_size[afrSetPage])
       {
         *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
       }
@@ -679,7 +670,7 @@ void sendPage(bool useChar)
           for (pnt_configPage = (uint16_t *)&configPage1.inj4Ang + 1; pnt_configPage < &configPage1.mapMax; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
           Serial.println(configPage1.mapMax);
           // Following loop displays remaining byte values of the page
-          for (pnt_configPage = (uint16_t *)&configPage1.mapMax + 1; pnt_configPage < (byte *)&configPage1 + page_size; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
+          for (pnt_configPage = (uint16_t *)&configPage1.mapMax + 1; pnt_configPage < (byte *)&configPage1 + npage_size[veSetPage]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
           sendComplete = true;
         }
         else { pnt_configPage = &configPage1; } //Create a pointer to Page 1 in memory
@@ -729,7 +720,7 @@ void sendPage(bool useChar)
             Serial.print(' ');
           }
           Serial.println();
-          for (pnt_configPage = (byte *)&configPage2.dwellCorrectionValues[5] + 1; pnt_configPage < (byte *)&configPage2 + page_size; pnt_configPage = (byte *)pnt_configPage + 1)
+          for (pnt_configPage = (byte *)&configPage2.dwellCorrectionValues[5] + 1; pnt_configPage < (byte *)&configPage2 + npage_size[ignSetPage]; pnt_configPage = (byte *)pnt_configPage + 1)
           {
             Serial.println(*((byte *)pnt_configPage));// Displaying remaining byte values of the page
           }
@@ -780,16 +771,15 @@ void sendPage(bool useChar)
             Serial.println();
           }
           // Following loop displays the remaining byte values of the page
-          for (pnt_configPage = (byte *)&configPage3.airDenRates[8] + 1; pnt_configPage < (byte *)&configPage3 + page_size; pnt_configPage = (byte *)pnt_configPage + 1)
+          for (pnt_configPage = (byte *)&configPage3.airDenRates[8] + 1; pnt_configPage < (byte *)&configPage3 + npage_size[afrSetPage]; pnt_configPage = (byte *)pnt_configPage + 1)
           {
             Serial.println(*((byte *)pnt_configPage));
           }
           sendComplete = true;
         }
         else { pnt_configPage = &configPage3; } //Create a pointer to Page 3 in memory
-        break;
 
-    case iacPage:
+        //Old configPage4 STARTED HERE!
         //currentTitleIndex = 106;
         //To Display Values from Config Page 4
         if (useChar)
@@ -800,10 +790,10 @@ void sendPage(bool useChar)
             byte * currentVar;
             switch (y)
             {
-              case 1: currentVar = configPage4.iacBins; break;
-              case 2: currentVar = configPage4.iacOLPWMVal; break;
-              case 3: currentVar = configPage4.iacOLStepVal; break;
-              case 4: currentVar = configPage4.iacCLValues; break;
+              case 1: currentVar = configPage3.iacBins; break;
+              case 2: currentVar = configPage3.iacOLPWMVal; break;
+              case 3: currentVar = configPage3.iacOLStepVal; break;
+              case 4: currentVar = configPage3.iacCLValues; break;
               default: break;
             }
             for (byte x = 10; x; x--)
@@ -818,9 +808,9 @@ void sendPage(bool useChar)
             byte * currentVar;
             switch (y)
             {
-              case 1: currentVar = configPage4.iacCrankBins; break;
-              case 2: currentVar = configPage4.iacCrankDuty; break;
-              case 3: currentVar = configPage4.iacCrankSteps; break;
+              case 1: currentVar = configPage3.iacCrankBins; break;
+              case 2: currentVar = configPage3.iacCrankDuty; break;
+              case 3: currentVar = configPage3.iacCrankSteps; break;
               default: break;
             }
             for (byte x = 4; x; x--)
@@ -831,10 +821,10 @@ void sendPage(bool useChar)
             Serial.println();
           }
           // Following loop is for remaining byte value of page
-          for (pnt_configPage = (byte *)&configPage4.iacCrankBins[3] + 1; pnt_configPage < (byte *)&configPage4 + page_size; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
+          for (pnt_configPage = (byte *)&configPage3.iacCrankBins[3] + 1; pnt_configPage < (byte *)&configPage3 + npage_size[afrSetPage]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
           sendComplete = true;
         }
-        else { pnt_configPage = &configPage4; } //Create a pointer to Page 4 in memory
+        else { pnt_configPage = &configPage3; } //Create a pointer to Page 4 in memory
         break;
 
     case boostvvtPage:
@@ -1103,11 +1093,6 @@ byte getPageValue(byte page, uint16_t valueAddress)
 
     case afrSetPage:
         pnt_configPage = &configPage3; //Create a pointer to Page 3 in memory
-        returnValue = *((byte *)pnt_configPage + valueAddress);
-        break;
-
-    case iacPage:
-        pnt_configPage = &configPage4; //Create a pointer to Page 4 in memory
         returnValue = *((byte *)pnt_configPage + valueAddress);
         break;
 
