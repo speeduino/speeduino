@@ -140,7 +140,7 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 //const byte page_size = 64;
-const int npage_size[11] = {0,288,64,288,64,288,128,160,192,128,192};
+const int npage_size[11] = {0,288,128,288,64,288,128,160,192,128,192};
 //const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
@@ -380,6 +380,8 @@ struct config1 {
   byte iacCLminDuty;
   byte iacCLmaxDuty;
   byte boostMinDuty;
+
+  byte unused2_64[64];
 
 #if defined(CORE_AVR)
   };
