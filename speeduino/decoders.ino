@@ -1356,6 +1356,7 @@ void triggerSetup_Miata9905()
   triggerActualTeeth = 8;
   secondaryToothCount = 0;
   if(initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
+  else { toothLastToothTime = 0; }
   toothLastMinusOneToothTime = 0;
 
   //Note that these angles are for every rising and falling edge
@@ -1443,10 +1444,9 @@ void triggerPri_Miata9905()
 
     if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage2.ignCranklock)
     {
-      if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) { endCoil1Charge(); }
-      else if( (toothCurrentCount == 2) || (toothCurrentCount == 6) ) { endCoil2Charge(); }
-      else if( (toothCurrentCount == 3) || (toothCurrentCount == 7) ) { endCoil3Charge(); }
-      else if( (toothCurrentCount == 4) || (toothCurrentCount == 8) ) { endCoil4Charge(); }
+      //This operates in waasted spark mode during cranking to align with crank teeth
+      if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) { endCoil1Charge(); endCoil3Charge(); }
+      else if( (toothCurrentCount == 3) || (toothCurrentCount == 7) ) { endCoil2Charge(); endCoil4Charge(); }
     }
   } //Trigger filter
   secondaryToothCount = 0;
