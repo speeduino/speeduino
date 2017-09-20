@@ -818,10 +818,7 @@ void triggerSec_4G63()
       triggerSecFilterTime = triggerSecFilterTime >> 1; //Divide the secondary filter time by 2 again, making it 25%. Only needed when cranking
       if(READ_PRI_TRIGGER() == true)// && (crankState == digitalRead(pinTrigger)))
       {
-        //if( (currentStatus.hasSync == true) && (toothCurrentCount != 4) ) { currentStatus.hasSync = false; }
-        //toothCurrentCount = 4; //If the crank trigger is currently HIGH, it means we're on tooth #1
         if(toothCurrentCount == 4) { currentStatus.hasSync = true; }
-
       }
     }
 

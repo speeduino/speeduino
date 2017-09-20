@@ -130,7 +130,8 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //Reset watchdog timer (Not active currently)
       //wdt_reset();
       //DIY watchdog
-      //if( (initialisationComplete == true) && (last250msLoopCount == mainLoopCount) ) { setup(); } //This is a sign of a crash.
+      //This is a sign of a crash:
+      //if( (initialisationComplete == true) && (last250msLoopCount == mainLoopCount) ) { setup(); }
       //else { last250msLoopCount = mainLoopCount; }
     #endif
   }

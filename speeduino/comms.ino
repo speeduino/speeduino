@@ -153,9 +153,9 @@ void command()
         length1 = Serial.read();
         length2 = Serial.read();
         length = word(length2, length1);
-        for(int x = 0; x < length; x++)
+        for(int i = 0; i < length; i++)
         {
-          Serial.write( getPageValue(tempPage, valueOffset + x) );
+          Serial.write( getPageValue(tempPage, valueOffset + i) );
         }
 
         cmdPending = false;
@@ -188,10 +188,10 @@ void command()
           chunkSize = word(length2, length1);
 
           //chunkPending = true;
-          for(uint16_t x = 0; x < chunkSize; x++)
+          for(int i = 0; i < chunkSize; i++)
           {
-            while(Serial.available() == 0) { }
-            receiveValue( (valueOffset + x), Serial.read());
+            while(Serial.available() == 0) { } //For chunk writes, we can safely loop here
+            receiveValue( (valueOffset + i), Serial.read());
           }
           cmdPending = false;
         }
@@ -447,6 +447,7 @@ void receiveValue(int valueOffset, byte newValue)
 {
 
   void* pnt_configPage;//This only stores the address of the value that it's pointing to and not the max size
+  int tempOffset;
 
   switch (currentPage)
   {
@@ -466,7 +467,7 @@ void receiveValue(int valueOffset, byte newValue)
         else if(valueOffset < 288)
         {
           //Y Axis
-          int tempOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
+          tempOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
           fuelTable.axisY[tempOffset] = (int)(newValue) * TABLE_LOAD_MULTIPLIER;
         }
         else
@@ -501,7 +502,7 @@ void receiveValue(int valueOffset, byte newValue)
         else if(valueOffset < 288)
         {
           //Y Axis
-          int tempOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order
+          tempOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order
           ignitionTable.axisY[tempOffset] = (int)(newValue) * TABLE_LOAD_MULTIPLIER;
         }
       }
@@ -532,7 +533,7 @@ void receiveValue(int valueOffset, byte newValue)
         else
         {
           //Y Axis
-          int tempOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order
+          tempOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order
           afrTable.axisY[tempOffset] = int(newValue) * TABLE_LOAD_MULTIPLIER;
 
         }
@@ -563,23 +564,22 @@ void receiveValue(int valueOffset, byte newValue)
       }
       else if (valueOffset < 144) //New value is part of the vvt map
       {
-        int tempOffset = valueOffset - 80;
+        tempOffset = valueOffset - 80;
         vvtTable.values[7 - (tempOffset / 8)][tempOffset % 8] = newValue;
       }
       else if (valueOffset < 152) //New value is on the X (RPM) axis of the vvt table
       {
-        int tempOffset = valueOffset - 144;
+        tempOffset = valueOffset - 144;
         vvtTable.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       }
-      else if (valueOffset < 161) //New value is on the X (RPM) axis of the vvt table//New value is on the Y (Load) axis of the vvt table
+      else if (valueOffset < 161) //New value is on the Y (Load) axis of the vvt table
       {
-        int tempOffset = valueOffset - 152;
+        tempOffset = valueOffset - 152;
         vvtTable.axisY[(7 - tempOffset)] = int(newValue); //TABLE_LOAD_MULTIPLIER is NOT used for vvt as it is TPS based (0-100)
       }
       break;
 
     case seqFuelPage:
-      int tempOffset;
       if (valueOffset < 36) { trim1Table.values[5 - (valueOffset / 6)][valueOffset % 6] = newValue; } //Trim1 values
       else if (valueOffset < 42) { trim1Table.axisX[(valueOffset - 36)] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the trim1 table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       else if (valueOffset < 48) { trim1Table.axisY[(5 - (valueOffset - 42))] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (TPS) axis of the boost table
@@ -1058,6 +1058,7 @@ void sendPage(bool useChar)
 byte getPageValue(byte page, uint16_t valueAddress)
 {
   void* pnt_configPage = &configPage1; //Default value is for safety only. Will be changed below if needed.
+  uint16_t tempAddress;
   byte returnValue = 0;
 
   switch (page)
@@ -1108,11 +1109,11 @@ byte getPageValue(byte page, uint16_t valueAddress)
           }
           else
           {
-            valueAddress -= 80;
+            tempAddress = valueAddress - 80;
             //VVT table
-            if(valueAddress < 64) { returnValue = vvtTable.values[7 - (valueAddress / 8)][valueAddress % 8]; }
-            else if(valueAddress < 72) { returnValue = byte(vvtTable.axisX[(valueAddress - 64)] / TABLE_RPM_MULTIPLIER); }
-            else if(valueAddress < 80) { returnValue = byte(vvtTable.axisY[7 - (valueAddress - 72)]); }
+            if(tempAddress < 64) { returnValue = vvtTable.values[7 - (tempAddress / 8)][tempAddress % 8]; }
+            else if(tempAddress < 72) { returnValue = byte(vvtTable.axisX[(tempAddress - 64)] / TABLE_RPM_MULTIPLIER); }
+            else if(tempAddress < 80) { returnValue = byte(vvtTable.axisY[7 - (tempAddress - 72)]); }
           }
         }
         break;
@@ -1130,27 +1131,27 @@ byte getPageValue(byte page, uint16_t valueAddress)
           }
           else if(valueAddress < 96)
           {
-            valueAddress -= 48;
+            tempAddress = valueAddress - 48;
             //trim2 table
-            if(valueAddress < 36) { returnValue = trim2Table.values[5 - (valueAddress / 6)][valueAddress % 6]; }
-            else if(valueAddress < 42) { returnValue = byte(trim2Table.axisX[(valueAddress - 36)] / TABLE_RPM_MULTIPLIER); }
-            else if(valueAddress < 48) { returnValue = byte(trim2Table.axisY[5 - (valueAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
+            if(tempAddress < 36) { returnValue = trim2Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
+            else if(tempAddress < 42) { returnValue = byte(trim2Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
+            else if(tempAddress < 48) { returnValue = byte(trim2Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
           }
           else if(valueAddress < 144)
           {
-            valueAddress -= 96;
+            tempAddress = valueAddress - 96;
             //trim3 table
-            if(valueAddress < 36) { returnValue = trim3Table.values[5 - (valueAddress / 6)][valueAddress % 6]; }
-            else if(valueAddress < 42) { returnValue = byte(trim3Table.axisX[(valueAddress - 36)] / TABLE_RPM_MULTIPLIER); }
-            else if(valueAddress < 48) { returnValue = byte(trim3Table.axisY[5 - (valueAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
+            if(tempAddress < 36) { returnValue = trim3Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
+            else if(tempAddress < 42) { returnValue = byte(trim3Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
+            else if(tempAddress < 48) { returnValue = byte(trim3Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
           }
           else if(valueAddress < 192)
           {
-            valueAddress -= 144;
+            tempAddress = valueAddress - 144;
             //trim4 table
-            if(valueAddress < 36) { returnValue = trim4Table.values[5 - (valueAddress / 6)][valueAddress % 6]; }
-            else if(valueAddress < 42) { returnValue = byte(trim4Table.axisX[(valueAddress - 36)] / TABLE_RPM_MULTIPLIER); }
-            else if(valueAddress < 48) { returnValue = byte(trim4Table.axisY[5 - (valueAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
+            if(tempAddress < 36) { returnValue = trim4Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
+            else if(tempAddress < 42) { returnValue = byte(trim4Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
+            else if(tempAddress < 48) { returnValue = byte(trim4Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
           }
         }
         break;
