@@ -140,7 +140,7 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 //const byte page_size = 64;
-const int npage_size[11] = {0,288,128,288,64,288,128,160,192,128,192};
+const int npage_size[11] = {0,288,128,288,128,288,128,160,192,128,192};
 //const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
@@ -381,7 +381,7 @@ struct config1 {
   byte iacCLmaxDuty;
   byte boostMinDuty;
 
-  byte unused2_64[64];
+  byte unused1_64[63];
 
 #if defined(CORE_AVR)
   };
@@ -444,6 +444,8 @@ struct config2 {
   byte ignBypassEnabled : 1; //Whether or not the ignition bypass is enabled
   byte ignBypassPin : 6; //Pin the ignition bypass is activated on
   byte ignBypassHiLo : 1; //Whether this should be active high or low.
+
+  byte unused2_64[63];
 
 #if defined(CORE_AVR)
   };
