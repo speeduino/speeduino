@@ -8,7 +8,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    5
+  #define CURRENT_DATA_VERSION    6
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -53,12 +53,37 @@ void doUpdates()
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 5);
   }
+  //September 2017 had a major change to increase the minimum table size to 128. This required multiple pieces of data being moved around
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 5)
+  {
+    //Data after page 4 has to move back 128 bytes
+    for(int x=0; x < 1152; x++)
+    {
+      int endMem = EEPROM_CONFIG11_END - x;
+      int startMem = endMem - 128; //
+      byte currentVal = EEPROM.read(startMem);
+      EEPROM.update(endMem, currentVal);
+    }
+    //The remaining data only has to move back 64 bytes
+    for(int x=0; x < 352; x++)
+    {
+      int endMem = EEPROM_CONFIG11_END - 1152 - x;
+      int startMem = endMem - 64; //
+      byte currentVal = EEPROM.read(startMem);
+      EEPROM.update(endMem, currentVal);
+    }
+
+    EEPROM.write(EEPROM_DATA_VERSION, 6);
+    loadConfig(); //Reload the config after changing everything in EEPROM
+  }
 
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
   {
     configPage10.true_address = 0x200;
     EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION);
-
   }
+
+  //Check to see if someone has downgraded versions:
+  if( EEPROM.read(EEPROM_DATA_VERSION) > CURRENT_DATA_VERSION ) { EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION); }
 }
