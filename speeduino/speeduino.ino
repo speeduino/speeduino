@@ -740,14 +740,6 @@ void loop()
     //-----------------------------------------------------------------------------------------------------
     readMAP();
 
-    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ))
-    {
-      BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
-      //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
-      //currentStatus.RPM = 3000;
-      boostControl();
-    }
-
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
@@ -794,11 +786,16 @@ void loop()
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
 
+
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
       //Nothing here currently
       BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
+      //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
+      //currentStatus.RPM = 3000;
+      boostControl();
+
     }
     //The IAT and CLT readings can be done less frequently (4 times per second)
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
@@ -808,6 +805,7 @@ void loop()
        readIAT();
        readO2();
        readBat();
+
        if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
