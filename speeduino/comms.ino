@@ -15,6 +15,8 @@ A detailed description of each call can be found at: http://www.msextra.com/doc/
 
 void command()
 {
+  int valueOffset; //cannot use offset as a variable name, it is a reserved word for several teensy libraries
+  
   if (cmdPending == false) { currentCommand = Serial.read(); }
 
   switch (currentCommand)
@@ -44,6 +46,13 @@ void command()
       testComm();
       break;
 
+    case 'c': //Send the current loops/sec value
+      Serial.write(lowByte(currentStatus.loopsPerSecond));
+      Serial.write(highByte(currentStatus.loopsPerSecond));
+      break;
+
+    //The following can be used to show the amount of free memory
+
     case 'E': // receive command button commands
       cmdPending = true;
 
@@ -58,8 +67,18 @@ void command()
       }
       break;
 
+    case 'F': // send serial protocol version
+      Serial.print("001");
+      break;
+
     case 'L': // List the contents of current page in human readable form
       sendPage(true);
+      break;
+
+    case 'm': //Send the current free memory
+      currentStatus.freeRAM = freeRam();
+      Serial.write(lowByte(currentStatus.freeRAM));
+      Serial.write(highByte(currentStatus.freeRAM));
       break;
 
     case 'N': // Displays a new line.  Like pushing enter in a text editor
@@ -80,52 +99,6 @@ void command()
         else { isMap = false; }
         cmdPending = false;
       }
-      break;
-
-    case 'F': // send serial protocol version
-      Serial.print("001");
-      break;
-
-    case 'S': // send code version
-      Serial.print("Speeduino 2017.09-dev");
-      currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
-      break;
-
-    case 'Q': // send code version
-      Serial.print("speeduino 201709-dev");
-      break;
-
-    case 'V': // send VE table and constants in binary
-      sendPage(false);
-      break;
-
-    case 'W': // receive new VE obr constant at 'W'+<offset>+<newbyte>
-      cmdPending = true;
-
-      int valueOffset; //cannot use offset as a variable name, it is a reserved word for several teensy libraries
-
-      if (isMap)
-      {
-        if(Serial.available() >= 3) // 1 additional byte is required on the MAP pages which are larger than 255 bytes
-        {
-          byte offset1, offset2;
-          offset1 = Serial.read();
-          offset2 = Serial.read();
-          valueOffset = word(offset2, offset1);
-          receiveValue(valueOffset, Serial.read());
-          cmdPending = false;
-        }
-      }
-      else
-      {
-        if(Serial.available() >= 2)
-        {
-          valueOffset = Serial.read();
-          receiveValue(valueOffset, Serial.read());
-          cmdPending = false;
-        }
-      }
-
       break;
 
     /*
@@ -160,6 +133,89 @@ void command()
 
         cmdPending = false;
       }
+      break;
+
+    case 'Q': // send code version
+      Serial.print("speeduino 201709-dev");
+      break;
+
+    case 'r': //New format for the optimised OutputChannels
+      cmdPending = true;
+      byte cmd;
+      if (Serial.available() >= 6)
+      {
+        tsCanId = Serial.read(); //Read the $tsCanId
+        cmd = Serial.read(); // read the command
+
+        uint16_t offset, length;
+        if(cmd == 0x30) //Send output channels command 0x30 is 48dec
+        {
+          byte tmp;
+          tmp = Serial.read();
+          offset = word(Serial.read(), tmp);
+          tmp = Serial.read();
+          length = word(Serial.read(), tmp);
+          sendValues(offset, length,cmd, 0);
+        }
+        else
+        {
+          //No other r/ commands should be called
+        }
+        cmdPending = false;
+      }
+      break;
+
+    case 'S': // send code version
+      Serial.print("Speeduino 2017.09-dev");
+      currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
+      break;
+
+    case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
+      sendToothLog(false); //Sends tooth log values as ints
+      break;
+
+    case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
+      byte tableID;
+      //byte canID;
+
+      //The first 2 bytes sent represent the canID and tableID
+      while (Serial.available() == 0) { }
+      tableID = Serial.read(); //Not currently used for anything
+
+      receiveCalibration(tableID); //Receive new values and store in memory
+      writeCalibration(); //Store received values in EEPROM
+
+      break;
+
+    case 'V': // send VE table and constants in binary
+      sendPage(false);
+      break;
+
+    case 'W': // receive new VE obr constant at 'W'+<offset>+<newbyte>
+      cmdPending = true;
+
+      if (isMap)
+      {
+        if(Serial.available() >= 3) // 1 additional byte is required on the MAP pages which are larger than 255 bytes
+        {
+          byte offset1, offset2;
+          offset1 = Serial.read();
+          offset2 = Serial.read();
+          valueOffset = word(offset2, offset1);
+          receiveValue(valueOffset, Serial.read());
+          cmdPending = false;
+        }
+      }
+      else
+      {
+        if(Serial.available() >= 2)
+        {
+          valueOffset = Serial.read();
+          receiveValue(valueOffset, Serial.read());
+          cmdPending = false;
+        }
+      }
+
       break;
 
     case 'w':
@@ -198,19 +254,6 @@ void command()
       }
       break;
 
-    case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
-      byte tableID;
-      //byte canID;
-
-      //The first 2 bytes sent represent the canID and tableID
-      while (Serial.available() == 0) { }
-      tableID = Serial.read(); //Not currently used for anything
-
-      receiveCalibration(tableID); //Receive new values and store in memory
-      writeCalibration(); //Store received values in EEPROM
-
-      break;
-
     case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed. This function takes 1.5kb of program space! :S
       Serial.println(F("Coolant"));
       for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
@@ -243,40 +286,9 @@ void command()
       Serial.flush();
       break;
 
-    case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
-      sendToothLog(false); //Sends tooth log values as ints
-      break;
-
     case 'z': //Send 256 tooth log entries to a terminal emulator
       sendToothLog(true); //Sends tooth log values as chars
       break;
-
-    case 'r': //New format for the optimised OutputChannels
-      cmdPending = true;
-      byte cmd;
-      if (Serial.available() >= 6)
-      {
-        tsCanId = Serial.read(); //Read the $tsCanId
-        cmd = Serial.read(); // read the command
-
-        uint16_t offset, length;
-        if(cmd == 0x30) //Send output channels command 0x30 is 48dec
-        {
-          byte tmp;
-          tmp = Serial.read();
-          offset = word(Serial.read(), tmp);
-          tmp = Serial.read();
-          length = word(Serial.read(), tmp);
-          sendValues(offset, length,cmd, 0);
-        }
-        else
-        {
-          //No other r/ commands should be called
-        }
-        cmdPending = false;
-      }
-      break;
-
 
     case '?':
       Serial.println
