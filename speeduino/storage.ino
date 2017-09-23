@@ -28,8 +28,8 @@ void writeConfig()
   | Fuel table (See storage.h for data layout) - Page 1
   | 16x16 table itself + the 16 values along each of the axis
   -----------------------------------------------------*/
-  EEPROM.update(EEPROM_CONFIG1_XSIZE, fuelTable.xSize); //Write the VE Tables Table RPM dimension size
-  EEPROM.update(EEPROM_CONFIG1_YSIZE, fuelTable.ySize); //Write the VE Tables Table MAP/TPS dimension size
+  EEPROM.update(EEPROM_CONFIG1_XSIZE, fuelTable.xSize); //Write the VE Table RPM dimension size
+  EEPROM.update(EEPROM_CONFIG1_YSIZE, fuelTable.ySize); //Write the VE Table MAP/TPS dimension size
   for(int x=EEPROM_CONFIG1_MAP; x<EEPROM_CONFIG1_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG1_MAP;

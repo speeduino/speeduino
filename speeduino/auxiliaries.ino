@@ -154,7 +154,7 @@ void vvtControl()
   static inline void boostInterrupt() //Most ARM chips can simply call a function
 #endif
 {
-  if ((boost_pwm_state) && (boost_pwm_target_value<=2))
+  if (boost_pwm_state == true)
   {
     BOOST_PIN_LOW();  // Switch pin to low
     BOOST_TIMER_COMPARE = BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value);
@@ -176,7 +176,7 @@ void vvtControl()
   static inline void vvtInterrupt() //Most ARM chips can simply call a function
 #endif
 {
-  if ((vvt_pwm_state) && (vvt_pwm_target_value<=2))
+  if (vvt_pwm_state == true)
   {
     VVT_PIN_LOW();  // Switch pin to low
     VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt_pwm_cur_value);

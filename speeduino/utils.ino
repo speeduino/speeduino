@@ -196,23 +196,27 @@ void setPinMapping(byte boardID)
         pinO2 = A22;
       #elif defined(STM32F4)
         //Black F407VE http://wiki.stm32duino.com/index.php?title=STM32F407
+        //PC8~PC12 SDio
+        //PA13~PA15 & PB4 SWD(debug) pins
+        //PB0 EEPROM CS pin
+        //PD5 & PD6 Serial2
         pinInjector1 = PE7; //Output pin injector 1 is on
         pinInjector2 = PE8; //Output pin injector 2 is on
         pinInjector3 = PE9; //Output pin injector 3 is on
         pinInjector4 = PE10; //Output pin injector 4 is on
         pinInjector5 = PE11; //Output pin injector 5 is on
-        pinCoil1 = PB10; //Pin for coil 1
-        pinCoil2 = PB11; //Pin for coil 2
-        pinCoil3 = PB12; //Pin for coil 3
-        pinCoil4 = PB13; //Pin for coil 4
-        pinCoil5 = PB14; //Pin for coil 5
+        pinCoil1 = PB5; //Pin for coil 1
+        pinCoil2 = PB6; //Pin for coil 2
+        pinCoil3 = PB7; //Pin for coil 3
+        pinCoil4 = PB8; //Pin for coil 4
+        pinCoil5 = PB9; //Pin for coil 5
         pinTPS = A0; //TPS input pin
         pinMAP = A1; //MAP sensor pin
         pinIAT = A2; //IAT sensor pin
-        pinCLT = A3; //CLS sensor pin
+        pinCLT = A3; //CLT sensor pin
         pinO2 = A4; //O2 Sensor pin
         pinBat = A5; //Battery reference voltage pin
-        pinBaro = A6;        
+        pinBaro = A10;        
         pinIdle1 = PB8; //Single wire idle control
         pinIdle2 = PB9; //2 wire idle control
         pinBoost = PE0; //Boost control
@@ -225,9 +229,10 @@ void setPinMapping(byte boardID)
         pinFuelPump = PA6; //Fuel pump output
         pinTachOut = PA7; //Tacho output pin
         //external interrupt enabled pins
-        pinFlex = PC4; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = PC5; //The CAS pin
-        pinTrigger2 = PC6; //The Cam Sensor pin
+        //external interrupts could be enalbed in any pin, except same port numbers (PA4,PE4)
+        pinFlex = PE2; // Flex sensor (Must be external interrupt enabled)
+        pinTrigger = PE3; //The CAS pin
+        pinTrigger2 = PE4; //The Cam Sensor pin
       #elif defined(CORE_STM32)
         //blue pill http://wiki.stm32duino.com/index.php?title=Blue_Pill
         //Maple mini http://wiki.stm32duino.com/index.php?title=Maple_Mini

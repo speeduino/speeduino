@@ -176,7 +176,7 @@ void initialiseSchedulers()
       Timer3.setPrescaleFactor((36 * 2U)-1); //2us resolution
     #elif defined(STM32F4)
       //(CYCLES_PER_MICROSECOND == 168, APB2 at 84MHz, APB1 at 42MHz).
-      //Timer2 to 4 is on APB1, Timer1 on APB2.   http://www.st.com/resource/en/datasheet/stm32f103cb.pdf sheet 12
+      //Timer2 to 14 is on APB1, Timers 1, 8, 9 and 10 on APB2.   http://www.st.com/resource/en/datasheet/stm32f407vg.pdf sheet 120
       Timer1.setPrescaleFactor((84 * 2U)-1); //2us resolution
       Timer2.setPrescaleFactor((42 * 2U)-1); //2us resolution
       Timer3.setPrescaleFactor((42 * 2U)-1); //2us resolution

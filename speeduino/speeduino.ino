@@ -649,32 +649,17 @@ void loop()
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
       // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
-      if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+      if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       {
         if (Serial.available() > 0)
         {
           command();
         }
       }
-
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-      //if serial3 interface is enabled then check for serial3 requests.
-      if (configPage10.enable_canbus == 1)
-          {
-            if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-                {
-                  if (CANSerial.available() > 0)
-                    {
-                      canCommand();
-                    }
-                }
-          }
-
-#elif  defined(CORE_TEENSY) || defined(CORE_STM32)
       //if can or secondary serial interface is enabled then check for requests.
       if (configPage10.enable_canbus == 1)  //secondary serial interface enabled
           {
-            if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+            if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
                 {
                   if (CANSerial.available() > 0)
                     {
@@ -682,15 +667,16 @@ void loop()
                     }
                 }
           }
-      else if (configPage10.enable_canbus == 2) // can module enabled
+      #if  defined(CORE_TEENSY) || defined(CORE_STM32)
+          else if (configPage10.enable_canbus == 2) // can module enabled
           {
             //check local can module
-            // if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) or (CANbus0.available())
+            // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
             //    {
             //      CANbus0.read(rx_msg);
             //    }
           }
-#endif
+      #endif
 
     //Displays currently disabled
     // if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
