@@ -2424,3 +2424,29 @@ void triggerSetEndTeeth_Harley()
 {
 
 }
+
+void triggerSetup_Subaru36222()
+{
+  
+}
+
+void triggerPri_Subaru36222()
+{
+
+}
+
+void triggerSec_Subaru36222()
+{
+  
+}
+
+uint16_t getRPM_Subaru36222()
+{
+  
+}
+
+int getCrankAngle_Subaru36222(int timePerDegree)
+{
+ 
+}
+

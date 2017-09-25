@@ -806,6 +806,16 @@ void initialiseTriggers()
             // attachInterrupt(triggerInterrupt2, triggerSec_Harley, FALLING);
             break;
 
+    case 16:
+            triggerSetup_Subaru36222();
+            trigger = triggerPri_Subaru36222;
+            triggerSecondary = triggerSec_Subaru36222;
+            getRPM = getRPM_Subaru36222;
+            getCrankAngle = getCrankAngle_Subaru36222;
+            attachInterrupt(triggerInterrupt, trigger, RISING);
+            attachInterrupt(triggerInterrupt, triggerSecondary, RISING);
+            break;
+    
     default:
       trigger = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;
