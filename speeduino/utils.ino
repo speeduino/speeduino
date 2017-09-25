@@ -813,7 +813,7 @@ void initialiseTriggers()
             getRPM = getRPM_Subaru36222;
             getCrankAngle = getCrankAngle_Subaru36222;
             attachInterrupt(triggerInterrupt, trigger, RISING);
-            attachInterrupt(triggerInterrupt, triggerSecondary, RISING);
+            attachInterrupt(triggerInterrupt2, triggerSecondary, RISING);
             break;
     
     default:
