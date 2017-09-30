@@ -7,18 +7,21 @@
 #define ignSetPage   4//Config Page 2
 #define afrMapPage   5
 #define afrSetPage   6//Config Page 3
-#define iacPage      7//Config Page 4
-#define boostvvtPage 8
-#define seqFuelPage  9
-#define canbusPage   10//Config Page 10
+#define boostvvtPage 7
+#define seqFuelPage  8
+#define canbusPage   9//Config Page 9
+#define warmupPage   10 //Config Page 10
 
-#define packetSize   73
+#define packetSize   74
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool isMap = true;
 unsigned long requestCount = 0; //The number of times the A command has been issued
 byte currentCommand;
 bool cmdPending = false;
+bool chunkPending = false;
+uint16_t chunkComplete = 0;
+int16_t chunkSize = 0;
 byte cmdGroup = 0;
 byte cmdValue = 0;
 int cmdCombined = 0;  //the cmdgroup as high byte and cmdvalue as low byte

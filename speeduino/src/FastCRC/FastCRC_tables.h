@@ -31,7 +31,7 @@
 #define FastCRC_tables
 #include "inttypes.h"
 
-#if defined(__AVR__) || defined(STM32_MCU_SERIES) || defined(_VARIANT_ARDUINO_STM32_)
+#if defined(__AVR__) || defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(_VARIANT_ARDUINO_STM32_)
 #include <avr/pgmspace.h>
 #else
 #include <pgmspace.h>

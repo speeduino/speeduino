@@ -161,23 +161,40 @@ void initialiseSchedulers()
   NVIC_ENABLE_IRQ(IRQ_FTM1);
 
 #elif defined(CORE_STM32)
-  //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
-  (TIMER1->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
-  (TIMER2->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
-  (TIMER3->regs).bas->PSC = (CYCLES_PER_MICROSECOND << 1) - 1;  //2us resolution
-  // Alternative 2us resolution:
-  //TimerX.setPrescaleFactor(CYCLES_PER_MICROSECOND * 2U);
+  #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
+    //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
+    Timer1.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
+    Timer2.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
+    Timer3.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
+    Timer2.setMode(1, TIMER_OUTPUT_COMPARE);
+    Timer2.setMode(2, TIMER_OUTPUT_COMPARE);
+    Timer2.setMode(3, TIMER_OUTPUT_COMPARE);
+    Timer2.setMode(4, TIMER_OUTPUT_COMPARE);
 
-  Timer2.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
-  Timer2.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
-  Timer2.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
-  Timer2.setMode(TIMER_CH4, TIMER_OUTPUT_COMPARE);
+    Timer3.setMode(1, TIMER_OUTPUT_COMPARE);
+    Timer3.setMode(2, TIMER_OUTPUT_COMPARE);
+    Timer3.setMode(3, TIMER_OUTPUT_COMPARE);
+    Timer3.setMode(4, TIMER_OUTPUT_COMPARE);
+    Timer1.setMode(1, TIMER_OUTPUT_COMPARE); 
 
-  Timer3.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
-  Timer3.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
-  Timer3.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
-  Timer3.setMode(TIMER_CH4, TIMER_OUTPUT_COMPARE);
+  #else //libmaple core aka STM32DUINO
+    //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
+    //(CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
+    //Timer2 to 4 is on APB1, Timer1 on APB2.   http://www.st.com/resource/en/datasheet/stm32f103cb.pdf sheet 12
+    Timer1.setPrescaleFactor((72 * 2U)-1); //2us resolution
+    Timer2.setPrescaleFactor((36 * 2U)-1); //2us resolution
+    Timer3.setPrescaleFactor((36 * 2U)-1); //2us resolution
+    Timer2.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
+    Timer2.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
+    Timer2.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
+    Timer2.setMode(TIMER_CH4, TIMER_OUTPUT_COMPARE);
 
+    Timer3.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
+    Timer3.setMode(TIMER_CH2, TIMER_OUTPUT_COMPARE);
+    Timer3.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
+    Timer3.setMode(TIMER_CH4, TIMER_OUTPUT_COMPARE);
+
+  #endif
   Timer2.attachInterrupt(1, fuelSchedule1Interrupt);
   Timer2.attachInterrupt(2, fuelSchedule2Interrupt);
   Timer2.attachInterrupt(3, fuelSchedule3Interrupt);
@@ -187,7 +204,11 @@ void initialiseSchedulers()
   Timer3.attachInterrupt(2, ignitionSchedule2Interrupt);
   Timer3.attachInterrupt(3, ignitionSchedule3Interrupt);
   Timer3.attachInterrupt(4, ignitionSchedule4Interrupt);
+  Timer1.attachInterrupt(1, ignitionSchedule5Interrupt);
 
+  Timer1.resume();
+  Timer2.resume();
+  Timer3.resume();
 #endif
 
     fuelSchedule1.Status = OFF;
@@ -445,6 +466,14 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
     interrupts();
     IGN3_TIMER_ENABLE();
   }
+  else
+  {
+    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    ignitionSchedule3.nextStartCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+    ignitionSchedule3.nextEndCompare = ignitionSchedule3.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+    ignitionSchedule3.hasNextSchedule = true;
+  }
 }
 void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
@@ -468,6 +497,14 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule4.schedulesSet++;
     interrupts();
     IGN4_TIMER_ENABLE();
+  }
+  else
+  {
+    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    ignitionSchedule4.nextStartCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    ignitionSchedule4.nextEndCompare = ignitionSchedule4.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+    ignitionSchedule4.hasNextSchedule = true;
   }
 }
 void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
@@ -653,7 +690,6 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
       ignitionSchedule1.StartCallback();
       ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule1.startTime = micros();
-      ign1LastRev = currentStatus.startRevolutions;
       IGN1_COMPARE = ignitionSchedule1.endCompare;
     }
     else if (ignitionSchedule1.Status == RUNNING)
@@ -677,7 +713,6 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
       ignitionSchedule2.StartCallback();
       ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule2.startTime = micros();
-      ign2LastRev = currentStatus.startRevolutions;
       IGN2_COMPARE = ignitionSchedule2.endCompare; //OCR5B = TCNT5 + (ignitionSchedule2.duration >> 2);
     }
     else if (ignitionSchedule2.Status == RUNNING)
@@ -701,7 +736,6 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
       ignitionSchedule3.StartCallback();
       ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule3.startTime = micros();
-      ign3LastRev = currentStatus.startRevolutions;
       IGN3_COMPARE = ignitionSchedule3.endCompare; //OCR5C = TCNT5 + (ignitionSchedule3.duration >> 2);
     }
     else if (ignitionSchedule3.Status == RUNNING)
@@ -710,7 +744,17 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
        ignitionSchedule3.EndCallback();
        ignitionSchedule3.schedulesSet = 0;
        ignitionCount += 1; //Increment the igintion counter
-       IGN3_TIMER_DISABLE();
+
+       //If there is a next schedule queued up, activate it
+       if(ignitionSchedule3.hasNextSchedule == true)
+       {
+         IGN3_COMPARE = ignitionSchedule3.nextStartCompare;
+         ignitionSchedule3.endCompare = ignitionSchedule3.nextEndCompare;
+         ignitionSchedule3.Status = PENDING;
+         ignitionSchedule3.schedulesSet = 1;
+         ignitionSchedule3.hasNextSchedule = false;
+       }
+       else { IGN3_TIMER_DISABLE(); }
     }
   }
 
@@ -725,7 +769,6 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
       ignitionSchedule4.StartCallback();
       ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule4.startTime = micros();
-      ign4LastRev = currentStatus.startRevolutions;
       IGN4_COMPARE = ignitionSchedule4.endCompare;
     }
     else if (ignitionSchedule4.Status == RUNNING)
@@ -734,7 +777,17 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
        ignitionSchedule4.EndCallback();
        ignitionSchedule4.schedulesSet = 0;
        ignitionCount += 1; //Increment the igintion counter
-       IGN4_TIMER_DISABLE();
+
+       //If there is a next schedule queued up, activate it
+       if(ignitionSchedule4.hasNextSchedule == true)
+       {
+         IGN4_COMPARE = ignitionSchedule4.nextStartCompare;
+         ignitionSchedule4.endCompare = ignitionSchedule4.nextEndCompare;
+         ignitionSchedule4.Status = PENDING;
+         ignitionSchedule4.schedulesSet = 1;
+         ignitionSchedule4.hasNextSchedule = false;
+       }
+       else { IGN4_TIMER_DISABLE(); }
     }
   }
 
@@ -749,7 +802,6 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
       ignitionSchedule5.StartCallback();
       ignitionSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule5.startTime = micros();
-      ign5LastRev = currentStatus.startRevolutions;
       IGN5_COMPARE = ignitionSchedule5.endCompare;
     }
     else if (ignitionSchedule5.Status == RUNNING)

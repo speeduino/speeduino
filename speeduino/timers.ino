@@ -42,18 +42,27 @@ void initialiseTimers()
 #elif defined(CORE_STM32)
   Timer4.setPeriod(1000);  // Set up period
   // Set up an interrupt
-  Timer4.setMode(TIMER_CH1, TIMER_OUTPUT_COMPARE);
+  Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
   Timer4.attachInterrupt(1, oneMSInterval);
+  Timer4.resume(); //Start Timer
 #endif
 
-  dwellLimit_uS = (1000 * configPage2.dwellLimit);
+  #if defined(CORE_STM32)
+    pinMode(LED_BUILTIN, OUTPUT);
+  #endif
+
   lastRPM_100ms = 0;
+  loop33ms = 0;
+  loop66ms = 0;
+  loop100ms = 0;
+  loop250ms = 0;
+  loopSec = 0;
 }
 
 
 //Timer2 Overflow Interrupt Vector, called when the timer overflows.
 //Executes every ~1ms.
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
+#if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER2_OVF_vect, ISR_NOBLOCK)
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
 void oneMSInterval() //Most ARM chips can simply call a function
@@ -61,6 +70,8 @@ void oneMSInterval() //Most ARM chips can simply call a function
 {
 
   //Increment Loop Counters
+  loop33ms++;
+  loop66ms++;
   loop100ms++;
   loop250ms++;
   loopSec++;
@@ -69,19 +80,40 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
   //Overdwell check
   targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
+  bool isCrankLocked = configPage2.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
 
-  if(ignitionSchedule1.Status == RUNNING) { if( (ignitionSchedule1.startTime < targetOverdwellTime) && (configPage2.useDwellLim) ) { endCoil1Charge(); } }
-  if(ignitionSchedule2.Status == RUNNING) { if( (ignitionSchedule2.startTime < targetOverdwellTime) && (configPage2.useDwellLim) ) { endCoil2Charge(); } }
-  if(ignitionSchedule3.Status == RUNNING) { if( (ignitionSchedule3.startTime < targetOverdwellTime) && (configPage2.useDwellLim) ) { endCoil3Charge(); } }
-  if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage2.useDwellLim) ) { endCoil4Charge(); } }
-  if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage2.useDwellLim) ) { endCoil5Charge(); } }
+  if(ignitionSchedule1.Status == RUNNING) { if( (ignitionSchedule1.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil1Charge(); } }
+  if(ignitionSchedule2.Status == RUNNING) { if( (ignitionSchedule2.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil2Charge(); } }
+  if(ignitionSchedule3.Status == RUNNING) { if( (ignitionSchedule3.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil3Charge(); } }
+  if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil4Charge(); } }
+  if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil5Charge(); } }
+
+
+
+  //30Hz loop
+  if (loop33ms == 33)
+  {
+    loop33ms = 0;
+    BIT_SET(TIMER_mask, BIT_TIMER_30HZ);
+  }
+
+  //15Hz loop
+  if (loop66ms == 66)
+  {
+    loop66ms = 0;
+    BIT_SET(TIMER_mask, BIT_TIMER_15HZ);
+  }
 
   //Loop executed every 100ms loop
   //Anything inside this if statement will run every 100ms.
   if (loop100ms == 100)
   {
     loop100ms = 0; //Reset counter
+    BIT_SET(TIMER_mask, BIT_TIMER_10HZ);
+    #if defined(CORE_STM32) //debug purpose, only visal for running code
+      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+    #endif
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
@@ -91,10 +123,16 @@ void oneMSInterval() //Most ARM chips can simply call a function
   //Anything inside this if statement will run every 250ms.
   if (loop250ms == 250)
   {
-    loop250ms = 0; //Reset Counter.
+    loop250ms = 0; //Reset Counter
+    BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
+
     #if defined(CORE_AVR)
       //Reset watchdog timer (Not active currently)
       //wdt_reset();
+      //DIY watchdog
+      //This is a sign of a crash:
+      //if( (initialisationComplete == true) && (last250msLoopCount == mainLoopCount) ) { setup(); }
+      //else { last250msLoopCount = mainLoopCount; }
     #endif
   }
 
@@ -102,9 +140,10 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if (loopSec == 1000)
   {
     loopSec = 0; //Reset counter.
+    BIT_SET(TIMER_mask, BIT_TIMER_1HZ);
 
     dwellLimit_uS = (1000 * configPage2.dwellLimit); //Update uS value incase setting has changed
-    if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) { dwellLimit_uS = dwellLimit_uS * 3; } //Make sure the overdwell doesn't clobber the fixed ignition cranking if enabled.
+    currentStatus.crankRPM = ((unsigned int)configPage2.crankRPM * 100);
 
     //**************************************************************************************************************************************************
     //This updates the runSecs variable
@@ -123,18 +162,23 @@ void oneMSInterval() //Most ARM chips can simply call a function
     currentStatus.secl++;
     //**************************************************************************************************************************************************
     //Check the fan output status
-    if (configPage4.fanEnable == 1)
+    if (configPage3.fanEnable == 1)
     {
        fanControl();            // Fucntion to turn the cooling fan on/off
     }
 
     //Check whether fuel pump priming is complete
-    if(!fpPrimed)
+    if(fpPrimed == false)
     {
       if(currentStatus.secl >= configPage1.fpPrime)
       {
         fpPrimed = true; //Mark the priming as being completed
-        if(currentStatus.RPM == 0) { digitalWrite(pinFuelPump, LOW); fuelPumpOn = false; } //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
+        if(currentStatus.RPM == 0)
+        {
+          //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
+          digitalWrite(pinFuelPump, LOW);
+          fuelPumpOn = false;
+        }
       }
     }
     //**************************************************************************************************************************************************
@@ -173,7 +217,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     }
 
   }
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
+#if defined(CORE_AVR) //AVR chips use the ISR for this
     //Reset Timer2 to trigger in another ~1ms
     TCNT2 = 131;            //Preload timer2 with 100 cycles, leaving 156 till overflow.
     TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag

@@ -9,13 +9,25 @@
   #define CORE_AVR
 #elif defined(CORE_TEENSY)
   #define BOARD_NR_GPIO_PINS 34
-#elif defined(STM32_MCU_SERIES) || defined(_VARIANT_ARDUINO_STM32_)
+#elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
-  #define LED_BUILTIN 33
+  #if defined (STM32F1) || defined(__STM32F1__)
+    #define BOARD_NR_GPIO_PINS 34
+    #define LED_BUILTIN 33
+  #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
+    #define BOARD_NR_GPIO_PINS 80
+    #define LED_BUILTIN PA7
+  #endif
 
+  extern "C" char* sbrk(int incr); //Used to freeRam
   inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
-  #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
-  #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+  #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
+    #define portOutputRegister(port) (volatile byte *)( &(port->ODR) )
+    #define portInputRegister(port) (volatile byte *)( &(port->IDR) )
+  #else //libmaple core aka STM32DUINO
+    #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+    #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+  #endif
 #else
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif
@@ -27,6 +39,10 @@
 
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000
+
+//Define the load algorithm
+#define LOAD_SOURCE_MAP         0
+#define LOAD_SOURCE_TPS         1
 
 //Define bit positions within engine virable
 #define BIT_ENGINE_RUN      0   // Engine running
@@ -67,6 +83,12 @@
 #define BIT_SPARK2_UNUSED7        6
 #define BIT_SPARK2_UNUSED8        7
 
+#define BIT_TIMER_1HZ             0
+#define BIT_TIMER_4HZ             1
+#define BIT_TIMER_10HZ            2
+#define BIT_TIMER_15HZ            3
+#define BIT_TIMER_30HZ            4
+
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
@@ -82,6 +104,14 @@
 #define IGN_MODE_SINGLE     1
 #define IGN_MODE_WASTEDCOP  2
 #define IGN_MODE_SEQUENTIAL 3
+#define IGN_MODE_ROTARY     4
+
+#define ROTARY_IGN_FC       0
+#define ROTARY_IGN_FD       1
+#define ROTARY_IGN_RX8      2
+
+#define BOOST_MODE_SIMPLE   0
+#define BOOST_MODE_FULL     1
 
 #define SIZE_BYTE   8
 #define SIZE_INT    16
@@ -99,6 +129,9 @@
 
 #define SERIAL_BUFFER_THRESHOLD 32 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
 
+#define FUEL_PUMP_ON() *pump_pin_port |= (pump_pin_mask)
+#define FUEL_PUMP_OFF() *pump_pin_port &= ~(pump_pin_mask)
+
 const byte signature = 20;
 
 //const char signature[] = "speeduino";
@@ -106,9 +139,9 @@ const char displaySignature[] = "speeduino 201609-dev";
 const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
-const byte page_size = 64;
-const int npage_size[11] = {0,288,64,288,64,288,64,64,160,192,128};
-//const byte page10_size = 128;
+//const byte page_size = 64;
+const int npage_size[11] = {0,288,128,288,128,288,128,160,192,128,192};
+//const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
 struct table3D fuelTable; //16x16 fuel map
@@ -122,10 +155,12 @@ struct table3D trim3Table; //6x6 Fuel trim 3 map
 struct table3D trim4Table; //6x6 Fuel trim 4 map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
+struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
 struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
+struct table2D rotarySplitTable; //8 bin ignition split curve for rotary leading/trailing  (2D)
 
 //These are for the direct port manipulation of the injectors and coils
 volatile byte *inj1_pin_port;
@@ -152,6 +187,8 @@ volatile byte ign5_pin_mask;
 
 volatile byte *tach_pin_port;
 volatile byte tach_pin_mask;
+volatile byte *pump_pin_port;
+volatile byte pump_pin_mask;
 
 volatile byte *triggerPri_pin_port;
 volatile byte triggerPri_pin_mask;
@@ -173,6 +210,9 @@ int ignition4EndAngle = 0;
 //This is used across multiple files
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 
+volatile byte TIMER_mask;
+volatile byte LOOP_TIMER;
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
@@ -180,8 +220,9 @@ struct statuses {
   uint16_t RPM;
   long longRPM;
   int mapADC;
+  int baroADC;
   long MAP; //Has to be a long for PID calcs (Boost control)
-  byte baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running
+  byte baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
   byte TPS; //The current TPS reading (0% - 100%)
   byte TPSlast; //The previous TPS reading
   unsigned long TPS_time; //The time the TPS sample was taken
@@ -230,17 +271,18 @@ struct statuses {
   volatile unsigned int loopsPerSecond;
   boolean launchingSoft; //True when in launch control soft limit mode
   boolean launchingHard; //True when in launch control hard limit mode
-  int freeRAM;
+  uint16_t freeRAM;
   unsigned int clutchEngagedRPM;
   bool flatShiftingHard;
-  volatile byte startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
-  byte boostTarget;
+  volatile uint16_t startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
+  uint16_t boostTarget;
   byte testOutputs;
   bool testActive;
-  byte boostDuty;
+  uint16_t boostDuty; //Percentage value * 100 to give 2 points of precision
   byte idleLoad; //Either the current steps or current duty cycle for the idle control.
   uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
   uint8_t current_caninchannel = 0; //start off at channel 0
+  uint16_t crankRPM = 400; //The actual cranking RPM limit. Saves us multiplying it everytime from the config page
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -313,7 +355,7 @@ struct config1 {
   byte baroCorr : 1;
   byte injLayout : 2;
   byte perToothIgn : 1;
-  byte unused2_38h : 1;
+  byte dfcoEnabled : 1; //Whether or not DFCO is turned on
 
   byte primePulse;
   byte dutyLim;
@@ -323,7 +365,7 @@ struct config1 {
   byte boostMaxDuty;
   byte tpsMin;
   byte tpsMax;
-  byte mapMin;
+  int8_t mapMin; //Must be signed
   uint16_t mapMax;
   byte fpPrime; //Time (In seconds) that the fuel pump should be primed for on power up
   byte stoich;
@@ -338,6 +380,8 @@ struct config1 {
   byte iacCLminDuty;
   byte iacCLmaxDuty;
   byte boostMinDuty;
+
+  byte unused1_64[63];
 
 #if defined(CORE_AVR)
   };
@@ -357,7 +401,7 @@ struct config2 {
   byte TrigEdge : 1;
   byte TrigSpeed : 1;
   byte IgInv : 1;
-  byte oddfire : 1;
+  byte unused4_5d : 1;
   byte TrigPattern : 4;
 
   byte TrigEdgeSec : 1;
@@ -372,8 +416,7 @@ struct config2 {
 
   byte dwellCont : 1; //Fixed duty dwell control
   byte useDwellLim : 1; //Whether the dwell limiter is off or on
-  byte sparkMode : 2; //Spark output mode (Eg Wasted spark, single channel or Wasted COP)
-  byte dfcoEnabled : 1; //Whether or not DFCO is turned on
+  byte sparkMode : 3; //Spark output mode (Eg Wasted spark, single channel or Wasted COP)
   byte triggerFilter : 2; //The mode of trigger filter being used (0=Off, 1=Light (Not currently used), 2=Normal, 3=Aggressive)
   byte ignCranklock : 1; //Whether or not the ignition timing during cranking is locked to a CAS pulse. Only currently valid for Basic distributor and 4G63.
 
@@ -401,6 +444,8 @@ struct config2 {
   byte ignBypassEnabled : 1; //Whether or not the ignition bypass is enabled
   byte ignBypassPin : 6; //Pin the ignition bypass is activated on
   byte ignBypassHiLo : 1; //Whether this should be active high or low.
+
+  byte unused2_64[63];
 
 #if defined(CORE_AVR)
   };
@@ -431,7 +476,8 @@ struct config3 {
   byte egoRPM; //RPM must be above this for closed loop to function
   byte egoTPSMax; //TPS must be below this for closed loop to function
   byte vvtPin : 6;
-  byte unused6_13 : 2;
+  byte useExtBaro : 1;
+  byte boostMode : 1; //Simple of full boost contrl
   byte boostPin : 6;
   byte unused6_14 : 2;
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
@@ -464,21 +510,11 @@ struct config3 {
   byte lnchPullRes : 2;
   byte fuelTrimEnabled : 1;
   byte flatSEnable : 1;
-  byte unused60 : 4;
+  byte baroPin : 4;
   byte flatSSoftWin;
   byte flatSRetard;
   byte flatSArm;
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
-#endif
-
-
-//Page 4 of the config mostly deals with idle control
-//See ini file for further info (Config Page 7 in the ini)
-struct config4 {
   byte iacCLValues[10]; //Closed loop target RPM value
   byte iacOLStepVal[10]; //Open loop step values for stepper motors
   byte iacOLPWMVal[10]; //Open loop duty values for PMWM valves
@@ -561,6 +597,31 @@ struct config10 {
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
 
+/*
+Page 11 - No specific purpose. Created initially for the cranking enrich curve
+192 bytes long
+See ini file for further info (Config Page 11 in the ini)
+*/
+struct config11 {
+  byte crankingEnrichBins[4];
+  byte crankingEnrichValues[4];
+
+  byte rotaryType : 2;
+  byte unused11_8c : 6;
+
+  byte rotarySplitValues[8];
+  byte rotarySplitBins[8];
+
+  uint16_t boostSens;
+  byte boostIntv;
+  byte unused11_28_192[164];
+
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+#endif
+
 
 byte pinInjector1; //Output pin injector 1
 byte pinInjector2; //Output pin injector 2
@@ -619,6 +680,7 @@ byte pinStepperEnable; //Turning the DRV8825 driver on/off
 byte pinLaunch;
 byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached
+byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
@@ -627,10 +689,12 @@ extern struct table3D ignitionTable; //16x16 ignition map
 extern struct table3D afrTable; //16x16 afr target map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
+extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 extern struct config1 configPage1;
 extern struct config2 configPage2;
 extern struct config3 configPage3;
 extern struct config10 configPage10;
+extern struct config11 configPage11;
 extern unsigned long currentLoopTime; //The time the current loop started (uS)
 extern unsigned long previousLoopTime; //The time the previous loop started (uS)
 extern byte ignitionCount;

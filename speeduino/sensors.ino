@@ -61,10 +61,12 @@ void instanteneousMAPReading()
   if( (tempReading >= VALID_MAP_MAX) || (tempReading <= VALID_MAP_MIN) ) { mapErrorCount += 1; }
   else { mapErrorCount = 0; }
 
-  currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC); //Very weak filter
+  //During startup a call is made here to get the baro reading. In this case, we can't apply the ADC filter
+  if(initialisationComplete == true) { currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC); } //Very weak filter
+  else { currentStatus.mapADC = tempReading; } //Baro reading (No filter)
 
-  currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
-
+  currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+  if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
 
 }
 
@@ -96,7 +98,10 @@ void readMAP()
           //Error check
           if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
           {
-            MAPrunningValue = MAPrunningValue + (unsigned long)tempReading; //Add the current reading onto the total
+            currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC);
+            MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
+            //Old method (No filter)
+            //MAPrunningValue = MAPrunningValue + (unsigned long)tempReading;
             MAPcount++;
           }
           else { mapErrorCount += 1; }
@@ -108,7 +113,9 @@ void readMAP()
           if( (MAPrunningValue != 0) && (MAPcount != 0) )
           {
             currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
-            currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
+            currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+            //currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax);
+            if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
             MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
             MAPrunningValue = 0;
             MAPcount = 0;
@@ -142,7 +149,8 @@ void readMAP()
         {
           //Reaching here means that the last cylce has completed and the MAP value should be calculated
           currentStatus.mapADC = MAPrunningValue;
-          currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax); //Get the current MAP value
+          currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+          if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
           MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
           MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
         }
@@ -200,6 +208,25 @@ void readIAT()
   #endif
   currentStatus.iatADC = ADC_FILTER(tempReading, ADCFILTER_IAT, currentStatus.iatADC);
   currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
+}
+
+void readBaro()
+{
+  if ( configPage3.useExtBaro != 0 )
+  {
+    int tempReading;
+    // readings
+    #if defined(ANALOG_ISR_MAP)
+      tempReading = AnChannel[pinBaro-A0];
+    #else
+      tempReading = analogRead(pinBaro);
+      tempReading = analogRead(pinBaro);
+    #endif
+
+    currentStatus.baroADC = ADC_FILTER(tempReading, ADCFILTER_BARO, currentStatus.baroADC); //Very weak filter
+
+    currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+  }
 }
 
 void readO2()

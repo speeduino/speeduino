@@ -15,6 +15,8 @@ static inline void addToothLogEntry(unsigned long);
 static inline uint16_t stdGetRPM();
 static inline void setFilter(unsigned long);
 static inline int crankingGetRPM(byte);
+static inline void doPerToothTiming(uint16_t crankAngle);
+
 void triggerSetup_missingTooth();
 void triggerPri_missingTooth();
 void triggerSec_missingTooth();
@@ -59,6 +61,7 @@ unsigned int triggerSecFilterTime_duration; // The shortest valid time (in uS) p
 volatile int triggerToothAngle; //The number of crank degrees that elapse per tooth
 bool secondDerivEnabled; //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
 bool decoderIsSequential; //Whether or not the decoder supports sequential operation
+bool decoderIsLowRes = false; //Is set true, certain extra calculations are performed for better timing accuracy
 byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
 
 int16_t ignition1EndTooth = 0;

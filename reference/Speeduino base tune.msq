@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.26 - EFI Analytics, Inc." tuneComment="" writeDate="Wed Jul 05 15:59:26 BST 2017"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.06-dev" nPages="10" signature="speeduino 201706-dev"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.28 - EFI Analytics, Inc." tuneComment="" writeDate="Sat Sep 09 21:28:59 AEST 2017"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.07" nPages="11" signature="speeduino 201708"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
 </page>
@@ -122,9 +122,9 @@
 <constant name="baroCorr">"Off"</constant>
 <constant name="injLayout">"Paired"</constant>
 <constant name="perToothIgn">"No"</constant>
-<constant name="unused2-38h">"No"</constant>
+<constant name="dfcoEnabled">"Off"</constant>
 <constant digits="1" name="primePulse" units="ms">1.0</constant>
-<constant digits="0" name="dutyLim" units="%">85.0</constant>
+<constant digits="0" name="dutyLim" units="%">90.0</constant>
 <constant digits="0" name="flexFreqLow" units="Hz">50.0</constant>
 <constant digits="0" name="flexFreqHigh" units="Hz">150.0</constant>
 <constant digits="0" name="boostMaxDuty" units="%">100.0</constant>
@@ -214,15 +214,14 @@
 <constant name="TrigEdgeSec">"Leading"</constant>
 <constant name="fuelPumpPin">"Board Default"</constant>
 <constant name="useResync">"No"</constant>
-<constant digits="1" name="sparkDur" units="ms">25.5</constant>
+<constant digits="1" name="sparkDur" units="ms">1.0</constant>
 <constant digits="0" name="IdleAdvRPM" units="RPM">3200.0</constant>
-<constant digits="0" name="IdleAdvCLT" units="F">-5.814</constant>
+<constant digits="1" name="IdleAdvCLT" units="C">-21.0</constant>
 <constant digits="0" name="IdleDelayTime" units="sec">38.0</constant>
 <constant digits="0" name="StgCycles" units="cycles">2.0</constant>
 <constant name="dwellcont">"Dwell control"</constant>
 <constant name="useDwellLim">"On"</constant>
 <constant name="sparkMode">"Wasted Spark"</constant>
-<constant name="dfcoEnabled">"Off"</constant>
 <constant name="TrigFilter">"Off"</constant>
 <constant name="ignCranklock">"On"</constant>
 <constant digits="1" name="dwellcrank" units="ms">4.5</constant>
@@ -247,17 +246,17 @@
          74.0 
          85.0 
       </constant>
-<constant cols="1" digits="0" name="wueBins" rows="10" units="F">
-         -40.014 
-         -14.814 
-         17.586 
-         48.186 
-         78.786 
-         100.386 
-         120.186 
-         139.986 
-         156.186 
-         175.986 
+<constant cols="1" digits="0" name="wueBins" rows="10" units="C">
+         -40.0 
+         -26.0 
+         -8.0 
+         9.0 
+         26.0 
+         38.0 
+         49.0 
+         60.0 
+         69.0 
+         80.0 
       </constant>
 <constant digits="0" name="dwellLim" units="ms">8.0</constant>
 <constant cols="1" digits="0" name="dwellRates" rows="6" units="%">
@@ -268,13 +267,13 @@
          91.0 
          85.0 
       </constant>
-<constant cols="1" digits="0" name="iatRetBins" rows="6" units="F">
-         136.386 
-         179.586 
-         199.386 
-         219.186 
-         240.786 
-         283.986 
+<constant cols="1" digits="0" name="iatRetBins" rows="6" units="C">
+         58.0 
+         82.0 
+         93.0 
+         104.0 
+         116.0 
+         140.0 
       </constant>
 <constant cols="1" digits="0" name="iatRetRates" rows="6" units="deg">
          0.0 
@@ -356,7 +355,7 @@
 <constant digits="0" name="egoKP" units="%">100.0</constant>
 <constant digits="0" name="egoKI" units="%">20.0</constant>
 <constant digits="0" name="egoKD" units="%">0.0</constant>
-<constant digits="0" name="egoTemp" units="F">157.986</constant>
+<constant digits="0" name="egoTemp" units="C">70.0</constant>
 <constant digits="0" name="egoCount">16.0</constant>
 <constant digits="0" name="egoDelta" units="%">1.0</constant>
 <constant digits="0" name="egoLimit">15.0</constant>
@@ -366,8 +365,8 @@
 <constant digits="0" name="egoRPM" units="rpm">1200.0</constant>
 <constant digits="0" name="egoTPSMax" units="%">70.0</constant>
 <constant name="vvtPin">"Board Default"</constant>
-<constant name="unused6-13e">"ONE"</constant>
-<constant name="unused6-13f">"ONE"</constant>
+<constant name="useExtBaro">"No"</constant>
+<constant name="boostMode">"Simple"</constant>
 <constant name="boostPin">"Board Default"</constant>
 <constant name="unused6-14e">"ONE"</constant>
 <constant name="unused6-14f">"ONE"</constant>
@@ -387,16 +386,16 @@
          100.0 
          98.0 
       </constant>
-<constant cols="1" digits="0" name="airDenBins" rows="9" units="F">
-         -40.014 
-         -4.014 
-         31.986 
-         67.986 
-         94.986 
-         121.986 
-         139.986 
-         193.986 
-         247.986 
+<constant cols="1" digits="0" name="airDenBins" rows="9" units="C">
+         -40.0 
+         -20.0 
+         0.0 
+         20.0 
+         35.0 
+         50.0 
+         60.0 
+         90.0 
+         120.0 
       </constant>
 <constant cols="1" digits="0" name="airDenRates" rows="9" units="%">
          126.0 
@@ -429,10 +428,7 @@
 <constant name="lnchPullRes">"Pullup"</constant>
 <constant name="fuelTrimEnabled">"No"</constant>
 <constant name="flatSEnable">"No"</constant>
-<constant name="unused6-60e">"ONE"</constant>
-<constant name="unused6-60f">"ONE"</constant>
-<constant name="unused6-60g">"ONE"</constant>
-<constant name="unused6-60h">"ONE"</constant>
+<constant name="baroPin">"A0"</constant>
 <constant digits="0" name="flatSSoftWin" units="rpm">400.0</constant>
 <constant digits="0" name="flatSRetard" units="deg">5.0</constant>
 <constant digits="0" name="flatSArm" units="rpm">2000.0</constant>
@@ -474,17 +470,17 @@
          16.0 
          9.0 
       </constant>
-<constant cols="1" digits="0" name="iacBins" rows="10" units="F">
-         -36.414 
-         -2.214 
-         33.786 
-         62.586 
-         93.186 
-         121.986 
-         145.386 
-         174.186 
-         208.386 
-         289.386 
+<constant cols="1" digits="0" name="iacBins" rows="10" units="C">
+         -38.0 
+         -19.0 
+         1.0 
+         17.0 
+         34.0 
+         50.0 
+         63.0 
+         79.0 
+         98.0 
+         143.0 
       </constant>
 <constant cols="1" digits="0" name="iacCrankSteps" rows="4" units="Steps">
          123.0 
@@ -498,30 +494,30 @@
          44.0 
          60.0 
       </constant>
-<constant cols="1" digits="0" name="iacCrankBins" rows="4" units="F">
-         -18.414 
-         42.786 
-         111.186 
-         168.786 
+<constant cols="1" digits="0" name="iacCrankBins" rows="4" units="C">
+         -28.0 
+         6.0 
+         44.0 
+         76.0 
       </constant>
 <constant name="iacAlgorithm">"None"</constant>
 <constant name="iacStepTime">"3"</constant>
 <constant name="iacChannels">"1"</constant>
 <constant name="iacPWMdir">"Normal"</constant>
-<constant digits="0" name="iacFastTemp" units="F">67.986</constant>
+<constant digits="0" name="iacFastTemp" units="C">20.0</constant>
 <constant digits="0" name="iacStepHome" units="Steps">240.0</constant>
 <constant digits="0" name="iacStepHyster" units="Steps">4.0</constant>
 <constant name="fanInv">"No"</constant>
 <constant name="fanEnable">"Off"</constant>
 <constant name="fanPin">"Board Default"</constant>
-<constant digits="0" name="fanSP" units="F">166.986</constant>
-<constant digits="0" name="fanHyster" units="F">36.0</constant>
+<constant digits="0" name="fanSP" units="C">75.0</constant>
+<constant digits="0" name="fanHyster" units="C">2.0</constant>
 <constant digits="0" name="fanFreq" units="Hz">6.0</constant>
-<constant cols="1" digits="0" name="fanPWMBins" rows="4" units="F">
-         139.986 
-         -4.014 
-         -40.014 
-         316.386 
+<constant cols="1" digits="0" name="fanPWMBins" rows="4" units="C">
+         60.0 
+         -20.0 
+         -40.0 
+         158.0 
       </constant>
 </page>
 <page number="7" size="160">
@@ -686,16 +682,16 @@
 </page>
 <page number="9" size="128">
 <constant name="enable_canbus">"Disable"</constant>
-<constant name="enable_candata_in">"Off"</constant>
+<constant name="enable_candata_in">"On"</constant>
 <constant name="caninput_sel0">"Off"</constant>
-<constant name="caninput_sel1">"Off"</constant>
-<constant name="caninput_sel2">"Off"</constant>
-<constant name="caninput_sel3">"Off"</constant>
-<constant name="caninput_sel4">"Off"</constant>
-<constant name="caninput_sel5">"Off"</constant>
-<constant name="caninput_sel6">"Off"</constant>
-<constant name="caninput_sel7">"Off"</constant>
-<constant name="caninput_sel8">"Off"</constant>
+<constant name="caninput_sel1">"On"</constant>
+<constant name="caninput_sel2">"On"</constant>
+<constant name="caninput_sel3">"On"</constant>
+<constant name="caninput_sel4">"On"</constant>
+<constant name="caninput_sel5">"On"</constant>
+<constant name="caninput_sel6">"On"</constant>
+<constant name="caninput_sel7">"On"</constant>
+<constant name="caninput_sel8">"On"</constant>
 <constant name="caninput_sel9">"Off"</constant>
 <constant name="caninput_sel10">"Off"</constant>
 <constant name="caninput_sel11">"Off"</constant>
@@ -703,22 +699,22 @@
 <constant name="caninput_sel13">"Off"</constant>
 <constant name="caninput_sel14">"Off"</constant>
 <constant name="caninput_sel15">"Off"</constant>
-<constant name="caninput_param_group0">"0x200"</constant>
-<constant name="caninput_param_group1">"0x200"</constant>
-<constant name="caninput_param_group2">"0x200"</constant>
-<constant name="caninput_param_group3">"0x200"</constant>
-<constant name="caninput_param_group4">"0x200"</constant>
-<constant name="caninput_param_group5">"0x200"</constant>
-<constant name="caninput_param_group6">"0x200"</constant>
-<constant name="caninput_param_group7">"0x200"</constant>
-<constant name="caninput_param_group8">"0x200"</constant>
-<constant name="caninput_param_group9">"0x200"</constant>
-<constant name="caninput_param_group10">"0x200"</constant>
-<constant name="caninput_param_group11">"0x200"</constant>
-<constant name="caninput_param_group12">"0x200"</constant>
-<constant name="caninput_param_group13">"0x200"</constant>
-<constant name="caninput_param_group14">"0x200"</constant>
-<constant name="caninput_param_group15">"0x200"</constant>
+<constant name="caninput_param_group0">"blank"</constant>
+<constant name="caninput_param_group1">"blank"</constant>
+<constant name="caninput_param_group2">"blank"</constant>
+<constant name="caninput_param_group3">"blank"</constant>
+<constant name="caninput_param_group4">"blank"</constant>
+<constant name="caninput_param_group5">"blank"</constant>
+<constant name="caninput_param_group6">"blank"</constant>
+<constant name="caninput_param_group7">"blank"</constant>
+<constant name="caninput_param_group8">"blank"</constant>
+<constant name="caninput_param_group9">"blank"</constant>
+<constant name="caninput_param_group10">"blank"</constant>
+<constant name="caninput_param_group11">"blank"</constant>
+<constant name="caninput_param_group12">"blank"</constant>
+<constant name="caninput_param_group13">"blank"</constant>
+<constant name="caninput_param_group14">"blank"</constant>
+<constant name="caninput_param_group15">"blank"</constant>
 <constant name="caninput_param_start_byte0">"7"</constant>
 <constant name="caninput_param_start_byte1">"0"</constant>
 <constant name="caninput_param_start_byte2">"0"</constant>
@@ -728,13 +724,13 @@
 <constant name="caninput_param_start_byte6">"0"</constant>
 <constant name="caninput_param_start_byte7">"0"</constant>
 <constant name="caninput_param_start_byte8">"0"</constant>
-<constant name="caninput_param_start_byte9">"0"</constant>
-<constant name="caninput_param_start_byte10">"0"</constant>
-<constant name="caninput_param_start_byte11">"0"</constant>
-<constant name="caninput_param_start_byte12">"0"</constant>
-<constant name="caninput_param_start_byte13">"0"</constant>
-<constant name="caninput_param_start_byte14">"0"</constant>
-<constant name="caninput_param_start_byte15">"0"</constant>
+<constant name="caninput_param_start_byte9">"7"</constant>
+<constant name="caninput_param_start_byte10">"7"</constant>
+<constant name="caninput_param_start_byte11">"7"</constant>
+<constant name="caninput_param_start_byte12">"7"</constant>
+<constant name="caninput_param_start_byte13">"7"</constant>
+<constant name="caninput_param_start_byte14">"7"</constant>
+<constant name="caninput_param_start_byte15">"7"</constant>
 <constant name="caninput_param_num_bytes0">"1"</constant>
 <constant name="caninput_param_num_bytes1">"1"</constant>
 <constant name="caninput_param_num_bytes2">"1"</constant>
@@ -785,9 +781,9 @@
 <constant digits="0" name="unused10_98">255.0</constant>
 <constant digits="0" name="unused10_99">255.0</constant>
 <constant name="speeduino_tsCanId">"CAN ID 0"</constant>
-<constant name="true_address">"0x100"</constant>
-<constant name="realtime_base_address">"0x150"</constant>
-<constant name="obd_address">"0x7FF"</constant>
+<constant name="true_address">"0x101"</constant>
+<constant name="realtime_base_address">"0x201"</constant>
+<constant name="obd_address">"0x2FF"</constant>
 <constant digits="0" name="unused10_107">255.0</constant>
 <constant digits="0" name="unused10_108">255.0</constant>
 <constant digits="0" name="unused10_109">255.0</constant>
@@ -808,13 +804,27 @@
 <constant digits="0" name="unused10_124">255.0</constant>
 <constant digits="0" name="unused10_125">255.0</constant>
 <constant digits="0" name="unused10_126">255.0</constant>
-<constant digits="0" name="unused10_127">255.0</constant>
+<constant digits="0" name="unused10_127">1.0</constant>
+</page>
+<page number="10" size="192">
+<constant cols="1" digits="0" name="crankingEnrichBins" rows="4" units="C">
+         -40.0 
+         0.0 
+         30.0 
+         70.0 
+      </constant>
+<constant cols="1" digits="0" name="crankingEnrichValues" rows="4" units="%">
+         138.0 
+         115.0 
+         105.0 
+         100.0 
+      </constant>
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">
 <setting name="enablehardware_test_OFF" value="enablehardware_test_OFF"/>
-<setting name="FAHRENHEIT" value="FAHRENHEIT"/>
 <setting name="SPEED_DENSITY" value="SPEED_DENSITY"/>
-<setting name="CAN_COMMANDS" value="CAN_COMMANDS"/>
+<setting name="CAN_COMMANDS_OFF" value="CAN_COMMANDS_OFF"/>
+<setting name="CELSIUS" value="CELSIUS"/>
 <setting name="AFR" value="AFR"/>
 </settings>
 <userComments Comment="These are user comments that can be related to a particular setting or dialog."/>

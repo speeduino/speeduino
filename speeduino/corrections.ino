@@ -112,7 +112,11 @@ Additional fuel % to be added when the engine is cranking
 static inline byte correctionCranking()
 {
   byte crankingValue = 100;
-  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage1.crankingPct; }
+  //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage1.crankingPct; }
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+  {
+    crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  }
   return crankingValue;
 }
 
@@ -152,12 +156,13 @@ static inline byte correctionAccel()
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
   {
     //If it is currently running, check whether it should still be running or whether it's reached it's end time
-    if( currentLoopTime >= currentStatus.TAEEndTime )
+    if( micros() >= currentStatus.TAEEndTime )
     {
       //Time to turn enrichment off
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
       currentStatus.TAEamount = 0;
       accelValue = 100;
+      currentStatus.tpsDOT = 0;
     }
     else
     {
@@ -173,6 +178,7 @@ static inline byte correctionAccel()
     if (TPS_change <= 2)
     {
       accelValue = 100;
+      currentStatus.tpsDOT = 0;
     }
     else
     {
@@ -256,7 +262,7 @@ static inline byte correctionLaunch()
 static inline bool correctionDFCO()
 {
   bool DFCOValue = false;
-  if ( configPage2.dfcoEnabled == 1 )
+  if ( configPage1.dfcoEnabled == 1 )
   {
     if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
     else { DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage2.dfcoRPM * 10) + configPage2.dfcoHyster) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
@@ -472,7 +478,7 @@ uint16_t correctionsDwell(uint16_t dwell)
   uint16_t dwellPerRevolution = tempDwell + (uint16_t)(configPage2.sparkDur * 100); //Spark duration is in mS*10. Multiple it by 100 to get spark duration in uS
   int8_t pulsesPerRevolution = 1;
   //Single channel spark mode is the only time there will be more than 1 pulse per revolution on any given output
-  if( (configPage2.sparkMode == IGN_MODE_SINGLE) && (configPage1.nCylinders > 1) ) //No point in running this for 1 cylinder engines
+  if( ( (configPage2.sparkMode == IGN_MODE_SINGLE) || (configPage2.sparkMode == IGN_MODE_ROTARY) ) && (configPage1.nCylinders > 1) ) //No point in running this for 1 cylinder engines
   {
     pulsesPerRevolution = (configPage1.nCylinders >> 1);
     dwellPerRevolution = dwellPerRevolution * pulsesPerRevolution;
