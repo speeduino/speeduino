@@ -40,6 +40,14 @@ uint16_t freeRam ()
 #endif
 }
 
+byte pinTranslate(byte rawPin)
+{
+  byte outputPin = rawPin;
+  if(rawPin > BOARD_DIGITAL_GPIO_PINS) { outputPin = A8 + (outputPin - BOARD_DIGITAL_GPIO_PINS); }
+
+  return outputPin;
+}
+
 void setPinMapping(byte boardID)
 {
   switch (boardID)
@@ -269,7 +277,7 @@ void setPinMapping(byte boardID)
       pinInjector5 = 14; //Output pin injector 5 is on
       pinCoil1 = 39; //Pin for coil 1
       pinCoil2 = 41; //Pin for coil 2
-      pinCoil3 = 35; //Pin for coil 3
+      pinCoil3 = 32; //Pin for coil 3
       pinCoil4 = 33; //Pin for coil 4
       pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
@@ -288,7 +296,7 @@ void setPinMapping(byte boardID)
       pinFuelPump = 37; //Fuel pump output
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
-      pinFan = 47; //Pin for the fan output (Goes to ULN2803)
+      pinFan = 35; //Pin for the fan output
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
       break;
@@ -433,13 +441,13 @@ void setPinMapping(byte boardID)
 
   //Setup any devices that are using selectable pins
 
-  if ( (configPage3.launchPin != 0) && (configPage3.launchPin < BOARD_NR_GPIO_PINS) ) { pinLaunch = configPage3.launchPin; }
-  if ( (configPage2.ignBypassPin != 0) && (configPage2.ignBypassPin < BOARD_NR_GPIO_PINS) ) { pinIgnBypass = configPage2.ignBypassPin; }
-  if ( (configPage1.tachoPin != 0) && (configPage1.tachoPin < BOARD_NR_GPIO_PINS) ) { pinTachOut = configPage1.tachoPin; }
-  if ( (configPage2.fuelPumpPin != 0) && (configPage2.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = configPage2.fuelPumpPin; }
-  if ( (configPage3.fanPin != 0) && (configPage3.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = configPage3.fanPin; }
-  if ( (configPage3.boostPin != 0) && (configPage3.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = configPage3.boostPin; }
-  if ( (configPage3.vvtPin != 0) && (configPage3.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = configPage3.vvtPin; }
+  if ( (configPage3.launchPin != 0) && (configPage3.launchPin < BOARD_NR_GPIO_PINS) ) { pinLaunch = pinTranslate(configPage3.launchPin); }
+  if ( (configPage2.ignBypassPin != 0) && (configPage2.ignBypassPin < BOARD_NR_GPIO_PINS) ) { pinIgnBypass = pinTranslate(configPage2.ignBypassPin); }
+  if ( (configPage1.tachoPin != 0) && (configPage1.tachoPin < BOARD_NR_GPIO_PINS) ) { pinTachOut = pinTranslate(configPage1.tachoPin); }
+  if ( (configPage2.fuelPumpPin != 0) && (configPage2.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = pinTranslate(configPage2.fuelPumpPin); }
+  if ( (configPage3.fanPin != 0) && (configPage3.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = pinTranslate(configPage3.fanPin); }
+  if ( (configPage3.boostPin != 0) && (configPage3.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = pinTranslate(configPage3.boostPin); }
+  if ( (configPage3.vvtPin != 0) && (configPage3.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage3.vvtPin); }
   if ( (configPage3.useExtBaro != 0) && (configPage3.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage3.baroPin + A0; }
 
   //Finally, set the relevant pin modes for outputs

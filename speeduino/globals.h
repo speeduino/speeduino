@@ -4,17 +4,21 @@
 #include "table.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
-  #define BOARD_NR_GPIO_PINS 54
+  #define BOARD_DIGITAL_GPIO_PINS 54
+  #define BOARD_NR_GPIO_PINS 62
   #define LED_BUILTIN 13
   #define CORE_AVR
 #elif defined(CORE_TEENSY)
+  #define BOARD_DIGITAL_GPIO_PINS 34
   #define BOARD_NR_GPIO_PINS 34
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
   #if defined (STM32F1) || defined(__STM32F1__)
+    #define BOARD_DIGITAL_GPIO_PINS 34
     #define BOARD_NR_GPIO_PINS 34
     #define LED_BUILTIN 33
   #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
+    #define BOARD_DIGITAL_GPIO_PINS 80
     #define BOARD_NR_GPIO_PINS 80
     #define LED_BUILTIN PA7
   #endif
