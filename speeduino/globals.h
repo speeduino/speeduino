@@ -483,7 +483,8 @@ struct config3 {
   byte useExtBaro : 1;
   byte boostMode : 1; //Simple of full boost contrl
   byte boostPin : 6;
-  byte unused6_14 : 2;
+  byte VVTasOnOff : 1; //Whether or not to use the VVT table as an on/off map
+  byte unused6_14 : 1;
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
   byte airDenBins[9];
