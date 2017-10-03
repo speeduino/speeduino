@@ -657,10 +657,15 @@ void triggerSetup_4G63()
   else
   {
     // 70 / 110 for 4 cylinder
-    toothAngles[0] = 355; //Falling edge of tooth #1
+    toothAngles[0] = 715; //Falling edge of tooth #1
     toothAngles[1] = 105; //Rising edge of tooth #2
     toothAngles[2] = 175; //Falling edge of tooth #2
     toothAngles[3] = 285; //Rising edge of tooth #1
+
+    toothAngles[4] = 355; //Falling edge of tooth #1
+    toothAngles[5] = 465; //Rising edge of tooth #2
+    toothAngles[6] = 535; //Falling edge of tooth #2
+    toothAngles[7] = 645; //Rising edge of tooth #1
   }
   /*
    * https://forums.libreems.org/attachment.php?aid=34
@@ -1354,8 +1359,8 @@ void triggerSetup_Miata9905()
   secondDerivEnabled = false;
   decoderIsSequential = true;
   triggerActualTeeth = 8;
-  secondaryToothCount = 0;
-  if(initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
+
+  if(initialisationComplete == false) { secondaryToothCount = 0;toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
   else { toothLastToothTime = 0; }
   toothLastMinusOneToothTime = 0;
 
@@ -1438,9 +1443,10 @@ void triggerPri_Miata9905()
         else { triggerToothAngle = 110; }
       }
 
-      toothLastMinusOneToothTime = toothLastToothTime;
-      toothLastToothTime = curTime;
     } //Has sync
+
+    toothLastMinusOneToothTime = toothLastToothTime;
+    toothLastToothTime = curTime;
 
     if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage2.ignCranklock)
     {
