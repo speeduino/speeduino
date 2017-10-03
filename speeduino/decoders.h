@@ -27,6 +27,11 @@ void triggerPri_DualWheel();
 void triggerSec_DualWheel();
 uint16_t getRPM_DualWheel();
 int getCrankAngle_DualWheel(int timePerDegree);
+void triggerSetup_Subaru36222();
+void triggerPri_Subaru36222();
+void triggerSec_Subaru36222();
+uint16_t getRPM_Subaru36222();
+int getCrankAngle_Subaru36222();
 
 unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
 
