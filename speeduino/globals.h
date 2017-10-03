@@ -117,6 +117,9 @@
 #define BOOST_MODE_SIMPLE   0
 #define BOOST_MODE_FULL     1
 
+#define HARD_CUT_FULL       0
+#define HARD_CUT_ROLLING    1
+
 #define SIZE_BYTE   8
 #define SIZE_INT    16
 
@@ -332,7 +335,8 @@ struct config1 {
   byte injTiming : 1;
   byte multiplyMAP : 1;
   byte includeAFR : 1;
-  byte unused26 : 4;
+  byte hardCutType : 1;
+  byte unused26 : 3;
   byte indInjAng : 1;
   byte injOpen; //Injector opening time (ms * 10)
   uint16_t inj1Ang;

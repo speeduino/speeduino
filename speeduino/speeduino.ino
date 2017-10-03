@@ -93,6 +93,8 @@ volatile uint16_t mainLoopCount;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 byte ignitionCount;
+byte maxIgnOutputs = 1; //Used for rolling rev limiter
+byte curRollingCut = 0; //Rolling rev limiter, current ignition channel being cut
 uint16_t fixedCrankingOverride = 0;
 int16_t lastAdvance; //Stores the previous advance figure to track changes.
 bool clutchTrigger;
@@ -324,7 +326,7 @@ void setup()
 
     case 2:
       channel1IgnDegrees = 0;
-
+      maxIgnOutputs = 2;
       if (configPage1.engineType == EVEN_FIRE )
       {
         channel2IgnDegrees = 180;
@@ -345,7 +347,7 @@ void setup()
 
     case 3:
       channel1IgnDegrees = 0;
-
+      maxIgnOutputs = 3;
       if (configPage1.engineType == EVEN_FIRE )
       {
         if(configPage2.sparkMode == IGN_MODE_SEQUENTIAL)
@@ -390,7 +392,7 @@ void setup()
       break;
     case 4:
       channel1IgnDegrees = 0;
-
+      maxIgnOutputs = 2; //Default value for 4 cylinder, may be changed below
       if (configPage1.engineType == EVEN_FIRE )
       {
         channel2IgnDegrees = 180;
@@ -401,6 +403,7 @@ void setup()
           channel4IgnDegrees = 540;
 
           CRANK_ANGLE_MAX_IGN = 720;
+          maxIgnOutputs = 4;
         }
         else if(configPage2.sparkMode == IGN_MODE_ROTARY)
         {
@@ -414,6 +417,7 @@ void setup()
         channel2IgnDegrees = configPage1.oddfire2;
         channel3IgnDegrees = configPage1.oddfire3;
         channel4IgnDegrees = configPage1.oddfire4;
+        maxIgnOutputs = 4;
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
@@ -446,6 +450,7 @@ void setup()
       channel3IgnDegrees = 144;
       channel4IgnDegrees = 216;
       channel5IgnDegrees = 288;
+      maxIgnOutputs = 4; //Only 4 actual outputs, so that's all that can be cut
 
       if(configPage2.sparkMode == IGN_MODE_SEQUENTIAL)
       {
@@ -491,6 +496,7 @@ void setup()
       channel2InjDegrees = 120;
       channel3IgnDegrees = 240;
       channel3InjDegrees = 240;
+      maxIgnOutputs = 3;
 
       if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
@@ -505,6 +511,7 @@ void setup()
       channel2IgnDegrees = channel2InjDegrees = 90;
       channel3IgnDegrees = channel3InjDegrees = 180;
       channel4IgnDegrees = channel4InjDegrees = 270;
+      maxIgnOutputs = 4;
 
       if (!configPage1.injTiming)  { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
@@ -1081,8 +1088,8 @@ void loop()
 
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
-      BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM);
       if (currentStatus.RPM > ((unsigned int)(configPage2.HardRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); } //Hardcut RPM limit
+      else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM); }
 
 
       //Set dwell
@@ -1319,16 +1326,23 @@ void loop()
       else { fixedCrankingOverride = 0; }
 
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
-      //Check for hard cut rev limit (If we're above the hardcut limit, we simply don't set a spark schedule)
-      if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) && !BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) && !currentStatus.flatShiftingHard)
+      //Check for any of the hard cut rev limits being on
+      if(currentStatus.launchingHard || BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) || BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) || currentStatus.flatShiftingHard)
       {
+        if(configPage1.hardCutType == HARD_CUT_FULL) { ignitionOn = false; }
+        else { curRollingCut = (currentStatus.startRevolutions % maxIgnOutputs) + 1; } //Rolls through each of the active ignition channels based on how many revolutions have taken place
+      }
+      else { curRollingCut = 0; } //Disables the rolling hard cut
 
+      //if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) && !BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) && !currentStatus.flatShiftingHard)
+      if(ignitionOn)
+      {
         //Refresh the current crank angle info
         //ignition1StartAngle = 335;
         crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
         if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
 
-        if (ignition1StartAngle > crankAngle)
+        if ( (ignition1StartAngle > crankAngle) && (curRollingCut != 1) )
         {
             /*
             long some_time = ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree);
@@ -1355,12 +1369,13 @@ void loop()
             //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition2StartTime = 0; }
 
-            if(ignition2StartTime > 0) {
-            setIgnitionSchedule2(ign2StartFunction,
-                      ignition2StartTime,
-                      currentStatus.dwell + fixedCrankingOverride,
-                      ign2EndFunction
-                      );
+            if( (ignition2StartTime > 0) && (curRollingCut != 2) )
+            {
+              setIgnitionSchedule2(ign2StartFunction,
+                        ignition2StartTime,
+                        currentStatus.dwell + fixedCrankingOverride,
+                        ign2EndFunction
+                        );
             }
         }
 
@@ -1375,12 +1390,13 @@ void loop()
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition3StartTime = 0; }
 
-            if(ignition3StartTime > 0) {
-            setIgnitionSchedule3(ign3StartFunction,
-                      ignition3StartTime,
-                      currentStatus.dwell + fixedCrankingOverride,
-                      ign3EndFunction
-                      );
+            if( (ignition3StartTime > 0) && (curRollingCut != 3) )
+            {
+              setIgnitionSchedule3(ign3StartFunction,
+                        ignition3StartTime,
+                        currentStatus.dwell + fixedCrankingOverride,
+                        ign3EndFunction
+                        );
             }
         }
 
@@ -1396,12 +1412,13 @@ void loop()
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition4StartTime = 0; }
 
-            if(ignition4StartTime > 0) {
-            setIgnitionSchedule4(ign4StartFunction,
-                      ignition4StartTime,
-                      currentStatus.dwell + fixedCrankingOverride,
-                      ign4EndFunction
-                      );
+            if( (ignition4StartTime > 0) && (curRollingCut != 4) )
+            {
+              setIgnitionSchedule4(ign4StartFunction,
+                        ignition4StartTime,
+                        currentStatus.dwell + fixedCrankingOverride,
+                        ign4EndFunction
+                        );
             }
         }
 
