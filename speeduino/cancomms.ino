@@ -111,10 +111,10 @@ void canCommand()
       break;
 
     case 'S': // send code version
-       for (unsigned int sig = 0; sig < sizeof(displaySignature) - 1; sig++)
-       {
-         CANSerial.write(displaySignature[sig]);
-       }
+      for (unsigned int revn = 0; revn < sizeof( TSfirmwareVersion) - 1; revn++)
+      {
+        CANSerial.write( TSfirmwareVersion[revn]);
+      }
        //Serial3.print("speeduino 201609-dev");
        break;
 

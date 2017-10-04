@@ -133,9 +133,7 @@ void setup()
 {
   initialiseTimers();
   digitalWrite(LED_BUILTIN, LOW);
-  //Setup the dummy fuel and ignition tables
-  //dummyFuelTable(&fuelTable);
-  //dummyIgnitionTable(&ignitionTable);
+  
   table3D_setSize(&fuelTable, 16);
   table3D_setSize(&ignitionTable, 16);
   table3D_setSize(&afrTable, 16);

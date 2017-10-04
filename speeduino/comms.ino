@@ -16,7 +16,7 @@ A detailed description of each call can be found at: http://www.msextra.com/doc/
 void command()
 {
   int valueOffset; //cannot use offset as a variable name, it is a reserved word for several teensy libraries
-  
+
   if (cmdPending == false) { currentCommand = Serial.read(); }
 
   switch (currentCommand)
@@ -948,7 +948,7 @@ void sendPage(bool useChar)
         break;
 
     default:
-        Serial.println(F("\nPage has not been implemented yet. Change to another page."));
+        Serial.println(F("\nPage has not been implemented yet"));
         //Just set default Values to avoid warnings
         pnt_configPage = &configPage11;
         currentTable = fuelTable;
@@ -1179,7 +1179,7 @@ byte getPageValue(byte page, uint16_t valueAddress)
         break;
 
     default:
-        Serial.println(F("\nPage has not been implemented yet. Change to another page."));
+        Serial.println(F("\nPage has not been implemented yet"));
         //Just set default Values to avoid warnings
         pnt_configPage = &configPage11;
         break;
