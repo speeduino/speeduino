@@ -389,7 +389,7 @@ struct config1 {
   byte iacCLmaxDuty;
   byte boostMinDuty;
 
-  byte unused1_64[63];
+  byte unused1_64[64];
 
 #if defined(CORE_AVR)
   };
@@ -453,7 +453,7 @@ struct config2 {
   byte ignBypassPin : 6; //Pin the ignition bypass is activated on
   byte ignBypassHiLo : 1; //Whether this should be active high or low.
 
-  byte unused2_64[63];
+  byte unused2_64[64];
 
 #if defined(CORE_AVR)
   };
