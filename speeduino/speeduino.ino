@@ -133,7 +133,7 @@ void setup()
 {
   initialiseTimers();
   digitalWrite(LED_BUILTIN, LOW);
-  
+
   table3D_setSize(&fuelTable, 16);
   table3D_setSize(&ignitionTable, 16);
   table3D_setSize(&afrTable, 16);
@@ -1328,7 +1328,7 @@ void loop()
       if(currentStatus.launchingHard || BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) || BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) || currentStatus.flatShiftingHard)
       {
         if(configPage1.hardCutType == HARD_CUT_FULL) { ignitionOn = false; }
-        else { curRollingCut = (currentStatus.startRevolutions % maxIgnOutputs) + 1; } //Rolls through each of the active ignition channels based on how many revolutions have taken place
+        else { curRollingCut = ( (currentStatus.startRevolutions / 2) % maxIgnOutputs) + 1; } //Rolls through each of the active ignition channels based on how many revolutions have taken place
       }
       else { curRollingCut = 0; } //Disables the rolling hard cut
 
