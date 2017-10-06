@@ -654,7 +654,7 @@ void loop()
           {
             if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
                 {
-                  if (CANSerial.available() > 0)  { cancommand(); }
+                  if (CANSerial.available() > 0)  { canCommand(); }
                 }
           }
       #if  defined(CORE_TEENSY) || defined(CORE_STM32)
