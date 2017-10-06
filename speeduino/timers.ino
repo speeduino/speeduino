@@ -2,7 +2,7 @@
 Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
-*/ 
+*/
 
 /*
 Timers are used for having actions performed repeatedly at a fixed interval (Eg every 100ms)
@@ -45,19 +45,21 @@ void initialiseTimers()
   Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
   Timer4.attachInterrupt(1, oneMSInterval);
   Timer4.resume(); //Start Timer
+  pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
 #endif
 
-  #if defined(CORE_STM32)
-    pinMode(LED_BUILTIN, OUTPUT);
-  #endif
-  dwellLimit_uS = (1000 * configPage2.dwellLimit);
   lastRPM_100ms = 0;
+  loop33ms = 0;
+  loop66ms = 0;
+  loop100ms = 0;
+  loop250ms = 0;
+  loopSec = 0;
 }
 
 
 //Timer2 Overflow Interrupt Vector, called when the timer overflows.
 //Executes every ~1ms.
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
+#if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER2_OVF_vect, ISR_NOBLOCK)
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
 void oneMSInterval() //Most ARM chips can simply call a function
@@ -84,12 +86,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil4Charge(); } }
   if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil5Charge(); } }
 
-  //15Hz loop
-  if (loop66ms == 66)
-  {
-    loop66ms = 0;
-    BIT_SET(TIMER_mask, BIT_TIMER_15HZ);
-  }
+
 
   //30Hz loop
   if (loop33ms == 33)
@@ -97,7 +94,14 @@ void oneMSInterval() //Most ARM chips can simply call a function
     loop33ms = 0;
     BIT_SET(TIMER_mask, BIT_TIMER_30HZ);
   }
-  
+
+  //15Hz loop
+  if (loop66ms == 66)
+  {
+    loop66ms = 0;
+    BIT_SET(TIMER_mask, BIT_TIMER_15HZ);
+  }
+
   //Loop executed every 100ms loop
   //Anything inside this if statement will run every 100ms.
   if (loop100ms == 100)
@@ -123,8 +127,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //Reset watchdog timer (Not active currently)
       //wdt_reset();
       //DIY watchdog
-      if( (initialisationComplete == true) && (last250msLoopCount == mainLoopCount) ) { setup(); } //This is a sign of a crash.
-      else { last250msLoopCount = mainLoopCount; }
+      //This is a sign of a crash:
+      //if( (initialisationComplete == true) && (last250msLoopCount == mainLoopCount) ) { setup(); }
+      //else { last250msLoopCount = mainLoopCount; }
     #endif
   }
 
@@ -154,18 +159,23 @@ void oneMSInterval() //Most ARM chips can simply call a function
     currentStatus.secl++;
     //**************************************************************************************************************************************************
     //Check the fan output status
-    if (configPage4.fanEnable == 1)
+    if (configPage3.fanEnable == 1)
     {
        fanControl();            // Fucntion to turn the cooling fan on/off
     }
 
     //Check whether fuel pump priming is complete
-    if(!fpPrimed)
+    if(fpPrimed == false)
     {
       if(currentStatus.secl >= configPage1.fpPrime)
       {
         fpPrimed = true; //Mark the priming as being completed
-        if(currentStatus.RPM == 0) { digitalWrite(pinFuelPump, LOW); fuelPumpOn = false; } //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
+        if(currentStatus.RPM == 0)
+        {
+          //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
+          digitalWrite(pinFuelPump, LOW);
+          fuelPumpOn = false;
+        }
       }
     }
     //**************************************************************************************************************************************************
@@ -204,7 +214,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     }
 
   }
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //AVR chips use the ISR for this
+#if defined(CORE_AVR) //AVR chips use the ISR for this
     //Reset Timer2 to trigger in another ~1ms
     TCNT2 = 131;            //Preload timer2 with 100 cycles, leaving 156 till overflow.
     TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
