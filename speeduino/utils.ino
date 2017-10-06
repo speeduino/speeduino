@@ -40,6 +40,14 @@ uint16_t freeRam ()
 #endif
 }
 
+byte pinTranslate(byte rawPin)
+{
+  byte outputPin = rawPin;
+  if(rawPin > BOARD_DIGITAL_GPIO_PINS) { outputPin = A8 + (outputPin - BOARD_DIGITAL_GPIO_PINS); }
+
+  return outputPin;
+}
+
 void setPinMapping(byte boardID)
 {
   switch (boardID)
@@ -280,8 +288,8 @@ void setPinMapping(byte boardID)
       pinInjector5 = 14; //Output pin injector 5 is on
       pinCoil1 = 39; //Pin for coil 1
       pinCoil2 = 41; //Pin for coil 2
-      pinCoil3 = 35; //Pin for coil 3
-      pinCoil4 = 37; //Pin for coil 4
+      pinCoil3 = 32; //Pin for coil 3
+      pinCoil4 = 33; //Pin for coil 4
       pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
@@ -296,10 +304,10 @@ void setPinMapping(byte boardID)
       pinIdle1 = 2; //Single wire idle control
       pinBoost = 4;
       pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
-      pinFuelPump = 37; //Fuel pump output  (Goes to ULN2803)
+      pinFuelPump = 37; //Fuel pump output
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
-      pinFan = 47; //Pin for the fan output (Goes to ULN2803)
+      pinFan = 35; //Pin for the fan output
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
       break;
@@ -443,13 +451,14 @@ void setPinMapping(byte boardID)
   }
 
   //Setup any devices that are using selectable pins
-  if ( (configPage3.launchPin != 0) && (configPage3.launchPin < BOARD_NR_GPIO_PINS) ) { pinLaunch = configPage3.launchPin; }
-  if ( (configPage2.ignBypassPin != 0) && (configPage2.ignBypassPin < BOARD_NR_GPIO_PINS) ) { pinIgnBypass = configPage2.ignBypassPin; }
-  if ( (configPage1.tachoPin != 0) && (configPage1.tachoPin < BOARD_NR_GPIO_PINS) ) { pinTachOut = configPage1.tachoPin; }
-  if ( (configPage2.fuelPumpPin != 0) && (configPage2.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = configPage2.fuelPumpPin; }
-  if ( (configPage4.fanPin != 0) && (configPage4.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = configPage4.fanPin; }
-  if ( (configPage3.boostPin != 0) && (configPage3.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = configPage3.boostPin; }
-  if ( (configPage3.vvtPin != 0) && (configPage3.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = configPage3.vvtPin; }
+
+  if ( (configPage3.launchPin != 0) && (configPage3.launchPin < BOARD_NR_GPIO_PINS) ) { pinLaunch = pinTranslate(configPage3.launchPin); }
+  if ( (configPage2.ignBypassPin != 0) && (configPage2.ignBypassPin < BOARD_NR_GPIO_PINS) ) { pinIgnBypass = pinTranslate(configPage2.ignBypassPin); }
+  if ( (configPage1.tachoPin != 0) && (configPage1.tachoPin < BOARD_NR_GPIO_PINS) ) { pinTachOut = pinTranslate(configPage1.tachoPin); }
+  if ( (configPage2.fuelPumpPin != 0) && (configPage2.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = pinTranslate(configPage2.fuelPumpPin); }
+  if ( (configPage3.fanPin != 0) && (configPage3.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = pinTranslate(configPage3.fanPin); }
+  if ( (configPage3.boostPin != 0) && (configPage3.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = pinTranslate(configPage3.boostPin); }
+  if ( (configPage3.vvtPin != 0) && (configPage3.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage3.vvtPin); }
   if ( (configPage3.useExtBaro != 0) && (configPage3.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage3.baroPin + A0; }
 
   //Finally, set the relevant pin modes for outputs
@@ -554,6 +563,7 @@ void initialiseTriggers()
 {
   byte triggerInterrupt = 0; // By default, use the first interrupt
   byte triggerInterrupt2 = 1;
+
   #if defined(CORE_AVR)
     switch (pinTrigger) {
       //Arduino Mega 2560 mapping
@@ -597,6 +607,7 @@ void initialiseTriggers()
   #else
     triggerInterrupt2 = pinTrigger2;
   #endif
+
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
@@ -834,7 +845,7 @@ void initialiseTriggers()
 
   This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N calculations respectively.
 */
-unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
+unsigned int PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
@@ -876,7 +887,7 @@ unsigned int PW(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
 }
 
 //Convenience functions for Speed Density and Alpha-N
-unsigned int PW_SD(int REQ_FUEL, byte VE, byte MAP, int corrections, int injOpen)
+unsigned int PW_SD(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
 {
   return PW(REQ_FUEL, VE, MAP, corrections, injOpen);
   //return PW(REQ_FUEL, VE, 100, corrections, injOpen);

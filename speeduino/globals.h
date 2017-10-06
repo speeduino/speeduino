@@ -4,19 +4,23 @@
 #include "table.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
-  #define BOARD_NR_GPIO_PINS 54
+  #define BOARD_DIGITAL_GPIO_PINS 54
+  #define BOARD_NR_GPIO_PINS 62
   #define LED_BUILTIN 13
   #define CORE_AVR
 #elif defined(CORE_TEENSY)
+  #define BOARD_DIGITAL_GPIO_PINS 34
   #define BOARD_NR_GPIO_PINS 34
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
   #if defined (STM32F1) || defined(__STM32F1__)
+    #define BOARD_DIGITAL_GPIO_PINS 34
     #define BOARD_NR_GPIO_PINS 34
     #ifndef LED_BUILTIN
       #define LED_BUILTIN PB1 //Maple Mini
     #endif
   #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
+    #define BOARD_DIGITAL_GPIO_PINS 80
     #define BOARD_NR_GPIO_PINS 80
     #define LED_BUILTIN PA7
   #endif
@@ -112,6 +116,12 @@
 #define ROTARY_IGN_FD       1
 #define ROTARY_IGN_RX8      2
 
+#define BOOST_MODE_SIMPLE   0
+#define BOOST_MODE_FULL     1
+
+#define HARD_CUT_FULL       0
+#define HARD_CUT_ROLLING    1
+
 #define SIZE_BYTE   8
 #define SIZE_INT    16
 
@@ -131,15 +141,11 @@
 #define FUEL_PUMP_ON() *pump_pin_port |= (pump_pin_mask)
 #define FUEL_PUMP_OFF() *pump_pin_port &= ~(pump_pin_mask)
 
-const byte signature = 20;
-
-//const char signature[] = "speeduino";
-const char displaySignature[] = "speeduino 201609-dev";
 const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
-const byte page_size = 64;
-const int npage_size[12] = {0,288,64,288,64,288,64,64,160,192,128,192};
+//const byte page_size = 64;
+const int16_t npage_size[11] = {0,288,128,288,128,288,128,160,192,128,192};
 //const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
@@ -274,10 +280,10 @@ struct statuses {
   unsigned int clutchEngagedRPM;
   bool flatShiftingHard;
   volatile uint16_t startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
-  byte boostTarget;
+  uint16_t boostTarget;
   byte testOutputs;
   bool testActive;
-  byte boostDuty;
+  uint16_t boostDuty; //Percentage value * 100 to give 2 points of precision
   byte idleLoad; //Either the current steps or current duty cycle for the idle control.
   uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
   uint8_t current_caninchannel = 0; //start off at channel 0
@@ -327,7 +333,8 @@ struct config1 {
   byte injTiming : 1;
   byte multiplyMAP : 1;
   byte includeAFR : 1;
-  byte unused26 : 4;
+  byte hardCutType : 1;
+  byte unused26 : 3;
   byte indInjAng : 1;
   byte injOpen; //Injector opening time (ms * 10)
   uint16_t inj1Ang;
@@ -380,6 +387,8 @@ struct config1 {
   byte iacCLmaxDuty;
   byte boostMinDuty;
 
+  byte unused1_64[64];
+
 #if defined(CORE_AVR)
   };
 #else
@@ -398,7 +407,7 @@ struct config2 {
   byte TrigEdge : 1;
   byte TrigSpeed : 1;
   byte IgInv : 1;
-  byte oddfire : 1;
+  byte unused4_5d : 1;
   byte TrigPattern : 4;
 
   byte TrigEdgeSec : 1;
@@ -442,6 +451,8 @@ struct config2 {
   byte ignBypassPin : 6; //Pin the ignition bypass is activated on
   byte ignBypassHiLo : 1; //Whether this should be active high or low.
 
+  byte unused2_64[64];
+
 #if defined(CORE_AVR)
   };
 #else
@@ -472,9 +483,10 @@ struct config3 {
   byte egoTPSMax; //TPS must be below this for closed loop to function
   byte vvtPin : 6;
   byte useExtBaro : 1;
-  byte unused6_13f : 1;
+  byte boostMode : 1; //Simple of full boost contrl
   byte boostPin : 6;
-  byte unused6_14 : 2;
+  byte VVTasOnOff : 1; //Whether or not to use the VVT table as an on/off map
+  byte unused6_14 : 1;
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
   byte airDenBins[9];
@@ -510,16 +522,6 @@ struct config3 {
   byte flatSRetard;
   byte flatSArm;
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
-#endif
-
-
-//Page 4 of the config mostly deals with idle control
-//See ini file for further info (Config Page 7 in the ini)
-struct config4 {
   byte iacCLValues[10]; //Closed loop target RPM value
   byte iacOLStepVal[10]; //Open loop step values for stepper motors
   byte iacOLPWMVal[10]; //Open loop duty values for PMWM valves
@@ -617,8 +619,10 @@ struct config11 {
   byte rotarySplitValues[8];
   byte rotarySplitBins[8];
 
-  byte unused11_25_192[167];
-  
+  uint16_t boostSens;
+  byte boostIntv;
+  byte unused11_28_192[164];
+
 #if defined(CORE_AVR)
   };
 #else

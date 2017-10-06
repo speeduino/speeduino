@@ -24,7 +24,7 @@ void initialiseIdle()
 
   #elif defined (CORE_TEENSY)
 
-    if( (configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
+    if( (configPage3.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage3.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
     {
     //FlexTimer 2 is used for idle
     FTM2_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
@@ -81,14 +81,14 @@ void initialiseIdle()
   #endif
 
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
-  switch(configPage4.iacAlgorithm)
+  switch(configPage3.iacAlgorithm)
   {
     case IAC_ALGORITHM_NONE:       //Case 0 is no idle control ('None')
       break;
 
     case IAC_ALGORITHM_ONOFF:
       //Case 1 is on/off idle control
-      if ((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < configPage4.iacFastTemp)
+      if ((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < configPage3.iacFastTemp)
       {
         digitalWrite(pinIdle1, HIGH);
         idleOn = true;
@@ -99,14 +99,14 @@ void initialiseIdle()
       //Case 2 is PWM open loop
       iacPWMTable.xSize = 10;
       iacPWMTable.valueSize = SIZE_BYTE;
-      iacPWMTable.values = configPage4.iacOLPWMVal;
-      iacPWMTable.axisX = configPage4.iacBins;
+      iacPWMTable.values = configPage3.iacOLPWMVal;
+      iacPWMTable.axisX = configPage3.iacBins;
 
 
       iacCrankDutyTable.xSize = 4;
       iacCrankDutyTable.valueSize = SIZE_BYTE;
-      iacCrankDutyTable.values = configPage4.iacCrankDuty;
-      iacCrankDutyTable.axisX = configPage4.iacCrankBins;
+      iacCrankDutyTable.values = configPage3.iacCrankDuty;
+      iacCrankDutyTable.axisX = configPage3.iacCrankBins;
 
       idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
       idle_pin_mask = digitalPinToBitMask(pinIdle1);
@@ -124,13 +124,13 @@ void initialiseIdle()
       //Case 3 is PWM closed loop
       iacClosedLoopTable.xSize = 10;
       iacClosedLoopTable.valueSize = SIZE_BYTE;
-      iacClosedLoopTable.values = configPage4.iacCLValues;
-      iacClosedLoopTable.axisX = configPage4.iacBins;
+      iacClosedLoopTable.values = configPage3.iacCLValues;
+      iacClosedLoopTable.axisX = configPage3.iacBins;
 
       iacCrankDutyTable.xSize = 4;
       iacCrankDutyTable.valueSize = SIZE_BYTE;
-      iacCrankDutyTable.values = configPage4.iacCrankDuty;
-      iacCrankDutyTable.axisX = configPage4.iacCrankBins;
+      iacCrankDutyTable.values = configPage3.iacCrankDuty;
+      iacCrankDutyTable.axisX = configPage3.iacCrankBins;
 
       idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
       idle_pin_mask = digitalPinToBitMask(pinIdle1);
@@ -152,13 +152,13 @@ void initialiseIdle()
       //Case 2 is Stepper open loop
       iacStepTable.xSize = 10;
       iacStepTable.valueSize = SIZE_BYTE;
-      iacStepTable.values = configPage4.iacOLStepVal;
-      iacStepTable.axisX = configPage4.iacBins;
+      iacStepTable.values = configPage3.iacOLStepVal;
+      iacStepTable.axisX = configPage3.iacBins;
 
       iacCrankStepsTable.xSize = 4;
-      iacCrankStepsTable.values = configPage4.iacCrankSteps;
-      iacCrankStepsTable.axisX = configPage4.iacCrankBins;
-      iacStepTime = configPage4.iacStepTime * 1000;
+      iacCrankStepsTable.values = configPage3.iacCrankSteps;
+      iacCrankStepsTable.axisX = configPage3.iacCrankBins;
+      iacStepTime = configPage3.iacStepTime * 1000;
 
       completedHomeSteps = 0;
       idleStepper.curIdleStep = 0;
@@ -169,20 +169,20 @@ void initialiseIdle()
       //Case 5 is Stepper closed loop
       iacClosedLoopTable.xSize = 10;
       iacClosedLoopTable.valueSize = SIZE_BYTE;
-      iacClosedLoopTable.values = configPage4.iacCLValues;
-      iacClosedLoopTable.axisX = configPage4.iacBins;
+      iacClosedLoopTable.values = configPage3.iacCLValues;
+      iacClosedLoopTable.axisX = configPage3.iacBins;
 
       iacCrankStepsTable.xSize = 4;
-      iacCrankStepsTable.values = configPage4.iacCrankSteps;
-      iacCrankStepsTable.axisX = configPage4.iacCrankBins;
-      iacStepTime = configPage4.iacStepTime * 1000;
+      iacCrankStepsTable.values = configPage3.iacCrankSteps;
+      iacCrankStepsTable.axisX = configPage3.iacCrankBins;
+      iacStepTime = configPage3.iacStepTime * 1000;
 
       completedHomeSteps = 0;
       idleCounter = 0;
       idleStepper.curIdleStep = 0;
       idleStepper.stepperStatus = SOFF;
 
-      idlePID.SetOutputLimits(0, (configPage4.iacStepHome * 3)); //Maximum number of steps probably needs its own setting
+      idlePID.SetOutputLimits(0, (configPage3.iacStepHome * 3)); //Maximum number of steps probably needs its own setting
       idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       break;
@@ -191,7 +191,7 @@ void initialiseIdle()
       //Well this just shouldn't happen
       break;
   }
-  idleInitComplete = configPage4.iacAlgorithm; //Sets which idle method was initialised
+  idleInitComplete = configPage3.iacAlgorithm; //Sets which idle method was initialised
   currentStatus.idleLoad = 0;
   #if defined(CORE_STM32) //Need to be initialised last due to instant interrupt
     Timer1.setMode(4, TIMER_OUTPUT_COMPARE);
@@ -202,15 +202,15 @@ void initialiseIdle()
 
 void idleControl()
 {
-  if(idleInitComplete != configPage4.iacAlgorithm) { initialiseIdle(); }
+  if(idleInitComplete != configPage3.iacAlgorithm) { initialiseIdle(); }
 
-  switch(configPage4.iacAlgorithm)
+  switch(configPage3.iacAlgorithm)
   {
     case IAC_ALGORITHM_NONE:       //Case 0 is no idle control ('None')
       break;
 
     case IAC_ALGORITHM_ONOFF:      //Case 1 is on/off idle control
-      if ( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < configPage4.iacFastTemp) //All temps are offset by 40 degrees
+      if ( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < configPage3.iacFastTemp) //All temps are offset by 40 degrees
       {
         digitalWrite(pinIdle1, HIGH);
         idleOn = true;
@@ -272,7 +272,7 @@ void idleControl()
           {
             //Only do a lookup of the required value around 4 times per second. Any more than this can create too much jitter and require a hyster value that is too high
             idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
-            iacStepTime = configPage4.iacStepTime * 1000;
+            iacStepTime = configPage3.iacStepTime * 1000;
           }
           doStep();
         }
@@ -288,7 +288,7 @@ void idleControl()
         {
           //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
           idlePID.SetTunings(configPage3.idleKP, configPage3.idleKI, configPage3.idleKD);
-          iacStepTime = configPage4.iacStepTime * 1000;
+          iacStepTime = configPage3.iacStepTime * 1000;
         }
 
         idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
@@ -316,7 +316,7 @@ False: If the motor has not yet been homed. Will also perform another homing ste
 static inline byte isStepperHomed()
 {
   bool isHomed = true; //As it's the most common scenario, default value is true
-  if( completedHomeSteps < (configPage4.iacStepHome * 3) ) //Home steps are divided by 3 from TS
+  if( completedHomeSteps < (configPage3.iacStepHome * 3) ) //Home steps are divided by 3 from TS
   {
     digitalWrite(pinStepperDir, STEPPER_BACKWARD); //Sets stepper direction to backwards
     digitalWrite(pinStepperStep, HIGH);
@@ -371,7 +371,7 @@ Performs a step
 */
 static inline void doStep()
 {
-  if ( (idleStepper.targetIdleStep <= (idleStepper.curIdleStep - configPage4.iacStepHyster)) || (idleStepper.targetIdleStep >= (idleStepper.curIdleStep + configPage4.iacStepHyster)) ) //Hysteris check
+  if ( (idleStepper.targetIdleStep <= (idleStepper.curIdleStep - configPage3.iacStepHyster)) || (idleStepper.targetIdleStep >= (idleStepper.curIdleStep + configPage3.iacStepHyster)) ) //Hysteris check
   {
     if(idleStepper.targetIdleStep < idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_BACKWARD); idleStepper.curIdleStep--; }//Sets stepper direction to backwards
     else if (idleStepper.targetIdleStep > idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_FORWARD); idleStepper.curIdleStep++; }//Sets stepper direction to forwards
@@ -387,12 +387,12 @@ static inline void doStep()
 //This function simply turns off the idle PWM and sets the pin low
 static inline void disableIdle()
 {
-  if( (configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
+  if( (configPage3.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage3.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
   {
     IDLE_TIMER_DISABLE();
     digitalWrite(pinIdle1, LOW);
   }
-  else if ( (configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
+  else if ( (configPage3.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage3.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
   {
     digitalWrite(pinStepperEnable, HIGH); //Disable the DRV8825
     idleStepper.targetIdleStep = idleStepper.curIdleStep; //Don't try to move anymore
@@ -403,11 +403,11 @@ static inline void disableIdle()
 //Typically this is enabling the PWM interrupt
 static inline void enableIdle()
 {
-  if( (configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage4.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
+  if( (configPage3.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage3.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
   {
     IDLE_TIMER_ENABLE();
   }
-  else if ( (configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage4.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
+  else if ( (configPage3.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage3.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
   {
 
   }
@@ -421,34 +421,34 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
 {
   if (idle_pwm_state)
   {
-    if (configPage4.iacPWMdir == 0)
+    if (configPage3.iacPWMdir == 0)
     {
       //Normal direction
       *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
-      if(configPage4.iacChannels == 1) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      if(configPage3.iacChannels == 1) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
     else
     {
       //Reversed direction
       *idle_pin_port |= (idle_pin_mask);  // Switch pin high
-      if(configPage4.iacChannels == 1) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      if(configPage3.iacChannels == 1) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
     IDLE_COMPARE = IDLE_COUNTER + (idle_pwm_max_count - idle_pwm_cur_value);
     idle_pwm_state = false;
   }
   else
   {
-    if (configPage4.iacPWMdir == 0)
+    if (configPage3.iacPWMdir == 0)
     {
       //Normal direction
       *idle_pin_port |= (idle_pin_mask);  // Switch pin high
-      if(configPage4.iacChannels == 1) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      if(configPage3.iacChannels == 1) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
     else
     {
       //Reversed direction
       *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
-      if(configPage4.iacChannels == 1) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      if(configPage3.iacChannels == 1) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
     IDLE_COMPARE = IDLE_COUNTER + idle_pwm_target_value;
     idle_pwm_cur_value = idle_pwm_target_value;
