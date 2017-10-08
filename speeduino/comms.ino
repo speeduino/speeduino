@@ -243,14 +243,19 @@ void command()
           length2 = Serial.read(); // Length to be written (Should always be 1)
           chunkSize = word(length2, length1);
 
-          //chunkPending = true;
-          for(int i = 0; i < chunkSize; i++)
-          {
-            while(Serial.available() == 0) { } //For chunk writes, we can safely loop here
-            receiveValue( (valueOffset + i), Serial.read());
-          }
-          cmdPending = false;
+          chunkPending = true;
+          chunkComplete = 0;
         }
+      }
+      //This CANNOT be an else of the above if statement as chunkPending gets set to true above
+      if(chunkPending == true)
+      {
+        while( (Serial.available() > 0) && (chunkComplete < chunkSize) )
+        {
+          receiveValue( (valueOffset + chunkComplete), Serial.read());
+          chunkComplete++;
+        }
+        if(chunkComplete >= chunkSize) { cmdPending = false; chunkPending = false; }
       }
       break;
 
