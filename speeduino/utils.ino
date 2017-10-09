@@ -43,7 +43,7 @@ uint16_t freeRam ()
 byte pinTranslate(byte rawPin)
 {
   byte outputPin = rawPin;
-  if(rawPin > BOARD_DIGITAL_GPIO_PINS) { outputPin = A8 + (outputPin - BOARD_DIGITAL_GPIO_PINS); }
+  if(rawPin > BOARD_DIGITAL_GPIO_PINS) { outputPin = A8 + (outputPin - BOARD_DIGITAL_GPIO_PINS - 1); }
 
   return outputPin;
 }
