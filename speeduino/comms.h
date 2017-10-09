@@ -22,6 +22,7 @@ bool cmdPending = false;
 bool chunkPending = false;
 uint16_t chunkComplete = 0;
 uint16_t chunkSize = 0;
+int valueOffset; //cannot use offset as a variable name, it is a reserved word for several teensy libraries
 byte cmdGroup = 0;
 byte cmdValue = 0;
 int cmdCombined = 0;  //the cmdgroup as high byte and cmdvalue as low byte

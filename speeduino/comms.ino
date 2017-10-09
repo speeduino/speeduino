@@ -15,7 +15,6 @@ A detailed description of each call can be found at: http://www.msextra.com/doc/
 
 void command()
 {
-  int valueOffset; //cannot use offset as a variable name, it is a reserved word for several teensy libraries
 
   if (cmdPending == false) { currentCommand = Serial.read(); }
 
