@@ -43,8 +43,9 @@ void initialiseADC()
      BIT_CLEAR(ADCSRA,ADPS0);
   #endif
 #endif
-MAPcurRev = 0;
-MAPcount = 0;
+  MAPcurRev = 0;
+  MAPcount = 0;
+  MAPrunningValue = 0;
 }
 
 void instanteneousMAPReading()

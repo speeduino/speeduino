@@ -28,7 +28,7 @@ volatile int AnChannel[15];
 
 unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
-byte MAPcurRev; //Tracks which revolution we're sampling on
+uint16_t MAPcurRev; //Tracks which revolution we're sampling on
 
 /*
  * Simple low pass IIR filter macro for the analog inputs
