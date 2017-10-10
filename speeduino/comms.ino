@@ -381,31 +381,31 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[17] = currentStatus.corrections; //Total GammaE (%)
   fullStatus[18] = currentStatus.VE; //Current VE 1 (%)
   fullStatus[19] = currentStatus.afrTarget;
-  fullStatus[20] = (byte)(currentStatus.PW1 / 100); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[21] = currentStatus.tpsDOT; //TPS DOT
-  fullStatus[22] = currentStatus.advance;
-  fullStatus[23] = currentStatus.TPS; // TPS (0% to 100%)
+  fullStatus[20] = lowByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[21] = highByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[22] = currentStatus.tpsDOT; //TPS DOT
+  fullStatus[23] = currentStatus.advance;
+  fullStatus[24] = currentStatus.TPS; // TPS (0% to 100%)
   //Need to split the int loopsPerSecond value into 2 bytes
-  fullStatus[24] = lowByte(currentStatus.loopsPerSecond);
-  fullStatus[25] = highByte(currentStatus.loopsPerSecond);
+  fullStatus[25] = lowByte(currentStatus.loopsPerSecond);
+  fullStatus[26] = highByte(currentStatus.loopsPerSecond);
 
   //The following can be used to show the amount of free memory
   currentStatus.freeRAM = freeRam();
-  fullStatus[26] = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
-  fullStatus[27] = highByte(currentStatus.freeRAM);
+  fullStatus[27] = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
+  fullStatus[28] = highByte(currentStatus.freeRAM);
 
-  fullStatus[28] = (byte)(currentStatus.boostTarget >> 1); //Divide boost target by 2 to fit in a byte
-  fullStatus[29] = (byte)(currentStatus.boostDuty / 100);
-  fullStatus[30] = currentStatus.spark; //Spark related bitfield
+  fullStatus[29] = (byte)(currentStatus.boostTarget >> 1); //Divide boost target by 2 to fit in a byte
+  fullStatus[30] = (byte)(currentStatus.boostDuty / 100);
+  fullStatus[31] = currentStatus.spark; //Spark related bitfield
 
   //rpmDOT must be sent as a signed integer
-  fullStatus[31] = lowByte(currentStatus.rpmDOT);
-  fullStatus[32] = highByte(currentStatus.rpmDOT);
+  fullStatus[32] = lowByte(currentStatus.rpmDOT);
+  fullStatus[33] = highByte(currentStatus.rpmDOT);
 
-  fullStatus[33] = currentStatus.ethanolPct; //Flex sensor value (or 0 if not used)
-  fullStatus[34] = currentStatus.flexCorrection; //Flex fuel correction (% above or below 100)
-  fullStatus[35] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
-  fullStatus[36] = getNextError();
+  fullStatus[34] = currentStatus.ethanolPct; //Flex sensor value (or 0 if not used)
+  fullStatus[35] = currentStatus.flexCorrection; //Flex fuel correction (% above or below 100)
+  fullStatus[36] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
 
   fullStatus[37] = currentStatus.idleLoad;
   fullStatus[38] = currentStatus.testOutputs;
@@ -447,6 +447,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[72] = highByte(currentStatus.canin[15]);
 
   fullStatus[73] = currentStatus.tpsADC;
+  fullStatus[74] = getNextError();
 
   for(byte x=0; x<packetLength; x++)
   {
