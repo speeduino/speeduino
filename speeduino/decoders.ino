@@ -1517,7 +1517,7 @@ uint16_t getRPM_Miata9905()
   return tempRPM;
 }
 
-int getCrankAngle_Miata9905(int timePerDegree)
+int getCrankAngle_Miata9905()//int timePerDegree)
 {
     int crankAngle = 0;
     if(currentStatus.hasSync == true)
@@ -1945,7 +1945,7 @@ uint16_t getRPM_Nissan360()
   return tempRPM;
 }
 
-int getCrankAngle_Nissan360(int timePerDegree)
+int getCrankAngle_Nissan360()//int timePerDegree)
 {
   //As each tooth represents 2 crank degrees, we only need to determine whether we're more or less than halfway between teeth to know whether to add another 1 degrees
   int crankAngle = 0;
@@ -2443,3 +2443,30 @@ void triggerSetEndTeeth_Harley()
 {
 
 }
+
+void triggerSetup_Subaru36222()
+{
+  
+}
+
+void triggerPri_Subaru36222()
+{
+
+}
+
+void triggerSec_Subaru36222()
+{
+  
+}
+
+uint16_t getRPM_Subaru36222()
+{
+ return 0; 
+}
+
+int getCrankAngle_Subaru36222()//int timePerDegree)
+{
+ return 0;
+}
+
+

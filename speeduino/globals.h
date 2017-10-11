@@ -405,8 +405,8 @@ struct config2 {
   byte TrigEdge : 1;
   byte TrigSpeed : 1;
   byte IgInv : 1;
-  byte unused4_5d : 1;
-  byte TrigPattern : 4;
+//  byte unused4_5d : 1;
+  byte TrigPattern : 5;
 
   byte TrigEdgeSec : 1;
   byte fuelPumpPin : 6;
