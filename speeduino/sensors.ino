@@ -45,8 +45,9 @@ void initialiseADC()
 #elif defined(ARDUINO_ARCH_STM32) //STM32GENERIC lib
   analogReadResolution(10); //use 10bits for analog
 #endif
-MAPcurRev = 0;
-MAPcount = 0;
+  MAPcurRev = 0;
+  MAPcount = 0;
+  MAPrunningValue = 0;
 }
 
 void instanteneousMAPReading()
@@ -118,11 +119,12 @@ void readMAP()
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
             //currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax);
             if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
-            MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
-            MAPrunningValue = 0;
-            MAPcount = 0;
           }
           else { instanteneousMAPReading(); }
+          
+          MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
+          MAPrunningValue = 0;
+          MAPcount = 0;
         }
       }
       else {  instanteneousMAPReading(); }
