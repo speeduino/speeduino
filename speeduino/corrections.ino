@@ -437,7 +437,7 @@ static inline int8_t correctionSoftLaunch(int8_t advance)
 {
   byte ignSoftLaunchValue = advance;
   //SoftCut rev limit for 2-step launch control.
-  if (configPage3.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) )
+  if (configPage3.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) && (currentStatus.TPS >= configPage11.lnchFltsTPS))
   {
     currentStatus.launchingSoft = true;
     BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH);
@@ -456,7 +456,7 @@ static inline int8_t correctionSoftFlatShift(int8_t  advance)
 {
   byte ignSoftFlatValue = advance;
 
-  if(configPage3.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage3.flatSSoftWin) ) )
+  if(configPage3.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage3.flatSSoftWin) ) && (currentStatus.TPS >= configPage11.lnchFltsTPS))
   {
     BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
     ignSoftFlatValue = configPage3.flatSRetard;
