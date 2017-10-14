@@ -80,8 +80,8 @@
 
 #define BIT_SPARK2_FLATSH         0 //Flat shift hard cut
 #define BIT_SPARK2_FLATSS         1 //Flat shift soft cut
-#define BIT_SPARK2_UNUSED3        2
-#define BIT_SPARK2_UNUSED4        3
+#define BIT_SPARK2_ANTILAG        2 //Antilag Indicator
+#define BIT_SPARK2_ROTIDLE        3 //Rotational Idle Indicator
 #define BIT_SPARK2_UNUSED5        4
 #define BIT_SPARK2_UNUSED6        5
 #define BIT_SPARK2_UNUSED7        6
@@ -286,7 +286,9 @@ struct statuses {
   uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
   uint8_t current_caninchannel = 0; //start off at channel 0
   uint16_t crankRPM = 400; //The actual cranking RPM limit. Saves us multiplying it everytime from the config page
-
+  boolean antilagActive; //true when all conditions are met
+  boolean rotaionalIdleActive; //True when all conditions are met.
+  byte antilagCorrection;  //Fuel correction when antilag is enabled
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
   // y = (x >> n) & 1;    // n=0..15.  stores nth bit of x in y.  y becomes 0 or 1.
@@ -619,7 +621,27 @@ struct config11 {
 
   uint16_t boostSens;
   byte boostIntv;
-  byte unused11_28_192[164];
+  //Rotational Idle Variables
+
+  byte rotationalIdle : 1; //Used for rotaionalIdle enable
+  byte unused11_28c : 7;
+  byte riCoolantTemp; //Minimum coolant temp for RI to be engaged
+  byte riTPSMax;
+
+  
+  //Antilag Settings
+  byte antilagEnabled : 1;
+  
+  byte unused11_31c : 7;
+
+  byte antilagCoolant;
+  byte antilagTPS;
+  byte antilagMinRpm;
+  int8_t antilagRetard;
+  byte antilagFuelAdder;
+
+  byte unused11_37;
+  byte unused11_31_192[154];
 
 #if defined(CORE_AVR)
   };
