@@ -175,7 +175,7 @@ void initialiseSchedulers()
     Timer3.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer3.setMode(3, TIMER_OUTPUT_COMPARE);
     Timer3.setMode(4, TIMER_OUTPUT_COMPARE);
-    Timer1.setMode(1, TIMER_OUTPUT_COMPARE); 
+    Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
 
   #else //libmaple core aka STM32DUINO
     //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
@@ -256,9 +256,14 @@ void setFuelSchedule1(unsigned long timeout, unsigned long duration)
     //fuelSchedule1.EndCallback = endCallback;
     fuelSchedule1.duration = duration;
 
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD_SLOW) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
+
     //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
     noInterrupts();
-    fuelSchedule1.startCompare = FUEL1_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    fuelSchedule1.startCompare = FUEL1_COUNTER + timeout_timer_compare;
     fuelSchedule1.endCompare = fuelSchedule1.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     fuelSchedule1.Status = PENDING; //Turn this schedule on
     fuelSchedule1.schedulesSet++; //Increment the number of times this schedule has been set
@@ -288,9 +293,14 @@ void setFuelSchedule2(unsigned long timeout, unsigned long duration)
     //fuelSchedule2.EndCallback = endCallback;
     fuelSchedule2.duration = duration;
 
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD_SLOW) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
+
     //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
     noInterrupts();
-    fuelSchedule2.startCompare = FUEL2_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    fuelSchedule2.startCompare = FUEL2_COUNTER + timeout_timer_compare;
     fuelSchedule2.endCompare = fuelSchedule2.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     FUEL2_COMPARE = fuelSchedule2.startCompare; //Use the B compare unit of timer 3
     fuelSchedule2.Status = PENDING; //Turn this schedule on
@@ -317,9 +327,14 @@ void setFuelSchedule3(unsigned long timeout, unsigned long duration)
     //fuelSchedule3.EndCallback = endCallback;
     fuelSchedule3.duration = duration;
 
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD_SLOW) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
+
     //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
     noInterrupts();
-    fuelSchedule3.startCompare = FUEL3_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    fuelSchedule3.startCompare = FUEL3_COUNTER + timeout_timer_compare;
     fuelSchedule3.endCompare = fuelSchedule3.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     FUEL3_COMPARE = fuelSchedule3.startCompare; //Use the C copmare unit of timer 3
     fuelSchedule3.Status = PENDING; //Turn this schedule on
@@ -346,9 +361,14 @@ void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses time
     //fuelSchedule4.EndCallback = endCallback;
     fuelSchedule4.duration = duration;
 
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD_SLOW) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
+
     //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
     noInterrupts();
-    fuelSchedule4.startCompare = FUEL4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    fuelSchedule4.startCompare = FUEL4_COUNTER + timeout_timer_compare;
     fuelSchedule4.endCompare = fuelSchedule4.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     FUEL4_COMPARE = fuelSchedule4.startCompare; //Use the C copmare unit of timer 3
     fuelSchedule4.Status = PENDING; //Turn this schedule on
