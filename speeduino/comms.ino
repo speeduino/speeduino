@@ -295,6 +295,7 @@ void command()
       break;
 
     case '?':
+    #ifndef SMALL_FLASH_MODE
       Serial.println
       (F(
          "\n"
@@ -322,6 +323,7 @@ void command()
          "r - Displays 256 tooth log entries\n"
          "? - Displays this help page"
        ));
+     #endif
 
       break;
 
@@ -950,7 +952,9 @@ void sendPage(bool useChar)
         break;
 
     default:
+    #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
+    #endif
         //Just set default Values to avoid warnings
         pnt_configPage = &configPage11;
         currentTable = fuelTable;
@@ -1181,7 +1185,9 @@ byte getPageValue(byte page, uint16_t valueAddress)
         break;
 
     default:
+    #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
+    #endif
         //Just set default Values to avoid warnings
         pnt_configPage = &configPage11;
         break;
