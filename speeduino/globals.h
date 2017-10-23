@@ -624,7 +624,8 @@ struct config11 {
 
   uint16_t boostSens;
   byte boostIntv;
-  byte unused11_28_192[164];
+  byte lnchFltsTPS;
+  byte unused11_29_191[163];
 
 #if defined(CORE_AVR)
   };
