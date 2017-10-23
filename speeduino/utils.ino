@@ -406,6 +406,46 @@ void setPinMapping(byte boardID)
       pinSpareLOut5 = 53;
       pinFan = 47; //Pin for the fan output
       break;
+      
+    case 40:
+      //Pin mappings as per the NO2C shield
+      pinInjector1 = 8; //Output pin injector 1 is on
+      pinInjector2 = 9; //Output pin injector 2 is on
+      pinInjector3 = 11; //Output pin injector 3 is on - NOT USED
+      pinInjector4 = 12; //Output pin injector 4 is on - NOT USED
+      pinInjector5 = 13; //Placeholder only - NOT USED
+      pinCoil1 = 23; //Pin for coil 1
+      pinCoil2 = 22; //Pin for coil 2
+      pinCoil3 = 2; //Pin for coil 3 - ONLY WITH DB2
+      pinCoil4 = 3; //Pin for coil 4 - ONLY WITH DB2
+      pinCoil5 = 46; //Placeholder only - NOT USED
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinTPS = A3; //TPS input pin
+      pinMAP = A0; //MAP sensor pin
+      pinIAT = A5; //IAT sensor pin
+      pinCLT = A4; //CLT sensor pin
+      pinO2 = A2; //O2 sensor pin
+      pinBat = A1; //Battery reference voltage pin
+      pinBaro = A6; //Baro sensor pin - ONLY WITH DB
+      pinSpareTemp1 = A7; //spare Analog input 1 - ONLY WITH DB
+      pinDisplayReset = 48; // OLED reset pin - NOT USED
+      pinTachOut = 38; //Tacho output pin
+      pinIdle1 = 5; //Single wire idle control
+      pinIdle2 = 47; //2 wire idle control - NOT USED
+      pinBoost = 7; //Boost control
+      pinVVT_1 = 6; //Default VVT output
+      pinFuelPump = 4; //Fuel pump output
+      pinStepperDir = 25; //Direction pin for DRV8825 driver
+      pinStepperStep = 24; //Step pin for DRV8825 driver
+      pinStepperEnable = 27; //Enable pin for DRV8825 driver
+      pinLaunch = 10; //Can be overwritten below
+      pinFlex = 20; // Flex sensor (Must be external interrupt enabled) - ONLY WITH DB
+      pinFan = 30; //Pin for the fan output - ONLY WITH DB
+      pinSpareLOut1 = 32; //low current output spare1 - ONLY WITH DB
+      pinSpareLOut2 = 34; //low current output spare2 - ONLY WITH DB
+      pinSpareLOut3 = 36; //low current output spare3 - ONLY WITH DB
+      break;
 
     default:
       //Pin mappings as per the v0.2 shield
