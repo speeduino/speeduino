@@ -314,8 +314,8 @@ struct config1 {
   byte pinMapping; // The board / ping mapping to be used
   byte tachoPin : 6; //Custom pin setting for tacho output
   byte tachoDiv : 2; //Whether to change the tacho speed
-  byte tdePct; // TPS decelleration (%)
-  byte taeColdA;
+  byte unused2_17;
+  byte unused2_18;
   byte tpsThresh;
   byte taeTime;
 
@@ -418,9 +418,9 @@ struct config2 {
   byte useResync : 1;
 
   byte sparkDur; //Spark duration in ms * 10
-  byte IdleAdvRPM;
-  byte IdleAdvCLT; //The temperature below which the idle is advanced
-  byte IdleDelayTime;
+  byte unused4_8;
+  byte unused4_9;
+  byte unused4_10;
   byte StgCycles; //The number of initial cycles before the ignition should fire when first cranking
 
   byte dwellCont : 1; //Fixed duty dwell control
