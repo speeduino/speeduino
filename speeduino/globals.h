@@ -63,15 +63,15 @@
 #define BIT_ENGINE_MAPACC   6   // MAP acceleration mode
 #define BIT_ENGINE_MAPDCC   7   // MAP decelleration mode
 
-//Define masks for Squirt
-#define BIT_SQUIRT_INJ1          0  //inj1 Squirt
-#define BIT_SQUIRT_INJ2          1  //inj2 Squirt
-#define BIT_SQUIRT_INJ3          2  //inj3 Squirt
-#define BIT_SQUIRT_INJ4          3  //inj4 Squirt
-#define BIT_SQUIRT_DFCO          4 //Decelleration fuel cutoff
-#define BIT_SQUIRT_BOOSTCUT      5  //Fuel component of MAP based boost cut out
-#define BIT_SQUIRT_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
-#define BIT_SQUIRT_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
+//Define masks for Status1
+#define BIT_STATUS1_INJ1           0  //inj1 
+#define BIT_STATUS1_INJ2           1  //inj2
+#define BIT_STATUS1_INJ3           2  //inj3
+#define BIT_STATUS1_INJ4           3  //inj4
+#define BIT_STATUS1_DFCO           4 //Decelleration fuel cutoff
+#define BIT_STATUS1_BOOSTCUT       5  //Fuel component of MAP based boost cut out
+#define BIT_STATUS1_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
+#define BIT_STATUS1_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
 
 //Define masks for spark variable
 #define BIT_SPARK_HLAUNCH         0  //Hard Launch indicator
@@ -266,7 +266,7 @@ struct statuses {
   bool fanOn; //Whether or not the fan is turned on
   volatile byte ethanolPct; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85.
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
-  volatile byte squirt;
+  volatile byte status1;
   volatile byte spark;
   volatile byte spark2;
   byte engine;

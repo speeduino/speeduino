@@ -771,26 +771,26 @@ void loop()
         {
           case 1:
             BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-            BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+            BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
             break;
           case 2:
-            BIT_SET(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+            BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
             BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
             break;
           case 3:
             BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-            BIT_SET(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+            BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
             break;
         }
       }
       else
       {
         BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-        BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+        BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
       }
 
       //And check whether the tooth log buffer is ready
-      if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
+      if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
 
 
     }
@@ -1222,7 +1222,7 @@ void loop()
       int crankAngle = getCrankAngle(timePerDegree);
       if (crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle -= 360; }
 
-      if (fuelOn && currentStatus.PW1 > 0 && !BIT_CHECK(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT))
+      if (fuelOn && currentStatus.PW1 > 0 && !BIT_CHECK(currentStatus.status1, BIT_STATUS1_BOOSTCUT))
       {
         if ( (injector1StartAngle <= crankAngle) && (fuelSchedule1.Status == RUNNING) ) { injector1StartAngle += CRANK_ANGLE_MAX_INJ; }
         if (injector1StartAngle > crankAngle)

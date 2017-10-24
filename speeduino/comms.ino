@@ -364,7 +364,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
-  fullStatus[1] = currentStatus.squirt; //Squirt Bitfield
+  fullStatus[1] = currentStatus.status1; //status1 Bitfield
   fullStatus[2] = currentStatus.engine; //Engine Status Bitfield
   fullStatus[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
   fullStatus[4] = lowByte(currentStatus.MAP); //2 bytes for MAP
@@ -1330,7 +1330,7 @@ void sendToothLog(bool useChar)
         Serial.write(highByte(tempToothHistory[x]));
         Serial.write(lowByte(tempToothHistory[x]));
       }
-      BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY);
+      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
     }
     toothLogRead = true;
   }
