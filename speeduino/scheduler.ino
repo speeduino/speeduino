@@ -258,7 +258,7 @@ void setFuelSchedule1(unsigned long timeout, unsigned long duration)
 
     //Need to check that the timeout doesn't exceed the overflow
     uint16_t timeout_timer_compare;
-    if (timeout > MAX_TIMER_PERIOD_SLOW) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    if (timeout > MAX_TIMER_PERIOD_SLOW) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD_SLOW - 1) ); } // If the timeout is >16x (Each tick represents 16uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
 
     //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
@@ -440,6 +440,18 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
     IGN1_TIMER_ENABLE();
   }
 }
+
+static inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
+{
+  if( (ignitionSchedule1.Status == RUNNING) && (timeToEnd < ignitionSchedule1.duration) )
+  {
+    noInterrupts();
+    ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeToEnd);
+    IGN1_COMPARE = ignitionSchedule1.endCompare;
+    interrupts();
+  }
+}
+
 void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
   if(ignitionSchedule2.Status != RUNNING) //Check that we're not already part way through a schedule
