@@ -5,14 +5,11 @@ A full copy of the license may be found in the projects root directory
 */
 
 /*
-This is called when a command is received over serial from TunerStudio / Megatune
-It parses the command and calls the relevant function
-A detailed description of each call can be found at: http://www.msextra.com/doc/ms1extra/COM_RS232.htm
+  Processes the data on the serial buffer.
+  Can be either a new command or a continuation of one that is already in progress:
+    * cmdPending = If a command has started but is wairing on further data to complete
+    * chunkPending = Specifically for the new receive value method where TS will send a known number of contiguous bytes to be written to a table
 */
-//#include "comms.h"
-//#include "globals.h"
-//#include "storage.h"
-
 void command()
 {
 

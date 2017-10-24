@@ -64,7 +64,7 @@
 #define BIT_ENGINE_MAPDCC   7   // MAP decelleration mode
 
 //Define masks for Status1
-#define BIT_STATUS1_INJ1           0  //inj1 
+#define BIT_STATUS1_INJ1           0  //inj1
 #define BIT_STATUS1_INJ2           1  //inj2
 #define BIT_STATUS1_INJ3           2  //inj3
 #define BIT_STATUS1_INJ4           3  //inj4
@@ -132,6 +132,7 @@
 #define ODD_FIRE          1
 
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
+#define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
