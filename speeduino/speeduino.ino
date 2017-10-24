@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //https://developer.mbed.org/handbook/C-Data-Types
 #include <stdint.h>
 //************************************************
+#include "speeduino.h"
 #include "globals.h"
 #include "utils.h"
 #include "table.h"
@@ -910,17 +911,16 @@ void loop()
       {
         //Speed Density
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-        currentStatus.PW1 = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
         currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.MAP, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
       }
       else
       {
         //Alpha-N
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
-        currentStatus.PW1 = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
         currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
       }
 
+      currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
       currentStatus.advance = correctionsIgn(currentStatus.advance);
 
       int injector1StartAngle = 0;
@@ -1356,6 +1356,11 @@ void loop()
                       ign1EndFunction
                       );
         }
+        if(ignition1EndAngle > crankAngle && configPage2.StgCycles == 0)
+        {
+          unsigned long uSToEnd = degreesToUS( (ignition1EndAngle - crankAngle) );
+          //refreshIgnitionSchedule1( uSToEnd + fixedCrankingOverride );
+        }
 
         tempCrankAngle = crankAngle - channel2IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
@@ -1443,3 +1448,51 @@ void loop()
       } //Ignition schedules on
     } //Has sync and RPM
 } //loop()
+
+/*
+  This function retuns a pulsewidth time (in us) given the following:
+  REQ_FUEL
+  VE: Lookup from the main fuel table. This can either have been MAP or TPS based, depending on the algorithm used
+  MAP: In KPa, read from the sensor (This is used when performing a multiply of the map only. It is applicable in both Speed density and Alpha-N)
+  GammaE: Sum of Enrichment factors (Cold start, acceleration). This is a multiplication factor (Eg to add 10%, this should be 110)
+  injDT: Injector dead time. The time the injector take to open minus the time it takes to close (Both in uS)
+*/
+static inline unsigned int PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
+{
+  //Standard float version of the calculation
+  //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
+  //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
+  uint16_t iVE, iCorrections;
+  uint16_t iMAP = 100;
+  uint16_t iAFR = 147;
+
+  //100% float free version, does sacrifice a little bit of accuracy, but not much.
+  iVE = ((unsigned int)VE << 7) / 100;
+  if ( configPage1.multiplyMAP == true ) {
+    iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
+  }
+  if ( (configPage1.includeAFR == true) && (configPage3.egoType == 2)) {
+    iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+  }
+  iCorrections = (corrections << 7) / 100;
+
+
+  unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
+  if ( configPage1.multiplyMAP == true ) {
+    intermediate = (intermediate * (unsigned long)iMAP) >> 7;
+  }
+  if ( (configPage1.includeAFR == true) && (configPage3.egoType == 2) ) {
+    intermediate = (intermediate * (unsigned long)iAFR) >> 7;  //EGO type must be set to wideband for this to be used
+  }
+  intermediate = (intermediate * (unsigned long)iCorrections) >> 7;
+  if (intermediate != 0)
+  {
+    //If intermeditate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
+    intermediate += injOpen; //Add the injector opening time
+    if ( intermediate > 65535)
+    {
+      intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
+    }
+  }
+  return (unsigned int)(intermediate);
+}
