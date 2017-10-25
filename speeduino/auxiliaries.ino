@@ -130,6 +130,10 @@ void vvtControl()
   if( configPage3.vvtEnabled == 1 )
   {
     byte vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
+
+    //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
+    if( (configPage3.VVTasOnOff == true) && (vvtDuty < 100) ) { vvtDuty = 0; }
+
     if(vvtDuty == 0)
     {
       //Make sure solenoid is off (0% duty)

@@ -62,6 +62,7 @@ volatile int triggerToothAngle; //The number of crank degrees that elapse per to
 bool secondDerivEnabled; //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
 bool decoderIsSequential; //Whether or not the decoder supports sequential operation
 bool decoderIsLowRes = false; //Is set true, certain extra calculations are performed for better timing accuracy
+bool decoderHasFixedCrankingTiming = false; //Whether or not the decoder supports fixed cranking timing
 byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
 
 int16_t ignition1EndTooth = 0;

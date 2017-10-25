@@ -5,18 +5,14 @@ A full copy of the license may be found in the projects root directory
 */
 
 /*
-This is called when a command is received over serial from TunerStudio / Megatune
-It parses the command and calls the relevant function
-A detailed description of each call can be found at: http://www.msextra.com/doc/ms1extra/COM_RS232.htm
+  Processes the data on the serial buffer.
+  Can be either a new command or a continuation of one that is already in progress:
+    * cmdPending = If a command has started but is wairing on further data to complete
+    * chunkPending = Specifically for the new receive value method where TS will send a known number of contiguous bytes to be written to a table
 */
-//#include "comms.h"
-//#include "globals.h"
-//#include "storage.h"
-
 void command()
 {
-  int valueOffset; //cannot use offset as a variable name, it is a reserved word for several teensy libraries
-  
+
   if (cmdPending == false) { currentCommand = Serial.read(); }
 
   switch (currentCommand)
@@ -136,7 +132,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201709-dev");
+      Serial.print("speeduino 201710-dev");
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -166,7 +162,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.09-dev");
+      Serial.print("Speeduino 2017.10-dev");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -243,14 +239,19 @@ void command()
           length2 = Serial.read(); // Length to be written (Should always be 1)
           chunkSize = word(length2, length1);
 
-          //chunkPending = true;
-          for(int i = 0; i < chunkSize; i++)
-          {
-            while(Serial.available() == 0) { } //For chunk writes, we can safely loop here
-            receiveValue( (valueOffset + i), Serial.read());
-          }
-          cmdPending = false;
+          chunkPending = true;
+          chunkComplete = 0;
         }
+      }
+      //This CANNOT be an else of the above if statement as chunkPending gets set to true above
+      if(chunkPending == true)
+      {
+        while( (Serial.available() > 0) && (chunkComplete < chunkSize) )
+        {
+          receiveValue( (valueOffset + chunkComplete), Serial.read());
+          chunkComplete++;
+        }
+        if(chunkComplete >= chunkSize) { cmdPending = false; chunkPending = false; }
       }
       break;
 
@@ -291,21 +292,19 @@ void command()
       break;
 
     case '?':
+    #ifndef SMALL_FLASH_MODE
       Serial.println
       (F(
          "\n"
          "===Command Help===\n\n"
          "All commands are single character and are concatenated with their parameters \n"
-         "without spaces. Some parameters are binary and cannot be entered through this \n"
-         "prompt by conventional means. \n"
+         "without spaces."
          "Syntax:  <command>+<parameter1>+<parameter2>+<parameterN>\n\n"
          "===List of Commands===\n\n"
          "A - Displays 31 bytes of currentStatus values in binary (live data)\n"
          "B - Burn current map and configPage values to eeprom\n"
          "C - Test COM port.  Used by Tunerstudio to see whether an ECU is on a given serial \n"
          "    port. Returns a binary number.\n"
-         "L - Displays map page (aka table) or configPage values.  Use P to change page (not \n"
-         "    every page is a map)\n"
          "N - Print new line.\n"
          "P - Set current page.  Syntax:  P+<pageNumber>\n"
          "R - Same as A command\n"
@@ -321,6 +320,7 @@ void command()
          "r - Displays 256 tooth log entries\n"
          "? - Displays this help page"
        ));
+     #endif
 
       break;
 
@@ -361,7 +361,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
-  fullStatus[1] = currentStatus.squirt; //Squirt Bitfield
+  fullStatus[1] = currentStatus.status1; //status1 Bitfield
   fullStatus[2] = currentStatus.engine; //Engine Status Bitfield
   fullStatus[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
   fullStatus[4] = lowByte(currentStatus.MAP); //2 bytes for MAP
@@ -380,31 +380,31 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[17] = currentStatus.corrections; //Total GammaE (%)
   fullStatus[18] = currentStatus.VE; //Current VE 1 (%)
   fullStatus[19] = currentStatus.afrTarget;
-  fullStatus[20] = (byte)(currentStatus.PW1 / 100); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[21] = currentStatus.tpsDOT; //TPS DOT
-  fullStatus[22] = currentStatus.advance;
-  fullStatus[23] = currentStatus.TPS; // TPS (0% to 100%)
+  fullStatus[20] = lowByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[21] = highByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[22] = currentStatus.tpsDOT; //TPS DOT
+  fullStatus[23] = currentStatus.advance;
+  fullStatus[24] = currentStatus.TPS; // TPS (0% to 100%)
   //Need to split the int loopsPerSecond value into 2 bytes
-  fullStatus[24] = lowByte(currentStatus.loopsPerSecond);
-  fullStatus[25] = highByte(currentStatus.loopsPerSecond);
+  fullStatus[25] = lowByte(currentStatus.loopsPerSecond);
+  fullStatus[26] = highByte(currentStatus.loopsPerSecond);
 
   //The following can be used to show the amount of free memory
   currentStatus.freeRAM = freeRam();
-  fullStatus[26] = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
-  fullStatus[27] = highByte(currentStatus.freeRAM);
+  fullStatus[27] = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
+  fullStatus[28] = highByte(currentStatus.freeRAM);
 
-  fullStatus[28] = (byte)(currentStatus.boostTarget >> 1); //Divide boost target by 2 to fit in a byte
-  fullStatus[29] = (byte)(currentStatus.boostDuty / 100);
-  fullStatus[30] = currentStatus.spark; //Spark related bitfield
+  fullStatus[29] = (byte)(currentStatus.boostTarget >> 1); //Divide boost target by 2 to fit in a byte
+  fullStatus[30] = (byte)(currentStatus.boostDuty / 100);
+  fullStatus[31] = currentStatus.spark; //Spark related bitfield
 
   //rpmDOT must be sent as a signed integer
-  fullStatus[31] = lowByte(currentStatus.rpmDOT);
-  fullStatus[32] = highByte(currentStatus.rpmDOT);
+  fullStatus[32] = lowByte(currentStatus.rpmDOT);
+  fullStatus[33] = highByte(currentStatus.rpmDOT);
 
-  fullStatus[33] = currentStatus.ethanolPct; //Flex sensor value (or 0 if not used)
-  fullStatus[34] = currentStatus.flexCorrection; //Flex fuel correction (% above or below 100)
-  fullStatus[35] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
-  fullStatus[36] = getNextError();
+  fullStatus[34] = currentStatus.ethanolPct; //Flex sensor value (or 0 if not used)
+  fullStatus[35] = currentStatus.flexCorrection; //Flex fuel correction (% above or below 100)
+  fullStatus[36] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
 
   fullStatus[37] = currentStatus.idleLoad;
   fullStatus[38] = currentStatus.testOutputs;
@@ -446,6 +446,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[72] = highByte(currentStatus.canin[15]);
 
   fullStatus[73] = currentStatus.tpsADC;
+  fullStatus[74] = getNextError();
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -948,7 +949,9 @@ void sendPage(bool useChar)
         break;
 
     default:
-        Serial.println(F("\nPage has not been implemented yet. Change to another page."));
+    #ifndef SMALL_FLASH_MODE
+        Serial.println(F("\nPage has not been implemented yet"));
+    #endif
         //Just set default Values to avoid warnings
         pnt_configPage = &configPage11;
         currentTable = fuelTable;
@@ -1179,7 +1182,9 @@ byte getPageValue(byte page, uint16_t valueAddress)
         break;
 
     default:
-        Serial.println(F("\nPage has not been implemented yet. Change to another page."));
+    #ifndef SMALL_FLASH_MODE
+        Serial.println(F("\nPage has not been implemented yet"));
+    #endif
         //Just set default Values to avoid warnings
         pnt_configPage = &configPage11;
         break;
@@ -1322,7 +1327,7 @@ void sendToothLog(bool useChar)
         Serial.write(highByte(tempToothHistory[x]));
         Serial.write(lowByte(tempToothHistory[x]));
       }
-      BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY);
+      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
     }
     toothLogRead = true;
   }

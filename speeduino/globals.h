@@ -4,19 +4,28 @@
 #include "table.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
-  #define BOARD_NR_GPIO_PINS 54
+  #define BOARD_DIGITAL_GPIO_PINS 54
+  #define BOARD_NR_GPIO_PINS 62
   #define LED_BUILTIN 13
   #define CORE_AVR
 #elif defined(CORE_TEENSY)
+  #define BOARD_DIGITAL_GPIO_PINS 34
   #define BOARD_NR_GPIO_PINS 34
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
   #if defined (STM32F1) || defined(__STM32F1__)
+    #define BOARD_DIGITAL_GPIO_PINS 34
     #define BOARD_NR_GPIO_PINS 34
     #define LED_BUILTIN 33
   #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
+    #define BOARD_DIGITAL_GPIO_PINS 80
     #define BOARD_NR_GPIO_PINS 80
     #define LED_BUILTIN PA7
+  #endif
+
+  //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
+  #if defined(MCU_STM32F103C8)
+    #define SMALL_FLASH_MODE
   #endif
 
   extern "C" char* sbrk(int incr); //Used to freeRam
@@ -54,15 +63,15 @@
 #define BIT_ENGINE_MAPACC   6   // MAP acceleration mode
 #define BIT_ENGINE_MAPDCC   7   // MAP decelleration mode
 
-//Define masks for Squirt
-#define BIT_SQUIRT_INJ1          0  //inj1 Squirt
-#define BIT_SQUIRT_INJ2          1  //inj2 Squirt
-#define BIT_SQUIRT_INJ3          2  //inj3 Squirt
-#define BIT_SQUIRT_INJ4          3  //inj4 Squirt
-#define BIT_SQUIRT_DFCO          4 //Decelleration fuel cutoff
-#define BIT_SQUIRT_BOOSTCUT      5  //Fuel component of MAP based boost cut out
-#define BIT_SQUIRT_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
-#define BIT_SQUIRT_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
+//Define masks for Status1
+#define BIT_STATUS1_INJ1           0  //inj1
+#define BIT_STATUS1_INJ2           1  //inj2
+#define BIT_STATUS1_INJ3           2  //inj3
+#define BIT_STATUS1_INJ4           3  //inj4
+#define BIT_STATUS1_DFCO           4 //Decelleration fuel cutoff
+#define BIT_STATUS1_BOOSTCUT       5  //Fuel component of MAP based boost cut out
+#define BIT_STATUS1_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
+#define BIT_STATUS1_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
 
 //Define masks for spark variable
 #define BIT_SPARK_HLAUNCH         0  //Hard Launch indicator
@@ -113,6 +122,9 @@
 #define BOOST_MODE_SIMPLE   0
 #define BOOST_MODE_FULL     1
 
+#define HARD_CUT_FULL       0
+#define HARD_CUT_ROLLING    1
+
 #define SIZE_BYTE   8
 #define SIZE_INT    16
 
@@ -120,6 +132,7 @@
 #define ODD_FIRE          1
 
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
+#define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
@@ -132,15 +145,11 @@
 #define FUEL_PUMP_ON() *pump_pin_port |= (pump_pin_mask)
 #define FUEL_PUMP_OFF() *pump_pin_port &= ~(pump_pin_mask)
 
-const byte signature = 20;
-
-//const char signature[] = "speeduino";
-const char displaySignature[] = "speeduino 201609-dev";
 const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 //const byte page_size = 64;
-const int npage_size[11] = {0,288,128,288,128,288,128,160,192,128,192};
+const int16_t npage_size[11] = {0,288,128,288,128,288,128,160,192,128,192};
 //const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
@@ -258,7 +267,7 @@ struct statuses {
   bool fanOn; //Whether or not the fan is turned on
   volatile byte ethanolPct; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85.
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
-  volatile byte squirt;
+  volatile byte status1;
   volatile byte spark;
   volatile byte spark2;
   byte engine;
@@ -306,8 +315,8 @@ struct config1 {
   byte pinMapping; // The board / ping mapping to be used
   byte tachoPin : 6; //Custom pin setting for tacho output
   byte tachoDiv : 2; //Whether to change the tacho speed
-  byte tdePct; // TPS decelleration (%)
-  byte taeColdA;
+  byte unused2_17;
+  byte unused2_18;
   byte tpsThresh;
   byte taeTime;
 
@@ -328,7 +337,8 @@ struct config1 {
   byte injTiming : 1;
   byte multiplyMAP : 1;
   byte includeAFR : 1;
-  byte unused26 : 4;
+  byte hardCutType : 1;
+  byte unused26 : 3;
   byte indInjAng : 1;
   byte injOpen; //Injector opening time (ms * 10)
   uint16_t inj1Ang;
@@ -381,7 +391,7 @@ struct config1 {
   byte iacCLmaxDuty;
   byte boostMinDuty;
 
-  byte unused1_64[63];
+  byte unused1_64[64];
 
 #if defined(CORE_AVR)
   };
@@ -409,9 +419,9 @@ struct config2 {
   byte useResync : 1;
 
   byte sparkDur; //Spark duration in ms * 10
-  byte IdleAdvRPM;
-  byte IdleAdvCLT; //The temperature below which the idle is advanced
-  byte IdleDelayTime;
+  byte unused4_8;
+  byte unused4_9;
+  byte unused4_10;
   byte StgCycles; //The number of initial cycles before the ignition should fire when first cranking
 
   byte dwellCont : 1; //Fixed duty dwell control
@@ -445,7 +455,7 @@ struct config2 {
   byte ignBypassPin : 6; //Pin the ignition bypass is activated on
   byte ignBypassHiLo : 1; //Whether this should be active high or low.
 
-  byte unused2_64[63];
+  byte unused2_64[64];
 
 #if defined(CORE_AVR)
   };
@@ -479,7 +489,8 @@ struct config3 {
   byte useExtBaro : 1;
   byte boostMode : 1; //Simple of full boost contrl
   byte boostPin : 6;
-  byte unused6_14 : 2;
+  byte VVTasOnOff : 1; //Whether or not to use the VVT table as an on/off map
+  byte unused6_14 : 1;
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
   byte airDenBins[9];

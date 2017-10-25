@@ -31,7 +31,7 @@ static inline void addToothLogEntry(unsigned long toothTime)
     if (toothLogRead)
     {
       toothHistoryIndex = 0;
-      BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY);
+      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothLogRead = false; //The tooth log ready bit is cleared to ensure that we only get a set of concurrent values.
     }
   }
@@ -51,7 +51,8 @@ static inline uint16_t stdGetRPM()
 
   if( currentStatus.hasSync == true )
   {
-    if( (BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (currentStatus.startRevolutions == 0) ) { tempRPM = 0; } //Prevents crazy RPM spike when there has been less than 1 full revolution
+    if( (currentStatus.RPM < currentStatus.crankRPM) && (currentStatus.startRevolutions == 0) ) { tempRPM = 0; } //Prevents crazy RPM spike when there has been less than 1 full revolution
+    else if( (toothOneTime == 0) || (toothOneMinusOneTime == 0) ) { tempRPM = 0; }
     else
     {
       noInterrupts();
@@ -88,9 +89,9 @@ It takes an argument of the full (COMPLETE) number of teeth per revolution. For 
 static inline int crankingGetRPM(byte totalTeeth)
 {
   uint16_t tempRPM = 0;
-  if( currentStatus.startRevolutions >= 2 )
+  if( (currentStatus.startRevolutions >= configPage2.StgCycles) && (currentStatus.hasSync == true) )
   {
-    if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) )
+    if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) && (toothLastToothTime > toothLastMinusOneToothTime) )
     {
       noInterrupts();
       revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth;
@@ -130,14 +131,15 @@ void triggerSetup_missingTooth()
   secondDerivEnabled = false;
   decoderIsSequential = false;
   checkSyncToothCount = (configPage2.triggerTeeth) >> 1; //50% of the total teeth.
+  toothLastMinusOneToothTime = 0;
+  toothCurrentCount = 0;
+  toothOneTime = 0;
+  toothOneMinusOneTime = 0;
   MAX_STALL_TIME = (3333UL * triggerToothAngle * (configPage2.triggerMissingTeeth + 1)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 }
 
 void triggerPri_missingTooth()
 {
-   // http://www.msextra.com/forums/viewtopic.php?f=94&t=22976
-   // http://www.megamanual.com/ms2/wheel.htm
-
    curTime = micros();
    curGap = curTime - toothLastToothTime;
    if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
@@ -152,6 +154,8 @@ void triggerPri_missingTooth()
        //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
        if(configPage2.triggerMissingTeeth == 1) { targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
        else { targetGap = ((toothLastToothTime - toothLastMinusOneToothTime)) * 2; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
+
+       if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { curGap = 0; }
 
        if ( (curGap > targetGap) || (toothCurrentCount > triggerActualTeeth) )
        {
@@ -198,10 +202,14 @@ void triggerSec_missingTooth()
 uint16_t getRPM_missingTooth()
 {
   uint16_t tempRPM = 0;
-  if( (currentStatus.RPM < currentStatus.crankRPM) && (toothCurrentCount != 1) ) //Can't do per tooth RPM if we're at tooth #1 as the missing tooth messes the calculation
+  if( (currentStatus.RPM < currentStatus.crankRPM) )
   {
-    if(configPage2.TrigSpeed == 1) { crankingGetRPM(configPage2.triggerTeeth/2); } //Account for cam speed
-    else { tempRPM = crankingGetRPM(configPage2.triggerTeeth); }
+    if(toothCurrentCount != 1)
+    {
+      if(configPage2.TrigSpeed == 1) { tempRPM = crankingGetRPM(configPage2.triggerTeeth/2); } //Account for cam speed
+      else { tempRPM = crankingGetRPM(configPage2.triggerTeeth); }
+    }
+    else { tempRPM = currentStatus.RPM; } //Can't do per tooth RPM if we're at tooth #1 as the missing tooth messes the calculation
   }
   else
   {
@@ -428,7 +436,7 @@ void triggerSetup_BasicDistributor()
   secondDerivEnabled = false;
   decoderIsSequential = false;
   toothCurrentCount = 0; //Default value
-
+  decoderHasFixedCrankingTiming = true;
   if(configPage1.nCylinders <= 4) { MAX_STALL_TIME = (1851UL * triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
   else { MAX_STALL_TIME = (3200UL * triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
 
@@ -639,6 +647,7 @@ void triggerSetup_4G63()
   toothCurrentCount = 99; //Fake tooth count represents no sync
   secondDerivEnabled = false;
   decoderIsSequential = true;
+  decoderHasFixedCrankingTiming = true;
   MAX_STALL_TIME = 366667UL; //Minimum 50rpm based on the 110 degree tooth spacing
   if(initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
   //decoderIsLowRes = true;
@@ -653,14 +662,23 @@ void triggerSetup_4G63()
     toothAngles[3] = 355; //
     toothAngles[4] = 65; //
     toothAngles[5] = 115; //
+
+    triggerActualTeeth = 6;
   }
   else
   {
     // 70 / 110 for 4 cylinder
-    toothAngles[0] = 355; //Falling edge of tooth #1
+    toothAngles[0] = 715; //Falling edge of tooth #1
     toothAngles[1] = 105; //Rising edge of tooth #2
     toothAngles[2] = 175; //Falling edge of tooth #2
     toothAngles[3] = 285; //Rising edge of tooth #1
+
+    toothAngles[4] = 355; //Falling edge of tooth #1
+    toothAngles[5] = 465; //Rising edge of tooth #2
+    toothAngles[6] = 535; //Falling edge of tooth #2
+    toothAngles[7] = 645; //Rising edge of tooth #1
+
+    triggerActualTeeth = 4;
   }
   /*
    * https://forums.libreems.org/attachment.php?aid=34
@@ -698,7 +716,7 @@ void triggerPri_4G63()
 
     toothCurrentCount++;
 
-    if( (toothCurrentCount == 1) || (toothCurrentCount > configPage1.nCylinders) ) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
+    if( (toothCurrentCount == 1) || (toothCurrentCount > triggerActualTeeth) ) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
     {
        toothCurrentCount = 1; //Reset the counter
        toothOneMinusOneTime = toothOneTime;
@@ -711,16 +729,25 @@ void triggerPri_4G63()
     {
       if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage2.ignCranklock && (currentStatus.startRevolutions >= configPage2.StgCycles))
       {
-        if( toothCurrentCount == 1 ) { endCoil1Charge(); }
-        else if( toothCurrentCount == 3 ) { endCoil2Charge(); }
-        else if( toothCurrentCount == 5 ) { endCoil3Charge(); }
+        if(configPage1.nCylinders == 4)
+        {
+          //This operates in forced wasted spark mode during cranking to align with crank teeth
+          if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) { endCoil1Charge(); endCoil3Charge(); }
+          else if( (toothCurrentCount == 3) || (toothCurrentCount == 7) ) { endCoil2Charge(); endCoil4Charge(); }
+        }
+        else if(configPage1.nCylinders == 6)
+        {
+          if( toothCurrentCount == 1 ) { endCoil1Charge(); }
+          else if( toothCurrentCount == 3 ) { endCoil2Charge(); }
+          else if( toothCurrentCount == 5 ) { endCoil3Charge(); }
+        }
       }
 
       //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
       if( (configPage2.triggerFilter == 1) || (currentStatus.RPM < 1400) )
       {
         //Lite filter
-        if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) )
+        if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) )
         {
           triggerToothAngle = 70;
           triggerFilterTime = curGap; //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
@@ -743,20 +770,20 @@ void triggerPri_4G63()
       else if(configPage2.triggerFilter == 2)
       {
         //Medium filter level
-        if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) ) { triggerToothAngle = 70; triggerFilterTime = (curGap * 5) >> 2 ; } //87.5 degrees with a target of 110
+        if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; triggerFilterTime = (curGap * 5) >> 2 ; } //87.5 degrees with a target of 110
         else { triggerToothAngle = 110; triggerFilterTime = (curGap >> 1); } //55 degrees with a target of 70
       }
       else if (configPage2.triggerFilter == 3)
       {
         //Aggressive filter level
-        if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) ) { triggerToothAngle = 70; triggerFilterTime = (curGap * 11) >> 3 ; } //96.26 degrees with a target of 110
+        if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; triggerFilterTime = (curGap * 11) >> 3 ; } //96.26 degrees with a target of 110
         else { triggerToothAngle = 110; triggerFilterTime = (curGap * 9) >> 5; } //61.87 degrees with a target of 70
       }
       else
       {
         //trigger filter is turned off.
         triggerFilterTime = 0;
-        if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) ) { triggerToothAngle = 70; } //96.26 degrees with a target of 110
+        if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; } //96.26 degrees with a target of 110
         else { triggerToothAngle = 110; } //61.87 degrees with a target of 70
       }
 
@@ -1354,8 +1381,8 @@ void triggerSetup_Miata9905()
   secondDerivEnabled = false;
   decoderIsSequential = true;
   triggerActualTeeth = 8;
-  secondaryToothCount = 0;
-  if(initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
+
+  if(initialisationComplete == false) { secondaryToothCount = 0;toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
   else { toothLastToothTime = 0; }
   toothLastMinusOneToothTime = 0;
 
@@ -1380,6 +1407,7 @@ void triggerSetup_Miata9905()
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
   triggerSecFilterTime = 0; //Need to figure out something better for this
+  decoderHasFixedCrankingTiming = true;
 }
 
 void triggerPri_Miata9905()
@@ -1438,9 +1466,10 @@ void triggerPri_Miata9905()
         else { triggerToothAngle = 110; }
       }
 
-      toothLastMinusOneToothTime = toothLastToothTime;
-      toothLastToothTime = curTime;
     } //Has sync
+
+    toothLastMinusOneToothTime = toothLastToothTime;
+    toothLastToothTime = curTime;
 
     if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage2.ignCranklock)
     {
@@ -1554,6 +1583,7 @@ void triggerSetup_MazdaAU()
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  decoderHasFixedCrankingTiming = true;
 }
 
 void triggerPri_MazdaAU()
