@@ -24,20 +24,51 @@
 # Template #1: General project. Test it using existing `platformio.ini`.
 #
 
-# language: python
-# python:
-#     - "2.7"
-#
-# sudo: false
-# cache:
-#     directories:
-#         - "~/.platformio"
-#
-# install:
-#     - pip install -U platformio
-#
-# script:
-#     - platformio run
+language: python
+python:
+    - "2.7"
+
+dist: trusty
+sudo: required
+
+cache:
+    directories:
+        - "~/.platformio"
+
+#addons:
+#  apt:
+#    sources:
+#      - sourceline: 'deb http://ports.ubuntu.com/ubuntu-ports trusty-backports main restricted universe multiverse'
+#    packages:
+#      - cppcheck/trusty-backports
+
+before_install:
+  - sudo apt-get update -qq
+#  - sudo apt-get install -t trusty-backports cppcheck
+  - sudo apt-get build-dep -qq cppcheck
+  - wget https://github.com/danmar/cppcheck/archive/1.79.zip
+  - unzip 1.79.zip
+  - cd cppcheck-1.79
+#  - make SRCDIR=build CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
+  - sudo make install CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
+
+install:
+    - pip install -U platformio
+
+script:
+  - cd /home/travis/build
+  - git clone --depth=20 https://github.com/noisymime/cppcheck.git noisymime/cppcheck
+  - cd noisymime/speeduino
+  - platformio update
+  - platformio run -e megaatmega2560 -e teensy35 -e bluepill_f103c8 -e genericSTM32F103RB
+  - cd ..
+  - chmod +x speeduino/misra/check_misra.sh
+  - speeduino/misra/check_misra.sh
+
+notifications:
+    slack: speeduino:Y8Bhhviu4r7HFF3abMYDnH3p
+
+
 
 
 #

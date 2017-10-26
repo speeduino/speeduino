@@ -4,26 +4,28 @@
 #include <limits.h>
 
 #if defined(CORE_AVR)
-  #define READ_PRI_TRIGGER() ((*triggerPri_pin_port & triggerPri_pin_mask) ? HIGH : LOW)
-  #define READ_SEC_TRIGGER() ((*triggerSec_pin_port & triggerSec_pin_mask) ? HIGH : LOW)
+  #define READ_PRI_TRIGGER() ((*triggerPri_pin_port & triggerPri_pin_mask) ? true : false)
+  #define READ_SEC_TRIGGER() ((*triggerSec_pin_port & triggerSec_pin_mask) ? true : false)
 #elif defined(CORE_TEENSY) || defined(CORE_STM32)
   #define READ_PRI_TRIGGER() digitalRead(pinTrigger)
   #define READ_SEC_TRIGGER() digitalRead(pinTrigger2)
 #endif
 
 static inline void addToothLogEntry(unsigned long);
-static inline int stdGetRPM();
+static inline uint16_t stdGetRPM();
 static inline void setFilter(unsigned long);
 static inline int crankingGetRPM(byte);
+static inline void doPerToothTiming(uint16_t crankAngle);
+
 void triggerSetup_missingTooth();
 void triggerPri_missingTooth();
 void triggerSec_missingTooth();
-int getRPM_missingTooth();
+uint16_t getRPM_missingTooth();
 int getCrankAngle_missingTooth(int timePerDegree);
 void triggerSetup_DualWheel();
 void triggerPri_DualWheel();
 void triggerSec_DualWheel();
-int getRPM_DualWheel();
+uint16_t getRPM_DualWheel();
 int getCrankAngle_DualWheel(int timePerDegree);
 
 unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
@@ -54,13 +56,19 @@ volatile unsigned long secondaryLastToothTime1 = 0; //The time (micros()) that t
 
 volatile int triggerActualTeeth;
 volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
-unsigned int triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
+unsigned long triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
 unsigned int triggerSecFilterTime_duration; // The shortest valid time (in uS) pulse DURATION
 volatile int triggerToothAngle; //The number of crank degrees that elapse per tooth
-unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 bool secondDerivEnabled; //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
 bool decoderIsSequential; //Whether or not the decoder supports sequential operation
+bool decoderIsLowRes = false; //Is set true, certain extra calculations are performed for better timing accuracy
+bool decoderHasFixedCrankingTiming = false; //Whether or not the decoder supports fixed cranking timing
 byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
+
+int16_t ignition1EndTooth = 0;
+int16_t ignition2EndTooth = 0;
+int16_t ignition3EndTooth = 0;
+int16_t ignition4EndTooth = 0;
 
 int toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 

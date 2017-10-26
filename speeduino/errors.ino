@@ -17,32 +17,32 @@ byte setError(byte errorID)
     errorCodes[errorCount] = errorID;
     errorCount++;
     if(errorCount == 1) { BIT_SET(currentStatus.spark, BIT_SPARK_ERROR); } //Enable the error indicator
-    return errorCount;
   }
-  return 0;
+  return errorCount;
 }
 
 void clearError(byte errorID)
 {
-  byte clearedError;
+  byte clearedError = 255;
 
   if (errorID == errorCodes[0]) { clearedError = 0; }
   else if(errorID == errorCodes[1]) { clearedError = 1; }
   else if(errorID == errorCodes[2]) { clearedError = 2; }
   else if(errorID == errorCodes[3]) { clearedError = 3; }
-  else return; //Occurs when the error we're being asked to clear is not currently one of the active errors
 
-  errorCodes[clearedError] = ERR_NONE;
-  //Clear the required error and move any from above it 'down' in the error array
-  for (byte x=clearedError; x < (errorCount-1); x++)
+  if(clearedError < MAX_ERRORS)
   {
-    errorCodes[x] = errorCodes[x+1];
-    errorCodes[x+1] = ERR_NONE;
-  }
+    errorCodes[clearedError] = ERR_NONE;
+    //Clear the required error and move any from above it 'down' in the error array
+    for (byte x=clearedError; x < (errorCount-1); x++)
+    {
+      errorCodes[x] = errorCodes[x+1];
+      errorCodes[x+1] = ERR_NONE;
+    }
 
-  errorCount--;
-  if(errorCount == 0) { BIT_CLEAR(currentStatus.spark, BIT_SPARK_ERROR); } //Enable the error indicator
-  
+    errorCount--;
+    if(errorCount == 0) { BIT_CLEAR(currentStatus.spark, BIT_SPARK_ERROR); } //Enable the error indicator
+  }
 }
 
 byte getNextError()

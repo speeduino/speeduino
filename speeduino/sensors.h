@@ -12,6 +12,7 @@
 #define ADCFILTER_O2   128
 #define ADCFILTER_BAT  128
 #define ADCFILTER_MAP   20 //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
+#define ADCFILTER_BARO  64
 
 #define BARO_MIN      87
 #define BARO_MAX      108
@@ -27,7 +28,7 @@ volatile int AnChannel[15];
 
 unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
-byte MAPcurRev; //Tracks which revolution we're sampling on
+uint16_t MAPcurRev; //Tracks which revolution we're sampling on
 
 /*
  * Simple low pass IIR filter macro for the analog inputs
@@ -39,8 +40,6 @@ byte MAPcurRev; //Tracks which revolution we're sampling on
 void instanteneousMAPReading();
 void readMAP();
 void flexPulse();
-
-unsigned int tempReading;
 
 #if defined(ANALOG_ISR)
 //Analog ISR interrupt routine
@@ -86,7 +85,7 @@ ISR(ADC_vect)
   #if defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__)
     if (nChannel==7) { ADMUX = 0x40; }
   #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-    if(ADCSRB & 0x08) { nChannel += 8; }  //8 to 15
+    if( (ADCSRB & 0x08) > 0) { nChannel += 8; }  //8 to 15
     if(nChannel == 15)
     {
       ADMUX = 0x40; //channel 0
