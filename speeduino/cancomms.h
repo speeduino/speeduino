@@ -25,6 +25,7 @@ uint8_t Glow, Ghigh;
 #endif
 
 void canCommand();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
+void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum);
 void sendCancommand(uint8_t cmdtype , uint16_t canadddress, uint8_t candata1, uint8_t candata2, uint16_t paramgroup);
 
 #endif // CANCOMMS_H
