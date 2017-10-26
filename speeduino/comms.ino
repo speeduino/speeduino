@@ -256,6 +256,7 @@ void command()
       break;
 
     case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed. This function takes 1.5kb of program space! :S
+    #ifndef SMALL_FLASH_MODE
       Serial.println(F("Coolant"));
       for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
       {
@@ -285,6 +286,7 @@ void command()
         Serial.println(configPage1.wueValues[x]);
       }
       Serial.flush();
+    #endif
       break;
 
     case 'z': //Send 256 tooth log entries to a terminal emulator

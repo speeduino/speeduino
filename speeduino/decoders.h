@@ -46,7 +46,7 @@ volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) tha
 volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
 volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
 volatile bool revolutionOne = 0; // For sequential operation, this tracks whether the current revolution is 1 or 2 (not 1)
-volatile unsigned int toothHistory[TOOTH_LOG_BUFFER];
+volatile uint16_t toothHistory[TOOTH_LOG_BUFFER];
 volatile unsigned int toothHistoryIndex = 0;
 volatile bool toothLogRead = false; //Flag to indicate whether the current tooth log values have been read out yet
 
@@ -70,7 +70,7 @@ int16_t ignition2EndTooth = 0;
 int16_t ignition3EndTooth = 0;
 int16_t ignition4EndTooth = 0;
 
-int toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
+int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 
 //Used for identifying long and short pulses on the 4G63 (And possibly other) trigger patterns
 #define LONG 0;
