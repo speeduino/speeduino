@@ -302,9 +302,9 @@ void integerPID::SetSampleTime(int NewSampleTime)
    if (NewSampleTime > 0)
    {
       unsigned long ratioX1000  = (unsigned long)(NewSampleTime * 1000) / (unsigned long)SampleTime;
-      ki = (ki * ratioX1000) / 1000;
+      ki = ((unsigned long)ki * ratioX1000) / 1000;
       //kd /= ratio;
-      kd = (kd * 1000) / ratioX1000;
+      kd = ((unsigned long)kd * 1000) / ratioX1000;
       SampleTime = (unsigned long)NewSampleTime;
    }
 }
@@ -387,3 +387,175 @@ byte integerPID::GetKi(){ return  dispKi;}
 byte integerPID::GetKd(){ return  dispKd;}
 int integerPID::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
 int integerPID::GetDirection(){ return controllerDirection;}
+
+//************************************************************************************************************************
+#define limitMultiplier 100 //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
+
+/*Constructor (...)*********************************************************
+ *    The parameters specified here are those for for which we can't set up
+ *    reliable defaults, so we need to have the user set them.
+ ***************************************************************************/
+integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity, byte* SampleTime,
+                                   byte Kp, byte Ki, byte Kd, byte ControllerDirection)
+{
+
+    myOutput = Output;
+    myInput = (long*)Input;
+    mySetpoint = Setpoint;
+    mySensitivity = Sensitivity;
+    mySampleTime = SampleTime;
+
+	  integerPID_ideal::SetOutputLimits(20, 80);				//default output limits
+
+    integerPID_ideal::SetControllerDirection(ControllerDirection);
+    integerPID_ideal::SetTunings(Kp, Ki, Kd);
+
+    lastTime = millis()- *mySampleTime;
+    lastError = 0;
+}
+
+/* Compute() **********************************************************************
+ *     This, as they say, is where the magic happens.  this function should be called
+ *   every time "void loop()" executes.  the function will decide for itself whether a new
+ *   pid Output needs to be computed.  returns true when the output is computed,
+ *   false when nothing has been done.
+ **********************************************************************************/
+bool integerPID_ideal::Compute()
+{
+   unsigned long now = millis();
+   //SampleTime = (now - lastTime);
+   unsigned long timeChange = (now - lastTime);
+   if(timeChange >= *mySampleTime)
+   {
+      /*Compute all the working error variables*/
+      uint16_t sensitivity = 10001 - (*mySensitivity * 2);
+      long unitless_setpoint = (((long)*mySetpoint - 0) * 10000L) / (sensitivity - 0);
+      long unitless_input = (((long)*myInput - 0) * 10000L) / (sensitivity - 0);
+      long error = unitless_setpoint - unitless_input;
+
+      ITerm += error;
+
+      uint16_t bias = 50; //Base target DC%
+      long output = 0;
+
+      if(ki != 0)
+      {
+        output = ((outMax - bias) * limitMultiplier * 100) / (long)ki;
+        if (output < 0) { output = 0; }
+      }
+      if (ITerm > output) { ITerm = output; }
+
+      if(ki != 0)
+      {
+        output = ((bias - outMin) * limitMultiplier * 100) / (long)ki;
+        if (output < 0) { output = 0; }
+      }
+      else { output = 0; }
+      if (ITerm < -output) { ITerm = -output; }
+
+      /*Compute PID Output*/
+      output = (kp * error) + (ki * ITerm) + (kd * (error - lastError));
+      output = (bias * limitMultiplier) + (output / 10); //output is % multipled by 1000. To get % with 2 decimal places, divide it by 10. Likewise, bias is % in whole numbers. Multiply it by 100 to get it with 2 places.
+
+      if(output > (outMax * limitMultiplier)) { output  = (outMax * limitMultiplier);  }
+      if(output < (outMin * limitMultiplier)) { output  = (outMin * limitMultiplier);  }
+
+	    *myOutput = output;
+
+      /*Remember some variables for next time*/
+      lastTime = now;
+      lastError = error;
+
+      return true;
+   }
+   else return false;
+}
+
+
+/* SetTunings(...)*************************************************************
+ * This function allows the controller's dynamic performance to be adjusted.
+ * it's called automatically from the constructor, but tunings can also
+ * be adjusted on the fly during normal operation
+ ******************************************************************************/
+void integerPID_ideal::SetTunings(byte Kp, byte Ki, byte Kd)
+{
+   if (Kp<0 || Ki<0 || Kd<0) return;
+   if ( dispKp == Kp && dispKi == Ki && dispKd == Kd ) return; //Only do anything if one of the values has changed
+   dispKp = Kp; dispKi = Ki; dispKd = Kd;
+
+  kp = Kp;
+  ki = Ki;
+  kd = Kd;
+
+  if(controllerDirection == REVERSE)
+   {
+      kp = (0 - kp);
+      ki = (0 - ki);
+      kd = (0 - kd);
+   }
+}
+
+/* SetOutputLimits(...)****************************************************
+ *     This function will be used far more often than SetInputLimits.  while
+ *  the input to the controller will generally be in the 0-1023 range (which is
+ *  the default already,)  the output will be a little different.  maybe they'll
+ *  be doing a time window and will need 0-8000 or something.  or maybe they'll
+ *  want to clamp it from 0-125.  who knows.  at any rate, that can all be done
+ *  here.
+ **************************************************************************/
+void integerPID_ideal::SetOutputLimits(long Min, long Max)
+{
+   if(Min < Max)
+   {
+     outMin = Min;
+     outMax = Max;
+   }
+/*
+   long outMax_resized = outMax * limitMultiplier;
+   long outMin_resized = outMin * limitMultiplier;
+
+   if(*myOutput > outMax_resized) { *myOutput  = outMax_resized;  }
+   else if(*myOutput < outMin_resized) { *myOutput  = outMin_resized;  }
+
+   if(ITerm > outMax_resized) ITerm = outMax_resized;
+   else if(ITerm < outMin_resized) ITerm = outMin_resized;
+*/
+}
+
+/* Initialize()****************************************************************
+ *	does all the things that need to happen to ensure a bumpless transfer
+ *  from manual to automatic mode.
+ ******************************************************************************/
+void integerPID_ideal::Initialize()
+{
+   ITerm = 0;
+   lastInput = *myInput;
+   lastError = 0;
+}
+
+/* SetControllerDirection(...)*************************************************
+ * The PID will either be connected to a DIRECT acting process (+Output leads
+ * to +Input) or a REVERSE acting process(+Output leads to -Input.)  we need to
+ * know which one, because otherwise we may increase the output when we should
+ * be decreasing.  This is called from the constructor.
+ ******************************************************************************/
+void integerPID_ideal::SetControllerDirection(byte Direction)
+{
+   if(Direction != controllerDirection)
+   {
+	    kp = (0 - kp);
+      ki = (0 - ki);
+      kd = (0 - kd);
+   }
+   controllerDirection = Direction;
+}
+
+/* Status Funcions*************************************************************
+ * Just because you set the Kp=-1 doesn't mean it actually happened.  these
+ * functions query the internal state of the PID.  they're here for display
+ * purposes.  this are the functions the PID Front-end uses for example
+ ******************************************************************************/
+byte integerPID_ideal::GetKp(){ return  dispKp; }
+byte integerPID_ideal::GetKi(){ return  dispKi;}
+byte integerPID_ideal::GetKd(){ return  dispKd;}
+int integerPID_ideal::GetDirection(){ return controllerDirection;}
