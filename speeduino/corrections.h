@@ -31,4 +31,6 @@ static inline int8_t correctionSoftFlatShift(int8_t);
 
 uint16_t correctionsDwell(uint16_t dwell);
 
+uint16_t AFRnextCycle;
+
 #endif // CORRECTIONS_H
