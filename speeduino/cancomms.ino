@@ -18,7 +18,7 @@ void canCommand()
   switch (currentcanCommand)
   {
     case 'A': // sends the bytes of realtime values
-        sendcanValues(0, packetSize,0x30,1); //send values to serial3
+        sendcanValues(0, CAN_PACKET_SIZE, 0x30, 1); //send values to serial3
         break;
 
     case 'G': // this is the reply command sent by the Can interface
@@ -135,7 +135,7 @@ void canCommand()
 }
 void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portType)
 {
-  byte fullStatus[packetSize];
+  byte fullStatus[CAN_PACKET_SIZE];
 
     //CAN serial
     #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)|| defined(CORE_STM32) || defined (CORE_TEENSY) //ATmega2561 does not have Serial3
