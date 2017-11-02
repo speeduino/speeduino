@@ -3,7 +3,7 @@
 //These are the page numbers that the Tuner Studio serial protocol uses to transverse the different map and config pages.
 #define veMapPage    1
 
-#define canpacketSize   74
+#define CAN_PACKET_SIZE   75
 
 uint8_t currentcanCommand;
 uint8_t currentCanPage = 1;//Not the same as the speeduino config page numbers
