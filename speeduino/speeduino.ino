@@ -87,7 +87,6 @@ static byte fanLOW = LOW;               // Used to invert the cooling fan output
 volatile uint16_t mainLoopCount;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
-byte ignitionCount;
 byte maxIgnOutputs = 1; //Used for rolling rev limiter
 byte curRollingCut = 0; //Rolling rev limiter, current ignition channel being cut
 uint16_t fixedCrankingOverride = 0;
@@ -306,7 +305,6 @@ void setup()
   currentLoopTime = micros();
 
   mainLoopCount = 0;
-  ignitionCount = 0;
 
   //Calculate the number of degrees between cylinders
   switch (configPage1.nCylinders) {
@@ -715,6 +713,8 @@ void loop()
       MAPcurRev = 0;
       MAPcount = 0;
       currentStatus.rpmDOT = 0;
+      AFRnextCycle = 0;
+      ignitionCount = 0;
       ignitionOn = false;
       fuelOn = false;
       if (fpPrimed == true) { digitalWrite(pinFuelPump, LOW); fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete

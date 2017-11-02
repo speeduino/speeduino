@@ -19,7 +19,7 @@ void command()
   {
 
     case 'A': // send x bytes of realtime values
-      sendValues(0, packetSize,0x30, 0);   //send values to serial0
+      sendValues(0, SERIAL_PACKET_SIZE, 0x30, 0);   //send values to serial0
       break;
 
 
@@ -337,7 +337,7 @@ This function returns the current values of a fixed group of variables
 //void sendValues(int packetlength, byte portNum)
 void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 {
-  byte fullStatus[packetSize];
+  byte fullStatus[SERIAL_PACKET_SIZE];
 
   if (portNum == 3)
   {

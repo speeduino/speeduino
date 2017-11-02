@@ -23,6 +23,7 @@ void initialiseCorrections()
 {
   egoPID.SetMode(AUTOMATIC); //Turn O2 PID on
   currentStatus.flexIgnCorrection = 0;
+  AFRnextCycle = 0;
 }
 
 /*
@@ -306,60 +307,57 @@ static inline byte correctionAFRClosedLoop()
   {
     currentStatus.afrTarget = currentStatus.O2; //Catch all incase the below doesn't run. This prevents the Include AFR option from doing crazy things if the AFR target conditions aren't met. This value is changed again below if all conditions are met.
 
-    //Check the ignition count to see whether the next step is required
-    //This if statement is the equivalent of ( (ignitionCount % configPage3.egoCount) == 0 ) but without the expensive modulus operation. ie It results in True every <egoCount> ignition loops. Note that it only works for power of two vlaues for egoCount
-    //if( (ignitionCount & (configPage3.egoCount - 1)) == 1 )
+    //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
+    byte yValue;
+    if (configPage1.algorithm == 0) { yValue = currentStatus.MAP; }
+    else  { yValue = currentStatus.TPS; }
+    currentStatus.afrTarget = get3DTableValue(&afrTable, yValue, currentStatus.RPM); //Perform the target lookup
+
+    //Check all other requirements for closed loop adjustments
+    if( (ignitionCount >= AFRnextCycle) && (currentStatus.coolant > (int)(configPage3.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage3.egoRPM * 100)) && (currentStatus.TPS < configPage3.egoTPSMax) && (currentStatus.O2 < configPage3.ego_max) && (currentStatus.O2 > configPage3.ego_min) && (currentStatus.runSecs > configPage3.ego_sdelay) )
     {
-      //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
-      byte yValue;
-      if (configPage1.algorithm == 0) { yValue = currentStatus.MAP; }
-      else  { yValue = currentStatus.TPS; }
-      currentStatus.afrTarget = get3DTableValue(&afrTable, yValue, currentStatus.RPM); //Perform the target lookup
+      AFRnextCycle = ignitionCount + configPage3.egoCount; //Set the target ignition event for the next calculation
 
-      //Check all other requirements for closed loop adjustments
-      if( (currentStatus.coolant > (int)(configPage3.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage3.egoRPM * 100)) && (currentStatus.TPS < configPage3.egoTPSMax) && (currentStatus.O2 < configPage3.ego_max) && (currentStatus.O2 > configPage3.ego_min) && (currentStatus.runSecs > configPage3.ego_sdelay) )
+      //Check which algorithm is used, simple or PID
+      if (configPage3.egoAlgorithm == EGO_ALGORITHM_SIMPLE)
       {
-        //Check which algorithm is used, simple or PID
-        if (configPage3.egoAlgorithm == 0)
+        //*************************************************************************************************************************************
+        //Simple algorithm
+        if(currentStatus.O2 > currentStatus.afrTarget)
         {
-          //*************************************************************************************************************************************
-          //Simple algorithm
-          if(currentStatus.O2 > currentStatus.afrTarget)
+          //Running lean
+          if(currentStatus.egoCorrection < (100 + configPage3.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
           {
-            //Running lean
-            if(currentStatus.egoCorrection < (100 + configPage3.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
-            {
-              if(currentStatus.egoCorrection >= 100) { AFRValue = (currentStatus.egoCorrection + 1); } //Increase the fueling by 1%
-              else { AFRValue = 100; } //This means that the last reading had been rich, so simply return back to no adjustment (100%)
-            }
-            else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return then again
+            if(currentStatus.egoCorrection >= 100) { AFRValue = (currentStatus.egoCorrection + 1); } //Increase the fueling by 1%
+            else { AFRValue = 100; } //This means that the last reading had been rich, so simply return back to no adjustment (100%)
           }
-          else
-            //Running Rich
-            if(currentStatus.egoCorrection > (100 - configPage3.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
-            {
-              if(currentStatus.egoCorrection <= 100) { AFRValue = (currentStatus.egoCorrection - 1); } //Increase the fueling by 1%
-              else { AFRValue = 100; } //This means that the last reading had been lean, so simply return back to no adjustment (100%)
-            }
-            else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return then again
+          else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return then again
         }
-        else if(configPage3.egoAlgorithm == 2)
-        {
-          //*************************************************************************************************************************************
-          //PID algorithm
-          egoPID.SetOutputLimits((long)(-configPage3.egoLimit), (long)(configPage3.egoLimit)); //Set the limits again, just incase the user has changed them since the last loop. Note that these are sent to the PID library as (Eg:) -15 and +15
-          egoPID.SetTunings(configPage3.egoKP, configPage3.egoKI, configPage3.egoKD); //Set the PID values again, just incase the user has changed them since the last loop
-          PID_O2 = (long)(currentStatus.O2);
-          PID_AFRTarget = (long)(currentStatus.afrTarget);
+        else
+          //Running Rich
+          if(currentStatus.egoCorrection > (100 - configPage3.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
+          {
+            if(currentStatus.egoCorrection <= 100) { AFRValue = (currentStatus.egoCorrection - 1); } //Increase the fueling by 1%
+            else { AFRValue = 100; } //This means that the last reading had been lean, so simply return back to no adjustment (100%)
+          }
+          else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return then again
+      }
+      else if(configPage3.egoAlgorithm == EGO_ALGORITHM_PID)
+      {
+        //*************************************************************************************************************************************
+        //PID algorithm
+        egoPID.SetOutputLimits((long)(-configPage3.egoLimit), (long)(configPage3.egoLimit)); //Set the limits again, just incase the user has changed them since the last loop. Note that these are sent to the PID library as (Eg:) -15 and +15
+        egoPID.SetTunings(configPage3.egoKP, configPage3.egoKI, configPage3.egoKD); //Set the PID values again, just incase the user has changed them since the last loop
+        PID_O2 = (long)(currentStatus.O2);
+        PID_AFRTarget = (long)(currentStatus.afrTarget);
 
-          egoPID.Compute();
-          //currentStatus.egoCorrection = 100 + PID_output;
-          AFRValue = 100 + PID_output;
-        }
-        else { AFRValue = 100; } // Occurs if the egoAlgorithm is set to 0 (No Correction)
+        egoPID.Compute();
+        //currentStatus.egoCorrection = 100 + PID_output;
+        AFRValue = 100 + PID_output;
+      }
+      else { AFRValue = 100; } // Occurs if the egoAlgorithm is set to 0 (No Correction)
 
-      } //Multi variable check
-    } //ignitionCount
+    } //Multi variable check
   } //egoType
 
   return AFRValue; //Catch all (Includes when AFR target = current AFR

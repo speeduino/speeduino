@@ -131,6 +131,9 @@
 #define EVEN_FIRE         0
 #define ODD_FIRE          1
 
+#define EGO_ALGORITHM_SIMPLE  0
+#define EGO_ALGORITHM_PID     2
+
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 
@@ -478,7 +481,7 @@ struct config3 {
   byte egoKD;
   byte egoTemp; //The temperature above which closed loop functions
   byte egoCount; //The number of ignition cylces per step
-  byte egoDelta; //The step size (In %) when using simple algorithm
+  byte unused6_6;
   byte egoLimit; //Maximum amount the closed loop will vary the fueling
   byte ego_min; //AFR must be above this for closed loop to function
   byte ego_max; //AFR must be below this for closed loop to function
@@ -708,7 +711,7 @@ extern struct config10 configPage10;
 extern struct config11 configPage11;
 extern unsigned long currentLoopTime; //The time the current loop started (uS)
 extern unsigned long previousLoopTime; //The time the previous loop started (uS)
-extern byte ignitionCount;
+volatile uint16_t ignitionCount; //The count of ignition events that have taken place since the engine started
 extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
