@@ -566,9 +566,9 @@ struct config10 {
   byte enable_canbus:2;
   byte enable_candata_in:1;
   uint16_t caninput_sel;                    //bit status on/off if input is enabled
-  uint16_t caninput_param_group[16];        //u16 [15] array holding can address of input
-  uint8_t caninput_param_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)
-  uint16_t caninput_param_num_bytes;     //u16 bit status of the number of bytes length 1 or 2
+  uint16_t caninput_source_can_address[16];        //u16 [15] array holding can address of input
+  uint8_t caninput_source_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)
+  uint16_t caninput_source_num_bytes;     //u16 bit status of the number of bytes length 1 or 2
   byte unused10_53;
   byte unused10_54;
   byte enable_candata_out : 1;

@@ -809,56 +809,45 @@ void loop()
        if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-      //if Can interface is enabled then check for serial3 requests.
-      if (configPage10.enable_canbus == 1)  // megas only support can via secondary serial
-          {
-            if (configPage10.enable_candata_in)
+      //if Can interface is enabled then check for external data requests.
+      if (configPage10.enable_candata_in)     //if external data input is enabled
+          {            
+            if (configPage10.enable_canbus == 1)  // megas only support can via secondary serial
               {
-                if (BIT_CHECK(configPage10.caninput_sel,currentStatus.current_caninchannel))  //if current input channel bit is enabled
+               for (byte caninChan = 0; caninChan <16 ; caninChan++)
                   {
-                    sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage10.caninput_param_group[currentStatus.current_caninchannel]&2047)+256));    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
-                  }
-                else
-                  {
-                    if (currentStatus.current_caninchannel < 15)
-                        {
-                          currentStatus.current_caninchannel++;   //step to next input channel if under 15
-                        }
-                    else
-                        {
-                          currentStatus.current_caninchannel = 0;   //reset input channel back to 1
-                        }
+                   currentStatus.current_caninchannel = caninChan; 
+                   //currentStatus.canin[14] = currentStatus.current_caninchannel;
+                   currentStatus.canin[13]  = ((configPage10.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100);
+                   if (BIT_CHECK(configPage10.caninput_sel,currentStatus.current_caninchannel))  //if current input channel bit is enabled
+                     {
+                      sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage10.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100));
+                       //send an R command for data from caninput_source_address[currentStatus.current_caninchannel]
+                     }
                   }
               }
           }
+          
 #elif defined(CORE_STM32) || defined(CORE_TEENSY)
       //if serial3io is enabled then check for serial3 requests.
-            if (configPage10.enable_candata_in)
+      if (configPage10.enable_candata_in)
+          {
+           for (byte caninChan = 0; caninChan <16 ; caninChan++)
               {
+                currentStatus.current_caninchannel == caninChan;
                 if (BIT_CHECK(configPage10.caninput_sel,currentStatus.current_caninchannel))  //if current input channel is enabled
                   {
                     if (configPage10.enable_canbus == 1)  //can via secondary serial
-                    {
-                      sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage10.caninput_param_group[currentStatus.current_caninchannel]&2047)+256));    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
-                    }
-                    else if (configPage10.enable_canbus == 2) // can via internal can module
-                    {
-                      sendCancommand(3,configPage10.speeduino_tsCanId,currentStatus.current_caninchannel,0,configPage10.caninput_param_group[currentStatus.current_caninchannel]);    //send via localcanbus the command for data from paramgroup[currentStatus.current_caninchannel]
-                    }
-                  }
-                else
-                  {
-                    if (currentStatus.current_caninchannel < 15)
-                        {
-                          currentStatus.current_caninchannel++;   //step to next input channel if under 15
-                        }
-                    else
-                        {
-                          currentStatus.current_caninchannel = 0;   //reset input channel back to 0
-                        }
+                      {
+                        sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage10.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+256));    //send an R command for data from paramgroup[currentStatus.current_caninchannel]                    
+                      }    
+               else if (configPage10.enable_canbus == 2) // can via internal can module
+                      {                      
+                        sendCancommand(3,configPage10.speeduino_tsCanId,currentStatus.current_caninchannel,0,configPage10.caninput_source_can_address[currentStatus.current_caninchannel]);    //send via localcanbus the command for data from paramgroup[currentStatus.current_caninchannel]                       
+                      }
                   }
               }
-
+          }
 #endif
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
