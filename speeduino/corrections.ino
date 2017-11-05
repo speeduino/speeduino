@@ -334,7 +334,7 @@ static inline byte correctionAFRClosedLoop()
             if(currentStatus.egoCorrection < (100 + configPage3.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
             {
               if(currentStatus.egoCorrection >= 100) { AFRValue = (currentStatus.egoCorrection + 1); } //Increase the fueling by 1%
-              else { AFRValue = 100; } //This means that the last reading had been rich, so simply return back to no adjustment (100%)
+              else { AFRValue += 1; } //This means that the last reading had been rich, so start counting back towards 100%
             }
             else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return then again
           }
@@ -343,7 +343,7 @@ static inline byte correctionAFRClosedLoop()
             if(currentStatus.egoCorrection > (100 - configPage3.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
             {
               if(currentStatus.egoCorrection <= 100) { AFRValue = (currentStatus.egoCorrection - 1); } //Increase the fueling by 1%
-              else { AFRValue = 100; } //This means that the last reading had been lean, so simply return back to no adjustment (100%)
+              else { AFRValue -= 1; } //This means that the last reading had been lean, so start count back towards 100%
             }
             else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return then again
         }
