@@ -378,7 +378,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[13] = currentStatus.wueCorrection; //Warmup enrichment (%)
   fullStatus[14] = lowByte(currentStatus.RPM); //rpm HB
   fullStatus[15] = highByte(currentStatus.RPM); //rpm LB
-  fullStatus[16] = currentStatus.TAEamount; //acceleration enrichment (%)
+  fullStatus[16] = (byte)(currentStatus.TAEamount >> 1); //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
   fullStatus[17] = currentStatus.corrections; //Total GammaE (%)
   fullStatus[18] = currentStatus.VE; //Current VE 1 (%)
   fullStatus[19] = currentStatus.afrTarget;

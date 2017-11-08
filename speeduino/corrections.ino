@@ -150,10 +150,11 @@ static inline byte correctionASE()
 TPS based acceleration enrichment
 Calculates the % change of the throttle over time (%/second) and performs a lookup based on this
 When the enrichment is turned on, it runs at that amount for a fixed period of time (taeTime)
+Note that as the maximum enrichment amount is +255%, the overall return value from this function can be 100+255=355. Hence this function returns a int16_t rather than byte
 */
-static inline byte correctionAccel()
+static inline int16_t correctionAccel()
 {
-  byte accelValue = 100;
+  int16_t accelValue = 100;
   //First, check whether the accel. enrichment is already running
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
   {
