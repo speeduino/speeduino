@@ -233,6 +233,7 @@ void idleControl()
         enableIdle();
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         currentStatus.idleLoad = currentStatus.idleDuty >> 1;
+        if ((currentStatus.highIdleReq) && (currentStatus.idleLoad < 50)){ currentStatus.idleLoad = 50;}
         idleOn = true;
       }
       break;

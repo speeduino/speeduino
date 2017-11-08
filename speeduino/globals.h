@@ -268,6 +268,11 @@ struct statuses {
   byte afrTarget;
   byte idleDuty;
   bool fanOn; //Whether or not the fan is turned on
+  bool ACOn; //whether AC is on
+  bool AcReq; // AC request
+  bool highIdleReq; //raises idle in open loop to evade stalling
+  bool DFCOwait; // waits to enable DFCO
+  byte DFCOcounter = 0;// counts cycles till dfco
   volatile byte ethanolPct; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85.
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte status1;

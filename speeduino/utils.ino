@@ -520,7 +520,9 @@ void setPinMapping(byte boardID)
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
   pinMode(pinIgnBypass, OUTPUT);
-  pinMode(pinFan, OUTPUT);
+  pinMode(4, OUTPUT); // primary fan
+  pinMode(46, OUTPUT); // aux 
+  pinMode(44, OUTPUT); //ac control
   pinMode(pinStepperDir, OUTPUT);
   pinMode(pinStepperStep, OUTPUT);
   pinMode(pinStepperEnable, OUTPUT);
@@ -575,6 +577,8 @@ void setPinMapping(byte boardID)
       pinMode(pinCLT, INPUT);
       pinMode(pinBat, INPUT);
       pinMode(pinBaro, INPUT);
+      pinMode(26, INPUT); // pin input for AC
+      pinMode(28, INPUT); // pin input for AC temp and pressure check
     #endif
   #endif
   pinMode(pinTrigger, INPUT);

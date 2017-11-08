@@ -37,12 +37,10 @@ uint16_t MAPcurRev; //Tracks which revolution we're sampling on
  */
 #define ADC_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
 
-static inline void instanteneousMAPReading() __attribute__((always_inline));
-static inline void readMAP() __attribute__((always_inline));
-void readTPS();
+void instanteneousMAPReading();
+void readMAP();
 void flexPulse();
-
-
+void readACReq();
 #if defined(ANALOG_ISR)
 //Analog ISR interrupt routine
 /*
