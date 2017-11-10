@@ -89,7 +89,8 @@ byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 byte maxIgnOutputs = 1; //Used for rolling rev limiter
 byte curRollingCut = 0; //Rolling rev limiter, current ignition channel being cut
-uint16_t fixedCrankingOverride = 0;
+byte curIdleCut = 0; //Rotational Idle 
+uint16_t fixedCrankingOverride = 0; //current ignition channel being cut
 int16_t lastAdvance; //Stores the previous advance figure to track changes.
 bool clutchTrigger;
 bool previousClutchTrigger;
@@ -731,10 +732,11 @@ void loop()
     }
 
     //Uncomment the following for testing
-    /*
-    currentStatus.hasSync = true;
-    currentStatus.RPM = 500;
-    */
+    //
+    //currentStatus.hasSync = true;
+    //currentStatus.RPM = 1200;
+    //currentStatus.TPS = 20;
+    //
 
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
@@ -1315,6 +1317,37 @@ void loop()
       }
       else { curRollingCut = 0; } //Disables the rolling hard cut
 
+      //Perform Rotational Idle Checks
+      //Engine must be running above 1000rpm 
+      //Coolant Temp must be above setting
+      //TPS must be below or equal to setting
+      if(configPage11.rotationalIdle == 1 && (currentStatus.RPM > 1000))
+      {
+        if(currentStatus.coolant >= configPage11.riCoolantTemp)
+        {
+          if(currentStatus.TPS <= configPage11.riTPSMax)
+          {
+            BIT_SET(currentStatus.spark2, BIT_SPARK2_ROTIDLE);
+            curIdleCut = ( (currentStatus.startRevolutions / 2) % maxIgnOutputs) + 1; //Rolls through each of the active ignition channels based on how many revolutions have taken place 
+          }
+          else 
+          {
+            curIdleCut = 0;
+            BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_ROTIDLE);
+          }
+        }
+        else
+        {
+          curIdleCut = 0;
+          BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_ROTIDLE);   
+        } 
+      }
+      else
+      {
+        curIdleCut = 0;
+        BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_ROTIDLE);
+      }
+
       //if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) && !BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) && !currentStatus.flatShiftingHard)
       if(ignitionOn)
       {
@@ -1323,7 +1356,7 @@ void loop()
         crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
         if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
 
-        if ( (ignition1StartAngle > crankAngle) && (curRollingCut != 1) )
+        if ( (ignition1StartAngle > crankAngle) && (curRollingCut != 1) && (curIdleCut != 1) )
         {
             /*
             long some_time = ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree);
@@ -1357,7 +1390,7 @@ void loop()
             //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition2StartTime = 0; }
 
-            if( (ignition2StartTime > 0) && (curRollingCut != 2) )
+            if( (ignition2StartTime > 0) && (curRollingCut != 2) && (curIdleCut != 2) )
             {
               setIgnitionSchedule2(ign2StartFunction,
                         ignition2StartTime,
@@ -1378,7 +1411,7 @@ void loop()
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition3StartTime = 0; }
 
-            if( (ignition3StartTime > 0) && (curRollingCut != 3) )
+            if( (ignition3StartTime > 0) && (curRollingCut != 3) && (curIdleCut != 3) )
             {
               setIgnitionSchedule3(ign3StartFunction,
                         ignition3StartTime,
@@ -1400,7 +1433,7 @@ void loop()
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition4StartTime = 0; }
 
-            if( (ignition4StartTime > 0) && (curRollingCut != 4) )
+            if( (ignition4StartTime > 0) && (curRollingCut != 4) && (curIdleCut != 4))
             {
               setIgnitionSchedule4(ign4StartFunction,
                         ignition4StartTime,
