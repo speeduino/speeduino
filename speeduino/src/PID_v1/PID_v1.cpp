@@ -510,16 +510,6 @@ void integerPID_ideal::SetOutputLimits(long Min, long Max)
      outMin = Min;
      outMax = Max;
    }
-/*
-   long outMax_resized = outMax * limitMultiplier;
-   long outMin_resized = outMin * limitMultiplier;
-
-   if(*myOutput > outMax_resized) { *myOutput  = outMax_resized;  }
-   else if(*myOutput < outMin_resized) { *myOutput  = outMin_resized;  }
-
-   if(ITerm > outMax_resized) ITerm = outMax_resized;
-   else if(ITerm < outMin_resized) ITerm = outMin_resized;
-*/
 }
 
 /* Initialize()****************************************************************
