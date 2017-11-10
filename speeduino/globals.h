@@ -257,7 +257,7 @@ struct statuses {
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
   int8_t advance; //Signed 8 bit as advance can now go negative (ATDC)
   byte corrections;
-  byte TAEamount; //The amount of accleration enrichment currently being applied
+  int16_t TAEamount; //The amount of accleration enrichment currently being applied
   byte egoCorrection; //The amount of closed loop AFR enrichment currently being applied
   byte wueCorrection; //The amount of warmup enrichment currently being applied
   byte batCorrection; //The amount of battery voltage enrichment currently being applied
@@ -549,7 +549,7 @@ struct config3 {
 
   byte fanInv : 1;        // Fan output inversion bit
   byte fanEnable : 1;     // Fan enable bit. 0=Off, 1=On/Off
-  byte fanPin : 5;
+  byte fanPin : 6;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
@@ -566,9 +566,9 @@ struct config10 {
   byte enable_canbus:2;
   byte enable_candata_in:1;
   uint16_t caninput_sel;                    //bit status on/off if input is enabled
-  uint16_t caninput_param_group[16];        //u16 [15] array holding can address of input
-  uint8_t caninput_param_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)
-  uint16_t caninput_param_num_bytes;     //u16 bit status of the number of bytes length 1 or 2
+  uint16_t caninput_source_can_address[16];        //u16 [15] array holding can address of input
+  uint8_t caninput_source_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)
+  uint16_t caninput_source_num_bytes;     //u16 bit status of the number of bytes length 1 or 2
   byte unused10_53;
   byte unused10_54;
   byte enable_candata_out : 1;

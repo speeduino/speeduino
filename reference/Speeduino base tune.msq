@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS 3.0.28 - EFI Analytics, Inc." tuneComment="" writeDate="Mon Oct 09 11:58:20 AEDT 2017"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.09" nPages="10" signature="speeduino 201709"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.50.10 - EFI Analytics, Inc." tuneComment="" writeDate="Tue Nov 07 22:13:14 AEDT 2017"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.09" nPages="10" signature="speeduino 201710"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
 </page>
@@ -82,8 +82,6 @@
 <constant name="pinLayout">"Speeduino v0.4"</constant>
 <constant name="tachoPin">"Board Default"</constant>
 <constant name="tachoDiv">"Normal"</constant>
-<constant digits="1" name="tdePct" units="ms">3.2</constant>
-<constant digits="1" name="taeColdA" units="ms">0.0</constant>
 <constant digits="0" name="tpsThresh" units="%/s">70.0</constant>
 <constant digits="0" name="taeTime" units="ms">200.0</constant>
 <constant name="display">"Unused"</constant>
@@ -113,8 +111,6 @@
 <constant name="twoStroke">"Four-stroke"</constant>
 <constant name="injType">"Port"</constant>
 <constant name="nCylinders">"4"</constant>
-<constant name="cltType">"GM"</constant>
-<constant name="matType">"GM"</constant>
 <constant name="nInjectors">"4"</constant>
 <constant name="engineType">"Even fire"</constant>
 <constant name="flexEnabled">"Off"</constant>
@@ -210,7 +206,7 @@
          71.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_1" units="RAW">
-         0.0 
+         255.0 
       </constant>
 </page>
 <page number="2" size="288">
@@ -283,19 +279,15 @@
 <constant name="fuelPumpPin">"Board Default"</constant>
 <constant name="useResync">"No"</constant>
 <constant digits="1" name="sparkDur" units="ms">1.0</constant>
-<constant digits="0" name="IdleAdvRPM" units="RPM">3200.0</constant>
-<constant digits="1" name="IdleAdvCLT" units="C">-21.0</constant>
-<constant digits="0" name="IdleDelayTime" units="sec">38.0</constant>
-<constant digits="0" name="StgCycles" units="cycles">2.0</constant>
-<constant name="dwellcont">"Dwell control"</constant>
+<constant digits="0" name="SkipCycles" units="cycles">1.0</constant>
 <constant name="useDwellLim">"On"</constant>
 <constant name="sparkMode">"Wasted Spark"</constant>
 <constant name="TrigFilter">"Off"</constant>
 <constant name="ignCranklock">"On"</constant>
 <constant digits="1" name="dwellcrank" units="ms">4.5</constant>
 <constant digits="1" name="dwellrun" units="ms">3.0</constant>
-<constant digits="0" name="numteeth" units="teeth">36.0</constant>
-<constant digits="0" name="onetwo" units="teeth">1.0</constant>
+<constant digits="0" name="numTeeth" units="teeth">36.0</constant>
+<constant digits="0" name="missingTeeth" units="teeth">1.0</constant>
 <constant digits="0" name="crankRPM" units="rpm">400.0</constant>
 <constant digits="0" name="tpsflood" units="%">80.0</constant>
 <constant digits="0" name="SoftRevLim" units="rpm">6500.0</constant>
@@ -423,7 +415,7 @@
          145.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_3" units="RAW">
-         0.0 
+         255.0 
       </constant>
 </page>
 <page number="4" size="288">
@@ -493,7 +485,6 @@
 <constant digits="0" name="egoKD" units="%">0.0</constant>
 <constant digits="0" name="egoTemp" units="C">70.0</constant>
 <constant digits="0" name="egoCount">16.0</constant>
-<constant digits="0" name="egoDelta" units="%">1.0</constant>
 <constant digits="0" name="egoLimit">15.0</constant>
 <constant digits="1" name="ego_min" units="AFR">9.0</constant>
 <constant digits="1" name="ego_max" units="AFR">19.0</constant>
@@ -833,54 +824,6 @@
 <constant name="caninput_sel13">"Off"</constant>
 <constant name="caninput_sel14">"Off"</constant>
 <constant name="caninput_sel15">"Off"</constant>
-<constant name="caninput_param_group0">"blank"</constant>
-<constant name="caninput_param_group1">"blank"</constant>
-<constant name="caninput_param_group2">"blank"</constant>
-<constant name="caninput_param_group3">"blank"</constant>
-<constant name="caninput_param_group4">"blank"</constant>
-<constant name="caninput_param_group5">"blank"</constant>
-<constant name="caninput_param_group6">"blank"</constant>
-<constant name="caninput_param_group7">"blank"</constant>
-<constant name="caninput_param_group8">"blank"</constant>
-<constant name="caninput_param_group9">"blank"</constant>
-<constant name="caninput_param_group10">"blank"</constant>
-<constant name="caninput_param_group11">"blank"</constant>
-<constant name="caninput_param_group12">"blank"</constant>
-<constant name="caninput_param_group13">"blank"</constant>
-<constant name="caninput_param_group14">"blank"</constant>
-<constant name="caninput_param_group15">"blank"</constant>
-<constant name="caninput_param_start_byte0">"7"</constant>
-<constant name="caninput_param_start_byte1">"0"</constant>
-<constant name="caninput_param_start_byte2">"0"</constant>
-<constant name="caninput_param_start_byte3">"0"</constant>
-<constant name="caninput_param_start_byte4">"0"</constant>
-<constant name="caninput_param_start_byte5">"0"</constant>
-<constant name="caninput_param_start_byte6">"0"</constant>
-<constant name="caninput_param_start_byte7">"0"</constant>
-<constant name="caninput_param_start_byte8">"0"</constant>
-<constant name="caninput_param_start_byte9">"7"</constant>
-<constant name="caninput_param_start_byte10">"7"</constant>
-<constant name="caninput_param_start_byte11">"7"</constant>
-<constant name="caninput_param_start_byte12">"7"</constant>
-<constant name="caninput_param_start_byte13">"7"</constant>
-<constant name="caninput_param_start_byte14">"7"</constant>
-<constant name="caninput_param_start_byte15">"7"</constant>
-<constant name="caninput_param_num_bytes0">"1"</constant>
-<constant name="caninput_param_num_bytes1">"1"</constant>
-<constant name="caninput_param_num_bytes2">"1"</constant>
-<constant name="caninput_param_num_bytes3">"1"</constant>
-<constant name="caninput_param_num_bytes4">"1"</constant>
-<constant name="caninput_param_num_bytes5">"1"</constant>
-<constant name="caninput_param_num_bytes6">"1"</constant>
-<constant name="caninput_param_num_bytes7">"1"</constant>
-<constant name="caninput_param_num_bytes8">"1"</constant>
-<constant name="caninput_param_num_bytes9">"1"</constant>
-<constant name="caninput_param_num_bytes10">"1"</constant>
-<constant name="caninput_param_num_bytes11">"1"</constant>
-<constant name="caninput_param_num_bytes12">"1"</constant>
-<constant name="caninput_param_num_bytes13">"1"</constant>
-<constant name="caninput_param_num_bytes14">"1"</constant>
-<constant name="caninput_param_num_bytes15">"1"</constant>
 <constant digits="0" name="unused10_53">255.0</constant>
 <constant digits="0" name="unused10_54">255.0</constant>
 <constant name="enable_candata_out">"On"</constant>
@@ -1148,7 +1091,7 @@
          25500.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_9" units="RAW">
-         0.0 
+         255.0 
       </constant>
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">

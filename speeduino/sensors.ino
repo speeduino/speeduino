@@ -48,7 +48,7 @@ void initialiseADC()
   MAPrunningValue = 0;
 }
 
-void instanteneousMAPReading()
+static inline void instanteneousMAPReading()
 {
   unsigned int tempReading;
   //Instantaneous MAP readings
@@ -71,7 +71,7 @@ void instanteneousMAPReading()
 
 }
 
-void readMAP()
+static inline void readMAP()
 {
   unsigned int tempReading;
   //MAP Sampling system
@@ -119,7 +119,7 @@ void readMAP()
             if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
           }
           else { instanteneousMAPReading(); }
-          
+
           MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
           MAPrunningValue = 0;
           MAPcount = 0;
