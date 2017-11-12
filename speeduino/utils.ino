@@ -196,7 +196,10 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
-
+      pinHC1 = 6;
+      pinHC2 = 4;
+      pinHC3 = 5;
+      pinHC4 = 7;
       #if defined(CORE_TEENSY)
         pinTrigger = 23;
         pinTrigger2 = 35;
@@ -497,11 +500,17 @@ void setPinMapping(byte boardID)
 
   if ( (configPage3.launchPin != 0) && (configPage3.launchPin < BOARD_NR_GPIO_PINS) ) { pinLaunch = pinTranslate(configPage3.launchPin); }
   if ( (configPage2.ignBypassPin != 0) && (configPage2.ignBypassPin < BOARD_NR_GPIO_PINS) ) { pinIgnBypass = pinTranslate(configPage2.ignBypassPin); }
+   else if (configPage2.ignBypassPin == 0) { configPage2.ignBypassPin = pinIgnBypass; }    //use board default
   if ( (configPage1.tachoPin != 0) && (configPage1.tachoPin < BOARD_NR_GPIO_PINS) ) { pinTachOut = pinTranslate(configPage1.tachoPin); }
-  if ( (configPage2.fuelPumpPin != 0) && (configPage2.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = pinTranslate(configPage2.fuelPumpPin); }
-  if ( (configPage3.fanPin != 0) && (configPage3.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = pinTranslate(configPage3.fanPin); }
+   else if (configPage1.tachoPin == 0) { configPage1.tachoPin = pinTachOut; }    //use board default
+  if ( (configPage2.fuelPumpPin != 0) && (configPage2.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = pinTranslate(configPage2.fuelPumpPin); }    //use TS config value
+   else if (configPage2.fuelPumpPin == 0) { configPage2.fuelPumpPin = pinFuelPump; }    //use board default
+  if ( (configPage3.fanPin != 0) && (configPage3.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = pinTranslate(configPage3.fanPin); }    //use TS config value
+   else if (configPage3.fanPin == 0) { configPage3.fanPin = pinFan; }    //use board default
   if ( (configPage3.boostPin != 0) && (configPage3.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = pinTranslate(configPage3.boostPin); }
+   else if (configPage3.boostPin == 0){ configPage3.boostPin = pinBoost; }    //use board default
   if ( (configPage3.vvtPin != 0) && (configPage3.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage3.vvtPin); }
+   else if (configPage3.vvtPin == 0) { configPage3.vvtPin = pinVVT_1; }    //use board default
   if ( (configPage3.useExtBaro != 0) && (configPage3.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage3.baroPin + A0; }
 
   //Finally, set the relevant pin modes for outputs
@@ -526,7 +535,11 @@ void setPinMapping(byte boardID)
   pinMode(pinStepperEnable, OUTPUT);
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
-
+  pinMode(pinHC1, OUTPUT);
+  pinMode(pinHC2, OUTPUT);
+  pinMode(pinHC3, OUTPUT);
+  pinMode(pinHC4, OUTPUT);
+  
   inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
   inj1_pin_mask = digitalPinToBitMask(pinInjector1);
   inj2_pin_port = portOutputRegister(digitalPinToPort(pinInjector2));

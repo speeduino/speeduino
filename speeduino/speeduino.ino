@@ -125,6 +125,7 @@ bool initialisationComplete = false; //Tracks whether the setup() functino has r
 
 void setup()
 {
+  currentStatus.testOutputs = 0;      //clear all the hardware test  flag
   initialiseTimers();
   digitalWrite(LED_BUILTIN, LOW);
 
@@ -626,8 +627,11 @@ void setup()
   }
 
   //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
-  digitalWrite(pinFuelPump, HIGH);
-  fuelPumpOn = true;
+      //if( BIT_CHECK(currentStatus.testOutputs, 1 == 0) )
+     // {
+        driveFuelpump(1);//digitalWrite(pinFuelPump, HIGH);
+        //fuelPumpOn = true;
+     // }  
   interrupts();
   //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
   setFuelSchedule1(100, (unsigned long)(configPage1.primePulse * 100));
@@ -683,6 +687,11 @@ void loop()
           }
 #endif
 
+    if( BIT_CHECK(currentStatus.testOutputs, 1 == 0) )
+      {
+        return;
+      }
+      
     //Displays currently disabled
     // if (configPage1.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
 
@@ -692,8 +701,11 @@ void loop()
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
       currentStatus.RPM = currentStatus.longRPM = getRPM(); //Long RPM is included here
-      FUEL_PUMP_ON();
-      fuelPumpOn = true; //Not sure if this is needed.
+      //if( BIT_CHECK(currentStatus.testOutputs, 1 == 0) )
+      //  {
+          driveFuelpump(1);//FUEL_PUMP_ON();
+          //fuelPumpOn = true; //Not sure if this is needed.
+      //  }  
     }
     else
     {
@@ -717,7 +729,7 @@ void loop()
       ignitionCount = 0;
       ignitionOn = false;
       fuelOn = false;
-      if (fpPrimed == true) { digitalWrite(pinFuelPump, LOW); fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete
+      if (fpPrimed == true) {driveFuelpump(0);}// digitalWrite(pinFuelPump, LOW); fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete  
       disableIdle(); //Turn off the idle PWM
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE
@@ -725,8 +737,11 @@ void loop()
       //It can possibly be run much less frequently.
       initialiseTriggers();
 
-      VVT_PIN_LOW();
-      DISABLE_VVT_TIMER();
+    //if( BIT_CHECK(currentStatus.testOutputs, 1 == 0) )
+    //  {
+        driveVVT_1(0);//VVT_PIN_LOW();
+        DISABLE_VVT_TIMER();
+    //  }  
       boostDisable();
     }
 

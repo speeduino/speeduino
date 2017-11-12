@@ -153,7 +153,6 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 //const byte page_size = 64;
 const int16_t npage_size[11] = {0,288,128,288,128,288,128,160,192,128,192};
-//const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
 struct table3D fuelTable; //16x16 fuel map
@@ -288,11 +287,11 @@ struct statuses {
   bool flatShiftingHard;
   volatile uint16_t startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
   uint16_t boostTarget;
-  byte testOutputs;
-  bool testActive;
+  volatile byte testOutputs;
+  volatile bool testActive;
   uint16_t boostDuty; //Percentage value * 100 to give 2 points of precision
   byte idleLoad; //Either the current steps or current duty cycle for the idle control.
-  uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
+  volatile uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
   uint8_t current_caninchannel = 0; //start off at channel 0
   uint16_t crankRPM = 400; //The actual cranking RPM limit. Saves us multiplying it everytime from the config page
 
@@ -569,18 +568,32 @@ struct config10 {
   uint16_t caninput_source_can_address[16];        //u16 [15] array holding can address of input
   uint8_t caninput_source_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)
   uint16_t caninput_source_num_bytes;     //u16 bit status of the number of bytes length 1 or 2
-  byte unused10_53;
-  byte unused10_54;
-  byte enable_candata_out : 1;
-  byte canoutput_sel[8];
-  uint16_t canoutput_param_group[8];
-  uint8_t canoutput_param_start_byte[8];
-  byte canoutput_param_num_bytes[8];
-
+  uint8_t unused10_53;
+  uint8_t unused10_54;
+  uint8_t enable_candata_out : 1;
+  uint8_t canoutput_sel;                  //bit status on/off if input is enabled
+  uint16_t canoutput_source_can_address[8];
+  uint8_t canoutput_source_start_byte[8];
+  uint8_t canoutput_source_num_bytes;
+  byte unused10_82;
+  byte unused10_83;
+  byte unused10_84;
+  byte unused10_85;
+  byte unused10_86;
+  byte unused10_87;
+  byte unused10_88;
+  byte unused10_89;
+  byte unused10_90;
+  byte unused10_91;
+  byte unused10_92;
+  byte unused10_93;
+  byte unused10_94;
+  byte unused10_95;
+  byte unused10_96;
   byte unused10_97;
   byte unused10_98;
   byte unused10_99;
-  byte speeduino_tsCanId:4;         //speeduino TS canid (0-14)
+  uint8_t speeduino_tsCanId:4;         //speeduino TS canid (0-14)
   uint16_t true_address;            //speeduino 11bit can address
   uint16_t realtime_base_address;   //speeduino 11 bit realtime base address
   uint16_t obd_address;             //speeduino OBD diagnostic address
@@ -597,14 +610,15 @@ struct config10 {
   byte unused10_117;
   byte unused10_118;
   byte unused10_119;
-  byte unused10_120;
-  byte unused10_121;
-  byte unused10_122;
-  byte unused10_123;
-  byte unused10_124;
-  byte unused10_125;
-  byte unused10_126;
-  byte unused10_127;
+  byte testselectpin[8] = {4,5,6,7,8,9,10,11};        //this array is only kept in ram and not saved in eeprom!
+//  byte unused10_120;
+//  byte unused10_121;
+//  byte unused10_122;
+//  byte unused10_123;
+//  byte unused10_124;
+//  byte unused10_125;
+//  byte unused10_126;
+//  byte unused10_127;
 #if defined(CORE_AVR)
   };
 #else
@@ -635,7 +649,6 @@ struct config11 {
 #else
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
-
 
 byte pinInjector1; //Output pin injector 1
 byte pinInjector2; //Output pin injector 2
@@ -679,6 +692,10 @@ byte pinSpareOut5; //Generic output
 byte pinSpareOut6; //Generic output
 byte pinSpareHOut1; //spare high current output
 byte pinSpareHOut2; // spare high current output
+byte pinHC1;
+byte pinHC2;
+byte pinHC3;
+byte pinHC4;
 byte pinSpareLOut1; // spare low current output
 byte pinSpareLOut2; // spare low current output
 byte pinSpareLOut3;

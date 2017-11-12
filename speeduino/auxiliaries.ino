@@ -24,9 +24,11 @@ void fanControl()
   {
     int onTemp = (int)configPage3.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
     int offTemp = onTemp - configPage3.fanHyster;
-
-    if ( (!currentStatus.fanOn) && (currentStatus.coolant >= onTemp) ) { digitalWrite(pinFan,fanHIGH); currentStatus.fanOn = true; }
-    if ( (currentStatus.fanOn) && (currentStatus.coolant <= offTemp) ) { digitalWrite(pinFan, fanLOW); currentStatus.fanOn = false; }
+    //if( BIT_CHECK(currentStatus.testOutputs, 1 == 0) )
+    //  {
+        if ( (!currentStatus.fanOn) && (currentStatus.coolant >= onTemp) ) { digitalWrite(pinFan,fanHIGH); currentStatus.fanOn = true; }
+        if ( (currentStatus.fanOn) && (currentStatus.coolant <= offTemp) ) { digitalWrite(pinFan, fanLOW); currentStatus.fanOn = false; }
+    //  }  
   }
 }
 
@@ -97,7 +99,7 @@ void boostControl()
         }
 
         bool PIDcomputed = boostPID.Compute(); //Compute() returns false if the required interval has not yet passed.
-        if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
+        if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); driveBoost(0);}//BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
         else
         {
           if(PIDcomputed == true)
@@ -137,13 +139,13 @@ void vvtControl()
     if(vvtDuty == 0)
     {
       //Make sure solenoid is off (0% duty)
-      VVT_PIN_LOW();
+      driveVVT_1(0);//VVT_PIN_LOW();
       DISABLE_VVT_TIMER();
     }
     else if (vvtDuty >= 100)
     {
       //Make sure solenoid is on (100% duty)
-      VVT_PIN_HIGH();
+      driveVVT_1(1);//VVT_PIN_HIGH();
       DISABLE_VVT_TIMER();
     }
     else
@@ -160,7 +162,7 @@ void boostDisable()
   boostPID.Initialize(); //This resets the ITerm value to prevent rubber banding
   currentStatus.boostDuty = 0;
   DISABLE_BOOST_TIMER(); //Turn off timer
-  BOOST_PIN_LOW(); //Make sure solenoid is off (0% duty)
+        driveBoost(0);//BOOST_PIN_LOW(); //Make sure solenoid is off (0% duty)
 }
 
 //The interrupt to control the Boost PWM
@@ -172,13 +174,13 @@ void boostDisable()
 {
   if (boost_pwm_state)
   {
-    BOOST_PIN_LOW();  // Switch pin to low
+    driveBoost(0);//BOOST_PIN_LOW();  // Switch pin to low
     BOOST_TIMER_COMPARE = BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value);
     boost_pwm_state = false;
   }
   else
   {
-    BOOST_PIN_HIGH();  // Switch pin high
+    driveBoost(1);//BOOST_PIN_HIGH();  // Switch pin high
     BOOST_TIMER_COMPARE = BOOST_TIMER_COUNTER + boost_pwm_target_value;
     boost_pwm_cur_value = boost_pwm_target_value;
     boost_pwm_state = true;
@@ -194,15 +196,57 @@ void boostDisable()
 {
   if (vvt_pwm_state)
   {
-    VVT_PIN_LOW();  // Switch pin to low
+    driveVVT_1(0);//VVT_PIN_LOW();  // Switch pin to low
     VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt_pwm_cur_value);
     vvt_pwm_state = false;
   }
   else
   {
-    VVT_PIN_HIGH();  // Switch pin high
+    driveVVT_1(1);//VVT_PIN_HIGH();  // Switch pin high
     VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt_pwm_target_value;
     vvt_pwm_cur_value = vvt_pwm_target_value;
     vvt_pwm_state = true;
   }
 }
+void driveFuelpump(bool on_off)
+{
+if(currentStatus.testOutputs == 0)
+  {  
+   if (on_off == 1){ 
+     FUEL_PUMP_ON();
+     fuelPumpOn = true;
+     }
+
+   if (on_off == 0){
+     FUEL_PUMP_OFF();
+     fuelPumpOn = false;
+     }  
+  }
+}
+void driveVVT_1(bool on_off)
+{
+if(currentStatus.testOutputs == 0)
+  {  
+   if (on_off == 1){ 
+     VVT_PIN_HIGH();
+     }
+
+   if (on_off == 0){
+     VVT_PIN_LOW();
+     }  
+  }    
+}
+void driveBoost(bool on_off)
+{
+if(currentStatus.testOutputs == 0)
+  {  
+   if (on_off == 1){ 
+     BOOST_PIN_HIGH();
+     }
+
+   if (on_off == 0){
+     BOOST_PIN_LOW();
+     }  
+  }      
+}
+

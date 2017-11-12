@@ -1069,7 +1069,8 @@ void sendPage(bool useChar)
       //Serial.write((byte *)&response, npage_size[currentPage]);
       // }
     } //isMap
-  } //sendComplete
+    } //sendComplete        
+
 }
 
 byte getPageValue(byte page, uint16_t valueAddress)
@@ -1343,10 +1344,14 @@ void testComm()
 
 void commandButtons()
 {
+      byte ctriggerInterrupt = 0; // By default, use the first interrupt
+      byte ctriggerInterrupt2 = 1;
+      //currentStatus.canin[1] = cmdCombined;
   switch (cmdCombined)
   {
     case 256: // cmd is stop
-      BIT_CLEAR(currentStatus.testOutputs, 1);
+    currentStatus.testOutputs = 0;
+      //BIT_CLEAR(currentStatus.testOutputs, 1);
       digitalWrite(pinInjector1, LOW);
       digitalWrite(pinInjector2, LOW);
       digitalWrite(pinInjector3, LOW);
@@ -1355,12 +1360,66 @@ void commandButtons()
       digitalWrite(pinCoil2, LOW);
       digitalWrite(pinCoil3, LOW);
       digitalWrite(pinCoil4, LOW);
+      for (byte testend = 0 ; testend < 8; testend++)
+          {
+            digitalWrite(configPage10.testselectpin[testend], LOW);
+          }  
       break;
 
     case 257: // cmd is enable
       // currentStatus.testactive = 1;
-      BIT_SET(currentStatus.testOutputs, 1);
+     //BIT_SET(currentStatus.testOutputs, 1);
+     currentStatus.testOutputs = 254;
+      #if defined(CORE_AVR)
+          switch (pinTrigger) {
+          //Arduino Mega 2560 mapping
+          case 2:
+            ctriggerInterrupt = 0; break;
+          case 3:
+            ctriggerInterrupt = 1; break;
+          case 18:
+            ctriggerInterrupt = 5; break;
+          case 19:
+            ctriggerInterrupt = 4; break;
+          case 20:
+            ctriggerInterrupt = 3; break;
+          case 21:
+            ctriggerInterrupt = 2; break;
+          default:
+            ctriggerInterrupt = 0; break; //This should NEVER happen
+        }
+      #else
+        ctriggerInterrupt = pinTrigger;
+      #endif
+
+      #if defined(CORE_AVR)
+        switch (pinTrigger2) {
+          //Arduino Mega 2560 mapping
+        case 2:
+          ctriggerInterrupt2 = 0; break;
+        case 3:
+          ctriggerInterrupt2 = 1; break;
+        case 18:
+          ctriggerInterrupt2 = 5; break;
+        case 19:
+          ctriggerInterrupt2 = 4; break;
+        case 20:
+          ctriggerInterrupt2 = 3; break;
+        case 21:
+          ctriggerInterrupt2 = 2; break;
+        default:
+          ctriggerInterrupt2 = 0; break; //This should NEVER happen
+      }
+    #else
+      ctriggerInterrupt2 = pinTrigger2;
+    #endif
+     //currentStatus.canin[0] = ctriggerInterrupt;
+     //currentStatus.canin[1] = ctriggerInterrupt2;
+    detachInterrupt(ctriggerInterrupt);
+    detachInterrupt(ctriggerInterrupt2);
+
       break;
+      
     case 513: // cmd group is for injector1 on actions
       if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector1, HIGH); }
       break;
@@ -1437,7 +1496,80 @@ void commandButtons()
         if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil4, LOW); }
       break;
     case 780: // cmd group is for spark4 50%dc actions
+      break;  
+      
+    case 1281: // cmd group is for uni1 on action
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[0], HIGH); }
+      break;
+    case 1282: // cmd group is for uni1 off action
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[0], LOW); }
+      break;
+    case 1283: // cmd group is for uni1 50%dc actions
 
+      break;
+    case 1284: // cmd group is for uni2 on action
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[1], HIGH); }
+      break;
+    case 1285: // cmd group is for uni2 off action
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[1], LOW); }
+      break;
+    case 1286: // cmd group is for uni2 50%dc actions
+
+      break;
+    case 1287: // cmd group is for uni3 on actions
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[2], HIGH); }
+      break;
+    case 1288: // cmd group is for uni3 off actions
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[2], LOW); }
+      break;
+    case 1289: // cmd group is for uni3 50%dc actions
+
+      break;
+    case 1290: // cmd group is for uni4 on actions
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[3], HIGH); }
+      break;
+    case 1291: // cmd group is for uni4 off actions
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[3], LOW); }
+      break;
+    case 1292: // cmd group is for uni4 50%dc actions
+      break;
+      
+    case 1293: // cmd group is for uni5 on action
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[4], HIGH); }
+      break;
+    case 1294: // cmd group is for uni5 off action
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[4], LOW); }
+      break;
+    case 1295: // cmd group is for uni5 50%dc actions
+
+      break;
+    case 1296: // cmd group is for uni6 on action
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[5], HIGH); }
+      break;
+    case 1297: // cmd group is for uni6 off action
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[5], LOW); }
+      break;
+    case 1298: // cmd group is for uni6 50%dc actions
+
+      break;
+    case 1299: // cmd group is for uni7 on actions
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[6], HIGH); }
+      break;
+    case 1300: // cmd group is for uni7 off actions
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[6], LOW); }
+      break;
+    case 1301: // cmd group is for uni7 50%dc actions
+
+      break;
+    case 1302: // cmd group is for uin8 on actions
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[7], HIGH); }
+      break;
+    case 1303: // cmd group is for uni8 off actions
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[7], LOW); }
+      break;
+    case 1304: // cmd group is for uni8 50%dc actions
+      break;
+      
     default:
       break;
   }

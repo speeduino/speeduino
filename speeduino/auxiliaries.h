@@ -5,6 +5,9 @@ void initialiseAuxPWM();
 void boostControl();
 void vvtControl();
 void initialiseFan();
+void driveFuelpump(bool on_off);
+void driveVVT_1(bool on_off);
+void driveBoost(bool on_off);
 
 #if defined(CORE_AVR)
   #define ENABLE_BOOST_TIMER()  TIMSK1 |= (1 << OCIE1A)

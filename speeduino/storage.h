@@ -52,7 +52,7 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 | 1441  |2    | X and Y size4                       |
 | 1443  |36   | PAGE 9 MAP4                         |
 | 1479  |6    | X and Y Bins4                       |
-| 1500  |128  | CANBUS config and data (Table 10_)  |
+| 1500  |128  | CANBUS config and data (Table 10_)  |NOTE:!!! last 8 bytes are NOT saved to eeprom only kept in ram!!
 | 1628  |192  | Table 11 - General settings         |
 |                                                   |
 | 2559  |512  | Calibration data (O2)               |

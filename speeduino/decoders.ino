@@ -444,6 +444,8 @@ void triggerSetup_BasicDistributor()
 
 void triggerPri_BasicDistributor()
 {
+ if(currentStatus.testOutputs == 0)
+ {  
   curTime = micros();
   curGap = curTime - toothLastToothTime;
   if ( (curGap >= triggerFilterTime) )
@@ -489,6 +491,7 @@ void triggerPri_BasicDistributor()
     toothLastMinusOneToothTime = toothLastToothTime;
     toothLastToothTime = curTime;
   } //Trigger filter
+ }
 }
 void triggerSec_BasicDistributor() { return; } //Not required
 uint16_t getRPM_BasicDistributor()

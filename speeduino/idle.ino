@@ -452,5 +452,32 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
     idle_pwm_cur_value = idle_pwm_target_value;
     idle_pwm_state = true;
   }
-
+}  
+void drivepinIdle(bool on_off, byte chan)
+{  
+if(currentStatus.testOutputs == 0)
+  {  
+   if (on_off == 1)
+    { 
+    if (chan == 1)
+       {
+        
+       }
+   else if (chan == 2)
+       {
+            
+       }
+    }
+  if (on_off == 0)
+    { 
+    if (chan == 1)
+       {
+        
+       }
+   else if (chan == 2)
+       {
+            
+       }
+    }
+  }
 }
