@@ -69,6 +69,23 @@ void oneMSInterval() //Most ARM chips can simply call a function
 #endif
 {
 
+  if(currentStatus.testOutputs != 0)                    //if test hardware is active
+     {
+      //currentStatus.canin[0] = currentStatus.htestLoop[4];
+      //currentStatus.canin[1] = configPage10.test50DC[4];
+      for (byte htest = 0; htest <8; htest++)
+        {
+         if (currentStatus.htestLoop[htest] != 65535)                        //if test1 is active
+           {
+           if (currentStatus.htestLoop[htest] == configPage10.test50DC[htest])
+              {
+               digitalWrite(configPage10.testselectpin[htest],!digitalRead(configPage10.testselectpin[htest]));
+               currentStatus.htestLoop[htest] = 0;
+              }
+           else{currentStatus.htestLoop[htest]++;}  
+           }
+        }
+     }
   //Increment Loop Counters
   loop33ms++;
   loop66ms++;

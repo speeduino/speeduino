@@ -296,8 +296,10 @@ void setup()
   dwellLimit_uS = (1000 * configPage2.dwellLimit);
 
   noInterrupts();
+ if(currentStatus.testOutputs == 0)
+ {
   initialiseTriggers();
-
+ }
   //End crank triger interrupt attachment
   req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
 
@@ -735,13 +737,12 @@ void loop()
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE
       //This is a safety check. If for some reason the interrupts have got screwed up (Leading to 0rpm), this resets them.
       //It can possibly be run much less frequently.
-      initialiseTriggers();
-
-    //if( BIT_CHECK(currentStatus.testOutputs, 1 == 0) )
-    //  {
+       if(currentStatus.testOutputs == 0)
+          {
+            initialiseTriggers();
+          }
         driveVVT_1(0);//VVT_PIN_LOW();
         DISABLE_VVT_TIMER();
-    //  }  
       boostDisable();
     }
 

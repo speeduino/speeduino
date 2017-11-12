@@ -1346,7 +1346,6 @@ void commandButtons()
 {
       byte ctriggerInterrupt = 0; // By default, use the first interrupt
       byte ctriggerInterrupt2 = 1;
-      //currentStatus.canin[1] = cmdCombined;
   switch (cmdCombined)
   {
     case 256: // cmd is stop
@@ -1361,9 +1360,10 @@ void commandButtons()
       digitalWrite(pinCoil3, LOW);
       digitalWrite(pinCoil4, LOW);
       for (byte testend = 0 ; testend < 8; testend++)
-          {
-            digitalWrite(configPage10.testselectpin[testend], LOW);
-          }  
+         {
+          digitalWrite(configPage10.testselectpin[testend], LOW);
+          currentStatus.htestLoop[testend] = 65535;
+         }  
       break;
 
     case 257: // cmd is enable
@@ -1413,8 +1413,6 @@ void commandButtons()
     #else
       ctriggerInterrupt2 = pinTrigger2;
     #endif
-     //currentStatus.canin[0] = ctriggerInterrupt;
-     //currentStatus.canin[1] = ctriggerInterrupt2;
     detachInterrupt(ctriggerInterrupt);
     detachInterrupt(ctriggerInterrupt2);
 
@@ -1424,150 +1422,283 @@ void commandButtons()
       if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector1, HIGH); }
       break;
     case 514: // cmd group is for injector1 off actions
-      if( BIT_CHECK(currentStatus.testOutputs, 1) ){digitalWrite(pinInjector1, LOW);}
+      if( BIT_CHECK(currentStatus.testOutputs, 1) )
+        {
+         digitalWrite(pinInjector1, LOW);
+         currentStatus.htestLoop[0] = 65535;                                     //set to 0 to disable 50%dc pulse
+        }
       break;
     case 515: // cmd group is for injector1 50% dc actions
-      //for (byte dcloop = 0; dcloop < 11; dcloop++)
-      //{
-      //  digitalWrite(pinInjector1, HIGH);
-      //  delay(500);
-      //  digitalWrite(pinInjector1, LOW);
-      //  delay(500);
-      //}
+      configPage10.testselectpin[0] = pinInjector1;
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+        {
+         currentStatus.htestLoop[0] = 0;                          //set millisecond count according to TS selected value
+         digitalWrite(configPage10.testselectpin[0], HIGH);      //start pin high
+        }
       break;
     case 516: // cmd group is for injector2 on actions
         if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector2, HIGH); }
       break;
     case 517: // cmd group is for injector2 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector2, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) )
+          {
+            digitalWrite(pinInjector2, LOW);
+            currentStatus.htestLoop[1] = 65535;                                     //set to 0 to disable 50%dc pulse
+          }
       break;
     case 518: // cmd group is for injector2 50%dc actions
-
+      configPage10.testselectpin[1] = pinInjector2;
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+        {
+         currentStatus.htestLoop[1] = 0;                          //set millisecond count according to TS selected value
+         digitalWrite(configPage10.testselectpin[1], HIGH);      //start pin high
+        }
       break;
     case 519: // cmd group is for injector3 on actions
         if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinInjector3, HIGH); }
       break;
     case 520: // cmd group is for injector3 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinInjector3, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) )
+          {
+            digitalWrite(pinInjector3, LOW); 
+            currentStatus.htestLoop[2] = 65535;                                     //set to 0 to disable 50%dc pulse          
+          }
       break;
     case 521: // cmd group is for injector3 50%dc actions
-
+      configPage10.testselectpin[2] = pinInjector3;
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+        {
+         currentStatus.htestLoop[2] = 0;                          //set millisecond count according to TS selected value
+         digitalWrite(configPage10.testselectpin[2], HIGH);      //start pin high
+        }
       break;
     case 522: // cmd group is for injector4 on actions
         if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector4, HIGH); }
       break;
     case 523: // cmd group is for injector4 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector4, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) )
+          { 
+            digitalWrite(pinInjector4, LOW); 
+            currentStatus.htestLoop[3] = 65535;                                     //set to 0 to disable 50%dc pulse            
+          }
       break;
     case 524: // cmd group is for injector4 50% dc actions
-
+      configPage10.testselectpin[3] = pinInjector4;
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+        {
+         currentStatus.htestLoop[3] = 0;                          //set millisecond count according to TS selected value
+         digitalWrite(configPage10.testselectpin[3], HIGH);      //start pin high
+        }
       break;
     case 769: // cmd group is for spark1 on actions
         if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil1, HIGH); }
       break;
     case 770: // cmd group is for spark1 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil1, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+          {
+            digitalWrite(pinCoil1, LOW);
+            currentStatus.htestLoop[4] = 65535;                                     //set to 0 to disable 50%dc pulse
+          }
       break;
     case 771: // cmd group is for spark1 50%dc actions
-
+      configPage10.testselectpin[4] = pinCoil1;
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+        {
+         currentStatus.htestLoop[4] = 0;                          //set millisecond count according to TS selected value
+         digitalWrite(configPage10.testselectpin[4], HIGH);      //start pin high
+        }
       break;
     case 772: // cmd group is for spark2 on actions
         if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil2, HIGH); }
       break;
     case 773: // cmd group is for spark2 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil2, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) )
+          {
+           digitalWrite(pinCoil2, LOW);
+           currentStatus.htestLoop[5] = 65535;                                     //set to 0 to disable 50%dc pulse
+          }
       break;
     case 774: // cmd group is for spark2 50%dc actions
-
+      configPage10.testselectpin[5] = pinCoil2;
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+        {
+         currentStatus.htestLoop[5] = 0;                          //set millisecond count according to TS selected value
+         digitalWrite(configPage10.testselectpin[5], HIGH);      //start pin high
+        }
       break;
     case 775: // cmd group is for spark3 on actions
         if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil3, HIGH); }
       break;
     case 776: // cmd group is for spark3 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil3, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+          {
+            digitalWrite(pinCoil3, LOW); 
+            currentStatus.htestLoop[6] = 65535;                                     //set to 0 to disable 50%dc pulse  
+          }
       break;
     case 777: // cmd group is for spark3 50%dc actions
-
+      configPage10.testselectpin[6] = pinCoil3;
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+        {
+         currentStatus.htestLoop[6] = 0;                          //set millisecond count according to TS selected value
+         digitalWrite(configPage10.testselectpin[6], HIGH);      //start pin high
+        }
       break;
     case 778: // cmd group is for spark4 on actions
         if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil4, HIGH); }
       break;
     case 779: // cmd group is for spark4 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil4, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+          {
+            digitalWrite(pinCoil4, LOW); 
+            currentStatus.htestLoop[7] = 65535;                                     //set to 0 to disable 50%dc pulse
+          }
       break;
     case 780: // cmd group is for spark4 50%dc actions
+      configPage10.testselectpin[7] = pinCoil4;
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+        {
+         currentStatus.htestLoop[7] = 0;                          //set millisecond count according to TS selected value
+         digitalWrite(configPage10.testselectpin[7], HIGH);      //start pin high
+        }      
       break;  
       
     case 1281: // cmd group is for uni1 on action
         if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[0], HIGH); }
       break;
     case 1282: // cmd group is for uni1 off action
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[0], LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+          {
+            digitalWrite(configPage10.testselectpin[0], LOW); 
+            currentStatus.htestLoop[0] = 65535;                                     //set to 65535 to disable 50%dc pulse
+          }
       break;
     case 1283: // cmd group is for uni1 50%dc actions
-
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+          {
+            currentStatus.htestLoop[0] = 0;                           //set millisecond count according to TS selected value
+            digitalWrite(configPage10.testselectpin[0], HIGH);       //start pin high
+          }
       break;
     case 1284: // cmd group is for uni2 on action
         if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[1], HIGH); }
       break;
     case 1285: // cmd group is for uni2 off action
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[1], LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+          {
+            digitalWrite(configPage10.testselectpin[1], LOW);           
+            currentStatus.htestLoop[1] = 65535;
+          }
       break;
     case 1286: // cmd group is for uni2 50%dc actions
-
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+          {
+            currentStatus.htestLoop[1] = 0;                           //set millisecond count according to TS selected value
+            digitalWrite(configPage10.testselectpin[1], HIGH);       //start pin high
+          }
       break;
     case 1287: // cmd group is for uni3 on actions
         if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[2], HIGH); }
       break;
     case 1288: // cmd group is for uni3 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[2], LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+          {
+           digitalWrite(configPage10.testselectpin[2], LOW); 
+           currentStatus.htestLoop[2] = 65535;                                     //set to 0 to disable 50%dc pulse
+          }
       break;
     case 1289: // cmd group is for uni3 50%dc actions
-
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+        {
+         currentStatus.htestLoop[2] = 0;                          //set millisecond count according to TS selected value
+         digitalWrite(configPage10.testselectpin[2], HIGH);      //start pin high
+        }
       break;
     case 1290: // cmd group is for uni4 on actions
         if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[3], HIGH); }
       break;
     case 1291: // cmd group is for uni4 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[3], LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+          {
+            digitalWrite(configPage10.testselectpin[3], LOW); 
+            currentStatus.htestLoop[3] = 65535;                                     //set to 0 to disable 50%dc pulse
+          }
       break;
     case 1292: // cmd group is for uni4 50%dc actions
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+        {
+         currentStatus.htestLoop[3] = 0;                          //set millisecond count according to TS selected value
+         digitalWrite(configPage10.testselectpin[3], HIGH);      //start pin high
+        }      
       break;
       
     case 1293: // cmd group is for uni5 on action
         if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[4], HIGH); }
       break;
     case 1294: // cmd group is for uni5 off action
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[4], LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) )
+          {
+            digitalWrite(configPage10.testselectpin[4], LOW); 
+            currentStatus.htestLoop[4] = 65535;                                     //set to 0 to disable 50%dc pulse
+          }
       break;
     case 1295: // cmd group is for uni5 50%dc actions
-
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+        {
+         currentStatus.htestLoop[4] = 0;                          //set millisecond count according to TS selected value
+         digitalWrite(configPage10.testselectpin[4], HIGH);      //start pin high
+        }
       break;
     case 1296: // cmd group is for uni6 on action
         if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[5], HIGH); }
       break;
     case 1297: // cmd group is for uni6 off action
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[5], LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+          {
+            digitalWrite(configPage10.testselectpin[5], LOW); 
+            currentStatus.htestLoop[5] = 65535;                                     //set to 0 to disable 50%dc pulse
+          }
       break;
     case 1298: // cmd group is for uni6 50%dc actions
-
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+        {
+         currentStatus.htestLoop[5] = 0;                          //set millisecond count according to TS selected value
+         digitalWrite(configPage10.testselectpin[5], HIGH);      //start pin high
+        }
       break;
     case 1299: // cmd group is for uni7 on actions
         if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[6], HIGH); }
       break;
     case 1300: // cmd group is for uni7 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[6], LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+          {
+           digitalWrite(configPage10.testselectpin[6], LOW); 
+           currentStatus.htestLoop[6] = 65535;                                     //set to 0 to disable 50%dc pulse
+          }
       break;
     case 1301: // cmd group is for uni7 50%dc actions
-
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+        {
+         currentStatus.htestLoop[6] = 0;                          //set millisecond count according to TS selected value
+         digitalWrite(configPage10.testselectpin[6], HIGH);      //start pin high
+        }
       break;
     case 1302: // cmd group is for uin8 on actions
         if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[7], HIGH); }
       break;
     case 1303: // cmd group is for uni8 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(configPage10.testselectpin[7], LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+          {
+            digitalWrite(configPage10.testselectpin[7], LOW); 
+            currentStatus.htestLoop[7] = 65535;                                     //set to 0 to disable 50%dc pulse
+          }
       break;
     case 1304: // cmd group is for uni8 50%dc actions
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) 
+        {
+         currentStatus.htestLoop[7] = 0;                          //set millisecond count according to TS selected value
+         digitalWrite(configPage10.testselectpin[7], HIGH);      //start pin high
+        }
       break;
       
     default:

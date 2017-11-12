@@ -289,6 +289,7 @@ struct statuses {
   uint16_t boostTarget;
   volatile byte testOutputs;
   volatile bool testActive;
+  volatile uint16_t htestLoop[8];   //ms count for hardware tests @50% DC
   uint16_t boostDuty; //Percentage value * 100 to give 2 points of precision
   byte idleLoad; //Either the current steps or current duty cycle for the idle control.
   volatile uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
@@ -584,32 +585,40 @@ struct config10 {
   byte unused10_88;
   byte unused10_89;
   byte unused10_90;
-  byte unused10_91;
-  byte unused10_92;
-  byte unused10_93;
-  byte unused10_94;
-  byte unused10_95;
-  byte unused10_96;
-  byte unused10_97;
-  byte unused10_98;
-  byte unused10_99;
   uint8_t speeduino_tsCanId:4;         //speeduino TS canid (0-14)
   uint16_t true_address;            //speeduino 11bit can address
   uint16_t realtime_base_address;   //speeduino 11 bit realtime base address
-  uint16_t obd_address;             //speeduino OBD diagnostic address
-  byte unused10_107;
-  byte unused10_108;
-  byte unused10_109;
-  byte unused10_110;
-  byte unused10_111;
-  byte unused10_112;
-  byte unused10_113;
-  byte unused10_114;
-  byte unused10_115;
-  byte unused10_116;
-  byte unused10_117;
-  byte unused10_118;
-  byte unused10_119;
+  uint16_t obd_address;             //speeduino OBD diagnostic address  
+  //byte unused10_91;
+  //byte unused10_92;
+  //byte unused10_93;
+  //byte unused10_94;
+  //byte unused10_95;
+  //byte unused10_96;
+  //byte unused10_97;
+  byte unused10_98;
+  byte unused10_99;
+  byte unused10_100;
+  byte unused10_101;
+  byte unused10_102;
+  byte unused10_103;
+ // byte unused10_104;
+ // byte unused10_105;
+ // byte unused10_106;
+ // byte unused10_107;
+ // byte unused10_108;
+ // byte unused10_109;
+ // byte unused10_110;
+ // byte unused10_111;
+  uint16_t test50DC[8] = {65532,6254,6254,6254,6254,6254,6254,65533};
+//  byte unused10_112;
+//  byte unused10_113;
+//  byte unused10_114;
+//  byte unused10_115;
+//  byte unused10_116;
+//  byte unused10_117;
+//  byte unused10_118;
+//  byte unused10_119;
   byte testselectpin[8] = {4,5,6,7,8,9,10,11};        //this array is only kept in ram and not saved in eeprom!
 //  byte unused10_120;
 //  byte unused10_121;
