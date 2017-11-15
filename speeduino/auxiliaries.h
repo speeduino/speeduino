@@ -73,6 +73,15 @@ long boost_pwm_target_value;
 long boost_cl_target_boost;
 byte boostCounter;
 
+//fanstuff
+bool fanON = false;
+bool fan2ON = false;
+int onTemp;
+int offTemp;
+int onTempHighSpeed;
+int offTempHighSpeed;
+
+
 volatile bool vvt_pwm_state;
 unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int vvt_pwm_cur_value;
