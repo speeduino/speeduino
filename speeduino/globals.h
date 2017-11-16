@@ -152,7 +152,7 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 //const byte page_size = 64;
-const int16_t npage_size[11] = {0,288,128,288,128,288,128,160,192,128,192};
+const int16_t npage_size[11] = {0,288,128,288,128,288,130,160,192,128,192};
 //const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
@@ -267,7 +267,7 @@ struct statuses {
   byte flexIgnCorrection; //Amount of additional advance being applied based on flex
   byte afrTarget;
   byte idleDuty;
-  bool fanOn; //Whether or not the fan is turned on
+  byte fanStatus; //1 = on/off, 2-speed two, 3 = pwm
   volatile byte ethanolPct; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85.
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte status1;
@@ -547,13 +547,18 @@ struct config3 {
   byte iacStepHome; //When using a stepper motor, the number of steps to be taken on startup to home the motor
   byte iacStepHyster; //Hysteresis temperature (*10). Eg 2.2C = 22
 
-  byte fanInv : 1;        // Fan output inversion bit
-  byte fanEnable : 1;     // Fan enable bit. 0=Off, 1=On/Off
+  byte fanMode : 2;     // Fan enable 0=Off, 1=On/Off 3=PWM
   byte fanPin : 6;
+  byte fanInv : 1;        // Fan output inversion bit
+  byte fanPinHighSpeed: 6;
+  byte unused6_122f: 1;
+
   byte fanSP;             // Cooling fan start temperature
+  byte fanSecondSP;
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
+  byte unused6_129f;
 #if defined(CORE_AVR)
   };
 #else
@@ -688,6 +693,7 @@ byte pinBoost;
 byte pinVVT_1;		// vvt output 1
 byte pinVVt_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
+byte pinFanHighSpeed;
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
 byte pinStepperEnable; //Turning the DRV8825 driver on/off
