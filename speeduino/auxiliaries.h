@@ -5,6 +5,7 @@ void initialiseAuxPWM();
 void boostControl();
 void vvtControl();
 void initialiseFan();
+void shiftLight();
 
 #if defined(CORE_AVR)
   #define ENABLE_BOOST_TIMER()  TIMSK1 |= (1 << OCIE1A)
@@ -81,6 +82,8 @@ int offTemp;
 int onTempHighSpeed;
 int offTempHighSpeed;
 
+bool shiftLightOn = false;
+byte SHIFTLIGHT_THRESHOLD = 10;
 
 volatile bool vvt_pwm_state;
 unsigned int vvt_pwm_max_count; //Used for variable PWM frequency

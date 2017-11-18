@@ -318,8 +318,10 @@ struct config1 {
   byte pinMapping; // The board / ping mapping to be used
   byte tachoPin : 6; //Custom pin setting for tacho output
   byte tachoDiv : 2; //Whether to change the tacho speed
-  byte unused2_17;
-  byte unused2_18;
+  byte shiftLightEnabled: 1;
+  byte shiftLightPin: 6;
+  byte unused6_130f: 1;
+  byte shiftLightRev;
   byte tpsThresh;
   byte taeTime;
 
@@ -558,7 +560,9 @@ struct config3 {
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
-  byte unused6_129f;
+
+
+
 #if defined(CORE_AVR)
   };
 #else
@@ -671,6 +675,7 @@ byte pinO2_2; //second O2 pin
 byte pinBat; //Battery voltage pin
 byte pinDisplayReset; // OLED reset pin
 byte pinTachOut; //Tacho output
+byte pinShiftLight;
 byte pinFuelPump; //Fuel pump on/off
 byte pinIdle1; //Single wire idle control
 byte pinIdle2; //2 wire idle control (Not currently used)
@@ -694,6 +699,7 @@ byte pinVVT_1;		// vvt output 1
 byte pinVVt_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
 byte pinFanHighSpeed;
+
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
 byte pinStepperEnable; //Turning the DRV8825 driver on/off

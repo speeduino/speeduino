@@ -149,6 +149,7 @@ void setPinMapping(byte boardID)
       pinFanHighSpeed = A14;
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinShiftLight = A15;
 
       #if defined(CORE_TEENSY)
         pinTrigger = 23;
@@ -505,6 +506,7 @@ void setPinMapping(byte boardID)
   if ( (configPage3.boostPin != 0) && (configPage3.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = pinTranslate(configPage3.boostPin); }
   if ( (configPage3.vvtPin != 0) && (configPage3.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage3.vvtPin); }
   if ( (configPage3.useExtBaro != 0) && (configPage3.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage3.baroPin + A0; }
+  if ( (configPage1.shiftLightPin != 0) && (configPage1.shiftLightPin < BOARD_NR_GPIO_PINS) ) { pinShiftLight = pinTranslate(configPage1.shiftLightPin); }
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinCoil1, OUTPUT);
@@ -524,6 +526,7 @@ void setPinMapping(byte boardID)
   pinMode(pinIgnBypass, OUTPUT);
   pinMode(pinFan, OUTPUT);
   pinMode(pinFanHighSpeed, OUTPUT);
+  pinMode(pinShiftLight, OUTPUT);
 
   pinMode(pinStepperDir, OUTPUT);
   pinMode(pinStepperStep, OUTPUT);

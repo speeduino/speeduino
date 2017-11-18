@@ -162,11 +162,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
     currentStatus.secl++;
     //**************************************************************************************************************************************************
     //Check the fan output status
-    if (configPage3.fanMode != 0)
-    {
-       fanControl(configPage3.fanMode);            // fanControl(1) = on/off 2 = 2-Speed 3 = PWM
-    }
+    if (configPage3.fanMode != 0){ fanControl(configPage3.fanMode); }       // fanControl(1) = on/off 2 = 2-Speed 3 = PWM
 
+    if(configPage1.shiftLightEnabled == 1 ) {shiftLight();}
 
     //Check whether fuel pump priming is complete
     if(fpPrimed == false)

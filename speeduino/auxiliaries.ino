@@ -25,6 +25,19 @@ void initialiseFan()
   offTempHighSpeed = onTempHighSpeed - configPage3.fanHyster;
 }
 
+void shiftLight()
+{
+  if ((currentStatus.RPM > (configPage1.shiftLightRev * 100)) && !shiftLightOn)
+  { shiftLightOn = true;
+    digitalWrite(pinShiftLight,1);
+  }
+  else if (((currentStatus.RPM - SHIFTLIGHT_THRESHOLD) < (configPage1.shiftLightRev * 100)) && shiftLightOn)
+  { shiftLightOn = false;
+    digitalWrite(pinShiftLight,0);
+  }
+
+}
+
 void fanControl(byte fanCtrl)
 {
   switch (fanCtrl) {
