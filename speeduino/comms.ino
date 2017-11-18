@@ -162,7 +162,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.10");
+      Serial.print("Speeduino 2017.11-dev");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
