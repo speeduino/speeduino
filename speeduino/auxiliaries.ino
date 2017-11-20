@@ -14,20 +14,73 @@ void initialiseFan()
 {
   if( configPage3.fanInv == 1 ) { fanHIGH = LOW; fanLOW = HIGH; }
   else { fanHIGH = HIGH; fanLOW = LOW; }
-  digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
-  currentStatus.fanOn = false;
+  digitalWrite(pinFan, fanLOW);
+  digitalWrite(pinFanHighSpeed,fanLOW); //Initiallise program with the fan in the off state
+  currentStatus.fanStatus = 0;
+
+  onTemp = (int)configPage3.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
+  offTemp = onTemp - configPage3.fanHyster;
+
+  onTempHighSpeed  = (int)configPage3.fanSecondSP - CALIBRATION_TEMPERATURE_OFFSET;
+  offTempHighSpeed = onTempHighSpeed - configPage3.fanHyster;
 }
 
-void fanControl()
+void shiftLight()
 {
-  if( configPage3.fanEnable == 1 )
-  {
-    int onTemp = (int)configPage3.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
-    int offTemp = onTemp - configPage3.fanHyster;
-
-    if ( (!currentStatus.fanOn) && (currentStatus.coolant >= onTemp) ) { digitalWrite(pinFan,fanHIGH); currentStatus.fanOn = true; }
-    if ( (currentStatus.fanOn) && (currentStatus.coolant <= offTemp) ) { digitalWrite(pinFan, fanLOW); currentStatus.fanOn = false; }
+  if ((currentStatus.RPM > (configPage1.shiftLightRev * 100)) && !shiftLightOn)
+  { shiftLightOn = true;
+    digitalWrite(pinShiftLight,1);
   }
+  else if (((currentStatus.RPM - SHIFTLIGHT_THRESHOLD) < (configPage1.shiftLightRev * 100)) && shiftLightOn)
+  { shiftLightOn = false;
+    digitalWrite(pinShiftLight,0);
+  }
+
+}
+
+void fanControl(byte fanCtrl)
+{
+  switch (fanCtrl) {
+    case 1:
+    if(currentStatus.coolant >= onTemp && !fanON  && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)))
+    {
+    fanON = true;
+     currentStatus.fanStatus = 1;
+     digitalWrite(pinFan,fanHIGH);
+    }
+
+    else if((currentStatus.coolant <= offTemp && fanON) || (BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && fanON))
+    {
+      fanON = false;
+      currentStatus.fanStatus = 0;
+      digitalWrite(pinFan,fanLOW);
+    }
+    break;
+
+    case 2:
+    fanControl(1);
+
+    if(currentStatus.coolant >= onTempHighSpeed && !fan2ON && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)))
+    {
+     fan2ON = true;
+     currentStatus.fanStatus = 2;
+     digitalWrite(pinFanHighSpeed,fanHIGH);
+    }
+
+    else if((currentStatus.coolant <= offTempHighSpeed && fan2ON) || (BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && fan2ON))
+    {
+      fan2ON = false;
+      currentStatus.fanStatus = 1;
+      digitalWrite(pinFanHighSpeed,fanLOW);
+
+    }
+    break;
+
+    case 3:
+    //Pwm fan
+    break;
+
+   }
 }
 
 void initialiseAuxPWM()
