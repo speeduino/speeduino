@@ -20,3 +20,4 @@ reference/hardware/v0.4/gerbers/Archive.zip
 .build
 speeduino/comms.h
 speeduino/comms.h
+.vscode/c_cpp_properties.json
