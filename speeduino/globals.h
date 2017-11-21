@@ -152,13 +152,14 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 //const byte page_size = 64;
-const int16_t npage_size[11] = {0,288,128,288,128,288,128,160,192,128,192};
+const int16_t npage_size[11] = {0,288,128,288,128,288,128,240,192,128,192};
 //const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
 struct table3D fuelTable; //16x16 fuel map
 struct table3D ignitionTable; //16x16 ignition map
 struct table3D afrTable; //16x16 afr target map
+struct table3D stagingTable; //8x8 fuel staging table
 struct table3D boostTable; //8x8 boost map
 struct table3D vvtTable; //8x8 vvt map
 struct table3D trim1Table; //6x6 Fuel trim 1 map
@@ -621,7 +622,9 @@ struct config11 {
   byte crankingEnrichValues[4];
 
   byte rotaryType : 2;
-  byte unused11_8c : 6;
+  byte stagingEnabled : 1;
+  byte stagingMode : 1;
+  byte unused11_8e : 4;
 
   byte rotarySplitValues[8];
   byte rotarySplitBins[8];
@@ -701,6 +704,7 @@ extern struct statuses currentStatus; // from speeduino.ino
 extern struct table3D fuelTable; //16x16 fuel map
 extern struct table3D ignitionTable; //16x16 ignition map
 extern struct table3D afrTable; //16x16 afr target map
+extern struct table3D stagingTable; //8x8 afr target map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)

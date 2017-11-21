@@ -8,7 +8,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    6
+  #define CURRENT_DATA_VERSION    7
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -74,6 +74,21 @@ void doUpdates()
     }
 
     EEPROM.write(EEPROM_DATA_VERSION, 6);
+    loadConfig(); //Reload the config after changing everything in EEPROM
+  }
+  //November 2017 added the staging table that comes after boost and vvt in the EEPROM. This required multiple pieces of data being moved around
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 6)
+  {
+    //Data after page 8 has to move back 82 bytes
+    for(int x=0; x < 529; x++)
+    {
+      int endMem = EEPROM_CONFIG11_END - x;
+      int startMem = endMem - 82; //
+      byte currentVal = EEPROM.read(startMem);
+      EEPROM.update(endMem, currentVal);
+    }
+
+    EEPROM.write(EEPROM_DATA_VERSION, 7);
     loadConfig(); //Reload the config after changing everything in EEPROM
   }
 
