@@ -18,3 +18,5 @@ reference/hardware/v0.4/gerbers/Archive.zip
 .project
 .vscode
 .build
+speeduino/comms.h
+speeduino/comms.h

@@ -3,6 +3,8 @@
 //These are the page numbers that the Tuner Studio serial protocol uses to transverse the different map and config pages.
 #define veMapPage    1
 
+#define CAN_PACKET_SIZE   75
+
 uint8_t currentcanCommand;
 uint8_t currentCanPage = 1;//Not the same as the speeduino config page numbers
 uint8_t nCanretry = 0;      //no of retrys
@@ -26,6 +28,6 @@ uint8_t Glow, Ghigh;
 
 void canCommand();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
 void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum);
-void sendCancommand(uint8_t cmdtype , uint16_t canadddress, uint8_t candata1, uint8_t candata2, uint16_t paramgroup);
+void sendCancommand(uint8_t cmdtype , uint16_t canadddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress);
 
 #endif // CANCOMMS_H

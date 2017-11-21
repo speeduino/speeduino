@@ -18,27 +18,27 @@ void canCommand()
   switch (currentcanCommand)
   {
     case 'A': // sends the bytes of realtime values
-        sendcanValues(0, packetSize,0x30,1); //send values to serial3
+        sendcanValues(0, CAN_PACKET_SIZE, 0x30, 1); //send values to serial3
         break;
 
     case 'G': // this is the reply command sent by the Can interface
        byte destcaninchannel;
-      if (CANSerial.available() >= 10)
+      if (CANSerial.available() >= 9)
       {
-        cancmdfail = CANSerial.read();
-        destcaninchannel = CANSerial.read();
+        cancmdfail = CANSerial.read();        //0 == fail,  1 == good.
+        destcaninchannel = CANSerial.read();  // the input channel that requested the data value
         if (cancmdfail != 0)
            {                                 // read all 8 bytes of data.
             for (byte Gx = 0; Gx < 8; Gx++) // first two are the can address the data is from. next two are the can address the data is for.then next 1 or two bytes of data
               {
                 Gdata[Gx] = CANSerial.read();
               }
-            Glow = Gdata[(configPage10.caninput_param_start_byte[destcaninchannel]&7)];
-            if ((BIT_CHECK(configPage10.caninput_param_num_bytes,destcaninchannel)))  //if true then num bytes is 2
+            Glow = Gdata[(configPage10.caninput_source_start_byte[destcaninchannel]&7)];
+            if ((BIT_CHECK(configPage10.caninput_source_num_bytes,destcaninchannel)))  //if true then num bytes is 2
                {
-                if ((configPage10.caninput_param_start_byte[destcaninchannel]&7) < 8)   //you cant have a 2 byte value starting at byte 7(8 on the list)
+                if ((configPage10.caninput_source_start_byte[destcaninchannel]&7) < 8)   //you cant have a 2 byte value starting at byte 7(8 on the list)
                    {
-                    Ghigh = Gdata[((configPage10.caninput_param_start_byte[destcaninchannel]&7)+1)];
+                    Ghigh = Gdata[((configPage10.caninput_source_start_byte[destcaninchannel]&7)+1)];
                    }
             else{Ghigh = 0;}
                }
@@ -52,14 +52,6 @@ void canCommand()
 
         else{}  //continue as command request failed and/or data/device was not available
 
-        if (currentStatus.current_caninchannel < 15)     // if channel is < 15 then we can do another one
-           {
-            currentStatus.current_caninchannel++;       //inc to next channel
-           }
-        else
-           {
-            currentStatus.current_caninchannel = 0;      //reset to start
-           }
       }
         break;
 
@@ -135,7 +127,7 @@ void canCommand()
 }
 void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portType)
 {
-  byte fullStatus[packetSize];
+  byte fullStatus[CAN_PACKET_SIZE];
 
     //CAN serial
     #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)|| defined(CORE_STM32) || defined (CORE_TEENSY) //ATmega2561 does not have Serial3
@@ -253,7 +245,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 
 
 // this routine sends a request(either "0" for a "G" , "1" for a "L" , "2" for a "R" to the Can interface or "3" sends the request via the actual local canbus
-void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t paramgroup)
+void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress)
 {
     switch (cmdtype)
     {
@@ -272,8 +264,8 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
      case 2:                                          // requests via serial3
         CANSerial.print("R");                         //send "R" to request data from the parmagroup can address whos value is sent next
         CANSerial.write(candata1);                    //the currentStatus.current_caninchannel
-        CANSerial.write(lowByte(paramgroup) );       //send lsb first
-        CANSerial.write(highByte(paramgroup) );
+        CANSerial.write(lowByte(sourcecanAddress) );       //send lsb first
+        CANSerial.write(highByte(sourcecanAddress) );
         break;
 
      case 3:

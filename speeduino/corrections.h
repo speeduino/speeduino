@@ -11,7 +11,7 @@ static inline byte correctionsFuel() __attribute__((always_inline));
 static inline byte correctionWUE() __attribute__((always_inline)); //Warmup enrichment
 static inline byte correctionCranking() __attribute__((always_inline)); //Cranking enrichment
 static inline byte correctionASE() __attribute__((always_inline)); //After Start Enrichment
-static inline byte correctionAccel() __attribute__((always_inline)); //Acceleration Enrichment
+static inline int16_t correctionAccel() __attribute__((always_inline)); //Acceleration Enrichment
 static inline byte correctionFloodClear() __attribute__((always_inline)); //Check for flood clear on cranking
 static inline byte correctionAFRClosedLoop() __attribute__((always_inline)); //Closed loop AFR adjustment
 static inline byte correctionFlex() __attribute__((always_inline)); //Flex fuel adjustment
@@ -30,5 +30,7 @@ static inline int8_t correctionSoftLaunch(int8_t);
 static inline int8_t correctionSoftFlatShift(int8_t);
 
 uint16_t correctionsDwell(uint16_t dwell);
+
+uint16_t AFRnextCycle;
 
 #endif // CORRECTIONS_H

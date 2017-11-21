@@ -131,6 +131,9 @@
 #define EVEN_FIRE         0
 #define ODD_FIRE          1
 
+#define EGO_ALGORITHM_SIMPLE  0
+#define EGO_ALGORITHM_PID     2
+
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 
@@ -149,13 +152,14 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 //const byte page_size = 64;
-const int16_t npage_size[11] = {0,288,128,288,128,288,128,160,192,128,192};
+const int16_t npage_size[11] = {0,288,128,288,128,288,128,240,192,128,192};
 //const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
 struct table3D fuelTable; //16x16 fuel map
 struct table3D ignitionTable; //16x16 ignition map
 struct table3D afrTable; //16x16 afr target map
+struct table3D stagingTable; //8x8 fuel staging table
 struct table3D boostTable; //8x8 boost map
 struct table3D vvtTable; //8x8 vvt map
 struct table3D trim1Table; //6x6 Fuel trim 1 map
@@ -254,7 +258,7 @@ struct statuses {
   byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
   int8_t advance; //Signed 8 bit as advance can now go negative (ATDC)
   byte corrections;
-  byte TAEamount; //The amount of accleration enrichment currently being applied
+  int16_t TAEamount; //The amount of accleration enrichment currently being applied
   byte egoCorrection; //The amount of closed loop AFR enrichment currently being applied
   byte wueCorrection; //The amount of warmup enrichment currently being applied
   byte batCorrection; //The amount of battery voltage enrichment currently being applied
@@ -477,7 +481,7 @@ struct config3 {
   byte egoKD;
   byte egoTemp; //The temperature above which closed loop functions
   byte egoCount; //The number of ignition cylces per step
-  byte egoDelta; //The step size (In %) when using simple algorithm
+  byte unused6_6;
   byte egoLimit; //Maximum amount the closed loop will vary the fueling
   byte ego_min; //AFR must be above this for closed loop to function
   byte ego_max; //AFR must be below this for closed loop to function
@@ -545,7 +549,7 @@ struct config3 {
 
   byte fanInv : 1;        // Fan output inversion bit
   byte fanEnable : 1;     // Fan enable bit. 0=Off, 1=On/Off
-  byte fanPin : 5;
+  byte fanPin : 6;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
@@ -562,9 +566,9 @@ struct config10 {
   byte enable_canbus:2;
   byte enable_candata_in:1;
   uint16_t caninput_sel;                    //bit status on/off if input is enabled
-  uint16_t caninput_param_group[16];        //u16 [15] array holding can address of input
-  uint8_t caninput_param_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)
-  uint16_t caninput_param_num_bytes;     //u16 bit status of the number of bytes length 1 or 2
+  uint16_t caninput_source_can_address[16];        //u16 [15] array holding can address of input
+  uint8_t caninput_source_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)
+  uint16_t caninput_source_num_bytes;     //u16 bit status of the number of bytes length 1 or 2
   byte unused10_53;
   byte unused10_54;
   byte enable_candata_out : 1;
@@ -617,7 +621,9 @@ struct config11 {
   byte crankingEnrichValues[4];
 
   byte rotaryType : 2;
-  byte unused11_8c : 6;
+  byte stagingEnabled : 1;
+  byte stagingMode : 1;
+  byte unused11_8e : 4;
 
   byte rotarySplitValues[8];
   byte rotarySplitBins[8];
@@ -697,6 +703,7 @@ extern struct statuses currentStatus; // from speeduino.ino
 extern struct table3D fuelTable; //16x16 fuel map
 extern struct table3D ignitionTable; //16x16 ignition map
 extern struct table3D afrTable; //16x16 afr target map
+extern struct table3D stagingTable; //8x8 afr target map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
@@ -707,7 +714,7 @@ extern struct config10 configPage10;
 extern struct config11 configPage11;
 extern unsigned long currentLoopTime; //The time the current loop started (uS)
 extern unsigned long previousLoopTime; //The time the previous loop started (uS)
-extern byte ignitionCount;
+volatile uint16_t ignitionCount; //The count of ignition events that have taken place since the engine started
 extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];

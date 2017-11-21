@@ -19,7 +19,7 @@ void command()
   {
 
     case 'A': // send x bytes of realtime values
-      sendValues(0, packetSize,0x30, 0);   //send values to serial0
+      sendValues(0, SERIAL_PACKET_SIZE, 0x30, 0);   //send values to serial0
       break;
 
 
@@ -132,7 +132,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201710-dev");
+      Serial.print("speeduino 201711-dev");
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -162,7 +162,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.10-dev");
+      Serial.print("Speeduino 2017.11-dev");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -223,8 +223,8 @@ void command()
         //7 bytes required:
         //2 - Page identifier
         //2 - offset
-        //2 - Length (Should always be 1 until chunk write is setup)
-        //1 - New value
+        //2 - Length
+        //1 - 1st New value
         if(Serial.available() >= 7)
         {
           byte offset1, offset2, length1, length2;
@@ -337,7 +337,7 @@ This function returns the current values of a fixed group of variables
 //void sendValues(int packetlength, byte portNum)
 void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 {
-  byte fullStatus[packetSize];
+  byte fullStatus[SERIAL_PACKET_SIZE];
 
   if (portNum == 3)
   {
@@ -378,7 +378,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[13] = currentStatus.wueCorrection; //Warmup enrichment (%)
   fullStatus[14] = lowByte(currentStatus.RPM); //rpm HB
   fullStatus[15] = highByte(currentStatus.RPM); //rpm LB
-  fullStatus[16] = currentStatus.TAEamount; //acceleration enrichment (%)
+  fullStatus[16] = (byte)(currentStatus.TAEamount >> 1); //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
   fullStatus[17] = currentStatus.corrections; //Total GammaE (%)
   fullStatus[18] = currentStatus.VE; //Current VE 1 (%)
   fullStatus[19] = currentStatus.afrTarget;
@@ -564,7 +564,7 @@ void receiveValue(int valueOffset, byte newValue)
       }
       break;
 
-    case boostvvtPage: //Boost and VVT maps (8x8)
+    case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
       if (valueOffset < 64) //New value is part of the boost map
       {
         boostTable.values[7 - (valueOffset / 8)][valueOffset % 8] = newValue;
@@ -577,6 +577,7 @@ void receiveValue(int valueOffset, byte newValue)
       {
         boostTable.axisY[(7 - (valueOffset - 72))] = int(newValue); //TABLE_LOAD_MULTIPLIER is NOT used for boost as it is TPS based (0-100)
       }
+      //End of boost table
       else if (valueOffset < 144) //New value is part of the vvt map
       {
         tempOffset = valueOffset - 80;
@@ -587,10 +588,26 @@ void receiveValue(int valueOffset, byte newValue)
         tempOffset = valueOffset - 144;
         vvtTable.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       }
-      else if (valueOffset < 161) //New value is on the Y (Load) axis of the vvt table
+      else if (valueOffset < 160) //New value is on the Y (Load) axis of the vvt table
       {
         tempOffset = valueOffset - 152;
         vvtTable.axisY[(7 - tempOffset)] = int(newValue); //TABLE_LOAD_MULTIPLIER is NOT used for vvt as it is TPS based (0-100)
+      }
+      //End of vvt table
+      else if (valueOffset < 224) //New value is part of the staging map
+      {
+        tempOffset = valueOffset - 160;
+        stagingTable.values[7 - (tempOffset / 8)][tempOffset % 8] = newValue;
+      }
+      else if (valueOffset < 232) //New value is on the X (RPM) axis of the staging table
+      {
+        tempOffset = valueOffset - 224;
+        stagingTable.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+      }
+      else if (valueOffset < 240) //New value is on the Y (Load) axis of the staging table
+      {
+        tempOffset = valueOffset - 232;
+        stagingTable.axisY[(7 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER;
       }
       break;
 
@@ -850,17 +867,23 @@ void sendPage(bool useChar)
         else
         {
           //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
-          byte response[160]; //Bit hacky, but the size is: (8x8 + 8 + 8) + (8x8 + 8 + 8) = 160
+          byte response[80]; //Bit hacky, but send 1 map at a time (Each map is 8x8, so 64 + 8 + 8)
 
           //Boost table
           for (int x = 0; x < 64; x++) { response[x] = boostTable.values[7 - (x / 8)][x % 8]; }
           for (int x = 64; x < 72; x++) { response[x] = byte(boostTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
           for (int y = 72; y < 80; y++) { response[y] = byte(boostTable.axisY[7 - (y - 72)]); }
+          Serial.write((byte *)&response, 80);
           //VVT table
-          for (int x = 0; x < 64; x++) { response[x + 80] = vvtTable.values[7 - (x / 8)][x % 8]; }
-          for (int x = 64; x < 72; x++) { response[x + 80] = byte(vvtTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
-          for (int y = 72; y < 80; y++) { response[y + 80] = byte(vvtTable.axisY[7 - (y - 72)]); }
-          Serial.write((byte *)&response, sizeof(response));
+          for (int x = 0; x < 64; x++) { response[x] = vvtTable.values[7 - (x / 8)][x % 8]; }
+          for (int x = 64; x < 72; x++) { response[x] = byte(vvtTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
+          for (int y = 72; y < 80; y++) { response[y] = byte(vvtTable.axisY[7 - (y - 72)]); }
+          Serial.write((byte *)&response, 80);
+          //Staging table
+          for (int x = 0; x < 64; x++) { response[x] = stagingTable.values[7 - (x / 8)][x % 8]; }
+          for (int x = 64; x < 72; x++) { response[x] = byte(stagingTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
+          for (int y = 72; y < 80; y++) { response[y] = byte(stagingTable.axisY[7 - (y - 72)] / TABLE_LOAD_MULTIPLIER); }
+          Serial.write((byte *)&response, 80);
           sendComplete = true;
         }
         break;
@@ -1124,13 +1147,21 @@ byte getPageValue(byte page, uint16_t valueAddress)
             else if(valueAddress < 72) { returnValue = byte(boostTable.axisX[(valueAddress - 64)] / TABLE_RPM_MULTIPLIER); }
             else if(valueAddress < 80) { returnValue = byte(boostTable.axisY[7 - (valueAddress - 72)]); }
           }
-          else
+          else if(valueAddress < 160)
           {
             tempAddress = valueAddress - 80;
             //VVT table
             if(tempAddress < 64) { returnValue = vvtTable.values[7 - (tempAddress / 8)][tempAddress % 8]; }
             else if(tempAddress < 72) { returnValue = byte(vvtTable.axisX[(tempAddress - 64)] / TABLE_RPM_MULTIPLIER); }
             else if(tempAddress < 80) { returnValue = byte(vvtTable.axisY[7 - (tempAddress - 72)]); }
+          }
+          else
+          {
+            tempAddress = valueAddress - 160;
+            //Staging table
+            if(tempAddress < 64) { returnValue = stagingTable.values[7 - (tempAddress / 8)][tempAddress % 8]; }
+            else if(tempAddress < 72) { returnValue = byte(stagingTable.axisX[(tempAddress - 64)] / TABLE_RPM_MULTIPLIER); }
+            else if(tempAddress < 80) { returnValue = byte(stagingTable.axisY[7 - (tempAddress - 72)] / TABLE_LOAD_MULTIPLIER); }
           }
         }
         break;
