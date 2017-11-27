@@ -393,8 +393,11 @@ static inline void disableIdle()
   }
   else if ( (configPage3.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage3.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
   {
-    digitalWrite(pinStepperEnable, HIGH); //Disable the DRV8825
-    idleStepper.targetIdleStep = idleStepper.curIdleStep; //Don't try to move anymore
+    if( isStepperHomed() == true )
+    {
+      digitalWrite(pinStepperEnable, HIGH); //Disable the DRV8825
+      idleStepper.targetIdleStep = idleStepper.curIdleStep; //Don't try to move anymore
+    }
   }
 }
 
