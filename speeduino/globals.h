@@ -395,7 +395,10 @@ struct config1 {
   byte iacCLmaxDuty;
   byte boostMinDuty;
 
-  byte unused1_64[64];
+  int8_t baroMin; //Must be signed
+  uint16_t baroMax;
+
+  byte unused1_64[61];
 
 #if defined(CORE_AVR)
   };
