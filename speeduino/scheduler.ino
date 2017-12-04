@@ -444,6 +444,8 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
 static inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
 {
   if( (ignitionSchedule1.Status == RUNNING) && (timeToEnd < ignitionSchedule1.duration) )
+  //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
+  //if( (timeToEnd < ignitionSchedule1.duration) && (timeToEnd > IGNITION_REFRESH_THRESHOLD) )
   {
     noInterrupts();
     ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeToEnd);
@@ -570,7 +572,7 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
 //If the startCallback function is called, we put the scheduler into RUNNING state
 //Timer3A (fuel schedule 1) Compare Vector
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER3_COMPA_vect, ISR_NOBLOCK) //fuelSchedules 1 and 5
+ISR(TIMER3_COMPA_vect) //fuelSchedules 1 and 5
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
@@ -607,7 +609,7 @@ static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a f
   }
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER3_COMPB_vect, ISR_NOBLOCK) //fuelSchedule2
+ISR(TIMER3_COMPB_vect) //fuelSchedule2
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
@@ -642,7 +644,7 @@ static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a f
   }
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER3_COMPC_vect, ISR_NOBLOCK) //fuelSchedule3
+ISR(TIMER3_COMPC_vect) //fuelSchedule3
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
@@ -679,7 +681,7 @@ static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a f
   }
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER4_COMPB_vect, ISR_NOBLOCK) //fuelSchedule4
+ISR(TIMER4_COMPB_vect) //fuelSchedule4
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
@@ -724,6 +726,20 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
       ignitionSchedule1.startTime = micros();
       IGN1_COMPARE = ignitionSchedule1.endCompare;
     }
+      /*
+      //This code is all to do with the staged ignition timing testing. That is, calling this interrupt slightly before the true ignition point and recalculating the end time for more accuracy
+      IGN1_COMPARE = ignitionSchedule1.endCompare - 20;
+      ignitionSchedule1.Status = STAGED;
+    }
+    else if (ignitionSchedule1.Status == STAGED)
+    {
+      int16_t crankAngle = getCrankAngle(timePerDegree);
+      if(ignition1EndAngle > crankAngle)
+      { IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( (ignition1EndAngle - crankAngle) * timePerDegree ); }
+      else { IGN1_COMPARE = ignitionSchedule1.endCompare; }
+
+      ignitionSchedule1.Status = RUNNING;
+    }*/
     else if (ignitionSchedule1.Status == RUNNING)
     {
       ignitionSchedule1.EndCallback();

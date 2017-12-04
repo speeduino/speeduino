@@ -25,7 +25,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-
+#define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
 #if defined(CORE_AVR)
   #include <avr/interrupt.h>
   #include <avr/io.h>
@@ -298,7 +298,7 @@ static inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute
   static inline void ignitionSchedule5Interrupt();
 #endif
 
-enum ScheduleStatus {OFF, PENDING, RUNNING}; //The 3 statuses that a schedule can have
+enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The 3 statuses that a schedule can have
 
 struct Schedule {
   volatile unsigned long duration;
