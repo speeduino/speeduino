@@ -22,14 +22,14 @@ inline void endTrailingCoilCharge1();
 inline void endTrailingCoilCharge2();
 
 
-#define openInjector1() *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ1)
-#define closeInjector1() *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ1)
-#define openInjector2() *inj2_pin_port |= (inj2_pin_mask); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ2)
-#define closeInjector2() *inj2_pin_port &= ~(inj2_pin_mask);  BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ2)
-#define openInjector3() *inj3_pin_port |= (inj3_pin_mask); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ3)
-#define closeInjector3() *inj3_pin_port &= ~(inj3_pin_mask);  BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ3)
-#define openInjector4() *inj4_pin_port |= (inj4_pin_mask); BIT_SET(currentStatus.squirt, BIT_SQUIRT_INJ4)
-#define closeInjector4() *inj4_pin_port &= ~(inj4_pin_mask);  BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_INJ4)
+#define openInjector1() *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1)
+#define closeInjector1() *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1)
+#define openInjector2() *inj2_pin_port |= (inj2_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ2)
+#define closeInjector2() *inj2_pin_port &= ~(inj2_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ2)
+#define openInjector3() *inj3_pin_port |= (inj3_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ3)
+#define closeInjector3() *inj3_pin_port &= ~(inj3_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ3)
+#define openInjector4() *inj4_pin_port |= (inj4_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ4)
+#define closeInjector4() *inj4_pin_port &= ~(inj4_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ4)
 #define openInjector5() *inj5_pin_port |= (inj5_pin_mask)
 #define closeInjector5() *inj5_pin_port &= ~(inj5_pin_mask)
 

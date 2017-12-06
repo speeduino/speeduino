@@ -53,6 +53,7 @@ void setPinMapping(byte boardID)
   switch (boardID)
   {
     case 0:
+    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the v0.1 shield
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on
@@ -79,8 +80,10 @@ void setPinMapping(byte boardID)
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
       pinFlex = 19; // Flex sensor (Must be external interrupt enabled)
+    #endif
       break;
     case 1:
+    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the v0.2 shield
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on
@@ -110,7 +113,9 @@ void setPinMapping(byte boardID)
       pinFuelPump = 4; //Fuel pump output
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       break;
+    #endif
     case 2:
+    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the v0.3 shield
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on
@@ -155,6 +160,7 @@ void setPinMapping(byte boardID)
         pinCoil3 = 30;
         pinO2 = A22;
       #endif
+    #endif
       break;
 
     case 3:
@@ -313,6 +319,7 @@ void setPinMapping(byte boardID)
       break;
 
     case 10:
+    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings for user turtanas PCB
       pinInjector1 = 4; //Output pin injector 1 is on
       pinInjector2 = 5; //Output pin injector 2 is on
@@ -344,9 +351,11 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinTachOut = 49; //Tacho output pin
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+    #endif
       break;
 
     case 20:
+    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the Plazomat In/Out shields Rev 0.1
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on
@@ -377,9 +386,11 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
+    #endif
       break;
 
     case 30:
+    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the dazv6 shield
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on
@@ -416,9 +427,51 @@ void setPinMapping(byte boardID)
       pinSpareLOut4 = 51;
       pinSpareLOut5 = 53;
       pinFan = 47; //Pin for the fan output
+    #endif
+      break;
+
+    case 40:
+      //Pin mappings as per the NO2C shield
+      pinInjector1 = 8; //Output pin injector 1 is on
+      pinInjector2 = 9; //Output pin injector 2 is on
+      pinInjector3 = 11; //Output pin injector 3 is on - NOT USED
+      pinInjector4 = 12; //Output pin injector 4 is on - NOT USED
+      pinInjector5 = 13; //Placeholder only - NOT USED
+      pinCoil1 = 23; //Pin for coil 1
+      pinCoil2 = 22; //Pin for coil 2
+      pinCoil3 = 2; //Pin for coil 3 - ONLY WITH DB2
+      pinCoil4 = 3; //Pin for coil 4 - ONLY WITH DB2
+      pinCoil5 = 46; //Placeholder only - NOT USED
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinTPS = A3; //TPS input pin
+      pinMAP = A0; //MAP sensor pin
+      pinIAT = A5; //IAT sensor pin
+      pinCLT = A4; //CLT sensor pin
+      pinO2 = A2; //O2 sensor pin
+      pinBat = A1; //Battery reference voltage pin
+      pinBaro = A6; //Baro sensor pin - ONLY WITH DB
+      pinSpareTemp1 = A7; //spare Analog input 1 - ONLY WITH DB
+      pinDisplayReset = 48; // OLED reset pin - NOT USED
+      pinTachOut = 38; //Tacho output pin
+      pinIdle1 = 5; //Single wire idle control
+      pinIdle2 = 47; //2 wire idle control - NOT USED
+      pinBoost = 7; //Boost control
+      pinVVT_1 = 6; //Default VVT output
+      pinFuelPump = 4; //Fuel pump output
+      pinStepperDir = 25; //Direction pin for DRV8825 driver
+      pinStepperStep = 24; //Step pin for DRV8825 driver
+      pinStepperEnable = 27; //Enable pin for DRV8825 driver
+      pinLaunch = 10; //Can be overwritten below
+      pinFlex = 20; // Flex sensor (Must be external interrupt enabled) - ONLY WITH DB
+      pinFan = 30; //Pin for the fan output - ONLY WITH DB
+      pinSpareLOut1 = 32; //low current output spare1 - ONLY WITH DB
+      pinSpareLOut2 = 34; //low current output spare2 - ONLY WITH DB
+      pinSpareLOut3 = 36; //low current output spare3 - ONLY WITH DB
       break;
 
     default:
+    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the v0.2 shield
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on
@@ -447,6 +500,7 @@ void setPinMapping(byte boardID)
       pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
       pinBoost = 5;
       pinIdle1 = 6;
+    #endif
       break;
   }
 
@@ -833,67 +887,4 @@ void initialiseTriggers()
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       break;
   }
-}
-/*
-  This function retuns a pulsewidth time (in us) using a either Alpha-N or Speed Density algorithms, given the following:
-  REQ_FUEL
-  VE: Lookup from the main MAP vs RPM fuel table
-  MAP: In KPa, read from the sensor
-  GammaE: Sum of Enrichment factors (Cold start, acceleration). This is a multiplication factor (Eg to add 10%, this should be 110)
-  injDT: Injector dead time. The time the injector take to open minus the time it takes to close (Both in uS)
-  TPS: Throttle position (0% to 100%)
-
-  This function is called by PW_SD and PW_AN for speed0density and pure Alpha-N calculations respectively.
-*/
-unsigned int PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
-{
-  //Standard float version of the calculation
-  //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
-  //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
-  uint16_t iVE, iCorrections;
-  uint16_t iMAP = 100;
-  uint16_t iAFR = 147;
-
-  //100% float free version, does sacrifice a little bit of accuracy, but not much.
-  iVE = ((unsigned int)VE << 7) / 100;
-  if ( configPage1.multiplyMAP == true ) {
-    iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
-  }
-  if ( (configPage1.includeAFR == true) && (configPage3.egoType == 2)) {
-    iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
-  }
-  iCorrections = (corrections << 7) / 100;
-
-
-  unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
-  if ( configPage1.multiplyMAP == true ) {
-    intermediate = (intermediate * (unsigned long)iMAP) >> 7;
-  }
-  if ( (configPage1.includeAFR == true) && (configPage3.egoType == 2) ) {
-    intermediate = (intermediate * (unsigned long)iAFR) >> 7;  //EGO type must be set to wideband for this to be used
-  }
-  intermediate = (intermediate * (unsigned long)iCorrections) >> 7;
-  if (intermediate != 0)
-  {
-    //If intermeditate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
-    intermediate += injOpen; //Add the injector opening time
-    if ( intermediate > 65535)
-    {
-      intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
-    }
-  }
-  return (unsigned int)(intermediate);
-
-}
-
-//Convenience functions for Speed Density and Alpha-N
-unsigned int PW_SD(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
-{
-  return PW(REQ_FUEL, VE, MAP, corrections, injOpen);
-  //return PW(REQ_FUEL, VE, 100, corrections, injOpen);
-}
-
-unsigned int PW_AN(int REQ_FUEL, byte VE, byte TPS, int corrections, int injOpen)
-{
-  return PW(REQ_FUEL, VE, currentStatus.MAP, corrections, injOpen);
 }

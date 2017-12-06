@@ -77,7 +77,8 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A) //Turn off this output compare unit
   #define IGN5_TIMER_DISABLE() TIMSK1 &= ~(1 << OCIE1C) //Turn off this output compare unit
 
-  #define MAX_TIMER_PERIOD 262140 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
+  #define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
+  #define MAX_TIMER_PERIOD_SLOW 1048560UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 16, as each timer tick is 16uS)
   #define uS_TO_TIMER_COMPARE(uS1) (uS1 >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
   //This is a hack until I make all the AVR timers run at the same speed
   #define uS_TO_TIMER_COMPARE_SLOW(uS1) (uS1 >> 4)
@@ -157,12 +158,14 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN8_TIMER_DISABLE() FTM3_C7SC &= ~FTM_CSC_CHIE
 
   #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
+  #define MAX_TIMER_PERIOD_SLOW 139808
   #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
   //Hack compatibility with AVR timers that run at different speeds
   #define uS_TO_TIMER_COMPARE_SLOW(uS) ((uS * 15) >> 5)
 
 #elif defined(CORE_STM32)
   #define MAX_TIMER_PERIOD 131070 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
+  #define MAX_TIMER_PERIOD_SLOW 131070 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
   #define uS_TO_TIMER_COMPARE(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
   #define uS_TO_TIMER_COMPARE_SLOW(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
   #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
@@ -278,6 +281,8 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
 void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+
+static inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 
 //Needed for STM32 interrupt handlers
 #if defined(CORE_STM32)

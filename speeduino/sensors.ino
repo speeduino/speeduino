@@ -50,7 +50,7 @@ void initialiseADC()
   MAPrunningValue = 0;
 }
 
-void instanteneousMAPReading()
+static inline void instanteneousMAPReading()
 {
   unsigned int tempReading;
   //Instantaneous MAP readings
@@ -73,7 +73,7 @@ void instanteneousMAPReading()
 
 }
 
-void readMAP()
+static inline void readMAP()
 {
   unsigned int tempReading;
   //MAP Sampling system
@@ -121,7 +121,6 @@ void readMAP()
             if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
           }
           else { instanteneousMAPReading(); }
-          
           MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
           MAPrunningValue = 0;
           MAPcount = 0;
@@ -229,7 +228,7 @@ void readBaro()
 
     currentStatus.baroADC = ADC_FILTER(tempReading, ADCFILTER_BARO, currentStatus.baroADC); //Very weak filter
 
-    currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+    currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage1.baroMin, configPage1.baroMax); //Get the current MAP value
   }
 }
 

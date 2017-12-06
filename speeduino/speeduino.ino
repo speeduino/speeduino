@@ -17,14 +17,9 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-//**************************************************************************************************
-// Config section
-#define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
-//**************************************************************************************************
-
-//https://developer.mbed.org/handbook/C-Data-Types
-#include <stdint.h>
+#include <stdint.h> //https://developer.mbed.org/handbook/C-Data-Types
 //************************************************
+#include "speeduino.h"
 #include "globals.h"
 #include "utils.h"
 #include "table.h"
@@ -92,7 +87,6 @@ static byte fanLOW = LOW;               // Used to invert the cooling fan output
 volatile uint16_t mainLoopCount;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
-byte ignitionCount;
 byte maxIgnOutputs = 1; //Used for rolling rev limiter
 byte curRollingCut = 0; //Rolling rev limiter, current ignition channel being cut
 uint16_t fixedCrankingOverride = 0;
@@ -139,6 +133,7 @@ void setup()
   table3D_setSize(&fuelTable, 16);
   table3D_setSize(&ignitionTable, 16);
   table3D_setSize(&afrTable, 16);
+  table3D_setSize(&stagingTable, 8);
   table3D_setSize(&boostTable, 8);
   table3D_setSize(&vvtTable, 8);
   table3D_setSize(&trim1Table, 6);
@@ -304,7 +299,6 @@ void setup()
   currentLoopTime = micros();
 
   mainLoopCount = 0;
-  ignitionCount = 0;
 
   //Calculate the number of degrees between cylinders
   switch (configPage1.nCylinders) {
@@ -698,6 +692,8 @@ void loop()
       MAPcurRev = 0;
       MAPcount = 0;
       currentStatus.rpmDOT = 0;
+      AFRnextCycle = 0;
+      ignitionCount = 0;
       ignitionOn = false;
       fuelOn = false;
       if (fpPrimed == true) { digitalWrite(pinFuelPump, LOW); fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete
@@ -748,26 +744,26 @@ void loop()
         {
           case 1:
             BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-            BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+            BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
             break;
           case 2:
-            BIT_SET(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+            BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
             BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
             break;
           case 3:
             BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-            BIT_SET(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+            BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
             break;
         }
       }
       else
       {
         BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-        BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT);
+        BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
       }
 
       //And check whether the tooth log buffer is ready
-      if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY); }
+      if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
 
 
     }
@@ -792,56 +788,45 @@ void loop()
        if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-      //if Can interface is enabled then check for serial3 requests.
-      if (configPage10.enable_canbus == 1)  // megas only support can via secondary serial
+      //if Can interface is enabled then check for external data requests.
+      if (configPage10.enable_candata_in)     //if external data input is enabled
           {
-            if (configPage10.enable_candata_in)
+            if (configPage10.enable_canbus == 1)  // megas only support can via secondary serial
               {
-                if (BIT_CHECK(configPage10.caninput_sel,currentStatus.current_caninchannel))  //if current input channel bit is enabled
+               for (byte caninChan = 0; caninChan <16 ; caninChan++)
                   {
-                    sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage10.caninput_param_group[currentStatus.current_caninchannel]&2047)+256));    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
-                  }
-                else
-                  {
-                    if (currentStatus.current_caninchannel < 15)
-                        {
-                          currentStatus.current_caninchannel++;   //step to next input channel if under 15
-                        }
-                    else
-                        {
-                          currentStatus.current_caninchannel = 0;   //reset input channel back to 1
-                        }
+                   currentStatus.current_caninchannel = caninChan;
+                   //currentStatus.canin[14] = currentStatus.current_caninchannel;
+                   currentStatus.canin[13]  = ((configPage10.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100);
+                   if (BIT_CHECK(configPage10.caninput_sel,currentStatus.current_caninchannel))  //if current input channel bit is enabled
+                     {
+                      sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage10.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100));
+                       //send an R command for data from caninput_source_address[currentStatus.current_caninchannel]
+                     }
                   }
               }
           }
+
 #elif defined(CORE_STM32) || defined(CORE_TEENSY)
       //if serial3io is enabled then check for serial3 requests.
-            if (configPage10.enable_candata_in)
+      if (configPage10.enable_candata_in)
+          {
+           for (byte caninChan = 0; caninChan <16 ; caninChan++)
               {
+                currentStatus.current_caninchannel == caninChan;
                 if (BIT_CHECK(configPage10.caninput_sel,currentStatus.current_caninchannel))  //if current input channel is enabled
                   {
                     if (configPage10.enable_canbus == 1)  //can via secondary serial
-                    {
-                      sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage10.caninput_param_group[currentStatus.current_caninchannel]&2047)+256));    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
-                    }
-                    else if (configPage10.enable_canbus == 2) // can via internal can module
-                    {
-                      sendCancommand(3,configPage10.speeduino_tsCanId,currentStatus.current_caninchannel,0,configPage10.caninput_param_group[currentStatus.current_caninchannel]);    //send via localcanbus the command for data from paramgroup[currentStatus.current_caninchannel]
-                    }
-                  }
-                else
-                  {
-                    if (currentStatus.current_caninchannel < 15)
-                        {
-                          currentStatus.current_caninchannel++;   //step to next input channel if under 15
-                        }
-                    else
-                        {
-                          currentStatus.current_caninchannel = 0;   //reset input channel back to 0
-                        }
+                      {
+                        sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage10.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+256));    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
+                      }
+               else if (configPage10.enable_canbus == 2) // can via internal can module
+                      {
+                        sendCancommand(3,configPage10.speeduino_tsCanId,currentStatus.current_caninchannel,0,configPage10.caninput_source_can_address[currentStatus.current_caninchannel]);    //send via localcanbus the command for data from paramgroup[currentStatus.current_caninchannel]
+                      }
                   }
               }
-
+          }
 #endif
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
@@ -888,17 +873,16 @@ void loop()
       {
         //Speed Density
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-        currentStatus.PW1 = PW_SD(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
         currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.MAP, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
       }
       else
       {
         //Alpha-N
         currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
-        currentStatus.PW1 = PW_AN(req_fuel_uS, currentStatus.VE, currentStatus.TPS, currentStatus.corrections, inj_opentime_uS); //Calculate pulsewidth using the Alpha-N algorithm (in uS)
         currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
       }
 
+      currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
       currentStatus.advance = correctionsIgn(currentStatus.advance);
 
       int injector1StartAngle = 0;
@@ -1200,7 +1184,7 @@ void loop()
       int crankAngle = getCrankAngle(timePerDegree);
       if (crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle -= 360; }
 
-      if (fuelOn && currentStatus.PW1 > 0 && !BIT_CHECK(currentStatus.squirt, BIT_SQUIRT_BOOSTCUT))
+      if (fuelOn && currentStatus.PW1 > 0 && !BIT_CHECK(currentStatus.status1, BIT_STATUS1_BOOSTCUT))
       {
         if ( (injector1StartAngle <= crankAngle) && (fuelSchedule1.Status == RUNNING) ) { injector1StartAngle += CRANK_ANGLE_MAX_INJ; }
         if (injector1StartAngle > crankAngle)
@@ -1298,7 +1282,7 @@ void loop()
       //Likewise for the ignition
 
       //fixedCrankingOverride is used to extend the dwell during cranking so that the decoder can trigger the spark upon seeing a certain tooth. Currently only available on the basic distributor and 4g63 decoders.
-      if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) { fixedCrankingOverride = currentStatus.dwell * 3; }
+      if ( configPage2.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (decoderHasFixedCrankingTiming == true) ) { fixedCrankingOverride = currentStatus.dwell * 3; }
       else { fixedCrankingOverride = 0; }
 
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
@@ -1334,6 +1318,13 @@ void loop()
                       ign1EndFunction
                       );
         }
+        /*
+        if(ignition1EndAngle > crankAngle && configPage2.StgCycles == 0)
+        {
+          unsigned long uSToEnd = degreesToUS( (ignition1EndAngle - crankAngle) );
+          refreshIgnitionSchedule1( uSToEnd + fixedCrankingOverride );
+        }
+        */
 
         tempCrankAngle = crankAngle - channel2IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
@@ -1421,3 +1412,51 @@ void loop()
       } //Ignition schedules on
     } //Has sync and RPM
 } //loop()
+
+/*
+  This function retuns a pulsewidth time (in us) given the following:
+  REQ_FUEL
+  VE: Lookup from the main fuel table. This can either have been MAP or TPS based, depending on the algorithm used
+  MAP: In KPa, read from the sensor (This is used when performing a multiply of the map only. It is applicable in both Speed density and Alpha-N)
+  GammaE: Sum of Enrichment factors (Cold start, acceleration). This is a multiplication factor (Eg to add 10%, this should be 110)
+  injDT: Injector dead time. The time the injector take to open minus the time it takes to close (Both in uS)
+*/
+static inline unsigned int PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
+{
+  //Standard float version of the calculation
+  //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
+  //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
+  uint16_t iVE, iCorrections;
+  uint16_t iMAP = 100;
+  uint16_t iAFR = 147;
+
+  //100% float free version, does sacrifice a little bit of accuracy, but not much.
+  iVE = ((unsigned int)VE << 7) / 100;
+  if ( configPage1.multiplyMAP == true ) {
+    iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
+  }
+  if ( (configPage1.includeAFR == true) && (configPage3.egoType == 2)) {
+    iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+  }
+  iCorrections = (corrections << 7) / 100;
+
+
+  unsigned long intermediate = ((long)REQ_FUEL * (long)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
+  if ( configPage1.multiplyMAP == true ) {
+    intermediate = (intermediate * (unsigned long)iMAP) >> 7;
+  }
+  if ( (configPage1.includeAFR == true) && (configPage3.egoType == 2) ) {
+    intermediate = (intermediate * (unsigned long)iAFR) >> 7;  //EGO type must be set to wideband for this to be used
+  }
+  intermediate = (intermediate * (unsigned long)iCorrections) >> 7;
+  if (intermediate != 0)
+  {
+    //If intermeditate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
+    intermediate += injOpen; //Add the injector opening time
+    if ( intermediate > 65535)
+    {
+      intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
+    }
+  }
+  return (unsigned int)(intermediate);
+}

@@ -212,8 +212,11 @@ void writeConfig(byte tableNum)
       if(EEPROM.read(EEPROM_CONFIG8_YSIZE1) != boostTable.ySize) { EEPROM.write(EEPROM_CONFIG8_YSIZE1,boostTable.ySize); writeCounter++; } //Write the boost Table MAP/TPS dimension size
       if(EEPROM.read(EEPROM_CONFIG8_XSIZE2) != vvtTable.xSize) { EEPROM.write(EEPROM_CONFIG8_XSIZE2,vvtTable.xSize); writeCounter++; } //Write the vvt Table RPM dimension size
       if(EEPROM.read(EEPROM_CONFIG8_YSIZE2) != vvtTable.ySize) { EEPROM.write(EEPROM_CONFIG8_YSIZE2,vvtTable.ySize); writeCounter++; } //Write the vvt Table MAP/TPS dimension size
+      if(EEPROM.read(EEPROM_CONFIG8_XSIZE3) != stagingTable.xSize) { EEPROM.write(EEPROM_CONFIG8_XSIZE3,stagingTable.xSize); writeCounter++; } //Write the staging Table RPM dimension size
+      if(EEPROM.read(EEPROM_CONFIG8_YSIZE3) != stagingTable.ySize) { EEPROM.write(EEPROM_CONFIG8_YSIZE3,stagingTable.ySize); writeCounter++; } //Write the staging Table MAP/TPS dimension size
 
-      y = EEPROM_CONFIG8_MAP2; //We do the 2 maps together in the same loop
+      y = EEPROM_CONFIG8_MAP2; //We do the 3 maps together in the same loop
+      z = EEPROM_CONFIG8_MAP3;
       for(int x=EEPROM_CONFIG8_MAP1; x<EEPROM_CONFIG8_XBINS1; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
@@ -221,10 +224,14 @@ void writeConfig(byte tableNum)
         if(EEPROM.read(x) != (boostTable.values[7-(offset/8)][offset%8]) ) { EEPROM.write(x, boostTable.values[7-(offset/8)][offset%8]); writeCounter++; }  //Write the 8x8 map
         offset = y - EEPROM_CONFIG8_MAP2;
         if(EEPROM.read(y) != (vvtTable.values[7-(offset/8)][offset%8]) ) { EEPROM.write(y, vvtTable.values[7-(offset/8)][offset%8]); writeCounter++; }  //Write the 8x8 map
+        offset = z - EEPROM_CONFIG8_MAP3;
+        if(EEPROM.read(z) != (stagingTable.values[7-(offset/8)][offset%8]) ) { EEPROM.write(z, stagingTable.values[7-(offset/8)][offset%8]); writeCounter++; }  //Write the 8x8 map
         y++;
+        z++;
       }
       //RPM bins
       y = EEPROM_CONFIG8_XBINS2;
+      z = EEPROM_CONFIG8_XBINS3;
       for(int x=EEPROM_CONFIG8_XBINS1; x<EEPROM_CONFIG8_YBINS1; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
@@ -232,10 +239,14 @@ void writeConfig(byte tableNum)
         if(EEPROM.read(x) != byte(boostTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(boostTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
         offset = y - EEPROM_CONFIG8_XBINS2;
         if(EEPROM.read(y) != byte(vvtTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(y, byte(vvtTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+        offset = z - EEPROM_CONFIG8_XBINS3;
+        if(EEPROM.read(z) != byte(stagingTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(z, byte(stagingTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
         y++;
+        z++;
       }
       //TPS/MAP bins
       y=EEPROM_CONFIG8_YBINS2;
+      z=EEPROM_CONFIG8_YBINS3;
       for(int x=EEPROM_CONFIG8_YBINS1; x<EEPROM_CONFIG8_XSIZE2; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
@@ -243,7 +254,10 @@ void writeConfig(byte tableNum)
         if(EEPROM.read(x) != boostTable.axisY[offset]) { EEPROM.write(x, boostTable.axisY[offset]); writeCounter++; } //TABLE_LOAD_MULTIPLIER is NOT used for boost as it is TPS based (0-100)
         offset = y - EEPROM_CONFIG8_YBINS2;
         if(EEPROM.read(y) != vvtTable.axisY[offset]) { EEPROM.write(y, vvtTable.axisY[offset]); writeCounter++; } //TABLE_LOAD_MULTIPLIER is NOT used for VVT as it is TPS based (0-100)
+        offset = z - EEPROM_CONFIG8_YBINS3;
+        if(EEPROM.read(z) != byte(stagingTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)) { EEPROM.write(z, byte(stagingTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
         y++;
+        z++;
       }
 
       if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
@@ -468,41 +482,53 @@ void loadConfig()
   //*********************************************************************************************************************************************************************************
   // Boost and vvt tables load
   int y = EEPROM_CONFIG8_MAP2;
+  int z = EEPROM_CONFIG8_MAP3;
   for(int x=EEPROM_CONFIG8_MAP1; x<EEPROM_CONFIG8_XBINS1; x++)
   {
     offset = x - EEPROM_CONFIG8_MAP1;
     boostTable.values[7-(offset/8)][offset%8] = EEPROM.read(x); //Read the 8x8 map
     offset = y - EEPROM_CONFIG8_MAP2;
     vvtTable.values[7-(offset/8)][offset%8] = EEPROM.read(y); //Read the 8x8 map
+    offset = z - EEPROM_CONFIG8_MAP3;
+    stagingTable.values[7-(offset/8)][offset%8] = EEPROM.read(z); //Read the 8x8 map
     y++;
+    z++;
   }
 
   //RPM bins
   y = EEPROM_CONFIG8_XBINS2;
+  z = EEPROM_CONFIG8_XBINS3;
   for(int x=EEPROM_CONFIG8_XBINS1; x<EEPROM_CONFIG8_YBINS1; x++)
   {
     offset = x - EEPROM_CONFIG8_XBINS1;
     boostTable.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
     offset = y - EEPROM_CONFIG8_XBINS2;
     vvtTable.axisX[offset] = (EEPROM.read(y) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
+    offset = z - EEPROM_CONFIG8_XBINS3;
+    stagingTable.axisX[offset] = (EEPROM.read(z) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
     y++;
+    z++;
   }
 
   //TPS/MAP bins
   y = EEPROM_CONFIG8_YBINS2;
+  z = EEPROM_CONFIG8_YBINS3;
   for(int x=EEPROM_CONFIG8_YBINS1; x<EEPROM_CONFIG8_XSIZE2; x++)
   {
     offset = x - EEPROM_CONFIG8_YBINS1;
     boostTable.axisY[offset] = EEPROM.read(x); //TABLE_LOAD_MULTIPLIER is NOT used for boost as it is TPS based (0-100)
     offset = y - EEPROM_CONFIG8_YBINS2;
     vvtTable.axisY[offset] = EEPROM.read(y); //TABLE_LOAD_MULTIPLIER is NOT used for VVT as it is TPS based (0-100)
+    offset = z - EEPROM_CONFIG8_YBINS2;
+    stagingTable.axisY[offset] = EEPROM.read(z) * TABLE_LOAD_MULTIPLIER;
     y++;
+    z++;
   }
 
   //*********************************************************************************************************************************************************************************
   // Fuel trim tables load
   y = EEPROM_CONFIG9_MAP2;
-  int z = EEPROM_CONFIG9_MAP3;
+  z = EEPROM_CONFIG9_MAP3;
   int i = EEPROM_CONFIG9_MAP4;
   for(int x=EEPROM_CONFIG9_MAP1; x<EEPROM_CONFIG9_XBINS1; x++)
   {

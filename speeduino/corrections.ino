@@ -23,13 +23,15 @@ void initialiseCorrections()
 {
   egoPID.SetMode(AUTOMATIC); //Turn O2 PID on
   currentStatus.flexIgnCorrection = 0;
+  currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
+  AFRnextCycle = 0;
 }
 
 /*
 correctionsTotal() calls all the other corrections functions and combines their results.
 This is the only function that should be called from anywhere outside the file
 */
-byte correctionsFuel()
+static inline byte correctionsFuel()
 {
   unsigned long sumCorrections = 100;
   byte activeCorrections = 0;
@@ -73,8 +75,8 @@ byte correctionsFuel()
   currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
 
-  bitWrite(currentStatus.squirt, BIT_SQUIRT_DFCO, correctionDFCO());
-  if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) == 1 ) { sumCorrections = 0; }
+  bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
+  if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
   sumCorrections = sumCorrections / powint(100,activeCorrections);
 
@@ -148,10 +150,11 @@ static inline byte correctionASE()
 TPS based acceleration enrichment
 Calculates the % change of the throttle over time (%/second) and performs a lookup based on this
 When the enrichment is turned on, it runs at that amount for a fixed period of time (taeTime)
+Note that as the maximum enrichment amount is +255%, the overall return value from this function can be 100+255=355. Hence this function returns a int16_t rather than byte
 */
-static inline byte correctionAccel()
+static inline int16_t correctionAccel()
 {
-  byte accelValue = 100;
+  int16_t accelValue = 100;
   //First, check whether the accel. enrichment is already running
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
   {
@@ -264,7 +267,7 @@ static inline bool correctionDFCO()
   bool DFCOValue = false;
   if ( configPage1.dfcoEnabled == 1 )
   {
-    if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
+    if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
     else { DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage2.dfcoRPM * 10) + configPage2.dfcoHyster) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
   }
   return DFCOValue;
@@ -306,21 +309,23 @@ static inline byte correctionAFRClosedLoop()
   {
     currentStatus.afrTarget = currentStatus.O2; //Catch all incase the below doesn't run. This prevents the Include AFR option from doing crazy things if the AFR target conditions aren't met. This value is changed again below if all conditions are met.
 
-    //Check the ignition count to see whether the next step is required
-    //This if statement is the equivalent of ( (ignitionCount % configPage3.egoCount) == 0 ) but without the expensive modulus operation. ie It results in True every <egoCount> ignition loops. Note that it only works for power of two vlaues for egoCount
-    //if( (ignitionCount & (configPage3.egoCount - 1)) == 1 )
-    {
-      //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
-      byte yValue;
-      if (configPage1.algorithm == 0) { yValue = currentStatus.MAP; }
-      else  { yValue = currentStatus.TPS; }
-      currentStatus.afrTarget = get3DTableValue(&afrTable, yValue, currentStatus.RPM); //Perform the target lookup
+    //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
+    byte yValue;
+    if (configPage1.algorithm == 0) { yValue = currentStatus.MAP; }
+    else  { yValue = currentStatus.TPS; }
+    currentStatus.afrTarget = get3DTableValue(&afrTable, yValue, currentStatus.RPM); //Perform the target lookup
 
-      //Check all other requirements for closed loop adjustments
-      if( (currentStatus.coolant > (int)(configPage3.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage3.egoRPM * 100)) && (currentStatus.TPS < configPage3.egoTPSMax) && (currentStatus.O2 < configPage3.ego_max) && (currentStatus.O2 > configPage3.ego_min) && (currentStatus.runSecs > configPage3.ego_sdelay) )
+    //Check all other requirements for closed loop adjustments
+    if( (currentStatus.coolant > (int)(configPage3.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage3.egoRPM * 100)) && (currentStatus.TPS < configPage3.egoTPSMax) && (currentStatus.O2 < configPage3.ego_max) && (currentStatus.O2 > configPage3.ego_min) && (currentStatus.runSecs > configPage3.ego_sdelay) )
+    {
+      AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
+
+      if(ignitionCount >= AFRnextCycle)
       {
+        AFRnextCycle = ignitionCount + configPage3.egoCount; //Set the target ignition event for the next calculation
+
         //Check which algorithm is used, simple or PID
-        if (configPage3.egoAlgorithm == 0)
+        if (configPage3.egoAlgorithm == EGO_ALGORITHM_SIMPLE)
         {
           //*************************************************************************************************************************************
           //Simple algorithm
@@ -330,7 +335,7 @@ static inline byte correctionAFRClosedLoop()
             if(currentStatus.egoCorrection < (100 + configPage3.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
             {
               if(currentStatus.egoCorrection >= 100) { AFRValue = (currentStatus.egoCorrection + 1); } //Increase the fueling by 1%
-              else { AFRValue = 100; } //This means that the last reading had been rich, so simply return back to no adjustment (100%)
+              else { AFRValue += 1; } //This means that the last reading had been rich, so start counting back towards 100%
             }
             else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return then again
           }
@@ -339,11 +344,11 @@ static inline byte correctionAFRClosedLoop()
             if(currentStatus.egoCorrection > (100 - configPage3.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
             {
               if(currentStatus.egoCorrection <= 100) { AFRValue = (currentStatus.egoCorrection - 1); } //Increase the fueling by 1%
-              else { AFRValue = 100; } //This means that the last reading had been lean, so simply return back to no adjustment (100%)
+              else { AFRValue -= 1; } //This means that the last reading had been lean, so start count back towards 100%
             }
             else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return then again
         }
-        else if(configPage3.egoAlgorithm == 2)
+        else if(configPage3.egoAlgorithm == EGO_ALGORITHM_PID)
         {
           //*************************************************************************************************************************************
           //PID algorithm
@@ -357,9 +362,8 @@ static inline byte correctionAFRClosedLoop()
           AFRValue = 100 + PID_output;
         }
         else { AFRValue = 100; } // Occurs if the egoAlgorithm is set to 0 (No Correction)
-
-      } //Multi variable check
-    } //ignitionCount
+      } //Ignition count check
+    } //Multi variable check
   } //egoType
 
   return AFRValue; //Catch all (Includes when AFR target = current AFR
