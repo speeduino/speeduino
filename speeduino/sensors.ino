@@ -48,7 +48,7 @@ void initialiseADC()
   MAPrunningValue = 0;
 }
 
-static inline void instanteneousMAPReading()
+void instanteneousMAPReading()
 {
   unsigned int tempReading;
   //Instantaneous MAP readings
@@ -71,7 +71,7 @@ static inline void instanteneousMAPReading()
 
 }
 
-static inline void readMAP()
+void readMAP()
 {
   unsigned int tempReading;
   //MAP Sampling system
@@ -119,7 +119,7 @@ static inline void readMAP()
             if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
           }
           else { instanteneousMAPReading(); }
-
+          
           MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
           MAPrunningValue = 0;
           MAPcount = 0;
@@ -270,3 +270,10 @@ void flexPulse()
  {
    ++flexCounter;
  }
+
+ void readACReq()
+ {
+  if ((digitalRead(26) == HIGH) && (digitalRead(28) == HIGH)) {currentStatus.AcReq = true;} //pin 26 is AC Request, pin 28 is a combined pressure/temp signal that is high when the A/C compressor can be activated
+  else {currentStatus.AcReq = false;}
+ }
+

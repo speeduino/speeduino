@@ -166,7 +166,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     {
        fanControl();            // Fucntion to turn the cooling fan on/off
     }
-
+    ACControl();
     //Check whether fuel pump priming is complete
     if(fpPrimed == false)
     {
@@ -215,7 +215,17 @@ void oneMSInterval() //Most ARM chips can simply call a function
       if (currentStatus.ethanolPct == 1) { currentStatus.ethanolPct = 0; }
 
     }
+    //high idle function
+    if ((currentStatus.TPS > 5) && (currentStatus.RPM > 950)){currentStatus.highIdleReq = true;} // increases idle value to evade stalling when coming down from high load
+     else {currentStatus.highIdleReq = false;}
 
+    //DFCO wait time
+    if ( ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ) ) 
+    {
+      currentStatus.DFCOcounter++;
+      if (currentStatus.DFCOcounter > 2 ) {currentStatus.DFCOwait = true;}
+    }
+    else {currentStatus.DFCOwait = false; currentStatus.DFCOcounter = 0;}
   }
 #if defined(CORE_AVR) //AVR chips use the ISR for this
     //Reset Timer2 to trigger in another ~1ms

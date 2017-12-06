@@ -231,12 +231,13 @@ void setup()
   closeInjector5();
 
   //Set the tacho output default state
-  digitalWrite(pinTachOut, HIGH);
+  digitalWrite(pinTachOut, LOW);
   //Perform all initialisations
   initialiseSchedulers();
   //initialiseDisplay();
   initialiseIdle();
   initialiseFan();
+  initialiseAC();
   initialiseAuxPWM();
   initialiseCorrections();
   initialiseADC();
@@ -806,18 +807,18 @@ void loop()
        readIAT();
        readO2();
        readBat();
-
+       readACReq();
        if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
       //if Can interface is enabled then check for external data requests.
       if (configPage10.enable_candata_in)     //if external data input is enabled
-          {
+          {            
             if (configPage10.enable_canbus == 1)  // megas only support can via secondary serial
               {
                for (byte caninChan = 0; caninChan <16 ; caninChan++)
                   {
-                   currentStatus.current_caninchannel = caninChan;
+                   currentStatus.current_caninchannel = caninChan; 
                    //currentStatus.canin[14] = currentStatus.current_caninchannel;
                    currentStatus.canin[13]  = ((configPage10.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100);
                    if (BIT_CHECK(configPage10.caninput_sel,currentStatus.current_caninchannel))  //if current input channel bit is enabled
@@ -828,7 +829,7 @@ void loop()
                   }
               }
           }
-
+          
 #elif defined(CORE_STM32) || defined(CORE_TEENSY)
       //if serial3io is enabled then check for serial3 requests.
       if (configPage10.enable_candata_in)
@@ -840,11 +841,11 @@ void loop()
                   {
                     if (configPage10.enable_canbus == 1)  //can via secondary serial
                       {
-                        sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage10.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+256));    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
-                      }
+                        sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage10.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+256));    //send an R command for data from paramgroup[currentStatus.current_caninchannel]                    
+                      }    
                else if (configPage10.enable_canbus == 2) // can via internal can module
-                      {
-                        sendCancommand(3,configPage10.speeduino_tsCanId,currentStatus.current_caninchannel,0,configPage10.caninput_source_can_address[currentStatus.current_caninchannel]);    //send via localcanbus the command for data from paramgroup[currentStatus.current_caninchannel]
+                      {                      
+                        sendCancommand(3,configPage10.speeduino_tsCanId,currentStatus.current_caninchannel,0,configPage10.caninput_source_can_address[currentStatus.current_caninchannel]);    //send via localcanbus the command for data from paramgroup[currentStatus.current_caninchannel]                       
                       }
                   }
               }
@@ -1340,13 +1341,11 @@ void loop()
                       ign1EndFunction
                       );
         }
-        /*
         if(ignition1EndAngle > crankAngle && configPage2.StgCycles == 0)
         {
           unsigned long uSToEnd = degreesToUS( (ignition1EndAngle - crankAngle) );
-          refreshIgnitionSchedule1( uSToEnd + fixedCrankingOverride );
+          //refreshIgnitionSchedule1( uSToEnd + fixedCrankingOverride );
         }
-        */
 
         tempCrankAngle = crankAngle - channel2IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
