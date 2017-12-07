@@ -51,6 +51,8 @@ struct config10 configPage10;
 struct config11 configPage11;
 
 int req_fuel_uS, inj_opentime_uS;
+uint16_t staged_req_fuel_mult_pri;
+uint16_t staged_req_fuel_mult_sec;
 
 bool ignitionOn = false; //The current state of the ignition system
 bool fuelOn = false; //The current state of the ignition system
@@ -281,6 +283,23 @@ void setup()
   req_fuel_uS = configPage1.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations
   inj_opentime_uS = configPage1.injOpen * 100; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155).
 
+  if(configPage11.stagingEnabled == true)
+  {
+    uint32_t totalInjector = configPage11.stagedInjSizePri + configPage11.stagedInjSizeSec;
+    /*
+      These values are a percentage of the req_fuel value that would be required for each injector channel to deliver that much fuel.
+      Eg:
+      Pri injectors are 250cc
+      Sec injectors are 500cc
+      Total injector capacity = 750cc
+
+      staged_req_fuel_mult_pri = 300% (The primary injectors would have to run 3x the overall PW in order to be the equivalent of the full 750cc capacity
+      staged_req_fuel_mult_sec = 150% (The secondary injectors would have to run 1.5x the overall PW in order to be the equivalent of the full 750cc capacity
+    */
+    staged_req_fuel_mult_pri = (100 * totalInjector) / configPage11.stagedInjSizePri;
+    staged_req_fuel_mult_sec = (100 * totalInjector) / configPage11.stagedInjSizeSec;
+  }
+
   //Begin the main crank trigger interrupt pin setup
   //The interrupt numbering is a bit odd - See here for reference: http://arduino.cc/en/Reference/AttachInterrupt
   //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly.
@@ -432,6 +451,16 @@ void setup()
         req_fuel_uS = req_fuel_uS * 2;
       }
       if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+
+      //Check if injector staging is enabled
+      if(configPage11.stagingEnabled == true)
+      {
+        channel3InjEnabled = true;
+        channel4InjEnabled = true;
+
+        channel3InjDegrees = channel1InjDegrees;
+        channel4InjDegrees = channel2InjDegrees;
+      }
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
