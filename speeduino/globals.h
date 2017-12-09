@@ -638,7 +638,8 @@ struct config11 {
   byte boostIntv;
   uint16_t stagedInjSizePri;
   uint16_t stagedInjSizeSec;
-  byte unused11_28_192[160];
+  byte lnchCtrlTPS;
+  byte unused11_28_192[159];
 
 #if defined(CORE_AVR)
   };
