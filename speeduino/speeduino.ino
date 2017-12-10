@@ -50,7 +50,7 @@ struct config3 configPage3;
 struct config10 configPage10;
 struct config11 configPage11;
 
-int req_fuel_uS, inj_opentime_uS;
+uint16_t req_fuel_uS, inj_opentime_uS;
 uint16_t staged_req_fuel_mult_pri;
 uint16_t staged_req_fuel_mult_sec;
 
@@ -1433,19 +1433,7 @@ void loop()
                         );
             }
         }
-        /*
-        if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && configPage2.StgCycles == 0)
-        //if( (ignitionSchedule1.Status == RUNNING) && (configPage2.StgCycles == 0 ) )
-        {
-          unsigned long uSToEnd = 0;
-          //if(ignition1EndAngle > crankAngle) { uSToEnd = fastDegreesToUS( (ignition1EndAngle - crankAngle) ); }
-          //else { uSToEnd = fastDegreesToUS( (360 + ignition1EndAngle - crankAngle) ); }
-          uSToEnd = fastDegreesToUS( (ignition1EndAngle - crankAngle) );
-          //uSToEnd = ((ignition1EndAngle - crankAngle) * (toothLastToothTime - toothLastMinusOneToothTime)) / triggerToothAngle;
 
-          refreshIgnitionSchedule1( uSToEnd + fixedCrankingOverride );
-        }
-        */
 
 
 

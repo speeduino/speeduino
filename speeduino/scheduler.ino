@@ -727,7 +727,7 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
       IGN1_COMPARE = ignitionSchedule1.endCompare;
     }
       /*
-      //This code is all to do with the staged ignition timing testing. That is, calling this interrupt slightly before the true ignition point and recalculating the end time for more accuracy
+      This code is all to do with the staged ignition timing testing. That is, calling this interrupt slightly before the true ignition point and recalculating the end time for more accuracy
       IGN1_COMPARE = ignitionSchedule1.endCompare - 20;
       ignitionSchedule1.Status = STAGED;
     }
