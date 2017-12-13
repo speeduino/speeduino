@@ -6,6 +6,7 @@ unsigned long percentage(byte, unsigned long);
 
 //#define degreesToUS(degrees) (decoderIsLowRes == true ) ? ((degrees * 166666UL) / currentStatus.RPM) : (degrees * (unsigned long)timePerDegree)
 #define degreesToUS(degrees) ((degrees * revolutionTime) / 360)
+#define fastDegreesToUS(degrees) (degrees * (unsigned long)timePerDegree)
 //#define degreesToUS(degrees) ((degrees * revolutionTime * 3054198967ULL) >> 40) //Fast version of divide by 360
 //#define degreesToUS(degrees) (degrees * (unsigned long)timePerDegree)
 

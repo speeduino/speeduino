@@ -132,7 +132,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201711-dev");
+      Serial.print("speeduino 201711");
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -162,7 +162,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.11-dev");
+      Serial.print("Speeduino 2017.11");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -450,6 +450,13 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 
   fullStatus[73] = currentStatus.tpsADC;
   fullStatus[74] = getNextError();
+
+  fullStatus[75] = lowByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[76] = highByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[77] = lowByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[78] = highByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[79] = lowByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[80] = highByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
 
   for(byte x=0; x<packetLength; x++)
   {

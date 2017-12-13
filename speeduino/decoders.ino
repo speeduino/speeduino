@@ -173,6 +173,7 @@ void triggerPri_missingTooth()
            triggerFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
            toothLastMinusOneToothTime = toothLastToothTime;
            toothLastToothTime = curTime;
+           triggerToothAngleIsCorrect = false; //The tooth angle is double at this point
          }
        }
        else
@@ -181,6 +182,7 @@ void triggerPri_missingTooth()
          setFilter(curGap);
          toothLastMinusOneToothTime = toothLastToothTime;
          toothLastToothTime = curTime;
+         triggerToothAngleIsCorrect = true;
        }
      }
 
@@ -238,6 +240,7 @@ int getCrankAngle_missingTooth(int timePerDegree)
     //crankAngle += DIV_ROUND_CLOSEST(elapsedTime, timePerDegree);
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
+    //crankAngle += uSToDegrees(elapsedTime);
 
     //Sequential check (simply sets whether we're on the first or 2nd revoltuion of the cycle)
     if (tempRevolutionOne) { crankAngle += 360; }
@@ -289,6 +292,7 @@ void triggerSetup_DualWheel()
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   secondDerivEnabled = false;
   decoderIsSequential = true;
+  triggerToothAngleIsCorrect = true; //This is always true for this pattern
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 }
 
@@ -437,6 +441,7 @@ void triggerSetup_BasicDistributor()
   decoderIsSequential = false;
   toothCurrentCount = 0; //Default value
   decoderHasFixedCrankingTiming = true;
+  triggerToothAngleIsCorrect = true;
   if(configPage1.nCylinders <= 4) { MAX_STALL_TIME = (1851UL * triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
   else { MAX_STALL_TIME = (3200UL * triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
 
@@ -648,6 +653,7 @@ void triggerSetup_4G63()
   secondDerivEnabled = false;
   decoderIsSequential = true;
   decoderHasFixedCrankingTiming = true;
+  triggerToothAngleIsCorrect = true;
   MAX_STALL_TIME = 366667UL; //Minimum 50rpm based on the 110 degree tooth spacing
   if(initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
   //decoderIsLowRes = true;
@@ -1167,6 +1173,7 @@ void triggerSetup_Audi135()
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   secondDerivEnabled = false;
   decoderIsSequential = true;
+  triggerToothAngleIsCorrect = true;
 }
 
 void triggerPri_Audi135()
@@ -1408,6 +1415,7 @@ void triggerSetup_Miata9905()
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
   triggerSecFilterTime = 0; //Need to figure out something better for this
   decoderHasFixedCrankingTiming = true;
+  triggerToothAngleIsCorrect = true;
 }
 
 void triggerPri_Miata9905()
