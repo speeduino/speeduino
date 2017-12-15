@@ -868,6 +868,21 @@ void initialiseTriggers()
             // attachInterrupt(triggerInterrupt2, triggerSec_Harley, FALLING);
             break;
 
+    case 16:
+            //36-2-2-2
+            triggerSetup_ThirtySixMinus222();
+            trigger = triggerPri_ThirtySixMinus222;
+            triggerSecondary = triggerSec_ThirtySixMinus222;
+            getRPM = getRPM_ThirtySixMinus222;
+            getCrankAngle = getCrankAngle_ThirtySixMinus222;
+            triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus222;
+
+            if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+            else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+            if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSecondary, RISING); }
+            else { attachInterrupt(triggerInterrupt2, triggerSecondary, FALLING); }
+            break;
+
     default:
       trigger = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;
