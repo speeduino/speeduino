@@ -23,6 +23,7 @@ volatile byte loop33ms;
 volatile byte loop66ms;
 volatile byte loop100ms;
 volatile byte loop250ms;
+volatile byte loopCLT; //used for software PWM on XRS pnp ECU
 volatile int loopSec;
 
 volatile unsigned int dwellLimit_uS;

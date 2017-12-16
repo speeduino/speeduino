@@ -95,6 +95,8 @@ uint16_t fixedCrankingOverride = 0;
 int16_t lastAdvance; //Stores the previous advance figure to track changes.
 bool clutchTrigger;
 bool previousClutchTrigger;
+bool gaugeSweep = true;
+
 
 unsigned long secCounter; //The next time to incremen 'runSecs' counter.
 int channel1IgnDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
@@ -670,6 +672,18 @@ void setup()
 
 void loop()
 {
+	//sweep tacho gauge for cool points
+      if ((mainLoopCount > 30) && (mainLoopCount < 300) && (gaugeSweep))
+      {
+        tone(pinTachOut, mainLoopCount);
+        analogWrite(2,  138);
+      }
+      else if ((mainLoopCount > 5001) && (mainLoopCount < 5005))
+      {
+        noTone(pinTachOut);
+        digitalWrite(2, LOW);
+        gaugeSweep = false;
+      }
       mainLoopCount++;
       LOOP_TIMER = TIMER_mask;
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
@@ -835,6 +849,7 @@ void loop()
        readIAT();
        readO2();
        readBat();
+       readACReq();
 
        if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
@@ -880,6 +895,7 @@ void loop()
           }
 #endif
        vvtControl();
+       vvlControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)

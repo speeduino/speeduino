@@ -266,12 +266,22 @@ struct statuses {
   byte wueCorrection; //The amount of warmup enrichment currently being applied
   byte batCorrection; //The amount of battery voltage enrichment currently being applied
   byte iatCorrection; //The amount of inlet air temperature adjustment currently being applied
+  byte vvlCorrection; // Amount of fuel added due to VVL
   byte launchCorrection; //The amount of correction being applied if launch control is active
   byte flexCorrection; //Amount of correction being applied to compensate for ethanol content
   byte flexIgnCorrection; //Amount of additional advance being applied based on flex
   byte afrTarget;
   byte idleDuty;
   bool fanOn; //Whether or not the fan is turned on
+  bool ACOn; //whether AC is on
+  bool AcReq; // AC request
+  bool highIdleReq; //raises idle in open loop to evade stalling
+  byte highIdleCount = 0;// counts to wait for normal idle
+  bool DFCOwait; // waits to enable DFCO
+  byte DFCOcounter = 0;// counts cycles till dfco
+  boolean coolantPulse = false;
+  int coolantGauge;
+  bool vvlOn = false;
   volatile byte ethanolPct; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85.
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte status1;
@@ -421,6 +431,7 @@ struct config2 {
   byte TrigEdge : 1;
   byte TrigSpeed : 1;
   byte IgInv : 1;
+
   byte TrigPattern : 5;
 
   byte TrigEdgeSec : 1;

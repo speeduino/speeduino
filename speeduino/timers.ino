@@ -56,6 +56,7 @@ void initialiseTimers()
   loop66ms = 0;
   loop100ms = 0;
   loop250ms = 0;
+
   loopSec = 0;
 }
 
@@ -74,6 +75,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
   loop66ms++;
   loop100ms++;
   loop250ms++;
+
   loopSec++;
 
   unsigned long targetOverdwellTime;
@@ -136,6 +138,26 @@ void oneMSInterval() //Most ARM chips can simply call a function
     #endif
   }
 
+   // Loop used in Toyota Corolla XRS to emulate a PWM at 2.4Hz
+  if (currentStatus.coolantPulse)
+  {
+      if (loopCLT == 135 + currentStatus.coolantGauge)
+    {
+      loopCLT = 0;
+      currentStatus.coolantPulse = !currentStatus.coolantPulse;
+      digitalWrite(2, currentStatus.coolantPulse);
+    }  
+  }
+  else
+  {
+    if (loopCLT == 135 - currentStatus.coolantGauge)
+    {
+      loopCLT = 0;
+      currentStatus.coolantPulse = !currentStatus.coolantPulse;
+      digitalWrite(2, currentStatus.coolantPulse); 
+    }
+  }
+
   //Loop executed every 1 second (1ms x 1000 = 1000ms)
   if (loopSec == 1000)
   {
@@ -166,6 +188,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     {
        fanControl();            // Fucntion to turn the cooling fan on/off
     }
+    ACControl();
 
     //Check whether fuel pump priming is complete
     if(fpPrimed == false)
@@ -216,6 +239,27 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
     }
 
+//high idle function
+    if ( ( currentStatus.RPM > 950 ) && ( currentStatus.TPS > 30 ) ) 
+    {
+      currentStatus.highIdleCount++;
+      if (currentStatus.highIdleCount <= 2 ) {currentStatus.highIdleReq = true;}
+    }
+    else {currentStatus.highIdleReq = false; currentStatus.highIdleCount = 0;}
+
+    //DFCO wait time
+    if ( ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ) ) 
+    {
+      currentStatus.DFCOcounter++;
+      if (currentStatus.DFCOcounter > 2 ) {currentStatus.DFCOwait = true;}
+    }
+    else {currentStatus.DFCOwait = false; currentStatus.DFCOcounter = 0;}
+
+    //Coolant gauge control
+    if (currentStatus.coolant < 40){ currentStatus.coolantGauge = -100;}
+    else if ((currentStatus.coolant >= 40) && (currentStatus.coolant < 60)){ currentStatus.coolantGauge = -60;}
+    else if ((currentStatus.coolant >= 60) && (currentStatus.coolant < 90)){ currentStatus.coolantGauge = 10;}
+    else if ((currentStatus.coolant >= 90) && (currentStatus.coolant < 110)){ currentStatus.coolantGauge = 85;}
   }
 #if defined(CORE_AVR) //AVR chips use the ISR for this
     //Reset Timer2 to trigger in another ~1ms

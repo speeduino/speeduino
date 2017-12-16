@@ -68,6 +68,11 @@ static inline byte correctionsFuel()
   if (currentStatus.iatCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.iatCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
+  currentStatus.vvlCorrection = correctionVVL();
+  if (currentStatus.vvlCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.vvlCorrection); activeCorrections++; }
+  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+
+
   currentStatus.flexCorrection = correctionFlex();
   if (currentStatus.flexCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.flexCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
@@ -247,6 +252,16 @@ static inline byte correctionIATDensity()
   return IATValue;
 }
 
+
+//Simple correction for when VVL is active
+
+static inline byte correctionVVL()
+{
+  byte VVLValue = 100;
+  if (currentStatus.vvlOn) { VVLValue = 107; } //Adds 7% fuel when VVL is active
+  return VVLValue;
+}
+
 /*
 Launch control has a setting to increase the fuel load to assist in bringing up boost
 This simple check applies the extra fuel if we're currently launching
@@ -267,8 +282,8 @@ static inline bool correctionDFCO()
   bool DFCOValue = false;
   if ( configPage1.dfcoEnabled == 1 )
   {
-    if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
-    else { DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage2.dfcoRPM * 10) + configPage2.dfcoHyster) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
+    if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ) && (currentStatus.DFCOwait); }
+    else { DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage2.dfcoRPM * 10) + configPage2.dfcoHyster) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ) && (currentStatus.DFCOwait); }
   }
   return DFCOValue;
 }
@@ -379,12 +394,32 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionSoftRevLimit(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
+  advance = correctionZeroThrottleTiming(advance);
 
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
   advance = correctionCrankingFixedTiming(advance); //This overrrides the regular fixed timing, must come last
 
   return advance;
+}
+
+static inline int8_t correctionZeroThrottleTiming(int8_t advance)
+{
+  byte ignZeroThrottleValue = advance;
+  if (currentStatus.TPS < 2) //Check whether TPS coorelates to zero value
+  {
+    if (currentStatus.RPM > 950) { ignZeroThrottleValue = -5;}
+    else if ((currentStatus.RPM > 900) && (currentStatus.RPM <= 950)) { ignZeroThrottleValue = -1;}
+    else if ((currentStatus.RPM > 860) && (currentStatus.RPM <= 900)) { ignZeroThrottleValue = 1;}
+    else if ((currentStatus.RPM > 800) && (currentStatus.RPM < 860)) { ignZeroThrottleValue = 3;}
+    else if ((currentStatus.RPM > 750) && (currentStatus.RPM <= 800)) { ignZeroThrottleValue = 5;}
+    else if ((currentStatus.RPM > 700) && (currentStatus.RPM <= 750)) { ignZeroThrottleValue = 7;}
+    else if ((currentStatus.RPM > 650) && (currentStatus.RPM <= 700)) { ignZeroThrottleValue = 10;}
+    else if (currentStatus.RPM <= 650) { ignZeroThrottleValue = 14;}
+    else {ignZeroThrottleValue = 10;}
+    if (currentStatus.ACOn == true) {ignZeroThrottleValue = ignZeroThrottleValue + 5;}
+  }
+  return ignZeroThrottleValue;
 }
 
 static inline int8_t correctionFixedTiming(int8_t advance)
@@ -493,5 +528,7 @@ uint16_t correctionsDwell(uint16_t dwell)
     //Possibly need some method of reducing spark duration here as well, but this is a start
     tempDwell = (revolutionTime / pulsesPerRevolution) - (configPage2.sparkDur * 100);
   }
+	//reduce dwell in WOT
+  if (currentStatus.TPS > 85){ tempDwell = (tempDwell - 1500);}
   return tempDwell;
 }
