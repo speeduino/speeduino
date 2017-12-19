@@ -873,8 +873,8 @@ void initialiseTriggers()
             triggerSetup_ThirtySixMinus222();
             trigger = triggerPri_ThirtySixMinus222;
             triggerSecondary = triggerSec_ThirtySixMinus222;
-            getRPM = getRPM_ThirtySixMinus222;
-            getCrankAngle = getCrankAngle_ThirtySixMinus222;
+            getRPM = getRPM_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
+            getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
             triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus222;
 
             if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
