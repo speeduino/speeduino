@@ -254,7 +254,7 @@ void idleControl()
 
     case IAC_ALGORITHM_STEP_OL:    //Case 4 is open loop stepper control
       //First thing to check is whether there is currently a step going on and if so, whether it needs to be turned off
-      if( isStepperHomed() && !checkForStepping() ) //Check that homing is complete and that there's not currently a step already taking place
+      if( (checkForStepping() == false) && (isStepperHomed() == true) ) //Check that homing is complete and that there's not currently a step already taking place. MUST BE IN THIS ORDER!
       {
         //Check for cranking pulsewidth
         if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
@@ -280,7 +280,7 @@ void idleControl()
 
     case IAC_ALGORITHM_STEP_CL://Case 5 is closed loop stepper control
       //First thing to check is whether there is currently a step going on and if so, whether it needs to be turned off
-      if( isStepperHomed() && !checkForStepping() ) //Check that homing is complete and that there's not currently a step already taking place
+      if( (checkForStepping() == false) && (isStepperHomed() == true) ) //Check that homing is complete and that there's not currently a step already taking place. MUST BE IN THIS ORDER!
       {
         if( (idleCounter & 31) == 1)
         {
@@ -317,6 +317,7 @@ static inline byte isStepperHomed()
   if( completedHomeSteps < (configPage3.iacStepHome * 3) ) //Home steps are divided by 3 from TS
   {
     digitalWrite(pinStepperDir, STEPPER_BACKWARD); //Sets stepper direction to backwards
+    digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
     digitalWrite(pinStepperStep, HIGH);
     idleStepper.stepStartTime = micros();
     idleStepper.stepperStatus = STEPPING;
@@ -392,8 +393,12 @@ static inline void disableIdle()
   }
   else if ( (configPage3.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage3.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
   {
-    digitalWrite(pinStepperEnable, HIGH); //Disable the DRV8825
-    idleStepper.targetIdleStep = idleStepper.curIdleStep; //Don't try to move anymore
+    //Only disable the stepper motor if homing is completed
+    if( isStepperHomed() == true )
+    {
+      digitalWrite(pinStepperEnable, HIGH); //Disable the DRV8825
+      idleStepper.targetIdleStep = idleStepper.curIdleStep; //Don't try to move anymore
+    }
   }
 }
 

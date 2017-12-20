@@ -134,6 +134,9 @@
 #define EGO_ALGORITHM_SIMPLE  0
 #define EGO_ALGORITHM_PID     2
 
+#define STAGING_MODE_TABLE  0
+#define STAGING_MODE_AUTO  1
+
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 
@@ -152,13 +155,14 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 //const byte page_size = 64;
-const int16_t npage_size[11] = {0,288,128,288,128,288,128,160,192,128,192};
+const int16_t npage_size[11] = {0,288,128,288,128,288,128,240,192,128,192};
 //const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
 struct table3D fuelTable; //16x16 fuel map
 struct table3D ignitionTable; //16x16 ignition map
 struct table3D afrTable; //16x16 afr target map
+struct table3D stagingTable; //8x8 fuel staging table
 struct table3D boostTable; //8x8 boost map
 struct table3D vvtTable; //8x8 vvt map
 struct table3D trim1Table; //6x6 Fuel trim 1 map
@@ -394,7 +398,10 @@ struct config1 {
   byte iacCLmaxDuty;
   byte boostMinDuty;
 
-  byte unused1_64[64];
+  int8_t baroMin; //Must be signed
+  uint16_t baroMax;
+
+  byte unused1_64[61];
 
 #if defined(CORE_AVR)
   };
@@ -414,8 +421,7 @@ struct config2 {
   byte TrigEdge : 1;
   byte TrigSpeed : 1;
   byte IgInv : 1;
-  byte unused4_5d : 1;
-  byte TrigPattern : 4;
+  byte TrigPattern : 5;
 
   byte TrigEdgeSec : 1;
   byte fuelPumpPin : 6;
@@ -621,14 +627,18 @@ struct config11 {
   byte crankingEnrichValues[4];
 
   byte rotaryType : 2;
-  byte unused11_8c : 6;
+  byte stagingEnabled : 1;
+  byte stagingMode : 1;
+  byte unused11_8e : 4;
 
   byte rotarySplitValues[8];
   byte rotarySplitBins[8];
 
   uint16_t boostSens;
   byte boostIntv;
-  byte unused11_28_192[164];
+  uint16_t stagedInjSizePri;
+  uint16_t stagedInjSizeSec;
+  byte unused11_28_192[160];
 
 #if defined(CORE_AVR)
   };
@@ -701,6 +711,7 @@ extern struct statuses currentStatus; // from speeduino.ino
 extern struct table3D fuelTable; //16x16 fuel map
 extern struct table3D ignitionTable; //16x16 ignition map
 extern struct table3D afrTable; //16x16 afr target map
+extern struct table3D stagingTable; //8x8 afr target map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
