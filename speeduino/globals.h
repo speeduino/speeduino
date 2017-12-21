@@ -428,7 +428,7 @@ struct config2 {
   byte useResync : 1;
 
   byte sparkDur; //Spark duration in ms * 10
-  byte unused4_8;
+  bool cam4minus1; //Mode for Missing tooth secondary trigger.  Either single tooth cam wheel or 4-1
   byte unused4_9;
   byte unused4_10;
   byte StgCycles; //The number of initial cycles before the ignition should fire when first cranking
@@ -727,5 +727,7 @@ extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
 
+// alias(es) for ease of code reading!!
+bool& cam4minus1 = configPage2.cam4minus1;
 
 #endif // GLOBALS_H

@@ -128,6 +128,7 @@ void triggerSetup_missingTooth()
   if(configPage2.TrigSpeed == 1) { triggerToothAngle = 720 / configPage2.triggerTeeth; } //Account for cam speed missing tooth
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+  triggerSecFilterTime = (cam4minus1 == true) ? (int)(1000000 / (MAX_RPM / 60 * 4)) / 2 : (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   secondDerivEnabled = false;
   decoderIsSequential = false;
   checkSyncToothCount = (configPage2.triggerTeeth) >> 1; //50% of the total teeth.
@@ -197,8 +198,35 @@ void triggerPri_missingTooth()
 
 void triggerSec_missingTooth()
 {
-  //TODO: This should really have filtering enabled on the secondary input.
-  revolutionOne = 1;
+  curTime2 = micros();
+  curGap2 = curTime2 - toothLastSecToothTime;
+  if( (toothLastSecToothTime == 0) || (toothLastMinusOneSecToothTime == 0) ) { curGap2 = 0; }
+  if ( curGap2 >= triggerSecFilterTime )
+  {
+#ifndef SMALL_FLASH_MODE
+    if ( cam4minus1 == true )
+    {
+      targetGap2 = (3 * (toothLastSecToothTime - toothLastMinusOneSecToothTime)) >> 1; //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
+      toothLastMinusOneSecToothTime = toothLastSecToothTime;
+      if ( ( curGap2 >= targetGap2 ) || ( secondaryToothCount > 3 ) )
+      {
+        secondaryToothCount = 1;
+        revolutionOne = 1; //Sequential revolution reset
+        triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
+      }
+      else
+      {
+        triggerSecFilterTime = curGap2 >> 2; //Set filter at 25% of the current speed. Filter can only be recalc'd for the regular teeth, not the missing one.
+        secondaryToothCount++;
+      }
+    }
+    else
+#endif
+    {
+      revolutionOne = 1; //Sequential revolution reset
+    }    
+    toothLastSecToothTime = curTime2;    
+  } //Trigger filter
 }
 
 uint16_t getRPM_missingTooth()
