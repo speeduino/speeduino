@@ -519,7 +519,7 @@ void loadConfig()
     boostTable.axisY[offset] = EEPROM.read(x); //TABLE_LOAD_MULTIPLIER is NOT used for boost as it is TPS based (0-100)
     offset = y - EEPROM_CONFIG8_YBINS2;
     vvtTable.axisY[offset] = EEPROM.read(y); //TABLE_LOAD_MULTIPLIER is NOT used for VVT as it is TPS based (0-100)
-    offset = z - EEPROM_CONFIG8_YBINS2;
+    offset = z - EEPROM_CONFIG8_YBINS3;
     stagingTable.axisY[offset] = EEPROM.read(z) * TABLE_LOAD_MULTIPLIER;
     y++;
     z++;
