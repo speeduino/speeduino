@@ -813,6 +813,8 @@ void triggerPri_4G63()
       else
       {
         if( (READ_SEC_TRIGGER() == false) && (revolutionOne == true) ) { toothCurrentCount = 1; } //Crank is low, cam is low and the crank pulse STARTED when the cam was high. Means we're at 5* BTDC
+        //If sequential is ever enabled, the below toothCurrentCount will need to change:
+        else if( (READ_SEC_TRIGGER() == true) && (revolutionOne == true) ) { toothCurrentCount = 1; } //Crank is low, cam is high and the crank pulse STARTED when the cam was high. Means we're at 5* BTDC.
       }
     }
   } //Filter time
@@ -853,6 +855,10 @@ void triggerSec_4G63()
       if(READ_PRI_TRIGGER() == true)// && (crankState == digitalRead(pinTrigger)))
       {
         if(toothCurrentCount == 4) { currentStatus.hasSync = true; }
+      }
+      else
+      {
+        if(toothCurrentCount == 1) { currentStatus.hasSync = true; }
       }
     }
 
