@@ -200,7 +200,11 @@ void triggerSec_missingTooth()
 {
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
-  if( (toothLastSecToothTime == 0) || (toothLastMinusOneSecToothTime == 0) ) { curGap2 = 0; }
+  if( (toothLastSecToothTime == 0)
+#ifndef SMALL_FLASH_MODE
+	  || (toothLastMinusOneSecToothTime == 0 )
+#endif
+  ) { curGap2 = 0; }
   if ( curGap2 >= triggerSecFilterTime )
   {
 #ifndef SMALL_FLASH_MODE
