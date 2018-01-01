@@ -457,6 +457,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[79] = lowByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
   fullStatus[80] = highByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
 
+  fullStatus[81] = currentStatus.status3;
+
   for(byte x=0; x<packetLength; x++)
   {
     if (portNum == 0) { Serial.write(fullStatus[offset+x]); }

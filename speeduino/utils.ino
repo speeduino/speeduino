@@ -80,6 +80,7 @@ void setPinMapping(byte boardID)
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
       pinFlex = 19; // Flex sensor (Must be external interrupt enabled)
+      pinResetLock = 43; //Reset lock output
     #endif
       break;
     case 1:
@@ -112,6 +113,7 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinResetLock = 43; //Reset lock output
       break;
     #endif
     case 2:
@@ -148,6 +150,7 @@ void setPinMapping(byte boardID)
       pinFan = A13; //Pin for the fan output
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinResetLock = 50; //Reset lock output
 
       #if defined(CORE_TEENSY)
         pinTrigger = 23;
@@ -196,6 +199,7 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinResetLock = 43; //Reset lock output
 
       #if defined(CORE_TEENSY)
         pinTrigger = 23;
@@ -305,6 +309,7 @@ void setPinMapping(byte boardID)
       pinFan = 35; //Pin for the fan output
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+      pinResetLock = 44; //Reset lock output
 
       #if defined(CORE_TEENSY)
         pinTrigger = 23;
@@ -354,6 +359,8 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinTachOut = 49; //Tacho output pin
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinResetLock = 26; //Reset lock output
+
     #endif
       break;
 
@@ -389,6 +396,7 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
+      pinResetLock = 26; //Reset lock output
     #endif
       break;
 
@@ -471,6 +479,7 @@ void setPinMapping(byte boardID)
       pinSpareLOut1 = 32; //low current output spare1 - ONLY WITH DB
       pinSpareLOut2 = 34; //low current output spare2 - ONLY WITH DB
       pinSpareLOut3 = 36; //low current output spare3 - ONLY WITH DB
+      pinResetLock = 26; //Reset lock output
       break;
 
     default:
@@ -503,6 +512,7 @@ void setPinMapping(byte boardID)
       pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
       pinBoost = 5;
       pinIdle1 = 6;
+      pinResetLock = 43; //Reset lock output
     #endif
       break;
   }
@@ -517,6 +527,7 @@ void setPinMapping(byte boardID)
   if ( (configPage3.boostPin != 0) && (configPage3.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = pinTranslate(configPage3.boostPin); }
   if ( (configPage3.vvtPin != 0) && (configPage3.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage3.vvtPin); }
   if ( (configPage3.useExtBaro != 0) && (configPage3.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage3.baroPin + A0; }
+  if ( (configPage2.resetLock != 0) && (configPage2.resetLockPin < BOARD_NR_GPIO_PINS) ) { pinResetLock = pinTranslate(configPage2.resetLockPin); }
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinCoil1, OUTPUT);
@@ -540,6 +551,7 @@ void setPinMapping(byte boardID)
   pinMode(pinStepperEnable, OUTPUT);
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
+  pinMode(pinResetLock, OUTPUT);
 
   inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
   inj1_pin_mask = digitalPinToBitMask(pinInjector1);

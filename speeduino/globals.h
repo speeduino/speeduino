@@ -98,6 +98,14 @@
 #define BIT_TIMER_15HZ            3
 #define BIT_TIMER_30HZ            4
 
+#define BIT_STATUS3_RESET_LOCK    0 //Indicates whether reset lock is active
+#define BIT_STATUS3_UNUSED2       1
+#define BIT_STATUS3_UNUSED3       2
+#define BIT_STATUS3_UNUSED4       3
+#define BIT_STATUS3_UNUSED5       4
+#define BIT_STATUS3_UNUSED6       5
+#define BIT_STATUS3_UNUSED7       6
+
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
@@ -136,6 +144,10 @@
 
 #define STAGING_MODE_TABLE  0
 #define STAGING_MODE_AUTO  1
+
+#define RESET_LOCK_DISABLED     0
+#define RESET_LOCK_WHEN_RUNNING 1
+#define RESET_LOCK_ALWAYS       2
 
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
@@ -299,6 +311,7 @@ struct statuses {
   uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
   uint8_t current_caninchannel = 0; //start off at channel 0
   uint16_t crankRPM = 400; //The actual cranking RPM limit. Saves us multiplying it everytime from the config page
+  volatile byte status3;
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -430,7 +443,11 @@ struct config2 {
   byte sparkDur; //Spark duration in ms * 10
   byte unused4_8;
   byte unused4_9;
-  byte unused4_10;
+  
+  //byte unused4_10;
+  byte resetLock : 2; // When to lock the 8u2/16u2 against reset on DTR (0=Never, 1=With Sync, 2=Always, 4=Not currently used)
+  byte resetLockPin : 6;
+
   byte StgCycles; //The number of initial cycles before the ignition should fire when first cranking
 
   byte dwellCont : 1; //Fixed duty dwell control
@@ -705,6 +722,7 @@ byte pinLaunch;
 byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
+byte pinResetLock; // Output pin used to tell the 8u2/16u2 not to reset on DTR
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
