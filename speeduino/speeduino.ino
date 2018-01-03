@@ -1452,10 +1452,14 @@ void loop()
         if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && configPage2.StgCycles == 0)
         {
           unsigned long uSToEnd = 0;
-          //if(ignition1EndAngle > crankAngle) { uSToEnd = fastDegreesToUS( (ignition1EndAngle - crankAngle) ); }
-          //else { uSToEnd = fastDegreesToUS( (360 + ignition1EndAngle - crankAngle) ); }
-          uSToEnd = fastDegreesToUS( (ignition1EndAngle - crankAngle) );
-          //uSToEnd = ((ignition1EndAngle - crankAngle) * (toothLastToothTime - toothLastMinusOneToothTime)) / triggerToothAngle;
+
+          ONLY ONE OF THE BELOW SHOULD BE USED (PROBABLY THE FIRST):
+          *********
+          if(ignition1EndAngle > crankAngle) { uSToEnd = fastDegreesToUS( (ignition1EndAngle - crankAngle) ); }
+          else { uSToEnd = fastDegreesToUS( (360 + ignition1EndAngle - crankAngle) ); }
+          *********
+          uSToEnd = ((ignition1EndAngle - crankAngle) * (toothLastToothTime - toothLastMinusOneToothTime)) / triggerToothAngle;
+          *********
 
           refreshIgnitionSchedule1( uSToEnd + fixedCrankingOverride );
         }

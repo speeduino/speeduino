@@ -315,7 +315,7 @@ void setPinMapping(byte boardID)
         pinCoil2 = 24; //Done
         pinCoil3 = 51; //Won't work (No mapping for pin 32)
         pinCoil4 = 52; //Won't work (No mapping for pin 33)
-        pinFuelPump = 53; //Won't work (No mapping for pin 37)
+        pinFuelPump = 26; //Requires PVT4 adapter or above
         pinFan = 50; //Won't work (No mapping for pin 35)
         pinTachOut = 28; //Done
       #endif

@@ -58,8 +58,8 @@ volatile int triggerActualTeeth;
 volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 unsigned long triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
 unsigned int triggerSecFilterTime_duration; // The shortest valid time (in uS) pulse DURATION
-volatile int triggerToothAngle; //The number of crank degrees that elapse per tooth
-volatile bool triggerToothAngleIsCorrect = false; //Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set. 
+volatile uint16_t triggerToothAngle; //The number of crank degrees that elapse per tooth
+volatile bool triggerToothAngleIsCorrect = false; //Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.
 bool secondDerivEnabled; //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
 bool decoderIsSequential; //Whether or not the decoder supports sequential operation
 bool decoderIsLowRes = false; //Is set true, certain extra calculations are performed for better timing accuracy
