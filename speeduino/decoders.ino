@@ -940,7 +940,7 @@ int getCrankAngle_4G63(int timePerDegree)
       unsigned long elapsedTime = micros() - tempToothLastToothTime;
       //crankAngle += uSToDegrees(elapsedTime);
       unsigned long toothTime = tempToothLastToothTime - tempToothLastMinusOneToothTime;
-      crankAngle += int16_t((elapsedTime * triggerToothAngle) / toothTime);
+      crankAngle += int((elapsedTime * triggerToothAngle) / toothTime);
       //timePerDegree = toothTime / tempToothAngle;
 
       if (crankAngle >= 720) { crankAngle -= 720; }
