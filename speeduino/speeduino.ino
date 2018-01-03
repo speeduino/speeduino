@@ -345,12 +345,21 @@ void setup()
       else { channel2IgnDegrees = configPage1.oddfire2; }
 
       //For alternating injection, the squirt occurs at different times for each channel
-      if(configPage1.injLayout == INJ_SEMISEQUENTIAL)
+      if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injLayout == INJ_PAIRED)
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = channel2IgnDegrees; //Set to the same as the ignition degrees (Means there's no need for another if to check for oddfire)
+
+        if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       }
-      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      else if (configPage1.injLayout == INJ_SEQUENTIAL)
+      {
+        channel1InjDegrees = 0;
+        channel2InjDegrees = channel2IgnDegrees;
+
+        CRANK_ANGLE_MAX_INJ = 720;
+        req_fuel_uS = req_fuel_uS * 2;
+      }
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
@@ -381,11 +390,13 @@ void setup()
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if(configPage1.injLayout == INJ_SEMISEQUENTIAL  || configPage1.injLayout == INJ_PAIRED)
+      if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injLayout == INJ_PAIRED)
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = 120;
         channel3InjDegrees = 240;
+
+        if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       }
       else if (configPage1.injLayout == INJ_SEQUENTIAL)
       {
@@ -395,7 +406,6 @@ void setup()
         CRANK_ANGLE_MAX_INJ = 720;
         req_fuel_uS = req_fuel_uS * 2;
       }
-      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
@@ -436,6 +446,8 @@ void setup()
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = 180;
+
+        if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       }
       else if (configPage1.injLayout == INJ_SEQUENTIAL)
       {
@@ -450,7 +462,6 @@ void setup()
         CRANK_ANGLE_MAX_INJ = 720;
         req_fuel_uS = req_fuel_uS * 2;
       }
-      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       //Check if injector staging is enabled
       if(configPage11.stagingEnabled == true)
@@ -548,6 +559,8 @@ void setup()
       channel2InjDegrees = 180;
       break;
   }
+
+  if(CRANK_ANGLE_MAX_IGN == CRANK_ANGLE_MAX_INJ) { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_IGN; } //If both the injector max and ignition max angles are the same, make the overall system max this value
 
   switch(configPage2.sparkMode)
   {
