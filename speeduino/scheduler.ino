@@ -723,21 +723,22 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
       ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule1.startTime = micros();
       IGN1_COMPARE = ignitionSchedule1.endCompare;
-    }
-      /*
-      This code is all to do with the staged ignition timing testing. That is, calling this interrupt slightly before the true ignition point and recalculating the end time for more accuracy
-      IGN1_COMPARE = ignitionSchedule1.endCompare - 20;
-      ignitionSchedule1.Status = STAGED;
-    }
+      //This code is all to do with the staged ignition timing testing. That is, calling this interrupt slightly before the true ignition point and recalculating the end time for more accuracy
+      //IGN1_COMPARE = ignitionSchedule1.endCompare - 50;
+      //ignitionSchedule1.Status = STAGED;
+      }
     else if (ignitionSchedule1.Status == STAGED)
     {
       int16_t crankAngle = getCrankAngle(timePerDegree);
+      if(crankAngle > CRANK_ANGLE_MAX_IGN) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
       if(ignition1EndAngle > crankAngle)
-      { IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( (ignition1EndAngle - crankAngle) * timePerDegree ); }
+      {
+        IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS((ignition1EndAngle - crankAngle)) );
+      }
       else { IGN1_COMPARE = ignitionSchedule1.endCompare; }
 
       ignitionSchedule1.Status = RUNNING;
-    }*/
+    }
     else if (ignitionSchedule1.Status == RUNNING)
     {
       ignitionSchedule1.EndCallback();

@@ -338,12 +338,21 @@ void setup()
       else { channel2IgnDegrees = configPage1.oddfire2; }
 
       //For alternating injection, the squirt occurs at different times for each channel
-      if(configPage1.injLayout == INJ_SEMISEQUENTIAL)
+      if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injLayout == INJ_PAIRED)
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = channel2IgnDegrees; //Set to the same as the ignition degrees (Means there's no need for another if to check for oddfire)
+
+        if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       }
-      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      else if (configPage1.injLayout == INJ_SEQUENTIAL)
+      {
+        channel1InjDegrees = 0;
+        channel2InjDegrees = channel2IgnDegrees;
+
+        CRANK_ANGLE_MAX_INJ = 720;
+        req_fuel_uS = req_fuel_uS * 2;
+      }
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
@@ -374,11 +383,13 @@ void setup()
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if(configPage1.injLayout == INJ_SEMISEQUENTIAL  || configPage1.injLayout == INJ_PAIRED)
+      if(configPage1.injLayout == INJ_SEMISEQUENTIAL || configPage1.injLayout == INJ_PAIRED)
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = 120;
         channel3InjDegrees = 240;
+
+        if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       }
       else if (configPage1.injLayout == INJ_SEQUENTIAL)
       {
@@ -388,7 +399,6 @@ void setup()
         CRANK_ANGLE_MAX_INJ = 720;
         req_fuel_uS = req_fuel_uS * 2;
       }
-      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
@@ -428,6 +438,8 @@ void setup()
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = 180;
+
+        if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       }
       else if (configPage1.injLayout == INJ_SEQUENTIAL)
       {
@@ -442,7 +454,6 @@ void setup()
         CRANK_ANGLE_MAX_INJ = 720;
         req_fuel_uS = req_fuel_uS * 2;
       }
-      if (!configPage1.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       //Check if injector staging is enabled
       if(configPage11.stagingEnabled == true)
@@ -540,6 +551,8 @@ void setup()
       channel2InjDegrees = 180;
       break;
   }
+
+  if(CRANK_ANGLE_MAX_IGN == CRANK_ANGLE_MAX_INJ) { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_IGN; } //If both the injector max and ignition max angles are the same, make the overall system max this value
 
   switch(configPage2.sparkMode)
   {
@@ -1091,14 +1104,14 @@ void loop()
               if (pw4percent != 100) { currentStatus.PW4 = (pw4percent * currentStatus.PW4) / 100; }
             }
           }
-          if(configPage11.stagingEnabled == true)
+          else if(configPage11.stagingEnabled == true)
           {
             PWdivTimerPerDegree = div(currentStatus.PW3, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
             injector3StartAngle = configPage1.inj3Ang - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
             if(injector3StartAngle < 0) {injector3StartAngle += CRANK_ANGLE_MAX_INJ;}
             if(injector3StartAngle > CRANK_ANGLE_MAX_INJ) {injector3StartAngle -= CRANK_ANGLE_MAX_INJ;}
 
-            injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2);
+            injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
             if(injector4StartAngle < 0) {injector4StartAngle += CRANK_ANGLE_MAX_INJ;}
             if(injector4StartAngle > CRANK_ANGLE_MAX_INJ) {injector4StartAngle -= CRANK_ANGLE_MAX_INJ;}
           }
@@ -1417,10 +1430,14 @@ void loop()
         if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && configPage2.StgCycles == 0)
         {
           unsigned long uSToEnd = 0;
-          //if(ignition1EndAngle > crankAngle) { uSToEnd = fastDegreesToUS( (ignition1EndAngle - crankAngle) ); }
-          //else { uSToEnd = fastDegreesToUS( (360 + ignition1EndAngle - crankAngle) ); }
-          uSToEnd = fastDegreesToUS( (ignition1EndAngle - crankAngle) );
-          //uSToEnd = ((ignition1EndAngle - crankAngle) * (toothLastToothTime - toothLastMinusOneToothTime)) / triggerToothAngle;
+
+          ONLY ONE OF THE BELOW SHOULD BE USED (PROBABLY THE FIRST):
+          *********
+          if(ignition1EndAngle > crankAngle) { uSToEnd = fastDegreesToUS( (ignition1EndAngle - crankAngle) ); }
+          else { uSToEnd = fastDegreesToUS( (360 + ignition1EndAngle - crankAngle) ); }
+          *********
+          uSToEnd = ((ignition1EndAngle - crankAngle) * (toothLastToothTime - toothLastMinusOneToothTime)) / triggerToothAngle;
+          *********
 
           refreshIgnitionSchedule1( uSToEnd + fixedCrankingOverride );
         }

@@ -199,9 +199,9 @@ void setPinMapping(byte boardID)
 
       #if defined(CORE_TEENSY)
         pinTrigger = 23;
-        pinTrigger2 = 35;
-        pinStepperDir = 33;
-        pinStepperStep = 34;
+        pinTrigger2 = 36;
+        pinStepperDir = 34;
+        pinStepperStep = 35;
         pinCoil1 = 31;
         pinTachOut = 28;
         pinFan = 27;
@@ -316,6 +316,20 @@ void setPinMapping(byte boardID)
       pinFan = 35; //Pin for the fan output
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+
+      #if defined(CORE_TEENSY)
+        pinTrigger = 23;
+        pinTrigger2 = 36;
+        pinStepperDir = 34;
+        pinStepperStep = 35;
+        pinCoil1 = 33; //Done
+        pinCoil2 = 24; //Done
+        pinCoil3 = 51; //Won't work (No mapping for pin 32)
+        pinCoil4 = 52; //Won't work (No mapping for pin 33)
+        pinFuelPump = 26; //Requires PVT4 adapter or above
+        pinFan = 50; //Won't work (No mapping for pin 35)
+        pinTachOut = 28; //Done
+      #endif
       break;
 
     case 10:

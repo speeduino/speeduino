@@ -500,14 +500,13 @@ uint16_t getRPM_BasicDistributor()
 {
   uint16_t tempRPM;
   if( currentStatus.RPM < currentStatus.crankRPM )
-  { tempRPM = crankingGetRPM(triggerActualTeeth >> 1); } //crankGetRPM uses teeth per 360 degrees. As triggerActualTeeh is total teeth in 720 degrees, we divide the tooth count by 2
-  else
-  {
-    tempRPM = stdGetRPM() << 1;
-    revolutionTime = revolutionTime >> 1; //Revolution time has to be divided by 2 as otherwise it would be over 720 degrees (triggerActualTeeth = nCylinders)
-    MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-    if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
-  } //Multiply RPM by 2 due to tracking over 720 degrees now rather than 360
+  { tempRPM = crankingGetRPM(triggerActualTeeth) << 1; } //crankGetRPM uses teeth per 360 degrees. As triggerActualTeeh is total teeth in 720 degrees, we divide the tooth count by 2
+  else { tempRPM = stdGetRPM() << 1; } //Multiply RPM by 2 due to tracking over 720 degrees now rather than 360
+
+  revolutionTime = revolutionTime >> 1; //Revolution time has to be divided by 2 as otherwise it would be over 720 degrees (triggerActualTeeth = nCylinders)
+  MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  if(triggerActualTeeth == 1) { MAX_STALL_TIME = revolutionTime << 1; } //Special case for 1 cylinder engines that only get 1 pulse every 720 degrees
+  if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
 
   return tempRPM;
 
@@ -814,6 +813,8 @@ void triggerPri_4G63()
       else
       {
         if( (READ_SEC_TRIGGER() == false) && (revolutionOne == true) ) { toothCurrentCount = 1; } //Crank is low, cam is low and the crank pulse STARTED when the cam was high. Means we're at 5* BTDC
+        //If sequential is ever enabled, the below toothCurrentCount will need to change:
+        else if( (READ_SEC_TRIGGER() == true) && (revolutionOne == true) ) { toothCurrentCount = 1; } //Crank is low, cam is high and the crank pulse STARTED when the cam was high. Means we're at 5* BTDC.
       }
     }
   } //Filter time
@@ -854,6 +855,10 @@ void triggerSec_4G63()
       if(READ_PRI_TRIGGER() == true)// && (crankState == digitalRead(pinTrigger)))
       {
         if(toothCurrentCount == 4) { currentStatus.hasSync = true; }
+      }
+      else
+      {
+        if(toothCurrentCount == 1) { currentStatus.hasSync = true; }
       }
     }
 
@@ -921,13 +926,12 @@ int getCrankAngle_4G63(int timePerDegree)
     {
       //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
       unsigned long tempToothLastToothTime, tempToothLastMinusOneToothTime;
-      int tempToothCurrentCount, tempToothAngle;
+      int tempToothCurrentCount;
       //Grab some variables that are used in the trigger code and assign them to temp variables.
       noInterrupts();
       tempToothCurrentCount = toothCurrentCount;
       tempToothLastToothTime = toothLastToothTime;
       tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
-      tempToothAngle = triggerToothAngle;
       interrupts();
 
       crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
@@ -936,7 +940,7 @@ int getCrankAngle_4G63(int timePerDegree)
       unsigned long elapsedTime = micros() - tempToothLastToothTime;
       //crankAngle += uSToDegrees(elapsedTime);
       unsigned long toothTime = tempToothLastToothTime - tempToothLastMinusOneToothTime;
-      crankAngle += (elapsedTime * triggerToothAngle) / toothTime;
+      crankAngle += int((elapsedTime * triggerToothAngle) / toothTime);
       //timePerDegree = toothTime / tempToothAngle;
 
       if (crankAngle >= 720) { crankAngle -= 720; }
@@ -2522,8 +2526,6 @@ void triggerPri_ThirtySixMinus222()
 
      if ( (curGap > targetGap) )
      {
-       //if(toothCurrentCount < (triggerActualTeeth) && (currentStatus.hasSync == true) ) { currentStatus.hasSync = false; } //This occurs when we're at tooth #1, but haven't seen all the other teeth. This indicates a signal issue so we flag lost sync so this will attempt to resync on the next revolution.
-       //else
        {
          if(toothSystemCount == 1)
          {
