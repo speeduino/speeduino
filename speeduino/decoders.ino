@@ -926,13 +926,12 @@ int getCrankAngle_4G63(int timePerDegree)
     {
       //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
       unsigned long tempToothLastToothTime, tempToothLastMinusOneToothTime;
-      int tempToothCurrentCount, tempToothAngle;
+      int tempToothCurrentCount;
       //Grab some variables that are used in the trigger code and assign them to temp variables.
       noInterrupts();
       tempToothCurrentCount = toothCurrentCount;
       tempToothLastToothTime = toothLastToothTime;
       tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
-      tempToothAngle = triggerToothAngle;
       interrupts();
 
       crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage2.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
@@ -941,7 +940,7 @@ int getCrankAngle_4G63(int timePerDegree)
       unsigned long elapsedTime = micros() - tempToothLastToothTime;
       //crankAngle += uSToDegrees(elapsedTime);
       unsigned long toothTime = tempToothLastToothTime - tempToothLastMinusOneToothTime;
-      crankAngle += (elapsedTime * triggerToothAngle) / toothTime;
+      crankAngle += int((elapsedTime * triggerToothAngle) / toothTime);
       //timePerDegree = toothTime / tempToothAngle;
 
       if (crankAngle >= 720) { crankAngle -= 720; }
@@ -2527,8 +2526,6 @@ void triggerPri_ThirtySixMinus222()
 
      if ( (curGap > targetGap) )
      {
-       //if(toothCurrentCount < (triggerActualTeeth) && (currentStatus.hasSync == true) ) { currentStatus.hasSync = false; } //This occurs when we're at tooth #1, but haven't seen all the other teeth. This indicates a signal issue so we flag lost sync so this will attempt to resync on the next revolution.
-       //else
        {
          if(toothSystemCount == 1)
          {
