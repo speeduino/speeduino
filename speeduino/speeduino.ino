@@ -665,24 +665,6 @@ void setup()
   setFuelSchedule3(100, (unsigned long)(configPage1.primePulse * 100));
   setFuelSchedule4(100, (unsigned long)(configPage1.primePulse * 100));
 
-  //Setup reset lock initial state
-  switch (configPage2.resetLock) {
-    case RESET_LOCK_WHEN_RUNNING: 
-      //Set the reset lock pin LOW and change it to HIGH later when we get sync.
-      digitalWrite(pinResetLock, LOW);
-      BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_LOCK);
-      break;
-    case RESET_LOCK_ALWAYS:
-      //Set the reset lock pin HIGH and never touch it again.
-      digitalWrite(pinResetLock, HIGH);
-      BIT_SET(currentStatus.status3, BIT_STATUS3_RESET_LOCK);
-      break;
-    default:
-      //Either disabled or set to an invalid value. Do nothing.
-      BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_LOCK);
-      break;
-  }
-
   initialisationComplete = true;
   digitalWrite(LED_BUILTIN, HIGH);
 }
@@ -1554,16 +1536,16 @@ void loop()
         }
       } //Ignition schedules on
 
-      if (!BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_LOCK) && configPage2.resetLock == RESET_LOCK_WHEN_RUNNING) {
-        //Reset lock is supposed to be set while synced but isn't. Fix that.
-        digitalWrite(pinResetLock, HIGH);
-        BIT_SET(currentStatus.status3, BIT_STATUS3_RESET_LOCK);
+      if (!BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_PREVENT) && resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) {
+        //Reset prevention is supposed to be on while the engine is running but isn't. Fix that.
+        digitalWrite(pinResetControl, HIGH);
+        BIT_SET(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
       }
     } //Has sync and RPM
-    else if (BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_LOCK) && configPage2.resetLock == RESET_LOCK_WHEN_RUNNING) {
-      digitalWrite(pinResetLock, LOW);
-      BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_LOCK);
-    } 
+    else if (BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_PREVENT) && resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) {
+      digitalWrite(pinResetControl, LOW);
+      BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
+    }
 } //loop()
 
 /*

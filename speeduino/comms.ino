@@ -183,6 +183,15 @@ void command()
 
       break;
 
+    case 'U': //User wants to reset the Arduino (probably for FW update)
+    #ifndef SMALL_FLASH_MODE
+      if (!cmdPending) { Serial.println(F("Comms halted. Next byte will reset the Arduino.")); }
+    #endif
+
+      while (Serial.available() == 0) { }
+      digitalWrite(pinResetControl, LOW);
+      break;
+
     case 'V': // send VE table and constants in binary
       sendPage(false);
       break;
@@ -320,6 +329,7 @@ void command()
          "Z - Display calibration values\n"
          "T - Displays 256 tooth log entries in binary\n"
          "r - Displays 256 tooth log entries\n"
+         "U - Prepare for firmware update. The next byte received will cause the Arduino to reset.\n"
          "? - Displays this help page"
        ));
      #endif
