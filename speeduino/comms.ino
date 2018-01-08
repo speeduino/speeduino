@@ -184,12 +184,21 @@ void command()
       break;
 
     case 'U': //User wants to reset the Arduino (probably for FW update)
-    #ifndef SMALL_FLASH_MODE
-      if (!cmdPending) { Serial.println(F("Comms halted. Next byte will reset the Arduino.")); }
-    #endif
+      if (resetControl != RESET_CONTROL_DISABLED)
+      {
+      #ifndef SMALL_FLASH_MODE
+        if (!cmdPending) { Serial.println(F("Comms halted. Next byte will reset the Arduino.")); }
+      #endif
 
-      while (Serial.available() == 0) { }
-      digitalWrite(pinResetControl, LOW);
+        while (Serial.available() == 0) { }
+        digitalWrite(pinResetControl, LOW);
+      }
+      else
+      {
+      #ifndef SMALL_FLASH_MODE
+        if (!cmdPending) { Serial.println(F("Reset control is currently disabled.")); }
+      #endif
+      }
       break;
 
     case 'V': // send VE table and constants in binary
