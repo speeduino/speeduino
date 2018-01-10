@@ -174,7 +174,7 @@ void setPinMapping(byte boardID)
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinStepperEnable = 26; //Enable pin for DRV8825
       pinFan = A13; //Pin for the fan output
-      pinLaunch = 12; //Can be overwritten below
+      pinLaunch = 51; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 50; //Reset control output
 
@@ -223,7 +223,7 @@ void setPinMapping(byte boardID)
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinStepperEnable = 24; //Enable pin for DRV8825
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
-      pinLaunch = 12; //Can be overwritten below
+      pinLaunch = 51; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 43; //Reset control output
 
