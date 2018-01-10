@@ -48,24 +48,24 @@ void loop()
   loopCount++;
 
   if(Serial.available() >= SERIAL_BUFFER_THRESHOLD) { command(); }
-  if(serialStream == true) { sendCSV(); } //If serialStream is enabled, the current map values are sent continually as CSV
+  if(serialStream == true && Serial.availableForWrite() ) { sendCSV(); } //If serialStream is enabled and the serial write buffer isn't full, the current map values are sent continually as CSV
 
   //Read each of the 4 sensors and map them using the calibration values (Results in map1 value in kPa etc)
   map1_adc = analogRead(pinMAP1);
   map1_adc = analogRead(pinMAP1);
-  map1 = fastMap10BitX10(map1_adc, MPX2450_min, MPX2450_max);
+  map1 = fastMap10BitX8(map1_adc, MPX2450_min, MPX2450_max);
 
   map2_adc = analogRead(pinMAP2);
   map2_adc = analogRead(pinMAP2);
-  map2 = fastMap10BitX10(map2_adc, MPX2450_min, MPX2450_max);
+  map2 = fastMap10BitX8(map2_adc, MPX2450_min, MPX2450_max);
 
   map3_adc = analogRead(pinMAP3);
   map3_adc = analogRead(pinMAP3);
-  map3 = fastMap10BitX10(map3_adc, MPX2450_min, MPX2450_max);
+  map3 = fastMap10BitX8(map3_adc, MPX2450_min, MPX2450_max);
 
   map4_adc = analogRead(pinMAP4);
   map4_adc = analogRead(pinMAP4);
-  map4 = fastMap10BitX10(map4_adc, MPX2450_min, MPX2450_max);
+  map4 = fastMap10BitX8(map4_adc, MPX2450_min, MPX2450_max);
 
   //Find the lowest current value
   currentMAP = map1;
@@ -77,12 +77,12 @@ void loop()
   setDAC();
 }
 
-void setDAC()
+static inline void setDAC()
 {
-  uint16_t outputValue;
+  
   byte outputValueByte0, outputValueByte1;
   
-  outputValue = map(currentMAP, 0, 2550, 0, 4095);
+  outputValue = map(currentMAP, 0, 2048, 0, 4095); //The MAP readings have been multiplied by 8 for better resolution. The 2048 brings them back into an 8 bit (256) range equivalent
   outputValueByte0 = byte(outputValue);
   outputValue = outputValue >> 8;
   outputValueByte1 = byte(outputValue | 0b00110000); //Combines the remaining part of the 

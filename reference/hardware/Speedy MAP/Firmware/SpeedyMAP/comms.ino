@@ -23,13 +23,13 @@ void command()
 
 void sendCSV()
 {
-  Serial.write(map1/10);
+  Serial.print(map1/8);
   Serial.print(",");
-  Serial.write(map2/10);
+  Serial.print(map2/8);
   Serial.print(",");
-  Serial.write(map3/10);
+  Serial.print(map3/8);
   Serial.print(",");
-  Serial.write(map4/10);
+  Serial.print(map4/8);
   Serial.println("");
 }
 
@@ -37,7 +37,8 @@ void sendStats()
 {
   Serial.println("Version: 0.1");
   Serial.print("Loops/s: ");
-  Serial.write(loopsPerSecond);
-  Serial.println("");
+  Serial.println(loopsPerSecond);
+  Serial.print("Output: ");
+  Serial.println(outputValue);
 }
 
