@@ -5,9 +5,12 @@
 
 uint16_t map1_adc, map2_adc, map3_adc, map4_adc;
 uint16_t map5_adc, map6_adc, map7_adc, map8_adc;
-uint16_t currentMAP, map1, map2, map3, map4; //These values are all stored in kPa x 10 for 1 point of extra precision
+uint16_t currentMAP, map1, map2, map3, map4; //These values are all stored in kPa x 8 for 1 point of extra precision. They are the instantaneous values
+uint16_t map1_min, map2_min, map3_min, map4_min; //As above, but represent the minimum reading for each sensor within the current cycle
 
-uint16_t rev_count = 0;
+byte currentLowestCylinder;
+uint16_t cycle_count = 0;
+unsigned long cycleStartTime;
 
 bool serialStream = false;
 
@@ -41,6 +44,8 @@ void setup() {
   //Set the port and mask for the cable select pin
   cs_pin_port = portOutputRegister(digitalPinToPort(pinChipSelect));
   cs_pin_mask = digitalPinToBitMask(pinChipSelect);
+
+  cycleStartTime = micros();
 }
 
 void loop() 
@@ -68,10 +73,22 @@ void loop()
   map4 = fastMap10BitX8(map4_adc, MPX2450_min, MPX2450_max);
 
   //Find the lowest current value
+  byte tempLowestCylinder = 1;
   currentMAP = map1;
-  if(map2 < currentMAP) { currentMAP = map2; }
-  if(map3 < currentMAP) { currentMAP = map3; }
-  if(map4 < currentMAP) { currentMAP = map4; }
+  if(map2 < currentMAP) { currentMAP = map2; tempLowestCylinder = 2; }
+  if(map3 < currentMAP) { currentMAP = map3; tempLowestCylinder = 3; }
+  if(map4 < currentMAP) { currentMAP = map4; tempLowestCylinder = 4; }
+
+  //Check if we're starting a new cycle yet
+  //This is determined to be when sensor 1 has the lowest reading, but only if the previous lowest reading was on another cylinder
+  //Note that this is only really accurate for determining that a new cycle has started. RPM readings based on it will bounce around by a few 100
+  if( tempLowestCylinder == 1 && currentLowestCylinder != 1)
+  {
+    cycle_count++;
+    currentLowestCylinder = tempLowestCylinder;
+    cycleStartTime = micros();
+  }
+  
 
   //Set the DAC output value from the above
   setDAC();
