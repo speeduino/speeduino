@@ -18,4 +18,4 @@ reference/hardware/v0.4/gerbers/Archive.zip
 .project
 .vscode
 .build
-.bak
+.kicad_pcb-bak
