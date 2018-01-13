@@ -147,6 +147,10 @@ void setup()
   loadConfig();
   doUpdates(); //Check if any data items need updating (Occurs ith firmware updates)
 
+  //Always start with a clean slate on the bootloader capabilities level
+  //This should be 0 until we hear otherwise from the 16u2
+  configPage2.bootloaderCaps = 0;
+
   Serial.begin(115200);
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
   if (configPage10.enable_canbus == 1) { CANSerial.begin(115200); }

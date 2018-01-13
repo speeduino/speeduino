@@ -311,6 +311,17 @@ void command()
       sendToothLog(true); //Sends tooth log values as chars
       break;
 
+    case '`': //Custom 16u2 firmware is making its presence known
+      cmdPending = true;
+
+      if (Serial.available() >= 1) {
+        //configPage2.bootloaderCaps = Serial.read();
+        configPage2.bootloaderCaps = 0;
+        cmdPending = false;
+      }
+      break;
+
+
     case '?':
     #ifndef SMALL_FLASH_MODE
       Serial.println

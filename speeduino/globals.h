@@ -446,9 +446,8 @@ struct config2 {
 
   byte sparkDur; //Spark duration in ms * 10
   byte unused4_8;
-  byte unused4_9;
-  
-  //byte unused4_10;
+  uint8_t bootloaderCaps; //Capabilities of the bootloader over stock. e.g., 0=Stock, 1=Reset protection, etc.
+
   byte resetControl : 2; //Which method of reset control to use (0=None, 1=Prevent When Running, 2=Prevent Always, 3=Serial Command)
   byte resetControlPin : 6;
 
