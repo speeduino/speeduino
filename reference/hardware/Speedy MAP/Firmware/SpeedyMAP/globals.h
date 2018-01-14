@@ -26,11 +26,14 @@ volatile byte loop66ms;
 volatile byte loop100ms;
 volatile byte loop250ms;
 volatile int loopSec;
+uint16_t outputValue;
 
 #define CS_PIN_LOW()  *cs_pin_port &= ~(cs_pin_mask)
 #define CS_PIN_HIGH() *cs_pin_port |= (cs_pin_mask)
 
 #define fastMap10BitX10(x, out_min, out_max) ( ( ((unsigned long)x * 10 * (out_max-out_min)) >> 10 ) + (out_min * 10))
+#define fastMap10BitX8(x, out_min, out_max) ( ( ((unsigned long)x * 8 * (out_max-out_min)) >> 10 ) + (out_min * 8))
+#define map1(x, in_min, in_max, out_min, out_max)  ( (unsigned long)x * out_max / in_max )
 void setDAC();
 
 //Interrupt for timer. Fires every 1ms
