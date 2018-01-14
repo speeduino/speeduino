@@ -4,8 +4,8 @@
 *.ino text eol=lf
 *.h text eol=lf
 *.c text eol=lf
-*.ini test eol=lf
-*.msq test eol=lf
+*.ini text eol=lf
+*.msq text eol=lf
 
 # Denote all files that are truly binary and should not be modified.
 *.png binary
