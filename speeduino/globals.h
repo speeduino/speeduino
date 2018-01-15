@@ -98,6 +98,14 @@
 #define BIT_TIMER_15HZ            3
 #define BIT_TIMER_30HZ            4
 
+#define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
+#define BIT_STATUS3_UNUSED2       1
+#define BIT_STATUS3_UNUSED3       2
+#define BIT_STATUS3_UNUSED4       3
+#define BIT_STATUS3_UNUSED5       4
+#define BIT_STATUS3_UNUSED6       5
+#define BIT_STATUS3_UNUSED7       6
+
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
@@ -136,6 +144,11 @@
 
 #define STAGING_MODE_TABLE  0
 #define STAGING_MODE_AUTO  1
+
+#define RESET_CONTROL_DISABLED             0
+#define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
+#define RESET_CONTROL_PREVENT_ALWAYS       2
+#define RESET_CONTROL_SERIAL_COMMAND       3
 
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
@@ -226,6 +239,9 @@ int ignition4EndAngle = 0;
 //This is used across multiple files
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 
+//This needs to be here because using the config page directly can prevent burning the setting
+byte resetControl = RESET_CONTROL_DISABLED;
+
 volatile byte TIMER_mask;
 volatile byte LOOP_TIMER;
 
@@ -299,6 +315,7 @@ struct statuses {
   uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
   uint8_t current_caninchannel = 0; //start off at channel 0
   uint16_t crankRPM = 400; //The actual cranking RPM limit. Saves us multiplying it everytime from the config page
+  volatile byte status3;
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -429,8 +446,11 @@ struct config2 {
 
   byte sparkDur; //Spark duration in ms * 10
   byte unused4_8;
-  byte unused4_9;
-  byte unused4_10;
+  uint8_t bootloaderCaps; //Capabilities of the bootloader over stock. e.g., 0=Stock, 1=Reset protection, etc.
+
+  byte resetControl : 2; //Which method of reset control to use (0=None, 1=Prevent When Running, 2=Prevent Always, 3=Serial Command)
+  byte resetControlPin : 6;
+
   byte StgCycles; //The number of initial cycles before the ignition should fire when first cranking
 
   byte dwellCont : 1; //Fixed duty dwell control
@@ -705,6 +725,7 @@ byte pinLaunch;
 byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
+byte pinResetControl; // Output pin used control resetting the Arduino
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
