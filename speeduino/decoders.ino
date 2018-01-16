@@ -128,7 +128,7 @@ void triggerSetup_missingTooth()
   if(configPage2.TrigSpeed == 1) { triggerToothAngle = 720 / configPage2.triggerTeeth; } //Account for cam speed missing tooth
   triggerActualTeeth = configPage2.triggerTeeth - configPage2.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage2.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
-  triggerSecFilterTime = (int)((cam4minus1 == true) ? 1000000 * 60 / MAX_RPM / 4 / 2 : 1000000 * 60 / MAX_RPM / 2 / 2); //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  triggerSecFilterTime = (int)((trigPatternSec == true) ? 1000000 * 60 / MAX_RPM / 4 / 2 : 1000000 * 60 / MAX_RPM / 2 / 2); //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   secondDerivEnabled = false;
   decoderIsSequential = false;
   checkSyncToothCount = (configPage2.triggerTeeth) >> 1; //50% of the total teeth.
@@ -208,7 +208,7 @@ void triggerSec_missingTooth()
   if ( curGap2 >= triggerSecFilterTime )
   {
 #ifndef SMALL_FLASH_MODE
-    if ( cam4minus1 == true )
+    if ( trigPatternSec == true )
     {
       targetGap2 = (3 * (toothLastSecToothTime - toothLastMinusOneSecToothTime)) >> 1; //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
       toothLastMinusOneSecToothTime = toothLastSecToothTime;
