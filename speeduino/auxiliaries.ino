@@ -80,8 +80,10 @@ void boostControl()
       //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
       if( configPage1.flexEnabled == 1 )
       {
-        int16_t boostAdder = (((int16_t)configPage1.flexBoostHigh - (int16_t)configPage1.flexBoostLow) * currentStatus.ethanolPct) / 100;
-        boostAdder = boostAdder + configPage1.flexBoostLow; //Required in case flexBoostLow is less than 0
+        int16_t boostAdder = flexLookupCache.boost = BIT_CHECK(TIMER_mask, BIT_TIMER_4HZ) || !flexLookupCache.boostReady
+          ? table2D_getValue(&flexCorrectionBoostTable, currentStatus.ethanolPct)
+          : flexLookupCache.boost;
+
         currentStatus.boostTarget += boostAdder;
       }
 

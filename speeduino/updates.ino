@@ -8,7 +8,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    6
+  #define CURRENT_DATA_VERSION    7
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -75,6 +75,22 @@ void doUpdates()
 
     EEPROM.write(EEPROM_DATA_VERSION, 6);
     loadConfig(); //Reload the config after changing everything in EEPROM
+  }
+
+  if (EEPROM.read(EEPROM_DATA_VERSION) == 6) {
+    //Convert whatever flex fuel settings are there into the new tables
+
+    for (uint8_t x = 0; x < 6; x++)
+    {
+      uint8_t pct = x * 20;
+      configPage11.flexCorrectionBins[x]  = pct;
+      configPage11.flexCorrectionBoost[x] = percentage(pct, configPage1.unused2_2 - (int8_t)configPage1.unused2_1);
+      configPage11.flexCorrectionFuel[x]  = percentage(pct, configPage1.unused2_58 - configPage1.unused2_57);
+      configPage11.flexCorrectionAdv[x]   = percentage(pct, configPage1.unused2_60 - configPage1.unused2_59);
+    }
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 7);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)

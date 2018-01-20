@@ -19,6 +19,7 @@ Flood clear mode etc.
 long PID_O2, PID_output, PID_AFRTarget;
 PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage3.egoKP, configPage3.egoKI, configPage3.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
+
 void initialiseCorrections()
 {
   egoPID.SetMode(AUTOMATIC); //Turn O2 PID on
@@ -279,10 +280,11 @@ static inline bool correctionDFCO()
 static inline byte correctionFlex()
 {
   byte flexValue = 100;
-  if(configPage1.flexEnabled == 1)
+  if (configPage1.flexEnabled == 1)
   {
-    byte flexRange = configPage1.flexFuelHigh - configPage1.flexFuelLow;
-    flexValue = percentage(currentStatus.ethanolPct, flexRange) + 100;
+    flexValue = flexLookupCache.fuel = BIT_CHECK(TIMER_mask, BIT_TIMER_4HZ) || !flexLookupCache.fuelReady
+      ? table2D_getValue(&flexCorrectionFuelTable, currentStatus.ethanolPct)
+      : flexLookupCache.fuel;
   }
   return flexValue;
 }
@@ -405,11 +407,10 @@ static inline int8_t correctionFlexTiming(int8_t advance)
   byte ignFlexValue = advance;
   if( configPage1.flexEnabled == 1 ) //Check for flex being enabled
   {
-    byte flexRange = configPage1.flexAdvHigh - configPage1.flexAdvLow;
-
-    if (currentStatus.ethanolPct != 0) { currentStatus.flexIgnCorrection = percentage(currentStatus.ethanolPct, flexRange); }
-    else { currentStatus.flexIgnCorrection = 0; }
-
+    currentStatus.flexIgnCorrection = flexLookupCache.advance = BIT_CHECK(TIMER_mask, BIT_TIMER_4HZ) || !flexLookupCache.advanceReady
+      ? table2D_getValue(&flexCorrectionAdvTable, currentStatus.ethanolPct)
+      : flexLookupCache.advance;
+    
     ignFlexValue = advance + currentStatus.flexIgnCorrection;
   }
   return ignFlexValue;
