@@ -12,7 +12,7 @@
 #define canbusPage   9//Config Page 9
 #define warmupPage   10 //Config Page 10
 
-#define SERIAL_PACKET_SIZE   81
+#define SERIAL_PACKET_SIZE   83
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool isMap = true;

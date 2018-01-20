@@ -80,11 +80,15 @@ void boostControl()
       //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
       if( configPage1.flexEnabled == 1 )
       {
-        int16_t boostAdder = flexLookupCache.boost = BIT_CHECK(TIMER_mask, BIT_TIMER_4HZ) || !flexLookupCache.boostReady
-          ? table2D_getValue(&flexCorrectionBoostTable, currentStatus.ethanolPct)
+        int16_t boostAdder = currentStatus.flexBoostCorrection = flexLookupCache.boost = BIT_CHECK(TIMER_mask, BIT_TIMER_4HZ) || !flexLookupCache.boostReady
+          ? table2D_getValue(&flexBoostTable, currentStatus.ethanolPct)
           : flexLookupCache.boost;
 
         currentStatus.boostTarget += boostAdder;
+      }
+      else
+      {
+        currentStatus.flexBoostCorrection = 0;
       }
 
       if(currentStatus.boostTarget > 0)
@@ -122,7 +126,10 @@ void boostControl()
       boostDisable();
     }
   }
-  else { DISABLE_BOOST_TIMER(); } // Disable timer channel
+  else { // Disable timer channel and zero the flex boost correction status
+    DISABLE_BOOST_TIMER();  
+    currentStatus.flexBoostCorrection = 0;
+  }
 
   boostCounter++;
 }

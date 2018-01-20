@@ -204,18 +204,18 @@ void setup()
   rotarySplitTable.values = configPage11.rotarySplitValues;
   rotarySplitTable.axisX = configPage11.rotarySplitBins;
 
-  flexCorrectionFuelTable.valueSize = SIZE_BYTE;
-  flexCorrectionFuelTable.xSize = 6;
-  flexCorrectionFuelTable.values = configPage11.flexCorrectionFuel;
-  flexCorrectionFuelTable.axisX = configPage11.flexCorrectionBins;
-  flexCorrectionAdvTable.valueSize = SIZE_BYTE;
-  flexCorrectionAdvTable.xSize = 6;
-  flexCorrectionAdvTable.values = configPage11.flexCorrectionAdv;
-  flexCorrectionAdvTable.axisX = configPage11.flexCorrectionBins;
-  flexCorrectionBoostTable.valueSize = SIZE_INT;
-  flexCorrectionBoostTable.xSize = 6;
-  flexCorrectionBoostTable.values16 = configPage11.flexCorrectionBoost;
-  flexCorrectionBoostTable.axisX = configPage11.flexCorrectionBins;
+  flexFuelTable.valueSize = SIZE_BYTE;
+  flexFuelTable.xSize = 6;
+  flexFuelTable.values = configPage11.flexFuelAdj;
+  flexFuelTable.axisX = configPage11.flexFuelBins;
+  flexAdvTable.valueSize = SIZE_BYTE;
+  flexAdvTable.xSize = 6;
+  flexAdvTable.values = configPage11.flexAdvAdj;
+  flexAdvTable.axisX = configPage11.flexAdvBins;
+  flexBoostTable.valueSize = SIZE_INT;
+  flexBoostTable.xSize = 6;
+  flexBoostTable.values16 = configPage11.flexBoostAdj;
+  flexBoostTable.axisX = configPage11.flexBoostBins;
 
   //Setup the calibration tables
   loadCalibration();

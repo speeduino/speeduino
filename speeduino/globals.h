@@ -177,9 +177,9 @@ struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D
 struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
 struct table2D rotarySplitTable; //8 bin ignition split curve for rotary leading/trailing  (2D)
-struct table2D flexCorrectionFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
-struct table2D flexCorrectionAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
-struct table2D flexCorrectionBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
+struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
+struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
+struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
 
 //These are for the direct port manipulation of the injectors and coils
 volatile byte *inj1_pin_port;
@@ -302,6 +302,7 @@ struct statuses {
   uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
   uint8_t current_caninchannel = 0; //start off at channel 0
   uint16_t crankRPM = 400; //The actual cranking RPM limit. Saves us multiplying it everytime from the config page
+  int16_t flexBoostCorrection; //Amount of boost added based on flex
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -642,12 +643,15 @@ struct config11 {
   uint16_t stagedInjSizePri;
   uint16_t stagedInjSizeSec;
   
-  uint8_t flexCorrectionBins[6];
-  int16_t flexCorrectionBoost[6];
-  uint8_t flexCorrectionFuel[6];   //Fuel % to be used at current ethanol reading (typically 100% fuel @ 0% eth, 163% @ 100%)
-  uint8_t flexCorrectionAdv[6];    //Additional advance (in degrees) at current ethanol reading (typically 0 @ 0%, 10-20 @ 100%)
+  uint8_t flexBoostBins[6];
+  int16_t flexBoostAdj[6];  //Boost kPa to be added to the boost target @ current ethanol (negative values allowed)
+  uint8_t flexFuelBins[6];
+  uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%)
+  uint8_t flexAdvBins[6];
+  uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%)
+                            //And another three corn rows die.
 
-  byte unused11_61_192[131];
+  byte unused11_68_192[124];
 
 #if defined(CORE_AVR)
   };

@@ -284,7 +284,7 @@ static inline byte correctionFlex()
   if (configPage1.flexEnabled == 1)
   {
     flexValue = flexLookupCache.fuel = BIT_CHECK(TIMER_mask, BIT_TIMER_4HZ) || !flexLookupCache.fuelReady
-      ? table2D_getValue(&flexCorrectionFuelTable, currentStatus.ethanolPct)
+      ? table2D_getValue(&flexFuelTable, currentStatus.ethanolPct)
       : flexLookupCache.fuel;
   }
   return flexValue;
@@ -409,7 +409,7 @@ static inline int8_t correctionFlexTiming(int8_t advance)
   if( configPage1.flexEnabled == 1 ) //Check for flex being enabled
   {
     currentStatus.flexIgnCorrection = flexLookupCache.advance = BIT_CHECK(TIMER_mask, BIT_TIMER_4HZ) || !flexLookupCache.advanceReady
-      ? table2D_getValue(&flexCorrectionAdvTable, currentStatus.ethanolPct)
+      ? table2D_getValue(&flexAdvTable, currentStatus.ethanolPct)
       : flexLookupCache.advance;
     
     ignFlexValue = advance + currentStatus.flexIgnCorrection;
