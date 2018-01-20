@@ -146,7 +146,7 @@ void setPinMapping(byte boardID)
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinStepperEnable = 26; //Enable pin for DRV8825
       pinFan = A13; //Pin for the fan output
-      pinLaunch = 12; //Can be overwritten below
+      pinLaunch = 51; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
 
       #if defined(CORE_TEENSY)
@@ -194,14 +194,14 @@ void setPinMapping(byte boardID)
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinStepperEnable = 24; //Enable pin for DRV8825
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
-      pinLaunch = 12; //Can be overwritten below
+      pinLaunch = 51; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
 
       #if defined(CORE_TEENSY)
         pinTrigger = 23;
-        pinTrigger2 = 35;
-        pinStepperDir = 33;
-        pinStepperStep = 34;
+        pinTrigger2 = 36;
+        pinStepperDir = 34;
+        pinStepperStep = 35;
         pinCoil1 = 31;
         pinTachOut = 28;
         pinFan = 27;
@@ -278,8 +278,8 @@ void setPinMapping(byte boardID)
       //Pin mappings as per the MX5 PNP shield
       pinInjector1 = 11; //Output pin injector 1 is on
       pinInjector2 = 10; //Output pin injector 2 is on
-      pinInjector3 = 8; //Output pin injector 3 is on
-      pinInjector4 = 9; //Output pin injector 4 is on
+      pinInjector3 = 9; //Output pin injector 3 is on
+      pinInjector4 = 8; //Output pin injector 4 is on
       pinInjector5 = 14; //Output pin injector 5 is on
       pinCoil1 = 39; //Pin for coil 1
       pinCoil2 = 41; //Pin for coil 2
@@ -305,6 +305,20 @@ void setPinMapping(byte boardID)
       pinFan = 35; //Pin for the fan output
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+
+      #if defined(CORE_TEENSY)
+        pinTrigger = 23;
+        pinTrigger2 = 36;
+        pinStepperDir = 34;
+        pinStepperStep = 35;
+        pinCoil1 = 33; //Done
+        pinCoil2 = 24; //Done
+        pinCoil3 = 51; //Won't work (No mapping for pin 32)
+        pinCoil4 = 52; //Won't work (No mapping for pin 33)
+        pinFuelPump = 26; //Requires PVT4 adapter or above
+        pinFan = 50; //Won't work (No mapping for pin 35)
+        pinTachOut = 28; //Done
+      #endif
       break;
 
     case 10:
@@ -866,6 +880,21 @@ void initialiseTriggers()
             triggerSetEndTeeth = triggerSetEndTeeth_Harley;
             attachInterrupt(triggerInterrupt, trigger, RISING);
             // attachInterrupt(triggerInterrupt2, triggerSec_Harley, FALLING);
+            break;
+
+    case 16:
+            //36-2-2-2
+            triggerSetup_ThirtySixMinus222();
+            trigger = triggerPri_ThirtySixMinus222;
+            triggerSecondary = triggerSec_ThirtySixMinus222;
+            getRPM = getRPM_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
+            getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
+            triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus222;
+
+            if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+            else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+            if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSecondary, RISING); }
+            else { attachInterrupt(triggerInterrupt2, triggerSecondary, FALLING); }
             break;
 
     default:

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.50.10 - EFI Analytics, Inc." tuneComment="" writeDate="Tue Nov 07 22:13:14 AEDT 2017"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.09" nPages="10" signature="speeduino 201710"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.50.23 - EFI Analytics, Inc." tuneComment="" writeDate="Wed Jan 03 21:35:21 AEDT 2018"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.12" nPages="10" signature="speeduino 201712"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
 </page>
@@ -82,6 +82,8 @@
 <constant name="pinLayout">"Speeduino v0.4"</constant>
 <constant name="tachoPin">"Board Default"</constant>
 <constant name="tachoDiv">"Normal"</constant>
+<constant digits="1" name="unused2-17" units="ms">25.5</constant>
+<constant digits="1" name="unused2-18" units="ms">25.5</constant>
 <constant digits="0" name="tpsThresh" units="%/s">70.0</constant>
 <constant digits="0" name="taeTime" units="ms">200.0</constant>
 <constant name="display">"Unused"</constant>
@@ -111,6 +113,8 @@
 <constant name="twoStroke">"Four-stroke"</constant>
 <constant name="injType">"Port"</constant>
 <constant name="nCylinders">"4"</constant>
+<constant name="unused2-37a">"None"</constant>
+<constant name="unused2-37b">"None"</constant>
 <constant name="nInjectors">"4"</constant>
 <constant name="engineType">"Even fire"</constant>
 <constant name="flexEnabled">"Off"</constant>
@@ -140,10 +144,9 @@
 <constant digits="0" name="iacCLminDuty" units="%">0.0</constant>
 <constant digits="0" name="iacCLmaxDuty" units="%">0.0</constant>
 <constant digits="0" name="boostMinDuty" units="%">20.0</constant>
-<constant cols="1" digits="0" name="unused2-64" rows="63" units="%">
-         16.0 
-         18.0 
-         57.0 
+<constant digits="0" name="baroMin" units="kpa">1.0</constant>
+<constant digits="0" name="baroMax" units="kpa">315.0</constant>
+<constant cols="1" digits="0" name="unused2-67" rows="60" units="%">
          62.0 
          62.0 
          60.0 
@@ -273,13 +276,16 @@
 <constant name="TrigEdge">"Leading"</constant>
 <constant name="TrigSpeed">"Crank Speed"</constant>
 <constant name="IgInv">"Going Low"</constant>
-<constant name="unused4-5d">"No"</constant>
 <constant name="TrigPattern">"Missing Tooth"</constant>
 <constant name="TrigEdgeSec">"Leading"</constant>
 <constant name="fuelPumpPin">"Board Default"</constant>
 <constant name="useResync">"No"</constant>
 <constant digits="1" name="sparkDur" units="ms">1.0</constant>
+<constant digits="1" name="unused4-8" units="ms">25.5</constant>
+<constant digits="1" name="unused4-9" units="ms">25.5</constant>
+<constant digits="1" name="unused4-10" units="ms">25.5</constant>
 <constant digits="0" name="SkipCycles" units="cycles">1.0</constant>
+<constant name="unused4-12a">"NOTHING"</constant>
 <constant name="useDwellLim">"On"</constant>
 <constant name="sparkMode">"Wasted Spark"</constant>
 <constant name="TrigFilter">"Off"</constant>
@@ -485,6 +491,7 @@
 <constant digits="0" name="egoKD" units="%">0.0</constant>
 <constant digits="0" name="egoTemp" units="C">70.0</constant>
 <constant digits="0" name="egoCount">16.0</constant>
+<constant digits="0" name="unused6-6" units="%">255.0</constant>
 <constant digits="0" name="egoLimit">15.0</constant>
 <constant digits="1" name="ego_min" units="AFR">9.0</constant>
 <constant digits="1" name="ego_max" units="AFR">19.0</constant>
@@ -645,7 +652,7 @@
          158.0 
       </constant>
 </page>
-<page number="6" size="160">
+<page number="6" size="240">
 <constant cols="8" digits="0" name="boostTable" rows="8" units="kPa">
          150.0 150.0 150.0 150.0 150.0 150.0 150.0 150.0 
          150.0 150.0 150.0 150.0 150.0 150.0 150.0 150.0 
@@ -677,8 +684,8 @@
          100.0 
       </constant>
 <constant cols="8" digits="0" name="vvtTable" rows="8" units="%">
-         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
-         11.0 10.0 6.0 6.0 6.0 6.0 7.0 7.0 
+         175.0 0.0 0.0 27.0 4.0 4.0 0.0 0.0 
+         99.0 8.0 6.0 0.0 6.0 6.0 0.0 1.0 
          24.0 22.0 20.0 18.0 18.0 18.0 19.0 20.0 
          32.0 30.0 29.0 28.0 27.0 27.0 27.0 29.0 
          39.0 39.0 38.0 38.0 37.0 37.0 36.0 36.0 
@@ -705,6 +712,36 @@
          60.0 
          80.0 
          100.0 
+      </constant>
+<constant cols="8" digits="0" name="stagingTable" rows="8" units="%">
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+      </constant>
+<constant cols="1" digits="0" name="rpmBinsStaging" rows="8" units="RPM">
+         500.0 
+         1000.0 
+         2000.0 
+         3000.0 
+         4000.0 
+         5000.0 
+         6000.0 
+         7000.0 
+      </constant>
+<constant cols="1" digits="0" name="mapBinsStaging" rows="8" units="kPa">
+         10.0 
+         30.0 
+         46.0 
+         60.0 
+         80.0 
+         100.0 
+         120.0 
+         150.0 
       </constant>
 </page>
 <page number="7" size="192">
@@ -824,6 +861,38 @@
 <constant name="caninput_sel13">"Off"</constant>
 <constant name="caninput_sel14">"Off"</constant>
 <constant name="caninput_sel15">"Off"</constant>
+<constant name="caninput_source_start_byte0">"7"</constant>
+<constant name="caninput_source_start_byte1">"7"</constant>
+<constant name="caninput_source_start_byte2">"7"</constant>
+<constant name="caninput_source_start_byte3">"7"</constant>
+<constant name="caninput_source_start_byte4">"7"</constant>
+<constant name="caninput_source_start_byte5">"7"</constant>
+<constant name="caninput_source_start_byte6">"7"</constant>
+<constant name="caninput_source_start_byte7">"7"</constant>
+<constant name="caninput_source_start_byte8">"7"</constant>
+<constant name="caninput_source_start_byte9">"7"</constant>
+<constant name="caninput_source_start_byte10">"7"</constant>
+<constant name="caninput_source_start_byte11">"7"</constant>
+<constant name="caninput_source_start_byte12">"7"</constant>
+<constant name="caninput_source_start_byte13">"7"</constant>
+<constant name="caninput_source_start_byte14">"7"</constant>
+<constant name="caninput_source_start_byte15">"7"</constant>
+<constant name="caninput_source_num_bytes0">"2"</constant>
+<constant name="caninput_source_num_bytes1">"2"</constant>
+<constant name="caninput_source_num_bytes2">"2"</constant>
+<constant name="caninput_source_num_bytes3">"2"</constant>
+<constant name="caninput_source_num_bytes4">"2"</constant>
+<constant name="caninput_source_num_bytes5">"2"</constant>
+<constant name="caninput_source_num_bytes6">"2"</constant>
+<constant name="caninput_source_num_bytes7">"2"</constant>
+<constant name="caninput_source_num_bytes8">"2"</constant>
+<constant name="caninput_source_num_bytes9">"2"</constant>
+<constant name="caninput_source_num_bytes10">"2"</constant>
+<constant name="caninput_source_num_bytes11">"2"</constant>
+<constant name="caninput_source_num_bytes12">"2"</constant>
+<constant name="caninput_source_num_bytes13">"2"</constant>
+<constant name="caninput_source_num_bytes14">"2"</constant>
+<constant name="caninput_source_num_bytes15">"2"</constant>
 <constant digits="0" name="unused10_53">255.0</constant>
 <constant digits="0" name="unused10_54">255.0</constant>
 <constant name="enable_candata_out">"On"</constant>
@@ -881,7 +950,7 @@
 <constant digits="0" name="unused10_124">255.0</constant>
 <constant digits="0" name="unused10_125">255.0</constant>
 <constant digits="0" name="unused10_126">255.0</constant>
-<constant digits="0" name="unused10_127">100.0</constant>
+<constant digits="0" name="unused10_127">124.0</constant>
 </page>
 <page number="9" size="192">
 <constant cols="1" digits="0" name="crankingEnrichBins" rows="4" units="C">
@@ -897,41 +966,39 @@
          100.0 
       </constant>
 <constant name="rotaryType">"FC"</constant>
-<constant name="unused11-8c">"On"</constant>
-<constant name="unused11-8d">"Off"</constant>
+<constant name="stagingEnabled">"Off"</constant>
+<constant name="stagingMode">"Automatic"</constant>
 <constant name="unused11-8e">"Off"</constant>
 <constant name="unused11-8f">"Off"</constant>
 <constant name="unused11-8g">"Off"</constant>
 <constant name="unused11-8h">"Off"</constant>
 <constant cols="1" digits="0" name="rotarySplitValues" rows="8" units="degrees">
-         255.0 
-         7.0 
-         255.0 
-         7.0 
-         255.0 
-         7.0 
-         255.0 
-         7.0 
+         0.0 
+         0.0 
+         0.0 
+         10.0 
+         10.0 
+         10.0 
+         11.0 
+         12.0 
       </constant>
 <constant cols="1" digits="0" name="rotarySplitBins" rows="8" units="kPa">
-         510.0 
-         14.0 
-         510.0 
-         14.0 
-         510.0 
-         14.0 
-         510.0 
-         14.0 
+         0.0 
+         30.0 
+         50.0 
+         70.0 
+         90.0 
+         110.0 
+         140.0 
+         200.0 
       </constant>
 <constant digits="0" name="boostSens">2047.0</constant>
 <constant digits="0" name="boostIntv" units="ms">20.0</constant>
-<constant cols="1" digits="0" name="unused11_28_192" rows="163" units="RPM">
+<constant digits="0" name="stagedInjSizePri" units="cc/min">200.0</constant>
+<constant digits="0" name="stagedInjSizeSec" units="cc/min">600.0</constant>
+<constant cols="1" digits="0" name="unused11_32_192" rows="159" units="RPM">
          700.0 
-         25300.0 
-         1000.0 
-         25000.0 
-         1300.0 
-         24700.0 
+         25500.0 
          700.0 
          700.0 
          0.0 
@@ -942,69 +1009,69 @@
          0.0 
          0.0 
          0.0 
-         100.0 
+         0.0 
          700.0 
          700.0 
          700.0 
          700.0 
          700.0 
-         600.0 
-         0.0 
-         3800.0 
-         25500.0 
-         21400.0 
-         100.0 
-         100.0 
-         100.0 
-         100.0 
-         100.0 
-         100.0 
-         100.0 
-         100.0 
-         5600.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         17700.0 
-         500.0 
+         700.0 
          0.0 
          0.0 
+         25500.0 
+         25500.0 
+         100.0 
+         100.0 
+         100.0 
+         100.0 
+         100.0 
+         100.0 
+         100.0 
+         100.0 
+         100.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         700.0 
          0.0 
          0.0 
          0.0 
          0.0 
          0.0 
+         0.0 
+         0.0 
          100.0 
-         100.0 
+         0.0 
          200.0 
          200.0 
          100.0 
          100.0 
          100.0 
-         10700.0 
+         200.0 
          25500.0 
          25500.0 
          25500.0 
-         14300.0 
+         25500.0 
          0.0 
          100.0 
          0.0 
          100.0 
-         12000.0 
-         13400.0 
-         12300.0 
+         100.0 
+         25500.0 
+         100.0 
          25500.0 
          25500.0 
          25500.0 
@@ -1025,70 +1092,70 @@
          25500.0 
          25500.0 
          25500.0 
-         10500.0 
-         3500.0 
-         6600.0 
-         9700.0 
-         13500.0 
-         13100.0 
-         11300.0 
-         10000.0 
-         3300.0 
-         800.0 
-         1100.0 
-         700.0 
-         500.0 
-         800.0 
+         25500.0 
          1000.0 
-         1200.0 
-         1400.0 
-         1500.0 
-         2200.0 
-         3400.0 
-         4300.0 
-         4900.0 
-         6100.0 
-         8400.0 
-         11700.0 
-         19500.0 
          5000.0 
-         2400.0 
+         7500.0 
+         11000.0 
+         15000.0 
+         12000.0 
+         10900.0 
+         9600.0 
+         0.0 
+         1200.0 
+         1000.0 
          600.0 
+         500.0 
+         1000.0 
+         1000.0 
+         1300.0 
+         1500.0 
+         1500.0 
+         2500.0 
+         3800.0 
+         4500.0 
+         5000.0 
+         6500.0 
+         9000.0 
+         12500.0 
+         21600.0 
+         100.0 
+         3000.0 
          0.0 
          0.0 
          0.0 
          0.0 
          0.0 
-         20900.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_9" units="RAW">
          255.0 

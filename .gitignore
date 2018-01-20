@@ -18,5 +18,4 @@ reference/hardware/v0.4/gerbers/Archive.zip
 .project
 .vscode
 .build
-.vscode/c_cpp_properties.json
-.vscode/launch.json
+.kicad_pcb-bak
