@@ -487,6 +487,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[80] = highByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
 
   fullStatus[81] = currentStatus.status3;
+  fullStatus[82] = lowByte(currentStatus.flexBoostCorrection);
+  fullStatus[83] = highByte(currentStatus.flexBoostCorrection);
 
   for(byte x=0; x<packetLength; x++)
   {

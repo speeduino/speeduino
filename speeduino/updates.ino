@@ -8,7 +8,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    7
+  #define CURRENT_DATA_VERSION    8
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -90,6 +90,32 @@ void doUpdates()
 
     EEPROM.write(EEPROM_DATA_VERSION, 7);
     loadConfig(); //Reload the config after changing everything in EEPROM
+  }
+
+  if (EEPROM.read(EEPROM_DATA_VERSION) == 7) {
+    //Convert whatever flex fuel settings are there into the new tables
+
+    configPage11.flexBoostAdj[0] = (int8_t)configPage1.unused2_1;
+    configPage11.flexFuelAdj[0]  = configPage1.unused2_57;
+    configPage11.flexAdvAdj[0]   = configPage1.unused2_59;
+
+    for (uint8_t x = 1; x < 6; x++)
+    {
+      uint8_t pct = x * 20;
+      configPage11.flexBoostBins[x] = configPage11.flexFuelBins[x] = configPage11.flexAdvBins[x] = pct;
+
+      int16_t boostAdder = (((configPage1.unused2_2 - (int8_t)configPage1.unused2_1) * pct) / 100) + (int8_t)configPage1.unused2_1;
+      configPage11.flexBoostAdj[x] = boostAdder;
+
+      uint8_t fuelAdder = (((configPage1.unused2_58 - configPage1.unused2_57) * pct) / 100) + configPage1.unused2_57;
+      configPage11.flexFuelAdj[x] = fuelAdder;
+
+      uint8_t advanceAdder = (((configPage1.unused2_60 - configPage1.unused2_59) * pct) / 100) + configPage1.unused2_59;
+      configPage11.flexAdvAdj[x] = advanceAdder;
+    }
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 8);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)

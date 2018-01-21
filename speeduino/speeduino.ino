@@ -208,6 +208,19 @@ void setup()
   rotarySplitTable.values = configPage11.rotarySplitValues;
   rotarySplitTable.axisX = configPage11.rotarySplitBins;
 
+  flexFuelTable.valueSize = SIZE_BYTE;
+  flexFuelTable.xSize = 6;
+  flexFuelTable.values = configPage11.flexFuelAdj;
+  flexFuelTable.axisX = configPage11.flexFuelBins;
+  flexAdvTable.valueSize = SIZE_BYTE;
+  flexAdvTable.xSize = 6;
+  flexAdvTable.values = configPage11.flexAdvAdj;
+  flexAdvTable.axisX = configPage11.flexAdvBins;
+  flexBoostTable.valueSize = SIZE_INT;
+  flexBoostTable.xSize = 6;
+  flexBoostTable.values16 = configPage11.flexBoostAdj;
+  flexBoostTable.axisX = configPage11.flexBoostBins;
+
   //Setup the calibration tables
   loadCalibration();
 
