@@ -177,6 +177,9 @@ struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D
 struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
 struct table2D rotarySplitTable; //8 bin ignition split curve for rotary leading/trailing  (2D)
+struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
+struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
+struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
 
 //These are for the direct port manipulation of the injectors and coils
 volatile byte *inj1_pin_port;
@@ -299,6 +302,7 @@ struct statuses {
   uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
   uint8_t current_caninchannel = 0; //start off at channel 0
   uint16_t crankRPM = 400; //The actual cranking RPM limit. Saves us multiplying it everytime from the config page
+  int16_t flexBoostCorrection; //Amount of boost added based on flex
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -313,8 +317,8 @@ struct statuses currentStatus; //The global status object
 //This mostly covers off variables that are required for fuel
 struct config1 {
 
-  int8_t flexBoostLow; //Must be signed to allow for negatives
-  byte flexBoostHigh;
+  byte unused2_1;
+  byte unused2_2;
   byte asePct;  //Afterstart enrichment (%)
   byte aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
@@ -389,10 +393,10 @@ struct config1 {
   uint16_t oddfire2; //The ATDC angle of channel 2 for oddfire
   uint16_t oddfire3; //The ATDC angle of channel 3 for oddfire
   uint16_t oddfire4; //The ATDC angle of channel 4 for oddfire
-  byte flexFuelLow; //Fuel % to be used for the lowest ethanol reading (Typically 100%)
-  byte flexFuelHigh; //Fuel % to be used for the highest ethanol reading (Typically 163%)
-  byte flexAdvLow; //Additional advance (in degrees) at lowest ethanol reading (Typically 0)
-  byte flexAdvHigh; //Additional advance (in degrees) at highest ethanol reading (Varies, usually 10-20)
+  byte unused2_57;
+  byte unused2_58;
+  byte unused2_59;
+  byte unused2_60;
 
   byte iacCLminDuty;
   byte iacCLmaxDuty;
@@ -639,7 +643,16 @@ struct config11 {
   uint16_t stagedInjSizePri;
   uint16_t stagedInjSizeSec;
   byte lnchCtrlTPS;
-  byte unused11_28_192[159];
+  
+  uint8_t flexBoostBins[6];
+  int16_t flexBoostAdj[6];  //Boost kPa to be added to the boost target @ current ethanol (negative values allowed)
+  uint8_t flexFuelBins[6];
+  uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%)
+  uint8_t flexAdvBins[6];
+  uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%)
+                            //And another three corn rows die.
+
+  byte unused11_70_192[122];
 
 #if defined(CORE_AVR)
   };
@@ -647,6 +660,16 @@ struct config11 {
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
 
+struct flexCachedLookups
+{
+  bool fuelReady;
+  bool advanceReady;
+  bool boostReady;
+  byte fuel;
+  byte advance;
+  int16_t boost;
+};
+struct flexCachedLookups flexLookupCache = { false, false, false, 0, 0, 0 };
 
 byte pinInjector1; //Output pin injector 1
 byte pinInjector2; //Output pin injector 2
