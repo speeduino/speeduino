@@ -642,6 +642,7 @@ struct config11 {
   byte boostIntv;
   uint16_t stagedInjSizePri;
   uint16_t stagedInjSizeSec;
+  byte lnchCtrlTPS;
   
   uint8_t flexBoostBins[6];
   int16_t flexBoostAdj[6];  //Boost kPa to be added to the boost target @ current ethanol (negative values allowed)
@@ -651,7 +652,7 @@ struct config11 {
   uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%)
                             //And another three corn rows die.
 
-  byte unused11_68_192[124];
+  byte unused11_70_192[122];
 
 #if defined(CORE_AVR)
   };
