@@ -3,6 +3,10 @@
 #include <Arduino.h>
 #include "table.h"
 
+//These are configuration options for changing around the outputs that are used
+#define INJ_CHANNELS 4
+#define IGN_CHANNELS 4
+
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define BOARD_DIGITAL_GPIO_PINS 54
   #define BOARD_NR_GPIO_PINS 62
@@ -122,6 +126,9 @@
 #define IGN_MODE_WASTEDCOP  2
 #define IGN_MODE_SEQUENTIAL 3
 #define IGN_MODE_ROTARY     4
+
+#define SEC_TRIGGER_SINGLE  0
+#define SEC_TRIGGER_4_1     1
 
 #define ROTARY_IGN_FC       0
 #define ROTARY_IGN_FD       1
@@ -449,7 +456,7 @@ struct config2 {
   byte useResync : 1;
 
   byte sparkDur; //Spark duration in ms * 10
-  bool trigPatternSec; //Mode for Missing tooth secondary trigger.  Either single tooth cam wheel or 4-1
+  byte trigPatternSec; //Mode for Missing tooth secondary trigger.  Either single tooth cam wheel or 4-1
   uint8_t bootloaderCaps; //Capabilities of the bootloader over stock. e.g., 0=Stock, 1=Reset protection, etc.
 
   byte resetControl : 2; //Which method of reset control to use (0=None, 1=Prevent When Running, 2=Prevent Always, 3=Serial Command)
@@ -771,8 +778,5 @@ volatile uint16_t ignitionCount; //The count of ignition events that have taken 
 extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
-
-// alias(es) for ease of code reading!!
-bool& trigPatternSec = configPage2.trigPatternSec;
 
 #endif // GLOBALS_H
