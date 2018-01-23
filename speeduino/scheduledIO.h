@@ -32,6 +32,13 @@ inline void endTrailingCoilCharge2();
 #define closeInjector4() *inj4_pin_port &= ~(inj4_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ4)
 #define openInjector5() *inj5_pin_port |= (inj5_pin_mask)
 #define closeInjector5() *inj5_pin_port &= ~(inj5_pin_mask)
+//Dynamic functions below
+#define openInjector6() *inj6_pin_port |= (inj6_pin_mask);
+#define closeInjector6() *inj6_pin_port &= ~(inj6_pin_mask);
+#define openInjector7() *inj7_pin_port |= (inj7_pin_mask);
+#define closeInjector7() *inj7_pin_port &= ~(inj7_pin_mask);
+#define openInjector8() *inj8_pin_port |= (inj8_pin_mask);
+#define closeInjector8() *inj8_pin_port &= ~(inj8_pin_mask);
 
 #define openInjector1and4() openInjector1(); openInjector4()
 #define closeInjector1and4() closeInjector1(); closeInjector4()

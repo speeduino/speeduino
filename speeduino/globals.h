@@ -4,7 +4,7 @@
 #include "table.h"
 
 //These are configuration options for changing around the outputs that are used
-#define INJ_CHANNELS 4
+#define INJ_CHANNELS 5
 #define IGN_CHANNELS 4
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
@@ -224,6 +224,9 @@ bool channel2InjEnabled = false;
 bool channel3InjEnabled = false;
 bool channel4InjEnabled = false;
 bool channel5InjEnabled = false;
+bool channel6InjEnabled = false;
+bool channel7InjEnabled = false;
+bool channel8InjEnabled = false;
 
 int ignition1EndAngle = 0;
 int ignition2EndAngle = 0;
@@ -289,6 +292,10 @@ struct statuses {
   unsigned int PW2; //In uS
   unsigned int PW3; //In uS
   unsigned int PW4; //In uS
+  unsigned int PW5; //In uS
+  unsigned int PW6; //In uS
+  unsigned int PW7; //In uS
+  unsigned int PW8; //In uS
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous
   volatile unsigned int loopsPerSecond;

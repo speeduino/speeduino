@@ -343,6 +343,8 @@ struct Schedule {
   unsigned int nextStartCompare;
   unsigned int nextEndCompare;
   volatile bool hasNextSchedule = false;
+  volatile uint16_t * counter;
+  volatile uint16_t * compare;
 };
 
 volatile Schedule *timer3Aqueue[4];

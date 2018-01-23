@@ -17,6 +17,8 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#ifndef UNIT_TEST  // Scope guard for unit testing
+
 #include <stdint.h> //https://developer.mbed.org/handbook/C-Data-Types
 //************************************************
 #include "speeduino.h"
@@ -1091,7 +1093,7 @@ void loop()
         currentStatus.PW4 = currentStatus.PW3;
       }
       //If staging is off, all the pulse widths are set the same (Sequential adjustments will be made below)
-      else { currentStatus.PW2 = currentStatus.PW3 = currentStatus.PW4 = currentStatus.PW1; } // Initial state is for all pulsewidths to be the same (This gets changed below)
+      else { currentStatus.PW2 = currentStatus.PW3 = currentStatus.PW4 = currentStatus.PW5 = currentStatus.PW6 = currentStatus.PW7 = currentStatus.PW1; } // Initial state is for all pulsewidths to be the same (This gets changed below)
 
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
@@ -1461,7 +1463,43 @@ void loop()
           {
             setFuelSchedule6(
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW4
+                      (unsigned long)currentStatus.PW6
+                      );
+          }
+        }
+#endif
+
+#if INJ_CHANNELS >= 7
+        if( (channel7InjEnabled) && (currentStatus.PW7 >= inj_opentime_uS) )
+        {
+          tempCrankAngle = crankAngle - channel7InjDegrees;
+          if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
+          tempStartAngle = injector7StartAngle - channel7InjDegrees;
+          if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule7.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( tempStartAngle > tempCrankAngle )
+          {
+            setFuelSchedule7(
+                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      (unsigned long)currentStatus.PW7
+                      );
+          }
+        }
+#endif
+
+#if INJ_CHANNELS >= 8
+        if( (channel8InjEnabled) && (currentStatus.PW8 >= inj_opentime_uS) )
+        {
+          tempCrankAngle = crankAngle - channel8InjDegrees;
+          if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
+          tempStartAngle = injector8StartAngle - channel8InjDegrees;
+          if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule8.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( tempStartAngle > tempCrankAngle )
+          {
+            setFuelSchedule8(
+                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      (unsigned long)currentStatus.PW8
                       );
           }
         }
@@ -1664,3 +1702,5 @@ static inline unsigned int PW(int REQ_FUEL, byte VE, long MAP, int corrections, 
   }
   return (unsigned int)(intermediate);
 }
+
+#endif //Unit testing scope guard
