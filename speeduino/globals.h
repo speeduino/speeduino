@@ -325,7 +325,7 @@ struct statuses currentStatus; //The global status object
 
 //Page 1 of the config - See the ini file for further reference
 //This mostly covers off variables that are required for fuel
-struct config1 {
+struct config2 {
 
   int8_t flexBoostLow; //Must be signed to allow for negatives
   byte flexBoostHigh;
@@ -425,7 +425,7 @@ struct config1 {
 
 //Page 2 of the config - See the ini file for further reference
 //This mostly covers off variables that are required for ignition
-struct config2 {
+struct config4 {
 
   int16_t triggerAngle;
   byte FixAng;
@@ -486,9 +486,9 @@ struct config2 {
   } __attribute__((__packed__)); //The 32 bi systems require all structs to be fully packed
 #endif
 
-//Page 3 of the config - See the ini file for further reference
+//Page 6 of the config - See the ini file for further reference
 //This mostly covers off variables that are required for AFR targets and closed loop
-struct config3 {
+struct config6 {
 
   byte egoAlgorithm : 2;
   byte egoType : 2;
@@ -580,9 +580,9 @@ struct config3 {
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
 
-//Page 10 of the config mostly deals with CANBUS control
+//Page 9 of the config mostly deals with CANBUS control
 //See ini file for further info (Config Page 10 in the ini)
-struct config10 {
+struct config9 {
   byte enable_canbus:2;
   byte enable_candata_in:1;
   uint16_t caninput_sel;                    //bit status on/off if input is enabled
@@ -632,11 +632,11 @@ struct config10 {
 #endif
 
 /*
-Page 11 - No specific purpose. Created initially for the cranking enrich curve
+Page 10 - No specific purpose. Created initially for the cranking enrich curve
 192 bytes long
 See ini file for further info (Config Page 11 in the ini)
 */
-struct config11 {
+struct config10 {
   byte crankingEnrichBins[4];
   byte crankingEnrichValues[4];
 
@@ -730,11 +730,11 @@ extern struct table3D stagingTable; //8x8 afr target map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
-extern struct config1 configPage1;
 extern struct config2 configPage2;
-extern struct config3 configPage3;
+extern struct config4 configPage4;
+extern struct config6 configPage6;
+extern struct config9 configPage9;
 extern struct config10 configPage10;
-extern struct config11 configPage11;
 extern unsigned long currentLoopTime; //The time the current loop started (uS)
 extern unsigned long previousLoopTime; //The time the previous loop started (uS)
 volatile uint16_t ignitionCount; //The count of ignition events that have taken place since the engine started

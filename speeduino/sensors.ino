@@ -66,7 +66,7 @@ static inline void instanteneousMAPReading()
   if(initialisationComplete == true) { currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC); } //Very weak filter
   else { currentStatus.mapADC = tempReading; } //Baro reading (No filter)
 
-  currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+  currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
   if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
 
 }
@@ -75,7 +75,7 @@ static inline void readMAP()
 {
   unsigned int tempReading;
   //MAP Sampling system
-  switch(configPage1.mapSample)
+  switch(configPage2.mapSample)
   {
     case 0:
       //Instantaneous MAP readings
@@ -114,8 +114,8 @@ static inline void readMAP()
           if( (MAPrunningValue != 0) && (MAPcount != 0) )
           {
             currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
-            currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
-            //currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage1.mapMax);
+            currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
+            //currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage2.mapMax);
             if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
           }
           else { instanteneousMAPReading(); }
@@ -151,7 +151,7 @@ static inline void readMAP()
         {
           //Reaching here means that the last cylce has completed and the MAP value should be calculated
           currentStatus.mapADC = MAPrunningValue;
-          currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage1.mapMin, configPage1.mapMax); //Get the current MAP value
+          currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
           if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
           MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
           MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
@@ -180,9 +180,9 @@ void readTPS()
   currentStatus.tpsADC = ADC_FILTER(tempTPS, ADCFILTER_TPS, currentStatus.tpsADC);
   //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
   byte tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
-  if (currentStatus.tpsADC < configPage1.tpsMin) { tempADC = configPage1.tpsMin; }
-  else if(currentStatus.tpsADC > configPage1.tpsMax) { tempADC = configPage1.tpsMax; }
-  currentStatus.TPS = map(tempADC, configPage1.tpsMin, configPage1.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+  if (currentStatus.tpsADC < configPage2.tpsMin) { tempADC = configPage2.tpsMin; }
+  else if(currentStatus.tpsADC > configPage2.tpsMax) { tempADC = configPage2.tpsMax; }
+  currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
   currentStatus.TPS_time = currentLoopTime;
 }
 
@@ -214,7 +214,7 @@ void readIAT()
 
 void readBaro()
 {
-  if ( configPage3.useExtBaro != 0 )
+  if ( configPage6.useExtBaro != 0 )
   {
     int tempReading;
     // readings
@@ -227,7 +227,7 @@ void readBaro()
 
     currentStatus.baroADC = ADC_FILTER(tempReading, ADCFILTER_BARO, currentStatus.baroADC); //Very weak filter
 
-    currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage1.baroMin, configPage1.baroMax); //Get the current MAP value
+    currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage2.baroMin, configPage2.baroMax); //Get the current MAP value
   }
 }
 

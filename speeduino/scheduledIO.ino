@@ -1,7 +1,7 @@
 
 volatile bool tachoAlt = true;
 #define TACH_PULSE_HIGH() *tach_pin_port |= (tach_pin_mask)
-#define TACH_PULSE_LOW() if( (configPage1.tachoDiv == 0) || tachoAlt ) { *tach_pin_port &= ~(tach_pin_mask); tachoAlt = !tachoAlt; }
+#define TACH_PULSE_LOW() if( (configPage2.tachoDiv == 0) || tachoAlt ) { *tach_pin_port &= ~(tach_pin_mask); tachoAlt = !tachoAlt; }
 
 
 

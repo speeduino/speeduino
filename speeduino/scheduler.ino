@@ -298,7 +298,7 @@ void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, uns
   {
     //If the schedule is already running, we can set the next schedule so it is ready to go
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-    targetSchedule->nextStartCompare = FUEL1_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    targetSchedule->nextStartCompare = *targetSchedule->counter + uS_TO_TIMER_COMPARE_SLOW(timeout);
     targetSchedule->nextEndCompare = targetSchedule->nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
     targetSchedule->hasNextSchedule = true;
   }
@@ -753,7 +753,7 @@ static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a f
     if (fuelSchedule1.Status == PENDING) //Check to see if this schedule is turn on
     {
       //To use timer queue, change fuelShedule1 to timer3Aqueue[0];
-      if (configPage1.injLayout == INJ_SEMISEQUENTIAL) { openInjector1and4(); }
+      if (configPage2.injLayout == INJ_SEMISEQUENTIAL) { openInjector1and4(); }
       else { openInjector1(); }
       fuelSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       FUEL1_COMPARE = fuelSchedule1.endCompare;
@@ -761,7 +761,7 @@ static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a f
     else if (fuelSchedule1.Status == RUNNING)
     {
        //timer3Aqueue[0]->EndCallback();
-       if (configPage1.injLayout == INJ_SEMISEQUENTIAL) { closeInjector1and4(); }
+       if (configPage2.injLayout == INJ_SEMISEQUENTIAL) { closeInjector1and4(); }
        else { closeInjector1(); }
        fuelSchedule1.Status = OFF; //Turn off the schedule
        fuelSchedule1.schedulesSet = 0;
@@ -790,7 +790,7 @@ static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a f
     if (fuelSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
       //fuelSchedule2.StartCallback();
-      if (configPage1.injLayout == INJ_SEMISEQUENTIAL) { openInjector2and3(); }
+      if (configPage2.injLayout == INJ_SEMISEQUENTIAL) { openInjector2and3(); }
       else { openInjector2(); }
       fuelSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       FUEL2_COMPARE = fuelSchedule2.endCompare;
@@ -798,7 +798,7 @@ static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a f
     else if (fuelSchedule2.Status == RUNNING)
     {
        //fuelSchedule2.EndCallback();
-       if (configPage1.injLayout == INJ_SEMISEQUENTIAL) { closeInjector2and3(); }
+       if (configPage2.injLayout == INJ_SEMISEQUENTIAL) { closeInjector2and3(); }
        else { closeInjector2(); }
        fuelSchedule2.Status = OFF; //Turn off the schedule
        fuelSchedule2.schedulesSet = 0;
