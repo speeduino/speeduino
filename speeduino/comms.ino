@@ -183,6 +183,24 @@ void command()
 
       break;
 
+    case 'U': //User wants to reset the Arduino (probably for FW update)
+      if (resetControl != RESET_CONTROL_DISABLED)
+      {
+      #ifndef SMALL_FLASH_MODE
+        if (!cmdPending) { Serial.println(F("Comms halted. Next byte will reset the Arduino.")); }
+      #endif
+
+        while (Serial.available() == 0) { }
+        digitalWrite(pinResetControl, LOW);
+      }
+      else
+      {
+      #ifndef SMALL_FLASH_MODE
+        if (!cmdPending) { Serial.println(F("Reset control is currently disabled.")); }
+      #endif
+      }
+      break;
+
     case 'V': // send VE table and constants in binary
       sendPage(false);
       break;
@@ -293,6 +311,16 @@ void command()
       sendToothLog(true); //Sends tooth log values as chars
       break;
 
+    case '`': //Custom 16u2 firmware is making its presence known
+      cmdPending = true;
+
+      if (Serial.available() >= 1) {
+        configPage2.bootloaderCaps = Serial.read();
+        cmdPending = false;
+      }
+      break;
+
+
     case '?':
     #ifndef SMALL_FLASH_MODE
       Serial.println
@@ -320,6 +348,7 @@ void command()
          "Z - Display calibration values\n"
          "T - Displays 256 tooth log entries in binary\n"
          "r - Displays 256 tooth log entries\n"
+         "U - Prepare for firmware update. The next byte received will cause the Arduino to reset.\n"
          "? - Displays this help page"
        ));
      #endif
@@ -456,6 +485,10 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[78] = highByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
   fullStatus[79] = lowByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
   fullStatus[80] = highByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
+
+  fullStatus[81] = currentStatus.status3;
+  fullStatus[82] = lowByte(currentStatus.flexBoostCorrection);
+  fullStatus[83] = highByte(currentStatus.flexBoostCorrection);
 
   for(byte x=0; x<packetLength; x++)
   {

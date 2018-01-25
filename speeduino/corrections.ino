@@ -280,10 +280,10 @@ static inline bool correctionDFCO()
 static inline byte correctionFlex()
 {
   byte flexValue = 100;
-  if(configPage2.flexEnabled == 1)
+  
+  if (configPage2.flexEnabled == 1)
   {
-    byte flexRange = configPage2.flexFuelHigh - configPage2.flexFuelLow;
-    flexValue = percentage(currentStatus.ethanolPct, flexRange) + 100;
+    flexValue = table2D_getValue(&flexFuelTable, currentStatus.ethanolPct);
   }
   return flexValue;
 }
@@ -406,11 +406,7 @@ static inline int8_t correctionFlexTiming(int8_t advance)
   byte ignFlexValue = advance;
   if( configPage2.flexEnabled == 1 ) //Check for flex being enabled
   {
-    byte flexRange = configPage2.flexAdvHigh - configPage2.flexAdvLow;
-
-    if (currentStatus.ethanolPct != 0) { currentStatus.flexIgnCorrection = percentage(currentStatus.ethanolPct, flexRange); }
-    else { currentStatus.flexIgnCorrection = 0; }
-
+    currentStatus.flexIgnCorrection = table2D_getValue(&flexAdvTable, currentStatus.ethanolPct);
     ignFlexValue = advance + currentStatus.flexIgnCorrection;
   }
   return ignFlexValue;

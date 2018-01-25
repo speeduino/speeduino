@@ -161,6 +161,10 @@ void setup()
   loadConfig();
   doUpdates(); //Check if any data items need updating (Occurs ith firmware updates)
 
+  //Always start with a clean slate on the bootloader capabilities level
+  //This should be 0 until we hear otherwise from the 16u2
+  configPage2.bootloaderCaps = 0;
+
   Serial.begin(115200);
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
   if (configPage9.enable_canbus == 1) { CANSerial.begin(115200); }
@@ -217,6 +221,19 @@ void setup()
   rotarySplitTable.xSize = 8;
   rotarySplitTable.values = configPage10.rotarySplitValues;
   rotarySplitTable.axisX = configPage10.rotarySplitBins;
+
+  flexFuelTable.valueSize = SIZE_BYTE;
+  flexFuelTable.xSize = 6;
+  flexFuelTable.values = configPage11.flexFuelAdj;
+  flexFuelTable.axisX = configPage11.flexFuelBins;
+  flexAdvTable.valueSize = SIZE_BYTE;
+  flexAdvTable.xSize = 6;
+  flexAdvTable.values = configPage11.flexAdvAdj;
+  flexAdvTable.axisX = configPage11.flexAdvBins;
+  flexBoostTable.valueSize = SIZE_INT;
+  flexBoostTable.xSize = 6;
+  flexBoostTable.values16 = configPage11.flexBoostAdj;
+  flexBoostTable.axisX = configPage11.flexBoostBins;
 
   //Setup the calibration tables
   loadCalibration();
@@ -691,6 +708,7 @@ void setup()
   setFuelSchedule2(100, (unsigned long)(configPage2.primePulse * 100));
   setFuelSchedule3(100, (unsigned long)(configPage2.primePulse * 100));
   setFuelSchedule4(100, (unsigned long)(configPage2.primePulse * 100));
+
   initialisationComplete = true;
   digitalWrite(LED_BUILTIN, HIGH);
 }
@@ -1658,7 +1676,17 @@ void loop()
             }
         }
       } //Ignition schedules on
+
+      if (!BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_PREVENT) && resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) {
+        //Reset prevention is supposed to be on while the engine is running but isn't. Fix that.
+        digitalWrite(pinResetControl, HIGH);
+        BIT_SET(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
+      }
     } //Has sync and RPM
+    else if (BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_PREVENT) && resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) {
+      digitalWrite(pinResetControl, LOW);
+      BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
+    }
 } //loop()
 
 /*

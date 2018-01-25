@@ -102,6 +102,14 @@
 #define BIT_TIMER_15HZ            3
 #define BIT_TIMER_30HZ            4
 
+#define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
+#define BIT_STATUS3_UNUSED2       1
+#define BIT_STATUS3_UNUSED3       2
+#define BIT_STATUS3_UNUSED4       3
+#define BIT_STATUS3_UNUSED5       4
+#define BIT_STATUS3_UNUSED6       5
+#define BIT_STATUS3_UNUSED7       6
+
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
@@ -144,6 +152,11 @@
 #define STAGING_MODE_TABLE  0
 #define STAGING_MODE_AUTO  1
 
+#define RESET_CONTROL_DISABLED             0
+#define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
+#define RESET_CONTROL_PREVENT_ALWAYS       2
+#define RESET_CONTROL_SERIAL_COMMAND       3
+
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 
@@ -184,6 +197,9 @@ struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D
 struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
 struct table2D rotarySplitTable; //8 bin ignition split curve for rotary leading/trailing  (2D)
+struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
+struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
+struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
 
 //These are for the direct port manipulation of the injectors and coils
 volatile byte *inj1_pin_port;
@@ -235,6 +251,9 @@ int ignition4EndAngle = 0;
 
 //This is used across multiple files
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+
+//This needs to be here because using the config page directly can prevent burning the setting
+byte resetControl = RESET_CONTROL_DISABLED;
 
 volatile byte TIMER_mask;
 volatile byte LOOP_TIMER;
@@ -313,6 +332,8 @@ struct statuses {
   uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
   uint8_t current_caninchannel = 0; //start off at channel 0
   uint16_t crankRPM = 400; //The actual cranking RPM limit. Saves us multiplying it everytime from the config page
+  volatile byte status3;
+  int16_t flexBoostCorrection; //Amount of boost added based on flex
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -327,8 +348,8 @@ struct statuses currentStatus; //The global status object
 //This mostly covers off variables that are required for fuel
 struct config2 {
 
-  int8_t flexBoostLow; //Must be signed to allow for negatives
-  byte flexBoostHigh;
+  byte unused2_1;
+  byte unused2_2;
   byte asePct;  //Afterstart enrichment (%)
   byte aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
@@ -403,10 +424,10 @@ struct config2 {
   uint16_t oddfire2; //The ATDC angle of channel 2 for oddfire
   uint16_t oddfire3; //The ATDC angle of channel 3 for oddfire
   uint16_t oddfire4; //The ATDC angle of channel 4 for oddfire
-  byte flexFuelLow; //Fuel % to be used for the lowest ethanol reading (Typically 100%)
-  byte flexFuelHigh; //Fuel % to be used for the highest ethanol reading (Typically 163%)
-  byte flexAdvLow; //Additional advance (in degrees) at lowest ethanol reading (Typically 0)
-  byte flexAdvHigh; //Additional advance (in degrees) at highest ethanol reading (Varies, usually 10-20)
+  byte unused2_57;
+  byte unused2_58;
+  byte unused2_59;
+  byte unused2_60;
 
   byte iacCLminDuty;
   byte iacCLmaxDuty;
@@ -443,8 +464,11 @@ struct config4 {
 
   byte sparkDur; //Spark duration in ms * 10
   byte trigPatternSec; //Mode for Missing tooth secondary trigger.  Either single tooth cam wheel or 4-1
-  byte unused4_9;
-  byte unused4_10;
+  uint8_t bootloaderCaps; //Capabilities of the bootloader over stock. e.g., 0=Stock, 1=Reset protection, etc.
+
+  byte resetControl : 2; //Which method of reset control to use (0=None, 1=Prevent When Running, 2=Prevent Always, 3=Serial Command)
+  byte resetControlPin : 6;
+
   byte StgCycles; //The number of initial cycles before the ignition should fire when first cranking
 
   byte dwellCont : 1; //Fixed duty dwell control
@@ -653,7 +677,16 @@ struct config10 {
   uint16_t stagedInjSizePri;
   uint16_t stagedInjSizeSec;
   byte lnchCtrlTPS;
-  byte unused11_28_192[159];
+
+  uint8_t flexBoostBins[6];
+  int16_t flexBoostAdj[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed)
+  uint8_t flexFuelBins[6];
+  uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%)
+  uint8_t flexAdvBins[6];
+  uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%)
+                            //And another three corn rows die.
+
+  byte unused11_75_192[117];
 
 #if defined(CORE_AVR)
   };
@@ -661,6 +694,16 @@ struct config10 {
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
 
+struct flexCachedLookups
+{
+  bool fuelReady;
+  bool advanceReady;
+  bool boostReady;
+  byte fuel;
+  byte advance;
+  int16_t boost;
+};
+struct flexCachedLookups flexLookupCache = { false, false, false, 0, 0, 0 };
 
 byte pinInjector1; //Output pin injector 1
 byte pinInjector2; //Output pin injector 2
@@ -720,6 +763,7 @@ byte pinLaunch;
 byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
+byte pinResetControl; // Output pin used control resetting the Arduino
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
