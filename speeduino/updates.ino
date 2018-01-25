@@ -95,23 +95,23 @@ void doUpdates()
   if (EEPROM.read(EEPROM_DATA_VERSION) == 7) {
     //Convert whatever flex fuel settings are there into the new tables
 
-    configPage11.flexBoostAdj[0] = (int8_t)configPage1.unused2_1;
-    configPage11.flexFuelAdj[0]  = configPage1.unused2_57;
-    configPage11.flexAdvAdj[0]   = configPage1.unused2_59;
+    configPage10.flexBoostAdj[0] = (int8_t)configPage2.unused2_1;
+    configPage10.flexFuelAdj[0]  = configPage2.unused2_57;
+    configPage10.flexAdvAdj[0]   = configPage2.unused2_59;
 
     for (uint8_t x = 1; x < 6; x++)
     {
       uint8_t pct = x * 20;
-      configPage11.flexBoostBins[x] = configPage11.flexFuelBins[x] = configPage11.flexAdvBins[x] = pct;
+      configPage10.flexBoostBins[x] = configPage10.flexFuelBins[x] = configPage10.flexAdvBins[x] = pct;
 
-      int16_t boostAdder = (((configPage1.unused2_2 - (int8_t)configPage1.unused2_1) * pct) / 100) + (int8_t)configPage1.unused2_1;
-      configPage11.flexBoostAdj[x] = boostAdder;
+      int16_t boostAdder = (((configPage2.unused2_2 - (int8_t)configPage2.unused2_1) * pct) / 100) + (int8_t)configPage2.unused2_1;
+      configPage10.flexBoostAdj[x] = boostAdder;
 
-      uint8_t fuelAdder = (((configPage1.unused2_58 - configPage1.unused2_57) * pct) / 100) + configPage1.unused2_57;
-      configPage11.flexFuelAdj[x] = fuelAdder;
+      uint8_t fuelAdder = (((configPage2.unused2_58 - configPage2.unused2_57) * pct) / 100) + configPage2.unused2_57;
+      configPage10.flexFuelAdj[x] = fuelAdder;
 
-      uint8_t advanceAdder = (((configPage1.unused2_60 - configPage1.unused2_59) * pct) / 100) + configPage1.unused2_59;
-      configPage11.flexAdvAdj[x] = advanceAdder;
+      uint8_t advanceAdder = (((configPage2.unused2_60 - configPage2.unused2_59) * pct) / 100) + configPage2.unused2_59;
+      configPage10.flexAdvAdj[x] = advanceAdder;
     }
 
     writeAllConfig();

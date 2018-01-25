@@ -557,10 +557,10 @@ void setPinMapping(byte boardID)
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
      because the control pin will go low as soon as the pinMode is set to OUTPUT. */
-  if ( (configPage2.resetControl != 0) && (configPage2.resetControlPin < BOARD_NR_GPIO_PINS) )
+  if ( (configPage4.resetControl != 0) && (configPage4.resetControlPin < BOARD_NR_GPIO_PINS) )
   {
-    resetControl = configPage2.resetControl;
-    pinResetControl = pinTranslate(configPage2.resetControlPin);
+    resetControl = configPage4.resetControl;
+    pinResetControl = pinTranslate(configPage4.resetControlPin);
     setResetControlPinState();
     pinMode(pinResetControl, OUTPUT);
   }

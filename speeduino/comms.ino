@@ -315,7 +315,7 @@ void command()
       cmdPending = true;
 
       if (Serial.available() >= 1) {
-        configPage2.bootloaderCaps = Serial.read();
+        configPage4.bootloaderCaps = Serial.read();
         cmdPending = false;
       }
       break;

@@ -694,17 +694,6 @@ struct config10 {
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
 
-struct flexCachedLookups
-{
-  bool fuelReady;
-  bool advanceReady;
-  bool boostReady;
-  byte fuel;
-  byte advance;
-  int16_t boost;
-};
-struct flexCachedLookups flexLookupCache = { false, false, false, 0, 0, 0 };
-
 byte pinInjector1; //Output pin injector 1
 byte pinInjector2; //Output pin injector 2
 byte pinInjector3; //Output pin injector 3 is on

@@ -163,7 +163,7 @@ void setup()
 
   //Always start with a clean slate on the bootloader capabilities level
   //This should be 0 until we hear otherwise from the 16u2
-  configPage2.bootloaderCaps = 0;
+  configPage4.bootloaderCaps = 0;
 
   Serial.begin(115200);
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
@@ -224,16 +224,16 @@ void setup()
 
   flexFuelTable.valueSize = SIZE_BYTE;
   flexFuelTable.xSize = 6;
-  flexFuelTable.values = configPage11.flexFuelAdj;
-  flexFuelTable.axisX = configPage11.flexFuelBins;
+  flexFuelTable.values = configPage10.flexFuelAdj;
+  flexFuelTable.axisX = configPage10.flexFuelBins;
   flexAdvTable.valueSize = SIZE_BYTE;
   flexAdvTable.xSize = 6;
-  flexAdvTable.values = configPage11.flexAdvAdj;
-  flexAdvTable.axisX = configPage11.flexAdvBins;
+  flexAdvTable.values = configPage10.flexAdvAdj;
+  flexAdvTable.axisX = configPage10.flexAdvBins;
   flexBoostTable.valueSize = SIZE_INT;
   flexBoostTable.xSize = 6;
-  flexBoostTable.values16 = configPage11.flexBoostAdj;
-  flexBoostTable.axisX = configPage11.flexBoostBins;
+  flexBoostTable.values16 = configPage10.flexBoostAdj;
+  flexBoostTable.axisX = configPage10.flexBoostBins;
 
   //Setup the calibration tables
   loadCalibration();
