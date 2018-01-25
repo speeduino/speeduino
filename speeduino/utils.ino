@@ -545,14 +545,14 @@ void setPinMapping(byte boardID)
 
   //Setup any devices that are using selectable pins
 
-  if ( (configPage3.launchPin != 0) && (configPage3.launchPin < BOARD_NR_GPIO_PINS) ) { pinLaunch = pinTranslate(configPage3.launchPin); }
-  if ( (configPage2.ignBypassPin != 0) && (configPage2.ignBypassPin < BOARD_NR_GPIO_PINS) ) { pinIgnBypass = pinTranslate(configPage2.ignBypassPin); }
-  if ( (configPage1.tachoPin != 0) && (configPage1.tachoPin < BOARD_NR_GPIO_PINS) ) { pinTachOut = pinTranslate(configPage1.tachoPin); }
-  if ( (configPage2.fuelPumpPin != 0) && (configPage2.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = pinTranslate(configPage2.fuelPumpPin); }
-  if ( (configPage3.fanPin != 0) && (configPage3.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = pinTranslate(configPage3.fanPin); }
-  if ( (configPage3.boostPin != 0) && (configPage3.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = pinTranslate(configPage3.boostPin); }
-  if ( (configPage3.vvtPin != 0) && (configPage3.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage3.vvtPin); }
-  if ( (configPage3.useExtBaro != 0) && (configPage3.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage3.baroPin + A0; }
+  if ( (configPage6.launchPin != 0) && (configPage6.launchPin < BOARD_NR_GPIO_PINS) ) { pinLaunch = pinTranslate(configPage6.launchPin); }
+  if ( (configPage4.ignBypassPin != 0) && (configPage4.ignBypassPin < BOARD_NR_GPIO_PINS) ) { pinIgnBypass = pinTranslate(configPage4.ignBypassPin); }
+  if ( (configPage2.tachoPin != 0) && (configPage2.tachoPin < BOARD_NR_GPIO_PINS) ) { pinTachOut = pinTranslate(configPage2.tachoPin); }
+  if ( (configPage4.fuelPumpPin != 0) && (configPage4.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = pinTranslate(configPage4.fuelPumpPin); }
+  if ( (configPage6.fanPin != 0) && (configPage6.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = pinTranslate(configPage6.fanPin); }
+  if ( (configPage6.boostPin != 0) && (configPage6.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = pinTranslate(configPage6.boostPin); }
+  if ( (configPage6.vvtPin != 0) && (configPage6.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage6.vvtPin); }
+  if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage6.baroPin + A0; }
 
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
@@ -642,7 +642,7 @@ void setPinMapping(byte boardID)
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
   pinMode(pinFlex, INPUT_PULLUP); //Standard GM / Continental flex sensor requires pullup
-  if (configPage3.lnchPullRes == true) {
+  if (configPage6.lnchPullRes == true) {
     pinMode(pinLaunch, INPUT_PULLUP);
   }
   else {
@@ -721,7 +721,7 @@ void initialiseTriggers()
   detachInterrupt(triggerInterrupt2);
 
   //Set the trigger function based on the decoder in the config
-  switch (configPage2.TrigPattern)
+  switch (configPage4.TrigPattern)
   {
     case 0:
       //Missing tooth decoder
@@ -732,9 +732,9 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_missingTooth;
       triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-      if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, RISING); }
+      if(configPage4.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, RISING); }
       else { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, FALLING); }
       break;
 
@@ -746,7 +746,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_BasicDistributor;
       triggerSetEndTeeth = triggerSetEndTeeth_BasicDistributor;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       break;
 
@@ -757,9 +757,9 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_DualWheel;
       triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-      if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, RISING); }
+      if(configPage4.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, RISING); }
       else { attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, FALLING); }
       break;
 
@@ -770,7 +770,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_GM7X;
       triggerSetEndTeeth = triggerSetEndTeeth_GM7X;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       break;
 
@@ -782,7 +782,7 @@ void initialiseTriggers()
       triggerSetEndTeeth = triggerSetEndTeeth_4G63;
 
       //These may both need to change, not sure
-      if(configPage2.TrigEdge == 0)
+      if(configPage4.TrigEdge == 0)
       {
         attachInterrupt(triggerInterrupt, trigger, CHANGE);  // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
         attachInterrupt(triggerInterrupt2, triggerSec_4G63, FALLING); //changed
@@ -801,7 +801,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_24X;
       triggerSetEndTeeth = triggerSetEndTeeth_24X;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
       attachInterrupt(triggerInterrupt2, triggerSec_24X, CHANGE);
       break;
@@ -813,7 +813,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_Jeep2000;
       triggerSetEndTeeth = triggerSetEndTeeth_Jeep2000;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
       attachInterrupt(triggerInterrupt2, triggerSec_Jeep2000, CHANGE);
       break;
@@ -825,7 +825,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_Audi135;
       triggerSetEndTeeth = triggerSetEndTeeth_Audi135;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       attachInterrupt(triggerInterrupt2, triggerSec_Audi135, RISING);
       break;
@@ -837,7 +837,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_HondaD17;
       triggerSetEndTeeth = triggerSetEndTeeth_HondaD17;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
       attachInterrupt(triggerInterrupt2, triggerSec_HondaD17, CHANGE);
       break;
@@ -851,10 +851,10 @@ void initialiseTriggers()
 
       //These may both need to change, not sure
       // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); }
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); }
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
 
-      if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, RISING); }
+      if(configPage4.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, RISING); }
       else { attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, FALLING); }
       break;
 
@@ -865,7 +865,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_MazdaAU;
       triggerSetEndTeeth = triggerSetEndTeeth_MazdaAU;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
       attachInterrupt(triggerInterrupt2, triggerSec_MazdaAU, FALLING);
       break;
@@ -877,7 +877,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_non360;
       triggerSetEndTeeth = triggerSetEndTeeth_Non360;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, FALLING); //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
       break;
@@ -889,7 +889,7 @@ void initialiseTriggers()
         getCrankAngle = getCrankAngle_Nissan360;
         triggerSetEndTeeth = triggerSetEndTeeth_Nissan360;
 
-        if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+        if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
         else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
         attachInterrupt(triggerInterrupt2, triggerSec_Nissan360, CHANGE);
         break;
@@ -901,7 +901,7 @@ void initialiseTriggers()
             getCrankAngle = getCrankAngle_Subaru67;
             triggerSetEndTeeth = triggerSetEndTeeth_Subaru67;
 
-            if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+            if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
             else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
             attachInterrupt(triggerInterrupt2, triggerSec_Subaru67, FALLING);
             break;
@@ -913,7 +913,7 @@ void initialiseTriggers()
             getCrankAngle = getCrankAngle_Daihatsu;
             triggerSetEndTeeth = triggerSetEndTeeth_Daihatsu;
 
-            if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+            if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
             else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
             //No secondary input required for this pattern
             break;
@@ -938,9 +938,9 @@ void initialiseTriggers()
             getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
             triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus222;
 
-            if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+            if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
             else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-            if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSecondary, RISING); }
+            if(configPage4.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSecondary, RISING); }
             else { attachInterrupt(triggerInterrupt2, triggerSecondary, FALLING); }
             break;
 
@@ -949,7 +949,7 @@ void initialiseTriggers()
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       break;
   }

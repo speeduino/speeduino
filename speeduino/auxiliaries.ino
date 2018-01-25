@@ -4,15 +4,15 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 //Old PID method. Retained incase the new one has issues
-//integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT);
-integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage11.boostSens, &configPage11.boostIntv, configPage3.boostKP, configPage3.boostKI, configPage3.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+//integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
+integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage10.boostSens, &configPage10.boostIntv, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 /*
 Fan control
 */
 void initialiseFan()
 {
-  if( configPage3.fanInv == 1 ) { fanHIGH = LOW; fanLOW = HIGH; }
+  if( configPage6.fanInv == 1 ) { fanHIGH = LOW; fanLOW = HIGH; }
   else { fanHIGH = HIGH; fanLOW = LOW; }
   digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
   currentStatus.fanOn = false;
@@ -20,10 +20,10 @@ void initialiseFan()
 
 void fanControl()
 {
-  if( configPage3.fanEnable == 1 )
+  if( configPage6.fanEnable == 1 )
   {
-    int onTemp = (int)configPage3.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
-    int offTemp = onTemp - configPage3.fanHyster;
+    int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
+    int offTemp = onTemp - configPage6.fanHyster;
 
     if ( (!currentStatus.fanOn) && (currentStatus.coolant >= onTemp) ) { digitalWrite(pinFan,fanHIGH); currentStatus.fanOn = true; }
     if ( (currentStatus.fanOn) && (currentStatus.coolant <= offTemp) ) { digitalWrite(pinFan, fanLOW); currentStatus.fanOn = false; }
@@ -52,18 +52,18 @@ void initialiseAuxPWM()
   vvt_pin_mask = digitalPinToBitMask(pinVVT_1);
 
   #if defined(CORE_STM32) //2uS resolution Min 8Hz, Max 5KHz
-    boost_pwm_max_count = 1000000L / (configPage3.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
-    vvt_pwm_max_count = 1000000L / (configPage3.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
+    boost_pwm_max_count = 1000000L / (configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+    vvt_pwm_max_count = 1000000L / (configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
   #else
-    boost_pwm_max_count = 1000000L / (16 * configPage3.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
-    vvt_pwm_max_count = 1000000L / (16 * configPage3.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
+    boost_pwm_max_count = 1000000L / (16 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+    vvt_pwm_max_count = 1000000L / (16 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
   #endif
   //TIMSK1 |= (1 << OCIE1A); <---- Not required as compare A is turned on when needed by boost control
   ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
 
-  boostPID.SetOutputLimits(configPage1.boostMinDuty, configPage1.boostMaxDuty);
-  if(configPage3.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(100, 100, 100); }
-  else { boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD); }
+  boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
+  if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(100, 100, 100); }
+  else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
 
   currentStatus.boostDuty = 0;
   boostCounter = 0;
@@ -72,19 +72,15 @@ void initialiseAuxPWM()
 #define BOOST_HYSTER  40
 void boostControl()
 {
-  if( configPage3.boostEnabled==1 )
+  if( configPage6.boostEnabled==1 )
   {
     if( (boostCounter & 7) == 1) { currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; } //Boost target table is in kpa and divided by 2
     if(currentStatus.MAP >= (currentStatus.boostTarget - BOOST_HYSTER) )
     {
       //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
-      if( configPage1.flexEnabled == 1 )
+      if( configPage2.flexEnabled == 1 )
       {
-        int16_t boostAdder = currentStatus.flexBoostCorrection = flexLookupCache.boost = BIT_CHECK(TIMER_mask, BIT_TIMER_4HZ) || !flexLookupCache.boostReady
-          ? table2D_getValue(&flexBoostTable, currentStatus.ethanolPct)
-          : flexLookupCache.boost;
-
-        currentStatus.boostTarget += boostAdder;
+        currentStatus.boostTarget += table2D_getValue(&flexBoostTable, currentStatus.ethanolPct);;
       }
       else
       {
@@ -96,10 +92,10 @@ void boostControl()
         //This only needs to be run very infrequently, once every 16 calls to boostControl(). This is approx. once per second
         if( (boostCounter & 15) == 1)
         {
-          boostPID.SetOutputLimits(configPage1.boostMinDuty, configPage1.boostMaxDuty);
+          boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
 
-          if(configPage3.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(100, 100, 100); }
-          else { boostPID.SetTunings(configPage3.boostKP, configPage3.boostKI, configPage3.boostKD); }
+          if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(100, 100, 100); }
+          else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
         }
 
         bool PIDcomputed = boostPID.Compute(); //Compute() returns false if the required interval has not yet passed.
@@ -136,12 +132,12 @@ void boostControl()
 
 void vvtControl()
 {
-  if( configPage3.vvtEnabled == 1 )
+  if( configPage6.vvtEnabled == 1 )
   {
     byte vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
 
     //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
-    if( (configPage3.VVTasOnOff == true) && (vvtDuty < 100) ) { vvtDuty = 0; }
+    if( (configPage6.VVTasOnOff == true) && (vvtDuty < 100) ) { vvtDuty = 0; }
 
     if(vvtDuty == 0)
     {

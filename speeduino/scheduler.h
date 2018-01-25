@@ -204,30 +204,47 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
     #define FUEL2_COUNTER (TIM2)->CNT
     #define FUEL3_COUNTER (TIM2)->CNT
     #define FUEL4_COUNTER (TIM2)->CNT
-    #define FUEL5_COUNTER (TIM2)->CNT
+    #define FUEL5_COUNTER (TIM4)->CNT
+    #define FUEL6_COUNTER (TIM4)->CNT
+    #define FUEL7_COUNTER (TIM4)->CNT
+    #define FUEL8_COUNTER (TIM4)->CNT
 
     #define IGN1_COUNTER  (TIM3)->CNT
     #define IGN2_COUNTER  (TIM3)->CNT
     #define IGN3_COUNTER  (TIM3)->CNT
     #define IGN4_COUNTER  (TIM3)->CNT
-    #define IGN5_COUNTER  (TIM3)->CNT
+    #define IGN5_COUNTER  (TIM4)->CNT
+    #define IGN6_COUNTER  (TIM4)->CNT
+    #define IGN7_COUNTER  (TIM4)->CNT
+    #define IGN8_COUNTER  (TIM4)->CNT
 
     #define FUEL1_COMPARE (TIM2)->CCR1
     #define FUEL2_COMPARE (TIM2)->CCR2
     #define FUEL3_COMPARE (TIM2)->CCR3
     #define FUEL4_COMPARE (TIM2)->CCR4
+    #define FUEL5_COMPARE (TIM4)->CCR1
+    #define FUEL6_COMPARE (TIM4)->CCR2
+    #define FUEL7_COMPARE (TIM4)->CCR3
+    #define FUEL8_COMPARE (TIM4)->CCR4
 
     #define IGN1_COMPARE (TIM3)->CCR1
     #define IGN2_COMPARE (TIM3)->CCR2
     #define IGN3_COMPARE (TIM3)->CCR3
     #define IGN4_COMPARE (TIM3)->CCR4
-    #define IGN5_COMPARE (TIM3)->CCR1
+    #define IGN5_COMPARE (TIM4)->CCR1
+    #define IGN6_COMPARE (TIM4)->CCR2
+    #define IGN7_COMPARE (TIM4)->CCR3
+    #define IGN8_COMPARE (TIM4)->CCR4
 
     //https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
     #define FUEL1_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC1E
     #define FUEL2_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC2E
     #define FUEL3_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC3E
     #define FUEL4_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC4E
+    #define FUEL5_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC1E
+    #define FUEL6_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC2E
+    #define FUEL7_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC3E
+    #define FUEL8_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC4E
 
     #define IGN1_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC1E
     #define IGN2_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC2E
@@ -250,47 +267,75 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
     #define FUEL2_COUNTER (TIMER2->regs).gen->CNT
     #define FUEL3_COUNTER (TIMER2->regs).gen->CNT
     #define FUEL4_COUNTER (TIMER2->regs).gen->CNT
-    #define FUEL5_COUNTER (TIMER1->regs).gen->CNT
+    #define FUEL5_COUNTER (TIMER4->regs).gen->CNT
+    #define FUEL6_COUNTER (TIMER4->regs).gen->CNT
+    #define FUEL7_COUNTER (TIMER4->regs).gen->CNT
+    #define FUEL8_COUNTER (TIMER4->regs).gen->CNT
 
     #define IGN1_COUNTER  (TIMER3->regs).gen->CNT
     #define IGN2_COUNTER  (TIMER3->regs).gen->CNT
     #define IGN3_COUNTER  (TIMER3->regs).gen->CNT
     #define IGN4_COUNTER  (TIMER3->regs).gen->CNT
-    #define IGN5_COUNTER  (TIMER1->regs).gen->CNT
+    #define IGN5_COUNTER  (TIMER4->regs).gen->CNT
+    #define IGN6_COUNTER  (TIMER4->regs).gen->CNT
+    #define IGN7_COUNTER  (TIMER4->regs).gen->CNT
+    #define IGN8_COUNTER  (TIMER4->regs).gen->CNT
 
     #define FUEL1_COMPARE (TIMER2->regs).gen->CCR1
     #define FUEL2_COMPARE (TIMER2->regs).gen->CCR2
     #define FUEL3_COMPARE (TIMER2->regs).gen->CCR3
     #define FUEL4_COMPARE (TIMER2->regs).gen->CCR4
+    #define FUEL5_COMPARE (TIMER4->regs).gen->CCR1
+    #define FUEL6_COMPARE (TIMER4->regs).gen->CCR2
+    #define FUEL7_COMPARE (TIMER4->regs).gen->CCR3
+    #define FUEL8_COMPARE (TIMER4->regs).gen->CCR4
 
     #define IGN1_COMPARE (TIMER3->regs).gen->CCR1
     #define IGN2_COMPARE (TIMER3->regs).gen->CCR2
     #define IGN3_COMPARE (TIMER3->regs).gen->CCR3
     #define IGN4_COMPARE (TIMER3->regs).gen->CCR4
-    #define IGN5_COMPARE (TIMER1->regs).gen->CCR1
+    #define IGN5_COMPARE (TIMER4->regs).gen->CCR1
+    #define IGN6_COMPARE (TIMER4->regs).gen->CCR2
+    #define IGN7_COMPARE (TIMER4->regs).gen->CCR3
+    #define IGN8_COMPARE (TIMER4->regs).gen->CCR4
 
     //https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
     #define FUEL1_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC1E
     #define FUEL2_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC2E
     #define FUEL3_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC3E
     #define FUEL4_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC4E
+    #define FUEL5_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC1E
+    #define FUEL6_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC2E
+    #define FUEL7_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC3E
+    #define FUEL8_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC4E
 
     #define IGN1_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC1E
     #define IGN2_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC2E
     #define IGN3_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC3E
     #define IGN4_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC4E
-    #define IGN5_TIMER_ENABLE() (TIMER1->regs).gen->CCER |= TIMER_CCER_CC1E
+    #define IGN5_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC1E
+    #define IGN6_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC2E
+    #define IGN7_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC3E
+    #define IGN8_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC4E
 
     #define FUEL1_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC1E
     #define FUEL2_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC2E
     #define FUEL3_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC3E
     #define FUEL4_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC4E
+    #define FUEL5_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC1E
+    #define FUEL6_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC2E
+    #define FUEL7_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC3E
+    #define FUEL8_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC4E
 
     #define IGN1_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC1E
     #define IGN2_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC2E
     #define IGN3_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC3E
     #define IGN4_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC4E
-    #define IGN5_TIMER_DISABLE() (TIMER1->regs).gen->CCER &= ~TIMER_CCER_CC1E
+    #define IGN5_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC1E
+    #define IGN6_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC2E
+    #define IGN7_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC3E
+    #define IGN8_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC4E
+
   #endif
 #endif
 
@@ -314,18 +359,24 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
 
 static inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 
-//Needed for STM32 interrupt handlers
-#if defined(CORE_STM32)
+//The ARM cores use seprate functions for their ISRs
+#if defined(CORE_STM32) || defined(CORE_TEENSY)
   static inline void fuelSchedule1Interrupt();
   static inline void fuelSchedule2Interrupt();
   static inline void fuelSchedule3Interrupt();
   static inline void fuelSchedule4Interrupt();
   static inline void fuelSchedule5Interrupt();
+  static inline void fuelSchedule6Interrupt();
+  static inline void fuelSchedule7Interrupt();
+  static inline void fuelSchedule8Interrupt();
   static inline void ignitionSchedule1Interrupt();
   static inline void ignitionSchedule2Interrupt();
   static inline void ignitionSchedule3Interrupt();
   static inline void ignitionSchedule4Interrupt();
   static inline void ignitionSchedule5Interrupt();
+  static inline void ignitionSchedule6Interrupt();
+  static inline void ignitionSchedule7Interrupt();
+  static inline void ignitionSchedule8Interrupt();
 #endif
 
 enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The 3 statuses that a schedule can have
@@ -343,6 +394,13 @@ struct Schedule {
   unsigned int nextStartCompare;
   unsigned int nextEndCompare;
   volatile bool hasNextSchedule = false;
+#if defined(CORE_AVR)
+  volatile uint16_t * counter;
+  volatile uint16_t * compare;
+#elif defined(CORE_STM32) || defined(CORE_TEENSY)
+  volatile uint32_t * counter;
+  volatile uint32_t * compare;
+  #endif
 };
 
 volatile Schedule *timer3Aqueue[4];

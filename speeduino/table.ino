@@ -198,6 +198,9 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
       returnValue = yVal;
     }
 
+    fromTable->lastInput = X_in;
+    fromTable->lastOutput = returnValue;
+
     return returnValue;
 }
 
