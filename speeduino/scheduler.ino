@@ -200,11 +200,21 @@ void initialiseSchedulers()
   Timer2.attachInterrupt(3, fuelSchedule3Interrupt);
   Timer2.attachInterrupt(4, fuelSchedule4Interrupt);
 
+#if (IGN_CHANNELS >= 1)
   Timer3.attachInterrupt(1, ignitionSchedule1Interrupt);
+#endif
+#if (IGN_CHANNELS >= 2)
   Timer3.attachInterrupt(2, ignitionSchedule2Interrupt);
+#endif
+#if (IGN_CHANNELS >= 3)
   Timer3.attachInterrupt(3, ignitionSchedule3Interrupt);
+#endif
+#if (IGN_CHANNELS >= 4)
   Timer3.attachInterrupt(4, ignitionSchedule4Interrupt);
+#endif
+#if (IGN_CHANNELS >= 5)
   Timer1.attachInterrupt(1, ignitionSchedule5Interrupt);
+#endif
 
   Timer1.resume();
   Timer2.resume();

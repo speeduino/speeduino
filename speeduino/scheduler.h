@@ -365,18 +365,42 @@ static inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute
   static inline void fuelSchedule2Interrupt();
   static inline void fuelSchedule3Interrupt();
   static inline void fuelSchedule4Interrupt();
+#if (INJ_CHANNELS >= 5)
   static inline void fuelSchedule5Interrupt();
+#endif
+#if (INJ_CHANNELS >= 6)
   static inline void fuelSchedule6Interrupt();
+#endif
+#if (INJ_CHANNELS >= 7)
   static inline void fuelSchedule7Interrupt();
+#endif
+#if (INJ_CHANNELS >= 8)
   static inline void fuelSchedule8Interrupt();
+#endif
+#if (IGN_CHANNELS >= 1)
   static inline void ignitionSchedule1Interrupt();
+#endif
+#if (IGN_CHANNELS >= 2)
   static inline void ignitionSchedule2Interrupt();
+#endif
+#if (IGN_CHANNELS >= 3)
   static inline void ignitionSchedule3Interrupt();
+#endif
+#if (IGN_CHANNELS >= 4)
   static inline void ignitionSchedule4Interrupt();
+#endif
+#if (IGN_CHANNELS >= 5)
   static inline void ignitionSchedule5Interrupt();
+#endif
+#if (IGN_CHANNELS >= 6)
   static inline void ignitionSchedule6Interrupt();
+#endif
+#if (IGN_CHANNELS >= 7)
   static inline void ignitionSchedule7Interrupt();
+#endif
+#if (IGN_CHANNELS >= 8)
   static inline void ignitionSchedule8Interrupt();
+#endif
 #endif
 
 enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The 3 statuses that a schedule can have
@@ -415,6 +439,7 @@ Schedule fuelSchedule5;
 Schedule fuelSchedule6;
 Schedule fuelSchedule7;
 Schedule fuelSchedule8;
+
 Schedule ignitionSchedule1;
 Schedule ignitionSchedule2;
 Schedule ignitionSchedule3;

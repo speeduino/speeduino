@@ -995,7 +995,7 @@ void sendPage(bool useChar)
         if (useChar)
         {
           //To Display Values from Config Page 10
-          Serial.println((const __FlashStringHelper *)&pageTitles[141]);//special typecasting to enable suroutine that the F macro uses
+          Serial.println((const __FlashStringHelper *)&pageTitles[103]);//special typecasting to enable suroutine that the F macro uses
           for (pnt_configPage = &configPage9; pnt_configPage < ((byte *)pnt_configPage + 128); pnt_configPage = (byte *)pnt_configPage + 1)
           {
             Serial.println(*((byte *)pnt_configPage));// Displaying byte values of config page 3 up to but not including the first array

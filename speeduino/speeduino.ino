@@ -911,7 +911,7 @@ void loop()
           {
            for (byte caninChan = 0; caninChan <16 ; caninChan++)
               {
-                currentStatus.current_caninchannel == caninChan;
+                currentStatus.current_caninchannel = caninChan;
                 if (BIT_CHECK(configPage9.caninput_sel,currentStatus.current_caninchannel))  //if current input channel is enabled
                   {
                     if (configPage9.enable_canbus == 1)  //can via secondary serial

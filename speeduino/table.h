@@ -19,16 +19,16 @@ struct table2D {
   byte *values;
   byte *axisX;
 
-  int *values16;
-  int *axisX16;
+  int16_t *values16;
+  int16_t *axisX16;
 
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
-  int lastXMax;
-  int lastXMin;
+  int16_t lastXMax;
+  int16_t lastXMin;
 
   //Store the last input and output for caching
-  int lastInput;
-  int lastOutput;
+  int16_t lastInput;
+  int16_t lastOutput;
 };
 
 void table2D_setSize(struct table2D targetTable, byte newSize);
@@ -41,8 +41,8 @@ struct table3D {
   byte ySize;
 
   byte **values;
-  int *axisX;
-  int *axisY;
+  int16_t *axisX;
+  int16_t *axisY;
 
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
   byte lastXMax, lastXMin;

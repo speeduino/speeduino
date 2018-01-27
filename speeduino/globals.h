@@ -4,8 +4,8 @@
 #include "table.h"
 
 //These are configuration options for changing around the outputs that are used
-#define INJ_CHANNELS 5
-#define IGN_CHANNELS 4
+#define INJ_CHANNELS 4
+#define IGN_CHANNELS 5
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define BOARD_DIGITAL_GPIO_PINS 54
@@ -17,8 +17,10 @@
   #define BOARD_NR_GPIO_PINS 34
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
+  #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
   #if defined (STM32F1) || defined(__STM32F1__)
     #define BOARD_DIGITAL_GPIO_PINS 34
+    #undef BOARD_NR_GPIO_PINS //This is declared as 49 in .../framework-arduinoststm32/STM32F1/variants/generic_stm32f103r8/board/board.h
     #define BOARD_NR_GPIO_PINS 34
     #define LED_BUILTIN 33
   #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
@@ -38,8 +40,11 @@
     #define portOutputRegister(port) (volatile byte *)( &(port->ODR) )
     #define portInputRegister(port) (volatile byte *)( &(port->IDR) )
   #else //libmaple core aka STM32DUINO
-    #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
-    #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) ) //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+    //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
+    #undef portOutputRegister
+    #undef portInputRegister
+    #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) )
+    #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) )
   #endif
 #else
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
