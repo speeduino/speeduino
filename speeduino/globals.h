@@ -94,7 +94,7 @@
 
 #define BIT_SPARK2_FLATSH         0 //Flat shift hard cut
 #define BIT_SPARK2_FLATSS         1 //Flat shift soft cut
-#define BIT_SPARK2_UNUSED3        2
+#define BIT_SPARK2_ANTILAG        2 //Antilag Indicator
 #define BIT_SPARK2_UNUSED4        3
 #define BIT_SPARK2_UNUSED5        4
 #define BIT_SPARK2_UNUSED6        5
@@ -339,6 +339,8 @@ struct statuses {
   uint16_t crankRPM = 400; //The actual cranking RPM limit. Saves us multiplying it everytime from the config page
   volatile byte status3;
   int16_t flexBoostCorrection; //Amount of boost added based on flex
+  boolean antilagActive; //true when all conditions are met
+  byte antilagCorrection;  //Fuel correction when antilag is enabled
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -691,7 +693,17 @@ struct config10 {
   uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%)
                             //And another three corn rows die.
 
-  byte unused11_75_192[117];
+  //Antilag Settings
+  byte antilagEnabled : 1;
+  byte unused11_75_7c : 7;
+
+  byte antilagCoolant;
+  byte antilagTPS;
+  byte antilagMinRpm;
+  int8_t antilagRetard;
+  byte antilagFuelAdder;
+  
+  byte unused11_75_192[111];
 
 #if defined(CORE_AVR)
   };
