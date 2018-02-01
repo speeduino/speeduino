@@ -30,4 +30,14 @@ void endCoil1and3Charge()   { digitalWrite(pinCoil1, coilLOW);  digitalWrite(pin
 void beginCoil2and4Charge() { digitalWrite(pinCoil2, coilHIGH); digitalWrite(pinCoil4, coilHIGH); TACH_PULSE_LOW();  }
 void endCoil2and4Charge()   { digitalWrite(pinCoil2, coilLOW);  digitalWrite(pinCoil4, coilLOW);  TACH_PULSE_HIGH(); }
 
+//ignition control for toyota multiplexing
+// 1-5-3-6-2-4
+void beginMultiplex1Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinCoil3, coilHIGH); TACH_PULSE_LOW() }
+void endMultiplex1Charge()    { digitalWrite(pinCoil1, coilLOW);  digitalWrite(pinCoil3, coilLOW);  TACH_PULSE_HIGH();}
+void beginMultiplex2Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinCoil2, coilHIGH); TACH_PULSE_LOW() }
+void endMultiplex2Charge()    { digitalWrite(pinCoil1, coilLOW);  digitalWrite(pinCoil2, coilLOW);  TACH_PULSE_HIGH();}
+void beginMultiplex3Charge() { digitalWrite(pinCoil1, coilHIGH);  TACH_PULSE_LOW() }
+void endMultiplex3Charge()    { digitalWrite(pinCoil1, coilLOW);  TACH_PULSE_HIGH();}
+
+
 void nullCallback() { return; }

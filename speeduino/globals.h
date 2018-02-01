@@ -131,6 +131,7 @@
 #define IGN_MODE_WASTEDCOP  2
 #define IGN_MODE_SEQUENTIAL 3
 #define IGN_MODE_ROTARY     4
+#define IGN_MODE_MULTIPLEX  5
 
 #define SEC_TRIGGER_SINGLE  0
 #define SEC_TRIGGER_4_1     1
