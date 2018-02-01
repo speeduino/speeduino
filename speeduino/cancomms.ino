@@ -33,12 +33,12 @@ void canCommand()
               {
                 Gdata[Gx] = CANSerial.read();
               }
-            Glow = Gdata[(configPage10.caninput_source_start_byte[destcaninchannel]&7)];
-            if ((BIT_CHECK(configPage10.caninput_source_num_bytes,destcaninchannel)))  //if true then num bytes is 2
+            Glow = Gdata[(configPage9.caninput_source_start_byte[destcaninchannel]&7)];
+            if ((BIT_CHECK(configPage9.caninput_source_num_bytes,destcaninchannel)))  //if true then num bytes is 2
                {
-                if ((configPage10.caninput_source_start_byte[destcaninchannel]&7) < 8)   //you cant have a 2 byte value starting at byte 7(8 on the list)
+                if ((configPage9.caninput_source_start_byte[destcaninchannel]&7) < 8)   //you cant have a 2 byte value starting at byte 7(8 on the list)
                    {
-                    Ghigh = Gdata[((configPage10.caninput_source_start_byte[destcaninchannel]&7)+1)];
+                    Ghigh = Gdata[((configPage9.caninput_source_start_byte[destcaninchannel]&7)+1)];
                    }
             else{Ghigh = 0;}
                }

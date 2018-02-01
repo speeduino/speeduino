@@ -8,7 +8,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    7
+  #define CURRENT_DATA_VERSION    8
   uint8_t currentVersion = EEPROM.read(EEPROM_DATA_VERSION);
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
@@ -27,12 +27,12 @@ void doUpdates()
   //June 2017 required the forced addition of some CAN values to avoid weird errors
   if(currentVersion == 3)
   {
-    configPage10.speeduino_tsCanId = 0;
-    configPage10.true_address = 256;
-    configPage10.realtime_base_address = 336;
+    configPage9.speeduino_tsCanId = 0;
+    configPage9.true_address = 256;
+    configPage9.realtime_base_address = 336;
 
     //There was a bad value in the May base tune for the spark duration setting, fix it here if it's a problem
-    if(configPage2.sparkDur == 255) { configPage2.sparkDur = 10; }
+    if(configPage4.sparkDur == 255) { configPage4.sparkDur = 10; }
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 4);
@@ -41,15 +41,15 @@ void doUpdates()
   if(currentVersion == 4)
   {
     //Some default values for the bins (Doesn't matter too much here as the values against them will all be identical)
-    configPage11.crankingEnrichBins[0] = 0;
-    configPage11.crankingEnrichBins[1] = 40;
-    configPage11.crankingEnrichBins[2] = 70;
-    configPage11.crankingEnrichBins[3] = 100;
+    configPage10.crankingEnrichBins[0] = 0;
+    configPage10.crankingEnrichBins[1] = 40;
+    configPage10.crankingEnrichBins[2] = 70;
+    configPage10.crankingEnrichBins[3] = 100;
 
-    configPage11.crankingEnrichValues[0] = 100 + configPage1.crankingPct;
-    configPage11.crankingEnrichValues[1] = 100 + configPage1.crankingPct;
-    configPage11.crankingEnrichValues[2] = 100 + configPage1.crankingPct;
-    configPage11.crankingEnrichValues[3] = 100 + configPage1.crankingPct;
+    configPage10.crankingEnrichValues[0] = 100 + configPage2.crankingPct;
+    configPage10.crankingEnrichValues[1] = 100 + configPage2.crankingPct;
+    configPage10.crankingEnrichValues[2] = 100 + configPage2.crankingPct;
+    configPage10.crankingEnrichValues[3] = 100 + configPage2.crankingPct;
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 5);
@@ -60,7 +60,7 @@ void doUpdates()
     //Data after page 4 has to move back 128 bytes
     for(int x=0; x < 1152; x++)
     {
-      int endMem = EEPROM_CONFIG11_END - x;
+      int endMem = EEPROM_CONFIG10_END - x;
       int startMem = endMem - 128; //
       byte currentVal = EEPROM.read(startMem);
       EEPROM.update(endMem, currentVal);
@@ -68,7 +68,7 @@ void doUpdates()
     //The remaining data only has to move back 64 bytes
     for(int x=0; x < 352; x++)
     {
-      int endMem = EEPROM_CONFIG11_END - 1152 - x;
+      int endMem = EEPROM_CONFIG10_END - 1152 - x;
       int startMem = endMem - 64; //
       byte currentVal = EEPROM.read(startMem);
       EEPROM.update(endMem, currentVal);
@@ -83,7 +83,7 @@ void doUpdates()
     //Data after page 8 has to move back 82 bytes
     for(int x=0; x < 529; x++)
     {
-      int endMem = EEPROM_CONFIG11_END - x;
+      int endMem = EEPROM_CONFIG10_END - x;
       int startMem = endMem - 82; //
       byte currentVal = EEPROM.read(startMem);
       EEPROM.update(endMem, currentVal);
@@ -93,10 +93,36 @@ void doUpdates()
     loadConfig(); //Reload the config after changing everything in EEPROM
   }
 
+  if (currentVersion == 7) {
+    //Convert whatever flex fuel settings are there into the new tables
+
+    configPage10.flexBoostAdj[0] = (int8_t)configPage2.unused2_1;
+    configPage10.flexFuelAdj[0]  = configPage2.unused2_57;
+    configPage10.flexAdvAdj[0]   = configPage2.unused2_59;
+
+    for (uint8_t x = 1; x < 6; x++)
+    {
+      uint8_t pct = x * 20;
+      configPage10.flexBoostBins[x] = configPage10.flexFuelBins[x] = configPage10.flexAdvBins[x] = pct;
+
+      int16_t boostAdder = (((configPage2.unused2_2 - (int8_t)configPage2.unused2_1) * pct) / 100) + (int8_t)configPage2.unused2_1;
+      configPage10.flexBoostAdj[x] = boostAdder;
+
+      uint8_t fuelAdder = (((configPage2.unused2_58 - configPage2.unused2_57) * pct) / 100) + configPage2.unused2_57;
+      configPage10.flexFuelAdj[x] = fuelAdder;
+
+      uint8_t advanceAdder = (((configPage2.unused2_60 - configPage2.unused2_59) * pct) / 100) + configPage2.unused2_59;
+      configPage10.flexAdvAdj[x] = advanceAdder;
+    }
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 8);
+  }
+
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (currentVersion == 0) || (currentVersion == 255) )
   {
-    configPage10.true_address = 0x200;
+    configPage9.true_address = 0x200;
     EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION);
   }
 

@@ -77,14 +77,14 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
   //Overdwell check
   targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
-  bool isCrankLocked = configPage2.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
+  bool isCrankLocked = configPage4.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
 
-  if(ignitionSchedule1.Status == RUNNING) { if( (ignitionSchedule1.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil1Charge(); ignitionSchedule1.Status = OFF; } }
-  if(ignitionSchedule2.Status == RUNNING) { if( (ignitionSchedule2.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil2Charge(); ignitionSchedule2.Status = OFF; } }
-  if(ignitionSchedule3.Status == RUNNING) { if( (ignitionSchedule3.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil3Charge(); ignitionSchedule3.Status = OFF; } }
-  if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil4Charge(); ignitionSchedule4.Status = OFF; } }
-  if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil5Charge(); ignitionSchedule5.Status = OFF; } }
+  if(ignitionSchedule1.Status == RUNNING) { if( (ignitionSchedule1.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil1Charge(); ignitionSchedule1.Status = OFF; } }
+  if(ignitionSchedule2.Status == RUNNING) { if( (ignitionSchedule2.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil2Charge(); ignitionSchedule2.Status = OFF; } }
+  if(ignitionSchedule3.Status == RUNNING) { if( (ignitionSchedule3.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil3Charge(); ignitionSchedule3.Status = OFF; } }
+  if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil4Charge(); ignitionSchedule4.Status = OFF; } }
+  if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil5Charge(); ignitionSchedule5.Status = OFF; } }
 
 
 
@@ -139,8 +139,8 @@ void oneMSInterval() //Most ARM chips can simply call a function
     loopSec = 0; //Reset counter.
     BIT_SET(TIMER_mask, BIT_TIMER_1HZ);
 
-    dwellLimit_uS = (1000 * configPage2.dwellLimit); //Update uS value incase setting has changed
-    currentStatus.crankRPM = ((unsigned int)configPage2.crankRPM * 100);
+    dwellLimit_uS = (1000 * configPage4.dwellLimit); //Update uS value incase setting has changed
+    currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 100);
 
     //**************************************************************************************************************************************************
     //This updates the runSecs variable
@@ -159,7 +159,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     currentStatus.secl++;
     //**************************************************************************************************************************************************
     //Check the fan output status
-    if (configPage3.fanEnable == 1)
+    if (configPage6.fanEnable == 1)
     {
        fanControl();            // Fucntion to turn the cooling fan on/off
     }
@@ -167,7 +167,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     //Check whether fuel pump priming is complete
     if(fpPrimed == false)
     {
-      if(currentStatus.secl >= configPage1.fpPrime)
+      if(currentStatus.secl >= configPage2.fpPrime)
       {
         fpPrimed = true; //Mark the priming as being completed
         if(currentStatus.RPM == 0)
@@ -180,7 +180,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     }
     //**************************************************************************************************************************************************
     //Set the flex reading (if enabled). The flexCounter is updated with every pulse from the sensor. If cleared once per second, we get a frequency reading
-    if(configPage1.flexEnabled == true)
+    if(configPage2.flexEnabled == true)
     {
       if(flexCounter < 50)
       {

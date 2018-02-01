@@ -1,7 +1,9 @@
 
 volatile bool tachoAlt = true;
 #define TACH_PULSE_HIGH() *tach_pin_port |= (tach_pin_mask)
-#define TACH_PULSE_LOW() if( (configPage1.tachoDiv == 0) || tachoAlt ) { *tach_pin_port &= ~(tach_pin_mask); tachoAlt = !tachoAlt; }
+#define TACH_PULSE_LOW() if( (configPage2.tachoDiv == 0) || tachoAlt ) { *tach_pin_port &= ~(tach_pin_mask); tachoAlt = !tachoAlt; }
+
+
 
   inline void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); TACH_PULSE_LOW(); }
   inline void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); TACH_PULSE_HIGH(); }

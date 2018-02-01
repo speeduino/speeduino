@@ -24,8 +24,8 @@ void table2D_setSize(struct table2D* targetTable, byte newSize)
     }
     else
     {
-      targetTable->values16 = (int *)realloc(targetTable->values16, newSize * sizeof(int));
-      targetTable->axisX16 = (int *)realloc(targetTable->axisX16, newSize * sizeof(int));
+      targetTable->values16 = (int16_t *)realloc(targetTable->values16, newSize * sizeof(int16_t));
+      targetTable->axisX16 = (int16_t *)realloc(targetTable->axisX16, newSize * sizeof(int16_t));
       targetTable->xSize = newSize;
     } //Byte or int
   } //initialisationComplete
@@ -39,8 +39,8 @@ void table3D_setSize(struct table3D *targetTable, byte newSize)
     targetTable->values = (byte **)malloc(newSize * sizeof(byte*));
     for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)malloc(newSize * sizeof(byte)); }
 
-    targetTable->axisX = (int *)malloc(newSize * sizeof(int));
-    targetTable->axisY = (int *)malloc(newSize * sizeof(int));
+    targetTable->axisX = (int16_t *)malloc(newSize * sizeof(int16_t));
+    targetTable->axisY = (int16_t *)malloc(newSize * sizeof(int16_t));
     targetTable->xSize = newSize;
     targetTable->ySize = newSize;
   } //initialisationComplete
@@ -197,6 +197,9 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
       }
       returnValue = yVal;
     }
+
+    fromTable->lastInput = X_in;
+    fromTable->lastOutput = returnValue;
 
     return returnValue;
 }
