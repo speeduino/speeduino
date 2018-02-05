@@ -29,7 +29,7 @@ struct table2D {
   //Store the last input and output for caching
   int16_t lastInput;
   int16_t lastOutput;
-  byte cacheTime; //TRacks when the last cache value was set so it can expire after x seconds
+  byte cacheTime; //TRacks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
 };
 
 void table2D_setSize(struct table2D targetTable, byte newSize);
