@@ -377,7 +377,8 @@ void triggerSec_DualWheel()
     {
       toothLastToothTime = micros();
       //CONFIRM THE BELOW! IT DOESN'T LOOK RIGHT (toothOneTime??)
-      toothLastMinusOneToothTime = (toothOneTime - 6000000) / configPage4.triggerTeeth; //Fixes RPM at 10rpm until a full revolution has taken place
+      //toothLastMinusOneToothTime = (toothOneTime - 6000000) / configPage4.triggerTeeth; //Fixes RPM at 10rpm until a full revolution has taken place
+      toothLastMinusOneToothTime = micros() - (6000000 / configPage4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
       toothCurrentCount = configPage4.triggerTeeth;
 
       currentStatus.hasSync = true;
