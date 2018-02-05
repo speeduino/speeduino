@@ -1248,6 +1248,7 @@ void loop()
       //Calculate start angle for each channel
       //1 cylinder (Everyone gets this)
       ignition1EndAngle = CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+      if(ignition1EndAngle > CRANK_ANGLE_MAX_IGN) {ignition1EndAngle -= CRANK_ANGLE_MAX_IGN;}
       ignition1StartAngle = ignition1EndAngle - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
       if(ignition1StartAngle < 0) {ignition1StartAngle += CRANK_ANGLE_MAX_IGN;}
 
@@ -1256,35 +1257,41 @@ void loop()
       {
         //2 cylinders
         case 2:
-          ignition2EndAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+          ignition2EndAngle = channel2IgnDegrees - currentStatus.advance;
+          if(ignition2EndAngle > CRANK_ANGLE_MAX_IGN) {ignition2EndAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition2StartAngle = ignition2EndAngle - dwellAngle;
-          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          if(ignition2StartAngle < 0) {ignition2StartAngle += CRANK_ANGLE_MAX_IGN;}
           break;
         //3 cylinders
         case 3:
-          ignition2EndAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+          ignition2EndAngle = channel2IgnDegrees - currentStatus.advance;
+          if(ignition2EndAngle > CRANK_ANGLE_MAX_IGN) {ignition2EndAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition2StartAngle = ignition2EndAngle - dwellAngle;
-          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
-          ignition3EndAngle = channel3IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+          if(ignition2StartAngle < 0) {ignition2StartAngle += CRANK_ANGLE_MAX_IGN;}
+
+          ignition3EndAngle = channel3IgnDegrees - currentStatus.advance;
+          if(ignition3EndAngle > CRANK_ANGLE_MAX_IGN) {ignition3EndAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition3StartAngle = channel3IgnDegrees + 360 - currentStatus.advance - dwellAngle;
-          if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          if(ignition3StartAngle < 0) {ignition3StartAngle += CRANK_ANGLE_MAX_IGN;}
           break;
         //4 cylinders
         case 4:
-          ignition2EndAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+          ignition2EndAngle = channel2IgnDegrees - currentStatus.advance;
+          if(ignition2EndAngle > CRANK_ANGLE_MAX_IGN) {ignition2EndAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition2StartAngle = ignition2EndAngle - dwellAngle;
-          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
           if(ignition2StartAngle < 0) {ignition2StartAngle += CRANK_ANGLE_MAX_IGN;}
 
           if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
           {
-            ignition3EndAngle = channel3IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+            ignition3EndAngle = channel3IgnDegrees - currentStatus.advance;
+            if(ignition3EndAngle > CRANK_ANGLE_MAX_IGN) {ignition3EndAngle -= CRANK_ANGLE_MAX_IGN;}
             ignition3StartAngle = ignition3EndAngle - dwellAngle;
-            if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
+            if(ignition3StartAngle < 0) {ignition3StartAngle += CRANK_ANGLE_MAX_IGN;}
 
-            ignition4EndAngle = channel4IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+            ignition4EndAngle = channel4IgnDegrees - currentStatus.advance;
+            if(ignition4EndAngle > CRANK_ANGLE_MAX_IGN) {ignition4EndAngle -= CRANK_ANGLE_MAX_IGN;}
             ignition4StartAngle = ignition4EndAngle - dwellAngle;
-            if(ignition4StartAngle > CRANK_ANGLE_MAX_IGN) {ignition4StartAngle -= CRANK_ANGLE_MAX_IGN;}
+            if(ignition4StartAngle < 0) {ignition4StartAngle += CRANK_ANGLE_MAX_IGN;}
           }
           else if(configPage4.sparkMode == IGN_MODE_ROTARY)
           {
@@ -1309,18 +1316,20 @@ void loop()
           break;
         //5 cylinders
         case 5:
-          ignition2EndAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+          ignition2EndAngle = channel2IgnDegrees - currentStatus.advance;
+          if(ignition2EndAngle > CRANK_ANGLE_MAX_IGN) {ignition2EndAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition2StartAngle = ignition2EndAngle - dwellAngle;
-          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
           if(ignition2StartAngle < 0) {ignition2StartAngle += CRANK_ANGLE_MAX_IGN;}
 
-          ignition3EndAngle = channel3IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+          ignition3EndAngle = channel3IgnDegrees - currentStatus.advance;
+          if(ignition3EndAngle > CRANK_ANGLE_MAX_IGN) {ignition3EndAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition3StartAngle = ignition3EndAngle - dwellAngle;
-          if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          if(ignition3StartAngle < 0) {ignition3StartAngle += CRANK_ANGLE_MAX_IGN;}
 
           ignition4EndAngle = channel4IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+          if(ignition4EndAngle > CRANK_ANGLE_MAX_IGN) {ignition4EndAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition4StartAngle = ignition4EndAngle - dwellAngle;
-          if(ignition4StartAngle > CRANK_ANGLE_MAX_IGN) {ignition4StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          if(ignition4StartAngle < 0) {ignition4StartAngle += CRANK_ANGLE_MAX_IGN;}
 
           ignition5StartAngle = channel5IgnDegrees + CRANK_ANGLE_MAX - currentStatus.advance - dwellAngle;
           if(ignition5StartAngle > CRANK_ANGLE_MAX_IGN) {ignition5StartAngle -= CRANK_ANGLE_MAX_IGN;}
@@ -1328,27 +1337,32 @@ void loop()
           break;
         //6 cylinders
         case 6:
-          ignition2EndAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+          ignition2EndAngle = channel2IgnDegrees - currentStatus.advance;
+          if(ignition2EndAngle > CRANK_ANGLE_MAX_IGN) {ignition2EndAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition2StartAngle = ignition2EndAngle - dwellAngle;
-          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          if(ignition2StartAngle < 0) {ignition2StartAngle += CRANK_ANGLE_MAX_IGN;}
 
-          ignition3EndAngle = channel3IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+          ignition3EndAngle = channel3IgnDegrees - currentStatus.advance;
+          if(ignition3EndAngle > CRANK_ANGLE_MAX_IGN) {ignition3EndAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition3StartAngle = ignition3EndAngle - dwellAngle;
-          if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          if(ignition3StartAngle < 0) {ignition3StartAngle += CRANK_ANGLE_MAX_IGN;}
           break;
         //8 cylinders
         case 8:
-          ignition2EndAngle = channel2IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+          ignition2EndAngle = channel2IgnDegrees - currentStatus.advance;
+          if(ignition2EndAngle > CRANK_ANGLE_MAX_IGN) {ignition2EndAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition2StartAngle = ignition2EndAngle - dwellAngle;
-          if(ignition2StartAngle > CRANK_ANGLE_MAX_IGN) {ignition2StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          if(ignition2StartAngle < 0) {ignition2StartAngle += CRANK_ANGLE_MAX_IGN;}
 
-          ignition3EndAngle = channel3IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+          ignition3EndAngle = channel3IgnDegrees - currentStatus.advance;
+          if(ignition3EndAngle > CRANK_ANGLE_MAX_IGN) {ignition3EndAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition3StartAngle = ignition3EndAngle - dwellAngle;
-          if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          if(ignition3StartAngle < 0) {ignition3StartAngle += CRANK_ANGLE_MAX_IGN;}
 
-          ignition4EndAngle = channel4IgnDegrees + CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+          ignition4EndAngle = channel4IgnDegrees - currentStatus.advance;
+          if(ignition4EndAngle > CRANK_ANGLE_MAX_IGN) {ignition4EndAngle -= CRANK_ANGLE_MAX_IGN;}
           ignition4StartAngle = ignition4EndAngle - dwellAngle;
-          if(ignition4StartAngle > CRANK_ANGLE_MAX_IGN) {ignition4StartAngle -= CRANK_ANGLE_MAX_IGN;}
+          if(ignition4StartAngle < 0) {ignition4StartAngle += CRANK_ANGLE_MAX_IGN;}
           break;
 
         //Will hit the default case on 1 cylinder or >8 cylinders. Do nothing in these cases
