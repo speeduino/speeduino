@@ -227,8 +227,9 @@ void idleControl()
       }
       else
       {
-        //Standard running
-        currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+          currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        //If antilag is enabled triple Steps to open idle valve to keep boost up. (integration with rotational idle comming soonish)
+         if(currentStatus.antilagActive && (currentStatus.idleDuty < 100)) { currentStatus.idleDuty = 100; }
         if( currentStatus.idleDuty == 0 ) { disableIdle(); break; }
         enableIdle();
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
@@ -240,6 +241,8 @@ void idleControl()
     case IAC_ALGORITHM_PWM_CL:    //Case 3 is PWM closed loop
         //No cranking specific value for closed loop (yet?)
         idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
+        //If antilag is enabled triple target RPM to open idle valve. (integration with rotational idle comming soonish)
+        if(currentStatus.antilagActive) { idle_cl_target_rpm *= 3; }
         if( (idleCounter & 31) == 1) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
 
         idlePID.Compute();
@@ -270,6 +273,8 @@ void idleControl()
           {
             //Only do a lookup of the required value around 4 times per second. Any more than this can create too much jitter and require a hyster value that is too high
             idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+            //If antilag is enabled triple Steps to open idle valve to keep boost up. (integration with rotational idle comming soonish)
+            if(currentStatus.antilagActive) { idleStepper.targetIdleStep *= 3; }
             iacStepTime = configPage6.iacStepTime * 1000;
           }
           doStep();
@@ -288,8 +293,10 @@ void idleControl()
           idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
           iacStepTime = configPage6.iacStepTime * 1000;
         }
-
+        
         idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
+        //If antilag is enabled triple target RPM to open idle valve. (integration with rotational idle comming soonish)
+        if(currentStatus.antilagActive) { idle_cl_target_rpm *= 3; }
         idlePID.Compute();
         idleStepper.targetIdleStep = idle_pid_target_value;
 

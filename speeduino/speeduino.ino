@@ -682,6 +682,19 @@ void setup()
       }
       break;
 
+    case IGN_MODE_MULTIPLEX:
+      ign1StartFunction = beginMultiplex1Charge;
+      ign1EndFunction = endMultiplex1Charge;
+      ign2StartFunction = beginMultiplex2Charge;
+      ign2EndFunction = endMultiplex2Charge;
+      ign3StartFunction = beginMultiplex3Charge;
+      ign3EndFunction = endMultiplex3Charge;
+      
+      ign4StartFunction = nullCallback;
+      ign4EndFunction = nullCallback;
+      break;
+
+
 
 
     default:

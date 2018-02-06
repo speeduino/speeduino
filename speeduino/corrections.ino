@@ -75,6 +75,9 @@ static inline byte correctionsFuel()
   currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
 
+  currentStatus.antilagCorrection = correctionAntiLagfuel();
+  if (currentStatus.antilagCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.antilagCorrection); activeCorrections++; }
+
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
   if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
@@ -289,6 +292,17 @@ static inline byte correctionFlex()
 }
 
 /*
+* Antilag has a setting to increase the fuel load to assist in Keeping the turbo spooled
+* This simple check applies the extra fuel if we're currently in antilag mode
+*/
+static inline byte correctionAntiLagfuel()
+{
+  byte antilagFuel = 100;
+  if(currentStatus.antilagActive ) { antilagFuel = (100 + configPage10.antilagFuelAdder); }
+
+  return antilagFuel;
+}
+/*
 Lookup the AFR target table and perform either a simple or PID adjustment based on this
 
 Simple (Best suited to narrowband sensors):
@@ -379,7 +393,8 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionSoftRevLimit(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
-
+  advance = correctionAntiLagIgn(advance);
+  
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
   advance = correctionCrankingFixedTiming(advance); //This overrrides the regular fixed timing, must come last
@@ -464,6 +479,28 @@ static inline int8_t correctionSoftFlatShift(int8_t  advance)
   else { BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS); }
 
   return ignSoftFlatValue;
+}
+
+//Rally style Anti-lag igntion Retard.
+static inline int8_t correctionAntiLagIgn(int8_t advance)
+{
+  byte ignAntilag = advance;
+  if (configPage10.antilagEnabled && 
+  (currentStatus.coolant >= (configPage10.antilagCoolant - CALIBRATION_TEMPERATURE_OFFSET)) && 
+  (currentStatus.TPS <= configPage10.antilagTPS) && 
+  (currentStatus.RPM > ((unsigned int)(configPage10.antilagMinRpm) * 100)))
+  {
+    currentStatus.antilagActive = true;
+    BIT_SET(currentStatus.spark2, BIT_SPARK2_ANTILAG);
+    ignAntilag = configPage10.antilagRetard;
+  }
+  else
+  {
+    currentStatus.antilagActive= false;
+    BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_ANTILAG);
+  }
+
+  return ignAntilag;
 }
 
 //******************************** DWELL CORRECTIONS ********************************
