@@ -200,11 +200,21 @@ void initialiseSchedulers()
   Timer2.attachInterrupt(3, fuelSchedule3Interrupt);
   Timer2.attachInterrupt(4, fuelSchedule4Interrupt);
 
+#if (IGN_CHANNELS >= 1)
   Timer3.attachInterrupt(1, ignitionSchedule1Interrupt);
+#endif
+#if (IGN_CHANNELS >= 2)
   Timer3.attachInterrupt(2, ignitionSchedule2Interrupt);
+#endif
+#if (IGN_CHANNELS >= 3)
   Timer3.attachInterrupt(3, ignitionSchedule3Interrupt);
+#endif
+#if (IGN_CHANNELS >= 4)
   Timer3.attachInterrupt(4, ignitionSchedule4Interrupt);
+#endif
+#if (IGN_CHANNELS >= 5)
   Timer1.attachInterrupt(1, ignitionSchedule5Interrupt);
+#endif
 
   Timer1.resume();
   Timer2.resume();
@@ -216,24 +226,45 @@ void initialiseSchedulers()
     fuelSchedule3.Status = OFF;
     fuelSchedule4.Status = OFF;
     fuelSchedule5.Status = OFF;
+    fuelSchedule6.Status = OFF;
+    fuelSchedule7.Status = OFF;
+    fuelSchedule8.Status = OFF;
 
     fuelSchedule1.schedulesSet = 0;
     fuelSchedule2.schedulesSet = 0;
     fuelSchedule3.schedulesSet = 0;
     fuelSchedule4.schedulesSet = 0;
     fuelSchedule5.schedulesSet = 0;
+    fuelSchedule6.schedulesSet = 0;
+    fuelSchedule7.schedulesSet = 0;
+    fuelSchedule8.schedulesSet = 0;
+
+    fuelSchedule1.counter = &FUEL1_COUNTER;
+    fuelSchedule2.counter = &FUEL2_COUNTER;
+    fuelSchedule3.counter = &FUEL3_COUNTER;
+    fuelSchedule4.counter = &FUEL4_COUNTER;
+    fuelSchedule5.counter = &FUEL5_COUNTER;
+    fuelSchedule6.counter = &FUEL6_COUNTER;
+    fuelSchedule7.counter = &FUEL7_COUNTER;
+    fuelSchedule8.counter = &FUEL8_COUNTER;
 
     ignitionSchedule1.Status = OFF;
     ignitionSchedule2.Status = OFF;
     ignitionSchedule3.Status = OFF;
     ignitionSchedule4.Status = OFF;
     ignitionSchedule5.Status = OFF;
+    ignitionSchedule6.Status = OFF;
+    ignitionSchedule7.Status = OFF;
+    ignitionSchedule8.Status = OFF;
 
     ignitionSchedule1.schedulesSet = 0;
     ignitionSchedule2.schedulesSet = 0;
     ignitionSchedule3.schedulesSet = 0;
     ignitionSchedule4.schedulesSet = 0;
     ignitionSchedule5.schedulesSet = 0;
+    ignitionSchedule6.schedulesSet = 0;
+    ignitionSchedule7.schedulesSet = 0;
+    ignitionSchedule8.schedulesSet = 0;
 
   }
 
@@ -246,32 +277,30 @@ timeout: The number of uS in the future that the startCallback should be trigger
 duration: The number of uS after startCallback is called before endCallback is called
 endCallback: This function is called once the duration time has been reached
 */
-//void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-void setFuelSchedule1(unsigned long timeout, unsigned long duration)
+
+//Experimental new generic function
+void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, unsigned long duration)
 {
-  if(fuelSchedule1.Status != RUNNING) //Check that we're not already part way through a schedule
+  if(targetSchedule->Status != RUNNING) //Check that we're not already part way through a schedule
   {
     //Callbacks no longer used, but retained for now:
     //fuelSchedule1.StartCallback = startCallback;
     //fuelSchedule1.EndCallback = endCallback;
-    fuelSchedule1.duration = duration;
+    targetSchedule->duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
     uint16_t timeout_timer_compare;
-    if (timeout > MAX_TIMER_PERIOD_SLOW) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD_SLOW - 1) ); } // If the timeout is >16x (Each tick represents 16uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
-    else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
+    if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >16x (Each tick represents 16uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
     //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
     noInterrupts();
-    fuelSchedule1.startCompare = FUEL1_COUNTER + timeout_timer_compare;
-    fuelSchedule1.endCompare = fuelSchedule1.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
-    fuelSchedule1.Status = PENDING; //Turn this schedule on
-    fuelSchedule1.schedulesSet++; //Increment the number of times this schedule has been set
-    //Schedule 1 shares a timer with schedule 5
-    //if(channel5InjEnabled) { FUEL1_COMPARE = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, FUEL1_COUNTER); }
-    //else { timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1; FUEL1_COMPARE = fuelSchedule1.startCompare; }
-    //timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1;
-    FUEL1_COMPARE = fuelSchedule1.startCompare;
+    targetSchedule->startCompare = *targetSchedule->counter + timeout_timer_compare;
+    targetSchedule->endCompare = targetSchedule->startCompare + uS_TO_TIMER_COMPARE(duration);
+    targetSchedule->Status = PENDING; //Turn this schedule on
+    targetSchedule->schedulesSet++; //Increment the number of times this schedule has been set
+
+    *targetSchedule->compare = targetSchedule->startCompare;
     interrupts();
     FUEL1_TIMER_ENABLE();
   }
@@ -279,143 +308,316 @@ void setFuelSchedule1(unsigned long timeout, unsigned long duration)
   {
     //If the schedule is already running, we can set the next schedule so it is ready to go
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-    fuelSchedule1.nextStartCompare = FUEL1_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
-    fuelSchedule1.nextEndCompare = fuelSchedule1.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
-    fuelSchedule1.hasNextSchedule = true;
+    targetSchedule->nextStartCompare = *targetSchedule->counter + uS_TO_TIMER_COMPARE(timeout);
+    targetSchedule->nextEndCompare = targetSchedule->nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+    targetSchedule->hasNextSchedule = true;
   }
 }
-void setFuelSchedule2(unsigned long timeout, unsigned long duration)
+
+
+//void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setFuelSchedule1(unsigned long timeout, unsigned long duration)
 {
-  if(fuelSchedule2.Status != RUNNING) //Check that we're not already part way through a schedule
+  //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
+  if(timeout < MAX_TIMER_PERIOD_SLOW)
   {
-    //Callbacks no longer used, but retained for now:
-    //fuelSchedule2.StartCallback = startCallback;
-    //fuelSchedule2.EndCallback = endCallback;
-    fuelSchedule2.duration = duration;
-
-    //Need to check that the timeout doesn't exceed the overflow
-    uint16_t timeout_timer_compare;
-    if (timeout > MAX_TIMER_PERIOD_SLOW) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
-    else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
-
-    //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
-    noInterrupts();
-    fuelSchedule2.startCompare = FUEL2_COUNTER + timeout_timer_compare;
-    fuelSchedule2.endCompare = fuelSchedule2.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
-    FUEL2_COMPARE = fuelSchedule2.startCompare; //Use the B compare unit of timer 3
-    fuelSchedule2.Status = PENDING; //Turn this schedule on
-    fuelSchedule2.schedulesSet++; //Increment the number of times this schedule has been set
-    interrupts();
-    FUEL2_TIMER_ENABLE();
-  }
-  else
-  {
-    //If the schedule is already running, we can set the next schedule so it is ready to go
-    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-    fuelSchedule2.nextStartCompare = FUEL2_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
-    fuelSchedule2.nextEndCompare = fuelSchedule2.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
-    fuelSchedule2.hasNextSchedule = true;
-  }
-}
-//void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-void setFuelSchedule3(unsigned long timeout, unsigned long duration)
-{
-  if(fuelSchedule3.Status != RUNNING)//Check that we're not already part way through a schedule
-  {
-    //Callbacks no longer used, but retained for now:
-    //fuelSchedule3.StartCallback = startCallback;
-    //fuelSchedule3.EndCallback = endCallback;
-    fuelSchedule3.duration = duration;
-
-    //Need to check that the timeout doesn't exceed the overflow
-    uint16_t timeout_timer_compare;
-    if (timeout > MAX_TIMER_PERIOD_SLOW) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
-    else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
-
-    //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
-    noInterrupts();
-    fuelSchedule3.startCompare = FUEL3_COUNTER + timeout_timer_compare;
-    fuelSchedule3.endCompare = fuelSchedule3.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
-    FUEL3_COMPARE = fuelSchedule3.startCompare; //Use the C copmare unit of timer 3
-    fuelSchedule3.Status = PENDING; //Turn this schedule on
-    fuelSchedule3.schedulesSet++; //Increment the number of times this schedule has been set
-    interrupts();
-    FUEL3_TIMER_ENABLE();
-  }
-  else
-  {
-    //If the schedule is already running, we can set the next schedule so it is ready to go
-    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-    fuelSchedule3.nextStartCompare = FUEL3_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
-    fuelSchedule3.nextEndCompare = fuelSchedule3.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
-    fuelSchedule3.hasNextSchedule = true;
-  }
-}
-//void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses timer 4 compare B
-{
-  if(fuelSchedule4.Status != RUNNING) //Check that we're not already part way through a schedule
-  {
-    //Callbacks no longer used, but retained for now:
-    //fuelSchedule4.StartCallback = startCallback;
-    //fuelSchedule4.EndCallback = endCallback;
-    fuelSchedule4.duration = duration;
-
-    //Need to check that the timeout doesn't exceed the overflow
-    uint16_t timeout_timer_compare;
-    if (timeout > MAX_TIMER_PERIOD_SLOW) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
-    else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
-
-    //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
-    noInterrupts();
-    fuelSchedule4.startCompare = FUEL4_COUNTER + timeout_timer_compare;
-    fuelSchedule4.endCompare = fuelSchedule4.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
-    FUEL4_COMPARE = fuelSchedule4.startCompare; //Use the C copmare unit of timer 3
-    fuelSchedule4.Status = PENDING; //Turn this schedule on
-    fuelSchedule4.schedulesSet++; //Increment the number of times this schedule has been set
-    interrupts();
-    FUEL4_TIMER_ENABLE();
-  }
-  else
-  {
-    //If the schedule is already running, we can set the next schedule so it is ready to go
-    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-    fuelSchedule4.nextStartCompare = FUEL4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
-    fuelSchedule4.nextEndCompare = fuelSchedule4.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
-    fuelSchedule4.hasNextSchedule = true;
-  }
-}
-void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-  {
-    if(fuelSchedule5.Status != RUNNING) //Check that we're not already part way through a schedule
+    if(fuelSchedule1.Status != RUNNING) //Check that we're not already part way through a schedule
     {
-      fuelSchedule5.StartCallback = startCallback; //Name the start callback function
-      fuelSchedule5.EndCallback = endCallback; //Name the end callback function
-      fuelSchedule5.duration = duration;
+      //Callbacks no longer used, but retained for now:
+      //fuelSchedule1.StartCallback = startCallback;
+      //fuelSchedule1.EndCallback = endCallback;
+      fuelSchedule1.duration = duration;
 
-      /*
-       * The following must be enclosed in the noIntterupts block to avoid contention caused if the relevant interrupts fires before the state is fully set
-       */
-  #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+      //Need to check that the timeout doesn't exceed the overflow
+      uint16_t timeout_timer_compare;
+      if ((timeout+duration) > MAX_TIMER_PERIOD_SLOW) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD_SLOW - 1 - duration) ); } // If the timeout is >16x (Each tick represents 16uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+      else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
+
+      //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
       noInterrupts();
-      fuelSchedule5.startCompare = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
-      fuelSchedule5.endCompare = fuelSchedule5.startCompare + (duration >> 4);
-      fuelSchedule5.Status = PENDING; //Turn this schedule on
-      fuelSchedule5.schedulesSet++; //Increment the number of times this schedule has been set
-      OCR3A = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, TCNT3); //Schedule 1 shares a timer with schedule 5
+      fuelSchedule1.startCompare = FUEL1_COUNTER + timeout_timer_compare;
+      fuelSchedule1.endCompare = fuelSchedule1.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+      fuelSchedule1.Status = PENDING; //Turn this schedule on
+      fuelSchedule1.schedulesSet++; //Increment the number of times this schedule has been set
+      //Schedule 1 shares a timer with schedule 5
+      //if(channel5InjEnabled) { FUEL1_COMPARE = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, FUEL1_COUNTER); }
+      //else { timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1; FUEL1_COMPARE = fuelSchedule1.startCompare; }
+      //timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1;
+      FUEL1_COMPARE = fuelSchedule1.startCompare;
       interrupts();
-      TIMSK3 |= (1 << OCIE3A); //Turn on the A compare unit (ie turn on the interrupt)
-  #endif
+      FUEL1_TIMER_ENABLE();
     }
     else
     {
       //If the schedule is already running, we can set the next schedule so it is ready to go
       //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-      fuelSchedule5.nextStartCompare = FUEL5_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
-      fuelSchedule5.nextEndCompare = fuelSchedule5.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
-      fuelSchedule5.hasNextSchedule = true;
+      noInterrupts();
+      fuelSchedule1.nextStartCompare = FUEL1_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+      fuelSchedule1.nextEndCompare = fuelSchedule1.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+      fuelSchedule1.duration = duration;
+      fuelSchedule1.hasNextSchedule = true;
+      interrupts();
+    } //Schedule is RUNNING
+  } //Timeout less than threshold
+}
+
+void setFuelSchedule2(unsigned long timeout, unsigned long duration)
+{
+  //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
+  if(timeout < MAX_TIMER_PERIOD_SLOW)
+  {
+    if(fuelSchedule2.Status != RUNNING) //Check that we're not already part way through a schedule
+    {
+      //Callbacks no longer used, but retained for now:
+      //fuelSchedule2.StartCallback = startCallback;
+      //fuelSchedule2.EndCallback = endCallback;
+      fuelSchedule2.duration = duration;
+
+      //Need to check that the timeout doesn't exceed the overflow
+      uint16_t timeout_timer_compare;
+      if (timeout > MAX_TIMER_PERIOD_SLOW) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+      else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
+
+      //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
+      noInterrupts();
+      fuelSchedule2.startCompare = FUEL2_COUNTER + timeout_timer_compare;
+      fuelSchedule2.endCompare = fuelSchedule2.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+      FUEL2_COMPARE = fuelSchedule2.startCompare; //Use the B compare unit of timer 3
+      fuelSchedule2.Status = PENDING; //Turn this schedule on
+      fuelSchedule2.schedulesSet++; //Increment the number of times this schedule has been set
+      interrupts();
+      FUEL2_TIMER_ENABLE();
+    }
+    else
+    {
+      //If the schedule is already running, we can set the next schedule so it is ready to go
+      //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+      fuelSchedule2.nextStartCompare = FUEL2_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+      fuelSchedule2.nextEndCompare = fuelSchedule2.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+      fuelSchedule2.hasNextSchedule = true;
     }
   }
+}
+//void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setFuelSchedule3(unsigned long timeout, unsigned long duration)
+{
+  //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
+  if(timeout < MAX_TIMER_PERIOD_SLOW)
+  {
+    if(fuelSchedule3.Status != RUNNING)//Check that we're not already part way through a schedule
+    {
+      //Callbacks no longer used, but retained for now:
+      //fuelSchedule3.StartCallback = startCallback;
+      //fuelSchedule3.EndCallback = endCallback;
+      fuelSchedule3.duration = duration;
+
+      //Need to check that the timeout doesn't exceed the overflow
+      uint16_t timeout_timer_compare;
+      if (timeout > MAX_TIMER_PERIOD_SLOW) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+      else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
+
+      //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
+      noInterrupts();
+      fuelSchedule3.startCompare = FUEL3_COUNTER + timeout_timer_compare;
+      fuelSchedule3.endCompare = fuelSchedule3.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+      FUEL3_COMPARE = fuelSchedule3.startCompare; //Use the C copmare unit of timer 3
+      fuelSchedule3.Status = PENDING; //Turn this schedule on
+      fuelSchedule3.schedulesSet++; //Increment the number of times this schedule has been set
+      interrupts();
+      FUEL3_TIMER_ENABLE();
+    }
+    else
+    {
+      //If the schedule is already running, we can set the next schedule so it is ready to go
+      //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+      fuelSchedule3.nextStartCompare = FUEL3_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+      fuelSchedule3.nextEndCompare = fuelSchedule3.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+      fuelSchedule3.hasNextSchedule = true;
+    }
+  }
+}
+//void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses timer 4 compare B
+{
+  //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
+  if(timeout < MAX_TIMER_PERIOD_SLOW)
+  {
+    if(fuelSchedule4.Status != RUNNING) //Check that we're not already part way through a schedule
+    {
+      //Callbacks no longer used, but retained for now:
+      //fuelSchedule4.StartCallback = startCallback;
+      //fuelSchedule4.EndCallback = endCallback;
+      fuelSchedule4.duration = duration;
+
+      //Need to check that the timeout doesn't exceed the overflow
+      uint16_t timeout_timer_compare;
+      if (timeout > MAX_TIMER_PERIOD_SLOW) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+      else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
+
+      //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
+      noInterrupts();
+      fuelSchedule4.startCompare = FUEL4_COUNTER + timeout_timer_compare;
+      fuelSchedule4.endCompare = fuelSchedule4.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+      FUEL4_COMPARE = fuelSchedule4.startCompare; //Use the C copmare unit of timer 3
+      fuelSchedule4.Status = PENDING; //Turn this schedule on
+      fuelSchedule4.schedulesSet++; //Increment the number of times this schedule has been set
+      interrupts();
+      FUEL4_TIMER_ENABLE();
+    }
+    else
+    {
+      //If the schedule is already running, we can set the next schedule so it is ready to go
+      //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+      fuelSchedule4.nextStartCompare = FUEL4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+      fuelSchedule4.nextEndCompare = fuelSchedule4.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+      fuelSchedule4.hasNextSchedule = true;
+    }
+  }
+}
+
+void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+{
+  if(fuelSchedule5.Status != RUNNING) //Check that we're not already part way through a schedule
+  {
+    fuelSchedule5.StartCallback = startCallback; //Name the start callback function
+    fuelSchedule5.EndCallback = endCallback; //Name the end callback function
+    fuelSchedule5.duration = duration;
+
+    /*
+     * The following must be enclosed in the noIntterupts block to avoid contention caused if the relevant interrupts fires before the state is fully set
+     */
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+    noInterrupts();
+    fuelSchedule5.startCompare = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
+    fuelSchedule5.endCompare = fuelSchedule5.startCompare + (duration >> 4);
+    fuelSchedule5.Status = PENDING; //Turn this schedule on
+    fuelSchedule5.schedulesSet++; //Increment the number of times this schedule has been set
+    OCR3A = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, TCNT3); //Schedule 1 shares a timer with schedule 5
+    interrupts();
+    TIMSK3 |= (1 << OCIE3A); //Turn on the A compare unit (ie turn on the interrupt)
+#endif
+  }
+  else
+  {
+    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    fuelSchedule5.nextStartCompare = FUEL5_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    fuelSchedule5.nextEndCompare = fuelSchedule5.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+    fuelSchedule5.hasNextSchedule = true;
+  }
+}
+
+#if INJ_CHANNELS >= 6
+//This uses timer
+void setFuelSchedule6(unsigned long timeout, unsigned long duration)
+{
+  if(fuelSchedule6.Status != RUNNING) //Check that we're not already part way through a schedule
+  {
+    //Callbacks no longer used, but retained for now:
+    //fuelSchedule4.StartCallback = startCallback;
+    //fuelSchedule4.EndCallback = endCallback;
+    fuelSchedule6.duration = duration;
+
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD_SLOW) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
+
+    //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
+    noInterrupts();
+    fuelSchedule6.startCompare = FUEL6_COUNTER + timeout_timer_compare;
+    fuelSchedule6.endCompare = fuelSchedule6.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+    FUEL6_COMPARE = fuelSchedule6.startCompare; //Use the C copmare unit of timer 3
+    fuelSchedule6.Status = PENDING; //Turn this schedule on
+    fuelSchedule6.schedulesSet++; //Increment the number of times this schedule has been set
+    interrupts();
+    FUEL6_TIMER_ENABLE();
+  }
+  else
+  {
+    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    fuelSchedule6.nextStartCompare = FUEL6_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    fuelSchedule6.nextEndCompare = fuelSchedule6.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+    fuelSchedule6.hasNextSchedule = true;
+  }
+}
+#endif
+
+#if INJ_CHANNELS >= 7
+//This uses timer
+void setFuelSchedule7(unsigned long timeout, unsigned long duration)
+{
+  if(fuelSchedule7.Status != RUNNING) //Check that we're not already part way through a schedule
+  {
+    //Callbacks no longer used, but retained for now:
+    //fuelSchedule4.StartCallback = startCallback;
+    //fuelSchedule4.EndCallback = endCallback;
+    fuelSchedule7.duration = duration;
+
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
+
+    //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
+    noInterrupts();
+    fuelSchedule7.startCompare = FUEL7_COUNTER + timeout_timer_compare;
+    fuelSchedule7.endCompare = fuelSchedule6.startCompare + uS_TO_TIMER_COMPARE(duration);
+    FUEL7_COMPARE = fuelSchedule7.startCompare; //Use the C copmare unit of timer 3
+    fuelSchedule7.Status = PENDING; //Turn this schedule on
+    fuelSchedule7.schedulesSet++; //Increment the number of times this schedule has been set
+    interrupts();
+    FUEL7_TIMER_ENABLE();
+  }
+  else
+  {
+    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    fuelSchedule7.nextStartCompare = FUEL7_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+    fuelSchedule7.nextEndCompare = fuelSchedule7.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+    fuelSchedule7.hasNextSchedule = true;
+  }
+}
+#endif
+
+#if INJ_CHANNELS >= 8
+//This uses timer
+void setFuelSchedule8(unsigned long timeout, unsigned long duration)
+{
+  if(fuelSchedule8.Status != RUNNING) //Check that we're not already part way through a schedule
+  {
+    //Callbacks no longer used, but retained for now:
+    //fuelSchedule4.StartCallback = startCallback;
+    //fuelSchedule4.EndCallback = endCallback;
+    fuelSchedule8.duration = duration;
+
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
+
+    //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
+    noInterrupts();
+    fuelSchedule8.startCompare = FUEL8_COUNTER + timeout_timer_compare;
+    fuelSchedule8.endCompare = fuelSchedule8.startCompare + uS_TO_TIMER_COMPARE(duration);
+    FUEL8_COMPARE = fuelSchedule8.startCompare; //Use the C copmare unit of timer 3
+    fuelSchedule8.Status = PENDING; //Turn this schedule on
+    fuelSchedule8.schedulesSet++; //Increment the number of times this schedule has been set
+    interrupts();
+    FUEL8_TIMER_ENABLE();
+  }
+  else
+  {
+    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    fuelSchedule8.nextStartCompare = FUEL8_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+    fuelSchedule8.nextEndCompare = fuelSchedule8.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+    fuelSchedule8.hasNextSchedule = true;
+  }
+}
+#endif
+
 //Ignition schedulers use Timer 5
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
@@ -580,15 +782,15 @@ static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a f
     if (fuelSchedule1.Status == PENDING) //Check to see if this schedule is turn on
     {
       //To use timer queue, change fuelShedule1 to timer3Aqueue[0];
-      if (configPage1.injLayout == INJ_SEMISEQUENTIAL) { openInjector1and4(); }
+      if (configPage2.injLayout == INJ_SEMISEQUENTIAL) { openInjector1and4(); }
       else { openInjector1(); }
       fuelSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      FUEL1_COMPARE = fuelSchedule1.endCompare;
+      FUEL1_COMPARE = FUEL1_COUNTER + uS_TO_TIMER_COMPARE_SLOW(fuelSchedule1.duration); //Doing this here prevents a potential overflow on restarts
     }
     else if (fuelSchedule1.Status == RUNNING)
     {
        //timer3Aqueue[0]->EndCallback();
-       if (configPage1.injLayout == INJ_SEMISEQUENTIAL) { closeInjector1and4(); }
+       if (configPage2.injLayout == INJ_SEMISEQUENTIAL) { closeInjector1and4(); }
        else { closeInjector1(); }
        fuelSchedule1.Status = OFF; //Turn off the schedule
        fuelSchedule1.schedulesSet = 0;
@@ -617,15 +819,15 @@ static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a f
     if (fuelSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
       //fuelSchedule2.StartCallback();
-      if (configPage1.injLayout == INJ_SEMISEQUENTIAL) { openInjector2and3(); }
+      if (configPage2.injLayout == INJ_SEMISEQUENTIAL) { openInjector2and3(); }
       else { openInjector2(); }
       fuelSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      FUEL2_COMPARE = fuelSchedule2.endCompare;
+      FUEL2_COMPARE = FUEL2_COUNTER + uS_TO_TIMER_COMPARE_SLOW(fuelSchedule2.duration); //Doing this here prevents a potential overflow on restarts
     }
     else if (fuelSchedule2.Status == RUNNING)
     {
        //fuelSchedule2.EndCallback();
-       if (configPage1.injLayout == INJ_SEMISEQUENTIAL) { closeInjector2and3(); }
+       if (configPage2.injLayout == INJ_SEMISEQUENTIAL) { closeInjector2and3(); }
        else { closeInjector2(); }
        fuelSchedule2.Status = OFF; //Turn off the schedule
        fuelSchedule2.schedulesSet = 0;
@@ -656,7 +858,7 @@ static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a f
       if(channel5InjEnabled) { openInjector3and5(); }
       else { openInjector3(); }
       fuelSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      FUEL3_COMPARE = fuelSchedule3.endCompare;
+      FUEL3_COMPARE = FUEL3_COUNTER + uS_TO_TIMER_COMPARE_SLOW(fuelSchedule3.duration); //Doing this here prevents a potential overflow on restarts
     }
     else if (fuelSchedule3.Status == RUNNING)
     {
@@ -691,7 +893,7 @@ static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a f
       //fuelSchedule4.StartCallback();
       openInjector4();
       fuelSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      FUEL4_COMPARE = fuelSchedule4.endCompare;
+      FUEL4_COMPARE = FUEL4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(fuelSchedule4.duration); //Doing this here prevents a potential overflow on restarts
     }
     else if (fuelSchedule4.Status == RUNNING)
     {
@@ -713,6 +915,41 @@ static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a f
     }
   }
 
+#if (INJ_CHANNELS >= 6)
+#if defined(CORE_AVR) //AVR chips use the ISR for this
+ISR(TIMER4_COMPA_vect) //fuelSchedule6
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+static inline void fuelSchedule6Interrupt() //Most ARM chips can simply call a function
+#endif
+{
+  if (fuelSchedule6.Status == PENDING) //Check to see if this schedule is turn on
+  {
+    //fuelSchedule4.StartCallback();
+    openInjector6();
+    fuelSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+    FUEL6_COMPARE = fuelSchedule6.endCompare;
+  }
+  else if (fuelSchedule6.Status == RUNNING)
+  {
+     //fuelSchedule4.EndCallback();
+     closeInjector6();
+     fuelSchedule6.Status = OFF; //Turn off the schedule
+     fuelSchedule6.schedulesSet = 0;
+
+     //If there is a next schedule queued up, activate it
+     if(fuelSchedule6.hasNextSchedule == true)
+     {
+       FUEL6_COMPARE = fuelSchedule6.nextStartCompare;
+       fuelSchedule6.endCompare = fuelSchedule6.nextEndCompare;
+       fuelSchedule6.Status = PENDING;
+       fuelSchedule6.schedulesSet = 1;
+       fuelSchedule6.hasNextSchedule = false;
+     }
+     else { FUEL6_TIMER_DISABLE(); }
+  }
+}
+#endif
+
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER5_COMPA_vect) //ignitionSchedule1
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
@@ -724,22 +961,24 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
       ignitionSchedule1.StartCallback();
       ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule1.startTime = micros();
-      IGN1_COMPARE = ignitionSchedule1.endCompare;
-    }
-      /*
-      This code is all to do with the staged ignition timing testing. That is, calling this interrupt slightly before the true ignition point and recalculating the end time for more accuracy
-      IGN1_COMPARE = ignitionSchedule1.endCompare - 20;
-      ignitionSchedule1.Status = STAGED;
+      //IGN1_COMPARE = ignitionSchedule1.endCompare;
+      IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule1.duration); //Doing this here prevents a potential overflow on restarts
+      //This code is all to do with the staged ignition timing testing. That is, calling this interrupt slightly before the true ignition point and recalculating the end time for more accuracy
+      //IGN1_COMPARE = ignitionSchedule1.endCompare - 50;
+      //ignitionSchedule1.Status = STAGED;
     }
     else if (ignitionSchedule1.Status == STAGED)
     {
       int16_t crankAngle = getCrankAngle(timePerDegree);
+      if(crankAngle > CRANK_ANGLE_MAX_IGN) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
       if(ignition1EndAngle > crankAngle)
-      { IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( (ignition1EndAngle - crankAngle) * timePerDegree ); }
+      {
+        IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS((ignition1EndAngle - crankAngle)) );
+      }
       else { IGN1_COMPARE = ignitionSchedule1.endCompare; }
 
       ignitionSchedule1.Status = RUNNING;
-    }*/
+    }
     else if (ignitionSchedule1.Status == RUNNING)
     {
       ignitionSchedule1.EndCallback();
@@ -761,7 +1000,7 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
       ignitionSchedule2.StartCallback();
       ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule2.startTime = micros();
-      IGN2_COMPARE = ignitionSchedule2.endCompare; //OCR5B = TCNT5 + (ignitionSchedule2.duration >> 2);
+      IGN2_COMPARE = IGN2_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule2.duration); //Doing this here prevents a potential overflow on restarts
     }
     else if (ignitionSchedule2.Status == RUNNING)
     {
@@ -784,7 +1023,7 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
       ignitionSchedule3.StartCallback();
       ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule3.startTime = micros();
-      IGN3_COMPARE = ignitionSchedule3.endCompare; //OCR5C = TCNT5 + (ignitionSchedule3.duration >> 2);
+      IGN3_COMPARE = IGN3_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule3.duration); //Doing this here prevents a potential overflow on restarts
     }
     else if (ignitionSchedule3.Status == RUNNING)
     {
@@ -806,7 +1045,7 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
     }
   }
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //ignitionSchedule4
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call a function
@@ -817,7 +1056,7 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
       ignitionSchedule4.StartCallback();
       ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule4.startTime = micros();
-      IGN4_COMPARE = ignitionSchedule4.endCompare;
+      IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(ignitionSchedule4.duration); //Doing this here prevents a potential overflow on restarts
     }
     else if (ignitionSchedule4.Status == RUNNING)
     {
@@ -850,7 +1089,7 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
       ignitionSchedule5.StartCallback();
       ignitionSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule5.startTime = micros();
-      IGN5_COMPARE = ignitionSchedule5.endCompare;
+      IGN5_COMPARE = IGN5_COUNTER + uS_TO_TIMER_COMPARE_SLOW(ignitionSchedule5.duration); //Doing this here prevents a potential overflow on restarts
     }
     else if (ignitionSchedule5.Status == RUNNING)
     {

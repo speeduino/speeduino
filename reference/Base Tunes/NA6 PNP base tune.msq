@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.50.17 - EFI Analytics, Inc." tuneComment="" writeDate="Sun Dec 10 17:18:48 AEDT 2017"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.11" nPages="10" signature="speeduino 201711"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.50.23 - EFI Analytics, Inc." tuneComment="" writeDate="Wed Jan 03 21:37:23 AEDT 2018"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.12" nPages="10" signature="speeduino 201712"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
 </page>
@@ -113,12 +113,14 @@
 <constant name="twoStroke">"Four-stroke"</constant>
 <constant name="injType">"Port"</constant>
 <constant name="nCylinders">"4"</constant>
+<constant name="unused2-37a">"None"</constant>
+<constant name="unused2-37b">"None"</constant>
 <constant name="nInjectors">"4"</constant>
 <constant name="engineType">"Even fire"</constant>
 <constant name="flexEnabled">"Off"</constant>
 <constant name="algorithm">"Speed Density"</constant>
 <constant name="baroCorr">"Off"</constant>
-<constant name="injLayout">"Semi-Sequential"</constant>
+<constant name="injLayout">"Paired"</constant>
 <constant name="perToothIgn">"No"</constant>
 <constant name="dfcoEnabled">"Off"</constant>
 <constant digits="1" name="primePulse" units="ms">2.0</constant>
@@ -207,7 +209,7 @@
          77.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_1" units="RAW">
-         77.0 
+         255.0 
       </constant>
 </page>
 <page number="2" size="288">
@@ -274,7 +276,6 @@
 <constant name="TrigEdge">"Leading"</constant>
 <constant name="TrigSpeed">"Crank Speed"</constant>
 <constant name="IgInv">"Going Low"</constant>
-<constant name="unused4-5d">"Yes"</constant>
 <constant name="TrigPattern">"4G63 / Miata / 3000GT"</constant>
 <constant name="TrigEdgeSec">"Trailing"</constant>
 <constant name="fuelPumpPin">"Board Default"</constant>
@@ -420,7 +421,7 @@
          1.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_3" units="RAW">
-         134.0 
+         255.0 
       </constant>
 </page>
 <page number="4" size="288">
@@ -526,8 +527,8 @@
          20.0 
          35.0 
          50.0 
-         60.0 
-         90.0 
+         62.0 
+         91.0 
          120.0 
       </constant>
 <constant cols="1" digits="0" name="airDenRates" rows="9" units="%">
@@ -537,7 +538,7 @@
          100.0 
          95.0 
          91.0 
-         88.0 
+         83.0 
          81.0 
          74.0 
       </constant>
@@ -860,6 +861,22 @@
 <constant name="caninput_sel13">"Off"</constant>
 <constant name="caninput_sel14">"Off"</constant>
 <constant name="caninput_sel15">"Off"</constant>
+<constant name="caninput_source_can_address0">"0x100"</constant>
+<constant name="caninput_source_can_address1">"0x100"</constant>
+<constant name="caninput_source_can_address2">"0x100"</constant>
+<constant name="caninput_source_can_address3">"0x100"</constant>
+<constant name="caninput_source_can_address4">"0x100"</constant>
+<constant name="caninput_source_can_address5">"0x100"</constant>
+<constant name="caninput_source_can_address6">"0x100"</constant>
+<constant name="caninput_source_can_address7">"0x100"</constant>
+<constant name="caninput_source_can_address8">"0x100"</constant>
+<constant name="caninput_source_can_address9">"0x100"</constant>
+<constant name="caninput_source_can_address10">"0x100"</constant>
+<constant name="caninput_source_can_address11">"0x100"</constant>
+<constant name="caninput_source_can_address12">"0x100"</constant>
+<constant name="caninput_source_can_address13">"0x100"</constant>
+<constant name="caninput_source_can_address14">"0x100"</constant>
+<constant name="caninput_source_can_address15">"0x100"</constant>
 <constant name="caninput_source_start_byte0">"7"</constant>
 <constant name="caninput_source_start_byte1">"1"</constant>
 <constant name="caninput_source_start_byte2">"1"</constant>
@@ -926,6 +943,9 @@
 <constant digits="0" name="unused10_98">0.0</constant>
 <constant digits="0" name="unused10_99">0.0</constant>
 <constant name="speeduino_tsCanId">"CAN ID 0"</constant>
+<constant name="true_address">"0x100"</constant>
+<constant name="realtime_base_address">"0x100"</constant>
+<constant name="obd_address">"0x100"</constant>
 <constant digits="0" name="unused10_107">0.0</constant>
 <constant digits="0" name="unused10_108">0.0</constant>
 <constant digits="0" name="unused10_109">0.0</constant>
@@ -946,7 +966,7 @@
 <constant digits="0" name="unused10_124">0.0</constant>
 <constant digits="0" name="unused10_125">0.0</constant>
 <constant digits="0" name="unused10_126">0.0</constant>
-<constant digits="0" name="unused10_127">132.0</constant>
+<constant digits="0" name="unused10_127">1.0</constant>
 </page>
 <page number="9" size="192">
 <constant cols="1" digits="0" name="crankingEnrichBins" rows="4" units="C">
@@ -1154,7 +1174,7 @@
          0.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_9" units="RAW">
-         0.0 
+         255.0 
       </constant>
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">
