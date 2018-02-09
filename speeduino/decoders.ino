@@ -377,7 +377,8 @@ void triggerSec_DualWheel()
     {
       toothLastToothTime = micros();
       //CONFIRM THE BELOW! IT DOESN'T LOOK RIGHT (toothOneTime??)
-      toothLastMinusOneToothTime = (toothOneTime - 6000000) / configPage4.triggerTeeth; //Fixes RPM at 10rpm until a full revolution has taken place
+      //toothLastMinusOneToothTime = (toothOneTime - 6000000) / configPage4.triggerTeeth; //Fixes RPM at 10rpm until a full revolution has taken place
+      toothLastMinusOneToothTime = micros() - (6000000 / configPage4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
       toothCurrentCount = configPage4.triggerTeeth;
 
       currentStatus.hasSync = true;
@@ -1025,7 +1026,8 @@ void triggerSetup_24X()
   toothAngles[23] = 357;
 
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  toothCurrentCount = 25; //We set the initial tooth value to be something that should never be reached. This indicates no sync
+  if(initialisationComplete == false) { toothCurrentCount = 25; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
+   //We set the initial tooth value to be something that should never be reached. This indicates no sync
   secondDerivEnabled = false;
   decoderIsSequential = true;
 }
@@ -1043,24 +1045,29 @@ void triggerPri_24X()
        toothCurrentCount = 1; //Reset the counter
        toothOneMinusOneTime = toothOneTime;
        toothOneTime = curTime;
+       revolutionOne = !revolutionOne; //Sequential revolution flip
        currentStatus.hasSync = true;
        currentStatus.startRevolutions++; //Counter
+       triggerToothAngle = 15; //Always 15 degrees for tooth #15
     }
     else
     {
       toothCurrentCount++; //Increment the tooth counter
+      triggerToothAngle = toothAngles[(toothCurrentCount-1)] - toothAngles[(toothCurrentCount-2)]; //Calculate the last tooth gap in degrees
     }
 
     addToothLogEntry(curGap);
 
     toothLastToothTime = curTime;
+
+
   }
 }
 
 void triggerSec_24X()
 {
   toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
-  return;
+  revolutionOne = 1; //Sequential revolution reset
 }
 
 uint16_t getRPM_24X()
@@ -1071,11 +1078,12 @@ int getCrankAngle_24X(int timePerDegree)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
-    int tempToothCurrentCount;
+    int tempToothCurrentCount, tempRevolutionOne;
     //Grab some variables that are used in the trigger code and assign them to temp variables.
     noInterrupts();
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
+    tempRevolutionOne = revolutionOne;
     interrupts();
 
     int crankAngle;
@@ -1086,6 +1094,9 @@ int getCrankAngle_24X(int timePerDegree)
     long elapsedTime = micros() - tempToothLastToothTime;
     if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
+
+    //Sequential check (simply sets whether we're on the first or 2nd revoltuion of the cycle)
+    if (tempRevolutionOne) { crankAngle += 360; }
 
     if (crankAngle >= 720) { crankAngle -= 720; }
     if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }

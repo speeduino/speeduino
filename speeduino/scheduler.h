@@ -412,8 +412,8 @@ struct Schedule {
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
   volatile unsigned long startTime; //The system time (in uS) that the schedule started
-  volatile unsigned int startCompare; //The counter value of the timer when this will start
-  volatile unsigned int endCompare;
+  volatile uint16_t startCompare; //The counter value of the timer when this will start
+  volatile uint16_t endCompare;
 
   unsigned int nextStartCompare;
   unsigned int nextEndCompare;
