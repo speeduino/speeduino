@@ -49,7 +49,7 @@ void receiveValue(int offset, byte newValue);
 void saveConfig();
 void sendPage(bool useChar);
 void receiveCalibration(byte tableID);
-void sendToothLog(bool useChar);
+void sendToothLog(bool useChar, uint8_t loggerID);
 void testComm();
 void commandButtons();
 

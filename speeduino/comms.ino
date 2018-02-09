@@ -167,7 +167,11 @@ void command()
       break;
 
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
-      sendToothLog(false); //Sends tooth log values as ints
+      uint8_t loggerID;
+      while (Serial.available() == 0) { }
+      loggerID = Serial.read(); //The logger type id
+      
+      sendToothLog(false,loggerID); //Sends tooth log values as ints
       break;
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
@@ -308,7 +312,7 @@ void command()
       break;
 
     case 'z': //Send 256 tooth log entries to a terminal emulator
-      sendToothLog(true); //Sends tooth log values as chars
+      sendToothLog(true,0); //Sends tooth log values as chars
       break;
 
     case '`': //Custom 16u2 firmware is making its presence known
@@ -1374,7 +1378,7 @@ Send 256 tooth log entries
  * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
  * if useChar is false, the values are sent as a 2 byte integer which is readable by TunerStudios tooth logger
 */
-void sendToothLog(bool useChar)
+void sendToothLog(bool useChar, uint8_t loggerID)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (toothHistoryIndex >= TOOTH_LOG_SIZE) //Sanity check. Flagging system means this should always be true
@@ -1395,10 +1399,16 @@ void sendToothLog(bool useChar)
     }
     else
     {
-      for (int x = 0; x < TOOTH_LOG_SIZE; x++)
+      for (int x = 0; x < (TOOTH_LOG_SIZE-6); x=x+5)
       {
         Serial.write(highByte(tempToothHistory[x]));
         Serial.write(lowByte(tempToothHistory[x]));
+        if ((loggerID == 2 )|| (loggerID == 3 )){Serial.write(highByte(tempToothHistory[(x+1)]));}
+        if ((loggerID == 2 )|| (loggerID == 3 )){Serial.write(lowByte(tempToothHistory[(x+1)]));}
+        if ((loggerID == 2 )|| (loggerID == 3 )){Serial.write(lowByte(tempToothHistory[(x+2)]));}
+        if (loggerID == 3 ){Serial.write(highByte(tempToothHistory[(x+3)]));}
+        if (loggerID == 3 ){Serial.write(lowByte(tempToothHistory[(x+3)]));}
+        if (loggerID == 3 ){Serial.write(lowByte(tempToothHistory[(x+4)]));}
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
     }

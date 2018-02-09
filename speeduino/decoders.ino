@@ -26,7 +26,13 @@ static inline void addToothLogEntry(unsigned long toothTime)
 {
   //High speed tooth logging history
   toothHistory[toothHistoryIndex] = toothTime;
-  if(toothHistoryIndex == (TOOTH_LOG_BUFFER-1))
+   //uint16_t cAngle = getCrankAngle(timePerDegree);         // pointed to correct routine according to trigger type in utils.ino
+  toothHistory[(toothHistoryIndex+1)] = currentStatus.currentCrankangle;//cAngle;//
+  toothHistory[(toothHistoryIndex+2)] = toothCurrentCount;          // primary tooth number
+  toothHistory[(toothHistoryIndex+3)] = secondaryToothCount   ;   // cam1 tooth number
+  //toothHistory[(toothHistoryIndex+4)] = camangle   ;   // time between cam teeth
+
+  if(toothHistoryIndex == (TOOTH_LOG_BUFFER-6))
   {
     if (toothLogRead)
     {
@@ -36,7 +42,7 @@ static inline void addToothLogEntry(unsigned long toothTime)
     }
   }
   else
-  { toothHistoryIndex++; }
+  { toothHistoryIndex = toothHistoryIndex + 5; }
 }
 
 /*

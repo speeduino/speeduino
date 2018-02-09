@@ -1381,6 +1381,7 @@ void loop()
 
       //Determine the current crank angle
       int crankAngle = getCrankAngle(timePerDegree);
+      currentStatus.currentCrankangle = crankAngle; 
       if (crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle -= 360; }
 
 #if INJ_CHANNELS >= 1
@@ -1566,6 +1567,7 @@ void loop()
         //Refresh the current crank angle info
         //ignition1StartAngle = 335;
         crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
+        currentStatus.currentCrankangle = crankAngle; 
         if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
 
         if ( (ignition1StartAngle > crankAngle) && (curRollingCut != 1) )

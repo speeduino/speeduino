@@ -337,6 +337,8 @@ struct statuses {
   uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
   uint8_t current_caninchannel = 0; //start off at channel 0
   uint16_t crankRPM = 400; //The actual cranking RPM limit. Saves us multiplying it everytime from the config page
+  volatile uint16_t currentCrankangle;
+  volatile uint16_t currentCamangle;
   volatile byte status3;
   int16_t flexBoostCorrection; //Amount of boost added based on flex
 
