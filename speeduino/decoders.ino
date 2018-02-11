@@ -376,8 +376,6 @@ void triggerSec_DualWheel()
     if(currentStatus.hasSync == false)
     {
       toothLastToothTime = micros();
-      //CONFIRM THE BELOW! IT DOESN'T LOOK RIGHT (toothOneTime??)
-      //toothLastMinusOneToothTime = (toothOneTime - 6000000) / configPage4.triggerTeeth; //Fixes RPM at 10rpm until a full revolution has taken place
       toothLastMinusOneToothTime = micros() - (6000000 / configPage4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
       toothCurrentCount = configPage4.triggerTeeth;
 
@@ -1027,7 +1025,6 @@ void triggerSetup_24X()
 
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   if(initialisationComplete == false) { toothCurrentCount = 25; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
-   //We set the initial tooth value to be something that should never be reached. This indicates no sync
   secondDerivEnabled = false;
   decoderIsSequential = true;
 }
@@ -1087,7 +1084,7 @@ int getCrankAngle_24X(int timePerDegree)
     interrupts();
 
     int crankAngle;
-    if (toothCurrentCount == 0) { crankAngle = 0 + configPage4.triggerAngle; } //This is the special case to handle when the 'last tooth' seen was the cam tooth. 0 is the angle at which the crank tooth goes high (Within 360 degrees).
+    if (tempToothCurrentCount == 0) { crankAngle = 0 + configPage4.triggerAngle; } //This is the special case to handle when the 'last tooth' seen was the cam tooth. 0 is the angle at which the crank tooth goes high (Within 360 degrees).
     else { crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage4.triggerAngle;} //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
 
     //Estimate the number of degrees travelled since the last tooth}
@@ -1096,7 +1093,7 @@ int getCrankAngle_24X(int timePerDegree)
     else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
 
     //Sequential check (simply sets whether we're on the first or 2nd revoltuion of the cycle)
-    if (tempRevolutionOne) { crankAngle += 360; }
+    if (tempRevolutionOne == 1) { crankAngle += 360; }
 
     if (crankAngle >= 720) { crankAngle -= 720; }
     if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
@@ -1134,7 +1131,7 @@ void triggerSetup_Jeep2000()
   toothAngles[11] = 474;
 
   MAX_STALL_TIME = (3333UL * 60); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 60 degrees.
-  toothCurrentCount = 13; //We set the initial tooth value to be something that should never be reached. This indicates no sync
+  if(initialisationComplete == false) { toothCurrentCount = 13; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
   secondDerivEnabled = false;
   decoderIsSequential = false;
 }

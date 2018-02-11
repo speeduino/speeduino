@@ -20,7 +20,6 @@
   #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
   #if defined (STM32F1) || defined(__STM32F1__)
     #define BOARD_DIGITAL_GPIO_PINS 34
-    #undef BOARD_NR_GPIO_PINS //This is declared as 49 in .../framework-arduinoststm32/STM32F1/variants/generic_stm32f103r8/board/board.h
     #define BOARD_NR_GPIO_PINS 34
     #define LED_BUILTIN 33
   #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
@@ -41,8 +40,6 @@
     #define portInputRegister(port) (volatile byte *)( &(port->IDR) )
   #else //libmaple core aka STM32DUINO
     //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
-    #undef portOutputRegister
-    #undef portInputRegister
     #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) )
     #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) )
   #endif
