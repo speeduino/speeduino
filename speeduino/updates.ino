@@ -102,7 +102,9 @@ void doUpdates()
     for (uint8_t x = 1; x < 6; x++)
     {
       uint8_t pct = x * 20;
-      configPage10.flexBoostBins[x] = configPage10.flexFuelBins[x] = configPage10.flexAdvBins[x] = pct;
+      configPage10.flexBoostBins[x] = pct;
+      configPage10.flexFuelBins[x] = pct;
+      configPage10.flexAdvBins[x] = pct;
 
       int16_t boostAdder = (((configPage2.unused2_2 - (int8_t)configPage2.unused2_1) * pct) / 100) + (int8_t)configPage2.unused2_1;
       configPage10.flexBoostAdj[x] = boostAdder;

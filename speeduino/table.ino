@@ -64,7 +64,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
     int xMax = 0;
 
     //Check whether the X input is the same as last time this ran
-    if(X_in == fromTable->lastInput && fromTable->cacheTime == currentStatus.secl)
+    if( (X_in == fromTable->lastInput) && (fromTable->cacheTime == currentStatus.secl) )
     {
       returnValue = fromTable->lastOutput;
       valueFound = true;
