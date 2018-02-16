@@ -40,11 +40,17 @@ void initialiseTimers()
    lowResTimer.begin(oneMSInterval, 1000);
 
 #elif defined(CORE_STM32)
+#ifndef SMALL_FLASH_MODE
+  Timer8.setPeriod(1000);  // Set up period
+  Timer8.setMode(1, TIMER_OUTPUT_COMPARE);
+  Timer8.attachInterrupt(1, oneMSInterval);
+  Timer8.resume(); //Start Timer
+#else
   Timer4.setPeriod(1000);  // Set up period
-  // Set up an interrupt
   Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
   Timer4.attachInterrupt(1, oneMSInterval);
   Timer4.resume(); //Start Timer
+#endif
   pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
 #endif
 

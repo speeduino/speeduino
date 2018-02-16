@@ -166,10 +166,10 @@ void setup()
   configPage4.bootloaderCaps = 0;
 
   Serial.begin(115200);
-  if (configPage10.enable_canbus == 1) { CANSerial.begin(115200); }
+  if (configPage9.enable_canbus == 1) { CANSerial.begin(115200); }
   
   #if defined(CORE_STM32) || defined(CORE_TEENSY)
-  else if (configPage10.enable_canbus == 2)
+  else if (configPage9.enable_canbus == 2)
   {
     //Teensy onboard CAN not used currently
     //enable local can interface
@@ -178,6 +178,7 @@ void setup()
     //static CAN_message_t txmsg,rxmsg;
     //CANbus0.begin();
   }
+  
   #endif
 
   //Repoint the 2D table structs to the config pages that were just loaded
@@ -719,7 +720,7 @@ void loop()
         if (Serial.available() > 0) { command(); }
       }
       //if can or secondary serial interface is enabled then check for requests.
-      if (configPage10.enable_canbus == 1)  //secondary serial interface enabled
+      if (configPage9.enable_canbus == 1)  //secondary serial interface enabled
           {
             if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
                 {
@@ -727,7 +728,7 @@ void loop()
                 }
           }
       #if  defined(CORE_TEENSY) || defined(CORE_STM32)
-          else if (configPage10.enable_canbus == 2) // can module enabled
+          else if (configPage9.enable_canbus == 2) // can module enabled
           {
             //check local can module
             // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
