@@ -95,9 +95,14 @@ void doUpdates()
   if (EEPROM.read(EEPROM_DATA_VERSION) == 7) {
     //Convert whatever flex fuel settings are there into the new tables
 
-    configPage10.flexBoostAdj[0] = (int8_t)configPage2.unused2_1;
+    configPage10.flexBoostBins[0] = 0;
+    configPage10.flexBoostAdj[0]  = (int8_t)configPage2.unused2_1;
+
+    configPage10.flexFuelBins[0] = 0;
     configPage10.flexFuelAdj[0]  = configPage2.unused2_57;
-    configPage10.flexAdvAdj[0]   = configPage2.unused2_59;
+
+    configPage10.flexAdvBins[0] = 0;
+    configPage10.flexAdvAdj[0]  = configPage2.unused2_59;
 
     for (uint8_t x = 1; x < 6; x++)
     {

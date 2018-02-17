@@ -688,7 +688,7 @@ struct config10 {
   uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%)
                             //And another three corn rows die.
 
-  byte unused11_75_192[117];
+  byte unused11_75_191[117];
 
 #if defined(CORE_AVR)
   };
