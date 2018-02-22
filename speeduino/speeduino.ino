@@ -1082,7 +1082,8 @@ void loop()
       if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && configPage10.stagingEnabled == false) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
 
       //Calculate staging pulsewidths if used
-      if(configPage10.stagingEnabled == true)
+      //To run injection, the number of cylinder must be less than or equal to have the injector channels (ie you need at least twice as many injector channels as you have cylinders)
+      if( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= (INJ_CHANNELS/2)) )
       {
         //Scale the 'full' pulsewidth by each of the injector capacities
         uint32_t tempPW1 = ((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100;
