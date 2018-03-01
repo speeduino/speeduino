@@ -2304,11 +2304,11 @@ void triggerPri_Daihatsu()
         //Aim for tooth times less than about 60 degrees
         if(configPage2.nCylinders == 3)
         {
-          targetTime = (toothLastToothTime -  toothLastMinusOneToothTime) >> 2; //Teeth are 240 degrees apart for 3 cylinder. 240/3 = 60
+          targetTime = (toothLastToothTime -  toothLastMinusOneToothTime) / 4; //Teeth are 240 degrees apart for 3 cylinder. 240/4 = 60
         }
         else
         {
-          targetTime = ((toothLastToothTime -  toothLastMinusOneToothTime) * 3) >> 4; //Teeth are 180 degrees apart for 4 cylinder. (180*3)/8 = 67
+          targetTime = ((toothLastToothTime -  toothLastMinusOneToothTime) * 3) / 8; //Teeth are 180 degrees apart for 4 cylinder. (180*3)/8 = 67
         }
         if(curGap < targetTime)
         {
