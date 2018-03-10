@@ -20,6 +20,15 @@ volatile bool tachoAlt = true;
   inline void beginCoil5Charge() { digitalWrite(pinCoil5, coilHIGH); TACH_PULSE_LOW(); }
   inline void endCoil5Charge() { digitalWrite(pinCoil5, coilLOW); TACH_PULSE_HIGH(); }
 
+  inline void beginCoil6Charge() { digitalWrite(pinCoil6, coilHIGH); TACH_PULSE_LOW(); }
+  inline void endCoil6Charge() { digitalWrite(pinCoil6, coilLOW); TACH_PULSE_HIGH(); }
+
+  inline void beginCoil7Charge() { digitalWrite(pinCoil7, coilHIGH); TACH_PULSE_LOW(); }
+  inline void endCoil7Charge() { digitalWrite(pinCoil7, coilLOW); TACH_PULSE_HIGH(); }
+
+  inline void beginCoil8Charge() { digitalWrite(pinCoil8, coilHIGH); TACH_PULSE_LOW(); }
+  inline void endCoil8Charge() { digitalWrite(pinCoil8, coilLOW); TACH_PULSE_HIGH(); }
+
   inline void beginTrailingCoilCharge() { digitalWrite(pinCoil2, coilHIGH); }
   inline void endTrailingCoilCharge1() { digitalWrite(pinCoil2, coilLOW); *ign3_pin_port |= ign3_pin_mask; } //Sets ign3 (Trailing select) high
   inline void endTrailingCoilCharge2() { digitalWrite(pinCoil2, coilLOW); *ign3_pin_port &= ~(ign3_pin_mask); } //sets ign3 (Trailing select) low

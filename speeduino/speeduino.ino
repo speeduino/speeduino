@@ -133,6 +133,12 @@ void (*ign4StartFunction)();
 void (*ign4EndFunction)();
 void (*ign5StartFunction)();
 void (*ign5EndFunction)();
+void (*ign6StartFunction)();
+void (*ign6EndFunction)();
+void (*ign7StartFunction)();
+void (*ign7EndFunction)();
+void (*ign8StartFunction)();
+void (*ign8EndFunction)();
 
 volatile int timePerDegree;
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
@@ -665,6 +671,12 @@ void setup()
       ign4EndFunction = endCoil4Charge;
       ign5StartFunction = beginCoil5Charge;
       ign5EndFunction = endCoil5Charge;
+      ign6StartFunction = beginCoil6Charge;
+      ign6EndFunction = endCoil6Charge;
+      ign7StartFunction = beginCoil7Charge;
+      ign7EndFunction = endCoil7Charge;
+      ign8StartFunction = beginCoil8Charge;
+      ign8EndFunction = endCoil8Charge;
       break;
 
     case IGN_MODE_ROTARY:
@@ -1083,8 +1095,8 @@ void loop()
       if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && configPage10.stagingEnabled == false) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
 
       //Calculate staging pulsewidths if used
-      //To run injection, the number of cylinder must be less than or equal to have the injector channels (ie you need at least twice as many injector channels as you have cylinders)
-      if( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= (INJ_CHANNELS/2)) )
+      //To run staged injection, the number of cylinders must be less than or equal to the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
+      if( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= INJ_CHANNELS) )
       {
         //Scale the 'full' pulsewidth by each of the injector capacities
         uint32_t tempPW1 = ((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100;
@@ -1570,6 +1582,7 @@ void loop()
         crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
         if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
 
+#if IGN_CHANNELS >= 1
         if ( (ignition1StartAngle > crankAngle) && (curRollingCut != 1) )
         {
             /*
@@ -1589,6 +1602,7 @@ void loop()
                         );
             }
         }
+#endif
         /*
         if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && configPage4.StgCycles == 0)
         {
@@ -1607,7 +1621,7 @@ void loop()
         */
 
 
-
+#if IGN_CHANNELS >= 2
         tempCrankAngle = crankAngle - channel2IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition2StartAngle - channel2IgnDegrees;
@@ -1627,7 +1641,9 @@ void loop()
                         );
             }
         }
+#endif
 
+#if IGN_CHANNELS >= 3
         tempCrankAngle = crankAngle - channel3IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition3StartAngle - channel3IgnDegrees;
@@ -1648,7 +1664,9 @@ void loop()
                         );
             }
         }
+#endif
 
+#if IGN_CHANNELS >= 4
         tempCrankAngle = crankAngle - channel4IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition4StartAngle - channel4IgnDegrees;
@@ -1670,7 +1688,9 @@ void loop()
                         );
             }
         }
+#endif
 
+#if IGN_CHANNELS >= 5
         tempCrankAngle = crankAngle - channel5IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition5StartAngle - channel5IgnDegrees;
@@ -1691,6 +1711,29 @@ void loop()
                       );
             }
         }
+#endif
+
+#if IGN_CHANNELS >= 6
+        tempCrankAngle = crankAngle - channel6IgnDegrees;
+        if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
+        tempStartAngle = ignition6StartAngle - channel6IgnDegrees;
+        if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+        {
+            unsigned long ignition6StartTime = 0;
+            if(tempStartAngle > tempCrankAngle) { ignition6StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
+            else { ignition6StartTime = 0; }
+
+            if( (ignition6StartTime > 0) && (curRollingCut != 2) )
+            {
+              setIgnitionSchedule6(ign6StartFunction,
+                        ignition6StartTime,
+                        currentStatus.dwell + fixedCrankingOverride,
+                        ign6EndFunction
+                        );
+            }
+        }
+#endif
+
       } //Ignition schedules on
 
       if (!BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_PREVENT) && resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) {
