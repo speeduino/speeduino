@@ -12,12 +12,17 @@
   #define BOARD_NR_GPIO_PINS 62
   #define LED_BUILTIN 13
   #define CORE_AVR
+
+  //#define TIMER5_MICROS
+
 #elif defined(CORE_TEENSY)
   #define BOARD_DIGITAL_GPIO_PINS 34
   #define BOARD_NR_GPIO_PINS 34
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
-  #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
+  #ifndef word
+    #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
+  #endif
   #if defined (STM32F1) || defined(__STM32F1__)
     #define BOARD_DIGITAL_GPIO_PINS 34
     #define BOARD_NR_GPIO_PINS 34
@@ -34,7 +39,7 @@
   #endif
 
   extern "C" char* sbrk(int incr); //Used to freeRam
-  inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
+  //inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
   #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
     #define portOutputRegister(port) (volatile byte *)( &(port->ODR) )
     #define portInputRegister(port) (volatile byte *)( &(port->IDR) )
@@ -51,6 +56,8 @@
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
 #define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
 #define BIT_CHECK(var,pos) !!((var) & (1<<(pos)))
+
+#define interruptSafe(c)  noInterrupts(); c interrupts(); //Wraps any code between nointerrupt and interrupt calls
 
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000
@@ -253,6 +260,8 @@ int ignition4EndAngle = 0;
 
 //This is used across multiple files
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
+volatile unsigned long ms_counter = 0; //A counter that increments once per ms
 
 //This needs to be here because using the config page directly can prevent burning the setting
 byte resetControl = RESET_CONTROL_DISABLED;

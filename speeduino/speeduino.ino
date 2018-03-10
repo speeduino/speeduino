@@ -762,7 +762,7 @@ void loop()
     // if (configPage2.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
 
     previousLoopTime = currentLoopTime;
-    currentLoopTime = micros();
+    currentLoopTime = micros_safe();
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
@@ -1069,7 +1069,8 @@ void loop()
         }
         else
         {
-          long rpm_adjust = ((long)(micros() - toothOneTime) * (long)currentStatus.rpmDOT) / 1000000; //Take into account any likely accleration that has occurred since the last full revolution completed
+          interruptSafe(long elapsedTime = (micros() - toothOneTime);) //micros() is no longer interrupt safe
+          long rpm_adjust = (elapsedTime * (long)currentStatus.rpmDOT) / 1000000; //Take into account any likely accleration that has occurred since the last full revolution completed
           timePerDegree = ldiv( 166666L, currentStatus.RPM + rpm_adjust).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
         }
 

@@ -21,13 +21,18 @@ void initialiseSchedulers()
     TCCR3B = (1 << CS12);   //Timer3 Control Reg B: Timer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
     //TCCR3B = 0x03;   //Timer3 Control Reg B: Timer Prescaler set to 64. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
 
-    //Ignition Schedules, which uses timer 5
+    //Ignition Schedules, which uses timer 5. This is also used by the fast version of micros(). If the speed of this timer is changed from 4uS ticks, that MUST be changed as well. See globals.h and timers.ino
     TCCR5B = 0x00;          //Disable Timer5 while we set it up
     TCNT5  = 0;             //Reset Timer Count
     TIFR5  = 0x00;          //Timer5 INT Flag Reg: Clear Timer Overflow Flag
     TCCR5A = 0x00;          //Timer5 Control Reg A: Wave Gen Mode normal
     //TCCR5B = (1 << CS12);   //Timer5 Control Reg B: Timer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
     TCCR5B = 0x03;         //aka Divisor = 64 = 490.1Hz
+
+    #if defined(TIMER5_MICROS)
+      TIMSK5 |= (1 << TOIE5); //Enable the timer5 overflow interrupt (See timers.ino for ISR)
+      TIMSK0 &= ~_BV(TOIE0); // disable timer0 overflow interrupt
+    #endif
 
     //The remaining Schedules (Schedules 4 for fuel and ignition) use Timer4
     TCCR4B = 0x00;          //Disable Timer4 while we set it up
