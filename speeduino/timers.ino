@@ -66,11 +66,12 @@ void initialiseTimers()
 //Timer2 Overflow Interrupt Vector, called when the timer overflows.
 //Executes every ~1ms.
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER2_OVF_vect, ISR_NOBLOCK)
+ISR(TIMER2_OVF_vect)
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
 void oneMSInterval() //Most ARM chips can simply call a function
 #endif
 {
+  ms_counter++;
 
   //Increment Loop Counters
   loop33ms++;
@@ -226,3 +227,21 @@ void oneMSInterval() //Most ARM chips can simply call a function
     TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
 #endif
 }
+
+#if defined(TIMER5_MICROS)
+//This is used by the fast version of micros(). We just need to increment the timer overflow counter
+ISR(TIMER5_OVF_vect)
+{
+  ++timer5_overflow_count;
+}
+
+static inline unsigned long micros_safe()
+{
+  unsigned long newMicros;
+  noInterrupts();
+  newMicros = micros();
+  interrupts();
+
+  return newMicros;
+}
+#endif

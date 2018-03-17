@@ -321,7 +321,7 @@ static inline byte isStepperHomed()
     digitalWrite(pinStepperDir, STEPPER_BACKWARD); //Sets stepper direction to backwards
     digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
     digitalWrite(pinStepperStep, HIGH);
-    idleStepper.stepStartTime = micros();
+    idleStepper.stepStartTime = micros_safe();
     idleStepper.stepperStatus = STEPPING;
     completedHomeSteps++;
     idleOn = true;
@@ -341,13 +341,13 @@ static inline byte checkForStepping()
   bool isStepping = false;
   if( (idleStepper.stepperStatus == STEPPING) || (idleStepper.stepperStatus == COOLING) )
   {
-    if(micros() > (idleStepper.stepStartTime + iacStepTime) )
+    if(micros_safe() > (idleStepper.stepStartTime + iacStepTime) )
     {
       if(idleStepper.stepperStatus == STEPPING)
       {
         //Means we're currently in a step, but it needs to be turned off
         digitalWrite(pinStepperStep, LOW); //Turn off the step
-        idleStepper.stepStartTime = micros();
+        idleStepper.stepStartTime = micros_safe();
         idleStepper.stepperStatus = COOLING; //'Cooling' is the time the stepper needs to sit in LOW state before the next step can be made
         isStepping = true;
       }
@@ -379,7 +379,7 @@ static inline void doStep()
 
     digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
     digitalWrite(pinStepperStep, HIGH);
-    idleStepper.stepStartTime = micros();
+    idleStepper.stepStartTime = micros_safe();
     idleStepper.stepperStatus = STEPPING;
     idleOn = true;
   }
