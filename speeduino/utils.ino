@@ -598,6 +598,12 @@ void setPinMapping(byte boardID)
   inj4_pin_mask = digitalPinToBitMask(pinInjector4);
   inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
   inj5_pin_mask = digitalPinToBitMask(pinInjector5);
+  inj6_pin_port = portOutputRegister(digitalPinToPort(pinInjector6));
+  inj6_pin_mask = digitalPinToBitMask(pinInjector6);
+  inj7_pin_port = portOutputRegister(digitalPinToPort(pinInjector7));
+  inj7_pin_mask = digitalPinToBitMask(pinInjector7);
+  inj8_pin_port = portOutputRegister(digitalPinToPort(pinInjector8));
+  inj8_pin_mask = digitalPinToBitMask(pinInjector8);
 
   ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
   ign1_pin_mask = digitalPinToBitMask(pinCoil1);
@@ -609,6 +615,12 @@ void setPinMapping(byte boardID)
   ign4_pin_mask = digitalPinToBitMask(pinCoil4);
   ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
   ign5_pin_mask = digitalPinToBitMask(pinCoil5);
+  ign6_pin_port = portOutputRegister(digitalPinToPort(pinCoil6));
+  ign6_pin_mask = digitalPinToBitMask(pinCoil6);
+  ign7_pin_port = portOutputRegister(digitalPinToPort(pinCoil7));
+  ign7_pin_mask = digitalPinToBitMask(pinCoil7);
+  ign8_pin_port = portOutputRegister(digitalPinToPort(pinCoil8));
+  ign8_pin_mask = digitalPinToBitMask(pinCoil8);
 
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);

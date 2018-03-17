@@ -772,6 +772,102 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     IGN5_TIMER_ENABLE();
   }
 }
+void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+{
+  if(ignitionSchedule6.Status != RUNNING) //Check that we're not already part way through a schedule
+  {
+
+    ignitionSchedule6.StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule6.EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule6.duration = duration;
+
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
+
+    noInterrupts();
+    ignitionSchedule6.startCompare = IGN6_COUNTER + timeout_timer_compare;
+    ignitionSchedule6.endCompare = ignitionSchedule6.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+    IGN4_COMPARE = ignitionSchedule6.startCompare;
+    ignitionSchedule6.Status = PENDING; //Turn this schedule on
+    ignitionSchedule6.schedulesSet++;
+    interrupts();
+    IGN6_TIMER_ENABLE();
+  }
+  else
+  {
+    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    ignitionSchedule6.nextStartCompare = IGN6_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    ignitionSchedule6.nextEndCompare = ignitionSchedule6.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+    ignitionSchedule6.hasNextSchedule = true;
+  }
+}
+void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+{
+  if(ignitionSchedule7.Status != RUNNING) //Check that we're not already part way through a schedule
+  {
+
+    ignitionSchedule7.StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule7.EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule7.duration = duration;
+
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
+
+    noInterrupts();
+    ignitionSchedule7.startCompare = IGN4_COUNTER + timeout_timer_compare;
+    ignitionSchedule7.endCompare = ignitionSchedule7.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+    IGN7_COMPARE = ignitionSchedule7.startCompare;
+    ignitionSchedule7.Status = PENDING; //Turn this schedule on
+    ignitionSchedule7.schedulesSet++;
+    interrupts();
+    IGN7_TIMER_ENABLE();
+  }
+  else
+  {
+    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    ignitionSchedule7.nextStartCompare = IGN7_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    ignitionSchedule7.nextEndCompare = ignitionSchedule7.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+    ignitionSchedule7.hasNextSchedule = true;
+  }
+}
+void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+{
+  if(ignitionSchedule8.Status != RUNNING) //Check that we're not already part way through a schedule
+  {
+
+    ignitionSchedule8.StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule8.EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule8.duration = duration;
+
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE_SLOW(timeout); } //Normal case
+
+    noInterrupts();
+    ignitionSchedule8.startCompare = IGN8_COUNTER + timeout_timer_compare;
+    ignitionSchedule8.endCompare = ignitionSchedule8.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+    IGN8_COMPARE = ignitionSchedule8.startCompare;
+    ignitionSchedule8.Status = PENDING; //Turn this schedule on
+    ignitionSchedule8.schedulesSet++;
+    interrupts();
+    IGN8_TIMER_ENABLE();
+  }
+  else
+  {
+    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    ignitionSchedule8.nextStartCompare = IGN8_COUNTER + uS_TO_TIMER_COMPARE_SLOW(timeout);
+    ignitionSchedule8.nextEndCompare = ignitionSchedule8.nextStartCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
+    ignitionSchedule8.hasNextSchedule = true;
+  }
+}
 
 /*******************************************************************************************************************************************************************************************************/
 //This function (All 8 ISR functions that are below) gets called when either the start time or the duration time are reached
@@ -920,6 +1016,39 @@ static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a f
     }
   }
 
+#if (INJ_CHANNELS >= 5)
+#if defined(CORE_AVR) //AVR chips use the ISR for this
+ISR(TIMER1_COMPC_vect) //fuelSchedule5
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+static inline void fuelSchedule5Interrupt() //Most ARM chips can simply call a function
+#endif
+{
+  if (fuelSchedule5.Status == PENDING) //Check to see if this schedule is turn on
+  {
+    openInjector5();
+    fuelSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+    FUEL5_COMPARE = fuelSchedule5.endCompare;
+  }
+  else if (fuelSchedule5.Status == RUNNING)
+  {
+     closeInjector5();
+     fuelSchedule5.Status = OFF; //Turn off the schedule
+     fuelSchedule5.schedulesSet = 0;
+
+     //If there is a next schedule queued up, activate it
+     if(fuelSchedule5.hasNextSchedule == true)
+     {
+       FUEL5_COMPARE = fuelSchedule5.nextStartCompare;
+       fuelSchedule5.endCompare = fuelSchedule5.nextEndCompare;
+       fuelSchedule5.Status = PENDING;
+       fuelSchedule5.schedulesSet = 1;
+       fuelSchedule5.hasNextSchedule = false;
+     }
+     else { FUEL5_TIMER_DISABLE(); }
+  }
+}
+#endif
+
 #if (INJ_CHANNELS >= 6)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //fuelSchedule6
@@ -955,7 +1084,76 @@ static inline void fuelSchedule6Interrupt() //Most ARM chips can simply call a f
 }
 #endif
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#if (INJ_CHANNELS >= 7)
+#if defined(CORE_AVR) //AVR chips use the ISR for this
+ISR(TIMER5_COMPC_vect) //fuelSchedule7
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+static inline void fuelSchedule7Interrupt() //Most ARM chips can simply call a function
+#endif
+{
+  if (fuelSchedule7.Status == PENDING) //Check to see if this schedule is turn on
+  {
+    openInjector7();
+    fuelSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+    FUEL7_COMPARE = fuelSchedule7.endCompare;
+  }
+  else if (fuelSchedule7.Status == RUNNING)
+  {
+     closeInjector7();
+     fuelSchedule7.Status = OFF; //Turn off the schedule
+     fuelSchedule7.schedulesSet = 0;
+
+     //If there is a next schedule queued up, activate it
+     if(fuelSchedule7.hasNextSchedule == true)
+     {
+       FUEL7_COMPARE = fuelSchedule7.nextStartCompare;
+       fuelSchedule7.endCompare = fuelSchedule7.nextEndCompare;
+       fuelSchedule7.Status = PENDING;
+       fuelSchedule7.schedulesSet = 1;
+       fuelSchedule7.hasNextSchedule = false;
+     }
+     else { FUEL7_TIMER_DISABLE(); }
+  }
+}
+#endif
+
+#if (INJ_CHANNELS >= 8)
+#if defined(CORE_AVR) //AVR chips use the ISR for this
+ISR(TIMER5_COMPB_vect) //fuelSchedule8
+#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a function
+#endif
+{
+  if (fuelSchedule8.Status == PENDING) //Check to see if this schedule is turn on
+  {
+    //fuelSchedule4.StartCallback();
+    openInjector8();
+    fuelSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+    FUEL8_COMPARE = fuelSchedule8.endCompare;
+  }
+  else if (fuelSchedule8.Status == RUNNING)
+  {
+     //fuelSchedule4.EndCallback();
+     closeInjector8();
+     fuelSchedule8.Status = OFF; //Turn off the schedule
+     fuelSchedule8.schedulesSet = 0;
+
+     //If there is a next schedule queued up, activate it
+     if(fuelSchedule8.hasNextSchedule == true)
+     {
+       FUEL8_COMPARE = fuelSchedule8.nextStartCompare;
+       fuelSchedule8.endCompare = fuelSchedule8.nextEndCompare;
+       fuelSchedule8.Status = PENDING;
+       fuelSchedule8.schedulesSet = 1;
+       fuelSchedule8.hasNextSchedule = false;
+     }
+     else { FUEL8_TIMER_DISABLE(); }
+  }
+}
+#endif
+
+#if IGN_CHANNELS >= 1
+#if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPA_vect) //ignitionSchedule1
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call a function
@@ -993,8 +1191,10 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
       IGN1_TIMER_DISABLE();
     }
   }
+#endif
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#if IGN_CHANNELS >= 2
+#if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //ignitionSchedule2
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call a function
@@ -1016,8 +1216,10 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
       IGN2_TIMER_DISABLE();
     }
   }
+#endif
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#if IGN_CHANNELS >= 3
+#if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //ignitionSchedule3
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
 static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call a function
@@ -1049,7 +1251,9 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
        else { IGN3_TIMER_DISABLE(); }
     }
   }
+#endif
 
+#if IGN_CHANNELS >= 4
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //ignitionSchedule4
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
@@ -1082,7 +1286,9 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
        else { IGN4_TIMER_DISABLE(); }
     }
   }
+#endif
 
+#if IGN_CHANNELS >= 5
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER1_COMPC_vect) //ignitionSchedule5
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
@@ -1105,7 +1311,7 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
        IGN5_TIMER_DISABLE();
     }
   }
-
+#endif
 
 
 #if defined(CORE_TEENSY)

@@ -221,6 +221,12 @@ volatile byte *inj4_pin_port;
 volatile byte inj4_pin_mask;
 volatile byte *inj5_pin_port;
 volatile byte inj5_pin_mask;
+volatile byte *inj6_pin_port;
+volatile byte inj6_pin_mask;
+volatile byte *inj7_pin_port;
+volatile byte inj7_pin_mask;
+volatile byte *inj8_pin_port;
+volatile byte inj8_pin_mask;
 
 volatile byte *ign1_pin_port;
 volatile byte ign1_pin_mask;
@@ -232,6 +238,12 @@ volatile byte *ign4_pin_port;
 volatile byte ign4_pin_mask;
 volatile byte *ign5_pin_port;
 volatile byte ign5_pin_mask;
+volatile byte *ign6_pin_port;
+volatile byte ign6_pin_mask;
+volatile byte *ign7_pin_port;
+volatile byte ign7_pin_mask;
+volatile byte *ign8_pin_port;
+volatile byte ign8_pin_mask;
 
 volatile byte *tach_pin_port;
 volatile byte tach_pin_mask;
