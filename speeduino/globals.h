@@ -26,7 +26,9 @@
   #if defined (STM32F1) || defined(__STM32F1__)
     #define BOARD_DIGITAL_GPIO_PINS 34
     #define BOARD_NR_GPIO_PINS 34
-    #define LED_BUILTIN 33
+    #ifndef LED_BUILTIN
+      #define LED_BUILTIN PB1 //Maple Mini
+    #endif
   #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
     #define BOARD_DIGITAL_GPIO_PINS 80
     #define BOARD_NR_GPIO_PINS 80
@@ -34,13 +36,13 @@
   #endif
 
   //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
-  #if defined(MCU_STM32F103C8)
+  #if defined(MCU_STM32F103C8) | defined(MCU_STM32F103CB)
     #define SMALL_FLASH_MODE
   #endif
 
   extern "C" char* sbrk(int incr); //Used to freeRam
-  //inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
   #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
+    inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
     #define portOutputRegister(port) (volatile byte *)( &(port->ODR) )
     #define portInputRegister(port) (volatile byte *)( &(port->IDR) )
   #else //libmaple core aka STM32DUINO

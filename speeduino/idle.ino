@@ -78,9 +78,6 @@ void initialiseIdle()
     NVIC_ENABLE_IRQ(IRQ_FTM2);
   }
 
-  #elif defined(CORE_STM32)
-    Timer1.attachInterrupt(4, idleInterrupt);
-    Timer1.resume();
   #endif
 
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
@@ -196,6 +193,11 @@ void initialiseIdle()
   }
   idleInitComplete = configPage6.iacAlgorithm; //Sets which idle method was initialised
   currentStatus.idleLoad = 0;
+  #if defined(CORE_STM32) //Need to be initialised last due to instant interrupt
+    Timer1.setMode(4, TIMER_OUTPUT_COMPARE);
+    if(idle_pwm_max_count > 0) { Timer1.attachInterrupt(4, idleInterrupt);} //on first flash the configPage4.iacAlgorithm is invalid
+    Timer1.resume();
+  #endif
 }
 
 void idleControl()
@@ -459,3 +461,4 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
   }
 
 }
+

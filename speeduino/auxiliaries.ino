@@ -40,10 +40,6 @@ void initialiseAuxPWM()
     TCCR1B = (1 << CS12);   //Timer1 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
   #elif defined(CORE_TEENSY)
     //REALLY NEED TO DO THIS!
-  #elif defined(CORE_STM32)
-    Timer1.attachInterrupt(2, boostInterrupt);
-    Timer1.attachInterrupt(3, vvtInterrupt);
-    Timer1.resume();
   #endif
 
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
@@ -67,6 +63,13 @@ void initialiseAuxPWM()
 
   currentStatus.boostDuty = 0;
   boostCounter = 0;
+  #if defined(CORE_STM32) //Need to be initialised last due to instant interrupt
+    Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
+    Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
+    if(boost_pwm_max_count > 0) { Timer1.attachInterrupt(2, boostInterrupt);}
+    if(vvt_pwm_max_count > 0) { Timer1.attachInterrupt(3, vvtInterrupt);}
+    Timer1.resume();
+  #endif
 }
 
 #define BOOST_HYSTER  40
@@ -175,7 +178,7 @@ void boostDisable()
   static inline void boostInterrupt() //Most ARM chips can simply call a function
 #endif
 {
-  if (boost_pwm_state)
+  if (boost_pwm_state == true)
   {
     BOOST_PIN_LOW();  // Switch pin to low
     BOOST_TIMER_COMPARE = BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value);
@@ -197,7 +200,7 @@ void boostDisable()
   static inline void vvtInterrupt() //Most ARM chips can simply call a function
 #endif
 {
-  if (vvt_pwm_state)
+  if (vvt_pwm_state == true)
   {
     VVT_PIN_LOW();  // Switch pin to low
     VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt_pwm_cur_value);

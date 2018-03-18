@@ -260,6 +260,7 @@ void command()
           chunkPending = true;
           chunkComplete = 0;
         }
+        if(chunkComplete >= chunkSize) { cmdPending = false; chunkPending = false; }
       }
       //This CANNOT be an else of the above if statement as chunkPending gets set to true above
       if(chunkPending == true)

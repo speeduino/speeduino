@@ -147,9 +147,11 @@ bool initialisationComplete = false; //Tracks whether the setup() functino has r
 
 void setup()
 {
-  initialiseTimers();
+  pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
-
+  //Setup the dummy fuel and ignition tables
+  //dummyFuelTable(&fuelTable);
+  //dummyIgnitionTable(&ignitionTable);
   table3D_setSize(&fuelTable, 16);
   table3D_setSize(&ignitionTable, 16);
   table3D_setSize(&afrTable, 16);
@@ -160,10 +162,8 @@ void setup()
   table3D_setSize(&trim2Table, 6);
   table3D_setSize(&trim3Table, 6);
   table3D_setSize(&trim4Table, 6);
-
-  #if defined(CORE_STM32)
-    EEPROM.init();
-  #endif
+  initialiseTimers();
+  
   loadConfig();
   doUpdates(); //Check if any data items need updating (Occurs ith firmware updates)
 
@@ -172,16 +172,9 @@ void setup()
   configPage4.bootloaderCaps = 0;
 
   Serial.begin(115200);
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
   if (configPage9.enable_canbus == 1) { CANSerial.begin(115200); }
-#elif defined(CORE_STM32)
-  if (configPage9.enable_canbus == 1) { CANSerial.begin(115200); }
-  else if (configPage9.enable_canbus == 2)
-  {
-    //enable local can interface
-  }
-#elif defined(CORE_TEENSY)
-  if (configPage9.enable_canbus == 1) { CANSerial.begin(115200); }
+  
+  #if defined(CORE_STM32) || defined(CORE_TEENSY)
   else if (configPage9.enable_canbus == 2)
   {
     //Teensy onboard CAN not used currently
@@ -191,7 +184,8 @@ void setup()
     //static CAN_message_t txmsg,rxmsg;
     //CANbus0.begin();
   }
-#endif
+  
+  #endif
 
   //Repoint the 2D table structs to the config pages that were just loaded
   taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
@@ -733,42 +727,28 @@ void loop()
       // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
       //if ( (BIT_CHECK(TIMER_mask, BIT_TIMER_15HZ)) || (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
-      //if ( (timer15Hz == true) )
       if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       {
         if (Serial.available() > 0) { command(); }
       }
-
-
-
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-      //if serial3 interface is enabled then check for serial3 requests.
-      if (configPage9.enable_canbus == 1)
-      {
-        if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) || (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-        {
-          if (CANSerial.available() > 0) { canCommand(); }
-        }
-      }
-
-#elif  defined(CORE_TEENSY) || defined(CORE_STM32)
       //if can or secondary serial interface is enabled then check for requests.
       if (configPage9.enable_canbus == 1)  //secondary serial interface enabled
-      {
-        if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) || (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-        {
-          if (CANSerial.available() > 0) { canCommand(); }
-        }
-      }
-      else if (configPage9.enable_canbus == 2) // can module enabled
+          {
+            if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+                {
+                  if (CANSerial.available() > 0)  { canCommand(); }
+                }
+          }
+      #if  defined(CORE_TEENSY) || defined(CORE_STM32)
+          else if (configPage9.enable_canbus == 2) // can module enabled
           {
             //check local can module
-            // if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) or (CANbus0.available())
+            // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
             //    {
             //      CANbus0.read(rx_msg);
             //    }
           }
-#endif
+      #endif
 
     //Displays currently disabled
     // if (configPage2.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
