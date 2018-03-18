@@ -568,7 +568,7 @@ void setFuelSchedule7(unsigned long timeout, unsigned long duration)
     //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
     noInterrupts();
     fuelSchedule7.startCompare = FUEL7_COUNTER + timeout_timer_compare;
-    fuelSchedule7.endCompare = fuelSchedule6.startCompare + uS_TO_TIMER_COMPARE(duration);
+    fuelSchedule7.endCompare = fuelSchedule7.startCompare + uS_TO_TIMER_COMPARE(duration);
     FUEL7_COMPARE = fuelSchedule7.startCompare; //Use the C copmare unit of timer 3
     fuelSchedule7.Status = PENDING; //Turn this schedule on
     fuelSchedule7.schedulesSet++; //Increment the number of times this schedule has been set
@@ -789,7 +789,7 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
     noInterrupts();
     ignitionSchedule6.startCompare = IGN6_COUNTER + timeout_timer_compare;
     ignitionSchedule6.endCompare = ignitionSchedule6.startCompare + uS_TO_TIMER_COMPARE_SLOW(duration);
-    IGN4_COMPARE = ignitionSchedule6.startCompare;
+    IGN6_COMPARE = ignitionSchedule6.startCompare;
     ignitionSchedule6.Status = PENDING; //Turn this schedule on
     ignitionSchedule6.schedulesSet++;
     interrupts();
