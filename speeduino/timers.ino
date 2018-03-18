@@ -40,7 +40,7 @@ void initialiseTimers()
    lowResTimer.begin(oneMSInterval, 1000);
 
 #elif defined(CORE_STM32)
-#ifndef SMALL_FLASH_MODE
+#if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
   Timer8.setPeriod(1000);  // Set up period
   Timer8.setMode(1, TIMER_OUTPUT_COMPARE);
   Timer8.attachInterrupt(1, oneMSInterval);

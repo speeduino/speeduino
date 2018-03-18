@@ -246,10 +246,18 @@ void initialiseSchedulers()
     fuelSchedule2.counter = &FUEL2_COUNTER;
     fuelSchedule3.counter = &FUEL3_COUNTER;
     fuelSchedule4.counter = &FUEL4_COUNTER;
+    #if (INJ_CHANNELS >= 5)
     fuelSchedule5.counter = &FUEL5_COUNTER;
-    fuelSchedule6.counter = &FUEL6_COUNTER;
-    fuelSchedule7.counter = &FUEL7_COUNTER;
-    fuelSchedule8.counter = &FUEL8_COUNTER;
+    #endif
+    #if (INJ_CHANNELS >= 6)
+    fuelSchedule5.counter = &FUEL6_COUNTER;
+    #endif
+    #if (INJ_CHANNELS >= 7)
+    fuelSchedule5.counter = &FUEL7_COUNTER;
+    #endif
+    #if (INJ_CHANNELS >= 8)
+    fuelSchedule5.counter = &FUEL8_COUNTER;
+    #endif
 
     ignitionSchedule1.Status = OFF;
     ignitionSchedule2.Status = OFF;
@@ -478,6 +486,7 @@ void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses time
   }
 }
 
+#if INJ_CHANNELS >= 5
 void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
   if(fuelSchedule5.Status != RUNNING) //Check that we're not already part way through a schedule
@@ -509,6 +518,7 @@ void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned l
     fuelSchedule5.hasNextSchedule = true;
   }
 }
+#endif
 
 #if INJ_CHANNELS >= 6
 //This uses timer
