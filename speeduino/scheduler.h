@@ -71,19 +71,19 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define FUEL2_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3B) //Turn on the B compare unit (ie turn on the interrupt)
   #define FUEL3_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3C) //Turn on the C compare unit (ie turn on the interrupt)
   #define FUEL4_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4B) //Turn on the B compare unit (ie turn on the interrupt)
-  #define FUEL5_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3B) //
-  #define FUEL6_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3B) //
-  #define FUEL7_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3C) //
-  #define FUEL8_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4B) //
+  #define FUEL5_TIMER_ENABLE() TIMSK1 |= (1 << OCIE1C) //
+  #define FUEL6_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4A) //
+  #define FUEL7_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5C) //
+  #define FUEL8_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5B) //
 
   #define FUEL1_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3A); //Turn off this output compare unit
   #define FUEL2_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3B); //Turn off this output compare unit
   #define FUEL3_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3C); //Turn off this output compare unit
   #define FUEL4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4B); //Turn off this output compare unit
-  #define FUEL5_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3A); //
-  #define FUEL6_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3B); //
-  #define FUEL7_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3C); //
-  #define FUEL8_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4B); //
+  #define FUEL5_TIMER_DISABLE() TIMSK1 &= ~(1 << OCIE1C); //
+  #define FUEL6_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A); //
+  #define FUEL7_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C); //
+  #define FUEL8_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5B); //
 
   #define IGN1_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5A) //Turn on the A compare unit (ie turn on the interrupt)
   #define IGN2_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5B) //Turn on the B compare unit (ie turn on the interrupt)
@@ -242,7 +242,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
     #define FUEL2_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC2E
     #define FUEL3_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC3E
     #define FUEL4_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC4E
-    
+
     #define FUEL1_TIMER_DISABLE() (TIM2)->CCER &= ~TIM_CCER_CC1E
     #define FUEL2_TIMER_DISABLE() (TIM2)->CCER &= ~TIM_CCER_CC2E
     #define FUEL3_TIMER_DISABLE() (TIM2)->CCER &= ~TIM_CCER_CC3E
@@ -326,7 +326,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
     #define FUEL2_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC2E
     #define FUEL3_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC3E
     #define FUEL4_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC4E
-    
+
     #define FUEL1_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC1E
     #define FUEL2_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC2E
     #define FUEL3_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC3E
