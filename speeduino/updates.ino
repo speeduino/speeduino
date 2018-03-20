@@ -9,10 +9,9 @@
 void doUpdates()
 {
   #define CURRENT_DATA_VERSION    8
-  uint8_t currentVersion = EEPROM.read(EEPROM_DATA_VERSION);
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
-  if(currentVersion == 2)
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
   {
     for(int x=0; x<16; x++)
     {
@@ -25,7 +24,7 @@ void doUpdates()
     EEPROM.write(EEPROM_DATA_VERSION, 3);
   }
   //June 2017 required the forced addition of some CAN values to avoid weird errors
-  if(currentVersion == 3)
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 3)
   {
     configPage9.speeduino_tsCanId = 0;
     configPage9.true_address = 256;
@@ -38,7 +37,7 @@ void doUpdates()
     EEPROM.write(EEPROM_DATA_VERSION, 4);
   }
   //July 2017 adds a cranking enrichment curve in place of the single value. This converts that single value to the curve
-  if(currentVersion == 4)
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 4)
   {
     //Some default values for the bins (Doesn't matter too much here as the values against them will all be identical)
     configPage10.crankingEnrichBins[0] = 0;
@@ -55,7 +54,7 @@ void doUpdates()
     EEPROM.write(EEPROM_DATA_VERSION, 5);
   }
   //September 2017 had a major change to increase the minimum table size to 128. This required multiple pieces of data being moved around
-  if(currentVersion == 5)
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 5)
   {
     //Data after page 4 has to move back 128 bytes
     for(int x=0; x < 1152; x++)
@@ -78,7 +77,7 @@ void doUpdates()
     loadConfig(); //Reload the config after changing everything in EEPROM
   }
   //November 2017 added the staging table that comes after boost and vvt in the EEPROM. This required multiple pieces of data being moved around
-  if(currentVersion == 6)
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 6)
   {
     //Data after page 8 has to move back 82 bytes
     for(int x=0; x < 529; x++)
@@ -93,7 +92,7 @@ void doUpdates()
     loadConfig(); //Reload the config after changing everything in EEPROM
   }
 
-  if (currentVersion == 7) {
+  if (EEPROM.read(EEPROM_DATA_VERSION) == 7) {
     //Convert whatever flex fuel settings are there into the new tables
 
     configPage10.flexBoostBins[0] = 0;
@@ -127,7 +126,7 @@ void doUpdates()
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)
-  if( (currentVersion == 0) || (currentVersion == 255) )
+  if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
   {
     configPage9.true_address = 0x200;
     EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION);
