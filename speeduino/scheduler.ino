@@ -53,15 +53,15 @@ void initialiseSchedulers()
   FTM0_CNT = 0x0000; // Reset the count to zero
   FTM0_MOD = 0xFFFF; // max modulus = 65535
 
-  //FlexTimer 1 is used for schedules on channel 5+. Currently only channel 5 is used, but will likely be expanded later
-  FTM1_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
-  FTM1_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
-  FTM1_MODE |= FTM_MODE_INIT;
+  //FlexTimer 3 is used for schedules on channel 5+. Currently only channel 5 is used, but will likely be expanded later
+  FTM3_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
+  FTM3_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
+  FTM3_MODE |= FTM_MODE_INIT;
 
-  FTM1_SC = 0x00; // Set this to zero before changing the modulus
-  FTM1_CNTIN = 0x0000; //Shouldn't be needed, but just in case
-  FTM1_CNT = 0x0000; // Reset the count to zero
-  FTM1_MOD = 0xFFFF; // max modulus = 65535
+  FTM3_SC = 0x00; // Set this to zero before changing the modulus
+  FTM3_CNTIN = 0x0000; //Shouldn't be needed, but just in case
+  FTM3_CNT = 0x0000; // Reset the count to zero
+  FTM3_MOD = 0xFFFF; // max modulus = 65535
 
   /*
    * Enable the clock for FTM0/1
@@ -71,7 +71,7 @@ void initialiseSchedulers()
    * 11 External clock
    */
   FTM0_SC |= FTM_SC_CLKS(0b1);
-  FTM1_SC |= FTM_SC_CLKS(0b1);
+  FTM3_SC |= FTM_SC_CLKS(0b1);
 
   /*
    * Set Prescaler
@@ -89,7 +89,7 @@ void initialiseSchedulers()
    * 111 Divide by 128
    */
   FTM0_SC |= FTM_SC_PS(0b111);
-  FTM1_SC |= FTM_SC_PS(0b111);
+  FTM3_SC |= FTM_SC_PS(0b111);
 
   //Setup the channels (See Pg 1014 of K64 DS).
   //The are probably not needed as power on state should be 0
@@ -196,7 +196,7 @@ void initialiseSchedulers()
   Timer3.setMode(2, TIMER_OUTPUT_COMPARE);
   Timer3.setMode(3, TIMER_OUTPUT_COMPARE);
   Timer3.setMode(4, TIMER_OUTPUT_COMPARE);
-  Timer1.setMode(1, TIMER_OUTPUT_COMPARE); 
+  Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
 
   Timer2.attachInterrupt(1, fuelSchedule1Interrupt);
   Timer2.attachInterrupt(2, fuelSchedule2Interrupt);
