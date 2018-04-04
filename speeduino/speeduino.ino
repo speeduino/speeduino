@@ -163,7 +163,7 @@ void setup()
   table3D_setSize(&trim3Table, 6);
   table3D_setSize(&trim4Table, 6);
   initialiseTimers();
-  
+
   loadConfig();
   doUpdates(); //Check if any data items need updating (Occurs ith firmware updates)
 
@@ -173,7 +173,7 @@ void setup()
 
   Serial.begin(115200);
   if (configPage9.enable_canbus == 1) { CANSerial.begin(115200); }
-  
+
   #if defined(CORE_STM32) || defined(CORE_TEENSY)
   else if (configPage9.enable_canbus == 2)
   {
@@ -184,7 +184,7 @@ void setup()
     //static CAN_message_t txmsg,rxmsg;
     //CANbus0.begin();
   }
-  
+
   #endif
 
   //Repoint the 2D table structs to the config pages that were just loaded
@@ -920,12 +920,12 @@ void loop()
 #endif
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
-    }
+    } //4Hz timer
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
       readBaro(); //Infrequent baro readings are not an issue.
-    }
+    } //1Hz timer
 
     if(configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL || configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) { idleControl(); } //Run idlecontrol every loop for stepper idle.
 
@@ -1542,7 +1542,18 @@ void loop()
       //Likewise for the ignition
 
       //fixedCrankingOverride is used to extend the dwell during cranking so that the decoder can trigger the spark upon seeing a certain tooth. Currently only available on the basic distributor and 4g63 decoders.
-      if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (decoderHasFixedCrankingTiming == true) ) { fixedCrankingOverride = currentStatus.dwell * 3; }
+      if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (decoderHasFixedCrankingTiming == true) )
+      {
+        fixedCrankingOverride = currentStatus.dwell * 3;
+        //This is a safety step to prevent the ignition start time occuring AFTER the target tooth pulse has already occcured. It simply moves the start time forward a little, which is compensated for by the increase in the dwell time
+        if(currentStatus.RPM < 250)
+        {
+          ignition1StartAngle -= 5;
+          ignition2StartAngle -= 5; 
+          ignition3StartAngle -= 5;
+          ignition4StartAngle -= 5;
+        }
+      }
       else { fixedCrankingOverride = 0; }
 
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
