@@ -508,6 +508,96 @@ void setPinMapping(byte boardID)
       pinResetControl = 26; //Reset control output
       break;
 
+    case 50:
+      //Pin mappings as per the teensy rev A shield
+      pinInjector1 = 2; //Output pin injector 1 is on
+      pinInjector2 = 10; //Output pin injector 2 is on
+      pinInjector3 = 6; //Output pin injector 3 is on - NOT USED
+      pinInjector4 = 9; //Output pin injector 4 is on - NOT USED
+      //pinInjector5 = 13; //Placeholder only - NOT USED
+      pinCoil1 = 29; //Pin for coil 1
+      pinCoil2 = 30; //Pin for coil 2
+      pinCoil3 = 31; //Pin for coil 3 - ONLY WITH DB2
+      pinCoil4 = 32; //Pin for coil 4 - ONLY WITH DB2
+      //pinCoil5 = 46; //Placeholder only - NOT USED
+      pinTrigger = 23; //The CAS pin
+      pinTrigger2 = 36; //The Cam Sensor pin
+      pinTPS = 16; //TPS input pin
+      pinMAP = 17; //MAP sensor pin
+      pinIAT = 14; //IAT sensor pin
+      pinCLT = 15; //CLT sensor pin
+      pinO2 = A22; //O2 sensor pin
+      pinO2_2 = A21; //O2 sensor pin (second sensor)
+      pinBat = 18; //Battery reference voltage pin
+      //pinBaro = A6; //Baro sensor pin - ONLY WITH DB
+      //pinSpareTemp1 = A7; //spare Analog input 1 - ONLY WITH DB
+      //pinDisplayReset = 48; // OLED reset pin - NOT USED
+      pinTachOut = 20; //Tacho output pin
+      pinIdle1 = 5; //Single wire idle control
+      //pinIdle2 = 47; //2 wire idle control - NOT USED
+      pinBoost = 11; //Boost control
+      //pinVVT_1 = 6; //Default VVT output
+      pinFuelPump = 38; //Fuel pump output
+      pinStepperDir = 34; //Direction pin for DRV8825 driver
+      pinStepperStep = 35; //Step pin for DRV8825 driver
+      pinStepperEnable = 33; //Enable pin for DRV8825 driver
+      pinLaunch = 26; //Can be overwritten below
+      //pinFlex = 20; // Flex sensor (Must be external interrupt enabled) - ONLY WITH DB
+      pinFan = 37; //Pin for the fan output - ONLY WITH DB
+      //pinSpareLOut1 = 32; //low current output spare1 - ONLY WITH DB
+      //pinSpareLOut2 = 34; //low current output spare2 - ONLY WITH DB
+      //pinSpareLOut3 = 36; //low current output spare3 - ONLY WITH DB
+      //pinResetControl = 26; //Reset control output
+      pinSpareHOut1 = 8; // high current output spare1
+      pinSpareHOut2 = 7; // high current output spare2
+      pinSpareLOut1 = 21; //low current output spare1
+      break;
+
+    case 51:
+      //Pin mappings as per the teensy revB board shield
+ pinInjector1 = 2; //Output pin injector 1 is on
+      pinInjector2 = 10; //Output pin injector 2 is on
+      pinInjector3 = 6; //Output pin injector 3 is on - NOT USED
+      pinInjector4 = 9; //Output pin injector 4 is on - NOT USED
+      //pinInjector5 = 13; //Placeholder only - NOT USED
+      pinCoil1 = 29; //Pin for coil 1
+      pinCoil2 = 30; //Pin for coil 2
+      pinCoil3 = 31; //Pin for coil 3 - ONLY WITH DB2
+      pinCoil4 = 32; //Pin for coil 4 - ONLY WITH DB2
+      //pinCoil5 = 46; //Placeholder only - NOT USED
+      pinTrigger = 23; //The CAS pin
+      pinTrigger2 = 36; //The Cam Sensor pin
+      pinTPS = 16; //TPS input pin
+      pinMAP = 17; //MAP sensor pin
+      pinIAT = 14; //IAT sensor pin
+      pinCLT = 15; //CLT sensor pin
+      pinO2 = A22; //O2 sensor pin
+      pinO2_2 = A21; //O2 sensor pin (second sensor)
+      pinBat = 18; //Battery reference voltage pin
+      //pinBaro = A6; //Baro sensor pin - ONLY WITH DB
+      //pinSpareTemp1 = A7; //spare Analog input 1 - ONLY WITH DB
+      //pinDisplayReset = 48; // OLED reset pin - NOT USED
+      pinTachOut = 20; //Tacho output pin
+      pinIdle1 = 5; //Single wire idle control
+      //pinIdle2 = 47; //2 wire idle control - NOT USED
+      pinBoost = 11; //Boost control
+      //pinVVT_1 = 6; //Default VVT output
+      pinFuelPump = 38; //Fuel pump output
+      pinStepperDir = 34; //Direction pin for DRV8825 driver
+      pinStepperStep = 35; //Step pin for DRV8825 driver
+      pinStepperEnable = 33; //Enable pin for DRV8825 driver
+      pinLaunch = 26; //Can be overwritten below
+      //pinFlex = 20; // Flex sensor (Must be external interrupt enabled) - ONLY WITH DB
+      pinFan = 37; //Pin for the fan output - ONLY WITH DB
+      //pinSpareLOut1 = 32; //low current output spare1 - ONLY WITH DB
+      //pinSpareLOut2 = 34; //low current output spare2 - ONLY WITH DB
+      //pinSpareLOut3 = 36; //low current output spare3 - ONLY WITH DB
+      //pinResetControl = 26; //Reset control output
+      pinSpareHOut1 = 8; // high current output spare1
+      pinSpareHOut2 = 7; // high current output spare2
+      pinSpareLOut1 = 21; //low current output spare1
+      break;
+
     default:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the v0.2 shield

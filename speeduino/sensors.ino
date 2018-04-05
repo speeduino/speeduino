@@ -246,9 +246,9 @@ void readO2()
 
   //Second O2 currently disabled as its not being used
   //Get the current O2 value.
-  //currentStatus.O2_2ADC = map(analogRead(pinO2_2), 0, 1023, 0, 511);
-  //currentStatus.O2_2ADC = ADC_FILTER(tempReading, ADCFILTER_O2, currentStatus.O2_2ADC);
-  //currentStatus.O2_2 = o2CalibrationTable[currentStatus.O2_2ADC];
+  currentStatus.O2_2ADC = map(analogRead(pinO2_2), 0, 1023, 0, 511);
+  currentStatus.O2_2ADC = ADC_FILTER(tempReading, ADCFILTER_O2, currentStatus.O2_2ADC);
+  currentStatus.O2_2 = o2CalibrationTable[currentStatus.O2_2ADC];
 
 void readBat()
 {
