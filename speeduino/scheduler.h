@@ -35,18 +35,16 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define FUEL2_COUNTER TCNT3
   #define FUEL3_COUNTER TCNT3
   #define FUEL4_COUNTER TCNT4
-  #define FUEL5_COUNTER TCNT3
-  //The following are for the additional dynamic modes and share the counter and compares with the ignition
-  #define FUEL6_COUNTER TCNT4 //Takes off ignition 4
-  #define FUEL7_COUNTER TCNT5
-  #define FUEL8_COUNTER TCNT5
+  #define FUEL5_COUNTER TCNT1
+  #define FUEL6_COUNTER TCNT4 //Replaces ignition 4
+  #define FUEL7_COUNTER TCNT5 //Replaces ignition 3
+  #define FUEL8_COUNTER TCNT5 //Replaces ignition 2
 
   #define IGN1_COUNTER  TCNT5
   #define IGN2_COUNTER  TCNT5
   #define IGN3_COUNTER  TCNT5
   #define IGN4_COUNTER  TCNT4
   #define IGN5_COUNTER  TCNT1
-  //The following are for the additional dynamic modes and share the counter and compares with the injectors
   #define IGN6_COUNTER  TCNT4 //Replaces injector 4
   #define IGN7_COUNTER  TCNT3 //Replaces injector 3
   #define IGN8_COUNTER  TCNT3 //Replaces injector 2
@@ -55,8 +53,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define FUEL2_COMPARE OCR3B
   #define FUEL3_COMPARE OCR3C
   #define FUEL4_COMPARE OCR4B
-  #define FUEL5_COMPARE OCR3A //Shared with FUEL1
-  //The following are for the additional dynamic modes and share the counter and compares with the ignition
+  #define FUEL5_COMPARE OCR1C //Shared with FUEL1
   #define FUEL6_COMPARE OCR4A //Replaces ignition4
   #define FUEL7_COMPARE OCR5C //Replaces ignition3
   #define FUEL8_COMPARE OCR5B //Replaces ignition2
@@ -66,7 +63,6 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define IGN3_COMPARE  OCR5C
   #define IGN4_COMPARE  OCR4A
   #define IGN5_COMPARE  OCR1C
-  //The following are for the additional dynamic modes and share the counter and compares with the injectors
   #define IGN6_COMPARE  OCR4B //Replaces injector 4
   #define IGN7_COMPARE  OCR3C //Replaces injector 3
   #define IGN8_COMPARE  OCR3B //Replaces injector 2
@@ -75,19 +71,19 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
   #define FUEL2_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3B) //Turn on the B compare unit (ie turn on the interrupt)
   #define FUEL3_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3C) //Turn on the C compare unit (ie turn on the interrupt)
   #define FUEL4_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4B) //Turn on the B compare unit (ie turn on the interrupt)
-  #define FUEL5_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3B) //
-  #define FUEL6_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3B) //
-  #define FUEL7_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3C) //
-  #define FUEL8_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4B) //
+  #define FUEL5_TIMER_ENABLE() TIMSK1 |= (1 << OCIE1C) //
+  #define FUEL6_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4A) //
+  #define FUEL7_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5C) //
+  #define FUEL8_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5B) //
 
   #define FUEL1_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3A); //Turn off this output compare unit
   #define FUEL2_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3B); //Turn off this output compare unit
   #define FUEL3_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3C); //Turn off this output compare unit
   #define FUEL4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4B); //Turn off this output compare unit
-  #define FUEL5_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3A); //
-  #define FUEL6_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3B); //
-  #define FUEL7_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3C); //
-  #define FUEL8_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4B); //
+  #define FUEL5_TIMER_DISABLE() TIMSK1 &= ~(1 << OCIE1C); //
+  #define FUEL6_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A); //
+  #define FUEL7_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C); //
+  #define FUEL8_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5B); //
 
   #define IGN1_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5A) //Turn on the A compare unit (ie turn on the interrupt)
   #define IGN2_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5B) //Turn on the B compare unit (ie turn on the interrupt)
@@ -204,138 +200,169 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
     #define FUEL2_COUNTER (TIM2)->CNT
     #define FUEL3_COUNTER (TIM2)->CNT
     #define FUEL4_COUNTER (TIM2)->CNT
-    #define FUEL5_COUNTER (TIM4)->CNT
-    #define FUEL6_COUNTER (TIM4)->CNT
-    #define FUEL7_COUNTER (TIM4)->CNT
-    #define FUEL8_COUNTER (TIM4)->CNT
-
-    #define IGN1_COUNTER  (TIM3)->CNT
-    #define IGN2_COUNTER  (TIM3)->CNT
-    #define IGN3_COUNTER  (TIM3)->CNT
-    #define IGN4_COUNTER  (TIM3)->CNT
-    #define IGN5_COUNTER  (TIM4)->CNT
-    #define IGN6_COUNTER  (TIM4)->CNT
-    #define IGN7_COUNTER  (TIM4)->CNT
-    #define IGN8_COUNTER  (TIM4)->CNT
 
     #define FUEL1_COMPARE (TIM2)->CCR1
     #define FUEL2_COMPARE (TIM2)->CCR2
     #define FUEL3_COMPARE (TIM2)->CCR3
     #define FUEL4_COMPARE (TIM2)->CCR4
-    #define FUEL5_COMPARE (TIM4)->CCR1
-    #define FUEL6_COMPARE (TIM4)->CCR2
-    #define FUEL7_COMPARE (TIM4)->CCR3
-    #define FUEL8_COMPARE (TIM4)->CCR4
+
+    #define IGN1_COUNTER  (TIM3)->CNT
+    #define IGN2_COUNTER  (TIM3)->CNT
+    #define IGN3_COUNTER  (TIM3)->CNT
+    #define IGN4_COUNTER  (TIM3)->CNT
 
     #define IGN1_COMPARE (TIM3)->CCR1
     #define IGN2_COMPARE (TIM3)->CCR2
     #define IGN3_COMPARE (TIM3)->CCR3
     #define IGN4_COMPARE (TIM3)->CCR4
+
+#ifndef SMALL_FLASH_MODE
+    #define FUEL5_COUNTER (TIM5)->CNT
+    #define FUEL6_COUNTER (TIM5)->CNT
+    #define FUEL7_COUNTER (TIM5)->CNT
+    #define FUEL8_COUNTER (TIM5)->CNT
+
+    #define FUEL5_COMPARE (TIM5)->CCR1
+    #define FUEL6_COMPARE (TIM5)->CCR2
+    #define FUEL7_COMPARE (TIM5)->CCR3
+    #define FUEL8_COMPARE (TIM5)->CCR4
+
+    #define IGN5_COUNTER  (TIM4)->CNT
+    #define IGN6_COUNTER  (TIM4)->CNT
+    #define IGN7_COUNTER  (TIM4)->CNT
+    #define IGN8_COUNTER  (TIM4)->CNT
+
     #define IGN5_COMPARE (TIM4)->CCR1
     #define IGN6_COMPARE (TIM4)->CCR2
     #define IGN7_COMPARE (TIM4)->CCR3
     #define IGN8_COMPARE (TIM4)->CCR4
-
+#endif
     //https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
     #define FUEL1_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC1E
     #define FUEL2_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC2E
     #define FUEL3_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC3E
     #define FUEL4_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC4E
-    #define FUEL5_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC1E
-    #define FUEL6_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC2E
-    #define FUEL7_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC3E
-    #define FUEL8_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC4E
-
-    #define IGN1_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC1E
-    #define IGN2_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC2E
-    #define IGN3_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC3E
-    #define IGN4_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC4E
-    #define IGN5_TIMER_ENABLE() (TIM1)->CCER |= TIM_CCER_CC1E
 
     #define FUEL1_TIMER_DISABLE() (TIM2)->CCER &= ~TIM_CCER_CC1E
     #define FUEL2_TIMER_DISABLE() (TIM2)->CCER &= ~TIM_CCER_CC2E
     #define FUEL3_TIMER_DISABLE() (TIM2)->CCER &= ~TIM_CCER_CC3E
     #define FUEL4_TIMER_DISABLE() (TIM2)->CCER &= ~TIM_CCER_CC4E
 
+    #define IGN1_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC1E
+    #define IGN2_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC2E
+    #define IGN3_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC3E
+    #define IGN4_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC4E
+
     #define IGN1_TIMER_DISABLE() (TIM3)->CCER &= ~TIM_CCER_CC1E
     #define IGN2_TIMER_DISABLE() (TIM3)->CCER &= ~TIM_CCER_CC2E
     #define IGN3_TIMER_DISABLE() (TIM3)->CCER &= ~TIM_CCER_CC3E
     #define IGN4_TIMER_DISABLE() (TIM3)->CCER &= ~TIM_CCER_CC4E
-    #define IGN5_TIMER_DISABLE() (TIM1)->CCER &= ~TIM_CCER_CC1E
+
+#ifndef SMALL_FLASH_MODE
+    #define FUEL5_TIMER_ENABLE() (TIM5)->CCER |= TIM_CCER_CC1E
+    #define FUEL6_TIMER_ENABLE() (TIM5)->CCER |= TIM_CCER_CC2E
+    #define FUEL7_TIMER_ENABLE() (TIM5)->CCER |= TIM_CCER_CC3E
+    #define FUEL8_TIMER_ENABLE() (TIM5)->CCER |= TIM_CCER_CC4E
+
+    #define FUEL5_TIMER_DISABLE() (TIM5)->CCER &= ~TIM_CCER_CC1E
+    #define FUEL6_TIMER_DISABLE() (TIM5)->CCER &= ~TIM_CCER_CC2E
+    #define FUEL7_TIMER_DISABLE() (TIM5)->CCER &= ~TIM_CCER_CC3E
+    #define FUEL8_TIMER_DISABLE() (TIM5)->CCER &= ~TIM_CCER_CC4E
+
+    #define IGN5_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC1E
+    #define IGN6_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC2E
+    #define IGN7_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC3E
+    #define IGN8_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC4E
+
+    #define IGN5_TIMER_DISABLE() (TIM4)->CCER &= ~TIM_CCER_CC1E
+    #define IGN6_TIMER_DISABLE() (TIM4)->CCER &= ~TIM_CCER_CC2E
+    #define IGN7_TIMER_DISABLE() (TIM4)->CCER &= ~TIM_CCER_CC3E
+    #define IGN8_TIMER_DISABLE() (TIM4)->CCER &= ~TIM_CCER_CC4E
+#endif
   #else //libmaple core aka STM32DUINO
     #define FUEL1_COUNTER (TIMER2->regs).gen->CNT
     #define FUEL2_COUNTER (TIMER2->regs).gen->CNT
     #define FUEL3_COUNTER (TIMER2->regs).gen->CNT
     #define FUEL4_COUNTER (TIMER2->regs).gen->CNT
-    #define FUEL5_COUNTER (TIMER4->regs).gen->CNT
-    #define FUEL6_COUNTER (TIMER4->regs).gen->CNT
-    #define FUEL7_COUNTER (TIMER4->regs).gen->CNT
-    #define FUEL8_COUNTER (TIMER4->regs).gen->CNT
-
-    #define IGN1_COUNTER  (TIMER3->regs).gen->CNT
-    #define IGN2_COUNTER  (TIMER3->regs).gen->CNT
-    #define IGN3_COUNTER  (TIMER3->regs).gen->CNT
-    #define IGN4_COUNTER  (TIMER3->regs).gen->CNT
-    #define IGN5_COUNTER  (TIMER4->regs).gen->CNT
-    #define IGN6_COUNTER  (TIMER4->regs).gen->CNT
-    #define IGN7_COUNTER  (TIMER4->regs).gen->CNT
-    #define IGN8_COUNTER  (TIMER4->regs).gen->CNT
 
     #define FUEL1_COMPARE (TIMER2->regs).gen->CCR1
     #define FUEL2_COMPARE (TIMER2->regs).gen->CCR2
     #define FUEL3_COMPARE (TIMER2->regs).gen->CCR3
     #define FUEL4_COMPARE (TIMER2->regs).gen->CCR4
-    #define FUEL5_COMPARE (TIMER4->regs).gen->CCR1
-    #define FUEL6_COMPARE (TIMER4->regs).gen->CCR2
-    #define FUEL7_COMPARE (TIMER4->regs).gen->CCR3
-    #define FUEL8_COMPARE (TIMER4->regs).gen->CCR4
+
+    #define IGN1_COUNTER  (TIMER3->regs).gen->CNT
+    #define IGN2_COUNTER  (TIMER3->regs).gen->CNT
+    #define IGN3_COUNTER  (TIMER3->regs).gen->CNT
+    #define IGN4_COUNTER  (TIMER3->regs).gen->CNT
 
     #define IGN1_COMPARE (TIMER3->regs).gen->CCR1
     #define IGN2_COMPARE (TIMER3->regs).gen->CCR2
     #define IGN3_COMPARE (TIMER3->regs).gen->CCR3
     #define IGN4_COMPARE (TIMER3->regs).gen->CCR4
+
+#ifndef SMALL_FLASH_MODE
+    #define FUEL5_COUNTER (TIMER5->regs).gen->CNT
+    #define FUEL6_COUNTER (TIMER5->regs).gen->CNT
+    #define FUEL7_COUNTER (TIMER5->regs).gen->CNT
+    #define FUEL8_COUNTER (TIMER5->regs).gen->CNT
+
+    #define FUEL5_COMPARE (TIMER5->regs).gen->CCR1
+    #define FUEL6_COMPARE (TIMER5->regs).gen->CCR2
+    #define FUEL7_COMPARE (TIMER5->regs).gen->CCR3
+    #define FUEL8_COMPARE (TIMER5->regs).gen->CCR4
+
+    #define IGN5_COUNTER  (TIMER4->regs).gen->CNT
+    #define IGN6_COUNTER  (TIMER4->regs).gen->CNT
+    #define IGN7_COUNTER  (TIMER4->regs).gen->CNT
+    #define IGN8_COUNTER  (TIMER4->regs).gen->CNT
+
     #define IGN5_COMPARE (TIMER4->regs).gen->CCR1
     #define IGN6_COMPARE (TIMER4->regs).gen->CCR2
     #define IGN7_COMPARE (TIMER4->regs).gen->CCR3
     #define IGN8_COMPARE (TIMER4->regs).gen->CCR4
-
+#endif
     //https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
     #define FUEL1_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC1E
     #define FUEL2_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC2E
     #define FUEL3_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC3E
     #define FUEL4_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC4E
-    #define FUEL5_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC1E
-    #define FUEL6_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC2E
-    #define FUEL7_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC3E
-    #define FUEL8_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC4E
-
-    #define IGN1_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC1E
-    #define IGN2_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC2E
-    #define IGN3_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC3E
-    #define IGN4_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC4E
-    #define IGN5_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC1E
-    #define IGN6_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC2E
-    #define IGN7_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC3E
-    #define IGN8_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC4E
 
     #define FUEL1_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC1E
     #define FUEL2_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC2E
     #define FUEL3_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC3E
     #define FUEL4_TIMER_DISABLE() (TIMER2->regs).gen->CCER &= ~TIMER_CCER_CC4E
-    #define FUEL5_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC1E
-    #define FUEL6_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC2E
-    #define FUEL7_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC3E
-    #define FUEL8_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC4E
 
     #define IGN1_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC1E
     #define IGN2_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC2E
     #define IGN3_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC3E
     #define IGN4_TIMER_DISABLE() (TIMER3->regs).gen->CCER &= ~TIMER_CCER_CC4E
+
+    #define IGN1_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC1E
+    #define IGN2_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC2E
+    #define IGN3_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC3E
+    #define IGN4_TIMER_ENABLE() (TIMER3->regs).gen->CCER |= TIMER_CCER_CC4E
+
+#ifndef SMALL_FLASH_MODE
+    #define FUEL5_TIMER_ENABLE() (TIMER5->regs).gen->CCER |= TIMER_CCER_CC1E
+    #define FUEL6_TIMER_ENABLE() (TIMER5->regs).gen->CCER |= TIMER_CCER_CC2E
+    #define FUEL7_TIMER_ENABLE() (TIMER5->regs).gen->CCER |= TIMER_CCER_CC3E
+    #define FUEL8_TIMER_ENABLE() (TIMER5->regs).gen->CCER |= TIMER_CCER_CC4E
+
+    #define IGN5_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC1E
+    #define IGN6_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC2E
+    #define IGN7_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC3E
+    #define IGN8_TIMER_ENABLE() (TIMER4->regs).gen->CCER |= TIMER_CCER_CC4E
+
+    #define FUEL5_TIMER_DISABLE() (TIMER5->regs).gen->CCER &= ~TIMER_CCER_CC1E
+    #define FUEL6_TIMER_DISABLE() (TIMER5->regs).gen->CCER &= ~TIMER_CCER_CC2E
+    #define FUEL7_TIMER_DISABLE() (TIMER5->regs).gen->CCER &= ~TIMER_CCER_CC3E
+    #define FUEL8_TIMER_DISABLE() (TIMER5->regs).gen->CCER &= ~TIMER_CCER_CC4E
+
     #define IGN5_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC1E
     #define IGN6_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC2E
     #define IGN7_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC3E
     #define IGN8_TIMER_DISABLE() (TIMER4->regs).gen->CCER &= ~TIMER_CCER_CC4E
-
+#endif
   #endif
 #endif
 

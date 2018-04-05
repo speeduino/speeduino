@@ -42,6 +42,7 @@ void writeConfig(byte tableNum)
   byte newVal; //Used for tempoerarily storing the new intended value
   //Create a pointer to the config page
   byte* pnt_configPage;
+
   switch(tableNum)
   {
     case veMapPage:

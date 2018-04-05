@@ -96,7 +96,7 @@ static inline byte correctionWUE()
   {
     //This prevents us doing the 2D lookup if we're already up to temp
     BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP);
-    WUEValue = 100;
+    WUEValue = WUETable.values[9]; //Set the current value to be whatever the final value on the curve is.
   }
   else
   {
@@ -159,7 +159,7 @@ static inline int16_t correctionAccel()
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
   {
     //If it is currently running, check whether it should still be running or whether it's reached it's end time
-    if( micros() >= currentStatus.TAEEndTime )
+    if( micros_safe() >= currentStatus.TAEEndTime )
     {
       //Time to turn enrichment off
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
@@ -192,7 +192,7 @@ static inline int16_t correctionAccel()
       if (rateOfChange > configPage2.tpsThresh)
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
-        currentStatus.TAEEndTime = micros() + ((unsigned long)configPage2.taeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
+        currentStatus.TAEEndTime = micros_safe() + ((unsigned long)configPage2.taeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
         accelValue = 100 + table2D_getValue(&taeTable, currentStatus.tpsDOT);
       }
     }
@@ -280,7 +280,7 @@ static inline bool correctionDFCO()
 static inline byte correctionFlex()
 {
   byte flexValue = 100;
-  
+
   if (configPage2.flexEnabled == 1)
   {
     flexValue = table2D_getValue(&flexFuelTable, currentStatus.ethanolPct);

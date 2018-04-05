@@ -546,7 +546,7 @@
 <constant digits="0" name="vvtFreq" units="Hz">300.0</constant>
 <constant digits="0" name="idleFreq" units="Hz">160.0</constant>
 <constant name="launchPin">"Board Default"</constant>
-<constant name="launchEnable">"Yes"</constant>
+<constant name="launchEnable">"No"</constant>
 <constant name="launchHiLo">"LOW"</constant>
 <constant digits="0" name="lnchSoftLim" units="rpm">2500.0</constant>
 <constant digits="0" name="lnchRetard" units="deg">-15.0</constant>
@@ -628,9 +628,9 @@
       </constant>
 <constant cols="1" digits="0" name="iacCrankBins" rows="4" units="C">
          -40.0 
-         -40.0 
-         -40.0 
-         -40.0 
+         0.0 
+         40.0 
+         80.0 
       </constant>
 <constant name="iacAlgorithm">"None"</constant>
 <constant name="iacStepTime">"1"</constant>
@@ -647,9 +647,9 @@
 <constant digits="0" name="fanFreq" units="Hz">0.0</constant>
 <constant cols="1" digits="0" name="fanPWMBins" rows="4" units="C">
          -40.0 
-         -40.0 
-         -40.0 
-         -40.0 
+         0.0 
+         40.0 
+         80.0 
       </constant>
 </page>
 <page number="6" size="240">

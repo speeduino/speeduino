@@ -78,9 +78,6 @@ void initialiseIdle()
     NVIC_ENABLE_IRQ(IRQ_FTM2);
   }
 
-  #elif defined(CORE_STM32)
-    Timer1.attachInterrupt(4, idleInterrupt);
-    Timer1.resume();
   #endif
 
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
@@ -196,6 +193,11 @@ void initialiseIdle()
   }
   idleInitComplete = configPage6.iacAlgorithm; //Sets which idle method was initialised
   currentStatus.idleLoad = 0;
+  #if defined(CORE_STM32) //Need to be initialised last due to instant interrupt
+    Timer1.setMode(4, TIMER_OUTPUT_COMPARE);
+    if(idle_pwm_max_count > 0) { Timer1.attachInterrupt(4, idleInterrupt);} //on first flash the configPage4.iacAlgorithm is invalid
+    Timer1.resume();
+  #endif
 }
 
 void idleControl()
@@ -319,7 +321,7 @@ static inline byte isStepperHomed()
     digitalWrite(pinStepperDir, STEPPER_BACKWARD); //Sets stepper direction to backwards
     digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
     digitalWrite(pinStepperStep, HIGH);
-    idleStepper.stepStartTime = micros();
+    idleStepper.stepStartTime = micros_safe();
     idleStepper.stepperStatus = STEPPING;
     completedHomeSteps++;
     idleOn = true;
@@ -339,13 +341,13 @@ static inline byte checkForStepping()
   bool isStepping = false;
   if( (idleStepper.stepperStatus == STEPPING) || (idleStepper.stepperStatus == COOLING) )
   {
-    if(micros() > (idleStepper.stepStartTime + iacStepTime) )
+    if(micros_safe() > (idleStepper.stepStartTime + iacStepTime) )
     {
       if(idleStepper.stepperStatus == STEPPING)
       {
         //Means we're currently in a step, but it needs to be turned off
         digitalWrite(pinStepperStep, LOW); //Turn off the step
-        idleStepper.stepStartTime = micros();
+        idleStepper.stepStartTime = micros_safe();
         idleStepper.stepperStatus = COOLING; //'Cooling' is the time the stepper needs to sit in LOW state before the next step can be made
         isStepping = true;
       }
@@ -377,7 +379,7 @@ static inline void doStep()
 
     digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
     digitalWrite(pinStepperStep, HIGH);
-    idleStepper.stepStartTime = micros();
+    idleStepper.stepStartTime = micros_safe();
     idleStepper.stepperStatus = STEPPING;
     idleOn = true;
   }
@@ -459,3 +461,4 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
   }
 
 }
+
