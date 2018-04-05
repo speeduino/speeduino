@@ -133,6 +133,12 @@ void (*ign4StartFunction)();
 void (*ign4EndFunction)();
 void (*ign5StartFunction)();
 void (*ign5EndFunction)();
+void (*ign6StartFunction)();
+void (*ign6EndFunction)();
+void (*ign7StartFunction)();
+void (*ign7EndFunction)();
+void (*ign8StartFunction)();
+void (*ign8EndFunction)();
 
 volatile int timePerDegree;
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
@@ -141,9 +147,11 @@ bool initialisationComplete = false; //Tracks whether the setup() functino has r
 
 void setup()
 {
-  initialiseTimers();
+  pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
-
+  //Setup the dummy fuel and ignition tables
+  //dummyFuelTable(&fuelTable);
+  //dummyIgnitionTable(&ignitionTable);
   table3D_setSize(&fuelTable, 16);
   table3D_setSize(&ignitionTable, 16);
   table3D_setSize(&afrTable, 16);
@@ -154,10 +162,8 @@ void setup()
   table3D_setSize(&trim2Table, 6);
   table3D_setSize(&trim3Table, 6);
   table3D_setSize(&trim4Table, 6);
+  initialiseTimers();
 
-  #if defined(CORE_STM32)
-    EEPROM.init();
-  #endif
   loadConfig();
   doUpdates(); //Check if any data items need updating (Occurs ith firmware updates)
 
@@ -166,16 +172,9 @@ void setup()
   configPage4.bootloaderCaps = 0;
 
   Serial.begin(115200);
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
   if (configPage9.enable_canbus == 1) { CANSerial.begin(115200); }
-#elif defined(CORE_STM32)
-  if (configPage9.enable_canbus == 1) { CANSerial.begin(115200); }
-  else if (configPage9.enable_canbus == 2)
-  {
-    //enable local can interface
-  }
-#elif defined(CORE_TEENSY)
-  if (configPage9.enable_canbus == 1) { CANSerial.begin(115200); }
+
+  #if defined(CORE_STM32) || defined(CORE_TEENSY)
   else if (configPage9.enable_canbus == 2)
   {
     //Teensy onboard CAN not used currently
@@ -185,7 +184,8 @@ void setup()
     //static CAN_message_t txmsg,rxmsg;
     //CANbus0.begin();
   }
-#endif
+
+  #endif
 
   //Repoint the 2D table structs to the config pages that were just loaded
   taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
@@ -665,6 +665,12 @@ void setup()
       ign4EndFunction = endCoil4Charge;
       ign5StartFunction = beginCoil5Charge;
       ign5EndFunction = endCoil5Charge;
+      ign6StartFunction = beginCoil6Charge;
+      ign6EndFunction = endCoil6Charge;
+      ign7StartFunction = beginCoil7Charge;
+      ign7EndFunction = endCoil7Charge;
+      ign8StartFunction = beginCoil8Charge;
+      ign8EndFunction = endCoil8Charge;
       break;
 
     case IGN_MODE_ROTARY:
@@ -721,48 +727,34 @@ void loop()
       // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
       //if ( (BIT_CHECK(TIMER_mask, BIT_TIMER_15HZ)) || (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
-      //if ( (timer15Hz == true) )
       if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       {
         if (Serial.available() > 0) { command(); }
       }
-
-
-
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-      //if serial3 interface is enabled then check for serial3 requests.
-      if (configPage9.enable_canbus == 1)
-      {
-        if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) || (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-        {
-          if (CANSerial.available() > 0) { canCommand(); }
-        }
-      }
-
-#elif  defined(CORE_TEENSY) || defined(CORE_STM32)
       //if can or secondary serial interface is enabled then check for requests.
       if (configPage9.enable_canbus == 1)  //secondary serial interface enabled
-      {
-        if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) || (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-        {
-          if (CANSerial.available() > 0) { canCommand(); }
-        }
-      }
-      else if (configPage9.enable_canbus == 2) // can module enabled
+          {
+            if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+                {
+                  if (CANSerial.available() > 0)  { canCommand(); }
+                }
+          }
+      #if  defined(CORE_TEENSY) || defined(CORE_STM32)
+          else if (configPage9.enable_canbus == 2) // can module enabled
           {
             //check local can module
-            // if ( (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) or (CANbus0.available())
+            // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
             //    {
             //      CANbus0.read(rx_msg);
             //    }
           }
-#endif
+      #endif
 
     //Displays currently disabled
     // if (configPage2.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
 
     previousLoopTime = currentLoopTime;
-    currentLoopTime = micros();
+    currentLoopTime = micros_safe();
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
@@ -928,12 +920,12 @@ void loop()
 #endif
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
-    }
+    } //4Hz timer
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
       readBaro(); //Infrequent baro readings are not an issue.
-    }
+    } //1Hz timer
 
     if(configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL || configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) { idleControl(); } //Run idlecontrol every loop for stepper idle.
 
@@ -1069,7 +1061,8 @@ void loop()
         }
         else
         {
-          long rpm_adjust = ((long)(micros() - toothOneTime) * (long)currentStatus.rpmDOT) / 1000000; //Take into account any likely accleration that has occurred since the last full revolution completed
+          interruptSafe(long elapsedTime = (micros() - toothOneTime);) //micros() is no longer interrupt safe
+          long rpm_adjust = (elapsedTime * (long)currentStatus.rpmDOT) / 1000000; //Take into account any likely accleration that has occurred since the last full revolution completed
           timePerDegree = ldiv( 166666L, currentStatus.RPM + rpm_adjust).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
         }
 
@@ -1082,7 +1075,8 @@ void loop()
       if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && configPage10.stagingEnabled == false) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
 
       //Calculate staging pulsewidths if used
-      if(configPage10.stagingEnabled == true)
+      //To run staged injection, the number of cylinders must be less than or equal to the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
+      if( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= INJ_CHANNELS) )
       {
         //Scale the 'full' pulsewidth by each of the injector capacities
         uint32_t tempPW1 = ((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100;
@@ -1548,7 +1542,18 @@ void loop()
       //Likewise for the ignition
 
       //fixedCrankingOverride is used to extend the dwell during cranking so that the decoder can trigger the spark upon seeing a certain tooth. Currently only available on the basic distributor and 4g63 decoders.
-      if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (decoderHasFixedCrankingTiming == true) ) { fixedCrankingOverride = currentStatus.dwell * 3; }
+      if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (decoderHasFixedCrankingTiming == true) )
+      {
+        fixedCrankingOverride = currentStatus.dwell * 3;
+        //This is a safety step to prevent the ignition start time occuring AFTER the target tooth pulse has already occcured. It simply moves the start time forward a little, which is compensated for by the increase in the dwell time
+        if(currentStatus.RPM < 250)
+        {
+          ignition1StartAngle -= 5;
+          ignition2StartAngle -= 5; 
+          ignition3StartAngle -= 5;
+          ignition4StartAngle -= 5;
+        }
+      }
       else { fixedCrankingOverride = 0; }
 
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
@@ -1568,6 +1573,7 @@ void loop()
         crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
         if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
 
+#if IGN_CHANNELS >= 1
         if ( (ignition1StartAngle > crankAngle) && (curRollingCut != 1) )
         {
             /*
@@ -1587,6 +1593,7 @@ void loop()
                         );
             }
         }
+#endif
         /*
         if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && configPage4.StgCycles == 0)
         {
@@ -1605,7 +1612,7 @@ void loop()
         */
 
 
-
+#if IGN_CHANNELS >= 2
         tempCrankAngle = crankAngle - channel2IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition2StartAngle - channel2IgnDegrees;
@@ -1625,7 +1632,9 @@ void loop()
                         );
             }
         }
+#endif
 
+#if IGN_CHANNELS >= 3
         tempCrankAngle = crankAngle - channel3IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition3StartAngle - channel3IgnDegrees;
@@ -1646,7 +1655,9 @@ void loop()
                         );
             }
         }
+#endif
 
+#if IGN_CHANNELS >= 4
         tempCrankAngle = crankAngle - channel4IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition4StartAngle - channel4IgnDegrees;
@@ -1668,7 +1679,9 @@ void loop()
                         );
             }
         }
+#endif
 
+#if IGN_CHANNELS >= 5
         tempCrankAngle = crankAngle - channel5IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition5StartAngle - channel5IgnDegrees;
@@ -1689,6 +1702,29 @@ void loop()
                       );
             }
         }
+#endif
+
+#if IGN_CHANNELS >= 6
+        tempCrankAngle = crankAngle - channel6IgnDegrees;
+        if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
+        tempStartAngle = ignition6StartAngle - channel6IgnDegrees;
+        if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+        {
+            unsigned long ignition6StartTime = 0;
+            if(tempStartAngle > tempCrankAngle) { ignition6StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
+            else { ignition6StartTime = 0; }
+
+            if( (ignition6StartTime > 0) && (curRollingCut != 2) )
+            {
+              setIgnitionSchedule6(ign6StartFunction,
+                        ignition6StartTime,
+                        currentStatus.dwell + fixedCrankingOverride,
+                        ign6EndFunction
+                        );
+            }
+        }
+#endif
+
       } //Ignition schedules on
 
       if (!BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_PREVENT) && resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) {

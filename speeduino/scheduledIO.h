@@ -1,6 +1,9 @@
 #ifndef SCHEDULEDIO_H
 #define SCHEDULEDIO_H
 
+//If coil inverse is on, set the output low, else set it high
+//#define beginCoil1Charge() { configPage4.IgInv == 1 ? *ign1_pin_port &= ~(ign1_pin_mask); : *ign1_pin_port |= (ign1_pin_mask); } TACH_PULSE_LOW();
+
 inline void beginCoil1Charge();
 inline void endCoil1Charge();
 
@@ -15,6 +18,15 @@ inline void endCoil4Charge();
 
 inline void beginCoil5Charge();
 inline void endCoil5Charge();
+
+inline void beginCoil6Charge();
+inline void endCoil6Charge();
+
+inline void beginCoil7Charge();
+inline void endCoil7Charge();
+
+inline void beginCoil8Charge();
+inline void endCoil8Charge();
 
 //The following functions are used specifically for the trailing coil on rotary engines. They are separate as they also control the switching of the trailing select pin
 inline void beginTrailingCoilCharge();

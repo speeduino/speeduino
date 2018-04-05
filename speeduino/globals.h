@@ -12,17 +12,23 @@
   #define BOARD_NR_GPIO_PINS 62
   #define LED_BUILTIN 13
   #define CORE_AVR
+
+  //#define TIMER5_MICROS
+
 #elif defined(CORE_TEENSY)
   #define BOARD_DIGITAL_GPIO_PINS 34
   #define BOARD_NR_GPIO_PINS 34
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
-  #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
+  #ifndef word
+    #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
+  #endif
   #if defined (STM32F1) || defined(__STM32F1__)
     #define BOARD_DIGITAL_GPIO_PINS 34
-    #undef BOARD_NR_GPIO_PINS //This is declared as 49 in .../framework-arduinoststm32/STM32F1/variants/generic_stm32f103r8/board/board.h
     #define BOARD_NR_GPIO_PINS 34
-    #define LED_BUILTIN 33
+    #ifndef LED_BUILTIN
+      #define LED_BUILTIN PB1 //Maple Mini
+    #endif
   #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
     #define BOARD_DIGITAL_GPIO_PINS 80
     #define BOARD_NR_GPIO_PINS 80
@@ -30,19 +36,17 @@
   #endif
 
   //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
-  #if defined(MCU_STM32F103C8)
+  #if defined(MCU_STM32F103C8) | defined(MCU_STM32F103CB)
     #define SMALL_FLASH_MODE
   #endif
 
   extern "C" char* sbrk(int incr); //Used to freeRam
-  inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
   #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
+    inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
     #define portOutputRegister(port) (volatile byte *)( &(port->ODR) )
     #define portInputRegister(port) (volatile byte *)( &(port->IDR) )
   #else //libmaple core aka STM32DUINO
     //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
-    #undef portOutputRegister
-    #undef portInputRegister
     #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) )
     #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) )
   #endif
@@ -54,6 +58,8 @@
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
 #define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
 #define BIT_CHECK(var,pos) !!((var) & (1<<(pos)))
+
+#define interruptSafe(c)  noInterrupts(); c interrupts(); //Wraps any code between nointerrupt and interrupt calls
 
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000
@@ -217,6 +223,12 @@ volatile byte *inj4_pin_port;
 volatile byte inj4_pin_mask;
 volatile byte *inj5_pin_port;
 volatile byte inj5_pin_mask;
+volatile byte *inj6_pin_port;
+volatile byte inj6_pin_mask;
+volatile byte *inj7_pin_port;
+volatile byte inj7_pin_mask;
+volatile byte *inj8_pin_port;
+volatile byte inj8_pin_mask;
 
 volatile byte *ign1_pin_port;
 volatile byte ign1_pin_mask;
@@ -228,6 +240,12 @@ volatile byte *ign4_pin_port;
 volatile byte ign4_pin_mask;
 volatile byte *ign5_pin_port;
 volatile byte ign5_pin_mask;
+volatile byte *ign6_pin_port;
+volatile byte ign6_pin_mask;
+volatile byte *ign7_pin_port;
+volatile byte ign7_pin_mask;
+volatile byte *ign8_pin_port;
+volatile byte ign8_pin_mask;
 
 volatile byte *tach_pin_port;
 volatile byte tach_pin_mask;
@@ -256,6 +274,8 @@ int ignition4EndAngle = 0;
 
 //This is used across multiple files
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
+volatile unsigned long ms_counter = 0; //A counter that increments once per ms
 
 //This needs to be here because using the config page directly can prevent burning the setting
 byte resetControl = RESET_CONTROL_DISABLED;
@@ -691,7 +711,7 @@ struct config10 {
   uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%)
                             //And another three corn rows die.
 
-  byte unused11_75_192[117];
+  byte unused11_75_191[117];
 
 #if defined(CORE_AVR)
   };

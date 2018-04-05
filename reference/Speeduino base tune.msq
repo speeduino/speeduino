@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.50.23 - EFI Analytics, Inc." tuneComment="" writeDate="Wed Jan 03 21:35:21 AEDT 2018"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.12" nPages="10" signature="speeduino 201712"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.50.40 - EFI Analytics, Inc." tuneComment="" writeDate="Sat Mar 10 20:55:10 AEDT 2018"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.12" nPages="10" signature="speeduino 201802"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
 </page>
@@ -58,12 +58,10 @@
          86.0 
          90.0 
          96.0 
-         500.0 
+         100.0 
       </constant>
 </page>
 <page number="1" size="128">
-<constant digits="0" name="flexBoostLow" units="kPa">0.0</constant>
-<constant digits="0" name="flexBoostHigh" units="kPa">50.0</constant>
 <constant digits="0" name="asePct" units="%">25.0</constant>
 <constant digits="0" name="aseCount" units="s">8.0</constant>
 <constant cols="1" digits="0" name="wueRates" rows="10" units="%">
@@ -137,10 +135,6 @@
 <constant digits="0" name="oddfire2" units="deg">0.0</constant>
 <constant digits="0" name="oddfire3" units="deg">0.0</constant>
 <constant digits="0" name="oddfire4" units="deg">0.0</constant>
-<constant digits="0" name="flexFuelLow" units="%">100.0</constant>
-<constant digits="0" name="flexFuelHigh" units="%">163.0</constant>
-<constant digits="0" name="flexAdvLow" units="Deg">0.0</constant>
-<constant digits="0" name="flexAdvHigh" units="Deg">10.0</constant>
 <constant digits="0" name="iacCLminDuty" units="%">0.0</constant>
 <constant digits="0" name="iacCLmaxDuty" units="%">0.0</constant>
 <constant digits="0" name="boostMinDuty" units="%">20.0</constant>
@@ -281,15 +275,12 @@
 <constant name="fuelPumpPin">"Board Default"</constant>
 <constant name="useResync">"No"</constant>
 <constant digits="1" name="sparkDur" units="ms">1.0</constant>
-<constant digits="1" name="unused4-8" units="ms">25.5</constant>
-<constant digits="1" name="unused4-9" units="ms">25.5</constant>
-<constant digits="1" name="unused4-10" units="ms">25.5</constant>
 <constant digits="0" name="SkipCycles" units="cycles">1.0</constant>
 <constant name="unused4-12a">"NOTHING"</constant>
 <constant name="useDwellLim">"On"</constant>
 <constant name="sparkMode">"Wasted Spark"</constant>
 <constant name="TrigFilter">"Off"</constant>
-<constant name="ignCranklock">"On"</constant>
+<constant name="ignCranklock">"Off"</constant>
 <constant digits="1" name="dwellcrank" units="ms">4.5</constant>
 <constant digits="1" name="dwellrun" units="ms">3.0</constant>
 <constant digits="0" name="numTeeth" units="teeth">36.0</constant>
@@ -996,166 +987,53 @@
 <constant digits="0" name="boostIntv" units="ms">20.0</constant>
 <constant digits="0" name="stagedInjSizePri" units="cc/min">200.0</constant>
 <constant digits="0" name="stagedInjSizeSec" units="cc/min">600.0</constant>
-<constant cols="1" digits="0" name="unused11_32_192" rows="159" units="RPM">
-         700.0 
-         25500.0 
-         700.0 
-         700.0 
+<constant cols="1" digits="0" name="flexBoostBins" rows="6" units="%">
          0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         700.0 
-         700.0 
-         700.0 
-         700.0 
-         700.0 
-         700.0 
-         0.0 
-         0.0 
-         25500.0 
-         25500.0 
+         20.0 
+         40.0 
+         60.0 
+         80.0 
          100.0 
+      </constant>
+<constant cols="1" digits="0" name="flexBoostAdj" rows="6" units="kPa">
+         0.0 
+         10.0 
+         20.0 
+         30.0 
+         40.0 
+         50.0 
+      </constant>
+<constant cols="1" digits="0" name="flexFuelBins" rows="6" units="%">
+         0.0 
+         20.0 
+         40.0 
+         60.0 
+         80.0 
          100.0 
+      </constant>
+<constant cols="1" digits="0" name="flexFuelAdj" rows="6" units="%">
          100.0 
+         139.0 
+         156.0 
+         160.0 
+         163.0 
+         163.0 
+      </constant>
+<constant cols="1" digits="0" name="flexAdvBins" rows="6" units="%">
+         0.0 
+         20.0 
+         40.0 
+         60.0 
+         80.0 
          100.0 
-         100.0 
-         100.0 
-         100.0 
-         100.0 
-         100.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         700.0 
+      </constant>
+<constant cols="1" digits="0" name="flexAdvAdj" rows="6" units="Deg">
          0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         100.0 
-         0.0 
-         200.0 
-         200.0 
-         100.0 
-         100.0 
-         100.0 
-         200.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         0.0 
-         100.0 
-         0.0 
-         100.0 
-         100.0 
-         25500.0 
-         100.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         1000.0 
-         5000.0 
-         7500.0 
-         11000.0 
-         15000.0 
-         12000.0 
-         10900.0 
-         9600.0 
-         0.0 
-         1200.0 
-         1000.0 
-         600.0 
-         500.0 
-         1000.0 
-         1000.0 
-         1300.0 
-         1500.0 
-         1500.0 
-         2500.0 
-         3800.0 
-         4500.0 
-         5000.0 
-         6500.0 
-         9000.0 
-         12500.0 
-         21600.0 
-         100.0 
-         3000.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
+         2.0 
+         5.0 
+         8.0 
+         9.0 
+         10.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_9" units="RAW">
          255.0 
@@ -1166,6 +1044,7 @@
 <setting name="SPEED_DENSITY" value="SPEED_DENSITY"/>
 <setting name="CAN_COMMANDS_OFF" value="CAN_COMMANDS_OFF"/>
 <setting name="CELSIUS" value="CELSIUS"/>
+<setting name="resetcontrol_standard" value="resetcontrol_standard"/>
 <setting name="AFR" value="AFR"/>
 </settings>
 <userComments Comment="These are user comments that can be related to a particular setting or dialog."/>

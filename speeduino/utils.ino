@@ -239,23 +239,32 @@ void setPinMapping(byte boardID)
         pinCoil3 = 30;
         pinO2 = A22;
       #elif defined(STM32F4)
+        //Black F407VE http://wiki.stm32duino.com/index.php?title=STM32F407
+        //PC8~PC12 SDio
+        //PA13~PA15 & PB4 SWD(debug) pins
+        //PB0 EEPROM CS pin
+        //PD5 & PD6 Serial2
         pinInjector1 = PE7; //Output pin injector 1 is on
         pinInjector2 = PE8; //Output pin injector 2 is on
         pinInjector3 = PE9; //Output pin injector 3 is on
         pinInjector4 = PE10; //Output pin injector 4 is on
         pinInjector5 = PE11; //Output pin injector 5 is on
-        pinCoil1 = PB10; //Pin for coil 1
-        pinCoil2 = PB11; //Pin for coil 2
-        pinCoil3 = PB12; //Pin for coil 3
-        pinCoil4 = PB13; //Pin for coil 4
-        pinCoil5 = PB14; //Pin for coil 5
+        pinCoil1 = PB5; //Pin for coil 1
+        pinCoil2 = PB6; //Pin for coil 2
+        pinCoil3 = PB7; //Pin for coil 3
+        pinCoil4 = PB8; //Pin for coil 4
+        pinCoil5 = PB9; //Pin for coil 5
         pinTPS = A0; //TPS input pin
         pinMAP = A1; //MAP sensor pin
         pinIAT = A2; //IAT sensor pin
-        pinCLT = A3; //CLS sensor pin
+        pinCLT = A3; //CLT sensor pin
         pinO2 = A4; //O2 Sensor pin
         pinBat = A5; //Battery reference voltage pin
-        pinBaro = A6;
+        pinBaro = A10;        
+        pinIdle1 = PB8; //Single wire idle control
+        pinIdle2 = PB9; //2 wire idle control
+        pinBoost = PE0; //Boost control
+        pinVVT_1 = PE1; //Default VVT output
         pinStepperDir = PD8; //Direction pin  for DRV8825 driver
         pinStepperStep = PB15; //Step pin for DRV8825 driver
         pinStepperEnable = PD9; //Enable pin for DRV8825
@@ -264,43 +273,45 @@ void setPinMapping(byte boardID)
         pinFuelPump = PA6; //Fuel pump output
         pinTachOut = PA7; //Tacho output pin
         //external interrupt enabled pins
-        pinFlex = PC4; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = PC5; //The CAS pin
-        pinTrigger2 = PC6; //The Cam Sensor pin
-        pinBoost = PE0; //Boost control
-        pinVVT_1 = PE1; //Default VVT output
+        //external interrupts could be enalbed in any pin, except same port numbers (PA4,PE4)
+        pinFlex = PE2; // Flex sensor (Must be external interrupt enabled)
+        pinTrigger = PE3; //The CAS pin
+        pinTrigger2 = PE4; //The Cam Sensor pin
       #elif defined(CORE_STM32)
-        //http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/0.0.12/hardware/maple-mini.html#master-pin-map
-        //pins 23, 24 and 33 couldn't be used
-        pinInjector1 = 15; //Output pin injector 1 is on
-        pinInjector2 = 16; //Output pin injector 2 is on
-        pinInjector3 = 17; //Output pin injector 3 is on
-        pinInjector4 = 18; //Output pin injector 4 is on
-        pinCoil1 = 19; //Pin for coil 1
-        pinCoil2 = 20; //Pin for coil 2
-        pinCoil3 = 21; //Pin for coil 3
-        pinCoil4 = 26; //Pin for coil 4
-        pinCoil5 = 27; //Pin for coil 5
+        //blue pill http://wiki.stm32duino.com/index.php?title=Blue_Pill
+        //Maple mini http://wiki.stm32duino.com/index.php?title=Maple_Mini
+        //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
+        pinInjector1 = PB7; //Output pin injector 1 is on
+        pinInjector2 = PB6; //Output pin injector 2 is on
+        pinInjector3 = PB5; //Output pin injector 3 is on
+        pinInjector4 = PB4; //Output pin injector 4 is on
+        pinCoil1 = PB3; //Pin for coil 1
+        pinCoil2 = PA15; //Pin for coil 2
+        pinCoil3 = PA14; //Pin for coil 3
+        pinCoil4 = PA9; //Pin for coil 4
+        pinCoil5 = PA8; //Pin for coil 5
         pinTPS = A0; //TPS input pin
         pinMAP = A1; //MAP sensor pin
         pinIAT = A2; //IAT sensor pin
         pinCLT = A3; //CLS sensor pin
         pinO2 = A4; //O2 Sensor pin
         pinBat = A5; //Battery reference voltage pin
-        pinStepperDir = 12; //Direction pin  for DRV8825 driver
-        pinStepperStep = 13; //Step pin for DRV8825 driver
-        pinStepperEnable = 14; //Enable pin for DRV8825
-        pinDisplayReset = 2; // OLED reset pin
-        pinFan = 1; //Pin for the fan output
-        pinFuelPump = 0; //Fuel pump output
-        pinTachOut = 31; //Tacho output pin
-        //external interrupt enabled pins
-        pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = 25; //The CAS pin
-        pinTrigger2 = 22; //The Cam Sensor pin
         pinBaro = pinMAP;
-        pinBoost = 1; //Boost control
-        pinVVT_1 = 0; //Default VVT output
+        pinIdle1 = PB2; //Single wire idle control
+        pinIdle2 = PA2; //2 wire idle control
+        pinBoost = PA1; //Boost control
+        pinVVT_1 = PA0; //Default VVT output
+        pinStepperDir = PC15; //Direction pin  for DRV8825 driver
+        pinStepperStep = PC14; //Step pin for DRV8825 driver
+        pinStepperEnable = PC13; //Enable pin for DRV8825
+        pinDisplayReset = PB2; // OLED reset pin
+        pinFan = PB1; //Pin for the fan output
+        pinFuelPump = PB11; //Fuel pump output
+        pinTachOut = PB10; //Tacho output pin
+        //external interrupt enabled pins
+        pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
+        pinTrigger = PA10; //The CAS pin
+        pinTrigger2 = PA13; //The Cam Sensor pin
       #endif
       break;
 
@@ -688,6 +699,12 @@ void setPinMapping(byte boardID)
   inj4_pin_mask = digitalPinToBitMask(pinInjector4);
   inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
   inj5_pin_mask = digitalPinToBitMask(pinInjector5);
+  inj6_pin_port = portOutputRegister(digitalPinToPort(pinInjector6));
+  inj6_pin_mask = digitalPinToBitMask(pinInjector6);
+  inj7_pin_port = portOutputRegister(digitalPinToPort(pinInjector7));
+  inj7_pin_mask = digitalPinToBitMask(pinInjector7);
+  inj8_pin_port = portOutputRegister(digitalPinToPort(pinInjector8));
+  inj8_pin_mask = digitalPinToBitMask(pinInjector8);
 
   ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
   ign1_pin_mask = digitalPinToBitMask(pinCoil1);
@@ -699,13 +716,18 @@ void setPinMapping(byte boardID)
   ign4_pin_mask = digitalPinToBitMask(pinCoil4);
   ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
   ign5_pin_mask = digitalPinToBitMask(pinCoil5);
+  ign6_pin_port = portOutputRegister(digitalPinToPort(pinCoil6));
+  ign6_pin_mask = digitalPinToBitMask(pinCoil6);
+  ign7_pin_port = portOutputRegister(digitalPinToPort(pinCoil7));
+  ign7_pin_mask = digitalPinToBitMask(pinCoil7);
+  ign8_pin_port = portOutputRegister(digitalPinToPort(pinCoil8));
+  ign8_pin_mask = digitalPinToBitMask(pinCoil8);
 
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
   pump_pin_port = portOutputRegister(digitalPinToPort(pinFuelPump));
   pump_pin_mask = digitalPinToBitMask(pinFuelPump);
 
-  //And for inputs
   //And for inputs
   #if defined(CORE_STM32)
     #ifndef ARDUINO_ARCH_STM32 //libmaple core aka STM32DUINO

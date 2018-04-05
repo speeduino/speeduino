@@ -40,16 +40,19 @@ void initialiseTimers()
    lowResTimer.begin(oneMSInterval, 1000);
 
 #elif defined(CORE_STM32)
+#if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
+  Timer8.setPeriod(1000);  // Set up period
+  Timer8.setMode(1, TIMER_OUTPUT_COMPARE);
+  Timer8.attachInterrupt(1, oneMSInterval);
+  Timer8.resume(); //Start Timer
+#else
   Timer4.setPeriod(1000);  // Set up period
-  // Set up an interrupt
   Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
   Timer4.attachInterrupt(1, oneMSInterval);
   Timer4.resume(); //Start Timer
 #endif
-
-  #if defined(CORE_STM32)
-    pinMode(LED_BUILTIN, OUTPUT);
-  #endif
+  pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
+#endif
 
   lastRPM_100ms = 0;
   loop33ms = 0;
@@ -63,11 +66,12 @@ void initialiseTimers()
 //Timer2 Overflow Interrupt Vector, called when the timer overflows.
 //Executes every ~1ms.
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER2_OVF_vect, ISR_NOBLOCK)
+ISR(TIMER2_OVF_vect)
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
 void oneMSInterval() //Most ARM chips can simply call a function
 #endif
 {
+  ms_counter++;
 
   //Increment Loop Counters
   loop33ms++;
@@ -111,9 +115,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
   {
     loop100ms = 0; //Reset counter
     BIT_SET(TIMER_mask, BIT_TIMER_10HZ);
-    #if defined(CORE_STM32) //debug purpose, only visal for running code
-      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    #endif
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
@@ -125,6 +126,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
   {
     loop250ms = 0; //Reset Counter
     BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
+    #if defined(CORE_STM32) //debug purpose, only visal for running code
+      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+    #endif
 
     #if defined(CORE_AVR)
       //Reset watchdog timer (Not active currently)
@@ -143,7 +147,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     BIT_SET(TIMER_mask, BIT_TIMER_1HZ);
 
     dwellLimit_uS = (1000 * configPage4.dwellLimit); //Update uS value incase setting has changed
-    currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 100);
+    currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10);
 
     //**************************************************************************************************************************************************
     //This updates the runSecs variable
@@ -223,3 +227,21 @@ void oneMSInterval() //Most ARM chips can simply call a function
     TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
 #endif
 }
+
+#if defined(TIMER5_MICROS)
+//This is used by the fast version of micros(). We just need to increment the timer overflow counter
+ISR(TIMER5_OVF_vect)
+{
+  ++timer5_overflow_count;
+}
+
+static inline unsigned long micros_safe()
+{
+  unsigned long newMicros;
+  noInterrupts();
+  newMicros = micros();
+  interrupts();
+
+  return newMicros;
+}
+#endif
