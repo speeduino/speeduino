@@ -203,6 +203,7 @@ void initialiseIdle()
 void idleControl()
 {
   if(idleInitComplete != configPage6.iacAlgorithm) { initialiseIdle(); }
+  if(currentStatus.RPM > 0) { enableIdle(); }
 
   switch(configPage6.iacAlgorithm)
   {
@@ -224,6 +225,7 @@ void idleControl()
       {
         //Currently cranking. Use the cranking table
         currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        if( currentStatus.idleDuty == 0 ) { disableIdle(); break; }
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         idleOn = true;
       }
@@ -232,7 +234,6 @@ void idleControl()
         //Standard running
         currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         if( currentStatus.idleDuty == 0 ) { disableIdle(); break; }
-        enableIdle();
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         currentStatus.idleLoad = currentStatus.idleDuty >> 1;
         idleOn = true;
@@ -247,7 +248,6 @@ void idleControl()
         idlePID.Compute();
         idle_pwm_target_value = idle_pid_target_value;
         if( idle_pwm_target_value == 0 ) { disableIdle(); }
-        else{ enableIdle(); } //Turn on the C compare unit (ie turn on the interrupt)
         currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count) >> 1;
         //idle_pwm_target_value = 104;
 
@@ -459,6 +459,4 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
     idle_pwm_cur_value = idle_pwm_target_value;
     idle_pwm_state = true;
   }
-
 }
-
