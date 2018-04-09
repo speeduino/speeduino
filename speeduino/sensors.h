@@ -41,7 +41,7 @@ static inline void instanteneousMAPReading() __attribute__((always_inline));
 static inline void readMAP() __attribute__((always_inline));
 void readTPS();
 void flexPulse();
-
+void readO2_2();
 
 #if defined(ANALOG_ISR)
 //Analog ISR interrupt routine
