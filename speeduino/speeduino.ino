@@ -873,6 +873,7 @@ void loop()
        readCLT();
        readIAT();
        readO2();
+       readO2_2();
        readBat();
 
        if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
