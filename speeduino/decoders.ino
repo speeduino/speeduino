@@ -1536,7 +1536,7 @@ void triggerPri_Miata9905()
     toothLastToothTime = curTime;
 
     //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage4.ignCranklock)
-    if ( (currentStatus.RPM < (currentStatus.crankRPM + 50)) && configPage4.ignCranklock)
+    if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && configPage4.ignCranklock) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
     {
       if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) { endCoil1Charge(); endCoil3Charge(); }
       else if( (toothCurrentCount == 3) || (toothCurrentCount == 7) ) { endCoil2Charge(); endCoil4Charge(); }
