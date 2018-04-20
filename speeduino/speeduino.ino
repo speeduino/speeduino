@@ -353,7 +353,7 @@ void setup()
 
   //Initial values for loop times
   previousLoopTime = 0;
-  currentLoopTime = micros();
+  currentLoopTime = micros_safe();
 
   mainLoopCount = 0;
 
@@ -589,6 +589,26 @@ void setup()
         channel3InjDegrees = channel3InjDegrees / (currentStatus.nSquirts / 2);
       }
 
+#if INJ_CHANNELS >= 6
+      if (configPage2.injLayout == INJ_SEQUENTIAL)
+      {
+        channel1InjDegrees = 0;
+        channel2InjDegrees = 120;
+        channel3InjDegrees = 240;
+        channel4InjDegrees = 360;
+        channel5InjDegrees = 480;
+        channel6InjDegrees = 600;
+
+        channel4InjEnabled = true;
+        channel5InjEnabled = true;
+        channel6InjEnabled = true;
+
+        CRANK_ANGLE_MAX_INJ = 720;
+        currentStatus.nSquirts = 1;
+        req_fuel_uS = req_fuel_uS * 2;
+      }
+#endif
+
       if (!configPage2.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
@@ -610,6 +630,30 @@ void setup()
         channel3InjDegrees = channel3InjDegrees / (currentStatus.nSquirts / 2);
         channel4InjDegrees = channel4InjDegrees / (currentStatus.nSquirts / 2);
       }
+
+#if INJ_CHANNELS >= 8
+      if (configPage2.injLayout == INJ_SEQUENTIAL)
+      {
+        channel1InjDegrees = 0;
+        channel2InjDegrees = 90;
+        channel3InjDegrees = 180;
+        channel4InjDegrees = 270;
+        channel5InjDegrees = 360;
+        channel6InjDegrees = 450;
+        channel7InjDegrees = 540;
+        channel8InjDegrees = 630;
+
+        channel5InjEnabled = true;
+        channel6InjEnabled = true;
+        channel7InjEnabled = true;
+        channel8InjEnabled = true;
+
+        CRANK_ANGLE_MAX_INJ = 720;
+        currentStatus.nSquirts = 1;
+        req_fuel_uS = req_fuel_uS * 2;
+      }
+#endif
+
       maxIgnOutputs = 4;
 
       if (!configPage2.injTiming)  { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
@@ -1100,7 +1144,7 @@ void loop()
         }
         else
         {
-          interruptSafe(long elapsedTime = (micros() - toothOneTime);) //micros() is no longer interrupt safe
+          long elapsedTime = (micros_safe() - toothOneTime); //micros() is no longer interrupt safe
           long rpm_adjust = (elapsedTime * (long)currentStatus.rpmDOT) / 1000000; //Take into account any likely accleration that has occurred since the last full revolution completed
           timePerDegree = ldiv( 166666L, currentStatus.RPM + rpm_adjust).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
         }
