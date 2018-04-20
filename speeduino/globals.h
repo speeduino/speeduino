@@ -271,6 +271,7 @@ int ignition1EndAngle = 0;
 int ignition2EndAngle = 0;
 int ignition3EndAngle = 0;
 int ignition4EndAngle = 0;
+int ignition5EndAngle = 0;
 
 //This is used across multiple files
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
@@ -359,6 +360,7 @@ struct statuses {
   uint16_t crankRPM = 400; //The actual cranking RPM limit. Saves us multiplying it everytime from the config page
   volatile byte status3;
   int16_t flexBoostCorrection; //Amount of boost added based on flex
+  byte nSquirts;
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath

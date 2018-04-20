@@ -40,6 +40,9 @@ uint16_t freeRam ()
 #endif
 }
 
+//This function performs a translation between the pin list that appears in TS and the actual pin numbers
+//For the digital IO, this will simply return the same number as the rawPin value as those are mapped directly.
+//For analog pins, it will translate them into the currect internal pin number
 byte pinTranslate(byte rawPin)
 {
   byte outputPin = rawPin;
@@ -260,7 +263,7 @@ void setPinMapping(byte boardID)
         pinCLT = A3; //CLT sensor pin
         pinO2 = A4; //O2 Sensor pin
         pinBat = A5; //Battery reference voltage pin
-        pinBaro = A10;        
+        pinBaro = A10;
         pinIdle1 = PB8; //Single wire idle control
         pinIdle2 = PB9; //2 wire idle control
         pinBoost = PE0; //Boost control
@@ -518,7 +521,7 @@ void setPinMapping(byte boardID)
       pinSpareLOut3 = 36; //low current output spare3 - ONLY WITH DB
       pinResetControl = 26; //Reset control output
       break;
-      
+
     #if defined(CORE_TEENSY)
     case 50:
       //Pin mappings as per the teensy rev A shield
