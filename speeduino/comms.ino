@@ -490,6 +490,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[82] = lowByte(currentStatus.flexBoostCorrection);
   fullStatus[83] = highByte(currentStatus.flexBoostCorrection);
 
+  fullStatus[84] = currentStatus.nChannels;
+
   for(byte x=0; x<packetLength; x++)
   {
     if (portNum == 0) { Serial.write(fullStatus[offset+x]); }

@@ -114,12 +114,13 @@
 #define BIT_TIMER_30HZ            4
 
 #define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
-#define BIT_STATUS3_UNUSED2       1
-#define BIT_STATUS3_UNUSED3       2
-#define BIT_STATUS3_UNUSED4       3
-#define BIT_STATUS3_UNUSED5       4
-#define BIT_STATUS3_UNUSED6       5
-#define BIT_STATUS3_UNUSED7       6
+#define BIT_STATUS3_UNUSED1       1
+#define BIT_STATUS3_UNUSED2       2
+#define BIT_STATUS3_UNUSED3       3
+#define BIT_STATUS3_UNUSED4       4
+#define BIT_STATUS3_NSQUIRTS1     5
+#define BIT_STATUS3_NSQUIRTS2     6
+#define BIT_STATUS3_NSQUIRTS3     7
 
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
@@ -361,6 +362,7 @@ struct statuses {
   volatile byte status3;
   int16_t flexBoostCorrection; //Amount of boost added based on flex
   byte nSquirts;
+  byte nChannels; //Number of fuel and ignition channels
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
