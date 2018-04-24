@@ -67,6 +67,7 @@
 //Define the load algorithm
 #define LOAD_SOURCE_MAP         0
 #define LOAD_SOURCE_TPS         1
+#define LOAD_SOURCE_IMAPEMAP    2
 
 //Define bit positions within engine virable
 #define BIT_ENGINE_RUN      0   // Engine running
@@ -294,6 +295,8 @@ struct statuses {
   int mapADC;
   int baroADC;
   long MAP; //Has to be a long for PID calcs (Boost control)
+  int16_t EMAP;
+  int16_t EMAPADC;
   byte baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
   byte TPS; //The current TPS reading (0% - 100%)
   byte TPSlast; //The previous TPS reading
@@ -363,6 +366,7 @@ struct statuses {
   int16_t flexBoostCorrection; //Amount of boost added based on flex
   byte nSquirts;
   byte nChannels; //Number of fuel and ignition channels
+  int16_t fuelLoad;
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -465,7 +469,9 @@ struct config2 {
   int8_t baroMin; //Must be signed
   uint16_t baroMax;
 
-  byte unused1_64[61];
+  int8_t EMAPMin; //Must be signed
+  uint16_t EMAPMax;
+  byte unused1_70[58];
 
 #if defined(CORE_AVR)
   };
@@ -566,7 +572,7 @@ struct config6 {
   byte boostMode : 1; //Simple of full boost contrl
   byte boostPin : 6;
   byte VVTasOnOff : 1; //Whether or not to use the VVT table as an on/off map
-  byte unused6_14 : 1;
+  byte useEMAP : 1;
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
   byte airDenBins[9];
@@ -696,7 +702,7 @@ struct config10 {
   byte rotaryType : 2;
   byte stagingEnabled : 1;
   byte stagingMode : 1;
-  byte unused11_8e : 4;
+  byte EMAPPin : 4;
 
   byte rotarySplitValues[8];
   byte rotarySplitBins[8];
@@ -744,6 +750,7 @@ byte pinTrigger2; //The Cam Sensor pin
 byte pinTrigger3;	//the 2nd cam sensor pin
 byte pinTPS;//TPS input pin
 byte pinMAP; //MAP sensor pin
+byte pinEMAP; //EMAP sensor pin
 byte pinMAP2; //2nd MAP sensor (Currently unused)
 byte pinIAT; //IAT sensor pin
 byte pinCLT; //CLS sensor pin

@@ -310,10 +310,7 @@ static inline byte correctionAFRClosedLoop()
     currentStatus.afrTarget = currentStatus.O2; //Catch all incase the below doesn't run. This prevents the Include AFR option from doing crazy things if the AFR target conditions aren't met. This value is changed again below if all conditions are met.
 
     //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
-    byte yValue;
-    if (configPage2.algorithm == 0) { yValue = currentStatus.MAP; }
-    else  { yValue = currentStatus.TPS; }
-    currentStatus.afrTarget = get3DTableValue(&afrTable, yValue, currentStatus.RPM); //Perform the target lookup
+    currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform the target lookup
 
     //Check all other requirements for closed loop adjustments
     if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) )

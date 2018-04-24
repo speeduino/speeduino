@@ -103,11 +103,24 @@ static inline void readMAP()
           {
             currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC);
             MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
-            //Old method (No filter)
-            //MAPrunningValue = MAPrunningValue + (unsigned long)tempReading;
             MAPcount++;
           }
           else { mapErrorCount += 1; }
+
+          //Repeat for EMAP if it's enabled
+          if(configPage6.useEMAP == true)
+          {
+            tempReading = analogRead(pinEMAP);
+            tempReading = analogRead(pinEMAP);
+
+            //Error check
+            if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
+            {
+              currentStatus.EMAPADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.EMAPADC);
+              EMAPrunningValue += currentStatus.EMAPADC; //Add the current reading onto the total
+            }
+            else { mapErrorCount += 1; }
+          }
         }
         else
         {
@@ -117,12 +130,20 @@ static inline void readMAP()
           {
             currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-            //currentStatus.MAP = fastMap1023toX(currentStatus.mapADC, configPage2.mapMax);
             if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
+
+            //If EMAP is enabled, the process is identical to the above
+            if(configPage6.useEMAP == true)
+            {
+              currentStatus.EMAPADC = ldiv(EMAPrunningValue, MAPcount).quot; //Note that the MAP count can be reused here as it will always be the same count.
+              currentStatus.EMAP = fastMap10Bit(currentStatus.EMAPADC, configPage2.EMAPMin, configPage2.EMAPMax);
+              if(currentStatus.EMAP < 0) { currentStatus.EMAP = 0; } //Sanity check
+            }
           }
           else { instanteneousMAPReading(); }
           MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
           MAPrunningValue = 0;
+          EMAPrunningValue = 0; //Can reset this even if EMAP not used
           MAPcount = 0;
         }
       }

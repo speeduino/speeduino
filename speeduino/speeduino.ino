@@ -1871,13 +1871,20 @@ static inline byte getVE()
   if (configPage2.algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
   {
     //Speed Density
-    tempVE = get3DTableValue(&fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
+    currentStatus.fuelLoad = currentStatus.MAP;
   }
-  else
+  else if (configPage2.algorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
-    tempVE = get3DTableValue(&fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
+    currentStatus.fuelLoad = currentStatus.TPS;
   }
+  else if (configPage2.algorithm == LOAD_SOURCE_IMAPEMAP)
+  {
+    //IMAP / EMAP
+    currentStatus.fuelLoad = (currentStatus.MAP * 100) / currentStatus.EMAP;
+  }
+  else { currentStatus.fuelLoad = currentStatus.MAP; } //Fallback position
+  tempVE = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
 
   return tempVE;
 }
