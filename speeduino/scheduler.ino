@@ -1347,30 +1347,38 @@ void ftm0_isr(void)
 }
 void ftm3_isr(void)
 {
+  bool interrupt1 = (FTM3_C0SC & FTM_CSC_CHF);
+  bool interrupt2 = (FTM3_C1SC & FTM_CSC_CHF);
+  bool interrupt3 = (FTM3_C2SC & FTM_CSC_CHF);
+  bool interrupt4 = (FTM3_C3SC & FTM_CSC_CHF);
+  bool interrupt5 = (FTM3_C4SC & FTM_CSC_CHF);
+  bool interrupt6 = (FTM3_C5SC & FTM_CSC_CHF);
+  bool interrupt7 = (FTM3_C6SC & FTM_CSC_CHF);
+  bool interrupt8 = (FTM3_C7SC & FTM_CSC_CHF);
 
 #if (INJ_CHANNELS >= 5)
-  if(bool(FTM3_C0SC & FTM_CSC_CHF)) { FTM3_C0SC &= ~FTM_CSC_CHF; fuelSchedule5Interrupt(); }
+  if(interrupt1) { FTM3_C0SC &= ~FTM_CSC_CHF; fuelSchedule5Interrupt(); }
 #endif
 #if (INJ_CHANNELS >= 6)
-  else if(bool(FTM3_C1SC & FTM_CSC_CHF)) { FTM3_C1SC &= ~FTM_CSC_CHF; fuelSchedule6Interrupt(); }
+  else if(interrupt2) { FTM3_C1SC &= ~FTM_CSC_CHF; fuelSchedule6Interrupt(); }
 #endif
 #if (INJ_CHANNELS >= 7)
-  else if(bool(FTM3_C2SC & FTM_CSC_CHF)) { FTM3_C2SC &= ~FTM_CSC_CHF; fuelSchedule7Interrupt(); }
+  else if(interrupt3) { FTM3_C2SC &= ~FTM_CSC_CHF; fuelSchedule7Interrupt(); }
 #endif
 #if (INJ_CHANNELS >= 8)
-  else if(bool(FTM3_C3SC & FTM_CSC_CHF)) { FTM3_C3SC &= ~FTM_CSC_CHF; fuelSchedule8Interrupt(); }
+  else if(interrupt4) { FTM3_C3SC &= ~FTM_CSC_CHF; fuelSchedule8Interrupt(); }
 #endif
 #if (IGN_CHANNELS >= 5)
-  if(bool(FTM3_C4SC & FTM_CSC_CHF)) { FTM3_C4SC &= ~FTM_CSC_CHF; ignitionSchedule5Interrupt(); }
+  if(interrupt5) { FTM3_C4SC &= ~FTM_CSC_CHF; ignitionSchedule5Interrupt(); }
 #endif
 #if (IGN_CHANNELS >= 6)
-  else if(bool(FTM3_C5SC & FTM_CSC_CHF)) { FTM3_C5SC &= ~FTM_CSC_CHF; ignitionSchedule6Interrupt(); }
+  else if(interrupt6) { FTM3_C5SC &= ~FTM_CSC_CHF; ignitionSchedule6Interrupt(); }
 #endif
 #if (IGN_CHANNELS >= 7)
-  else if(bool(FTM3_C6SC & FTM_CSC_CHF)) { FTM3_C6SC &= ~FTM_CSC_CHF; ignitionSchedule7Interrupt(); }
+  else if(interrupt7) { FTM3_C6SC &= ~FTM_CSC_CHF; ignitionSchedule7Interrupt(); }
 #endif
 #if (IGN_CHANNELS >= 8)
-  else if(bool(FTM3_C7SC & FTM_CSC_CHF)) { FTM3_C7SC &= ~FTM_CSC_CHF; ignitionSchedule8Interrupt(); }
+  else if(interrupt8) { FTM3_C7SC &= ~FTM_CSC_CHF; ignitionSchedule8Interrupt(); }
 #endif
 
 }
