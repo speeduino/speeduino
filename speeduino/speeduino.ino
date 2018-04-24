@@ -1044,21 +1044,10 @@ void loop()
       //Calculate an injector pulsewidth from the VE
       currentStatus.corrections = correctionsFuel();
       lastAdvance = currentStatus.advance; //Store the previous advance value
-      if (configPage2.algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
-      {
-        //Speed Density
-        currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-        currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.MAP, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
-      }
-      else
-      {
-        //Alpha-N
-        currentStatus.VE = get3DTableValue(&fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
-        currentStatus.advance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
-      }
 
+      currentStatus.VE = getVE();
+      currentStatus.advance = getAdvance();
       currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
-      currentStatus.advance = correctionsIgn(currentStatus.advance);
 
       int injector1StartAngle = 0;
       int injector2StartAngle = 0;
@@ -1874,6 +1863,41 @@ static inline unsigned int PW(int REQ_FUEL, byte VE, long MAP, int corrections, 
     }
   }
   return (unsigned int)(intermediate);
+}
+
+static inline byte getVE()
+{
+  byte tempVE = 100;
+  if (configPage2.algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
+  {
+    //Speed Density
+    tempVE = get3DTableValue(&fuelTable, currentStatus.MAP, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
+  }
+  else
+  {
+    //Alpha-N
+    tempVE = get3DTableValue(&fuelTable, currentStatus.TPS, currentStatus.RPM); //Perform lookup into fuel map for RPM vs TPS value
+  }
+
+  return tempVE;
+}
+
+static inline byte getAdvance()
+{
+  byte tempAdvance = 0;
+  if (configPage2.algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
+  {
+    //Speed Density
+    tempAdvance = get3DTableValue(&ignitionTable, currentStatus.MAP, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
+  }
+  else
+  {
+    //Alpha-N
+    tempAdvance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
+  }
+  tempAdvance = correctionsIgn(tempAdvance);
+
+  return tempAdvance;
 }
 
 #endif //Unit testing scope guard

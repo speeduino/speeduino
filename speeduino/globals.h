@@ -409,7 +409,7 @@ struct config2 {
   byte multiplyMAP : 1;
   byte includeAFR : 1;
   byte hardCutType : 1;
-  byte unused26 : 3;
+  byte ignAlgorithm : 3;
   byte indInjAng : 1;
   byte injOpen; //Injector opening time (ms * 10)
   uint16_t inj1Ang;
@@ -424,8 +424,8 @@ struct config2 {
   byte nCylinders : 4; //Number of cylinders
 
   //config2 in ini
-  byte cltType1 : 2;
-  byte matType1 : 2;
+  byte fuelAlgorithm : 3;
+  byte unused2_37d : 1;
   byte nInjectors : 4; //Number of injectors
 
 
