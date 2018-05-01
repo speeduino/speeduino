@@ -386,7 +386,7 @@ int8_t correctionsIgn(int8_t base_advance)
 
 static inline int8_t correctionFixedTiming(int8_t advance)
 {
-  byte ignFixValue = advance;
+  int8_t ignFixValue = advance;
   if (configPage4.FixAng != 0) { ignFixValue = configPage4.FixAng; } //Check whether the user has set a fixed timing angle
   return ignFixValue;
 }

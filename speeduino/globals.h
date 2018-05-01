@@ -484,7 +484,7 @@ struct config2 {
 struct config4 {
 
   int16_t triggerAngle;
-  byte FixAng;
+  int8_t FixAng; //Negative values allowed
   byte CrankAng;
   byte TrigAngMul; //Multiplier for non evenly divisible tooth counts.
 
