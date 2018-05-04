@@ -205,6 +205,14 @@ void idleControl()
   if(idleInitComplete != configPage6.iacAlgorithm) { initialiseIdle(); }
   if(currentStatus.RPM > 0) { enableIdle(); }
 
+  //Check whether the idleUp is active
+  if(configPage2.idleUpEnabled == true)
+  {
+    if(configPage2.idleUpPolarity == 0) { currentStatus.idleUpActive = !digitalRead(pinIdleUp); } //Normal mode (ground switched)
+    else { currentStatus.idleUpActive = digitalRead(pinIdleUp); } //Inverted mode (5v activates idleUp)
+  }
+  else { currentStatus.idleUpActive = false; }
+
   switch(configPage6.iacAlgorithm)
   {
     case IAC_ALGORITHM_NONE:       //Case 0 is no idle control ('None')
@@ -225,6 +233,7 @@ void idleControl()
       {
         //Currently cranking. Use the cranking table
         currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
         if( currentStatus.idleDuty == 0 ) { disableIdle(); break; }
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         idleOn = true;
@@ -233,6 +242,7 @@ void idleControl()
       {
         //Standard running
         currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
         if( currentStatus.idleDuty == 0 ) { disableIdle(); break; }
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         currentStatus.idleLoad = currentStatus.idleDuty >> 1;
@@ -249,6 +259,7 @@ void idleControl()
         idle_pwm_target_value = idle_pid_target_value;
         if( idle_pwm_target_value == 0 ) { disableIdle(); }
         currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count) >> 1;
+        if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
         //idle_pwm_target_value = 104;
 
         idleCounter++;
@@ -263,6 +274,7 @@ void idleControl()
         {
           //Currently cranking. Use the cranking table
           idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+          if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
           doStep();
         }
         else if( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < iacStepTable.axisX[IDLE_TABLE_SIZE-1])
@@ -272,6 +284,7 @@ void idleControl()
           {
             //Only do a lookup of the required value around 4 times per second. Any more than this can create too much jitter and require a hyster value that is too high
             idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+            if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
             iacStepTime = configPage6.iacStepTime * 1000;
           }
           doStep();
@@ -292,6 +305,7 @@ void idleControl()
         }
 
         idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
+        if(currentStatus.idleUpActive == true) { idle_pid_target_value += configPage2.idleUpAdder; } //Add Idle Up amount if active
         idlePID.Compute();
         idleStepper.targetIdleStep = idle_pid_target_value;
 

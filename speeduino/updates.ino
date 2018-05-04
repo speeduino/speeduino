@@ -99,7 +99,7 @@ void doUpdates()
     configPage10.flexBoostAdj[0]  = (int8_t)configPage2.unused2_1;
 
     configPage10.flexFuelBins[0] = 0;
-    configPage10.flexFuelAdj[0]  = configPage2.unused2_57;
+    configPage10.flexFuelAdj[0]  = configPage2.idleUpPin;
 
     configPage10.flexAdvBins[0] = 0;
     configPage10.flexAdvAdj[0]  = configPage2.unused2_59;
@@ -114,7 +114,7 @@ void doUpdates()
       int16_t boostAdder = (((configPage2.unused2_2 - (int8_t)configPage2.unused2_1) * pct) / 100) + (int8_t)configPage2.unused2_1;
       configPage10.flexBoostAdj[x] = boostAdder;
 
-      uint8_t fuelAdder = (((configPage2.unused2_58 - configPage2.unused2_57) * pct) / 100) + configPage2.unused2_57;
+      uint8_t fuelAdder = (((configPage2.idleUpAdder - configPage2.idleUpPin) * pct) / 100) + configPage2.idleUpPin;
       configPage10.flexFuelAdj[x] = fuelAdder;
 
       uint8_t advanceAdder = (((configPage2.unused2_60 - configPage2.unused2_59) * pct) / 100) + configPage2.unused2_59;

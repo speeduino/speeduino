@@ -661,6 +661,9 @@ void setPinMapping(byte boardID)
   if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage6.baroPin + A0; }
   if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_NR_GPIO_PINS) ) { pinEMAP = configPage10.EMAPPin + A0; }
 
+  //Currently there's no default pin for Idle Up
+  pinIdleUp = pinTranslate(configPage2.idleUpPin);
+
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
      because the control pin will go low as soon as the pinMode is set to OUTPUT. */
@@ -760,12 +763,10 @@ void setPinMapping(byte boardID)
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
   pinMode(pinFlex, INPUT_PULLUP); //Standard GM / Continental flex sensor requires pullup
-  if (configPage6.lnchPullRes == true) {
-    pinMode(pinLaunch, INPUT_PULLUP);
-  }
-  else {
-    pinMode(pinLaunch, INPUT);  //If Launch Pull Resistor is not set make input float.
-  }
+  if (configPage6.lnchPullRes == true) { pinMode(pinLaunch, INPUT_PULLUP); }
+  else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
+  if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
+  else { pinMode(pinIdleUp, INPUT); } //inverted setting
 
   //These must come after the above pinMode statements
   triggerPri_pin_port = portInputRegister(digitalPinToPort(pinTrigger));

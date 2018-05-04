@@ -330,6 +330,7 @@ struct statuses {
   byte flexIgnCorrection; //Amount of additional advance being applied based on flex
   byte afrTarget;
   byte idleDuty;
+  bool idleUpActive;
   bool fanOn; //Whether or not the fan is turned on
   volatile byte ethanolPct; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85.
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
@@ -457,8 +458,12 @@ struct config2 {
   uint16_t oddfire2; //The ATDC angle of channel 2 for oddfire
   uint16_t oddfire3; //The ATDC angle of channel 3 for oddfire
   uint16_t oddfire4; //The ATDC angle of channel 4 for oddfire
-  byte unused2_57;
-  byte unused2_58;
+
+  byte idleUpPin : 6;
+  byte idleUpPolarity : 1;
+  byte idleUpEnabled : 1;
+
+  byte idleUpAdder;
   byte unused2_59;
   byte unused2_60;
 
@@ -762,6 +767,7 @@ byte pinTachOut; //Tacho output
 byte pinFuelPump; //Fuel pump on/off
 byte pinIdle1; //Single wire idle control
 byte pinIdle2; //2 wire idle control (Not currently used)
+byte pinIdleUp; //Input for triggering Idle Up
 byte pinSpareTemp1; // Future use only
 byte pinSpareTemp2; // Future use only
 byte pinSpareOut1; //Generic output
