@@ -8,7 +8,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    8
+  #define CURRENT_DATA_VERSION    9
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -120,6 +120,16 @@ void doUpdates()
       uint8_t advanceAdder = (((configPage2.unused2_60 - configPage2.unused2_59) * pct) / 100) + configPage2.unused2_59;
       configPage10.flexAdvAdj[x] = advanceAdder;
     }
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 8);
+  }
+
+  if (EEPROM.read(EEPROM_DATA_VERSION) == 8) 
+  {
+    //May 2018 adds separate load sources for fuel and ignition. Copy the existing load alogirthm into Both
+    configPage2.fuelAlgorithm = configPage2.unused2_38c;
+    configPage2.ignAlgorithm = configPage2.unused2_38c;
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 8);

@@ -491,6 +491,10 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[83] = highByte(currentStatus.flexBoostCorrection);
 
   fullStatus[84] = currentStatus.nChannels;
+  fullStatus[85] = lowByte(currentStatus.fuelLoad);
+  fullStatus[86] = highByte(currentStatus.fuelLoad);
+  fullStatus[87] = lowByte(currentStatus.ignLoad);
+  fullStatus[88] = highByte(currentStatus.ignLoad);
 
   for(byte x=0; x<packetLength; x++)
   {

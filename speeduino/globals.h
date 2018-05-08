@@ -368,6 +368,7 @@ struct statuses {
   byte nSquirts;
   byte nChannels; //Number of fuel and ignition channels
   int16_t fuelLoad;
+  int16_t ignLoad;
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -437,7 +438,7 @@ struct config2 {
   //config3 in ini
   byte engineType : 1;
   byte flexEnabled : 1;
-  byte algorithm : 1; //"Speed Density", "Alpha-N"
+  byte unused2_38c : 1; //"Speed Density", "Alpha-N"
   byte baroCorr : 1;
   byte injLayout : 2;
   byte perToothIgn : 1;

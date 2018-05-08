@@ -1367,7 +1367,7 @@ void loop()
             if(configPage10.rotaryType == ROTARY_IGN_FC)
             {
               byte splitDegrees = 0;
-              if (configPage2.algorithm == LOAD_SOURCE_MAP) { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.MAP/2); }
+              if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.MAP/2); }
               else { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.TPS/2); }
 
               //The trailing angles are set relative to the leading ones
@@ -1868,17 +1868,17 @@ static inline unsigned int PW(int REQ_FUEL, byte VE, long MAP, int corrections, 
 static inline byte getVE()
 {
   byte tempVE = 100;
-  if (configPage2.algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
+  if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
   {
     //Speed Density
     currentStatus.fuelLoad = currentStatus.MAP;
   }
-  else if (configPage2.algorithm == LOAD_SOURCE_TPS)
+  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
     currentStatus.fuelLoad = currentStatus.TPS;
   }
-  else if (configPage2.algorithm == LOAD_SOURCE_IMAPEMAP)
+  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
   {
     //IMAP / EMAP
     currentStatus.fuelLoad = (currentStatus.MAP * 100) / currentStatus.EMAP;
@@ -1892,16 +1892,18 @@ static inline byte getVE()
 static inline byte getAdvance()
 {
   byte tempAdvance = 0;
-  if (configPage2.algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
+  if (configPage2.ignAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
   {
     //Speed Density
-    tempAdvance = get3DTableValue(&ignitionTable, currentStatus.MAP, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
+    currentStatus.ignLoad = currentStatus.MAP;
   }
   else
   {
     //Alpha-N
-    tempAdvance = get3DTableValue(&ignitionTable, currentStatus.TPS, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
+    currentStatus.ignLoad = currentStatus.TPS;
+
   }
+  tempAdvance = get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
   tempAdvance = correctionsIgn(tempAdvance);
 
   return tempAdvance;
