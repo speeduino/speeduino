@@ -27,6 +27,7 @@ volatile byte flexCounter = 0;
 volatile int AnChannel[15];
 
 unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
+unsigned long EMAPrunningValue; //As above but for EMAP
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
 uint16_t MAPcurRev; //Tracks which revolution we're sampling on
 
@@ -40,6 +41,7 @@ uint16_t MAPcurRev; //Tracks which revolution we're sampling on
 static inline void instanteneousMAPReading() __attribute__((always_inline));
 static inline void readMAP() __attribute__((always_inline));
 void readTPS();
+void readO2_2();
 void flexPulse();
 
 

@@ -40,12 +40,41 @@ uint16_t freeRam ()
 #endif
 }
 
+//This function performs a translation between the pin list that appears in TS and the actual pin numbers
+//For the digital IO, this will simply return the same number as the rawPin value as those are mapped directly.
+//For analog pins, it will translate them into the currect internal pin number
 byte pinTranslate(byte rawPin)
 {
   byte outputPin = rawPin;
   if(rawPin > BOARD_DIGITAL_GPIO_PINS) { outputPin = A8 + (outputPin - BOARD_DIGITAL_GPIO_PINS - 1); }
 
   return outputPin;
+}
+
+void setResetControlPinState()
+{
+  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
+
+  /* Setup reset control initial state */
+  switch (resetControl)
+  {
+    case RESET_CONTROL_PREVENT_WHEN_RUNNING:
+      /* Set the reset control pin LOW and change it to HIGH later when we get sync. */
+      digitalWrite(pinResetControl, LOW);
+      BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
+      break;
+    case RESET_CONTROL_PREVENT_ALWAYS:
+      /* Set the reset control pin HIGH and never touch it again. */
+      digitalWrite(pinResetControl, HIGH);
+      BIT_SET(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
+      break;
+    case RESET_CONTROL_SERIAL_COMMAND:
+      /* Set the reset control pin HIGH. There currently isn't any practical difference
+         between this and PREVENT_ALWAYS but it doesn't hurt anything to have them separate. */
+      digitalWrite(pinResetControl, HIGH);
+      BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
+      break;
+  }
 }
 
 void setPinMapping(byte boardID)
@@ -80,6 +109,7 @@ void setPinMapping(byte boardID)
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
       pinFlex = 19; // Flex sensor (Must be external interrupt enabled)
+      pinResetControl = 43; //Reset control output
     #endif
       break;
     case 1:
@@ -112,6 +142,7 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinResetControl = 43; //Reset control output
       break;
     #endif
     case 2:
@@ -146,8 +177,9 @@ void setPinMapping(byte boardID)
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinStepperEnable = 26; //Enable pin for DRV8825
       pinFan = A13; //Pin for the fan output
-      pinLaunch = 12; //Can be overwritten below
+      pinLaunch = 51; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinResetControl = 50; //Reset control output
 
       #if defined(CORE_TEENSY)
         pinTrigger = 23;
@@ -194,14 +226,15 @@ void setPinMapping(byte boardID)
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinStepperEnable = 24; //Enable pin for DRV8825
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
-      pinLaunch = 12; //Can be overwritten below
+      pinLaunch = 51; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinResetControl = 43; //Reset control output
 
       #if defined(CORE_TEENSY)
         pinTrigger = 23;
-        pinTrigger2 = 35;
-        pinStepperDir = 33;
-        pinStepperStep = 34;
+        pinTrigger2 = 36;
+        pinStepperDir = 34;
+        pinStepperStep = 35;
         pinCoil1 = 31;
         pinTachOut = 28;
         pinFan = 27;
@@ -209,23 +242,32 @@ void setPinMapping(byte boardID)
         pinCoil3 = 30;
         pinO2 = A22;
       #elif defined(STM32F4)
+        //Black F407VE http://wiki.stm32duino.com/index.php?title=STM32F407
+        //PC8~PC12 SDio
+        //PA13~PA15 & PB4 SWD(debug) pins
+        //PB0 EEPROM CS pin
+        //PD5 & PD6 Serial2
         pinInjector1 = PE7; //Output pin injector 1 is on
         pinInjector2 = PE8; //Output pin injector 2 is on
         pinInjector3 = PE9; //Output pin injector 3 is on
         pinInjector4 = PE10; //Output pin injector 4 is on
         pinInjector5 = PE11; //Output pin injector 5 is on
-        pinCoil1 = PB10; //Pin for coil 1
-        pinCoil2 = PB11; //Pin for coil 2
-        pinCoil3 = PB12; //Pin for coil 3
-        pinCoil4 = PB13; //Pin for coil 4
-        pinCoil5 = PB14; //Pin for coil 5
+        pinCoil1 = PB5; //Pin for coil 1
+        pinCoil2 = PB6; //Pin for coil 2
+        pinCoil3 = PB7; //Pin for coil 3
+        pinCoil4 = PB8; //Pin for coil 4
+        pinCoil5 = PB9; //Pin for coil 5
         pinTPS = A0; //TPS input pin
         pinMAP = A1; //MAP sensor pin
         pinIAT = A2; //IAT sensor pin
-        pinCLT = A3; //CLS sensor pin
+        pinCLT = A3; //CLT sensor pin
         pinO2 = A4; //O2 Sensor pin
         pinBat = A5; //Battery reference voltage pin
-        pinBaro = A6;
+        pinBaro = A10;
+        pinIdle1 = PB8; //Single wire idle control
+        pinIdle2 = PB9; //2 wire idle control
+        pinBoost = PE0; //Boost control
+        pinVVT_1 = PE1; //Default VVT output
         pinStepperDir = PD8; //Direction pin  for DRV8825 driver
         pinStepperStep = PB15; //Step pin for DRV8825 driver
         pinStepperEnable = PD9; //Enable pin for DRV8825
@@ -234,43 +276,45 @@ void setPinMapping(byte boardID)
         pinFuelPump = PA6; //Fuel pump output
         pinTachOut = PA7; //Tacho output pin
         //external interrupt enabled pins
-        pinFlex = PC4; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = PC5; //The CAS pin
-        pinTrigger2 = PC6; //The Cam Sensor pin
-        pinBoost = PE0; //Boost control
-        pinVVT_1 = PE1; //Default VVT output
+        //external interrupts could be enalbed in any pin, except same port numbers (PA4,PE4)
+        pinFlex = PE2; // Flex sensor (Must be external interrupt enabled)
+        pinTrigger = PE3; //The CAS pin
+        pinTrigger2 = PE4; //The Cam Sensor pin
       #elif defined(CORE_STM32)
-        //http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/0.0.12/hardware/maple-mini.html#master-pin-map
-        //pins 23, 24 and 33 couldn't be used
-        pinInjector1 = 15; //Output pin injector 1 is on
-        pinInjector2 = 16; //Output pin injector 2 is on
-        pinInjector3 = 17; //Output pin injector 3 is on
-        pinInjector4 = 18; //Output pin injector 4 is on
-        pinCoil1 = 19; //Pin for coil 1
-        pinCoil2 = 20; //Pin for coil 2
-        pinCoil3 = 21; //Pin for coil 3
-        pinCoil4 = 26; //Pin for coil 4
-        pinCoil5 = 27; //Pin for coil 5
+        //blue pill http://wiki.stm32duino.com/index.php?title=Blue_Pill
+        //Maple mini http://wiki.stm32duino.com/index.php?title=Maple_Mini
+        //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
+        pinInjector1 = PB7; //Output pin injector 1 is on
+        pinInjector2 = PB6; //Output pin injector 2 is on
+        pinInjector3 = PB5; //Output pin injector 3 is on
+        pinInjector4 = PB4; //Output pin injector 4 is on
+        pinCoil1 = PB3; //Pin for coil 1
+        pinCoil2 = PA15; //Pin for coil 2
+        pinCoil3 = PA14; //Pin for coil 3
+        pinCoil4 = PA9; //Pin for coil 4
+        pinCoil5 = PA8; //Pin for coil 5
         pinTPS = A0; //TPS input pin
         pinMAP = A1; //MAP sensor pin
         pinIAT = A2; //IAT sensor pin
         pinCLT = A3; //CLS sensor pin
         pinO2 = A4; //O2 Sensor pin
         pinBat = A5; //Battery reference voltage pin
-        pinStepperDir = 12; //Direction pin  for DRV8825 driver
-        pinStepperStep = 13; //Step pin for DRV8825 driver
-        pinStepperEnable = 14; //Enable pin for DRV8825
-        pinDisplayReset = 2; // OLED reset pin
-        pinFan = 1; //Pin for the fan output
-        pinFuelPump = 0; //Fuel pump output
-        pinTachOut = 31; //Tacho output pin
-        //external interrupt enabled pins
-        pinFlex = 32; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = 25; //The CAS pin
-        pinTrigger2 = 22; //The Cam Sensor pin
         pinBaro = pinMAP;
-        pinBoost = 1; //Boost control
-        pinVVT_1 = 0; //Default VVT output
+        pinIdle1 = PB2; //Single wire idle control
+        pinIdle2 = PA2; //2 wire idle control
+        pinBoost = PA1; //Boost control
+        pinVVT_1 = PA0; //Default VVT output
+        pinStepperDir = PC15; //Direction pin  for DRV8825 driver
+        pinStepperStep = PC14; //Step pin for DRV8825 driver
+        pinStepperEnable = PC13; //Enable pin for DRV8825
+        pinDisplayReset = PB2; // OLED reset pin
+        pinFan = PB1; //Pin for the fan output
+        pinFuelPump = PB11; //Fuel pump output
+        pinTachOut = PB10; //Tacho output pin
+        //external interrupt enabled pins
+        pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
+        pinTrigger = PA10; //The CAS pin
+        pinTrigger2 = PA13; //The Cam Sensor pin
       #endif
       break;
 
@@ -305,6 +349,21 @@ void setPinMapping(byte boardID)
       pinFan = 35; //Pin for the fan output
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+      pinResetControl = 44; //Reset control output
+
+      #if defined(CORE_TEENSY)
+        pinTrigger = 23;
+        pinTrigger2 = 36;
+        pinStepperDir = 34;
+        pinStepperStep = 35;
+        pinCoil1 = 33; //Done
+        pinCoil2 = 24; //Done
+        pinCoil3 = 51; //Won't work (No mapping for pin 32)
+        pinCoil4 = 52; //Won't work (No mapping for pin 33)
+        pinFuelPump = 26; //Requires PVT4 adapter or above
+        pinFan = 50; //Won't work (No mapping for pin 35)
+        pinTachOut = 28; //Done
+      #endif
       break;
 
     case 10:
@@ -340,6 +399,8 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinTachOut = 49; //Tacho output pin
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinResetControl = 26; //Reset control output
+
     #endif
       break;
 
@@ -375,6 +436,7 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
       pinFuelPump = 4; //Fuel pump output
       pinTachOut = 49; //Tacho output pin
+      pinResetControl = 26; //Reset control output
     #endif
       break;
 
@@ -457,7 +519,100 @@ void setPinMapping(byte boardID)
       pinSpareLOut1 = 32; //low current output spare1 - ONLY WITH DB
       pinSpareLOut2 = 34; //low current output spare2 - ONLY WITH DB
       pinSpareLOut3 = 36; //low current output spare3 - ONLY WITH DB
+      pinResetControl = 26; //Reset control output
       break;
+
+    #if defined(CORE_TEENSY)
+    case 50:
+      //Pin mappings as per the teensy rev A shield
+      pinInjector1 = 2; //Output pin injector 1 is on
+      pinInjector2 = 10; //Output pin injector 2 is on
+      pinInjector3 = 6; //Output pin injector 3 is on - NOT USED
+      pinInjector4 = 9; //Output pin injector 4 is on - NOT USED
+      //pinInjector5 = 13; //Placeholder only - NOT USED
+      pinCoil1 = 29; //Pin for coil 1
+      pinCoil2 = 30; //Pin for coil 2
+      pinCoil3 = 31; //Pin for coil 3 - ONLY WITH DB2
+      pinCoil4 = 32; //Pin for coil 4 - ONLY WITH DB2
+      //pinCoil5 = 46; //Placeholder only - NOT USED
+      pinTrigger = 23; //The CAS pin
+      pinTrigger2 = 36; //The Cam Sensor pin
+      pinTPS = 16; //TPS input pin
+      pinMAP = 17; //MAP sensor pin
+      pinIAT = 14; //IAT sensor pin
+      pinCLT = 15; //CLT sensor pin
+      pinO2 = A22; //O2 sensor pin
+      pinO2_2 = A21; //O2 sensor pin (second sensor)
+      pinBat = 18; //Battery reference voltage pin
+      //pinBaro = A6; //Baro sensor pin - ONLY WITH DB
+      //pinSpareTemp1 = A7; //spare Analog input 1 - ONLY WITH DB
+      //pinDisplayReset = 48; // OLED reset pin - NOT USED
+      pinTachOut = 20; //Tacho output pin
+      pinIdle1 = 5; //Single wire idle control
+      //pinIdle2 = 47; //2 wire idle control - NOT USED
+      pinBoost = 11; //Boost control
+      //pinVVT_1 = 6; //Default VVT output
+      pinFuelPump = 38; //Fuel pump output
+      pinStepperDir = 34; //Direction pin for DRV8825 driver
+      pinStepperStep = 35; //Step pin for DRV8825 driver
+      pinStepperEnable = 33; //Enable pin for DRV8825 driver
+      pinLaunch = 26; //Can be overwritten below
+      //pinFlex = 20; // Flex sensor (Must be external interrupt enabled) - ONLY WITH DB
+      pinFan = 37; //Pin for the fan output - ONLY WITH DB
+      //pinSpareLOut1 = 32; //low current output spare1 - ONLY WITH DB
+      //pinSpareLOut2 = 34; //low current output spare2 - ONLY WITH DB
+      //pinSpareLOut3 = 36; //low current output spare3 - ONLY WITH DB
+      //pinResetControl = 26; //Reset control output
+      pinSpareHOut1 = 8; // high current output spare1
+      pinSpareHOut2 = 7; // high current output spare2
+      pinSpareLOut1 = 21; //low current output spare1
+      break;
+
+    case 51:
+      //Pin mappings as per the teensy revB board shield
+      pinInjector1 = 2; //Output pin injector 1 is on
+      pinInjector2 = 10; //Output pin injector 2 is on
+      pinInjector3 = 6; //Output pin injector 3 is on - NOT USED
+      pinInjector4 = 9; //Output pin injector 4 is on - NOT USED
+      //pinInjector5 = 13; //Placeholder only - NOT USED
+      pinCoil1 = 29; //Pin for coil 1
+      pinCoil2 = 30; //Pin for coil 2
+      pinCoil3 = 31; //Pin for coil 3 - ONLY WITH DB2
+      pinCoil4 = 32; //Pin for coil 4 - ONLY WITH DB2
+      //pinCoil5 = 46; //Placeholder only - NOT USED
+      pinTrigger = 23; //The CAS pin
+      pinTrigger2 = 36; //The Cam Sensor pin
+      pinTPS = 16; //TPS input pin
+      pinMAP = 17; //MAP sensor pin
+      pinIAT = 14; //IAT sensor pin
+      pinCLT = 15; //CLT sensor pin
+      pinO2 = A22; //O2 sensor pin
+      pinO2_2 = A21; //O2 sensor pin (second sensor)
+      pinBat = 18; //Battery reference voltage pin
+      //pinBaro = A6; //Baro sensor pin - ONLY WITH DB
+      //pinSpareTemp1 = A7; //spare Analog input 1 - ONLY WITH DB
+      //pinDisplayReset = 48; // OLED reset pin - NOT USED
+      pinTachOut = 20; //Tacho output pin
+      pinIdle1 = 5; //Single wire idle control
+      //pinIdle2 = 47; //2 wire idle control - NOT USED
+      pinBoost = 11; //Boost control
+      //pinVVT_1 = 6; //Default VVT output
+      pinFuelPump = 38; //Fuel pump output
+      pinStepperDir = 34; //Direction pin for DRV8825 driver
+      pinStepperStep = 35; //Step pin for DRV8825 driver
+      pinStepperEnable = 33; //Enable pin for DRV8825 driver
+      pinLaunch = 26; //Can be overwritten below
+      //pinFlex = 20; // Flex sensor (Must be external interrupt enabled) - ONLY WITH DB
+      pinFan = 37; //Pin for the fan output - ONLY WITH DB
+      //pinSpareLOut1 = 32; //low current output spare1 - ONLY WITH DB
+      //pinSpareLOut2 = 34; //low current output spare2 - ONLY WITH DB
+      //pinSpareLOut3 = 36; //low current output spare3 - ONLY WITH DB
+      //pinResetControl = 26; //Reset control output
+      pinSpareHOut1 = 8; // high current output spare1
+      pinSpareHOut2 = 7; // high current output spare2
+      pinSpareLOut1 = 21; //low current output spare1
+      break;
+    #endif
 
     default:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
@@ -489,20 +644,36 @@ void setPinMapping(byte boardID)
       pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
       pinBoost = 5;
       pinIdle1 = 6;
+      pinResetControl = 43; //Reset control output
     #endif
       break;
   }
 
   //Setup any devices that are using selectable pins
 
-  if ( (configPage3.launchPin != 0) && (configPage3.launchPin < BOARD_NR_GPIO_PINS) ) { pinLaunch = pinTranslate(configPage3.launchPin); }
-  if ( (configPage2.ignBypassPin != 0) && (configPage2.ignBypassPin < BOARD_NR_GPIO_PINS) ) { pinIgnBypass = pinTranslate(configPage2.ignBypassPin); }
-  if ( (configPage1.tachoPin != 0) && (configPage1.tachoPin < BOARD_NR_GPIO_PINS) ) { pinTachOut = pinTranslate(configPage1.tachoPin); }
-  if ( (configPage2.fuelPumpPin != 0) && (configPage2.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = pinTranslate(configPage2.fuelPumpPin); }
-  if ( (configPage3.fanPin != 0) && (configPage3.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = pinTranslate(configPage3.fanPin); }
-  if ( (configPage3.boostPin != 0) && (configPage3.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = pinTranslate(configPage3.boostPin); }
-  if ( (configPage3.vvtPin != 0) && (configPage3.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage3.vvtPin); }
-  if ( (configPage3.useExtBaro != 0) && (configPage3.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage3.baroPin + A0; }
+  if ( (configPage6.launchPin != 0) && (configPage6.launchPin < BOARD_NR_GPIO_PINS) ) { pinLaunch = pinTranslate(configPage6.launchPin); }
+  if ( (configPage4.ignBypassPin != 0) && (configPage4.ignBypassPin < BOARD_NR_GPIO_PINS) ) { pinIgnBypass = pinTranslate(configPage4.ignBypassPin); }
+  if ( (configPage2.tachoPin != 0) && (configPage2.tachoPin < BOARD_NR_GPIO_PINS) ) { pinTachOut = pinTranslate(configPage2.tachoPin); }
+  if ( (configPage4.fuelPumpPin != 0) && (configPage4.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = pinTranslate(configPage4.fuelPumpPin); }
+  if ( (configPage6.fanPin != 0) && (configPage6.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = pinTranslate(configPage6.fanPin); }
+  if ( (configPage6.boostPin != 0) && (configPage6.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = pinTranslate(configPage6.boostPin); }
+  if ( (configPage6.vvtPin != 0) && (configPage6.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage6.vvtPin); }
+  if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage6.baroPin + A0; }
+  if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_NR_GPIO_PINS) ) { pinEMAP = configPage10.EMAPPin + A0; }
+
+  //Currently there's no default pin for Idle Up
+  pinIdleUp = pinTranslate(configPage2.idleUpPin);
+
+  /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
+     If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
+     because the control pin will go low as soon as the pinMode is set to OUTPUT. */
+  if ( (configPage4.resetControl != 0) && (configPage4.resetControlPin < BOARD_NR_GPIO_PINS) )
+  {
+    resetControl = configPage4.resetControl;
+    pinResetControl = pinTranslate(configPage4.resetControlPin);
+    setResetControlPinState();
+    pinMode(pinResetControl, OUTPUT);
+  }
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinCoil1, OUTPUT);
@@ -526,12 +697,6 @@ void setPinMapping(byte boardID)
   pinMode(pinStepperEnable, OUTPUT);
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
-  pinMode(37, OUTPUT); // primary fan
-  pinMode(49, OUTPUT); // aux 
-  pinMode(45, OUTPUT); //ac control
-  pinMode(53, OUTPUT); // CEL control
-  pinMode(6, OUTPUT); // VVL Control
-  pinMode(2, OUTPUT); // temp gauge control for XRS
 
   inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
   inj1_pin_mask = digitalPinToBitMask(pinInjector1);
@@ -543,6 +708,12 @@ void setPinMapping(byte boardID)
   inj4_pin_mask = digitalPinToBitMask(pinInjector4);
   inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
   inj5_pin_mask = digitalPinToBitMask(pinInjector5);
+  inj6_pin_port = portOutputRegister(digitalPinToPort(pinInjector6));
+  inj6_pin_mask = digitalPinToBitMask(pinInjector6);
+  inj7_pin_port = portOutputRegister(digitalPinToPort(pinInjector7));
+  inj7_pin_mask = digitalPinToBitMask(pinInjector7);
+  inj8_pin_port = portOutputRegister(digitalPinToPort(pinInjector8));
+  inj8_pin_mask = digitalPinToBitMask(pinInjector8);
 
   ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
   ign1_pin_mask = digitalPinToBitMask(pinCoil1);
@@ -554,13 +725,18 @@ void setPinMapping(byte boardID)
   ign4_pin_mask = digitalPinToBitMask(pinCoil4);
   ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
   ign5_pin_mask = digitalPinToBitMask(pinCoil5);
+  ign6_pin_port = portOutputRegister(digitalPinToPort(pinCoil6));
+  ign6_pin_mask = digitalPinToBitMask(pinCoil6);
+  ign7_pin_port = portOutputRegister(digitalPinToPort(pinCoil7));
+  ign7_pin_mask = digitalPinToBitMask(pinCoil7);
+  ign8_pin_port = portOutputRegister(digitalPinToPort(pinCoil8));
+  ign8_pin_mask = digitalPinToBitMask(pinCoil8);
 
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
   pump_pin_port = portOutputRegister(digitalPinToPort(pinFuelPump));
   pump_pin_mask = digitalPinToBitMask(pinFuelPump);
 
-  //And for inputs
   //And for inputs
   #if defined(CORE_STM32)
     #ifndef ARDUINO_ARCH_STM32 //libmaple core aka STM32DUINO
@@ -581,20 +757,16 @@ void setPinMapping(byte boardID)
       pinMode(pinCLT, INPUT);
       pinMode(pinBat, INPUT);
       pinMode(pinBaro, INPUT);
-	  pinMode(26, INPUT); // pin input for AC
-      pinMode(28, INPUT_PULLUP); // pin input for AC pressure check, only usable when pulls to ground on overpressure
     #endif
   #endif
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
   pinMode(pinFlex, INPUT_PULLUP); //Standard GM / Continental flex sensor requires pullup
-  if (configPage3.lnchPullRes == true) {
-    pinMode(pinLaunch, INPUT_PULLUP);
-  }
-  else {
-    pinMode(pinLaunch, INPUT);  //If Launch Pull Resistor is not set make input float.
-  }
+  if (configPage6.lnchPullRes == true) { pinMode(pinLaunch, INPUT_PULLUP); }
+  else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
+  if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
+  else { pinMode(pinIdleUp, INPUT); } //inverted setting
 
   //These must come after the above pinMode statements
   triggerPri_pin_port = portInputRegister(digitalPinToPort(pinTrigger));
@@ -668,7 +840,7 @@ void initialiseTriggers()
   detachInterrupt(triggerInterrupt2);
 
   //Set the trigger function based on the decoder in the config
-  switch (configPage2.TrigPattern)
+  switch (configPage4.TrigPattern)
   {
     case 0:
       //Missing tooth decoder
@@ -679,9 +851,9 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_missingTooth;
       triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-      if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, RISING); }
+      if(configPage4.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, RISING); }
       else { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, FALLING); }
       break;
 
@@ -693,7 +865,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_BasicDistributor;
       triggerSetEndTeeth = triggerSetEndTeeth_BasicDistributor;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       break;
 
@@ -704,9 +876,9 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_DualWheel;
       triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-      if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, RISING); }
+      if(configPage4.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, RISING); }
       else { attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, FALLING); }
       break;
 
@@ -717,7 +889,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_GM7X;
       triggerSetEndTeeth = triggerSetEndTeeth_GM7X;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       break;
 
@@ -729,7 +901,7 @@ void initialiseTriggers()
       triggerSetEndTeeth = triggerSetEndTeeth_4G63;
 
       //These may both need to change, not sure
-      if(configPage2.TrigEdge == 0)
+      if(configPage4.TrigEdge == 0)
       {
         attachInterrupt(triggerInterrupt, trigger, CHANGE);  // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
         attachInterrupt(triggerInterrupt2, triggerSec_4G63, FALLING); //changed
@@ -748,7 +920,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_24X;
       triggerSetEndTeeth = triggerSetEndTeeth_24X;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
       attachInterrupt(triggerInterrupt2, triggerSec_24X, CHANGE);
       break;
@@ -760,7 +932,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_Jeep2000;
       triggerSetEndTeeth = triggerSetEndTeeth_Jeep2000;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
       attachInterrupt(triggerInterrupt2, triggerSec_Jeep2000, CHANGE);
       break;
@@ -772,7 +944,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_Audi135;
       triggerSetEndTeeth = triggerSetEndTeeth_Audi135;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       attachInterrupt(triggerInterrupt2, triggerSec_Audi135, RISING);
       break;
@@ -784,7 +956,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_HondaD17;
       triggerSetEndTeeth = triggerSetEndTeeth_HondaD17;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
       attachInterrupt(triggerInterrupt2, triggerSec_HondaD17, CHANGE);
       break;
@@ -798,10 +970,10 @@ void initialiseTriggers()
 
       //These may both need to change, not sure
       // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); }
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); }
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
 
-      if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, RISING); }
+      if(configPage4.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, RISING); }
       else { attachInterrupt(triggerInterrupt2, triggerSec_Miata9905, FALLING); }
       break;
 
@@ -812,7 +984,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_MazdaAU;
       triggerSetEndTeeth = triggerSetEndTeeth_MazdaAU;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); } // Primary trigger connects to
       attachInterrupt(triggerInterrupt2, triggerSec_MazdaAU, FALLING);
       break;
@@ -824,7 +996,7 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_non360;
       triggerSetEndTeeth = triggerSetEndTeeth_Non360;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       attachInterrupt(triggerInterrupt2, triggerSec_DualWheel, FALLING); //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
       break;
@@ -836,7 +1008,7 @@ void initialiseTriggers()
         getCrankAngle = getCrankAngle_Nissan360;
         triggerSetEndTeeth = triggerSetEndTeeth_Nissan360;
 
-        if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+        if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
         else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
         attachInterrupt(triggerInterrupt2, triggerSec_Nissan360, CHANGE);
         break;
@@ -848,7 +1020,7 @@ void initialiseTriggers()
             getCrankAngle = getCrankAngle_Subaru67;
             triggerSetEndTeeth = triggerSetEndTeeth_Subaru67;
 
-            if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+            if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
             else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
             attachInterrupt(triggerInterrupt2, triggerSec_Subaru67, FALLING);
             break;
@@ -860,7 +1032,7 @@ void initialiseTriggers()
             getCrankAngle = getCrankAngle_Daihatsu;
             triggerSetEndTeeth = triggerSetEndTeeth_Daihatsu;
 
-            if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+            if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
             else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
             //No secondary input required for this pattern
             break;
@@ -881,13 +1053,13 @@ void initialiseTriggers()
             triggerSetup_ThirtySixMinus222();
             trigger = triggerPri_ThirtySixMinus222;
             triggerSecondary = triggerSec_ThirtySixMinus222;
-            getRPM = getRPM_ThirtySixMinus222;
-            getCrankAngle = getCrankAngle_ThirtySixMinus222;
+            getRPM = getRPM_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
+            getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
             triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus222;
 
-            if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+            if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
             else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
-            if(configPage2.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSecondary, RISING); }
+            if(configPage4.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSecondary, RISING); }
             else { attachInterrupt(triggerInterrupt2, triggerSecondary, FALLING); }
             break;
 
@@ -896,7 +1068,7 @@ void initialiseTriggers()
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
 
-      if(configPage2.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
       break;
   }

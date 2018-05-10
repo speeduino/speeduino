@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.50.17 - EFI Analytics, Inc." tuneComment="" writeDate="Sun Dec 10 15:54:48 AEDT 2017"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2017.10" nPages="10" signature="speeduino 201711"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.60.00 - EFI Analytics, Inc." tuneComment="" writeDate="Tue May 01 17:38:10 AEST 2018"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2018.2" nPages="10" signature="speeduino 201804"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
 </page>
@@ -58,12 +58,12 @@
          86.0 
          90.0 
          96.0 
-         500.0 
+         100.0 
       </constant>
 </page>
 <page number="1" size="128">
-<constant digits="0" name="flexBoostLow" units="kPa">0.0</constant>
-<constant digits="0" name="flexBoostHigh" units="kPa">50.0</constant>
+<constant digits="0" name="unused2-1" units="kPa">-1.0</constant>
+<constant digits="0" name="unused2-2" units="kPa">255.0</constant>
 <constant digits="0" name="asePct" units="%">25.0</constant>
 <constant digits="0" name="aseCount" units="s">8.0</constant>
 <constant cols="1" digits="0" name="wueRates" rows="10" units="%">
@@ -100,9 +100,7 @@
 <constant name="multiplyMAP">"Yes"</constant>
 <constant name="includeAFR">"No"</constant>
 <constant name="hardCutType">"Full"</constant>
-<constant name="unused2-26e">"No"</constant>
-<constant name="unused2-26f">"No"</constant>
-<constant name="unused2-26g">"Yes"</constant>
+<constant name="ignAlgorithm">"Speed Density"</constant>
 <constant name="indInjAng">"Enabled"</constant>
 <constant digits="1" name="injOpen" units="ms">1.0</constant>
 <constant digits="0" name="inj1Ang" units="deg">355.0</constant>
@@ -113,8 +111,7 @@
 <constant name="twoStroke">"Four-stroke"</constant>
 <constant name="injType">"Port"</constant>
 <constant name="nCylinders">"4"</constant>
-<constant name="unused2-37a">"None"</constant>
-<constant name="unused2-37b">"None"</constant>
+<constant name="fuelAlgorithm">"Speed Density"</constant>
 <constant name="nInjectors">"4"</constant>
 <constant name="engineType">"Even fire"</constant>
 <constant name="flexEnabled">"Off"</constant>
@@ -137,13 +134,76 @@
 <constant digits="0" name="oddfire2" units="deg">0.0</constant>
 <constant digits="0" name="oddfire3" units="deg">0.0</constant>
 <constant digits="0" name="oddfire4" units="deg">0.0</constant>
-<constant digits="0" name="flexFuelLow" units="%">100.0</constant>
-<constant digits="0" name="flexFuelHigh" units="%">163.0</constant>
-<constant digits="0" name="flexAdvLow" units="Deg">0.0</constant>
-<constant digits="0" name="flexAdvHigh" units="Deg">10.0</constant>
+<constant digits="0" name="unused2-57" units="%">255.0</constant>
+<constant digits="0" name="unused2-58" units="%">255.0</constant>
+<constant digits="0" name="unused2-59" units="Deg">255.0</constant>
+<constant digits="0" name="unused2-60" units="Deg">255.0</constant>
 <constant digits="0" name="iacCLminDuty" units="%">0.0</constant>
 <constant digits="0" name="iacCLmaxDuty" units="%">0.0</constant>
 <constant digits="0" name="boostMinDuty" units="%">20.0</constant>
+<constant digits="0" name="baroMin" units="kpa">1.0</constant>
+<constant digits="0" name="baroMax" units="kpa">315.0</constant>
+<constant digits="0" name="EMAPMin" units="kpa">10.0</constant>
+<constant digits="0" name="EMAPMax" units="kpa">260.0</constant>
+<constant cols="1" digits="0" name="unused2-67" rows="57" units="%">
+         62.0 
+         62.0 
+         60.0 
+         61.0 
+         64.0 
+         65.0 
+         67.0 
+         68.0 
+         69.0 
+         70.0 
+         71.0 
+         71.0 
+         71.0 
+         68.0 
+         61.0 
+         60.0 
+         60.0 
+         61.0 
+         63.0 
+         64.0 
+         66.0 
+         67.0 
+         68.0 
+         69.0 
+         70.0 
+         71.0 
+         73.0 
+         72.0 
+         65.0 
+         60.0 
+         60.0 
+         61.0 
+         62.0 
+         64.0 
+         66.0 
+         67.0 
+         69.0 
+         70.0 
+         71.0 
+         72.0 
+         72.0 
+         73.0 
+         72.0 
+         62.0 
+         60.0 
+         61.0 
+         60.0 
+         63.0 
+         65.0 
+         66.0 
+         68.0 
+         68.0 
+         70.0 
+         71.0 
+         71.0 
+         71.0 
+         71.0 
+      </constant>
 <constant digits="0" name="UNALLOCATED_TOP_1" units="RAW">
          255.0 
       </constant>
@@ -212,21 +272,20 @@
 <constant name="TrigEdge">"Leading"</constant>
 <constant name="TrigSpeed">"Crank Speed"</constant>
 <constant name="IgInv">"Going Low"</constant>
-<constant name="unused4-5d">"No"</constant>
 <constant name="TrigPattern">"Missing Tooth"</constant>
 <constant name="TrigEdgeSec">"Leading"</constant>
 <constant name="fuelPumpPin">"Board Default"</constant>
 <constant name="useResync">"No"</constant>
 <constant digits="1" name="sparkDur" units="ms">1.0</constant>
-<constant digits="1" name="unused4-8" units="ms">25.5</constant>
-<constant digits="1" name="unused4-9" units="ms">25.5</constant>
-<constant digits="1" name="unused4-10" units="ms">25.5</constant>
+<constant digits="0" name="bootloaderCaps" units="level">0.0</constant>
+<constant name="resetControl">"Serial Command"</constant>
+<constant name="resetControlPin">"Board Default"</constant>
 <constant digits="0" name="SkipCycles" units="cycles">1.0</constant>
 <constant name="unused4-12a">"NOTHING"</constant>
 <constant name="useDwellLim">"On"</constant>
 <constant name="sparkMode">"Wasted Spark"</constant>
 <constant name="TrigFilter">"Off"</constant>
-<constant name="ignCranklock">"On"</constant>
+<constant name="ignCranklock">"Off"</constant>
 <constant digits="1" name="dwellcrank" units="ms">4.5</constant>
 <constant digits="1" name="dwellrun" units="ms">3.0</constant>
 <constant digits="0" name="numTeeth" units="teeth">36.0</constant>
@@ -421,7 +480,7 @@
 <constant name="egoAlgorithm">"No correction"</constant>
 <constant name="egoType">"Wide Band"</constant>
 <constant name="boostEnabled">"Off"</constant>
-<constant name="vvtEnabled">"Off"</constant>
+<constant name="vvtEnabled">"On"</constant>
 <constant name="boostCutType">"Spark Only"</constant>
 <constant digits="0" name="egoKP" units="%">100.0</constant>
 <constant digits="0" name="egoKI" units="%">20.0</constant>
@@ -440,7 +499,7 @@
 <constant name="boostMode">"Simple"</constant>
 <constant name="boostPin">"Board Default"</constant>
 <constant name="VVTasOnOff">"No"</constant>
-<constant name="unused6-14f">"ONE"</constant>
+<constant name="useEMAP">"No"</constant>
 <constant cols="1" digits="1" name="brvBins" rows="6" units="V">
          6.6 
          9.4 
@@ -621,8 +680,8 @@
          100.0 
       </constant>
 <constant cols="8" digits="0" name="vvtTable" rows="8" units="%">
-         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
-         11.0 10.0 6.0 6.0 6.0 6.0 7.0 7.0 
+         175.0 0.0 0.0 27.0 4.0 4.0 0.0 0.0 
+         99.0 8.0 6.0 0.0 6.0 6.0 0.0 1.0 
          24.0 22.0 20.0 18.0 18.0 18.0 19.0 20.0 
          32.0 30.0 29.0 28.0 27.0 27.0 27.0 29.0 
          39.0 39.0 38.0 38.0 37.0 37.0 36.0 36.0 
@@ -887,7 +946,7 @@
 <constant digits="0" name="unused10_124">255.0</constant>
 <constant digits="0" name="unused10_125">255.0</constant>
 <constant digits="0" name="unused10_126">255.0</constant>
-<constant digits="0" name="unused10_127">124.0</constant>
+<constant digits="0" name="unused10_127">100.0</constant>
 </page>
 <page number="9" size="192">
 <constant cols="1" digits="0" name="crankingEnrichBins" rows="4" units="C">
@@ -905,10 +964,7 @@
 <constant name="rotaryType">"FC"</constant>
 <constant name="stagingEnabled">"Off"</constant>
 <constant name="stagingMode">"Automatic"</constant>
-<constant name="unused11-8e">"Off"</constant>
-<constant name="unused11-8f">"Off"</constant>
-<constant name="unused11-8g">"Off"</constant>
-<constant name="unused11-8h">"Off"</constant>
+<constant name="EMAPPin">"A0"</constant>
 <constant cols="1" digits="0" name="rotarySplitValues" rows="8" units="degrees">
          0.0 
          0.0 
@@ -933,6 +989,173 @@
 <constant digits="0" name="boostIntv" units="ms">20.0</constant>
 <constant digits="0" name="stagedInjSizePri" units="cc/min">200.0</constant>
 <constant digits="0" name="stagedInjSizeSec" units="cc/min">600.0</constant>
+<constant digits="0" name="lnchCtrlTPS" units="%TPS">255.0</constant>
+<constant cols="1" digits="0" name="flexBoostBins" rows="6" units="%">
+         0.0 
+         20.0 
+         40.0 
+         60.0 
+         80.0 
+         100.0 
+      </constant>
+<constant cols="1" digits="0" name="flexBoostAdj" rows="6" units="kPa">
+         0.0 
+         10.0 
+         20.0 
+         30.0 
+         40.0 
+         50.0 
+      </constant>
+<constant cols="1" digits="0" name="flexFuelBins" rows="6" units="%">
+         0.0 
+         20.0 
+         40.0 
+         60.0 
+         80.0 
+         100.0 
+      </constant>
+<constant cols="1" digits="0" name="flexFuelAdj" rows="6" units="%">
+         100.0 
+         139.0 
+         156.0 
+         160.0 
+         163.0 
+         163.0 
+      </constant>
+<constant cols="1" digits="0" name="flexAdvBins" rows="6" units="%">
+         0.0 
+         20.0 
+         40.0 
+         60.0 
+         80.0 
+         100.0 
+      </constant>
+<constant cols="1" digits="0" name="flexAdvAdj" rows="6" units="Deg">
+         0.0 
+         2.0 
+         5.0 
+         8.0 
+         9.0 
+         10.0 
+      </constant>
+<constant cols="1" digits="0" name="unused11_75_191" rows="116" units="RPM">
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+         25500.0 
+      </constant>
 <constant digits="0" name="UNALLOCATED_TOP_9" units="RAW">
          255.0 
       </constant>
@@ -942,6 +1165,7 @@
 <setting name="SPEED_DENSITY" value="SPEED_DENSITY"/>
 <setting name="CAN_COMMANDS_OFF" value="CAN_COMMANDS_OFF"/>
 <setting name="CELSIUS" value="CELSIUS"/>
+<setting name="resetcontrol_standard" value="resetcontrol_standard"/>
 <setting name="AFR" value="AFR"/>
 </settings>
 <userComments Comment="These are user comments that can be related to a particular setting or dialog."/>
