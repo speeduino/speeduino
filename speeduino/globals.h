@@ -153,22 +153,25 @@
 #define HARD_CUT_FULL       0
 #define HARD_CUT_ROLLING    1
 
-#define SIZE_BYTE   8
-#define SIZE_INT    16
+#define SIZE_BYTE           8
+#define SIZE_INT            16
 
-#define EVEN_FIRE         0
-#define ODD_FIRE          1
+#define EVEN_FIRE           0
+#define ODD_FIRE            1
 
 #define EGO_ALGORITHM_SIMPLE  0
 #define EGO_ALGORITHM_PID     2
 
 #define STAGING_MODE_TABLE  0
-#define STAGING_MODE_AUTO  1
+#define STAGING_MODE_AUTO   1
 
 #define RESET_CONTROL_DISABLED             0
 #define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
 #define RESET_CONTROL_PREVENT_ALWAYS       2
 #define RESET_CONTROL_SERIAL_COMMAND       3
+
+#define OPEN_LOOP_BOOST     0
+#define CLOSED_LOOP_BOOST   1
 
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
@@ -512,7 +515,7 @@ struct config4 {
 
   byte StgCycles; //The number of initial cycles before the ignition should fire when first cranking
 
-  byte dwellCont : 1; //Fixed duty dwell control
+  byte boostType : 1; //Open or closed loop boost control
   byte useDwellLim : 1; //Whether the dwell limiter is off or on
   byte sparkMode : 3; //Spark output mode (Eg Wasted spark, single channel or Wasted COP)
   byte triggerFilter : 2; //The mode of trigger filter being used (0=Off, 1=Light (Not currently used), 2=Normal, 3=Aggressive)

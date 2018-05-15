@@ -51,6 +51,7 @@ byte pinTranslate(byte rawPin)
   return outputPin;
 }
 
+
 void setResetControlPinState()
 {
   BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
