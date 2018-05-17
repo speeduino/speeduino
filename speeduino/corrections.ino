@@ -407,29 +407,17 @@ static inline int8_t correctionZeroThrottleTiming(int8_t advance)
 {
   int8_t ignZeroThrottleValue = advance;
   if ((currentStatus.TPS < 2) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))) //Check whether TPS coorelates to zero value
-  {/*
-     const int idleRPM[7] =  {500, 600, 700, 800,  900,  1000, 1100};
-     const int ignValues[7]= {23,  19,  14,  10,   7,    3,    -5};
-     int x = 0;
-
-    while (x < 7){
-      if (x == 6){
-        ignZeroThrottleValue = 10;
-        x = 7;
-        //this is an error condition and should never be reached
-      }
-      else if ((currentStatus.RPM > idleRPM[x]) && (currentStatus.RPM <= idleRPM[x+1])){
-        float leftBias = (idleRPM[x+1]-currentStatus.RPM)/100; //100 is a constant distance between cells in idleRPM
-        float rightBias = (currentStatus.RPM - idleRPM[x])/100;
-
-        int ignZeroThrottleValue2 = leftBias*ignValues[x] + rightBias*ignValues[x+1];
-        ignZeroThrottleValue = ignZeroThrottleValue2;
-         x = 6;
-      }
-      x++;
-    }
+  {
+     if ((currentStatus.RPM > 500) && (currentStatus.RPM < 800)) { 
+      ignZeroThrottleValue = map(currentStatus.RPM, 500, 800, 15, 4);
+     }
+     else if ((currentStatus.RPM > 800) && (currentStatus.RPM < 3000)) { 
+      ignZeroThrottleValue = map(currentStatus.RPM, 800, 1200, 4, 0);
+     }
+     else if ((currentStatus.RPM > 3000) && (currentStatus.RPM < 5500)){ ignZeroThrottleValue = -5;}
+     else{ignZeroThrottleValue = 10;}
     
-    */
+    /*
     if (currentStatus.RPM > 1150) { ignZeroThrottleValue = -5;}
     else if ((currentStatus.RPM > 1000) && (currentStatus.RPM <= 1150)) { ignZeroThrottleValue = 3;}
     else if ((currentStatus.RPM > 900) && (currentStatus.RPM <= 1000)) { ignZeroThrottleValue = 5;}
@@ -441,9 +429,13 @@ static inline int8_t correctionZeroThrottleTiming(int8_t advance)
     else {ignZeroThrottleValue = 10;}
     if ((currentStatus.coolant > 100) && (currentStatus.RPM > 650)){
       ignZeroThrottleValue = ignZeroThrottleValue + 3;
-    }
+    }*/
     //if (currentStatus.ACOn == true) {ignZeroThrottleValue = ignZeroThrottleValue + 5;}
   }
+  else if ((currentStatus.TPS < 2) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))){
+    ignZeroThrottleValue = 10;
+  }
+  constrain(ignZeroThrottleValue , -5, 17);
   return ignZeroThrottleValue;
 }
 
@@ -489,7 +481,10 @@ static inline int8_t correctionSoftRevLimit(int8_t advance)
 {
   byte ignSoftRevValue = advance;
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
-  if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); ignSoftRevValue = configPage4.SoftLimRetard;  } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+  if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) { 
+      BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); 
+      ignSoftRevValue = configPage4.SoftLimRetard;  
+    } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
 
   return ignSoftRevValue;
 }
@@ -502,7 +497,8 @@ static inline int8_t correctionSoftLaunch(int8_t advance)
   {
     currentStatus.launchingSoft = true;
     BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH);
-    ignSoftLaunchValue = configPage6.lnchRetard;
+    ignSoftLaunchValue = map(currentStatus.RPM, ((unsigned int)(configPage6.lnchSoftLim) * 100), ((unsigned int)(configPage6.lnchHardLim) * 100) - 50, configPage6.lnchRetard + 10, configPage6.lnchRetard);
+    //ignSoftLaunchValue = configPage6.lnchRetard;
   }
   else
   {
@@ -550,5 +546,8 @@ uint16_t correctionsDwell(uint16_t dwell)
     //Possibly need some method of reducing spark duration here as well, but this is a start
     tempDwell = (revolutionTime / pulsesPerRevolution) - (configPage4.sparkDur * 100);
   }
+  //reduce dwell in WOT
+  if (currentStatus.TPS > 85){ tempDwell = (tempDwell - 200);}
+  
   return tempDwell;
 }
