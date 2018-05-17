@@ -435,7 +435,7 @@ static inline int8_t correctionZeroThrottleTiming(int8_t advance)
   else if ((currentStatus.TPS < 2) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))){
     ignZeroThrottleValue = 10;
   }
-  constrain(ignZeroThrottleValue , -5, 17);
+  ignZeroThrottleValue = constrain(ignZeroThrottleValue , -5, 17);
   return ignZeroThrottleValue;
 }
 
