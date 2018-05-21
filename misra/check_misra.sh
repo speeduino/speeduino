@@ -4,7 +4,7 @@ fi
 
 for i in speeduino/speeduino/*.ino; do
   #cppcheck --xml --include=${i%.*}.h --include=speeduino/speeduino/globals.h $i > /dev/null
-  cppcheck --dump --suppress=syntaxError:speeduino/speeduino/src/PID_v1/PID_v1.h --include=${i%.*}.h --include=speeduino/speeduino/globals.h $i > /dev/null
+  cppcheck --force --dump --suppress=syntaxError:speeduino/speeduino/src/PID_v1/PID_v1.h --include=${i%.*}.h --include=speeduino/speeduino/globals.h $i > /dev/null
 done
 mv speeduino/speeduino/*.dump ./
 rm ./utils.*.dump

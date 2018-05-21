@@ -18,6 +18,7 @@ reference/hardware/v0.4/gerbers/Archive.zip
 .project
 .vscode
 .build
-speeduino/comms.h
-speeduino/comms.h
+.kicad_pcb-bak
 .vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/.browse.c_cpp.db*

@@ -29,6 +29,14 @@ volatile unsigned int dwellLimit_uS;
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
 volatile uint16_t last250msLoopCount = 1000; //Set to effectively random number on startup. Just need this to be different to what mainLoopCount equals initially (Probably 0)
 
+#if defined(TIMER5_MICROS)
+  #define micros() (((timer5_overflow_count << 16) + TCNT5) * 4) //Fast version of micros() that uses the 4uS tick of timer5. See timers.ino for the overflow ISR of timer5
+  #define millis() (ms_counter) //Replaces the standard millis() function with this macro. It is both faster and more accurate. See timers.ino for its counter increment.
+  static inline unsigned long micros_safe(); //A version of micros() that is interrupt safe
+#else
+  #define micros_safe() micros() //If the timer5 method is not used, the micros_safe() macro is simply an alias for the normal micros()
+#endif
+
 #if defined (CORE_TEENSY)
   IntervalTimer lowResTimer;
   void oneMSInterval();

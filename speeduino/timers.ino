@@ -40,16 +40,19 @@ void initialiseTimers()
    lowResTimer.begin(oneMSInterval, 1000);
 
 #elif defined(CORE_STM32)
+#if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
+  Timer8.setPeriod(1000);  // Set up period
+  Timer8.setMode(1, TIMER_OUTPUT_COMPARE);
+  Timer8.attachInterrupt(1, oneMSInterval);
+  Timer8.resume(); //Start Timer
+#else
   Timer4.setPeriod(1000);  // Set up period
-  // Set up an interrupt
   Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
   Timer4.attachInterrupt(1, oneMSInterval);
   Timer4.resume(); //Start Timer
 #endif
-
-  #if defined(CORE_STM32)
-    pinMode(LED_BUILTIN, OUTPUT);
-  #endif
+  pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
+#endif
 
   lastRPM_100ms = 0;
   loop33ms = 0;
@@ -63,11 +66,12 @@ void initialiseTimers()
 //Timer2 Overflow Interrupt Vector, called when the timer overflows.
 //Executes every ~1ms.
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER2_OVF_vect, ISR_NOBLOCK)
+ISR(TIMER2_OVF_vect)
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
 void oneMSInterval() //Most ARM chips can simply call a function
 #endif
 {
+  ms_counter++;
 
   //Increment Loop Counters
   loop33ms++;
@@ -80,14 +84,14 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
   //Overdwell check
   targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
-  bool isCrankLocked = configPage2.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
+  bool isCrankLocked = configPage4.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
 
-  if(ignitionSchedule1.Status == RUNNING) { if( (ignitionSchedule1.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil1Charge(); } }
-  if(ignitionSchedule2.Status == RUNNING) { if( (ignitionSchedule2.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil2Charge(); } }
-  if(ignitionSchedule3.Status == RUNNING) { if( (ignitionSchedule3.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil3Charge(); } }
-  if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil4Charge(); } }
-  if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage2.useDwellLim) && (isCrankLocked != true) ) { endCoil5Charge(); } }
+  if(ignitionSchedule1.Status == RUNNING) { if( (ignitionSchedule1.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil1Charge(); ignitionSchedule1.Status = OFF; } }
+  if(ignitionSchedule2.Status == RUNNING) { if( (ignitionSchedule2.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil2Charge(); ignitionSchedule2.Status = OFF; } }
+  if(ignitionSchedule3.Status == RUNNING) { if( (ignitionSchedule3.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil3Charge(); ignitionSchedule3.Status = OFF; } }
+  if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil4Charge(); ignitionSchedule4.Status = OFF; } }
+  if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil5Charge(); ignitionSchedule5.Status = OFF; } }
 
 
 
@@ -111,9 +115,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
   {
     loop100ms = 0; //Reset counter
     BIT_SET(TIMER_mask, BIT_TIMER_10HZ);
-    #if defined(CORE_STM32) //debug purpose, only visal for running code
-      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    #endif
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
@@ -125,6 +126,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
   {
     loop250ms = 0; //Reset Counter
     BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
+    #if defined(CORE_STM32) //debug purpose, only visal for running code
+      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+    #endif
 
     #if defined(CORE_AVR)
       //Reset watchdog timer (Not active currently)
@@ -142,8 +146,8 @@ void oneMSInterval() //Most ARM chips can simply call a function
     loopSec = 0; //Reset counter.
     BIT_SET(TIMER_mask, BIT_TIMER_1HZ);
 
-    dwellLimit_uS = (1000 * configPage2.dwellLimit); //Update uS value incase setting has changed
-    currentStatus.crankRPM = ((unsigned int)configPage2.crankRPM * 100);
+    dwellLimit_uS = (1000 * configPage4.dwellLimit); //Update uS value incase setting has changed
+    currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10);
 
     //**************************************************************************************************************************************************
     //This updates the runSecs variable
@@ -162,7 +166,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     currentStatus.secl++;
     //**************************************************************************************************************************************************
     //Check the fan output status
-    if (configPage3.fanEnable == 1)
+    if (configPage6.fanEnable == 1)
     {
        fanControl();            // Fucntion to turn the cooling fan on/off
     }
@@ -170,7 +174,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     //Check whether fuel pump priming is complete
     if(fpPrimed == false)
     {
-      if(currentStatus.secl >= configPage1.fpPrime)
+      if(currentStatus.secl >= configPage2.fpPrime)
       {
         fpPrimed = true; //Mark the priming as being completed
         if(currentStatus.RPM == 0)
@@ -183,7 +187,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     }
     //**************************************************************************************************************************************************
     //Set the flex reading (if enabled). The flexCounter is updated with every pulse from the sensor. If cleared once per second, we get a frequency reading
-    if(configPage1.flexEnabled == true)
+    if(configPage2.flexEnabled == true)
     {
       if(flexCounter < 50)
       {
@@ -223,3 +227,21 @@ void oneMSInterval() //Most ARM chips can simply call a function
     TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
 #endif
 }
+
+#if defined(TIMER5_MICROS)
+//This is used by the fast version of micros(). We just need to increment the timer overflow counter
+ISR(TIMER5_OVF_vect)
+{
+  ++timer5_overflow_count;
+}
+
+static inline unsigned long micros_safe()
+{
+  unsigned long newMicros;
+  noInterrupts();
+  newMicros = micros();
+  interrupts();
+
+  return newMicros;
+}
+#endif
