@@ -959,7 +959,8 @@ void loop()
        readO2();
        readO2_2();
        readBat();
-
+        readACReq();
+        
        if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3

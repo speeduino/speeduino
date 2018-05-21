@@ -385,7 +385,7 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
   advance = correctionZeroThrottleTiming(advance);
-  advance = correctionAtUpshift(advance);
+  //advance = correctionAtUpshift(advance);
 
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
@@ -397,7 +397,7 @@ int8_t correctionsIgn(int8_t base_advance)
 static inline int8_t correctionAtUpshift(int8_t advance)
 {
   int8_t upshiftAdvance = advance;
-  if ((currentStatus.rpmDOT < 0) && (currentStatus.TPS > 90)){
+  if ((currentStatus.rpmDOT < -20) && (currentStatus.TPS > 90)){
    upshiftAdvance = advance - 10;
   }
   return upshiftAdvance;
@@ -408,34 +408,21 @@ static inline int8_t correctionZeroThrottleTiming(int8_t advance)
   int8_t ignZeroThrottleValue = advance;
   if ((currentStatus.TPS < 2) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))) //Check whether TPS coorelates to zero value
   {
-     if ((currentStatus.RPM > 500) && (currentStatus.RPM < 800)) { 
+     if ((currentStatus.RPM > 500) && (currentStatus.RPM <= 800)) { 
       ignZeroThrottleValue = map(currentStatus.RPM, 500, 800, 15, 4);
      }
-     else if ((currentStatus.RPM > 800) && (currentStatus.RPM < 3000)) { 
+     else if ((currentStatus.RPM > 800) && (currentStatus.RPM < 1600)) { 
       ignZeroThrottleValue = map(currentStatus.RPM, 800, 1200, 4, 0);
      }
-     else if ((currentStatus.RPM > 3000) && (currentStatus.RPM < 5500)){ ignZeroThrottleValue = -5;}
-     else{ignZeroThrottleValue = 10;}
-    
-    /*
-    if (currentStatus.RPM > 1150) { ignZeroThrottleValue = -5;}
-    else if ((currentStatus.RPM > 1000) && (currentStatus.RPM <= 1150)) { ignZeroThrottleValue = 3;}
-    else if ((currentStatus.RPM > 900) && (currentStatus.RPM <= 1000)) { ignZeroThrottleValue = 5;}
-    else if ((currentStatus.RPM > 850) && (currentStatus.RPM < 900)) { ignZeroThrottleValue = 7;}
-    else if ((currentStatus.RPM > 800) && (currentStatus.RPM <= 850)) { ignZeroThrottleValue = 10;}
-    else if ((currentStatus.RPM > 750) && (currentStatus.RPM <= 800)) { ignZeroThrottleValue =  13;}
-    else if ((currentStatus.RPM > 700) && (currentStatus.RPM <= 750)) { ignZeroThrottleValue = 15 ;}
-    else if (currentStatus.RPM <= 700) { ignZeroThrottleValue = 17;}
-    else {ignZeroThrottleValue = 10;}
-    if ((currentStatus.coolant > 100) && (currentStatus.RPM > 650)){
-      ignZeroThrottleValue = ignZeroThrottleValue + 3;
-    }*/
-    //if (currentStatus.ACOn == true) {ignZeroThrottleValue = ignZeroThrottleValue + 5;}
+     else{ignZeroThrottleValue = advance;}
+    ignZeroThrottleValue = constrain(ignZeroThrottleValue , 0, 17);
+     if ((currentStatus.RPM > 3000) && (currentStatus.RPM < 5500)){ ignZeroThrottleValue = -5;}
+     
   }
   else if ((currentStatus.TPS < 2) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))){
     ignZeroThrottleValue = 10;
   }
-  ignZeroThrottleValue = constrain(ignZeroThrottleValue , -5, 17);
+  if ((currentStatus.ACOn == true) && (currentStatus.RPM < 3000) && (currentStatus.TPS < 30)) {ignZeroThrottleValue = ignZeroThrottleValue + 2;}
   return ignZeroThrottleValue;
 }
 
@@ -547,7 +534,7 @@ uint16_t correctionsDwell(uint16_t dwell)
     tempDwell = (revolutionTime / pulsesPerRevolution) - (configPage4.sparkDur * 100);
   }
   //reduce dwell in WOT
-  if (currentStatus.TPS > 85){ tempDwell = (tempDwell - 200);}
+  if (currentStatus.TPS > 85){ tempDwell = (tempDwell - 1200);}
   
   return tempDwell;
 }

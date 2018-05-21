@@ -199,8 +199,8 @@ void setPinMapping(byte boardID)
       //Pin mappings as per the v0.4 shield
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on
-      pinInjector3 = 10; //Output pin injector 3 is on
-      pinInjector4 = 11; //Output pin injector 4 is on
+      pinInjector3 = 11; //Output pin injector 3 is on
+      pinInjector4 = 10; //Output pin injector 4 is on
       pinInjector5 = 12; //Output pin injector 5 is on
       pinCoil1 = 40; //Pin for coil 1
       pinCoil2 = 38; //Pin for coil 2
@@ -349,7 +349,7 @@ void setPinMapping(byte boardID)
       pinFan = 35; //Pin for the fan output
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
-      pinResetControl = 44; //Reset control output
+     // pinResetControl = 44; //Reset control output
 
       #if defined(CORE_TEENSY)
         pinTrigger = 23;
@@ -697,7 +697,11 @@ void setPinMapping(byte boardID)
   pinMode(pinStepperEnable, OUTPUT);
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
-
+   pinMode(4, OUTPUT); // primary fan
+  pinMode(46, OUTPUT); // aux 
+  pinMode(44, OUTPUT); //ac control
+  pinMode(30, OUTPUT); // CEL control
+  
   inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
   inj1_pin_mask = digitalPinToBitMask(pinInjector1);
   inj2_pin_port = portOutputRegister(digitalPinToPort(pinInjector2));
@@ -706,14 +710,14 @@ void setPinMapping(byte boardID)
   inj3_pin_mask = digitalPinToBitMask(pinInjector3);
   inj4_pin_port = portOutputRegister(digitalPinToPort(pinInjector4));
   inj4_pin_mask = digitalPinToBitMask(pinInjector4);
-  inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
+  /*inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
   inj5_pin_mask = digitalPinToBitMask(pinInjector5);
   inj6_pin_port = portOutputRegister(digitalPinToPort(pinInjector6));
   inj6_pin_mask = digitalPinToBitMask(pinInjector6);
   inj7_pin_port = portOutputRegister(digitalPinToPort(pinInjector7));
   inj7_pin_mask = digitalPinToBitMask(pinInjector7);
   inj8_pin_port = portOutputRegister(digitalPinToPort(pinInjector8));
-  inj8_pin_mask = digitalPinToBitMask(pinInjector8);
+  inj8_pin_mask = digitalPinToBitMask(pinInjector8);*/
 
   ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
   ign1_pin_mask = digitalPinToBitMask(pinCoil1);
@@ -723,14 +727,14 @@ void setPinMapping(byte boardID)
   ign3_pin_mask = digitalPinToBitMask(pinCoil3);
   ign4_pin_port = portOutputRegister(digitalPinToPort(pinCoil4));
   ign4_pin_mask = digitalPinToBitMask(pinCoil4);
-  ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
+ /* ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
   ign5_pin_mask = digitalPinToBitMask(pinCoil5);
   ign6_pin_port = portOutputRegister(digitalPinToPort(pinCoil6));
   ign6_pin_mask = digitalPinToBitMask(pinCoil6);
   ign7_pin_port = portOutputRegister(digitalPinToPort(pinCoil7));
   ign7_pin_mask = digitalPinToBitMask(pinCoil7);
   ign8_pin_port = portOutputRegister(digitalPinToPort(pinCoil8));
-  ign8_pin_mask = digitalPinToBitMask(pinCoil8);
+  ign8_pin_mask = digitalPinToBitMask(pinCoil8);*/
 
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
@@ -757,6 +761,8 @@ void setPinMapping(byte boardID)
       pinMode(pinCLT, INPUT);
       pinMode(pinBat, INPUT);
       pinMode(pinBaro, INPUT);
+      pinMode(26, INPUT); // pin input for AC
+      pinMode(28, INPUT_PULLUP); // pin input for AC pressure check, only usable when pulls to ground on overpressure
     #endif
   #endif
   pinMode(pinTrigger, INPUT);

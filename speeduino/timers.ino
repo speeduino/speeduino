@@ -170,7 +170,8 @@ void oneMSInterval() //Most ARM chips can simply call a function
     {
        fanControl();            // Fucntion to turn the cooling fan on/off
     }
-
+    ACControl();
+    
     //Check whether fuel pump priming is complete
     if(fpPrimed == false)
     {

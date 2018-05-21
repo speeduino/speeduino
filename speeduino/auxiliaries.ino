@@ -19,7 +19,7 @@ void initialiseFan()
 }
 void initialiseAC()
 {
- // digitalWrite(44, LOW); // initialize AC low
+  digitalWrite(44, LOW); // initialize AC low
   currentStatus.ACOn = false;
 }
 void fanControl()
@@ -32,28 +32,28 @@ void fanControl()
     if ( (!currentStatus.fanOn) && (currentStatus.coolant >= onTemp) && (currentStatus.RPM > 500)) { digitalWrite(pinFan,fanHIGH); currentStatus.fanOn = true; }
     if ( (currentStatus.fanOn) && (currentStatus.coolant <= offTemp)|| (currentStatus.RPM == 0) ) { digitalWrite(pinFan, fanLOW); currentStatus.fanOn = false; }
     //fan2
-    if ( ((currentStatus.fanOn) && (currentStatus.coolant >= onTemp+7) && (currentStatus.RPM > 500)) || (currentStatus.AcReq == true) ) { /*digitalWrite(49,fanHIGH); currentStatus.fanOn = true;*/ }
-    if ( ((!currentStatus.fanOn) && (currentStatus.coolant <= offTemp+7) && (currentStatus.AcReq == false)) || (currentStatus.RPM == 0) ) { /*digitalWrite(49, fanLOW); currentStatus.fanOn = false;*/ }
+    if ( ((currentStatus.fanOn) && (currentStatus.coolant >= onTemp+7) && (currentStatus.RPM > 500)) || (currentStatus.AcReq == true) ) { digitalWrite(46,fanHIGH); currentStatus.fanOn = true; }
+    if ( ((!currentStatus.fanOn) && (currentStatus.coolant <= offTemp+7) && (currentStatus.AcReq == false)) || (currentStatus.RPM == 0) ) { digitalWrite(46, fanLOW); currentStatus.fanOn = false; }
   
   }
 }
 
 void ACControl()
 {
-  if ((currentStatus.AcReq) && (currentStatus.TPS < 60) && (currentStatus.RPM > 600) && (currentStatus.RPM < 3600)){digitalWrite(45, HIGH); currentStatus.ACOn = true;}// turn on AC compressor
-  else{ digitalWrite(45, LOW); currentStatus.ACOn = false;} // shut down AC compressor
+  if ((currentStatus.AcReq) && (currentStatus.TPS < 60) && (currentStatus.RPM > 600) && (currentStatus.RPM < 3600)){digitalWrite(44, HIGH); currentStatus.ACOn = true;}// turn on AC compressor
+  else{ digitalWrite(44, LOW); currentStatus.ACOn = false;} // shut down AC compressor
 }
 
 void CELcontrol()
 {
   if ((currentStatus.RPM == 0) || (currentStatus.tpsADC > configPage2.tpsMax + 1) || (currentStatus.tpsADC < configPage2.tpsMin - 1)/* || (currentStatus.mapADC > configPage1.mapMax + 1) || (currentStatus.mapADC < configPage1.mapMin - 1)*/ || (currentStatus.RPM > 6400))
   {
-    digitalWrite(53, HIGH);
+    digitalWrite(30, HIGH);
   }
-  else {digitalWrite(53, LOW);}
+  else {digitalWrite(30, LOW);}
 }
 
-
+/*
 void vvlControl()
 {
   if ((currentStatus.RPM >= 8800) && (currentStatus.TPS > 80) && (currentStatus.coolant > 50))
@@ -66,7 +66,7 @@ void vvlControl()
   }
   else if ((currentStatus.RPM <= 8600) && (currentStatus.TPS < 80)) { digitalWrite(6, LOW);  currentStatus.vvlOn = false;}
 }
-
+*/
 void initialiseAuxPWM()
 {
   #if defined(CORE_AVR)

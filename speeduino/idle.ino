@@ -234,6 +234,8 @@ void idleControl()
         //Currently cranking. Use the cranking table
         currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
+        if (currentStatus.AcReq == true){ currentStatus.idleDuty = currentStatus.idleDuty + 9;}
+        if ((currentStatus.highIdleReq) && (currentStatus.idleDuty < 50)){ currentStatus.idleDuty = 50;}
         if( currentStatus.idleDuty == 0 ) { disableIdle(); break; }
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         idleOn = true;
