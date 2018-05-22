@@ -127,53 +127,69 @@ void boostControl()
 {
   if( configPage6.boostEnabled==1 )
   {
-    if( (boostCounter & 7) == 1) { currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; } //Boost target table is in kpa and divided by 2
-    if(currentStatus.MAP >= (currentStatus.boostTarget - BOOST_HYSTER) )
+    if(configPage4.boostType == OPEN_LOOP_BOOST)
     {
-      //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
-      if( configPage2.flexEnabled == 1 )
-      {
-        currentStatus.boostTarget += table2D_getValue(&flexBoostTable, currentStatus.ethanolPct);;
-      }
+      //Open loop
+      currentStatus.boostDuty = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2 * 100;
+      if ((currentStatus.TPS > 90) && (currentStatus.MAP < 160) && (currentStatus.RPM > 2500) && (currentStatus.RPM < 5000)){ currentStatus.boostDuty = 9000;}
+      if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
+      if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
       else
       {
-        currentStatus.flexBoostCorrection = 0;
+        boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
+        ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
       }
-
-      if(currentStatus.boostTarget > 0)
+    }
+    else if (configPage4.boostType == CLOSED_LOOP_BOOST)
+    {
+      if( (boostCounter & 7) == 1) { currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; } //Boost target table is in kpa and divided by 2
+      if(currentStatus.MAP >= (currentStatus.boostTarget - BOOST_HYSTER) )
       {
-        //This only needs to be run very infrequently, once every 16 calls to boostControl(). This is approx. once per second
-        if( (boostCounter & 15) == 1)
+        //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
+        if( configPage2.flexEnabled == 1 )
         {
-          boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
-
-          if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(100, 100, 100); }
-          else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
+          currentStatus.boostTarget += table2D_getValue(&flexBoostTable, currentStatus.ethanolPct);;
         }
-
-        bool PIDcomputed = boostPID.Compute(); //Compute() returns false if the required interval has not yet passed.
-        if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
         else
         {
-          if(PIDcomputed == true)
-          {
-            boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
-            ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
-          }
+          currentStatus.flexBoostCorrection = 0;
         }
 
+        if(currentStatus.boostTarget > 0)
+        {
+          //This only needs to be run very infrequently, once every 16 calls to boostControl(). This is approx. once per second
+          if( (boostCounter & 15) == 1)
+          {
+            boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
+
+            if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(100, 100, 100); }
+            else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
+          }
+
+          bool PIDcomputed = boostPID.Compute(); //Compute() returns false if the required interval has not yet passed.
+          if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
+          else
+          {
+            if(PIDcomputed == true)
+            {
+              boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
+              ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
+            }
+          }
+
+        }
+        else
+        {
+          //If boost target is 0, turn everything off
+          boostDisable();
+        }
       }
       else
       {
-        //If boost target is 0, turn everything off
+        //Boost control does nothing if kPa below the hyster point
         boostDisable();
-      }
-    }
-    else
-    {
-      //Boost control does nothing if kPa below the hyster point
-      boostDisable();
-    }
+      } //MAP above boost + hyster
+    } //Open / Cloosed loop
   }
   else { // Disable timer channel and zero the flex boost correction status
     DISABLE_BOOST_TIMER();
@@ -182,6 +198,7 @@ void boostControl()
 
   boostCounter++;
 }
+
 
 void vvtControl()
 {

@@ -526,6 +526,7 @@ struct config4 {
   byte StgCycles; //The number of initial cycles before the ignition should fire when first cranking
 
   byte dwellCont : 1; //Fixed duty dwell control
+    byte boostType : 1; //Open or closed loop boost control
   byte useDwellLim : 1; //Whether the dwell limiter is off or on
   byte sparkMode : 3; //Spark output mode (Eg Wasted spark, single channel or Wasted COP)
   byte triggerFilter : 2; //The mode of trigger filter being used (0=Off, 1=Light (Not currently used), 2=Normal, 3=Aggressive)

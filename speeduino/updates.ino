@@ -130,6 +130,8 @@ void doUpdates()
     //May 2018 adds separate load sources for fuel and ignition. Copy the existing load alogirthm into Both
     configPage2.fuelAlgorithm = configPage2.unused2_38c;
     configPage2.ignAlgorithm = configPage2.unused2_38c;
+        configPage4.boostType = 1;
+
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 8);
