@@ -960,7 +960,6 @@ void loop()
        readO2_2();
        readBat();
         readACReq();
-        
        if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
@@ -1898,11 +1897,16 @@ static inline byte getAdvance()
     //Speed Density
     currentStatus.ignLoad = currentStatus.MAP;
   }
-  else
+  else if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
     currentStatus.ignLoad = currentStatus.TPS;
 
+  }
+  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
+  {
+    //IMAP / EMAP
+    currentStatus.ignLoad = (currentStatus.MAP * 100) / currentStatus.EMAP;
   }
   tempAdvance = get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
   tempAdvance = correctionsIgn(tempAdvance);

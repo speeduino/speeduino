@@ -125,16 +125,17 @@ void doUpdates()
     EEPROM.write(EEPROM_DATA_VERSION, 8);
   }
 
-  if (EEPROM.read(EEPROM_DATA_VERSION) == 8) 
+  if (EEPROM.read(EEPROM_DATA_VERSION) == 8)
   {
     //May 2018 adds separate load sources for fuel and ignition. Copy the existing load alogirthm into Both
     configPage2.fuelAlgorithm = configPage2.unused2_38c;
     configPage2.ignAlgorithm = configPage2.unused2_38c;
-        configPage4.boostType = 1;
 
+    //Add option back in for open or closed loop boost. For all current configs to use closed
+    configPage4.boostType = 1;
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 8);
+    EEPROM.write(EEPROM_DATA_VERSION, 9);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)

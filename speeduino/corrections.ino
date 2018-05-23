@@ -251,10 +251,9 @@ static inline byte correctionIATDensity()
  static inline byte correctionVVL()
 {
   byte VVLValue = 100;
-  if (currentStatus.vvlOn) { VVLValue = 107; } //Adds 7% fuel when VVL is active
+  //if (currentStatus.vvlOn) { VVLValue = 107; } //Adds 7% fuel when VVL is active
   return VVLValue;
 }
-
 /*
 Launch control has a setting to increase the fuel load to assist in bringing up boost
 This simple check applies the extra fuel if we're currently launching
@@ -275,9 +274,8 @@ static inline bool correctionDFCO()
   bool DFCOValue = false;
   if ( configPage2.dfcoEnabled == 1 )
   {
-    if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh )&& (currentStatus.DFCOwait); }
-    else { DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh )&& (currentStatus.DFCOwait); }
-  }
+    if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh )&& (currentStatus.DFCOwait)  && (currentStatus.coolant > 60);  }
+    else { DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh )&& (currentStatus.DFCOwait)&& (currentStatus.coolant > 60); }  }
   return DFCOValue;
 }
 
@@ -384,9 +382,8 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionSoftRevLimit(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
-  advance = correctionZeroThrottleTiming(advance);
+ advance = correctionZeroThrottleTiming(advance);
   //advance = correctionAtUpshift(advance);
-
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
   advance = correctionCrankingFixedTiming(advance); //This overrrides the regular fixed timing, must come last
@@ -397,7 +394,7 @@ int8_t correctionsIgn(int8_t base_advance)
 static inline int8_t correctionAtUpshift(int8_t advance)
 {
   int8_t upshiftAdvance = advance;
-  if ((currentStatus.rpmDOT < -20) && (currentStatus.TPS > 90)){
+  if ((currentStatus.rpmDOT < -500) && (currentStatus.TPS > 90)){
    upshiftAdvance = advance - 10;
   }
   return upshiftAdvance;
@@ -425,7 +422,6 @@ static inline int8_t correctionZeroThrottleTiming(int8_t advance)
   if ((currentStatus.ACOn == true) && (currentStatus.RPM < 3000) && (currentStatus.TPS < 30)) {ignZeroThrottleValue = ignZeroThrottleValue + 2;}
   return ignZeroThrottleValue;
 }
-
 
 static inline int8_t correctionFixedTiming(int8_t advance)
 {
@@ -468,10 +464,7 @@ static inline int8_t correctionSoftRevLimit(int8_t advance)
 {
   byte ignSoftRevValue = advance;
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
-  if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) { 
-      BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); 
-      ignSoftRevValue = configPage4.SoftLimRetard;  
-    } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+  if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); ignSoftRevValue = configPage4.SoftLimRetard;  } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
 
   return ignSoftRevValue;
 }
@@ -535,6 +528,5 @@ uint16_t correctionsDwell(uint16_t dwell)
   }
   //reduce dwell in WOT
   if (currentStatus.TPS > 85){ tempDwell = (tempDwell - 1200);}
-  
-  return tempDwell;
+    return tempDwell;
 }

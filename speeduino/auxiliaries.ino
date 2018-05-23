@@ -17,6 +17,7 @@ void initialiseFan()
   digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
   currentStatus.fanOn = false;
 }
+
 void initialiseAC()
 {
   digitalWrite(44, LOW); // initialize AC low
@@ -131,6 +132,7 @@ void boostControl()
     {
       //Open loop
       currentStatus.boostDuty = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2 * 100;
+
       if ((currentStatus.TPS > 90) && (currentStatus.MAP < 160) && (currentStatus.RPM > 2500) && (currentStatus.RPM < 5000)){ currentStatus.boostDuty = 9000;}
       if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
       if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
@@ -198,7 +200,6 @@ void boostControl()
 
   boostCounter++;
 }
-
 
 void vvtControl()
 {

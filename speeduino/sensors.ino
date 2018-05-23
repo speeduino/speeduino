@@ -302,7 +302,7 @@ void flexPulse()
    ++flexCounter;
  }
 
-  void readACReq()
+ void readACReq()
  {
   if ((digitalRead(26) == HIGH) /*&& (digitalRead(28) == HIGH)*/) {currentStatus.AcReq = true;} //pin 26 is AC Request, pin 28 is a combined pressure/temp signal that is high when the A/C compressor can be activated
   else {currentStatus.AcReq = false;}
