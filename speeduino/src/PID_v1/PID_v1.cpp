@@ -29,12 +29,12 @@ PID::PID(long* Input, long* Output, long* Setpoint,
 	PID::SetOutputLimits(0, 255);				//default output limit corresponds to
 												//the arduino pwm limits
 
-    //SampleTime = 100;							//default Controller Sample Time is 0.1 seconds
+    SampleTime = 100;							//default Controller Sample Time is 0.1 seconds
 
     PID::SetControllerDirection(ControllerDirection);
     PID::SetTunings(Kp, Ki, Kd);
 
-    //lastTime = millis()-SampleTime;
+    lastTime = millis()-SampleTime;
 }
 
 
@@ -62,8 +62,8 @@ bool PID::Compute()
       /*Compute PID Output*/
       long output = (kp * error)/100 + ITerm- (kd * dInput)/100;
 
-	  if(output > outMax) output = outMax;
-      else if(output < outMin) output = outMin;
+	  if(output > outMax) { output = outMax; }
+      else if(output < outMin) { output = outMin; }
 	  *myOutput = output;
 
       /*Remember some variables for next time*/
@@ -193,9 +193,9 @@ void PID::SetControllerDirection(byte Direction)
  * functions query the internal state of the PID.  they're here for display
  * purposes.  this are the functions the PID Front-end uses for example
  ******************************************************************************/
-byte PID::GetKp(){ return  dispKp; }
-byte PID::GetKi(){ return  dispKi;}
-byte PID::GetKd(){ return  dispKd;}
+int16_t PID::GetKp(){ return  dispKp; }
+int16_t PID::GetKi(){ return  dispKi;}
+int16_t PID::GetKd(){ return  dispKd;}
 int PID::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
 int PID::GetDirection(){ return controllerDirection;}
 
@@ -239,7 +239,7 @@ bool integerPID::Compute()
    if(timeChange >= SampleTime)
    {
       /*Compute all the working error variables*/
-	    long input = *myInput;
+	  long input = *myInput;
       long error = *mySetpoint - input;
       ITerm += (ki * error)/1000; //Note that ki is multiplied by 1000 rather than 100, so it must be divided by 1000 here
       if(ITerm > outMax) { ITerm = outMax; }

@@ -45,22 +45,22 @@ class PID
 
 
   //Display functions ****************************************************************
-	byte GetKp();						  // These functions query the pid for interal values.
-	byte GetKi();						  //  they were created mainly for the pid front-end,
-	byte GetKd();						  // where it's important to know what is actually
+	int16_t GetKp();						  // These functions query the pid for interal values.
+	int16_t GetKi();						  //  they were created mainly for the pid front-end,
+	int16_t GetKd();						  // where it's important to know what is actually
 	int GetMode();						  //  inside the PID.
 	int GetDirection();					  //
 
   private:
 	void Initialize();
 
-	byte dispKp;				// * we'll hold on to the tuning parameters in user-entered
-	byte dispKi;				//   format for display purposes
-	byte dispKd;				//
+	long dispKp;				// * we'll hold on to the tuning parameters in user-entered
+	long dispKi;				//   format for display purposes
+	long dispKd;				//
 
-	byte kp;                  // * (P)roportional Tuning Parameter
-  byte ki;                  // * (I)ntegral Tuning Parameter
-  byte kd;                  // * (D)erivative Tuning Parameter
+	long kp;                  // * (P)roportional Tuning Parameter
+  long ki;                  // * (I)ntegral Tuning Parameter
+  long kd;                  // * (D)erivative Tuning Parameter
 
 	int controllerDirection;
 

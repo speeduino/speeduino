@@ -15,6 +15,7 @@ Flood clear mode etc.
 
 #include "corrections.h"
 #include "globals.h"
+#include "timers.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
 PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
