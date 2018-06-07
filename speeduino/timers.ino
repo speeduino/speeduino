@@ -239,7 +239,7 @@ static inline unsigned long micros_safe()
 {
   unsigned long newMicros;
   noInterrupts();
-  newMicros = micros();
+  newMicros = (((timer5_overflow_count << 16) + TCNT5) * 4);
   interrupts();
 
   return newMicros;
