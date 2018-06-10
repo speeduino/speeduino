@@ -59,12 +59,16 @@ void initialiseFan();
 #define BOOST_PIN_HIGH() *boost_pin_port |= (boost_pin_mask)
 #define VVT_PIN_LOW()    *vvt_pin_port &= ~(vvt_pin_mask)
 #define VVT_PIN_HIGH()   *vvt_pin_port |= (vvt_pin_mask)
+#define FAN_PIN_LOW()    *fan_pin_port &= ~(fan_pin_mask)
+#define FAN_PIN_HIGH()   *fan_pin_port |= (fan_pin_mask)
 
 
 volatile byte *boost_pin_port;
 volatile byte boost_pin_mask;
 volatile byte *vvt_pin_port;
 volatile byte vvt_pin_mask;
+volatile byte *fan_pin_port;
+volatile byte fan_pin_mask;
 
 volatile bool boost_pwm_state;
 unsigned int boost_pwm_max_count; //Used for variable PWM frequency

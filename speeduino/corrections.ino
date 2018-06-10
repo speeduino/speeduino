@@ -15,6 +15,7 @@ Flood clear mode etc.
 
 #include "corrections.h"
 #include "globals.h"
+#include "timers.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
 PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
@@ -331,19 +332,21 @@ static inline byte correctionAFRClosedLoop()
             //Running lean
             if(currentStatus.egoCorrection < (100 + configPage6.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
             {
-              if(currentStatus.egoCorrection >= 100) { AFRValue = (currentStatus.egoCorrection + 1); } //Increase the fueling by 1%
-              else { AFRValue += 1; } //This means that the last reading had been rich, so start counting back towards 100%
+              AFRValue = (currentStatus.egoCorrection + 1); //Increase the fueling by 1%
             }
-            else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return then again
+            else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return that again
           }
-          else
+          else if(currentStatus.O2 < currentStatus.afrTarget)
+          {
             //Running Rich
             if(currentStatus.egoCorrection > (100 - configPage6.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
             {
-              if(currentStatus.egoCorrection <= 100) { AFRValue = (currentStatus.egoCorrection - 1); } //Increase the fueling by 1%
-              else { AFRValue -= 1; } //This means that the last reading had been lean, so start count back towards 100%
+              AFRValue = (currentStatus.egoCorrection - 1); //Decrease the fueling by 1%
             }
-            else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return then again
+            else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return that again
+          }
+          else { AFRValue = currentStatus.egoCorrection; } //Means we're already right on target
+
         }
         else if(configPage6.egoAlgorithm == EGO_ALGORITHM_PID)
         {
