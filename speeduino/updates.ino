@@ -102,7 +102,7 @@ void doUpdates()
     configPage10.flexFuelAdj[0]  = configPage2.idleUpPin;
 
     configPage10.flexAdvBins[0] = 0;
-    configPage10.flexAdvAdj[0]  = configPage2.unused2_59;
+    configPage10.flexAdvAdj[0]  = configPage2.taeTaperMin;
 
     for (uint8_t x = 1; x < 6; x++)
     {
@@ -117,7 +117,7 @@ void doUpdates()
       uint8_t fuelAdder = (((configPage2.idleUpAdder - configPage2.idleUpPin) * pct) / 100) + configPage2.idleUpPin;
       configPage10.flexFuelAdj[x] = fuelAdder;
 
-      uint8_t advanceAdder = (((configPage2.unused2_60 - configPage2.unused2_59) * pct) / 100) + configPage2.unused2_59;
+      uint8_t advanceAdder = (((configPage2.taeTaperMax - configPage2.taeTaperMin) * pct) / 100) + configPage2.taeTaperMin;
       configPage10.flexAdvAdj[x] = advanceAdder;
     }
 

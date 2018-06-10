@@ -132,7 +132,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 20180-dev");
+      Serial.print("speeduino 201806-dev");
       break;
 
     case 'r': //New format for the optimised OutputChannels
