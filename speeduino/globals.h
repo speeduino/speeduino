@@ -468,8 +468,8 @@ struct config2 {
   byte idleUpEnabled : 1;
 
   byte idleUpAdder;
-  byte unused2_59;
-  byte unused2_60;
+  byte taeTaperMin;
+  byte taeTaperMax;
 
   byte iacCLminDuty;
   byte iacCLmaxDuty;

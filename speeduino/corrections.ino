@@ -194,7 +194,23 @@ static inline int16_t correctionAccel()
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
         currentStatus.TAEEndTime = micros_safe() + ((unsigned long)configPage2.taeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
-        accelValue = 100 + table2D_getValue(&taeTable, currentStatus.tpsDOT);
+        accelValue = table2D_getValue(&taeTable, currentStatus.tpsDOT);
+
+        //Apply the taper to the above
+        //The RPM settings are stored divided by 100:
+        uint16_t trueTaperMin = configPage2.taeTaperMin * 100;
+        uint16_t trueTaperMax = configPage2.taeTaperMax * 100;
+        if (currentStatus.RPM > trueTaperMin)
+        {
+          if(currentStatus.RPM > trueTaperMax) { accelValue = 0; } //RPM is beyond taper max limit, so accel enrich is turned off
+          else 
+          {
+            int16_t taperRange = trueTaperMax - trueTaperMin;
+            int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100) / taperRange; //The percentage of the way through the RPM taper range
+            accelValue = percentage(taperPercent, accelValue); //Calculate the above percentage of the calculated accel amount. 
+          }
+        }
+        accelValue = 100 + accelValue; //Add the 100 normalisation to the calculated amount
       }
     }
   }
