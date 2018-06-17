@@ -199,6 +199,10 @@ void readTPS()
     analogRead(pinTPS);
     byte tempTPS = fastMap1023toX(analogRead(pinTPS), 255); //Get the current raw TPS ADC value and map it into a byte
   #endif
+  if ((bool)configPage10.invertTPS)
+  {
+     tempTPS = ~(byte)tempTPS; //For those who have tpsMin and tpsMax at opposite ends.
+  }
   currentStatus.tpsADC = ADC_FILTER(tempTPS, ADCFILTER_TPS, currentStatus.tpsADC);
   byte tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
 

@@ -729,8 +729,10 @@ struct config10 {
   uint8_t flexAdvBins[6];
   uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%)
                             //And another three corn rows die.
+  uint8_t invertTPS : 1; //For backwards throttle position sensors
+  uint8_t unused11_75 : 7;
 
-  byte unused11_75_191[117];
+  byte unused11_76_191[116];
 
 #if defined(CORE_AVR)
   };
