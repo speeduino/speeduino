@@ -341,7 +341,7 @@ void setup()
   currentStatus.startRevolutions = 0;
   currentStatus.flatShiftingHard = false;
   currentStatus.launchingHard = false;
-  currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 100); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
+  currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
   triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
   dwellLimit_uS = (1000 * configPage4.dwellLimit);
   currentStatus.nChannels = (INJ_CHANNELS << 4) + IGN_CHANNELS; //First 4 bits store the number of injection channels, 2nd 4 store the number of ignition channels
