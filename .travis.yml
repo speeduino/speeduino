@@ -1,0 +1,97 @@
+# Continuous Integration (CI) is the practice, in software
+# engineering, of merging all developer working copies with a shared mainline
+# several times a day < http://docs.platformio.org/page/ci/index.html >
+#
+# Documentation:
+#
+# * Travis CI Embedded Builds with PlatformIO
+#   < https://docs.travis-ci.com/user/integration/platformio/ >
+#
+# * PlatformIO integration with Travis CI
+#   < http://docs.platformio.org/page/ci/travis.html >
+#
+# * User Guide for `platformio ci` command
+#   < http://docs.platformio.org/page/userguide/cmd_ci.html >
+#
+#
+# Please choice one of the following templates (proposed below) and uncomment
+# it (remove "# " before each line) or use own configuration according to the
+# Travis CI documentation (see above).
+#
+
+
+#
+# Template #1: General project. Test it using existing `platformio.ini`.
+#
+
+language: python
+python:
+    - "2.7"
+
+dist: trusty
+sudo: required
+
+cache:
+    directories:
+        - "~/.platformio"
+
+#addons:
+#  apt:
+#    sources:
+#      - sourceline: 'deb http://ports.ubuntu.com/ubuntu-ports trusty-backports main restricted universe multiverse'
+#    packages:
+#      - cppcheck/trusty-backports
+
+before_install:
+  - sudo apt-get update -qq
+#  - sudo apt-get install -t trusty-backports cppcheck
+  - sudo apt-get build-dep -qq cppcheck
+  - wget https://github.com/danmar/cppcheck/archive/1.79.zip
+  - unzip 1.79.zip
+  - cd cppcheck-1.79
+#  - make SRCDIR=build CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
+  - sudo make install CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
+
+install:
+    - pip install -U platformio
+
+script:
+  - cd /home/travis/build
+  - git clone --depth=20 https://github.com/noisymime/cppcheck.git noisymime/cppcheck
+  - cd noisymime/speeduino
+  - platformio update
+#  - platformio run -e megaatmega2560 -e teensy35 -e bluepill_f103c8 -e genericSTM32F103RB
+  - platformio run -e megaatmega2560 -e teensy35 -e genericSTM32F103RB
+  - cd ..
+  - chmod +x speeduino/misra/check_misra.sh
+  - speeduino/misra/check_misra.sh
+
+notifications:
+    slack: speeduino:Y8Bhhviu4r7HFF3abMYDnH3p
+
+
+
+
+#
+# Template #2: The project is intended to by used as a library with examples
+#
+
+# language: python
+# python:
+#     - "2.7"
+#
+# sudo: false
+# cache:
+#     directories:
+#         - "~/.platformio"
+#
+# env:
+#     - PLATFORMIO_CI_SRC=path/to/test/file.c
+#     - PLATFORMIO_CI_SRC=examples/file.ino
+#     - PLATFORMIO_CI_SRC=path/to/test/directory
+#
+# install:
+#     - pip install -U platformio
+#
+# script:
+#     - platformio ci --lib="." --board=ID_1 --board=ID_2 --board=ID_N
