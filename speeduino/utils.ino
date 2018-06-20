@@ -947,17 +947,8 @@ void initialiseTriggers()
       getCrankAngle = getCrankAngle_4G63;
       triggerSetEndTeeth = triggerSetEndTeeth_4G63;
 
-      //These may both need to change, not sure
-      if(configPage4.TrigEdge == 0)
-      {
-        attachInterrupt(triggerInterrupt, trigger, CHANGE);  // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-        attachInterrupt(triggerInterrupt2, triggerSec_4G63, FALLING); //changed
-      }
-      else
-      {
-        attachInterrupt(triggerInterrupt, trigger, CHANGE); // Primary trigger connects to
-        attachInterrupt(triggerInterrupt2, triggerSec_4G63, FALLING);
-      }
+      attachInterrupt(triggerInterrupt, trigger, CHANGE); // Primary trigger connects to
+      attachInterrupt(triggerInterrupt2, triggerSec_4G63, FALLING);
       break;
 
     case 5:
