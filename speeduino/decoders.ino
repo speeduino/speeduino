@@ -125,7 +125,7 @@ Note: This does not currently support dual wheel (ie missing tooth + single toot
 void triggerSetup_missingTooth()
 {
   triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
-  if(configPage4.TrigSpeed == 1) { triggerToothAngle = 720 / configPage4.triggerTeeth; } //Account for cam speed missing tooth
+  if(configPage4.TrigSpeed == CAM_SPEED) { triggerToothAngle = 720 / configPage4.triggerTeeth; } //Account for cam speed missing tooth
   triggerActualTeeth = configPage4.triggerTeeth - configPage4.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   triggerSecFilterTime = (int)((configPage4.trigPatternSec == SEC_TRIGGER_4_1 ) ? 1000000 * 60 / MAX_RPM / 4 / 2 : 1000000 * 60 / MAX_RPM / 2 / 2); //For 4-1 came wheel. Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
@@ -171,6 +171,7 @@ void triggerPri_missingTooth()
            toothOneTime = curTime;
            currentStatus.hasSync = true;
            currentStatus.startRevolutions++; //Counter
+           if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
            triggerFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
            toothLastMinusOneToothTime = toothLastToothTime;
            toothLastToothTime = curTime;
@@ -238,14 +239,14 @@ uint16_t getRPM_missingTooth()
   {
     if(toothCurrentCount != 1)
     {
-      if(configPage4.TrigSpeed == 1) { tempRPM = crankingGetRPM(configPage4.triggerTeeth/2); } //Account for cam speed
+      if(configPage4.TrigSpeed == CAM_SPEED) { tempRPM = crankingGetRPM(configPage4.triggerTeeth/2); } //Account for cam speed
       else { tempRPM = crankingGetRPM(configPage4.triggerTeeth); }
     }
     else { tempRPM = currentStatus.RPM; } //Can't do per tooth RPM if we're at tooth #1 as the missing tooth messes the calculation
   }
   else
   {
-    if(configPage4.TrigSpeed == 1) { tempRPM = (stdGetRPM() * 2); } //Account for cam speed
+    if(configPage4.TrigSpeed == CAM_SPEED) { tempRPM = stdGetRPM(720); } //Account for cam speed
     else { tempRPM = stdGetRPM(); }
   }
   return tempRPM;
@@ -275,7 +276,7 @@ int getCrankAngle_missingTooth(int timePerDegree)
     //crankAngle += uSToDegrees(elapsedTime);
 
     //Sequential check (simply sets whether we're on the first or 2nd revoltuion of the cycle)
-    if (tempRevolutionOne) { crankAngle += 360; }
+    if ( (tempRevolutionOne == true) && (configPage4.TrigSpeed == 0) ) { crankAngle += 360; }
 
     if (crankAngle >= 720) { crankAngle -= 720; }
     else if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
@@ -1709,7 +1710,7 @@ int getCrankAngle_Miata9905(int timePerDegree)
       crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
 
       //Estimate the number of degrees travelled since the last tooth}
-      crankAngle += uSToDegrees(elapsedTime);
+      crankAngle += timeToAngle(elapsedTime);
 
       if (crankAngle >= 720) { crankAngle -= 720; }
       if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
