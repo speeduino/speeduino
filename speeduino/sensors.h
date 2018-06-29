@@ -43,7 +43,8 @@ static inline void readMAP() __attribute__((always_inline));
 void readTPS();
 void readO2_2();
 void flexPulse();
-
+uint16_t readAuxanalog(uint8_t analogPin);
+uint16_t readAuxdigital(uint8_t digitalPin);
 
 #if defined(ANALOG_ISR)
 //Analog ISR interrupt routine

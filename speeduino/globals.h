@@ -191,7 +191,7 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 //const byte page_size = 64;
-const int16_t npage_size[11] = {0,288,128,288,128,288,128,240,192,128,192};
+const int16_t npage_size[11] = {0,288,128,288,128,288,128,240,192,192,192};
 //const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
@@ -653,39 +653,27 @@ struct config6 {
 struct config9 {
   byte enable_canbus:2;
   byte enable_candata_in:1;
-  uint16_t caninput_sel;                    //bit status on/off if input is enabled
+  byte caninput_sel[16];                    //bit status on/Can/analog_local/digtal_local if input is enabled
   uint16_t caninput_source_can_address[16];        //u16 [15] array holding can address of input
   uint8_t caninput_source_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)
   uint16_t caninput_source_num_bytes;     //u16 bit status of the number of bytes length 1 or 2
-  byte unused10_53;
-  byte unused10_54;
+  byte unused10_67;
+  byte unused10_68;
   byte enable_candata_out : 1;
   byte canoutput_sel[8];
   uint16_t canoutput_param_group[8];
   uint8_t canoutput_param_start_byte[8];
   byte canoutput_param_num_bytes[8];
 
-  byte unused10_97;
-  byte unused10_98;
-  byte unused10_99;
-  byte speeduino_tsCanId:4;         //speeduino TS canid (0-14)
-  uint16_t true_address;            //speeduino 11bit can address
-  uint16_t realtime_base_address;   //speeduino 11 bit realtime base address
-  uint16_t obd_address;             //speeduino OBD diagnostic address
-  byte unused10_107;
-  byte unused10_108;
-  byte unused10_109;
   byte unused10_110;
   byte unused10_111;
   byte unused10_112;
   byte unused10_113;
-  byte unused10_114;
-  byte unused10_115;
-  byte unused10_116;
-  byte unused10_117;
-  byte unused10_118;
-  byte unused10_119;
-  byte unused10_120;
+  byte speeduino_tsCanId:4;         //speeduino TS canid (0-14)
+  uint16_t true_address;            //speeduino 11bit can address
+  uint16_t realtime_base_address;   //speeduino 11 bit realtime base address
+  uint16_t obd_address;             //speeduino OBD diagnostic address
+  uint8_t Auxinpin[16];
   byte unused10_121;
   byte unused10_122;
   byte unused10_123;
@@ -693,6 +681,71 @@ struct config9 {
   byte unused10_125;
   byte unused10_126;
   byte unused10_127;
+  byte unused10_128;
+  byte unused10_129;
+  byte unused10_130;
+  byte unused10_131;
+  byte unused10_132;
+  byte unused10_133;
+  byte unused10_134;
+  byte unused10_135;
+  byte unused10_136;
+  byte unused10_137;
+  byte unused10_138;
+  byte unused10_139;
+  byte unused10_140;
+  byte unused10_141;
+  byte unused10_142;
+  byte unused10_143;
+  byte unused10_144;
+  byte unused10_145;
+  byte unused10_146;
+  byte unused10_147;
+  byte unused10_148;
+  byte unused10_149;
+  byte unused10_150;
+  byte unused10_151;
+  byte unused10_152;
+  byte unused10_153;
+  byte unused10_154;
+  byte unused10_155;
+  byte unused10_156;
+  byte unused10_157;
+  byte unused10_158;
+  byte unused10_159;
+  byte unused10_160;
+  byte unused10_161;
+  byte unused10_162;
+  byte unused10_163;
+  byte unused10_164;
+  byte unused10_165;
+  byte unused10_166;
+  byte unused10_167;
+  byte unused10_168;
+  byte unused10_169;
+  byte unused10_170;
+  byte unused10_171;
+  byte unused10_172;
+  byte unused10_173;
+  byte unused10_174;
+  byte unused10_175;
+  byte unused10_176;
+  byte unused10_177;
+  byte unused10_178;
+  byte unused10_179;
+  byte unused10_180;
+  byte unused10_181;
+  byte unused10_182;
+  byte unused10_183;
+  byte unused10_184;
+  byte unused10_185;
+  byte unused10_186;
+  byte unused10_187;
+  byte unused10_188;
+  byte unused10_189;
+  byte unused10_190;
+  byte unused10_191;
+  
 #if defined(CORE_AVR)
   };
 #else
