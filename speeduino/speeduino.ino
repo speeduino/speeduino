@@ -41,6 +41,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "errors.h"
 #include "storage.h"
 #include "scheduledIO.h"
+#include "crankMaths.h"
 #include <EEPROM.h>
 #if defined (CORE_TEENSY)
 #include <FlexCAN.h>
@@ -948,7 +949,7 @@ void loop()
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
       //currentStatus.RPM = 3000;
       boostControl();
-
+      nitrousControl();
     }
     //The IAT and CLT readings can be done less frequently (4 times per second)
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
@@ -1068,6 +1069,20 @@ void loop()
       currentStatus.VE = getVE();
       currentStatus.advance = getAdvance();
       currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
+
+      //Manual adder for nitrous. These are not in correctionsFuel() because  they are direct adders to the ms value, not % based
+      if(currentStatus.nitrous_status == NITROUS_STAGE1)
+      { 
+        int16_t adderRange = configPage10.n2o_stage1_maxRPM - configPage10.n2o_stage1_minRPM;
+        int16_t adderPercent = ((currentStatus.RPM - configPage10.n2o_stage1_minRPM) * 100) / adderRange; //The percentage of the way through the RPM range
+        currentStatus.PW1 = currentStatus.PW1 + configPage10.n2o_stage1_adderMax + percentage(adderPercent, (configPage10.n2o_stage1_adderMin - configPage10.n2o_stage1_adderMax)); //Calculate the above percentage of the calculated ms value.
+      }
+      if(currentStatus.nitrous_status == NITROUS_STAGE2)
+      {
+        int16_t adderRange = configPage10.n2o_stage2_maxRPM - configPage10.n2o_stage2_minRPM;
+        int16_t adderPercent = ((currentStatus.RPM - configPage10.n2o_stage2_minRPM) * 100) / adderRange; //The percentage of the way through the RPM range
+        currentStatus.PW1 = currentStatus.PW1 + configPage10.n2o_stage2_adderMax + percentage(adderPercent, (configPage10.n2o_stage2_adderMin - configPage10.n2o_stage2_adderMax)); //Calculate the above percentage of the calculated ms value.
+      }
 
       int injector1StartAngle = 0;
       int injector2StartAngle = 0;
@@ -1332,7 +1347,7 @@ void loop()
       else { currentStatus.dwell =  (configPage4.dwellRun * 100); }
       currentStatus.dwell = correctionsDwell(currentStatus.dwell);
 
-      int dwellAngle = uSToDegrees(currentStatus.dwell); //Convert the dwell time to dwell angle based on the current engine speed
+      int dwellAngle = timeToAngle(currentStatus.dwell); //Convert the dwell time to dwell angle based on the current engine speed
 
       //Calculate start angle for each channel
       //1 cylinder (Everyone gets this)
@@ -1685,7 +1700,7 @@ void loop()
             {
               setIgnitionSchedule1(ign1StartFunction,
                         //((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                        degreesToUS((ignition1StartAngle - crankAngle)),
+                        angleToTime((ignition1StartAngle - crankAngle)),
                         currentStatus.dwell + fixedCrankingOverride, //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,
                         ign1EndFunction
                         );
@@ -1717,7 +1732,7 @@ void loop()
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
         {
             unsigned long ignition2StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition2StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
+            if(tempStartAngle > tempCrankAngle) { ignition2StartTime = angleToTime((tempStartAngle - tempCrankAngle)); }
             //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition2StartTime = 0; }
 
@@ -1740,7 +1755,7 @@ void loop()
         //if (tempStartAngle > tempCrankAngle)
         {
             long ignition3StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition3StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
+            if(tempStartAngle > tempCrankAngle) { ignition3StartTime = angleToTime((tempStartAngle - tempCrankAngle)); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition3StartTime = 0; }
 
@@ -1764,7 +1779,7 @@ void loop()
         {
 
             long ignition4StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition4StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
+            if(tempStartAngle > tempCrankAngle) { ignition4StartTime = angleToTime((tempStartAngle - tempCrankAngle)); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition4StartTime = 0; }
 
@@ -1788,7 +1803,7 @@ void loop()
         {
 
             long ignition5StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition5StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
+            if(tempStartAngle > tempCrankAngle) { ignition5StartTime = angleToTime((tempStartAngle - tempCrankAngle)); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition5StartTime = 0; }
 
@@ -1809,7 +1824,7 @@ void loop()
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
         {
             unsigned long ignition6StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition6StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
+            if(tempStartAngle > tempCrankAngle) { ignition6StartTime = angleToTime((tempStartAngle - tempCrankAngle)); }
             else { ignition6StartTime = 0; }
 
             if( (ignition6StartTime > 0) && (curRollingCut != 2) )

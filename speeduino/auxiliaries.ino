@@ -121,7 +121,7 @@ void boostControl()
     else if (configPage4.boostType == CLOSED_LOOP_BOOST)
     {
       if( (boostCounter & 7) == 1) { currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; } //Boost target table is in kpa and divided by 2
-      if(currentStatus.MAP >= (currentStatus.boostTarget - BOOST_HYSTER) )
+      if(currentStatus.MAP >= 100 ) //Only engage boost control above 100kpa. 
       {
         //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
         if( configPage2.flexEnabled == 1 )
@@ -205,6 +205,45 @@ void vvtControl()
     }
   }
   else { DISABLE_VVT_TIMER(); } // Disable timer channel
+}
+
+void nitrousControl()
+{
+  if(configPage10.n2o_enable > 0)
+  {
+    bool isArmed = digitalRead(configPage10.n2o_arming_pin);
+    if (configPage10.n2o_pin_polarity == 1) { isArmed = !isArmed; } //If nirtrous is active when pin is low, flip the reading (n2o_pin_polarity = 0 = active when High)
+
+    //Perform the main checks to see if nitrous is ready
+    if( (isArmed == true) && (currentStatus.coolant > (configPage10.n2o_minCLT - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.TPS > configPage10.n2o_minTPS) && (currentStatus.O2 < configPage10.n2o_maxAFR) && (currentStatus.MAP < configPage10.n2o_maxMAP) )
+    {
+      uint16_t realStage1MinRPM = configPage10.n2o_stage1_minRPM * 100;
+      uint16_t realStage1MaxRPM = configPage10.n2o_stage1_maxRPM * 100;
+      uint16_t realStage2MinRPM = configPage10.n2o_stage2_minRPM * 100;
+      uint16_t realStage2MaxRPM = configPage10.n2o_stage2_maxRPM * 100;
+
+      if( (currentStatus.RPM > realStage1MinRPM) && (currentStatus.RPM < realStage1MaxRPM) )
+      {
+        currentStatus.nitrous_status = NITROUS_STAGE1;
+        BIT_SET(currentStatus.status3, BIT_STATUS3_NITROUS);
+        digitalWrite(configPage10.n2o_stage1_pin, HIGH);
+      }
+      if( (currentStatus.RPM > realStage2MinRPM) && (currentStatus.RPM < realStage2MaxRPM) )
+      {
+        currentStatus.nitrous_status = NITROUS_STAGE2;
+        BIT_SET(currentStatus.status3, BIT_STATUS3_NITROUS);
+        digitalWrite(configPage10.n2o_stage2_pin, HIGH);
+      }
+    }
+    else
+    {
+      currentStatus.nitrous_status = NITROUS_OFF;
+      BIT_CLEAR(currentStatus.status3, BIT_STATUS3_NITROUS);
+      digitalWrite(configPage10.n2o_stage1_pin, LOW);
+      digitalWrite(configPage10.n2o_stage2_pin, LOW);
+    }
+
+  }
 }
 
 void boostDisable()
