@@ -393,6 +393,7 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionFlexTiming(base_advance);
   advance = correctionIATretard(advance);
   advance = correctionSoftRevLimit(advance);
+  advance = correctionNitrous(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
 
@@ -447,6 +448,26 @@ static inline int8_t correctionSoftRevLimit(int8_t advance)
   if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); ignSoftRevValue = configPage4.SoftLimRetard;  } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
 
   return ignSoftRevValue;
+}
+
+static inline int8_t correctionNitrous(int8_t advance)
+{
+  byte ignNitrous = advance;
+  //Check if nitrous is currently active
+  if(configPage10.n2o_enable > 0)
+  {
+    //Check which stage is running (if any)
+    if( currentStatus.nitrous_status == NITROUS_STAGE1 )
+    {
+      ignNitrous -= configPage10.n2o_stage1_retard;
+    }
+    if( currentStatus.nitrous_status == NITROUS_STAGE2 )
+    {
+      ignNitrous -= configPage10.n2o_stage2_retard;
+    }
+  }
+
+  return ignNitrous;
 }
 
 static inline int8_t correctionSoftLaunch(int8_t advance)

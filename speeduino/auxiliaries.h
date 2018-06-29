@@ -5,6 +5,7 @@ void initialiseAuxPWM();
 void boostControl();
 void vvtControl();
 void initialiseFan();
+void nitrousControl();
 
 #if defined(CORE_AVR)
   #define ENABLE_BOOST_TIMER()  TIMSK1 |= (1 << OCIE1A)
