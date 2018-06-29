@@ -984,12 +984,12 @@ void loop()
           else if (configPage9.caninput_sel[currentStatus.current_caninchannel] == 2)  //if current input channel is enabled as analog local pin
             {
               //read analog channel specified
-              canin[currentStatus.current_caninchannel] = readAuxanalog(configPage9.Auxinpin[currentStatus.current_caninchannel]);
+              currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(configPage9.Auxinpin[currentStatus.current_caninchannel]);
             }
           else if (configPage9.caninput_sel[currentStatus.current_caninchannel] == 3)  //if current input channel is enabled as digital local pin
             {
               //read digital channel specified
-              canin[currentStatus.current_caninchannel] = readAuxdigital(configPage9.Auxinpin[currentStatus.current_caninchannel]);
+              currentStatus.canin[currentStatus.current_caninchannel] = readAuxdigital(configPage9.Auxinpin[currentStatus.current_caninchannel]);
             }
          }
 
@@ -1015,12 +1015,12 @@ void loop()
           else if (configPage9.caninput_sel[currentStatus.current_caninchannel] == 2)  //if current input channel is enabled as analog local pin
             {
               //read analog channel specified
-              canin[currentStatus.current_caninchannel] = readAuxanalog(configPage9.Auxinpin[currentStatus.current_caninchannel]);
+              currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(configPage9.Auxinpin[currentStatus.current_caninchannel]);
             }
           else if (configPage9.caninput_sel[currentStatus.current_caninchannel] == 3)  //if current input channel is enabled as digital local pin
             {
               //read digital channel specified
-              canin[currentStatus.current_caninchannel] = readAuxdigital(configPage9.Auxinpin[currentStatus.current_caninchannel]);
+              currentStatus.canin[currentStatus.current_caninchannel] = readAuxdigital(configPage9.Auxinpin[currentStatus.current_caninchannel]);
             }  
          }
 #endif
