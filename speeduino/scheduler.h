@@ -367,14 +367,15 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #endif
 
 void initialiseSchedulers();
-void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setFuelSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setFuelSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setFuelSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setFuelSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setFuelSchedule1(unsigned long timeout, unsigned long duration);
+void setFuelSchedule2(unsigned long timeout, unsigned long duration);
+void setFuelSchedule3(unsigned long timeout, unsigned long duration);
+void setFuelSchedule4(unsigned long timeout, unsigned long duration);
+void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)()); //Schedule 5 remains a special case for now due to the way it's implemented 
+//void setFuelSchedule5(unsigned long timeout, unsigned long duration);
+void setFuelSchedule6(unsigned long timeout, unsigned long duration);
+void setFuelSchedule7(unsigned long timeout, unsigned long duration);
+void setFuelSchedule8(unsigned long timeout, unsigned long duration);
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());

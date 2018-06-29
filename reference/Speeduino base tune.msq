@@ -1,9 +1,21 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.60.00 - EFI Analytics, Inc." tuneComment="" writeDate="Tue May 01 17:38:10 AEST 2018"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2018.2" nPages="10" signature="speeduino 201804"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.60.09 - EFI Analytics, Inc." tuneComment="" writeDate="Thu Jun 07 14:35:52 AEST 2018"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2018.5" nPages="10" signature="speeduino 201805"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
+<pcVariable cols="1" digits="0" name="algorithmLimits" rows="8">
+         511.0 
+         100.0 
+         511.0 
+         511.0 
+         100.0 
+         100.0 
+         100.0 
+         100.0 
+      </pcVariable>
+<pcVariable digits="0" name="fuelLoadMax">255.0</pcVariable>
+<pcVariable digits="0" name="ignLoadMax">255.0</pcVariable>
 </page>
 <page number="0" size="288">
 <constant cols="16" digits="0" name="veTable" rows="16" units="%">
@@ -42,7 +54,7 @@
          6900.0 
          7000.0 
       </constant>
-<constant cols="1" digits="0" name="mapBins" rows="16" units="kPa">
+<constant cols="1" digits="0" name="fuelLoadBins" rows="16" units="kPa">
          16.0 
          26.0 
          30.0 
@@ -100,7 +112,7 @@
 <constant name="multiplyMAP">"Yes"</constant>
 <constant name="includeAFR">"No"</constant>
 <constant name="hardCutType">"Full"</constant>
-<constant name="ignAlgorithm">"Speed Density"</constant>
+<constant name="ignAlgorithm">"MAP"</constant>
 <constant name="indInjAng">"Enabled"</constant>
 <constant digits="1" name="injOpen" units="ms">1.0</constant>
 <constant digits="0" name="inj1Ang" units="deg">355.0</constant>
@@ -111,11 +123,12 @@
 <constant name="twoStroke">"Four-stroke"</constant>
 <constant name="injType">"Port"</constant>
 <constant name="nCylinders">"4"</constant>
-<constant name="fuelAlgorithm">"Speed Density"</constant>
+<constant name="algorithm">"MAP"</constant>
+<constant name="unused2_37d">"Off"</constant>
 <constant name="nInjectors">"4"</constant>
 <constant name="engineType">"Even fire"</constant>
 <constant name="flexEnabled">"Off"</constant>
-<constant name="algorithm">"Speed Density"</constant>
+<constant name="unused2_38c">"Speed Density"</constant>
 <constant name="baroCorr">"Off"</constant>
 <constant name="injLayout">"Paired"</constant>
 <constant name="perToothIgn">"No"</constant>
@@ -134,8 +147,10 @@
 <constant digits="0" name="oddfire2" units="deg">0.0</constant>
 <constant digits="0" name="oddfire3" units="deg">0.0</constant>
 <constant digits="0" name="oddfire4" units="deg">0.0</constant>
-<constant digits="0" name="unused2-57" units="%">255.0</constant>
-<constant digits="0" name="unused2-58" units="%">255.0</constant>
+<constant name="idleUpPin">"36"</constant>
+<constant name="idleUpPolarity">"Inverted"</constant>
+<constant name="idleUpEnabled">"Off"</constant>
+<constant digits="0" name="idleUpAdder" units="% / Steps">163.0</constant>
 <constant digits="0" name="unused2-59" units="Deg">255.0</constant>
 <constant digits="0" name="unused2-60" units="Deg">255.0</constant>
 <constant digits="0" name="iacCLminDuty" units="%">0.0</constant>
@@ -205,7 +220,7 @@
          71.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_1" units="RAW">
-         255.0 
+         0.0 
       </constant>
 </page>
 <page number="2" size="288">
@@ -245,7 +260,7 @@
          7200.0 
          7700.0 
       </constant>
-<constant cols="1" digits="0" name="mapBins2" rows="16" units="kPa">
+<constant cols="1" digits="0" name="ignLoadBins" rows="16" units="kPa">
          10.0 
          16.0 
          20.0 
@@ -261,7 +276,7 @@
          80.0 
          88.0 
          96.0 
-         104.0 
+         100.0 
       </constant>
 </page>
 <page number="3" size="128">
@@ -277,11 +292,12 @@
 <constant name="fuelPumpPin">"Board Default"</constant>
 <constant name="useResync">"No"</constant>
 <constant digits="1" name="sparkDur" units="ms">1.0</constant>
+<constant name="trigPatternSec">"Single tooth cam"</constant>
 <constant digits="0" name="bootloaderCaps" units="level">0.0</constant>
 <constant name="resetControl">"Serial Command"</constant>
 <constant name="resetControlPin">"Board Default"</constant>
 <constant digits="0" name="SkipCycles" units="cycles">1.0</constant>
-<constant name="unused4-12a">"NOTHING"</constant>
+<constant name="boostType">"Open Loop"</constant>
 <constant name="useDwellLim">"On"</constant>
 <constant name="sparkMode">"Wasted Spark"</constant>
 <constant name="TrigFilter">"Off"</constant>
@@ -417,7 +433,7 @@
          145.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_3" units="RAW">
-         255.0 
+         0.0 
       </constant>
 </page>
 <page number="4" size="288">
@@ -477,14 +493,14 @@
       </constant>
 </page>
 <page number="5" size="128">
-<constant name="egoAlgorithm">"No correction"</constant>
+<constant name="egoAlgorithm">"Simple"</constant>
 <constant name="egoType">"Wide Band"</constant>
 <constant name="boostEnabled">"Off"</constant>
 <constant name="vvtEnabled">"On"</constant>
 <constant name="boostCutType">"Spark Only"</constant>
-<constant digits="0" name="egoKP" units="%">100.0</constant>
-<constant digits="0" name="egoKI" units="%">20.0</constant>
-<constant digits="0" name="egoKD" units="%">0.0</constant>
+<constant digits="0" name="egoKP" units="%">35.0</constant>
+<constant digits="0" name="egoKI" units="%">0.0</constant>
+<constant digits="0" name="egoKD" units="%">20.0</constant>
 <constant digits="0" name="egoTemp" units="C">70.0</constant>
 <constant digits="0" name="egoCount">16.0</constant>
 <constant digits="0" name="unused6-6" units="%">255.0</constant>
@@ -649,7 +665,7 @@
       </constant>
 </page>
 <page number="6" size="240">
-<constant cols="8" digits="0" name="boostTable" rows="8" units="kPa">
+<constant cols="8" digits="0" name="boostTable" rows="8" units="Duty Cycle %">
          150.0 150.0 150.0 150.0 150.0 150.0 150.0 150.0 
          150.0 150.0 150.0 150.0 150.0 150.0 150.0 150.0 
          150.0 150.0 150.0 150.0 150.0 150.0 150.0 150.0 
@@ -857,6 +873,8 @@
 <constant name="caninput_sel13">"Off"</constant>
 <constant name="caninput_sel14">"Off"</constant>
 <constant name="caninput_sel15">"Off"</constant>
+<constant name="caninput_source_can_address8">"0x706"</constant>
+<constant name="caninput_source_can_address15">"0x6FD"</constant>
 <constant name="caninput_source_start_byte0">"7"</constant>
 <constant name="caninput_source_start_byte1">"7"</constant>
 <constant name="caninput_source_start_byte2">"7"</constant>
@@ -1157,7 +1175,7 @@
          25500.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_9" units="RAW">
-         255.0 
+         0.0 
       </constant>
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">

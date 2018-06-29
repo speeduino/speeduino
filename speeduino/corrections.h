@@ -19,7 +19,6 @@ static inline byte correctionBatVoltage() __attribute__((always_inline)); //Batt
 static inline byte correctionIATDensity() __attribute__((always_inline)); //Inlet temp density correction
 static inline byte correctionLaunch() __attribute__((always_inline)); //Launch control correction
 static inline bool correctionDFCO() __attribute__((always_inline)); //Decelleration fuel cutoff
-static inline byte correctionVVL()  __attribute__((always_inline)); //VVLCorrection
 
 int8_t correctionsIgn(int8_t advance);
 static inline int8_t correctionFixedTiming(int8_t);
@@ -27,9 +26,10 @@ static inline int8_t correctionCrankingFixedTiming(int8_t);
 static inline int8_t correctionFlexTiming(int8_t);
 static inline int8_t correctionIATretard(int8_t);
 static inline int8_t correctionSoftRevLimit(int8_t);
+static inline int8_t correctionNitrous(int8_t);
 static inline int8_t correctionSoftLaunch(int8_t);
 static inline int8_t correctionSoftFlatShift(int8_t);
-static inline int8_t correctionZeroThrottleTiming(int8_t);
+
 uint16_t correctionsDwell(uint16_t dwell);
 
 uint16_t AFRnextCycle;

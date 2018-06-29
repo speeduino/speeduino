@@ -234,8 +234,6 @@ void idleControl()
         //Currently cranking. Use the cranking table
         currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
-        if (currentStatus.AcReq == true){ currentStatus.idleDuty = currentStatus.idleDuty + 12;}
-        if ((currentStatus.highIdleReq) && (currentStatus.idleDuty < 50)){ currentStatus.idleDuty = 50;}
         if( currentStatus.idleDuty == 0 ) { disableIdle(); break; }
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         idleOn = true;
@@ -245,7 +243,9 @@ void idleControl()
         //Standard running
         currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
-         if ((currentStatus.highIdleReq) && (currentStatus.idleDuty < 60)){ currentStatus.idleDuty = 60;}
+        if ((BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))){ currentStatus.idleDuty = currentStatus.idleDuty + 10;}
+        if ((highIdleReq) && (currentStatus.idleDuty < 60)){ currentStatus.idleDuty = currentStatus.idleDuty + 12;}
+        if (AcReq == true){ currentStatus.idleDuty = currentStatus.idleDuty + 10;}
         if( currentStatus.idleDuty == 0 ) { disableIdle(); break; }
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         currentStatus.idleLoad = currentStatus.idleDuty >> 1;

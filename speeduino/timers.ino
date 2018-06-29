@@ -59,6 +59,7 @@ void initialiseTimers()
   loop66ms = 0;
   loop100ms = 0;
   loop250ms = 0;
+  loopCLT = 0;
   loopSec = 0;
 }
 
@@ -77,8 +78,24 @@ void oneMSInterval() //Most ARM chips can simply call a function
   loop33ms++;
   loop66ms++;
   loop100ms++;
+
   loop250ms++;
   loopSec++;
+  if (carSelect != 255){
+    loopCLT++;
+     switch(carSelect){
+      case 1:
+       XRSgaugeCLT();
+       break;
+      case 2:
+       break;
+      case 4:
+       audiFanControl();
+       break;
+      default:
+       break;
+      }
+    }
 
   unsigned long targetOverdwellTime;
 
@@ -120,11 +137,29 @@ void oneMSInterval() //Most ARM chips can simply call a function
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
   }
 
+  //Loop executed every CLT loop
+  //Anything inside this if statement will run every CLTms.
+  switch(carSelect){
+    case 1:
+      if (loopCLT == 400){
+        loopCLT = 0; // Reset counter
+      }
+      break;
+     case 4:
+      if (loopCLT == 200){
+        loopCLT = 0;
+      }
+      break;
+     default:
+     break;
+  }
+
   //Loop executed every 250ms loop (1ms x 250 = 250ms)
   //Anything inside this if statement will run every 250ms.
   if (loop250ms == 250)
   {
     loop250ms = 0; //Reset Counter
+
     BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
     #if defined(CORE_STM32) //debug purpose, only visal for running code
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
@@ -169,8 +204,14 @@ void oneMSInterval() //Most ARM chips can simply call a function
     if (configPage6.fanEnable == 1)
     {
        fanControl();            // Fucntion to turn the cooling fan on/off
+		if ((carSelect != 255) && (carSelect != 4)){
+        	fanControl2();
+       	}
+
     }
-	ACControl();
+    ACControl();
+    CELcontrol();
+
     //Check whether fuel pump priming is complete
     if(fpPrimed == false)
     {
@@ -218,22 +259,12 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //Off by 1 error check
       if (currentStatus.ethanolPct == 1) { currentStatus.ethanolPct = 0; }
 
-//high idle function
-    if ( ( currentStatus.RPM > 950 ) && ( currentStatus.TPS > 30 ) ) 
-    {
-      currentStatus.highIdleCount++;
-      if (currentStatus.highIdleCount <= 2 ) {currentStatus.highIdleReq = true;}
     }
-    else {currentStatus.highIdleReq = false; currentStatus.highIdleCount = 0;}
+	if (carSelect != 255){
+      highIdleFunc();
+      DFCOwaitFunc();
+    }
 
-    //DFCO wait time
-    if ( ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) ) 
-    {
-      currentStatus.DFCOcounter++;
-      if (currentStatus.DFCOcounter > 2 ) {currentStatus.DFCOwait = true;}
-    }
-    else {currentStatus.DFCOwait = false; currentStatus.DFCOcounter = 0;}
-	}
   }
 #if defined(CORE_AVR) //AVR chips use the ISR for this
     //Reset Timer2 to trigger in another ~1ms
@@ -253,7 +284,7 @@ static inline unsigned long micros_safe()
 {
   unsigned long newMicros;
   noInterrupts();
-  newMicros = micros();
+  newMicros = (((timer5_overflow_count << 16) + TCNT5) * 4);
   interrupts();
 
   return newMicros;

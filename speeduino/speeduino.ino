@@ -41,7 +41,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "errors.h"
 #include "storage.h"
 #include "scheduledIO.h"
+#include "crankMaths.h"
 #include <EEPROM.h>
+#include "alphaMods.h"
+
 #if defined (CORE_TEENSY)
 #include <FlexCAN.h>
 #endif
@@ -247,6 +250,8 @@ void setup()
   }
   else { setPinMapping(configPage2.pinMapping); }
 
+  alphaPinSetup();
+
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
   if(configPage4.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
   else { coilHIGH = HIGH, coilLOW = LOW; }
@@ -270,6 +275,7 @@ void setup()
   //initialiseDisplay();
   initialiseIdle();
   initialiseFan();
+  initialiseAC();
   initialiseAuxPWM();
   initialiseCorrections();
   initialiseADC();
@@ -341,7 +347,7 @@ void setup()
   currentStatus.startRevolutions = 0;
   currentStatus.flatShiftingHard = false;
   currentStatus.launchingHard = false;
-  currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 100); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
+  currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
   triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
   dwellLimit_uS = (1000 * configPage4.dwellLimit);
   currentStatus.nChannels = (INJ_CHANNELS << 4) + IGN_CHANNELS; //First 4 bits store the number of injection channels, 2nd 4 store the number of ignition channels
@@ -948,6 +954,7 @@ void loop()
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
       //currentStatus.RPM = 3000;
       boostControl();
+      nitrousControl();
 
     }
     //The IAT and CLT readings can be done less frequently (4 times per second)
@@ -956,10 +963,11 @@ void loop()
        BIT_CLEAR(TIMER_mask, BIT_TIMER_4HZ);
        readCLT();
        readIAT();
+       readACReq();
        readO2();
        readO2_2();
        readBat();
-        readACReq();
+
        if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
@@ -1005,6 +1013,8 @@ void loop()
 #endif
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
+       vvlControl();
+
     } //4Hz timer
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
@@ -1020,7 +1030,7 @@ void loop()
     {
         if(currentStatus.startRevolutions >= configPage4.StgCycles)  { ignitionOn = true; fuelOn = true; } //Enable the fuel and ignition, assuming staging revolutions are complete
         //If it is, check is we're running or cranking
-        if(currentStatus.RPM > currentStatus.crankRPM) //Crank RPM stored in byte as RPM / 100
+        if(currentStatus.RPM > currentStatus.crankRPM) //Crank RPM in the config is stored as a x10. currentStatus.crankRPM is set in timers.ino and represents the true value
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); //Sets the engine running bit
           //Only need to do anything if we're transitioning from cranking to running
@@ -1048,6 +1058,20 @@ void loop()
       currentStatus.VE = getVE();
       currentStatus.advance = getAdvance();
       currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
+
+      //Manual adder for nitrous. These are not in correctionsFuel() because  they are direct adders to the ms value, not % based
+      if(currentStatus.nitrous_status == NITROUS_STAGE1)
+      { 
+        int16_t adderRange = configPage10.n2o_stage1_maxRPM - configPage10.n2o_stage1_minRPM;
+        int16_t adderPercent = ((currentStatus.RPM - configPage10.n2o_stage1_minRPM) * 100) / adderRange; //The percentage of the way through the RPM range
+        currentStatus.PW1 = currentStatus.PW1 + configPage10.n2o_stage1_adderMax + percentage(adderPercent, (configPage10.n2o_stage1_adderMin - configPage10.n2o_stage1_adderMax)); //Calculate the above percentage of the calculated ms value.
+      }
+      if(currentStatus.nitrous_status == NITROUS_STAGE2)
+      {
+        int16_t adderRange = configPage10.n2o_stage2_maxRPM - configPage10.n2o_stage2_minRPM;
+        int16_t adderPercent = ((currentStatus.RPM - configPage10.n2o_stage2_minRPM) * 100) / adderRange; //The percentage of the way through the RPM range
+        currentStatus.PW1 = currentStatus.PW1 + configPage10.n2o_stage2_adderMax + percentage(adderPercent, (configPage10.n2o_stage2_adderMin - configPage10.n2o_stage2_adderMax)); //Calculate the above percentage of the calculated ms value.
+      }
 
       int injector1StartAngle = 0;
       int injector2StartAngle = 0;
@@ -1312,7 +1336,7 @@ void loop()
       else { currentStatus.dwell =  (configPage4.dwellRun * 100); }
       currentStatus.dwell = correctionsDwell(currentStatus.dwell);
 
-      int dwellAngle = uSToDegrees(currentStatus.dwell); //Convert the dwell time to dwell angle based on the current engine speed
+      int dwellAngle = timeToAngle(currentStatus.dwell); //Convert the dwell time to dwell angle based on the current engine speed
 
       //Calculate start angle for each channel
       //1 cylinder (Everyone gets this)
@@ -1665,7 +1689,7 @@ void loop()
             {
               setIgnitionSchedule1(ign1StartFunction,
                         //((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                        degreesToUS((ignition1StartAngle - crankAngle)),
+                        angleToTime((ignition1StartAngle - crankAngle)),
                         currentStatus.dwell + fixedCrankingOverride, //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,
                         ign1EndFunction
                         );
@@ -1697,7 +1721,7 @@ void loop()
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
         {
             unsigned long ignition2StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition2StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
+            if(tempStartAngle > tempCrankAngle) { ignition2StartTime = angleToTime((tempStartAngle - tempCrankAngle)); }
             //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition2StartTime = 0; }
 
@@ -1720,7 +1744,7 @@ void loop()
         //if (tempStartAngle > tempCrankAngle)
         {
             long ignition3StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition3StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
+            if(tempStartAngle > tempCrankAngle) { ignition3StartTime = angleToTime((tempStartAngle - tempCrankAngle)); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition3StartTime = 0; }
 
@@ -1744,7 +1768,7 @@ void loop()
         {
 
             long ignition4StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition4StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
+            if(tempStartAngle > tempCrankAngle) { ignition4StartTime = angleToTime((tempStartAngle - tempCrankAngle)); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition4StartTime = 0; }
 
@@ -1768,7 +1792,7 @@ void loop()
         {
 
             long ignition5StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition5StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
+            if(tempStartAngle > tempCrankAngle) { ignition5StartTime = angleToTime((tempStartAngle - tempCrankAngle)); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition5StartTime = 0; }
 
@@ -1789,7 +1813,7 @@ void loop()
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
         {
             unsigned long ignition6StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition6StartTime = degreesToUS((tempStartAngle - tempCrankAngle)); }
+            if(tempStartAngle > tempCrankAngle) { ignition6StartTime = angleToTime((tempStartAngle - tempCrankAngle)); }
             else { ignition6StartTime = 0; }
 
             if( (ignition6StartTime > 0) && (curRollingCut != 2) )

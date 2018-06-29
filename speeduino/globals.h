@@ -115,7 +115,7 @@
 #define BIT_TIMER_30HZ            4
 
 #define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
-#define BIT_STATUS3_UNUSED1       1
+#define BIT_STATUS3_NITROUS       1
 #define BIT_STATUS3_UNUSED2       2
 #define BIT_STATUS3_UNUSED3       3
 #define BIT_STATUS3_UNUSED4       4
@@ -165,6 +165,10 @@
 #define STAGING_MODE_TABLE  0
 #define STAGING_MODE_AUTO   1
 
+#define NITROUS_OFF         0
+#define NITROUS_STAGE1      1
+#define NITROUS_STAGE2      2
+
 #define RESET_CONTROL_DISABLED             0
 #define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
 #define RESET_CONTROL_PREVENT_ALWAYS       2
@@ -173,7 +177,7 @@
 #define OPEN_LOOP_BOOST     0
 #define CLOSED_LOOP_BOOST   1
 
-#define MAX_RPM 8000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
+#define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 
 //Table sizes
@@ -331,18 +335,7 @@ struct statuses {
   byte launchCorrection; //The amount of correction being applied if launch control is active
   byte flexCorrection; //Amount of correction being applied to compensate for ethanol content
   byte flexIgnCorrection; //Amount of additional advance being applied based on flex
-
-  //**
-  bool ACOn; //whether AC is on
-  bool AcReq; // AC request
-  bool highIdleReq; //raises idle in open loop to evade stalling
-  byte highIdleCount = 0;// counts to wait for normal idle
-  bool DFCOwait; // waits to enable DFCO
-  byte DFCOcounter = 0;// counts cycles till dfco
-  boolean coolantPulse = false;
-  int coolantGauge;
-  bool vvlOn = false;
-  //**
+  byte vvlCorrection;
   byte afrTarget;
   byte idleDuty;
   bool idleUpActive;
@@ -380,6 +373,7 @@ struct statuses {
   uint16_t crankRPM = 400; //The actual cranking RPM limit. Saves us multiplying it everytime from the config page
   volatile byte status3;
   int16_t flexBoostCorrection; //Amount of boost added based on flex
+  byte nitrous_status;
   byte nSquirts;
   byte nChannels; //Number of fuel and ignition channels
   int16_t fuelLoad;
@@ -446,7 +440,8 @@ struct config2 {
 
   //config2 in ini
   byte fuelAlgorithm : 3;
-  byte unused2_37d : 1;
+  byte fixAngEnable : 1; //Whether fixed/locked timing is enabled
+
   byte nInjectors : 4; //Number of injectors
 
 
@@ -480,8 +475,8 @@ struct config2 {
   byte idleUpEnabled : 1;
 
   byte idleUpAdder;
-  byte unused2_59;
-  byte unused2_60;
+  byte taeTaperMin;
+  byte taeTaperMax;
 
   byte iacCLminDuty;
   byte iacCLmaxDuty;
@@ -742,7 +737,31 @@ struct config10 {
   uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%)
                             //And another three corn rows die.
 
-  byte unused11_75_191[117];
+  byte n2o_enable : 2;
+  byte n2o_arming_pin : 6;
+  byte n2o_minCLT;
+  byte n2o_maxMAP;
+  byte n2o_minTPS;
+  byte n2o_maxAFR;
+
+  byte n2o_stage1_pin : 6;
+  byte n2o_pin_polarity : 1;
+  byte n2o_stage1_unused : 1;
+  byte n2o_stage1_minRPM;
+  byte n2o_stage1_maxRPM;
+  byte n2o_stage1_adderMin;
+  byte n2o_stage1_adderMax;
+  byte n2o_stage1_retard;
+
+  byte n2o_stage2_pin : 6;
+  byte n2o_stage2_unused : 2;
+  byte n2o_stage2_minRPM;
+  byte n2o_stage2_maxRPM;
+  byte n2o_stage2_adderMin;
+  byte n2o_stage2_adderMax;
+  byte n2o_stage2_retard;
+
+  byte unused11_75_191[99];
 
 #if defined(CORE_AVR)
   };
