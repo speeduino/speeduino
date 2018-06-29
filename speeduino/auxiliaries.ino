@@ -121,7 +121,7 @@ void boostControl()
     else if (configPage4.boostType == CLOSED_LOOP_BOOST)
     {
       if( (boostCounter & 7) == 1) { currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; } //Boost target table is in kpa and divided by 2
-      if(currentStatus.MAP >= (currentStatus.boostTarget - BOOST_HYSTER) )
+      if(currentStatus.MAP >= 100 ) //Only engage boost control above 100kpa. 
       {
         //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
         if( configPage2.flexEnabled == 1 )
