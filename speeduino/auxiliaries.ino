@@ -75,6 +75,10 @@ void initialiseAuxPWM()
   boost_pin_mask = digitalPinToBitMask(pinBoost);
   vvt_pin_port = portOutputRegister(digitalPinToPort(pinVVT_1));
   vvt_pin_mask = digitalPinToBitMask(pinVVT_1);
+  n2o_stage1_pin_port = portOutputRegister(digitalPinToPort(configPage10.n2o_stage1_pin));
+  n2o_stage1_pin_mask = digitalPinToBitMask(configPage10.n2o_stage1_pin);
+  n2o_stage2_pin_port = portOutputRegister(digitalPinToPort(configPage10.n2o_stage2_pin));
+  n2o_stage2_pin_mask = digitalPinToBitMask(configPage10.n2o_stage2_pin);
 
   #if defined(CORE_STM32) || defined(CORE_TEENSY) //2uS resolution Min 8Hz, Max 5KHz
     boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
@@ -98,6 +102,8 @@ void initialiseAuxPWM()
     if(vvt_pwm_max_count > 0) { Timer1.attachInterrupt(3, vvtInterrupt);}
     Timer1.resume();
   #endif
+
+  currentStatus.nitrous_status = NITROUS_OFF;
 }
 
 #define BOOST_HYSTER  40
@@ -211,8 +217,8 @@ void nitrousControl()
 {
   if(configPage10.n2o_enable > 0)
   {
-    bool isArmed = digitalRead(configPage10.n2o_arming_pin);
-    if (configPage10.n2o_pin_polarity == 1) { isArmed = !isArmed; } //If nirtrous is active when pin is low, flip the reading (n2o_pin_polarity = 0 = active when High)
+    bool isArmed = READ_N2O_ARM_PIN();
+    if (configPage10.n2o_pin_polarity == 1) { isArmed = !isArmed; } //If nitrous is active when pin is low, flip the reading (n2o_pin_polarity = 0 = active when High)
 
     //Perform the main checks to see if nitrous is ready
     if( (isArmed == true) && (currentStatus.coolant > (configPage10.n2o_minCLT - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.TPS > configPage10.n2o_minTPS) && (currentStatus.O2 < configPage10.n2o_maxAFR) && (currentStatus.MAP < configPage10.n2o_maxMAP) )
@@ -226,21 +232,21 @@ void nitrousControl()
       {
         currentStatus.nitrous_status = NITROUS_STAGE1;
         BIT_SET(currentStatus.status3, BIT_STATUS3_NITROUS);
-        digitalWrite(configPage10.n2o_stage1_pin, HIGH);
+        N2O_STAGE1_PIN_HIGH();
       }
       if( (currentStatus.RPM > realStage2MinRPM) && (currentStatus.RPM < realStage2MaxRPM) )
       {
         currentStatus.nitrous_status = NITROUS_STAGE2;
         BIT_SET(currentStatus.status3, BIT_STATUS3_NITROUS);
-        digitalWrite(configPage10.n2o_stage2_pin, HIGH);
+        N2O_STAGE2_PIN_HIGH();
       }
     }
     else
     {
       currentStatus.nitrous_status = NITROUS_OFF;
       BIT_CLEAR(currentStatus.status3, BIT_STATUS3_NITROUS);
-      digitalWrite(configPage10.n2o_stage1_pin, LOW);
-      digitalWrite(configPage10.n2o_stage2_pin, LOW);
+      N2O_STAGE1_PIN_LOW();
+      N2O_STAGE2_PIN_LOW();
     }
 
   }

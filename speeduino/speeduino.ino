@@ -949,7 +949,6 @@ void loop()
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
       //currentStatus.RPM = 3000;
       boostControl();
-      nitrousControl();
     }
     //The IAT and CLT readings can be done less frequently (4 times per second)
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
@@ -960,6 +959,7 @@ void loop()
        readO2();
        readO2_2();
        readBat();
+       nitrousControl();
 
        if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 

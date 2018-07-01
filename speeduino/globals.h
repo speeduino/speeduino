@@ -221,7 +221,7 @@ struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjus
 struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
 struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
 
-//These are for the direct port manipulation of the injectors and coils
+//These are for the direct port manipulation of the injectors, coils and aux outputs
 volatile byte *inj1_pin_port;
 volatile byte inj1_pin_mask;
 volatile byte *inj2_pin_port;
