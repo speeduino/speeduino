@@ -2,7 +2,7 @@
 
 //pin setup
 void alphaPinSetup(){
-  switch (carSelect){
+  switch (alphaVars.carSelect){
     case 0:
       pinAC; // pin for AC clutch
       pinAcReq;
@@ -59,7 +59,7 @@ void alphaPinSetup(){
 void initialiseAC()
 {
   digitalWrite(pinAC, LOW); // initialize AC low
-  ACOn = false;
+  alphaVars.ACOn = false;
 }
 
 void fanControl2()
@@ -67,8 +67,8 @@ void fanControl2()
   //fan2
     int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
     int offTemp = onTemp - configPage6.fanHyster;
-    if ( ((currentStatus.fanOn) && (currentStatus.coolant >= onTemp+7) && (currentStatus.RPM > 500)) || (AcReq== true) ) { digitalWrite(pinFan2,fanHIGH); currentStatus.fanOn = true; }
-    if ( ((!currentStatus.fanOn) && (currentStatus.coolant <= offTemp+7) && (AcReq== false)) || (currentStatus.RPM == 0) ) { digitalWrite(pinFan2, fanLOW); currentStatus.fanOn = false; }
+    if ( ((currentStatus.fanOn) && (currentStatus.coolant >= onTemp+7) && (currentStatus.RPM > 500)) || (alphaVars.AcReq== true) ) { digitalWrite(pinFan2,fanHIGH); currentStatus.fanOn = true; }
+    if ( ((!currentStatus.fanOn) && (currentStatus.coolant <= offTemp+7) && (alphaVars.AcReq== false)) || (currentStatus.RPM == 0) ) { digitalWrite(pinFan2, fanLOW); currentStatus.fanOn = false; }
 }
 
 void audiFanControl()
@@ -101,14 +101,19 @@ void audiFanControl()
 
 void ACControl()
 {
-  if ((AcReq) && (currentStatus.TPS < 60) && (currentStatus.RPM > 600) && (currentStatus.RPM < 3600)){digitalWrite(pinAC, HIGH); ACOn = true;}// turn on AC compressor
-  else{ digitalWrite(pinAC, LOW); ACOn = false;} // shut down AC compressor
+  if ((alphaVars.AcReq) && (currentStatus.TPS < 60) && (currentStatus.RPM > 600) && (currentStatus.RPM < 3600)){digitalWrite(pinAC, HIGH); alphaVars.ACOn = true;}// turn on AC compressor
+  else{ digitalWrite(pinAC, LOW); alphaVars.ACOn = false;} // shut down AC compressor
 }
 
 void CELcontrol()
 {
-  if ((currentStatus.RPM == 0) || (currentStatus.tpsADC > configPage2.tpsMax + 1) || (currentStatus.tpsADC < configPage2.tpsMin - 1)/* || (currentStatus.mapADC > configPage1.mapMax + 1) || (currentStatus.mapADC < configPage1.mapMin - 1)*/ || (currentStatus.RPM > 6400))
-  {
+  if ((mapErrorCount > 4) || (cltErrorCount > 4) || (iatErrorCount > 4)  || (errorCount > 1) || (currentStatus.RPM == 0)){
+    alphaVars.CELon = true;
+  }
+  else{
+    alphaVars.CELon = false;
+  }
+  if (alphaVars.CELon)  {
     digitalWrite(pinCEL, HIGH);
   }
   else {digitalWrite(pinCEL, LOW);}
@@ -119,24 +124,24 @@ void vvlControl()
 {
   if ((currentStatus.RPM >= 5800) && (currentStatus.TPS > 80) && (currentStatus.coolant > 50))
   {
-    if (!vvlOn)
+    if (!alphaVars.vvlOn)
     {
-      vvlOn = true;
+      alphaVars.vvlOn = true;
       digitalWrite(pinVVL, HIGH);
     }
   }
-  else if ((currentStatus.RPM <= 5600) && (currentStatus.TPS < 80)) { digitalWrite(pinVVL, LOW);  vvlOn = false;}
+  else if ((currentStatus.RPM <= 5600) && (currentStatus.TPS < 80)) { digitalWrite(pinVVL, LOW);  alphaVars.vvlOn = false;}
 }
 
  void readACReq()
  {
-  if (carSelect == 2){
-    if ((digitalRead(pinAcReq) == HIGH) && (digitalRead(pinACpress) == LOW)) {AcReq= true;} //pin 26 is AC Request, pin 28 is a combined pressure/temp signal that is high when the A/C compressor can be activated
-      else {AcReq= false;}
+  if (alphaVars.carSelect == 2){
+    if ((digitalRead(pinAcReq) == HIGH) && (digitalRead(pinACpress) == LOW)) {alphaVars.AcReq= true;} //pin 26 is AC Request, pin 28 is a combined pressure/temp signal that is high when the A/C compressor can be activated
+      else {alphaVars.AcReq= false;}
   }
-  else if (carSelect == 1){
-    if ((digitalRead(pinAcReq) == HIGH) && (digitalRead(pinACpress) == LOW) && (analogRead(pinACtemp) < 860)) {AcReq= true;} //pin 26 is AC Request, pin 28 is a combined pressure/temp signal that is high when the A/C compressor can be activated
-      else {AcReq= false;}
+  else if (alphaVars.carSelect == 1){
+    if ((digitalRead(pinAcReq) == HIGH) && (digitalRead(pinACpress) == LOW) && (analogRead(pinACtemp) < 820)) {alphaVars.AcReq = true;}
+    else {alphaVars.AcReq= false;}
   }
  }
 
@@ -144,7 +149,7 @@ void vvlControl()
  static inline byte correctionVVL()
 {
   byte VVLValue = 100;
-  if (vvlOn) { VVLValue = 107; } //Adds 7% fuel when VVL is active
+  if (alphaVars.vvlOn) { VVLValue = 107; } //Adds 7% fuel when VVL is active
   return VVLValue;
 }
 
@@ -157,8 +162,8 @@ static inline bool correctionDFCO2()
   bool DFCOValue = false;
   if ( configPage2.dfcoEnabled == 1 )
   {
-    if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh )&& (DFCOwait)  && (currentStatus.coolant > 60);  }
-    else { DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh )&& (DFCOwait)&& (currentStatus.coolant > 60); }  }
+    if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh )&& (alphaVars.DFCOwait)  && (currentStatus.coolant > 60);  }
+    else { DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh )&& (alphaVars.DFCOwait)&& (currentStatus.coolant > 60); }  }
   return DFCOValue;
 }
 
@@ -190,66 +195,101 @@ static inline int8_t correctionZeroThrottleTiming(int8_t advance)
   else if ((currentStatus.TPS < 2) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))){
     ignZeroThrottleValue = 10;
   }
-  if ((ACOn == true) && (currentStatus.RPM < 3000) && (currentStatus.TPS < 30)) {ignZeroThrottleValue = ignZeroThrottleValue + 2;}
+  if ((alphaVars.ACOn == true) && (currentStatus.RPM < 3000) && (currentStatus.TPS < 30)) {ignZeroThrottleValue = ignZeroThrottleValue + 2;}
   return ignZeroThrottleValue;
 }
 
 void highIdleFunc(){
   //high idle function
-    if ( (( currentStatus.RPM > 950 ) && ( currentStatus.TPS > 7 )) || ((currentStatus.RPM > 1150) && (currentStatus.rpmDOT < -50)) ) 
+    if ( (( currentStatus.RPM > 950 ) && ( currentStatus.TPS > 7 )) || ((currentStatus.RPM > 1150) && (currentStatus.rpmDOT < -100)) ) 
     {
-      highIdleCount++;
-      if (highIdleCount <= 1 ) {highIdleReq = true;}
-      if (highIdleCount > 3) { highIdleReq = 3;}
+      alphaVars.highIdleCount++;
+      if (alphaVars.highIdleCount >= 2 ) {alphaVars.highIdleReq = true; }
     }
     else { 
-      if (highIdleCount > 0){
-        highIdleCount--;
+      if (alphaVars.highIdleCount > 0){
+        alphaVars.highIdleCount--;
       }
-      else if(highIdleCount == 0)
+      else if(alphaVars.highIdleCount == 0)
       {
-       highIdleReq = false; 
+       alphaVars.highIdleReq = false; 
       }
      }
+     alphaVars.highIdleCount = constrain(alphaVars.highIdleCount, 0, 12);
 }
 
 void DFCOwaitFunc(){
       //DFCO wait time
     if ( ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) ) 
     {
-      DFCOcounter++;
-      if (DFCOcounter > 2 ) {DFCOwait = true;}
+      alphaVars.DFCOcounter++;
+      if (alphaVars.DFCOcounter > 2 ) {alphaVars.DFCOwait = true;}
     }
-    else {DFCOwait = false; DFCOcounter = 0;}
+    else {alphaVars.DFCOwait = false; alphaVars.DFCOcounter = 0;}
 }
 
 
 void XRSgaugeCLT(){
 //Coolant gauge control
-  if (currentStatus.coolant < 40){
-    if (loopCLT < 220){
+  if (currentStatus.coolant < 50){
+    if (loopCLT < 320){
       digitalWrite(pinCLTgauge, LOW);
     }
     else {digitalWrite(pinCLTgauge, HIGH);}
    }
-  else if ((currentStatus.coolant >= 40) && (currentStatus.coolant < 60)){
-      if (loopCLT < 165){
+  else if ((currentStatus.coolant >= 50) && (currentStatus.coolant < 70)){
+      if (loopCLT < 225){
         digitalWrite(pinCLTgauge, LOW);
       }
       else {digitalWrite(pinCLTgauge, HIGH);}
   }
-  else if ((currentStatus.coolant >= 60) && (currentStatus.coolant < 90)){ 
+  else if ((currentStatus.coolant >= 70) && (currentStatus.coolant < 90)){ 
     if (loopCLT < 100){
         digitalWrite(pinCLTgauge, LOW);
       }
       else {digitalWrite(pinCLTgauge, HIGH);}
     }
-  else if ((currentStatus.coolant >= 90) && (currentStatus.coolant < 140)){
+  else if (currentStatus.coolant >= 90){
       if (loopCLT <= 35){
         digitalWrite(pinCLTgauge, LOW);
       }
       else {digitalWrite(pinCLTgauge, HIGH);}
   }
 }
-    
+
+void alphaIdleMods(){
+  if ((BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))){ currentStatus.idleDuty = currentStatus.idleDuty + 10;}
+  if ((alphaVars.highIdleReq) && (currentStatus.idleDuty < 60)){ currentStatus.idleDuty = currentStatus.idleDuty + alphaVars.highIdleCount;}
+  if (alphaVars.AcReq == true){ currentStatus.idleDuty = currentStatus.idleDuty + 10;}
+}
+
+void RPMdance(){
+  //sweep tacho gauge for cool points
+      if ((mainLoopCount > 30) && (mainLoopCount < 300))
+      {
+        tone(pinTachOut, mainLoopCount);
+        analogWrite(pinTachOut,  138);
+      }
+      else if (mainLoopCount == 4999)
+      {
+        noTone(pinTachOut);
+        digitalWrite(pinTachOut, LOW);
+        alphaVars.gaugeSweep = false;
+      }
+}
+
+uint16_t WOTdwellCorrection(uint16_t tempDwell){
+  if ((currentStatus.TPS > 80) && (currentStatus.RPM > 3500)){
+    uint16_t dwellCorr = map(currentStatus.RPM, 3500, 5000, 200, 1000);
+    tempDwell = tempDwell - dwellCorr;
+  }
+  return tempDwell;
+}
+
+uint16_t boostAssist(uint16_t tempDuty){
+  if ((currentStatus.TPS > 90) && (currentStatus.MAP < 120)){
+    tempDuty = 9000;
+  }
+  return tempDuty;
+}
 

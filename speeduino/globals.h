@@ -221,7 +221,7 @@ struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjus
 struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
 struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
 
-//These are for the direct port manipulation of the injectors and coils
+//These are for the direct port manipulation of the injectors, coils and aux outputs
 volatile byte *inj1_pin_port;
 volatile byte inj1_pin_mask;
 volatile byte *inj2_pin_port;
@@ -335,7 +335,6 @@ struct statuses {
   byte launchCorrection; //The amount of correction being applied if launch control is active
   byte flexCorrection; //Amount of correction being applied to compensate for ethanol content
   byte flexIgnCorrection; //Amount of additional advance being applied based on flex
-  byte vvlCorrection;
   byte afrTarget;
   byte idleDuty;
   bool idleUpActive;
@@ -441,7 +440,6 @@ struct config2 {
   //config2 in ini
   byte fuelAlgorithm : 3;
   byte fixAngEnable : 1; //Whether fixed/locked timing is enabled
-
   byte nInjectors : 4; //Number of injectors
 
 

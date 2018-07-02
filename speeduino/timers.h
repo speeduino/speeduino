@@ -23,7 +23,7 @@ volatile byte loop33ms;
 volatile byte loop66ms;
 volatile byte loop100ms;
 volatile byte loop250ms;
-volatile unsigned int loopCLT;
+volatile unsigned int loopCLT;//alphamods
 volatile int loopSec;
 
 volatile unsigned int dwellLimit_uS;

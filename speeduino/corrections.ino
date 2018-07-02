@@ -68,10 +68,12 @@ static inline byte correctionsFuel()
   currentStatus.iatCorrection = correctionIATDensity();
   if (currentStatus.iatCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.iatCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
-  
-  currentStatus.vvlCorrection = correctionVVL();
-  if (currentStatus.vvlCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.vvlCorrection); activeCorrections++; }
+
+  //alphamods
+  alphaVars.vvlCorrection = correctionVVL();
+  if (alphaVars.vvlCorrection != 100) { sumCorrections = (sumCorrections * alphaVars.vvlCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  //alphamods
 
   currentStatus.flexCorrection = correctionFlex();
   if (currentStatus.flexCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.flexCorrection); activeCorrections++; }
@@ -286,7 +288,8 @@ static inline byte correctionLaunch()
 static inline bool correctionDFCO()
 {
   bool DFCOValue = false;
-  if (carSelect == 255){
+    //alphamods
+  if (alphaVars.carSelect == 255){
     if ( configPage2.dfcoEnabled == 1 )
     {
       if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); }
@@ -296,6 +299,7 @@ static inline bool correctionDFCO()
   else{
    DFCOValue = correctionDFCO2();
   }
+  //alphamods
   return DFCOValue;
 }
 
@@ -405,12 +409,15 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionNitrous(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
-  if (carSelect != 255){
+    //alphamods
+  if (alphaVars.carSelect != 255){
     advance = correctionZeroThrottleTiming(advance);
   }
-  if (carSelect == 254){
+  if (alphaVars.carSelect == 254){
     advance = correctionAtUpshift(advance);
   }
+  //alphamods
+
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
   advance = correctionCrankingFixedTiming(advance); //This overrrides the regular fixed timing, must come last
@@ -540,5 +547,10 @@ uint16_t correctionsDwell(uint16_t dwell)
     //Possibly need some method of reducing spark duration here as well, but this is a start
     tempDwell = (revolutionTime / pulsesPerRevolution) - (configPage4.sparkDur * 100);
   }
+    //alphamods
+  if (alphaVars.carSelect != 255){
+    tempDwell = WOTdwellCorrection(tempDwell);
+  }
+  //alphamods
   return tempDwell;
 }

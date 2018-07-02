@@ -42,9 +42,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "storage.h"
 #include "scheduledIO.h"
 #include "crankMaths.h"
-#include <EEPROM.h>
 #include "alphaMods.h"
-
+#include <EEPROM.h>
 #if defined (CORE_TEENSY)
 #include <FlexCAN.h>
 #endif
@@ -250,8 +249,6 @@ void setup()
   }
   else { setPinMapping(configPage2.pinMapping); }
 
-  alphaPinSetup();
-
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
   if(configPage4.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
   else { coilHIGH = HIGH, coilLOW = LOW; }
@@ -275,7 +272,6 @@ void setup()
   //initialiseDisplay();
   initialiseIdle();
   initialiseFan();
-  initialiseAC();
   initialiseAuxPWM();
   initialiseCorrections();
   initialiseADC();
@@ -954,8 +950,6 @@ void loop()
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
       //currentStatus.RPM = 3000;
       boostControl();
-      nitrousControl();
-
     }
     //The IAT and CLT readings can be done less frequently (4 times per second)
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
@@ -963,10 +957,11 @@ void loop()
        BIT_CLEAR(TIMER_mask, BIT_TIMER_4HZ);
        readCLT();
        readIAT();
-       readACReq();
+       readACReq();//alphamods
        readO2();
        readO2_2();
        readBat();
+       nitrousControl();
 
        if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
@@ -1013,8 +1008,8 @@ void loop()
 #endif
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
-       vvlControl();
-
+       vvlControl(); //alphamods
+              
     } //4Hz timer
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {

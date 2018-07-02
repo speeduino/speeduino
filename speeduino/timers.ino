@@ -59,7 +59,7 @@ void initialiseTimers()
   loop66ms = 0;
   loop100ms = 0;
   loop250ms = 0;
-  loopCLT = 0;
+  loopCLT = 0; //alphamods
   loopSec = 0;
 }
 
@@ -78,24 +78,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
   loop33ms++;
   loop66ms++;
   loop100ms++;
-
   loop250ms++;
+  loopCLT++; //alphamods
   loopSec++;
-  if (carSelect != 255){
-    loopCLT++;
-     switch(carSelect){
-      case 1:
-       XRSgaugeCLT();
-       break;
-      case 2:
-       break;
-      case 4:
-       audiFanControl();
-       break;
-      default:
-       break;
-      }
-    }
 
   unsigned long targetOverdwellTime;
 
@@ -137,9 +122,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
   }
 
-  //Loop executed every CLT loop
+    //Loop executed every CLT loop
   //Anything inside this if statement will run every CLTms.
-  switch(carSelect){
+  switch(alphaVars.carSelect){
     case 1:
       if (loopCLT == 400){
         loopCLT = 0; // Reset counter
@@ -153,13 +138,14 @@ void oneMSInterval() //Most ARM chips can simply call a function
      default:
      break;
   }
+//alphamods  
 
   //Loop executed every 250ms loop (1ms x 250 = 250ms)
   //Anything inside this if statement will run every 250ms.
   if (loop250ms == 250)
   {
     loop250ms = 0; //Reset Counter
-
+    highIdleFunc();//alphamods
     BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
     #if defined(CORE_STM32) //debug purpose, only visal for running code
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
@@ -204,14 +190,14 @@ void oneMSInterval() //Most ARM chips can simply call a function
     if (configPage6.fanEnable == 1)
     {
        fanControl();            // Fucntion to turn the cooling fan on/off
-		if ((carSelect != 255) && (carSelect != 4)){
-        	fanControl2();
-       	}
-
+       //alphamods
+       if ((alphaVars.carSelect != 255) && (alphaVars.carSelect != 4)){
+        fanControl2();
+       }
     }
     ACControl();
     CELcontrol();
-
+    //alphamods
     //Check whether fuel pump priming is complete
     if(fpPrimed == false)
     {
@@ -259,10 +245,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //Off by 1 error check
       if (currentStatus.ethanolPct == 1) { currentStatus.ethanolPct = 0; }
 
-    }
-	if (carSelect != 255){
-      highIdleFunc();
-      DFCOwaitFunc();
     }
 
   }
