@@ -967,9 +967,9 @@ void loop()
       //check through the Aux input channels if enabed for Can or local use
       for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
          {
-          currentStatus.current_caninchannel = AuxinChan;
-          //currentStatus.canin[14] = currentStatus.current_caninchannel;
-          //currentStatus.canin[13]  = ((configPage9.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100);
+          currentStatus.current_caninchannel = AuxinChan;          
+          //currentStatus.canin[14] = ((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
+          //currentStatus.canin[13] = (configPage9.caninput_sel[currentStatus.current_caninchannel]&3);          
           if (configPage9.caninput_sel[currentStatus.current_caninchannel] == 1)  //if current input channel is enabled as canbus
             {
              if (configPage9.enable_candata_in)     //if external data input is enabled
@@ -981,15 +981,15 @@ void loop()
                   }
                }
             }
-          else if (configPage9.caninput_sel[currentStatus.current_caninchannel] == 2)  //if current input channel is enabled as analog local pin
+          else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  //if current input channel is enabled as analog local pin
             {
               //read analog channel specified
-              currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(configPage9.Auxinpin[currentStatus.current_caninchannel]);
+              currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&127);
             }
-          else if (configPage9.caninput_sel[currentStatus.current_caninchannel] == 3)  //if current input channel is enabled as digital local pin
+          else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)  //if current input channel is enabled as digital local pin
             {
               //read digital channel specified
-              currentStatus.canin[currentStatus.current_caninchannel] = readAuxdigital(configPage9.Auxinpin[currentStatus.current_caninchannel]);
+              currentStatus.canin[currentStatus.current_caninchannel] = readAuxdigital((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
             }
          }
 
@@ -998,13 +998,13 @@ void loop()
       for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
          {
           currentStatus.current_caninchannel = AuxinChan;
-          if (configPage9.caninput_sel[currentStatus.current_caninchannel] == 1)  //if current input channel is enabled as canbus
+          if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 1)  //if current input channel is enabled as canbus
             {
              if (configPage9.enable_candata_in)
                {
                 if (configPage9.enable_canbus == 1)  //can via secondary serial
                   {
-                   sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage9.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+256));    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
+                   sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage9.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100));    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
                   }
                 else if (configPage9.enable_canbus == 2) // can via internal can module
                   {
@@ -1012,15 +1012,15 @@ void loop()
                   }
                }
             }
-          else if (configPage9.caninput_sel[currentStatus.current_caninchannel] == 2)  //if current input channel is enabled as analog local pin
+          else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  //if current input channel is enabled as analog local pin
             {
               //read analog channel specified
-              currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(configPage9.Auxinpin[currentStatus.current_caninchannel]);
+              currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&127);
             }
-          else if (configPage9.caninput_sel[currentStatus.current_caninchannel] == 3)  //if current input channel is enabled as digital local pin
+          else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)  //if current input channel is enabled as digital local pin
             {
               //read digital channel specified
-              currentStatus.canin[currentStatus.current_caninchannel] = readAuxdigital(configPage9.Auxinpin[currentStatus.current_caninchannel]);
+              currentStatus.canin[currentStatus.current_caninchannel] = readAuxdigital((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
             }  
          }
 #endif

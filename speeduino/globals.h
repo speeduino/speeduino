@@ -678,38 +678,9 @@ struct config9 {
   uint16_t true_address;            //speeduino 11bit can address
   uint16_t realtime_base_address;   //speeduino 11 bit realtime base address
   uint16_t obd_address;             //speeduino OBD diagnostic address
-  uint8_t Auxinpin[16];
-  byte unused10_121;
-  byte unused10_122;
-  byte unused10_123;
-  byte unused10_124;
-  byte unused10_125;
-  byte unused10_126;
-  byte unused10_127;
-  byte unused10_128;
-  byte unused10_129;
-  byte unused10_130;
-  byte unused10_131;
-  byte unused10_132;
-  byte unused10_133;
-  byte unused10_134;
-  byte unused10_135;
-  byte unused10_136;
-  byte unused10_137;
-  byte unused10_138;
-  byte unused10_139;
-  byte unused10_140;
-  byte unused10_141;
-  byte unused10_142;
-  byte unused10_143;
-  byte unused10_144;
-  byte unused10_145;
-  byte unused10_146;
-  byte unused10_147;
-  byte unused10_148;
-  byte unused10_149;
-  byte unused10_150;
-  byte unused10_151;
+  uint8_t Auxinpina[16];            //analog  pin number when internal aux in use
+  uint8_t Auxinpinb[16];            // digital pin number when internal aux in use
+  
   byte unused10_152;
   byte unused10_153;
   byte unused10_154;
