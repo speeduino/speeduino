@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.60.15 - EFI Analytics, Inc." tuneComment="" writeDate="Tue Jul 03 17:30:28 AEST 2018"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.60.15 - EFI Analytics, Inc." tuneComment="" writeDate="Tue Jul 03 22:21:15 AEST 2018"/>
 <versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2018.6" nPages="10" signature="speeduino 201806"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
@@ -151,8 +151,8 @@
 <constant name="idleUpPolarity">"Inverted"</constant>
 <constant name="idleUpEnabled">"Off"</constant>
 <constant digits="0" name="idleUpAdder" units="% / Steps">163.0</constant>
-<constant digits="0" name="taeTaperMin" units="RPM">0.0</constant>
-<constant digits="0" name="taeTaperMax" units="RPM">1000.0</constant>
+<constant digits="0" name="taeTaperMin" units="RPM">1000.0</constant>
+<constant digits="0" name="taeTaperMax" units="RPM">4500.0</constant>
 <constant digits="0" name="iacCLminDuty" units="%">0.0</constant>
 <constant digits="0" name="iacCLmaxDuty" units="%">0.0</constant>
 <constant digits="0" name="boostMinDuty" units="%">20.0</constant>
