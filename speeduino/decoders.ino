@@ -44,8 +44,7 @@ As nearly all the decoders use a common method of determining RPM (The time the 
 A common function is simpler
 degreesOver is the number of crank degrees between tooth #1s. Some patterns have a tooth #1 every crank rev, others are every cam rev.
 */
-static inline uint16_t stdGetRPM(uint16_t degreesOver=360)
-//static inline uint16_t stdGetRPM()
+static inline uint16_t stdGetRPM(uint16_t degreesOver)
 {
   uint16_t tempRPM = 0;
 
@@ -247,7 +246,7 @@ uint16_t getRPM_missingTooth()
   else
   {
     if(configPage4.TrigSpeed == CAM_SPEED) { tempRPM = stdGetRPM(720); } //Account for cam speed
-    else { tempRPM = stdGetRPM(); }
+    else { tempRPM = stdGetRPM(360); }
   }
   return tempRPM;
 }
@@ -396,7 +395,7 @@ uint16_t getRPM_DualWheel()
   if( currentStatus.hasSync == true )
   {
     if(currentStatus.RPM < currentStatus.crankRPM) { tempRPM = crankingGetRPM(configPage4.triggerTeeth); }
-    else { tempRPM = stdGetRPM(); }
+    else { tempRPM = stdGetRPM(360); }
   }
   return tempRPM;
 }
@@ -534,7 +533,7 @@ uint16_t getRPM_BasicDistributor()
   uint16_t tempRPM;
   if( currentStatus.RPM < currentStatus.crankRPM )
   { tempRPM = crankingGetRPM(triggerActualTeeth) << 1; } //crankGetRPM uses teeth per 360 degrees. As triggerActualTeeh is total teeth in 720 degrees, we divide the tooth count by 2
-  else { tempRPM = stdGetRPM() << 1; } //Multiply RPM by 2 due to tracking over 720 degrees now rather than 360
+  else { tempRPM = stdGetRPM(720); } //Multiply RPM by 2 due to tracking over 720 degrees now rather than 360
 
   revolutionTime = revolutionTime >> 1; //Revolution time has to be divided by 2 as otherwise it would be over 720 degrees (triggerActualTeeth = nCylinders)
   MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
@@ -627,7 +626,7 @@ void triggerPri_GM7X()
 void triggerSec_GM7X() { return; } //Not required
 uint16_t getRPM_GM7X()
 {
-   return stdGetRPM();
+   return stdGetRPM(360);
 }
 int getCrankAngle_GM7X(int timePerDegree)
 {
@@ -1032,7 +1031,7 @@ uint16_t getRPM_4G63()
     }
     else
     {
-      if(configPage2.nCylinders == 4) { tempRPM = stdGetRPM(); }
+      if(configPage2.nCylinders == 4) { tempRPM = stdGetRPM(360); }
       else if(configPage2.nCylinders == 6) { tempRPM = stdGetRPM(720); }
       //EXPERIMENTAL! Add/subtract RPM based on the last rpmDOT calc
       //tempRPM += (micros() - toothOneTime) * currentStatus.rpmDOT
@@ -1164,7 +1163,7 @@ void triggerSec_24X()
 
 uint16_t getRPM_24X()
 {
-   return stdGetRPM();
+   return stdGetRPM(360);
 }
 int getCrankAngle_24X(int timePerDegree)
 {
@@ -1270,7 +1269,7 @@ void triggerSec_Jeep2000()
 
 uint16_t getRPM_Jeep2000()
 {
-   return stdGetRPM();
+   return stdGetRPM(360);
 }
 int getCrankAngle_Jeep2000(int timePerDegree)
 {
@@ -1382,7 +1381,7 @@ void triggerSec_Audi135()
 
 uint16_t getRPM_Audi135()
 {
-   return stdGetRPM();
+   return stdGetRPM(360);
 }
 
 int getCrankAngle_Audi135(int timePerDegree)
@@ -1479,7 +1478,7 @@ void triggerPri_HondaD17()
 void triggerSec_HondaD17() { return; } //The 4+1 signal on the cam is yet to be supported
 uint16_t getRPM_HondaD17()
 {
-   return stdGetRPM();
+   return stdGetRPM(360);
 }
 int getCrankAngle_HondaD17(int timePerDegree)
 {
@@ -1683,7 +1682,7 @@ uint16_t getRPM_Miata9905()
   }
   else
   {
-    tempRPM = stdGetRPM() << 1;
+    tempRPM = stdGetRPM(720);
     revolutionTime = revolutionTime / 2;
     MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
     if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
@@ -1840,7 +1839,7 @@ uint16_t getRPM_MazdaAU()
       revolutionTime = revolutionTime * 36;
       tempRPM = (tempToothAngle * 60000000L) / revolutionTime;
     }
-    else { tempRPM = stdGetRPM(); }
+    else { tempRPM = stdGetRPM(360); }
   }
   return tempRPM;
 }
@@ -1912,7 +1911,7 @@ uint16_t getRPM_non360()
   if( (currentStatus.hasSync == true) && (toothCurrentCount != 0) )
   {
     if(currentStatus.RPM < currentStatus.crankRPM) { tempRPM = crankingGetRPM(configPage4.triggerTeeth); }
-    else { tempRPM = stdGetRPM(); }
+    else { tempRPM = stdGetRPM(360); }
   }
   return tempRPM;
 }
@@ -2279,7 +2278,7 @@ uint16_t getRPM_Subaru67()
   if(currentStatus.startRevolutions > 0)
   {
     //As the tooth count is over 720 degrees, we need to double the RPM value and halve the revolution time
-    tempRPM = stdGetRPM() << 1;
+    tempRPM = stdGetRPM(720);
     revolutionTime = revolutionTime >> 1; //Revolution time has to be divided by 2 as otherwise it would be over 720 degrees (triggerActualTeeth = nCylinders)
   }
   return tempRPM;
@@ -2446,7 +2445,7 @@ uint16_t getRPM_Daihatsu()
     else { tempRPM = 0; } //No sync
   }
   else
-  { tempRPM = stdGetRPM() << 1; } //Multiply RPM by 2 due to tracking over 720 degrees now rather than 360
+  { tempRPM = stdGetRPM(720); } //TRacking over 2 crank revolutions
 
   return tempRPM;
 
@@ -2575,7 +2574,7 @@ uint16_t getRPM_Harley()
       }
     }
     else {
-      tempRPM = stdGetRPM();
+      tempRPM = stdGetRPM(360);
     }
   }
   return tempRPM;
