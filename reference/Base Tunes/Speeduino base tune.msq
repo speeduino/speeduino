@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.60.09 - EFI Analytics, Inc." tuneComment="" writeDate="Thu Jun 07 14:35:52 AEST 2018"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2018.5" nPages="10" signature="speeduino 201805"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.60.15 - EFI Analytics, Inc." tuneComment="" writeDate="Tue Jul 03 17:30:28 AEST 2018"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2018.6" nPages="10" signature="speeduino 201806"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
 <pcVariable cols="1" digits="0" name="algorithmLimits" rows="8">
@@ -124,7 +124,7 @@
 <constant name="injType">"Port"</constant>
 <constant name="nCylinders">"4"</constant>
 <constant name="algorithm">"MAP"</constant>
-<constant name="unused2_37d">"Off"</constant>
+<constant name="fixAngEnable">"Off"</constant>
 <constant name="nInjectors">"4"</constant>
 <constant name="engineType">"Even fire"</constant>
 <constant name="flexEnabled">"Off"</constant>
@@ -151,8 +151,8 @@
 <constant name="idleUpPolarity">"Inverted"</constant>
 <constant name="idleUpEnabled">"Off"</constant>
 <constant digits="0" name="idleUpAdder" units="% / Steps">163.0</constant>
-<constant digits="0" name="unused2-59" units="Deg">255.0</constant>
-<constant digits="0" name="unused2-60" units="Deg">255.0</constant>
+<constant digits="0" name="taeTaperMin" units="RPM">0.0</constant>
+<constant digits="0" name="taeTaperMax" units="RPM">1000.0</constant>
 <constant digits="0" name="iacCLminDuty" units="%">0.0</constant>
 <constant digits="0" name="iacCLmaxDuty" units="%">0.0</constant>
 <constant digits="0" name="boostMinDuty" units="%">20.0</constant>
@@ -280,7 +280,7 @@
       </constant>
 </page>
 <page number="3" size="128">
-<constant digits="0" name="TrigAng" units="Deg">0.0</constant>
+<constant digits="0" name="TrigAng" units="Deg">10.0</constant>
 <constant digits="0" name="FixAng" units="Deg">0.0</constant>
 <constant digits="0" name="CrankAng" units="Deg">5.0</constant>
 <constant digits="0" name="TrigAngMul">0.0</constant>
@@ -873,7 +873,21 @@
 <constant name="caninput_sel13">"Off"</constant>
 <constant name="caninput_sel14">"Off"</constant>
 <constant name="caninput_sel15">"Off"</constant>
+<constant name="caninput_source_can_address0">"0x100"</constant>
+<constant name="caninput_source_can_address1">"0x100"</constant>
+<constant name="caninput_source_can_address2">"0x100"</constant>
+<constant name="caninput_source_can_address3">"0x100"</constant>
+<constant name="caninput_source_can_address4">"0x100"</constant>
+<constant name="caninput_source_can_address5">"0x100"</constant>
+<constant name="caninput_source_can_address6">"0x100"</constant>
+<constant name="caninput_source_can_address7">"0x100"</constant>
 <constant name="caninput_source_can_address8">"0x706"</constant>
+<constant name="caninput_source_can_address9">"0x100"</constant>
+<constant name="caninput_source_can_address10">"0x100"</constant>
+<constant name="caninput_source_can_address11">"0x100"</constant>
+<constant name="caninput_source_can_address12">"0x100"</constant>
+<constant name="caninput_source_can_address13">"0x100"</constant>
+<constant name="caninput_source_can_address14">"0x100"</constant>
 <constant name="caninput_source_can_address15">"0x6FD"</constant>
 <constant name="caninput_source_start_byte0">"7"</constant>
 <constant name="caninput_source_start_byte1">"7"</constant>
@@ -964,7 +978,7 @@
 <constant digits="0" name="unused10_124">255.0</constant>
 <constant digits="0" name="unused10_125">255.0</constant>
 <constant digits="0" name="unused10_126">255.0</constant>
-<constant digits="0" name="unused10_127">100.0</constant>
+<constant digits="0" name="unused10_127">124.0</constant>
 </page>
 <page number="9" size="192">
 <constant cols="1" digits="0" name="crankingEnrichBins" rows="4" units="C">
@@ -1056,24 +1070,28 @@
          9.0 
          10.0 
       </constant>
-<constant cols="1" digits="0" name="unused11_75_191" rows="116" units="RPM">
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
+<constant name="n2o_enable">"2 stage"</constant>
+<constant name="n2o_arming_pin">"34"</constant>
+<constant digits="0" name="n2o_minCLT" units="C">20.0</constant>
+<constant digits="0" name="n2o_maxMAP" units="kPa">250.0</constant>
+<constant digits="0" name="n2o_minTPS" units="%TPS">30.0</constant>
+<constant digits="1" name="n2o_maxAFR" units="kPa">18.0</constant>
+<constant name="n2o_stage1_pin">"30"</constant>
+<constant name="n2o_pin_polarity">"LOW"</constant>
+<constant name="n2o_unused">0</constant>
+<constant digits="0" name="n2o_stage1_minRPM" units="RPM">3000.0</constant>
+<constant digits="0" name="n2o_stage1_maxRPM" units="RPM">6000.0</constant>
+<constant digits="1" name="n2o_stage1_adderMin" units="ms">6.0</constant>
+<constant digits="1" name="n2o_stage1_adderMax" units="ms">3.0</constant>
+<constant digits="0" name="n2o_stage1_retard" units="Deg">5.0</constant>
+<constant name="n2o_stage2_pin">"31"</constant>
+<constant name="n2o_stage2_unused">0</constant>
+<constant digits="0" name="n2o_stage2_minRPM" units="RPM">6000.0</constant>
+<constant digits="0" name="n2o_stage2_maxRPM" units="RPM">7000.0</constant>
+<constant digits="1" name="n2o_stage2_adderMin" units="ms">3.0</constant>
+<constant digits="1" name="n2o_stage2_adderMax" units="ms">1.5</constant>
+<constant digits="0" name="n2o_stage2_retard" units="Deg">5.0</constant>
+<constant cols="1" digits="0" name="unused11_75_191" rows="99" units="RPM">
          25500.0 
          25500.0 
          25500.0 
@@ -1175,7 +1193,7 @@
          25500.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_9" units="RAW">
-         0.0 
+         100.0 
       </constant>
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">
