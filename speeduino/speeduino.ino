@@ -949,7 +949,6 @@ void loop()
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
       //currentStatus.RPM = 3000;
       boostControl();
-      nitrousControl();
     }
     //The IAT and CLT readings can be done less frequently (4 times per second)
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
@@ -960,6 +959,7 @@ void loop()
        readO2();
        readO2_2();
        readBat();
+       nitrousControl();
 
        if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
@@ -1073,15 +1073,17 @@ void loop()
       //Manual adder for nitrous. These are not in correctionsFuel() because  they are direct adders to the ms value, not % based
       if(currentStatus.nitrous_status == NITROUS_STAGE1)
       { 
-        int16_t adderRange = configPage10.n2o_stage1_maxRPM - configPage10.n2o_stage1_minRPM;
-        int16_t adderPercent = ((currentStatus.RPM - configPage10.n2o_stage1_minRPM) * 100) / adderRange; //The percentage of the way through the RPM range
-        currentStatus.PW1 = currentStatus.PW1 + configPage10.n2o_stage1_adderMax + percentage(adderPercent, (configPage10.n2o_stage1_adderMin - configPage10.n2o_stage1_adderMax)); //Calculate the above percentage of the calculated ms value.
+        int16_t adderRange = (configPage10.n2o_stage1_maxRPM - configPage10.n2o_stage1_minRPM) * 100;
+        int16_t adderPercent = ((currentStatus.RPM - (configPage10.n2o_stage1_minRPM * 100)) * 100) / adderRange; //The percentage of the way through the RPM range
+        adderPercent = 100 - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
+        currentStatus.PW1 = currentStatus.PW1 + (configPage10.n2o_stage1_adderMax + percentage(adderPercent, (configPage10.n2o_stage1_adderMin - configPage10.n2o_stage1_adderMax))) * 100; //Calculate the above percentage of the calculated ms value.
       }
       if(currentStatus.nitrous_status == NITROUS_STAGE2)
       {
-        int16_t adderRange = configPage10.n2o_stage2_maxRPM - configPage10.n2o_stage2_minRPM;
-        int16_t adderPercent = ((currentStatus.RPM - configPage10.n2o_stage2_minRPM) * 100) / adderRange; //The percentage of the way through the RPM range
-        currentStatus.PW1 = currentStatus.PW1 + configPage10.n2o_stage2_adderMax + percentage(adderPercent, (configPage10.n2o_stage2_adderMin - configPage10.n2o_stage2_adderMax)); //Calculate the above percentage of the calculated ms value.
+        int16_t adderRange = (configPage10.n2o_stage2_maxRPM - configPage10.n2o_stage2_minRPM) * 100;
+        int16_t adderPercent = ((currentStatus.RPM - (configPage10.n2o_stage2_minRPM * 100)) * 100) / adderRange; //The percentage of the way through the RPM range
+        adderPercent = 100 - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
+        currentStatus.PW1 = currentStatus.PW1 + (configPage10.n2o_stage2_adderMax + percentage(adderPercent, (configPage10.n2o_stage2_adderMin - configPage10.n2o_stage2_adderMax))) * 100; //Calculate the above percentage of the calculated ms value.
       }
 
       int injector1StartAngle = 0;
