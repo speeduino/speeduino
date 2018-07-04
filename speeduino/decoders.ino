@@ -200,18 +200,18 @@ void triggerSec_missingTooth()
 {
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
-  if( (toothLastSecToothTime == 0)
-#ifndef SMALL_FLASH_MODE
-	  || (toothLastMinusOneSecToothTime == 0 )
-#endif
-  ) { curGap2 = 0; }
+  if( (toothLastSecToothTime == 0) || (toothLastMinusOneSecToothTime == 0 ) ) { curGap2 = 0; }
   if ( curGap2 >= triggerSecFilterTime )
   {
     if ( configPage4.trigPatternSec == SEC_TRIGGER_4_1 )
     {
       targetGap2 = (3 * (toothLastSecToothTime - toothLastMinusOneSecToothTime)) >> 1; //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
-      toothLastMinusOneSecToothTime = toothLastSecToothTime;
-      if ( ( curGap2 >= targetGap2 ) || ( secondaryToothCount > 3 ) )
+      if ( (((3 * curGap2) >> 1) <= (toothLastSecToothTime - toothLastMinusOneSecToothTime)) && (bool)curGap2 ) //small gap detection
+      {
+        secondaryToothCount = 2; //This keeps secondaryToothCount from counting to 4
+        triggerSecFilterTime = curGap2 >> 2; //Set filter at 25% of the current speed. Filter can only be recalc'd for the regular teeth, not the missing one.
+      }
+      else if ( ( curGap2 >= targetGap2 ) || ( secondaryToothCount > 3 ) )
       {
         secondaryToothCount = 1;
         revolutionOne = 1; //Sequential revolution reset
@@ -222,6 +222,7 @@ void triggerSec_missingTooth()
         triggerSecFilterTime = curGap2 >> 2; //Set filter at 25% of the current speed. Filter can only be recalc'd for the regular teeth, not the missing one.
         secondaryToothCount++;
       }
+      toothLastMinusOneSecToothTime = toothLastSecToothTime;
     }
     else
     {
