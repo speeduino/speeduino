@@ -75,6 +75,15 @@ void initialiseAuxPWM()
   boost_pin_mask = digitalPinToBitMask(pinBoost);
   vvt_pin_port = portOutputRegister(digitalPinToPort(pinVVT_1));
   vvt_pin_mask = digitalPinToBitMask(pinVVT_1);
+  n2o_stage1_pin_port = portOutputRegister(digitalPinToPort(configPage10.n2o_stage1_pin));
+  n2o_stage1_pin_mask = digitalPinToBitMask(configPage10.n2o_stage1_pin);
+  n2o_stage2_pin_port = portOutputRegister(digitalPinToPort(configPage10.n2o_stage2_pin));
+  n2o_stage2_pin_mask = digitalPinToBitMask(configPage10.n2o_stage2_pin);
+  n2o_arming_pin_port = portInputRegister(digitalPinToPort(configPage10.n2o_arming_pin));
+  n2o_arming_pin_mask = digitalPinToBitMask(configPage10.n2o_arming_pin);
+
+  if(configPage10.n2o_pin_polarity == 1) { pinMode(configPage10.n2o_arming_pin, INPUT_PULLUP); }
+  else { pinMode(configPage10.n2o_arming_pin, INPUT); }
 
   #if defined(CORE_STM32) || defined(CORE_TEENSY) //2uS resolution Min 8Hz, Max 5KHz
     boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
@@ -98,6 +107,9 @@ void initialiseAuxPWM()
     if(vvt_pwm_max_count > 0) { Timer1.attachInterrupt(3, vvtInterrupt);}
     Timer1.resume();
   #endif
+
+  currentStatus.nitrous_status = NITROUS_OFF;
+
 }
 
 #define BOOST_HYSTER  40
@@ -121,7 +133,7 @@ void boostControl()
     else if (configPage4.boostType == CLOSED_LOOP_BOOST)
     {
       if( (boostCounter & 7) == 1) { currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; } //Boost target table is in kpa and divided by 2
-      if(currentStatus.MAP >= (currentStatus.boostTarget - BOOST_HYSTER) )
+      if(currentStatus.MAP >= 100 ) //Only engage boost control above 100kpa. 
       {
         //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
         if( configPage2.flexEnabled == 1 )
@@ -205,6 +217,51 @@ void vvtControl()
     }
   }
   else { DISABLE_VVT_TIMER(); } // Disable timer channel
+}
+
+void nitrousControl()
+{
+  bool nitrousOn = false; //This tracks whether the control gets turned on at any point. 
+  if(configPage10.n2o_enable > 0)
+  {
+    bool isArmed = READ_N2O_ARM_PIN();
+    if (configPage10.n2o_pin_polarity == 1) { isArmed = !isArmed; } //If nitrous is active when pin is low, flip the reading (n2o_pin_polarity = 0 = active when High)
+
+    //Perform the main checks to see if nitrous is ready
+    if( (isArmed == true) && (currentStatus.coolant > (configPage10.n2o_minCLT - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.TPS > configPage10.n2o_minTPS) && (currentStatus.O2 < configPage10.n2o_maxAFR) && (currentStatus.MAP < configPage10.n2o_maxMAP) )
+    {
+      uint16_t realStage1MinRPM = (uint16_t)configPage10.n2o_stage1_minRPM * 100;
+      uint16_t realStage1MaxRPM = (uint16_t)configPage10.n2o_stage1_maxRPM * 100;
+      uint16_t realStage2MinRPM = (uint16_t)configPage10.n2o_stage2_minRPM * 100;
+      uint16_t realStage2MaxRPM = (uint16_t)configPage10.n2o_stage2_maxRPM * 100;
+
+      if( (currentStatus.RPM > realStage1MinRPM) && (currentStatus.RPM < realStage1MaxRPM) )
+      {
+        currentStatus.nitrous_status = NITROUS_STAGE1;
+        BIT_SET(currentStatus.status3, BIT_STATUS3_NITROUS);
+        N2O_STAGE1_PIN_HIGH();
+        nitrousOn = true;
+      }
+      if(configPage10.n2o_enable == NITROUS_STAGE2) //This is really just a sanity check
+      {
+        if( (currentStatus.RPM > realStage2MinRPM) && (currentStatus.RPM < realStage2MaxRPM) )
+        {
+          currentStatus.nitrous_status = NITROUS_STAGE2;
+          BIT_SET(currentStatus.status3, BIT_STATUS3_NITROUS);
+          N2O_STAGE2_PIN_HIGH();
+          nitrousOn = true;
+        }
+      }
+    }
+  }
+
+  if (nitrousOn == false)
+    {
+      currentStatus.nitrous_status = NITROUS_OFF;
+      BIT_CLEAR(currentStatus.status3, BIT_STATUS3_NITROUS);
+      N2O_STAGE1_PIN_LOW();
+      N2O_STAGE2_PIN_LOW();
+    }
 }
 
 void boostDisable()
