@@ -11,6 +11,7 @@ void alphaPinSetup(){
       pinVVL;
       pinACpress;
       pinACtemp;
+      pinRollingAL = 50;
   
     case 1:
       pinAC = 45; // pin for AC clutch
@@ -36,7 +37,7 @@ void alphaPinSetup(){
     case 4:
       pinAC = 45; // pin for AC clutch
       pinAcReq = 26;
-      pinFan2 = 35;
+      pinFan2 = 46;
       pinCEL = 53;
       //pinVVL = 6;
       pinACpress = 28;
@@ -46,6 +47,7 @@ void alphaPinSetup(){
       pinMode(pinAC, OUTPUT);
       pinMode(pinAcReq, INPUT);
       pinMode(pinCEL, OUTPUT);
+      pinMode(pinFan2, OUTPUT);
       //pinMode(pinVVL, OUTPUT);
       pinMode(pinACpress, INPUT_PULLUP);
       pinMode(pinACtemp, INPUT);
@@ -73,16 +75,38 @@ void fanControl2()
 
 void audiFanControl()
 {
-  if (currentStatus.coolant < 80){
-    if (loopCLT < 10){
+  if (loopCLT ==1){
       digitalWrite(pinFan2,LOW);
+  }
+  else{
+    if (currentStatus.coolant < 80){
+      if (loopCLT == 21){
+        digitalWrite(pinFan2,HIGH);
+      }
+    }
+    else if ((currentStatus.coolant >= 80) && (currentStatus.coolant < 90)){
+      if (loopCLT == 101){
+        digitalWrite(pinFan2,HIGH);
+      }
     }
     else{
+      if (loopCLT == 151){
+        digitalWrite(pinFan2,HIGH);
+      }
+    }
+  }
+  /*if (currentStatus.coolant < 80){
+    if (loopCLT == 1){
+      digitalWrite(pinFan2,LOW);
+     // Serial.print("LOW LoopCLT =");Serial.println(pinFan2);
+    }
+    else if (loopCLT == 21){
       digitalWrite(pinFan2,HIGH);
+      //Serial.print("HIGH LoopCLT =");Serial.println(loopCLT);
     }
   }
   else if ((currentStatus.coolant >= 80) && (currentStatus.coolant < 90)){
-    if (loopCLT < 100){
+    if (loopCLT == 100){
       digitalWrite(pinFan2,LOW);
     }
     else{
@@ -96,7 +120,7 @@ void audiFanControl()
     else{
       digitalWrite(pinFan2,HIGH);
     }
-  }
+  }*/
 }
 
 void ACControl()
@@ -179,7 +203,7 @@ static inline int8_t correctionAtUpshift(int8_t advance)
 static inline int8_t correctionZeroThrottleTiming(int8_t advance)
 {
   int8_t ignZeroThrottleValue = advance;
-  if ((currentStatus.TPS < 2) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))) //Check whether TPS coorelates to zero value
+  if ((currentStatus.TPS < 2) &&!(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))) //Check whether TPS coorelates to zero value
   {
      if ((currentStatus.RPM > 500) && (currentStatus.RPM <= 800)) { 
       ignZeroThrottleValue = map(currentStatus.RPM, 500, 800, 25, 9);
@@ -189,8 +213,12 @@ static inline int8_t correctionZeroThrottleTiming(int8_t advance)
      }
      else{ignZeroThrottleValue = advance;}
     ignZeroThrottleValue = constrain(ignZeroThrottleValue , 0, 25);
+    if (currentStatus.coolant < 63){
+      byte coldCorr = map(currentStatus.RPM, 800, 1700, 0, 10);
+      coldCorr = constrain(coldCorr, 0, 10);
+      ignZeroThrottleValue = ignZeroThrottleValue - coldCorr;
+    }
      if ((currentStatus.RPM > 3000) && (currentStatus.RPM < 5500)){ ignZeroThrottleValue = -5;}
-     
   }
   else if ((currentStatus.TPS < 2) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))){
     ignZeroThrottleValue = 10;
@@ -291,5 +319,25 @@ uint16_t boostAssist(uint16_t tempDuty){
     tempDuty = 9000;
   }
   return tempDuty;
+}
+
+static inline int8_t correctionRollingAntiLag(int8_t advance)
+{
+  byte ignRollingALValue = advance;
+  //SoftCut rev limit for 2-step launch control.
+  if (configPage6.launchEnabled && alphaVars.rollingALtrigger && (currentStatus.RPM > 2500) /*&& (currentStatus.TPS >= configPage10.lnchCtrlTPS)*/ )
+  {
+    uint16_t rollingALrpm = currentStatus.RPM + 300;
+    alphaVars.rollingALsoft = true;
+    ignSoftLaunchValue = map(currentStatus.RPM, rollingALrpm -400, rollingALrpm-100, configPage6.lnchRetard + 15, configPage6.lnchRetard);
+    constrain(ignSoftLaunchValue, configPage6.lnchRetard, configPage6.lnchRetard + 15);
+    if (currentStatus.RPM > rollingALrpm){ alphaVars.rollingALhard = true;}
+  }
+  else
+  {
+    alphaVars.rollingALsoft = false;
+  }
+
+  return ignRollingALValue;
 }
 

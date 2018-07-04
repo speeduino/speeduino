@@ -226,7 +226,12 @@ void triggerSec_missingTooth()
     }
     else
     {
-      revolutionOne = 1; //Sequential revolution reset
+      if (alphaVars.carSelect == 4){
+        if (toothCurrentCount == 58){
+          revolutionOne = 1;
+        }
+      }
+      else{ revolutionOne = 1;}
     }
     toothLastSecToothTime = curTime2;
   } //Trigger filter

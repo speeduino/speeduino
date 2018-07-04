@@ -273,6 +273,9 @@ void setup()
   initialiseIdle();
   initialiseFan();
   initialiseAuxPWM();
+  if (alphaVars.carSelect != 255){ // alphamods
+    alphaPinSetup();
+  }
   initialiseCorrections();
   initialiseADC();
 
@@ -962,7 +965,13 @@ void loop()
        readO2_2();
        readBat();
        nitrousControl();
-
+       
+       //alphamods
+       if (alphaVars.carSelect != 255){
+        alphaVars.rollingALtrigger = digitalRead(pinRollingAL);
+       }
+       //alphaMods
+       
        if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
@@ -1655,7 +1664,7 @@ void loop()
 
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
       //Check for any of the hard cut rev limits being on
-      if(currentStatus.launchingHard || BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) || BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) || currentStatus.flatShiftingHard)
+      if(currentStatus.launchingHard || BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) || BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) || currentStatus.flatShiftingHard || alphaVars.rollingALhard)
       {
         if(configPage2.hardCutType == HARD_CUT_FULL) { ignitionOn = false; }
         else { curRollingCut = ( (currentStatus.startRevolutions / 2) % maxIgnOutputs) + 1; } //Rolls through each of the active ignition channels based on how many revolutions have taken place

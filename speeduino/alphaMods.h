@@ -1,6 +1,6 @@
 struct alphaMods{
 //***
-  byte carSelect = 1; //0 - generic car; 1 - Corolla XRS; 2 - Hyundai Tiburon; 3 - Subaru WRX; 4 - Audi A4 1.8T; 255 - mods disabled
+  byte carSelect = 4; //0 - generic car; 1 - Corolla XRS; 2 - Hyundai Tiburon; 3 - Subaru WRX; 4 - Audi A4 1.8T; 255 - mods disabled
   
   bool ACOn; //whether AC is on
   bool AcReq; // AC request
@@ -12,6 +12,9 @@ struct alphaMods{
   bool CELon = false;
   bool gaugeSweep = true;
   byte vvlCorrection;
+  bool rollingALsoft = false;
+  bool rollingALhard = false;
+  bool rollingALtrigger = false;
   //**
 };
 
@@ -29,6 +32,7 @@ void alphaIdleMods();
 void RPMdance();
 uint16_t WOTdwellCorrection(uint16_t);
 uint16_t boostAssist(uint16_t);
+static inline int8_t correctionRollingAntiLag(int8_t);
 
 // Custom pins
  byte pinAC; // pin for AC clutch
@@ -40,6 +44,7 @@ uint16_t boostAssist(uint16_t);
  byte pinACtemp;
  byte pinOilPress;
  byte pinCLTgauge;
+ byte pinRollingAL;
 
 
 

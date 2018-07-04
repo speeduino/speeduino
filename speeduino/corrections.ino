@@ -411,6 +411,7 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionSoftFlatShift(advance);
     //alphamods
   if (alphaVars.carSelect != 255){
+    advance = correctionRollingAntiLag(advance);
     advance = correctionZeroThrottleTiming(advance);
   }
   if (alphaVars.carSelect == 254){

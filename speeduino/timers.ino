@@ -79,9 +79,21 @@ void oneMSInterval() //Most ARM chips can simply call a function
   loop66ms++;
   loop100ms++;
   loop250ms++;
-  loopCLT++; //alphamods
+  if (alphaVars.carSelect != 255){
+    loopCLT++; //alphamods
+  }
   loopSec++;
-
+  switch(alphaVars.carSelect){
+    case 1:
+      XRSgaugeCLT();
+      break;
+    case 4:
+      audiFanControl();
+      break;
+    default:
+      break;
+  }
+  
   unsigned long targetOverdwellTime;
 
   //Overdwell check
@@ -191,7 +203,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     {
        fanControl();            // Fucntion to turn the cooling fan on/off
        //alphamods
-       if ((alphaVars.carSelect != 255) && (alphaVars.carSelect != 4)){
+       if ((alphaVars.carSelect != 255) || (alphaVars.carSelect != 4) ){
         fanControl2();
        }
     }
