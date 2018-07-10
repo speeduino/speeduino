@@ -81,4 +81,7 @@ int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently si
 #define LONG 0;
 #define SHORT 1;
 
+#define CRANK_SPEED 0
+#define CAM_SPEED   1
+
 #endif

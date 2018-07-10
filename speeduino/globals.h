@@ -115,7 +115,7 @@
 #define BIT_TIMER_30HZ            4
 
 #define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
-#define BIT_STATUS3_UNUSED1       1
+#define BIT_STATUS3_NITROUS       1
 #define BIT_STATUS3_UNUSED2       2
 #define BIT_STATUS3_UNUSED3       3
 #define BIT_STATUS3_UNUSED4       4
@@ -164,6 +164,10 @@
 
 #define STAGING_MODE_TABLE  0
 #define STAGING_MODE_AUTO   1
+
+#define NITROUS_OFF         0
+#define NITROUS_STAGE1      1
+#define NITROUS_STAGE2      2
 
 #define RESET_CONTROL_DISABLED             0
 #define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
@@ -217,7 +221,7 @@ struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjus
 struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
 struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
 
-//These are for the direct port manipulation of the injectors and coils
+//These are for the direct port manipulation of the injectors, coils and aux outputs
 volatile byte *inj1_pin_port;
 volatile byte inj1_pin_mask;
 volatile byte *inj2_pin_port;
@@ -368,6 +372,7 @@ struct statuses {
   uint16_t crankRPM = 400; //The actual cranking RPM limit. Saves us multiplying it everytime from the config page
   volatile byte status3;
   int16_t flexBoostCorrection; //Amount of boost added based on flex
+  byte nitrous_status;
   byte nSquirts;
   byte nChannels; //Number of fuel and ignition channels
   int16_t fuelLoad;
@@ -434,7 +439,7 @@ struct config2 {
 
   //config2 in ini
   byte fuelAlgorithm : 3;
-  byte unused2_37d : 1;
+  byte fixAngEnable : 1; //Whether fixed/locked timing is enabled
   byte nInjectors : 4; //Number of injectors
 
 
@@ -730,7 +735,31 @@ struct config10 {
   uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%)
                             //And another three corn rows die.
 
-  byte unused11_75_191[117];
+  byte n2o_enable : 2;
+  byte n2o_arming_pin : 6;
+  byte n2o_minCLT;
+  byte n2o_maxMAP;
+  byte n2o_minTPS;
+  byte n2o_maxAFR;
+
+  byte n2o_stage1_pin : 6;
+  byte n2o_pin_polarity : 1;
+  byte n2o_stage1_unused : 1;
+  byte n2o_stage1_minRPM;
+  byte n2o_stage1_maxRPM;
+  byte n2o_stage1_adderMin;
+  byte n2o_stage1_adderMax;
+  byte n2o_stage1_retard;
+
+  byte n2o_stage2_pin : 6;
+  byte n2o_stage2_unused : 2;
+  byte n2o_stage2_minRPM;
+  byte n2o_stage2_maxRPM;
+  byte n2o_stage2_adderMin;
+  byte n2o_stage2_adderMax;
+  byte n2o_stage2_retard;
+
+  byte unused11_75_191[99];
 
 #if defined(CORE_AVR)
   };
