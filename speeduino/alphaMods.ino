@@ -1,7 +1,8 @@
 //#include "alphaMods.h"
 
 //pin setup
-void alphaPinSetup(){
+void alphaPinSetup(){//0 - generic car; 1 - Corolla XRS; 2 - Hyundai Tiburon; 3 - Subaru WRX; 4 - Audi A4 1.8T; 255 - mods disabled
+  
   switch (alphaVars.carSelect){
     case 0:
       pinAC; // pin for AC clutch
@@ -33,6 +34,24 @@ void alphaPinSetup(){
       pinMode(pinCLTgauge, OUTPUT);
       break;
     case 2:
+      pinAC = 44; // pin for AC clutch
+      pinAcReq = 26;
+      pinFan2 = 46;
+      pinCEL = 30;
+      //pinVVL = 6;
+      pinACpress = 28;
+      //pinACtemp = A5;
+      //pinOilPress = 30;
+      //pinCLTgauge = 2;
+      pinMode(pinAC, OUTPUT);
+      pinMode(pinAcReq, INPUT);
+      pinMode(pinCEL, OUTPUT);
+      pinMode(pinFan2, OUTPUT);
+      //pinMode(pinVVL, OUTPUT);
+      pinMode(pinACpress, INPUT_PULLUP);
+      //pinMode(pinACtemp, INPUT);
+      //pinMode(pinOilPress, INPUT_PULLUP);
+      //pinMode(pinCLTgauge, OUTPUT);
       break;
     case 4:
       pinAC = 45; // pin for AC clutch
@@ -95,32 +114,6 @@ void audiFanControl()
       }
     }
   }
-  /*if (currentStatus.coolant < 80){
-    if (loopCLT == 1){
-      digitalWrite(pinFan2,LOW);
-     // Serial.print("LOW LoopCLT =");Serial.println(pinFan2);
-    }
-    else if (loopCLT == 21){
-      digitalWrite(pinFan2,HIGH);
-      //Serial.print("HIGH LoopCLT =");Serial.println(loopCLT);
-    }
-  }
-  else if ((currentStatus.coolant >= 80) && (currentStatus.coolant < 90)){
-    if (loopCLT == 100){
-      digitalWrite(pinFan2,LOW);
-    }
-    else{
-      digitalWrite(pinFan2,HIGH);
-    }
-  }
-  else if (currentStatus.coolant >= 90){
-    if (loopCLT < 150){
-      digitalWrite(pinFan2,LOW);
-    }
-    else{
-      digitalWrite(pinFan2,HIGH);
-    }
-  }*/
 }
 
 void ACControl()
@@ -203,7 +196,7 @@ static inline int8_t correctionAtUpshift(int8_t advance)
 static inline int8_t correctionZeroThrottleTiming(int8_t advance)
 {
   int8_t ignZeroThrottleValue = advance;
-  if ((currentStatus.TPS < 2) &&!(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))) //Check whether TPS coorelates to zero value
+  if ((currentStatus.TPS < 2) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))) //Check whether TPS coorelates to zero value
   {
      if ((currentStatus.RPM > 500) && (currentStatus.RPM <= 800)) { 
       ignZeroThrottleValue = map(currentStatus.RPM, 500, 800, 25, 9);
@@ -213,15 +206,15 @@ static inline int8_t correctionZeroThrottleTiming(int8_t advance)
      }
      else{ignZeroThrottleValue = advance;}
     ignZeroThrottleValue = constrain(ignZeroThrottleValue , 0, 25);
-    if (currentStatus.coolant < 63){
+  /*  if (currentStatus.coolant < 63){
       byte coldCorr = map(currentStatus.RPM, 800, 1700, 0, 10);
       coldCorr = constrain(coldCorr, 0, 10);
       ignZeroThrottleValue = ignZeroThrottleValue - coldCorr;
-    }
+    }*/
      if ((currentStatus.RPM > 3000) && (currentStatus.RPM < 5500)){ ignZeroThrottleValue = -5;}
   }
   else if ((currentStatus.TPS < 2) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))){
-    ignZeroThrottleValue = 10;
+    ignZeroThrottleValue = 11;
   }
   if ((alphaVars.ACOn == true) && (currentStatus.RPM < 3000) && (currentStatus.TPS < 30)) {ignZeroThrottleValue = ignZeroThrottleValue + 2;}
   return ignZeroThrottleValue;
@@ -325,19 +318,19 @@ static inline int8_t correctionRollingAntiLag(int8_t advance)
 {
   byte ignRollingALValue = advance;
   //SoftCut rev limit for 2-step launch control.
-  if (configPage6.launchEnabled && alphaVars.rollingALtrigger && (currentStatus.RPM > 2500) /*&& (currentStatus.TPS >= configPage10.lnchCtrlTPS)*/ )
-  {
+  //if (configPage6.launchEnabled && alphaVars.rollingALtrigger && (currentStatus.RPM > 2500) /*&& (currentStatus.TPS >= configPage10.lnchCtrlTPS)*/ )
+  /*{
     uint16_t rollingALrpm = currentStatus.RPM + 300;
     alphaVars.rollingALsoft = true;
-    ignSoftLaunchValue = map(currentStatus.RPM, rollingALrpm -400, rollingALrpm-100, configPage6.lnchRetard + 15, configPage6.lnchRetard);
-    constrain(ignSoftLaunchValue, configPage6.lnchRetard, configPage6.lnchRetard + 15);
+    ignRollingALValue = map(currentStatus.RPM, rollingALrpm -400, rollingALrpm-100, configPage6.lnchRetard + 15, configPage6.lnchRetard);
+    constrain(ignRollingALValue, configPage6.lnchRetard, configPage6.lnchRetard + 15);
     if (currentStatus.RPM > rollingALrpm){ alphaVars.rollingALhard = true;}
   }
   else
   {
     alphaVars.rollingALsoft = false;
   }
-
+*/
   return ignRollingALValue;
 }
 

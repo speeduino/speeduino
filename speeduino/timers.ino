@@ -83,6 +83,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     loopCLT++; //alphamods
   }
   loopSec++;
+
   switch(alphaVars.carSelect){
     case 1:
       XRSgaugeCLT();
@@ -206,10 +207,12 @@ void oneMSInterval() //Most ARM chips can simply call a function
        if ((alphaVars.carSelect != 255) || (alphaVars.carSelect != 4) ){
         fanControl2();
        }
+
     }
     ACControl();
     CELcontrol();
     //alphamods
+
     //Check whether fuel pump priming is complete
     if(fpPrimed == false)
     {

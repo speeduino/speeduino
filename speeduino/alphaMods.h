@@ -1,6 +1,6 @@
 struct alphaMods{
 //***
-  byte carSelect = 4; //0 - generic car; 1 - Corolla XRS; 2 - Hyundai Tiburon; 3 - Subaru WRX; 4 - Audi A4 1.8T; 255 - mods disabled
+  byte carSelect = 0; //0 - generic car; 1 - Corolla XRS; 2 - Hyundai Tiburon; 3 - Subaru WRX; 4 - Audi A4 1.8T; 255 - mods disabled
   
   bool ACOn; //whether AC is on
   bool AcReq; // AC request

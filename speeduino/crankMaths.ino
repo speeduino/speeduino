@@ -15,7 +15,8 @@ unsigned long angleToTime(int16_t angle)
 {
 //#define degreesToUS(degrees) (decoderIsLowRes == true ) ? ((degrees * 166666UL) / currentStatus.RPM) : (degrees * (unsigned long)timePerDegree)
 //#define degreesToUS(degrees) ((degrees * revolutionTime) / 360)
-//#define degreesToUS(degrees) ((degrees * revolutionTime * 3054198967ULL) >> 40) //Fast version of divide by 360
+//Fast version of divide by 360:
+//#define degreesToUS(degrees) ((degrees * revolutionTime * 3054198967ULL) >> 40)
 //#define degreesToUS(degrees) (degrees * (unsigned long)timePerDegree)
     return ((angle * revolutionTime) / 360);
 }
@@ -27,7 +28,8 @@ uint16_t timeToAngle(unsigned long time)
 {
 
 //#define uSToDegrees(time) (((unsigned long)time * currentStatus.RPM) / 166666)
-//#define uSToDegrees(time) ( (((uint64_t)time * currentStatus.RPM * 211107077ULL) >> 45) ) //Crazy magic numbers method from Hackers delight (www.hackersdelight.org/magic.htm)
+//Crazy magic numbers method from Hackers delight (www.hackersdelight.org/magic.htm):
+//#define uSToDegrees(time) ( (((uint64_t)time * currentStatus.RPM * 211107077ULL) >> 45) ) 
     return (((unsigned long)time * currentStatus.RPM) / 166666);
 
 /*
