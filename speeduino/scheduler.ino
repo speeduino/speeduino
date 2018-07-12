@@ -642,6 +642,7 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
 
     //Need to check that the timeout doesn't exceed the overflow
     uint16_t timeout_timer_compare;
+    timeout -= (micros() - lastCrankAngleCalc);
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
@@ -663,7 +664,8 @@ static inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
   //if( (timeToEnd < ignitionSchedule1.duration) && (timeToEnd > IGNITION_REFRESH_THRESHOLD) )
   {
     noInterrupts();
-    ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeToEnd);
+    unsigned long adjustedTimeToEnd = timeToEnd - (micros() - lastCrankAngleCalc); //Take into account any time that has passed since the last crank angle calculation
+    ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(adjustedTimeToEnd);
     IGN1_COMPARE = ignitionSchedule1.endCompare;
     interrupts();
   }
@@ -1180,7 +1182,7 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule1.Status == STAGED)
     {
-      int16_t crankAngle = getCrankAngle(timePerDegree);
+      int16_t crankAngle = getCrankAngle();
       if(crankAngle > CRANK_ANGLE_MAX_IGN) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
       if(ignition1EndAngle > crankAngle)
       {

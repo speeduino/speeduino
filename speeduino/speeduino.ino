@@ -70,7 +70,7 @@ bool fuelPumpOn = false; //The current status of the fuel pump
 void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
 uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
-int (*getCrankAngle)(int); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
+int (*getCrankAngle)(); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of each decoder
 
 byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
@@ -141,7 +141,6 @@ void (*ign7EndFunction)();
 void (*ign8StartFunction)();
 void (*ign8EndFunction)();
 
-volatile int timePerDegree;
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 bool initialisationComplete = false; //Tracks whether the setup() functino has run completely
@@ -1154,10 +1153,12 @@ void loop()
         {
           long elapsedTime = (micros_safe() - toothOneTime); //micros() is no longer interrupt safe
           long rpm_adjust = (elapsedTime * (long)currentStatus.rpmDOT) / 1000000; //Take into account any likely accleration that has occurred since the last full revolution completed
+          rpm_adjust = 0;
           timePerDegree = ldiv( 166666L, currentStatus.RPM + rpm_adjust).quot; //There is a small amount of rounding in this calculation, however it is less than 0.001 of a uS (Faster as ldiv than / )
         }
 
       }
+      degreesPeruSx2048 = 2048 / timePerDegree;
 
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
       unsigned long pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
@@ -1329,7 +1330,7 @@ void loop()
       else { currentStatus.dwell =  (configPage4.dwellRun * 100); }
       currentStatus.dwell = correctionsDwell(currentStatus.dwell);
 
-      int dwellAngle = timeToAngle(currentStatus.dwell); //Convert the dwell time to dwell angle based on the current engine speed
+      int dwellAngle = timeToAngle(currentStatus.dwell, CRANKMATH_METHOD_INTERVAL_REV); //Convert the dwell time to dwell angle based on the current engine speed
 
       //Calculate start angle for each channel
       //1 cylinder (Everyone gets this)
@@ -1468,9 +1469,25 @@ void loop()
       //This may potentially be called a number of times as we get closer and closer to the opening time
 
       //Determine the current crank angle
-      int crankAngle = getCrankAngle(timePerDegree);
-      //if (crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle -= 360; }
+      int crankAngle = getCrankAngle();
       if (crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle -= CRANK_ANGLE_MAX_INJ; }
+
+      if(Serial && false)
+      {
+        if(ignition1StartAngle > crankAngle)
+        {
+          noInterrupts();
+          Serial.print("Time2LastTooth:"); Serial.println(micros()-toothLastToothTime);
+          Serial.print("elapsedTime:"); Serial.println(elapsedTime);
+          Serial.print("CurAngle:"); Serial.println(crankAngle);
+          Serial.print("RPM:"); Serial.println(currentStatus.RPM);
+          Serial.print("Tooth:"); Serial.println(toothCurrentCount);
+          Serial.print("timePerDegree:"); Serial.println(timePerDegree);
+          Serial.print("IGN1Angle:"); Serial.println(ignition1StartAngle);
+          Serial.print("TimeToIGN1:"); Serial.println(angleToTime((ignition1StartAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV));
+          interrupts();
+        }
+      }
 
 #if INJ_CHANNELS >= 1
       if (fuelOn && !BIT_CHECK(currentStatus.status1, BIT_STATUS1_BOOSTCUT))
@@ -1665,7 +1682,7 @@ void loop()
       {
         //Refresh the current crank angle info
         //ignition1StartAngle = 335;
-        crankAngle = getCrankAngle(timePerDegree); //Refresh with the latest crank angle
+        crankAngle = getCrankAngle(); //Refresh with the latest crank angle
         if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
 
 #if IGN_CHANNELS >= 1
@@ -1682,29 +1699,32 @@ void loop()
             {
               setIgnitionSchedule1(ign1StartFunction,
                         //((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                        angleToTime((ignition1StartAngle - crankAngle)),
+                        angleToTime((ignition1StartAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV),
                         currentStatus.dwell + fixedCrankingOverride, //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,
                         ign1EndFunction
                         );
             }
         }
 #endif
-        /*
+        
         if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && configPage4.StgCycles == 0)
         {
           unsigned long uSToEnd = 0;
 
-          ONLY ONE OF THE BELOW SHOULD BE USED (PROBABLY THE FIRST):
-          *********
+          crankAngle = getCrankAngle(); //Refresh with the latest crank angle
+          if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
+          
+          //ONLY ONE OF THE BELOW SHOULD BE USED (PROBABLY THE FIRST):
+          //*********
           if(ignition1EndAngle > crankAngle) { uSToEnd = fastDegreesToUS( (ignition1EndAngle - crankAngle) ); }
           else { uSToEnd = fastDegreesToUS( (360 + ignition1EndAngle - crankAngle) ); }
-          *********
-          uSToEnd = ((ignition1EndAngle - crankAngle) * (toothLastToothTime - toothLastMinusOneToothTime)) / triggerToothAngle;
-          *********
+          //*********
+          //uSToEnd = ((ignition1EndAngle - crankAngle) * (toothLastToothTime - toothLastMinusOneToothTime)) / triggerToothAngle;
+          //*********
 
           refreshIgnitionSchedule1( uSToEnd + fixedCrankingOverride );
         }
-        */
+        
 
 
 #if IGN_CHANNELS >= 2
@@ -1714,7 +1734,7 @@ void loop()
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
         {
             unsigned long ignition2StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition2StartTime = angleToTime((tempStartAngle - tempCrankAngle)); }
+            if(tempStartAngle > tempCrankAngle) { ignition2StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition2StartTime = 0; }
 
@@ -1737,7 +1757,7 @@ void loop()
         //if (tempStartAngle > tempCrankAngle)
         {
             long ignition3StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition3StartTime = angleToTime((tempStartAngle - tempCrankAngle)); }
+            if(tempStartAngle > tempCrankAngle) { ignition3StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition3StartTime = 0; }
 
@@ -1761,7 +1781,7 @@ void loop()
         {
 
             long ignition4StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition4StartTime = angleToTime((tempStartAngle - tempCrankAngle)); }
+            if(tempStartAngle > tempCrankAngle) { ignition4StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition4StartTime = 0; }
 
@@ -1785,7 +1805,7 @@ void loop()
         {
 
             long ignition5StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition5StartTime = angleToTime((tempStartAngle - tempCrankAngle)); }
+            if(tempStartAngle > tempCrankAngle) { ignition5StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition5StartTime = 0; }
 

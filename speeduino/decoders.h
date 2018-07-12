@@ -21,12 +21,12 @@ void triggerSetup_missingTooth();
 void triggerPri_missingTooth();
 void triggerSec_missingTooth();
 uint16_t getRPM_missingTooth();
-int getCrankAngle_missingTooth(int timePerDegree);
+int getCrankAngle_missingTooth();
 void triggerSetup_DualWheel();
 void triggerPri_DualWheel();
 void triggerSec_DualWheel();
 uint16_t getRPM_DualWheel();
-int getCrankAngle_DualWheel(int timePerDegree);
+int getCrankAngle_DualWheel();
 
 unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
 
@@ -69,6 +69,8 @@ bool decoderIsSequential; //Whether or not the decoder supports sequential opera
 bool decoderIsLowRes = false; //Is set true, certain extra calculations are performed for better timing accuracy
 bool decoderHasFixedCrankingTiming = false; //Whether or not the decoder supports fixed cranking timing
 byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
+unsigned long elapsedTime;
+unsigned long lastCrankAngleCalc;
 
 int16_t ignition1EndTooth = 0;
 int16_t ignition2EndTooth = 0;
