@@ -366,36 +366,41 @@ void setup()
     case 1:
       channel1IgnDegrees = 0;
       channel1InjDegrees = 0;
+      maxIgnOutputs = 1;
+
+      //Sequential ignition works identically on a 1 cylinder whether it's odd or even fire. 
+      if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) { CRANK_ANGLE_MAX_IGN = 720; }
+
+      if (configPage2.injLayout == INJ_SEQUENTIAL)
+      {
+        CRANK_ANGLE_MAX_INJ = 720;
+        currentStatus.nSquirts = 1;
+        req_fuel_uS = req_fuel_uS * 2;
+      }
 
       channel1InjEnabled = true;
       break;
 
     case 2:
       channel1IgnDegrees = 0;
+      channel1InjDegrees = 0;
       maxIgnOutputs = 2;
-      if (configPage2.engineType == EVEN_FIRE )
-      {
-        channel2IgnDegrees = 180;
-      }
+      if (configPage2.engineType == EVEN_FIRE ) { channel2IgnDegrees = 180; }
       else { channel2IgnDegrees = configPage2.oddfire2; }
 
-      //For alternating injection, the squirt occurs at different times for each channel
-      if(configPage2.injLayout == INJ_SEMISEQUENTIAL || configPage2.injLayout == INJ_PAIRED)
-      {
-        channel1InjDegrees = 0;
-        channel2InjDegrees = channel2IgnDegrees; //Set to the same as the ignition degrees (Means there's no need for another if to check for oddfire)
+      //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder). 
+      if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) { CRANK_ANGLE_MAX_IGN = 720; }
 
-        if (!configPage2.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
-      }
-      else if (configPage2.injLayout == INJ_SEQUENTIAL)
+      if (configPage2.injLayout == INJ_SEQUENTIAL)
       {
-        channel1InjDegrees = 0;
-        channel2InjDegrees = channel2IgnDegrees;
-
         CRANK_ANGLE_MAX_INJ = 720;
         currentStatus.nSquirts = 1;
         req_fuel_uS = req_fuel_uS * 2;
       }
+      //The below are true regardless of whether this is running sequential or not
+      if (configPage2.engineType == EVEN_FIRE ) { channel2InjDegrees = 180; }
+      else { channel2InjDegrees = configPage2.oddfire2; }
+      if (!configPage2.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
@@ -412,7 +417,6 @@ void setup()
           channel3IgnDegrees = 480;
 
           CRANK_ANGLE_MAX_IGN = 720;
-          currentStatus.nSquirts = 1;
         }
         else
         {
@@ -458,6 +462,7 @@ void setup()
       break;
     case 4:
       channel1IgnDegrees = 0;
+      channel1InjDegrees = 0;
       maxIgnOutputs = 2; //Default value for 4 cylinder, may be changed below
       if (configPage2.engineType == EVEN_FIRE )
       {
@@ -474,7 +479,6 @@ void setup()
           channel4IgnDegrees = 540;
 
           CRANK_ANGLE_MAX_IGN = 720;
-          currentStatus.nSquirts = 1;
           maxIgnOutputs = 4;
         }
         else if(configPage4.sparkMode == IGN_MODE_ROTARY)
@@ -495,14 +499,12 @@ void setup()
       //For alternatiing injection, the squirt occurs at different times for each channel
       if(configPage2.injLayout == INJ_SEMISEQUENTIAL || configPage2.injLayout == INJ_PAIRED)
       {
-        channel1InjDegrees = 0;
         channel2InjDegrees = 180;
 
         if (!configPage2.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
       }
       else if (configPage2.injLayout == INJ_SEQUENTIAL)
       {
-        channel1InjDegrees = 0;
         channel2InjDegrees = 180;
         channel3InjDegrees = 360;
         channel4InjDegrees = 540;
