@@ -16,6 +16,8 @@ Flood clear mode etc.
 #include "corrections.h"
 #include "globals.h"
 #include "timers.h"
+#include "maths.h"
+#include "src/PID_v1/PID_v1.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
 PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
@@ -423,7 +425,7 @@ static inline int8_t correctionFlexTiming(int8_t advance)
   byte ignFlexValue = advance;
   if( configPage2.flexEnabled == 1 ) //Check for flex being enabled
   {
-    currentStatus.flexIgnCorrection = table2D_getValue(&flexAdvTable, currentStatus.ethanolPct);
+    currentStatus.flexIgnCorrection = (int8_t)table2D_getValue(&flexAdvTable, currentStatus.ethanolPct); //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here. 
     ignFlexValue = advance + currentStatus.flexIgnCorrection;
   }
   return ignFlexValue;
