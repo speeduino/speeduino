@@ -40,9 +40,15 @@ uint16_t MAPcurRev; //Tracks which revolution we're sampling on
 
 static inline void instanteneousMAPReading() __attribute__((always_inline));
 static inline void readMAP() __attribute__((always_inline));
+void initialiseADC();
 void readTPS();
 void readO2_2();
 void flexPulse();
+void readCLT();
+void readIAT();
+void readO2();
+void readBat();
+void readBaro();
 
 
 #if defined(ANALOG_ISR)

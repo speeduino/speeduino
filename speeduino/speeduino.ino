@@ -36,12 +36,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "idle.h"
 #include "auxiliaries.h"
 #include "sensors.h"
-#include "src/PID_v1/PID_v1.h"
 //#include "src/DigitalWriteFast/digitalWriteFast.h"
 #include "errors.h"
 #include "storage.h"
 #include "scheduledIO.h"
 #include "crankMaths.h"
+#include "updates.h"
 #include <EEPROM.h>
 #if defined (CORE_TEENSY)
 #include <FlexCAN.h>
@@ -92,8 +92,6 @@ int CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system tr
 
 static byte coilHIGH = HIGH;
 static byte coilLOW = LOW;
-static byte fanHIGH = HIGH;             // Used to invert the cooling fan output
-static byte fanLOW = LOW;               // Used to invert the cooling fan output
 
 volatile uint16_t mainLoopCount;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc

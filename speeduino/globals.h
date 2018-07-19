@@ -334,7 +334,7 @@ struct statuses {
   byte iatCorrection; //The amount of inlet air temperature adjustment currently being applied
   byte launchCorrection; //The amount of correction being applied if launch control is active
   byte flexCorrection; //Amount of correction being applied to compensate for ethanol content
-  byte flexIgnCorrection; //Amount of additional advance being applied based on flex
+  int8_t flexIgnCorrection; //Amount of additional advance being applied based on flex. Note the type as this allows for negative values
   byte afrTarget;
   byte idleDuty;
   bool idleUpActive;
@@ -732,7 +732,7 @@ struct config10 {
   uint8_t flexFuelBins[6];
   uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%)
   uint8_t flexAdvBins[6];
-  uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%)
+  uint8_t  flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%). NOTE: THIS IS A SIGNED VALUE!
                             //And another three corn rows die.
 
   byte n2o_enable : 2;

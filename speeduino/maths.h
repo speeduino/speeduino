@@ -3,6 +3,8 @@
 
 int fastMap1023toX(int, int);
 unsigned long percentage(byte, unsigned long);
+inline long powint(int, unsigned int);
+int divs100(long);
 
 #define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d)/2)/(d)) : (((n) + (d)/2)/(d)))
 

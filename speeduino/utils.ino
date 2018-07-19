@@ -10,6 +10,7 @@
   This function is one big MISRA violation. MISRA advisories forbid directly poking at memory addresses, however there is no other way of determining heap size on embedded systems.
 */
 #include "utils.h"
+#include "globals.h"
 
 uint16_t freeRam ()
 {
