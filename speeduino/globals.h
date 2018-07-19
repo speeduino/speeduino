@@ -283,9 +283,15 @@ int ignition4EndAngle = 0;
 int ignition5EndAngle = 0;
 
 //This is used across multiple files
+bool initialisationComplete = false; //Tracks whether the setup() functino has run completely
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
 volatile unsigned long ms_counter = 0; //A counter that increments once per ms
+bool clutchTrigger;
+bool previousClutchTrigger;
+volatile uint16_t toothHistory[TOOTH_LOG_BUFFER];
+volatile unsigned int toothHistoryIndex = 0;
+volatile bool toothLogRead = false; //Flag to indicate whether the current tooth log values have been read out yet
 
 //This needs to be here because using the config page directly can prevent burning the setting
 byte resetControl = RESET_CONTROL_DISABLED;

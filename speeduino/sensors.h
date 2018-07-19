@@ -31,6 +31,11 @@ unsigned long EMAPrunningValue; //As above but for EMAP
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
 uint16_t MAPcurRev; //Tracks which revolution we're sampling on
 
+//These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
+byte mapErrorCount = 0;
+byte iatErrorCount = 0;
+byte cltErrorCount = 0;
+
 /*
  * Simple low pass IIR filter macro for the analog inputs
  * This is effectively implementing the smooth filter from http://playground.arduino.cc/Main/Smooth

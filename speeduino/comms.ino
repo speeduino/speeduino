@@ -4,6 +4,12 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 
+#include "comms.h"
+#include "globals.h"
+#include "storage.h"
+#include "maths.h"
+#include "utils.h"
+
 /*
   Processes the data on the serial buffer.
   Can be either a new command or a continuation of one that is already in progress:

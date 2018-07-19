@@ -3,6 +3,8 @@
 
 void initialiseAuxPWM();
 void boostControl();
+void boostDisable();
+void idleControl();
 void vvtControl();
 void initialiseFan();
 void nitrousControl();

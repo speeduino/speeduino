@@ -262,7 +262,6 @@ int getCrankAngle_missingTooth()
     tempToothCurrentCount = toothCurrentCount;
     tempRevolutionOne = revolutionOne;
     tempToothLastToothTime = toothLastToothTime;
-    //elapsedTime = (micros() - toothLastToothTime); //micros() is no longer interrupt safe
     interrupts();
 
     int crankAngle = ((tempToothCurrentCount - 1) * triggerToothAngle) + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.

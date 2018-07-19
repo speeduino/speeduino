@@ -77,11 +77,6 @@ byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
 
-//These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
-byte mapErrorCount = 0;
-byte iatErrorCount = 0;
-byte cltErrorCount = 0;
-
 unsigned long counter;
 unsigned long currentLoopTime; //The time the current loop started (uS)
 unsigned long previousLoopTime; //The time the previous loop started (uS)
@@ -90,9 +85,6 @@ int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360;
 int CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 
-static byte coilHIGH = HIGH;
-static byte coilLOW = LOW;
-
 volatile uint16_t mainLoopCount;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
@@ -100,8 +92,6 @@ byte maxIgnOutputs = 1; //Used for rolling rev limiter
 byte curRollingCut = 0; //Rolling rev limiter, current ignition channel being cut
 uint16_t fixedCrankingOverride = 0;
 int16_t lastAdvance; //Stores the previous advance figure to track changes.
-bool clutchTrigger;
-bool previousClutchTrigger;
 
 unsigned long secCounter; //The next time to incremen 'runSecs' counter.
 int channel1IgnDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
@@ -141,7 +131,6 @@ void (*ign8EndFunction)();
 
 byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
-bool initialisationComplete = false; //Tracks whether the setup() functino has run completely
 
 void setup()
 {
@@ -302,7 +291,7 @@ void setup()
   }
 
   //Check whether the flex sensor is enabled and if so, attach an interupt for it
-  if(configPage2.flexEnabled)
+  if(configPage2.flexEnabled > 0)
   {
     attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, RISING);
     currentStatus.ethanolPct = 0;
@@ -398,7 +387,12 @@ void setup()
       //The below are true regardless of whether this is running sequential or not
       if (configPage2.engineType == EVEN_FIRE ) { channel2InjDegrees = 180; }
       else { channel2InjDegrees = configPage2.oddfire2; }
-      if (!configPage2.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      if (!configPage2.injTiming) 
+      { 
+        //For simultaneous, all squirts happen at the same time
+        channel1InjDegrees = 0;
+        channel2InjDegrees = 0; 
+      } 
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
@@ -429,7 +423,7 @@ void setup()
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if(configPage2.injLayout == INJ_SEMISEQUENTIAL || configPage2.injLayout == INJ_PAIRED)
+      if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = 120;
@@ -442,7 +436,13 @@ void setup()
           channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
         }
 
-        if (!configPage2.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+        if (!configPage2.injTiming) 
+        { 
+          //For simultaneous, all squirts happen at the same time
+          channel1InjDegrees = 0;
+          channel2InjDegrees = 0;
+          channel3InjDegrees = 0; 
+        } 
       }
       else if (configPage2.injLayout == INJ_SEQUENTIAL)
       {
@@ -495,11 +495,16 @@ void setup()
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if(configPage2.injLayout == INJ_SEMISEQUENTIAL || configPage2.injLayout == INJ_PAIRED)
+      if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
       {
         channel2InjDegrees = 180;
 
-        if (!configPage2.injTiming) { channel1InjDegrees = channel2InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+        if (!configPage2.injTiming) 
+        { 
+          //For simultaneous, all squirts happen at the same time
+          channel1InjDegrees = 0;
+          channel2InjDegrees = 0; 
+        }
       }
       else if (configPage2.injLayout == INJ_SEQUENTIAL)
       {
@@ -547,7 +552,7 @@ void setup()
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if(configPage2.injLayout == INJ_SEMISEQUENTIAL || configPage2.injLayout == INJ_PAIRED)
+      if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = 72;
@@ -566,7 +571,15 @@ void setup()
         CRANK_ANGLE_MAX_INJ = 720;
         currentStatus.nSquirts = 1;
       }
-      if (!configPage2.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = channel5InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      if (!configPage2.injTiming) 
+      { 
+        //For simultaneous, all squirts happen at the same time
+        channel1InjDegrees = 0;
+        channel2InjDegrees = 0;
+        channel3InjDegrees = 0;
+        channel4InjDegrees = 0;
+        channel5InjDegrees = 0; 
+      }
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
@@ -610,7 +623,13 @@ void setup()
       }
 #endif
 
-      if (!configPage2.injTiming) { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      if (!configPage2.injTiming) 
+      { 
+        //For simultaneous, all squirts happen at the same time
+        channel1InjDegrees = 0;
+        channel2InjDegrees = 0;
+        channel3InjDegrees = 0; 
+      } 
 
       configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
 
@@ -657,7 +676,14 @@ void setup()
 
       maxIgnOutputs = 4;
 
-      if (!configPage2.injTiming)  { channel1InjDegrees = channel2InjDegrees = channel3InjDegrees = channel4InjDegrees = 0; } //For simultaneous, all squirts happen at the same time
+      if (!configPage2.injTiming) 
+      { 
+        //For simultaneous, all squirts happen at the same time
+        channel1InjDegrees = 0;
+        channel2InjDegrees = 0;
+        channel3InjDegrees = 0;
+        channel4InjDegrees = 0; 
+      }
 
       configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
 
@@ -842,7 +868,8 @@ void loop()
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
-      currentStatus.RPM = currentStatus.longRPM = getRPM(); //Long RPM is included here
+      currentStatus.longRPM = getRPM(); //Long RPM is included here
+      currentStatus.RPM = currentStatus.longRPM;
       FUEL_PUMP_ON();
       fuelPumpOn = true; //Not sure if this is needed.
     }
@@ -900,7 +927,7 @@ void loop()
 
       //Check for launching/flat shift (clutch) can be done around here too
       previousClutchTrigger = clutchTrigger;
-      if(configPage6.launchHiLo) { clutchTrigger = digitalRead(pinLaunch); }
+      if(configPage6.launchHiLo > 0) { clutchTrigger = digitalRead(pinLaunch); }
       else { clutchTrigger = !digitalRead(pinLaunch); }
 
       if(previousClutchTrigger != clutchTrigger) { currentStatus.clutchEngagedRPM = currentStatus.RPM; }
@@ -912,7 +939,7 @@ void loop()
       else { currentStatus.flatShiftingHard = false; }
 
       //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
-      if(configPage6.boostCutType && currentStatus.MAP > (configPage6.boostLimit * 2) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
+      if( (configPage6.boostCutType > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2)) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
       {
         switch(configPage6.boostCutType)
         {
@@ -984,7 +1011,7 @@ void loop()
 
 #elif defined(CORE_STM32) || defined(CORE_TEENSY)
       //if serial3io is enabled then check for serial3 requests.
-      if (configPage9.enable_candata_in)
+      if (configPage9.enable_candata_in > 0)
           {
            for (byte caninChan = 0; caninChan <16 ; caninChan++)
               {
@@ -1012,7 +1039,7 @@ void loop()
       readBaro(); //Infrequent baro readings are not an issue.
     } //1Hz timer
 
-    if(configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL || configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) { idleControl(); } //Run idlecontrol every loop for stepper idle.
+    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) )  { idleControl(); } //Run idlecontrol every loop for stepper idle.
 
     //Always check for sync
     //Main loop runs within this clause
@@ -1027,7 +1054,7 @@ void loop()
           if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
           {
             BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //clears the engine cranking bit
-            if(configPage4.ignBypassEnabled) { digitalWrite(pinIgnBypass, HIGH); }
+            if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, HIGH); }
           }
         }
         else
@@ -1035,7 +1062,7 @@ void loop()
           BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN);
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
-          if(configPage4.ignBypassEnabled) { digitalWrite(pinIgnBypass, LOW); }
+          if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); }
         }
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
@@ -1102,7 +1129,7 @@ void loop()
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       //We use a 1st Deriv accleration prediction, but only when there is an even spacing between primary sensor teeth
       //Any decoder that has uneven spacing has its triggerToothAngle set to 0
-      if(secondDerivEnabled && toothHistoryIndex >= 3 && currentStatus.RPM < 2000) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
+      if( (secondDerivEnabled > 0) && (toothHistoryIndex >= 3) && (currentStatus.RPM < 2000) ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
       //if(true)
       {
         //Only recalculate deltaV if the tooth has changed since last time (DeltaV stays the same until the next tooth)
@@ -1122,9 +1149,9 @@ void loop()
             //Special case for missing tooth decoder where the missing tooth was one of the last 2 seen
             if(toothCurrentCount == 1) { angle2 = 2*triggerToothAngle; angle1 = triggerToothAngle; }
             else if(toothCurrentCount == 2) { angle1 = 2*triggerToothAngle; angle2 = triggerToothAngle; }
-            else { angle1 = angle2 = triggerToothAngle; }
+            else { angle1 = triggerToothAngle; angle2 = triggerToothAngle; }
           }
-          else { angle1 = angle2 = triggerToothAngle; }
+          else { angle1 = triggerToothAngle; angle2 = triggerToothAngle; }
 
           long toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
           long toothDeltaT = toothHistory[toothHistoryIndex];
@@ -1139,7 +1166,7 @@ void loop()
       else
       {
         //If we can, attempt to get the timePerDegree by comparing the times of the last two teeth seen. This is only possible for evenly spaced teeth
-        if(triggerToothAngleIsCorrect == true && toothLastToothTime > toothLastMinusOneToothTime)
+        if( (triggerToothAngleIsCorrect == true) && (toothLastToothTime > toothLastMinusOneToothTime) )
         {
           noInterrupts();
           unsigned long tempToothLastToothTime = toothLastToothTime;
@@ -1165,7 +1192,7 @@ void loop()
       if (CRANK_ANGLE_MAX_INJ == 720) { pwLimit = pwLimit * 2; } //For sequential, the maximum pulse time is double (2 revolutions). Wouldn't work for 2 stroke...
       else if (CRANK_ANGLE_MAX_INJ < 360) { pwLimit = pwLimit / currentStatus.nSquirts; } //Handle cases where there are multiple squirts per rev
       //Apply the pwLimit if staging is dsiabled and engine is not cranking
-      if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && configPage10.stagingEnabled == false) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
+      if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (configPage10.stagingEnabled == false) ) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
 
       //Calculate staging pulsewidths if used
       //To run staged injection, the number of cylinders must be less than or equal to the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
@@ -1203,13 +1230,27 @@ void loop()
         currentStatus.PW2 = currentStatus.PW1;
         currentStatus.PW4 = currentStatus.PW3;
       }
-      //If staging is off, all the pulse widths are set the same (Sequential adjustments will be made below)
-      else { currentStatus.PW2 = currentStatus.PW3 = currentStatus.PW4 = currentStatus.PW5 = currentStatus.PW6 = currentStatus.PW7 = currentStatus.PW1; } // Initial state is for all pulsewidths to be the same (This gets changed below)
+      else 
+      { 
+        //If staging is off, all the pulse widths are set the same (Sequential and other adjustments may be made below)
+        currentStatus.PW2 = currentStatus.PW1;
+        currentStatus.PW3 = currentStatus.PW1;
+        currentStatus.PW4 = currentStatus.PW1;
+        currentStatus.PW5 = currentStatus.PW1;
+        currentStatus.PW6 = currentStatus.PW1;
+        currentStatus.PW7 = currentStatus.PW1; 
+      }
 
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
       //Determine next firing angles
-      if(!configPage2.indInjAng) {configPage2.inj4Ang = configPage2.inj3Ang = configPage2.inj2Ang = configPage2.inj1Ang;} //Forcing all injector close angles to be the same.
+      if(!configPage2.indInjAng) 
+      {
+        //Forcing all injector close angles to be the same.
+        configPage2.inj2Ang = configPage2.inj1Ang;
+        configPage2.inj3Ang = configPage2.inj1Ang;
+        configPage2.inj4Ang = configPage2.inj1Ang;
+      } 
       int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
       injector1StartAngle = configPage2.inj1Ang - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       if(injector1StartAngle < 0) {injector1StartAngle += CRANK_ANGLE_MAX_INJ;}
@@ -1250,7 +1291,7 @@ void loop()
             if(injector4StartAngle > CRANK_ANGLE_MAX_INJ) {injector4StartAngle -= CRANK_ANGLE_MAX_INJ;}
             if(injector4StartAngle < 0) {injector4StartAngle += CRANK_ANGLE_MAX_INJ;}
 
-            if(configPage6.fuelTrimEnabled)
+            if(configPage6.fuelTrimEnabled > 0)
             {
               unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
               unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
@@ -1707,7 +1748,7 @@ void loop()
         }
 #endif
         
-        if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && configPage4.StgCycles == 0)
+        if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) )
         {
           unsigned long uSToEnd = 0;
 
@@ -1842,13 +1883,15 @@ void loop()
 
       } //Ignition schedules on
 
-      if (!BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_PREVENT) && resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) {
+      if ( (!BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_PREVENT)) && (resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) ) 
+      {
         //Reset prevention is supposed to be on while the engine is running but isn't. Fix that.
         digitalWrite(pinResetControl, HIGH);
         BIT_SET(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
       }
     } //Has sync and RPM
-    else if (BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_PREVENT) && resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) {
+    else if ( (BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_PREVENT) > 0) && (resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) )
+    {
       digitalWrite(pinResetControl, LOW);
       BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
     }
