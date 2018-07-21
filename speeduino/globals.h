@@ -282,7 +282,7 @@ int ignition3EndAngle = 0;
 int ignition4EndAngle = 0;
 int ignition5EndAngle = 0;
 
-//This is used across multiple files
+//These are variables used across multiple files
 bool initialisationComplete = false; //Tracks whether the setup() functino has run completely
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
@@ -292,6 +292,9 @@ bool previousClutchTrigger;
 volatile uint16_t toothHistory[TOOTH_LOG_BUFFER];
 volatile unsigned int toothHistoryIndex = 0;
 volatile bool toothLogRead = false; //Flag to indicate whether the current tooth log values have been read out yet
+int CRANK_ANGLE_MAX = 720;
+int CRANK_ANGLE_MAX_IGN = 360;
+int CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 
 //This needs to be here because using the config page directly can prevent burning the setting
 byte resetControl = RESET_CONTROL_DISABLED;
@@ -383,6 +386,7 @@ struct statuses {
   byte nChannels; //Number of fuel and ignition channels
   int16_t fuelLoad;
   int16_t ignLoad;
+  bool fuelPumpOn; //The current status of the fuel pump
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath

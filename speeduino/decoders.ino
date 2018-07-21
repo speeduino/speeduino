@@ -20,7 +20,12 @@ toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
 *
 
 */
+#include <limits.h>
 #include "decoders.h"
+#include "globals.h"
+#include "scheduledIO.h"
+#include "scheduler.h"
+#include "crankMaths.h"
 
 static inline void addToothLogEntry(unsigned long toothTime)
 {
@@ -110,10 +115,10 @@ Only if both these conditions are met will the schedule be updated with the late
 */
 static inline void doPerToothTiming(uint16_t crankAngle)
 {
-  if ( (toothCurrentCount == ignition1EndTooth) && (ignitionSchedule1.Status == RUNNING) ) { IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( (ignition1EndAngle - crankAngle) * timePerDegree ); }
-  else if ( (toothCurrentCount == ignition2EndTooth) && (ignitionSchedule2.Status == RUNNING) ) { IGN2_COMPARE = IGN2_COUNTER + uS_TO_TIMER_COMPARE( (ignition2EndAngle - crankAngle) * timePerDegree ); }
-  else if ( (toothCurrentCount == ignition3EndTooth) && (ignitionSchedule3.Status == RUNNING) ) { IGN3_COMPARE = IGN3_COUNTER + uS_TO_TIMER_COMPARE( (ignition3EndAngle - crankAngle) * timePerDegree ); }
-  else if ( (toothCurrentCount == ignition4EndTooth) && (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW( (ignition4EndAngle - crankAngle) * timePerDegree ); }
+  if ( (toothCurrentCount == ignition1EndTooth) && (ignitionSchedule1.Status == RUNNING) ) { IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( ((ignition1EndAngle - crankAngle) * timePerDegree) ); }
+  else if ( (toothCurrentCount == ignition2EndTooth) && (ignitionSchedule2.Status == RUNNING) ) { IGN2_COMPARE = IGN2_COUNTER + uS_TO_TIMER_COMPARE( ((ignition2EndAngle - crankAngle) * timePerDegree) ); }
+  else if ( (toothCurrentCount == ignition3EndTooth) && (ignitionSchedule3.Status == RUNNING) ) { IGN3_COMPARE = IGN3_COUNTER + uS_TO_TIMER_COMPARE( ((ignition3EndAngle - crankAngle) * timePerDegree) ); }
+  else if ( (toothCurrentCount == ignition4EndTooth) && (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW( ((ignition4EndAngle - crankAngle) * timePerDegree) ); }
 }
 
 /*
@@ -510,13 +515,13 @@ void triggerPri_BasicDistributor()
       uint16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
       if ( (toothCurrentCount == ignition1EndTooth) && (ignitionSchedule1.Status == RUNNING) )
       {
-        IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( (ignition1EndAngle - crankAngle) * timePerDegree );
+        IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( ((ignition1EndAngle - crankAngle) * timePerDegree) );
         //IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( (ignition1EndAngle - crankAngle)*my_timePerDegree - micros_compensation );
 
       }
-      else if ( (toothCurrentCount == ignition2EndTooth) && (ignitionSchedule2.Status == RUNNING) ) { IGN2_COMPARE = IGN2_COUNTER + uS_TO_TIMER_COMPARE( (ignition2EndAngle - crankAngle) * timePerDegree ); }
-      else if ( (toothCurrentCount == ignition3EndTooth) && (ignitionSchedule3.Status == RUNNING) ) { IGN3_COMPARE = IGN3_COUNTER + uS_TO_TIMER_COMPARE( (ignition3EndAngle - crankAngle) * timePerDegree ); }
-      else if ( (toothCurrentCount == ignition4EndTooth) && (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE( (ignition4EndAngle - crankAngle) * timePerDegree ); }
+      else if ( (toothCurrentCount == ignition2EndTooth) && (ignitionSchedule2.Status == RUNNING) ) { IGN2_COMPARE = IGN2_COUNTER + uS_TO_TIMER_COMPARE( ((ignition2EndAngle - crankAngle) * timePerDegree) ); }
+      else if ( (toothCurrentCount == ignition3EndTooth) && (ignitionSchedule3.Status == RUNNING) ) { IGN3_COMPARE = IGN3_COUNTER + uS_TO_TIMER_COMPARE( ((ignition3EndAngle - crankAngle) * timePerDegree) ); }
+      else if ( (toothCurrentCount == ignition4EndTooth) && (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE( ((ignition4EndAngle - crankAngle) * timePerDegree) ); }
     }
 
     toothLastMinusOneToothTime = toothLastToothTime;

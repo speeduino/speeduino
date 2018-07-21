@@ -65,7 +65,6 @@ uint16_t staged_req_fuel_mult_sec;
 
 bool ignitionOn = false; //The current state of the ignition system
 bool fuelOn = false; //The current state of the ignition system
-bool fuelPumpOn = false; //The current status of the fuel pump
 
 void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
@@ -81,10 +80,6 @@ unsigned long counter;
 unsigned long currentLoopTime; //The time the current loop started (uS)
 unsigned long previousLoopTime; //The time the previous loop started (uS)
 
-int CRANK_ANGLE_MAX = 720;
-int CRANK_ANGLE_MAX_IGN = 360;
-int CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
-
 volatile uint16_t mainLoopCount;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
@@ -92,6 +87,7 @@ byte maxIgnOutputs = 1; //Used for rolling rev limiter
 byte curRollingCut = 0; //Rolling rev limiter, current ignition channel being cut
 uint16_t fixedCrankingOverride = 0;
 int16_t lastAdvance; //Stores the previous advance figure to track changes.
+byte launchCounter = 0; //
 
 unsigned long secCounter; //The next time to incremen 'runSecs' counter.
 int channel1IgnDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
@@ -129,7 +125,6 @@ void (*ign7EndFunction)();
 void (*ign8StartFunction)();
 void (*ign8EndFunction)();
 
-byte degreesPerLoop; //The number of crank degrees that pass for each mainloop of the program
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 
 void setup()
@@ -235,8 +230,8 @@ void setup()
   else { setPinMapping(configPage2.pinMapping); }
 
   //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
-  if(configPage4.IgInv == 1) { coilHIGH = LOW, coilLOW = HIGH; }
-  else { coilHIGH = HIGH, coilLOW = LOW; }
+  if(configPage4.IgInv == 1) { coilHIGH = LOW; coilLOW = HIGH; }
+  else { coilHIGH = HIGH; coilLOW = LOW; }
   endCoil1Charge();
   endCoil2Charge();
   endCoil3Charge();
@@ -329,6 +324,7 @@ void setup()
   currentStatus.flatShiftingHard = false;
   currentStatus.launchingHard = false;
   currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
+  currentStatus.fuelPumpOn = false;
   triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
   dwellLimit_uS = (1000 * configPage4.dwellLimit);
   currentStatus.nChannels = (INJ_CHANNELS << 4) + IGN_CHANNELS; //First 4 bits store the number of injection channels, 2nd 4 store the number of ignition channels
@@ -817,7 +813,7 @@ void setup()
 
   //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
   digitalWrite(pinFuelPump, HIGH);
-  fuelPumpOn = true;
+  currentStatus.fuelPumpOn = true;
   interrupts();
   //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
   setFuelSchedule1(100, (unsigned long)(configPage2.primePulse * 100));
@@ -871,7 +867,7 @@ void loop()
       currentStatus.longRPM = getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
       FUEL_PUMP_ON();
-      fuelPumpOn = true; //Not sure if this is needed.
+      currentStatus.fuelPumpOn = true; //Not sure if this is needed.
     }
     else
     {
@@ -895,7 +891,7 @@ void loop()
       ignitionCount = 0;
       ignitionOn = false;
       fuelOn = false;
-      if (fpPrimed == true) { digitalWrite(pinFuelPump, LOW); fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete
+      if (fpPrimed == true) { digitalWrite(pinFuelPump, LOW); currentStatus.fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete
       disableIdle(); //Turn off the idle PWM
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE
@@ -932,7 +928,13 @@ void loop()
 
       if(previousClutchTrigger != clutchTrigger) { currentStatus.clutchEngagedRPM = currentStatus.RPM; }
 
-      if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchHardLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) { currentStatus.launchingHard = true; BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); } //HardCut rev limit for 2-step launch control.
+      if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchHardLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
+      { 
+        //HardCut rev limit for 2-step launch control.
+        currentStatus.launchingHard = true; 
+        BIT_SET(currentStatus.spark, 
+        BIT_SPARK_HLAUNCH); 
+      } 
       else { currentStatus.launchingHard = false; BIT_CLEAR(currentStatus.spark, BIT_SPARK_HLAUNCH); }
 
       if(configPage6.flatSEnable && clutchTrigger && (currentStatus.RPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > currentStatus.clutchEngagedRPM) ) { currentStatus.flatShiftingHard = true; }
@@ -955,6 +957,10 @@ void loop()
             BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
             BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
             break;
+          default:
+            //Shouldn't ever happen, but just in case, disable all cuts
+            BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
+            BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
         }
       }
       else
@@ -991,7 +997,7 @@ void loop()
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
       //if Can interface is enabled then check for external data requests.
-      if (configPage9.enable_candata_in)     //if external data input is enabled
+      if (configPage9.enable_candata_in > 0)     //if external data input is enabled
           {
             if (configPage9.enable_canbus == 1)  // megas only support can via secondary serial
               {
@@ -1850,7 +1856,7 @@ void loop()
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition5StartTime = 0; }
 
-            if(ignition5StartTime > 0) {
+            if(ignition5StartTime > 0 && (curRollingCut != 5) ) {
             setIgnitionSchedule5(ign5StartFunction,
                       ignition5StartTime,
                       currentStatus.dwell + fixedCrankingOverride,

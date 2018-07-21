@@ -13,6 +13,8 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "timers.h"
 #include "globals.h"
 #include "sensors.h"
+#include "scheduler.h"
+#include "scheduledIO.h"
 
 #if defined(CORE_AVR)
   #include <avr/wdt.h>
@@ -181,7 +183,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
         {
           //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
           digitalWrite(pinFuelPump, LOW);
-          fuelPumpOn = false;
+          currentStatus.fuelPumpOn = false;
         }
       }
     }

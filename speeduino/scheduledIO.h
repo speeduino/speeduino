@@ -67,6 +67,8 @@ void endCoil2and4Charge();
 #define openInjector3and5() openInjector3(); openInjector5()
 #define closeInjector3and5() closeInjector3(); closeInjector5()
 
+void nullCallback();
+
 static byte coilHIGH = HIGH;
 static byte coilLOW = LOW;
 

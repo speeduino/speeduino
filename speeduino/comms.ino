@@ -5,6 +5,8 @@ A full copy of the license may be found in the projects root directory
 */
 
 #include "comms.h"
+#include "cancomms.h"
+#include "errors.h"
 #include "globals.h"
 #include "storage.h"
 #include "maths.h"

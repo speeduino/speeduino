@@ -1,12 +1,10 @@
 #ifndef DECODERS_H
 #define DECODERS_H
 
-#include <limits.h>
-
 #if defined(CORE_AVR)
   #define READ_PRI_TRIGGER() ((*triggerPri_pin_port & triggerPri_pin_mask) ? true : false)
   #define READ_SEC_TRIGGER() ((*triggerSec_pin_port & triggerSec_pin_mask) ? true : false)
-#elif defined(CORE_TEENSY) || defined(CORE_STM32)
+#else
   #define READ_PRI_TRIGGER() digitalRead(pinTrigger)
   #define READ_SEC_TRIGGER() digitalRead(pinTrigger2)
 #endif

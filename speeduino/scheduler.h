@@ -449,10 +449,10 @@ struct Schedule {
 #if defined(CORE_AVR)
   volatile uint16_t * counter;
   volatile uint16_t * compare;
-#elif defined(CORE_STM32) || defined(CORE_TEENSY)
+#else
   volatile uint32_t * counter;
   volatile uint32_t * compare;
-  #endif
+#endif
 };
 
 volatile Schedule *timer3Aqueue[4];
