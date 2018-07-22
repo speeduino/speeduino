@@ -410,7 +410,7 @@ static inline void disableIdle()
   else if ( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
   {
     //Only disable the stepper motor if homing is completed
-    if( isStepperHomed() == true )
+    if( (checkForStepping() == false) && (isStepperHomed() == true) )
     {
       digitalWrite(pinStepperEnable, HIGH); //Disable the DRV8825
       idleStepper.targetIdleStep = idleStepper.curIdleStep; //Don't try to move anymore
