@@ -370,7 +370,7 @@ struct statuses {
   uint16_t freeRAM;
   unsigned int clutchEngagedRPM;
   bool flatShiftingHard;
-  volatile uint16_t startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
+  volatile uint32_t startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
   uint16_t boostTarget;
   byte testOutputs;
   bool testActive;

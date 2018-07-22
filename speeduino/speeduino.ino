@@ -85,9 +85,11 @@ byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 byte maxIgnOutputs = 1; //Used for rolling rev limiter
 byte curRollingCut = 0; //Rolling rev limiter, current ignition channel being cut
+byte rollingCutCounter = 0; //how many times (revolutions) the ignition has been cut in a row
+uint32_t rollingCutLastRev = 0; //Tracks whether we're on the same or a different rev for the rolling cut
 uint16_t fixedCrankingOverride = 0;
 int16_t lastAdvance; //Stores the previous advance figure to track changes.
-byte launchCounter = 0; //
+
 
 unsigned long secCounter; //The next time to incremen 'runSecs' counter.
 int channel1IgnDegrees; //The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones)
@@ -1720,7 +1722,27 @@ void loop()
       if(currentStatus.launchingHard || BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) || BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) || currentStatus.flatShiftingHard)
       {
         if(configPage2.hardCutType == HARD_CUT_FULL) { ignitionOn = false; }
-        else { curRollingCut = ( (currentStatus.startRevolutions / 2) % maxIgnOutputs) + 1; } //Rolls through each of the active ignition channels based on how many revolutions have taken place
+        else 
+        { 
+          if(rollingCutCounter >= 2) //Vary this number to change the intensity of the roll. The higher the number, the closer is it to full cut
+          { 
+            //Rolls through each of the active ignition channels based on how many revolutions have taken place
+            //curRollingCut = ( (currentStatus.startRevolutions / 2) % maxIgnOutputs) + 1;
+            rollingCutCounter = 0;
+            ignitionOn = true;
+            curRollingCut = 0;
+          }
+          else
+          {
+            if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //
+            if (rollingCutLastRev != currentStatus.startRevolutions)
+            {
+              rollingCutLastRev = currentStatus.startRevolutions;
+              rollingCutCounter++;
+            }
+            ignitionOn = false; //Finally the ignition is fully cut completely
+          }
+        } 
       }
       else { curRollingCut = 0; } //Disables the rolling hard cut
 
