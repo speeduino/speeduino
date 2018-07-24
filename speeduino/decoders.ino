@@ -164,7 +164,12 @@ void triggerPri_missingTooth()
 
        if ( (curGap > targetGap) || (toothCurrentCount > triggerActualTeeth) )
        {
-         if(toothCurrentCount < (triggerActualTeeth) && (currentStatus.hasSync == true) ) { currentStatus.hasSync = false; } //This occurs when we're at tooth #1, but haven't seen all the other teeth. This indicates a signal issue so we flag lost sync so this will attempt to resync on the next revolution.
+         if(toothCurrentCount < (triggerActualTeeth) && (currentStatus.hasSync == true) ) 
+         { 
+            //This occurs when we're at tooth #1, but haven't seen all the other teeth. This indicates a signal issue so we flag lost sync so this will attempt to resync on the next revolution.
+            currentStatus.hasSync = false;
+            currentStatus.syncLossCounter++;
+         }
          //This is to handle a special case on startup where sync can be obtained and the system immediately thinks the revs have jumped:
          //else if (currentStatus.hasSync == false && toothCurrentCount < checkSyncToothCount ) { triggerFilterTime = 0; }
          else
@@ -384,7 +389,11 @@ void triggerSec_DualWheel()
 
       currentStatus.hasSync = true;
     }
-    else if (configPage4.useResync == 1) { toothCurrentCount = configPage4.triggerTeeth; }
+    else 
+    {
+      if (toothCurrentCount != configPage4.triggerTeeth) { currentStatus.syncLossCounter++; } //Indicates likely sync loss
+      if (configPage4.useResync == 1) { toothCurrentCount = configPage4.triggerTeeth; }
+    }
 
     revolutionOne = 1; //Sequential revolution reset
   } //Trigger filter
@@ -997,7 +1006,12 @@ void triggerSec_4G63()
         if( (currentStatus.RPM < currentStatus.crankRPM) || true )
         {
           //Whilst we're cranking and have sync, we need to watch for noise pulses.
-          if(toothCurrentCount != 4) { currentStatus.hasSync = false; } // This should never be true, except when there's noise
+          if(toothCurrentCount != 4) 
+          { 
+            // This should never be true, except when there's noise
+            currentStatus.hasSync = false; 
+            currentStatus.syncLossCounter++;
+          } 
           else { toothCurrentCount = 4; } //Why? Just why?
         }
         else { toothCurrentCount = 4; } //If the crank trigger is currently HIGH, it means we're on tooth #1
@@ -2051,7 +2065,7 @@ void triggerSec_Nissan360()
           toothCurrentCount = 274; //End of fourth window is after 90+90+90+4 primary teeth
           currentStatus.hasSync = true;
         }
-        else { currentStatus.hasSync = false; } //This should really never happen
+        else { currentStatus.hasSync = false; currentStatus.syncLossCounter++; } //This should really never happen
       }
       else if(configPage2.nCylinders == 6)
       {
@@ -2231,6 +2245,7 @@ void triggerPri_Subaru67()
         default:
           //Almost certainly due to noise or cranking stop/start
           currentStatus.hasSync = false;
+          currentStatus.syncLossCounter++;
           secondaryToothCount = 0;
           break;
 
@@ -2534,6 +2549,7 @@ void triggerPri_Harley()
     }
     else
     {
+      if (currentStatus.hasSync == true) { currentStatus.syncLossCounter++; }
       currentStatus.hasSync = false;
       toothCurrentCount = 0;
     } //Primary trigger high

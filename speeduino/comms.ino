@@ -503,6 +503,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[86] = highByte(currentStatus.fuelLoad);
   fullStatus[87] = lowByte(currentStatus.ignLoad);
   fullStatus[88] = highByte(currentStatus.ignLoad);
+  fullStatus[89] = currentStatus.syncLossCounter;
 
   for(byte x=0; x<packetLength; x++)
   {
