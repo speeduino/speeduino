@@ -387,6 +387,7 @@ struct statuses {
   int16_t fuelLoad;
   int16_t ignLoad;
   bool fuelPumpOn; //The current status of the fuel pump
+  byte syncLossCounter;
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
