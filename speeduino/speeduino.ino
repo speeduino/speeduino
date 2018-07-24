@@ -223,7 +223,7 @@ void setup()
   loadCalibration();
 
   //Set the pin mappings
-  if(configPage2.pinMapping > BOARD_NR_GPIO_PINS)
+  if(configPage2.pinMapping == 255)
   {
     //First time running on this board
     setPinMapping(3); //Force board to v0.4
