@@ -23,6 +23,15 @@ unsigned long angleToTime(int16_t angle, byte method)
         returnTime = ((angle * revolutionTime) / 360);
         //returnTime = angle * (unsigned long)timePerDegree;
     }
+    else if (method == CRANKMATH_METHOD_INTERVAL_TOOTH)
+    {
+        //Still uses a last interval method (ie retrospective), but bases the interval on the gap between the 2 most recent teeth rather than the last full revolution
+        if(triggerToothAngleIsCorrect == true)
+        {
+            returnTime = ( ((toothLastToothTime - toothLastMinusOneToothTime) / triggerToothAngle) * angle );
+        }
+        else { returnTime = angleToTime(angle, CRANKMATH_METHOD_INTERVAL_REV); } //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
+    }
 
     return returnTime;
 }
