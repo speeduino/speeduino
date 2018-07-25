@@ -9,6 +9,7 @@ Because the size of the table is dynamic, this functino is required to reallocat
 Note that this may clear some of the existing values of the table
 */
 #include "table.h"
+#include "globals.h"
 
 void table2D_setSize(struct table2D* targetTable, byte newSize)
 {

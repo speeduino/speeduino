@@ -2,7 +2,7 @@
 #define STORAGE_H
 
 void writeAllConfig();
-void writeConfig();
+void writeConfig(byte);
 void loadConfig();
 void loadCalibration();
 void writeCalibration();

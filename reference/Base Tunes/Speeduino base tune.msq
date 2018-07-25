@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.60.15 - EFI Analytics, Inc." tuneComment="" writeDate="Tue Jul 03 22:21:15 AEST 2018"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.60.15 - EFI Analytics, Inc." tuneComment="" writeDate="Tue Jul 03 22:33:15 AEST 2018"/>
 <versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2018.6" nPages="10" signature="speeduino 201806"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
@@ -1070,7 +1070,7 @@
          9.0 
          10.0 
       </constant>
-<constant name="n2o_enable">"2 stage"</constant>
+<constant name="n2o_enable">"Off"</constant>
 <constant name="n2o_arming_pin">"34"</constant>
 <constant digits="0" name="n2o_minCLT" units="C">20.0</constant>
 <constant digits="0" name="n2o_maxMAP" units="kPa">250.0</constant>

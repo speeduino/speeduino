@@ -33,6 +33,12 @@ inline void beginTrailingCoilCharge();
 inline void endTrailingCoilCharge1();
 inline void endTrailingCoilCharge2();
 
+//And the combined versions of the above for simplicity
+void beginCoil1and3Charge();
+void endCoil1and3Charge();
+void beginCoil2and4Charge();
+void endCoil2and4Charge();
+
 
 #define openInjector1() *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1)
 #define closeInjector1() *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1)
@@ -60,5 +66,10 @@ inline void endTrailingCoilCharge2();
 //5 cylinder support doubles up injector 3 as being closese to inj 5 (Crank angle)
 #define openInjector3and5() openInjector3(); openInjector5()
 #define closeInjector3and5() closeInjector3(); closeInjector5()
+
+void nullCallback();
+
+static byte coilHIGH = HIGH;
+static byte coilLOW = LOW;
 
 #endif

@@ -282,10 +282,19 @@ int ignition3EndAngle = 0;
 int ignition4EndAngle = 0;
 int ignition5EndAngle = 0;
 
-//This is used across multiple files
+//These are variables used across multiple files
+bool initialisationComplete = false; //Tracks whether the setup() functino has run completely
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
 volatile unsigned long ms_counter = 0; //A counter that increments once per ms
+bool clutchTrigger;
+bool previousClutchTrigger;
+volatile uint16_t toothHistory[TOOTH_LOG_BUFFER];
+volatile unsigned int toothHistoryIndex = 0;
+volatile bool toothLogRead = false; //Flag to indicate whether the current tooth log values have been read out yet
+int CRANK_ANGLE_MAX = 720;
+int CRANK_ANGLE_MAX_IGN = 360;
+int CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 
 //This needs to be here because using the config page directly can prevent burning the setting
 byte resetControl = RESET_CONTROL_DISABLED;
@@ -334,7 +343,7 @@ struct statuses {
   byte iatCorrection; //The amount of inlet air temperature adjustment currently being applied
   byte launchCorrection; //The amount of correction being applied if launch control is active
   byte flexCorrection; //Amount of correction being applied to compensate for ethanol content
-  byte flexIgnCorrection; //Amount of additional advance being applied based on flex
+  int8_t flexIgnCorrection; //Amount of additional advance being applied based on flex. Note the type as this allows for negative values
   byte afrTarget;
   byte idleDuty;
   bool idleUpActive;
@@ -361,7 +370,7 @@ struct statuses {
   uint16_t freeRAM;
   unsigned int clutchEngagedRPM;
   bool flatShiftingHard;
-  volatile uint16_t startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
+  volatile uint32_t startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
   uint16_t boostTarget;
   byte testOutputs;
   bool testActive;
@@ -377,6 +386,8 @@ struct statuses {
   byte nChannels; //Number of fuel and ignition channels
   int16_t fuelLoad;
   int16_t ignLoad;
+  bool fuelPumpOn; //The current status of the fuel pump
+  byte syncLossCounter;
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -756,7 +767,7 @@ struct config10 {
   uint8_t flexFuelBins[6];
   uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%)
   uint8_t flexAdvBins[6];
-  uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%)
+  uint8_t  flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%). NOTE: THIS IS A SIGNED VALUE!
                             //And another three corn rows die.
 
   byte n2o_enable : 2;
