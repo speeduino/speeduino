@@ -320,3 +320,24 @@ void flexPulse()
  {
    ++flexCounter;
  }
+
+uint16_t readAuxanalog(uint8_t analogPin)
+ {
+  //read the Aux analog value for pin set by analogPin 
+  unsigned int tempReading;
+  #if defined(ANALOG_ISR)
+    tempReading = fastMap1023toX(AnChannel[analogPin-A0], 511); //Get the current raw Auxanalog value
+  #else
+    tempReading = analogRead(analogPin);
+    tempReading = fastMap1023toX(analogRead(analogPin), 511); //Get the current raw Auxanalog value
+  #endif
+  return tempReading;
+ } 
+
+uint16_t readAuxdigital(uint8_t digitalPin)
+ {
+  //read the Aux digital value for pin set by digitalPin 
+  unsigned int tempReading;
+  tempReading = digitalRead(digitalPin); 
+  return tempReading;
+ } 

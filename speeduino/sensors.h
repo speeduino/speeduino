@@ -49,12 +49,13 @@ void initialiseADC();
 void readTPS();
 void readO2_2();
 void flexPulse();
+uint16_t readAuxanalog(uint8_t analogPin);
+uint16_t readAuxdigital(uint8_t digitalPin);
 void readCLT();
 void readIAT();
 void readO2();
 void readBat();
 void readBaro();
-
 
 #if defined(ANALOG_ISR)
 //Analog ISR interrupt routine

@@ -998,45 +998,65 @@ void loop()
        if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //ATmega2561 does not have Serial3
-      //if Can interface is enabled then check for external data requests.
-      if (configPage9.enable_candata_in > 0)     //if external data input is enabled
-          {
-            if (configPage9.enable_canbus == 1)  // megas only support can via secondary serial
-              {
-               for (byte caninChan = 0; caninChan <16 ; caninChan++)
+      //check through the Aux input channels if enabed for Can or local use
+      for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
+         {
+          currentStatus.current_caninchannel = AuxinChan;          
+          //currentStatus.canin[14] = ((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
+          //currentStatus.canin[13] = (configPage9.caninput_sel[currentStatus.current_caninchannel]&3);          
+          if (configPage9.caninput_sel[currentStatus.current_caninchannel] == 1)  //if current input channel is enabled as canbus
+            {
+             if (configPage9.enable_candata_in)     //if external data input is enabled
+               {
+                if (configPage9.enable_canbus == 1)  // megas only support can via secondary serial
                   {
-                   currentStatus.current_caninchannel = caninChan;
-                   //currentStatus.canin[14] = currentStatus.current_caninchannel;
-                   currentStatus.canin[13]  = ((configPage9.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100);
-                   if (BIT_CHECK(configPage9.caninput_sel,currentStatus.current_caninchannel))  //if current input channel bit is enabled
-                     {
-                      sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage9.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100));
-                       //send an R command for data from caninput_source_address[currentStatus.current_caninchannel]
-                     }
+                   sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage9.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100));
+                   //send an R command for data from caninput_source_address[currentStatus.current_caninchannel]
                   }
-              }
-          }
+               }
+            }
+          else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  //if current input channel is enabled as analog local pin
+            {
+              //read analog channel specified
+              currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&127);
+            }
+          else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)  //if current input channel is enabled as digital local pin
+            {
+              //read digital channel specified
+              currentStatus.canin[currentStatus.current_caninchannel] = readAuxdigital((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
+            }
+         }
 
 #elif defined(CORE_STM32) || defined(CORE_TEENSY)
-      //if serial3io is enabled then check for serial3 requests.
-      if (configPage9.enable_candata_in > 0)
-          {
-           for (byte caninChan = 0; caninChan <16 ; caninChan++)
-              {
-                currentStatus.current_caninchannel = caninChan;
-                if (BIT_CHECK(configPage9.caninput_sel,currentStatus.current_caninchannel))  //if current input channel is enabled
+      //check through the Aux input channels if enabed for Can or local use
+      for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
+         {
+          currentStatus.current_caninchannel = AuxinChan;
+          if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 1)  //if current input channel is enabled as canbus
+            {
+             if (configPage9.enable_candata_in)
+               {
+                if (configPage9.enable_canbus == 1)  //can via secondary serial
                   {
-                    if (configPage9.enable_canbus == 1)  //can via secondary serial
-                      {
-                        sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage9.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+256));    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
-                      }
-               else if (configPage9.enable_canbus == 2) // can via internal can module
-                      {
-                        sendCancommand(3,configPage9.speeduino_tsCanId,currentStatus.current_caninchannel,0,configPage9.caninput_source_can_address[currentStatus.current_caninchannel]);    //send via localcanbus the command for data from paramgroup[currentStatus.current_caninchannel]
-                      }
+                   sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage9.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100));    //send an R command for data from paramgroup[currentStatus.current_caninchannel]
                   }
-              }
-          }
+                else if (configPage9.enable_canbus == 2) // can via internal can module
+                  {
+                   sendCancommand(3,configPage9.speeduino_tsCanId,currentStatus.current_caninchannel,0,configPage9.caninput_source_can_address[currentStatus.current_caninchannel]);    //send via localcanbus the command for data from paramgroup[currentStatus.current_caninchannel]
+                  }
+               }
+            }
+          else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  //if current input channel is enabled as analog local pin
+            {
+              //read analog channel specified
+              currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&127);
+            }
+          else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)  //if current input channel is enabled as digital local pin
+            {
+              //read digital channel specified
+              currentStatus.canin[currentStatus.current_caninchannel] = readAuxdigital((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
+            }  
+         }
 #endif
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
