@@ -3,7 +3,6 @@
 
 #include "Arduino.h"
 
-
 // The following are alpha values for the ADC filters.
 // Their values are from 0 to 255 with 0 being no filtering and 255 being maximum
 #define ADCFILTER_TPS  128
@@ -30,6 +29,7 @@ unsigned long MAPrunningValue; //Used for tracking either the total of all MAP r
 unsigned long EMAPrunningValue; //As above but for EMAP
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
 uint32_t MAPcurRev; //Tracks which revolution we're sampling on
+bool auxIsEnabled;
 
 //These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
 byte mapErrorCount = 0;
