@@ -794,7 +794,31 @@ struct config10 {
   byte n2o_stage2_adderMax;
   byte n2o_stage2_retard;
 
-  byte unused11_75_191[99];
+  byte knock_mode : 2;
+  byte knock_pin : 6;
+
+  byte knock_trigger : 1;
+  byte knock_pullup : 1;
+  byte knock_limiterDisable : 1;
+  byte knock_unused : 2;
+  byte knock_count : 3;
+
+  byte knock_maxMAP;
+  byte knock_maxRPM;
+  byte knock_window_rpms[6];
+  byte knock_window_angle[6];
+  byte knock_window_dur[6];
+
+  byte knock_maxRetard;
+  byte knock_firstStep;
+  byte knock_stepSize;
+  byte knock_stepTime;
+        
+  byte knock_duration; //Time after knock retard starts that it should start recovering
+  byte knock_recoveryStepTime;
+  byte knock_recoveryStep;
+
+  byte unused11_75_191[69];
 
 #if defined(CORE_AVR)
   };

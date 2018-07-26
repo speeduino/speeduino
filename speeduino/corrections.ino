@@ -491,7 +491,7 @@ static inline int8_t correctionSoftLaunch(int8_t advance)
   return ignSoftLaunchValue;
 }
 
-static inline int8_t correctionSoftFlatShift(int8_t  advance)
+static inline int8_t correctionSoftFlatShift(int8_t advance)
 {
   byte ignSoftFlatValue = advance;
 
@@ -503,6 +503,13 @@ static inline int8_t correctionSoftFlatShift(int8_t  advance)
   else { BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS); }
 
   return ignSoftFlatValue;
+}
+
+static inline int8_t correctionKnock(int8_t advance)
+{
+  byte knockRetard = 0;
+
+  return advance - knockRetard;
 }
 
 //******************************** DWELL CORRECTIONS ********************************
