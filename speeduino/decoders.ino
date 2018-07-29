@@ -735,7 +735,7 @@ void triggerSetup_4G63()
     toothAngles[6] = 535; //Falling edge of tooth #2
     toothAngles[7] = 645; //Rising edge of tooth #1
 
-    triggerActualTeeth = 4;
+    triggerActualTeeth = 8;
   }
   /*
    * https://forums.libreems.org/attachment.php?aid=34
@@ -935,7 +935,7 @@ void triggerPri_4G63()
         else if( (READ_SEC_TRIGGER() == true) && (revolutionOne == true) ) 
         { 
           //Crank is low, cam is high and the crank pulse STARTED when the cam was high. 
-          if(configPage2.nCylinders == 4) { toothCurrentCount = 1; } //Means we're at 5* BTDC on a 4G63 4 cylinder
+          if(configPage2.nCylinders == 4) { toothCurrentCount = 5; } //Means we're at 5* BTDC on a 4G63 4 cylinder
           else if(configPage2.nCylinders == 6) { toothCurrentCount = 2; currentStatus.hasSync = true; } //Means we're at 45* ATDC on 6G72 6 cylinder
         } 
       }
@@ -975,11 +975,11 @@ void triggerSec_4G63()
 
       triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset).
       triggerSecFilterTime = triggerSecFilterTime >> 1; //Divide the secondary filter time by 2 again, making it 25%. Only needed when cranking
-      if(READ_PRI_TRIGGER() == true)// && (crankState == digitalRead(pinTrigger)))
+      if(READ_PRI_TRIGGER() == true)
       {
         if(configPage2.nCylinders == 4)
         { 
-          if(toothCurrentCount == 4) { currentStatus.hasSync = true; }
+          if(toothCurrentCount == 8) { currentStatus.hasSync = true; } //Is 8 for sequential, was 4
         }
         else if(configPage2.nCylinders == 6) 
         { 
@@ -991,32 +991,31 @@ void triggerSec_4G63()
       {
         if(configPage2.nCylinders == 4)
         { 
-          if(toothCurrentCount == 1) { currentStatus.hasSync = true; }
+          if(toothCurrentCount == 5) { currentStatus.hasSync = true; } //Is 5 for sequential, was 1
         }
         //Cannot gain sync for 6 cylinder here. 
       }
     }
 
     //if ( (micros() - secondaryLastToothTime1) < triggerSecFilterTime_duration && configPage2.useResync )
-    if ( (configPage4.useResync == 1) && (currentStatus.hasSync == true) && (configPage2.nCylinders == 4) )
+    if ( (currentStatus.RPM < currentStatus.crankRPM) || (configPage4.useResync == 1) )
     {
-      triggerSecFilterTime_duration = (micros() - secondaryLastToothTime1) >> 1;
-      if(READ_PRI_TRIGGER() == true)// && (crankState == digitalRead(pinTrigger)))
+      if( (currentStatus.hasSync == true) && (configPage2.nCylinders == 4) )
       {
-        if( (currentStatus.RPM < currentStatus.crankRPM) || true )
+        triggerSecFilterTime_duration = (micros() - secondaryLastToothTime1) >> 1;
+        if(READ_PRI_TRIGGER() == true)
         {
           //Whilst we're cranking and have sync, we need to watch for noise pulses.
-          if(toothCurrentCount != 4) 
+          if(toothCurrentCount != 8) 
           { 
             // This should never be true, except when there's noise
             currentStatus.hasSync = false; 
             currentStatus.syncLossCounter++;
           } 
-          else { toothCurrentCount = 4; } //Why? Just why?
+          else { toothCurrentCount = 8; } //Why? Just why?
         }
-        else { toothCurrentCount = 4; } //If the crank trigger is currently HIGH, it means we're on tooth #1
-      }
-    } // Use resync
+      } //Has sync and 4 cylinder 
+    } // Use resync or cranking
   } //Trigger filter
 }
 
@@ -1047,7 +1046,7 @@ uint16_t getRPM_4G63()
     }
     else
     {
-      if(configPage2.nCylinders == 4) { tempRPM = stdGetRPM(360); }
+      if(configPage2.nCylinders == 4) { tempRPM = stdGetRPM(720); }
       else if(configPage2.nCylinders == 6) { tempRPM = stdGetRPM(720); }
       //EXPERIMENTAL! Add/subtract RPM based on the last rpmDOT calc
       //tempRPM += (micros() - toothOneTime) * currentStatus.rpmDOT
