@@ -1,8 +1,7 @@
 //#include "alphaMods.h"
 
 //pin setup
-void alphaPinSetup(){//0 - generic car; 1 - Corolla XRS; 2 - Hyundai Tiburon; 3 - Subaru WRX; 4 - Audi A4 1.8T; 255 - mods disabled
-  
+void alphaPinSetup(){
   switch (alphaVars.carSelect){
     case 0:
       pinAC; // pin for AC clutch
@@ -40,18 +39,12 @@ void alphaPinSetup(){//0 - generic car; 1 - Corolla XRS; 2 - Hyundai Tiburon; 3 
       pinCEL = 30;
       //pinVVL = 6;
       pinACpress = 28;
-      //pinACtemp = A5;
-      //pinOilPress = 30;
-      //pinCLTgauge = 2;
       pinMode(pinAC, OUTPUT);
       pinMode(pinAcReq, INPUT);
       pinMode(pinCEL, OUTPUT);
       pinMode(pinFan2, OUTPUT);
       //pinMode(pinVVL, OUTPUT);
       pinMode(pinACpress, INPUT_PULLUP);
-      //pinMode(pinACtemp, INPUT);
-      //pinMode(pinOilPress, INPUT_PULLUP);
-      //pinMode(pinCLTgauge, OUTPUT);
       break;
     case 4:
       pinAC = 45; // pin for AC clutch
@@ -114,6 +107,32 @@ void audiFanControl()
       }
     }
   }
+  /*if (currentStatus.coolant < 80){
+    if (loopCLT == 1){
+      digitalWrite(pinFan2,LOW);
+     // Serial.print("LOW LoopCLT =");Serial.println(pinFan2);
+    }
+    else if (loopCLT == 21){
+      digitalWrite(pinFan2,HIGH);
+      //Serial.print("HIGH LoopCLT =");Serial.println(loopCLT);
+    }
+  }
+  else if ((currentStatus.coolant >= 80) && (currentStatus.coolant < 90)){
+    if (loopCLT == 100){
+      digitalWrite(pinFan2,LOW);
+    }
+    else{
+      digitalWrite(pinFan2,HIGH);
+    }
+  }
+  else if (currentStatus.coolant >= 90){
+    if (loopCLT < 150){
+      digitalWrite(pinFan2,LOW);
+    }
+    else{
+      digitalWrite(pinFan2,HIGH);
+    }
+  }*/
 }
 
 void ACControl()
@@ -166,7 +185,7 @@ void vvlControl()
  static inline byte correctionVVL()
 {
   byte VVLValue = 100;
-  if (alphaVars.vvlOn) { VVLValue = 107; } //Adds 7% fuel when VVL is active
+  if (alphaVars.vvlOn) { VVLValue = 102; } //Adds 7% fuel when VVL is active
   return VVLValue;
 }
 
@@ -187,7 +206,7 @@ static inline bool correctionDFCO2()
 static inline int8_t correctionAtUpshift(int8_t advance)
 {
   int8_t upshiftAdvance = advance;
-  if ((currentStatus.rpmDOT < -500) && (currentStatus.TPS > 90)){
+  if ((currentStatus.rpmDOT < -1700) && (currentStatus.TPS > 90)){
    upshiftAdvance = advance - 10;
   }
   return upshiftAdvance;
@@ -301,7 +320,8 @@ void RPMdance(){
 
 uint16_t WOTdwellCorrection(uint16_t tempDwell){
   if ((currentStatus.TPS > 80) && (currentStatus.RPM > 3500)){
-    uint16_t dwellCorr = map(currentStatus.RPM, 3500, 5000, 200, 1000);
+    uint16_t dwellCorr = map(currentStatus.RPM, 3500, 5000, 200, 700);
+    dwellCorr = constrain(dwellCorr, 200, 700);
     tempDwell = tempDwell - dwellCorr;
   }
   return tempDwell;

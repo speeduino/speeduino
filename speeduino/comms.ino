@@ -4,6 +4,14 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 
+#include "comms.h"
+#include "cancomms.h"
+#include "errors.h"
+#include "globals.h"
+#include "storage.h"
+#include "maths.h"
+#include "utils.h"
+
 /*
   Processes the data on the serial buffer.
   Can be either a new command or a continuation of one that is already in progress:
@@ -132,7 +140,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201806");
+      Serial.print("speeduino 201807-dev");
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -162,7 +170,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2018.6");
+      Serial.print("Speeduino 2018.7-dev");
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -495,6 +503,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[86] = highByte(currentStatus.fuelLoad);
   fullStatus[87] = lowByte(currentStatus.ignLoad);
   fullStatus[88] = highByte(currentStatus.ignLoad);
+  fullStatus[89] = currentStatus.syncLossCounter;
 
   for(byte x=0; x<packetLength; x++)
   {

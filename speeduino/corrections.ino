@@ -16,6 +16,8 @@ Flood clear mode etc.
 #include "corrections.h"
 #include "globals.h"
 #include "timers.h"
+#include "maths.h"
+#include "src/PID_v1/PID_v1.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
 PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
@@ -68,7 +70,7 @@ static inline byte correctionsFuel()
   currentStatus.iatCorrection = correctionIATDensity();
   if (currentStatus.iatCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.iatCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
-  
+
   //alphamods
   alphaVars.vvlCorrection = correctionVVL();
   if (alphaVars.vvlCorrection != 100) { sumCorrections = (sumCorrections * alphaVars.vvlCorrection); activeCorrections++; }
@@ -288,8 +290,6 @@ static inline byte correctionLaunch()
 static inline bool correctionDFCO()
 {
   bool DFCOValue = false;
-
-
     //alphamods
   if (alphaVars.carSelect == 255){
     if ( configPage2.dfcoEnabled == 1 )
@@ -297,19 +297,11 @@ static inline bool correctionDFCO()
       if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); }
       else { DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); }
     }
-
-
-
-
-
   }
   else{
-  	 if ( configPage2.dfcoEnabled == 1 ){
-  	 	DFCOValue = correctionDFCO();
-  	 }
+   DFCOValue = correctionDFCO2();
   }
   //alphamods
-
   return DFCOValue;
 }
 
@@ -424,7 +416,7 @@ int8_t correctionsIgn(int8_t base_advance)
     advance = correctionRollingAntiLag(advance);
     advance = correctionZeroThrottleTiming(advance);
   }
-  if (alphaVars.carSelect == 254){
+  if (alphaVars.carSelect == 0){
     advance = correctionAtUpshift(advance);
   }
   //alphamods
@@ -455,7 +447,8 @@ static inline int8_t correctionFlexTiming(int8_t advance)
   byte ignFlexValue = advance;
   if( configPage2.flexEnabled == 1 ) //Check for flex being enabled
   {
-    currentStatus.flexIgnCorrection = table2D_getValue(&flexAdvTable, currentStatus.ethanolPct);
+    currentStatus.flexIgnCorrection = (int8_t)table2D_getValue(&flexAdvTable, currentStatus.ethanolPct); //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here. 
+
     ignFlexValue = advance + currentStatus.flexIgnCorrection;
   }
   return ignFlexValue;
@@ -558,12 +551,10 @@ uint16_t correctionsDwell(uint16_t dwell)
     //Possibly need some method of reducing spark duration here as well, but this is a start
     tempDwell = (revolutionTime / pulsesPerRevolution) - (configPage4.sparkDur * 100);
   }
-  
     //alphamods
   if (alphaVars.carSelect != 255){
     tempDwell = WOTdwellCorrection(tempDwell);
   }
   //alphamods
-
   return tempDwell;
 }

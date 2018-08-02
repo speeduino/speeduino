@@ -4,6 +4,8 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 #include "sensors.h"
+#include "globals.h"
+#include "maths.h"
 
 void initialiseADC()
 {

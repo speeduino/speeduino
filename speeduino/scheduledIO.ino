@@ -1,3 +1,6 @@
+#include "scheduledIO.h"
+#include "scheduler.h"
+#include "globals.h"
 
 volatile bool tachoAlt = true;
 #define TACH_PULSE_HIGH() *tach_pin_port |= (tach_pin_mask)

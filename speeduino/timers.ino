@@ -13,6 +13,8 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "timers.h"
 #include "globals.h"
 #include "sensors.h"
+#include "scheduler.h"
+#include "scheduledIO.h"
 
 #if defined(CORE_AVR)
   #include <avr/wdt.h>
@@ -94,7 +96,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     default:
       break;
   }
-  
+
   unsigned long targetOverdwellTime;
 
   //Overdwell check
@@ -153,6 +155,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
   }
 //alphamods  
 
+
   //Loop executed every 250ms loop (1ms x 250 = 250ms)
   //Anything inside this if statement will run every 250ms.
   if (loop250ms == 250)
@@ -200,17 +203,19 @@ void oneMSInterval() //Most ARM chips can simply call a function
     currentStatus.secl++;
     //**************************************************************************************************************************************************
     //Check the fan output status
-    if (configPage6.fanEnable == 1)
+   	if (configPage6.fanEnable == 1)
     {
        fanControl();            // Fucntion to turn the cooling fan on/off
        //alphamods
-       if ((alphaVars.carSelect != 255) || (alphaVars.carSelect != 4) ){
+       if ((alphaVars.carSelect != 255) && (alphaVars.carSelect != 4) ){
         fanControl2();
        }
 
     }
-    ACControl();
-    CELcontrol();
+    if ((alphaVars.carSelect != 0) && (alphaVars.carSelect != 255)){
+		ACControl();
+		CELcontrol();
+	}
     //alphamods
 
     //Check whether fuel pump priming is complete
@@ -223,7 +228,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
         {
           //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
           digitalWrite(pinFuelPump, LOW);
-          fuelPumpOn = false;
+          currentStatus.fuelPumpOn = false;
         }
       }
     }

@@ -8,6 +8,7 @@ These are some utility functions and variables used through the main code
 
 uint16_t freeRam ();
 void setPinMapping(byte boardID);
+void initialiseTriggers();
 
 //This is dumb, but it'll do for now to get things compiling
 #if defined(CORE_STM32)

@@ -10,6 +10,7 @@
   This function is one big MISRA violation. MISRA advisories forbid directly poking at memory addresses, however there is no other way of determining heap size on embedded systems.
 */
 #include "utils.h"
+#include "globals.h"
 
 uint16_t freeRam ()
 {
@@ -203,6 +204,7 @@ void setPinMapping(byte boardID)
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
       pinInjector5 = 12; //Output pin injector 5 is on
+      pinInjector6 = 50; //CAUTION: Uses the same as Coil 4 below. 
       pinCoil1 = 40; //Pin for coil 1
       pinCoil2 = 38; //Pin for coil 2
       pinCoil3 = 52; //Pin for coil 3
@@ -232,6 +234,8 @@ void setPinMapping(byte boardID)
       pinResetControl = 43; //Reset control output
 
       #if defined(CORE_TEENSY)
+        pinInjector6 = 51;
+
         pinTrigger = 23;
         pinTrigger2 = 36;
         pinStepperDir = 34;
@@ -253,6 +257,7 @@ void setPinMapping(byte boardID)
         pinInjector3 = PE9; //Output pin injector 3 is on
         pinInjector4 = PE10; //Output pin injector 4 is on
         pinInjector5 = PE11; //Output pin injector 5 is on
+        pinInjector6 = PE12; //Output pin injector 6 is on
         pinCoil1 = PB5; //Pin for coil 1
         pinCoil2 = PB6; //Pin for coil 2
         pinCoil3 = PB7; //Pin for coil 3

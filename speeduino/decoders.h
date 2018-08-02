@@ -1,12 +1,10 @@
 #ifndef DECODERS_H
 #define DECODERS_H
 
-#include <limits.h>
-
 #if defined(CORE_AVR)
   #define READ_PRI_TRIGGER() ((*triggerPri_pin_port & triggerPri_pin_mask) ? true : false)
   #define READ_SEC_TRIGGER() ((*triggerSec_pin_port & triggerSec_pin_mask) ? true : false)
-#elif defined(CORE_TEENSY) || defined(CORE_STM32)
+#else
   #define READ_PRI_TRIGGER() digitalRead(pinTrigger)
   #define READ_SEC_TRIGGER() digitalRead(pinTrigger2)
 #endif
@@ -21,12 +19,12 @@ void triggerSetup_missingTooth();
 void triggerPri_missingTooth();
 void triggerSec_missingTooth();
 uint16_t getRPM_missingTooth();
-int getCrankAngle_missingTooth(int timePerDegree);
+int getCrankAngle_missingTooth();
 void triggerSetup_DualWheel();
 void triggerPri_DualWheel();
 void triggerSec_DualWheel();
 uint16_t getRPM_DualWheel();
-int getCrankAngle_DualWheel(int timePerDegree);
+int getCrankAngle_DualWheel();
 
 unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
 
@@ -43,14 +41,13 @@ volatile unsigned long toothSystemLastToothTime = 0; //As below, but used for de
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
 volatile unsigned long toothLastSecToothTime = 0; //The time (micros()) that the last tooth was registered on the secondary input
 volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
+#ifndef SMALL_FLASH_MODE
 volatile unsigned long toothLastMinusOneSecToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered on secondary input
 volatile unsigned long targetGap2;
+#endif
 volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
 volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
 volatile bool revolutionOne = 0; // For sequential operation, this tracks whether the current revolution is 1 or 2 (not 1)
-volatile uint16_t toothHistory[TOOTH_LOG_BUFFER];
-volatile unsigned int toothHistoryIndex = 0;
-volatile bool toothLogRead = false; //Flag to indicate whether the current tooth log values have been read out yet
 
 volatile unsigned int secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
 volatile unsigned long secondaryLastToothTime = 0; //The time (micros()) that the last tooth was registered (Cam input)
@@ -67,6 +64,8 @@ bool decoderIsSequential; //Whether or not the decoder supports sequential opera
 bool decoderIsLowRes = false; //Is set true, certain extra calculations are performed for better timing accuracy
 bool decoderHasFixedCrankingTiming = false; //Whether or not the decoder supports fixed cranking timing
 byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
+unsigned long elapsedTime;
+unsigned long lastCrankAngleCalc;
 
 int16_t ignition1EndTooth = 0;
 int16_t ignition2EndTooth = 0;
