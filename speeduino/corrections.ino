@@ -75,6 +75,10 @@ static inline byte correctionsFuel()
   alphaVars.vvlCorrection = correctionVVL();
   if (alphaVars.vvlCorrection != 100) { sumCorrections = (sumCorrections * alphaVars.vvlCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+
+  alphaVars.alphaNcorrection = correctionAlphaN();
+  if (alphaVars.alphaNcorrection != 100) { sumCorrections = (sumCorrections * alphaVars.alphaNcorrection); activeCorrections++; }
+  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
   //alphamods
 
   currentStatus.flexCorrection = correctionFlex();
@@ -415,6 +419,7 @@ int8_t correctionsIgn(int8_t base_advance)
   if (alphaVars.carSelect != 255){
     advance = correctionRollingAntiLag(advance);
     advance = correctionZeroThrottleTiming(advance);
+    advance = correctionTimingAlphaN(advance);
   }
   if (alphaVars.carSelect == 0){
     advance = correctionAtUpshift(advance);

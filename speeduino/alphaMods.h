@@ -12,6 +12,7 @@ struct alphaMods{
   bool CELon = false;
   bool gaugeSweep = true;
   byte vvlCorrection;
+  byte alphaNcorrection;
   bool rollingALsoft = false;
   bool rollingALhard = false;
   bool rollingALtrigger = false;
@@ -30,6 +31,8 @@ void DFCOwaitFunc();
 void XRSgaugeCLT();
 void alphaIdleMods();
 void RPMdance();
+static inline byte correctionVVL();
+static inline byte correctionAlphaN();
 uint16_t WOTdwellCorrection(uint16_t);
 uint16_t boostAssist(uint16_t);
 static inline int8_t correctionRollingAntiLag(int8_t);
