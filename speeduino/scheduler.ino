@@ -642,13 +642,13 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
 
     //Need to check that the timeout doesn't exceed the overflow
     uint16_t timeout_timer_compare;
-    timeout -= (micros() - lastCrankAngleCalc);
+    //timeout -= (micros() - lastCrankAngleCalc);
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
     noInterrupts();
     ignitionSchedule1.startCompare = IGN1_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-    ignitionSchedule1.endCompare = ignitionSchedule1.startCompare + uS_TO_TIMER_COMPARE(duration);
+    if(ignitionSchedule1.hasNextSchedule == false) { ignitionSchedule1.endCompare = ignitionSchedule1.startCompare + uS_TO_TIMER_COMPARE(duration); }
     IGN1_COMPARE = ignitionSchedule1.startCompare;
     ignitionSchedule1.Status = PENDING; //Turn this schedule on
     ignitionSchedule1.schedulesSet++;
@@ -663,8 +663,11 @@ static inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
   //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
   //if( (timeToEnd < ignitionSchedule1.duration) && (timeToEnd > IGNITION_REFRESH_THRESHOLD) )
   {
+    unsigned long adjustedTimeToEnd = timeToEnd;
     noInterrupts();
-    unsigned long adjustedTimeToEnd = timeToEnd - (micros() - lastCrankAngleCalc); //Take into account any time that has passed since the last crank angle calculation
+    //unsigned long timeSinceLastCrankAngleCalc = (micros() - lastCrankAngleCalc);
+    //Take into account any time that has passed since the last crank angle calculation
+    //if(timeToEnd > timeSinceLastCrankAngleCalc) { adjustedTimeToEnd = timeToEnd - timeSinceLastCrankAngleCalc; } 
     ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(adjustedTimeToEnd);
     IGN1_COMPARE = ignitionSchedule1.endCompare;
     interrupts();
@@ -1174,29 +1177,52 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
       ignitionSchedule1.StartCallback();
       ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule1.startTime = micros();
-      //IGN1_COMPARE = ignitionSchedule1.endCompare;
-      IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule1.duration); //Doing this here prevents a potential overflow on restarts
+      if(ignitionSchedule1.hasNextSchedule == true) { IGN1_COMPARE = ignitionSchedule1.endCompare; }
+      else { IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule1.duration); } //Doing this here prevents a potential overflow on restarts
       //This code is all to do with the staged ignition timing testing. That is, calling this interrupt slightly before the true ignition point and recalculating the end time for more accuracy
-      //IGN1_COMPARE = ignitionSchedule1.endCompare - 50;
+      //IGN1_COMPARE = IGN1_COMPARE - 150;
       //ignitionSchedule1.Status = STAGED;
     }
     else if (ignitionSchedule1.Status == STAGED)
     {
-      int16_t crankAngle = getCrankAngle();
+      unsigned long timeToLast = lastCrankAngleCalc - micros();
+      degreesPeruSx2048 = 46;
+      //crankAngle += fastTimeToAngle(timeToLast);
+      int crankAngle = getCrankAngle();
+
       if(crankAngle > CRANK_ANGLE_MAX_IGN) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
-      if(ignition1EndAngle > crankAngle)
-      {
-        IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS((ignition1EndAngle - crankAngle)) );
+      int degreesToTarget;
+      //ignition1EndAngle = 0;
+      if(ignition1EndAngle > crankAngle) { degreesToTarget = (ignition1EndAngle - crankAngle); }
+      else 
+      { 
+        if((crankAngle - ignition1EndAngle) < 10)
+        {
+          ignitionSchedule1.EndCallback();
+          ignitionSchedule1.Status = OFF; //Turn off the schedule
+          ignitionSchedule1.schedulesSet = 0;
+          ignitionCount += 1; //Increment the igintion counter
+          IGN1_TIMER_DISABLE();
+          return;
+        }
+        degreesToTarget = CRANK_ANGLE_MAX_IGN - crankAngle;
+        //degreesToTarget = 720 - crankAngle;
+        
       }
-      else { IGN1_COMPARE = ignitionSchedule1.endCompare; }
+
+      //degreesToTarget = 360-crankAngle;
 
       ignitionSchedule1.Status = RUNNING;
+      IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS(degreesToTarget) );
+
     }
     else if (ignitionSchedule1.Status == RUNNING)
     {
-      ignitionSchedule1.EndCallback();
+      //ignitionSchedule1.EndCallback();
+         *ign1_pin_port &= ~(ign1_pin_mask);
       ignitionSchedule1.Status = OFF; //Turn off the schedule
       ignitionSchedule1.schedulesSet = 0;
+      ignitionSchedule1.hasNextSchedule = false;
       ignitionCount += 1; //Increment the igintion counter
       IGN1_TIMER_DISABLE();
     }

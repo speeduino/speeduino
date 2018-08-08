@@ -67,6 +67,15 @@ void endCoil2and4Charge();
 #define openInjector3and5() openInjector3(); openInjector5()
 #define closeInjector3and5() closeInjector3(); closeInjector5()
 
+#define coil1Low() (*ign1_pin_port &= ~(ign1_pin_mask))
+#define coil1High() (*ign1_pin_port |= (ign1_pin_mask))
+#define coil2Low() (*ign2_pin_port &= ~(ign2_pin_mask))
+#define coil2High() (*ign2_pin_port |= (ign2_pin_mask))
+#define coil3Low() (*ign3_pin_port &= ~(ign3_pin_mask))
+#define coil3High() (*ign3_pin_port |= (ign3_pin_mask))
+#define coil4Low() (*ign4_pin_port &= ~(ign4_pin_mask))
+#define coil4High() (*ign4_pin_port |= (ign4_pin_mask))
+
 void nullCallback();
 
 static byte coilHIGH = HIGH;

@@ -52,7 +52,7 @@ uint16_t timeToAngle(unsigned long time, byte method)
     {
         //A last interval method of calculating angle that does not take into account any acceleration. The interval used is the time taken to complete the last full revolution
         //degreesPeruSx2048 is the number of degrees the crank moves per uS. This value is almost always <1uS, so it is multiplied by 2048. This allows an angle calcuation with only a multiply and a bitshift without any appreciable drop in accuracy
-        returnAngle = (time * degreesPeruSx2048) / 2048; //Divide by 2048 will be converted at compile time to bitshift
+        returnAngle = fastTimeToAngle(time); 
     }
     else if (method == CRANKMATH_METHOD_INTERVAL_TOOTH)
     {

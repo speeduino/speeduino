@@ -5,4 +5,8 @@ static inline unsigned int PW(int REQ_FUEL, byte VE, long MAP, int corrections, 
 static inline byte getVE();
 static inline byte getAdvance();
 
+unsigned long calculateInjector2StartAngle(unsigned int);
+unsigned long calculateInjector3StartAngle(unsigned int);
+unsigned long calculateInjector4StartAngle(unsigned int);
+
 #endif

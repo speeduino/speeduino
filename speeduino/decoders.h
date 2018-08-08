@@ -10,10 +10,10 @@
 #endif
 
 static inline void addToothLogEntry(unsigned long);
-static inline uint16_t stdGetRPM(uint16_t degreesOver);
+static inline uint16_t stdGetRPM(uint16_t);
 static inline void setFilter(unsigned long);
 static inline int crankingGetRPM(byte);
-static inline void doPerToothTiming(uint16_t crankAngle);
+//static inline void doPerToothTiming(uint16_t);
 
 void triggerSetup_missingTooth();
 void triggerPri_missingTooth();
@@ -66,6 +66,7 @@ bool decoderHasFixedCrankingTiming = false; //Whether or not the decoder support
 byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
 unsigned long elapsedTime;
 unsigned long lastCrankAngleCalc;
+int16_t lastToothCalcAdvance = 99; //Invalid value here forces calculation of this on first main loop
 
 int16_t ignition1EndTooth = 0;
 int16_t ignition2EndTooth = 0;

@@ -897,14 +897,14 @@ void initialiseTriggers()
     case 0:
       //Missing tooth decoder
       triggerSetup_missingTooth();
-      trigger = triggerPri_missingTooth;
-      triggerSecondary = triggerSec_missingTooth;
+      //trigger = triggerPri_missingTooth;
+      //triggerSecondary = triggerSec_missingTooth;
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
       triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
 
-      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, triggerPri_missingTooth, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, triggerPri_missingTooth, FALLING); }
       if(configPage4.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, RISING); }
       else { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, FALLING); }
       break;
