@@ -18,6 +18,7 @@
 #elif defined(CORE_TEENSY)
   #define BOARD_DIGITAL_GPIO_PINS 34
   #define BOARD_NR_GPIO_PINS 34
+
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
   #ifndef word
@@ -295,6 +296,7 @@ volatile bool toothLogRead = false; //Flag to indicate whether the current tooth
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360;
 int CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+  
 
 //This needs to be here because using the config page directly can prevent burning the setting
 byte resetControl = RESET_CONTROL_DISABLED;
@@ -388,6 +390,7 @@ struct statuses {
   int16_t ignLoad;
   bool fuelPumpOn; //The current status of the fuel pump
   byte syncLossCounter;
+  byte knockRetard;
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -803,6 +806,7 @@ struct config10 {
   byte knock_unused : 2;
   byte knock_count : 3;
 
+  byte knock_threshold;
   byte knock_maxMAP;
   byte knock_maxRPM;
   byte knock_window_rpms[6];
@@ -818,7 +822,7 @@ struct config10 {
   byte knock_recoveryStepTime;
   byte knock_recoveryStep;
 
-  byte unused11_75_191[69];
+  byte unused11_122_191[69];
 
 #if defined(CORE_AVR)
   };
