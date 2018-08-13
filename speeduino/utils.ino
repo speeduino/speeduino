@@ -241,6 +241,7 @@ void setPinMapping(byte boardID)
         pinStepperDir = 34;
         pinStepperStep = 35;
         pinCoil1 = 31;
+        pinCoil2 = 32;
         pinTachOut = 28;
         pinFan = 27;
         pinCoil4 = 29;
