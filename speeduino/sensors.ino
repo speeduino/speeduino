@@ -4,6 +4,7 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 #include "sensors.h"
+#include "crankMaths.h"
 #include "globals.h"
 #include "maths.h"
 
@@ -344,6 +345,21 @@ void readBat()
 void flexPulse()
 {
   ++flexCounter;
+}
+
+/*
+ * The interrupt function for pulses from a knock conditioner / controller
+ * 
+ */
+void knockPulse()
+{
+  if(knockCounter == 0)
+  {
+    //knockAngle = crankAngle + fastTimeToAngle( (micros() - lastCrankAngleCalc) ); 
+    knockCounter = 1;
+  }
+  else { ++knockCounter; } //Knock has already started, so just increment the counter for this
+
 }
 
 uint16_t readAuxanalog(uint8_t analogPin)

@@ -17,6 +17,7 @@ Flood clear mode etc.
 #include "globals.h"
 #include "timers.h"
 #include "maths.h"
+#include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
@@ -398,6 +399,7 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionNitrous(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
+  advance = correctionKnock(advance);
 
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
@@ -508,6 +510,11 @@ static inline int8_t correctionSoftFlatShift(int8_t advance)
 static inline int8_t correctionKnock(int8_t advance)
 {
   byte knockRetard = 0;
+
+  if( (configPage10.knock_mode > 0) && (knockCounter > 0) )
+  {
+    
+  }
 
   return advance - knockRetard;
 }
