@@ -80,7 +80,6 @@ unsigned long counter;
 unsigned long currentLoopTime; //The time the current loop started (uS)
 unsigned long previousLoopTime; //The time the previous loop started (uS)
 
-volatile uint16_t mainLoopCount;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 byte maxIgnOutputs = 1; //Used for rolling rev limiter
@@ -125,8 +124,6 @@ void (*ign7StartFunction)();
 void (*ign7EndFunction)();
 void (*ign8StartFunction)();
 void (*ign8EndFunction)();
-
-volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 
 void setup()
 {

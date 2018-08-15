@@ -9,6 +9,7 @@
   Returns how much free dynamic memory exists (between heap and stack)
   This function is one big MISRA violation. MISRA advisories forbid directly poking at memory addresses, however there is no other way of determining heap size on embedded systems.
 */
+#include <avr/pgmspace.h>
 #include "globals.h"
 #include "utils.h"
 #include "decoders.h"
@@ -1039,7 +1040,7 @@ void initialiseTriggers()
       trigger = triggerPri_DualWheel; //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
       getRPM = getRPM_non360;
       getCrankAngle = getCrankAngle_non360;
-      triggerSetEndTeeth = triggerSetEndTeeth_Non360;
+      triggerSetEndTeeth = triggerSetEndTeeth_non360;
 
       if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
