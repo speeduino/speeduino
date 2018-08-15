@@ -16,6 +16,9 @@ Flood clear mode etc.
 #include "corrections.h"
 #include "globals.h"
 #include "timers.h"
+#include "maths.h"
+#include "sensors.h"
+#include "src/PID_v1/PID_v1.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
 PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
@@ -396,6 +399,7 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionNitrous(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
+  advance = correctionKnock(advance);
 
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
@@ -423,7 +427,7 @@ static inline int8_t correctionFlexTiming(int8_t advance)
   byte ignFlexValue = advance;
   if( configPage2.flexEnabled == 1 ) //Check for flex being enabled
   {
-    currentStatus.flexIgnCorrection = table2D_getValue(&flexAdvTable, currentStatus.ethanolPct);
+    currentStatus.flexIgnCorrection = (int8_t)table2D_getValue(&flexAdvTable, currentStatus.ethanolPct); //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here. 
     ignFlexValue = advance + currentStatus.flexIgnCorrection;
   }
   return ignFlexValue;
@@ -489,7 +493,7 @@ static inline int8_t correctionSoftLaunch(int8_t advance)
   return ignSoftLaunchValue;
 }
 
-static inline int8_t correctionSoftFlatShift(int8_t  advance)
+static inline int8_t correctionSoftFlatShift(int8_t advance)
 {
   byte ignSoftFlatValue = advance;
 
@@ -501,6 +505,18 @@ static inline int8_t correctionSoftFlatShift(int8_t  advance)
   else { BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS); }
 
   return ignSoftFlatValue;
+}
+
+static inline int8_t correctionKnock(int8_t advance)
+{
+  byte knockRetard = 0;
+
+  if( (configPage10.knock_mode > 0) && (knockCounter > 0) )
+  {
+    
+  }
+
+  return advance - knockRetard;
 }
 
 //******************************** DWELL CORRECTIONS ********************************

@@ -2,7 +2,7 @@
 #define STORAGE_H
 
 void writeAllConfig();
-void writeConfig();
+void writeConfig(byte);
 void loadConfig();
 void loadCalibration();
 void writeCalibration();
@@ -56,8 +56,8 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 | 1441  |2    | X and Y size4                       |
 | 1443  |36   | PAGE 9 MAP4                         |
 | 1479  |6    | X and Y Bins4                       |
-| 1500  |128  | CANBUS config and data (Table 10_)  |
-| 1628  |192  | Table 11 - General settings         |
+| 1500  |192  | CANBUS config and data (Table 10_)  |
+| 1692  |192  | Table 11 - General settings         |
 |                                                   |
 | 2559  |512  | Calibration data (O2)               |
 | 3071  |512  | Calibration data (IAT)              |
@@ -127,9 +127,9 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG8_XBINS4 1689
 #define EEPROM_CONFIG8_YBINS4 1695
 #define EEPROM_CONFIG9_START 1710
-#define EEPROM_CONFIG9_END   1838
-#define EEPROM_CONFIG10_START 1838
-#define EEPROM_CONFIG10_END   2030
+#define EEPROM_CONFIG9_END   1902
+#define EEPROM_CONFIG10_START 1902
+#define EEPROM_CONFIG10_END   2094
 
 //Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
 #define EEPROM_LAST_BARO      2558

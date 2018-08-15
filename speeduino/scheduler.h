@@ -25,6 +25,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
+//#define USE_IGN_REFRESH
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
 #if defined(CORE_AVR)
   #include <avr/interrupt.h>
@@ -446,13 +447,14 @@ struct Schedule {
   unsigned int nextStartCompare;
   unsigned int nextEndCompare;
   volatile bool hasNextSchedule = false;
+  volatile bool endScheduleSetByDecoder = false;
 #if defined(CORE_AVR)
   volatile uint16_t * counter;
   volatile uint16_t * compare;
-#elif defined(CORE_STM32) || defined(CORE_TEENSY)
+#else
   volatile uint32_t * counter;
   volatile uint32_t * compare;
-  #endif
+#endif
 };
 
 volatile Schedule *timer3Aqueue[4];

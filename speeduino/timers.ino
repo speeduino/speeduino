@@ -13,6 +13,8 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "timers.h"
 #include "globals.h"
 #include "sensors.h"
+#include "scheduler.h"
+#include "scheduledIO.h"
 
 #if defined(CORE_AVR)
   #include <avr/wdt.h>
@@ -66,7 +68,7 @@ void initialiseTimers()
 //Timer2 Overflow Interrupt Vector, called when the timer overflows.
 //Executes every ~1ms.
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER2_OVF_vect)
+ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //This MUST be no block. Turning NO_BLOCK off messes with timing accuracy
 #elif defined (CORE_TEENSY) || defined(CORE_STM32)
 void oneMSInterval() //Most ARM chips can simply call a function
 #endif
@@ -181,7 +183,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
         {
           //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
           digitalWrite(pinFuelPump, LOW);
-          fuelPumpOn = false;
+          currentStatus.fuelPumpOn = false;
         }
       }
     }

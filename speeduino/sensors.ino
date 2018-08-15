@@ -4,6 +4,9 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 #include "sensors.h"
+#include "crankMaths.h"
+#include "globals.h"
+#include "maths.h"
 
 void initialiseADC()
 {
@@ -48,6 +51,31 @@ void initialiseADC()
   MAPcurRev = 0;
   MAPcount = 0;
   MAPrunningValue = 0;
+
+  //The following checks the aux inputs and initialises pins if required
+  auxIsEnabled = false;
+  for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
+  {
+    currentStatus.current_caninchannel = AuxinChan;          
+    //currentStatus.canin[14] = ((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
+    //currentStatus.canin[13] = (configPage9.caninput_sel[currentStatus.current_caninchannel]&3);          
+    if ( (configPage9.caninput_sel[currentStatus.current_caninchannel] == 1) && (configPage9.enable_candata_in > 0) && (configPage9.enable_canbus == 1))  //if current input channel is enabled as canbus
+    {
+      auxIsEnabled = true;
+    }
+    else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  //if current input channel is enabled as analog local pin
+    {
+      //Channel is active and analog
+      pinMode( (configPage9.Auxinpina[currentStatus.current_caninchannel]&127), INPUT);
+      auxIsEnabled = true;
+    }
+    else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)  //if current input channel is enabled as digital local pin
+    {
+      //Channel is active and digital
+      pinMode( (configPage9.Auxinpinb[currentStatus.current_caninchannel]&127), INPUT);
+      auxIsEnabled = true;
+    }
+  }
 }
 
 static inline void instanteneousMAPReading()
@@ -315,6 +343,42 @@ void readBat()
  * This value is incremented with every pulse and reset back to 0 once per second
  */
 void flexPulse()
- {
-   ++flexCounter;
- }
+{
+  ++flexCounter;
+}
+
+/*
+ * The interrupt function for pulses from a knock conditioner / controller
+ * 
+ */
+void knockPulse()
+{
+  if(knockCounter == 0)
+  {
+    //knockAngle = crankAngle + fastTimeToAngle( (micros() - lastCrankAngleCalc) ); 
+    knockCounter = 1;
+  }
+  else { ++knockCounter; } //Knock has already started, so just increment the counter for this
+
+}
+
+uint16_t readAuxanalog(uint8_t analogPin)
+{
+  //read the Aux analog value for pin set by analogPin 
+  unsigned int tempReading;
+  #if defined(ANALOG_ISR)
+    tempReading = fastMap1023toX(AnChannel[analogPin-A0], 511); //Get the current raw Auxanalog value
+  #else
+    tempReading = analogRead(analogPin);
+    tempReading = fastMap1023toX(analogRead(analogPin), 511); //Get the current raw Auxanalog value
+  #endif
+  return tempReading;
+} 
+
+uint16_t readAuxdigital(uint8_t digitalPin)
+{
+  //read the Aux digital value for pin set by digitalPin 
+  unsigned int tempReading;
+  tempReading = digitalRead(digitalPin); 
+  return tempReading;
+} 

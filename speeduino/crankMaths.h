@@ -1,7 +1,23 @@
-#define CRANKMATH_METHOD_INTERVAL_RPM      0
-#define CRANKMATH_METHOD_INTERVAL_TOOTH    1
-#define CRANKMATH_METHOD_ALPHA_BETA        2
-#define CRANKMATH_METHOD_2ND_DERIVATIVE    3
+#ifndef CRANKMATHS_H
+#define CRANKMATHS_H
 
-unsigned long angleToTime(int16_t angle);
-uint16_t timeToAngle(unsigned long time);
+#define CRANKMATH_METHOD_INTERVAL_DEFAULT  0
+#define CRANKMATH_METHOD_INTERVAL_REV      1
+#define CRANKMATH_METHOD_INTERVAL_TOOTH    2
+#define CRANKMATH_METHOD_ALPHA_BETA        3
+#define CRANKMATH_METHOD_2ND_DERIVATIVE    4
+
+//#define fastDegreesToUS(targetDegrees) ((targetDegrees) * (unsigned long)timePerDegree)
+#define fastDegreesToUS(targetDegrees) (((targetDegrees) * (unsigned long)timePerDegreex16) >> 4)
+#define fastTimeToAngle(time) (((unsigned long)time * degreesPeruSx2048) / 2048) //Divide by 2048 will be converted at compile time to bitshift
+
+#define ignitionLimits(angle) ( ((int16_t)angle >= CRANK_ANGLE_MAX_IGN) ? (angle - CRANK_ANGLE_MAX_IGN) : ( (angle < 0) ? (angle + CRANK_ANGLE_MAX_IGN) : angle))
+
+unsigned long angleToTime(int16_t, byte);
+uint16_t timeToAngle(unsigned long, byte);
+
+volatile uint16_t timePerDegree;
+volatile uint16_t timePerDegreex16;
+volatile uint16_t degreesPeruSx2048;
+
+#endif

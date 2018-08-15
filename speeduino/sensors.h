@@ -3,7 +3,6 @@
 
 #include "Arduino.h"
 
-
 // The following are alpha values for the ADC filters.
 // Their values are from 0 to 255 with 0 being no filtering and 255 being maximum
 #define ADCFILTER_TPS  128
@@ -17,6 +16,9 @@
 #define BARO_MIN      87
 #define BARO_MAX      108
 
+#define KNOCK_MODE_DIGITAL  1
+#define KNOCK_MODE_ANALOG   2
+
 /*
 #if defined(CORE_AVR)
   #define ANALOG_ISR
@@ -24,12 +26,20 @@
 */
 
 volatile byte flexCounter = 0;
+volatile byte knockCounter = 0;
+volatile uint16_t knockAngle;
 volatile int AnChannel[15];
 
 unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
 unsigned long EMAPrunningValue; //As above but for EMAP
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
-uint16_t MAPcurRev; //Tracks which revolution we're sampling on
+uint32_t MAPcurRev; //Tracks which revolution we're sampling on
+bool auxIsEnabled;
+
+//These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
+byte mapErrorCount = 0;
+byte iatErrorCount = 0;
+byte cltErrorCount = 0;
 
 /*
  * Simple low pass IIR filter macro for the analog inputs
@@ -40,10 +50,17 @@ uint16_t MAPcurRev; //Tracks which revolution we're sampling on
 
 static inline void instanteneousMAPReading() __attribute__((always_inline));
 static inline void readMAP() __attribute__((always_inline));
+void initialiseADC();
 void readTPS();
 void readO2_2();
 void flexPulse();
-
+uint16_t readAuxanalog(uint8_t analogPin);
+uint16_t readAuxdigital(uint8_t digitalPin);
+void readCLT();
+void readIAT();
+void readO2();
+void readBat();
+void readBaro();
 
 #if defined(ANALOG_ISR)
 //Analog ISR interrupt routine
