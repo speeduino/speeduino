@@ -66,12 +66,6 @@ uint16_t staged_req_fuel_mult_sec;
 bool ignitionOn = false; //The current state of the ignition system
 bool fuelOn = false; //The current state of the ignition system
 
-void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
-void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
-uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
-int (*getCrankAngle)(); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
-void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of each decoder
-
 byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
