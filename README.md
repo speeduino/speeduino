@@ -1,19 +1,17 @@
 
-
-| **Dev Status**** | ![Unstable](https://img.shields.io/badge/Dev%20Status-Unstable-red.svg) |
-| **Build**** | [![Build status](https://img.shields.io/travis/noisymime/speeduino.svg)](https://travis-ci.org/noisymime/speeduino/) |
-| **Feature Bounties**** | [![Bountysource](https://img.shields.io/bountysource/team/speeduino/activity.svg)](https://www.bountysource.com/teams/speeduino)
+| |  |
+| --- | --- |
+| **Dev Status** | ![Unstable](https://img.shields.io/badge/Dev%20Status-Unstable-red.svg) |
+| **Build** | [![Build status](https://img.shields.io/travis/noisymime/speeduino.svg)](https://travis-ci.org/noisymime/speeduino/) |
+| **Feature Bounties** | [![Bountysource](https://img.shields.io/bountysource/team/speeduino/activity.svg)](https://www.bountysource.com/teams/speeduino)
 
 Speeduino
 =========
 
+The Speeduino project is a flexible, fully featured Engine Management Systems (EMS aka ECU) based on the low cost and open source Arduino platform. It provides all standard engine management functions and is constantly growing to support more features and with wider engine compatibility. 
+
 FAQ:
 =========
-
-Q: Speeduino, didn't you used to be called something else?
-
-A: Initial aim was for a simple DIY ECU for go-karts and the original project title was kartduino. As it became apparent that we wanted to extend support to larger vehicles, the name became a bit misleading.
-The important ideas though remain the same and the priority is still SIMPLICITY! The code is written with simplicity above all else in mind and all areas are well commented. The project can be loaded directly into the Arduino IDE and compiled with only a single additional library needing to be added. Where code is complex or low level, a high level pseudo code example is given to explain what is being performed. 
 
 ========================================================================
 
@@ -45,4 +43,4 @@ Q: I must know more! How can I contact you?
 
 A: Come and visit the forum : http://speeduino.com/forum
 
-If you still need some more info, feel free to drop me a line: noisymime (AT) gmail (dot) com
+If you still need some more info, feel free to jump on our Slack team: http://slack.speeduino.com:3000/
