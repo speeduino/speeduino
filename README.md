@@ -1,7 +1,7 @@
 
 | |  |
 | --- | --- |
-| **Dev Status** | ![Unstable](https://img.shields.io/badge/Dev%20Status-Unstable-red.svg) |
+| **Dev Status** | ![Unstable](https://img.shields.io/badge/Status-Unstable--Use%20Release-red.svg) |
 | **Build** | [![Build status](https://img.shields.io/travis/noisymime/speeduino.svg)](https://travis-ci.org/noisymime/speeduino/) |
 | **Feature Bounties** | [![Bountysource](https://img.shields.io/bountysource/team/speeduino/activity.svg)](https://www.bountysource.com/teams/speeduino)
 
@@ -17,7 +17,7 @@ FAQ:
 
 Q: Arduino ECU,pffft, heard THAT before. Does this one actually work?
 
-A: Yep! 1, 2, 4, 6 and 8 cylinder engines have all run, fuel and ignition, off Speeduino. 
+A: Yep! 1, 2, 3, 4, 5, 6 and 8 cylinder engines have all run using Speeduino. At last count over 300 engines were running on this platform, but this figure is growing all the time. 
 
 ========================================================================
 
