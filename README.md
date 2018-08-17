@@ -1,3 +1,9 @@
+
+
+| **Dev Status**** | ![Unstable](https://img.shields.io/badge/Dev%20Status-Unstable-red.svg) |
+| **Build**** | [![Build status](https://img.shields.io/travis/noisymime/speeduino.svg)](https://travis-ci.org/noisymime/speeduino/) |
+| **Feature Bounties**** | [![Bountysource](https://img.shields.io/bountysource/team/speeduino/activity.svg)](https://www.bountysource.com/teams/speeduino)
+
 Speeduino
 =========
 
