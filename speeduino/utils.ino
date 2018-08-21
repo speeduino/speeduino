@@ -817,7 +817,7 @@ void setPinMapping(byte boardID)
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
-  pinMode(pinFlex, INPUT_PULLUP); //Standard GM / Continental flex sensor requires pullup
+  pinMode(pinFlex, INPUT); //Standard GM / Continental flex sensor requires pullup, but this should be onboard. The internal pullup will not work (Requires ~3.3k)!
   if (configPage6.lnchPullRes == true) { pinMode(pinLaunch, INPUT_PULLUP); }
   else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
   if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
