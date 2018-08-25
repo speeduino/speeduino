@@ -18,6 +18,7 @@
 #elif defined(CORE_TEENSY)
   #define BOARD_DIGITAL_GPIO_PINS 34
   #define BOARD_NR_GPIO_PINS 34
+
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
   #ifndef word
@@ -195,7 +196,7 @@ const char TSfirmwareVersion[] = "Speeduino 2016.09";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 //const byte page_size = 64;
-const int16_t npage_size[11] = {0,288,128,288,128,288,128,240,192,128,192};
+const int16_t npage_size[11] = {0,288,128,288,128,288,128,240,192,192,192};
 //const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
@@ -282,10 +283,22 @@ int ignition3EndAngle = 0;
 int ignition4EndAngle = 0;
 int ignition5EndAngle = 0;
 
-//This is used across multiple files
+//These are variables used across multiple files
+bool initialisationComplete = false; //Tracks whether the setup() functino has run completely
+volatile uint16_t mainLoopCount;
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
 volatile unsigned long ms_counter = 0; //A counter that increments once per ms
+bool clutchTrigger;
+bool previousClutchTrigger;
+volatile uint16_t toothHistory[TOOTH_LOG_BUFFER];
+volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
+volatile unsigned int toothHistoryIndex = 0;
+volatile bool toothLogRead = false; //Flag to indicate whether the current tooth log values have been read out yet
+int CRANK_ANGLE_MAX = 720;
+int CRANK_ANGLE_MAX_IGN = 360;
+int CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+  
 
 //This needs to be here because using the config page directly can prevent burning the setting
 byte resetControl = RESET_CONTROL_DISABLED;
@@ -334,7 +347,7 @@ struct statuses {
   byte iatCorrection; //The amount of inlet air temperature adjustment currently being applied
   byte launchCorrection; //The amount of correction being applied if launch control is active
   byte flexCorrection; //Amount of correction being applied to compensate for ethanol content
-  byte flexIgnCorrection; //Amount of additional advance being applied based on flex
+  int8_t flexIgnCorrection; //Amount of additional advance being applied based on flex. Note the type as this allows for negative values
   byte afrTarget;
   byte idleDuty;
   bool idleUpActive;
@@ -361,7 +374,7 @@ struct statuses {
   uint16_t freeRAM;
   unsigned int clutchEngagedRPM;
   bool flatShiftingHard;
-  volatile uint16_t startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
+  volatile uint32_t startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
   uint16_t boostTarget;
   byte testOutputs;
   bool testActive;
@@ -377,6 +390,9 @@ struct statuses {
   byte nChannels; //Number of fuel and ignition channels
   int16_t fuelLoad;
   int16_t ignLoad;
+  bool fuelPumpOn; //The current status of the fuel pump
+  byte syncLossCounter;
+  byte knockRetard;
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -658,46 +674,70 @@ struct config6 {
 struct config9 {
   byte enable_canbus:2;
   byte enable_candata_in:1;
-  uint16_t caninput_sel;                    //bit status on/off if input is enabled
+  byte caninput_sel[16];                    //bit status on/Can/analog_local/digtal_local if input is enabled
   uint16_t caninput_source_can_address[16];        //u16 [15] array holding can address of input
   uint8_t caninput_source_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)
   uint16_t caninput_source_num_bytes;     //u16 bit status of the number of bytes length 1 or 2
-  byte unused10_53;
-  byte unused10_54;
+  byte unused10_67;
+  byte unused10_68;
   byte enable_candata_out : 1;
   byte canoutput_sel[8];
   uint16_t canoutput_param_group[8];
   uint8_t canoutput_param_start_byte[8];
   byte canoutput_param_num_bytes[8];
 
-  byte unused10_97;
-  byte unused10_98;
-  byte unused10_99;
-  byte speeduino_tsCanId:4;         //speeduino TS canid (0-14)
-  uint16_t true_address;            //speeduino 11bit can address
-  uint16_t realtime_base_address;   //speeduino 11 bit realtime base address
-  uint16_t obd_address;             //speeduino OBD diagnostic address
-  byte unused10_107;
-  byte unused10_108;
-  byte unused10_109;
   byte unused10_110;
   byte unused10_111;
   byte unused10_112;
   byte unused10_113;
-  byte unused10_114;
-  byte unused10_115;
-  byte unused10_116;
-  byte unused10_117;
-  byte unused10_118;
-  byte unused10_119;
-  byte unused10_120;
-  byte unused10_121;
-  byte unused10_122;
-  byte unused10_123;
-  byte unused10_124;
-  byte unused10_125;
-  byte unused10_126;
-  byte unused10_127;
+  byte speeduino_tsCanId:4;         //speeduino TS canid (0-14)
+  uint16_t true_address;            //speeduino 11bit can address
+  uint16_t realtime_base_address;   //speeduino 11 bit realtime base address
+  uint16_t obd_address;             //speeduino OBD diagnostic address
+  uint8_t Auxinpina[16];            //analog  pin number when internal aux in use
+  uint8_t Auxinpinb[16];            // digital pin number when internal aux in use
+  
+  byte unused10_152;
+  byte unused10_153;
+  byte unused10_154;
+  byte unused10_155;
+  byte unused10_156;
+  byte unused10_157;
+  byte unused10_158;
+  byte unused10_159;
+  byte unused10_160;
+  byte unused10_161;
+  byte unused10_162;
+  byte unused10_163;
+  byte unused10_164;
+  byte unused10_165;
+  byte unused10_166;
+  byte unused10_167;
+  byte unused10_168;
+  byte unused10_169;
+  byte unused10_170;
+  byte unused10_171;
+  byte unused10_172;
+  byte unused10_173;
+  byte unused10_174;
+  byte unused10_175;
+  byte unused10_176;
+  byte unused10_177;
+  byte unused10_178;
+  byte unused10_179;
+  byte unused10_180;
+  byte unused10_181;
+  byte unused10_182;
+  byte unused10_183;
+  byte unused10_184;
+  byte unused10_185;
+  byte unused10_186;
+  byte unused10_187;
+  byte unused10_188;
+  byte unused10_189;
+  byte unused10_190;
+  byte unused10_191;
+  
 #if defined(CORE_AVR)
   };
 #else
@@ -732,7 +772,7 @@ struct config10 {
   uint8_t flexFuelBins[6];
   uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%)
   uint8_t flexAdvBins[6];
-  uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%)
+  uint8_t  flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%). NOTE: THIS IS A SIGNED VALUE!
                             //And another three corn rows die.
 
   byte n2o_enable : 2;
@@ -759,7 +799,32 @@ struct config10 {
   byte n2o_stage2_adderMax;
   byte n2o_stage2_retard;
 
-  byte unused11_75_191[99];
+  byte knock_mode : 2;
+  byte knock_pin : 6;
+
+  byte knock_trigger : 1;
+  byte knock_pullup : 1;
+  byte knock_limiterDisable : 1;
+  byte knock_unused : 2;
+  byte knock_count : 3;
+
+  byte knock_threshold;
+  byte knock_maxMAP;
+  byte knock_maxRPM;
+  byte knock_window_rpms[6];
+  byte knock_window_angle[6];
+  byte knock_window_dur[6];
+
+  byte knock_maxRetard;
+  byte knock_firstStep;
+  byte knock_stepSize;
+  byte knock_stepTime;
+        
+  byte knock_duration; //Time after knock retard starts that it should start recovering
+  byte knock_recoveryStepTime;
+  byte knock_recoveryStep;
+
+  byte unused11_122_191[69];
 
 #if defined(CORE_AVR)
   };

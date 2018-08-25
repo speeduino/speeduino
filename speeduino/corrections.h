@@ -29,6 +29,7 @@ static inline int8_t correctionSoftRevLimit(int8_t);
 static inline int8_t correctionNitrous(int8_t);
 static inline int8_t correctionSoftLaunch(int8_t);
 static inline int8_t correctionSoftFlatShift(int8_t);
+static inline int8_t correctionKnock(int8_t);
 
 uint16_t correctionsDwell(uint16_t dwell);
 

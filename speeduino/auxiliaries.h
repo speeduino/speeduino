@@ -3,9 +3,12 @@
 
 void initialiseAuxPWM();
 void boostControl();
+void boostDisable();
+void idleControl();
 void vvtControl();
 void initialiseFan();
 void nitrousControl();
+void fanControl();
 
 #if defined(CORE_AVR)
   #define ENABLE_BOOST_TIMER()  TIMSK1 |= (1 << OCIE1A)
@@ -87,6 +90,9 @@ volatile unsigned int boost_pwm_cur_value;
 long boost_pwm_target_value;
 long boost_cl_target_boost;
 byte boostCounter;
+
+byte fanHIGH = HIGH;             // Used to invert the cooling fan output
+byte fanLOW = LOW;               // Used to invert the cooling fan output
 
 volatile bool vvt_pwm_state;
 unsigned int vvt_pwm_max_count; //Used for variable PWM frequency

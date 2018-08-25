@@ -9,7 +9,10 @@
   Returns how much free dynamic memory exists (between heap and stack)
   This function is one big MISRA violation. MISRA advisories forbid directly poking at memory addresses, however there is no other way of determining heap size on embedded systems.
 */
+#include <avr/pgmspace.h>
+#include "globals.h"
 #include "utils.h"
+#include "decoders.h"
 
 uint16_t freeRam ()
 {
@@ -203,6 +206,7 @@ void setPinMapping(byte boardID)
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
       pinInjector5 = 12; //Output pin injector 5 is on
+      pinInjector6 = 50; //CAUTION: Uses the same as Coil 4 below. 
       pinCoil1 = 40; //Pin for coil 1
       pinCoil2 = 38; //Pin for coil 2
       pinCoil3 = 52; //Pin for coil 3
@@ -232,11 +236,14 @@ void setPinMapping(byte boardID)
       pinResetControl = 43; //Reset control output
 
       #if defined(CORE_TEENSY)
+        pinInjector6 = 51;
+
         pinTrigger = 23;
         pinTrigger2 = 36;
         pinStepperDir = 34;
         pinStepperStep = 35;
         pinCoil1 = 31;
+        pinCoil2 = 32;
         pinTachOut = 28;
         pinFan = 27;
         pinCoil4 = 29;
@@ -253,6 +260,7 @@ void setPinMapping(byte boardID)
         pinInjector3 = PE9; //Output pin injector 3 is on
         pinInjector4 = PE10; //Output pin injector 4 is on
         pinInjector5 = PE11; //Output pin injector 5 is on
+        pinInjector6 = PE12; //Output pin injector 6 is on
         pinCoil1 = PB5; //Pin for coil 1
         pinCoil2 = PB6; //Pin for coil 2
         pinCoil3 = PB7; //Pin for coil 3
@@ -809,7 +817,7 @@ void setPinMapping(byte boardID)
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
-  pinMode(pinFlex, INPUT_PULLUP); //Standard GM / Continental flex sensor requires pullup
+  pinMode(pinFlex, INPUT); //Standard GM / Continental flex sensor requires pullup, but this should be onboard. The internal pullup will not work (Requires ~3.3k)!
   if (configPage6.lnchPullRes == true) { pinMode(pinLaunch, INPUT_PULLUP); }
   else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
   if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
@@ -892,14 +900,14 @@ void initialiseTriggers()
     case 0:
       //Missing tooth decoder
       triggerSetup_missingTooth();
-      trigger = triggerPri_missingTooth;
-      triggerSecondary = triggerSec_missingTooth;
+      //trigger = triggerPri_missingTooth;
+      //triggerSecondary = triggerSec_missingTooth;
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
       triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
 
-      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, trigger, FALLING); }
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, triggerPri_missingTooth, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, triggerPri_missingTooth, FALLING); }
       if(configPage4.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, RISING); }
       else { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, FALLING); }
       break;
@@ -1032,7 +1040,7 @@ void initialiseTriggers()
       trigger = triggerPri_DualWheel; //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
       getRPM = getRPM_non360;
       getCrankAngle = getCrankAngle_non360;
-      triggerSetEndTeeth = triggerSetEndTeeth_Non360;
+      triggerSetEndTeeth = triggerSetEndTeeth_non360;
 
       if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }

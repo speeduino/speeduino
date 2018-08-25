@@ -4,7 +4,9 @@
  * It also can be used for setting good values when there are viarables that move locations in the ini
  * When a user skips multiple firmware versions at a time, this will roll through the updates 1 at a time
  */
-
+#include <EEPROM.h>
+#include "globals.h"
+#include "storage.h"
 
 void doUpdates()
 {
