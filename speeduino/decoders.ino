@@ -565,7 +565,9 @@ void triggerPri_BasicDistributor()
     if(configPage2.perToothIgn == true)
     {
       uint16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
-      checkPerToothTiming(crankAngle, toothCurrentCount);
+      crankAngle = ignitionLimits(crankAngle);
+      if(toothCurrentCount > (triggerActualTeeth/2) ) { checkPerToothTiming(crankAngle, (toothCurrentCount - (triggerActualTeeth/2))); }
+      else { checkPerToothTiming(crankAngle, toothCurrentCount); }
     }
 
     toothLastMinusOneToothTime = toothLastToothTime;
@@ -617,10 +619,22 @@ int getCrankAngle_BasicDistributor()
 
 void triggerSetEndTeeth_BasicDistributor()
 {
-  ignition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / triggerToothAngle ) - 1;
-  if(ignition1EndTooth > configPage4.triggerTeeth) { ignition1EndTooth -= configPage4.triggerTeeth; }
-  if(ignition1EndTooth <= 0) { ignition1EndTooth += configPage4.triggerTeeth; }
-  if(ignition1EndTooth > triggerActualTeeth) { ignition1EndTooth = triggerActualTeeth; }
+
+  int tempEndAngle = (ignition1EndAngle - configPage4.triggerAngle);
+  tempEndAngle = ignitionLimits(tempEndAngle);
+
+  
+  if(tempEndAngle > 180 || tempEndAngle <= 0)
+  {
+    ignition1EndTooth = 2;
+    ignition2EndTooth = 1;
+  }
+  else
+  {
+    ignition1EndTooth = 1;
+    ignition2EndTooth = 2;
+  }
+
 
   lastToothCalcAdvance = currentStatus.advance;
 }
@@ -656,6 +670,7 @@ void triggerPri_GM7X()
 
      toothLastMinusOneToothTime = toothLastToothTime;
      toothLastToothTime = curTime;
+     triggerToothAngleIsCorrect = true;
    }
    else
    {
@@ -664,12 +679,14 @@ void triggerPri_GM7X()
      {
        toothCurrentCount = 3;
        currentStatus.hasSync = true;
+       triggerToothAngleIsCorrect = false;
        currentStatus.startRevolutions++; //Counter
      }
      else
      {
        toothLastMinusOneToothTime = toothLastToothTime;
        toothLastToothTime = curTime;
+       triggerToothAngleIsCorrect = true;
      }
    }
 }
@@ -1207,9 +1224,10 @@ void triggerSetup_24X()
   toothAngles[23] = 357;
 
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  if(initialisationComplete == false) { toothCurrentCount = 25; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
+  if(initialisationComplete == false) { toothCurrentCount = 25; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the init check to prevent the fuel pump just staying on all the time
   secondDerivEnabled = false;
   decoderIsSequential = true;
+  triggerToothAngleIsCorrect = true;
 }
 
 void triggerPri_24X()
@@ -1319,6 +1337,7 @@ void triggerSetup_Jeep2000()
   if(initialisationComplete == false) { toothCurrentCount = 13; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
   secondDerivEnabled = false;
   decoderIsSequential = false;
+  triggerToothAngleIsCorrect = true;
 }
 
 void triggerPri_Jeep2000()
@@ -1337,10 +1356,12 @@ void triggerPri_Jeep2000()
          toothOneTime = curTime;
          currentStatus.hasSync = true;
          currentStatus.startRevolutions++; //Counter
+         triggerToothAngle = 60; //There are groups of 4 pulses (Each 20 degrees apart), with each group being 60 degrees apart. Hence #1 is always 60
       }
       else
       {
         toothCurrentCount++; //Increment the tooth counter
+        triggerToothAngle = toothAngles[(toothCurrentCount-1)] - toothAngles[(toothCurrentCount-2)]; //Calculate the last tooth gap in degrees
       }
 
       setFilter(curGap); //Recalc the new filter value
@@ -2193,7 +2214,7 @@ uint16_t getRPM_Nissan360()
     if(currentStatus.startRevolutions < 2)
     {
       noInterrupts();
-      revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * 180;
+      revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * 180; //Each tooth covers 2 crank degrees, so multiply by 180 to get a full revolution time. 
       interrupts();
     }
     else
