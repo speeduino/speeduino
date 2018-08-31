@@ -170,6 +170,10 @@
 #define NITROUS_STAGE1      1
 #define NITROUS_STAGE2      2
 
+#define KNOCK_MODE_OFF      0
+#define KNOCK_MODE_DIGITAL  1
+#define KNOCK_MODE_ANALOG   2
+
 #define RESET_CONTROL_DISABLED             0
 #define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
 #define RESET_CONTROL_PREVENT_ALWAYS       2
@@ -221,6 +225,8 @@ struct table2D rotarySplitTable; //8 bin ignition split curve for rotary leading
 struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
 struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
 struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
+struct table2D knockWindowStartTable;
+struct table2D knockWindowDurationTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 volatile byte *inj1_pin_port;
@@ -393,6 +399,7 @@ struct statuses {
   bool fuelPumpOn; //The current status of the fuel pump
   byte syncLossCounter;
   byte knockRetard;
+  bool knockActive;
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath

@@ -34,5 +34,9 @@ static inline int8_t correctionKnock(int8_t);
 uint16_t correctionsDwell(uint16_t dwell);
 
 uint16_t AFRnextCycle;
+unsigned long knockStartTime;
+byte lastKnockCount;
+int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
+int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
 
 #endif // CORRECTIONS_H
