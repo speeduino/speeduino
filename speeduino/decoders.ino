@@ -565,7 +565,7 @@ void triggerPri_BasicDistributor()
     if(configPage2.perToothIgn == true)
     {
       uint16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
-      crankAngle = ignitionLimits(crankAngle);
+      crankAngle = ignitionLimits((crankAngle));
       if(toothCurrentCount > (triggerActualTeeth/2) ) { checkPerToothTiming(crankAngle, (toothCurrentCount - (triggerActualTeeth/2))); }
       else { checkPerToothTiming(crankAngle, toothCurrentCount); }
     }
@@ -621,10 +621,10 @@ void triggerSetEndTeeth_BasicDistributor()
 {
 
   int tempEndAngle = (ignition1EndAngle - configPage4.triggerAngle);
-  tempEndAngle = ignitionLimits(tempEndAngle);
+  tempEndAngle = ignitionLimits((tempEndAngle));
 
   
-  if(tempEndAngle > 180 || tempEndAngle <= 0)
+  if( (tempEndAngle > 180) || (tempEndAngle <= 0) )
   {
     ignition1EndTooth = 2;
     ignition2EndTooth = 1;
