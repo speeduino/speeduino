@@ -2184,14 +2184,9 @@ void triggerSec_Nissan360()
       else if(configPage2.nCylinders == 6)
       {
         //Pattern on the 6 cylinders is 4-8-12-16-20-24
-        if( (secondaryDuration >= 15) && (secondaryDuration <= 17) ) //Duration of window = 16 primary teeth
+        if( (secondaryDuration >= 3) && (secondaryDuration <= 5) ) //Duration of window = 4 primary teeth
         {
-          toothCurrentCount = 136; //End of third window is after 60+60+16 primary teeth
-          currentStatus.hasSync = true;
-        }
-        else if( (secondaryDuration >= 3) && (secondaryDuration <= 5) ) //Duration of window = 4 primary teeth
-        {
-          toothCurrentCount = 304; //End of sixth window is after 60+60+60+60+60+4 primary teeth
+          toothCurrentCount = 124; //End of smallest window is after 60+60+4 primary teeth
           currentStatus.hasSync = true;
         }
       }
@@ -2223,7 +2218,7 @@ void triggerSec_Nissan360()
         {
           if(secondaryDuration == 4)
           {
-            toothCurrentCount = 304;
+            //toothCurrentCount = 304;
           }
         } //Cylinder count
       } //use resync
