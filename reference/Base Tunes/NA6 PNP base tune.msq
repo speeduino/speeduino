@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.60.09 - EFI Analytics, Inc." tuneComment="" writeDate="Thu Jun 07 15:21:09 AEST 2018"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2018.5" nPages="10" signature="speeduino 201805"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.60.18 - EFI Analytics, Inc." tuneComment="" writeDate="Tue Sep 04 17:20:29 AEST 2018"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2018.8" nPages="10" signature="speeduino 201808"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
 <pcVariable cols="1" digits="0" name="algorithmLimits" rows="8">
@@ -83,8 +83,8 @@
          179.0 
          179.0 
          179.0 
-         179.0 
-         155.0 
+         163.0 
+         138.0 
          128.0 
          112.0 
          108.0 
@@ -124,7 +124,7 @@
 <constant name="injType">"Port"</constant>
 <constant name="nCylinders">"4"</constant>
 <constant name="algorithm">"MAP"</constant>
-<constant name="unused2_37d">"Off"</constant>
+<constant name="fixAngEnable">"Off"</constant>
 <constant name="nInjectors">"4"</constant>
 <constant name="engineType">"Even fire"</constant>
 <constant name="flexEnabled">"Off"</constant>
@@ -151,8 +151,8 @@
 <constant name="idleUpPolarity">"Inverted"</constant>
 <constant name="idleUpEnabled">"Off"</constant>
 <constant digits="0" name="idleUpAdder" units="% / Steps">163.0</constant>
-<constant digits="0" name="unused2-59" units="Deg">15.0</constant>
-<constant digits="0" name="unused2-60" units="Deg">85.0</constant>
+<constant digits="0" name="taeTaperMin" units="RPM">1500.0</constant>
+<constant digits="0" name="taeTaperMax" units="RPM">6000.0</constant>
 <constant digits="0" name="iacCLminDuty" units="%">40.0</constant>
 <constant digits="0" name="iacCLmaxDuty" units="%">80.0</constant>
 <constant digits="0" name="boostMinDuty" units="%">12.0</constant>
@@ -260,7 +260,7 @@
          8000.0 
          9000.0 
       </constant>
-<constant cols="1" digits="0" name="ignLoadBins" rows="16" units="kPa">
+<constant cols="1" digits="0" name="mapBins1" rows="16" units="kPa">
          10.0 
          16.0 
          20.0 
@@ -330,7 +330,7 @@
          -23.0 
          -14.0 
          -4.0 
-         15.0 
+         19.0 
          32.0 
          48.0 
          66.0 
@@ -563,11 +563,11 @@
 <constant digits="0" name="lnchSoftLim" units="rpm">2500.0</constant>
 <constant digits="0" name="lnchRetard" units="deg">-15.0</constant>
 <constant digits="0" name="lnchHardLim" units="rpm">4000.0</constant>
-<constant digits="0" name="lnchFuelAdd" units="%">30.0</constant>
+<constant digits="0" name="lnchFuelAdd" units="%">15.0</constant>
 <constant digits="0" name="idleKP" units="%">10.0</constant>
 <constant digits="0" name="idleKI" units="%">0.0</constant>
 <constant digits="0" name="idleKD" units="%">0.0</constant>
-<constant digits="0" name="boostLimit" units="kPa">64.0</constant>
+<constant digits="0" name="boostLimit" units="kPa">200.0</constant>
 <constant digits="0" name="boostKP" units="%">35.0</constant>
 <constant digits="0" name="boostKI" units="%">38.0</constant>
 <constant digits="0" name="boostKD" units="%">1.0</constant>
@@ -642,7 +642,7 @@
          -40.0 
          0.0 
          20.0 
-         4.0 
+         40.0 
       </constant>
 <constant name="iacAlgorithm">"PWM Open loop"</constant>
 <constant name="iacStepTime">"1"</constant>
@@ -854,7 +854,7 @@
          0.0 
       </constant>
 </page>
-<page number="8" size="128">
+<page number="8" size="192">
 <constant name="enable_canbus">"Disable"</constant>
 <constant name="enable_candata_in">"Off"</constant>
 <constant name="caninput_sel0">"Off"</constant>
@@ -921,8 +921,8 @@
 <constant name="caninput_source_num_bytes13">"2"</constant>
 <constant name="caninput_source_num_bytes14">"2"</constant>
 <constant name="caninput_source_num_bytes15">"2"</constant>
-<constant digits="0" name="unused10_53">255.0</constant>
-<constant digits="0" name="unused10_54">255.0</constant>
+<constant digits="0" name="unused10_67">255.0</constant>
+<constant digits="0" name="unused10_68">255.0</constant>
 <constant name="enable_candata_out">"Off"</constant>
 <constant name="canoutput_sel0">"On"</constant>
 <constant name="canoutput_sel1">"Off"</constant>
@@ -950,35 +950,74 @@
 <constant name="canoutput_param_start_byte5">"1"</constant>
 <constant name="canoutput_param_start_byte6">"1"</constant>
 <constant name="canoutput_param_start_byte7">"1"</constant>
-<constant digits="0" name="unused10_96">0.0</constant>
-<constant digits="0" name="unused10_97">0.0</constant>
-<constant digits="0" name="unused10_98">0.0</constant>
-<constant digits="0" name="unused10_99">0.0</constant>
-<constant name="speeduino_tsCanId">"CAN ID 0"</constant>
-<constant name="true_address">"0x100"</constant>
-<constant name="realtime_base_address">"0x100"</constant>
-<constant name="obd_address">"0x100"</constant>
-<constant digits="0" name="unused10_107">0.0</constant>
-<constant digits="0" name="unused10_108">0.0</constant>
-<constant digits="0" name="unused10_109">0.0</constant>
+<constant name="canoutput_param_num_bytes7">"1"</constant>
 <constant digits="0" name="unused10_110">0.0</constant>
 <constant digits="0" name="unused10_111">0.0</constant>
 <constant digits="0" name="unused10_112">0.0</constant>
 <constant digits="0" name="unused10_113">0.0</constant>
-<constant digits="0" name="unused10_114">0.0</constant>
-<constant digits="0" name="unused10_115">0.0</constant>
-<constant digits="0" name="unused10_116">0.0</constant>
-<constant digits="0" name="unused10_117">0.0</constant>
-<constant digits="0" name="unused10_118">0.0</constant>
-<constant digits="0" name="unused10_119">0.0</constant>
-<constant digits="0" name="unused10_120">0.0</constant>
-<constant digits="0" name="unused10_121">0.0</constant>
-<constant digits="0" name="unused10_122">0.0</constant>
-<constant digits="0" name="unused10_123">0.0</constant>
-<constant digits="0" name="unused10_124">0.0</constant>
-<constant digits="0" name="unused10_125">0.0</constant>
-<constant digits="0" name="unused10_126">0.0</constant>
-<constant digits="0" name="unused10_127">4.0</constant>
+<constant name="speeduino_tsCanId">"CAN ID 0"</constant>
+<constant name="true_address">"0x100"</constant>
+<constant name="realtime_base_address">"0x100"</constant>
+<constant name="obd_address">"0x100"</constant>
+<constant name="Auxin0pina">"A0"</constant>
+<constant name="Auxin1pina">"A0"</constant>
+<constant name="Auxin2pina">"A0"</constant>
+<constant name="Auxin3pina">"A0"</constant>
+<constant name="Auxin4pina">"A0"</constant>
+<constant name="Auxin5pina">"A0"</constant>
+<constant name="Auxin6pina">"A4"</constant>
+<constant name="Auxin7pina">"A0"</constant>
+<constant name="Auxin9pina">"A6"</constant>
+<constant name="Auxin10pina">"A10"</constant>
+<constant name="Auxin11pina">"A10"</constant>
+<constant name="Auxin15pina">"A8"</constant>
+<constant name="Auxin1pinb">"8"</constant>
+<constant name="Auxin3pinb">"8"</constant>
+<constant name="Auxin5pinb">"8"</constant>
+<constant name="Auxin7pinb">"8"</constant>
+<constant name="Auxin9pinb">"8"</constant>
+<constant name="Auxin11pinb">"8"</constant>
+<constant name="Auxin13pinb">"8"</constant>
+<constant name="Auxin15pinb">"8"</constant>
+<constant digits="0" name="unused10_153">227.0</constant>
+<constant digits="0" name="unused10_154">7.0</constant>
+<constant digits="0" name="unused10_155">20.0</constant>
+<constant digits="0" name="unused10_156">44.0</constant>
+<constant digits="0" name="unused10_157">1.0</constant>
+<constant digits="0" name="unused10_158">188.0</constant>
+<constant digits="0" name="unused10_159">2.0</constant>
+<constant digits="0" name="unused10_160">7.0</constant>
+<constant digits="0" name="unused10_161">0.0</constant>
+<constant digits="0" name="unused10_162">20.0</constant>
+<constant digits="0" name="unused10_163">40.0</constant>
+<constant digits="0" name="unused10_164">60.0</constant>
+<constant digits="0" name="unused10_165">80.0</constant>
+<constant digits="0" name="unused10_166">100.0</constant>
+<constant digits="0" name="unused10_167">0.0</constant>
+<constant digits="0" name="unused10_168">0.0</constant>
+<constant digits="0" name="unused10_169">10.0</constant>
+<constant digits="0" name="unused10_170">0.0</constant>
+<constant digits="0" name="unused10_171">20.0</constant>
+<constant digits="0" name="unused10_172">0.0</constant>
+<constant digits="0" name="unused10_173">30.0</constant>
+<constant digits="0" name="unused10_174">0.0</constant>
+<constant digits="0" name="unused10_175">40.0</constant>
+<constant digits="0" name="unused10_176">0.0</constant>
+<constant digits="0" name="unused10_177">50.0</constant>
+<constant digits="0" name="unused10_178">0.0</constant>
+<constant digits="0" name="unused10_179">0.0</constant>
+<constant digits="0" name="unused10_180">20.0</constant>
+<constant digits="0" name="unused10_181">40.0</constant>
+<constant digits="0" name="unused10_182">60.0</constant>
+<constant digits="0" name="unused10_183">80.0</constant>
+<constant digits="0" name="unused10_184">100.0</constant>
+<constant digits="0" name="unused10_185">100.0</constant>
+<constant digits="0" name="unused10_186">112.0</constant>
+<constant digits="0" name="unused10_187">125.0</constant>
+<constant digits="0" name="unused10_188">137.0</constant>
+<constant digits="0" name="unused10_189">150.0</constant>
+<constant digits="0" name="unused10_190">163.0</constant>
+<constant name="blankfield">""</constant>
 </page>
 <page number="9" size="192">
 <constant cols="1" digits="0" name="crankingEnrichBins" rows="4" units="C">
@@ -1021,7 +1060,7 @@
 <constant digits="0" name="boostIntv" units="ms">255.0</constant>
 <constant digits="0" name="stagedInjSizePri" units="cc/min">300.0</constant>
 <constant digits="0" name="stagedInjSizeSec" units="cc/min">700.0</constant>
-<constant digits="0" name="lnchCtrlTPS" units="%TPS">255.0</constant>
+<constant digits="0" name="lnchCtrlTPS" units="%TPS">20.0</constant>
 <constant cols="1" digits="0" name="flexBoostBins" rows="6" units="%">
          0.0 
          20.0 
@@ -1070,126 +1109,140 @@
          71.0 
          85.0 
       </constant>
-<constant cols="1" digits="0" name="unused11_75_191" rows="116" units="RPM">
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         100.0 
-         0.0 
-         0.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         22600.0 
-         9200.0 
-         0.0 
-         0.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
+<constant name="n2o_enable">"Off"</constant>
+<constant name="n2o_arming_pin">"30"</constant>
+<constant digits="0" name="n2o_minCLT" units="C">60.0</constant>
+<constant digits="0" name="n2o_maxMAP" units="kPa">250.0</constant>
+<constant digits="0" name="n2o_minTPS" units="%TPS">50.0</constant>
+<constant digits="1" name="n2o_maxAFR" units="AFR">17.0</constant>
+<constant name="n2o_stage1_pin">"31"</constant>
+<constant name="n2o_pin_polarity">"LOW"</constant>
+<constant name="n2o_unused">"Yes"</constant>
+<constant digits="0" name="n2o_stage1_minRPM" units="RPM">3000.0</constant>
+<constant digits="0" name="n2o_stage1_maxRPM" units="RPM">6000.0</constant>
+<constant digits="1" name="n2o_stage1_adderMin" units="ms">6.0</constant>
+<constant digits="1" name="n2o_stage1_adderMax" units="ms">3.0</constant>
+<constant digits="0" name="n2o_stage1_retard" units="Deg">5.0</constant>
+<constant name="n2o_stage2_pin">"32"</constant>
+<constant name="n2o_stage2_unused">"No"</constant>
+<constant digits="0" name="n2o_stage2_minRPM" units="RPM">6000.0</constant>
+<constant digits="0" name="n2o_stage2_maxRPM" units="RPM">7000.0</constant>
+<constant digits="1" name="n2o_stage2_adderMin" units="ms">3.0</constant>
+<constant digits="1" name="n2o_stage2_adderMax" units="ms">2.0</constant>
+<constant digits="0" name="n2o_stage2_retard" units="Deg">5.0</constant>
+<constant name="knock_mode">"Analog"</constant>
+<constant name="knock_pin">"3"</constant>
+<constant name="knock_trigger">"LOW"</constant>
+<constant name="knock_pullup">"Off"</constant>
+<constant name="knock_limiterDisable">"No"</constant>
+<constant name="knock_count">"3"</constant>
+<constant digits="1" name="knock_threshold" units="Volts">7.5</constant>
+<constant digits="0" name="knock_maxMAP" units="kPa">100.0</constant>
+<constant digits="0" name="knock_maxRPM" units="RPM">1000.0</constant>
+<constant cols="1" digits="0" name="knock_window_rpms" rows="6" units="RPM">
+         2000.0 
+         3000.0 
+         4000.0 
+         5000.0 
          6000.0 
-         2100.0 
-         100.0 
-         0.0 
-         14800.0 
-         19700.0 
-         14200.0 
-         900.0 
-         14800.0 
-         19700.0 
-         14200.0 
-         900.0 
-         5200.0 
-         17000.0 
-         12000.0 
-         200.0 
-         100.0 
-         23800.0 
-         9900.0 
-         200.0 
-         100.0 
-         0.0 
-         11500.0 
-         20800.0 
-         20900.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25500.0 
-         25400.0 
-         0.0 
-         9800.0 
-         0.0 
-         1000.0 
-         9800.0 
-         0.0 
-         1000.0 
-         11200.0 
-         0.0 
-         100.0 
+         5000.0 
+      </constant>
+<constant cols="1" digits="0" name="knock_window_angle" rows="6" units="deg">
          0.0 
          0.0 
-         3200.0 
-         100.0 
-         9800.0 
          0.0 
-         1000.0 
-         9800.0 
          0.0 
-         1000.0 
+         0.0 
+         -20.0 
+      </constant>
+<constant cols="1" digits="0" name="knock_window_dur" rows="6" units="deg">
+         30.0 
+         30.0 
+         30.0 
+         30.0 
+         30.0 
+         15.0 
+      </constant>
+<constant digits="0" name="knock_maxRetard" units="Deg">3.0</constant>
+<constant digits="0" name="knock_firstStep" units="Deg">1.0</constant>
+<constant digits="0" name="knock_stepSize" units="Deg">2.0</constant>
+<constant digits="1" name="knock_stepTime" units="Sec">2.0</constant>
+<constant digits="1" name="knock_duration" units="Sec">0.2</constant>
+<constant digits="1" name="knock_recoveryStepTime" units="Sec">0.1</constant>
+<constant digits="0" name="knock_recoveryStep" units="Deg">0.0</constant>
+<constant cols="1" digits="0" name="unused11_122_191" rows="69" units="RPM">
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         20000.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_9" units="RAW">
-         0.0 
+         100.0 
       </constant>
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">
