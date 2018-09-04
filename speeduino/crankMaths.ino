@@ -85,8 +85,8 @@ void doCrankSpeedCalcs()
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
       //We use a 1st Deriv accleration prediction, but only when there is an even spacing between primary sensor teeth
       //Any decoder that has uneven spacing has its triggerToothAngle set to 0
+      //THIS IS CURRENTLY DISABLED FOR ALL DECODERS! It needs more work. 
       if( (secondDerivEnabled > 0) && (toothHistoryIndex >= 3) && (currentStatus.RPM < 2000) ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
-      //if(true)
       {
         //Only recalculate deltaV if the tooth has changed since last time (DeltaV stays the same until the next tooth)
         //if (deltaToothCount != toothCurrentCount)
@@ -123,7 +123,7 @@ void doCrankSpeedCalcs()
       {
         //If we can, attempt to get the timePerDegree by comparing the times of the last two teeth seen. This is only possible for evenly spaced teeth
         noInterrupts();
-        if( (triggerToothAngleIsCorrect == true) && (toothLastToothTime > toothLastMinusOneToothTime)  )
+        if( (triggerToothAngleIsCorrect == true) && (toothLastToothTime > toothLastMinusOneToothTime) && (abs(currentStatus.rpmDOT) > 30) )
         {
           //noInterrupts();
           unsigned long tempToothLastToothTime = toothLastToothTime;
@@ -135,9 +135,10 @@ void doCrankSpeedCalcs()
         }
         else
         {
-          //long timeThisRevolution = (micros_safe() - toothOneTime); //micros() is no longer interrupt safe
+          //long timeThisRevolution = (micros_safe() - toothOneTime);
           interrupts();
-          //long rpm_adjust = (timeThisRevolution * (long)currentStatus.rpmDOT) / 1000000; //Take into account any likely accleration that has occurred since the last full revolution completed
+          //Take into account any likely accleration that has occurred since the last full revolution completed:
+          //long rpm_adjust = (timeThisRevolution * (long)currentStatus.rpmDOT) / 1000000; 
           long rpm_adjust = 0;
           timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpm_adjust).quot; //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticably better timing results on low res triggers
           timePerDegree = timePerDegreex16 / 16;
