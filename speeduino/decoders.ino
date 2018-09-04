@@ -151,7 +151,15 @@ void triggerSetup_missingTooth()
   if(configPage4.TrigSpeed == CAM_SPEED) { triggerToothAngle = 720 / configPage4.triggerTeeth; } //Account for cam speed missing tooth
   triggerActualTeeth = configPage4.triggerTeeth - configPage4.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
-  triggerSecFilterTime = (int)((configPage4.trigPatternSec == SEC_TRIGGER_4_1 ) ? 1000000 * 60 / MAX_RPM / 4 / 2 : 1000000 * 60 / MAX_RPM / 2 / 2); //For 4-1 came wheel. Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  if (configPage4.trigPatternSec == SEC_TRIGGER_4_1)
+  {
+    triggerSecFilterTime = 1000000 * 60 / MAX_RPM / 4 / 2;
+  }
+  else 
+  {
+    triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60));
+  }
+  //triggerSecFilterTime = (int)((configPage4.trigPatternSec == SEC_TRIGGER_4_1 ) ? 1000000 * 60 / MAX_RPM / 4 / 2 : 1000000 * 60 / MAX_RPM / 2 / 2); //For 4-1 came wheel. Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   secondDerivEnabled = false;
   decoderIsSequential = false;
   checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
@@ -241,11 +249,14 @@ void triggerSec_missingTooth()
 {
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
-  if( (toothLastSecToothTime == 0)
-#ifndef SMALL_FLASH_MODE
-	  || (toothLastMinusOneSecToothTime == 0 )
-#endif
-  ) { curGap2 = 0; }
+
+  //Safety check for initial startup
+  if( (toothLastSecToothTime == 0) )
+  { 
+    curGap2 = 0; 
+    toothLastSecToothTime = curTime2;
+  }
+
   if ( curGap2 >= triggerSecFilterTime )
   {
     if ( configPage4.trigPatternSec == SEC_TRIGGER_4_1 )
@@ -266,7 +277,9 @@ void triggerSec_missingTooth()
     }
     else
     {
+      //Standard single tooth cam trigger
       revolutionOne = 1; //Sequential revolution reset
+      triggerSecFilterTime = curGap2 >> 1; //Next secondary filter is half the current gap
     }
     toothLastSecToothTime = curTime2;
   } //Trigger filter
@@ -2142,6 +2155,8 @@ void triggerSec_Nissan360()
     {
       if(configPage2.nCylinders == 4)
       {
+        //Supported pattern is where all the inner windows as a different size (Most SR engines)
+        //These equate to 4,8,12,16 teeth spacings
         if( (secondaryDuration >= 15) && (secondaryDuration <= 17) ) //Duration of window = 16 primary teeth
         {
           toothCurrentCount = 16; //End of first window (The longest) occurs 16 teeth after TDC
@@ -2166,8 +2181,7 @@ void triggerSec_Nissan360()
       }
       else if(configPage2.nCylinders == 6)
       {
-        //Pattern on the 6 cylinders is 4-8-12-16-12-8
-        //We can therefore only get sync on the 4 and 16 pulses as they are the only unique ones
+        //Pattern on the 6 cylinders is 4-8-12-16-20-24
         if( (secondaryDuration >= 15) && (secondaryDuration <= 17) ) //Duration of window = 16 primary teeth
         {
           toothCurrentCount = 136; //End of third window is after 60+60+16 primary teeth
@@ -2179,7 +2193,17 @@ void triggerSec_Nissan360()
           currentStatus.hasSync = true;
         }
       }
-      else { currentStatus.hasSync = false; } //This should really never happen (Only 4 and 6 cylinder engines for this patter)
+      else if(configPage2.nCylinders == 8)
+      {
+        //V8 Optispark
+        //Pattern on the 8 cylinders is the same as the 6 cylinder 4-8-12-16-20-24
+        if( (secondaryDuration >= 6) && (secondaryDuration <= 8) ) //Duration of window = 16 primary teeth
+        {
+          toothCurrentCount = 56; //End of the shortest of the individual windows. Occurs at 102 crank degrees. 
+          currentStatus.hasSync = true;
+        }
+      }
+      else { currentStatus.hasSync = false; } //This should really never happen (Only 4, 6 and 8 cylinder engines for this pattern)
     }
     else
     {
