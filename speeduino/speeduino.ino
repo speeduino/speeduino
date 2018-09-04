@@ -78,7 +78,6 @@ byte maxIgnOutputs = 1; //Used for rolling rev limiter
 byte curRollingCut = 0; //Rolling rev limiter, current ignition channel being cut
 byte rollingCutCounter = 0; //how many times (revolutions) the ignition has been cut in a row
 uint32_t rollingCutLastRev = 0; //Tracks whether we're on the same or a different rev for the rolling cut
-uint16_t fixedCrankingOverride = 0;
 
 
 unsigned long secCounter; //The next time to incremen 'runSecs' counter.
