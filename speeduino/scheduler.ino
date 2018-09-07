@@ -1180,8 +1180,8 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule1.Status == RUNNING)
     {
-      //ignitionSchedule1.EndCallback();
-         *ign1_pin_port &= ~(ign1_pin_mask);
+      ignitionSchedule1.EndCallback();
+      //   *ign1_pin_port &= ~(ign1_pin_mask);
       ignitionSchedule1.Status = OFF; //Turn off the schedule
       ignitionSchedule1.schedulesSet = 0;
       ignitionSchedule1.hasNextSchedule = false;
