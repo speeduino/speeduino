@@ -74,13 +74,10 @@ unsigned long counter;
 unsigned long currentLoopTime; //The time the current loop started (uS)
 unsigned long previousLoopTime; //The time the previous loop started (uS)
 
-byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
-int rpmDelta;
 byte maxIgnOutputs = 1; //Used for rolling rev limiter
 byte curRollingCut = 0; //Rolling rev limiter, current ignition channel being cut
 byte rollingCutCounter = 0; //how many times (revolutions) the ignition has been cut in a row
 uint32_t rollingCutLastRev = 0; //Tracks whether we're on the same or a different rev for the rolling cut
-uint16_t fixedCrankingOverride = 0;
 
 
 unsigned long secCounter; //The next time to incremen 'runSecs' counter.
@@ -209,6 +206,15 @@ void setup()
   flexBoostTable.values16 = configPage10.flexBoostAdj;
   flexBoostTable.axisX = configPage10.flexBoostBins;
 
+  knockWindowStartTable.valueSize = SIZE_BYTE;
+  knockWindowStartTable.xSize = 6;
+  knockWindowStartTable.values = configPage10.knock_window_angle;
+  knockWindowStartTable.axisX = configPage10.knock_window_rpms;
+  knockWindowDurationTable.valueSize = SIZE_BYTE;
+  knockWindowDurationTable.xSize = 6;
+  knockWindowDurationTable.values = configPage10.knock_window_dur;
+  knockWindowDurationTable.axisX = configPage10.knock_window_rpms;
+
   //Setup the calibration tables
   loadCalibration();
 
@@ -335,7 +341,10 @@ void setup()
   mainLoopCount = 0;
 
   currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manaully overriden below for sequential setups (Due to TS req_fuel calc limitations)
-  CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts;
+  if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
+  if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
+  else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
+  
 
   //Calculate the number of degrees between cylinders
   switch (configPage2.nCylinders) {
@@ -345,9 +354,9 @@ void setup()
       maxIgnOutputs = 1;
 
       //Sequential ignition works identically on a 1 cylinder whether it's odd or even fire. 
-      if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) { CRANK_ANGLE_MAX_IGN = 720; }
+      if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
 
-      if (configPage2.injLayout == INJ_SEQUENTIAL)
+      if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
       {
         CRANK_ANGLE_MAX_INJ = 720;
         currentStatus.nSquirts = 1;
@@ -365,9 +374,9 @@ void setup()
       else { channel2IgnDegrees = configPage2.oddfire2; }
 
       //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder). 
-      if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) { CRANK_ANGLE_MAX_IGN = 720; }
+      if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
 
-      if (configPage2.injLayout == INJ_SEQUENTIAL)
+      if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
       {
         CRANK_ANGLE_MAX_INJ = 720;
         currentStatus.nSquirts = 1;
@@ -392,7 +401,7 @@ void setup()
       maxIgnOutputs = 3;
       if (configPage2.engineType == EVEN_FIRE )
       {
-        if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
+        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
         {
           channel2IgnDegrees = 240;
           channel3IgnDegrees = 480;
@@ -412,7 +421,7 @@ void setup()
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
+      if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = 120;
@@ -460,7 +469,7 @@ void setup()
           channel2InjDegrees = channel2InjDegrees / (currentStatus.nSquirts / 2);
         }
 
-        if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
+        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
         {
           channel3IgnDegrees = 360;
           channel4IgnDegrees = 540;
@@ -484,7 +493,7 @@ void setup()
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
+      if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
       {
         channel2InjDegrees = 180;
 
@@ -541,7 +550,7 @@ void setup()
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
+      if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = 72;
@@ -1119,68 +1128,7 @@ void loop()
       int tempCrankAngle;
       int tempStartAngle;
 
-      //********************************************************
-      //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
-      //We use a 1st Deriv accleration prediction, but only when there is an even spacing between primary sensor teeth
-      //Any decoder that has uneven spacing has its triggerToothAngle set to 0
-      if( (secondDerivEnabled > 0) && (toothHistoryIndex >= 3) && (currentStatus.RPM < 2000) ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
-      //if(true)
-      {
-        //Only recalculate deltaV if the tooth has changed since last time (DeltaV stays the same until the next tooth)
-        //if (deltaToothCount != toothCurrentCount)
-        {
-          deltaToothCount = toothCurrentCount;
-          int angle1, angle2; //These represent the crank angles that are travelled for the last 2 pulses
-          if(configPage4.TrigPattern == 4)
-          {
-            //Special case for 70/110 pattern on 4g63
-            angle2 = triggerToothAngle; //Angle 2 is the most recent
-            if (angle2 == 70) { angle1 = 110; }
-            else { angle1 = 70; }
-          }
-          else if(configPage4.TrigPattern == 0)
-          {
-            //Special case for missing tooth decoder where the missing tooth was one of the last 2 seen
-            if(toothCurrentCount == 1) { angle2 = 2*triggerToothAngle; angle1 = triggerToothAngle; }
-            else if(toothCurrentCount == 2) { angle1 = 2*triggerToothAngle; angle2 = triggerToothAngle; }
-            else { angle1 = triggerToothAngle; angle2 = triggerToothAngle; }
-          }
-          else { angle1 = triggerToothAngle; angle2 = triggerToothAngle; }
-
-          long toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
-          long toothDeltaT = toothHistory[toothHistoryIndex];
-          //long timeToLastTooth = micros() - toothLastToothTime;
-
-          rpmDelta = (toothDeltaV << 10) / (6 * toothDeltaT);
-        }
-
-          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpmDelta).quot; //This give accuracy down to 0.1 of a degree and can provide noticably better timing results on low res triggers
-          timePerDegree = timePerDegreex16 / 16;
-      }
-      else
-      {
-        //If we can, attempt to get the timePerDegree by comparing the times of the last two teeth seen. This is only possible for evenly spaced teeth
-        if( (triggerToothAngleIsCorrect == true) && (toothLastToothTime > toothLastMinusOneToothTime) && false ) //This is currently NOT working. Don't know why yet
-        {
-          noInterrupts();
-          unsigned long tempToothLastToothTime = toothLastToothTime;
-          unsigned long tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
-          uint16_t tempTriggerToothAngle = triggerToothAngle;
-          interrupts();
-          timePerDegreex16 = (unsigned long)( (tempToothLastToothTime - tempToothLastMinusOneToothTime)*16) / tempTriggerToothAngle;
-          timePerDegree = timePerDegreex16 / 16;
-        }
-        else
-        {
-          long timeThisRevolution = (micros_safe() - toothOneTime); //micros() is no longer interrupt safe
-          long rpm_adjust = (timeThisRevolution * (long)currentStatus.rpmDOT) / 1000000; //Take into account any likely accleration that has occurred since the last full revolution completed
-          rpm_adjust = 0;
-          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpm_adjust).quot; //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticably better timing results on low res triggers
-          timePerDegree = timePerDegreex16 / 16;
-        }
-
-      }
-      degreesPeruSx2048 = 2048 / timePerDegree;
+      doCrankSpeedCalcs(); //In crankMaths.ino
 
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
       unsigned long pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
@@ -1822,7 +1770,7 @@ void loop()
 #endif
 
 #if defined(USE_IGN_REFRESH)
-        if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) )
+        if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
         {
           unsigned long uSToEnd = 0;
 

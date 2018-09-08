@@ -353,9 +353,11 @@ void flexPulse()
  */
 void knockPulse()
 {
+  //Check if this the start of a knock. 
   if(knockCounter == 0)
   {
     //knockAngle = crankAngle + fastTimeToAngle( (micros() - lastCrankAngleCalc) ); 
+    knockStartTime = micros();
     knockCounter = 1;
   }
   else { ++knockCounter; } //Knock has already started, so just increment the counter for this

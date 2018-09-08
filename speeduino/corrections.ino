@@ -29,6 +29,7 @@ void initialiseCorrections()
   currentStatus.flexIgnCorrection = 0;
   currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
   AFRnextCycle = 0;
+  currentStatus.knockActive = false;
 }
 
 /*
@@ -511,9 +512,32 @@ static inline int8_t correctionKnock(int8_t advance)
 {
   byte knockRetard = 0;
 
-  if( (configPage10.knock_mode > 0) && (knockCounter > 0) )
+  //First check is to do the window calculations (ASsuming knock is enabled)
+  if( configPage10.knock_mode != KNOCK_MODE_OFF )
   {
-    
+    knockWindowMin = table2D_getValue(&knockWindowStartTable, currentStatus.RPM);
+    knockWindowMax = knockWindowMin + table2D_getValue(&knockWindowDurationTable, currentStatus.RPM);
+  }
+
+
+  if( (configPage10.knock_mode == KNOCK_MODE_DIGITAL)  )
+  {
+    //
+    if(knockCounter > configPage10.knock_count)
+    {
+      if(currentStatus.knockActive == true)
+      {
+        //Knock retard is currently 
+      }
+      else
+      {
+        //Knock needs to be activated
+        lastKnockCount = knockCounter;
+        knockStartTime = micros();
+        knockRetard = configPage10.knock_firstStep;
+      }
+    }
+
   }
 
   return advance - knockRetard;

@@ -1,6 +1,7 @@
 #include "globals.h"
 #include "crankMaths.h"
 #include "decoders.h"
+#include "timers.h"
 
 /*
 * Converts a crank angle into a time from or since that angle occurred.
@@ -76,4 +77,73 @@ uint16_t timeToAngle(unsigned long time, byte method)
 
    return returnAngle;
     
+}
+
+void doCrankSpeedCalcs()
+{
+     //********************************************************
+      //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
+      //We use a 1st Deriv accleration prediction, but only when there is an even spacing between primary sensor teeth
+      //Any decoder that has uneven spacing has its triggerToothAngle set to 0
+      //THIS IS CURRENTLY DISABLED FOR ALL DECODERS! It needs more work. 
+      if( (secondDerivEnabled > 0) && (toothHistoryIndex >= 3) && (currentStatus.RPM < 2000) ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
+      {
+        //Only recalculate deltaV if the tooth has changed since last time (DeltaV stays the same until the next tooth)
+        //if (deltaToothCount != toothCurrentCount)
+        {
+          deltaToothCount = toothCurrentCount;
+          int angle1, angle2; //These represent the crank angles that are travelled for the last 2 pulses
+          if(configPage4.TrigPattern == 4)
+          {
+            //Special case for 70/110 pattern on 4g63
+            angle2 = triggerToothAngle; //Angle 2 is the most recent
+            if (angle2 == 70) { angle1 = 110; }
+            else { angle1 = 70; }
+          }
+          else if(configPage4.TrigPattern == 0)
+          {
+            //Special case for missing tooth decoder where the missing tooth was one of the last 2 seen
+            if(toothCurrentCount == 1) { angle2 = 2*triggerToothAngle; angle1 = triggerToothAngle; }
+            else if(toothCurrentCount == 2) { angle1 = 2*triggerToothAngle; angle2 = triggerToothAngle; }
+            else { angle1 = triggerToothAngle; angle2 = triggerToothAngle; }
+          }
+          else { angle1 = triggerToothAngle; angle2 = triggerToothAngle; }
+
+          long toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
+          long toothDeltaT = toothHistory[toothHistoryIndex];
+          //long timeToLastTooth = micros() - toothLastToothTime;
+
+          rpmDelta = (toothDeltaV << 10) / (6 * toothDeltaT);
+        }
+
+          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpmDelta).quot; //This give accuracy down to 0.1 of a degree and can provide noticably better timing results on low res triggers
+          timePerDegree = timePerDegreex16 / 16;
+      }
+      else
+      {
+        //If we can, attempt to get the timePerDegree by comparing the times of the last two teeth seen. This is only possible for evenly spaced teeth
+        noInterrupts();
+        if( (triggerToothAngleIsCorrect == true) && (toothLastToothTime > toothLastMinusOneToothTime) && (abs(currentStatus.rpmDOT) > 30) )
+        {
+          //noInterrupts();
+          unsigned long tempToothLastToothTime = toothLastToothTime;
+          unsigned long tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
+          uint16_t tempTriggerToothAngle = triggerToothAngle;
+          interrupts();
+          timePerDegreex16 = (unsigned long)( (tempToothLastToothTime - tempToothLastMinusOneToothTime)*16) / tempTriggerToothAngle;
+          timePerDegree = timePerDegreex16 / 16;
+        }
+        else
+        {
+          //long timeThisRevolution = (micros_safe() - toothOneTime);
+          interrupts();
+          //Take into account any likely accleration that has occurred since the last full revolution completed:
+          //long rpm_adjust = (timeThisRevolution * (long)currentStatus.rpmDOT) / 1000000; 
+          long rpm_adjust = 0;
+          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpm_adjust).quot; //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticably better timing results on low res triggers
+          timePerDegree = timePerDegreex16 / 16;
+        }
+      }
+      degreesPeruSx2048 = 2048 / timePerDegree;
+      degreesPeruSx32768 = 524288 / timePerDegreex16;
 }

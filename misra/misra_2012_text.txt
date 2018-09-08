@@ -1,0 +1,285 @@
+Appendix A Summary of guidelines
+Rule 1.1
+C Syntax violation
+Rule 1.2
+txt rule 1.2
+Rule 1.3
+No text specified
+Rule 2.1
+No text specified
+Rule 2.2
+No text specified
+Rule 2.3
+No text specified
+Rule 2.4
+No text specified
+Rule 2.5
+No text specified
+Rule 2.6
+No text specified
+Rule 2.7
+No text specified
+Rule 3.1
+Mandatory - /* and // cannot used within a comment (ie No nested comments)
+Rule 3.2
+No text specified
+Rule 4.1
+No text specified
+Rule 4.2
+No text specified
+Rule 5.1
+No text specified
+Rule 5.2
+No text specified
+Rule 5.3
+No text specified
+Rule 5.4
+No text specified
+Rule 5.5
+No text specified
+Rule 5.6
+No text specified
+Rule 5.7
+No text specified
+Rule 5.8
+No text specified
+Rule 5.9
+No text specified
+Rule 6.1
+No text specified
+Rule 6.2
+No text specified
+Rule 7.1
+No text specified
+Rule 7.2
+No text specified
+Rule 7.3
+No text specified
+Rule 7.4
+No text specified
+Rule 8.1
+No text specified
+Rule 8.2
+No text specified
+Rule 8.3
+No text specified
+Rule 8.4
+No text specified
+Rule 8.6
+No text specified
+Rule 8.7
+No text specified
+Rule 8.8
+No text specified
+Rule 8.9
+No text specified
+Rule 8.10
+No text specified
+Rule 8.11
+No text specified
+Rule 8.12
+No text specified
+Rule 8.13
+No text specified
+Rule 8.14
+No text specified
+Rule 9.1
+No text specified
+Rule 9.2
+No text specified
+Rule 9.3
+No text specified
+Rule 9.4
+No text specified
+Rule 9.5
+No text specified
+Rule 10.1
+No text specified
+Rule 10.2
+No text specified
+Rule 10.3
+No text specified
+Rule 10.4
+No text specified
+Rule 10.5
+No text specified
+Rule 10.6
+No text Specified
+Rule 10.7
+No text specified
+Rule 10.8
+No text specified
+Rule 11.1
+No text specified
+Rule 11.2
+No text specified
+Rule 11.3
+No text specified
+Rule 11.4
+No text specified
+Rule 11.5
+No text specified
+Rule 11.6
+No text specified
+Rule 11.7
+No text specified
+Rule 11.8
+No text specified
+Rule 11.9
+No text specified
+Rule 12.1
+Advisory - Order of operations within an expression must be explicit. Multiple conditions in a logical operation should have brackets around them.
+Rule 12.2
+No text specified
+Rule 12.3
+Advisory - The comma operator is not permitted.
+Rule 12.4
+No text specified
+Rule 13.1
+No text specified
+Rule 13.2
+No text specified
+Rule 13.3
+No text specified
+Rule 13.4
+Advisory - Assignment operation should not be used in an expression (Check for = when == should have been used)
+Rule 13.5
+No text specified
+Rule 13.6
+No text specified
+Rule 14.1
+No text specified
+Rule 14.2
+No text specified
+Rule 14.3
+No text specified
+Rule 14.4
+Mandatory - Non-Boolean type expression used in an if statement or the conditional iteration statement of a loop
+Rule 15.1
+No text specified
+Rule 15.2
+No text specified
+Rule 15.3
+No text specified
+Rule 15.4
+No text specified
+Rule 15.5
+Advisory - A function should only have a single return point
+Rule 15.6
+No text specified
+Rule 15.7
+No text specified
+Rule 16.1
+No text specified
+Rule 16.2
+No text specified
+Rule 16.3
+No text specified
+Rule 16.4
+Mandatory - All switch statements must have a default case
+Rule 16.5
+No text specified
+Rule 16.6
+No text specified
+Rule 16.7
+No text specified
+Rule 17.1
+No text specified
+Rule 17.2
+No text specified
+Rule 17.3
+No text specified
+Rule 17.4
+No text specified
+Rule 17.5
+No text specified
+Rule 17.6
+No text specified
+Rule 17.7
+No text specified
+Rule 17.8
+Advisory - An argument to a function should be treated as read-only
+Rule 18.1
+No text specified
+Rule 18.2
+No text specified
+Rule 18.3
+No text specified
+Rule 18.4
+No text specified
+Rule 18.5
+No text specified
+Rule 18.6
+No text specified
+Rule 18.7
+No text specified
+Rule 18.8
+No text specified
+Rule 19.1
+No text specified
+Rule 19.2
+No text specified
+Rule 20.1
+No text specified
+Rule 20.2
+No text specified
+Rule 20.3
+No text specified
+Rule 20.4
+No text specified
+Rule 20.5
+Advisory - Use of #undef is not permitted
+Rule 20.6
+No text specified
+Rule 20.7
+No text specified
+Rule 20.8
+No text specified
+Rule 20.9
+No text specified
+Rule 20.10
+No text specified
+Rule 20.11
+No text specified
+Rule 20.12
+No text specified
+Rule 20.13
+No text specified
+Rule 20.14
+No text specified
+Rule 21.1
+No text specified
+Rule 21.2
+No text specified
+Rule 21.3
+No text specified
+Rule 21.4
+No text specified
+Rule 21.5
+No text specified
+Rule 21.6
+No text specified
+Rule 21.7
+No text specified
+Rule 21.8
+No text specified
+Rule 21.9
+No text specified
+Rule 21.10
+No text specified
+Rule 21.11
+No text specified
+Rule 21.12
+No text specified
+Rule 22.1
+No text specified
+Rule 22.2
+No text specified
+Rule 22.3
+No text specified
+Rule 22.4
+No text specified
+Rule 22.5
+No text specified
+Rule 22.6
+No text specified
