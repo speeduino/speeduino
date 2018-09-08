@@ -116,7 +116,7 @@ If it's the correct tooth, but
 */
 #define checkPerToothTiming(crankAngle, currentTooth) \
 { \
-  if (fixedCrankingOverride != 0) \
+  if (fixedCrankingOverride == 0) \
   { \
     if ( (currentTooth == ignition1EndTooth) ) \
     { \
@@ -2122,10 +2122,18 @@ void triggerPri_Nissan360()
      //EXPERIMENTAL!
      if(configPage2.perToothIgn == true)
      {
-       int16_t crankAngle = ( (toothCurrentCount-1) * 2 ) + configPage4.triggerAngle;
-       //if(crankAngle > CRANK_ANGLE_MAX_IGN) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
+        int16_t crankAngle = ( (toothCurrentCount-1) * 2 ) + configPage4.triggerAngle;
+        if(crankAngle > CRANK_ANGLE_MAX_IGN) 
+        { 
+          crankAngle -= CRANK_ANGLE_MAX_IGN;
+          checkPerToothTiming(crankAngle, (toothCurrentCount/2) );
+        }
+        else
+        {
+          checkPerToothTiming(crankAngle, toothCurrentCount);
+        }
        //if(crankAngle < CRANK_ANGLE_MAX_IGN) {
-       checkPerToothTiming(crankAngle, toothCurrentCount);
+       
      }
 
      timePerDegree = curGap >> 1;; //The time per crank degree is simply the time between this tooth and the last one divided by 2
@@ -2290,6 +2298,11 @@ void triggerSetEndTeeth_Nissan360()
   ignition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / 2 ) - 4;
   ignition3EndTooth = ( (ignition3EndAngle - configPage4.triggerAngle) / 2 ) - 4;
   ignition4EndTooth = ( (ignition4EndAngle - configPage4.triggerAngle) / 2 ) - 4;
+
+  if(ignition1EndTooth < 0) { ignition1EndTooth += 360; }
+  if(ignition2EndTooth < 0) { ignition2EndTooth += 360; }
+  if(ignition3EndTooth < 0) { ignition3EndTooth += 360; }
+  if(ignition4EndTooth < 0) { ignition4EndTooth += 360; }
 
   lastToothCalcAdvance = currentStatus.advance;
 }

@@ -341,7 +341,7 @@ void setup()
   mainLoopCount = 0;
 
   currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manaully overriden below for sequential setups (Due to TS req_fuel calc limitations)
-  if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check
+  if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
   if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
   else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
   
