@@ -145,4 +145,5 @@ void doCrankSpeedCalcs()
         }
       }
       degreesPeruSx2048 = 2048 / timePerDegree;
+      degreesPeruSx32768 = 524288 / timePerDegreex16;
 }

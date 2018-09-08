@@ -593,7 +593,7 @@ void triggerSec_BasicDistributor() { return; } //Not required
 uint16_t getRPM_BasicDistributor()
 {
   uint16_t tempRPM;
-  if( currentStatus.RPM < currentStatus.crankRPM )
+  if( currentStatus.RPM < currentStatus.crankRPM)
   { 
     tempRPM = crankingGetRPM(triggerActualTeeth) << 1; //crankGetRPM uses teeth per 360 degrees. As triggerActualTeeh is total teeth in 720 degrees, we divide the tooth count by 2
     revolutionTime = revolutionTime >> 1; //Revolution time has to be divided by 2 as otherwise it would be over 720 degrees (triggerActualTeeth = nCylinders)
@@ -616,14 +616,21 @@ int getCrankAngle_BasicDistributor()
     noInterrupts();
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
-    lastCrankAngleCalc= micros(); //micros() is no longer interrupt safe
+    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
     interrupts();
 
     int crankAngle = ((tempToothCurrentCount - 1) * triggerToothAngle) + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
     
     //Estimate the number of degrees travelled since the last tooth}
+    
     elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
-    crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_REV);
+
+    //if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
+    //else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
+
+    //crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_REV);
+    crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_TOOTH);
+    
 
     if (crankAngle >= 720) { crankAngle -= 720; }
     if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
@@ -2132,7 +2139,6 @@ void triggerPri_Nissan360()
         {
           checkPerToothTiming(crankAngle, toothCurrentCount);
         }
-       //if(crankAngle < CRANK_ANGLE_MAX_IGN) {
        
      }
 
