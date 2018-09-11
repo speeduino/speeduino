@@ -8,6 +8,7 @@ pool:
   vmImage: 'Ubuntu 16.04'
 
 steps:
+  - script: pip install --upgrade pip
   - script: pip install -U platformio
   - script: git clone --depth=20 https://github.com/noisymime/cppcheck.git noisymime/cppcheck
   - script: cd noisymime/speeduino
