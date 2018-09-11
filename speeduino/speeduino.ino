@@ -401,7 +401,8 @@ void setup()
       maxIgnOutputs = 3;
       if (configPage2.engineType == EVEN_FIRE )
       {
-        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
+        //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines. 
+        if( ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE) ) && (configPage2.strokes == FOUR_STROKE) )
         {
           channel2IgnDegrees = 240;
           channel3IgnDegrees = 480;
