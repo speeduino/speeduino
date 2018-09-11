@@ -211,7 +211,7 @@ static inline int16_t correctionAccel()
           {
             int16_t taperRange = trueTaperMax - trueTaperMin;
             int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100) / taperRange; //The percentage of the way through the RPM taper range
-            accelValue = percentage(taperPercent, accelValue); //Calculate the above percentage of the calculated accel amount. 
+            accelValue = percentage((100-taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
           }
         }
         accelValue = 100 + accelValue; //Add the 100 normalisation to the calculated amount
