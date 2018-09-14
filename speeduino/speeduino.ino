@@ -364,6 +364,13 @@ void setup()
       }
 
       channel1InjEnabled = true;
+
+      //Check if injector staging is enabled
+      if(configPage10.stagingEnabled == true)
+      {
+        channel3InjEnabled = true;
+        channel3InjDegrees = channel1InjDegrees;
+      }
       break;
 
     case 2:
@@ -390,10 +397,21 @@ void setup()
         //For simultaneous, all squirts happen at the same time
         channel1InjDegrees = 0;
         channel2InjDegrees = 0; 
-      } 
+      }
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
+
+      //Check if injector staging is enabled
+      if(configPage10.stagingEnabled == true)
+      {
+        channel3InjEnabled = true;
+        channel4InjEnabled = true;
+
+        channel3InjDegrees = channel1InjDegrees;
+        channel4InjDegrees = channel2InjDegrees;
+      }
+
       break;
 
     case 3:
@@ -401,7 +419,8 @@ void setup()
       maxIgnOutputs = 3;
       if (configPage2.engineType == EVEN_FIRE )
       {
-        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
+        //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines. 
+        if( ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE) ) && (configPage2.strokes == FOUR_STROKE) )
         {
           channel2IgnDegrees = 240;
           channel3IgnDegrees = 480;
@@ -1203,6 +1222,14 @@ void loop()
       //Repeat the above for each cylinder
       switch (configPage2.nCylinders)
       {
+        //Single cylinder
+        case 1:
+          //The only thing that needs to be done for single cylinder is to check for staging. 
+          if( (configPage10.stagingEnabled == true) && (currentStatus.PW3 > 0) )
+          {
+            PWdivTimerPerDegree = div(currentStatus.PW3, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
+            injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
+          }
         //2 cylinders
         case 2:
           /*
@@ -1212,6 +1239,15 @@ void loop()
           if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) { injector2StartAngle -= CRANK_ANGLE_MAX_INJ; }
           */
           injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
+          if( (configPage10.stagingEnabled == true) && (currentStatus.PW3 > 0) )
+          {
+            PWdivTimerPerDegree = div(currentStatus.PW3, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
+            injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
+
+            injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
+            if(injector4StartAngle < 0) {injector4StartAngle += CRANK_ANGLE_MAX_INJ;}
+            if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
+          }
           break;
         //3 cylinders
         case 3:
@@ -1268,15 +1304,9 @@ void loop()
               if (pw4percent != 100) { currentStatus.PW4 = (pw4percent * currentStatus.PW4) / 100; }
             }
           }
-          else if(configPage10.stagingEnabled == true)
+          else if( (configPage10.stagingEnabled == true) && (currentStatus.PW3 > 0) )
           {
             PWdivTimerPerDegree = div(currentStatus.PW3, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
-            
-            /*
-            injector3StartAngle = configPage2.inj3Ang - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
-            if(injector3StartAngle < 0) {injector3StartAngle += CRANK_ANGLE_MAX_INJ;}
-            if(injector3StartAngle > CRANK_ANGLE_MAX_INJ) {injector3StartAngle -= CRANK_ANGLE_MAX_INJ;}
-            */
             injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
 
             injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
@@ -1400,7 +1430,7 @@ void loop()
 
           ignition3EndAngle = channel3IgnDegrees - currentStatus.advance;
           if(ignition3EndAngle > CRANK_ANGLE_MAX_IGN) {ignition3EndAngle -= CRANK_ANGLE_MAX_IGN;}
-          ignition3StartAngle = channel3IgnDegrees + 360 - currentStatus.advance - dwellAngle;
+          ignition3StartAngle = channel3IgnDegrees - dwellAngle;
           if(ignition3StartAngle < 0) {ignition3StartAngle += CRANK_ANGLE_MAX_IGN;}
           break;
         //4 cylinders
