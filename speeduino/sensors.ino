@@ -70,7 +70,7 @@ void initialiseADC()
       if( pinIsUsed(pinNumber) )
       {
         //Do nothing here as the pin is already in use.
-        //Need some mmethod of reporting this back to the user
+        //Need some method of reporting this back to the user
       }
       else
       {
@@ -86,7 +86,7 @@ void initialiseADC()
       if( pinIsUsed(pinNumber) )
       {
         //Do nothing here as the pin is already in use.
-        //Need some mmethod of reporting this back to the user
+        //Need some method of reporting this back to the user
       }
       else
       {
@@ -270,7 +270,7 @@ void readTPS()
     currentStatus.TPS = map(tempADC, configPage2.tpsMax, configPage2.tpsMin, 0, 100);
   }
 
-  currentStatus.TPS_time = currentLoopTime;
+  currentStatus.TPS_time = micros();
 }
 
 void readCLT()
