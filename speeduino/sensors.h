@@ -47,6 +47,11 @@ byte cltErrorCount = 0;
  * But removes the use of floats and uses 8 bits of fixed precision.
  */
 #define ADC_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
+//These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
+#define pinIsInjector(pin)  ( (pin == pinInjector1) || (pin == pinInjector2) || (pin == pinInjector3) || (pin == pinInjector4) )
+#define pinIsIgnition(pin)  ( (pin == pinCoil1) || (pin == pinCoil2) || (pin == pinCoil3) || (pin == pinCoil4) )
+#define pinIsSensor(pin)    ( (pin == pinCLT) || (pin == pinIAT) || (pin == pinMAP) || (pin == pinTPS) || (pin == pinO2) || (pin == pinBat) )
+#define pinIsUsed(pin)      ( pinIsInjector(pin) || pinIsIgnition(pin) || pinIsSensor(pin) )
 
 static inline void instanteneousMAPReading() __attribute__((always_inline));
 static inline void readMAP() __attribute__((always_inline));

@@ -65,15 +65,35 @@ void initialiseADC()
     }
     else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  //if current input channel is enabled as analog local pin
     {
-      //Channel is active and analog
-      pinMode( (configPage9.Auxinpina[currentStatus.current_caninchannel]&127), INPUT);
-      auxIsEnabled = true;
+      byte pinNumber = (configPage9.Auxinpina[currentStatus.current_caninchannel]&127);
+
+      if( pinIsUsed(pinNumber) )
+      {
+        //Do nothing here as the pin is already in use.
+        //Need some mmethod of reporting this back to the user
+      }
+      else
+      {
+        //Channel is active and analog
+        pinMode( pinNumber, INPUT);
+        auxIsEnabled = true;
+      }
     }
     else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)  //if current input channel is enabled as digital local pin
     {
-      //Channel is active and digital
-      pinMode( (configPage9.Auxinpinb[currentStatus.current_caninchannel]&127), INPUT);
-      auxIsEnabled = true;
+      byte pinNumber = (configPage9.Auxinpinb[currentStatus.current_caninchannel]&127);
+
+      if( pinIsUsed(pinNumber) )
+      {
+        //Do nothing here as the pin is already in use.
+        //Need some mmethod of reporting this back to the user
+      }
+      else
+      {
+        //Channel is active and analog
+        pinMode( pinNumber, INPUT);
+        auxIsEnabled = true;
+      }
     }
   }
 }
