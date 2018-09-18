@@ -137,7 +137,7 @@ If it's the correct tooth, but
     } \
     else if ( (currentTooth == ignition4EndTooth) ) \
     { \
-      if( (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition4EndAngle - crankAngle) ) ) ); } \
+      if( (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW( fastDegreesToUS( ignitionLimits( (ignition4EndAngle - crankAngle) ) ) ); } \
       else { ignitionSchedule4.endCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW( fastDegreesToUS( ignitionLimits( (ignition4EndAngle - crankAngle) ) ) ); ignitionSchedule4.endScheduleSetByDecoder = true; } \
     } \
   } \
@@ -563,7 +563,18 @@ void triggerPri_BasicDistributor()
     }
     else
     {
-      toothCurrentCount++; //Increment the tooth counter
+      if( (toothCurrentCount < triggerActualTeeth) ) { toothCurrentCount++; } //Increment the tooth counter
+      else
+      {
+        //This means toothCurrentCount is greater than triggerActualTeeth, which is bad.
+        //If we have sync here then there's a problem. Throw a sync loss
+        if( currentStatus.hasSync == true ) 
+        { 
+          currentStatus.syncLossCounter++;
+          currentStatus.hasSync == false;
+        }
+      }
+      
     }
 
     setFilter(curGap); //Recalc the new filter value
