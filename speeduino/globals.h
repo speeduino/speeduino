@@ -578,7 +578,15 @@ struct config4 {
   byte ignBypassPin : 6; //Pin the ignition bypass is activated on
   byte ignBypassHiLo : 1; //Whether this should be active high or low.
 
-  byte unused2_64[64];
+  byte ADCFILTER_TPS;
+  byte ADCFILTER_CLT;
+  byte ADCFILTER_IAT;
+  byte ADCFILTER_O2;
+  byte ADCFILTER_BAT;
+  byte ADCFILTER_MAP; //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
+  byte ADCFILTER_BARO;
+
+  byte unused2_64[57];
 
 #if defined(CORE_AVR)
   };
