@@ -833,14 +833,24 @@ void setup()
   }
 
   //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
-  FUEL_PUMP_ON();
-  currentStatus.fuelPumpOn = true;
+  //First check that the priming time is not 0
+  if(configPage2.fpPrime > 0)
+  {
+    FUEL_PUMP_ON();
+    currentStatus.fuelPumpOn = true;
+  }
+  else { fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
+  
   interrupts();
   //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
-  setFuelSchedule1(100, (unsigned long)(configPage2.primePulse * 100));
-  setFuelSchedule2(100, (unsigned long)(configPage2.primePulse * 100));
-  setFuelSchedule3(100, (unsigned long)(configPage2.primePulse * 100));
-  setFuelSchedule4(100, (unsigned long)(configPage2.primePulse * 100));
+  if(configPage2.primePulse > 0)
+  {
+    setFuelSchedule1(100, (unsigned long)(configPage2.primePulse * 100));
+    setFuelSchedule2(100, (unsigned long)(configPage2.primePulse * 100));
+    setFuelSchedule3(100, (unsigned long)(configPage2.primePulse * 100));
+    setFuelSchedule4(100, (unsigned long)(configPage2.primePulse * 100));
+  }
+
 
   initialisationComplete = true;
   digitalWrite(LED_BUILTIN, HIGH);
