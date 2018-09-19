@@ -817,11 +817,23 @@ void setPinMapping(byte boardID)
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
-  pinMode(pinFlex, INPUT); //Standard GM / Continental flex sensor requires pullup, but this should be onboard. The internal pullup will not work (Requires ~3.3k)!
-  if (configPage6.lnchPullRes == true) { pinMode(pinLaunch, INPUT_PULLUP); }
-  else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
-  if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
-  else { pinMode(pinIdleUp, INPUT); } //inverted setting
+
+  //Each of the below are only set when their relevant function is enabled. This can help prevent pin conflicts that users aren't aware of with unused functions
+  if(configPage2.flexEnabled > 0)
+  {
+    pinMode(pinFlex, INPUT); //Standard GM / Continental flex sensor requires pullup, but this should be onboard. The internal pullup will not work (Requires ~3.3k)!
+  }
+  if(configPage6.launchEnabled > 0)
+  {
+    if (configPage6.lnchPullRes == true) { pinMode(pinLaunch, INPUT_PULLUP); }
+    else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
+  }
+  if(configPage2.idleUpEnabled > 0)
+  {
+    if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
+    else { pinMode(pinIdleUp, INPUT); } //inverted setting
+  }
+  
 
   //These must come after the above pinMode statements
   triggerPri_pin_port = portInputRegister(digitalPinToPort(pinTrigger));
