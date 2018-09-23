@@ -9,6 +9,7 @@
   Returns how much free dynamic memory exists (between heap and stack)
   This function is one big MISRA violation. MISRA advisories forbid directly poking at memory addresses, however there is no other way of determining heap size on embedded systems.
 */
+#include <avr/pgmspace.h>
 #include "globals.h"
 #include "utils.h"
 #include "decoders.h"
@@ -816,11 +817,23 @@ void setPinMapping(byte boardID)
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
-  pinMode(pinFlex, INPUT_PULLUP); //Standard GM / Continental flex sensor requires pullup
-  if (configPage6.lnchPullRes == true) { pinMode(pinLaunch, INPUT_PULLUP); }
-  else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
-  if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
-  else { pinMode(pinIdleUp, INPUT); } //inverted setting
+
+  //Each of the below are only set when their relevant function is enabled. This can help prevent pin conflicts that users aren't aware of with unused functions
+  if(configPage2.flexEnabled > 0)
+  {
+    pinMode(pinFlex, INPUT); //Standard GM / Continental flex sensor requires pullup, but this should be onboard. The internal pullup will not work (Requires ~3.3k)!
+  }
+  if(configPage6.launchEnabled > 0)
+  {
+    if (configPage6.lnchPullRes == true) { pinMode(pinLaunch, INPUT_PULLUP); }
+    else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
+  }
+  if(configPage2.idleUpEnabled > 0)
+  {
+    if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
+    else { pinMode(pinIdleUp, INPUT); } //inverted setting
+  }
+  
 
   //These must come after the above pinMode statements
   triggerPri_pin_port = portInputRegister(digitalPinToPort(pinTrigger));
@@ -1039,7 +1052,7 @@ void initialiseTriggers()
       trigger = triggerPri_DualWheel; //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
       getRPM = getRPM_non360;
       getCrankAngle = getCrankAngle_non360;
-      triggerSetEndTeeth = triggerSetEndTeeth_Non360;
+      triggerSetEndTeeth = triggerSetEndTeeth_non360;
 
       if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, trigger, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { attachInterrupt(triggerInterrupt, trigger, FALLING); }

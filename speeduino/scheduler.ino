@@ -665,12 +665,8 @@ static inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
   //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
   //if( (timeToEnd < ignitionSchedule1.duration) && (timeToEnd > IGNITION_REFRESH_THRESHOLD) )
   {
-    unsigned long adjustedTimeToEnd = timeToEnd;
     noInterrupts();
-    //unsigned long timeSinceLastCrankAngleCalc = (micros() - lastCrankAngleCalc);
-    //Take into account any time that has passed since the last crank angle calculation
-    //if(timeToEnd > timeSinceLastCrankAngleCalc) { adjustedTimeToEnd = timeToEnd - timeSinceLastCrankAngleCalc; } 
-    ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(adjustedTimeToEnd);
+    ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeToEnd);
     IGN1_COMPARE = ignitionSchedule1.endCompare;
     interrupts();
   }
@@ -1184,8 +1180,8 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule1.Status == RUNNING)
     {
-      //ignitionSchedule1.EndCallback();
-         *ign1_pin_port &= ~(ign1_pin_mask);
+      ignitionSchedule1.EndCallback();
+      //   *ign1_pin_port &= ~(ign1_pin_mask);
       ignitionSchedule1.Status = OFF; //Turn off the schedule
       ignitionSchedule1.schedulesSet = 0;
       ignitionSchedule1.hasNextSchedule = false;

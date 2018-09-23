@@ -170,6 +170,10 @@
 #define NITROUS_STAGE1      1
 #define NITROUS_STAGE2      2
 
+#define KNOCK_MODE_OFF      0
+#define KNOCK_MODE_DIGITAL  1
+#define KNOCK_MODE_ANALOG   2
+
 #define RESET_CONTROL_DISABLED             0
 #define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
 #define RESET_CONTROL_PREVENT_ALWAYS       2
@@ -177,6 +181,9 @@
 
 #define OPEN_LOOP_BOOST     0
 #define CLOSED_LOOP_BOOST   1
+
+#define FOUR_STROKE         0
+#define TWO_STROKE          1
 
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 #define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
@@ -221,6 +228,8 @@ struct table2D rotarySplitTable; //8 bin ignition split curve for rotary leading
 struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
 struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
 struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
+struct table2D knockWindowStartTable;
+struct table2D knockWindowDurationTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 volatile byte *inj1_pin_port;
@@ -285,12 +294,15 @@ int ignition5EndAngle = 0;
 
 //These are variables used across multiple files
 bool initialisationComplete = false; //Tracks whether the setup() functino has run completely
+volatile uint16_t mainLoopCount;
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
 volatile unsigned long ms_counter = 0; //A counter that increments once per ms
+uint16_t fixedCrankingOverride = 0;
 bool clutchTrigger;
 bool previousClutchTrigger;
 volatile uint16_t toothHistory[TOOTH_LOG_BUFFER];
+volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 volatile unsigned int toothHistoryIndex = 0;
 volatile bool toothLogRead = false; //Flag to indicate whether the current tooth log values have been read out yet
 int CRANK_ANGLE_MAX = 720;
@@ -391,6 +403,7 @@ struct statuses {
   bool fuelPumpOn; //The current status of the fuel pump
   byte syncLossCounter;
   byte knockRetard;
+  bool knockActive;
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -565,7 +578,15 @@ struct config4 {
   byte ignBypassPin : 6; //Pin the ignition bypass is activated on
   byte ignBypassHiLo : 1; //Whether this should be active high or low.
 
-  byte unused2_64[64];
+  byte ADCFILTER_TPS;
+  byte ADCFILTER_CLT;
+  byte ADCFILTER_IAT;
+  byte ADCFILTER_O2;
+  byte ADCFILTER_BAT;
+  byte ADCFILTER_MAP; //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
+  byte ADCFILTER_BARO;
+
+  byte unused2_64[57];
 
 #if defined(CORE_AVR)
   };
