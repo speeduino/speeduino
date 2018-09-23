@@ -98,6 +98,10 @@ void initialiseADC()
         //currentStatus.canin[14] = 44;  Dev test use only!
         auxIsEnabled = true;
       }  
+        //Channel is active and analog
+        pinMode( pinNumber, INPUT);
+        auxIsEnabled = true;
+      }
     }
   }
 }
