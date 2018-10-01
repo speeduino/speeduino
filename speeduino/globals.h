@@ -127,8 +127,8 @@
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
-#define TOOTH_LOG_SIZE      128
-#define TOOTH_LOG_BUFFER    256
+#define TOOTH_LOG_SIZE      64
+#define TOOTH_LOG_BUFFER    128
 
 #define INJ_PAIRED          0
 #define INJ_SEMISEQUENTIAL  1
@@ -302,9 +302,10 @@ uint16_t fixedCrankingOverride = 0;
 bool clutchTrigger;
 bool previousClutchTrigger;
 volatile uint16_t toothHistory[TOOTH_LOG_BUFFER];
+volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 volatile unsigned int toothHistoryIndex = 0;
-volatile bool toothLogRead = false; //Flag to indicate whether the current tooth log values have been read out yet
+volatile byte toothHistorySerialIndex = 0;
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360;
 int CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
@@ -404,6 +405,8 @@ struct statuses {
   byte syncLossCounter;
   byte knockRetard;
   bool knockActive;
+  bool toothLogEnabled;
+  bool compositeLogEnabled;
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -520,7 +523,7 @@ struct config2 {
   } __attribute__((__packed__)); //The 32 bi systems require all structs to be fully packed
 #endif
 
-//Page 2 of the config - See the ini file for further reference
+//Page 4 of the config - See the ini file for further reference
 //This mostly covers off variables that are required for ignition
 struct config4 {
 

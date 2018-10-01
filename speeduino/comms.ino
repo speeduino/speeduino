@@ -74,6 +74,16 @@ void command()
       Serial.print("001");
       break;
 
+    case 'H': //Start the tooth logger
+      currentStatus.toothLogEnabled = true;
+      toothHistoryIndex = 0;
+      toothHistorySerialIndex = 0;
+      break;
+
+    case 'h': //Stop the tooth logger
+      currentStatus.toothLogEnabled = false;
+      break;
+
     case 'L': // List the contents of current page in human readable form
       sendPage(true);
       break;
@@ -1391,32 +1401,18 @@ Send 256 tooth log entries
 void sendToothLog(bool useChar)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
-  if (toothHistoryIndex >= TOOTH_LOG_SIZE) //Sanity check. Flagging system means this should always be true
+  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
-    unsigned int tempToothHistory[TOOTH_LOG_BUFFER]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
-
-    //Copy the working history into the temporary buffer array. This is done so that, if the history loops whilst the values are being sent over serial, it doesn't affect the values
-    memcpy( (void*)tempToothHistory, (void*)toothHistory, sizeof(tempToothHistory) );
-    toothHistoryIndex = 0; //Reset the history index
-
-    //Loop only needs to go to half the buffer size
-    if (useChar)
-    {
       for (int x = 0; x < TOOTH_LOG_SIZE; x++)
       {
-        Serial.println(tempToothHistory[x]);
-      }
-    }
-    else
-    {
-      for (int x = 0; x < TOOTH_LOG_SIZE; x++)
-      {
-        Serial.write(highByte(tempToothHistory[x]));
-        Serial.write(lowByte(tempToothHistory[x]));
+        Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
+        Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
+
+        if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
+        else { toothHistorySerialIndex++; }
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-    }
-    toothLogRead = true;
+
   }
 }
 

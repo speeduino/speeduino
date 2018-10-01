@@ -30,18 +30,34 @@ toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
 static inline void addToothLogEntry(unsigned long toothTime)
 {
   //High speed tooth logging history
-  toothHistory[toothHistoryIndex] = toothTime;
-  if(toothHistoryIndex == (TOOTH_LOG_BUFFER-1))
+  if(currentStatus.toothLogEnabled == true)
   {
-    if (toothLogRead)
+    toothHistory[toothHistoryIndex] = toothTime;
+    if(toothHistoryIndex == (TOOTH_LOG_BUFFER-1))
     {
+      /*
+      if (toothLogRead)
+      {
+        toothHistoryIndex = 0;
+        BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+        toothLogRead = false; //The tooth log ready bit is cleared to ensure that we only get a set of concurrent values.
+      }
+      */
       toothHistoryIndex = 0;
-      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-      toothLogRead = false; //The tooth log ready bit is cleared to ensure that we only get a set of concurrent values.
     }
-  }
-  else
-  { toothHistoryIndex++; }
+    else
+    { toothHistoryIndex++; }
+
+    uint16_t absoluteToothHistoryIndex = toothHistoryIndex;
+    if(toothHistoryIndex < toothHistorySerialIndex)
+    {
+      //If the main history index is lower than the serial index, it means that this has looped. To calculate the delta between the two indexes, add the buffer size back on 
+      absoluteToothHistoryIndex += TOOTH_LOG_BUFFER;
+    }
+    //Check whether the current index is ahead of the serial index by at least the size of the log
+    if( (absoluteToothHistoryIndex - toothHistorySerialIndex) >= TOOTH_LOG_SIZE ) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
+    else { BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); } //Tooth log is not yet ahead of the serial index by enough, so mark the log as not yet ready
+  } //Tooth log enabled
 }
 
 /*
