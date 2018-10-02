@@ -3,10 +3,14 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
-#include "auxiliaries.h"
 #include "globals.h"
+#include "auxiliaries.h"
 #include "maths.h"
 #include "src/PID_v1/PID_v1.h"
+
+
+
+
 
 //Old PID method. Retained incase the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
@@ -33,14 +37,14 @@ void fanControl()
     int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
     int offTemp = onTemp - configPage6.fanHyster;
 
-    if ( currentStatus.coolant >= onTemp )
+    if ( (currentStatus.coolant >= onTemp) || alphaVars.ACOn )
     {
       //Fan needs to be turned on. Checked for normal or inverted fan signal
       if( configPage6.fanInv == 0 ) { FAN_PIN_HIGH(); }
       else { FAN_PIN_LOW(); }
       currentStatus.fanOn = true;
     }
-    else if ( currentStatus.coolant <= offTemp )
+    else if ( (currentStatus.coolant <= offTemp) || !alphaVars.ACOn )
     {
       //Fan needs to be turned off. Checked for normal or inverted fan signal
       if( configPage6.fanInv == 0 ) { FAN_PIN_LOW(); } 
@@ -87,8 +91,20 @@ void initialiseAuxPWM()
   n2o_arming_pin_port = portInputRegister(digitalPinToPort(configPage10.n2o_arming_pin));
   n2o_arming_pin_mask = digitalPinToBitMask(configPage10.n2o_arming_pin);
 
-  if(configPage10.n2o_pin_polarity == 1) { pinMode(configPage10.n2o_arming_pin, INPUT_PULLUP); }
-  else { pinMode(configPage10.n2o_arming_pin, INPUT); }
+  if(configPage10.n2o_enable > 0)
+  {
+    //The pin modes are only set if the if n2o is enabled to prevent them conflicting with other outputs. 
+    if(configPage10.n2o_pin_polarity == 1) { pinMode(configPage10.n2o_arming_pin, INPUT_PULLUP); }
+    else { pinMode(configPage10.n2o_arming_pin, INPUT); }
+  }
+
+
+
+
+
+
+
+  
 
   #if defined(CORE_STM32) || defined(CORE_TEENSY) //2uS resolution Min 8Hz, Max 5KHz
     boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
@@ -115,6 +131,7 @@ void initialiseAuxPWM()
 
   currentStatus.nitrous_status = NITROUS_OFF;
 
+
 }
 
 #define BOOST_HYSTER  40
@@ -140,6 +157,8 @@ void boostControl()
     {
       if( (boostCounter & 7) == 1) { currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; } //Boost target table is in kpa and divided by 2
       if(currentStatus.MAP >= 100 ) //Only engage boost control above 100kpa. 
+
+
       {
         //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
         if( configPage2.flexEnabled == 1 )
@@ -259,7 +278,6 @@ void nitrousControl()
         }
       }
     }
-
   }
 
   if (nitrousOn == false)
@@ -269,9 +287,8 @@ void nitrousControl()
       N2O_STAGE1_PIN_LOW();
       N2O_STAGE2_PIN_LOW();
     }
-
-
 }
+
 
 void boostDisable()
 {

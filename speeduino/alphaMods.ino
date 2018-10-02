@@ -16,7 +16,7 @@ void alphaPinSetup() {
     case 1:
       pinAC = 45; // pin for AC clutch
       pinAcReq = 26;
-      //pinFan2;
+      pinFan2 = 49;
       pinCEL = 53;
       pinVVL = 6;
       pinACpress = 28;
@@ -79,13 +79,11 @@ void initialiseAC()
 void fanControl2()
 {
   //fan2
-  int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
-  int offTemp = onTemp - configPage6.fanHyster;
-  if ( ((currentStatus.fanOn) && (currentStatus.coolant >= onTemp + 7) && (currentStatus.RPM > 500)) || (alphaVars.AcReq == true) ) {
+  if ( ((currentStatus.coolant >= 85) && (currentStatus.RPM > 500)) || (alphaVars.AcReq == true) ) {
     digitalWrite(pinFan2, fanHIGH);
     currentStatus.fanOn = true;
   }
-  if ( ((!currentStatus.fanOn) && (currentStatus.coolant <= offTemp + 7) && (alphaVars.AcReq == false)) || (currentStatus.RPM == 0) ) {
+  if ( ( (currentStatus.coolant <= 82) && (alphaVars.AcReq == false)) || (currentStatus.RPM == 0) ) {
     digitalWrite(pinFan2, fanLOW);
     currentStatus.fanOn = false;
   }
@@ -178,18 +176,21 @@ void vvlControl()
     {
       alphaVars.vvlOn = true;
       digitalWrite(pinVVL, HIGH);
+        //  Serial.println("VVL ON");
     }
   }
-  else if ((currentStatus.RPM <= 5600) && (currentStatus.TPS < 80)) {
+  else if ((currentStatus.RPM < 5600) && (currentStatus.TPS < 80)) {
     digitalWrite(pinVVL, LOW);
     alphaVars.vvlOn = false;
+      //  Serial.println("VVL OFF");
+
   }
 }
 
 void readACReq()
 {
   if (alphaVars.carSelect == 2) {
-    if ((digitalRead(pinAcReq) == HIGH) && (digitalRead(pinACpress) == LOW)) {
+    if ((digitalRead(pinAcReq) == HIGH) && (digitalRead(pinACpress) == HIGH)) {
       alphaVars.AcReq = true; //pin 26 is AC Request, pin 28 is a combined pressure/temp signal that is high when the A/C compressor can be activated
     }
     else {
@@ -197,7 +198,7 @@ void readACReq()
     }
   }
   else if (alphaVars.carSelect == 1) {
-    if ((digitalRead(pinAcReq) == HIGH) && (digitalRead(pinACpress) == LOW) && (analogRead(pinACtemp) < 820)) {
+    if ((digitalRead(pinAcReq) == HIGH) && (digitalRead(pinACpress) == LOW) && (analogRead(pinACtemp) < 780)) {
       alphaVars.AcReq = true;
     }
     else {
@@ -256,12 +257,12 @@ static inline int8_t correctionAtUpshift(int8_t advance)
 static inline int8_t correctionZeroThrottleTiming(int8_t advance)
 {
   int8_t ignZeroThrottleValue = advance;
-  if ((currentStatus.TPS < 2) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))) //Check whether TPS coorelates to zero value
+  if ((currentStatus.TPS < 2) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE)) && (currentStatus.MAP < 70)) //Check whether TPS coorelates to zero value
   {
     if ((currentStatus.RPM > 500) && (currentStatus.RPM <= 800)) {
       ignZeroThrottleValue = map(currentStatus.RPM, 500, 800, 25, 9);
     }
-    else if ((currentStatus.RPM > 800) && (currentStatus.RPM < 1600)) {
+    else if ((currentStatus.RPM > 800) && (currentStatus.RPM < 1700)) {
       ignZeroThrottleValue = map(currentStatus.RPM, 800, 1200, 9, 0);
     }
     else {
@@ -299,7 +300,7 @@ static inline int8_t correctionTimingAlphaN(int8_t advance){
 
 void highIdleFunc() {
   //high idle function
-  if ( (( currentStatus.RPM > 950 ) && ( currentStatus.TPS > 7 )) || ((currentStatus.RPM > 1150) && (currentStatus.rpmDOT < -100)) )
+  if (( currentStatus.RPM > 1150 ) && ( currentStatus.TPS > 2 )&& (currentStatus.rpmDOT < -200)) 
   {
     alphaVars.highIdleCount++;
     if (alphaVars.highIdleCount >= 2 ) {
@@ -352,7 +353,7 @@ void XRSgaugeCLT() {
       digitalWrite(pinCLTgauge, HIGH);
     }
   }
-  else if ((currentStatus.coolant >= 70) && (currentStatus.coolant < 90)) {
+  else if ((currentStatus.coolant >= 70) && (currentStatus.coolant < 95)) {
     if (loopCLT < 100) {
       digitalWrite(pinCLTgauge, LOW);
     }
@@ -360,7 +361,23 @@ void XRSgaugeCLT() {
       digitalWrite(pinCLTgauge, HIGH);
     }
   }
-  else if (currentStatus.coolant >= 90) {
+  else if ((currentStatus.coolant >= 95) && (currentStatus.coolant < 105)) {
+    if (loopCLT <= 75) {
+      digitalWrite(pinCLTgauge, LOW);
+    }
+    else {
+      digitalWrite(pinCLTgauge, HIGH);
+    }
+  }
+  else if ((currentStatus.coolant >= 105) && (currentStatus.coolant < 115)) {
+    if (loopCLT <= 55) {
+      digitalWrite(pinCLTgauge, LOW);
+    }
+    else {
+      digitalWrite(pinCLTgauge, HIGH);
+    }
+  }
+  else if (currentStatus.coolant >= 115)  {
     if (loopCLT <= 35) {
       digitalWrite(pinCLTgauge, LOW);
     }
@@ -379,6 +396,12 @@ void alphaIdleMods() {
   }
   if (alphaVars.AcReq == true) {
     currentStatus.idleDuty = currentStatus.idleDuty + 10;
+  }
+  if ((currentStatus.RPM > 1600) && (currentStatus.TPS < 3) && (currentStatus.coolant > 60)){
+    currentStatus.idleDuty = 0;
+  }
+  if (currentStatus.fanOn){
+    currentStatus.idleDuty = currentStatus.idleDuty + 2;
   }
 }
 

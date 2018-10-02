@@ -353,7 +353,7 @@ void writeConfig(byte tableNum)
     case canbusPage:
       /*---------------------------------------------------
       | Config page 10 (See storage.h for data layout)
-      | 128 byte long config table
+      | 192 byte long config table
       -----------------------------------------------------*/
       pnt_configPage = (byte *)&configPage9; //Create a pointer to Page 10 in memory
       for(int x=EEPROM_CONFIG9_START; x<EEPROM_CONFIG9_END; x++)

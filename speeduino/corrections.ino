@@ -13,10 +13,14 @@ Flood clear mode etc.
 */
 //************************************************************************************************************
 
-#include "corrections.h"
+
 #include "globals.h"
+#include "corrections.h"
 #include "timers.h"
+
+
 #include "maths.h"
+#include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
@@ -28,6 +32,7 @@ void initialiseCorrections()
   currentStatus.flexIgnCorrection = 0;
   currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
   AFRnextCycle = 0;
+  currentStatus.knockActive = false;
 }
 
 /*
@@ -219,10 +224,25 @@ static inline int16_t correctionAccel()
           {
             int16_t taperRange = trueTaperMax - trueTaperMin;
             int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100) / taperRange; //The percentage of the way through the RPM taper range
-            accelValue = percentage(taperPercent, accelValue); //Calculate the above percentage of the calculated accel amount. 
+            accelValue = percentage((100-taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
           }
         }
         accelValue = 100 + accelValue; //Add the 100 normalisation to the calculated amount
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       }
     }
   }
@@ -306,6 +326,7 @@ static inline bool correctionDFCO()
    DFCOValue = correctionDFCO2();
   }
   //alphamods
+
   return DFCOValue;
 }
 
@@ -413,9 +434,10 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionIATretard(advance);
   advance = correctionSoftRevLimit(advance);
   advance = correctionNitrous(advance);
+
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
-    //alphamods
+  //alphamods
   if (alphaVars.carSelect != 255){
     advance = correctionRollingAntiLag(advance);
     advance = correctionZeroThrottleTiming(advance);
@@ -425,6 +447,9 @@ int8_t correctionsIgn(int8_t base_advance)
     advance = correctionAtUpshift(advance);
   }
   //alphamods
+  advance = correctionKnock(advance);
+
+
 
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
@@ -453,6 +478,8 @@ static inline int8_t correctionFlexTiming(int8_t advance)
   if( configPage2.flexEnabled == 1 ) //Check for flex being enabled
   {
     currentStatus.flexIgnCorrection = (int8_t)table2D_getValue(&flexAdvTable, currentStatus.ethanolPct); //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here. 
+
+
 
     ignFlexValue = advance + currentStatus.flexIgnCorrection;
   }
@@ -500,6 +527,24 @@ static inline int8_t correctionNitrous(int8_t advance)
   return ignNitrous;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 static inline int8_t correctionSoftLaunch(int8_t advance)
 {
   byte ignSoftLaunchValue = advance;
@@ -519,7 +564,7 @@ static inline int8_t correctionSoftLaunch(int8_t advance)
   return ignSoftLaunchValue;
 }
 
-static inline int8_t correctionSoftFlatShift(int8_t  advance)
+static inline int8_t correctionSoftFlatShift(int8_t advance)
 {
   byte ignSoftFlatValue = advance;
 
@@ -531,6 +576,41 @@ static inline int8_t correctionSoftFlatShift(int8_t  advance)
   else { BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS); }
 
   return ignSoftFlatValue;
+}
+
+static inline int8_t correctionKnock(int8_t advance)
+{
+  byte knockRetard = 0;
+
+  //First check is to do the window calculations (ASsuming knock is enabled)
+  if( configPage10.knock_mode != KNOCK_MODE_OFF )
+  {
+    knockWindowMin = table2D_getValue(&knockWindowStartTable, currentStatus.RPM);
+    knockWindowMax = knockWindowMin + table2D_getValue(&knockWindowDurationTable, currentStatus.RPM);
+  }
+
+
+  if( (configPage10.knock_mode == KNOCK_MODE_DIGITAL)  )
+  {
+    //
+    if(knockCounter > configPage10.knock_count)
+    {
+      if(currentStatus.knockActive == true)
+      {
+        //Knock retard is currently 
+      }
+      else
+      {
+        //Knock needs to be activated
+        lastKnockCount = knockCounter;
+        knockStartTime = micros();
+        knockRetard = configPage10.knock_firstStep;
+      }
+    }
+
+  }
+
+  return advance - knockRetard;
 }
 
 //******************************** DWELL CORRECTIONS ********************************
@@ -561,5 +641,6 @@ uint16_t correctionsDwell(uint16_t dwell)
     tempDwell = WOTdwellCorrection(tempDwell);
   }
   //alphamods
+
   return tempDwell;
 }

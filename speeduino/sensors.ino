@@ -4,6 +4,7 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 #include "sensors.h"
+#include "crankMaths.h"
 #include "globals.h"
 #include "maths.h"
 
@@ -50,6 +51,51 @@ void initialiseADC()
   MAPcurRev = 0;
   MAPcount = 0;
   MAPrunningValue = 0;
+
+  //The following checks the aux inputs and initialises pins if required
+  auxIsEnabled = false;
+  for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
+  {
+    currentStatus.current_caninchannel = AuxinChan;          
+    //currentStatus.canin[14] = ((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
+    //currentStatus.canin[13] = (configPage9.caninput_sel[currentStatus.current_caninchannel]&3);          
+    if ( (configPage9.caninput_sel[currentStatus.current_caninchannel] == 1) && (configPage9.enable_candata_in > 0) && (configPage9.enable_canbus == 1))  //if current input channel is enabled as canbus
+    {
+      auxIsEnabled = true;
+    }
+    else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  //if current input channel is enabled as analog local pin
+    {
+      byte pinNumber = (configPage9.Auxinpina[currentStatus.current_caninchannel]&127);
+
+      if( pinIsUsed(pinNumber) )
+      {
+        //Do nothing here as the pin is already in use.
+        //Need some method of reporting this back to the user
+      }
+      else
+      {
+        //Channel is active and analog
+        pinMode( pinNumber, INPUT);
+        auxIsEnabled = true;
+      }
+    }
+    else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)  //if current input channel is enabled as digital local pin
+    {
+      byte pinNumber = (configPage9.Auxinpinb[currentStatus.current_caninchannel]&127);
+
+      if( pinIsUsed(pinNumber) )
+      {
+        //Do nothing here as the pin is already in use.
+        //Need some method of reporting this back to the user
+      }
+      else
+      {
+        //Channel is active and analog
+        pinMode( pinNumber, INPUT);
+        auxIsEnabled = true;
+      }
+    }
+  }
 }
 
 static inline void instanteneousMAPReading()
@@ -67,7 +113,7 @@ static inline void instanteneousMAPReading()
   else { mapErrorCount = 0; }
 
   //During startup a call is made here to get the baro reading. In this case, we can't apply the ADC filter
-  if(initialisationComplete == true) { currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC); } //Very weak filter
+  if(initialisationComplete == true) { currentStatus.mapADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC); } //Very weak filter
   else { currentStatus.mapADC = tempReading; } //Baro reading (No filter)
 
   currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
@@ -103,7 +149,7 @@ static inline void readMAP()
           //Error check
           if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
           {
-            currentStatus.mapADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.mapADC);
+            currentStatus.mapADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
             MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
             MAPcount++;
           }
@@ -118,7 +164,7 @@ static inline void readMAP()
             //Error check
             if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
             {
-              currentStatus.EMAPADC = ADC_FILTER(tempReading, ADCFILTER_MAP, currentStatus.EMAPADC);
+              currentStatus.EMAPADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
               EMAPrunningValue += currentStatus.EMAPADC; //Add the current reading onto the total
             }
             else { mapErrorCount += 1; }
@@ -201,7 +247,7 @@ void readTPS()
     analogRead(pinTPS);
     byte tempTPS = fastMap1023toX(analogRead(pinTPS), 255); //Get the current raw TPS ADC value and map it into a byte
   #endif
-  currentStatus.tpsADC = ADC_FILTER(tempTPS, ADCFILTER_TPS, currentStatus.tpsADC);
+  currentStatus.tpsADC = ADC_FILTER(tempTPS, configPage4.ADCFILTER_TPS, currentStatus.tpsADC);
   byte tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
 
   if(configPage2.tpsMax > configPage2.tpsMin)
@@ -224,7 +270,7 @@ void readTPS()
     currentStatus.TPS = map(tempADC, configPage2.tpsMax, configPage2.tpsMin, 0, 100);
   }
 
-  currentStatus.TPS_time = currentLoopTime;
+  currentStatus.TPS_time = micros();
 }
 
 void readCLT()
@@ -236,7 +282,7 @@ void readCLT()
     tempReading = analogRead(pinCLT);
     tempReading = fastMap1023toX(analogRead(pinCLT), 511); //Get the current raw CLT value
   #endif
-  currentStatus.cltADC = ADC_FILTER(tempReading, ADCFILTER_CLT, currentStatus.cltADC);
+  currentStatus.cltADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC);
   currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 }
 
@@ -249,7 +295,7 @@ void readIAT()
     tempReading = analogRead(pinIAT);
     tempReading = fastMap1023toX(analogRead(pinIAT), 511); //Get the current raw IAT value
   #endif
-  currentStatus.iatADC = ADC_FILTER(tempReading, ADCFILTER_IAT, currentStatus.iatADC);
+  currentStatus.iatADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_IAT, currentStatus.iatADC);
   currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
 }
 
@@ -266,7 +312,7 @@ void readBaro()
       tempReading = analogRead(pinBaro);
     #endif
 
-    currentStatus.baroADC = ADC_FILTER(tempReading, ADCFILTER_BARO, currentStatus.baroADC); //Very weak filter
+    currentStatus.baroADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); //Very weak filter
 
     currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage2.baroMin, configPage2.baroMax); //Get the current MAP value
   }
@@ -281,7 +327,7 @@ void readO2()
     tempReading = analogRead(pinO2);
     tempReading = fastMap1023toX(analogRead(pinO2), 511); //Get the current O2 value.
   #endif
-  currentStatus.O2ADC = ADC_FILTER(tempReading, ADCFILTER_O2, currentStatus.O2ADC);
+  currentStatus.O2ADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_O2, currentStatus.O2ADC);
   currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
 }
 
@@ -296,7 +342,7 @@ void readO2_2()
     tempReading = analogRead(pinO2_2);
     tempReading = fastMap1023toX(analogRead(pinO2_2), 511); //Get the current O2 value.
   #endif
-  currentStatus.O2_2ADC = ADC_FILTER(tempReading, ADCFILTER_O2, currentStatus.O2_2ADC);
+  currentStatus.O2_2ADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_O2, currentStatus.O2_2ADC);
   currentStatus.O2_2 = o2CalibrationTable[currentStatus.O2_2ADC];
 }
 
@@ -309,7 +355,7 @@ void readBat()
     tempReading = analogRead(pinBat);
     tempReading = fastMap1023toX(analogRead(pinBat), 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
   #endif
-  currentStatus.battery10 = ADC_FILTER(tempReading, ADCFILTER_BAT, currentStatus.battery10);
+  currentStatus.battery10 = ADC_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
 }
 
 /*
@@ -317,6 +363,44 @@ void readBat()
  * This value is incremented with every pulse and reset back to 0 once per second
  */
 void flexPulse()
- {
-   ++flexCounter;
- }
+{
+  ++flexCounter;
+}
+
+/*
+ * The interrupt function for pulses from a knock conditioner / controller
+ * 
+ */
+void knockPulse()
+{
+  //Check if this the start of a knock. 
+  if(knockCounter == 0)
+  {
+    //knockAngle = crankAngle + fastTimeToAngle( (micros() - lastCrankAngleCalc) ); 
+    knockStartTime = micros();
+    knockCounter = 1;
+  }
+  else { ++knockCounter; } //Knock has already started, so just increment the counter for this
+
+}
+
+uint16_t readAuxanalog(uint8_t analogPin)
+{
+  //read the Aux analog value for pin set by analogPin 
+  unsigned int tempReading;
+  #if defined(ANALOG_ISR)
+    tempReading = fastMap1023toX(AnChannel[analogPin-A0], 511); //Get the current raw Auxanalog value
+  #else
+    tempReading = analogRead(analogPin);
+    tempReading = fastMap1023toX(analogRead(analogPin), 511); //Get the current raw Auxanalog value
+  #endif
+  return tempReading;
+} 
+
+uint16_t readAuxdigital(uint8_t digitalPin)
+{
+  //read the Aux digital value for pin set by digitalPin 
+  unsigned int tempReading;
+  tempReading = digitalRead(digitalPin); 
+  return tempReading;
+} 
