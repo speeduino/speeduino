@@ -479,3 +479,17 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
     idle_pwm_state = true;
   }
 }
+
+#if defined(CORE_TEENSY)
+void ftm2_isr(void)
+{
+  //FTM2 only has 2 compare channels
+  //Use separate variables for each test to ensure conversion to bool
+  bool interrupt1 = (FTM2_C0SC & FTM_CSC_CHF);
+  bool interrupt2 = (FTM2_C1SC & FTM_CSC_CHF); //Not currently used
+
+  if(interrupt2) { FTM2_C0SC &= ~FTM_CSC_CHF; idleInterrupt(); }
+  else if(interrupt2) { FTM1_C1SC &= ~FTM_CSC_CHF; } //Add a callback function here if this is ever used
+
+}
+#endif
