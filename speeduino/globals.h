@@ -128,7 +128,12 @@
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
 #define TOOTH_LOG_SIZE      64
-#define TOOTH_LOG_BUFFER    128
+#define TOOTH_LOG_BUFFER    256
+
+#define COMPOSITE_LOG_PRI   0
+#define COMPOSITE_LOG_SEC   1
+#define COMPOSITE_LOG_TRIG  2
+#define COMPOSITE_LOG_SYNC  3
 
 #define INJ_PAIRED          0
 #define INJ_SEMISEQUENTIAL  1
@@ -199,11 +204,11 @@
 #define FUEL_PUMP_ON() *pump_pin_port |= (pump_pin_mask)
 #define FUEL_PUMP_OFF() *pump_pin_port &= ~(pump_pin_mask)
 
-const char TSfirmwareVersion[] = "Speeduino 2016.09";
+const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 //const byte page_size = 64;
-const int16_t npage_size[11] = {0,288,128,288,128,288,128,240,192,192,192};
+const int16_t npage_size[11] PROGMEM = {0,288,128,288,128,288,128,240,192,192,192};
 //const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
