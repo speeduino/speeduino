@@ -9,7 +9,7 @@
   #define READ_SEC_TRIGGER() digitalRead(pinTrigger2)
 #endif
 
-static inline void addToothLogEntry(unsigned long);
+static inline void addToothLogEntry(unsigned long, bool);
 static inline uint16_t stdGetRPM(uint16_t);
 static inline void setFilter(unsigned long);
 static inline int crankingGetRPM(byte);
@@ -149,6 +149,7 @@ volatile unsigned long curTime2;
 volatile unsigned long curGap2;
 volatile unsigned long lastGap;
 volatile unsigned long targetGap;
+volatile unsigned long compositeLastToothTime;
 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
 volatile byte toothSystemCount = 0; //Used for decoders such as Audi 135 where not every tooth is used for calculating crank angle. This variable stores the actual number of teeth, not the number being used to calculate crank angle

@@ -76,12 +76,25 @@ void command()
 
     case 'H': //Start the tooth logger
       currentStatus.toothLogEnabled = true;
+      currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
       toothHistoryIndex = 0;
       toothHistorySerialIndex = 0;
       break;
 
     case 'h': //Stop the tooth logger
       currentStatus.toothLogEnabled = false;
+      break;
+
+    case 'J': //Start the composite logger
+      currentStatus.compositeLogEnabled = true;
+      currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
+      toothHistoryIndex = 0;
+      toothHistorySerialIndex = 0;
+      compositeLastToothTime = 0;
+      break;
+
+    case 'j': //Stop the composite logger
+      currentStatus.compositeLogEnabled = false;
       break;
 
     case 'L': // List the contents of current page in human readable form
@@ -149,7 +162,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201809-dev");
+      Serial.print(F("speeduino 201809-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -179,12 +192,14 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2018.9-dev");
+      Serial.print(F("Speeduino 2018.9-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
-      sendToothLog(false); //Sends tooth log values as ints
+      if(currentStatus.toothLogEnabled == true) { sendToothLog(false); } //Sends tooth log values as ints
+      else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(); }
+
       break;
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
@@ -1412,7 +1427,36 @@ void sendToothLog(bool useChar)
         else { toothHistorySerialIndex++; }
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  }
+}
 
+void sendCompositeLog()
+{
+  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
+  {
+      uint32_t runTime = 0;
+      for (int x = 0; x < TOOTH_LOG_SIZE; x++)
+      {
+        runTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
+        
+        //Serial.write(highByte(runTime));
+        //Serial.write(lowByte(runTime));
+        Serial.write(runTime >> 24);
+        Serial.write(runTime >> 16);
+        Serial.write(runTime >> 8);
+        Serial.write(runTime);
+
+        //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
+        //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
+
+        Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates which)
+
+        
+
+        if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
+        else { toothHistorySerialIndex++; }
+      }
+      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
   }
 }
 

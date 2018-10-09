@@ -27,37 +27,56 @@ toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
 #include "scheduler.h"
 #include "crankMaths.h"
 
-static inline void addToothLogEntry(unsigned long toothTime)
+/*
+*
+* whichTooth - 0 for Primary (Crank), 1 for Secondary (Cam)
+*/
+static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
 {
   //High speed tooth logging history
-  if(currentStatus.toothLogEnabled == true)
+  if( (currentStatus.toothLogEnabled == true) || (currentStatus.compositeLogEnabled == true) ) 
   {
-    toothHistory[toothHistoryIndex] = toothTime;
-    if(toothHistoryIndex == (TOOTH_LOG_BUFFER-1))
+    bool valueLogged = false;
+    if(currentStatus.toothLogEnabled == true)
     {
-      /*
-      if (toothLogRead)
-      {
-        toothHistoryIndex = 0;
-        BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-        toothLogRead = false; //The tooth log ready bit is cleared to ensure that we only get a set of concurrent values.
-      }
-      */
-      toothHistoryIndex = 0;
+      //Tooth log only works on the Crank tooth
+      if(whichTooth == TOOTH_CRANK)
+      { 
+        toothHistory[toothHistoryIndex] = toothTime; //Set the value in the log. 
+        valueLogged = true;
+      } 
     }
-    else
-    { toothHistoryIndex++; }
+    else if(currentStatus.compositeLogEnabled == true)
+    {
+      compositeLogHistory[toothHistoryIndex] = 0;
+      if(READ_PRI_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_PRI); }
+      if(READ_SEC_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SEC); }
+      if(whichTooth == TOOTH_CAM) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_TRIG); }
+      if(currentStatus.hasSync == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SYNC); }
 
-    uint16_t absoluteToothHistoryIndex = toothHistoryIndex;
-    if(toothHistoryIndex < toothHistorySerialIndex)
-    {
-      //If the main history index is lower than the serial index, it means that this has looped. To calculate the delta between the two indexes, add the buffer size back on 
-      absoluteToothHistoryIndex += TOOTH_LOG_BUFFER;
+      toothHistory[toothHistoryIndex] = micros() - compositeLastToothTime;
+      compositeLastToothTime = micros();
     }
-    //Check whether the current index is ahead of the serial index by at least the size of the log
-    if( (absoluteToothHistoryIndex - toothHistorySerialIndex) >= TOOTH_LOG_SIZE ) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
-    else { BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); } //Tooth log is not yet ahead of the serial index by enough, so mark the log as not yet ready
-  } //Tooth log enabled
+
+    //If there has been a value logged above, update the indexes
+    if(valueLogged == true)
+    {
+      if(toothHistoryIndex == (TOOTH_LOG_BUFFER-1)) { toothHistoryIndex = 0; }
+      else { toothHistoryIndex++; }
+
+      uint16_t absoluteToothHistoryIndex = toothHistoryIndex;
+      if(toothHistoryIndex < toothHistorySerialIndex)
+      {
+        //If the main history index is lower than the serial index, it means that this has looped. To calculate the delta between the two indexes, add the buffer size back on 
+        absoluteToothHistoryIndex += TOOTH_LOG_BUFFER;
+      }
+      //Check whether the current index is ahead of the serial index by at least the size of the log
+      if( (absoluteToothHistoryIndex - toothHistorySerialIndex) >= TOOTH_LOG_SIZE ) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
+      else { BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); } //Tooth log is not yet ahead of the serial index by enough, so mark the log as not yet ready
+    }
+
+
+  } //Tooth/Composite log enabled
 }
 
 /*
@@ -196,7 +215,7 @@ void triggerPri_missingTooth()
    {
      toothCurrentCount++; //Increment the tooth counter
 
-     addToothLogEntry(curGap);
+     addToothLogEntry(curGap, TOOTH_CRANK);
 
      //if(toothCurrentCount > checkSyncToothCount || currentStatus.hasSync == false)
      {
@@ -406,7 +425,7 @@ void triggerPri_DualWheel()
     if ( curGap >= triggerFilterTime )
     {
       toothCurrentCount++; //Increment the tooth counter
-      addToothLogEntry(curGap);
+      addToothLogEntry(curGap, TOOTH_CRANK);
 
       toothLastMinusOneToothTime = toothLastToothTime;
       toothLastToothTime = curTime;
@@ -594,7 +613,7 @@ void triggerPri_BasicDistributor()
     }
 
     setFilter(curGap); //Recalc the new filter value
-    addToothLogEntry(curGap);
+    addToothLogEntry(curGap, TOOTH_CRANK);
 
     if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
     {
@@ -708,7 +727,7 @@ void triggerPri_GM7X()
    curGap = curTime - toothLastToothTime;
    toothCurrentCount++; //Increment the tooth counter
 
-   addToothLogEntry(curGap);
+   addToothLogEntry(curGap, TOOTH_CRANK);
 
    //
    if( toothCurrentCount > 7 )
@@ -871,7 +890,7 @@ void triggerPri_4G63()
   curGap = curTime - toothLastToothTime;
   if ( (curGap >= triggerFilterTime) || (currentStatus.startRevolutions == 0) )
   {
-    addToothLogEntry(curGap);
+    addToothLogEntry(curGap, TOOTH_CRANK);
     triggerFilterTime = curGap >> 2; //This only applies during non-sync conditions. If there is sync then triggerFilterTime gets changed again below with a better value.
 
     toothLastMinusOneToothTime = toothLastToothTime;
@@ -1070,6 +1089,7 @@ void triggerSec_4G63()
   if ( (curGap2 >= triggerSecFilterTime) )//|| (currentStatus.startRevolutions == 0) )
   {
     toothLastSecToothTime = curTime2;
+    addToothLogEntry(curGap, TOOTH_CAM);
 
     triggerSecFilterTime = curGap2 >> 1; //Basic 50% filter for the secondary reading
     //More aggressive options:
@@ -1303,7 +1323,7 @@ void triggerPri_24X()
       triggerToothAngle = toothAngles[(toothCurrentCount-1)] - toothAngles[(toothCurrentCount-2)]; //Calculate the last tooth gap in degrees
     }
 
-    addToothLogEntry(curGap);
+    addToothLogEntry(curGap, TOOTH_CRANK);
 
     toothLastToothTime = curTime;
 
@@ -1415,7 +1435,7 @@ void triggerPri_Jeep2000()
 
       setFilter(curGap); //Recalc the new filter value
 
-      addToothLogEntry(curGap);
+      addToothLogEntry(curGap, TOOTH_CRANK);
 
       toothLastMinusOneToothTime = toothLastToothTime;
       toothLastToothTime = curTime;
@@ -1498,7 +1518,7 @@ void triggerPri_Audi135()
        {
          //We only proceed for every third tooth
 
-         addToothLogEntry(curGap);
+         addToothLogEntry(curGap, TOOTH_CRANK);
          toothSystemLastToothTime = curTime;
          toothSystemCount = 0;
          toothCurrentCount++; //Increment the tooth counter
@@ -1604,7 +1624,7 @@ void triggerPri_HondaD17()
    curGap = curTime - toothLastToothTime;
    toothCurrentCount++; //Increment the tooth counter
 
-   addToothLogEntry(curGap);
+   addToothLogEntry(curGap, TOOTH_CRANK);
 
    //
    if( (toothCurrentCount == 13) && (currentStatus.hasSync == true) )
@@ -1755,7 +1775,7 @@ void triggerPri_Miata9905()
 
     if (currentStatus.hasSync == true)
     {
-      addToothLogEntry(curGap);
+      addToothLogEntry(curGap, TOOTH_CRANK);
 
       //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
       if( (configPage4.triggerFilter == 1) || (currentStatus.RPM < 1400) )
@@ -1919,7 +1939,7 @@ void triggerPri_MazdaAU()
   curGap = curTime - toothLastToothTime;
   if ( curGap >= triggerFilterTime )
   {
-    addToothLogEntry(curGap);
+    addToothLogEntry(curGap, TOOTH_CRANK);
 
     toothCurrentCount++;
     if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
@@ -2377,7 +2397,7 @@ void triggerPri_Subaru67()
    //curGap = curTime - toothLastToothTime;
    //if ( curGap < triggerFilterTime ) { return; }
    toothCurrentCount++; //Increment the tooth counter
-   addToothLogEntry(curGap);
+   addToothLogEntry(curGap, TOOTH_CRANK);
 
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
@@ -2459,7 +2479,7 @@ uint16_t getRPM_Subaru67()
   uint16_t tempRPM = 0;
   if(currentStatus.startRevolutions > 0)
   {
-    //As the tooth count is over 720 degrees, we need to double the RPM value and halve the revolution time
+    //As the tooth count is over 720 degrees
     tempRPM = stdGetRPM(720);
   }
   return tempRPM;
@@ -2561,7 +2581,7 @@ void triggerPri_Daihatsu()
         setFilter(curGap); //Recalc the new filter value
       }
 
-      //addToothLogEntry(curGap);
+      //addToothLogEntry(curGap, TOOTH_CRANK);
 
       if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
@@ -2690,7 +2710,7 @@ void triggerPri_Harley()
   {
     if ( READ_PRI_TRIGGER() == HIGH) // Has to be the same as in main() trigger-attach, for readability we do it this way.
     {
-        addToothLogEntry(curGap);
+        addToothLogEntry(curGap, TOOTH_CRANK);
         targetGap = lastGap ; //Gap is the Time to next toothtrigger, so we know where we are
         toothCurrentCount++;
         if (curGap > targetGap)
@@ -2831,7 +2851,7 @@ void triggerPri_ThirtySixMinus222()
    {
      toothCurrentCount++; //Increment the tooth counter
 
-     addToothLogEntry(curGap);
+     addToothLogEntry(curGap, TOOTH_CRANK);
 
      //Begin the missing tooth detection
      //If the time between the current tooth and the last is greater than 2x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after a gap
