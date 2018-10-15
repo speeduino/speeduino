@@ -1442,7 +1442,9 @@ void sendToothLog(bool useChar)
         else { toothHistorySerialIndex++; }
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+      cmdPending = false;
   }
+  else { cmdPending = true; } //Mark this request as being incomplete. 
 }
 
 void sendCompositeLog()
@@ -1472,7 +1474,9 @@ void sendCompositeLog()
         else { toothHistorySerialIndex++; }
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+      cmdPending = false;
   }
+  else { cmdPending = true; } //Mark this request as being incomplete. 
 }
 
 void testComm()
