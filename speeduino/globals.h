@@ -311,6 +311,8 @@ volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 volatile unsigned int toothHistoryIndex = 0;
 volatile byte toothHistorySerialIndex = 0;
+byte primaryTriggerEdge;
+byte secondaryTriggerEdge;
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360;
 int CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential

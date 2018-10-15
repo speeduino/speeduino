@@ -56,6 +56,7 @@ static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
 
       toothHistory[toothHistoryIndex] = micros() - compositeLastToothTime;
       compositeLastToothTime = micros();
+      valueLogged = true;
     }
 
     //If there has been a value logged above, update the indexes
@@ -77,6 +78,62 @@ static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
 
 
   } //Tooth/Composite log enabled
+}
+
+/*
+* This function is called on both the rising and falling edges of the primary trigger, when either the 
+* composite or tooth loggers are turned on. 
+*/
+void loggerPrimaryISR()
+{
+  validTrigger = false; //This value will be set to the return value of the decoder function, indicating whether or not this pulse passed the filters
+  bool validEdge = false; //This is set true below if the edge 
+  /* Two checks here:
+  1) If the primary trigger is RISING, then check whether the primary is currently HIGH
+  2) If the primary trigger is FALLING, then check whether the primary is currently LOW
+  If either of these are true, the primary decoder funtino is called
+  */
+  if( ( (primaryTriggerEdge == RISING) && (READ_PRI_TRIGGER() == HIGH) ) || ( (primaryTriggerEdge == FALLING) && (READ_PRI_TRIGGER() == LOW) ) || (primaryTriggerEdge == CHANGE) )
+  {
+    triggerHandler();
+    validEdge = true;
+  }
+  if( (currentStatus.toothLogEnabled == true) && (validTrigger == true) )
+  {
+    //Tooth logger only logs when the edge was correct
+    if(validEdge == true) { addToothLogEntry(curGap, TOOTH_CRANK); }
+  }
+  //else if( (currentStatus.compositeLogEnabled == true) && (validTrigger == true) )
+  else if( (currentStatus.compositeLogEnabled == true) )
+  {
+    //Composite logger adds an entry regardless of which edge it was
+    addToothLogEntry(curGap, TOOTH_CRANK);
+  }
+}
+
+/*
+* As above, but for the secondary
+*/
+void loggerSecondaryISR()
+{
+  validTrigger = false; //This value will be set to the return value of the decoder function, indicating whether or not this pulse passed the filters
+  validTrigger = true;
+  /* 3 checks here:
+  1) If the primary trigger is RISING, then check whether the primary is currently HIGH
+  2) If the primary trigger is FALLING, then check whether the primary is currently LOW
+  3) The secondary trigger is CHANGING
+  If either of these are true, the primary decoder funtino is called
+  */
+  if( ( (secondaryTriggerEdge == RISING) && (READ_SEC_TRIGGER() == HIGH) ) || ( (secondaryTriggerEdge == FALLING) && (READ_SEC_TRIGGER() == LOW) ) || (secondaryTriggerEdge == CHANGE) )
+  {
+    triggerSecondaryHandler();
+  }
+  //No tooth logger for the secondary input
+  if( (currentStatus.compositeLogEnabled == true) && (validTrigger == true) )
+  {
+    //Composite logger adds an entry regardless of which edge it was
+    addToothLogEntry(curGap2, TOOTH_CAM);
+  }
 }
 
 /*
@@ -214,8 +271,7 @@ void triggerPri_missingTooth()
    if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    {
      toothCurrentCount++; //Increment the tooth counter
-
-     addToothLogEntry(curGap, TOOTH_CRANK);
+     validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
      //if(toothCurrentCount > checkSyncToothCount || currentStatus.hasSync == false)
      {
@@ -425,7 +481,7 @@ void triggerPri_DualWheel()
     if ( curGap >= triggerFilterTime )
     {
       toothCurrentCount++; //Increment the tooth counter
-      addToothLogEntry(curGap, TOOTH_CRANK);
+      validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
       toothLastMinusOneToothTime = toothLastToothTime;
       toothLastToothTime = curTime;
@@ -613,7 +669,7 @@ void triggerPri_BasicDistributor()
     }
 
     setFilter(curGap); //Recalc the new filter value
-    addToothLogEntry(curGap, TOOTH_CRANK);
+    validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
     if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
     {
@@ -726,8 +782,7 @@ void triggerPri_GM7X()
    curTime = micros();
    curGap = curTime - toothLastToothTime;
    toothCurrentCount++; //Increment the tooth counter
-
-   addToothLogEntry(curGap, TOOTH_CRANK);
+   validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
    //
    if( toothCurrentCount > 7 )
@@ -890,7 +945,7 @@ void triggerPri_4G63()
   curGap = curTime - toothLastToothTime;
   if ( (curGap >= triggerFilterTime) || (currentStatus.startRevolutions == 0) )
   {
-    addToothLogEntry(curGap, TOOTH_CRANK);
+    validTrigger = true; //Flag that this pulse was accepted as a valid trigger
     triggerFilterTime = curGap >> 2; //This only applies during non-sync conditions. If there is sync then triggerFilterTime gets changed again below with a better value.
 
     toothLastMinusOneToothTime = toothLastToothTime;
@@ -1089,7 +1144,8 @@ void triggerSec_4G63()
   if ( (curGap2 >= triggerSecFilterTime) )//|| (currentStatus.startRevolutions == 0) )
   {
     toothLastSecToothTime = curTime2;
-    addToothLogEntry(curGap, TOOTH_CAM);
+    validTrigger = true; //Flag that this pulse was accepted as a valid trigger
+    //addToothLogEntry(curGap, TOOTH_CAM);
 
     triggerSecFilterTime = curGap2 >> 1; //Basic 50% filter for the secondary reading
     //More aggressive options:
@@ -1323,7 +1379,7 @@ void triggerPri_24X()
       triggerToothAngle = toothAngles[(toothCurrentCount-1)] - toothAngles[(toothCurrentCount-2)]; //Calculate the last tooth gap in degrees
     }
 
-    addToothLogEntry(curGap, TOOTH_CRANK);
+    validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
     toothLastToothTime = curTime;
 
@@ -1435,7 +1491,7 @@ void triggerPri_Jeep2000()
 
       setFilter(curGap); //Recalc the new filter value
 
-      addToothLogEntry(curGap, TOOTH_CRANK);
+      validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
       toothLastMinusOneToothTime = toothLastToothTime;
       toothLastToothTime = curTime;
@@ -1518,7 +1574,7 @@ void triggerPri_Audi135()
        {
          //We only proceed for every third tooth
 
-         addToothLogEntry(curGap, TOOTH_CRANK);
+         validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
          toothSystemLastToothTime = curTime;
          toothSystemCount = 0;
          toothCurrentCount++; //Increment the tooth counter
@@ -1624,7 +1680,7 @@ void triggerPri_HondaD17()
    curGap = curTime - toothLastToothTime;
    toothCurrentCount++; //Increment the tooth counter
 
-   addToothLogEntry(curGap, TOOTH_CRANK);
+   validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
    //
    if( (toothCurrentCount == 13) && (currentStatus.hasSync == true) )
@@ -1753,6 +1809,7 @@ void triggerPri_Miata9905()
   if ( (curGap >= triggerFilterTime) || (currentStatus.startRevolutions == 0) )
   {
     toothCurrentCount++;
+    validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
     if( (toothCurrentCount == (triggerActualTeeth + 1)) )
     {
        toothCurrentCount = 1; //Reset the counter
@@ -1775,7 +1832,6 @@ void triggerPri_Miata9905()
 
     if (currentStatus.hasSync == true)
     {
-      addToothLogEntry(curGap, TOOTH_CRANK);
 
       //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
       if( (configPage4.triggerFilter == 1) || (currentStatus.RPM < 1400) )
@@ -1939,7 +1995,7 @@ void triggerPri_MazdaAU()
   curGap = curTime - toothLastToothTime;
   if ( curGap >= triggerFilterTime )
   {
-    addToothLogEntry(curGap, TOOTH_CRANK);
+    validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
     toothCurrentCount++;
     if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
@@ -2156,7 +2212,7 @@ void triggerPri_Nissan360()
    curGap = curTime - toothLastToothTime;
    //if ( curGap < triggerFilterTime ) { return; }
    toothCurrentCount++; //Increment the tooth counter
-   //addToothLogEntry(curGap); Disable tooth logging on this decoder due to overhead
+   validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
@@ -2397,7 +2453,7 @@ void triggerPri_Subaru67()
    //curGap = curTime - toothLastToothTime;
    //if ( curGap < triggerFilterTime ) { return; }
    toothCurrentCount++; //Increment the tooth counter
-   addToothLogEntry(curGap, TOOTH_CRANK);
+   validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
    toothLastMinusOneToothTime = toothLastToothTime;
    toothLastToothTime = curTime;
@@ -2561,6 +2617,7 @@ void triggerPri_Daihatsu()
   //if ( curGap >= triggerFilterTime || (currentStatus.startRevolutions == 0 )
   {
     toothSystemCount++;
+    validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
     if (currentStatus.hasSync == true)
     {
@@ -2580,8 +2637,6 @@ void triggerPri_Daihatsu()
         toothCurrentCount++; //Increment the tooth counter
         setFilter(curGap); //Recalc the new filter value
       }
-
-      //addToothLogEntry(curGap, TOOTH_CRANK);
 
       if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
@@ -2710,7 +2765,7 @@ void triggerPri_Harley()
   {
     if ( READ_PRI_TRIGGER() == HIGH) // Has to be the same as in main() trigger-attach, for readability we do it this way.
     {
-        addToothLogEntry(curGap, TOOTH_CRANK);
+        validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
         targetGap = lastGap ; //Gap is the Time to next toothtrigger, so we know where we are
         toothCurrentCount++;
         if (curGap > targetGap)
@@ -2850,8 +2905,7 @@ void triggerPri_ThirtySixMinus222()
    if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    {
      toothCurrentCount++; //Increment the tooth counter
-
-     addToothLogEntry(curGap, TOOTH_CRANK);
+     validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
      //Begin the missing tooth detection
      //If the time between the current tooth and the last is greater than 2x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after a gap

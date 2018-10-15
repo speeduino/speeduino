@@ -10,6 +10,7 @@ A full copy of the license may be found in the projects root directory
 #include "storage.h"
 #include "maths.h"
 #include "utils.h"
+#include "decoders.h"
 
 /*
   Processes the data on the serial buffer.
@@ -91,10 +92,24 @@ void command()
       toothHistoryIndex = 0;
       toothHistorySerialIndex = 0;
       compositeLastToothTime = 0;
+
+      //Disconnect the standard interrupt and add the logger verion
+      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
+
+      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
       break;
 
     case 'j': //Stop the composite logger
       currentStatus.compositeLogEnabled = false;
+
+      //Disconnect the logger interrupts and attach the normal ones
+      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
+
+      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
       break;
 
     case 'L': // List the contents of current page in human readable form
