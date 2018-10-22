@@ -701,8 +701,9 @@ struct config6 {
 //Page 9 of the config mostly deals with CANBUS control
 //See ini file for further info (Config Page 10 in the ini)
 struct config9 {
-  byte enable_canbus:2;
-  byte enable_candata_in:1;
+  byte enable_secondarySerial:1;            //enable secondary serial
+  byte intcan_available:1;                     //enable internal can module
+  byte enable_intcan:1;
   byte caninput_sel[16];                    //bit status on/Can/analog_local/digtal_local if input is enabled
   uint16_t caninput_source_can_address[16];        //u16 [15] array holding can address of input
   uint8_t caninput_source_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)

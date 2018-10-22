@@ -22,9 +22,13 @@ void canCommand()
 
   switch (currentcanCommand)
   {
-    case 'A': // sends the bytes of realtime values
+    case 'A': // sends the bytes of realtime values from the CAN list
         sendcanValues(0, CAN_PACKET_SIZE, 0x30, 1); //send values to serial3
         break;
+
+    //case 'A': // send x bytes of realtime values from the TS list
+    //  sendValues(0, SERIAL_PACKET_SIZE, 0x30, 3);   //send values to serial0
+    //  break;
 
     case 'G': // this is the reply command sent by the Can interface
        byte destcaninchannel;
@@ -107,14 +111,14 @@ void canCommand()
       }
       break;
 
-    case 'S': // send code version
-      for (unsigned int revn = 0; revn < sizeof( TSfirmwareVersion) - 1; revn++)
-      {
-        CANSerial.write( TSfirmwareVersion[revn]);
-      }
-       //Serial3.print("speeduino 201609-dev");
+    case 's': // send the "a" stream code version
+      CANSerial.write("Speeduino csx02018.7");
        break;
 
+    case 'S': // send code version
+      CANSerial.write("Speeduino 2018.7-dev");
+      break;
+      
     case 'Q': // send code version
        for (unsigned int revn = 0; revn < sizeof( TSfirmwareVersion) - 1; revn++)
        {
@@ -267,7 +271,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
         break;
 
      case 2:                                          // requests via serial3
-        CANSerial.print("R");                         //send "R" to request data from the parmagroup can address whos value is sent next
+        CANSerial.print("R");                         //send "R" to request data from the sourcecanAddress whos value is sent next
         CANSerial.write(candata1);                    //the currentStatus.current_caninchannel
         CANSerial.write(lowByte(sourcecanAddress) );       //send lsb first
         CANSerial.write(highByte(sourcecanAddress) );
