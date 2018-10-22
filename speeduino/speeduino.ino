@@ -867,6 +867,12 @@ void loop()
       if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       {
         if (Serial.available() > 0) { command(); }
+        else if(cmdPending == true)
+        {
+          //This is a special case just for the tooth and composite loggers
+          if (currentCommand == 'T') { command(); }
+        }
+        
       }
       //if can or secondary serial interface is enabled then check for requests.
       if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled

@@ -9,14 +9,16 @@
   #define READ_SEC_TRIGGER() digitalRead(pinTrigger2)
 #endif
 
-static inline void addToothLogEntry(unsigned long);
+static inline void addToothLogEntry(unsigned long, bool);
+void loggerPrimaryISR();
+void loggerSecondaryISR();
 static inline uint16_t stdGetRPM(uint16_t);
 static inline void setFilter(unsigned long);
 static inline int crankingGetRPM(byte);
 //static inline void doPerToothTiming(uint16_t);
 
-void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
-void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
+void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
+void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
 uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
 int (*getCrankAngle)(); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of each decoder
@@ -149,6 +151,7 @@ volatile unsigned long curTime2;
 volatile unsigned long curGap2;
 volatile unsigned long lastGap;
 volatile unsigned long targetGap;
+volatile unsigned long compositeLastToothTime;
 
 volatile int toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
 volatile byte toothSystemCount = 0; //Used for decoders such as Audi 135 where not every tooth is used for calculating crank angle. This variable stores the actual number of teeth, not the number being used to calculate crank angle
@@ -171,12 +174,14 @@ volatile unsigned long secondaryLastToothTime1 = 0; //The time (micros()) that t
 volatile int triggerActualTeeth;
 volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 volatile unsigned long triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
+volatile bool validTrigger; //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
 unsigned int triggerSecFilterTime_duration; // The shortest valid time (in uS) pulse DURATION
 volatile uint16_t triggerToothAngle; //The number of crank degrees that elapse per tooth
 volatile bool triggerToothAngleIsCorrect = false; //Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.
 bool secondDerivEnabled = false; //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
 bool decoderIsSequential; //Whether or not the decoder supports sequential operation
 bool decoderIsLowRes = false; //Is set true, certain extra calculations are performed for better timing accuracy
+bool decoderHasSecondary = false; //Whether or not the pattern uses a secondary input
 bool decoderHasFixedCrankingTiming = false; //Whether or not the decoder supports fixed cranking timing
 byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
 unsigned long elapsedTime;
@@ -196,5 +201,8 @@ int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently si
 
 #define CRANK_SPEED 0
 #define CAM_SPEED   1
+
+#define TOOTH_CRANK 0
+#define TOOTH_CAM   1
 
 #endif
