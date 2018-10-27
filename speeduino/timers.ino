@@ -213,7 +213,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
     //**************************************************************************************************************************************************
     //Check the fan output status
     if (configPage6.fanEnable == 1)
-
     {
        fanControl();            // Fucntion to turn the cooling fan on/off
     }
@@ -224,6 +223,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
   		ACControl();
   		CELcontrol();
   	}
+   if (alphaVars.carSelect != 255){
+    DFCOwaitFunc();
+   }
    
     //alphamods
 
