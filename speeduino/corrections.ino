@@ -641,6 +641,5 @@ uint16_t correctionsDwell(uint16_t dwell)
     tempDwell = WOTdwellCorrection(tempDwell);
   }
   //alphamods
-
   return tempDwell;
 }

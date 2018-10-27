@@ -200,18 +200,22 @@ void setup()
   configPage4.bootloaderCaps = 0;
 
   Serial.begin(115200);
-  if (configPage9.enable_canbus == 1) { CANSerial.begin(115200); }
-
+  if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
+  
+  #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+    configPage9.intcan_available = 0;   // device does NOT have internal canbus
+  #endif  
   #if defined(CORE_STM32) || defined(CORE_TEENSY)
-  else if (configPage9.enable_canbus == 2)
-  {
+    configPage9.intcan_available = 1;   // device has internal canbus
+
+
     //Teensy onboard CAN not used currently
     //enable local can interface
     //setup can interface to 250k
     //FlexCAN CANbus0(2500000, 0);
     //static CAN_message_t txmsg,rxmsg;
     //CANbus0.begin();
-  }
+
 
   #endif
 
@@ -1062,9 +1066,15 @@ void loop()
       if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       {
         if (Serial.available() > 0) { command(); }
+        else if(cmdPending == true)
+        {
+          //This is a special case just for the tooth and composite loggers
+          if (currentCommand == 'T') { command(); }
+        }
+        
       }
       //if can or secondary serial interface is enabled then check for requests.
-      if (configPage9.enable_canbus == 1)  //secondary serial interface enabled
+      if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
           {
             if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
                 {
@@ -1072,7 +1082,7 @@ void loop()
                 }
           }
       #if  defined(CORE_TEENSY) || defined(CORE_STM32)
-          else if (configPage9.enable_canbus == 2) // can module enabled
+          else if (configPage9.enable_secondarySerial == 2) // can module enabled
           {
             //check local can module
             // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
@@ -1229,14 +1239,13 @@ void loop()
       readO2_2();
       readBat();
       nitrousControl();
-
+       
        //alphamods
        if ((alphaVars.carSelect != 255) && (alphaVars.carSelect != 0)){
         readACReq();
         alphaVars.rollingALtrigger = digitalRead(pinRollingAL);
        }
        //alphaMods
-
 
 
       if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
@@ -1248,58 +1257,92 @@ void loop()
         //check through the Aux input channels if enabed for Can or local use
         for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
         {
-          currentStatus.current_caninchannel = AuxinChan;          
-          //currentStatus.canin[14] = ((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
+          currentStatus.current_caninchannel = AuxinChan; 
+          
+          //Dev test use only!
+          //currentStatus.canin[13] = ((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
+          //currentStatus.canin[14] = (configPage9.caninput_sel[1]);
+          //currentStatus.canin[12] = (configPage9.caninput_sel[1]&12);          
+          //currentStatus.canin[14] = configPage9.enable_secondarySerial;  //> 0)((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
           //currentStatus.canin[13] = (configPage9.caninput_sel[currentStatus.current_caninchannel]&3);          
-          if (configPage9.caninput_sel[currentStatus.current_caninchannel] == 1)  //if current input channel is enabled as canbus
-          {
-            if (configPage9.enable_candata_in > 0)     //if external data input is enabled
+
+
+
+
+          
+          if (((configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 4) 
+              && (((configPage9.enable_secondarySerial == 1) && ((configPage9.enable_intcan == 0)&&(configPage9.intcan_available == 1)))
+              || ((configPage9.enable_secondarySerial == 1) && ((configPage9.enable_intcan == 1)&&(configPage9.intcan_available == 1))&& 
+              ((configPage9.caninput_sel[currentStatus.current_caninchannel]&64) == 0))
+              || ((configPage9.enable_secondarySerial == 1) && ((configPage9.enable_intcan == 1)&&(configPage9.intcan_available == 0)))))              
+          { //if current input channel is enabled as external & secondary serial enabled & internal can disabled(but internal can is available)
+            // or current input channel is enabled as external & secondary serial enabled & internal can enabled(and internal can is available)
+            //currentStatus.canin[13] = 11;  Dev test use only!
+            if (configPage9.enable_secondarySerial == 1)  // megas only support can via secondary serial
+
+
+
+
+
+
+
             {
-              if (configPage9.enable_canbus == 1)  // megas only support can via secondary serial
-
-
-
-
-
-
-
-              {
-                sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage9.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100));
-                //send an R command for data from caninput_source_address[currentStatus.current_caninchannel]
-              }
-
-
-
-
-              #if defined(CORE_STM32) || defined(CORE_TEENSY)
-
-
-
-
-
-
-
-
-
-
-
-
-              else if (configPage9.enable_canbus == 2) // can via internal can module
-              {
-                sendCancommand(3,configPage9.speeduino_tsCanId,currentStatus.current_caninchannel,0,configPage9.caninput_source_can_address[currentStatus.current_caninchannel]);    //send via localcanbus the command for data from paramgroup[currentStatus.current_caninchannel]
-              }
-              #endif
+              sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage9.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100));
+              //send an R command for data from caninput_source_address[currentStatus.current_caninchannel] from CANSERIAL
             }
-          }
-          else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  //if current input channel is enabled as analog local pin
-          {
+
+
+
+
+          }  
+          else if (((configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 4) 
+              && (((configPage9.enable_secondarySerial == 1) && ((configPage9.enable_intcan == 1)&&(configPage9.intcan_available == 1))&& 
+              ((configPage9.caninput_sel[currentStatus.current_caninchannel]&64) == 64))
+              || ((configPage9.enable_secondarySerial == 0) && ((configPage9.enable_intcan == 1)&&(configPage9.intcan_available == 1))&& 
+              ((configPage9.caninput_sel[currentStatus.current_caninchannel]&128) == 128))))                             
+          { //if current input channel is enabled as external for canbus & secondary serial enabled & internal can enabled(and internal can is available)
+            // or current input channel is enabled as external for canbus & secondary serial disabled & internal can enabled(and internal can is available)
+            //currentStatus.canin[13] = 12;  Dev test use only!  
+          #if defined(CORE_STM32) || defined(CORE_TEENSY)
+
+
+
+
+
+
+
+
+
+
+
+
+           if (configPage9.enable_intcan == 1) //  if internal can is enabled 
+           {
+              sendCancommand(3,configPage9.speeduino_tsCanId,currentStatus.current_caninchannel,0,((configPage9.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100));  
+              //send an R command for data from caninput_source_address[currentStatus.current_caninchannel] from internal canbus
+           }
+          #endif
+          }   
+
+
+
+          else if ((((configPage9.enable_secondarySerial == 1) || ((configPage9.enable_intcan == 1) && (configPage9.intcan_available == 1))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 8)
+                  || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 1 && configPage9.intcan_available == 0 )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  
+                  || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)))  
+          { //if current input channel is enabled as analog local pin
             //read analog channel specified
+            //currentStatus.canin[13] = 13;  Dev test use only!
             currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&127);
           }
 
-          else if ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)  //if current input channel is enabled as digital local pin
-          {
+
+
+          else if ((((configPage9.enable_secondarySerial == 1) || ((configPage9.enable_intcan == 1) && (configPage9.intcan_available == 1))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 12)
+                  || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 1 && configPage9.intcan_available == 0 )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)
+                  || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)))
+          {  //if current input channel is enabled as digital local pin
             //read digital channel specified
+            //currentStatus.canin[13] = 14;  Dev test use only!
             currentStatus.canin[currentStatus.current_caninchannel] = readAuxdigital((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
           } //Channel type
         } //For loop going through each channel
@@ -1314,6 +1357,7 @@ void loop()
        }
        //alphaMods
        
+
     } //4Hz timer
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
@@ -2216,9 +2260,9 @@ void loop()
 
           crankAngle = getCrankAngle(); //Refresh with the latest crank angle
           if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
+
+
           
-
-
           //ONLY ONE OF THE BELOW SHOULD BE USED (PROBABLY THE FIRST):
           //*********
           if(ignition1EndAngle > crankAngle) { uSToEnd = fastDegreesToUS( (ignition1EndAngle - crankAngle) ); }

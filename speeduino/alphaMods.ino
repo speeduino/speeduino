@@ -170,7 +170,7 @@ void CELcontrol()
 
 void vvlControl()
 {
-  if ((currentStatus.RPM >= 5800) && (currentStatus.TPS > 80) && (currentStatus.coolant > 50))
+  if ((currentStatus.RPM >= 5400) && (currentStatus.TPS > 80) && (currentStatus.coolant > 50))
   {
     if (!alphaVars.vvlOn)
     {
@@ -179,7 +179,7 @@ void vvlControl()
         //  Serial.println("VVL ON");
     }
   }
-  else if ((currentStatus.RPM < 5600) && (currentStatus.TPS < 80)) {
+  else if ((currentStatus.RPM < 5300) && (currentStatus.TPS < 80)) {
     digitalWrite(pinVVL, LOW);
     alphaVars.vvlOn = false;
       //  Serial.println("VVL OFF");
@@ -259,11 +259,11 @@ static inline int8_t correctionZeroThrottleTiming(int8_t advance)
   int8_t ignZeroThrottleValue = advance;
   if ((currentStatus.TPS < 2) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE)) && (currentStatus.MAP < 70)) //Check whether TPS coorelates to zero value
   {
-    if ((currentStatus.RPM > 500) && (currentStatus.RPM <= 800)) {
-      ignZeroThrottleValue = map(currentStatus.RPM, 500, 800, 25, 9);
+    if ((currentStatus.RPM > 600) && (currentStatus.RPM <= 1000)) {
+      ignZeroThrottleValue = map(currentStatus.RPM, 600, 1000, 25, 9);
     }
-    else if ((currentStatus.RPM > 800) && (currentStatus.RPM < 1700)) {
-      ignZeroThrottleValue = map(currentStatus.RPM, 800, 1200, 9, 0);
+    else if ((currentStatus.RPM > 800) && (currentStatus.RPM < 1500)) {
+      ignZeroThrottleValue = map(currentStatus.RPM, 1000, 1500, 9, 0);
     }
     else {
       ignZeroThrottleValue = advance;
@@ -389,7 +389,7 @@ void XRSgaugeCLT() {
 
 void alphaIdleMods() {
   if ((BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))) {
-    currentStatus.idleDuty = currentStatus.idleDuty + 10;
+    currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
   }
   if ((alphaVars.highIdleReq) && (currentStatus.idleDuty < 60)) {
     currentStatus.idleDuty = currentStatus.idleDuty + alphaVars.highIdleCount;
