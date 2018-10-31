@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    9
+  #define CURRENT_DATA_VERSION    10
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -138,6 +138,28 @@ void doUpdates()
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 9);
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 9)
+  {
+    //September 2018 set default values for all the aux in variables (These were introduced in Aug, but no defaults were set then)
+    //All aux channels set to Off
+    for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
+    {
+      configPage9.caninput_sel[AuxinChan] = 0;
+    }
+
+    //Ability to change the analog filter values was added. Set default values for these:
+    configPage4.ADCFILTER_TPS = 128;
+    configPage4.ADCFILTER_CLT = 180;
+    configPage4.ADCFILTER_IAT = 180;
+    configPage4.ADCFILTER_O2  = 128;
+    configPage4.ADCFILTER_BAT = 128;
+    configPage4.ADCFILTER_MAP = 20; //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
+    configPage4.ADCFILTER_BARO= 64;
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 10);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)

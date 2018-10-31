@@ -457,9 +457,9 @@ struct Schedule {
 #endif
 };
 
-volatile Schedule *timer3Aqueue[4];
-Schedule *timer3Bqueue[4];
-Schedule *timer3Cqueue[4];
+//volatile Schedule *timer3Aqueue[4];
+//Schedule *timer3Bqueue[4];
+//Schedule *timer3Cqueue[4];
 
 Schedule fuelSchedule1;
 Schedule fuelSchedule2;

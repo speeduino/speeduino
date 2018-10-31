@@ -29,7 +29,7 @@ void initialiseIdle()
 
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
     {
-    //FlexTimer 2 is used for idle
+    //FlexTimer 2, compare channel 0 is used for idle
     FTM2_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
     FTM2_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
     FTM2_MODE |= FTM_MODE_INIT;
@@ -75,7 +75,12 @@ void initialiseIdle()
     //Setup the channels (See Pg 1014 of K64 DS).
     FTM2_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
     FTM2_C0SC |= FTM_CSC_MSA; //Enable Compare mode
-    FTM2_C0SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+    //The below enables channel compare interrupt, but this is done in idleControl()
+    //FTM2_C0SC |= FTM_CSC_CHIE; 
+
+    FTM2_C1SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+    FTM2_C1SC |= FTM_CSC_MSA; //Enable Compare mode
+    //FTM2_C1SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
 
     // enable IRQ Interrupt
     NVIC_ENABLE_IRQ(IRQ_FTM2);
@@ -117,8 +122,10 @@ void initialiseIdle()
       idle2_pin_mask = digitalPinToBitMask(pinIdle2);
       #if defined(CORE_STM32)
         idle_pwm_max_count = 1000000L / (configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
-      #else
+      #elif defined(CORE_AVR)
         idle_pwm_max_count = 1000000L / (16 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      #elif defined(CORE_TEENSY)
+        idle_pwm_max_count = 1000000L / (32 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       #endif
       enableIdle();
       break;
@@ -141,8 +148,10 @@ void initialiseIdle()
       idle2_pin_mask = digitalPinToBitMask(pinIdle2);
       #if defined(CORE_STM32)
         idle_pwm_max_count = 1000000L / (configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
-      #else
+      #elif defined(CORE_AVR)
         idle_pwm_max_count = 1000000L / (16 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      #elif defined(CORE_TEENSY)
+        idle_pwm_max_count = 1000000L / (32 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       #endif
       idlePID.SetOutputLimits(percentage(configPage2.iacCLminDuty, idle_pwm_max_count), percentage(configPage2.iacCLmaxDuty, idle_pwm_max_count));
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
@@ -250,9 +259,10 @@ void idleControl()
         if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
         if( currentStatus.idleDuty == 0 ) { disableIdle(); break; }
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
-        currentStatus.idleLoad = currentStatus.idleDuty >> 1;
+        currentStatus.idleLoad = currentStatus.idleDuty >> 1; //Idle Load is divided by 2 in order to send to TS
         idleOn = true;
       }
+      
       break;
 
     case IAC_ALGORITHM_PWM_CL:    //Case 3 is PWM closed loop
@@ -479,3 +489,16 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
     idle_pwm_state = true;
   }
 }
+
+#if defined(CORE_TEENSY)
+void ftm2_isr(void)
+{ 
+  //FTM2 only has 2 compare channels
+  //Use separate variables for each test to ensure conversion to bool
+  bool interrupt1 = (FTM2_C0SC & FTM_CSC_CHF);
+  bool interrupt2 = (FTM2_C1SC & FTM_CSC_CHF); //Not currently used
+
+  if(interrupt1) { FTM2_C0SC &= ~FTM_CSC_CHF; idleInterrupt(); }
+  else if(interrupt2) { FTM2_C1SC &= ~FTM_CSC_CHF; } //Add a callback function here if this is ever used
+}
+#endif

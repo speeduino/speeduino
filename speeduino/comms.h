@@ -26,7 +26,6 @@ int valueOffset; //cannot use offset as a variable name, it is a reserved word f
 byte cmdGroup = 0;
 byte cmdValue = 0;
 int cmdCombined = 0;  //the cmdgroup as high byte and cmdvalue as low byte
-byte cmdStore[8];     //array storing pre test values
 byte tsCanId = 0;     // current tscanid requested
 
 const char pageTitles[] PROGMEM //This is being stored in the avr flash instead of SRAM which there is not very much of

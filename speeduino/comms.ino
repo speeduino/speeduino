@@ -10,6 +10,7 @@ A full copy of the license may be found in the projects root directory
 #include "storage.h"
 #include "maths.h"
 #include "utils.h"
+#include "decoders.h"
 
 /*
   Processes the data on the serial buffer.
@@ -72,6 +73,43 @@ void command()
 
     case 'F': // send serial protocol version
       Serial.print("001");
+      break;
+
+    case 'H': //Start the tooth logger
+      currentStatus.toothLogEnabled = true;
+      currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
+      toothHistoryIndex = 0;
+      toothHistorySerialIndex = 0;
+      break;
+
+    case 'h': //Stop the tooth logger
+      currentStatus.toothLogEnabled = false;
+      break;
+
+    case 'J': //Start the composite logger
+      currentStatus.compositeLogEnabled = true;
+      currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
+      toothHistoryIndex = 0;
+      toothHistorySerialIndex = 0;
+      compositeLastToothTime = 0;
+
+      //Disconnect the standard interrupt and add the logger verion
+      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
+
+      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+      break;
+
+    case 'j': //Stop the composite logger
+      currentStatus.compositeLogEnabled = false;
+
+      //Disconnect the logger interrupts and attach the normal ones
+      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
+
+      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
       break;
 
     case 'L': // List the contents of current page in human readable form
@@ -139,7 +177,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201808");
+      Serial.print(F("speeduino 201809-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -169,12 +207,14 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2018.8");
+      Serial.print(F("Speeduino 2018.9-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
-      sendToothLog(false); //Sends tooth log values as ints
+      if(currentStatus.toothLogEnabled == true) { sendToothLog(false); } //Sends tooth log values as ints
+      else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(); }
+
       break;
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
@@ -1391,33 +1431,52 @@ Send 256 tooth log entries
 void sendToothLog(bool useChar)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
-  if (toothHistoryIndex >= TOOTH_LOG_SIZE) //Sanity check. Flagging system means this should always be true
+  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
-    unsigned int tempToothHistory[TOOTH_LOG_BUFFER]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
-
-    //Copy the working history into the temporary buffer array. This is done so that, if the history loops whilst the values are being sent over serial, it doesn't affect the values
-    memcpy( (void*)tempToothHistory, (void*)toothHistory, sizeof(tempToothHistory) );
-    toothHistoryIndex = 0; //Reset the history index
-
-    //Loop only needs to go to half the buffer size
-    if (useChar)
-    {
       for (int x = 0; x < TOOTH_LOG_SIZE; x++)
       {
-        Serial.println(tempToothHistory[x]);
-      }
-    }
-    else
-    {
-      for (int x = 0; x < TOOTH_LOG_SIZE; x++)
-      {
-        Serial.write(highByte(tempToothHistory[x]));
-        Serial.write(lowByte(tempToothHistory[x]));
+        Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
+        Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
+
+        if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
+        else { toothHistorySerialIndex++; }
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-    }
-    toothLogRead = true;
+      cmdPending = false;
   }
+  else { cmdPending = true; } //Mark this request as being incomplete. 
+}
+
+void sendCompositeLog()
+{
+  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
+  {
+      uint32_t runTime = 0;
+      for (int x = 0; x < TOOTH_LOG_SIZE; x++)
+      {
+        runTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
+        
+        //Serial.write(highByte(runTime));
+        //Serial.write(lowByte(runTime));
+        Serial.write(runTime >> 24);
+        Serial.write(runTime >> 16);
+        Serial.write(runTime >> 8);
+        Serial.write(runTime);
+
+        //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
+        //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
+
+        Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates which)
+
+        
+
+        if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
+        else { toothHistorySerialIndex++; }
+      }
+      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+      cmdPending = false;
+  }
+  else { cmdPending = true; } //Mark this request as being incomplete. 
 }
 
 void testComm()
