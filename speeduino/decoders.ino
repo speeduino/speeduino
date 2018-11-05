@@ -1231,8 +1231,7 @@ uint16_t getRPM_4G63()
     }
     else
     {
-      if(configPage2.nCylinders == 4) { tempRPM = stdGetRPM(720); }
-      else if(configPage2.nCylinders == 6) { tempRPM = stdGetRPM(720); }
+      tempRPM = stdGetRPM(720);
       //EXPERIMENTAL! Add/subtract RPM based on the last rpmDOT calc
       //tempRPM += (micros() - toothOneTime) * currentStatus.rpmDOT
       MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
@@ -2417,7 +2416,7 @@ void triggerSetEndTeeth_Nissan360()
 }
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: Subary 6/7
+Name: Subaru 6/7
 Desc:
 Note:
 */
@@ -2487,6 +2486,7 @@ void triggerPri_Subaru67()
         default:
           //Almost certainly due to noise or cranking stop/start
           currentStatus.hasSync = false;
+          triggerToothAngleIsCorrect = false;
           currentStatus.syncLossCounter++;
           secondaryToothCount = 0;
           break;
@@ -2511,8 +2511,30 @@ void triggerPri_Subaru67()
        toothOneTime = curTime;
        currentStatus.startRevolutions++; //Counter
      }
+
+     //Set the last angle between teeth for better calc accuracy
+     if(toothCurrentCount == 1) { triggerToothAngle = 55; } //Special case for tooth 1
+     else if(toothCurrentCount == 2) { triggerToothAngle = 93; } //Special case for tooth 2
+     else { triggerToothAngle = toothAngles[(toothCurrentCount-1)] - toothAngles[(toothCurrentCount-2)]; }
+     triggerToothAngleIsCorrect = true;
+     //triggerToothAngleIsCorrect = false;
    }
 
+
+    //NEW IGNITION MODE
+    if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
+    {
+      int16_t crankAngle = toothAngles[(toothCurrentCount - 1)] + configPage4.triggerAngle;
+      if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) )
+      {
+        uint16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
+
+        //Handle non-sequential tooth counts 
+        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > 6) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-6) ); }
+        else { checkPerToothTiming(crankAngle, toothCurrentCount); }
+      }
+      else{ checkPerToothTiming(crankAngle, toothCurrentCount); }
+    }
    //Recalc the new filter value
    //setFilter(curGap);
  }
@@ -2560,7 +2582,7 @@ int getCrankAngle_Subaru67()
 
     //Estimate the number of degrees travelled since the last tooth}
     elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
-    crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_REV);
+    crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_TOOTH);
 
     if (crankAngle >= 720) { crankAngle -= 720; }
     if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
@@ -2572,6 +2594,42 @@ int getCrankAngle_Subaru67()
 
 void triggerSetEndTeeth_Subaru67()
 {
+  if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
+  {
+    //if(ignition1EndAngle < 710) { ignition1EndTooth = 12; }
+    if(currentStatus.advance >= 10 ) 
+    { 
+      ignition1EndTooth = 12;
+      ignition2EndTooth = 3;
+      ignition3EndTooth = 6;
+      ignition4EndTooth = 9;
+    }
+    else 
+    { 
+      ignition1EndTooth = 1;
+      ignition2EndTooth = 4;
+      ignition3EndTooth = 7;
+      ignition4EndTooth = 10;
+    }
+  }
+  else    
+  {
+    if(currentStatus.advance >= 10 ) 
+    { 
+      ignition1EndTooth = 6;
+      ignition2EndTooth = 3;
+      //ignition3EndTooth = 6;
+      //ignition4EndTooth = 9;
+    }
+    else 
+    { 
+      ignition1EndTooth = 1;
+      ignition2EndTooth = 4;
+      //ignition3EndTooth = 7;
+      //ignition4EndTooth = 10;
+    }
+  }
+  
   lastToothCalcAdvance = currentStatus.advance;
 }
 
