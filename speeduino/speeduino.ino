@@ -1033,17 +1033,11 @@ void loop()
 
       if(auxIsEnabled == true)
       {
+        //TODO dazq to clean this right up :)
         //check through the Aux input channels if enabed for Can or local use
         for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
         {
-          currentStatus.current_caninchannel = AuxinChan; 
-          
-          //Dev test use only!
-          //currentStatus.canin[13] = ((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
-          //currentStatus.canin[14] = (configPage9.caninput_sel[1]);
-          //currentStatus.canin[12] = (configPage9.caninput_sel[1]&12);          
-          //currentStatus.canin[14] = configPage9.enable_secondarySerial;  //> 0)((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
-          //currentStatus.canin[13] = (configPage9.caninput_sel[currentStatus.current_caninchannel]&3);          
+          currentStatus.current_caninchannel = AuxinChan;          
           
           if (((configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 4) 
               && (((configPage9.enable_secondarySerial == 1) && ((configPage9.enable_intcan == 0)&&(configPage9.intcan_available == 1)))
@@ -1076,7 +1070,7 @@ void loop()
           #endif
           }   
           else if ((((configPage9.enable_secondarySerial == 1) || ((configPage9.enable_intcan == 1) && (configPage9.intcan_available == 1))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 8)
-                  || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 1 && configPage9.intcan_available == 0 )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  
+                  || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  
                   || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)))  
           { //if current input channel is enabled as analog local pin
             //read analog channel specified
@@ -1084,7 +1078,7 @@ void loop()
             currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&127);
           }
           else if ((((configPage9.enable_secondarySerial == 1) || ((configPage9.enable_intcan == 1) && (configPage9.intcan_available == 1))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 12)
-                  || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 1 && configPage9.intcan_available == 0 )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)
+                  || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)
                   || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)))
           {  //if current input channel is enabled as digital local pin
             //read digital channel specified
@@ -1271,6 +1265,7 @@ void loop()
             PWdivTimerPerDegree = div(currentStatus.PW3, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
             injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
           }
+          break;
         //2 cylinders
         case 2:
           /*
@@ -1426,6 +1421,7 @@ void loop()
           */
           injector4StartAngle = calculateInjector4StartAngle(PWdivTimerPerDegree);
           break;
+
         //Will hit the default case on 1 cylinder or >8 cylinders. Do nothing in these cases
         default:
           break;

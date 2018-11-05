@@ -724,11 +724,7 @@ int getCrankAngle_BasicDistributor()
     int crankAngle = ((tempToothCurrentCount - 1) * triggerToothAngle) + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
     
     //Estimate the number of degrees travelled since the last tooth}
-    
     elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
-
-    //if(elapsedTime < SHRT_MAX ) { crankAngle += div((int)elapsedTime, timePerDegree).quot; } //This option is much faster, but only available for smaller values of elapsedTime
-    //else { crankAngle += ldiv(elapsedTime, timePerDegree).quot; }
 
     //crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_REV);
     crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_TOOTH);
@@ -2517,7 +2513,6 @@ void triggerPri_Subaru67()
      else if(toothCurrentCount == 2) { triggerToothAngle = 93; } //Special case for tooth 2
      else { triggerToothAngle = toothAngles[(toothCurrentCount-1)] - toothAngles[(toothCurrentCount-2)]; }
      triggerToothAngleIsCorrect = true;
-     //triggerToothAngleIsCorrect = false;
    }
 
 
@@ -2527,7 +2522,7 @@ void triggerPri_Subaru67()
       int16_t crankAngle = toothAngles[(toothCurrentCount - 1)] + configPage4.triggerAngle;
       if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) )
       {
-        uint16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
+        crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
 
         //Handle non-sequential tooth counts 
         if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > 6) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-6) ); }

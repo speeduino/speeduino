@@ -80,7 +80,8 @@ void initialiseIdle()
 
     FTM2_C1SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
     FTM2_C1SC |= FTM_CSC_MSA; //Enable Compare mode
-    //FTM2_C1SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+    //Enable channel compare interrupt (This is currently disabled as not in use)
+    //FTM2_C1SC |= FTM_CSC_CHIE; 
 
     // enable IRQ Interrupt
     NVIC_ENABLE_IRQ(IRQ_FTM2);

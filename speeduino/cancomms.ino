@@ -26,10 +26,6 @@ void canCommand()
         sendcanValues(0, CAN_PACKET_SIZE, 0x30, 1); //send values to serial3
         break;
 
-    //case 'A': // send x bytes of realtime values from the TS list
-    //  sendValues(0, SERIAL_PACKET_SIZE, 0x30, 3);   //send values to serial0
-    //  break;
-
     case 'G': // this is the reply command sent by the Can interface
        byte destcaninchannel;
       if (CANSerial.available() >= 9)
