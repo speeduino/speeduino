@@ -7,6 +7,7 @@ A full copy of the license may be found in the projects root directory
 #include "crankMaths.h"
 #include "globals.h"
 #include "maths.h"
+#include "storage.h"
 
 void initialiseADC()
 {
@@ -104,13 +105,14 @@ void initialiseADC()
 
   //Sanity checks to ensure none of the filter values are set to 255 (Which would be the default on a new arduino, but can prevent the sensor readings from going through correctly)
   //Each sensor has it's own default value
-  if(configPage4.ADCFILTER_TPS == 255) { configPage4.ADCFILTER_TPS = 50;  }
-  if(configPage4.ADCFILTER_CLT == 255) { configPage4.ADCFILTER_TPS = 180; }
-  if(configPage4.ADCFILTER_IAT == 255) { configPage4.ADCFILTER_TPS = 180; }
-  if(configPage4.ADCFILTER_O2  == 255) { configPage4.ADCFILTER_TPS = 100; }
-  if(configPage4.ADCFILTER_BAT == 255) { configPage4.ADCFILTER_TPS = 128; }
-  if(configPage4.ADCFILTER_MAP == 255) { configPage4.ADCFILTER_TPS = 20;  }
-  if(configPage4.ADCFILTER_BARO == 255) { configPage4.ADCFILTER_TPS = 64; }
+  if(configPage4.ADCFILTER_TPS > 240) { configPage4.ADCFILTER_TPS = 50; writeConfig(4); }
+  if(configPage4.ADCFILTER_CLT > 240) { configPage4.ADCFILTER_TPS = 180; writeConfig(4); }
+  if(configPage4.ADCFILTER_IAT > 240) { configPage4.ADCFILTER_TPS = 180; writeConfig(4); }
+  if(configPage4.ADCFILTER_O2  > 240) { configPage4.ADCFILTER_TPS = 100; writeConfig(4); }
+  if(configPage4.ADCFILTER_BAT > 240) { configPage4.ADCFILTER_TPS = 128; writeConfig(4); }
+  if(configPage4.ADCFILTER_MAP > 240) { configPage4.ADCFILTER_TPS = 20;  writeConfig(4); }
+  if(configPage4.ADCFILTER_BARO > 240) { configPage4.ADCFILTER_TPS = 64; writeConfig(4); }
+
 }
 
 static inline void instanteneousMAPReading()

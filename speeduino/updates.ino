@@ -142,7 +142,7 @@ void doUpdates()
 
   if(EEPROM.read(EEPROM_DATA_VERSION) == 9)
   {
-    //September 2018 set default values for all the aux in variables (These were introduced in Aug, but no defaults were set then)
+    //October 2018 set default values for all the aux in variables (These were introduced in Aug, but no defaults were set then)
     //All aux channels set to Off
     for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
     {
@@ -150,12 +150,12 @@ void doUpdates()
     }
 
     //Ability to change the analog filter values was added. Set default values for these:
-    configPage4.ADCFILTER_TPS = 128;
+    configPage4.ADCFILTER_TPS = 50;
     configPage4.ADCFILTER_CLT = 180;
     configPage4.ADCFILTER_IAT = 180;
     configPage4.ADCFILTER_O2  = 128;
     configPage4.ADCFILTER_BAT = 128;
-    configPage4.ADCFILTER_MAP = 20; //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
+    configPage4.ADCFILTER_MAP = 20;
     configPage4.ADCFILTER_BARO= 64;
 
     writeAllConfig();
