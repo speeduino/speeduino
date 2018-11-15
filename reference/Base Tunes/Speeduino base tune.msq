@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.60.18 - EFI Analytics, Inc." tuneComment="" writeDate="Tue Sep 04 17:17:01 AEST 2018"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2018.8" nPages="10" signature="speeduino 201808"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.60.33 - EFI Analytics, Inc." tuneComment="" writeDate="Thu Nov 15 22:10:26 AEDT 2018"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2018.8" nPages="10" signature="speeduino 201810"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
 <pcVariable cols="1" digits="0" name="algorithmLimits" rows="8">
@@ -220,7 +220,7 @@
          71.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_1" units="RAW">
-         0.0 
+         255.0 
       </constant>
 </page>
 <page number="2" size="288">
@@ -284,11 +284,11 @@
 <constant digits="0" name="FixAng" units="Deg">0.0</constant>
 <constant digits="0" name="CrankAng" units="Deg">5.0</constant>
 <constant digits="0" name="TrigAngMul">0.0</constant>
-<constant name="TrigEdge">"Leading"</constant>
+<constant name="TrigEdge">"FALLING"</constant>
 <constant name="TrigSpeed">"Crank Speed"</constant>
 <constant name="IgInv">"Going Low"</constant>
 <constant name="TrigPattern">"Missing Tooth"</constant>
-<constant name="TrigEdgeSec">"Leading"</constant>
+<constant name="TrigEdgeSec">"RISING"</constant>
 <constant name="fuelPumpPin">"Board Default"</constant>
 <constant name="useResync">"No"</constant>
 <constant digits="1" name="sparkDur" units="ms">1.0</constant>
@@ -367,14 +367,13 @@
 <constant name="ignBypassEnable">"Off"</constant>
 <constant name="ignBypassPin">"3"</constant>
 <constant name="ignBypassHiLo">"LOW"</constant>
-<constant cols="1" digits="0" name="unused4-64" rows="63" units="%">
+<constant cols="1" digits="0" name="unused4-64" rows="56" units="%">
          16.0 
-         16.0 
+         33.0 
          147.0 
          147.0 
          147.0 
-         147.0 
-         150.0 
+         149.0 
          151.0 
          151.0 
          148.0 
@@ -388,29 +387,24 @@
          147.0 
          147.0 
          147.0 
+         148.0 
+         151.0 
+         151.0 
+         149.0 
          147.0 
          147.0 
+         147.0 
+         147.0 
+         147.0 
+         147.0 
+         147.0 
+         147.0 
+         147.0 
+         147.0 
+         148.0 
          150.0 
          151.0 
-         151.0 
-         148.0 
-         147.0 
-         147.0 
-         147.0 
-         147.0 
-         147.0 
-         147.0 
-         147.0 
-         147.0 
-         147.0 
-         147.0 
-         147.0 
-         147.0 
-         150.0 
-         151.0 
-         151.0 
-         148.0 
-         147.0 
+         149.0 
          147.0 
          147.0 
          147.0 
@@ -424,16 +418,15 @@
          147.0 
          149.0 
          150.0 
-         150.0 
+         149.0 
          148.0 
-         147.0 
          147.0 
          147.0 
          146.0 
          145.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_3" units="RAW">
-         0.0 
+         255.0 
       </constant>
 </page>
 <page number="4" size="288">
@@ -855,23 +848,6 @@
       </constant>
 </page>
 <page number="8" size="192">
-<constant name="enable_canbus">"Disable"</constant>
-<constant name="enable_candata_in">"On"</constant>
-<constant name="caninput_sel0">"Off"</constant>
-<constant name="caninput_sel2">"Off"</constant>
-<constant name="caninput_sel3">"Off"</constant>
-<constant name="caninput_sel4">"Off"</constant>
-<constant name="caninput_sel5">"Off"</constant>
-<constant name="caninput_sel6">"Off"</constant>
-<constant name="caninput_sel7">"Off"</constant>
-<constant name="caninput_sel8">"Off"</constant>
-<constant name="caninput_sel9">"Off"</constant>
-<constant name="caninput_sel10">"Off"</constant>
-<constant name="caninput_sel11">"Off"</constant>
-<constant name="caninput_sel12">"Off"</constant>
-<constant name="caninput_sel13">"Off"</constant>
-<constant name="caninput_sel14">"Off"</constant>
-<constant name="caninput_sel15">"Off"</constant>
 <constant name="caninput_source_can_address0">"0x100"</constant>
 <constant name="caninput_source_can_address1">"0x100"</constant>
 <constant name="caninput_source_can_address2">"0x100"</constant>
@@ -922,7 +898,6 @@
 <constant name="caninput_source_num_bytes15">"2"</constant>
 <constant digits="0" name="unused10_67">255.0</constant>
 <constant digits="0" name="unused10_68">255.0</constant>
-<constant name="enable_candata_out">"On"</constant>
 <constant name="canoutput_sel0">"On"</constant>
 <constant name="canoutput_sel1">"On"</constant>
 <constant name="canoutput_sel2">"On"</constant>
@@ -949,6 +924,8 @@
 <constant name="canoutput_param_start_byte5">"0"</constant>
 <constant name="canoutput_param_start_byte6">"0"</constant>
 <constant name="canoutput_param_start_byte7">"0"</constant>
+<constant name="canoutput_param_num_bytes1">"1"</constant>
+<constant name="canoutput_param_num_bytes7">"1"</constant>
 <constant digits="0" name="unused10_110">255.0</constant>
 <constant digits="0" name="unused10_111">255.0</constant>
 <constant digits="0" name="unused10_112">255.0</constant>
@@ -1133,6 +1110,7 @@
 <constant name="knock_trigger">"LOW"</constant>
 <constant name="knock_pullup">"Off"</constant>
 <constant name="knock_limiterDisable">"No"</constant>
+<constant name="knock_unused">"3"</constant>
 <constant name="knock_count">"3"</constant>
 <constant digits="1" name="knock_threshold" units="Volts">7.5</constant>
 <constant digits="0" name="knock_maxMAP" units="kPa">100.0</constant>

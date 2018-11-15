@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.60.18 - EFI Analytics, Inc." tuneComment="" writeDate="Tue Sep 04 17:20:29 AEST 2018"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2018.8" nPages="10" signature="speeduino 201808"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.60.33 - EFI Analytics, Inc." tuneComment="" writeDate="Thu Nov 15 22:18:29 AEDT 2018"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2018.8" nPages="10" signature="speeduino 201810"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
 <pcVariable cols="1" digits="0" name="algorithmLimits" rows="8">
@@ -131,7 +131,7 @@
 <constant name="unused2_38c">"Speed Density"</constant>
 <constant name="baroCorr">"Off"</constant>
 <constant name="injLayout">"Paired"</constant>
-<constant name="perToothIgn">"No"</constant>
+<constant name="perToothIgn">"Yes"</constant>
 <constant name="dfcoEnabled">"Off"</constant>
 <constant digits="1" name="primePulse" units="ms">2.0</constant>
 <constant digits="0" name="dutyLim" units="%">95.0</constant>
@@ -220,7 +220,7 @@
          77.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_1" units="RAW">
-         0.0 
+         255.0 
       </constant>
 </page>
 <page number="2" size="288">
@@ -284,11 +284,11 @@
 <constant digits="0" name="FixAng" units="Deg">0.0</constant>
 <constant digits="0" name="CrankAng" units="Deg">5.0</constant>
 <constant digits="0" name="TrigAngMul">10.0</constant>
-<constant name="TrigEdge">"Leading"</constant>
+<constant name="TrigEdge">"RISING"</constant>
 <constant name="TrigSpeed">"Crank Speed"</constant>
 <constant name="IgInv">"Going Low"</constant>
 <constant name="TrigPattern">"4G63 / Miata / 3000GT"</constant>
-<constant name="TrigEdgeSec">"Trailing"</constant>
+<constant name="TrigEdgeSec">"RISING"</constant>
 <constant name="fuelPumpPin">"Board Default"</constant>
 <constant name="useResync">"Yes"</constant>
 <constant digits="1" name="sparkDur" units="ms">1.0</constant>
@@ -367,15 +367,14 @@
 <constant name="ignBypassEnable">"Off"</constant>
 <constant name="ignBypassPin">"3"</constant>
 <constant name="ignBypassHiLo">"HIGH"</constant>
-<constant cols="1" digits="0" name="unused4-64" rows="63" units="%">
+<constant cols="1" digits="0" name="unused4-64" rows="56" units="%">
          16.0 
-         16.0 
-         147.0 
-         128.0 
+         33.0 
+         142.0 
          128.0 
          129.0 
-         132.0 
-         151.0 
+         131.0 
+         147.0 
          150.0 
          147.0 
          147.0 
@@ -385,55 +384,49 @@
          147.0 
          147.0 
          147.0 
-         147.0 
-         147.0 
+         146.0 
          128.0 
          128.0 
-         129.0 
-         132.0 
-         151.0 
-         28.0 
-         64.0 
-         97.0 
-         69.0 
-         90.0 
-         106.0 
-         120.0 
-         0.0 
-         8.0 
-         17.0 
-         26.0 
-         36.0 
-         53.0 
-         73.0 
-         88.0 
-         106.0 
-         117.0 
-         12.0 
-         106.0 
+         130.0 
+         142.0 
+         68.0 
+         57.0 
+         95.0 
+         70.0 
+         93.0 
+         110.0 
+         68.0 
+         5.0 
+         14.0 
+         24.0 
+         35.0 
+         54.0 
+         76.0 
+         94.0 
+         111.0 
+         56.0 
+         79.0 
          105.0 
          100.0 
-         100.0 
-         91.0 
-         85.0 
-         0.0 
-         20.0 
-         30.0 
-         40.0 
-         60.0 
-         100.0 
-         0.0 
+         99.0 
+         90.0 
+         56.0 
+         9.0 
+         26.0 
+         37.0 
+         57.0 
+         99.0 
          0.0 
          0.0 
          0.0 
          0.0 
          0.0 
-         150.0 
+         112.0 
          150.0 
          1.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_3" units="RAW">
-         0.0 
+         255.0 
       </constant>
 </page>
 <page number="4" size="288">
@@ -855,24 +848,6 @@
       </constant>
 </page>
 <page number="8" size="192">
-<constant name="enable_canbus">"Disable"</constant>
-<constant name="enable_candata_in">"Off"</constant>
-<constant name="caninput_sel0">"Off"</constant>
-<constant name="caninput_sel1">"Off"</constant>
-<constant name="caninput_sel2">"Off"</constant>
-<constant name="caninput_sel3">"Off"</constant>
-<constant name="caninput_sel4">"Off"</constant>
-<constant name="caninput_sel5">"Off"</constant>
-<constant name="caninput_sel6">"Off"</constant>
-<constant name="caninput_sel7">"Off"</constant>
-<constant name="caninput_sel8">"Off"</constant>
-<constant name="caninput_sel9">"Off"</constant>
-<constant name="caninput_sel10">"Off"</constant>
-<constant name="caninput_sel11">"Off"</constant>
-<constant name="caninput_sel12">"Off"</constant>
-<constant name="caninput_sel13">"Off"</constant>
-<constant name="caninput_sel14">"Off"</constant>
-<constant name="caninput_sel15">"Off"</constant>
 <constant name="caninput_source_can_address0">"0x100"</constant>
 <constant name="caninput_source_can_address1">"0x100"</constant>
 <constant name="caninput_source_can_address2">"0x100"</constant>
@@ -923,7 +898,6 @@
 <constant name="caninput_source_num_bytes15">"2"</constant>
 <constant digits="0" name="unused10_67">255.0</constant>
 <constant digits="0" name="unused10_68">255.0</constant>
-<constant name="enable_candata_out">"Off"</constant>
 <constant name="canoutput_sel0">"On"</constant>
 <constant name="canoutput_sel1">"Off"</constant>
 <constant name="canoutput_sel2">"Off"</constant>
@@ -970,6 +944,9 @@
 <constant name="Auxin9pina">"A6"</constant>
 <constant name="Auxin10pina">"A10"</constant>
 <constant name="Auxin11pina">"A10"</constant>
+<constant name="Auxin12pina">"A3"</constant>
+<constant name="Auxin13pina">"A3"</constant>
+<constant name="Auxin14pina">"A3"</constant>
 <constant name="Auxin15pina">"A8"</constant>
 <constant name="Auxin1pinb">"8"</constant>
 <constant name="Auxin3pinb">"8"</constant>
@@ -1135,6 +1112,7 @@
 <constant name="knock_trigger">"LOW"</constant>
 <constant name="knock_pullup">"Off"</constant>
 <constant name="knock_limiterDisable">"No"</constant>
+<constant name="knock_unused">"3"</constant>
 <constant name="knock_count">"3"</constant>
 <constant digits="1" name="knock_threshold" units="Volts">7.5</constant>
 <constant digits="0" name="knock_maxMAP" units="kPa">100.0</constant>
@@ -1242,7 +1220,7 @@
          0.0 
       </constant>
 <constant digits="0" name="UNALLOCATED_TOP_9" units="RAW">
-         100.0 
+         255.0 
       </constant>
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">
