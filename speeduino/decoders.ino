@@ -2469,13 +2469,16 @@ void triggerPri_Subaru67()
 
         case 2:
           toothCurrentCount = 8;
-          currentStatus.hasSync = true;
+          //currentStatus.hasSync = true;
           secondaryToothCount = 0;
           break;
 
         case 3:
-          toothCurrentCount = 2;
-          currentStatus.hasSync = true;
+          //toothCurrentCount = 2;
+          if( toothCurrentCount == 2)
+          {
+            currentStatus.hasSync = true;
+          }
           secondaryToothCount = 0;
           break;
 
