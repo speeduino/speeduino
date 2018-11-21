@@ -2419,12 +2419,14 @@ Note:
 void triggerSetup_Subaru67()
 {
   triggerFilterTime = (1000000 / (MAX_RPM / 60 * 360UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
-  triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  triggerSecFilterTime = 0;
   secondaryToothCount = 0; //Initially set to 0 prior to calculating the secondary window duration
   secondDerivEnabled = false;
   decoderIsSequential = true;
   toothCurrentCount = 1;
   triggerToothAngle = 2;
+  triggerToothAngleIsCorrect = false;
+  toothSystemCount = 0;
   MAX_STALL_TIME = (3333UL * 93); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 
   toothAngles[0] = 710; //tooth #1
@@ -2448,6 +2450,7 @@ void triggerPri_Subaru67()
    //curGap = curTime - toothLastToothTime;
    //if ( curGap < triggerFilterTime ) { return; }
    toothCurrentCount++; //Increment the tooth counter
+   toothSystemCount++; //Used to count the number of primary pulses that have occurred since the last secondary. Is part of the noise filtering system.
    validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
    toothLastMinusOneToothTime = toothLastToothTime;
@@ -2539,13 +2542,37 @@ void triggerPri_Subaru67()
 
 void triggerSec_Subaru67()
 {
-  curTime2 = micros();
-  curGap2 = curTime2 - toothLastSecToothTime;
-  //if ( curGap2 < triggerSecFilterTime ) { return; }
-  toothLastSecToothTime = curTime2;
-  //OPTIONAL Set filter at 25% of the current speed
-  //triggerSecFilterTime = curGap2 >> 2;
-  secondaryToothCount++;
+  if( (toothSystemCount == 0) || (toothSystemCount == 3) )
+  {
+    curTime2 = micros();
+    curGap2 = curTime2 - toothLastSecToothTime;
+    
+    if ( curGap2 > triggerSecFilterTime ) 
+    {
+      toothLastSecToothTime = curTime2;
+      secondaryToothCount++;
+      toothSystemCount = 0;
+
+      if(secondaryToothCount > 1)
+      {
+        //Set filter at 25% of the current speed
+        //Note that this can only be set on the 2nd or 3rd cam tooth in each set. 
+        triggerSecFilterTime = curGap2 >> 2;
+      }
+      else { triggerSecFilterTime = 0; } //Filter disabled
+
+    }
+  }
+  else
+  {
+    //Sanity check
+    if(toothSystemCount > 3)
+    { 
+      toothSystemCount = 0; 
+      secondaryToothCount = 1;
+    }
+  }
+
 }
 
 uint16_t getRPM_Subaru67()
