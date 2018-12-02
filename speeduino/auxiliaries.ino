@@ -74,6 +74,8 @@ void initialiseAuxPWM()
     FTM1_C1SC |= FTM_CSC_MSA; //Enable Compare mode
     FTM1_C1SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
 
+    //NVIC_ENABLE_IRQ(IRQ_FTM1);
+
   #endif
 
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
@@ -240,6 +242,7 @@ void nitrousControl()
     //Perform the main checks to see if nitrous is ready
     if( (isArmed == true) && (currentStatus.coolant > (configPage10.n2o_minCLT - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.TPS > configPage10.n2o_minTPS) && (currentStatus.O2 < configPage10.n2o_maxAFR) && (currentStatus.MAP < configPage10.n2o_maxMAP) )
     {
+      //Config page values are divided by 100 to fit within a byte. Multiply them back out to real values. 
       uint16_t realStage1MinRPM = (uint16_t)configPage10.n2o_stage1_minRPM * 100;
       uint16_t realStage1MaxRPM = (uint16_t)configPage10.n2o_stage1_maxRPM * 100;
       uint16_t realStage2MinRPM = (uint16_t)configPage10.n2o_stage2_minRPM * 100;
