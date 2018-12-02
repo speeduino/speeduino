@@ -23,6 +23,8 @@ struct StepperIdle
   int targetIdleStep; //What the targetted step is
   volatile StepperStatus stepperStatus;
   volatile unsigned long stepStartTime; //The time the curren
+  byte lessAirDirection;
+  byte moreAirDirection;
 };
 
 #if defined(CORE_AVR)

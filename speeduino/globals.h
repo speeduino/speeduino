@@ -726,8 +726,9 @@ struct config9 {
   uint16_t obd_address;             //speeduino OBD diagnostic address
   uint8_t Auxinpina[16];            //analog  pin number when internal aux in use
   uint8_t Auxinpinb[16];            // digital pin number when internal aux in use
-  
-  byte unused10_152;
+
+  byte iacStepperInv : 1;  //stepper direction of travel to allow reversing. 0=normal, 1=inverted.
+
   byte unused10_153;
   byte unused10_154;
   byte unused10_155;
