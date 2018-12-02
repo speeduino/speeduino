@@ -177,6 +177,17 @@ void initialiseIdle()
       completedHomeSteps = 0;
       idleStepper.curIdleStep = 0;
       idleStepper.stepperStatus = SOFF;
+      if (! configPage9.iacStepperInv)
+      {
+        idleStepper.lessAirDirection = STEPPER_BACKWARD;
+        idleStepper.moreAirDirection = STEPPER_FORWARD;
+      }
+      else
+      {
+        idleStepper.lessAirDirection = STEPPER_FORWARD;
+        idleStepper.moreAirDirection = STEPPER_BACKWARD;
+      }
+
       break;
 
     case IAC_ALGORITHM_STEP_CL:
@@ -196,6 +207,17 @@ void initialiseIdle()
       idleCounter = 0;
       idleStepper.curIdleStep = 0;
       idleStepper.stepperStatus = SOFF;
+
+      if (! configPage9.iacStepperInv)
+      {
+        idleStepper.lessAirDirection = STEPPER_BACKWARD;
+        idleStepper.moreAirDirection = STEPPER_FORWARD;
+      }
+      else
+      {
+        idleStepper.lessAirDirection = STEPPER_FORWARD;
+        idleStepper.moreAirDirection = STEPPER_BACKWARD;
+      }
 
       idlePID.SetOutputLimits(0, (configPage6.iacStepHome * 3)); //Maximum number of steps probably needs its own setting
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
@@ -348,7 +370,7 @@ static inline byte isStepperHomed()
   bool isHomed = true; //As it's the most common scenario, default value is true
   if( completedHomeSteps < (configPage6.iacStepHome * 3) ) //Home steps are divided by 3 from TS
   {
-    digitalWrite(pinStepperDir, STEPPER_BACKWARD); //Sets stepper direction to backwards
+    digitalWrite(pinStepperDir, idleStepper.lessAirDirection); //homing the stepper closes off the air bleed
     digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
     digitalWrite(pinStepperStep, HIGH);
     idleStepper.stepStartTime = micros_safe();
@@ -404,8 +426,20 @@ static inline void doStep()
 {
   if ( (idleStepper.targetIdleStep <= (idleStepper.curIdleStep - configPage6.iacStepHyster)) || (idleStepper.targetIdleStep >= (idleStepper.curIdleStep + configPage6.iacStepHyster)) ) //Hysteris check
   {
-    if(idleStepper.targetIdleStep < idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_BACKWARD); idleStepper.curIdleStep--; }//Sets stepper direction to backwards
-    else if (idleStepper.targetIdleStep > idleStepper.curIdleStep) { digitalWrite(pinStepperDir, STEPPER_FORWARD); idleStepper.curIdleStep++; }//Sets stepper direction to forwards
+    // the home position for a stepper is pintle fully seated, i.e. no airflow.
+    if(idleStepper.targetIdleStep < idleStepper.curIdleStep)
+    {
+      // we are moving toward the home position (reducing air)
+      digitalWrite(pinStepperDir, idleStepper.lessAirDirection);
+      idleStepper.curIdleStep--;
+    }
+    else
+    if (idleStepper.targetIdleStep > idleStepper.curIdleStep)
+    {
+      // we are moving away from the home position (adding air).
+      digitalWrite(pinStepperDir, idleStepper.moreAirDirection);
+      idleStepper.curIdleStep++;
+    }
 
     digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
     digitalWrite(pinStepperStep, HIGH);
