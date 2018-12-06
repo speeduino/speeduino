@@ -250,6 +250,7 @@ void setup()
   //initialiseDisplay();
   initialiseIdle();
   initialiseFan();
+  initialiseAC();
   initialiseAuxPWM();
   initialiseCorrections();
   initialiseADC();
@@ -975,7 +976,15 @@ void loop()
 
       if(configPage6.flatSEnable && clutchTrigger && (currentStatus.RPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > currentStatus.clutchEngagedRPM) ) { currentStatus.flatShiftingHard = true; }
       else { currentStatus.flatShiftingHard = false; }
+      //Checking if AC Switch has been pressed
+      if(configPage6.acEnabled){
+        if(digitalRead(pinACIn)){
+            currentStatus.acSwitchPressed = true;
+        }else{
+          currentStatus.acSwitchPressed = false;
+        }
 
+      }
       //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
       if( (configPage6.boostCutType > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2)) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
       {
@@ -1196,12 +1205,11 @@ void loop()
       if( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= INJ_CHANNELS) )
       {
         //Scale the 'full' pulsewidth by each of the injector capacities
-        currentStatus.PW1 -= inj_opentime_uS; //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
-        uint32_t tempPW1 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100) + inj_opentime_uS; //Opening time has to be added back on here (See above where it is subtracted)
+        uint32_t tempPW1 = ((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100;
 
         if(configPage10.stagingMode == STAGING_MODE_TABLE)
         {
-          uint32_t tempPW3 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100) + inj_opentime_uS; //This is ONLY needed in in table mode. Auto mode only calculates the difference. As above, opening time must be readded. 
+          uint32_t tempPW3 = ((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100; //This is ONLY needed in in table mode. Auto mode only calculates the difference.
 
           byte stagingSplit = get3DTableValue(&stagingTable, currentStatus.MAP, currentStatus.RPM);
           currentStatus.PW1 = ((100 - stagingSplit) * tempPW1) / 100;

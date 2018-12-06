@@ -306,6 +306,8 @@ volatile unsigned long ms_counter = 0; //A counter that increments once per ms
 uint16_t fixedCrankingOverride = 0;
 bool clutchTrigger;
 bool previousClutchTrigger;
+bool acSwitchTrigger;
+bool previousACSwitchTrigger;
 volatile uint16_t toothHistory[TOOTH_LOG_BUFFER];
 volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
@@ -370,6 +372,8 @@ struct statuses {
   byte idleDuty;
   bool idleUpActive;
   bool fanOn; //Whether or not the fan is turned on
+  bool secFanOn;
+  bool mainRelayOn;
   volatile byte ethanolPct; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85.
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
   volatile byte status1;
@@ -414,7 +418,6 @@ struct statuses {
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
-
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
   // y = (x >> n) & 1;    // n=0..15.  stores nth bit of x in y.  y becomes 0 or 1.
@@ -692,6 +695,19 @@ struct config6 {
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
+
+  byte secFanInv : 1;        //Secondary Fan output inversion bit
+  byte secFanEnable : 1;     //Secondary Fan enable bit. 0=Off, 1=On/Off
+  byte secFanPin : 6;
+  byte secFanSP;             //Secondary Cooling fan start temperature
+  byte secFanHyster;         //Secondary Fan hysteresis
+  byte secFanFreq;           //Secondary Fan PWM frequency
+  byte secFanPWMBins[4];     //Secondary Temperature Bins for the PWM fan control
+
+  byte mainRelayInv : 1;     //Main relay inversion bit
+  byte mainRelayEnable : 1;  //Main Relay enable bit. 0=Off, 1=On/Off
+  byte mainRelayPin : 6;     
+  
 #if defined(CORE_AVR)
   };
 #else
@@ -915,6 +931,8 @@ byte pinBoost;
 byte pinVVT_1;		// vvt output 1
 byte pinVVt_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
+byte pinSecFan;    // Secondary fan output
+byte pinMainRelay;     //Main relay output
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
 byte pinStepperEnable; //Turning the DRV8825 driver on/off

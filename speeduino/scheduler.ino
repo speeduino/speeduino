@@ -165,7 +165,7 @@ void initialiseSchedulers()
 
   // enable IRQ Interrupt
   NVIC_ENABLE_IRQ(IRQ_FTM0);
-  NVIC_ENABLE_IRQ(IRQ_FTM1);
+  NVIC_ENABLE_IRQ(IRQ_FTM1); //This is wrong
 
 #elif defined(CORE_STM32)
   #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
@@ -1212,6 +1212,7 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
       ignitionSchedule2.Status = OFF; //Turn off the schedule
       ignitionSchedule2.EndCallback();
       ignitionSchedule2.schedulesSet = 0;
+      ignitionSchedule2.hasNextSchedule = false;
       ignitionSchedule2.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
       IGN2_TIMER_DISABLE();

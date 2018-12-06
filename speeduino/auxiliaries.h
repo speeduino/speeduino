@@ -7,8 +7,10 @@ void boostDisable();
 void idleControl();
 void vvtControl();
 void initialiseFan();
+void initialiseSecFan();
 void nitrousControl();
 void fanControl();
+void mainRelayControl();
 
 #if defined(CORE_AVR)
   #define ENABLE_BOOST_TIMER()  TIMSK1 |= (1 << OCIE1A)
@@ -65,6 +67,11 @@ void fanControl();
 #define VVT_PIN_HIGH()   *vvt_pin_port |= (vvt_pin_mask)
 #define FAN_PIN_LOW()    *fan_pin_port &= ~(fan_pin_mask)
 #define FAN_PIN_HIGH()   *fan_pin_port |= (fan_pin_mask)
+#define SEC_FAN_PIN_LOW()    *sec_fan_pin_port &= ~(sec_fan_pin_mask)
+#define SEC_FAN_PIN_HIGH()   *sec_fan_pin_port |= (sec_fan_pin_mask)
+#define MAIN_RELAY_PIN_LOW()    *main_relay_pin_port &= ~(main_relay_pin_mask)
+#define MAIN_RELAY_PIN_HIGH()   *main_relay_pin_port |= (main_relay_pin_mask)
+
 #define N2O_STAGE1_PIN_LOW()  *n2o_stage1_pin_port &= ~(n2o_stage1_pin_mask)
 #define N2O_STAGE1_PIN_HIGH() *n2o_stage1_pin_port |= (n2o_stage1_pin_mask)
 #define N2O_STAGE2_PIN_LOW()  *n2o_stage2_pin_port &= ~(n2o_stage2_pin_mask)
@@ -77,6 +84,10 @@ volatile byte *vvt_pin_port;
 volatile byte vvt_pin_mask;
 volatile byte *fan_pin_port;
 volatile byte fan_pin_mask;
+volatile byte *sec_fan_pin_port;
+volatile byte sec_fan_pin_mask;
+volatile byte *main_relay_pin_port;
+volatile byte main_relay_pin_mask;
 volatile byte *n2o_stage1_pin_port;
 volatile byte n2o_stage1_pin_mask;
 volatile byte *n2o_stage2_pin_port;
@@ -93,6 +104,10 @@ byte boostCounter;
 
 byte fanHIGH = HIGH;             // Used to invert the cooling fan output
 byte fanLOW = LOW;               // Used to invert the cooling fan output
+
+byte secFanHIGH = HIGH;
+byte secFanLOW = LOW;
+
 
 volatile bool vvt_pwm_state;
 unsigned int vvt_pwm_max_count; //Used for variable PWM frequency

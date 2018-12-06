@@ -25,7 +25,17 @@ void initialiseFan()
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
 }
+void initialiseSecFan{
+  if( configPage6.secFanInv == 1 ) { secFanHIGH = LOW; secFanLOW = HIGH; }
+  else { secFanHIGH = HIGH; secFanLOW = LOW; }
+  digitalWrite(secFanPin, secFanLOW);         //Initiallise program with the fan in the off state
+  currentStatus.secFanOn = false;
 
+  sec_fan_pin_port = portOutputRegister(digitalPinToPort(secFanPin));
+  fan_pin_mask = digitalPinToBitMask(pinFan);
+
+}
+}
 void fanControl()
 {
   if( configPage6.fanEnable == 1 )
@@ -49,7 +59,42 @@ void fanControl()
     }
   }
 }
+void secFanControl()
+{
+  if( configPage6.secFanEnable == 1 )
+  {
+    int onTemp = (int)configPage6.secFanSP - CALIBRATION_TEMPERATURE_OFFSET;
+    int offTemp = onTemp - configPage6.secFanHyster;
 
+    if ( currentStatus.coolant >= onTemp )
+    {
+      //Fan needs to be turned on. Checked for normal or inverted fan signal
+      if( configPage6.secFanInv == 0 ) { SEC_FAN_PIN_HIGH(); }
+      else { SEC_FAN_PIN_LOW(); }
+      currentStatus.fanOn = true;
+    }
+    else if ( currentStatus.coolant <= offTemp )
+    {
+      //Fan needs to be turned off. Checked for normal or inverted fan signal
+      if( configPage6.secFanOn == 0 ) { SEC_FAN_PIN_LOW(); } 
+      else { SEC_FAN_PIN_HIGH(); }
+      currentStatus.secFanOn = false;
+    }
+  }
+}
+void mainRelayControl(){
+  if(configPage6.mainRelayEnable == 1){
+    if(currentStatus.mainRelayOn){
+      if(currentStatus.hasSync){
+        digital
+      }else{
+
+      }
+
+
+  }
+
+}
 void initialiseAuxPWM()
 {
   #if defined(CORE_AVR)
@@ -242,7 +287,6 @@ void nitrousControl()
     //Perform the main checks to see if nitrous is ready
     if( (isArmed == true) && (currentStatus.coolant > (configPage10.n2o_minCLT - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.TPS > configPage10.n2o_minTPS) && (currentStatus.O2 < configPage10.n2o_maxAFR) && (currentStatus.MAP < configPage10.n2o_maxMAP) )
     {
-      //Config page values are divided by 100 to fit within a byte. Multiply them back out to real values. 
       uint16_t realStage1MinRPM = (uint16_t)configPage10.n2o_stage1_minRPM * 100;
       uint16_t realStage1MaxRPM = (uint16_t)configPage10.n2o_stage1_maxRPM * 100;
       uint16_t realStage2MinRPM = (uint16_t)configPage10.n2o_stage2_minRPM * 100;
