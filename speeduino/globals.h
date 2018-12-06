@@ -931,8 +931,6 @@ byte pinBoost;
 byte pinVVT_1;		// vvt output 1
 byte pinVVt_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
-byte pinSecFan;    // Secondary fan output
-byte pinMainRelay;     //Main relay output
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
 byte pinStepperEnable; //Turning the DRV8825 driver on/off
@@ -941,7 +939,8 @@ byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
-
+byte pinSecFan; // Secondary cooling fan output
+byte pinMainRelay; //Relay control
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
 extern struct table3D fuelTable; //16x16 fuel map

@@ -25,17 +25,17 @@ void initialiseFan()
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
 }
-void initialiseSecFan{
+void initialiseSecFan(){
   if( configPage6.secFanInv == 1 ) { secFanHIGH = LOW; secFanLOW = HIGH; }
   else { secFanHIGH = HIGH; secFanLOW = LOW; }
-  digitalWrite(secFanPin, secFanLOW);         //Initiallise program with the fan in the off state
+  digitalWrite(pinSecFan, secFanLOW);         //Initiallise program with the fan in the off state
   currentStatus.secFanOn = false;
 
-  sec_fan_pin_port = portOutputRegister(digitalPinToPort(secFanPin));
-  fan_pin_mask = digitalPinToBitMask(pinFan);
+  sec_fan_pin_port = portOutputRegister(digitalPinToPort(pinSecFan));
+  fan_pin_mask = digitalPinToBitMask(pinSecFan);
 
 }
-}
+
 void fanControl()
 {
   if( configPage6.fanEnable == 1 )
@@ -76,24 +76,45 @@ void secFanControl()
     else if ( currentStatus.coolant <= offTemp )
     {
       //Fan needs to be turned off. Checked for normal or inverted fan signal
-      if( configPage6.secFanOn == 0 ) { SEC_FAN_PIN_LOW(); } 
+      if( configPage6.secFanInv == 0 ) { SEC_FAN_PIN_LOW(); } 
       else { SEC_FAN_PIN_HIGH(); }
       currentStatus.secFanOn = false;
     }
   }
 }
-void mainRelayControl(){
-  if(configPage6.mainRelayEnable == 1){
-    if(currentStatus.mainRelayOn){
-      if(currentStatus.hasSync){
-        digital
-      }else{
+void mainRelayControl()
+{
+  if(configPage6.mainRelayEnable == 1)
+  {
+    if(currentStatus.mainRelayOn)
+    {
+      if(currentStatus.hasSync == 1)
+      {
+        //Relay needs to be turned on. Checked for normal or inverted relay signal
+       if( configPage6.mainRelayInv == 0 ) { MAIN_RELAY_PIN_HIGH(); }
+        else{ MAIN_RELAY_PIN_LOW(); }
+        currentStatus.mainRelayOn = true;
+      }else if (currentStatus.hasSync == 0){
+        //Relay needs to be turned off. Checked for normal or inverted relay signal
+        if( configPage6.mainRelayInv == 0 ) { MAIN_RELAY_PIN_LOW(); } 
+        else { MAIN_RELAY_PIN_HIGH(); }
+        currentStatus.mainRelayOn = false;
 
       }
+      
 
+    }else if(!currentStatus.mainRelayOn){
+    if(currentStatus.hasSync){
+      //Relay needs to be turned on. Checked for normal or inverted relay signal
+       if( configPage6.mainRelayInv == 0 ) { SEC_FAN_PIN_HIGH(); }
+        else{ SEC_FAN_PIN_LOW(); }
+        currentStatus.mainRelayOn = true;
+
+    }
 
   }
 
+}
 }
 void initialiseAuxPWM()
 {

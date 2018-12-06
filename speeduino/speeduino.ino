@@ -250,7 +250,7 @@ void setup()
   //initialiseDisplay();
   initialiseIdle();
   initialiseFan();
-  initialiseAC();
+  initialiseSecFan();
   initialiseAuxPWM();
   initialiseCorrections();
   initialiseADC();
@@ -976,15 +976,6 @@ void loop()
 
       if(configPage6.flatSEnable && clutchTrigger && (currentStatus.RPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > currentStatus.clutchEngagedRPM) ) { currentStatus.flatShiftingHard = true; }
       else { currentStatus.flatShiftingHard = false; }
-      //Checking if AC Switch has been pressed
-      if(configPage6.acEnabled){
-        if(digitalRead(pinACIn)){
-            currentStatus.acSwitchPressed = true;
-        }else{
-          currentStatus.acSwitchPressed = false;
-        }
-
-      }
       //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
       if( (configPage6.boostCutType > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2)) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
       {

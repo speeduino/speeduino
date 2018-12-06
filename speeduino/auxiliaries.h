@@ -10,6 +10,7 @@ void initialiseFan();
 void initialiseSecFan();
 void nitrousControl();
 void fanControl();
+void secFanControl();
 void mainRelayControl();
 
 #if defined(CORE_AVR)
