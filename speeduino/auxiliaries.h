@@ -8,6 +8,7 @@ void idleControl();
 void vvtControl();
 void initialiseFan();
 void initialiseSecFan();
+void initialiseMainRelay();
 void nitrousControl();
 void fanControl();
 void secFanControl();
@@ -109,6 +110,8 @@ byte fanLOW = LOW;               // Used to invert the cooling fan output
 byte secFanHIGH = HIGH;
 byte secFanLOW = LOW;
 
+byte mainRelayHIGH = HIGH;
+byte mainRelayLOW = LOW;
 
 volatile bool vvt_pwm_state;
 unsigned int vvt_pwm_max_count; //Used for variable PWM frequency

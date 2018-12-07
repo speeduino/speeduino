@@ -251,6 +251,7 @@ void setup()
   initialiseIdle();
   initialiseFan();
   initialiseSecFan();
+  initialiseMainRelay();
   initialiseAuxPWM();
   initialiseCorrections();
   initialiseADC();

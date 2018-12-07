@@ -35,7 +35,19 @@ void initialiseSecFan(){
   fan_pin_mask = digitalPinToBitMask(pinSecFan);
 
 }
+/*
+Main relay control
+*/
+void initialiseMainRelay(){
+  if( configPage6.mainRelayInv == 1 ) { mainRelayHIGH = LOW; mainRelayLOW = HIGH; }
+  else { mainRelayHIGH = HIGH; mainRelayLOW = LOW; }
+  digitalWrite(pinMainRelay, mainRelayLOW);         //Initiallise program with the main relay in the off state
+  currentStatus.mainRelayOn = false;
 
+  main_relay_pin_port = portOutputRegister(digitalPinToPort(pinMainRelay));
+  main_relay_pin_mask = digitalPinToBitMask(pinMainRelay);
+
+}
 void fanControl()
 {
   if( configPage6.fanEnable == 1 )
@@ -122,7 +134,7 @@ void mainRelayControl()
 void initialiseAuxPWM()
 {
   #if defined(CORE_AVR)
-    TCCR1B = 0x00;          //Disbale Timer1 while we set it up
+    TCCR1B = 0x00;          //Disable Timer1 while we set it up
     TCNT1  = 0;             //Reset Timer Count
     TIFR1  = 0x00;          //Timer1 INT Flag Reg: Clear Timer Overflow Flag
     TCCR1A = 0x00;          //Timer1 Control Reg A: Wave Gen Mode normal (Simply counts up from 0 to 65535 (16-bit int)
