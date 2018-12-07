@@ -299,6 +299,7 @@ void setup()
   if(configPage10.stagingEnabled == true)
   {
     uint32_t totalInjector = configPage10.stagedInjSizePri + configPage10.stagedInjSizeSec;
+    
     /*
       These values are a percentage of the req_fuel value that would be required for each injector channel to deliver that much fuel.
       Eg:
@@ -1197,8 +1198,9 @@ void loop()
       if( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= INJ_CHANNELS) )
       {
         //Scale the 'full' pulsewidth by each of the injector capacities
-        uint32_t tempPW1 = ((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100;
-
+        currentStatus.PW1 -= inj_opentime_uS;
+        uint32_t tempPW1 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100) + inj_opentime_uS; //Opening time has to be added back on here (See above where it is subtracted)
+      
         if(configPage10.stagingMode == STAGING_MODE_TABLE)
         {
           uint32_t tempPW3 = ((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100; //This is ONLY needed in in table mode. Auto mode only calculates the difference.
@@ -1217,9 +1219,8 @@ void loop()
           if(tempPW1 > pwLimit)
           {
             uint32_t extraPW = tempPW1 - pwLimit;
-            currentStatus.PW1 = pwLimit;
-            currentStatus.PW3 = ((extraPW * staged_req_fuel_mult_sec) / staged_req_fuel_mult_pri) + inj_opentime_uS; //Convert the 'left over' fuel amount from primary injector scaling to secondary
-          }
+            uint32_t tempPW3 = ((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100; //This is ONLY needed in in table mode. Auto mode only calculates the difference.
+            }
           else { currentStatus.PW3 = 0; } //If tempPW1 < pwLImit it means that the entire fuel load can be handled by the primaries. Simply set the secondaries to 0
         }
 
