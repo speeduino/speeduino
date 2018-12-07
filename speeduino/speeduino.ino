@@ -1203,7 +1203,7 @@ void loop()
       
         if(configPage10.stagingMode == STAGING_MODE_TABLE)
         {
-          uint32_t tempPW3 = ((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100; //This is ONLY needed in in table mode. Auto mode only calculates the difference.
+          uint32_t tempPW3 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100) + inj_opentime_uS; //This is ONLY needed in in table mode. Auto mode only calculates the difference. As above, opening time must be readded. 
 
           byte stagingSplit = get3DTableValue(&stagingTable, currentStatus.MAP, currentStatus.RPM);
           currentStatus.PW1 = ((100 - stagingSplit) * tempPW1) / 100;
@@ -1219,8 +1219,9 @@ void loop()
           if(tempPW1 > pwLimit)
           {
             uint32_t extraPW = tempPW1 - pwLimit;
-            uint32_t tempPW3 = ((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100; //This is ONLY needed in in table mode. Auto mode only calculates the difference.
-            }
+            currentStatus.PW1 = pwLimit;
+            currentStatus.PW3 = ((extraPW * staged_req_fuel_mult_sec) / staged_req_fuel_mult_pri) + inj_opentime_uS; //Convert the 'left over' fuel amount from primary injector scaling to secondary
+          }
           else { currentStatus.PW3 = 0; } //If tempPW1 < pwLImit it means that the entire fuel load can be handled by the primaries. Simply set the secondaries to 0
         }
 
