@@ -572,7 +572,7 @@ void setPinMapping(byte boardID)
       pinSpareLOut3 = 28; //low current output spare3
       pinSpareLOut4 = 29; //low current output spare4
       pinFan = 24; //Pin for the fan output
-      //pinFan2 = 25; //Pin for the 2nd fan output
+      pinSecFan = 25; //Pin for the 2nd fan output
       pinResetControl = 46; //Reset control output PLACEHOLDER value for now
     #endif
       break;
@@ -711,6 +711,7 @@ void setPinMapping(byte boardID)
   if ( (configPage2.tachoPin != 0) && (configPage2.tachoPin < BOARD_NR_GPIO_PINS) ) { pinTachOut = pinTranslate(configPage2.tachoPin); }
   if ( (configPage4.fuelPumpPin != 0) && (configPage4.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = pinTranslate(configPage4.fuelPumpPin); }
   if ( (configPage6.fanPin != 0) && (configPage6.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = pinTranslate(configPage6.fanPin); }
+  if ( (configPage6.secFanPin != 0) && (configPage6.secFanPin < BOARD_NR_GPIO_PINS) ) { pinSecFan = pinTranslate(configPage6.secFanPin); }
   if ( (configPage6.boostPin != 0) && (configPage6.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = pinTranslate(configPage6.boostPin); }
   if ( (configPage6.vvtPin != 0) && (configPage6.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage6.vvtPin); }
   if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage6.baroPin + A0; }
@@ -747,6 +748,7 @@ void setPinMapping(byte boardID)
   pinMode(pinFuelPump, OUTPUT);
   pinMode(pinIgnBypass, OUTPUT);
   pinMode(pinFan, OUTPUT);
+  pinMode(pinSecFan, OUTPUT);
   pinMode(pinStepperDir, OUTPUT);
   pinMode(pinStepperStep, OUTPUT);
   pinMode(pinStepperEnable, OUTPUT);
