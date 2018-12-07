@@ -179,7 +179,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     }
     //Used in some cars where the main relay is controlled independently
     if(configPage6.mainRelayEnable == 1){
-      mainRelayControl();
+      //mainRelayControl();
 
     }
     //Check whether fuel pump priming is complete
