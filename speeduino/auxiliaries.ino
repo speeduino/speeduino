@@ -59,6 +59,7 @@ void fanControl()
     }
   }
 }
+//Secondary fan for cars with A/C fans 
 void secFanControl()
 {
   if( configPage6.secFanEnable == 1 )
@@ -82,6 +83,8 @@ void secFanControl()
     }
   }
 }
+//Some cars require activation of the main relay upon sync gain. 
+//This activates main relay when sync is gained, and deactivates when sync is lost.
 void mainRelayControl()
 {
   if(configPage6.mainRelayEnable == 1)
@@ -106,8 +109,8 @@ void mainRelayControl()
     }else if(!currentStatus.mainRelayOn){
     if(currentStatus.hasSync){
       //Relay needs to be turned on. Checked for normal or inverted relay signal
-       if( configPage6.mainRelayInv == 0 ) { SEC_FAN_PIN_HIGH(); }
-        else{ SEC_FAN_PIN_LOW(); }
+       if( configPage6.mainRelayInv == 0 ) { MAIN_RELAY_PIN_HIGH(); }
+        else{ MAIN_RELAY_PIN_LOW(); }
         currentStatus.mainRelayOn = true;
 
     }
