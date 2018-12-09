@@ -656,18 +656,6 @@
          -40.0 
          158.0 
       </constant>
-<constant name="secFanInv">"No"</constant>
-<constant name="secFEnable">"Off"</constant>
-<constant name="secFanPin">"Board Default"</constant>
-<constant digits="0" name="secFanSP" units="C">75.0</constant>
-<constant digits="0" name="secFanHyster" units="C">2.0</constant>
-<constant digits="0" name="secFanFreq" units="Hz">6.0</constant>
-<constant cols="1" digits="0" name="secFanPWMBins" rows="4" units="C">
-         60.0 
-         -20.0 
-         -40.0 
-         158.0 
-      </constant>
 </page>
 <page number="6" size="240">
 <constant cols="8" digits="0" name="boostTable" rows="8" units="Duty Cycle %">

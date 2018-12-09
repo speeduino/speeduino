@@ -25,24 +25,14 @@ void initialiseFan()
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
 }
-void initialiseSecFan(){
-  if( configPage6.secFanInv == 1 ) { secFanHIGH = LOW; secFanLOW = HIGH; }
-  else { secFanHIGH = HIGH; secFanLOW = LOW; }
-  digitalWrite(pinSecFan, secFanLOW);         //Initiallise program with the fan in the off state
-  currentStatus.secFanOn = false;
-
-  sec_fan_pin_port = portOutputRegister(digitalPinToPort(pinSecFan));
-  fan_pin_mask = digitalPinToBitMask(pinSecFan);
-
-}
 /*
 Main relay control
 */
 void initialiseMainRelay(){
   if( configPage6.mainRelayInv == 1 ) { mainRelayHIGH = LOW; mainRelayLOW = HIGH; }
   else { mainRelayHIGH = HIGH; mainRelayLOW = LOW; }
-  digitalWrite(pinMainRelay, mainRelayLOW);         //Initiallise program with the main relay in the off state
-  currentStatus.mainRelayOn = false;
+  digitalWrite(pinMainRelay, mainRelayHIGH);         //Initiallise program with the main relay in the on state
+  currentStatus.mainRelayOn = true;
 
   main_relay_pin_port = portOutputRegister(digitalPinToPort(pinMainRelay));
   main_relay_pin_mask = digitalPinToBitMask(pinMainRelay);
@@ -71,66 +61,8 @@ void fanControl()
     }
   }
 }
-//Secondary fan for cars with A/C fans 
-void secFanControl()
-{
-  if( configPage6.secFanEnable == 1 )
-  {
-    int onTemp = (int)configPage6.secFanSP - CALIBRATION_TEMPERATURE_OFFSET;
-    int offTemp = onTemp - configPage6.secFanHyster;
-
-    if ( currentStatus.coolant >= onTemp )
-    {
-      //Fan needs to be turned on. Checked for normal or inverted fan signal
-      if( configPage6.secFanInv == 0 ) { SEC_FAN_PIN_HIGH(); }
-      else { SEC_FAN_PIN_LOW(); }
-      currentStatus.fanOn = true;
-    }
-    else if ( currentStatus.coolant <= offTemp )
-    {
-      //Fan needs to be turned off. Checked for normal or inverted fan signal
-      if( configPage6.secFanInv == 0 ) { SEC_FAN_PIN_LOW(); } 
-      else { SEC_FAN_PIN_HIGH(); }
-      currentStatus.secFanOn = false;
-    }
-  }
-}
 //Some cars require activation of the main relay upon sync gain. 
 //This activates main relay when sync is gained, and deactivates when sync is lost.
-void mainRelayControl()
-{
-  if(configPage6.mainRelayEnable == 1)
-  {
-    if(currentStatus.mainRelayOn)
-    {
-      if(currentStatus.hasSync == 1)
-      {
-        //Relay needs to be turned on. Checked for normal or inverted relay signal
-       if( configPage6.mainRelayInv == 0 ) { MAIN_RELAY_PIN_HIGH(); }
-        else{ MAIN_RELAY_PIN_LOW(); }
-        currentStatus.mainRelayOn = true;
-      }else if (currentStatus.hasSync == 0){
-        //Relay needs to be turned off. Checked for normal or inverted relay signal
-        if( configPage6.mainRelayInv == 0 ) { MAIN_RELAY_PIN_LOW(); } 
-        else { MAIN_RELAY_PIN_HIGH(); }
-        currentStatus.mainRelayOn = false;
-
-      }
-      
-
-    }else if(!currentStatus.mainRelayOn){
-    if(currentStatus.hasSync){
-      //Relay needs to be turned on. Checked for normal or inverted relay signal
-       if( configPage6.mainRelayInv == 0 ) { MAIN_RELAY_PIN_HIGH(); }
-        else{ MAIN_RELAY_PIN_LOW(); }
-        currentStatus.mainRelayOn = true;
-
-    }
-
-  }
-
-}
-}
 void initialiseAuxPWM()
 {
   #if defined(CORE_AVR)

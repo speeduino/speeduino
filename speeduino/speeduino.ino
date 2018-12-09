@@ -250,8 +250,11 @@ void setup()
   //initialiseDisplay();
   initialiseIdle();
   initialiseFan();
-  initialiseSecFan();
-  //initialiseMainRelay();
+  //Triggers main relay to ON
+  if(configPage6.mainRelayEnable == 1){
+    initialiseMainRelay();
+  }
+  
   initialiseAuxPWM();
   initialiseCorrections();
   initialiseADC();

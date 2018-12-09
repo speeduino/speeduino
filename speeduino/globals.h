@@ -372,7 +372,6 @@ struct statuses {
   byte idleDuty;
   bool idleUpActive;
   bool fanOn; //Whether or not the fan is turned on
-  bool secFanOn;
   bool mainRelayOn;
   volatile byte ethanolPct; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85.
   unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
@@ -696,14 +695,6 @@ struct config6 {
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
 
-  byte secFanInv : 1;        //Secondary Fan output inversion bit
-  byte secFanEnable : 1;     //Secondary Fan enable bit. 0=Off, 1=On/Off
-  byte secFanPin : 6;
-  byte secFanSP;             //Secondary Cooling fan start temperature
-  byte secFanHyster;         //Secondary Fan hysteresis
-  byte secFanFreq;           //Secondary Fan PWM frequency
-  byte secFanPWMBins[4];     //Secondary Temperature Bins for the PWM fan control
-
   byte mainRelayInv : 1;     //Main relay inversion bit
   byte mainRelayEnable : 1;  //Main Relay enable bit. 0=Off, 1=On/Off
   byte mainRelayPin : 6;     
@@ -939,8 +930,7 @@ byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
-byte pinSecFan; // Secondary cooling fan output
-byte pinMainRelay; //Relay control
+byte pinMainRelay; //Main relay control
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
 extern struct table3D fuelTable; //16x16 fuel map
