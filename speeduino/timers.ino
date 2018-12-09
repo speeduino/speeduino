@@ -173,15 +173,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
     {
        fanControl();            // Fucntion to turn the cooling fan on/off
     }
-    if(configPage6.secFanEnable == 1){
-      secFanControl();
-
-    }
-    //Used in some cars where the main relay is controlled independently
-    if(configPage6.mainRelayEnable == 1){
-      //mainRelayControl();
-
-    }
     //Check whether fuel pump priming is complete
     if(fpPrimed == false)
     {

@@ -254,7 +254,6 @@ void setup()
   if(configPage6.mainRelayEnable == 1){
     initialiseMainRelay();
   }
-  
   initialiseAuxPWM();
   initialiseCorrections();
   initialiseADC();

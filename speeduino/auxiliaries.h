@@ -7,12 +7,9 @@ void boostDisable();
 void idleControl();
 void vvtControl();
 void initialiseFan();
-void initialiseSecFan();
 void initialiseMainRelay();
 void nitrousControl();
 void fanControl();
-void secFanControl();
-void mainRelayControl();
 
 #if defined(CORE_AVR)
   #define ENABLE_BOOST_TIMER()  TIMSK1 |= (1 << OCIE1A)
@@ -106,9 +103,6 @@ byte boostCounter;
 
 byte fanHIGH = HIGH;             // Used to invert the cooling fan output
 byte fanLOW = LOW;               // Used to invert the cooling fan output
-
-byte secFanHIGH = HIGH;
-byte secFanLOW = LOW;
 
 byte mainRelayHIGH = HIGH;
 byte mainRelayLOW = LOW;
