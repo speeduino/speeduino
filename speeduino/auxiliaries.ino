@@ -3,8 +3,8 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
-#include "auxiliaries.h"
 #include "globals.h"
+#include "auxiliaries.h"
 #include "maths.h"
 #include "src/PID_v1/PID_v1.h"
 
@@ -74,6 +74,8 @@ void initialiseAuxPWM()
     FTM1_C1SC |= FTM_CSC_MSA; //Enable Compare mode
     FTM1_C1SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
 
+    //NVIC_ENABLE_IRQ(IRQ_FTM1);
+
   #endif
 
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
@@ -87,8 +89,13 @@ void initialiseAuxPWM()
   n2o_arming_pin_port = portInputRegister(digitalPinToPort(configPage10.n2o_arming_pin));
   n2o_arming_pin_mask = digitalPinToBitMask(configPage10.n2o_arming_pin);
 
-  if(configPage10.n2o_pin_polarity == 1) { pinMode(configPage10.n2o_arming_pin, INPUT_PULLUP); }
-  else { pinMode(configPage10.n2o_arming_pin, INPUT); }
+  if(configPage10.n2o_enable > 0)
+  {
+    //The pin modes are only set if the if n2o is enabled to prevent them conflicting with other outputs. 
+    if(configPage10.n2o_pin_polarity == 1) { pinMode(configPage10.n2o_arming_pin, INPUT_PULLUP); }
+    else { pinMode(configPage10.n2o_arming_pin, INPUT); }
+  }
+  
 
   #if defined(CORE_STM32) || defined(CORE_TEENSY) //2uS resolution Min 8Hz, Max 5KHz
     boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
@@ -235,6 +242,7 @@ void nitrousControl()
     //Perform the main checks to see if nitrous is ready
     if( (isArmed == true) && (currentStatus.coolant > (configPage10.n2o_minCLT - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.TPS > configPage10.n2o_minTPS) && (currentStatus.O2 < configPage10.n2o_maxAFR) && (currentStatus.MAP < configPage10.n2o_maxMAP) )
     {
+      //Config page values are divided by 100 to fit within a byte. Multiply them back out to real values. 
       uint16_t realStage1MinRPM = (uint16_t)configPage10.n2o_stage1_minRPM * 100;
       uint16_t realStage1MaxRPM = (uint16_t)configPage10.n2o_stage1_maxRPM * 100;
       uint16_t realStage2MinRPM = (uint16_t)configPage10.n2o_stage2_minRPM * 100;

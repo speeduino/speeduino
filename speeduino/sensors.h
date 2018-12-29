@@ -5,6 +5,7 @@
 
 // The following are alpha values for the ADC filters.
 // Their values are from 0 to 255 with 0 being no filtering and 255 being maximum
+/*
 #define ADCFILTER_TPS  128
 #define ADCFILTER_CLT  180
 #define ADCFILTER_IAT  180
@@ -12,6 +13,7 @@
 #define ADCFILTER_BAT  128
 #define ADCFILTER_MAP   20 //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
 #define ADCFILTER_BARO  64
+*/
 
 #define BARO_MIN      87
 #define BARO_MAX      108
@@ -28,7 +30,6 @@
 volatile byte flexCounter = 0;
 volatile byte knockCounter = 0;
 volatile uint16_t knockAngle;
-volatile int AnChannel[15];
 
 unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
 unsigned long EMAPrunningValue; //As above but for EMAP
@@ -68,6 +69,8 @@ void readBat();
 void readBaro();
 
 #if defined(ANALOG_ISR)
+volatile int AnChannel[15];
+
 //Analog ISR interrupt routine
 /*
 ISR(ADC_vect)

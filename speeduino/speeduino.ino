@@ -66,12 +66,6 @@ uint16_t staged_req_fuel_mult_sec;
 bool ignitionOn = false; //The current state of the ignition system
 bool fuelOn = false; //The current state of the ignition system
 
-void (*trigger)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
-void (*triggerSecondary)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
-uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
-int (*getCrankAngle)(); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
-void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of each decoder
-
 byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
@@ -80,14 +74,10 @@ unsigned long counter;
 unsigned long currentLoopTime; //The time the current loop started (uS)
 unsigned long previousLoopTime; //The time the previous loop started (uS)
 
-volatile uint16_t mainLoopCount;
-byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
-int rpmDelta;
 byte maxIgnOutputs = 1; //Used for rolling rev limiter
 byte curRollingCut = 0; //Rolling rev limiter, current ignition channel being cut
 byte rollingCutCounter = 0; //how many times (revolutions) the ignition has been cut in a row
 uint32_t rollingCutLastRev = 0; //Tracks whether we're on the same or a different rev for the rolling cut
-uint16_t fixedCrankingOverride = 0;
 
 
 unsigned long secCounter; //The next time to incremen 'runSecs' counter.
@@ -125,8 +115,6 @@ void (*ign7StartFunction)();
 void (*ign7EndFunction)();
 void (*ign8StartFunction)();
 void (*ign8EndFunction)();
-
-volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 
 void setup()
 {
@@ -217,6 +205,15 @@ void setup()
   flexBoostTable.xSize = 6;
   flexBoostTable.values16 = configPage10.flexBoostAdj;
   flexBoostTable.axisX = configPage10.flexBoostBins;
+
+  knockWindowStartTable.valueSize = SIZE_BYTE;
+  knockWindowStartTable.xSize = 6;
+  knockWindowStartTable.values = configPage10.knock_window_angle;
+  knockWindowStartTable.axisX = configPage10.knock_window_rpms;
+  knockWindowDurationTable.valueSize = SIZE_BYTE;
+  knockWindowDurationTable.xSize = 6;
+  knockWindowDurationTable.values = configPage10.knock_window_dur;
+  knockWindowDurationTable.axisX = configPage10.knock_window_rpms;
 
   //Setup the calibration tables
   loadCalibration();
@@ -344,7 +341,10 @@ void setup()
   mainLoopCount = 0;
 
   currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manaully overriden below for sequential setups (Due to TS req_fuel calc limitations)
-  CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts;
+  if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
+  if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
+  else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
+  
 
   //Calculate the number of degrees between cylinders
   switch (configPage2.nCylinders) {
@@ -354,9 +354,9 @@ void setup()
       maxIgnOutputs = 1;
 
       //Sequential ignition works identically on a 1 cylinder whether it's odd or even fire. 
-      if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) { CRANK_ANGLE_MAX_IGN = 720; }
+      if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
 
-      if (configPage2.injLayout == INJ_SEQUENTIAL)
+      if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
       {
         CRANK_ANGLE_MAX_INJ = 720;
         currentStatus.nSquirts = 1;
@@ -364,6 +364,13 @@ void setup()
       }
 
       channel1InjEnabled = true;
+
+      //Check if injector staging is enabled
+      if(configPage10.stagingEnabled == true)
+      {
+        channel3InjEnabled = true;
+        channel3InjDegrees = channel1InjDegrees;
+      }
       break;
 
     case 2:
@@ -374,9 +381,9 @@ void setup()
       else { channel2IgnDegrees = configPage2.oddfire2; }
 
       //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder). 
-      if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) { CRANK_ANGLE_MAX_IGN = 720; }
+      if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
 
-      if (configPage2.injLayout == INJ_SEQUENTIAL)
+      if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
       {
         CRANK_ANGLE_MAX_INJ = 720;
         currentStatus.nSquirts = 1;
@@ -390,10 +397,21 @@ void setup()
         //For simultaneous, all squirts happen at the same time
         channel1InjDegrees = 0;
         channel2InjDegrees = 0; 
-      } 
+      }
 
       channel1InjEnabled = true;
       channel2InjEnabled = true;
+
+      //Check if injector staging is enabled
+      if(configPage10.stagingEnabled == true)
+      {
+        channel3InjEnabled = true;
+        channel4InjEnabled = true;
+
+        channel3InjDegrees = channel1InjDegrees;
+        channel4InjDegrees = channel2InjDegrees;
+      }
+
       break;
 
     case 3:
@@ -401,7 +419,8 @@ void setup()
       maxIgnOutputs = 3;
       if (configPage2.engineType == EVEN_FIRE )
       {
-        if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
+        //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines. 
+        if( ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE) ) && (configPage2.strokes == FOUR_STROKE) )
         {
           channel2IgnDegrees = 240;
           channel3IgnDegrees = 480;
@@ -421,7 +440,7 @@ void setup()
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
+      if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = 120;
@@ -469,7 +488,7 @@ void setup()
           channel2InjDegrees = channel2InjDegrees / (currentStatus.nSquirts / 2);
         }
 
-        if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
+        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
         {
           channel3IgnDegrees = 360;
           channel4IgnDegrees = 540;
@@ -493,7 +512,7 @@ void setup()
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
+      if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
       {
         channel2InjDegrees = 180;
 
@@ -550,7 +569,7 @@ void setup()
       }
 
       //For alternatiing injection, the squirt occurs at different times for each channel
-      if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
+      if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
       {
         channel1InjDegrees = 0;
         channel2InjDegrees = 72;
@@ -814,14 +833,24 @@ void setup()
   }
 
   //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
-  FUEL_PUMP_ON();
-  currentStatus.fuelPumpOn = true;
+  //First check that the priming time is not 0
+  if(configPage2.fpPrime > 0)
+  {
+    FUEL_PUMP_ON();
+    currentStatus.fuelPumpOn = true;
+  }
+  else { fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
+  
   interrupts();
   //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
-  setFuelSchedule1(100, (unsigned long)(configPage2.primePulse * 100));
-  setFuelSchedule2(100, (unsigned long)(configPage2.primePulse * 100));
-  setFuelSchedule3(100, (unsigned long)(configPage2.primePulse * 100));
-  setFuelSchedule4(100, (unsigned long)(configPage2.primePulse * 100));
+  if(configPage2.primePulse > 0)
+  {
+    setFuelSchedule1(100, (unsigned long)(configPage2.primePulse * 100));
+    setFuelSchedule2(100, (unsigned long)(configPage2.primePulse * 100));
+    setFuelSchedule3(100, (unsigned long)(configPage2.primePulse * 100));
+    setFuelSchedule4(100, (unsigned long)(configPage2.primePulse * 100));
+  }
+
 
   initialisationComplete = true;
   digitalWrite(LED_BUILTIN, HIGH);
@@ -838,6 +867,12 @@ void loop()
       if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       {
         if (Serial.available() > 0) { command(); }
+        else if(cmdPending == true)
+        {
+          //This is a special case just for the tooth and composite loggers
+          if (currentCommand == 'T') { command(); }
+        }
+        
       }
       //if can or secondary serial interface is enabled then check for requests.
       if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
@@ -998,17 +1033,11 @@ void loop()
 
       if(auxIsEnabled == true)
       {
+        //TODO dazq to clean this right up :)
         //check through the Aux input channels if enabed for Can or local use
         for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
         {
-          currentStatus.current_caninchannel = AuxinChan; 
-          
-          //Dev test use only!
-          //currentStatus.canin[13] = ((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
-          //currentStatus.canin[14] = (configPage9.caninput_sel[1]);
-          //currentStatus.canin[12] = (configPage9.caninput_sel[1]&12);          
-          //currentStatus.canin[14] = configPage9.enable_secondarySerial;  //> 0)((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
-          //currentStatus.canin[13] = (configPage9.caninput_sel[currentStatus.current_caninchannel]&3);          
+          currentStatus.current_caninchannel = AuxinChan;          
           
           if (((configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 4) 
               && (((configPage9.enable_secondarySerial == 1) && ((configPage9.enable_intcan == 0)&&(configPage9.intcan_available == 1)))
@@ -1041,7 +1070,7 @@ void loop()
           #endif
           }   
           else if ((((configPage9.enable_secondarySerial == 1) || ((configPage9.enable_intcan == 1) && (configPage9.intcan_available == 1))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 8)
-                  || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 1 && configPage9.intcan_available == 0 )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  
+                  || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  
                   || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)))  
           { //if current input channel is enabled as analog local pin
             //read analog channel specified
@@ -1049,7 +1078,7 @@ void loop()
             currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&127);
           }
           else if ((((configPage9.enable_secondarySerial == 1) || ((configPage9.enable_intcan == 1) && (configPage9.intcan_available == 1))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 12)
-                  || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 1 && configPage9.intcan_available == 0 )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)
+                  || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)
                   || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)))
           {  //if current input channel is enabled as digital local pin
             //read digital channel specified
@@ -1153,68 +1182,7 @@ void loop()
       int tempCrankAngle;
       int tempStartAngle;
 
-      //********************************************************
-      //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
-      //We use a 1st Deriv accleration prediction, but only when there is an even spacing between primary sensor teeth
-      //Any decoder that has uneven spacing has its triggerToothAngle set to 0
-      if( (secondDerivEnabled > 0) && (toothHistoryIndex >= 3) && (currentStatus.RPM < 2000) ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
-      //if(true)
-      {
-        //Only recalculate deltaV if the tooth has changed since last time (DeltaV stays the same until the next tooth)
-        //if (deltaToothCount != toothCurrentCount)
-        {
-          deltaToothCount = toothCurrentCount;
-          int angle1, angle2; //These represent the crank angles that are travelled for the last 2 pulses
-          if(configPage4.TrigPattern == 4)
-          {
-            //Special case for 70/110 pattern on 4g63
-            angle2 = triggerToothAngle; //Angle 2 is the most recent
-            if (angle2 == 70) { angle1 = 110; }
-            else { angle1 = 70; }
-          }
-          else if(configPage4.TrigPattern == 0)
-          {
-            //Special case for missing tooth decoder where the missing tooth was one of the last 2 seen
-            if(toothCurrentCount == 1) { angle2 = 2*triggerToothAngle; angle1 = triggerToothAngle; }
-            else if(toothCurrentCount == 2) { angle1 = 2*triggerToothAngle; angle2 = triggerToothAngle; }
-            else { angle1 = triggerToothAngle; angle2 = triggerToothAngle; }
-          }
-          else { angle1 = triggerToothAngle; angle2 = triggerToothAngle; }
-
-          long toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
-          long toothDeltaT = toothHistory[toothHistoryIndex];
-          //long timeToLastTooth = micros() - toothLastToothTime;
-
-          rpmDelta = (toothDeltaV << 10) / (6 * toothDeltaT);
-        }
-
-          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpmDelta).quot; //This give accuracy down to 0.1 of a degree and can provide noticably better timing results on low res triggers
-          timePerDegree = timePerDegreex16 / 16;
-      }
-      else
-      {
-        //If we can, attempt to get the timePerDegree by comparing the times of the last two teeth seen. This is only possible for evenly spaced teeth
-        if( (triggerToothAngleIsCorrect == true) && (toothLastToothTime > toothLastMinusOneToothTime) && false ) //This is currently NOT working. Don't know why yet
-        {
-          noInterrupts();
-          unsigned long tempToothLastToothTime = toothLastToothTime;
-          unsigned long tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
-          uint16_t tempTriggerToothAngle = triggerToothAngle;
-          interrupts();
-          timePerDegreex16 = (unsigned long)( (tempToothLastToothTime - tempToothLastMinusOneToothTime)*16) / tempTriggerToothAngle;
-          timePerDegree = timePerDegreex16 / 16;
-        }
-        else
-        {
-          long timeThisRevolution = (micros_safe() - toothOneTime); //micros() is no longer interrupt safe
-          long rpm_adjust = (timeThisRevolution * (long)currentStatus.rpmDOT) / 1000000; //Take into account any likely accleration that has occurred since the last full revolution completed
-          rpm_adjust = 0;
-          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpm_adjust).quot; //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticably better timing results on low res triggers
-          timePerDegree = timePerDegreex16 / 16;
-        }
-
-      }
-      degreesPeruSx2048 = 2048 / timePerDegree;
+      doCrankSpeedCalcs(); //In crankMaths.ino
 
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
       unsigned long pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
@@ -1228,11 +1196,12 @@ void loop()
       if( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= INJ_CHANNELS) )
       {
         //Scale the 'full' pulsewidth by each of the injector capacities
-        uint32_t tempPW1 = ((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100;
+        currentStatus.PW1 -= inj_opentime_uS; //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
+        uint32_t tempPW1 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100) + inj_opentime_uS; //Opening time has to be added back on here (See above where it is subtracted)
 
         if(configPage10.stagingMode == STAGING_MODE_TABLE)
         {
-          uint32_t tempPW3 = ((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100; //This is ONLY needed in in table mode. Auto mode only calculates the difference.
+          uint32_t tempPW3 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100) + inj_opentime_uS; //This is ONLY needed in in table mode. Auto mode only calculates the difference. As above, opening time must be readded. 
 
           byte stagingSplit = get3DTableValue(&stagingTable, currentStatus.MAP, currentStatus.RPM);
           currentStatus.PW1 = ((100 - stagingSplit) * tempPW1) / 100;
@@ -1289,6 +1258,15 @@ void loop()
       //Repeat the above for each cylinder
       switch (configPage2.nCylinders)
       {
+        //Single cylinder
+        case 1:
+          //The only thing that needs to be done for single cylinder is to check for staging. 
+          if( (configPage10.stagingEnabled == true) && (currentStatus.PW3 > 0) )
+          {
+            PWdivTimerPerDegree = div(currentStatus.PW3, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
+            injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
+          }
+          break;
         //2 cylinders
         case 2:
           /*
@@ -1298,6 +1276,15 @@ void loop()
           if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) { injector2StartAngle -= CRANK_ANGLE_MAX_INJ; }
           */
           injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
+          if( (configPage10.stagingEnabled == true) && (currentStatus.PW3 > 0) )
+          {
+            PWdivTimerPerDegree = div(currentStatus.PW3, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
+            injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
+
+            injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
+            if(injector4StartAngle < 0) {injector4StartAngle += CRANK_ANGLE_MAX_INJ;}
+            if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
+          }
           break;
         //3 cylinders
         case 3:
@@ -1354,15 +1341,9 @@ void loop()
               if (pw4percent != 100) { currentStatus.PW4 = (pw4percent * currentStatus.PW4) / 100; }
             }
           }
-          else if(configPage10.stagingEnabled == true)
+          else if( (configPage10.stagingEnabled == true) && (currentStatus.PW3 > 0) )
           {
             PWdivTimerPerDegree = div(currentStatus.PW3, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
-            
-            /*
-            injector3StartAngle = configPage2.inj3Ang - ( PWdivTimerPerDegree ); //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
-            if(injector3StartAngle < 0) {injector3StartAngle += CRANK_ANGLE_MAX_INJ;}
-            if(injector3StartAngle > CRANK_ANGLE_MAX_INJ) {injector3StartAngle -= CRANK_ANGLE_MAX_INJ;}
-            */
             injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
 
             injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
@@ -1441,6 +1422,7 @@ void loop()
           */
           injector4StartAngle = calculateInjector4StartAngle(PWdivTimerPerDegree);
           break;
+
         //Will hit the default case on 1 cylinder or >8 cylinders. Do nothing in these cases
         default:
           break;
@@ -1486,7 +1468,7 @@ void loop()
 
           ignition3EndAngle = channel3IgnDegrees - currentStatus.advance;
           if(ignition3EndAngle > CRANK_ANGLE_MAX_IGN) {ignition3EndAngle -= CRANK_ANGLE_MAX_IGN;}
-          ignition3StartAngle = channel3IgnDegrees + 360 - currentStatus.advance - dwellAngle;
+          ignition3StartAngle = channel3IgnDegrees - dwellAngle;
           if(ignition3StartAngle < 0) {ignition3StartAngle += CRANK_ANGLE_MAX_IGN;}
           break;
         //4 cylinders
@@ -1856,7 +1838,7 @@ void loop()
 #endif
 
 #if defined(USE_IGN_REFRESH)
-        if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) )
+        if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
         {
           unsigned long uSToEnd = 0;
 

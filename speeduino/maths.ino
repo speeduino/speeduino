@@ -1,4 +1,5 @@
 #include "maths.h"
+#include "globals.h"
 
 //Replace the standard arduino map() function to use the div function instead
 int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)

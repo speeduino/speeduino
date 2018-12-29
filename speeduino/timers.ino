@@ -15,6 +15,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "sensors.h"
 #include "scheduler.h"
 #include "scheduledIO.h"
+#include "auxiliaries.h"
 
 #if defined(CORE_AVR)
   #include <avr/wdt.h>

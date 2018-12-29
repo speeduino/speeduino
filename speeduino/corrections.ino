@@ -13,8 +13,8 @@ Flood clear mode etc.
 */
 //************************************************************************************************************
 
-#include "corrections.h"
 #include "globals.h"
+#include "corrections.h"
 #include "timers.h"
 #include "maths.h"
 #include "sensors.h"
@@ -29,6 +29,7 @@ void initialiseCorrections()
   currentStatus.flexIgnCorrection = 0;
   currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
   AFRnextCycle = 0;
+  currentStatus.knockActive = false;
 }
 
 /*
@@ -210,7 +211,7 @@ static inline int16_t correctionAccel()
           {
             int16_t taperRange = trueTaperMax - trueTaperMin;
             int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100) / taperRange; //The percentage of the way through the RPM taper range
-            accelValue = percentage(taperPercent, accelValue); //Calculate the above percentage of the calculated accel amount. 
+            accelValue = percentage((100-taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
           }
         }
         accelValue = 100 + accelValue; //Add the 100 normalisation to the calculated amount
@@ -511,9 +512,32 @@ static inline int8_t correctionKnock(int8_t advance)
 {
   byte knockRetard = 0;
 
-  if( (configPage10.knock_mode > 0) && (knockCounter > 0) )
+  //First check is to do the window calculations (ASsuming knock is enabled)
+  if( configPage10.knock_mode != KNOCK_MODE_OFF )
   {
-    
+    knockWindowMin = table2D_getValue(&knockWindowStartTable, currentStatus.RPM);
+    knockWindowMax = knockWindowMin + table2D_getValue(&knockWindowDurationTable, currentStatus.RPM);
+  }
+
+
+  if( (configPage10.knock_mode == KNOCK_MODE_DIGITAL)  )
+  {
+    //
+    if(knockCounter > configPage10.knock_count)
+    {
+      if(currentStatus.knockActive == true)
+      {
+        //Knock retard is currently 
+      }
+      else
+      {
+        //Knock needs to be activated
+        lastKnockCount = knockCounter;
+        knockStartTime = micros();
+        knockRetard = configPage10.knock_firstStep;
+      }
+    }
+
   }
 
   return advance - knockRetard;
