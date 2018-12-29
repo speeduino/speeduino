@@ -1,0 +1,17 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+
+pool:
+  vmImage: 'Ubuntu 16.04'
+
+steps:
+  - script: pip install --upgrade pip
+  - script: pip install -U platformio
+  - script: git clone --depth=20 https://github.com/noisymime/cppcheck.git noisymime/cppcheck
+  - script: cd noisymime/speeduino
+  - script: platformio update
+  - script: platformio run -e megaatmega2560 -e teensy35 -e genericSTM32F103RB
+  - script: cd ..
