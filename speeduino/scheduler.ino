@@ -14,7 +14,7 @@ void initialiseSchedulers()
     nullSchedule.Status = OFF;
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-   // Much help in this from http://arduinomega.blogspot.com.au/2011/05/timer2-and-overflow-interrupt-lets-get.html
+    //Much help in this from http://arduinomega.blogspot.com.au/2011/05/timer2-and-overflow-interrupt-lets-get.html
     //Fuel Schedules, which uses timer 3
     TCCR3B = 0x00;          //Disable Timer3 while we set it up
     TCNT3  = 0;             //Reset Timer Count
@@ -46,24 +46,24 @@ void initialiseSchedulers()
 #elif defined (CORE_TEENSY)
 
   //FlexTimer 0 is used for 4 ignition and 4 injection schedules. There are 8 channels on this module, so no other timers are needed
-  FTM0_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
+  FTM0_MODE |= FTM_MODE_WPDIS; //Write Protection Disable
   FTM0_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
   FTM0_MODE |= FTM_MODE_INIT;
 
   FTM0_SC = 0x00; // Set this to zero before changing the modulus
   FTM0_CNTIN = 0x0000; //Shouldn't be needed, but just in case
-  FTM0_CNT = 0x0000; // Reset the count to zero
-  FTM0_MOD = 0xFFFF; // max modulus = 65535
+  FTM0_CNT = 0x0000; //Reset the count to zero
+  FTM0_MOD = 0xFFFF; //max modulus = 65535
 
   //FlexTimer 3 is used for schedules on channel 5+. Currently only channel 5 is used, but will likely be expanded later
-  FTM3_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
+  FTM3_MODE |= FTM_MODE_WPDIS; //Write Protection Disable
   FTM3_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
   FTM3_MODE |= FTM_MODE_INIT;
 
   FTM3_SC = 0x00; // Set this to zero before changing the modulus
   FTM3_CNTIN = 0x0000; //Shouldn't be needed, but just in case
-  FTM3_CNT = 0x0000; // Reset the count to zero
-  FTM3_MOD = 0xFFFF; // max modulus = 65535
+  FTM3_CNT = 0x0000; //Reset the count to zero
+  FTM3_MOD = 0xFFFF; //max modulus = 65535
 
   /*
    * Enable the clock for FTM0/1
