@@ -83,7 +83,12 @@ void initialiseIdle()
     //Enable channel compare interrupt (This is currently disabled as not in use)
     //FTM2_C1SC |= FTM_CSC_CHIE; 
 
-    // enable IRQ Interrupt
+    FTM2_C1SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+    FTM2_C1SC |= FTM_CSC_MSA; //Enable Compare mode
+    //Enable channel compare interrupt (This is currently disabled as not in use)
+    //FTM2_C1SC |= FTM_CSC_CHIE; 
+
+    //Enable IRQ Interrupt
     NVIC_ENABLE_IRQ(IRQ_FTM2);
   }
 
@@ -92,7 +97,8 @@ void initialiseIdle()
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
   switch(configPage6.iacAlgorithm)
   {
-    case IAC_ALGORITHM_NONE:       //Case 0 is no idle control ('None')
+    case IAC_ALGORITHM_NONE:       
+      //Case 0 is no idle control ('None')
       break;
 
     case IAC_ALGORITHM_ONOFF:
@@ -309,7 +315,7 @@ void idleControl()
       }
       break;
 
-    case IAC_ALGORITHM_STEP_CL://Case 5 is closed loop stepper control
+    case IAC_ALGORITHM_STEP_CL:    //Case 5 is closed loop stepper control
       //First thing to check is whether there is currently a step going on and if so, whether it needs to be turned off
       if( (checkForStepping() == false) && (isStepperHomed() == true) ) //Check that homing is complete and that there's not currently a step already taking place. MUST BE IN THIS ORDER!
       {
