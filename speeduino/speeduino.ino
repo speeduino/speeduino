@@ -136,7 +136,7 @@ void setup()
   initialiseTimers();
 
   loadConfig();
-  doUpdates(); //Check if any data items need updating (Occurs ith firmware updates)
+  doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
 
   //Always start with a clean slate on the bootloader capabilities level
   //This should be 0 until we hear otherwise from the 16u2
@@ -1080,7 +1080,7 @@ void loop()
           else if ((((configPage9.enable_secondarySerial == 1) || ((configPage9.enable_intcan == 1) && (configPage9.intcan_available == 1))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 12)
                   || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)
                   || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)))
-          {  //if current input channel is enabled as digital local pin
+          { //if current input channel is enabled as digital local pin
             //read digital channel specified
             //currentStatus.canin[13] = 14;  Dev test use only!
             currentStatus.canin[currentStatus.current_caninchannel] = readAuxdigital((configPage9.Auxinpinb[currentStatus.current_caninchannel]&127)+1);
@@ -1133,7 +1133,7 @@ void loop()
       currentStatus.advance = getAdvance();
       currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
 
-      //Manual adder for nitrous. These are not in correctionsFuel() because  they are direct adders to the ms value, not % based
+      //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
       if(currentStatus.nitrous_status == NITROUS_STAGE1)
       { 
         int16_t adderRange = (configPage10.n2o_stage1_maxRPM - configPage10.n2o_stage1_minRPM) * 100;
@@ -1212,7 +1212,7 @@ void loop()
         else if(configPage10.stagingMode == STAGING_MODE_AUTO)
         {
           currentStatus.PW1 = tempPW1;
-          //If automatic mode, the primary injectors are used all the way up to their limit (COnfigured by the pulsewidth limit setting)
+          //If automatic mode, the primary injectors are used all the way up to their limit (Configured by the pulsewidth limit setting)
           //If they exceed their limit, the extra duty is passed to the secondaries
           if(tempPW1 > pwLimit)
           {
@@ -1435,7 +1435,7 @@ void loop()
 
 
       //Set dwell
-       //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage4. This number therefore needs to be multiplied by 100 to get dwell in uS
+      //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage4. This number therefore needs to be multiplied by 100 to get dwell in uS
       if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { currentStatus.dwell =  (configPage4.dwellCrank * 100); }
       else { currentStatus.dwell =  (configPage4.dwellRun * 100); }
       currentStatus.dwell = correctionsDwell(currentStatus.dwell);
