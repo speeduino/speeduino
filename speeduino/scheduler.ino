@@ -992,14 +992,47 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
     if (ignitionSchedule1.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule1.StartCallback();
-      ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      
       ignitionSchedule1.startTime = micros();
-      if(ignitionSchedule1.endScheduleSetByDecoder == true) { IGN1_COMPARE = ignitionSchedule1.endCompare; }
-      else { IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule1.duration); } //Doing this here prevents a potential overflow on restarts
+
+      // Use an Intermediate stage for the case where the tacho pulse is to be separated
+      // from the ignition dwell.
+      ignitionSchedule1.tachoduration = configPage9.tachoPulseLimit * 100; // convert to us. Must have this here so we can change on the fly.
+      if ((configPage9.limitTachoPulse) && (ignitionSchedule1.duration > ignitionSchedule1.tachoduration))                                                                                            
+      {
+        ignitionSchedule1.Status = INTERMEDIATE; //go to tacho pulse intermediate stage next
+        IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule1.tachoduration);  
+      }
+      else
+      {
+        ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+        if(ignitionSchedule1.endScheduleSetByDecoder == true) { IGN1_COMPARE = ignitionSchedule1.endCompare; }
+        else { IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule1.duration); } 
+      }
+    }
+    else if (ignitionSchedule1.Status == INTERMEDIATE)
+    {
+      // it's here that we can turn off the tacho pulse.
+      TACH_PULSE_HIGH();  // This is no longer in the end callback routine so we can call it at different points.
+      ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+
+      // as we've already had some time so we must remove this amount from the next timer compare value we assign
+      // unless we are in new ignition mode, in which case the endcompare is an absolte value based on crank degrees.
+      
+      if(ignitionSchedule1.endScheduleSetByDecoder == true) { IGN1_COMPARE = ignitionSchedule1.endCompare; } 
+      else { IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE((ignitionSchedule1.duration-ignitionSchedule1.tachoduration)); } //Doing this here prevents a potential overflow on restarts
     }
     else if (ignitionSchedule1.Status == RUNNING)
     {
       ignitionSchedule1.EndCallback();
+      
+      // we generate the tacho pulse here if we're not limiting the pulse width, or if the dwell
+      // we are running is still less than the defined tacho duration. Reason for the latter might be due to 
+      // dwell corrections occuring between ISR calls, or alternatively someone changed the dwell in TS
+      // without revisiting the tacho duration.
+      if ((!configPage9.limitTachoPulse) || (ignitionSchedule1.duration <= ignitionSchedule1.tachoduration))
+        TACH_PULSE_HIGH();
+        
       //   *ign1_pin_port &= ~(ign1_pin_mask);
       ignitionSchedule1.Status = OFF; //Turn off the schedule
       ignitionSchedule1.schedulesSet = 0;
@@ -1021,15 +1054,39 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
     if (ignitionSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule2.StartCallback();
-      ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+
       ignitionSchedule2.startTime = micros();
-      if(ignitionSchedule2.endScheduleSetByDecoder == true) { IGN2_COMPARE = ignitionSchedule2.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN2_COMPARE = IGN2_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule2.duration); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
+
+      ignitionSchedule2.tachoduration = configPage9.tachoPulseLimit * 100; // convert to us. Must have this here so we can change on the fly.
+      if ((configPage9.limitTachoPulse) && (ignitionSchedule2.duration > ignitionSchedule2.tachoduration))                                                                                            
+      {
+        ignitionSchedule2.Status = INTERMEDIATE; //go to tacho pulse intermediate stage next
+        IGN2_COMPARE = IGN2_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule2.tachoduration);  
+      }
+      else
+      {
+        ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+        if(ignitionSchedule2.endScheduleSetByDecoder == true) { IGN2_COMPARE = ignitionSchedule2.endCompare; }
+        else { IGN2_COMPARE = IGN2_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule2.duration); } //Doing this here prevents a potential overflow on restarts
+      }
+    }
+    else if (ignitionSchedule2.Status == INTERMEDIATE)
+    {
+      // end tacho pulse here
+      TACH_PULSE_HIGH();
+      ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+
+      if(ignitionSchedule2.endScheduleSetByDecoder == true) { IGN2_COMPARE = ignitionSchedule2.endCompare; } 
+      else { IGN2_COMPARE = IGN2_COUNTER + uS_TO_TIMER_COMPARE((ignitionSchedule2.duration-ignitionSchedule2.tachoduration)); } //Doing this here prevents a potential overflow on restarts
     }
     else if (ignitionSchedule2.Status == RUNNING)
     {
-      ignitionSchedule2.Status = OFF; //Turn off the schedule
       ignitionSchedule2.EndCallback();
+
+      if ((!configPage9.limitTachoPulse) || (ignitionSchedule2.duration <= ignitionSchedule2.tachoduration))
+        TACH_PULSE_HIGH();
+        
+      ignitionSchedule2.Status = OFF; //Turn off the schedule
       ignitionSchedule2.schedulesSet = 0;
       ignitionSchedule2.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
@@ -1048,15 +1105,38 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
     if (ignitionSchedule3.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule3.StartCallback();
-      ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+
       ignitionSchedule3.startTime = micros();
-      if(ignitionSchedule3.endScheduleSetByDecoder == true) { IGN3_COMPARE = ignitionSchedule3.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN3_COMPARE = IGN3_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule3.duration); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
+
+      ignitionSchedule3.tachoduration = configPage9.tachoPulseLimit * 100; // convert to us. Must have this here so we can change on the fly.
+      if ((configPage9.limitTachoPulse) && (ignitionSchedule3.duration > ignitionSchedule3.tachoduration))
+      {
+        ignitionSchedule3.Status = INTERMEDIATE; //go to tacho pulse intermediate stage next
+        IGN3_COMPARE = IGN3_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule3.tachoduration);  
+      }
+      else
+      {
+        ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+        if(ignitionSchedule3.endScheduleSetByDecoder == true) { IGN3_COMPARE = ignitionSchedule3.endCompare; }
+        else { IGN3_COMPARE = IGN3_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule3.duration); } //Doing this here prevents a potential overflow on restarts
+      }
+    }
+    else if (ignitionSchedule3.Status == INTERMEDIATE)
+    {
+      TACH_PULSE_HIGH();
+      ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+
+      if(ignitionSchedule3.endScheduleSetByDecoder == true) { IGN3_COMPARE = ignitionSchedule3.endCompare; } 
+      else { IGN3_COMPARE = IGN3_COUNTER + uS_TO_TIMER_COMPARE((ignitionSchedule3.duration-ignitionSchedule3.tachoduration)); } //Doing this here prevents a potential overflow on restarts
     }
     else if (ignitionSchedule3.Status == RUNNING)
     {
        ignitionSchedule3.Status = OFF; //Turn off the schedule
        ignitionSchedule3.EndCallback();
+       
+       if ((!configPage9.limitTachoPulse) || (ignitionSchedule3.duration <= ignitionSchedule3.tachoduration))
+         TACH_PULSE_HIGH();
+       
        ignitionSchedule3.schedulesSet = 0;
        ignitionSchedule3.endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the igintion counter
@@ -1085,14 +1165,39 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
     if (ignitionSchedule4.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule4.StartCallback();
-      ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+
       ignitionSchedule4.startTime = micros();
-      IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(ignitionSchedule4.duration); //Doing this here prevents a potential overflow on restarts
+
+      ignitionSchedule4.tachoduration = configPage9.tachoPulseLimit * 100; // convert to us. Must have this here so we can change on the fly.
+      if ((configPage9.limitTachoPulse) && (ignitionSchedule4.duration > ignitionSchedule4.tachoduration))
+      {
+        ignitionSchedule4.Status = INTERMEDIATE; //go to tacho pulse intermediate stage next
+        IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(ignitionSchedule4.tachoduration);  
+      }
+      else
+      {
+        ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+        if(ignitionSchedule4.endScheduleSetByDecoder == true) { IGN4_COMPARE = ignitionSchedule4.endCompare; }
+        else { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW(ignitionSchedule4.duration); } //Doing this here prevents a potential overflow on restarts
+      }
+    }
+    else if (ignitionSchedule4.Status == INTERMEDIATE)
+    {
+
+      TACH_PULSE_HIGH(); 
+      ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+
+      if(ignitionSchedule4.endScheduleSetByDecoder == true) { IGN4_COMPARE = ignitionSchedule4.endCompare; } 
+      else { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW((ignitionSchedule4.duration-ignitionSchedule4.tachoduration)); } //Doing this here prevents a potential overflow on restarts
     }
     else if (ignitionSchedule4.Status == RUNNING)
     {
        ignitionSchedule4.Status = OFF; //Turn off the schedule
        ignitionSchedule4.EndCallback();
+       
+       if ((!configPage9.limitTachoPulse) || (ignitionSchedule4.duration <= ignitionSchedule4.tachoduration))
+         TACH_PULSE_HIGH();
+         
        ignitionSchedule4.schedulesSet = 0;
        ignitionSchedule4.endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the igintion counter
@@ -1121,14 +1226,39 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
     if (ignitionSchedule5.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule5.StartCallback();
-      ignitionSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+
       ignitionSchedule5.startTime = micros();
-      IGN5_COMPARE = IGN5_COUNTER + uS_TO_TIMER_COMPARE_SLOW(ignitionSchedule5.duration); //Doing this here prevents a potential overflow on restarts
+
+      ignitionSchedule5.tachoduration = configPage9.tachoPulseLimit * 100; // convert to us. Must have this here so we can change on the fly.
+      if ((configPage9.limitTachoPulse) && (ignitionSchedule5.duration > ignitionSchedule5.tachoduration))                                                                                            
+      {
+        ignitionSchedule5.Status = INTERMEDIATE; //go to tacho pulse intermediate stage next
+        IGN5_COMPARE = IGN5_COUNTER + uS_TO_TIMER_COMPARE_SLOW(ignitionSchedule5.tachoduration);  
+      }
+      else
+      {
+        ignitionSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+        if(ignitionSchedule5.endScheduleSetByDecoder == true) { IGN5_COMPARE = ignitionSchedule5.endCompare; }
+        else { IGN5_COMPARE = IGN5_COUNTER + uS_TO_TIMER_COMPARE_SLOW(ignitionSchedule5.duration); } //Doing this here prevents a potential overflow on restarts
+      }
+    }
+    else if (ignitionSchedule5.Status == INTERMEDIATE)
+    {
+
+      TACH_PULSE_HIGH();  
+      ignitionSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+
+      if(ignitionSchedule5.endScheduleSetByDecoder == true) { IGN5_COMPARE = ignitionSchedule5.endCompare; } 
+      else { IGN5_COMPARE = IGN5_COUNTER + uS_TO_TIMER_COMPARE_SLOW((ignitionSchedule5.duration-ignitionSchedule5.tachoduration)); } //Doing this here prevents a potential overflow on restarts
     }
     else if (ignitionSchedule5.Status == RUNNING)
     {
        ignitionSchedule5.Status = OFF; //Turn off the schedule
        ignitionSchedule5.EndCallback();
+
+       if ((!configPage9.limitTachoPulse) || (ignitionSchedule5.duration <= ignitionSchedule5.tachoduration))
+         TACH_PULSE_HIGH();
+
        ignitionSchedule5.schedulesSet = 0;
        ignitionSchedule5.endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the igintion counter
@@ -1147,14 +1277,38 @@ static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call
     if (ignitionSchedule6.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule6.StartCallback();
-      ignitionSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+
       ignitionSchedule6.startTime = micros();
-      IGN6_COMPARE = IGN6_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule6.duration); //Doing this here prevents a potential overflow on restarts
+
+      ignitionSchedule6.tachoduration = configPage9.tachoPulseLimit * 100; // convert to us. Must have this here so we can change on the fly.
+      if ((configPage9.limitTachoPulse) && (ignitionSchedule6.duration > ignitionSchedule6.tachoduration))
+      {
+        ignitionSchedule6.Status = INTERMEDIATE; //go to tacho pulse intermediate stage next
+        IGN6_COMPARE = IGN6_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule6.tachoduration);  
+      }
+      else
+      {
+        ignitionSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+        if(ignitionSchedule6.endScheduleSetByDecoder == true) { IGN6_COMPARE = ignitionSchedule6.endCompare; }
+        else { IGN6_COMPARE = IGN6_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule6.duration); } //Doing this here prevents a potential overflow on restarts
+      }
     }
+    else if (ignitionSchedule6.Status == INTERMEDIATE)
+    {
+      TACH_PULSE_HIGH();  
+      ignitionSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+
+      if(ignitionSchedule6.endScheduleSetByDecoder == true) { IGN6_COMPARE = ignitionSchedule6.endCompare; } 
+      else { IGN6_COMPARE = IGN6_COUNTER + uS_TO_TIMER_COMPARE((ignitionSchedule6.duration-ignitionSchedule6.tachoduration)); } //Doing this here prevents a potential overflow on restarts
+    }    
     else if (ignitionSchedule6.Status == RUNNING)
     {
        ignitionSchedule6.Status = OFF; //Turn off the schedule
        ignitionSchedule6.EndCallback();
+       
+       if ((!configPage9.limitTachoPulse) || (ignitionSchedule6.duration <= ignitionSchedule6.tachoduration))
+         TACH_PULSE_HIGH();
+       
        ignitionSchedule6.schedulesSet = 0;
        ignitionSchedule6.endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the igintion counter
@@ -1173,14 +1327,38 @@ static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call
     if (ignitionSchedule7.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule7.StartCallback();
-      ignitionSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      
       ignitionSchedule7.startTime = micros();
-      IGN7_COMPARE = IGN7_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule7.duration); //Doing this here prevents a potential overflow on restarts
+
+      ignitionSchedule7.tachoduration = configPage9.tachoPulseLimit * 100; // convert to us. Must have this here so we can change on the fly.
+      if ((configPage9.limitTachoPulse) && (ignitionSchedule7.duration > ignitionSchedule7.tachoduration))
+      {
+        ignitionSchedule7.Status = INTERMEDIATE; //go to tacho pulse intermediate stage next
+        IGN7_COMPARE = IGN7_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule7.tachoduration);  
+      }
+      else
+      {
+        ignitionSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+        if(ignitionSchedule7.endScheduleSetByDecoder == true) { IGN7_COMPARE = ignitionSchedule7.endCompare; }
+        else { IGN7_COMPARE = IGN7_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule7.duration); } //Doing this here prevents a potential overflow on restarts
+      }
+    }
+    else if (ignitionSchedule7.Status == INTERMEDIATE)
+    {
+      TACH_PULSE_HIGH();
+      ignitionSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+
+      if(ignitionSchedule7.endScheduleSetByDecoder == true) { IGN7_COMPARE = ignitionSchedule7.endCompare; } 
+      else { IGN7_COMPARE = IGN7_COUNTER + uS_TO_TIMER_COMPARE((ignitionSchedule7.duration-ignitionSchedule7.tachoduration)); } //Doing this here prevents a potential overflow on restarts
     }
     else if (ignitionSchedule7.Status == RUNNING)
     {
        ignitionSchedule7.Status = OFF; //Turn off the schedule
        ignitionSchedule7.EndCallback();
+       
+       if ((!configPage9.limitTachoPulse) || (ignitionSchedule7.duration <= ignitionSchedule7.tachoduration))
+         TACH_PULSE_HIGH();
+       
        ignitionSchedule7.schedulesSet = 0;
        ignitionSchedule7.endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the igintion counter
@@ -1199,14 +1377,38 @@ static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call
     if (ignitionSchedule8.Status == PENDING) //Check to see if this schedule is turn on
     {
       ignitionSchedule8.StartCallback();
-      ignitionSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      
       ignitionSchedule8.startTime = micros();
-      IGN8_COMPARE = IGN8_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule8.duration); //Doing this here prevents a potential overflow on restarts
+
+      ignitionSchedule8.tachoduration = configPage9.tachoPulseLimit * 100; // convert to us. Must have this here so we can change on the fly.
+      if ((configPage9.limitTachoPulse) && (ignitionSchedule8.duration > ignitionSchedule8.tachoduration))
+      {
+        ignitionSchedule8.Status = INTERMEDIATE; //go to tacho pulse intermediate stage next
+        IGN8_COMPARE = IGN8_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule8.tachoduration);  
+      }
+      else
+      {
+        ignitionSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+        if(ignitionSchedule8.endScheduleSetByDecoder == true) { IGN8_COMPARE = ignitionSchedule8.endCompare; }
+        else { IGN8_COMPARE = IGN8_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule8.duration); } //Doing this here prevents a potential overflow on restarts
+      }
+    }
+    else if (ignitionSchedule8.Status == INTERMEDIATE)
+    {
+      TACH_PULSE_HIGH();
+      ignitionSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+
+      if(ignitionSchedule8.endScheduleSetByDecoder == true) { IGN8_COMPARE = ignitionSchedule8.endCompare; } 
+      else { IGN8_COMPARE = IGN8_COUNTER + uS_TO_TIMER_COMPARE((ignitionSchedule8.duration-ignitionSchedule8.tachoduration)); } //Doing this here prevents a potential overflow on restarts
     }
     else if (ignitionSchedule8.Status == RUNNING)
     {
        ignitionSchedule8.Status = OFF; //Turn off the schedule
        ignitionSchedule8.EndCallback();
+       
+       if ((!configPage9.limitTachoPulse) || (ignitionSchedule8.duration <= ignitionSchedule8.tachoduration))
+         TACH_PULSE_HIGH();
+       
        ignitionSchedule8.schedulesSet = 0;
        ignitionSchedule8.endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the igintion counter

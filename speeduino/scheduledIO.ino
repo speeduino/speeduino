@@ -9,28 +9,28 @@ volatile bool tachoAlt = true;
 
 
   inline void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); TACH_PULSE_LOW(); }
-  inline void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); TACH_PULSE_HIGH(); }
+  inline void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); }
 
   inline void beginCoil2Charge() { digitalWrite(pinCoil2, coilHIGH); TACH_PULSE_LOW(); }
-  inline void endCoil2Charge() { digitalWrite(pinCoil2, coilLOW); TACH_PULSE_HIGH(); }
+  inline void endCoil2Charge() { digitalWrite(pinCoil2, coilLOW); }
 
   inline void beginCoil3Charge() { digitalWrite(pinCoil3, coilHIGH); TACH_PULSE_LOW(); }
-  inline void endCoil3Charge() { digitalWrite(pinCoil3, coilLOW); TACH_PULSE_HIGH(); }
+  inline void endCoil3Charge() { digitalWrite(pinCoil3, coilLOW); }
 
   inline void beginCoil4Charge() { digitalWrite(pinCoil4, coilHIGH); TACH_PULSE_LOW(); }
-  inline void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); TACH_PULSE_HIGH(); }
+  inline void endCoil4Charge() { digitalWrite(pinCoil4, coilLOW); }
 
   inline void beginCoil5Charge() { digitalWrite(pinCoil5, coilHIGH); TACH_PULSE_LOW(); }
-  inline void endCoil5Charge() { digitalWrite(pinCoil5, coilLOW); TACH_PULSE_HIGH(); }
+  inline void endCoil5Charge() { digitalWrite(pinCoil5, coilLOW); }
 
   inline void beginCoil6Charge() { digitalWrite(pinCoil6, coilHIGH); TACH_PULSE_LOW(); }
-  inline void endCoil6Charge() { digitalWrite(pinCoil6, coilLOW); TACH_PULSE_HIGH(); }
+  inline void endCoil6Charge() { digitalWrite(pinCoil6, coilLOW); }
 
   inline void beginCoil7Charge() { digitalWrite(pinCoil7, coilHIGH); TACH_PULSE_LOW(); }
-  inline void endCoil7Charge() { digitalWrite(pinCoil7, coilLOW); TACH_PULSE_HIGH(); }
+  inline void endCoil7Charge() { digitalWrite(pinCoil7, coilLOW); }
 
   inline void beginCoil8Charge() { digitalWrite(pinCoil8, coilHIGH); TACH_PULSE_LOW(); }
-  inline void endCoil8Charge() { digitalWrite(pinCoil8, coilLOW); TACH_PULSE_HIGH(); }
+  inline void endCoil8Charge() { digitalWrite(pinCoil8, coilLOW); }
 
   inline void beginTrailingCoilCharge() { digitalWrite(pinCoil2, coilHIGH); }
   inline void endTrailingCoilCharge1() { digitalWrite(pinCoil2, coilLOW); *ign3_pin_port |= ign3_pin_mask; } //Sets ign3 (Trailing select) high

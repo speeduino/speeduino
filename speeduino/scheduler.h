@@ -93,7 +93,7 @@ static inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute
 #endif
 #endif
 
-enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The 3 statuses that a schedule can have
+enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING, INTERMEDIATE}; //The 3 statuses that a schedule can have
 
 struct Schedule {
   volatile unsigned long duration;
@@ -116,6 +116,7 @@ struct Schedule {
   volatile uint32_t * counter;
   volatile uint32_t * compare;
 #endif
+  unsigned long tachoduration;
 };
 
 //volatile Schedule *timer3Aqueue[4];

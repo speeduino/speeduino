@@ -746,8 +746,11 @@ struct config9 {
   uint8_t Auxinpinb[16];            // digital pin number when internal aux in use
 
   byte iacStepperInv : 1;  //stepper direction of travel to allow reversing. 0=normal, 1=inverted.
-
-  byte unused10_153;
+  byte limitTachoPulse : 1;   // whether the tacho pulse has a duration limit or 
+                              //not (if not, the pulse width is equal to the dwell time)
+  
+  byte tachoPulseLimit;       // the duration in ms*10 of the tacho pulse limit
+  
   byte unused10_154;
   byte unused10_155;
   byte unused10_156;
