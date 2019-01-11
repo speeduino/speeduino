@@ -134,12 +134,6 @@ void loop()
       boostDisable();
     }
 
-    //Uncomment the following for testing
-    /*
-    currentStatus.hasSync = true;
-    currentStatus.RPM = 500;
-    */
-
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
     readMAP();
@@ -199,20 +193,17 @@ void loop()
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
 
-
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
-      //Nothing here currently
       BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
-      //currentStatus.RPM = 3000;
       boostControl();
     }
-    //The IAT and CLT readings can be done less frequently (4 times per second)
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_4HZ);
+      //The IAT and CLT readings can be done less frequently (4 times per second)
       readCLT();
       readIAT();
       readO2();
@@ -295,19 +286,20 @@ void loop()
     if (currentStatus.hasSync && (currentStatus.RPM > 0))
     {
         if(currentStatus.startRevolutions >= configPage4.StgCycles)  { ignitionOn = true; fuelOn = true; } //Enable the fuel and ignition, assuming staging revolutions are complete
-        //If it is, check is we're running or cranking
+        //Check whether running or cranking
         if(currentStatus.RPM > currentStatus.crankRPM) //Crank RPM in the config is stored as a x10. currentStatus.crankRPM is set in timers.ino and represents the true value
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_RUN); //Sets the engine running bit
           //Only need to do anything if we're transitioning from cranking to running
           if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
           {
-            BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //clears the engine cranking bit
+            BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
             if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, HIGH); }
           }
         }
         else
-        {  //Sets the engine cranking bit, clears the engine running bit
+        {  
+          //Sets the engine cranking bit, clears the engine running bit
           BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN);
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
@@ -369,7 +361,7 @@ void loop()
       int ignition8StartAngle = 0;
 #endif
       //These are used for comparisons on channels above 1 where the starting angle (for injectors or ignition) can be less than a single loop time
-      //(Don't ask why this is needed, it will break your head)
+      //(Don't ask why this is needed, it's just there)
       int tempCrankAngle;
       int tempStartAngle;
 
@@ -414,7 +406,6 @@ void loop()
           else { currentStatus.PW3 = 0; } //If tempPW1 < pwLImit it means that the entire fuel load can be handled by the primaries. Simply set the secondaries to 0
         }
 
-        //currentStatus.PW3 = 2000;
         //Set the 2nd channel of each stage with the same pulseWidth
         currentStatus.PW2 = currentStatus.PW1;
         currentStatus.PW4 = currentStatus.PW3;
@@ -460,12 +451,6 @@ void loop()
           break;
         //2 cylinders
         case 2:
-          /*
-          injector2StartAngle = (configPage2.inj2Ang + channel2InjDegrees);
-          if(injector2StartAngle < PWdivTimerPerDegree) { injector2StartAngle += CRANK_ANGLE_MAX_INJ; }
-          injector2StartAngle -= PWdivTimerPerDegree;
-          if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) { injector2StartAngle -= CRANK_ANGLE_MAX_INJ; }
-          */
           injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
           if( (configPage10.stagingEnabled == true) && (currentStatus.PW3 > 0) )
           {
@@ -479,44 +464,16 @@ void loop()
           break;
         //3 cylinders
         case 3:
-          /*
-          injector2StartAngle = (configPage2.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
-          if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) {injector2StartAngle -= CRANK_ANGLE_MAX_INJ;}
-          if(injector2StartAngle < 0) {injector2StartAngle += CRANK_ANGLE_MAX_INJ;}
-          */
           injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
-
-          /*
-          injector3StartAngle = (configPage2.inj3Ang + channel3InjDegrees - ( PWdivTimerPerDegree ));
-          if(injector3StartAngle > CRANK_ANGLE_MAX_INJ) {injector3StartAngle -= CRANK_ANGLE_MAX_INJ;}
-          if(injector3StartAngle < 0) {injector3StartAngle += CRANK_ANGLE_MAX_INJ;}
-          */
           injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
-
           break;
         //4 cylinders
         case 4:
-          /*
-          injector2StartAngle = (configPage2.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
-          if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) {injector2StartAngle -= CRANK_ANGLE_MAX_INJ;}
-          if(injector2StartAngle < 0) {injector2StartAngle += CRANK_ANGLE_MAX_INJ;}
-          */
           injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
 
           if(configPage2.injLayout == INJ_SEQUENTIAL)
           {
-            /*
-            injector3StartAngle = (configPage2.inj3Ang + channel3InjDegrees - ( PWdivTimerPerDegree ));
-            if(injector3StartAngle > CRANK_ANGLE_MAX_INJ) {injector3StartAngle -= CRANK_ANGLE_MAX_INJ;}
-            if(injector3StartAngle < 0) {injector3StartAngle += CRANK_ANGLE_MAX_INJ;}
-            */
             injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
-
-            /*
-            injector4StartAngle = (configPage2.inj4Ang + channel4InjDegrees - ( PWdivTimerPerDegree ));
-            if(injector4StartAngle > CRANK_ANGLE_MAX_INJ) {injector4StartAngle -= CRANK_ANGLE_MAX_INJ;}
-            if(injector4StartAngle < 0) {injector4StartAngle += CRANK_ANGLE_MAX_INJ;}
-            */
             injector4StartAngle = calculateInjector4StartAngle(PWdivTimerPerDegree);
 
             if(configPage6.fuelTrimEnabled > 0)
@@ -544,42 +501,14 @@ void loop()
           break;
         //5 cylinders
         case 5:
-          /*
-          injector2StartAngle = (configPage2.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
-          if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) {injector2StartAngle -= CRANK_ANGLE_MAX_INJ;}
-          */
-          injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
-
-          /*
-          injector3StartAngle = (configPage2.inj3Ang + channel3InjDegrees - ( PWdivTimerPerDegree ));
-          if(injector3StartAngle > CRANK_ANGLE_MAX_INJ) {injector3StartAngle -= CRANK_ANGLE_MAX_INJ;}
-          */
+          injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree); //Note the shared timing with INJ2
           injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
-
-          /*
-          injector4StartAngle = (configPage2.inj4Ang + channel4InjDegrees - ( PWdivTimerPerDegree ));
-          if(injector4StartAngle > CRANK_ANGLE_MAX_INJ) {injector4StartAngle -= CRANK_ANGLE_MAX_INJ;}
-          */
           injector4StartAngle = calculateInjector4StartAngle(PWdivTimerPerDegree);
-
-          /*
-          injector5StartAngle = (configPage2.inj1Ang + channel5InjDegrees - ( PWdivTimerPerDegree ));
-          if(injector5StartAngle > CRANK_ANGLE_MAX_INJ) {injector5StartAngle -= CRANK_ANGLE_MAX_INJ;}
-          */
           injector5StartAngle = calculateInjector5StartAngle(PWdivTimerPerDegree);
           break;
         //6 cylinders
         case 6:
-          /*
-          injector2StartAngle = (configPage2.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
-          if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) {injector2StartAngle -= CRANK_ANGLE_MAX_INJ;}
-          */
           injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
-
-          /*
-          injector3StartAngle = (configPage2.inj3Ang + channel3InjDegrees - ( PWdivTimerPerDegree ));
-          if(injector3StartAngle > CRANK_ANGLE_MAX_INJ) {injector3StartAngle -= CRANK_ANGLE_MAX_INJ;}
-          */
           injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
 #if INJ_CHANNELS >= 6
           if(configPage2.injLayout == INJ_SEQUENTIAL)
@@ -595,22 +524,8 @@ void loop()
           break;
         //8 cylinders
         case 8:
-          /*
-          injector2StartAngle = (configPage2.inj2Ang + channel2InjDegrees - ( PWdivTimerPerDegree ));
-          if(injector2StartAngle > CRANK_ANGLE_MAX_INJ) {injector2StartAngle -= CRANK_ANGLE_MAX_INJ;}
-          */
           injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
-
-          /*
-          injector3StartAngle = (configPage2.inj3Ang + channel3InjDegrees - ( PWdivTimerPerDegree ));
-          if(injector3StartAngle > CRANK_ANGLE_MAX_INJ) {injector3StartAngle -= CRANK_ANGLE_MAX_INJ;}
-          */
           injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
-
-          /*
-          injector4StartAngle = (configPage2.inj4Ang + channel4InjDegrees - ( PWdivTimerPerDegree ));
-          if(injector4StartAngle > CRANK_ANGLE_MAX_INJ) {injector4StartAngle -= CRANK_ANGLE_MAX_INJ;}
-          */
           injector4StartAngle = calculateInjector4StartAngle(PWdivTimerPerDegree);
           break;
 
@@ -952,7 +867,7 @@ void loop()
       }
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
-      //Likewise for the ignition
+      //Same as above, except for ignition
 
       //fixedCrankingOverride is used to extend the dwell during cranking so that the decoder can trigger the spark upon seeing a certain tooth. Currently only available on the basic distributor and 4g63 decoders.
       if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (decoderHasFixedCrankingTiming == true) )
@@ -1009,13 +924,6 @@ void loop()
 #if IGN_CHANNELS >= 1
         if ( (ignition1StartAngle > crankAngle) && (curRollingCut != 1) )
         {
-            /*
-            long some_time = ((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree);
-            long newRPM = (long)(some_time * currentStatus.rpmDOT) / 1000000L;
-            newRPM = currentStatus.RPM + (newRPM/2);
-            unsigned long timePerDegree_1 = ldiv( 166666L, newRPM).quot;
-            unsigned long timeout = (unsigned long)(ignition1StartAngle - crankAngle) * 282UL;
-            */
             if(ignitionSchedule1.Status != RUNNING)
             {
               setIgnitionSchedule1(ign1StartFunction,
@@ -1055,6 +963,7 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition2StartAngle - channel2IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+        //if (tempStartAngle > tempCrankAngle)
         {
             unsigned long ignition2StartTime = 0;
             if(tempStartAngle > tempCrankAngle) { ignition2StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
