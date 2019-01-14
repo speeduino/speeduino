@@ -32,7 +32,7 @@ void fanControl()
   {
     int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
     int offTemp = onTemp - configPage6.fanHyster;
-    bool fanPermit = fanWhenOff ? true : BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)
+    bool fanPermit = configPage6.fanWhenOff ? true : BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN);
 
     if ( currentStatus.coolant >= onTemp && fanPermit )
     {
