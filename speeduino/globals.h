@@ -692,7 +692,11 @@ struct config6 {
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
+
   byte fanWhenOff : 1;      // Only run fan when engine is running
+  byte fanUnused : 7;
+
+  byte unused6_129_135[7];
 
 #if defined(CORE_AVR)
   };
