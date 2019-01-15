@@ -281,6 +281,9 @@ void loop()
 
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) )  { idleControl(); } //Run idlecontrol every loop for stepper idle.
 
+    //VE calculation was moved outside the sync/RPM check so that the fuel load value will be accurately shown when RPM=0
+    currentStatus.VE = getVE();
+
     //Always check for sync
     //Main loop runs within this clause
     if (currentStatus.hasSync && (currentStatus.RPM > 0))
@@ -312,7 +315,6 @@ void loop()
       //Calculate an injector pulsewidth from the VE
       currentStatus.corrections = correctionsFuel();
 
-      currentStatus.VE = getVE();
       currentStatus.advance = getAdvance();
       currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
 
