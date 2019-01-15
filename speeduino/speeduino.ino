@@ -30,7 +30,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "maths.h"
 #include "corrections.h"
 #include "timers.h"
-//#include "display.h" //All display code is currently disabled
 #include "decoders.h"
 #include "idle.h"
 #include "auxiliaries.h"
