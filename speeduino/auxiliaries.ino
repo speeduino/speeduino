@@ -34,7 +34,7 @@ void fanControl()
     int offTemp = onTemp - configPage6.fanHyster;
     bool fanPermit = false;
 
-    if ( configPage6.fanWhenOff ) { fanPermit = true; }
+    if ( configPage2.fanWhenOff ) { fanPermit = true; }
     else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
 
     if ( currentStatus.coolant >= onTemp && fanPermit )
