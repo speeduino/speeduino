@@ -11,6 +11,7 @@ A full copy of the license may be found in the projects root directory
 #include "maths.h"
 #include "utils.h"
 #include "decoders.h"
+#include <EEPROM.h>
 
 /*
   Processes the data on the serial buffer.

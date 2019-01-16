@@ -85,7 +85,7 @@
 #define BIT_STATUS1_INJ2           1  //inj2
 #define BIT_STATUS1_INJ3           2  //inj3
 #define BIT_STATUS1_INJ4           3  //inj4
-#define BIT_STATUS1_DFCO           4 //Decelleration fuel cutoff
+#define BIT_STATUS1_DFCO           4  //Decelleration fuel cutoff
 #define BIT_STATUS1_BOOSTCUT       5  //Fuel component of MAP based boost cut out
 #define BIT_STATUS1_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
 #define BIT_STATUS1_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
@@ -100,8 +100,8 @@
 #define BIT_SPARK_IDLE            6  // idle on
 #define BIT_SPARK_SYNC            7  // Whether engine has sync or not
 
-#define BIT_SPARK2_FLATSH         0 //Flat shift hard cut
-#define BIT_SPARK2_FLATSS         1 //Flat shift soft cut
+#define BIT_SPARK2_FLATSH         0  //Flat shift hard cut
+#define BIT_SPARK2_FLATSS         1  //Flat shift soft cut
 #define BIT_SPARK2_UNUSED3        2
 #define BIT_SPARK2_UNUSED4        3
 #define BIT_SPARK2_UNUSED5        4
@@ -298,7 +298,7 @@ int ignition4EndAngle = 0;
 int ignition5EndAngle = 0;
 
 //These are variables used across multiple files
-bool initialisationComplete = false; //Tracks whether the setup() functino has run completely
+bool initialisationComplete = false; //Tracks whether the setup() function has run completely
 volatile uint16_t mainLoopCount;
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
@@ -317,7 +317,7 @@ byte primaryTriggerEdge;
 byte secondaryTriggerEdge;
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360;
-int CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+int CRANK_ANGLE_MAX_INJ = 360; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
   
 
 //This needs to be here because using the config page directly can prevent burning the setting
@@ -630,7 +630,7 @@ struct config6 {
   byte egoTPSMax; //TPS must be below this for closed loop to function
   byte vvtPin : 6;
   byte useExtBaro : 1;
-  byte boostMode : 1; //Simple of full boost contrl
+  byte boostMode : 1; //Simple of full boost control
   byte boostPin : 6;
   byte VVTasOnOff : 1; //Whether or not to use the VVT table as an on/off map
   byte useEMAP : 1;
@@ -680,7 +680,7 @@ struct config6 {
   byte iacAlgorithm : 3; //Valid values are: "None", "On/Off", "PWM", "PWM Closed Loop", "Stepper", "Stepper Closed Loop"
   byte iacStepTime : 3; //How long to pulse the stepper for to ensure the step completes (ms)
   byte iacChannels : 1; //How many outputs to use in PWM mode (0 = 1 channel, 1 = 2 channels)
-  byte iacPWMdir : 1; //Directino of the PWM valve. 0 = Normal = Higher RPM with more duty. 1 = Reverse = Lower RPM with more duty
+  byte iacPWMdir : 1; //Direction of the PWM valve. 0 = Normal = Higher RPM with more duty. 1 = Reverse = Lower RPM with more duty
 
   byte iacFastTemp; //Fast idle temp when using a simple on/off valve
 
@@ -733,8 +733,9 @@ struct config9 {
   uint16_t obd_address;             //speeduino OBD diagnostic address
   uint8_t Auxinpina[16];            //analog  pin number when internal aux in use
   uint8_t Auxinpinb[16];            // digital pin number when internal aux in use
-  
-  byte unused10_152;
+
+  byte iacStepperInv : 1;  //stepper direction of travel to allow reversing. 0=normal, 1=inverted.
+
   byte unused10_153;
   byte unused10_154;
   byte unused10_155;

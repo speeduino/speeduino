@@ -7,8 +7,8 @@ These are some utility functions and variables used through the main code
 #include <Arduino.h>
 
 uint16_t freeRam ();
-void setPinMapping(byte boardID);
-void initialiseTriggers();
+void setResetControlPinState();
+byte pinTranslate(byte);
 
 //This is dumb, but it'll do for now to get things compiling
 #if defined(CORE_STM32)
