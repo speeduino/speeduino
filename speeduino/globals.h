@@ -12,15 +12,18 @@
   #define BOARD_NR_GPIO_PINS 62
   #define LED_BUILTIN 13
   #define CORE_AVR
+  #define BOARD_H "src/boards/avr2560.h"
 
   //#define TIMER5_MICROS
 
 #elif defined(CORE_TEENSY)
   #define BOARD_DIGITAL_GPIO_PINS 34
   #define BOARD_NR_GPIO_PINS 34
+  #define BOARD_H "src/boards/teensy35.h"
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
+  #define BOARD_H "src/boards/stm32.h"
   #ifndef word
     #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
   #endif
