@@ -51,6 +51,9 @@
     #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) )
     #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) )
   #endif
+#elif defined(__SAMD21G18A__)
+  #define BOARD_H "src/boards/samd21.h"
+  #define CORE_SAMD21
 #else
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif

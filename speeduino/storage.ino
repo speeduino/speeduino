@@ -8,7 +8,11 @@ A full copy of the license may be found in the projects root directory
 #include "globals.h"
 #include "table.h"
 #include "comms.h"
+#if defined(CORE_SAMD21)
+  #include "src/FlashStorage/FlashAsEEPROM.h"
+#else
 #include <EEPROM.h>
+#endif
 
 void writeAllConfig()
 {
@@ -643,3 +647,11 @@ void writeCalibration()
   }
 
 }
+
+// Utility functions.
+// By having these in this file, it prevents other files from calling EEPROM functions directly. This is useful due to differences in the EEPROM libraries on different devces
+byte readLastBaro() { return EEPROM.read(EEPROM_LAST_BARO); }
+void storeLastBaro(byte newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
+void storeCalibrationValue(byte location, byte value) { EEPROM.update(location, value); } //This is essentially just an abstraction for EEPROM.update()
+byte readEEPROMVersion() { return EEPROM.read(EEPROM_DATA_VERSION); }
+void storeEEPROMVersion(byte newVersion) { EEPROM.update(EEPROM_DATA_VERSION, newVersion); }
