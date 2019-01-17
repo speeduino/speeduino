@@ -522,7 +522,11 @@ struct config2 {
 
   int8_t EMAPMin; //Must be signed
   uint16_t EMAPMax;
-  byte unused1_70[58];
+
+  byte fanWhenOff : 1;      // Only run fan when engine is running
+  byte fanUnused : 7;
+
+  byte unused1_70[57];
 
 #if defined(CORE_AVR)
   };
@@ -692,6 +696,7 @@ struct config6 {
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
+
 #if defined(CORE_AVR)
   };
 #else
