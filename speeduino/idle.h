@@ -3,6 +3,7 @@
 
 #include "globals.h"
 #include "table.h"
+#include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 #define IAC_ALGORITHM_NONE    0
 #define IAC_ALGORITHM_ONOFF   1
@@ -35,11 +36,7 @@ struct StepperIdle
   #define IDLE_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4C)
 
 #elif defined(CORE_TEENSY)
-  #define IDLE_COUNTER FTM2_CNT
-  #define IDLE_COMPARE FTM2_C0V
 
-  #define IDLE_TIMER_ENABLE() FTM2_C0SC |= FTM_CSC_CHIE
-  #define IDLE_TIMER_DISABLE() FTM2_C0SC &= ~FTM_CSC_CHIE
 
 #elif defined(CORE_STM32)
   #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
@@ -55,6 +52,7 @@ struct StepperIdle
     #define IDLE_TIMER_ENABLE()  (TIMER1->regs).gen->CCER |= TIMER_CCER_CC4E
     #define IDLE_TIMER_DISABLE() (TIMER1->regs).gen->CCER &= ~TIMER_CCER_CC4E
   #endif
+
 #endif
 
 struct table2D iacClosedLoopTable;
@@ -70,10 +68,11 @@ byte idleInitComplete = 99; //TRacks which idle method was initialised. 99 is a 
 unsigned int iacStepTime;
 unsigned int completedHomeSteps;
 
-volatile byte *idle_pin_port;
+volatile PORT_TYPE *idle_pin_port;
 volatile byte idle_pin_mask;
-volatile byte *idle2_pin_port;
+volatile PORT_TYPE *idle2_pin_port;
 volatile byte idle2_pin_mask;
+
 volatile bool idle_pwm_state;
 unsigned int idle_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int idle_pwm_cur_value;
@@ -88,7 +87,7 @@ static inline void enableIdle();
 static inline byte isStepperHomed();
 static inline byte checkForStepping();
 static inline void doStep();
-#if defined (CORE_TEENSY) || defined(CORE_STM32)
+#if defined(CORE_STM32)
   static inline void idleInterrupt();
 #endif
 

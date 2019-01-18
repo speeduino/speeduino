@@ -17,8 +17,6 @@
   //#define TIMER5_MICROS
 
 #elif defined(CORE_TEENSY)
-  #define BOARD_DIGITAL_GPIO_PINS 34
-  #define BOARD_NR_GPIO_PINS 34
   #define BOARD_H "src/boards/teensy35.h"
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
@@ -40,7 +38,7 @@
   #endif
 
   //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
-  #if defined(MCU_STM32F103C8) | defined(MCU_STM32F103CB)
+  #if defined(MCU_STM32F103C8) || defined(MCU_STM32F103CB)
     #define SMALL_FLASH_MODE
   #endif
 
@@ -60,6 +58,9 @@
 #else
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif
+
+//This can only be included after the above section
+#include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 //Handy bitsetting macros
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
@@ -243,48 +244,48 @@ struct table2D knockWindowStartTable;
 struct table2D knockWindowDurationTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
-volatile byte *inj1_pin_port;
+volatile PORT_TYPE *inj1_pin_port;
 volatile byte inj1_pin_mask;
-volatile byte *inj2_pin_port;
+volatile PORT_TYPE *inj2_pin_port;
 volatile byte inj2_pin_mask;
-volatile byte *inj3_pin_port;
+volatile PORT_TYPE *inj3_pin_port;
 volatile byte inj3_pin_mask;
-volatile byte *inj4_pin_port;
+volatile PORT_TYPE *inj4_pin_port;
 volatile byte inj4_pin_mask;
-volatile byte *inj5_pin_port;
+volatile PORT_TYPE *inj5_pin_port;
 volatile byte inj5_pin_mask;
-volatile byte *inj6_pin_port;
+volatile PORT_TYPE *inj6_pin_port;
 volatile byte inj6_pin_mask;
-volatile byte *inj7_pin_port;
+volatile PORT_TYPE *inj7_pin_port;
 volatile byte inj7_pin_mask;
-volatile byte *inj8_pin_port;
+volatile PORT_TYPE *inj8_pin_port;
 volatile byte inj8_pin_mask;
 
-volatile byte *ign1_pin_port;
+volatile PORT_TYPE *ign1_pin_port;
 volatile byte ign1_pin_mask;
-volatile byte *ign2_pin_port;
+volatile PORT_TYPE *ign2_pin_port;
 volatile byte ign2_pin_mask;
-volatile byte *ign3_pin_port;
+volatile PORT_TYPE *ign3_pin_port;
 volatile byte ign3_pin_mask;
-volatile byte *ign4_pin_port;
+volatile PORT_TYPE *ign4_pin_port;
 volatile byte ign4_pin_mask;
-volatile byte *ign5_pin_port;
+volatile PORT_TYPE *ign5_pin_port;
 volatile byte ign5_pin_mask;
-volatile byte *ign6_pin_port;
+volatile PORT_TYPE *ign6_pin_port;
 volatile byte ign6_pin_mask;
-volatile byte *ign7_pin_port;
+volatile PORT_TYPE *ign7_pin_port;
 volatile byte ign7_pin_mask;
-volatile byte *ign8_pin_port;
+volatile PORT_TYPE *ign8_pin_port;
 volatile byte ign8_pin_mask;
 
-volatile byte *tach_pin_port;
+volatile PORT_TYPE *tach_pin_port;
 volatile byte tach_pin_mask;
-volatile byte *pump_pin_port;
+volatile PORT_TYPE *pump_pin_port;
 volatile byte pump_pin_mask;
 
-volatile byte *triggerPri_pin_port;
+volatile PORT_TYPE *triggerPri_pin_port;
 volatile byte triggerPri_pin_mask;
-volatile byte *triggerSec_pin_port;
+volatile PORT_TYPE *triggerSec_pin_port;
 volatile byte triggerSec_pin_mask;
 
 //These need to be here as they are used in both speeduino.ino and scheduler.ino

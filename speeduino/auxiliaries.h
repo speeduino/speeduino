@@ -1,6 +1,8 @@
 #ifndef AUX_H
 #define AUX_H
 
+#include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
+
 void initialiseAuxPWM();
 void boostControl();
 void boostDisable();
@@ -22,16 +24,7 @@ void fanControl();
   #define VVT_TIMER_COUNTER     TCNT1
 
 #elif defined(CORE_TEENSY)
-  #define ENABLE_BOOST_TIMER()  FTM1_C0SC |= FTM_CSC_CHIE
-  #define DISABLE_BOOST_TIMER() FTM1_C0SC &= ~FTM_CSC_CHIE
-
-  #define ENABLE_VVT_TIMER()    FTM1_C1SC |= FTM_CSC_CHIE
-  #define DISABLE_VVT_TIMER()   FTM1_C1SC &= ~FTM_CSC_CHIE
-
-  #define BOOST_TIMER_COMPARE   FTM1_C0V
-  #define BOOST_TIMER_COUNTER   FTM1_CNT
-  #define VVT_TIMER_COMPARE     FTM1_C1V
-  #define VVT_TIMER_COUNTER     FTM1_CNT
+  
 
 #elif defined(CORE_STM32)
   #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
@@ -71,20 +64,18 @@ void fanControl();
 #define N2O_STAGE2_PIN_HIGH() *n2o_stage2_pin_port |= (n2o_stage2_pin_mask)
 #define READ_N2O_ARM_PIN()    ((*n2o_arming_pin_port & n2o_arming_pin_mask) ? true : false)
 
-#if not defined(CORE_SAMD21)
-volatile byte *boost_pin_port;
+volatile PORT_TYPE *boost_pin_port;
 volatile byte boost_pin_mask;
-volatile byte *vvt_pin_port;
+volatile PORT_TYPE *vvt_pin_port;
 volatile byte vvt_pin_mask;
-volatile byte *fan_pin_port;
+volatile PORT_TYPE *fan_pin_port;
 volatile byte fan_pin_mask;
-volatile byte *n2o_stage1_pin_port;
+volatile PORT_TYPE *n2o_stage1_pin_port;
 volatile byte n2o_stage1_pin_mask;
-volatile byte *n2o_stage2_pin_port;
+volatile PORT_TYPE *n2o_stage2_pin_port;
 volatile byte n2o_stage2_pin_mask;
-volatile byte *n2o_arming_pin_port;
+volatile PORT_TYPE *n2o_arming_pin_port;
 volatile byte n2o_arming_pin_mask;
-#endif
 
 volatile bool boost_pwm_state;
 unsigned int boost_pwm_max_count; //Used for variable PWM frequency
