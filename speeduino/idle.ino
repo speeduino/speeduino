@@ -490,7 +490,7 @@ static inline void enableIdle()
 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPC_vect)
-#elif defined (CORE_TEENSY) || defined (CORE_STM32)
+#else
 static inline void idleInterrupt() //Most ARM chips can simply call a function
 #endif
 {
