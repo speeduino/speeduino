@@ -1,4 +1,4 @@
- #ifndef SAMD21_H
+#ifndef SAMD21_H
 #define SAMD21_H
 #if defined(CORE_SAMD21)
 
@@ -18,6 +18,7 @@
   #define PIN_A7               (9ul)
   #define PIN_A8               (10ul)
   #define PIN_A9               (11ul)
+  //These don't work:
   #define PIN_A13               (9ul)
   #define PIN_A14               (9ul)
   #define PIN_A15               (9ul)

@@ -28,33 +28,6 @@ struct StepperIdle
   byte moreAirDirection;
 };
 
-#if defined(CORE_AVR)
-  #define IDLE_COUNTER TCNT4
-  #define IDLE_COMPARE OCR4C
-
-  #define IDLE_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4C)
-  #define IDLE_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4C)
-
-#elif defined(CORE_TEENSY)
-
-
-#elif defined(CORE_STM32)
-  #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
-    #define IDLE_COUNTER   (TIM1)->CNT
-    #define IDLE_COMPARE   (TIM1)->CCR4
-
-    #define IDLE_TIMER_ENABLE()  (TIM1)->CCER |= TIM_CCER_CC4E
-    #define IDLE_TIMER_DISABLE() (TIM1)->CCER &= ~TIM_CCER_CC4E
-  #else //libmaple core aka STM32DUINO
-    #define IDLE_COUNTER   (TIMER1->regs).gen->CNT
-    #define IDLE_COMPARE   (TIMER1->regs).gen->CCR4
-
-    #define IDLE_TIMER_ENABLE()  (TIMER1->regs).gen->CCER |= TIMER_CCER_CC4E
-    #define IDLE_TIMER_DISABLE() (TIMER1->regs).gen->CCER &= ~TIMER_CCER_CC4E
-  #endif
-
-#endif
-
 struct table2D iacClosedLoopTable;
 struct table2D iacPWMTable;
 struct table2D iacStepTable;
@@ -87,8 +60,6 @@ static inline void enableIdle();
 static inline byte isStepperHomed();
 static inline byte checkForStepping();
 static inline void doStep();
-#if defined(CORE_STM32)
-  static inline void idleInterrupt();
-#endif
+static inline void idleInterrupt();
 
 #endif
