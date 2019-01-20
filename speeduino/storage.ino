@@ -4,16 +4,16 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 
-#include "storage.h"
+
 #include "globals.h"
 #include "table.h"
 #include "comms.h"
 #if defined(CORE_SAMD21)
   #include "src/FlashStorage/FlashAsEEPROM.h"
 #else
-#include <EEPROM.h>
+  #include <EEPROM.h>
 #endif
-
+#include "storage.h"
 void writeAllConfig()
 {
   writeConfig(1);

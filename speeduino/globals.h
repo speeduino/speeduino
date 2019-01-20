@@ -12,16 +12,16 @@
   #define BOARD_NR_GPIO_PINS 62
   #define LED_BUILTIN 13
   #define CORE_AVR
-  #define BOARD_H "src/boards/avr2560.h"
+  #define BOARD_H "board_avr2560.h"
 
   //#define TIMER5_MICROS
 
 #elif defined(CORE_TEENSY)
-  #define BOARD_H "src/boards/teensy35.h"
+  #define BOARD_H "board_teensy35.h"
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
-  #define BOARD_H "src/boards/stm32.h"
+  #define BOARD_H "board_stm32.h"
   #ifndef word
     #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
   #endif
@@ -53,7 +53,7 @@
     #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) )
   #endif
 #elif defined(__SAMD21G18A__)
-  #define BOARD_H "src/boards/samd21.h"
+  #define BOARD_H "board_samd21.h"
   #define CORE_SAMD21
 #else
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again

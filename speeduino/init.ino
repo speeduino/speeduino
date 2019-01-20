@@ -13,9 +13,11 @@
 #include "decoders.h"
 #include "corrections.h"
 #include "idle.h"
+#include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 void initialiseAll()
 {
+    initBoard();
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     table3D_setSize(&fuelTable, 16);
