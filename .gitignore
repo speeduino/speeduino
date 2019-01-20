@@ -22,4 +22,4 @@ reference/hardware/v0.4/gerbers/Archive.zip
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/.browse.c_cpp.db*
-speeduino/*samd21.*
+speeduino/board_samd21*
