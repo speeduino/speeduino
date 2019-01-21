@@ -10,7 +10,7 @@ void initBoard()
     */
 
 
-   /*
+    /*
     ***********************************************************************************************************
     * Idle
     */
@@ -25,7 +25,25 @@ void initBoard()
     Timer1.resume();
 
 
-   /*
+    /*
+    ***********************************************************************************************************
+    * Timers
+    */
+    #if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
+        Timer8.setPeriod(1000);  // Set up period
+        Timer8.setMode(1, TIMER_OUTPUT_COMPARE);
+        Timer8.attachInterrupt(1, oneMSInterval);
+        Timer8.resume(); //Start Timer
+    #else
+        Timer4.setPeriod(1000);  // Set up period
+        Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
+        Timer4.attachInterrupt(1, oneMSInterval);
+        Timer4.resume(); //Start Timer
+    #endif
+    pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
+
+
+    /*
     ***********************************************************************************************************
     * Schedules
     */

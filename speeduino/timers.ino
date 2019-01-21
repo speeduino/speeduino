@@ -39,22 +39,8 @@ void initialiseTimers()
    //wdt_enable(WDTO_2S);
 
 #elif defined (CORE_TEENSY)
-   //Uses the PIT timer on Teensy.
-   lowResTimer.begin(oneMSInterval, 1000);
+   
 
-#elif defined(CORE_STM32)
-#if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
-  Timer8.setPeriod(1000);  // Set up period
-  Timer8.setMode(1, TIMER_OUTPUT_COMPARE);
-  Timer8.attachInterrupt(1, oneMSInterval);
-  Timer8.resume(); //Start Timer
-#else
-  Timer4.setPeriod(1000);  // Set up period
-  Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
-  Timer4.attachInterrupt(1, oneMSInterval);
-  Timer4.resume(); //Start Timer
-#endif
-  pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
 #endif
 
   lastRPM_100ms = 0;
@@ -231,20 +217,3 @@ void oneMSInterval() //Most ARM chips can simply call a function
 #endif
 }
 
-#if defined(TIMER5_MICROS)
-//This is used by the fast version of micros(). We just need to increment the timer overflow counter
-ISR(TIMER5_OVF_vect)
-{
-  ++timer5_overflow_count;
-}
-
-static inline unsigned long micros_safe()
-{
-  unsigned long newMicros;
-  noInterrupts();
-  newMicros = (((timer5_overflow_count << 16) + TCNT5) * 4);
-  interrupts();
-
-  return newMicros;
-}
-#endif
