@@ -7,6 +7,7 @@
 * General
 */
   void initBoard();
+  uint16_t freeRam();
   #define PORT_TYPE uint8_t //Size of the port variables
   #define BOARD_DIGITAL_GPIO_PINS 34
   #define BOARD_NR_GPIO_PINS 34

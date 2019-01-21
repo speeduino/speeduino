@@ -11,6 +11,7 @@
 */
   #define PORT_TYPE uint8_t //Size of the port variables (Eg inj1_pin_port).
   void initBoard();
+  uint16_t freeRam();
 
 /*
 ***********************************************************************************************************

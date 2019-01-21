@@ -2,12 +2,15 @@
 #define STM32_H
 #if defined(CORE_STM32)
 
+#include "HardwareTimer.h"
+
 /*
 ***********************************************************************************************************
 * General
 */
   #define PORT_TYPE uint8_t
   void initBoard();
+  uint16_t freeRam();
 
   //Much of the below is not correct, but included to allow compilation
   //STM32F1/variants/.../board.cpp
@@ -58,7 +61,6 @@
   #define uS_TO_TIMER_COMPARE(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
   #define uS_TO_TIMER_COMPARE_SLOW(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
   #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
-    #include "HardwareTimer.h"
     #define FUEL1_COUNTER (TIM2)->CNT
     #define FUEL2_COUNTER (TIM2)->CNT
     #define FUEL3_COUNTER (TIM2)->CNT

@@ -10,7 +10,7 @@ A full copy of the license may be found in the projects root directory
 
 
 void initialiseSchedulers()
-  {
+{
     nullSchedule.Status = OFF;
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
@@ -42,67 +42,7 @@ void initialiseSchedulers()
     TIFR4  = 0x00;          //Timer4 INT Flag Reg: Clear Timer Overflow Flag
     TCCR4A = 0x00;          //Timer4 Control Reg A: Wave Gen Mode normal
     TCCR4B = (1 << CS12);   //Timer4 Control Reg B: aka Divisor = 256 = 122.5HzTimer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
-
-#elif defined (CORE_TEENSY)
-
-
-#elif defined(CORE_STM32)
-  #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
-    //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
-    Timer1.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
-    Timer2.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
-    Timer3.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
-  #else //libmaple core aka STM32DUINO
-    //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
-    #if defined (STM32F1) || defined(__STM32F1__)
-      //(CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
-      //Timer2 to 4 is on APB1, Timer1 on APB2.   http://www.st.com/resource/en/datasheet/stm32f103cb.pdf sheet 12
-      Timer1.setPrescaleFactor((72 * 2U)-1); //2us resolution
-      Timer2.setPrescaleFactor((36 * 2U)-1); //2us resolution
-      Timer3.setPrescaleFactor((36 * 2U)-1); //2us resolution
-    #elif defined(STM32F4)
-      //(CYCLES_PER_MICROSECOND == 168, APB2 at 84MHz, APB1 at 42MHz).
-      //Timer2 to 14 is on APB1, Timers 1, 8, 9 and 10 on APB2.   http://www.st.com/resource/en/datasheet/stm32f407vg.pdf sheet 120
-      Timer1.setPrescaleFactor((84 * 2U)-1); //2us resolution
-      Timer2.setPrescaleFactor((42 * 2U)-1); //2us resolution
-      Timer3.setPrescaleFactor((42 * 2U)-1); //2us resolution
-    #endif
-  #endif
-  Timer2.setMode(1, TIMER_OUTPUT_COMPARE);
-  Timer2.setMode(2, TIMER_OUTPUT_COMPARE);
-  Timer2.setMode(3, TIMER_OUTPUT_COMPARE);
-  Timer2.setMode(4, TIMER_OUTPUT_COMPARE);
-
-  Timer3.setMode(1, TIMER_OUTPUT_COMPARE);
-  Timer3.setMode(2, TIMER_OUTPUT_COMPARE);
-  Timer3.setMode(3, TIMER_OUTPUT_COMPARE);
-  Timer3.setMode(4, TIMER_OUTPUT_COMPARE);
-  Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
-
-  Timer2.attachInterrupt(1, fuelSchedule1Interrupt);
-  Timer2.attachInterrupt(2, fuelSchedule2Interrupt);
-  Timer2.attachInterrupt(3, fuelSchedule3Interrupt);
-  Timer2.attachInterrupt(4, fuelSchedule4Interrupt);
-
-#if (IGN_CHANNELS >= 1)
-  Timer3.attachInterrupt(1, ignitionSchedule1Interrupt);
-#endif
-#if (IGN_CHANNELS >= 2)
-  Timer3.attachInterrupt(2, ignitionSchedule2Interrupt);
-#endif
-#if (IGN_CHANNELS >= 3)
-  Timer3.attachInterrupt(3, ignitionSchedule3Interrupt);
-#endif
-#if (IGN_CHANNELS >= 4)
-  Timer3.attachInterrupt(4, ignitionSchedule4Interrupt);
-#endif
-#if (IGN_CHANNELS >= 5)
-  Timer1.attachInterrupt(1, ignitionSchedule5Interrupt);
-#endif
-
-  Timer1.resume();
-  Timer2.resume();
-  Timer3.resume();
+  
 #endif
 
     fuelSchedule1.Status = OFF;
@@ -158,7 +98,7 @@ void initialiseSchedulers()
     ignitionSchedule7.schedulesSet = 0;
     ignitionSchedule8.schedulesSet = 0;
 
-  }
+}
 
 /*
 These 8 function turn a schedule on, provides the time to start and the duration and gives it callback functions.
