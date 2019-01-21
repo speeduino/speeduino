@@ -887,7 +887,7 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
 //Timer3A (fuel schedule 1) Compare Vector
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPA_vect) //fuelSchedules 1 and 5
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -924,7 +924,7 @@ static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a f
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect) //fuelSchedule2
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -959,7 +959,7 @@ static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a f
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect) //fuelSchedule3
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -996,7 +996,7 @@ static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a f
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect) //fuelSchedule4
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -1030,7 +1030,7 @@ static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a f
 #if (INJ_CHANNELS >= 5)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER1_COMPC_vect) //fuelSchedule5
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule5Interrupt() //Most ARM chips can simply call a function
 #endif
 {
@@ -1063,7 +1063,7 @@ static inline void fuelSchedule5Interrupt() //Most ARM chips can simply call a f
 #if (INJ_CHANNELS >= 6)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //fuelSchedule6
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule6Interrupt() //Most ARM chips can simply call a function
 #endif
 {
@@ -1098,7 +1098,7 @@ static inline void fuelSchedule6Interrupt() //Most ARM chips can simply call a f
 #if (INJ_CHANNELS >= 7)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //fuelSchedule7
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule7Interrupt() //Most ARM chips can simply call a function
 #endif
 {
@@ -1131,7 +1131,7 @@ static inline void fuelSchedule7Interrupt() //Most ARM chips can simply call a f
 #if (INJ_CHANNELS >= 8)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //fuelSchedule8
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a function
 #endif
 {
@@ -1166,7 +1166,7 @@ static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a f
 #if IGN_CHANNELS >= 1
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPA_vect) //ignitionSchedule1
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -1195,7 +1195,7 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
 #if IGN_CHANNELS >= 2
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //ignitionSchedule2
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -1223,7 +1223,7 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
 #if IGN_CHANNELS >= 3
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //ignitionSchedule3
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -1260,7 +1260,7 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
 #if IGN_CHANNELS >= 4
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //ignitionSchedule4
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -1296,7 +1296,7 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
 #if IGN_CHANNELS >= 5
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER1_COMPC_vect) //ignitionSchedule5
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -1345,37 +1345,37 @@ void ftm0_isr(void)
 }
 void ftm3_isr(void)
 {
-  bool interrupt1 = (FTM3_C0SC & FTM_CSC_CHF);
-  bool interrupt2 = (FTM3_C1SC & FTM_CSC_CHF);
-  bool interrupt3 = (FTM3_C2SC & FTM_CSC_CHF);
-  bool interrupt4 = (FTM3_C3SC & FTM_CSC_CHF);
-  bool interrupt5 = (FTM3_C4SC & FTM_CSC_CHF);
-  bool interrupt6 = (FTM3_C5SC & FTM_CSC_CHF);
-  bool interrupt7 = (FTM3_C6SC & FTM_CSC_CHF);
-  bool interrupt8 = (FTM3_C7SC & FTM_CSC_CHF);
 
 #if (INJ_CHANNELS >= 5)
+  bool interrupt1 = (FTM3_C0SC & FTM_CSC_CHF);
   if(interrupt1) { FTM3_C0SC &= ~FTM_CSC_CHF; fuelSchedule5Interrupt(); }
 #endif
 #if (INJ_CHANNELS >= 6)
+  bool interrupt2 = (FTM3_C1SC & FTM_CSC_CHF);
   else if(interrupt2) { FTM3_C1SC &= ~FTM_CSC_CHF; fuelSchedule6Interrupt(); }
 #endif
 #if (INJ_CHANNELS >= 7)
+  bool interrupt3 = (FTM3_C2SC & FTM_CSC_CHF);
   else if(interrupt3) { FTM3_C2SC &= ~FTM_CSC_CHF; fuelSchedule7Interrupt(); }
 #endif
 #if (INJ_CHANNELS >= 8)
+  bool interrupt4 = (FTM3_C3SC & FTM_CSC_CHF);
   else if(interrupt4) { FTM3_C3SC &= ~FTM_CSC_CHF; fuelSchedule8Interrupt(); }
 #endif
 #if (IGN_CHANNELS >= 5)
+  bool interrupt5 = (FTM3_C4SC & FTM_CSC_CHF);
   if(interrupt5) { FTM3_C4SC &= ~FTM_CSC_CHF; ignitionSchedule5Interrupt(); }
 #endif
 #if (IGN_CHANNELS >= 6)
+  bool interrupt6 = (FTM3_C5SC & FTM_CSC_CHF);
   else if(interrupt6) { FTM3_C5SC &= ~FTM_CSC_CHF; ignitionSchedule6Interrupt(); }
 #endif
 #if (IGN_CHANNELS >= 7)
+  bool interrupt7 = (FTM3_C6SC & FTM_CSC_CHF);
   else if(interrupt7) { FTM3_C6SC &= ~FTM_CSC_CHF; ignitionSchedule7Interrupt(); }
 #endif
 #if (IGN_CHANNELS >= 8)
+  bool interrupt8 = (FTM3_C7SC & FTM_CSC_CHF);
   else if(interrupt8) { FTM3_C7SC &= ~FTM_CSC_CHF; ignitionSchedule8Interrupt(); }
 #endif
 

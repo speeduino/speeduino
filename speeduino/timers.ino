@@ -70,7 +70,7 @@ void initialiseTimers()
 //Executes every ~1ms.
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //This MUST be no block. Turning NO_BLOCK off messes with timing accuracy
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 void oneMSInterval() //Most ARM chips can simply call a function
 #endif
 {

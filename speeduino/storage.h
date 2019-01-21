@@ -1,11 +1,20 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
+#include "globals.h"
+
 void writeAllConfig();
 void writeConfig(byte);
 void loadConfig();
 void loadCalibration();
 void writeCalibration();
+
+//These are utility functions that prevent other files from having to use EEPROM.h directly
+byte readLastBaro();
+void storeLastBaro(byte);
+void storeCalibrationValue(byte, byte);
+byte readEEPROMVersion();
+void storeEEPROMVersion(byte);
 
 #if defined(CORE_STM32) || defined(CORE_TEENSY)
 #define EEPROM_MAX_WRITE_BLOCK 64 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)

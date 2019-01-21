@@ -13,10 +13,11 @@
 #include "decoders.h"
 #include "corrections.h"
 #include "idle.h"
-#include <EEPROM.h>
+#include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 void initialiseAll()
 {
+    initBoard();
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     table3D_setSize(&fuelTable, 16);
@@ -155,8 +156,9 @@ void initialiseAll()
     //barometric reading can be taken from either an external sensor if enabled, or simply by using the initial MAP value
     if ( configPage6.useExtBaro != 0 )
     {
-    readBaro();
-    EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
+      readBaro();
+      //EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
+      storeLastBaro(currentStatus.baro);
     }
     else
     {
@@ -168,13 +170,15 @@ void initialiseAll()
     if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
     {
         currentStatus.baro = currentStatus.MAP;
-        EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
+        //EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
+        storeLastBaro(currentStatus.baro);
     }
     else
     {
         //Attempt to use the last known good baro reading from EEPROM
-        if ((EEPROM.read(EEPROM_LAST_BARO) >= BARO_MIN) && (EEPROM.read(EEPROM_LAST_BARO) <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
-        { currentStatus.baro = EEPROM.read(EEPROM_LAST_BARO); } //last baro correction
+        //if (EEPROM.read(EEPROM_LAST_BARO) >= BARO_MIN) && (EEPROM.read(EEPROM_LAST_BARO) <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
+        if ((readLastBaro() >= BARO_MIN) && (readLastBaro() <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
+        { currentStatus.baro = readLastBaro(); } //last baro correction
         else { currentStatus.baro = 100; } //Final fall back position.
     }
     }
