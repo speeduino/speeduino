@@ -17,7 +17,7 @@
 
 void initialiseAll()
 {
-    initBoard();
+    initBoard(); //This calls the current individual boards init function. See the board_xxx.ino files for these.
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     table3D_setSize(&fuelTable, 16);
@@ -41,10 +41,7 @@ void initialiseAll()
 
     Serial.begin(115200);
     if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
-
-    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-    configPage9.intcan_available = 0;   // device does NOT have internal canbus
-    #endif  
+ 
     #if defined(CORE_STM32) || defined(CORE_TEENSY)
     configPage9.intcan_available = 1;   // device has internal canbus
     //Teensy onboard CAN not used currently

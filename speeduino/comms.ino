@@ -418,16 +418,16 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   if (portNum == 3)
   {
     //CAN serial
-    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)|| defined(CORE_STM32) || defined (CORE_TEENSY) //ATmega2561 does not have Serial3
+    #if defined(USE_SERIAL3)
       if (offset == 0)
-        {
-          CANSerial.write("A");         //confirm cmd type
-        }
+      {
+        CANSerial.write("A");         //confirm cmd type
+      }
       else
-        {
-      CANSerial.write("r");         //confirm cmd type
-      CANSerial.write(cmd);
-        }
+      {
+        CANSerial.write("r");         //confirm cmd type
+        CANSerial.write(cmd);
+      }
     #endif
   }
   else
