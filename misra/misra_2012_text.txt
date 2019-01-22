@@ -34,7 +34,7 @@ No text specified
 Rule 5.3
 Mandatory - An identifier (variable) in an outer scope shall not be redfined within an inner scope
 Rule 5.4
-No text specified
+Mandatory - Macro names must be unique
 Rule 5.5
 No text specified
 Rule 5.6
@@ -116,9 +116,9 @@ No text specified
 Rule 11.3
 No text specified
 Rule 11.4
-No text specified
+Advisory - Object pointers should not be treated as or converted to integers
 Rule 11.5
-No text specified
+Advisory - A void pointer should not be converted to an object pointer
 Rule 11.6
 No text specified
 Rule 11.7
