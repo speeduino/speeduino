@@ -1,6 +1,7 @@
-#include "globals.h"
-
 #if defined(CORE_TEENSY)
+#include "globals.h"
+#include "auxiliaries.h"
+
 
 void initBoard()
 {
@@ -84,6 +85,31 @@ void initBoard()
     */
     //Uses the PIT timer on Teensy.
     lowResTimer.begin(oneMSInterval, 1000);
+
+    /*
+    ***********************************************************************************************************
+    * Auxilliaries
+    */
+    //FlexTimer 1 is used for boost and VVT. There are 8 channels on this module
+    FTM1_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
+    FTM1_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
+    FTM1_MODE |= FTM_MODE_INIT;
+    FTM1_SC |= FTM_SC_CLKS(0b1); // Set internal clocked
+    FTM1_SC |= FTM_SC_PS(0b111); //Set prescaler to 128 (2.1333uS tick time)
+
+    //Enable each compare channel individually
+    FTM1_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+    FTM1_C0SC |= FTM_CSC_MSA; //Enable Compare mode
+    FTM1_C0SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+    FTM1_C1SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+    FTM1_C1SC |= FTM_CSC_MSA; //Enable Compare mode
+    FTM1_C1SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
+
+    //NVIC_ENABLE_IRQ(IRQ_FTM1);
+
+    //2uS resolution Min 8Hz, Max 5KHz
+    boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+    vvt_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
 
     /*
     ***********************************************************************************************************

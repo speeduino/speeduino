@@ -9,6 +9,8 @@
 * General
 */
   #define PORT_TYPE uint8_t
+  #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
+  #define USE_SERIAL3
   void initBoard();
   uint16_t freeRam();
 
