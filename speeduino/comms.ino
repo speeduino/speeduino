@@ -11,7 +11,6 @@ A full copy of the license may be found in the projects root directory
 #include "maths.h"
 #include "utils.h"
 #include "decoders.h"
-#include <EEPROM.h>
 
 /*
   Processes the data on the serial buffer.
@@ -1406,7 +1405,8 @@ void receiveCalibration(byte tableID)
 
       //From TS3.x onwards, the EEPROM must be written here as TS restarts immediately after the process completes which is before the EEPROM write completes
       int y = EEPROM_START + (x / 2);
-      EEPROM.update(y, (byte)tempValue);
+      //EEPROM.update(y, (byte)tempValue);
+      storeCalibrationValue(y, (byte)tempValue);
 
       every2nd = false;
       #if defined(CORE_STM32)

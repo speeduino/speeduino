@@ -22,77 +22,6 @@ void initialiseIdle()
 {
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
   IDLE_TIMER_DISABLE();
-  #if defined(CORE_AVR) //AVR chips use the ISR for this
-    //No timer work required for AVRs. Timer is shared with the schedules and setup in there.
-
-  #elif defined (CORE_TEENSY)
-
-    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
-    {
-    //FlexTimer 2, compare channel 0 is used for idle
-    FTM2_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
-    FTM2_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
-    FTM2_MODE |= FTM_MODE_INIT;
-
-    FTM2_SC = 0x00; // Set this to zero before changing the modulus
-    FTM2_CNTIN = 0x0000; //Shouldn't be needed, but just in case
-    FTM2_CNT = 0x0000; // Reset the count to zero
-    FTM2_MOD = 0xFFFF; // max modulus = 65535
-
-    /*
-     * Enable the clock for FTM0/1
-     * 00 No clock selected. Disables the FTM counter.
-     * 01 System clock
-     * 10 Fixed frequency clock (32kHz)
-     * 11 External clock
-     */
-    FTM2_SC |= FTM_SC_CLKS(0b10);
-
-    /*
-    * Trim the slow clock from 32kHz down to 31.25kHz (The slowest it will go)
-    * This is somewhat imprecise and documentation is not good.
-    * I poked the chip until I figured out the values associated with 31.25kHz
-    */
-    MCG_C3 = 0x9B;
-
-    /*
-     * Set Prescaler
-     * This is the slowest that the timer can be clocked (Without used the slow timer, which is too slow). It results in ticks of 2.13333uS on the teensy 3.5:
-     * 32000 Hz = F_BUS
-     * 128 * 1000000uS / F_BUS = 2.133uS
-     *
-     * 000 = Divide by 1
-     * 001 Divide by 2
-     * 010 Divide by 4
-     * 011 Divide by 8
-     * 100 Divide by 16
-     * 101 Divide by 32
-     * 110 Divide by 64
-     * 111 Divide by 128
-     */
-    FTM2_SC |= FTM_SC_PS(0b0); //No prescaler
-
-    //Setup the channels (See Pg 1014 of K64 DS).
-    FTM2_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-    FTM2_C0SC |= FTM_CSC_MSA; //Enable Compare mode
-    //The below enables channel compare interrupt, but this is done in idleControl()
-    //FTM2_C0SC |= FTM_CSC_CHIE; 
-
-    FTM2_C1SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-    FTM2_C1SC |= FTM_CSC_MSA; //Enable Compare mode
-    //Enable channel compare interrupt (This is currently disabled as not in use)
-    //FTM2_C1SC |= FTM_CSC_CHIE; 
-
-    FTM2_C1SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-    FTM2_C1SC |= FTM_CSC_MSA; //Enable Compare mode
-    //Enable channel compare interrupt (This is currently disabled as not in use)
-    //FTM2_C1SC |= FTM_CSC_CHIE; 
-
-    //Enable IRQ Interrupt
-    NVIC_ENABLE_IRQ(IRQ_FTM2);
-  }
-
-  #endif
 
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
   switch(configPage6.iacAlgorithm)
@@ -127,9 +56,7 @@ void initialiseIdle()
       idle_pin_mask = digitalPinToBitMask(pinIdle1);
       idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
       idle2_pin_mask = digitalPinToBitMask(pinIdle2);
-      #if defined(CORE_STM32)
-        idle_pwm_max_count = 1000000L / (configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
-      #elif defined(CORE_AVR)
+      #if defined(CORE_AVR)
         idle_pwm_max_count = 1000000L / (16 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       #elif defined(CORE_TEENSY)
         idle_pwm_max_count = 1000000L / (32 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
@@ -153,9 +80,7 @@ void initialiseIdle()
       idle_pin_mask = digitalPinToBitMask(pinIdle1);
       idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
       idle2_pin_mask = digitalPinToBitMask(pinIdle2);
-      #if defined(CORE_STM32)
-        idle_pwm_max_count = 1000000L / (configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
-      #elif defined(CORE_AVR)
+      #if defined(CORE_AVR)
         idle_pwm_max_count = 1000000L / (16 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       #elif defined(CORE_TEENSY)
         idle_pwm_max_count = 1000000L / (32 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
@@ -236,11 +161,6 @@ void initialiseIdle()
   }
   idleInitComplete = configPage6.iacAlgorithm; //Sets which idle method was initialised
   currentStatus.idleLoad = 0;
-  #if defined(CORE_STM32) //Need to be initialised last due to instant interrupt
-    Timer1.setMode(4, TIMER_OUTPUT_COMPARE);
-    if(idle_pwm_max_count > 0) { Timer1.attachInterrupt(4, idleInterrupt);} //on first flash the configPage4.iacAlgorithm is invalid
-    Timer1.resume();
-  #endif
 }
 
 void idleControl()
@@ -490,7 +410,7 @@ static inline void enableIdle()
 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPC_vect)
-#elif defined (CORE_TEENSY) || defined (CORE_STM32)
+#else
 static inline void idleInterrupt() //Most ARM chips can simply call a function
 #endif
 {

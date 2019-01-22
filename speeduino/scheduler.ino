@@ -10,7 +10,7 @@ A full copy of the license may be found in the projects root directory
 
 
 void initialiseSchedulers()
-  {
+{
     nullSchedule.Status = OFF;
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
@@ -42,188 +42,7 @@ void initialiseSchedulers()
     TIFR4  = 0x00;          //Timer4 INT Flag Reg: Clear Timer Overflow Flag
     TCCR4A = 0x00;          //Timer4 Control Reg A: Wave Gen Mode normal
     TCCR4B = (1 << CS12);   //Timer4 Control Reg B: aka Divisor = 256 = 122.5HzTimer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
-
-#elif defined (CORE_TEENSY)
-
-  //FlexTimer 0 is used for 4 ignition and 4 injection schedules. There are 8 channels on this module, so no other timers are needed
-  FTM0_MODE |= FTM_MODE_WPDIS; //Write Protection Disable
-  FTM0_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
-  FTM0_MODE |= FTM_MODE_INIT;
-
-  FTM0_SC = 0x00; // Set this to zero before changing the modulus
-  FTM0_CNTIN = 0x0000; //Shouldn't be needed, but just in case
-  FTM0_CNT = 0x0000; //Reset the count to zero
-  FTM0_MOD = 0xFFFF; //max modulus = 65535
-
-  //FlexTimer 3 is used for schedules on channel 5+. Currently only channel 5 is used, but will likely be expanded later
-  FTM3_MODE |= FTM_MODE_WPDIS; //Write Protection Disable
-  FTM3_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
-  FTM3_MODE |= FTM_MODE_INIT;
-
-  FTM3_SC = 0x00; // Set this to zero before changing the modulus
-  FTM3_CNTIN = 0x0000; //Shouldn't be needed, but just in case
-  FTM3_CNT = 0x0000; //Reset the count to zero
-  FTM3_MOD = 0xFFFF; //max modulus = 65535
-
-  /*
-   * Enable the clock for FTM0/1
-   * 00 No clock selected. Disables the FTM counter.
-   * 01 System clock
-   * 10 Fixed frequency clock
-   * 11 External clock
-   */
-  FTM0_SC |= FTM_SC_CLKS(0b1);
-  FTM3_SC |= FTM_SC_CLKS(0b1);
-
-  /*
-   * Set Prescaler
-   * This is the slowest that the timer can be clocked (Without used the slow timer, which is too slow). It results in ticks of 2.13333uS on the teensy 3.5:
-   * 60000000 Hz = F_BUS
-   * 128 * 1000000uS / F_BUS = 2.133uS
-   *
-   * 000 = Divide by 1
-   * 001 Divide by 2
-   * 010 Divide by 4
-   * 011 Divide by 8
-   * 100 Divide by 16
-   * 101 Divide by 32
-   * 110 Divide by 64
-   * 111 Divide by 128
-   */
-  FTM0_SC |= FTM_SC_PS(0b111);
-  FTM3_SC |= FTM_SC_PS(0b111);
-
-  //Setup the channels (See Pg 1014 of K64 DS).
-  //The are probably not needed as power on state should be 0
-  //FTM0_C0SC &= ~FTM_CSC_ELSB;
-  //FTM0_C0SC &= ~FTM_CSC_ELSA;
-  //FTM0_C0SC &= ~FTM_CSC_DMA;
-  FTM0_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM0_C0SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM0_C0SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  FTM0_C1SC &= ~FTM_CSC_MSB; //According to Pg 965 of the datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM0_C1SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM0_C1SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  FTM0_C2SC &= ~FTM_CSC_MSB; //According to Pg 965 of the datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM0_C2SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM0_C2SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  FTM0_C3SC &= ~FTM_CSC_MSB; //According to Pg 965 of the datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM0_C3SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM0_C3SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  FTM0_C4SC &= ~FTM_CSC_MSB; //According to Pg 965 of the datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM0_C4SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM0_C4SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  FTM0_C5SC &= ~FTM_CSC_MSB; //According to Pg 965 of the datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM0_C5SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM0_C5SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  FTM0_C6SC &= ~FTM_CSC_MSB; //According to Pg 965 of the datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM0_C6SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM0_C6SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  FTM0_C7SC &= ~FTM_CSC_MSB; //According to Pg 965 of the datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM0_C7SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM0_C7SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  //Do the same, but on flex timer 3 (Used for channels 5-8)
-  FTM3_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM3_C0SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM3_C0SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  FTM3_C1SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM3_C1SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM3_C1SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  FTM3_C2SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM3_C2SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM3_C2SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  FTM3_C3SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM3_C3SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM3_C3SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  FTM3_C4SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM3_C4SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM3_C4SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  FTM3_C5SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM3_C5SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM3_C5SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  FTM3_C6SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM3_C6SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM3_C6SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  FTM3_C7SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-  FTM3_C7SC |= FTM_CSC_MSA; //Enable Compare mode
-  FTM3_C7SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  // enable IRQ Interrupt
-  NVIC_ENABLE_IRQ(IRQ_FTM0);
-  NVIC_ENABLE_IRQ(IRQ_FTM1);
-
-#elif defined(CORE_STM32)
-  #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
-    //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
-    Timer1.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
-    Timer2.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
-    Timer3.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
-  #else //libmaple core aka STM32DUINO
-    //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
-    #if defined (STM32F1) || defined(__STM32F1__)
-      //(CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
-      //Timer2 to 4 is on APB1, Timer1 on APB2.   http://www.st.com/resource/en/datasheet/stm32f103cb.pdf sheet 12
-      Timer1.setPrescaleFactor((72 * 2U)-1); //2us resolution
-      Timer2.setPrescaleFactor((36 * 2U)-1); //2us resolution
-      Timer3.setPrescaleFactor((36 * 2U)-1); //2us resolution
-    #elif defined(STM32F4)
-      //(CYCLES_PER_MICROSECOND == 168, APB2 at 84MHz, APB1 at 42MHz).
-      //Timer2 to 14 is on APB1, Timers 1, 8, 9 and 10 on APB2.   http://www.st.com/resource/en/datasheet/stm32f407vg.pdf sheet 120
-      Timer1.setPrescaleFactor((84 * 2U)-1); //2us resolution
-      Timer2.setPrescaleFactor((42 * 2U)-1); //2us resolution
-      Timer3.setPrescaleFactor((42 * 2U)-1); //2us resolution
-    #endif
-  #endif
-  Timer2.setMode(1, TIMER_OUTPUT_COMPARE);
-  Timer2.setMode(2, TIMER_OUTPUT_COMPARE);
-  Timer2.setMode(3, TIMER_OUTPUT_COMPARE);
-  Timer2.setMode(4, TIMER_OUTPUT_COMPARE);
-
-  Timer3.setMode(1, TIMER_OUTPUT_COMPARE);
-  Timer3.setMode(2, TIMER_OUTPUT_COMPARE);
-  Timer3.setMode(3, TIMER_OUTPUT_COMPARE);
-  Timer3.setMode(4, TIMER_OUTPUT_COMPARE);
-  Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
-
-  Timer2.attachInterrupt(1, fuelSchedule1Interrupt);
-  Timer2.attachInterrupt(2, fuelSchedule2Interrupt);
-  Timer2.attachInterrupt(3, fuelSchedule3Interrupt);
-  Timer2.attachInterrupt(4, fuelSchedule4Interrupt);
-
-#if (IGN_CHANNELS >= 1)
-  Timer3.attachInterrupt(1, ignitionSchedule1Interrupt);
-#endif
-#if (IGN_CHANNELS >= 2)
-  Timer3.attachInterrupt(2, ignitionSchedule2Interrupt);
-#endif
-#if (IGN_CHANNELS >= 3)
-  Timer3.attachInterrupt(3, ignitionSchedule3Interrupt);
-#endif
-#if (IGN_CHANNELS >= 4)
-  Timer3.attachInterrupt(4, ignitionSchedule4Interrupt);
-#endif
-#if (IGN_CHANNELS >= 5)
-  Timer1.attachInterrupt(1, ignitionSchedule5Interrupt);
-#endif
-
-  Timer1.resume();
-  Timer2.resume();
-  Timer3.resume();
+  
 #endif
 
     fuelSchedule1.Status = OFF;
@@ -279,7 +98,7 @@ void initialiseSchedulers()
     ignitionSchedule7.schedulesSet = 0;
     ignitionSchedule8.schedulesSet = 0;
 
-  }
+}
 
 /*
 These 8 function turn a schedule on, provides the time to start and the duration and gives it callback functions.
@@ -887,7 +706,7 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
 //Timer3A (fuel schedule 1) Compare Vector
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPA_vect) //fuelSchedules 1 and 5
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -924,7 +743,7 @@ static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a f
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect) //fuelSchedule2
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -959,7 +778,7 @@ static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a f
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect) //fuelSchedule3
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -996,7 +815,7 @@ static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a f
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect) //fuelSchedule4
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -1030,7 +849,7 @@ static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a f
 #if (INJ_CHANNELS >= 5)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER1_COMPC_vect) //fuelSchedule5
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule5Interrupt() //Most ARM chips can simply call a function
 #endif
 {
@@ -1063,7 +882,7 @@ static inline void fuelSchedule5Interrupt() //Most ARM chips can simply call a f
 #if (INJ_CHANNELS >= 6)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //fuelSchedule6
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule6Interrupt() //Most ARM chips can simply call a function
 #endif
 {
@@ -1098,7 +917,7 @@ static inline void fuelSchedule6Interrupt() //Most ARM chips can simply call a f
 #if (INJ_CHANNELS >= 7)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //fuelSchedule7
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule7Interrupt() //Most ARM chips can simply call a function
 #endif
 {
@@ -1131,7 +950,7 @@ static inline void fuelSchedule7Interrupt() //Most ARM chips can simply call a f
 #if (INJ_CHANNELS >= 8)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //fuelSchedule8
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a function
 #endif
 {
@@ -1166,7 +985,7 @@ static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a f
 #if IGN_CHANNELS >= 1
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPA_vect) //ignitionSchedule1
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -1195,7 +1014,7 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
 #if IGN_CHANNELS >= 2
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //ignitionSchedule2
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -1222,7 +1041,7 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
 #if IGN_CHANNELS >= 3
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //ignitionSchedule3
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -1259,7 +1078,7 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
 #if IGN_CHANNELS >= 4
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //ignitionSchedule4
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -1295,7 +1114,7 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
 #if IGN_CHANNELS >= 5
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER1_COMPC_vect) //ignitionSchedule5
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call a function
 #endif
   {
@@ -1344,37 +1163,37 @@ void ftm0_isr(void)
 }
 void ftm3_isr(void)
 {
-  bool interrupt1 = (FTM3_C0SC & FTM_CSC_CHF);
-  bool interrupt2 = (FTM3_C1SC & FTM_CSC_CHF);
-  bool interrupt3 = (FTM3_C2SC & FTM_CSC_CHF);
-  bool interrupt4 = (FTM3_C3SC & FTM_CSC_CHF);
-  bool interrupt5 = (FTM3_C4SC & FTM_CSC_CHF);
-  bool interrupt6 = (FTM3_C5SC & FTM_CSC_CHF);
-  bool interrupt7 = (FTM3_C6SC & FTM_CSC_CHF);
-  bool interrupt8 = (FTM3_C7SC & FTM_CSC_CHF);
 
 #if (INJ_CHANNELS >= 5)
+  bool interrupt1 = (FTM3_C0SC & FTM_CSC_CHF);
   if(interrupt1) { FTM3_C0SC &= ~FTM_CSC_CHF; fuelSchedule5Interrupt(); }
 #endif
 #if (INJ_CHANNELS >= 6)
+  bool interrupt2 = (FTM3_C1SC & FTM_CSC_CHF);
   else if(interrupt2) { FTM3_C1SC &= ~FTM_CSC_CHF; fuelSchedule6Interrupt(); }
 #endif
 #if (INJ_CHANNELS >= 7)
+  bool interrupt3 = (FTM3_C2SC & FTM_CSC_CHF);
   else if(interrupt3) { FTM3_C2SC &= ~FTM_CSC_CHF; fuelSchedule7Interrupt(); }
 #endif
 #if (INJ_CHANNELS >= 8)
+  bool interrupt4 = (FTM3_C3SC & FTM_CSC_CHF);
   else if(interrupt4) { FTM3_C3SC &= ~FTM_CSC_CHF; fuelSchedule8Interrupt(); }
 #endif
 #if (IGN_CHANNELS >= 5)
+  bool interrupt5 = (FTM3_C4SC & FTM_CSC_CHF);
   if(interrupt5) { FTM3_C4SC &= ~FTM_CSC_CHF; ignitionSchedule5Interrupt(); }
 #endif
 #if (IGN_CHANNELS >= 6)
+  bool interrupt6 = (FTM3_C5SC & FTM_CSC_CHF);
   else if(interrupt6) { FTM3_C5SC &= ~FTM_CSC_CHF; ignitionSchedule6Interrupt(); }
 #endif
 #if (IGN_CHANNELS >= 7)
+  bool interrupt7 = (FTM3_C6SC & FTM_CSC_CHF);
   else if(interrupt7) { FTM3_C6SC &= ~FTM_CSC_CHF; ignitionSchedule7Interrupt(); }
 #endif
 #if (IGN_CHANNELS >= 8)
+  bool interrupt8 = (FTM3_C7SC & FTM_CSC_CHF);
   else if(interrupt8) { FTM3_C7SC &= ~FTM_CSC_CHF; ignitionSchedule8Interrupt(); }
 #endif
 

@@ -4,9 +4,13 @@
  * It also can be used for setting good values when there are viarables that move locations in the ini
  * When a user skips multiple firmware versions at a time, this will roll through the updates 1 at a time
  */
-#include <EEPROM.h>
 #include "globals.h"
 #include "storage.h"
+#if defined(CORE_SAMD21)
+  #include "src/FlashStorage/FlashAsEEPROM.h"
+#else
+#include <EEPROM.h>
+#endif
 
 void doUpdates()
 {
@@ -23,7 +27,8 @@ void doUpdates()
       }
     }
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 3);
+    //EEPROM.write(EEPROM_DATA_VERSION, 3);
+    storeEEPROMVersion(3);
   }
   //June 2017 required the forced addition of some CAN values to avoid weird errors
   if(EEPROM.read(EEPROM_DATA_VERSION) == 3)
@@ -36,7 +41,8 @@ void doUpdates()
     if(configPage4.sparkDur == 255) { configPage4.sparkDur = 10; }
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 4);
+    //EEPROM.write(EEPROM_DATA_VERSION, 4);
+    storeEEPROMVersion(4);
   }
   //July 2017 adds a cranking enrichment curve in place of the single value. This converts that single value to the curve
   if(EEPROM.read(EEPROM_DATA_VERSION) == 4)
@@ -53,7 +59,8 @@ void doUpdates()
     configPage10.crankingEnrichValues[3] = 100 + configPage2.crankingPct;
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 5);
+    //EEPROM.write(EEPROM_DATA_VERSION, 5);
+    storeEEPROMVersion(5);
   }
   //September 2017 had a major change to increase the minimum table size to 128. This required multiple pieces of data being moved around
   if(EEPROM.read(EEPROM_DATA_VERSION) == 5)

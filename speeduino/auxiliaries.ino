@@ -32,15 +32,19 @@ void fanControl()
   {
     int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
     int offTemp = onTemp - configPage6.fanHyster;
+    bool fanPermit = false;
 
-    if ( currentStatus.coolant >= onTemp )
+    if ( configPage2.fanWhenOff ) { fanPermit = true; }
+    else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
+
+    if ( currentStatus.coolant >= onTemp && fanPermit )
     {
       //Fan needs to be turned on. Checked for normal or inverted fan signal
       if( configPage6.fanInv == 0 ) { FAN_PIN_HIGH(); }
       else { FAN_PIN_LOW(); }
       currentStatus.fanOn = true;
     }
-    else if ( currentStatus.coolant <= offTemp )
+    else if ( currentStatus.coolant <= offTemp || !fanPermit )
     {
       //Fan needs to be turned off. Checked for normal or inverted fan signal
       if( configPage6.fanInv == 0 ) { FAN_PIN_LOW(); } 
@@ -288,7 +292,7 @@ void boostDisable()
 //The interrupt to control the Boost PWM
 #if defined(CORE_AVR)
   ISR(TIMER1_COMPA_vect)
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
   static inline void boostInterrupt() //Most ARM chips can simply call a function
 #endif
 {
@@ -310,7 +314,7 @@ void boostDisable()
 //The interrupt to control the VVT PWM
 #if defined(CORE_AVR)
   ISR(TIMER1_COMPB_vect)
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
   static inline void vvtInterrupt() //Most ARM chips can simply call a function
 #endif
 {

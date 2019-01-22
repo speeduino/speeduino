@@ -14,35 +14,6 @@
 #include "utils.h"
 #include "decoders.h"
 
-uint16_t freeRam ()
-{
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-  extern int __heap_start, *__brkval;
-  uint16_t v;
-
-  return (uint16_t) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
-
-#elif defined(CORE_TEENSY)
-  uint32_t stackTop;
-  uint32_t heapTop;
-
-  // current position of the stack.
-  stackTop = (uint32_t) &stackTop;
-
-  // current position of heap.
-  void* hTop = malloc(1);
-  heapTop = (uint32_t) hTop;
-  free(hTop);
-
-  // The difference is the free, available ram.
-  return (uint16_t)stackTop - heapTop;
-#elif defined(CORE_STM32)
-  char top = 't';
-  return &top - reinterpret_cast<char*>(sbrk(0));
-
-#endif
-}
-
 //This function performs a translation between the pin list that appears in TS and the actual pin numbers
 //For the digital IO, this will simply return the same number as the rawPin value as those are mapped directly.
 //For analog pins, it will translate them into the currect internal pin number

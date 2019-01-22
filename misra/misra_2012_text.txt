@@ -220,11 +220,11 @@ No text specified
 Rule 19.2
 No text specified
 Rule 20.1
-No text specified
+Mandatory - Only comments and prepropccesor directives can come before #include statements
 Rule 20.2
 No text specified
 Rule 20.3
-No text specified
+Mandatory - #include statements must be followed by a filename
 Rule 20.4
 No text specified
 Rule 20.5

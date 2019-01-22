@@ -39,22 +39,8 @@ void initialiseTimers()
    //wdt_enable(WDTO_2S);
 
 #elif defined (CORE_TEENSY)
-   //Uses the PIT timer on Teensy.
-   lowResTimer.begin(oneMSInterval, 1000);
+   
 
-#elif defined(CORE_STM32)
-#if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
-  Timer8.setPeriod(1000);  // Set up period
-  Timer8.setMode(1, TIMER_OUTPUT_COMPARE);
-  Timer8.attachInterrupt(1, oneMSInterval);
-  Timer8.resume(); //Start Timer
-#else
-  Timer4.setPeriod(1000);  // Set up period
-  Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
-  Timer4.attachInterrupt(1, oneMSInterval);
-  Timer4.resume(); //Start Timer
-#endif
-  pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
 #endif
 
   lastRPM_100ms = 0;
@@ -70,7 +56,7 @@ void initialiseTimers()
 //Executes every ~1ms.
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //This MUST be no block. Turning NO_BLOCK off messes with timing accuracy
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 void oneMSInterval() //Most ARM chips can simply call a function
 #endif
 {
@@ -157,7 +143,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     //If the engine is running or cranking, we need ot update the run time counter.
     if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
     { //NOTE - There is a potential for a ~1sec gap between engine crank starting and ths runSec number being incremented. This may delay ASE!
-      if (currentStatus.runSecs <= 254) //Ensure we cap out at 255 and don't overflow. (which would reset ASE)
+      if (currentStatus.runSecs <= 254) //Ensure we cap out at 255 and don't overflow. (which would reset ASE and cause problems with the closed loop fueling (Which has to wait for the O2 to warmup))
         { currentStatus.runSecs++; } //Increment our run counter by 1 second.
     }
     //**************************************************************************************************************************************************
@@ -231,20 +217,3 @@ void oneMSInterval() //Most ARM chips can simply call a function
 #endif
 }
 
-#if defined(TIMER5_MICROS)
-//This is used by the fast version of micros(). We just need to increment the timer overflow counter
-ISR(TIMER5_OVF_vect)
-{
-  ++timer5_overflow_count;
-}
-
-static inline unsigned long micros_safe()
-{
-  unsigned long newMicros;
-  noInterrupts();
-  newMicros = (((timer5_overflow_count << 16) + TCNT5) * 4);
-  interrupts();
-
-  return newMicros;
-}
-#endif
