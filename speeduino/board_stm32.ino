@@ -1,7 +1,9 @@
-#include "globals.h"
-#include "auxiliaries.h"
 #if defined(CORE_STM32)
 #include "board_stm32.h"
+#include "globals.h"
+#include "auxiliaries.h"
+#include "idle.h"
+#include "scheduler.h"
 
 void initBoard()
 {

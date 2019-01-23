@@ -1,6 +1,9 @@
 #if defined(CORE_TEENSY)
+#include "board_teensy35.h"
 #include "globals.h"
 #include "auxiliaries.h"
+#include "idle.h"
+#include "scheduler.h"
 
 
 void initBoard()
