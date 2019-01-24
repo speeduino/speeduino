@@ -17,7 +17,6 @@
 
 void initialiseAll()
 {
-    initBoard(); //This calls the current individual boards init function. See the board_xxx.ino files for these.
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     table3D_setSize(&fuelTable, 16);
@@ -30,7 +29,6 @@ void initialiseAll()
     table3D_setSize(&trim2Table, 6);
     table3D_setSize(&trim3Table, 6);
     table3D_setSize(&trim4Table, 6);
-    initialiseTimers();
 
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
@@ -38,6 +36,9 @@ void initialiseAll()
     //Always start with a clean slate on the bootloader capabilities level
     //This should be 0 until we hear otherwise from the 16u2
     configPage4.bootloaderCaps = 0;
+
+    initBoard(); //This calls the current individual boards init function. See the board_xxx.ino files for these.
+    initialiseTimers();
 
     Serial.begin(115200);
     if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }

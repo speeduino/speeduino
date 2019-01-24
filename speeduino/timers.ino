@@ -23,7 +23,6 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 
 void initialiseTimers()
 {
-
   lastRPM_100ms = 0;
   loop33ms = 0;
   loop66ms = 0;
