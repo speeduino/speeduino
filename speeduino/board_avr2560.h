@@ -2,9 +2,6 @@
 #define AVR2560_H
 #if defined(CORE_AVR)
 
-#include <avr/interrupt.h>
-#include <avr/io.h>
-
 /*
 ***********************************************************************************************************
 * General
@@ -30,6 +27,9 @@
 ***********************************************************************************************************
 * Schedules
 */
+  #include <avr/interrupt.h>
+  #include <avr/io.h>
+
   //Refer to http://svn.savannah.nongnu.org/viewvc/trunk/avr-libc/include/avr/iomxx0_1.h?root=avr-libc&view=markup
   #define FUEL1_COUNTER TCNT3
   #define FUEL2_COUNTER TCNT3

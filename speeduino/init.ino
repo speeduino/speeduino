@@ -173,6 +173,7 @@ void initialiseAll()
     else
     {
         //Attempt to use the last known good baro reading from EEPROM
+        //if (EEPROM.read(EEPROM_LAST_BARO) >= BARO_MIN) && (EEPROM.read(EEPROM_LAST_BARO) <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
         if ((readLastBaro() >= BARO_MIN) && (readLastBaro() <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
         { currentStatus.baro = readLastBaro(); } //last baro correction
         else { currentStatus.baro = 100; } //Final fall back position.
