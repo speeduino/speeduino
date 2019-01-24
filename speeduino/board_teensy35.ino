@@ -6,6 +6,7 @@
 void initBoard()
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
     /*
     ***********************************************************************************************************
     * General
@@ -238,6 +239,8 @@ void initBoard()
     // enable IRQ Interrupt
     NVIC_ENABLE_IRQ(IRQ_FTM0);
     NVIC_ENABLE_IRQ(IRQ_FTM1);
+=======
+>>>>>>> parent of 5edbbce... Merge branch 'master' into master
 =======
 >>>>>>> parent of 5edbbce... Merge branch 'master' into master
     
