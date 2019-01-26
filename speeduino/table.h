@@ -51,7 +51,7 @@ struct table3D {
 };
 
 //void table3D_setSize(struct table3D *targetTable, byte);
-void table3D_setSize(table3D, byte);
+void table3D_setSize(struct table3D *targetTable, byte);
 
 /*
 3D Tables have an origin (0,0) in the top left hand corner. Vertical axis is expressed first.

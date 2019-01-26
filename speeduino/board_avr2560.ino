@@ -55,7 +55,8 @@ uint16_t freeRam()
     if(__brkval == 0) { currentVal = (int) &__heap_start; }
     else { currentVal = (int) __brkval; }
 
-    //return (uint16_t) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); // cppcheck-suppress misra-c2012-12.1
+    //Old version:
+    //return (uint16_t) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
     return (uint16_t) &v - currentVal; //cppcheck-suppress misra-c2012-11.4
 }
 
