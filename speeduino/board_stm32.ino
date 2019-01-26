@@ -6,7 +6,9 @@
 #include "scheduler.h"
 #include "HardwareTimer.h"
 #if defined(STM32F4)
+    //These should really be in the stm32GENERIC libs, but for somereason they only have timers 1-4
     #include <stm32_TIM_variant_11.h>
+    HardwareTimer Timer5(TIM5, chip_tim5, sizeof(chip_tim5) / sizeof(chip_tim5[0]));
     HardwareTimer Timer8(TIM8, chip_tim8, sizeof(chip_tim8) / sizeof(chip_tim8[0]));
 #endif
 
@@ -103,13 +105,28 @@ void initBoard()
     Timer3.setMode(4, TIMER_OUTPUT_COMPARE);
     Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
 
+    //Attach interupt functions
+    //Injection
     Timer2.attachInterrupt(1, fuelSchedule1Interrupt);
     Timer2.attachInterrupt(2, fuelSchedule2Interrupt);
     Timer2.attachInterrupt(3, fuelSchedule3Interrupt);
     Timer2.attachInterrupt(4, fuelSchedule4Interrupt);
+    #if (INJ_CHANNELS >= 5)
+    Timer5.attachInterrupt(1, fuelSchedule5Interrupt);
+    #endif
+    #if (INJ_CHANNELS >= 6)
+    Timer5.attachInterrupt(2, fuelSchedule6Interrupt);
+    #endif
+    #if (INJ_CHANNELS >= 7)
+    Timer5.attachInterrupt(3, fuelSchedule7Interrupt);
+    #endif
+    #if (INJ_CHANNELS >= 8)
+    Timer5.attachInterrupt(4, fuelSchedule8Interrupt);
+    #endif
 
-    #if (IGN_CHANNELS >= 1)
-    Timer3.attachInterrupt(1, ignitionSchedule1Interrupt);
+    //Ignition
+    #if (IGN_CHANNELS >= 1) 
+    Timer3.attachInterrupt(1, ignitionSchedule1Interrupt); 
     #endif
     #if (IGN_CHANNELS >= 2)
     Timer3.attachInterrupt(2, ignitionSchedule2Interrupt);
@@ -121,12 +138,27 @@ void initBoard()
     Timer3.attachInterrupt(4, ignitionSchedule4Interrupt);
     #endif
     #if (IGN_CHANNELS >= 5)
-    Timer1.attachInterrupt(1, ignitionSchedule5Interrupt);
+    Timer4.attachInterrupt(1, ignitionSchedule5Interrupt);
+    #endif
+    #if (IGN_CHANNELS >= 6)
+    Timer4.attachInterrupt(2, ignitionSchedule6Interrupt);
+    #endif
+    #if (IGN_CHANNELS >= 7)
+    Timer4.attachInterrupt(3, ignitionSchedule7Interrupt);
+    #endif
+    #if (IGN_CHANNELS >= 8)
+    Timer4.attachInterrupt(4, ignitionSchedule8Interrupt);
     #endif
 
     Timer1.resume();
     Timer2.resume();
     Timer3.resume();
+    #if (IGN_CHANNELS >= 5)
+    Timer4.resume();
+    #endif
+    #if (INJ_CHANNELS >= 5)
+    Timer5.resume();
+    #endif
 }
 
 uint16_t freeRam()
