@@ -82,13 +82,6 @@ void initialiseAuxPWM()
 
   currentStatus.boostDuty = 0;
   boostCounter = 0;
-  #if defined(CORE_STM32) //Need to be initialised last due to instant interrupt
-    Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
-    Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
-    if(boost_pwm_max_count > 0) { Timer1.attachInterrupt(2, boostInterrupt);}
-    if(vvt_pwm_max_count > 0) { Timer1.attachInterrupt(3, vvtInterrupt);}
-    Timer1.resume();
-  #endif
 
   currentStatus.nitrous_status = NITROUS_OFF;
 

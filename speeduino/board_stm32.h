@@ -2,8 +2,6 @@
 #define STM32_H
 #if defined(CORE_STM32)
 
-#include "HardwareTimer.h"
-
 /*
 ***********************************************************************************************************
 * General
@@ -13,6 +11,10 @@
   #define USE_SERIAL3
   void initBoard();
   uint16_t freeRam();
+
+  #if defined(USE_STM32GENERIC)
+    #define Serial Serial1
+  #endif
 
   //Much of the below is not correct, but included to allow compilation
   //STM32F1/variants/.../board.cpp
@@ -277,6 +279,12 @@
         #define IDLE_TIMER_ENABLE()  (TIMER1->regs).gen->CCER |= TIMER_CCER_CC4E
         #define IDLE_TIMER_DISABLE() (TIMER1->regs).gen->CCER &= ~TIMER_CCER_CC4E
     #endif
+
+/*
+***********************************************************************************************************
+* Timers
+*/
+
 
 /*
 ***********************************************************************************************************
