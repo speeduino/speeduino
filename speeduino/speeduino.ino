@@ -1060,7 +1060,7 @@ void loop()
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
         {
             unsigned long ignition6StartTime = 0;
-            if(tempStartAngle > tempCrankAngle) { ignition6StartTime = angleToTime((tempStartAngle - tempCrankAngle)); }
+            if(tempStartAngle > tempCrankAngle) { ignition6StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             else { ignition6StartTime = 0; }
 
             if( (ignition6StartTime > 0) && (curRollingCut != 2) )

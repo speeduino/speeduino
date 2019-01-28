@@ -21,6 +21,11 @@
     #define micros_safe() micros() //If the timer5 method is not used, the micros_safe() macro is simply an alias for the normal micros()
   #endif
 
+  //Mega 2561 MCU does not have a serial3 available. 
+  #if not defined(__AVR_ATmega2561__)
+    #define USE_SERIAL3
+  #endif
+
 /*
 ***********************************************************************************************************
 * Schedules

@@ -43,12 +43,12 @@ const char pageTitles[] PROGMEM //This is being stored in the avr flash instead 
   };
 
 void command();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
-void sendValues(uint16_t offset, uint16_t packetlength,byte cmd, byte portnum);
-void receiveValue(int offset, byte newValue);
+void sendValues(uint16_t, uint16_t,byte, byte);
+void receiveValue(int, byte);
 void saveConfig();
-void sendPage(bool useChar);
-void receiveCalibration(byte tableID);
-void sendToothLog(bool useChar);
+void sendPage(bool);
+void receiveCalibration(byte);
+void sendToothLog(bool);
 void testComm();
 void commandButtons();
 

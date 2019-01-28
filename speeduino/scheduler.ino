@@ -1112,7 +1112,7 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
 #endif
 
 #if IGN_CHANNELS >= 5
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER1_COMPC_vect) //ignitionSchedule5
 #else
 static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call a function
@@ -1133,6 +1133,84 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
        ignitionSchedule5.endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the igintion counter
        IGN5_TIMER_DISABLE();
+    }
+  }
+#endif
+
+#if IGN_CHANNELS >= 6
+#if defined(CORE_AVR) //AVR chips use the ISR for this
+ISR(TIMER1_COMPC_vect) //ignitionSchedule6  NOT CORRECT!!!
+#else
+static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call a function
+#endif
+  {
+    if (ignitionSchedule6.Status == PENDING) //Check to see if this schedule is turn on
+    {
+      ignitionSchedule6.StartCallback();
+      ignitionSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule6.startTime = micros();
+      IGN6_COMPARE = IGN6_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule6.duration); //Doing this here prevents a potential overflow on restarts
+    }
+    else if (ignitionSchedule6.Status == RUNNING)
+    {
+       ignitionSchedule6.Status = OFF; //Turn off the schedule
+       ignitionSchedule6.EndCallback();
+       ignitionSchedule6.schedulesSet = 0;
+       ignitionSchedule6.endScheduleSetByDecoder = false;
+       ignitionCount += 1; //Increment the igintion counter
+       IGN6_TIMER_DISABLE();
+    }
+  }
+#endif
+
+#if IGN_CHANNELS >= 7
+#if defined(CORE_AVR) //AVR chips use the ISR for this
+ISR(TIMER1_COMPC_vect) //ignitionSchedule6  NOT CORRECT!!!
+#else
+static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call a function
+#endif
+  {
+    if (ignitionSchedule7.Status == PENDING) //Check to see if this schedule is turn on
+    {
+      ignitionSchedule7.StartCallback();
+      ignitionSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule7.startTime = micros();
+      IGN7_COMPARE = IGN7_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule7.duration); //Doing this here prevents a potential overflow on restarts
+    }
+    else if (ignitionSchedule7.Status == RUNNING)
+    {
+       ignitionSchedule7.Status = OFF; //Turn off the schedule
+       ignitionSchedule7.EndCallback();
+       ignitionSchedule7.schedulesSet = 0;
+       ignitionSchedule7.endScheduleSetByDecoder = false;
+       ignitionCount += 1; //Increment the igintion counter
+       IGN7_TIMER_DISABLE();
+    }
+  }
+#endif
+
+#if IGN_CHANNELS >= 8
+#if defined(CORE_AVR) //AVR chips use the ISR for this
+ISR(TIMER1_COMPC_vect) //ignitionSchedule8  NOT CORRECT!!!
+#else
+static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call a function
+#endif
+  {
+    if (ignitionSchedule8.Status == PENDING) //Check to see if this schedule is turn on
+    {
+      ignitionSchedule8.StartCallback();
+      ignitionSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule8.startTime = micros();
+      IGN8_COMPARE = IGN8_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule8.duration); //Doing this here prevents a potential overflow on restarts
+    }
+    else if (ignitionSchedule8.Status == RUNNING)
+    {
+       ignitionSchedule8.Status = OFF; //Turn off the schedule
+       ignitionSchedule8.EndCallback();
+       ignitionSchedule8.schedulesSet = 0;
+       ignitionSchedule8.endScheduleSetByDecoder = false;
+       ignitionCount += 1; //Increment the igintion counter
+       IGN8_TIMER_DISABLE();
     }
   }
 #endif

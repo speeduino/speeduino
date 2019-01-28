@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include "table.h"
 
-//These are configuration options for changing around the outputs that are used
+//These are configuration options for changing around the outputs that are used. THese are just the defaults and may be changed in the sections below based on the hardware in use. 
 #define INJ_CHANNELS 4
 #define IGN_CHANNELS 5
 
@@ -35,6 +35,12 @@
     #define BOARD_DIGITAL_GPIO_PINS 80
     #define BOARD_NR_GPIO_PINS 80
     #define LED_BUILTIN PA7
+
+    //These boards always make 8/8 channels available
+    #undef INJ_CHANNELS
+    #undef IGN_CHANNELS
+    #define INJ_CHANNELS 8
+    #define IGN_CHANNELS 8
   #endif
 
   //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash

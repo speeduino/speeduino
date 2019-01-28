@@ -23,26 +23,6 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 
 void initialiseTimers()
 {
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-   //Configure Timer2 for our low-freq interrupt code.
-   TCCR2B = 0x00;          //Disbale Timer2 while we set it up
-   TCNT2  = 131;           //Preload timer2 with 131 cycles, leaving 125 till overflow. As the timer runs at 125Khz, this causes overflow to occur at 1Khz = 1ms
-   TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
-   TIMSK2 = 0x01;          //Timer2 Set Overflow Interrupt enabled.
-   TCCR2A = 0x00;          //Timer2 Control Reg A: Wave Gen Mode normal
-   /* Now configure the prescaler to CPU clock divided by 128 = 125Khz */
-   TCCR2B |= (1<<CS22)  | (1<<CS20); // Set bits
-   TCCR2B &= ~(1<<CS21);             // Clear bit
-
-   //Enable the watchdog timer for 2 second resets (Good reference: https://tushev.org/articles/arduino/5/arduino-and-watchdog-timer)
-   //Boooooooooo WDT is currently broken on Mega 2560 bootloaders :(
-   //wdt_enable(WDTO_2S);
-
-#elif defined (CORE_TEENSY)
-   
-
-#endif
-
   lastRPM_100ms = 0;
   loop33ms = 0;
   loop66ms = 0;
