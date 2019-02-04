@@ -141,7 +141,7 @@
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
 #define TOOTH_LOG_SIZE      64
-#define TOOTH_LOG_BUFFER    256
+#define TOOTH_LOG_BUFFER    128 //256
 
 #define COMPOSITE_LOG_PRI   0
 #define COMPOSITE_LOG_SEC   1
@@ -319,7 +319,7 @@ volatile unsigned long ms_counter = 0; //A counter that increments once per ms
 uint16_t fixedCrankingOverride = 0;
 bool clutchTrigger;
 bool previousClutchTrigger;
-volatile uint16_t toothHistory[TOOTH_LOG_BUFFER];
+volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
 volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 volatile unsigned int toothHistoryIndex = 0;

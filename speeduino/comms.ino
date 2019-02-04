@@ -80,10 +80,26 @@ void command()
       currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
       toothHistoryIndex = 0;
       toothHistorySerialIndex = 0;
+
+      //Disconnect the standard interrupt and add the logger version
+      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
+
+      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+
+      Serial.write(1); //TS needs an acknowledgement that this was received. I don't know if this is the correct response, but it seems to work
       break;
 
     case 'h': //Stop the tooth logger
       currentStatus.toothLogEnabled = false;
+
+      //Disconnect the logger interrupts and attach the normal ones
+      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
+
+      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
       break;
 
     case 'J': //Start the composite logger
@@ -93,12 +109,14 @@ void command()
       toothHistorySerialIndex = 0;
       compositeLastToothTime = 0;
 
-      //Disconnect the standard interrupt and add the logger verion
+      //Disconnect the standard interrupt and add the logger version
       detachInterrupt( digitalPinToInterrupt(pinTrigger) );
       attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
 
       detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
       attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+
+      Serial.write(1); //TS needs an acknowledgement that this was received. I don't know if this is the correct response, but it seems to work
       break;
 
     case 'j': //Stop the composite logger
@@ -1436,8 +1454,12 @@ void sendToothLog(bool useChar)
   {
       for (int x = 0; x < TOOTH_LOG_SIZE; x++)
       {
-        Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
-        Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
+        //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
+        //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
+        Serial.write(toothHistory[toothHistorySerialIndex] >> 24);
+        Serial.write(toothHistory[toothHistorySerialIndex] >> 16);
+        Serial.write(toothHistory[toothHistorySerialIndex] >> 8);
+        Serial.write(toothHistory[toothHistorySerialIndex]);
 
         if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
         else { toothHistorySerialIndex++; }
