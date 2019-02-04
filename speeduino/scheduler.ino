@@ -1031,7 +1031,9 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
       // dwell corrections occuring between ISR calls, or alternatively someone changed the dwell in TS
       // without revisiting the tacho duration.
       if ((!configPage9.limitTachoPulse) || (ignitionSchedule1.duration <= ignitionSchedule1.tachoduration))
+      {
         TACH_PULSE_HIGH();
+      }
         
       //   *ign1_pin_port &= ~(ign1_pin_mask);
       ignitionSchedule1.Status = OFF; //Turn off the schedule
@@ -1084,7 +1086,9 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
       ignitionSchedule2.EndCallback();
 
       if ((!configPage9.limitTachoPulse) || (ignitionSchedule2.duration <= ignitionSchedule2.tachoduration))
+      {
         TACH_PULSE_HIGH();
+      }
         
       ignitionSchedule2.Status = OFF; //Turn off the schedule
       ignitionSchedule2.schedulesSet = 0;
@@ -1135,7 +1139,9 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
        ignitionSchedule3.EndCallback();
        
        if ((!configPage9.limitTachoPulse) || (ignitionSchedule3.duration <= ignitionSchedule3.tachoduration))
+       {
          TACH_PULSE_HIGH();
+       }
        
        ignitionSchedule3.schedulesSet = 0;
        ignitionSchedule3.endScheduleSetByDecoder = false;
@@ -1196,7 +1202,9 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
        ignitionSchedule4.EndCallback();
        
        if ((!configPage9.limitTachoPulse) || (ignitionSchedule4.duration <= ignitionSchedule4.tachoduration))
+       {
          TACH_PULSE_HIGH();
+       }
          
        ignitionSchedule4.schedulesSet = 0;
        ignitionSchedule4.endScheduleSetByDecoder = false;
@@ -1257,7 +1265,9 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
        ignitionSchedule5.EndCallback();
 
        if ((!configPage9.limitTachoPulse) || (ignitionSchedule5.duration <= ignitionSchedule5.tachoduration))
+       {
          TACH_PULSE_HIGH();
+       }
 
        ignitionSchedule5.schedulesSet = 0;
        ignitionSchedule5.endScheduleSetByDecoder = false;
@@ -1307,7 +1317,9 @@ static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call
        ignitionSchedule6.EndCallback();
        
        if ((!configPage9.limitTachoPulse) || (ignitionSchedule6.duration <= ignitionSchedule6.tachoduration))
+       {
          TACH_PULSE_HIGH();
+       }
        
        ignitionSchedule6.schedulesSet = 0;
        ignitionSchedule6.endScheduleSetByDecoder = false;
@@ -1357,7 +1369,9 @@ static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call
        ignitionSchedule7.EndCallback();
        
        if ((!configPage9.limitTachoPulse) || (ignitionSchedule7.duration <= ignitionSchedule7.tachoduration))
+       {
          TACH_PULSE_HIGH();
+       }
        
        ignitionSchedule7.schedulesSet = 0;
        ignitionSchedule7.endScheduleSetByDecoder = false;
@@ -1407,7 +1421,9 @@ static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call
        ignitionSchedule8.EndCallback();
        
        if ((!configPage9.limitTachoPulse) || (ignitionSchedule8.duration <= ignitionSchedule8.tachoduration))
+       {
          TACH_PULSE_HIGH();
+       }
        
        ignitionSchedule8.schedulesSet = 0;
        ignitionSchedule8.endScheduleSetByDecoder = false;
