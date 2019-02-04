@@ -88,7 +88,9 @@ void loggerPrimaryISR()
 {
   validTrigger = false; //This value will be set to the return value of the decoder function, indicating whether or not this pulse passed the filters
   bool validEdge = false; //This is set true below if the edge 
-  /* Two checks here:
+  /* 
+  Need to still call the standard decoder trigger. 
+  Two checks here:
   1) If the primary trigger is RISING, then check whether the primary is currently HIGH
   2) If the primary trigger is FALLING, then check whether the primary is currently LOW
   If either of these are true, the primary decoder funtino is called
