@@ -196,21 +196,23 @@ void idleControl()
       {
         //Currently cranking. Use the cranking table
         currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
-        if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
-        if( currentStatus.idleDuty == 0 ) { disableIdle(); break; }
-        idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
-        idleOn = true;
       }
       else
       {
         //Standard running
         currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
-        if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
-        if( currentStatus.idleDuty == 0 ) { disableIdle(); break; }
-        idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
-        currentStatus.idleLoad = currentStatus.idleDuty >> 1; //Idle Load is divided by 2 in order to send to TS
-        idleOn = true;
       }
+
+      if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
+      if( currentStatus.idleDuty == 0 ) 
+      { 
+        disableIdle();
+        break; 
+      }
+      BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
+      idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
+      currentStatus.idleLoad = currentStatus.idleDuty >> 1; //Idle Load is divided by 2 in order to send to TS
+      idleOn = true;
       
       break;
 
@@ -221,10 +223,14 @@ void idleControl()
 
         idlePID.Compute();
         idle_pwm_target_value = idle_pid_target_value;
-        if( idle_pwm_target_value == 0 ) { disableIdle(); }
+        if( idle_pwm_target_value == 0 )
+        { 
+          disableIdle(); 
+          break; 
+        }
+        BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
         currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count) >> 1;
         if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
-        //idle_pwm_target_value = 104;
 
         idleCounter++;
       break;
@@ -392,6 +398,8 @@ static inline void disableIdle()
       idleStepper.targetIdleStep = idleStepper.curIdleStep; //Don't try to move anymore
     }
   }
+  BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off
+  currentStatus.idleLoad = 0;
 }
 
 //Any common functions associated with starting the Idle
