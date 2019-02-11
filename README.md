@@ -1,8 +1,8 @@
 
 | |  |
 | --- | --- |
-| **Dev Status** | ![Mostly stable](https://img.shields.io/badge/Status-Mostly--Stable-orange.svg) |
-| **Latest Release** | [![GitHub release](https://img.shields.io/github/release/noisymime/speeduino.svg)](https://github.com/noisymime/speeduino/releases/tag/201808) |
+| **Dev Status** | ![Stable](https://img.shields.io/badge/Status-Stable-green.svg) |
+| **Latest Release** | [![GitHub release](https://img.shields.io/github/release/noisymime/speeduino.svg)](https://github.com/noisymime/speeduino/releases/tag/201810) |
 | **MISRA Status** | [![MISRA](https://img.shields.io/travis/noisymime/speeduino.svg)](https://travis-ci.org/noisymime/speeduino/) |
 | **Feature Bounties** | [![Bountysource](https://img.shields.io/bountysource/team/speeduino/activity.svg)](https://www.bountysource.com/teams/speeduino)
 
@@ -18,7 +18,7 @@ FAQ:
 
 Q: Arduino ECU,pffft, heard THAT before. Does this one actually work?
 
-A: Yep! 1, 2, 3, 4, 5, 6 and 8 cylinder engines have all run using Speeduino. At last count over 300 engines were running on this platform, but this figure is growing all the time. 
+A: Yep! 1, 2, 3, 4, 5, 6 and 8 cylinder engines have all run using Speeduino. At last count over 700 engines were running on this platform, but this figure is growing all the time. 
 
 ========================================================================
 
@@ -30,7 +30,7 @@ A: Take a look at this page for details: http://speeduino.com/wiki/index.php/Ove
 
 Q: Target platform?
 
-A: Arduino Mega (Or other ATmega1280 / ATmega2560 powered SKU) will be required. Standard arduino models are not suitable for multi-cylinder engines due to their lack of 16-bit timers. The shield board has been designed around the Mega and it is not expected that there will be a non-Mega variant. 
+A: Arduino Mega (or other ATmega2560 powered SKU) will be required. Standard arduino models are not suitable for multi-cylinder engines due to their lack of 16-bit timers. The shield board has been designed around the Mega and it is not expected that there will be a non-Mega variant. 
 
 ========================================================================
 

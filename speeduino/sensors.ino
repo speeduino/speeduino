@@ -7,6 +7,7 @@ A full copy of the license may be found in the projects root directory
 #include "crankMaths.h"
 #include "globals.h"
 #include "maths.h"
+#include "storage.h"
 
 void initialiseADC()
 {
@@ -64,7 +65,7 @@ void initialiseADC()
       auxIsEnabled = true;     
     }
     else if ((((configPage9.enable_secondarySerial == 1) || ((configPage9.enable_intcan == 1) && (configPage9.intcan_available == 1))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 8)
-            || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 1 && configPage9.intcan_available == 0 )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  
+            || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  
             || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)))  
     {  //if current input channel is enabled as analog local pin check caninput_selxb(bits 2:3) with &12 and caninput_selxa(bits 0:1) with &3
       byte pinNumber = (configPage9.Auxinpina[currentStatus.current_caninchannel]&127);
@@ -82,7 +83,7 @@ void initialiseADC()
       }  
     }
     else if ((((configPage9.enable_secondarySerial == 1) || ((configPage9.enable_intcan == 1) && (configPage9.intcan_available == 1))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 12)
-            || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 1 && configPage9.intcan_available == 0 )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)
+            || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)
             || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)))
     {  //if current input channel is enabled as digital local pin check caninput_selxb(bits 2:3) wih &12 and caninput_selxa(bits 0:1) with &3
        byte pinNumber = (configPage9.Auxinpinb[currentStatus.current_caninchannel]&127);
@@ -102,15 +103,17 @@ void initialiseADC()
     }
   } //For loop iterating through aux in lines
 
-  //Sanity checks to ensure none of the filter values are set to 255 (Which would be the default on a new arduino, but can prevent the sensor readings from going through correctly)
+  //Sanity checks to ensure none of the filter values are set above 240 (Which would include the 255 value which is the default on a new arduino)
+  //If an invalid value is detected, it's reset to the default the value and burned to EEPROM. 
   //Each sensor has it's own default value
-  if(configPage4.ADCFILTER_TPS == 255) { configPage4.ADCFILTER_TPS = 50;  }
-  if(configPage4.ADCFILTER_CLT == 255) { configPage4.ADCFILTER_TPS = 180; }
-  if(configPage4.ADCFILTER_IAT == 255) { configPage4.ADCFILTER_TPS = 180; }
-  if(configPage4.ADCFILTER_O2  == 255) { configPage4.ADCFILTER_TPS = 100; }
-  if(configPage4.ADCFILTER_BAT == 255) { configPage4.ADCFILTER_TPS = 128; }
-  if(configPage4.ADCFILTER_MAP == 255) { configPage4.ADCFILTER_TPS = 20;  }
-  if(configPage4.ADCFILTER_BARO == 255) { configPage4.ADCFILTER_TPS = 64; }
+  if(configPage4.ADCFILTER_TPS > 240) { configPage4.ADCFILTER_TPS = 50; writeConfig(4); }
+  if(configPage4.ADCFILTER_CLT > 240) { configPage4.ADCFILTER_CLT = 180; writeConfig(4); }
+  if(configPage4.ADCFILTER_IAT > 240) { configPage4.ADCFILTER_IAT = 180; writeConfig(4); }
+  if(configPage4.ADCFILTER_O2  > 240) { configPage4.ADCFILTER_O2 = 100; writeConfig(4); }
+  if(configPage4.ADCFILTER_BAT > 240) { configPage4.ADCFILTER_BAT = 128; writeConfig(4); }
+  if(configPage4.ADCFILTER_MAP > 240) { configPage4.ADCFILTER_MAP = 20;  writeConfig(4); }
+  if(configPage4.ADCFILTER_BARO > 240) { configPage4.ADCFILTER_BARO = 64; writeConfig(4); }
+
 }
 
 static inline void instanteneousMAPReading()
@@ -405,10 +408,11 @@ uint16_t readAuxanalog(uint8_t analogPin)
   //read the Aux analog value for pin set by analogPin 
   unsigned int tempReading;
   #if defined(ANALOG_ISR)
-    tempReading = fastMap1023toX(AnChannel[analogPin-A0], 511); //Get the current raw Auxanalog value
+    tempReading = fastMap1023toX(AnChannel[analogPin-A0], 1023); //Get the current raw Auxanalog value
   #else
     tempReading = analogRead(analogPin);
-    tempReading = fastMap1023toX(analogRead(analogPin), 511); //Get the current raw Auxanalog value
+    tempReading = analogRead(analogPin);
+    //tempReading = fastMap1023toX(analogRead(analogPin), 511); Get the current raw Auxanalog value
   #endif
   return tempReading;
 } 

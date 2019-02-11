@@ -80,10 +80,26 @@ void command()
       currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
       toothHistoryIndex = 0;
       toothHistorySerialIndex = 0;
+
+      //Disconnect the standard interrupt and add the logger version
+      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
+
+      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+
+      Serial.write(1); //TS needs an acknowledgement that this was received. I don't know if this is the correct response, but it seems to work
       break;
 
     case 'h': //Stop the tooth logger
       currentStatus.toothLogEnabled = false;
+
+      //Disconnect the logger interrupts and attach the normal ones
+      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
+
+      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
       break;
 
     case 'J': //Start the composite logger
@@ -93,12 +109,14 @@ void command()
       toothHistorySerialIndex = 0;
       compositeLastToothTime = 0;
 
-      //Disconnect the standard interrupt and add the logger verion
+      //Disconnect the standard interrupt and add the logger version
       detachInterrupt( digitalPinToInterrupt(pinTrigger) );
       attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
 
       detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
       attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+
+      Serial.write(1); //TS needs an acknowledgement that this was received. I don't know if this is the correct response, but it seems to work
       break;
 
     case 'j': //Stop the composite logger
@@ -177,7 +195,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 201809-dev"));
+      Serial.print(F("speeduino 201812-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -207,7 +225,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2018.9-dev"));
+      Serial.print(F("Speeduino 2018.12-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -418,16 +436,16 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   if (portNum == 3)
   {
     //CAN serial
-    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)|| defined(CORE_STM32) || defined (CORE_TEENSY) //ATmega2561 does not have Serial3
+    #if defined(USE_SERIAL3)
       if (offset == 0)
-        {
-          CANSerial.write("A");         //confirm cmd type
-        }
+      {
+        CANSerial.write("A");         //confirm cmd type
+      }
       else
-        {
-      CANSerial.write("r");         //confirm cmd type
-      CANSerial.write(cmd);
-        }
+      {
+        CANSerial.write("r");         //confirm cmd type
+        CANSerial.write(cmd);
+      }
     #endif
   }
   else
@@ -1405,7 +1423,8 @@ void receiveCalibration(byte tableID)
 
       //From TS3.x onwards, the EEPROM must be written here as TS restarts immediately after the process completes which is before the EEPROM write completes
       int y = EEPROM_START + (x / 2);
-      EEPROM.update(y, (byte)tempValue);
+      //EEPROM.update(y, (byte)tempValue);
+      storeCalibrationValue(y, (byte)tempValue);
 
       every2nd = false;
       #if defined(CORE_STM32)
@@ -1435,8 +1454,12 @@ void sendToothLog(bool useChar)
   {
       for (int x = 0; x < TOOTH_LOG_SIZE; x++)
       {
-        Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
-        Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
+        //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
+        //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
+        Serial.write(toothHistory[toothHistorySerialIndex] >> 24);
+        Serial.write(toothHistory[toothHistorySerialIndex] >> 16);
+        Serial.write(toothHistory[toothHistorySerialIndex] >> 8);
+        Serial.write(toothHistory[toothHistorySerialIndex]);
 
         if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
         else { toothHistorySerialIndex++; }

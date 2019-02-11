@@ -1,4 +1,5 @@
 //#include "alphaMods.h"
+#include "errors.h"
 
 //pin setup
 void alphaPinSetup() {
@@ -73,17 +74,17 @@ void alphaPinSetup() {
 void initialiseAC()
 {
   digitalWrite(pinAC, LOW); // initialize AC low
-  alphaVars.ACOn = false;
+  BIT_CLEAR(alphaVars.alphaBools1, BIT_AC_ON);
 }
 
 void fanControl2()
 {
   //fan2
-  if ( ((currentStatus.coolant >= 85) && (currentStatus.RPM > 500)) || (alphaVars.AcReq == true) ) {
+  if ( ((currentStatus.coolant >= 85) && (currentStatus.RPM > 500)) || (BIT_CHECK(alphaVars.alphaBools1, BIT_AC_REQ)) ) {
     digitalWrite(pinFan2, fanHIGH);
     currentStatus.fanOn = true;
   }
-  if ( ( (currentStatus.coolant <= 82) && (alphaVars.AcReq == false)) || (currentStatus.RPM == 0) ) {
+  if ( ( (currentStatus.coolant <= 82) && (!BIT_CHECK(alphaVars.alphaBools1, BIT_AC_REQ))) || (currentStatus.RPM == 0) ) {
     digitalWrite(pinFan2, fanLOW);
     currentStatus.fanOn = false;
   }
@@ -141,25 +142,25 @@ void audiFanControl()
 
 void ACControl()
 {
-  if ((alphaVars.AcReq) && (currentStatus.TPS < 60) && (currentStatus.RPM > 600) && (currentStatus.RPM < 3600)) {
+  if ((BIT_CHECK(alphaVars.alphaBools1, BIT_AC_REQ)) && (currentStatus.TPS < 60) && (currentStatus.RPM > 600) && (currentStatus.RPM < 3600)) {
     digitalWrite(pinAC, HIGH);  // turn on AC compressor
-    alphaVars.ACOn = true;
+    BIT_SET(alphaVars.alphaBools1, BIT_AC_ON);
   }
   else {
     digitalWrite(pinAC, LOW);  // shut down AC compressor
-    alphaVars.ACOn = false;
+    BIT_CLEAR(alphaVars.alphaBools1, BIT_AC_ON);
   }
 }
 
 void CELcontrol()
 {
   if ((mapErrorCount > 4) || (cltErrorCount > 4) || (iatErrorCount > 4)  || (errorCount > 1) || (currentStatus.RPM == 0)) {
-    alphaVars.CELon = true;
+    BIT_SET(alphaVars.alphaBools1, BIT_CEL_STATE);
   }
   else {
-    alphaVars.CELon = false;
+    BIT_CLEAR(alphaVars.alphaBools1, BIT_CEL_STATE);
   }
-  if (alphaVars.CELon)  {
+  if (BIT_CHECK(alphaVars.alphaBools1, BIT_CEL_STATE))  {
     digitalWrite(pinCEL, HIGH);
   }
   else {
@@ -172,16 +173,16 @@ void vvlControl()
 {
   if ((currentStatus.RPM >= 5400) && (currentStatus.TPS > 80) && (currentStatus.coolant > 50))
   {
-    if (!alphaVars.vvlOn)
+    if (!BIT_CHECK(alphaVars.alphaBools1, BIT_VVL_ON))
     {
-      alphaVars.vvlOn = true;
+      BIT_SET(alphaVars.alphaBools1, BIT_VVL_ON);
       digitalWrite(pinVVL, HIGH);
         //  Serial.println("VVL ON");
     }
   }
   else if ((currentStatus.RPM < 5300) && (currentStatus.TPS < 80)) {
     digitalWrite(pinVVL, LOW);
-    alphaVars.vvlOn = false;
+    BIT_CLEAR(alphaVars.alphaBools1, BIT_VVL_ON);
       //  Serial.println("VVL OFF");
 
   }
@@ -191,34 +192,45 @@ void readACReq()
 {
   if (alphaVars.carSelect == 2) {
     if ((digitalRead(pinAcReq) == HIGH) && (digitalRead(pinACpress) == HIGH)) {
-      alphaVars.AcReq = true; //pin 26 is AC Request, pin 28 is a combined pressure/temp signal that is high when the A/C compressor can be activated
+      BIT_SET(alphaVars.alphaBools1, BIT_AC_REQ); //pin 26 is AC Request, pin 28 is a combined pressure/temp signal that is high when the A/C compressor can be activated
     }
     else {
-      alphaVars.AcReq = false;
+      BIT_CLEAR(alphaVars.alphaBools1, BIT_AC_REQ);
     }
   }
   else if (alphaVars.carSelect == 1) {
     if ((digitalRead(pinAcReq) == HIGH) && (digitalRead(pinACpress) == LOW) && (analogRead(pinACtemp) < 780)) {
-      alphaVars.AcReq = true;
+      BIT_SET(alphaVars.alphaBools1, BIT_AC_REQ);
     }
     else {
-      alphaVars.AcReq = false;
+      BIT_CLEAR(alphaVars.alphaBools1, BIT_AC_REQ);
     }
   }
 }
 
 //Simple correction if VVL is active
-static inline byte correctionVVL()
+static inline uint8_t correctionVVL()
 {
-  byte VVLValue = 100;
-  if (alphaVars.vvlOn) {
+  uint8_t VVLValue = 100;
+  if (BIT_CHECK(alphaVars.alphaBools1, BIT_VVL_ON)) {
     VVLValue = 102;  //Adds 7% fuel when VVL is active
   }
   return VVLValue;
 }
+void alpha4hz(){
+//alphamods
+  if ((alphaVars.carSelect != 255) && (alphaVars.carSelect != 0)){
+  readACReq();
+  if(digitalRead(pinRollingAL)){
+    BIT_SET(alphaVars.alphaBools2, BIT_RLING_TRIG);
+  }
+  else{ BIT_CLEAR(alphaVars.alphaBools2, BIT_RLING_TRIG);}
+  }
+//alphaMods
+}
 
-static inline byte correctionAlphaN() {
-  byte alphaNvalue = 100;
+static inline uint8_t correctionAlphaN() {
+  uint8_t alphaNvalue = 100;
   if ((configPage2.fuelAlgorithm == LOAD_SOURCE_TPS) && (currentStatus.MAP > 100)){
     alphaNvalue = map(currentStatus.MAP, 100, 260, 100, 124);
     alphaNvalue = constrain(alphaNvalue, 100, 128);
@@ -236,10 +248,10 @@ static inline bool correctionDFCO2()
   if ( configPage2.dfcoEnabled == 1 )
   {
     if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) {
-      DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) && (alphaVars.DFCOwait)  && (currentStatus.coolant > 60);
+      DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) && (BIT_CHECK(alphaVars.alphaBools1, BIT_DFCO_WAIT))  && (currentStatus.coolant > 60);
     }
     else {
-      DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) && (alphaVars.DFCOwait) && (currentStatus.coolant > 60);
+      DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) && (BIT_CHECK(alphaVars.alphaBools1, BIT_DFCO_WAIT)) && (currentStatus.coolant > 60);
     }
   }
   return DFCOValue;
@@ -269,21 +281,18 @@ static inline int8_t correctionZeroThrottleTiming(int8_t advance)
       ignZeroThrottleValue = advance;
     }
     ignZeroThrottleValue = constrain(ignZeroThrottleValue , 0, 25);
-    /*  if (currentStatus.coolant < 63){
-        byte coldCorr = map(currentStatus.RPM, 800, 1700, 0, 10);
-        coldCorr = constrain(coldCorr, 0, 10);
-        ignZeroThrottleValue = ignZeroThrottleValue - coldCorr;
-      }*/
+    
     if ((currentStatus.RPM > 3000) && (currentStatus.RPM < 5500)) {
       ignZeroThrottleValue = -5;
     }
+     if ((BIT_CHECK(alphaVars.alphaBools1, BIT_AC_ON)) && (currentStatus.RPM < 3000) && (currentStatus.TPS < 30)) {
+    ignZeroThrottleValue = ignZeroThrottleValue + 2;
+  }
   }
   else if ((currentStatus.TPS < 2) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))) {
     ignZeroThrottleValue = 11;
   }
-  if ((alphaVars.ACOn == true) && (currentStatus.RPM < 3000) && (currentStatus.TPS < 30)) {
-    ignZeroThrottleValue = ignZeroThrottleValue + 2;
-  }
+ 
   return ignZeroThrottleValue;
 }
 
@@ -304,7 +313,7 @@ void highIdleFunc() {
   {
     alphaVars.highIdleCount++;
     if (alphaVars.highIdleCount >= 2 ) {
-      alphaVars.highIdleReq = true;
+      BIT_SET(alphaVars.alphaBools1, BIT_HIGH_IDLE);
     }
   }
   else {
@@ -313,7 +322,7 @@ void highIdleFunc() {
     }
     else if (alphaVars.highIdleCount == 0)
     {
-      alphaVars.highIdleReq = false;
+      BIT_CLEAR(alphaVars.alphaBools1, BIT_HIGH_IDLE);
     }
   }
   alphaVars.highIdleCount = constrain(alphaVars.highIdleCount, 0, 12);
@@ -325,11 +334,11 @@ void DFCOwaitFunc() {
   {
     alphaVars.DFCOcounter++;
     if (alphaVars.DFCOcounter > 2 ) {
-      alphaVars.DFCOwait = true;
+      BIT_SET(alphaVars.alphaBools1, BIT_DFCO_WAIT);
     }
   }
   else {
-    alphaVars.DFCOwait = false;
+    BIT_CLEAR(alphaVars.alphaBools1, BIT_DFCO_WAIT);
     alphaVars.DFCOcounter = 0;
   }
 }
@@ -391,10 +400,10 @@ void alphaIdleMods() {
   if ((BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))) {
     currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
   }
-  if ((alphaVars.highIdleReq) && (currentStatus.idleDuty < 60)) {
+  if ((BIT_CHECK(alphaVars.alphaBools1, BIT_HIGH_IDLE)) && (currentStatus.idleDuty < 60)) {
     currentStatus.idleDuty = currentStatus.idleDuty + alphaVars.highIdleCount;
   }
-  if (alphaVars.AcReq == true) {
+  if (BIT_CHECK(alphaVars.alphaBools1, BIT_AC_REQ)) {
     currentStatus.idleDuty = currentStatus.idleDuty + 10;
   }
   if ((currentStatus.RPM > 1600) && (currentStatus.TPS < 3) && (currentStatus.coolant > 60)){
@@ -416,9 +425,16 @@ void RPMdance() {
   {
     noTone(pinTachOut);
     digitalWrite(pinTachOut, LOW);
-    alphaVars.gaugeSweep = false;
+    BIT_CLEAR(alphaVars.alphaBools1, BIT_GAUGE_SWEEP);
   }
 }
+
+void initialiseAlphaPins(){
+	if ((alphaVars.carSelect != 255) && (alphaVars.carSelect != 0)){ // alphamods
+    alphaPinSetup();
+  }
+}
+
 
 uint16_t WOTdwellCorrection(uint16_t tempDwell) {
   if ((currentStatus.TPS > 80) && (currentStatus.RPM > 3500)) {
@@ -438,7 +454,7 @@ uint16_t boostAssist(uint16_t tempDuty) {
 
 static inline int8_t correctionRollingAntiLag(int8_t advance)
 {
-  byte ignRollingALValue = advance;
+  uint8_t ignRollingALValue = advance;
   //SoftCut rev limit for 2-step launch control.
   //if (configPage6.launchEnabled && alphaVars.rollingALtrigger && (currentStatus.RPM > 2500) /*&& (currentStatus.TPS >= configPage10.lnchCtrlTPS)*/ )
   /*{
@@ -456,3 +472,13 @@ static inline int8_t correctionRollingAntiLag(int8_t advance)
   return ignRollingALValue;
 }
 
+void ghostCam(){
+  if ((currentStatus.coolant > 5) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE)) && (currentStatus.TPS < 40) && (currentStatus.RPM > 1000) && (currentStatus.RPM < 4000) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK))) {
+    if(BIT_CHECK(alphaVars.alphaBools2, BIT_GCAM_STATE)){
+      BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM);
+    }
+    else{
+      BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM);
+    }
+  }
+}

@@ -13,8 +13,6 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "timers.h"
 #include "globals.h"
 #include "sensors.h"
-
-
 #include "scheduler.h"
 #include "scheduledIO.h"
 #include "auxiliaries.h"
@@ -25,46 +23,11 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 
 void initialiseTimers()
 {
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-   //Configure Timer2 for our low-freq interrupt code.
-   TCCR2B = 0x00;          //Disbale Timer2 while we set it up
-   TCNT2  = 131;           //Preload timer2 with 131 cycles, leaving 125 till overflow. As the timer runs at 125Khz, this causes overflow to occur at 1Khz = 1ms
-   TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
-   TIMSK2 = 0x01;          //Timer2 Set Overflow Interrupt enabled.
-   TCCR2A = 0x00;          //Timer2 Control Reg A: Wave Gen Mode normal
-   /* Now configure the prescaler to CPU clock divided by 128 = 125Khz */
-   TCCR2B |= (1<<CS22)  | (1<<CS20); // Set bits
-   TCCR2B &= ~(1<<CS21);             // Clear bit
-
-   //Enable the watchdog timer for 2 second resets (Good reference: https://tushev.org/articles/arduino/5/arduino-and-watchdog-timer)
-   //Boooooooooo WDT is currently broken on Mega 2560 bootloaders :(
-   //wdt_enable(WDTO_2S);
-
-#elif defined (CORE_TEENSY)
-   //Uses the PIT timer on Teensy.
-   lowResTimer.begin(oneMSInterval, 1000);
-
-#elif defined(CORE_STM32)
-#if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
-  Timer8.setPeriod(1000);  // Set up period
-  Timer8.setMode(1, TIMER_OUTPUT_COMPARE);
-  Timer8.attachInterrupt(1, oneMSInterval);
-  Timer8.resume(); //Start Timer
-#else
-  Timer4.setPeriod(1000);  // Set up period
-  Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
-  Timer4.attachInterrupt(1, oneMSInterval);
-  Timer4.resume(); //Start Timer
-#endif
-  pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
-#endif
-
   lastRPM_100ms = 0;
   loop33ms = 0;
   loop66ms = 0;
   loop100ms = 0;
   loop250ms = 0;
-  loopCLT = 0; //alphamods
   loopSec = 0;
 }
 
@@ -73,19 +36,29 @@ void initialiseTimers()
 //Executes every ~1ms.
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //This MUST be no block. Turning NO_BLOCK off messes with timing accuracy
-
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
 void oneMSInterval() //Most ARM chips can simply call a function
 #endif
 {
   ms_counter++;
 
+  if(alphaVars.carSelect != 255){
+    alphaVars.gCamTime++;
+    if(alphaVars.gCamTime > constrain(map(currentStatus.RPM, 1000, 4000, 100, 20), 20, 100)){
+      if(BIT_CHECK(alphaVars.alphaBools2, BIT_GCAM_STATE)){
+        BIT_CLEAR(alphaVars.alphaBools2, BIT_GCAM_STATE);
+      }
+      else{BIT_CLEAR(alphaVars.alphaBools2, BIT_GCAM_STATE);}
+      alphaVars.gCamTime = 0;
+    }
+  }
+  
   //Increment Loop Counters
   loop33ms++;
   loop66ms++;
   loop100ms++;
   loop250ms++;
-  if (alphaVars.carSelect != 255){
+ if (alphaVars.carSelect != 255){
     loopCLT++; //alphamods
   }
   loopSec++;
@@ -100,8 +73,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
     default:
       break;
   }
-
-
   unsigned long targetOverdwellTime;
 
   //Overdwell check
@@ -133,7 +104,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
   //Loop executed every 100ms loop
   //Anything inside this if statement will run every 100ms.
-  if (loop100ms == 100)
+if (loop100ms == 100)
   {
     loop100ms = 0; //Reset counter
     BIT_SET(TIMER_mask, BIT_TIMER_10HZ);
@@ -164,13 +135,11 @@ void oneMSInterval() //Most ARM chips can simply call a function
 //alphamods  
 
 
-
   //Loop executed every 250ms loop (1ms x 250 = 250ms)
   //Anything inside this if statement will run every 250ms.
   if (loop250ms == 250)
   {
     loop250ms = 0; //Reset Counter
-    highIdleFunc();//alphamods
     BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
     #if defined(CORE_STM32) //debug purpose, only visal for running code
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
@@ -200,7 +169,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     //If the engine is running or cranking, we need ot update the run time counter.
     if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
     { //NOTE - There is a potential for a ~1sec gap between engine crank starting and ths runSec number being incremented. This may delay ASE!
-      if (currentStatus.runSecs <= 254) //Ensure we cap out at 255 and don't overflow. (which would reset ASE)
+      if (currentStatus.runSecs <= 254) //Ensure we cap out at 255 and don't overflow. (which would reset ASE and cause problems with the closed loop fueling (Which has to wait for the O2 to warmup))
         { currentStatus.runSecs++; } //Increment our run counter by 1 second.
     }
     //**************************************************************************************************************************************************
@@ -229,7 +198,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
    
     //alphamods
 
-
     //Check whether fuel pump priming is complete
     if(fpPrimed == false)
     {
@@ -241,7 +209,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
           //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
           digitalWrite(pinFuelPump, LOW);
           currentStatus.fuelPumpOn = false;
-
         }
       }
     }
@@ -287,21 +254,3 @@ void oneMSInterval() //Most ARM chips can simply call a function
     TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
 #endif
 }
-
-#if defined(TIMER5_MICROS)
-//This is used by the fast version of micros(). We just need to increment the timer overflow counter
-ISR(TIMER5_OVF_vect)
-{
-  ++timer5_overflow_count;
-}
-
-static inline unsigned long micros_safe()
-{
-  unsigned long newMicros;
-  noInterrupts();
-  newMicros = (((timer5_overflow_count << 16) + TCNT5) * 4);
-  interrupts();
-
-  return newMicros;
-}
-#endif

@@ -13,12 +13,9 @@ Flood clear mode etc.
 */
 //************************************************************************************************************
 
-
 #include "globals.h"
 #include "corrections.h"
 #include "timers.h"
-
-
 #include "maths.h"
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
@@ -76,7 +73,7 @@ static inline byte correctionsFuel()
   if (currentStatus.iatCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.iatCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
-  //alphamods
+	  //alphamods
   alphaVars.vvlCorrection = correctionVVL();
   if (alphaVars.vvlCorrection != 100) { sumCorrections = (sumCorrections * alphaVars.vvlCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
@@ -85,7 +82,7 @@ static inline byte correctionsFuel()
   if (alphaVars.alphaNcorrection != 100) { sumCorrections = (sumCorrections * alphaVars.alphaNcorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
   //alphamods
-
+  
   currentStatus.flexCorrection = correctionFlex();
   if (currentStatus.flexCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.flexCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
@@ -228,21 +225,6 @@ static inline int16_t correctionAccel()
           }
         }
         accelValue = 100 + accelValue; //Add the 100 normalisation to the calculated amount
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       }
     }
   }
@@ -326,7 +308,6 @@ static inline bool correctionDFCO()
    DFCOValue = correctionDFCO2();
   }
   //alphamods
-
   return DFCOValue;
 }
 
@@ -367,7 +348,8 @@ static inline byte correctionAFRClosedLoop()
     currentStatus.afrTarget = currentStatus.O2; //Catch all incase the below doesn't run. This prevents the Include AFR option from doing crazy things if the AFR target conditions aren't met. This value is changed again below if all conditions are met.
 
     //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
-    currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform the target lookup
+    //Note that this should only run after the sensor warmup delay necause it is used within the Include AFR option
+    if(currentStatus.runSecs > configPage6.ego_sdelay) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
 
     //Check all other requirements for closed loop adjustments
     if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) )
@@ -434,7 +416,6 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionIATretard(advance);
   advance = correctionSoftRevLimit(advance);
   advance = correctionNitrous(advance);
-
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
   //alphamods
@@ -446,10 +427,8 @@ int8_t correctionsIgn(int8_t base_advance)
   if (alphaVars.carSelect == 0){
     advance = correctionAtUpshift(advance);
   }
-  //alphamods
+  //alphamods 
   advance = correctionKnock(advance);
-
-
 
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
@@ -478,9 +457,6 @@ static inline int8_t correctionFlexTiming(int8_t advance)
   if( configPage2.flexEnabled == 1 ) //Check for flex being enabled
   {
     currentStatus.flexIgnCorrection = (int8_t)table2D_getValue(&flexAdvTable, currentStatus.ethanolPct); //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here. 
-
-
-
     ignFlexValue = advance + currentStatus.flexIgnCorrection;
   }
   return ignFlexValue;
@@ -526,24 +502,6 @@ static inline int8_t correctionNitrous(int8_t advance)
 
   return ignNitrous;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 static inline int8_t correctionSoftLaunch(int8_t advance)
 {
@@ -640,6 +598,6 @@ uint16_t correctionsDwell(uint16_t dwell)
   if (alphaVars.carSelect != 255){
     tempDwell = WOTdwellCorrection(tempDwell);
   }
-  //alphamods
+  //alphamods 
   return tempDwell;
 }

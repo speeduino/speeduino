@@ -26,10 +26,6 @@ void canCommand()
         sendcanValues(0, CAN_PACKET_SIZE, 0x30, 1); //send values to serial3
         break;
 
-    //case 'A': // send x bytes of realtime values from the TS list
-    //  sendValues(0, SERIAL_PACKET_SIZE, 0x30, 3);   //send values to serial0
-    //  break;
-
     case 'G': // this is the reply command sent by the Can interface
        byte destcaninchannel;
       if (CANSerial.available() >= 9)
@@ -85,19 +81,16 @@ void canCommand()
            Lbuffer[Lcount] = CANSerial.read();
          }
          break;
-    case '%':{// Audi RPM request
-      //unsigned int niggerRPM = 4583;
-      CANSerial.write(highByte(currentStatus.RPM));
-      CANSerial.write(lowByte(currentStatus.RPM));
-      //CANSerial.write(highByte(niggerRPM));
-      //CANSerial.write(lowByte(niggerRPM));
-      break;
-      }
-
+		case '%':{// Audi RPM request
+		  //unsigned int niggerRPM = 4583;
+		  CANSerial.write(highByte(currentStatus.RPM));
+		  CANSerial.write(lowByte(currentStatus.RPM));
+		  //CANSerial.write(highByte(niggerRPM));
+		  //CANSerial.write(lowByte(niggerRPM));
+		  break;
+		  } //alphamods
 
     case 'r': //New format for the optimised OutputChannels
-
-
       byte Cmd;
       if (CANSerial.available() >= 6)
       {
@@ -112,7 +105,6 @@ void canCommand()
           offset = word(CANSerial.read(), tmp);
           tmp = CANSerial.read();
           length = word(CANSerial.read(), tmp);
-
           sendcanValues(offset, length,Cmd, 1);
 //Serial.print(Cmd);
         }
@@ -128,10 +120,6 @@ void canCommand()
        break;
 
     case 'S': // send code version
-
-
-
-
       CANSerial.write("Speeduino 2018.7-dev");
       break;
       

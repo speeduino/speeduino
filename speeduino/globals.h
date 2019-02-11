@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include "table.h"
 
-//These are configuration options for changing around the outputs that are used
+//These are configuration options for changing around the outputs that are used. THese are just the defaults and may be changed in the sections below based on the hardware in use. 
 #define INJ_CHANNELS 4
 #define IGN_CHANNELS 5
 
@@ -12,15 +12,16 @@
   #define BOARD_NR_GPIO_PINS 62
   #define LED_BUILTIN 13
   #define CORE_AVR
+  #define BOARD_H "board_avr2560.h"
 
   //#define TIMER5_MICROS
 
 #elif defined(CORE_TEENSY)
-  #define BOARD_DIGITAL_GPIO_PINS 34
-  #define BOARD_NR_GPIO_PINS 34
+  #define BOARD_H "board_teensy35.h"
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
+  #define BOARD_H "board_stm32.h"
   #ifndef word
     #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
   #endif
@@ -34,10 +35,16 @@
     #define BOARD_DIGITAL_GPIO_PINS 80
     #define BOARD_NR_GPIO_PINS 80
     #define LED_BUILTIN PA7
+
+    //These boards always make 8/8 channels available
+    #undef INJ_CHANNELS
+    #undef IGN_CHANNELS
+    #define INJ_CHANNELS 8
+    #define IGN_CHANNELS 8
   #endif
 
   //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
-  #if defined(MCU_STM32F103C8) | defined(MCU_STM32F103CB)
+  #if defined(MCU_STM32F103C8) || defined(MCU_STM32F103CB)
     #define SMALL_FLASH_MODE
   #endif
 
@@ -51,9 +58,15 @@
     #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) )
     #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) )
   #endif
+#elif defined(__SAMD21G18A__)
+  #define BOARD_H "board_samd21.h"
+  #define CORE_SAMD21
 #else
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif
+
+//This can only be included after the above section
+#include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 //Handy bitsetting macros
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
@@ -85,7 +98,7 @@
 #define BIT_STATUS1_INJ2           1  //inj2
 #define BIT_STATUS1_INJ3           2  //inj3
 #define BIT_STATUS1_INJ4           3  //inj4
-#define BIT_STATUS1_DFCO           4 //Decelleration fuel cutoff
+#define BIT_STATUS1_DFCO           4  //Decelleration fuel cutoff
 #define BIT_STATUS1_BOOSTCUT       5  //Fuel component of MAP based boost cut out
 #define BIT_STATUS1_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
 #define BIT_STATUS1_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
@@ -100,8 +113,8 @@
 #define BIT_SPARK_IDLE            6  // idle on
 #define BIT_SPARK_SYNC            7  // Whether engine has sync or not
 
-#define BIT_SPARK2_FLATSH         0 //Flat shift hard cut
-#define BIT_SPARK2_FLATSS         1 //Flat shift soft cut
+#define BIT_SPARK2_FLATSH         0  //Flat shift hard cut
+#define BIT_SPARK2_FLATSS         1  //Flat shift soft cut
 #define BIT_SPARK2_UNUSED3        2
 #define BIT_SPARK2_UNUSED4        3
 #define BIT_SPARK2_UNUSED5        4
@@ -128,7 +141,7 @@
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
 #define TOOTH_LOG_SIZE      64
-#define TOOTH_LOG_BUFFER    256
+#define TOOTH_LOG_BUFFER    128 //256
 
 #define COMPOSITE_LOG_PRI   0
 #define COMPOSITE_LOG_SEC   1
@@ -237,48 +250,48 @@ struct table2D knockWindowStartTable;
 struct table2D knockWindowDurationTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
-volatile byte *inj1_pin_port;
+volatile PORT_TYPE *inj1_pin_port;
 volatile byte inj1_pin_mask;
-volatile byte *inj2_pin_port;
+volatile PORT_TYPE *inj2_pin_port;
 volatile byte inj2_pin_mask;
-volatile byte *inj3_pin_port;
+volatile PORT_TYPE *inj3_pin_port;
 volatile byte inj3_pin_mask;
-volatile byte *inj4_pin_port;
+volatile PORT_TYPE *inj4_pin_port;
 volatile byte inj4_pin_mask;
-volatile byte *inj5_pin_port;
+volatile PORT_TYPE *inj5_pin_port;
 volatile byte inj5_pin_mask;
-volatile byte *inj6_pin_port;
+volatile PORT_TYPE *inj6_pin_port;
 volatile byte inj6_pin_mask;
-volatile byte *inj7_pin_port;
+volatile PORT_TYPE *inj7_pin_port;
 volatile byte inj7_pin_mask;
-volatile byte *inj8_pin_port;
+volatile PORT_TYPE *inj8_pin_port;
 volatile byte inj8_pin_mask;
 
-volatile byte *ign1_pin_port;
+volatile PORT_TYPE *ign1_pin_port;
 volatile byte ign1_pin_mask;
-volatile byte *ign2_pin_port;
+volatile PORT_TYPE *ign2_pin_port;
 volatile byte ign2_pin_mask;
-volatile byte *ign3_pin_port;
+volatile PORT_TYPE *ign3_pin_port;
 volatile byte ign3_pin_mask;
-volatile byte *ign4_pin_port;
+volatile PORT_TYPE *ign4_pin_port;
 volatile byte ign4_pin_mask;
-volatile byte *ign5_pin_port;
+volatile PORT_TYPE *ign5_pin_port;
 volatile byte ign5_pin_mask;
-volatile byte *ign6_pin_port;
+volatile PORT_TYPE *ign6_pin_port;
 volatile byte ign6_pin_mask;
-volatile byte *ign7_pin_port;
+volatile PORT_TYPE *ign7_pin_port;
 volatile byte ign7_pin_mask;
-volatile byte *ign8_pin_port;
+volatile PORT_TYPE *ign8_pin_port;
 volatile byte ign8_pin_mask;
 
-volatile byte *tach_pin_port;
+volatile PORT_TYPE *tach_pin_port;
 volatile byte tach_pin_mask;
-volatile byte *pump_pin_port;
+volatile PORT_TYPE *pump_pin_port;
 volatile byte pump_pin_mask;
 
-volatile byte *triggerPri_pin_port;
+volatile PORT_TYPE *triggerPri_pin_port;
 volatile byte triggerPri_pin_mask;
-volatile byte *triggerSec_pin_port;
+volatile PORT_TYPE *triggerSec_pin_port;
 volatile byte triggerSec_pin_mask;
 
 //These need to be here as they are used in both speeduino.ino and scheduler.ino
@@ -298,7 +311,7 @@ int ignition4EndAngle = 0;
 int ignition5EndAngle = 0;
 
 //These are variables used across multiple files
-bool initialisationComplete = false; //Tracks whether the setup() functino has run completely
+bool initialisationComplete = false; //Tracks whether the setup() function has run completely
 volatile uint16_t mainLoopCount;
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
@@ -306,7 +319,7 @@ volatile unsigned long ms_counter = 0; //A counter that increments once per ms
 uint16_t fixedCrankingOverride = 0;
 bool clutchTrigger;
 bool previousClutchTrigger;
-volatile uint16_t toothHistory[TOOTH_LOG_BUFFER];
+volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
 volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 volatile unsigned int toothHistoryIndex = 0;
@@ -315,7 +328,7 @@ byte primaryTriggerEdge;
 byte secondaryTriggerEdge;
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360;
-int CRANK_ANGLE_MAX_INJ = 360; // The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+int CRANK_ANGLE_MAX_INJ = 360; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
   
 
 //This needs to be here because using the config page directly can prevent burning the setting
@@ -522,7 +535,11 @@ struct config2 {
 
   int8_t EMAPMin; //Must be signed
   uint16_t EMAPMax;
-  byte unused1_70[58];
+
+  byte fanWhenOff : 1;      // Only run fan when engine is running
+  byte fanUnused : 7;
+
+  byte unused1_70[57];
 
 #if defined(CORE_AVR)
   };
@@ -628,7 +645,7 @@ struct config6 {
   byte egoTPSMax; //TPS must be below this for closed loop to function
   byte vvtPin : 6;
   byte useExtBaro : 1;
-  byte boostMode : 1; //Simple of full boost contrl
+  byte boostMode : 1; //Simple of full boost control
   byte boostPin : 6;
   byte VVTasOnOff : 1; //Whether or not to use the VVT table as an on/off map
   byte useEMAP : 1;
@@ -678,7 +695,7 @@ struct config6 {
   byte iacAlgorithm : 3; //Valid values are: "None", "On/Off", "PWM", "PWM Closed Loop", "Stepper", "Stepper Closed Loop"
   byte iacStepTime : 3; //How long to pulse the stepper for to ensure the step completes (ms)
   byte iacChannels : 1; //How many outputs to use in PWM mode (0 = 1 channel, 1 = 2 channels)
-  byte iacPWMdir : 1; //Directino of the PWM valve. 0 = Normal = Higher RPM with more duty. 1 = Reverse = Lower RPM with more duty
+  byte iacPWMdir : 1; //Direction of the PWM valve. 0 = Normal = Higher RPM with more duty. 1 = Reverse = Lower RPM with more duty
 
   byte iacFastTemp; //Fast idle temp when using a simple on/off valve
 
@@ -692,6 +709,7 @@ struct config6 {
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
+
 #if defined(CORE_AVR)
   };
 #else
@@ -726,8 +744,9 @@ struct config9 {
   uint16_t obd_address;             //speeduino OBD diagnostic address
   uint8_t Auxinpina[16];            //analog  pin number when internal aux in use
   uint8_t Auxinpinb[16];            // digital pin number when internal aux in use
-  
-  byte unused10_152;
+
+  byte iacStepperInv : 1;  //stepper direction of travel to allow reversing. 0=normal, 1=inverted.
+
   byte unused10_153;
   byte unused10_154;
   byte unused10_155;
