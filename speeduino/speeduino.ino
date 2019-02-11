@@ -546,14 +546,7 @@ void loop()
       else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM); }
 
       if(alphaVars.carSelect != 255){
-        if ((currentStatus.coolant > 5) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE)) && (currentStatus.TPS < 40) && (currentStatus.RPM > 1000) && (currentStatus.RPM < 4000) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK))) {
-            if(BIT_CHECK(alphaVars.alphaBools2, BIT_GCAM_STATE)){
-              BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM);
-            }
-            else{
-              BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM);
-            }
-          }
+        ghostCam();
       } //alphamods
 
       //Set dwell

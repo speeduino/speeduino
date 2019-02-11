@@ -519,37 +519,64 @@ void triggerPri_DualWheel()
 
 void triggerSec_DualWheel()
 {
-	if (BIT_CHECK(alphaVars.alphaBools2, BIT_SKIP_TOOTH)){			   
-  curTime2 = micros();
-  curGap2 = curTime2 - toothLastSecToothTime;
-  if ( curGap2 >= triggerSecFilterTime )
-  {
-    toothLastSecToothTime = curTime2;
-    triggerSecFilterTime = curGap2 >> 2; //Set filter at 25% of the current speed
-
-    if(currentStatus.hasSync == false)
+  if(alphaVars.carSelect == 5){
+  	if (BIT_CHECK(alphaVars.alphaBools2, BIT_SKIP_TOOTH)){			   
+    curTime2 = micros();
+    curGap2 = curTime2 - toothLastSecToothTime;
+    if ( curGap2 >= triggerSecFilterTime )
     {
-      toothLastToothTime = micros();
-      toothLastMinusOneToothTime = micros() - (6000000 / configPage4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
-      toothCurrentCount = configPage4.triggerTeeth;
-
-      currentStatus.hasSync = true;
+      toothLastSecToothTime = curTime2;
+      triggerSecFilterTime = curGap2 >> 2; //Set filter at 25% of the current speed
+  
+      if(currentStatus.hasSync == false)
+      {
+        toothLastToothTime = micros();
+        toothLastMinusOneToothTime = micros() - (6000000 / configPage4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
+        toothCurrentCount = configPage4.triggerTeeth;
+  
+        currentStatus.hasSync = true;
+      }
+      else 
+      {
+        if (toothCurrentCount != configPage4.triggerTeeth) { currentStatus.syncLossCounter++; } //Indicates likely sync loss
+        if (configPage4.useResync == 1) { toothCurrentCount = configPage4.triggerTeeth; }
+      }
+  
+      revolutionOne = 1; //Sequential revolution reset
+    } //Trigger filter
+  	}								 
+     if(BIT_CHECK(alphaVars.alphaBools2, BIT_CRK_ALLOW)){
+      if(BIT_CHECK(alphaVars.alphaBools2, BIT_SKIP_TOOTH)){
+        BIT_CLEAR(alphaVars.alphaBools2, BIT_SKIP_TOOTH);
+      }
+      else{ BIT_SET(alphaVars.alphaBools2, BIT_SKIP_TOOTH);}
     }
-    else 
+  }
+  else{
+    curTime2 = micros();
+    curGap2 = curTime2 - toothLastSecToothTime;
+    if ( curGap2 >= triggerSecFilterTime )
     {
-      if (toothCurrentCount != configPage4.triggerTeeth) { currentStatus.syncLossCounter++; } //Indicates likely sync loss
-      if (configPage4.useResync == 1) { toothCurrentCount = configPage4.triggerTeeth; }
-    }
-
-    revolutionOne = 1; //Sequential revolution reset
-  } //Trigger filter
-	}								 
-   if(BIT_CHECK(alphaVars.alphaBools2, BIT_CRK_ALLOW)){
-    if(BIT_CHECK(alphaVars.alphaBools2, BIT_SKIP_TOOTH)){
-      BIT_CLEAR(alphaVars.alphaBools2, BIT_SKIP_TOOTH);
-    }
-    else{ BIT_SET(alphaVars.alphaBools2, BIT_SKIP_TOOTH);}
-  }															  
+      toothLastSecToothTime = curTime2;
+      triggerSecFilterTime = curGap2 >> 2; //Set filter at 25% of the current speed
+  
+      if(currentStatus.hasSync == false)
+      {
+        toothLastToothTime = micros();
+        toothLastMinusOneToothTime = micros() - (6000000 / configPage4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
+        toothCurrentCount = configPage4.triggerTeeth;
+  
+        currentStatus.hasSync = true;
+      }
+      else 
+      {
+        if (toothCurrentCount != configPage4.triggerTeeth) { currentStatus.syncLossCounter++; } //Indicates likely sync loss
+        if (configPage4.useResync == 1) { toothCurrentCount = configPage4.triggerTeeth; }
+      }
+  
+      revolutionOne = 1; //Sequential revolution reset
+    } //Trigger filter									  
+  }
 }
 
 uint16_t getRPM_DualWheel()

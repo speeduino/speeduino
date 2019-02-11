@@ -48,7 +48,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
       if(BIT_CHECK(alphaVars.alphaBools2, BIT_GCAM_STATE)){
         BIT_CLEAR(alphaVars.alphaBools2, BIT_GCAM_STATE);
       }
-      else{BIT_CLEAR(alphaVars.alphaBools2, BIT_GCAM_STATE);}
+      else{BIT_SET(alphaVars.alphaBools2, BIT_GCAM_STATE);}
       alphaVars.gCamTime = 0;
     }
   }

@@ -269,12 +269,13 @@ static inline int8_t correctionAtUpshift(int8_t advance)
 static inline int8_t correctionZeroThrottleTiming(int8_t advance)
 {
   int8_t ignZeroThrottleValue = advance;
+  static uint16_t idleRPM = 1300;
   if ((currentStatus.TPS < 2) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE)) && (currentStatus.MAP < 70)) //Check whether TPS coorelates to zero value
   {
-    if ((currentStatus.RPM > 600) && (currentStatus.RPM <= 1000)) {
+    if ((currentStatus.RPM > idleRPM - 300) && (currentStatus.RPM <= idleRPM)) {
       ignZeroThrottleValue = map(currentStatus.RPM, 600, 1000, 25, 9);
     }
-    else if ((currentStatus.RPM > 800) && (currentStatus.RPM < 1500)) {
+    else if ((currentStatus.RPM > idleRPM) && (currentStatus.RPM < idleRPM + 300)) {
       ignZeroThrottleValue = map(currentStatus.RPM, 1000, 1500, 9, 0);
     }
     else {
@@ -473,7 +474,7 @@ static inline int8_t correctionRollingAntiLag(int8_t advance)
 }
 
 void ghostCam(){
-  if ((currentStatus.coolant > 5) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE)) && (currentStatus.TPS < 40) && (currentStatus.RPM > 1000) && (currentStatus.RPM < 4000) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK))) {
+  if ((currentStatus.coolant > 55) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE)) && (currentStatus.TPS < 50) && (currentStatus.RPM > 1000) && (currentStatus.RPM < 4000) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK))) {
     if(BIT_CHECK(alphaVars.alphaBools2, BIT_GCAM_STATE)){
       BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM);
     }
