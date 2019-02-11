@@ -1,3 +1,8 @@
+#ifndef __ALPHA_MODS_H__
+#define __ALPHA_MODS_H__
+
+#include "globals.h"
+
 struct alphaMods{
 //***
   byte carSelect = 0; //0 - generic car; 1 - Corolla XRS; 2 - Hyundai Tiburon; 
@@ -64,6 +69,12 @@ uint16_t WOTdwellCorrection(uint16_t);
 uint16_t boostAssist(uint16_t);
 static inline int8_t correctionRollingAntiLag(int8_t);
 
+static inline int8_t correctionZeroThrottleTiming(const int8_t& advance);
+static inline bool correctionDFCO2();
+static inline int8_t correctionTimingAlphaN(int8_t advance);
+static inline int8_t correctionAtUpshift(int8_t advance);
+void ghostCam();
+
 // Custom pins
  byte pinAC; // pin for AC clutch
  byte pinAcReq;
@@ -75,3 +86,5 @@ static inline int8_t correctionRollingAntiLag(int8_t);
  byte pinOilPress;
  byte pinCLTgauge;
  byte pinRollingAL;
+
+#endif // __ALPHA_MODS_H__

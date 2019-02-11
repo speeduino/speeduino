@@ -1,5 +1,10 @@
-//#include "alphaMods.h"
+#include "alphaMods.h"
 #include "errors.h"
+
+#include "auxiliaries.h"
+#include "timers.h"
+#include "sensors.h"
+#include "idle.h"
 
 //pin setup
 void alphaPinSetup() {
