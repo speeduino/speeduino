@@ -273,6 +273,7 @@ static inline int8_t correctionAtUpshift(int8_t advance)
 
 static inline int8_t correctionZeroThrottleTiming(int8_t advance)
 {
+  static bool enabled = configPage4.idleZTTenabled;
   static uint16_t idleRPMtrg = configPage4.idleRPMtarget * 10;
   static uint16_t idleRPMmin = idleRPMtrg - (configPage4.idleRPMNegHyst * 10);
   static uint16_t idleRPMmax = idleRPMtrg + (configPage4.idleRPMPosHyst * 10);
