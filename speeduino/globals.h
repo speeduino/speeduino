@@ -616,8 +616,8 @@ struct config4 {
   uint8_t idleTPSlimit;
   uint8_t idleMAPlimit;
   uint8_t idleRPMtarget;
-  uint8_t idleRPMmin;
-  uint8_t idleRPMmax;
+  uint8_t idleRPMNegHyst;
+  uint8_t idleRPMPosHyst;
   uint8_t idleAdvTrg;
   uint8_t idleAdvMin;
   uint8_t idleAdvMax;
