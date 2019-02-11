@@ -62,6 +62,8 @@ script:
   - platformio update
 #  - platformio run -e megaatmega2560 -e teensy35 -e bluepill_f103c8 -e genericSTM32F103RB
   - platformio run -e megaatmega2560 -e teensy35 -e genericSTM32F103RB
+  - curl -v --user "speeduino_firmware@speeduino.com:$ftp_pwd" --basic -T "./.pioenvs/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
+  - curl -v --user "speeduino_firmware@speeduino.com:$ftp_pwd" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
   - cd ..
   - chmod +x speeduino/misra/check_misra.sh
   - speeduino/misra/check_misra.sh
@@ -69,29 +71,6 @@ script:
 notifications:
     slack: speeduino:Y8Bhhviu4r7HFF3abMYDnH3p
 
-
-
-
-#
-# Template #2: The project is intended to by used as a library with examples
-#
-
-# language: python
-# python:
-#     - "2.7"
-#
-# sudo: false
-# cache:
-#     directories:
-#         - "~/.platformio"
-#
-# env:
-#     - PLATFORMIO_CI_SRC=path/to/test/file.c
-#     - PLATFORMIO_CI_SRC=examples/file.ino
-#     - PLATFORMIO_CI_SRC=path/to/test/directory
-#
-# install:
-#     - pip install -U platformio
-#
-# script:
-#     - platformio ci --lib="." --board=ID_1 --board=ID_2 --board=ID_N
+env:
+  global:
+    secure: f7H4na9yvyIJj6UuqFAIEZ4N4moMaTvaKBFy80bo028YKoZ+nlwS1utYJxLtZgobbuj7nHmzsNm6uoNbYRdSJmtxozVThrUmx5ZoYa3ymTxExD2PTr2fl9Nn5uhnRsPNaRZwyRY8TGLwgOhlqVFUVSbm9BmfXwhS8cpx+C00CsXwUgeRujldjsUMsuaqCZXFKfcYZyhKMmGuhcC+Memyununtfm77eI8PjNnyTRRCn6Gab2Dzyuqf+B/nvQ1Gn09HfFZ9S/5PCGh5Jv77hS86tjL2kHEOq7LK+QpaS5qK7pY6dX+b3/JPOzS8lZhcs0bvRsf15qUCG4RiR56sU/Og814TIpgKxsj8/kAUeqpBdR4yfLaFBMM21HTrONz4qovIW+I1RA0jnZDXVvGhf9+uGh0UoOHpdNd9+vn1YPxY/jQB4K/qMkAsPaEATuY4tlU/uhVrEr/05Gv2jL86W3do2R2IRcjak4xpa6dg959CYK0eGCxbMsWcBSxORLl8u9wh0uwtiGM6auixtcfas2cWum3W231lypPBcIV2HXP2C7bdRUDbiW2JSMJorcm8asmOt9QPmaNvGMt2K/SuwkKl4LmOTVFbzZvX6XC1t4AUfxwbB8+2K0ajzeS0Wj1/70Xc/GjOOOLamrpugGnIsCEk9bvMD4luFr5+URqGT1Aa2Q=
