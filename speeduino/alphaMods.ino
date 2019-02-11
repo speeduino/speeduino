@@ -273,10 +273,10 @@ static inline int8_t correctionZeroThrottleTiming(int8_t advance)
   if ((currentStatus.TPS < 2) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE)) && (currentStatus.MAP < 70)) //Check whether TPS coorelates to zero value
   {
     if ((currentStatus.RPM > idleRPM - 300) && (currentStatus.RPM <= idleRPM)) {
-      ignZeroThrottleValue = map(currentStatus.RPM, 600, 1000, 25, 9);
+      ignZeroThrottleValue = map(currentStatus.RPM, idleRPM - 300 , idleRPM, 25, 9);
     }
     else if ((currentStatus.RPM > idleRPM) && (currentStatus.RPM < idleRPM + 300)) {
-      ignZeroThrottleValue = map(currentStatus.RPM, 1000, 1500, 9, 0);
+      ignZeroThrottleValue = map(currentStatus.RPM, idleRPM, idleRPM + 300, 9, 0);
     }
     else {
       ignZeroThrottleValue = advance;
