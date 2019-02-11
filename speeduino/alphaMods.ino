@@ -273,20 +273,26 @@ static inline int8_t correctionAtUpshift(int8_t advance)
 
 static inline int8_t correctionZeroThrottleTiming(int8_t advance)
 {
+  static uint16_t idleRPMtrg = configPage4.idleRPMtarget * 50;
+  static uint16_t idleRPMmin = configPage4.idleRPMmin * 50;
+  static uint16_t idleRPMmax = configPage4.idleRPMmax * 50;
+
   int8_t ignZeroThrottleValue = advance;
-  static uint16_t idleRPM = 1300;
-  if ((currentStatus.TPS < 2) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE)) && (currentStatus.MAP < 70)) //Check whether TPS coorelates to zero value
+
+  if ((currentStatus.TPS < configPage4.idleTPSlimit) &&
+      (currentStatus.MAP < configPage4.idleMAPlimit) &&
+      (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))) //Check whether TPS coorelates to zero value
   {
-    if ((currentStatus.RPM > idleRPM - 300) && (currentStatus.RPM <= idleRPM)) {
-      ignZeroThrottleValue = map(currentStatus.RPM, idleRPM - 300 , idleRPM, 25, 9);
+    if ((currentStatus.RPM > idleRPMmin) && (currentStatus.RPM <= idleRPMtrg)) {
+      ignZeroThrottleValue = map(currentStatus.RPM, idleRPMmin, idleRPMtrg, configPage4.idleAdvMax, configPage4.idleAdvTrg);
     }
-    else if ((currentStatus.RPM > idleRPM) && (currentStatus.RPM < idleRPM + 300)) {
-      ignZeroThrottleValue = map(currentStatus.RPM, idleRPM, idleRPM + 300, 9, 0);
+    else if ((currentStatus.RPM > idleRPMtrg) && (currentStatus.RPM < idleRPMmax)) {
+      ignZeroThrottleValue = map(currentStatus.RPM, idleRPMtrg, idleRPMmax, configPage4.idleAdvTrg, configPage4.idleAdvMin);
     }
     else {
       ignZeroThrottleValue = advance;
     }
-    ignZeroThrottleValue = constrain(ignZeroThrottleValue , 0, 25);
+    ignZeroThrottleValue = constrain(ignZeroThrottleValue , configPage4.idleAdvMin, configPage4.idleAdvMax);
     
     if ((currentStatus.RPM > 3000) && (currentStatus.RPM < 5500)) {
       ignZeroThrottleValue = -5;

@@ -69,7 +69,7 @@ uint16_t WOTdwellCorrection(uint16_t);
 uint16_t boostAssist(uint16_t);
 static inline int8_t correctionRollingAntiLag(int8_t);
 
-static inline int8_t correctionZeroThrottleTiming(const int8_t& advance);
+static inline int8_t correctionZeroThrottleTiming(int8_t advance);
 static inline bool correctionDFCO2();
 static inline int8_t correctionTimingAlphaN(int8_t advance);
 static inline int8_t correctionAtUpshift(int8_t advance);
