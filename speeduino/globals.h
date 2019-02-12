@@ -613,6 +613,18 @@ struct config4 {
   byte ADCFILTER_MAP; //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
   byte ADCFILTER_BARO;
 
+  uint8_t idleZTTenabled : 1;
+  uint8_t idleZTTunused : 7;
+
+  uint8_t idleTPSlimit;
+  uint8_t idleMAPlimit;
+  uint8_t idleRPMtarget;
+  uint8_t idleRPMNegHyst;
+  uint8_t idleRPMPosHyst;
+  uint8_t idleAdvTrg;
+  uint8_t idleAdvMin;
+  uint8_t idleAdvMax;
+
   byte unused2_64[57];
 
 #if defined(CORE_AVR)
