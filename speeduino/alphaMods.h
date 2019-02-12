@@ -75,6 +75,8 @@ static inline int8_t correctionTimingAlphaN(int8_t advance);
 static inline int8_t correctionAtUpshift(int8_t advance);
 void ghostCam();
 
+void alphaTableSetup();
+
 // Custom pins
  byte pinAC; // pin for AC clutch
  byte pinAcReq;

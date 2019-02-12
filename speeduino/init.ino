@@ -14,6 +14,7 @@
 #include "corrections.h"
 #include "idle.h"
 #include "table.h"
+#include "alphaMods.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 void initialiseAll()
@@ -110,6 +111,8 @@ void initialiseAll()
     knockWindowDurationTable.xSize = 6;
     knockWindowDurationTable.values = configPage10.knock_window_dur;
     knockWindowDurationTable.axisX = configPage10.knock_window_rpms;
+
+    alphaTableSetup();
 
     //Setup the calibration tables
     loadCalibration();
