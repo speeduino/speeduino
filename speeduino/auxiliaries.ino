@@ -42,15 +42,15 @@ void fanControl()
       //Fan needs to be turned on. Checked for normal or inverted fan signal
       if( configPage6.fanInv == 0 ) { FAN_PIN_HIGH(); }
       else { FAN_PIN_LOW(); }
-    }
       currentStatus.fanOn = true;
+    }
     else if ( (currentStatus.coolant <= offTemp || !fanPermit)|| !BIT_CHECK(alphaVars.alphaBools1, BIT_AC_ON) )
     {
       //Fan needs to be turned off. Checked for normal or inverted fan signal
       if( configPage6.fanInv == 0 ) { FAN_PIN_LOW(); } 
       else { FAN_PIN_HIGH(); }
-    }
       currentStatus.fanOn = false;
+    }
   }
 }
 
@@ -94,12 +94,12 @@ void boostControl()
   {
     if(configPage4.boostType == OPEN_LOOP_BOOST)
     {
-      else
-      if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
-      if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
-	currentStatus.boostDuty = boostAssist(currentStatus.boostDuty); //alphamods
-      currentStatus.boostDuty = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2 * 100;
       //Open loop
+      currentStatus.boostDuty = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2 * 100;
+  currentStatus.boostDuty = boostAssist(currentStatus.boostDuty); //alphamods
+      if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
+      if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
+      else
       {
         boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
         ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
