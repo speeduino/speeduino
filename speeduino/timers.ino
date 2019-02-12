@@ -254,3 +254,4 @@ if (loop100ms == 100)
     TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
 #endif
 }
+

@@ -1,8 +1,8 @@
 #ifndef COMMS_H
 #define COMMS_H
 //These are the page numbers that the Tuner Studio serial protocol uses to transverse the different map and config pages.
-#define veMapPage    1
-#define veSetPage    2//Config Page 1
+#define veMapPage    2
+#define veSetPage    1 //Note that this and the veMapPage were swapped in Feb 2019 as the 'algorithm' field must be declared in the ini before it's used in the fuel table
 #define ignMapPage   3
 #define ignSetPage   4//Config Page 2
 #define afrMapPage   5

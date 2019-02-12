@@ -1,7 +1,5 @@
 #ifndef CANCOMMS_H
 #define CANCOMMS_H
-//These are the page numbers that the Tuner Studio serial protocol uses to transverse the different map and config pages.
-#define veMapPage    1
 
 #define CAN_PACKET_SIZE   75
 
