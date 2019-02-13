@@ -621,11 +621,10 @@ struct config4 {
   uint8_t idleRPMtarget;
   uint8_t idleRPMNegHyst;
   uint8_t idleRPMPosHyst;
-  uint8_t idleAdvTrg;
-  uint8_t idleAdvMin;
-  uint8_t idleAdvMax;
+  uint8_t idleZTTValues[6];
+  uint8_t idleZTTBins[6];
 
-  byte unused2_64[57];
+  uint8_t unused4_64[39];
 
 #if defined(CORE_AVR)
   };

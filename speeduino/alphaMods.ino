@@ -5,6 +5,19 @@
 #include "timers.h"
 #include "sensors.h"
 #include "idle.h"
+#include "table.h"
+
+struct table2D zttAdvance;
+
+void alphaTableSetup()
+{
+  // init ztt Advance table
+  zttAdvance.xSize = 6;
+  zttAdvance.valueSize = SIZE_BYTE;
+  zttAdvance.axisX = configPage4.idleZTTBins;
+  zttAdvance.values = configPage4.idleZTTValues;
+
+}
 
 //pin setup
 void alphaPinSetup() {
@@ -273,27 +286,20 @@ static inline int8_t correctionAtUpshift(int8_t advance)
 
 static inline int8_t correctionZeroThrottleTiming(int8_t advance)
 {
-  static bool enabled = configPage4.idleZTTenabled;
   static uint16_t idleRPMtrg = configPage4.idleRPMtarget * 10;
   static uint16_t idleRPMmin = idleRPMtrg - (configPage4.idleRPMNegHyst * 10);
   static uint16_t idleRPMmax = idleRPMtrg + (configPage4.idleRPMPosHyst * 10);
 
   int8_t ignZeroThrottleValue = advance;
-   if (enabled){
-    if ((currentStatus.TPS < configPage4.idleTPSlimit) &&
-        (currentStatus.MAP < configPage4.idleMAPlimit) &&
-        (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))) //Check whether TPS coorelates to zero value
+    if(configPage4.idleZTTenabled &&
+      (currentStatus.TPS < configPage4.idleTPSlimit) &&
+      (currentStatus.MAP < configPage4.idleMAPlimit) &&
+      (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))) //Check whether TPS coorelates to zero value
     {
-      if ((currentStatus.RPM > idleRPMmin) && (currentStatus.RPM <= idleRPMtrg)) {
-        ignZeroThrottleValue = map(currentStatus.RPM, idleRPMmin, idleRPMtrg, configPage4.idleAdvMax, configPage4.idleAdvTrg);
+      if((currentStatus.RPM > idleRPMmin) && (currentStatus.RPM < idleRPMmax)) {
+        ignZeroThrottleValue = table2D_getValue(&zttAdvance, currentStatus.RPM / 10); // Divide by 10 because values are stored that way in EEPROM
       }
-      else if ((currentStatus.RPM > idleRPMtrg) && (currentStatus.RPM < idleRPMmax)) {
-        ignZeroThrottleValue = map(currentStatus.RPM, idleRPMtrg, idleRPMmax, configPage4.idleAdvTrg, configPage4.idleAdvMin);
-      }
-      else {
-        ignZeroThrottleValue = advance;
-      }
-      ignZeroThrottleValue = constrain(ignZeroThrottleValue , configPage4.idleAdvMin, configPage4.idleAdvMax);
+      // ignZeroThrottleValue = constrain(ignZeroThrottleValue , configPage4.idleAdvMin, configPage4.idleAdvMax);
       
       if ((currentStatus.RPM > 3000) && (currentStatus.RPM < 5500)) {
         ignZeroThrottleValue = -5;
@@ -301,13 +307,12 @@ static inline int8_t correctionZeroThrottleTiming(int8_t advance)
        if ((BIT_CHECK(alphaVars.alphaBools1, BIT_AC_ON)) && (currentStatus.RPM < 3000) && (currentStatus.TPS < 30)) {
       ignZeroThrottleValue = ignZeroThrottleValue + 2;
     }
-    }
     else if ((currentStatus.TPS < 2) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))) {
       ignZeroThrottleValue = 11;
     }
-   }
+  }
    
-    return ignZeroThrottleValue;
+  return ignZeroThrottleValue;
 }
 
 static inline int8_t correctionTimingAlphaN(int8_t advance){
