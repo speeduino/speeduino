@@ -37,14 +37,14 @@ void fanControl()
     if ( configPage2.fanWhenOff ) { fanPermit = true; }
     else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
 
-    if ( currentStatus.coolant >= onTemp && fanPermit )
+    if ( (currentStatus.coolant >= onTemp && fanPermit) || BIT_CHECK(alphaVars.alphaBools1, BIT_AC_ON) )
     {
       //Fan needs to be turned on. Checked for normal or inverted fan signal
       if( configPage6.fanInv == 0 ) { FAN_PIN_HIGH(); }
       else { FAN_PIN_LOW(); }
       currentStatus.fanOn = true;
     }
-    else if ( currentStatus.coolant <= offTemp || !fanPermit )
+    else if ( (currentStatus.coolant <= offTemp || !fanPermit)|| !BIT_CHECK(alphaVars.alphaBools1, BIT_AC_ON) )
     {
       //Fan needs to be turned off. Checked for normal or inverted fan signal
       if( configPage6.fanInv == 0 ) { FAN_PIN_LOW(); } 
@@ -96,7 +96,7 @@ void boostControl()
     {
       //Open loop
       currentStatus.boostDuty = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2 * 100;
-
+  currentStatus.boostDuty = boostAssist(currentStatus.boostDuty); //alphamods
       if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
       if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
       else

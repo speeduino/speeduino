@@ -12,7 +12,7 @@ void writeCalibration();
 //These are utility functions that prevent other files from having to use EEPROM.h directly
 byte readLastBaro();
 void storeLastBaro(byte);
-void storeCalibrationValue(uint16_t, byte);
+void storeCalibrationValue(byte, byte);
 byte readEEPROMVersion();
 void storeEEPROMVersion(byte);
 

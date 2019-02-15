@@ -33,6 +33,11 @@ inline void beginTrailingCoilCharge();
 inline void endTrailingCoilCharge1();
 inline void endTrailingCoilCharge2();
 
+inline void beginTrailingCoil1Charge();
+inline void beginTrailingCoil2Charge();
+inline void endTrailingCoil1Charge();
+inline void endTrailingCoil2Charge();
+
 //And the combined versions of the above for simplicity
 void beginCoil1and3Charge();
 void endCoil1and3Charge();

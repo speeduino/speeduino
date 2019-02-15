@@ -14,6 +14,7 @@
 #include "corrections.h"
 #include "idle.h"
 #include "table.h"
+#include "alphaMods.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 void initialiseAll()
@@ -110,6 +111,8 @@ void initialiseAll()
     knockWindowDurationTable.xSize = 6;
     knockWindowDurationTable.values = configPage10.knock_window_dur;
     knockWindowDurationTable.axisX = configPage10.knock_window_rpms;
+
+    alphaTableSetup();
 
     //Setup the calibration tables
     loadCalibration();
@@ -701,15 +704,26 @@ void initialiseAll()
     case IGN_MODE_ROTARY:
         if(configPage10.rotaryType == ROTARY_IGN_FC)
         {
+		ign1StartFunction = beginCoil1Charge;
+        ign1EndFunction = endCoil1Charge;
+        ign2StartFunction = beginCoil1Charge;
+        ign2EndFunction = endCoil1Charge;
+
+        ign3StartFunction = beginTrailingCoilCharge;
+        ign3EndFunction = endTrailingCoilCharge1;
+        ign4StartFunction = beginTrailingCoilCharge;
+        ign4EndFunction = endTrailingCoilCharge2;
+        }
+        else if (configPage10.rotaryType == ROTARY_IGN_RX8){
           ign1StartFunction = beginCoil1Charge;
           ign1EndFunction = endCoil1Charge;
-          ign2StartFunction = beginCoil1Charge;
-          ign2EndFunction = endCoil1Charge;
-
-          ign3StartFunction = beginTrailingCoilCharge;
-          ign3EndFunction = endTrailingCoilCharge1;
-          ign4StartFunction = beginTrailingCoilCharge;
-          ign4EndFunction = endTrailingCoilCharge2;
+          ign2StartFunction = beginCoil2Charge;
+          ign2EndFunction = endCoil2Charge;
+  
+          ign3StartFunction = beginTrailingCoil1Charge;
+          ign3EndFunction = endTrailingCoil1Charge;
+          ign4StartFunction = beginTrailingCoil2Charge;
+          ign4EndFunction = endTrailingCoil2Charge;
         }
         break;
 

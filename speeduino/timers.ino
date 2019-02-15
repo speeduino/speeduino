@@ -42,13 +42,37 @@ void oneMSInterval() //Most ARM chips can simply call a function
 {
   ms_counter++;
 
+  if(alphaVars.carSelect != 255){
+    alphaVars.gCamTime++;
+    if(alphaVars.gCamTime > constrain(map(currentStatus.RPM, 1000, 4000, 100, 20), 20, 100)){
+      if(BIT_CHECK(alphaVars.alphaBools2, BIT_GCAM_STATE)){
+        BIT_CLEAR(alphaVars.alphaBools2, BIT_GCAM_STATE);
+      }
+      else{BIT_SET(alphaVars.alphaBools2, BIT_GCAM_STATE);}
+      alphaVars.gCamTime = 0;
+    }
+  }
+  
   //Increment Loop Counters
   loop33ms++;
   loop66ms++;
   loop100ms++;
   loop250ms++;
+ if (alphaVars.carSelect != 255){
+    loopCLT++; //alphamods
+  }
   loopSec++;
 
+  switch(alphaVars.carSelect){
+    case 1:
+      XRSgaugeCLT();
+      break;
+    case 4:
+      audiFanControl();
+      break;
+    default:
+      break;
+  }
   unsigned long targetOverdwellTime;
 
   //Overdwell check
@@ -80,14 +104,36 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
   //Loop executed every 100ms loop
   //Anything inside this if statement will run every 100ms.
-  if (loop100ms == 100)
+if (loop100ms == 100)
   {
     loop100ms = 0; //Reset counter
     BIT_SET(TIMER_mask, BIT_TIMER_10HZ);
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
+    if(alphaVars.carSelect == 1){
+    vvlControl();
+   }
   }
+
+    //Loop executed every CLT loop
+  //Anything inside this if statement will run every CLTms.
+  switch(alphaVars.carSelect){
+    case 1:
+      if (loopCLT == 400){
+        loopCLT = 0; // Reset counter
+      }
+      break;
+     case 4:
+      if (loopCLT == 200){
+        loopCLT = 0;
+      }
+      break;
+     default:
+     break;
+  }
+//alphamods  
+
 
   //Loop executed every 250ms loop (1ms x 250 = 250ms)
   //Anything inside this if statement will run every 250ms.
@@ -139,6 +185,18 @@ void oneMSInterval() //Most ARM chips can simply call a function
     {
        fanControl();            // Fucntion to turn the cooling fan on/off
     }
+    else{
+      fanControl2();
+    }
+    if ((alphaVars.carSelect != 0) && (alphaVars.carSelect != 255)){
+  		ACControl();
+  		CELcontrol();
+  	}
+   if (alphaVars.carSelect != 255){
+    DFCOwaitFunc();
+   }
+   
+    //alphamods
 
     //Check whether fuel pump priming is complete
     if(fpPrimed == false)

@@ -204,6 +204,9 @@ void idleControl()
       }
 
       if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
+		if (alphaVars.carSelect != 255){
+          alphaIdleMods(); //alphamods
+        }
       if( currentStatus.idleDuty == 0 ) 
       { 
         disableIdle();

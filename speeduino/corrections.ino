@@ -19,6 +19,7 @@ Flood clear mode etc.
 #include "maths.h"
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
+#include "alphaMods.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
 PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
@@ -73,6 +74,16 @@ static inline byte correctionsFuel()
   if (currentStatus.iatCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.iatCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
+	  //alphamods
+  alphaVars.vvlCorrection = correctionVVL();
+  if (alphaVars.vvlCorrection != 100) { sumCorrections = (sumCorrections * alphaVars.vvlCorrection); activeCorrections++; }
+  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+
+  alphaVars.alphaNcorrection = correctionAlphaN();
+  if (alphaVars.alphaNcorrection != 100) { sumCorrections = (sumCorrections * alphaVars.alphaNcorrection); activeCorrections++; }
+  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  //alphamods
+  
   currentStatus.flexCorrection = correctionFlex();
   if (currentStatus.flexCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.flexCorrection); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
@@ -286,11 +297,18 @@ static inline byte correctionLaunch()
 static inline bool correctionDFCO()
 {
   bool DFCOValue = false;
-  if ( configPage2.dfcoEnabled == 1 )
-  {
-    if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); }
-    else { DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); }
+    //alphamods
+  if (alphaVars.carSelect == 255){
+    if ( configPage2.dfcoEnabled == 1 )
+    {
+      if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); }
+      else { DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); }
+    }
   }
+  else{
+   DFCOValue = correctionDFCO2();
+  }
+  //alphamods
   return DFCOValue;
 }
 
@@ -401,6 +419,16 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionNitrous(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
+  //alphamods
+  if (alphaVars.carSelect != 255){
+    advance = correctionRollingAntiLag(advance);
+    advance = correctionZeroThrottleTiming(advance);
+    advance = correctionTimingAlphaN(advance);
+  }
+  if (alphaVars.carSelect == 0){
+    advance = correctionAtUpshift(advance);
+  }
+  //alphamods 
   advance = correctionKnock(advance);
 
   //Fixed timing check must go last
@@ -567,5 +595,10 @@ uint16_t correctionsDwell(uint16_t dwell)
     //Possibly need some method of reducing spark duration here as well, but this is a start
     tempDwell = (revolutionTime / pulsesPerRevolution) - (configPage4.sparkDur * 100);
   }
+    //alphamods
+  if (alphaVars.carSelect != 255){
+    tempDwell = WOTdwellCorrection(tempDwell);
+  }
+  //alphamods 
   return tempDwell;
 }

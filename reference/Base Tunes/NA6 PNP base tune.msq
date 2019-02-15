@@ -1254,12 +1254,31 @@
 <constant digits="0" name="knock_recoveryStep" units="Deg">0.0</constant>
 <constant cols="1" digits="0" name="unused11_122_191" rows="69" units="RPM">
          0.0 
+         -20.0 
+      </constant>
+<constant cols="1" digits="0" name="knock_window_dur" rows="6" units="deg">
+         30.0 
+         30.0 
+         30.0 
+         30.0 
+         30.0 
+         15.0 
+      </constant>
+<constant digits="0" name="knock_maxRetard" units="Deg">3.0</constant>
+<constant digits="0" name="knock_firstStep" units="Deg">1.0</constant>
+<constant digits="0" name="knock_stepSize" units="Deg">2.0</constant>
+<constant digits="1" name="knock_stepTime" units="Sec">2.0</constant>
+<constant digits="1" name="knock_duration" units="Sec">0.2</constant>
+<constant digits="1" name="knock_recoveryStepTime" units="Sec">0.1</constant>
+<constant digits="0" name="knock_recoveryStep" units="Deg">0.0</constant>
+<constant cols="1" digits="0" name="unused11_122_191" rows="69" units="RPM">
          0.0 
          0.0 
          0.0 
          20000.0 
          0.0 
          0.0 
+         20000.0 
          0.0 
          0.0 
          0.0 

@@ -81,6 +81,14 @@ void canCommand()
            Lbuffer[Lcount] = CANSerial.read();
          }
          break;
+		case '%':{// Audi RPM request
+		  //unsigned int niggerRPM = 4583;
+		  CANSerial.write(highByte(currentStatus.RPM));
+		  CANSerial.write(lowByte(currentStatus.RPM));
+		  //CANSerial.write(highByte(niggerRPM));
+		  //CANSerial.write(lowByte(niggerRPM));
+		  break;
+		  } //alphamods
 
     case 'r': //New format for the optimised OutputChannels
       byte Cmd;

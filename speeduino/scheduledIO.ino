@@ -35,6 +35,10 @@ volatile bool tachoAlt = true;
   inline void beginTrailingCoilCharge() { digitalWrite(pinCoil2, coilHIGH); }
   inline void endTrailingCoilCharge1() { digitalWrite(pinCoil2, coilLOW); *ign3_pin_port |= ign3_pin_mask; } //Sets ign3 (Trailing select) high
   inline void endTrailingCoilCharge2() { digitalWrite(pinCoil2, coilLOW); *ign3_pin_port &= ~(ign3_pin_mask); } //sets ign3 (Trailing select) low
+  inline void beginTrailingCoil1Charge() { digitalWrite(pinCoil3, coilHIGH); }
+  inline void endTrailingCoil1Charge() { digitalWrite(pinCoil3, coilLOW);} //Sets ign3 (Trailing select) high
+  inline void beginTrailingCoil2Charge() { digitalWrite(pinCoil4, coilHIGH); }
+  inline void endTrailingCoil2Charge() { digitalWrite(pinCoil4, coilLOW);} //sets ign3 (Trailing select) low
 
 //As above but for ignition (Wasted COP mode)
 void beginCoil1and3Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinCoil3, coilHIGH); TACH_PULSE_LOW();  }

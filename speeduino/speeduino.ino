@@ -37,6 +37,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "storage.h"
 #include "crankMaths.h"
 #include "init.h"
+#include "alphaMods.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 #if defined (CORE_TEENSY)
 #include <FlexCAN.h>
@@ -104,6 +105,8 @@ void loop()
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       toothLastToothTime = 0;
+	    BIT_CLEAR(alphaVars.alphaBools2, BIT_CRK_ALLOW);
+      BIT_CLEAR(alphaVars.alphaBools2, BIT_SKIP_TOOTH);
       toothLastSecToothTime = 0;
       //toothLastMinusOneToothTime = 0;
       currentStatus.hasSync = false;
@@ -210,6 +213,7 @@ void loop()
       readO2_2();
       readBat();
       nitrousControl();
+		alpha4hz();
 
       if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
@@ -541,6 +545,9 @@ void loop()
       if (currentStatus.RPM > ((unsigned int)(configPage4.HardRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); } //Hardcut RPM limit
       else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM); }
 
+      if(alphaVars.carSelect != 255){
+        ghostCam();
+      } //alphamods
 
       //Set dwell
       //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage4. This number therefore needs to be multiplied by 100 to get dwell in uS
