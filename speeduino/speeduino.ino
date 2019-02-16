@@ -545,7 +545,7 @@ void loop()
       if (currentStatus.RPM > ((unsigned int)(configPage4.HardRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); } //Hardcut RPM limit
       else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM); }
 
-      if(alphaVars.carSelect != 255){
+      if(alphaVars.carSelect == 5){
         ghostCam();
       } //alphamods
 

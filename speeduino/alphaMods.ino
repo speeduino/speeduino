@@ -230,7 +230,7 @@ void readACReq()
 static inline uint8_t correctionVVL()
 {
   uint8_t VVLValue = 100;
-  if (BIT_CHECK(alphaVars.alphaBools1, BIT_VVL_ON)) {
+  if ((BIT_CHECK(alphaVars.alphaBools1, BIT_VVL_ON)) && (alphaVars.carSelect == 1)){
     VVLValue = 102;  //Adds 7% fuel when VVL is active
   }
   return VVLValue;
@@ -249,9 +249,13 @@ void alpha4hz(){
 
 static inline uint8_t correctionAlphaN() {
   uint8_t alphaNvalue = 100;
-  if ((configPage2.fuelAlgorithm == LOAD_SOURCE_TPS) && (currentStatus.MAP > 100)){
-    alphaNvalue = map(currentStatus.MAP, 100, 260, 100, 124);
-    alphaNvalue = constrain(alphaNvalue, 100, 128);
+  if ((configPage2.fuelAlgorithm == LOAD_SOURCE_TPS) && (currentStatus.MAP > 100) && (alphaVars.carSelect == 7)){
+    static uint8_t startMAP = 100;
+    static uint8_t endMAP = 280;
+    static uint8_t startCorr = 100;
+    static uint8_t endCorr = 128;
+    alphaNvalue = map(currentStatus.MAP, startMAP, endMAP, startCorr, endCorr);
+    alphaNvalue = constrain(alphaNvalue, startCorr, endCorr);
   }
   return alphaNvalue;
 }
@@ -289,6 +293,8 @@ static inline int8_t correctionZeroThrottleTiming(int8_t advance)
   static uint16_t idleRPMtrg = configPage4.idleRPMtarget * 10;
   static uint16_t idleRPMmin = idleRPMtrg - (configPage4.idleRPMNegHyst * 10);
   static uint16_t idleRPMmax = idleRPMtrg + (configPage4.idleRPMPosHyst * 10);
+  static int8_t popAndBangTiming = -5;
+  static uint8_t ASEtiming = 12;
 
   int8_t ignZeroThrottleValue = advance;
     if(configPage4.idleZTTenabled &&
@@ -302,13 +308,13 @@ static inline int8_t correctionZeroThrottleTiming(int8_t advance)
       // ignZeroThrottleValue = constrain(ignZeroThrottleValue , configPage4.idleAdvMin, configPage4.idleAdvMax);
       
       if ((currentStatus.RPM > 3000) && (currentStatus.RPM < 5500)) {
-        ignZeroThrottleValue = -5;
+        ignZeroThrottleValue = popAndBangTiming;
       }
        if ((BIT_CHECK(alphaVars.alphaBools1, BIT_AC_ON)) && (currentStatus.RPM < 3000) && (currentStatus.TPS < 30)) {
       ignZeroThrottleValue = ignZeroThrottleValue + 2;
     }
     else if ((currentStatus.TPS < 2) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE))) {
-      ignZeroThrottleValue = 11;
+      ignZeroThrottleValue = ASEtiming;
     }
   }
    
@@ -318,9 +324,13 @@ static inline int8_t correctionZeroThrottleTiming(int8_t advance)
 static inline int8_t correctionTimingAlphaN(int8_t advance){
   int8_t timingAlphaN = advance;
   if ((configPage2.ignAlgorithm == LOAD_SOURCE_TPS) && (currentStatus.MAP > 100)){
-    int8_t timingCorr = 0;
-    timingCorr = map(currentStatus.MAP, 100, 260, 1, 8);
-    timingCorr = constrain(timingCorr, 1, 10);
+    uint8_t timingCorr = 0;
+    static uint8_t startMAP = 100;
+    static uint8_t endMAP = 280;
+    static uint8_t startTiming = 1;
+    static uint8_t endTiming = 8;
+    timingCorr = map(currentStatus.MAP, startMAP, endMAP, startTiming, endTiming);
+    timingCorr = constrain(timingCorr, startTiming, endTiming);
     timingAlphaN = timingAlphaN - timingCorr;
   }
   return timingAlphaN;
@@ -351,8 +361,9 @@ void DFCOwaitFunc() {
   //DFCO wait time
   if ( ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) )
   {
+    static uint8_t dfcoWaitTime = 2;
     alphaVars.DFCOcounter++;
-    if (alphaVars.DFCOcounter > 2 ) {
+    if (alphaVars.DFCOcounter > dfcoWaitTime ) {
       BIT_SET(alphaVars.alphaBools1, BIT_DFCO_WAIT);
     }
   }
@@ -457,8 +468,13 @@ void initialiseAlphaPins(){
 
 uint16_t WOTdwellCorrection(uint16_t tempDwell) {
   if ((currentStatus.TPS > 80) && (currentStatus.RPM > 3500)) {
-    uint16_t dwellCorr = map(currentStatus.RPM, 3500, 5000, 200, 700);
-    dwellCorr = constrain(dwellCorr, 200, 500);
+    static uint8_t minDwellCorr = 200;
+    static uint16_t maxDwellCorr = 500;
+    static uint16_t startRPM = 3000;
+    static uint16_t endRPM = 5500;
+    
+    uint16_t dwellCorr = map(currentStatus.RPM, startRPM, endRPM, minDwellCorr, maxDwellCorr);
+    dwellCorr = constrain(dwellCorr, minDwellCorr, maxDwellCorr);
     tempDwell = tempDwell - dwellCorr;
   }
   return tempDwell;
@@ -492,7 +508,7 @@ static inline int8_t correctionRollingAntiLag(int8_t advance)
 }
 
 void ghostCam(){
-  if ((currentStatus.coolant > 55) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE)) && (currentStatus.TPS < 50) && (currentStatus.RPM > 1000) && (currentStatus.RPM < 4000) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK))) {
+  if ((currentStatus.coolant > 55) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_ASE)) && (currentStatus.TPS < 25) && (currentStatus.RPM > 1000) && (currentStatus.RPM < 4000) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (alphaVars.carSelect == 5)) {
     if(BIT_CHECK(alphaVars.alphaBools2, BIT_GCAM_STATE)){
       BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM);
     }

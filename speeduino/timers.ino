@@ -42,7 +42,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
 {
   ms_counter++;
 
-  if(alphaVars.carSelect != 255){
+  if(alphaVars.carSelect == 5){
     alphaVars.gCamTime++;
     if(alphaVars.gCamTime > constrain(map(currentStatus.RPM, 1000, 4000, 100, 20), 20, 100)){
       if(BIT_CHECK(alphaVars.alphaBools2, BIT_GCAM_STATE)){
@@ -254,4 +254,3 @@ if (loop100ms == 100)
     TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
 #endif
 }
-
