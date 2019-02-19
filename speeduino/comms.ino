@@ -26,6 +26,18 @@ void command()
   switch (currentCommand)
   {
 
+    case 'a':
+      cmdPending = true;
+
+      if (Serial.available() >= 2)
+      {
+        Serial.read(); //Ignore the first value, it's always 0
+        Serial.read(); //Ignore the second value, it's always 6
+        sendValuesLegacy();
+        cmdPending = false;
+      }
+      break;
+
     case 'A': // send x bytes of realtime values
       sendValues(0, SERIAL_PACKET_SIZE, 0x30, 0);   //send values to serial0
       break;
@@ -568,6 +580,65 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
     else if (portNum == 3){ CANSerial.write(fullStatus[offset+x]); }
   }
 
+}
+
+void sendValuesLegacy()
+{
+  uint16_t temp;
+  int bytestosend = 112;
+
+  bytestosend -= Serial.write(currentStatus.secl>>8);
+  bytestosend -= Serial.write(currentStatus.secl);
+  bytestosend -= Serial.write(currentStatus.PW1>>8);
+  bytestosend -= Serial.write(currentStatus.PW1);
+  bytestosend -= Serial.write(currentStatus.PW2>>8);
+  bytestosend -= Serial.write(currentStatus.PW2);
+  bytestosend -= Serial.write(currentStatus.RPM>>8);
+  bytestosend -= Serial.write(currentStatus.RPM);
+
+  temp = currentStatus.advance * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
+
+  bytestosend -= Serial.write(currentStatus.nSquirts);
+  bytestosend -= Serial.write(currentStatus.engine);
+  bytestosend -= Serial.write(currentStatus.afrTarget);
+  bytestosend -= Serial.write(currentStatus.afrTarget); // send twice so afrtgt1 == afrtgt2
+  bytestosend -= Serial.write(255); // send dummy data as we don't have wbo2_en1
+  bytestosend -= Serial.write(255); // send dummy data as we don't have wbo2_en2
+
+  temp = currentStatus.baro * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
+
+  temp = currentStatus.MAP * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
+
+  temp = currentStatus.IAT * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
+
+  temp = currentStatus.coolant * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
+
+  temp = currentStatus.TPS * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
+
+  bytestosend -= Serial.write(currentStatus.battery10>>8);
+  bytestosend -= Serial.write(currentStatus.battery10);
+  bytestosend -= Serial.write(currentStatus.O2>>8);
+  bytestosend -= Serial.write(currentStatus.O2);
+  bytestosend -= Serial.write(currentStatus.O2_2>>8);
+  bytestosend -= Serial.write(currentStatus.O2_2);
+
+  for(int i = 0; i < bytestosend; i++)
+  {
+    // send dummy data to fill remote's buffer
+    Serial.write(i+1);
+  }
 }
 
 void receiveValue(int valueOffset, byte newValue)
