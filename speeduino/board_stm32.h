@@ -1,6 +1,15 @@
 #ifndef STM32_H
 #define STM32_H
 #if defined(CORE_STM32)
+#if defined(STM32F4)
+    //These should really be in the stm32GENERIC libs, but for somereason they only have timers 1-4
+//    #include <stm32_TIM_variant_11.h>
+//      #include "src/HardwareTimers/HardwareTimer.h"
+//    HardwareTimer Timer5(TIM5, chip_tim5, sizeof(chip_tim5) / sizeof(chip_tim5[0]));
+//    HardwareTimer Timer8(TIM8, chip_tim8, sizeof(chip_tim8) / sizeof(chip_tim8[0]));
+#else
+  #include "HardwareTimer.h"
+#endif
 
 /*
 ***********************************************************************************************************
@@ -8,10 +17,13 @@
 */
   #define PORT_TYPE uint8_t
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
+  
   #define USE_SERIAL3
   void initBoard();
   uint16_t freeRam();
-
+  extern void oneMSIntervalIRQ(stimer_t *Timer);
+  
+  extern void EmptyIRQCallback(stimer_t *Timer, uint32_t channel);
   #if defined(USE_STM32GENERIC)
     #define Serial Serial1
   #endif

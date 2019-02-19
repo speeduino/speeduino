@@ -4,22 +4,47 @@
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
-#include "HardwareTimer.h"
 #if defined(STM32F4)
+    #define NR_OFF_TIMERS 9
+    //stimer_t HardwareTimers[NR_OFF_TIMERS + 1];
+    stimer_t HardwareTimers_1;
+    stimer_t HardwareTimers_2;
+    stimer_t HardwareTimers_3;
+    stimer_t HardwareTimers_4;
+    stimer_t HardwareTimers_5;
+    stimer_t HardwareTimers_8;
+    
     //These should really be in the stm32GENERIC libs, but for somereason they only have timers 1-4
-    #include <stm32_TIM_variant_11.h>
-    HardwareTimer Timer5(TIM5, chip_tim5, sizeof(chip_tim5) / sizeof(chip_tim5[0]));
-    HardwareTimer Timer8(TIM8, chip_tim8, sizeof(chip_tim8) / sizeof(chip_tim8[0]));
+//    #include <stm32_TIM_variant_11.h>
+//      #include "src/HardwareTimers/HardwareTimer.h"
+//    HardwareTimer Timer5(TIM5, chip_tim5, sizeof(chip_tim5) / sizeof(chip_tim5[0]));
+//    HardwareTimer Timer8(TIM8, chip_tim8, sizeof(chip_tim8) / sizeof(chip_tim8[0]));
+#else
+  #include "HardwareTimer.h"
 #endif
+
+extern void oneMSIntervalIRQ(stimer_t *Timer){oneMSInterval();}
+extern void EmptyIRQCallback(stimer_t *Timer, uint32_t channel){}
 
 void initBoard()
 {
     /*
+     * Initialize timers
+     */
+
+    HardwareTimers_1.timer = TIM1;
+    HardwareTimers_2.timer = TIM2;
+    HardwareTimers_3.timer = TIM3;
+    HardwareTimers_4.timer = TIM4;
+
+    HardwareTimers_5.timer = TIM5;
+    HardwareTimers_8.timer = TIM8;
+    
+    /*
     ***********************************************************************************************************
     * General
     */
-   #define FLASH_LENGTH 8192
-
+    #define FLASH_LENGTH 8192
 
     /*
     ***********************************************************************************************************
@@ -31,10 +56,10 @@ void initBoard()
     } 
 
     //This must happen at the end of the idle init
-    Timer1.setMode(4, TIMER_OUTPUT_COMPARE);
+    //Timer1.setMode(4, TIMER_OUTPUT_COMPARE);
     //timer_set_mode(TIMER1, 4, TIMER_OUTPUT_COMPARE;
-    if(idle_pwm_max_count > 0) { Timer1.attachInterrupt(4, idleInterrupt);} //on first flash the configPage4.iacAlgorithm is invalid
-    Timer1.resume();
+    //if(idle_pwm_max_count > 0) { Timer1.attachInterrupt(4, idleInterrupt);} //on first flash the configPage4.iacAlgorithm is invalid
+    //Timer1.resume();
 
 
     /*
@@ -42,10 +67,8 @@ void initBoard()
     * Timers
     */
     #if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
-        Timer8.setPeriod(1000);  // Set up period
-        Timer8.setMode(1, TIMER_OUTPUT_COMPARE);
-        Timer8.attachInterrupt(1, oneMSInterval);
-        Timer8.resume(); //Start Timer
+        TimerHandleInit(&HardwareTimers_8, 1000, 168);
+        attachIntHandle(&HardwareTimers_8, oneMSIntervalIRQ);
     #else
         Timer4.setPeriod(1000);  // Set up period
         Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
@@ -63,11 +86,11 @@ void initBoard()
     vvt_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
 
     //Need to be initialised last due to instant interrupt
-    Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
-    Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
-    if(boost_pwm_max_count > 0) { Timer1.attachInterrupt(2, boostInterrupt);}
-    if(vvt_pwm_max_count > 0) { Timer1.attachInterrupt(3, vvtInterrupt);}
-    Timer1.resume();
+//    Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
+//    Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
+//    if(boost_pwm_max_count > 0) { Timer1.attachInterrupt(2, boostInterrupt);}
+//    if(vvt_pwm_max_count > 0) { Timer1.attachInterrupt(3, vvtInterrupt);}
+//    Timer1.resume();
 
     /*
     ***********************************************************************************************************
@@ -75,9 +98,9 @@ void initBoard()
     */
     #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
         //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
-        Timer1.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
-        Timer2.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
-        Timer3.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
+//        Timer1.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
+//        Timer2.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
+//        Timer3.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
     #else //libmaple core aka STM32DUINO
         //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
         #if defined (STM32F1) || defined(__STM32F1__)
@@ -94,71 +117,60 @@ void initBoard()
             Timer3.setPrescaleFactor((42 * 2U)-1); //2us resolution
         #endif
     #endif
-    Timer2.setMode(1, TIMER_OUTPUT_COMPARE);
-    Timer2.setMode(2, TIMER_OUTPUT_COMPARE);
-    Timer2.setMode(3, TIMER_OUTPUT_COMPARE);
-    Timer2.setMode(4, TIMER_OUTPUT_COMPARE);
+       
+    TimerPulseInit(&HardwareTimers_2, 0xFFFF, 500, EmptyIRQCallback);
+    attachIntHandleOC(&HardwareTimers_2, fuelSchedule1Interrupt, 1, 0);
+    attachIntHandleOC(&HardwareTimers_2, fuelSchedule2Interrupt, 2, 0);
+    attachIntHandleOC(&HardwareTimers_2, fuelSchedule3Interrupt, 3, 0);
+    attachIntHandleOC(&HardwareTimers_2, fuelSchedule4Interrupt, 4, 0);
 
-    Timer3.setMode(1, TIMER_OUTPUT_COMPARE);
-    Timer3.setMode(2, TIMER_OUTPUT_COMPARE);
-    Timer3.setMode(3, TIMER_OUTPUT_COMPARE);
-    Timer3.setMode(4, TIMER_OUTPUT_COMPARE);
-    Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
+    TimerPulseInit(&HardwareTimers_3, 0xFFFF, 500, EmptyIRQCallback);
+    attachIntHandleOC(&HardwareTimers_3, ignitionSchedule1Interrupt, 1, 0);
+    attachIntHandleOC(&HardwareTimers_3, ignitionSchedule2Interrupt, 2, 0);
+    attachIntHandleOC(&HardwareTimers_3, ignitionSchedule3Interrupt, 3, 0);
+    attachIntHandleOC(&HardwareTimers_3, ignitionSchedule4Interrupt, 4, 0);
+    
+//    Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
 
     //Attach interupt functions
     //Injection
-    Timer2.attachInterrupt(1, fuelSchedule1Interrupt);
-    Timer2.attachInterrupt(2, fuelSchedule2Interrupt);
-    Timer2.attachInterrupt(3, fuelSchedule3Interrupt);
-    Timer2.attachInterrupt(4, fuelSchedule4Interrupt);
+
+    TimerPulseInit(&HardwareTimers_5, 0xFFFF, 0, EmptyIRQCallback);
     #if (INJ_CHANNELS >= 5)
-    Timer5.attachInterrupt(1, fuelSchedule5Interrupt);
+    attachIntHandleOC(&HardwareTimers_5, fuelSchedule5Interrupt, 1, 0);
+//Timer5.attachInterrupt(1, fuelSchedule5Interrupt);
     #endif
     #if (INJ_CHANNELS >= 6)
-    Timer5.attachInterrupt(2, fuelSchedule6Interrupt);
+    attachIntHandleOC(&HardwareTimers_5, fuelSchedule6Interrupt, 2, 0);
+    //Timer5.attachInterrupt(2, fuelSchedule6Interrupt);
     #endif
     #if (INJ_CHANNELS >= 7)
-    Timer5.attachInterrupt(3, fuelSchedule7Interrupt);
+    attachIntHandleOC(&HardwareTimers_5, fuelSchedule7Interrupt, 3, 0);
+    //Timer5.attachInterrupt(3, fuelSchedule7Interrupt);
     #endif
     #if (INJ_CHANNELS >= 8)
-    Timer5.attachInterrupt(4, fuelSchedule8Interrupt);
+    attachIntHandleOC(&HardwareTimers_5, fuelSchedule8Interrupt, 4, 0);
+    //Timer5.attachInterrupt(4, fuelSchedule8Interrupt);
     #endif
 
-    //Ignition
-    #if (IGN_CHANNELS >= 1) 
-    Timer3.attachInterrupt(1, ignitionSchedule1Interrupt); 
-    #endif
-    #if (IGN_CHANNELS >= 2)
-    Timer3.attachInterrupt(2, ignitionSchedule2Interrupt);
-    #endif
-    #if (IGN_CHANNELS >= 3)
-    Timer3.attachInterrupt(3, ignitionSchedule3Interrupt);
-    #endif
-    #if (IGN_CHANNELS >= 4)
-    Timer3.attachInterrupt(4, ignitionSchedule4Interrupt);
-    #endif
+    TimerPulseInit(&HardwareTimers_4, 0xFFFF, 0, EmptyIRQCallback);
     #if (IGN_CHANNELS >= 5)
-    Timer4.attachInterrupt(1, ignitionSchedule5Interrupt);
+    attachIntHandleOC(&HardwareTimers_4, ignitionSchedule5Interrupt, 1, 0);
+    //Timer4.attachInterrupt(1, ignitionSchedule5Interrupt);
     #endif
     #if (IGN_CHANNELS >= 6)
-    Timer4.attachInterrupt(2, ignitionSchedule6Interrupt);
+    attachIntHandleOC(&HardwareTimers_4, ignitionSchedule6Interrupt, 2, 0);
+    //Timer4.attachInterrupt(2, ignitionSchedule6Interrupt);
     #endif
     #if (IGN_CHANNELS >= 7)
-    Timer4.attachInterrupt(3, ignitionSchedule7Interrupt);
+    attachIntHandleOC(&HardwareTimers_4, ignitionSchedule7Interrupt, 3, 0);
+    //Timer4.attachInterrupt(3, ignitionSchedule7Interrupt);
     #endif
     #if (IGN_CHANNELS >= 8)
-    Timer4.attachInterrupt(4, ignitionSchedule8Interrupt);
+    attachIntHandleOC(&HardwareTimers_4, ignitionSchedule8Interrupt, 4, 0);
+    //Timer4.attachInterrupt(4, ignitionSchedule8Interrupt);
     #endif
 
-    Timer1.resume();
-    Timer2.resume();
-    Timer3.resume();
-    #if (IGN_CHANNELS >= 5)
-    Timer4.resume();
-    #endif
-    #if (INJ_CHANNELS >= 5)
-    Timer5.resume();
-    #endif
 }
 
 uint16_t freeRam()

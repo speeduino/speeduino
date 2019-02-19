@@ -16,7 +16,8 @@ uint8_t Glow, Ghigh;
   HardwareSerial &CANSerial = Serial3;
 #elif defined(CORE_STM32)
   #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
-    SerialUART &CANSerial = Serial2;
+    HardwareSerial CANSerial(PD6,PD5);
+    //SerialUART &CANSerial = Serial2;
   #else //libmaple core aka STM32DUINO
     HardwareSerial &CANSerial = Serial2;
   #endif
