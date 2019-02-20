@@ -13,7 +13,7 @@
     stimer_t HardwareTimers_4;
     stimer_t HardwareTimers_5;
     stimer_t HardwareTimers_8;
-    
+    #define LED_BUILTIN PA7
     //These should really be in the stm32GENERIC libs, but for somereason they only have timers 1-4
 //    #include <stm32_TIM_variant_11.h>
 //      #include "src/HardwareTimers/HardwareTimer.h"
@@ -25,6 +25,9 @@
 
 extern void oneMSIntervalIRQ(stimer_t *Timer){oneMSInterval();}
 extern void EmptyIRQCallback(stimer_t *Timer, uint32_t channel){}
+
+
+
 
 void initBoard()
 {
@@ -40,6 +43,7 @@ void initBoard()
     HardwareTimers_5.timer = TIM5;
     HardwareTimers_8.timer = TIM8;
     
+ 
     /*
     ***********************************************************************************************************
     * General
@@ -56,6 +60,8 @@ void initBoard()
     } 
 
     //This must happen at the end of the idle init
+    TimerPulseInit(&HardwareTimers_1, 0xFFFF, 0, EmptyIRQCallback);
+    if(idle_pwm_max_count > 0) { attachIntHandleOC(&HardwareTimers_1, idleInterrupt, 4, 0);} //on first flash the configPage4.iacAlgorithm is invalid
     //Timer1.setMode(4, TIMER_OUTPUT_COMPARE);
     //timer_set_mode(TIMER1, 4, TIMER_OUTPUT_COMPARE;
     //if(idle_pwm_max_count > 0) { Timer1.attachInterrupt(4, idleInterrupt);} //on first flash the configPage4.iacAlgorithm is invalid
@@ -90,6 +96,8 @@ void initBoard()
 //    Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
 //    if(boost_pwm_max_count > 0) { Timer1.attachInterrupt(2, boostInterrupt);}
 //    if(vvt_pwm_max_count > 0) { Timer1.attachInterrupt(3, vvtInterrupt);}
+      if(idle_pwm_max_count > 0) { attachIntHandleOC(&HardwareTimers_2, boostInterrupt, 4, 0);}
+      if(idle_pwm_max_count > 0) { attachIntHandleOC(&HardwareTimers_3, vvtInterrupt, 4, 0);}
 //    Timer1.resume();
 
     /*
@@ -291,84 +299,59 @@ void setPinMapping(byte boardID)
       
       //Black F407VE http://wiki.stm32duino.com/index.php?title=STM32F407
       //PC8~PC12 SDio
-      //PA13~PA15 & PB4 SWD(debug) pins
+
+      //PA9..PA10 Serial1
+      //PA11..PA12 USB
+      //PA13..PA15 & PB4 SWD(debug) pins
       //PB0 EEPROM CS pin
+      //PB1 LCD
+      //PB2 BOOT1 
+      //PB3..PB5 SPI interface
+      //PB6..PB8 NRF interface
+
+
       //PD5 & PD6 Serial2
-      pinInjector1 = PE7; //Output pin injector 1 is on
-      pinInjector2 = PE8; //Output pin injector 2 is on
-      pinInjector3 = PE9; //Output pin injector 3 is on
-      pinInjector4 = PE10; //Output pin injector 4 is on
-      pinInjector5 = PE11; //Output pin injector 5 is on
-      pinInjector6 = PE12; //Output pin injector 6 is on
-      pinCoil1 = PB5; //Pin for coil 1
-      pinCoil2 = PB6; //Pin for coil 2
-      pinCoil3 = PB7; //Pin for coil 3
-      pinCoil4 = PB8; //Pin for coil 4
-      pinCoil5 = PB9; //Pin for coil 5
-      pinTPS = PC0;//TPS input pin
-      pinMAP = PC1; //MAP sensor pin
-      pinIAT = PC2; //IAT sensor pin
-      pinCLT = PC3; //CLS sensor pin
-      pinO2 = PC4; //O2 Sensor pin
-      pinBat = PC6; //Battery reference voltage pin
-      pinBaro = PC7;
-      pinIdle1 = PB8; //Single wire idle control
-      pinIdle2 = PB9; //2 wire idle control
-      pinBoost = PE0; //Boost control
-      pinVVT_1 = PE1; //Default VVT output
-      pinStepperDir = PD8; //Direction pin  for DRV8825 driver
-      pinStepperStep = PB15; //Step pin for DRV8825 driver
-      pinStepperEnable = PD9; //Enable pin for DRV8825
-      pinDisplayReset = PE1; // OLED reset pin
-      pinFan = PE2; //Pin for the fan output
+
+
+
+      pinInjector1 = PA1; //Output pin injector 1 is on
+      pinInjector2 = PA2; //Output pin injector 2 is on
+      pinInjector3 = PA3; //Output pin injector 3 is on
+      pinInjector4 = PA4; //Output pin injector 4 is on
+      pinInjector5 = PA5; //Output pin injector 5 is on
+      pinInjector6 = PD4; //Output pin injector 6 is on
+      pinCoil1 = PD7; //Pin for coil 1
+      pinCoil2 = PC0; //Pin for coil 2
+      pinCoil3 = PC1; //Pin for coil 3
+      pinCoil4 = PC2; //Pin for coil 4
+      pinCoil5 = PC3; //Pin for coil 5
+      pinTPS = PA8;//TPS input pin
+      pinMAP = PB9; //MAP sensor pin
+      pinIAT = PB10; //IAT sensor pin
+      pinCLT = PB11; //CLS sensor pin
+      pinO2 = PC13; //O2 Sensor pin
+      pinBat = PD11; //Battery reference voltage pin
+      pinBaro = PD12;
+      pinIdle1 = PC4; //Single wire idle control
+      pinIdle2 = PC6; //2 wire idle control
+      pinBoost = PC7; //Boost control
+      pinVVT_1 = PD3; //Default VVT output
+      pinStepperDir = PE0; //Direction pin  for DRV8825 driver
+      pinStepperStep = PE1; //Step pin for DRV8825 driver
+      pinStepperEnable = PE2; //Enable pin for DRV8825
+      pinDisplayReset = PE5; // OLED reset pin
+      pinFan = PE6; //Pin for the fan output
+
       pinFuelPump = PA6; //Fuel pump output
-      pinTachOut = PA7; //Tacho output pin
-      pinLaunch = 51; //Can be overwritten below
-      pinResetControl = 43; //Reset control output
+      pinTachOut = PD15; //Tacho output pin
+      // pinLaunch = 51; //Can be overwritten below
+      // pinResetControl = 43; //Reset control output
 
       //external interrupt enabled pins
       //external interrupts could be enalbed in any pin, except same port numbers (PA4,PE4)
-      pinFlex = PE2; // Flex sensor (Must be external interrupt enabled)
-      pinTrigger = PE3; //The CAS pin
-      pinTrigger2 = PE4; //The Cam Sensor pin
-
-        
-//      #if defined(CORE_STM32)
-//        //blue pill http://wiki.stm32duino.com/index.php?title=Blue_Pill
-//        //Maple mini http://wiki.stm32duino.com/index.php?title=Maple_Mini
-//        //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
-//        pinInjector1 = PB7; //Output pin injector 1 is on
-//        pinInjector2 = PB6; //Output pin injector 2 is on
-//        pinInjector3 = PB5; //Output pin injector 3 is on
-//        pinInjector4 = PB4; //Output pin injector 4 is on
-//        pinCoil1 = PB3; //Pin for coil 1
-//        pinCoil2 = PA15; //Pin for coil 2
-//        pinCoil3 = PA14; //Pin for coil 3
-//        pinCoil4 = PA9; //Pin for coil 4
-//        pinCoil5 = PA8; //Pin for coil 5
-//        pinTPS = A0; //TPS input pin
-//        pinMAP = A1; //MAP sensor pin
-//        pinIAT = A2; //IAT sensor pin
-//        pinCLT = A3; //CLS sensor pin
-//        pinO2 = A4; //O2 Sensor pin
-//        pinBat = A5; //Battery reference voltage pin
-//        pinBaro = pinMAP;
-//        pinIdle1 = PB2; //Single wire idle control
-//        pinIdle2 = PA2; //2 wire idle control
-//        pinBoost = PA1; //Boost control
-//        pinVVT_1 = PA0; //Default VVT output
-//        pinStepperDir = PC15; //Direction pin  for DRV8825 driver
-//        pinStepperStep = PC14; //Step pin for DRV8825 driver
-//        pinStepperEnable = PC13; //Enable pin for DRV8825
-//        pinDisplayReset = PB2; // OLED reset pin
-//        pinFan = PB1; //Pin for the fan output
-//        pinFuelPump = PB11; //Fuel pump output
-//        pinTachOut = PB10; //Tacho output pin
-//        //external interrupt enabled pins
-//        pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
-//        pinTrigger = PA10; //The CAS pin
-//        pinTrigger2 = PA13; //The Cam Sensor pin
-//      #endif
+      pinFlex = PA4; // Flex sensor (Must be external interrupt enabled)
+      pinTrigger = PD13; //The CAS pin
+      pinTrigger2 = PD14; //The Cam Sensor pin
       break;
 
     case 9:

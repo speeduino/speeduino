@@ -47,8 +47,8 @@ void initialiseADC()
      BIT_CLEAR(ADCSRA,ADPS1);
      BIT_CLEAR(ADCSRA,ADPS0);
   #endif
-#elif defined(ARDUINO_ARCH_STM32) //STM32GENERIC lib
-  analogReadResolution(10); //use 10bits for analog
+#elif defined(ARDUINO_ARCH_STM32) //STM32GENERIC core and ST STM32duino core, change analog read to 12 bit
+  analogReadResolution(12); //use 10bits for analog
 #endif
   MAPcurRev = 0;
   MAPcount = 0;

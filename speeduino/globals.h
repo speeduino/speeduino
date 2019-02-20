@@ -34,7 +34,6 @@
   #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
     #define BOARD_DIGITAL_GPIO_PINS 80
     #define BOARD_NR_GPIO_PINS 80
-    #define LED_BUILTIN PA7
 
     //These boards always make 8/8 channels available
     #undef INJ_CHANNELS
