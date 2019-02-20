@@ -118,13 +118,13 @@ void initBoard()
         #endif
     #endif
        
-    TimerPulseInit(&HardwareTimers_2, 0xFFFF, 500, EmptyIRQCallback);
+    TimerPulseInit(&HardwareTimers_2, 0xFFFF, 0, EmptyIRQCallback);
     attachIntHandleOC(&HardwareTimers_2, fuelSchedule1Interrupt, 1, 0);
     attachIntHandleOC(&HardwareTimers_2, fuelSchedule2Interrupt, 2, 0);
     attachIntHandleOC(&HardwareTimers_2, fuelSchedule3Interrupt, 3, 0);
     attachIntHandleOC(&HardwareTimers_2, fuelSchedule4Interrupt, 4, 0);
 
-    TimerPulseInit(&HardwareTimers_3, 0xFFFF, 500, EmptyIRQCallback);
+    TimerPulseInit(&HardwareTimers_3, 0xFFFF, 0, EmptyIRQCallback);
     attachIntHandleOC(&HardwareTimers_3, ignitionSchedule1Interrupt, 1, 0);
     attachIntHandleOC(&HardwareTimers_3, ignitionSchedule2Interrupt, 2, 0);
     attachIntHandleOC(&HardwareTimers_3, ignitionSchedule3Interrupt, 3, 0);
@@ -286,39 +286,8 @@ void setPinMapping(byte boardID)
 
     case 3:
       //Pin mappings as per the v0.4 shield
-      pinInjector1 = 8; //Output pin injector 1 is on
-      pinInjector2 = 9; //Output pin injector 2 is on
-      pinInjector3 = 10; //Output pin injector 3 is on
-      pinInjector4 = 11; //Output pin injector 4 is on
-      pinInjector5 = 12; //Output pin injector 5 is on
-      pinInjector6 = 50; //CAUTION: Uses the same as Coil 4 below. 
-      pinCoil1 = 40; //Pin for coil 1
-      pinCoil2 = 38; //Pin for coil 2
-      pinCoil3 = 52; //Pin for coil 3
-      pinCoil4 = 50; //Pin for coil 4
-      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
-      pinTrigger = 19; //The CAS pin
-      pinTrigger2 = 18; //The Cam Sensor pin
-      pinTPS = A2;//TPS input pin
-      pinMAP = A3; //MAP sensor pin
-      pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLS sensor pin
-      pinO2 = A8; //O2 Sensor pin
-      pinBat = A4; //Battery reference voltage pin
-      pinDisplayReset = 48; // OLED reset pin
-      pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
-      pinIdle1 = 5; //Single wire idle control
-      pinIdle2 = 6; //2 wire idle control
-      pinBoost = 7; //Boost control
-      pinVVT_1 = 4; //Default VVT output
-      pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
-      pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinStepperStep = 17; //Step pin for DRV8825 driver
-      pinStepperEnable = 24; //Enable pin for DRV8825
-      pinFan = 47; //Pin for the fan output (Goes to ULN2803)
-      pinLaunch = 51; //Can be overwritten below
-      pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
-      pinResetControl = 43; //Reset control output
+
+
       
       //Black F407VE http://wiki.stm32duino.com/index.php?title=STM32F407
       //PC8~PC12 SDio
@@ -336,13 +305,13 @@ void setPinMapping(byte boardID)
       pinCoil3 = PB7; //Pin for coil 3
       pinCoil4 = PB8; //Pin for coil 4
       pinCoil5 = PB9; //Pin for coil 5
-      pinTPS = A0; //TPS input pin
-      pinMAP = A1; //MAP sensor pin
-      pinIAT = A2; //IAT sensor pin
-      pinCLT = A3; //CLT sensor pin
-      pinO2 = A4; //O2 Sensor pin
-      pinBat = A5; //Battery reference voltage pin
-      pinBaro = A10;
+      pinTPS = PC0;//TPS input pin
+      pinMAP = PC1; //MAP sensor pin
+      pinIAT = PC2; //IAT sensor pin
+      pinCLT = PC3; //CLS sensor pin
+      pinO2 = PC4; //O2 Sensor pin
+      pinBat = PC6; //Battery reference voltage pin
+      pinBaro = PC7;
       pinIdle1 = PB8; //Single wire idle control
       pinIdle2 = PB9; //2 wire idle control
       pinBoost = PE0; //Boost control
@@ -354,6 +323,9 @@ void setPinMapping(byte boardID)
       pinFan = PE2; //Pin for the fan output
       pinFuelPump = PA6; //Fuel pump output
       pinTachOut = PA7; //Tacho output pin
+      pinLaunch = 51; //Can be overwritten below
+      pinResetControl = 43; //Reset control output
+
       //external interrupt enabled pins
       //external interrupts could be enalbed in any pin, except same port numbers (PA4,PE4)
       pinFlex = PE2; // Flex sensor (Must be external interrupt enabled)
@@ -759,27 +731,27 @@ void setPinMapping(byte boardID)
   pump_pin_mask = digitalPinToBitMask(pinFuelPump);
 
   //And for inputs
-  #if defined(CORE_STM32)
-    #ifndef ARDUINO_ARCH_STM32 //libmaple core aka STM32DUINO
-      pinMode(pinMAP, INPUT_ANALOG);
-      pinMode(pinO2, INPUT_ANALOG);
-      pinMode(pinO2_2, INPUT_ANALOG);
-      pinMode(pinTPS, INPUT_ANALOG);
-      pinMode(pinIAT, INPUT_ANALOG);
-      pinMode(pinCLT, INPUT_ANALOG);
-      pinMode(pinBat, INPUT_ANALOG);
-      pinMode(pinBaro, INPUT_ANALOG);
-    #else
-      pinMode(pinMAP, INPUT);
-      pinMode(pinO2, INPUT);
-      pinMode(pinO2_2, INPUT);
-      pinMode(pinTPS, INPUT);
-      pinMode(pinIAT, INPUT);
-      pinMode(pinCLT, INPUT);
-      pinMode(pinBat, INPUT);
-      pinMode(pinBaro, INPUT);
-    #endif
-  #endif
+//  #if defined(CORE_STM32)
+//    #ifndef ARDUINO_ARCH_STM32 //libmaple core aka STM32DUINO
+//      pinMode(pinMAP, INPUT_ANALOG);
+//      pinMode(pinO2, INPUT_ANALOG);
+//      pinMode(pinO2_2, INPUT_ANALOG);
+//      pinMode(pinTPS, INPUT_ANALOG);
+//      pinMode(pinIAT, INPUT_ANALOG);
+//      pinMode(pinCLT, INPUT_ANALOG);
+//      pinMode(pinBat, INPUT_ANALOG);
+//      pinMode(pinBaro, INPUT_ANALOG);
+//    #else
+//      pinMode(pinMAP, INPUT);
+//      pinMode(pinO2, INPUT);
+//      pinMode(pinO2_2, INPUT);
+//      pinMode(pinTPS, INPUT);
+//      pinMode(pinIAT, INPUT);
+//      pinMode(pinCLT, INPUT);
+//      pinMode(pinBat, INPUT);
+//      pinMode(pinBaro, INPUT);
+//    #endif
+//  #endif
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
