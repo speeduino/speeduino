@@ -311,9 +311,6 @@ void setPinMapping(byte boardID)
 
 
       //PD5 & PD6 Serial2
-
-
-
       pinInjector1 = PA1; //Output pin injector 1 is on
       pinInjector2 = PA2; //Output pin injector 2 is on
       pinInjector3 = PA3; //Output pin injector 3 is on
@@ -321,19 +318,19 @@ void setPinMapping(byte boardID)
       pinInjector5 = PA5; //Output pin injector 5 is on
       pinInjector6 = PD4; //Output pin injector 6 is on
       pinCoil1 = PD7; //Pin for coil 1
-      pinCoil2 = PC0; //Pin for coil 2
-      pinCoil3 = PC1; //Pin for coil 3
-      pinCoil4 = PC2; //Pin for coil 4
-      pinCoil5 = PC3; //Pin for coil 5
-      pinTPS = PA8;//TPS input pin
-      pinMAP = PB9; //MAP sensor pin
-      pinIAT = PB10; //IAT sensor pin
-      pinCLT = PB11; //CLS sensor pin
-      pinO2 = PC13; //O2 Sensor pin
-      pinBat = PD11; //Battery reference voltage pin
-      pinBaro = PD12;
-      pinIdle1 = PC4; //Single wire idle control
-      pinIdle2 = PC6; //2 wire idle control
+      pinCoil2 = PB9; //Pin for coil 2
+      pinCoil3 = PA8; //Pin for coil 3
+      pinCoil4 = PB10; //Pin for coil 4
+      pinCoil5 = PB11; //Pin for coil 5
+      pinMAP = PC0; //MAP sensor pin
+      pinTPS = PC1;//TPS input pin
+      pinIAT = PC2; //IAT sensor pin
+      pinCLT = PC3; //CLS sensor pin
+      pinO2 = PC5; //O2 Sensor pin
+      pinBat = PB1; //Battery reference voltage pin
+      pinBaro = PC4;
+      pinIdle1 = PB12; //Single wire idle control
+      pinIdle2 = PB11; //2 wire idle control
       pinBoost = PC7; //Boost control
       pinVVT_1 = PD3; //Default VVT output
       pinStepperDir = PE0; //Direction pin  for DRV8825 driver
@@ -349,7 +346,7 @@ void setPinMapping(byte boardID)
 
       //external interrupt enabled pins
       //external interrupts could be enalbed in any pin, except same port numbers (PA4,PE4)
-      pinFlex = PA4; // Flex sensor (Must be external interrupt enabled)
+      pinFlex = PD4; // Flex sensor (Must be external interrupt enabled)
       pinTrigger = PD13; //The CAS pin
       pinTrigger2 = PD14; //The Cam Sensor pin
       break;
