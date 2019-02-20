@@ -10,10 +10,13 @@ A full copy of the license may be found in the projects root directory
 #include "comms.h"
 #if defined(CORE_SAMD21)
   #include "src/FlashStorage/FlashAsEEPROM.h"
+#elif defined(ARDUINO_BLACK_F407VE)
+  #include "src/BackupSram/BackupSramAsEEPROM.h"
 #else
   #include <EEPROM.h>
 #endif
 #include "storage.h"
+
 void writeAllConfig()
 {
   writeConfig(1);
