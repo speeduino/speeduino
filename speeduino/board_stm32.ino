@@ -22,9 +22,10 @@
 #else
   #include "HardwareTimer.h"
 #endif
-
+int EmptyIRQCallbackCnt;
 extern void oneMSIntervalIRQ(stimer_t *Timer){oneMSInterval();}
-extern void EmptyIRQCallback(stimer_t *Timer, uint32_t channel){}
+
+extern void EmptyIRQCallback(stimer_t *Timer, uint32_t channel){EmptyIRQCallbackCnt++;}
 
 
 
@@ -96,8 +97,8 @@ void initBoard()
 //    Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
 //    if(boost_pwm_max_count > 0) { Timer1.attachInterrupt(2, boostInterrupt);}
 //    if(vvt_pwm_max_count > 0) { Timer1.attachInterrupt(3, vvtInterrupt);}
-      if(idle_pwm_max_count > 0) { attachIntHandleOC(&HardwareTimers_2, boostInterrupt, 4, 0);}
-      if(idle_pwm_max_count > 0) { attachIntHandleOC(&HardwareTimers_3, vvtInterrupt, 4, 0);}
+      if(idle_pwm_max_count > 0) { attachIntHandleOC(&HardwareTimers_1, boostInterrupt, 2, 0);}
+      if(vvt_pwm_max_count > 0) { attachIntHandleOC(&HardwareTimers_1, vvtInterrupt, 3, 0);}
 //    Timer1.resume();
 
     /*
@@ -126,17 +127,17 @@ void initBoard()
         #endif
     #endif
        
-    TimerPulseInit(&HardwareTimers_2, 0xFFFF, 0, EmptyIRQCallback);
-    attachIntHandleOC(&HardwareTimers_2, fuelSchedule1Interrupt, 1, 0);
-    attachIntHandleOC(&HardwareTimers_2, fuelSchedule2Interrupt, 2, 0);
-    attachIntHandleOC(&HardwareTimers_2, fuelSchedule3Interrupt, 3, 0);
-    attachIntHandleOC(&HardwareTimers_2, fuelSchedule4Interrupt, 4, 0);
-
     TimerPulseInit(&HardwareTimers_3, 0xFFFF, 0, EmptyIRQCallback);
-    attachIntHandleOC(&HardwareTimers_3, ignitionSchedule1Interrupt, 1, 0);
-    attachIntHandleOC(&HardwareTimers_3, ignitionSchedule2Interrupt, 2, 0);
-    attachIntHandleOC(&HardwareTimers_3, ignitionSchedule3Interrupt, 3, 0);
-    attachIntHandleOC(&HardwareTimers_3, ignitionSchedule4Interrupt, 4, 0);
+    attachIntHandleOC(&HardwareTimers_3, fuelSchedule1Interrupt, 1, 0);
+    attachIntHandleOC(&HardwareTimers_3, fuelSchedule2Interrupt, 2, 0);
+    attachIntHandleOC(&HardwareTimers_3, fuelSchedule3Interrupt, 3, 0);
+    attachIntHandleOC(&HardwareTimers_3, fuelSchedule4Interrupt, 4, 0);
+
+    TimerPulseInit(&HardwareTimers_2, 0xFFFF, 0, EmptyIRQCallback);
+    attachIntHandleOC(&HardwareTimers_2, ignitionSchedule1Interrupt, 1, 0);
+    attachIntHandleOC(&HardwareTimers_2, ignitionSchedule2Interrupt, 2, 0);
+    attachIntHandleOC(&HardwareTimers_2, ignitionSchedule3Interrupt, 3, 0);
+    attachIntHandleOC(&HardwareTimers_2, ignitionSchedule4Interrupt, 4, 0);
     
 //    Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
 

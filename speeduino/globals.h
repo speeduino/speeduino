@@ -38,8 +38,8 @@
     //These boards always make 8/8 channels available
     #undef INJ_CHANNELS
     #undef IGN_CHANNELS
-    #define INJ_CHANNELS 8
-    #define IGN_CHANNELS 8
+    #define INJ_CHANNELS 4
+    #define IGN_CHANNELS 4
   #endif
 
   //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
