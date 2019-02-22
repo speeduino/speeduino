@@ -32,14 +32,15 @@
       #define LED_BUILTIN PB1 //Maple Mini
     #endif
   #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
+    #define BOARD_H "board_stm32F407VE.h"
     #define BOARD_DIGITAL_GPIO_PINS 80
     #define BOARD_NR_GPIO_PINS 80
 
     //These boards always make 8/8 channels available
     #undef INJ_CHANNELS
     #undef IGN_CHANNELS
-    #define INJ_CHANNELS 4
-    #define IGN_CHANNELS 4
+    #define INJ_CHANNELS 8
+    #define IGN_CHANNELS 8
   #endif
 
   //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash

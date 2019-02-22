@@ -1,5 +1,5 @@
-#if defined(CORE_STM32) && !defined(ARDUINO_BLACK_F407VE)
-#include "board_stm32.h"
+#if defined(ARDUINO_BLACK_F407VE)
+#include "board_stm32F407VE.h"
 #include "globals.h"
 #include "auxiliaries.h"
 #include "idle.h"

@@ -1,6 +1,7 @@
 #ifndef STM32_H
 #define STM32_H
-#if defined(CORE_STM32)
+#if defined(CORE_STM32) && !defined(ARDUINO_BLACK_F407VE)
+
 #if defined(STM32F4)
     //These should really be in the stm32GENERIC libs, but for somereason they only have timers 1-4
 //    #include <stm32_TIM_variant_11.h>
