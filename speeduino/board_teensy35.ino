@@ -1006,4 +1006,5 @@ void setPinMapping(byte boardID)
     digitalWrite(pinTPS, LOW);
   #endif
 }
+
 #endif

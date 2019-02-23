@@ -14,10 +14,9 @@ uint8_t Glow, Ghigh;
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   HardwareSerial &CANSerial = Serial3;
-#elif defined(CORE_STM32)
+#elif defined(CORE_STM32) && !defined(ARDUINO_BLACK_F407VE)
   #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
-    HardwareSerial CANSerial(PD6,PD5);
-    //SerialUART &CANSerial = Serial2;
+    SerialUART &CANSerial = Serial2;
   #else //libmaple core aka STM32DUINO
     HardwareSerial &CANSerial = Serial2;
   #endif
