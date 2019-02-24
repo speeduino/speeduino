@@ -102,14 +102,13 @@ void initBoard()
 //    Timer1.resume();
       
     TimerPulseInit(&HardwareTimers_3, 0xFFFF, 0, EmptyIRQCallback);
-    setTimerPrescalerRegister(&HardwareTimers_3, (uint32_t)(getTimerClkFreq(HardwareTimers_3.timer) / (500000)) - 1);
     attachIntHandleOC(&HardwareTimers_3, fuelSchedule1Interrupt, 1, 0);
     attachIntHandleOC(&HardwareTimers_3, fuelSchedule2Interrupt, 2, 0);
     attachIntHandleOC(&HardwareTimers_3, fuelSchedule3Interrupt, 3, 0);
     attachIntHandleOC(&HardwareTimers_3, fuelSchedule4Interrupt, 4, 0);
+    
 
     TimerPulseInit(&HardwareTimers_2, 0xFFFF, 0, EmptyIRQCallback);
-    setTimerPrescalerRegister(&HardwareTimers_2, (uint32_t)(getTimerClkFreq(HardwareTimers_2.timer) / (500000)) - 1);
     attachIntHandleOC(&HardwareTimers_2, ignitionSchedule1Interrupt, 1, 0);
     attachIntHandleOC(&HardwareTimers_2, ignitionSchedule2Interrupt, 2, 0);
     attachIntHandleOC(&HardwareTimers_2, ignitionSchedule3Interrupt, 3, 0);
@@ -155,7 +154,11 @@ void initBoard()
     attachIntHandleOC(&HardwareTimers_4, ignitionSchedule8Interrupt, 4, 0);
     //Timer4.attachInterrupt(4, ignitionSchedule8Interrupt);
     #endif
-
+    
+    setTimerPrescalerRegister(&HardwareTimers_2, (uint32_t)(getTimerClkFreq(HardwareTimers_2.timer) / (250000)) - 1);
+    setTimerPrescalerRegister(&HardwareTimers_3, (uint32_t)(getTimerClkFreq(HardwareTimers_3.timer) / (250000)) - 1);
+    setTimerPrescalerRegister(&HardwareTimers_4, (uint32_t)(getTimerClkFreq(HardwareTimers_4.timer) / (250000)) - 1);
+    setTimerPrescalerRegister(&HardwareTimers_5, (uint32_t)(getTimerClkFreq(HardwareTimers_5.timer) / (250000)) - 1);
 }
 
 uint16_t freeRam()
