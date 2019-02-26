@@ -250,7 +250,8 @@ void idleControl()
         else if( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < iacStepTable.axisX[IDLE_TABLE_SIZE-1])
         {
           //Standard running
-          if ((mainLoopCount & 255) == 1)
+          //We must also have more than zero RPM for the running state
+          if (((mainLoopCount & 255) == 1) && (currentStatus.RPM > 0))
           {
             //Only do a lookup of the required value around 4 times per second. Any more than this can create too much jitter and require a hyster value that is too high
             idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
@@ -389,13 +390,17 @@ static inline void disableIdle()
     IDLE_TIMER_DISABLE();
     digitalWrite(pinIdle1, LOW);
   }
-  else if ( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
+  else if ((configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
   {
     //Only disable the stepper motor if homing is completed
     if( (checkForStepping() == false) && (isStepperHomed() == true) )
     {
-      digitalWrite(pinStepperEnable, HIGH); //Disable the DRV8825
-      idleStepper.targetIdleStep = idleStepper.curIdleStep; //Don't try to move anymore
+        /* for open loop stepper we should just move to the cranking position when
+           disabling idle, since the only time this function is called in this scenario
+           is if the engine stops.
+        */
+        idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+        if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active?
     }
   }
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off
