@@ -104,6 +104,7 @@ void initialiseIdle()
       iacCrankStepsTable.values = configPage6.iacCrankSteps;
       iacCrankStepsTable.axisX = configPage6.iacCrankBins;
       iacStepTime = configPage6.iacStepTime * 1000;
+      iacCoolTime = configPage9.iacCoolTime * 1000;
 
       completedHomeSteps = 0;
       idleStepper.curIdleStep = 0;
@@ -133,6 +134,7 @@ void initialiseIdle()
       iacCrankStepsTable.values = configPage6.iacCrankSteps;
       iacCrankStepsTable.axisX = configPage6.iacCrankBins;
       iacStepTime = configPage6.iacStepTime * 1000;
+      iacCoolTime = configPage9.iacCoolTime * 1000;
 
       completedHomeSteps = 0;
       idleCounter = 0;
@@ -257,6 +259,7 @@ void idleControl()
             idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
             if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
             iacStepTime = configPage6.iacStepTime * 1000;
+            iacCoolTime = configPage9.iacCoolTime * 1000;
           }
           doStep();
         }
@@ -273,6 +276,7 @@ void idleControl()
           //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
           idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
           iacStepTime = configPage6.iacStepTime * 1000;
+          iacCoolTime = configPage9.iacCoolTime * 1000;
         }
 
         idle_cl_target_rpm = table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 10; //All temps are offset by 40 degrees
@@ -324,16 +328,37 @@ False: If the motor is ready for another step
 static inline byte checkForStepping()
 {
   bool isStepping = false;
+  unsigned int timeCheck;
+  
   if( (idleStepper.stepperStatus == STEPPING) || (idleStepper.stepperStatus == COOLING) )
   {
-    if(micros_safe() > (idleStepper.stepStartTime + iacStepTime) )
+    if (idleStepper.stepperStatus == STEPPING)
     {
+      timeCheck = iacStepTime;
+    }
+    else 
+    {
+      timeCheck = iacCoolTime;
+    }
+
+    if(micros_safe() > (idleStepper.stepStartTime + timeCheck) )
+    {         
       if(idleStepper.stepperStatus == STEPPING)
       {
         //Means we're currently in a step, but it needs to be turned off
         digitalWrite(pinStepperStep, LOW); //Turn off the step
         idleStepper.stepStartTime = micros_safe();
-        idleStepper.stepperStatus = COOLING; //'Cooling' is the time the stepper needs to sit in LOW state before the next step can be made
+        
+        // if there is no cool time we can miss that step out completely.
+        if (iacCoolTime > 0)
+        {
+          idleStepper.stepperStatus = COOLING; //'Cooling' is the time the stepper needs to sit in LOW state before the next step can be made
+        }
+        else
+        {
+          idleStepper.stepperStatus = SOFF;  
+        }
+          
         isStepping = true;
       }
       else

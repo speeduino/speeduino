@@ -746,8 +746,8 @@ struct config9 {
   uint8_t Auxinpinb[16];            // digital pin number when internal aux in use
 
   byte iacStepperInv : 1;  //stepper direction of travel to allow reversing. 0=normal, 1=inverted.
+  byte iacCoolTime : 3; // how long to wait for the stepper to cool between steps
 
-  byte unused10_153;
   byte unused10_154;
   byte unused10_155;
   byte unused10_156;
