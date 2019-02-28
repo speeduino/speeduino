@@ -225,6 +225,7 @@ void initialiseAll()
     triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
     dwellLimit_uS = (1000 * configPage4.dwellLimit);
     currentStatus.nChannels = (INJ_CHANNELS << 4) + IGN_CHANNELS; //First 4 bits store the number of injection channels, 2nd 4 store the number of ignition channels
+    fpPrimeTime = 0;
 
     noInterrupts();
     initialiseTriggers();

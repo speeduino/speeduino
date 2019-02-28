@@ -313,6 +313,7 @@ int ignition5EndAngle = 0;
 
 //These are variables used across multiple files
 bool initialisationComplete = false; //Tracks whether the setup() function has run completely
+byte fpPrimeTime = 0; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 volatile uint16_t mainLoopCount;
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
