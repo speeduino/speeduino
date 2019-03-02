@@ -1102,7 +1102,6 @@ void setPinMapping(byte boardID)
   pinCoil2 = 30; //Pin for coil 2
   pinCoil3 = 31; //Pin for coil 3
   pinCoil4 = 32; //Pin for coil 4
-  // pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER. Do not exist on this board
   pinTrigger = 23; // The Crank Position Sensor (CPS). Aka "CAS" pin
   pinTrigger2 = 36; //The Camshaft Position Sensor. (CAM) pin
   pinTPS = 16; //TPS input pin
@@ -1120,7 +1119,6 @@ void setPinMapping(byte boardID)
   pinStepperDir = 34; //Direction pin for DRV8825 driver
   pinStepperStep = 35; //Step pin for DRV8825 driver
   // pinStepperEnable = 33; //Enable pin for DRV8825 driver. Not availble on this board.
-  // pinLaunch = 26; //Can be overwritten below.  Not availble on this board.
   pinFan = 37; //Pin for the fan output - ONLY WITH DB
   pinSpareHOut1 = 8; // high current output spare1
   pinSpareHOut2 = 7; // high current output spare2

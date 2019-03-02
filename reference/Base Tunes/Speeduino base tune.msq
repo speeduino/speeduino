@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.60.45 - EFI Analytics, Inc." tuneComment="" writeDate="Tue Feb 12 17:03:58 AEDT 2019"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2019.02" nPages="10" signature="speeduino 201902"/>
+<bibliography author="TunerStudio MS Ultra 3.0.28 - EFI Analytics, Inc." tuneComment="" writeDate="Sat Mar 02 20:13:45 AEDT 2019"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2019.02" nPages="10" signature="speeduino 201903-dev"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
 <pcVariable cols="1" digits="0" name="algorithmLimits" rows="8">
@@ -474,24 +474,6 @@
          6900.0 
          7000.0 
       </constant>
-<constant cols="1" digits="0" name="mapBinsAFR" rows="16" units="kPa">
-         16.0 
-         26.0 
-         30.0 
-         36.0 
-         40.0 
-         46.0 
-         50.0 
-         56.0 
-         60.0 
-         66.0 
-         70.0 
-         76.0 
-         86.0 
-         90.0 
-         96.0 
-         100.0 
-      </constant>
 </page>
 <page number="5" size="128">
 <constant name="egoAlgorithm">"Simple"</constant>
@@ -746,16 +728,6 @@
          6000.0 
          7000.0 
       </constant>
-<constant cols="1" digits="0" name="mapBinsStaging" rows="8" units="kPa">
-         10.0 
-         30.0 
-         46.0 
-         60.0 
-         80.0 
-         100.0 
-         120.0 
-         150.0 
-      </constant>
 </page>
 <page number="7" size="192">
 <constant cols="6" digits="0" name="fuelTrim1Table" rows="6" units="%">
@@ -774,7 +746,7 @@
          5500.0 
          7000.0 
       </constant>
-<constant cols="1" digits="0" name="fuelTrim1loadBins" rows="6" units="kPa">
+<constant cols="1" digits="0" name="fuelTrim1loadBins" rows="6" units="TPS">
          36.0 
          50.0 
          66.0 
@@ -798,7 +770,7 @@
          5500.0 
          7000.0 
       </constant>
-<constant cols="1" digits="0" name="fuelTrim2loadBins" rows="6" units="kPa">
+<constant cols="1" digits="0" name="fuelTrim2loadBins" rows="6" units="TPS">
          36.0 
          50.0 
          66.0 
@@ -822,7 +794,7 @@
          5500.0 
          7000.0 
       </constant>
-<constant cols="1" digits="0" name="fuelTrim3loadBins" rows="6" units="kPa">
+<constant cols="1" digits="0" name="fuelTrim3loadBins" rows="6" units="TPS">
          36.0 
          50.0 
          66.0 
@@ -846,7 +818,7 @@
          5500.0 
          7000.0 
       </constant>
-<constant cols="1" digits="0" name="fuelTrim4loadBins" rows="6" units="kPa">
+<constant cols="1" digits="0" name="fuelTrim4loadBins" rows="6" units="TPS">
          36.0 
          50.0 
          66.0 
@@ -1127,7 +1099,7 @@
          11.0 
          12.0 
       </constant>
-<constant cols="1" digits="0" name="rotarySplitBins" rows="8" units="kPa">
+<constant cols="1" digits="0" name="rotarySplitBins" rows="8" units="TPS">
          0.0 
          30.0 
          50.0 
@@ -1329,7 +1301,7 @@
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">
 <setting name="enablehardware_test_OFF" value="enablehardware_test_OFF"/>
-<setting name="SPEED_DENSITY" value="SPEED_DENSITY"/>
+<setting name="ALPHA_N" value="ALPHA_N"/>
 <setting name="CAN_COMMANDS_OFF" value="CAN_COMMANDS_OFF"/>
 <setting name="CELSIUS" value="CELSIUS"/>
 <setting name="resetcontrol_standard" value="resetcontrol_standard"/>
