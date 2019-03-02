@@ -944,6 +944,32 @@ byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
+byte pinStarterSense; // Starter button pressed sense pin.
+byte pinIgnSense; // Ign on sense pin.
+byte pinStarterEnable; // Starter relay enable pin.
+byte pinSpareDigitalIn1; // Aux digital input. Triggered by being pulled low to ground.
+byte PinVss; // Vechivle Speed Sensor input pin. (VSS)
+byte pinO2Heat; // O2 sensor heat circuit enable. High current mosfet out.
+byte pinClutchSense; // Cluch depressed sensor circuit.
+byte pinSAI; // Secondary Air Injector output pin.
+byte pinBtn1; // On board AUX momentary switch number 1.
+byte pinBtn2; // On board AUX momentary switch number 2.
+byte pinNeutralSense; // Neutral gear sense pin.
+byte pinEMSRelay; // Enable EMS relay output pin.
+byte pinQS; // Quick Shifter input pin.
+byte pinHeadLight; // Enable Headlight relay output pin.
+byte pinCEL; // Enable Check Engine Light (CEL) pin.
+byte pinSideStandSense; // Side stand switch (STAND) sense pin.
+byte pinSpareDigitalIn2; // Aux digital input. Triggered by being pulled low to ground.
+byte pinLED3; // On board LED 3.
+byte pinLED2; // On board LED 2.
+byte pinLED1; // On board LED 1.
+byte pinFLS; // D22. Fuel Level Sensor input pin. (FLS)
+byte pinSpareAnalogIn1; // Aux analog input.
+byte pinSpareAnalogIn2; // Aux analog input.
+byte pinGPS; // Gear Postion Sensor input pin. (GPS)
+byte pinFallSensor; // D49. Fall sensor pin.
+
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
