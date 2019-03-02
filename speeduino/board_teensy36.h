@@ -1,8 +1,6 @@
-#ifndef TEENSY35_H
-#define TEENSY35_H
-#if defined(__MK64FX512__)  // The defines of __MK64FX512__ and __MK66FX1M0__ are for the Teensy 3.5 and 3.6 boards, respectively.
-
-
+#ifndef TEENSY36_H
+#define TEENSY36_H
+#if defined(__MK66FX1M0__)  // The defines of __MK64FX512__ and __MK66FX1M0__ are for the Teensy 3.5 and 3.6 boards, respectively.
 
 /*
 ***********************************************************************************************************
@@ -136,5 +134,5 @@
 */
   //Uart CANSerial (&sercom3, 0, 1, SERCOM_RX_PAD_1, UART_TX_PAD_0);
 
-#endif //CORE_TEENSY
-#endif //TEENSY35_H
+#endif //__MK66FX1M0__
+#endif //TEENSY36_H

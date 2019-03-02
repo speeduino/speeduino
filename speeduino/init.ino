@@ -1087,6 +1087,7 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
+    #if defined(CORE_TEENSY)
     case 15:
    //Pin mappings as per "Tobbera Teensy 3.6 PCB v0.6"
   pinInjector1 = 2; //Output pin injector 1 is on
@@ -1150,7 +1151,9 @@ void setPinMapping(byte boardID)
   pinSpareAnalogIn2 = 39; // Aux analog input.
   pinGPS = A10; // Gear Postion Sensor input pin. (GPS)
   pinFallSensor = A23; // D49. Fall sensor pin.
+   #endif
   break;
+  
 
     case 20:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
