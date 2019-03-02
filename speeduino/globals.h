@@ -16,8 +16,14 @@
 
   //#define TIMER5_MICROS
 
-#elif defined(CORE_TEENSY)
-  #define BOARD_H "board_teensy35.h"
+  #elif defined(__MK64FX512__)
+        #define BOARD "Teensy 3.5"
+		#define BOARD_H "board_teensy35.h"
+  
+  #elif defined(__MK66FX1M0__)
+        #define BOARD "Teensy 3.6"
+		#define BOARD_H "board_teensy36.h"
+
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   #define CORE_STM32
