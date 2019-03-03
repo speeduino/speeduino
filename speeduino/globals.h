@@ -48,11 +48,11 @@
     #define SMALL_FLASH_MODE
   #endif
 
+  #if __GNUC__ < 7 //Already included on GCC 7
   extern "C" char* sbrk(int incr); //Used to freeRam
-  #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
-    //inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
-    // #define portOutputRegister(port) (volatile byte *)( &(port->ODR) )
-    // #define portInputRegister(port) (volatile byte *)( &(port->IDR) )
+  #endif
+  #if !defined(_VARIANT_ARDUINO_STM32_) // STM32GENERIC core
+    inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
   #else //libmaple core aka STM32DUINO
     //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
     #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) )
@@ -252,48 +252,48 @@ struct table2D knockWindowDurationTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 volatile PORT_TYPE *inj1_pin_port;
-volatile PINMAKS_TYPE inj1_pin_mask;
+volatile PINMASK_TYPE inj1_pin_mask;
 volatile PORT_TYPE *inj2_pin_port;
-volatile PINMAKS_TYPE inj2_pin_mask;
+volatile PINMASK_TYPE inj2_pin_mask;
 volatile PORT_TYPE *inj3_pin_port;
-volatile PINMAKS_TYPE inj3_pin_mask;
+volatile PINMASK_TYPE inj3_pin_mask;
 volatile PORT_TYPE *inj4_pin_port;
-volatile PINMAKS_TYPE inj4_pin_mask;
+volatile PINMASK_TYPE inj4_pin_mask;
 volatile PORT_TYPE *inj5_pin_port;
-volatile PINMAKS_TYPE inj5_pin_mask;
+volatile PINMASK_TYPE inj5_pin_mask;
 volatile PORT_TYPE *inj6_pin_port;
-volatile PINMAKS_TYPE inj6_pin_mask;
+volatile PINMASK_TYPE inj6_pin_mask;
 volatile PORT_TYPE *inj7_pin_port;
-volatile PINMAKS_TYPE inj7_pin_mask;
+volatile PINMASK_TYPE inj7_pin_mask;
 volatile PORT_TYPE *inj8_pin_port;
-volatile PINMAKS_TYPE inj8_pin_mask;
+volatile PINMASK_TYPE inj8_pin_mask;
 
 volatile PORT_TYPE *ign1_pin_port;
-volatile PINMAKS_TYPE ign1_pin_mask;
+volatile PINMASK_TYPE ign1_pin_mask;
 volatile PORT_TYPE *ign2_pin_port;
-volatile PINMAKS_TYPE ign2_pin_mask;
+volatile PINMASK_TYPE ign2_pin_mask;
 volatile PORT_TYPE *ign3_pin_port;
-volatile PINMAKS_TYPE ign3_pin_mask;
+volatile PINMASK_TYPE ign3_pin_mask;
 volatile PORT_TYPE *ign4_pin_port;
-volatile PINMAKS_TYPE ign4_pin_mask;
+volatile PINMASK_TYPE ign4_pin_mask;
 volatile PORT_TYPE *ign5_pin_port;
-volatile PINMAKS_TYPE ign5_pin_mask;
+volatile PINMASK_TYPE ign5_pin_mask;
 volatile PORT_TYPE *ign6_pin_port;
-volatile PINMAKS_TYPE ign6_pin_mask;
+volatile PINMASK_TYPE ign6_pin_mask;
 volatile PORT_TYPE *ign7_pin_port;
-volatile PINMAKS_TYPE ign7_pin_mask;
+volatile PINMASK_TYPE ign7_pin_mask;
 volatile PORT_TYPE *ign8_pin_port;
-volatile PINMAKS_TYPE ign8_pin_mask;
+volatile PINMASK_TYPE ign8_pin_mask;
 
 volatile PORT_TYPE *tach_pin_port;
-volatile PINMAKS_TYPE tach_pin_mask;
+volatile PINMASK_TYPE tach_pin_mask;
 volatile PORT_TYPE *pump_pin_port;
-volatile PINMAKS_TYPE pump_pin_mask;
+volatile PINMASK_TYPE pump_pin_mask;
 
 volatile PORT_TYPE *triggerPri_pin_port;
-volatile PINMAKS_TYPE triggerPri_pin_mask;
+volatile PINMASK_TYPE triggerPri_pin_mask;
 volatile PORT_TYPE *triggerSec_pin_port;
-volatile PINMAKS_TYPE triggerSec_pin_mask;
+volatile PINMASK_TYPE triggerSec_pin_mask;
 
 //These need to be here as they are used in both speeduino.ino and scheduler.ino
 bool channel1InjEnabled = true;
@@ -313,6 +313,7 @@ int ignition5EndAngle = 0;
 
 //These are variables used across multiple files
 bool initialisationComplete = false; //Tracks whether the setup() function has run completely
+byte fpPrimeTime = 0; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 volatile uint16_t mainLoopCount;
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()

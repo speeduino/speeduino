@@ -95,7 +95,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
   {
     loop250ms = 0; //Reset Counter
     BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
-    #if defined(CORE_STM32) //debug purpose, only visal for running code
+    #if defined(CORE_STM32) //debug purpose, only visual for running code
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     #endif
 
@@ -143,7 +143,8 @@ void oneMSInterval() //Most ARM chips can simply call a function
     //Check whether fuel pump priming is complete
     if(fpPrimed == false)
     {
-      if(currentStatus.secl >= configPage2.fpPrime)
+      //fpPrimeTime is the time that the pump priming started. This is 0 on startup, but can be changed if the unit has been running on USB power and then had the ignition turned on (Which starts the priming again)
+      if( (currentStatus.secl - fpPrimeTime) >= configPage2.fpPrime)
       {
         fpPrimed = true; //Mark the priming as being completed
         if(currentStatus.RPM == 0)

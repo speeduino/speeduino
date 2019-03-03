@@ -11,6 +11,7 @@ A full copy of the license may be found in the projects root directory
 #include "maths.h"
 #include "utils.h"
 #include "decoders.h"
+#include "scheduledIO.h"
 
 /*
   Processes the data on the serial buffer.
@@ -195,7 +196,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 201902"));
+      Serial.print(F("speeduino 201903-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -225,7 +226,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2019.02"));
+      Serial.print(F("Speeduino 2019.03-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -1514,14 +1515,14 @@ void commandButtons()
   {
     case 256: // cmd is stop
       BIT_CLEAR(currentStatus.testOutputs, 1);
-      digitalWrite(pinInjector1, LOW);
-      digitalWrite(pinInjector2, LOW);
-      digitalWrite(pinInjector3, LOW);
-      digitalWrite(pinInjector4, LOW);
-      digitalWrite(pinCoil1, LOW);
-      digitalWrite(pinCoil2, LOW);
-      digitalWrite(pinCoil3, LOW);
-      digitalWrite(pinCoil4, LOW);
+    endCoil1Charge();
+    endCoil2Charge();
+    endCoil3Charge();
+    endCoil4Charge();
+    closeInjector1();
+    closeInjector2();
+    closeInjector3();
+    closeInjector4();
       break;
 
     case 257: // cmd is enable
@@ -1529,10 +1530,10 @@ void commandButtons()
       BIT_SET(currentStatus.testOutputs, 1);
       break;
     case 513: // cmd group is for injector1 on actions
-      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector1, HIGH); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector1(); }
       break;
     case 514: // cmd group is for injector1 off actions
-      if( BIT_CHECK(currentStatus.testOutputs, 1) ){digitalWrite(pinInjector1, LOW);}
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector1(); }
       break;
     case 515: // cmd group is for injector1 50% dc actions
       //for (byte dcloop = 0; dcloop < 11; dcloop++)
@@ -1544,64 +1545,64 @@ void commandButtons()
       //}
       break;
     case 516: // cmd group is for injector2 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector2, HIGH); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector2(); }
       break;
     case 517: // cmd group is for injector2 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector2, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector2(); }
       break;
     case 518: // cmd group is for injector2 50%dc actions
 
       break;
     case 519: // cmd group is for injector3 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinInjector3, HIGH); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector3(); }
       break;
     case 520: // cmd group is for injector3 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinInjector3, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector3(); }
       break;
     case 521: // cmd group is for injector3 50%dc actions
 
       break;
     case 522: // cmd group is for injector4 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector4, HIGH); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector4(); }
       break;
     case 523: // cmd group is for injector4 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ digitalWrite(pinInjector4, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector4(); }
       break;
     case 524: // cmd group is for injector4 50% dc actions
 
       break;
     case 769: // cmd group is for spark1 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil1, HIGH); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil1, coilHIGH); }
       break;
     case 770: // cmd group is for spark1 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil1, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil1, coilLOW); }
       break;
     case 771: // cmd group is for spark1 50%dc actions
 
       break;
     case 772: // cmd group is for spark2 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil2, HIGH); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil2, coilHIGH); }
       break;
     case 773: // cmd group is for spark2 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil2, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil2, coilLOW); }
       break;
     case 774: // cmd group is for spark2 50%dc actions
 
       break;
     case 775: // cmd group is for spark3 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil3, HIGH); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil3, coilHIGH); }
       break;
     case 776: // cmd group is for spark3 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil3, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil3, coilLOW); }
       break;
     case 777: // cmd group is for spark3 50%dc actions
 
       break;
     case 778: // cmd group is for spark4 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil4, HIGH); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil4, coilHIGH); }
       break;
     case 779: // cmd group is for spark4 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil4, LOW); }
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil4, coilLOW); }
       break;
     case 780: // cmd group is for spark4 50%dc actions
 

@@ -434,22 +434,22 @@ void triggerSetEndTeeth_missingTooth()
   byte toothAdder = 0;
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
 
-  ignition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / triggerToothAngle ) - 1;
+  ignition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
   if(ignition1EndTooth > (configPage4.triggerTeeth + toothAdder)) { ignition1EndTooth -= (configPage4.triggerTeeth + toothAdder); }
   if(ignition1EndTooth <= 0) { ignition1EndTooth += (configPage4.triggerTeeth + toothAdder); }
   if(ignition1EndTooth > (triggerActualTeeth + toothAdder)) { ignition1EndTooth = (triggerActualTeeth + toothAdder); }
 
-  ignition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / triggerToothAngle ) - 1;
+  ignition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
   if(ignition2EndTooth > (configPage4.triggerTeeth + toothAdder)) { ignition2EndTooth -= (configPage4.triggerTeeth + toothAdder); }
   if(ignition2EndTooth <= 0) { ignition2EndTooth += (configPage4.triggerTeeth + toothAdder); }
   if(ignition2EndTooth > (triggerActualTeeth + toothAdder)) { ignition2EndTooth = (triggerActualTeeth + toothAdder); }
 
-  ignition3EndTooth = ( (ignition3EndAngle - configPage4.triggerAngle) / triggerToothAngle ) - 1;
+  ignition3EndTooth = ( (ignition3EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
   if(ignition3EndTooth > (configPage4.triggerTeeth + toothAdder)) { ignition3EndTooth -= (configPage4.triggerTeeth + toothAdder); }
   if(ignition3EndTooth <= 0) { ignition3EndTooth += (configPage4.triggerTeeth + toothAdder); }
   if(ignition3EndTooth > (triggerActualTeeth + toothAdder)) { ignition3EndTooth = (triggerActualTeeth + toothAdder); }
 
-  ignition4EndTooth = ( (ignition4EndAngle - configPage4.triggerAngle) / triggerToothAngle ) - 1;
+  ignition4EndTooth = ( (ignition4EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
   if(ignition4EndTooth > (configPage4.triggerTeeth + toothAdder)) { ignition4EndTooth -= (configPage4.triggerTeeth + toothAdder); }
   if(ignition4EndTooth <= 0) { ignition4EndTooth += (configPage4.triggerTeeth + toothAdder); }
   if(ignition4EndTooth > (triggerActualTeeth + toothAdder)) { ignition4EndTooth = (triggerActualTeeth + toothAdder); }
@@ -592,22 +592,22 @@ void triggerSetEndTeeth_DualWheel()
   byte toothAdder = 0;
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
 
-  ignition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / triggerToothAngle ) - 1;
+  ignition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
   if(ignition1EndTooth > (configPage4.triggerTeeth + toothAdder)) { ignition1EndTooth -= (configPage4.triggerTeeth + toothAdder); }
   if(ignition1EndTooth <= 0) { ignition1EndTooth += configPage4.triggerTeeth; }
   if(ignition1EndTooth > (triggerActualTeeth + toothAdder)) { ignition1EndTooth = (triggerActualTeeth + toothAdder); }
 
-  ignition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / triggerToothAngle ) - 1;
+  ignition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
   if(ignition2EndTooth > (configPage4.triggerTeeth + toothAdder)) { ignition2EndTooth -= (configPage4.triggerTeeth + toothAdder); }
   if(ignition2EndTooth <= 0) { ignition2EndTooth += configPage4.triggerTeeth; }
   if(ignition1EndTooth > (triggerActualTeeth + toothAdder)) { ignition3EndTooth = (triggerActualTeeth + toothAdder); }
 
-  ignition3EndTooth = ( (ignition3EndAngle - configPage4.triggerAngle) / triggerToothAngle ) - 1;
+  ignition3EndTooth = ( (ignition3EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
   if(ignition3EndTooth > (configPage4.triggerTeeth + toothAdder)) { ignition3EndTooth -= (configPage4.triggerTeeth + toothAdder); }
   if(ignition3EndTooth <= 0) { ignition3EndTooth += configPage4.triggerTeeth; }
   if(ignition3EndTooth > (triggerActualTeeth + toothAdder)) { ignition3EndTooth = (triggerActualTeeth + toothAdder); }
 
-  ignition4EndTooth = ( (ignition4EndAngle - configPage4.triggerAngle) / triggerToothAngle ) - 1;
+  ignition4EndTooth = ( (ignition4EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
   if(ignition4EndTooth > (configPage4.triggerTeeth + toothAdder)) { ignition4EndTooth -= (configPage4.triggerTeeth + toothAdder); }
   if(ignition4EndTooth <= 0) { ignition4EndTooth += configPage4.triggerTeeth; }
   if(ignition4EndTooth > (triggerActualTeeth + toothAdder)) { ignition4EndTooth = (triggerActualTeeth + toothAdder); }
