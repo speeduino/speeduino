@@ -8,10 +8,12 @@
 #include "storage.h"
 #if defined(CORE_SAMD21)
   #include "src/FlashStorage/FlashAsEEPROM.h"
+#elif defined(ARDUINO_BLACK_F407VE)
+  #include "src/BackupSram/BackupSramAsEEPROM.h"
 #elif defined(CORE_STM32)
   #include <Fram.h>
 #else
-#include <EEPROM.h>
+  #include <EEPROM.h>
 #endif
 
 void doUpdates()
