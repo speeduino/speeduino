@@ -42,9 +42,9 @@ unsigned int iacStepTime;
 unsigned int completedHomeSteps;
 
 volatile PORT_TYPE *idle_pin_port;
-volatile byte idle_pin_mask;
+volatile PINMAKS_TYPE idle_pin_mask;
 volatile PORT_TYPE *idle2_pin_port;
-volatile byte idle2_pin_mask;
+volatile PINMAKS_TYPE idle2_pin_mask;
 
 volatile bool idle_pwm_state;
 unsigned int idle_pwm_max_count; //Used for variable PWM frequency
