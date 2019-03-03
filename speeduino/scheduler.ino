@@ -76,11 +76,11 @@ void initialiseSchedulers()
     fuelSchedule5.compare = &FUEL5_COMPARE;
     #endif
     #if (INJ_CHANNELS >= 6)
-    fuelSchedule5.counter = &FUEL6_COUNTER;
+    fuelSchedule6.counter = &FUEL6_COUNTER;
     fuelSchedule6.compare = &FUEL6_COMPARE;
     #endif
     #if (INJ_CHANNELS >= 7)
-    fuelSchedule5.counter = &FUEL7_COUNTER;
+    fuelSchedule7.counter = &FUEL7_COUNTER;
     fuelSchedule7.compare = &FUEL7_COMPARE;
     #endif
     #if (INJ_CHANNELS >= 8)
@@ -119,11 +119,11 @@ void initialiseSchedulers()
     ignitionSchedule5.compare = &IGN5_COMPARE;
     #endif
     #if (INJ_CHANNELS >= 6)
-    ignitionSchedule5.counter = &IGN6_COUNTER;
+    ignitionSchedule6.counter = &IGN6_COUNTER;
     ignitionSchedule6.compare = &IGN6_COMPARE;
     #endif
     #if (INJ_CHANNELS >= 7)
-    ignitionSchedule5.counter = &IGN7_COUNTER;
+    ignitionSchedule7.counter = &IGN7_COUNTER;
     ignitionSchedule7.compare = &IGN7_COMPARE;
     #endif
     #if (INJ_CHANNELS >= 8)
