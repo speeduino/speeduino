@@ -1,19 +1,27 @@
 #ifndef STM32_H
 #define STM32_H
 #if defined(CORE_STM32)
+#include <Fram.h>
 
 /*
 ***********************************************************************************************************
 * General
 */
-  #define PORT_TYPE uint8_t
+  #define PORT_TYPE uint32_t
+  #define PINMASK_TYPE uint32_t
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
+  #ifndef USE_SERIAL3
   #define USE_SERIAL3
+  #endif
   void initBoard();
   uint16_t freeRam();
 
-  #if defined(USE_STM32GENERIC)
+  #ifndef Serial
     #define Serial Serial1
+  #endif
+
+  #if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
+  FramClass EEPROM(PB0, PB3, PB4, PB5, 15000000);
   #endif
 
   //Much of the below is not correct, but included to allow compilation
@@ -59,12 +67,26 @@
 /*
 ***********************************************************************************************************
 * Schedules
+* Timers Table for STM32F1
+*   TIMER1    TIMER2    TIMER3    TIMER4
+* 1 -       1 - INJ1  1 - IGN1  1 - oneMSInterval
+* 2 - BOOST 2 - INJ2  2 - IGN2  2 -
+* 3 - VVT   3 - INJ3  3 - IGN3  3 -
+* 4 - IDLE  4 - INJ4  4 - IGN4  4 -
+*
+* Timers Table for STM32F4
+*   TIMER1    TIMER2    TIMER3    TIMER4    TIMER5    TIMER8
+* 1 -       1 - INJ1  1 - IGN1  1 - IGN5  1 - INJ5  1 - oneMSInterval
+* 2 - BOOST 2 - INJ2  2 - IGN2  2 - IGN6  2 - INJ6  2 - 
+* 3 - VVT   3 - INJ3  3 - IGN3  3 - IGN7  3 - INJ7  3 - 
+* 4 - IDLE  4 - INJ4  4 - IGN4  4 - IGN8  4 - INJ8  4 - 
+*
 */
-  #define MAX_TIMER_PERIOD 131070 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
-  #define MAX_TIMER_PERIOD_SLOW 131070 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
+  #define MAX_TIMER_PERIOD 65535*2 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
+  #define MAX_TIMER_PERIOD_SLOW  65535*2 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
   #define uS_TO_TIMER_COMPARE(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
   #define uS_TO_TIMER_COMPARE_SLOW(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
-  #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
+  #if defined(ARDUINO_ARCH_STM32) && !defined(_VARIANT_ARDUINO_STM32_) // STM32GENERIC core
     #define FUEL1_COUNTER (TIM2)->CNT
     #define FUEL2_COUNTER (TIM2)->CNT
     #define FUEL3_COUNTER (TIM2)->CNT
@@ -238,7 +260,7 @@
 ***********************************************************************************************************
 * Auxilliaries
 */
-    #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
+    #if defined(ARDUINO_ARCH_STM32) && !defined(_VARIANT_ARDUINO_STM32_) // STM32GENERIC core
         #define ENABLE_BOOST_TIMER()  (TIM1)->CCER |= TIM_CCER_CC2E
         #define DISABLE_BOOST_TIMER() (TIM1)->CCER &= ~TIM_CCER_CC2E
 
@@ -266,7 +288,7 @@
 ***********************************************************************************************************
 * Idle
 */
-    #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
+    #if defined(ARDUINO_ARCH_STM32) && !defined(_VARIANT_ARDUINO_STM32_) // STM32GENERIC core
         #define IDLE_COUNTER   (TIM1)->CNT
         #define IDLE_COMPARE   (TIM1)->CCR4
 

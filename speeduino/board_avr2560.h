@@ -10,6 +10,7 @@
 * General
 */
   #define PORT_TYPE uint8_t //Size of the port variables (Eg inj1_pin_port).
+  #define PINMASK_TYPE uint8_t
   void initBoard();
   uint16_t freeRam();
 

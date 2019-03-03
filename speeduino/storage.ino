@@ -10,22 +10,24 @@ A full copy of the license may be found in the projects root directory
 #include "comms.h"
 #if defined(CORE_SAMD21)
   #include "src/FlashStorage/FlashAsEEPROM.h"
+#elif defined(CORE_STM32)
+  #include <Fram.h>
 #else
   #include <EEPROM.h>
 #endif
 #include "storage.h"
 void writeAllConfig()
 {
-  writeConfig(1);
-  if (eepromWritesPending == false) { writeConfig(2); }
-  if (eepromWritesPending == false) { writeConfig(3); }
-  if (eepromWritesPending == false) { writeConfig(4); }
-  if (eepromWritesPending == false) { writeConfig(5); }
-  if (eepromWritesPending == false) { writeConfig(6); }
-  if (eepromWritesPending == false) { writeConfig(7); }
-  if (eepromWritesPending == false) { writeConfig(8); }
-  if (eepromWritesPending == false) { writeConfig(9); }
-  if (eepromWritesPending == false) { writeConfig(10); }
+  writeConfig(veSetPage);
+  if (eepromWritesPending == false) { writeConfig(veMapPage); }
+  if (eepromWritesPending == false) { writeConfig(ignMapPage); }
+  if (eepromWritesPending == false) { writeConfig(ignSetPage); }
+  if (eepromWritesPending == false) { writeConfig(afrMapPage); }
+  if (eepromWritesPending == false) { writeConfig(afrSetPage); }
+  if (eepromWritesPending == false) { writeConfig(boostvvtPage); }
+  if (eepromWritesPending == false) { writeConfig(seqFuelPage); }
+  if (eepromWritesPending == false) { writeConfig(canbusPage); }
+  if (eepromWritesPending == false) { writeConfig(warmupPage); }
 }
 
 
