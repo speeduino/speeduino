@@ -1,0 +1,73 @@
+PCBNEW-LibModule-V1  Tue 21 Jul 2015 09:24:58 AEST
+# encoding utf-8
+Units mm
+$INDEX
+MPX4250
+$EndINDEX
+$MODULE MPX4250
+Po 0 0 0 15 55AD8302 00000000 ~~
+Li MPX4250
+Sc 0
+AR 
+Op 0 0 0
+T0 2.54 2.54 1 1 0 0.15 N V 21 N "MPX4250"
+T1 10.16 2.54 1 1 0 0.15 N V 21 N "VAL**"
+DC 6.4 -12.3 10.2 -3.7 0.15 21
+$PAD
+Sh "1" C 1.5 1.5 0 0 0
+Dr 0.84 0 0
+At STD N 00E0FFFF
+Ne 0 ""
+Po 0 0
+$EndPAD
+$PAD
+Sh "2" C 1.5 1.5 0 0 0
+Dr 0.84 0 0
+At STD N 00E0FFFF
+Ne 0 ""
+Po 2.54 0
+$EndPAD
+$PAD
+Sh "3" C 1.5 1.5 0 0 0
+Dr 0.84 0 0
+At STD N 00E0FFFF
+Ne 0 ""
+Po 5.08 0
+$EndPAD
+$PAD
+Sh "4" C 1.5 1.5 0 0 0
+Dr 0.84 0 0
+At STD N 00E0FFFF
+Ne 0 ""
+Po 7.62 0
+$EndPAD
+$PAD
+Sh "5" C 1.5 1.5 0 0 0
+Dr 0.84 0 0
+At STD N 00E0FFFF
+Ne 0 ""
+Po 10.16 0
+$EndPAD
+$PAD
+Sh "6" C 1.5 1.5 0 0 0
+Dr 0.84 0 0
+At STD N 00E0FFFF
+Ne 0 ""
+Po 12.7 0
+$EndPAD
+$PAD
+Sh "~" C 4.1 4.1 0 0 0
+Dr 4.1 0 0
+At STD N 00E0FFFF
+Ne 0 ""
+Po 17.9 -12.32
+$EndPAD
+$PAD
+Sh "~" C 4.1 4.1 0 0 0
+Dr 4.1 0 0
+At STD N 00E0FFFF
+Ne 0 ""
+Po -5.25 -12.32
+$EndPAD
+$EndMODULE MPX4250
+$EndLIBRARY

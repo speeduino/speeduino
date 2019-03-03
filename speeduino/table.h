@@ -3,7 +3,6 @@ This file is used for everything related to maps/tables including their definiti
 */
 #ifndef TABLE_H
 #define TABLE_H
-#include <Arduino.h>
 
 #define TABLE_RPM_MULTIPLIER  100
 #define TABLE_LOAD_MULTIPLIER 2
@@ -19,15 +18,21 @@ struct table2D {
   byte *values;
   byte *axisX;
 
-  int *values16;
-  int *axisX16;
+  int16_t *values16;
+  int16_t *axisX16;
 
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
-  int lastXMax;
-  int lastXMin;
+  int16_t lastXMax;
+  int16_t lastXMin;
+
+  //Store the last input and output for caching
+  int16_t lastInput;
+  int16_t lastOutput;
+  byte cacheTime; //TRacks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
 };
 
-void table2D_setSize(struct table2D targetTable, byte newSize);
+//void table2D_setSize(struct table2D targetTable, byte newSize);
+void table2D_setSize(struct table2D, byte);
 
 struct table3D {
 
@@ -37,15 +42,16 @@ struct table3D {
   byte ySize;
 
   byte **values;
-  int *axisX;
-  int *axisY;
+  int16_t *axisX;
+  int16_t *axisY;
 
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
   byte lastXMax, lastXMin;
   byte lastYMax, lastYMin;
 };
 
-void table3D_setSize(struct table3D *targetTable, byte newSize);
+//void table3D_setSize(struct table3D *targetTable, byte);
+void table3D_setSize(struct table3D *targetTable, byte);
 
 /*
 3D Tables have an origin (0,0) in the top left hand corner. Vertical axis is expressed first.

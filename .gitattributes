@@ -1,0 +1,18 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+* text=auto
+
+*.ino text eol=lf
+*.h text eol=lf
+*.c text eol=lf
+*.ini text eol=lf
+*.msq text eol=lf
+
+# Denote all files that are truly binary and should not be modified.
+*.png binary
+*.jpg binary
+*.dll binary
+*.fzz binary
+*.xls binary
+
+
+*.pdf -text

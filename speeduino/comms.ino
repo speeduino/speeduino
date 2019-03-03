@@ -3,19 +3,23 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
+#include "globals.h"
+#include "comms.h"
+#include "cancomms.h"
+#include "errors.h"
+#include "storage.h"
+#include "maths.h"
+#include "utils.h"
+#include "decoders.h"
 
 /*
-This is called when a command is received over serial from TunerStudio / Megatune
-It parses the command and calls the relevant function
-A detailed description of each call can be found at: http://www.msextra.com/doc/ms1extra/COM_RS232.htm
+  Processes the data on the serial buffer.
+  Can be either a new command or a continuation of one that is already in progress:
+    * cmdPending = If a command has started but is wairing on further data to complete
+    * chunkPending = Specifically for the new receive value method where TS will send a known number of contiguous bytes to be written to a table
 */
-//#include "comms.h"
-//#include "globals.h"
-//#include "storage.h"
-
 void command()
 {
-  int valueOffset; //cannot use offset as a variable name, it is a reserved word for several teensy libraries
 
   if (cmdPending == false) { currentCommand = Serial.read(); }
 
@@ -23,7 +27,7 @@ void command()
   {
 
     case 'A': // send x bytes of realtime values
-      sendValues(0, packetSize,0x30, 0);   //send values to serial0
+      sendValues(0, SERIAL_PACKET_SIZE, 0x30, 0);   //send values to serial0
       break;
 
 
@@ -69,6 +73,61 @@ void command()
 
     case 'F': // send serial protocol version
       Serial.print("001");
+      break;
+
+    case 'H': //Start the tooth logger
+      currentStatus.toothLogEnabled = true;
+      currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
+      toothHistoryIndex = 0;
+      toothHistorySerialIndex = 0;
+
+      //Disconnect the standard interrupt and add the logger version
+      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
+
+      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+
+      Serial.write(1); //TS needs an acknowledgement that this was received. I don't know if this is the correct response, but it seems to work
+      break;
+
+    case 'h': //Stop the tooth logger
+      currentStatus.toothLogEnabled = false;
+
+      //Disconnect the logger interrupts and attach the normal ones
+      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
+
+      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+      break;
+
+    case 'J': //Start the composite logger
+      currentStatus.compositeLogEnabled = true;
+      currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
+      toothHistoryIndex = 0;
+      toothHistorySerialIndex = 0;
+      compositeLastToothTime = 0;
+
+      //Disconnect the standard interrupt and add the logger version
+      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
+
+      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+
+      Serial.write(1); //TS needs an acknowledgement that this was received. I don't know if this is the correct response, but it seems to work
+      break;
+
+    case 'j': //Stop the composite logger
+      currentStatus.compositeLogEnabled = false;
+
+      //Disconnect the logger interrupts and attach the normal ones
+      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
+
+      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+      attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
       break;
 
     case 'L': // List the contents of current page in human readable form
@@ -136,7 +195,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print("speeduino 201709-dev");
+      Serial.print(F("speeduino 201903-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -166,12 +225,14 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print("Speeduino 2017.09-dev");
+      Serial.print(F("Speeduino 2019.03-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
-      sendToothLog(false); //Sends tooth log values as ints
+      if(currentStatus.toothLogEnabled == true) { sendToothLog(false); } //Sends tooth log values as ints
+      else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(); }
+
       break;
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
@@ -185,6 +246,24 @@ void command()
       receiveCalibration(tableID); //Receive new values and store in memory
       writeCalibration(); //Store received values in EEPROM
 
+      break;
+
+    case 'U': //User wants to reset the Arduino (probably for FW update)
+      if (resetControl != RESET_CONTROL_DISABLED)
+      {
+      #ifndef SMALL_FLASH_MODE
+        if (!cmdPending) { Serial.println(F("Comms halted. Next byte will reset the Arduino.")); }
+      #endif
+
+        while (Serial.available() == 0) { }
+        digitalWrite(pinResetControl, LOW);
+      }
+      else
+      {
+      #ifndef SMALL_FLASH_MODE
+        if (!cmdPending) { Serial.println(F("Reset control is currently disabled.")); }
+      #endif
+      }
       break;
 
     case 'V': // send VE table and constants in binary
@@ -227,8 +306,8 @@ void command()
         //7 bytes required:
         //2 - Page identifier
         //2 - offset
-        //2 - Length (Should always be 1 until chunk write is setup)
-        //1 - New value
+        //2 - Length
+        //1 - 1st New value
         if(Serial.available() >= 7)
         {
           byte offset1, offset2, length1, length2;
@@ -243,18 +322,24 @@ void command()
           length2 = Serial.read(); // Length to be written (Should always be 1)
           chunkSize = word(length2, length1);
 
-          //chunkPending = true;
-          for(int i = 0; i < chunkSize; i++)
-          {
-            while(Serial.available() == 0) { } //For chunk writes, we can safely loop here
-            receiveValue( (valueOffset + i), Serial.read());
-          }
-          cmdPending = false;
+          chunkPending = true;
+          chunkComplete = 0;
         }
+      }
+      //This CANNOT be an else of the above if statement as chunkPending gets set to true above
+      if(chunkPending == true)
+      {
+        while( (Serial.available() > 0) && (chunkComplete < chunkSize) )
+        {
+          receiveValue( (valueOffset + chunkComplete), Serial.read());
+          chunkComplete++;
+        }
+        if(chunkComplete >= chunkSize) { cmdPending = false; chunkPending = false; }
       }
       break;
 
     case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed. This function takes 1.5kb of program space! :S
+    #ifndef SMALL_FLASH_MODE
       Serial.println(F("Coolant"));
       for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
       {
@@ -279,33 +364,42 @@ void command()
       Serial.println(F("WUE"));
       for (int x = 0; x < 10; x++)
       {
-        Serial.print(configPage2.wueBins[x]);
+        Serial.print(configPage4.wueBins[x]);
         Serial.print(", ");
-        Serial.println(configPage1.wueValues[x]);
+        Serial.println(configPage2.wueValues[x]);
       }
       Serial.flush();
+    #endif
       break;
 
     case 'z': //Send 256 tooth log entries to a terminal emulator
       sendToothLog(true); //Sends tooth log values as chars
       break;
 
+    case '`': //Custom 16u2 firmware is making its presence known
+      cmdPending = true;
+
+      if (Serial.available() >= 1) {
+        configPage4.bootloaderCaps = Serial.read();
+        cmdPending = false;
+      }
+      break;
+
+
     case '?':
+    #ifndef SMALL_FLASH_MODE
       Serial.println
       (F(
          "\n"
          "===Command Help===\n\n"
          "All commands are single character and are concatenated with their parameters \n"
-         "without spaces. Some parameters are binary and cannot be entered through this \n"
-         "prompt by conventional means. \n"
+         "without spaces."
          "Syntax:  <command>+<parameter1>+<parameter2>+<parameterN>\n\n"
          "===List of Commands===\n\n"
          "A - Displays 31 bytes of currentStatus values in binary (live data)\n"
          "B - Burn current map and configPage values to eeprom\n"
          "C - Test COM port.  Used by Tunerstudio to see whether an ECU is on a given serial \n"
          "    port. Returns a binary number.\n"
-         "L - Displays map page (aka table) or configPage values.  Use P to change page (not \n"
-         "    every page is a map)\n"
          "N - Print new line.\n"
          "P - Set current page.  Syntax:  P+<pageNumber>\n"
          "R - Same as A command\n"
@@ -319,8 +413,10 @@ void command()
          "Z - Display calibration values\n"
          "T - Displays 256 tooth log entries in binary\n"
          "r - Displays 256 tooth log entries\n"
+         "U - Prepare for firmware update. The next byte received will cause the Arduino to reset.\n"
          "? - Displays this help page"
        ));
+     #endif
 
       break;
 
@@ -335,21 +431,21 @@ This function returns the current values of a fixed group of variables
 //void sendValues(int packetlength, byte portNum)
 void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 {
-  byte fullStatus[packetSize];
+  byte fullStatus[SERIAL_PACKET_SIZE];
 
   if (portNum == 3)
   {
     //CAN serial
-    #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)|| defined(CORE_STM32) || defined (CORE_TEENSY) //ATmega2561 does not have Serial3
+    #if defined(USE_SERIAL3)
       if (offset == 0)
-        {
-          CANSerial.write("A");         //confirm cmd type
-        }
+      {
+        CANSerial.write("A");         //confirm cmd type
+      }
       else
-        {
-      CANSerial.write("r");         //confirm cmd type
-      CANSerial.write(cmd);
-        }
+      {
+        CANSerial.write("r");         //confirm cmd type
+        CANSerial.write(cmd);
+      }
     #endif
   }
   else
@@ -361,7 +457,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
-  fullStatus[1] = currentStatus.squirt; //Squirt Bitfield
+  fullStatus[1] = currentStatus.status1; //status1 Bitfield
   fullStatus[2] = currentStatus.engine; //Engine Status Bitfield
   fullStatus[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
   fullStatus[4] = lowByte(currentStatus.MAP); //2 bytes for MAP
@@ -376,35 +472,35 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[13] = currentStatus.wueCorrection; //Warmup enrichment (%)
   fullStatus[14] = lowByte(currentStatus.RPM); //rpm HB
   fullStatus[15] = highByte(currentStatus.RPM); //rpm LB
-  fullStatus[16] = currentStatus.TAEamount; //acceleration enrichment (%)
+  fullStatus[16] = (byte)(currentStatus.TAEamount >> 1); //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
   fullStatus[17] = currentStatus.corrections; //Total GammaE (%)
   fullStatus[18] = currentStatus.VE; //Current VE 1 (%)
   fullStatus[19] = currentStatus.afrTarget;
-  fullStatus[20] = (byte)(currentStatus.PW1 / 100); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[21] = currentStatus.tpsDOT; //TPS DOT
-  fullStatus[22] = currentStatus.advance;
-  fullStatus[23] = currentStatus.TPS; // TPS (0% to 100%)
+  fullStatus[20] = lowByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[21] = highByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[22] = currentStatus.tpsDOT; //TPS DOT
+  fullStatus[23] = currentStatus.advance;
+  fullStatus[24] = currentStatus.TPS; // TPS (0% to 100%)
   //Need to split the int loopsPerSecond value into 2 bytes
-  fullStatus[24] = lowByte(currentStatus.loopsPerSecond);
-  fullStatus[25] = highByte(currentStatus.loopsPerSecond);
+  fullStatus[25] = lowByte(currentStatus.loopsPerSecond);
+  fullStatus[26] = highByte(currentStatus.loopsPerSecond);
 
   //The following can be used to show the amount of free memory
   currentStatus.freeRAM = freeRam();
-  fullStatus[26] = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
-  fullStatus[27] = highByte(currentStatus.freeRAM);
+  fullStatus[27] = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
+  fullStatus[28] = highByte(currentStatus.freeRAM);
 
-  fullStatus[28] = (byte)(currentStatus.boostTarget >> 1); //Divide boost target by 2 to fit in a byte
-  fullStatus[29] = (byte)(currentStatus.boostDuty / 100);
-  fullStatus[30] = currentStatus.spark; //Spark related bitfield
+  fullStatus[29] = (byte)(currentStatus.boostTarget >> 1); //Divide boost target by 2 to fit in a byte
+  fullStatus[30] = (byte)(currentStatus.boostDuty / 100);
+  fullStatus[31] = currentStatus.spark; //Spark related bitfield
 
   //rpmDOT must be sent as a signed integer
-  fullStatus[31] = lowByte(currentStatus.rpmDOT);
-  fullStatus[32] = highByte(currentStatus.rpmDOT);
+  fullStatus[32] = lowByte(currentStatus.rpmDOT);
+  fullStatus[33] = highByte(currentStatus.rpmDOT);
 
-  fullStatus[33] = currentStatus.ethanolPct; //Flex sensor value (or 0 if not used)
-  fullStatus[34] = currentStatus.flexCorrection; //Flex fuel correction (% above or below 100)
-  fullStatus[35] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
-  fullStatus[36] = getNextError();
+  fullStatus[34] = currentStatus.ethanolPct; //Flex sensor value (or 0 if not used)
+  fullStatus[35] = currentStatus.flexCorrection; //Flex fuel correction (% above or below 100)
+  fullStatus[36] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
 
   fullStatus[37] = currentStatus.idleLoad;
   fullStatus[38] = currentStatus.testOutputs;
@@ -446,6 +542,25 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[72] = highByte(currentStatus.canin[15]);
 
   fullStatus[73] = currentStatus.tpsADC;
+  fullStatus[74] = getNextError();
+
+  fullStatus[75] = lowByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[76] = highByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[77] = lowByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[78] = highByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[79] = lowByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[80] = highByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
+
+  fullStatus[81] = currentStatus.status3;
+  fullStatus[82] = lowByte(currentStatus.flexBoostCorrection);
+  fullStatus[83] = highByte(currentStatus.flexBoostCorrection);
+
+  fullStatus[84] = currentStatus.nChannels;
+  fullStatus[85] = lowByte(currentStatus.fuelLoad);
+  fullStatus[86] = highByte(currentStatus.fuelLoad);
+  fullStatus[87] = lowByte(currentStatus.ignLoad);
+  fullStatus[88] = highByte(currentStatus.ignLoad);
+  fullStatus[89] = currentStatus.syncLossCounter;
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -490,7 +605,7 @@ void receiveValue(int valueOffset, byte newValue)
       break;
 
     case veSetPage:
-      pnt_configPage = &configPage1; //Setup a pointer to the relevant config page
+      pnt_configPage = &configPage2; //Setup a pointer to the relevant config page
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
       if (valueOffset < npage_size[veSetPage])
       {
@@ -521,7 +636,7 @@ void receiveValue(int valueOffset, byte newValue)
       break;
 
     case ignSetPage:
-      pnt_configPage = &configPage2;
+      pnt_configPage = &configPage4;
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
       if (valueOffset < npage_size[ignSetPage])
       {
@@ -553,7 +668,7 @@ void receiveValue(int valueOffset, byte newValue)
       break;
 
     case afrSetPage:
-      pnt_configPage = &configPage3;
+      pnt_configPage = &configPage6;
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
       if (valueOffset < npage_size[afrSetPage])
       {
@@ -561,7 +676,7 @@ void receiveValue(int valueOffset, byte newValue)
       }
       break;
 
-    case boostvvtPage: //Boost and VVT maps (8x8)
+    case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
       if (valueOffset < 64) //New value is part of the boost map
       {
         boostTable.values[7 - (valueOffset / 8)][valueOffset % 8] = newValue;
@@ -574,6 +689,7 @@ void receiveValue(int valueOffset, byte newValue)
       {
         boostTable.axisY[(7 - (valueOffset - 72))] = int(newValue); //TABLE_LOAD_MULTIPLIER is NOT used for boost as it is TPS based (0-100)
       }
+      //End of boost table
       else if (valueOffset < 144) //New value is part of the vvt map
       {
         tempOffset = valueOffset - 80;
@@ -584,10 +700,26 @@ void receiveValue(int valueOffset, byte newValue)
         tempOffset = valueOffset - 144;
         vvtTable.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       }
-      else if (valueOffset < 161) //New value is on the Y (Load) axis of the vvt table
+      else if (valueOffset < 160) //New value is on the Y (Load) axis of the vvt table
       {
         tempOffset = valueOffset - 152;
         vvtTable.axisY[(7 - tempOffset)] = int(newValue); //TABLE_LOAD_MULTIPLIER is NOT used for vvt as it is TPS based (0-100)
+      }
+      //End of vvt table
+      else if (valueOffset < 224) //New value is part of the staging map
+      {
+        tempOffset = valueOffset - 160;
+        stagingTable.values[7 - (tempOffset / 8)][tempOffset % 8] = newValue;
+      }
+      else if (valueOffset < 232) //New value is on the X (RPM) axis of the staging table
+      {
+        tempOffset = valueOffset - 224;
+        stagingTable.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+      }
+      else if (valueOffset < 240) //New value is on the Y (Load) axis of the staging table
+      {
+        tempOffset = valueOffset - 232;
+        stagingTable.axisY[(7 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER;
       }
       break;
 
@@ -611,7 +743,7 @@ void receiveValue(int valueOffset, byte newValue)
       break;
 
     case canbusPage:
-      pnt_configPage = &configPage10;
+      pnt_configPage = &configPage9;
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
       if (valueOffset < npage_size[currentPage])
       {
@@ -620,7 +752,7 @@ void receiveValue(int valueOffset, byte newValue)
       break;
 
     case warmupPage:
-      pnt_configPage = &configPage11;
+      pnt_configPage = &configPage10;
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
       if (valueOffset < npage_size[currentPage])
       {
@@ -642,7 +774,7 @@ useChar - If true, all values are send as chars, this is for the serial command 
 */
 void sendPage(bool useChar)
 {
-  void* pnt_configPage = &configPage1; //Default value is for safety only. Will be changed below if needed.
+  void* pnt_configPage = &configPage2; //Default value is for safety only. Will be changed below if needed.
   struct table3D currentTable = fuelTable; //Default value is for safety only. Will be changed below if needed.
   byte currentTitleIndex = 0;// This corresponds to the count up to the first char of a string in pageTitles
   bool sendComplete = false; //Used to track whether all send operations are complete
@@ -664,27 +796,27 @@ void sendPage(bool useChar)
           Serial.println((const __FlashStringHelper *)&pageTitles[27]);//27 is the index to the first char in the second sting in pageTitles
           // The following loop displays in human readable form of all byte values in config page 1 up to but not including the first array.
           // incrementing void pointers is cumbersome. Thus we have "pnt_configPage = (byte *)pnt_configPage + 1"
-          for (pnt_configPage = &configPage1; pnt_configPage < &configPage1.wueValues[0]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
+          for (pnt_configPage = &configPage2; pnt_configPage < &configPage2.wueValues[0]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
           for (byte x = 10; x; x--)// The x between the ';' has the same representation as the "x != 0" test or comparision
           {
-            Serial.print(configPage1.wueValues[10 - x]);// This displays the values horizantially on the screen
+            Serial.print(configPage2.wueValues[10 - x]);// This displays the values horizantially on the screen
             Serial.print(' ');
           }
           Serial.println();
-          for (pnt_configPage = (byte *)&configPage1.wueValues[9] + 1; pnt_configPage < &configPage1.inj1Ang; pnt_configPage = (byte *)pnt_configPage + 1) {
+          for (pnt_configPage = (byte *)&configPage2.wueValues[9] + 1; pnt_configPage < &configPage2.inj1Ang; pnt_configPage = (byte *)pnt_configPage + 1) {
             Serial.println(*((byte *)pnt_configPage));// This displays all the byte values between the last array up to but not including the first unsigned int on config page 1
           }
           // The following loop displays four unsigned ints
-          for (pnt16_configPage = (uint16_t *)&configPage1.inj1Ang; pnt16_configPage < (uint16_t*)&configPage1.inj4Ang + 1; pnt16_configPage = (uint16_t*)pnt16_configPage + 1)
+          for (pnt16_configPage = (uint16_t *)&configPage2.inj1Ang; pnt16_configPage < (uint16_t*)&configPage2.inj4Ang + 1; pnt16_configPage = (uint16_t*)pnt16_configPage + 1)
           { Serial.println(*((uint16_t *)pnt16_configPage)); }
           // Following loop displays byte values between the unsigned ints
-          for (pnt_configPage = (uint16_t *)&configPage1.inj4Ang + 1; pnt_configPage < &configPage1.mapMax; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
-          Serial.println(configPage1.mapMax);
+          for (pnt_configPage = (uint16_t *)&configPage2.inj4Ang + 1; pnt_configPage < &configPage2.mapMax; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
+          Serial.println(configPage2.mapMax);
           // Following loop displays remaining byte values of the page
-          for (pnt_configPage = (uint16_t *)&configPage1.mapMax + 1; pnt_configPage < (byte *)&configPage1 + npage_size[veSetPage]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
+          for (pnt_configPage = (uint16_t *)&configPage2.mapMax + 1; pnt_configPage < (byte *)&configPage2 + npage_size[veSetPage]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
           sendComplete = true;
         }
-        else { pnt_configPage = &configPage1; } //Create a pointer to Page 1 in memory
+        else { pnt_configPage = &configPage2; } //Create a pointer to Page 1 in memory
         break;
 
     case ignMapPage:
@@ -698,17 +830,17 @@ void sendPage(bool useChar)
         {
           //To Display Values from Config Page 2
           Serial.println((const __FlashStringHelper *)&pageTitles[56]);
-          Serial.println(configPage2.triggerAngle);// configPsge2.triggerAngle is an int so just display it without complication
+          Serial.println(configPage4.triggerAngle);// configPsge2.triggerAngle is an int so just display it without complication
           // Following loop displays byte values after that first int up to but not including the first array in config page 2
-          for (pnt_configPage = (int *)&configPage2 + 1; pnt_configPage < &configPage2.taeBins[0]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
+          for (pnt_configPage = (int *)&configPage4 + 1; pnt_configPage < &configPage4.taeBins[0]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
           for (byte y = 2; y; y--)// Displaying two equal sized arrays
           {
             byte * currentVar;// A placeholder for each array
             if (y == 2) {
-              currentVar = configPage2.taeBins;
+              currentVar = configPage4.taeBins;
             }
             else {
-              currentVar = configPage2.taeValues;
+              currentVar = configPage4.taeValues;
             }
 
             for (byte j = 4; j; j--)
@@ -720,24 +852,24 @@ void sendPage(bool useChar)
           }
           for (byte x = 10; x ; x--)
           {
-            Serial.print(configPage2.wueBins[10 - x]);//Displaying array horizontally across screen
+            Serial.print(configPage4.wueBins[10 - x]);//Displaying array horizontally across screen
             Serial.print(' ');
           }
           Serial.println();
-          Serial.println(configPage2.dwellLimit);// Little lonely byte stuck between two arrays. No complications just display it.
+          Serial.println(configPage4.dwellLimit);// Little lonely byte stuck between two arrays. No complications just display it.
           for (byte x = 6; x; x--)
           {
-            Serial.print(configPage2.dwellCorrectionValues[6 - x]);
+            Serial.print(configPage4.dwellCorrectionValues[6 - x]);
             Serial.print(' ');
           }
           Serial.println();
-          for (pnt_configPage = (byte *)&configPage2.dwellCorrectionValues[5] + 1; pnt_configPage < (byte *)&configPage2 + npage_size[ignSetPage]; pnt_configPage = (byte *)pnt_configPage + 1)
+          for (pnt_configPage = (byte *)&configPage4.dwellCorrectionValues[5] + 1; pnt_configPage < (byte *)&configPage4 + npage_size[ignSetPage]; pnt_configPage = (byte *)pnt_configPage + 1)
           {
             Serial.println(*((byte *)pnt_configPage));// Displaying remaining byte values of the page
           }
           sendComplete = true;
         }
-        else { pnt_configPage = &configPage2; } //Create a pointer to Page 2 in memory
+        else { pnt_configPage = &configPage4; } //Create a pointer to Page 2 in memory
         break;
 
     case afrMapPage:
@@ -751,15 +883,15 @@ void sendPage(bool useChar)
         {
           //To Display Values from Config Page 3
           Serial.println((const __FlashStringHelper *)&pageTitles[91]);//special typecasting to enable suroutine that the F macro uses
-          for (pnt_configPage = &configPage3; pnt_configPage < &configPage3.voltageCorrectionBins[0]; pnt_configPage = (byte *)pnt_configPage + 1)
+          for (pnt_configPage = &configPage6; pnt_configPage < &configPage6.voltageCorrectionBins[0]; pnt_configPage = (byte *)pnt_configPage + 1)
           {
             Serial.println(*((byte *)pnt_configPage));// Displaying byte values of config page 3 up to but not including the first array
           }
           for (byte y = 2; y; y--)// Displaying two equally sized arrays that are next to each other
           {
             byte * currentVar;
-            if (y == 2) { currentVar = configPage3.voltageCorrectionBins; }
-            else { currentVar = configPage3.injVoltageCorrectionValues; }
+            if (y == 2) { currentVar = configPage6.voltageCorrectionBins; }
+            else { currentVar = configPage6.injVoltageCorrectionValues; }
 
             for (byte x = 6; x; x--)
             {
@@ -771,8 +903,8 @@ void sendPage(bool useChar)
           for (byte y = 2; y; y--)// and again
           {
             byte* currentVar;
-            if (y == 2) { currentVar = configPage3.airDenBins; }
-            else { currentVar = configPage3.airDenRates; }
+            if (y == 2) { currentVar = configPage6.airDenBins; }
+            else { currentVar = configPage6.airDenRates; }
 
             for (byte x = 9; x; x--)
             {
@@ -782,13 +914,13 @@ void sendPage(bool useChar)
             Serial.println();
           }
           // Following loop displays the remaining byte values of the page
-          for (pnt_configPage = (byte *)&configPage3.airDenRates[8] + 1; pnt_configPage < (byte *)&configPage3 + npage_size[afrSetPage]; pnt_configPage = (byte *)pnt_configPage + 1)
+          for (pnt_configPage = (byte *)&configPage6.airDenRates[8] + 1; pnt_configPage < (byte *)&configPage6 + npage_size[afrSetPage]; pnt_configPage = (byte *)pnt_configPage + 1)
           {
             Serial.println(*((byte *)pnt_configPage));
           }
           sendComplete = true;
         }
-        else { pnt_configPage = &configPage3; } //Create a pointer to Page 3 in memory
+        else { pnt_configPage = &configPage6; } //Create a pointer to Page 3 in memory
 
         //Old configPage4 STARTED HERE!
         //currentTitleIndex = 106;
@@ -801,10 +933,10 @@ void sendPage(bool useChar)
             byte * currentVar;
             switch (y)
             {
-              case 1: currentVar = configPage3.iacBins; break;
-              case 2: currentVar = configPage3.iacOLPWMVal; break;
-              case 3: currentVar = configPage3.iacOLStepVal; break;
-              case 4: currentVar = configPage3.iacCLValues; break;
+              case 1: currentVar = configPage6.iacBins; break;
+              case 2: currentVar = configPage6.iacOLPWMVal; break;
+              case 3: currentVar = configPage6.iacOLStepVal; break;
+              case 4: currentVar = configPage6.iacCLValues; break;
               default: break;
             }
             for (byte x = 10; x; x--)
@@ -819,9 +951,9 @@ void sendPage(bool useChar)
             byte * currentVar;
             switch (y)
             {
-              case 1: currentVar = configPage3.iacCrankBins; break;
-              case 2: currentVar = configPage3.iacCrankDuty; break;
-              case 3: currentVar = configPage3.iacCrankSteps; break;
+              case 1: currentVar = configPage6.iacCrankBins; break;
+              case 2: currentVar = configPage6.iacCrankDuty; break;
+              case 3: currentVar = configPage6.iacCrankSteps; break;
               default: break;
             }
             for (byte x = 4; x; x--)
@@ -832,10 +964,10 @@ void sendPage(bool useChar)
             Serial.println();
           }
           // Following loop is for remaining byte value of page
-          for (pnt_configPage = (byte *)&configPage3.iacCrankBins[3] + 1; pnt_configPage < (byte *)&configPage3 + npage_size[afrSetPage]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
+          for (pnt_configPage = (byte *)&configPage6.iacCrankBins[3] + 1; pnt_configPage < (byte *)&configPage6 + npage_size[afrSetPage]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
           sendComplete = true;
         }
-        else { pnt_configPage = &configPage3; } //Create a pointer to Page 4 in memory
+        else { pnt_configPage = &configPage6; } //Create a pointer to Page 4 in memory
         break;
 
     case boostvvtPage:
@@ -847,17 +979,23 @@ void sendPage(bool useChar)
         else
         {
           //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
-          byte response[160]; //Bit hacky, but the size is: (8x8 + 8 + 8) + (8x8 + 8 + 8) = 160
+          byte response[80]; //Bit hacky, but send 1 map at a time (Each map is 8x8, so 64 + 8 + 8)
 
           //Boost table
           for (int x = 0; x < 64; x++) { response[x] = boostTable.values[7 - (x / 8)][x % 8]; }
           for (int x = 64; x < 72; x++) { response[x] = byte(boostTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
           for (int y = 72; y < 80; y++) { response[y] = byte(boostTable.axisY[7 - (y - 72)]); }
+          Serial.write((byte *)&response, 80);
           //VVT table
-          for (int x = 0; x < 64; x++) { response[x + 80] = vvtTable.values[7 - (x / 8)][x % 8]; }
-          for (int x = 64; x < 72; x++) { response[x + 80] = byte(vvtTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
-          for (int y = 72; y < 80; y++) { response[y + 80] = byte(vvtTable.axisY[7 - (y - 72)]); }
-          Serial.write((byte *)&response, sizeof(response));
+          for (int x = 0; x < 64; x++) { response[x] = vvtTable.values[7 - (x / 8)][x % 8]; }
+          for (int x = 64; x < 72; x++) { response[x] = byte(vvtTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
+          for (int y = 72; y < 80; y++) { response[y] = byte(vvtTable.axisY[7 - (y - 72)]); }
+          Serial.write((byte *)&response, 80);
+          //Staging table
+          for (int x = 0; x < 64; x++) { response[x] = stagingTable.values[7 - (x / 8)][x % 8]; }
+          for (int x = 64; x < 72; x++) { response[x] = byte(stagingTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
+          for (int y = 72; y < 80; y++) { response[y] = byte(stagingTable.axisY[7 - (y - 72)] / TABLE_LOAD_MULTIPLIER); }
+          Serial.write((byte *)&response, 80);
           sendComplete = true;
         }
         break;
@@ -929,14 +1067,14 @@ void sendPage(bool useChar)
         if (useChar)
         {
           //To Display Values from Config Page 10
-          Serial.println((const __FlashStringHelper *)&pageTitles[141]);//special typecasting to enable suroutine that the F macro uses
-          for (pnt_configPage = &configPage10; pnt_configPage < ((byte *)pnt_configPage + 128); pnt_configPage = (byte *)pnt_configPage + 1)
+          Serial.println((const __FlashStringHelper *)&pageTitles[103]);//special typecasting to enable suroutine that the F macro uses
+          for (pnt_configPage = &configPage9; pnt_configPage < ((byte *)pnt_configPage + 128); pnt_configPage = (byte *)pnt_configPage + 1)
           {
             Serial.println(*((byte *)pnt_configPage));// Displaying byte values of config page 3 up to but not including the first array
           }
           sendComplete = true;
         }
-        else { pnt_configPage = &configPage10; } //Create a pointer to Page 10 in memory
+        else { pnt_configPage = &configPage9; } //Create a pointer to Page 10 in memory
         break;
 
     case warmupPage:
@@ -944,13 +1082,15 @@ void sendPage(bool useChar)
         {
           sendComplete = true;
         }
-        else { pnt_configPage = &configPage11; } //Create a pointer to Page 11 in memory
+        else { pnt_configPage = &configPage10; } //Create a pointer to Page 11 in memory
         break;
 
     default:
+    #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
+    #endif
         //Just set default Values to avoid warnings
-        pnt_configPage = &configPage11;
+        pnt_configPage = &configPage10;
         currentTable = fuelTable;
         sendComplete = true;
         break;
@@ -1069,7 +1209,7 @@ void sendPage(bool useChar)
 
 byte getPageValue(byte page, uint16_t valueAddress)
 {
-  void* pnt_configPage = &configPage1; //Default value is for safety only. Will be changed below if needed.
+  void* pnt_configPage = &configPage2; //Default value is for safety only. Will be changed below if needed.
   uint16_t tempAddress;
   byte returnValue = 0;
 
@@ -1082,7 +1222,7 @@ byte getPageValue(byte page, uint16_t valueAddress)
         break;
 
     case veSetPage:
-        pnt_configPage = &configPage1; //Create a pointer to Page 1 in memory
+        pnt_configPage = &configPage2; //Create a pointer to Page 1 in memory
         returnValue = *((byte *)pnt_configPage + valueAddress);
         break;
 
@@ -1093,7 +1233,7 @@ byte getPageValue(byte page, uint16_t valueAddress)
         break;
 
     case ignSetPage:
-        pnt_configPage = &configPage2; //Create a pointer to Page 2 in memory
+        pnt_configPage = &configPage4; //Create a pointer to Page 2 in memory
         returnValue = *((byte *)pnt_configPage + valueAddress);
         break;
 
@@ -1104,7 +1244,7 @@ byte getPageValue(byte page, uint16_t valueAddress)
         break;
 
     case afrSetPage:
-        pnt_configPage = &configPage3; //Create a pointer to Page 3 in memory
+        pnt_configPage = &configPage6; //Create a pointer to Page 3 in memory
         returnValue = *((byte *)pnt_configPage + valueAddress);
         break;
 
@@ -1119,13 +1259,21 @@ byte getPageValue(byte page, uint16_t valueAddress)
             else if(valueAddress < 72) { returnValue = byte(boostTable.axisX[(valueAddress - 64)] / TABLE_RPM_MULTIPLIER); }
             else if(valueAddress < 80) { returnValue = byte(boostTable.axisY[7 - (valueAddress - 72)]); }
           }
-          else
+          else if(valueAddress < 160)
           {
             tempAddress = valueAddress - 80;
             //VVT table
             if(tempAddress < 64) { returnValue = vvtTable.values[7 - (tempAddress / 8)][tempAddress % 8]; }
             else if(tempAddress < 72) { returnValue = byte(vvtTable.axisX[(tempAddress - 64)] / TABLE_RPM_MULTIPLIER); }
             else if(tempAddress < 80) { returnValue = byte(vvtTable.axisY[7 - (tempAddress - 72)]); }
+          }
+          else
+          {
+            tempAddress = valueAddress - 160;
+            //Staging table
+            if(tempAddress < 64) { returnValue = stagingTable.values[7 - (tempAddress / 8)][tempAddress % 8]; }
+            else if(tempAddress < 72) { returnValue = byte(stagingTable.axisX[(tempAddress - 64)] / TABLE_RPM_MULTIPLIER); }
+            else if(tempAddress < 80) { returnValue = byte(stagingTable.axisY[7 - (tempAddress - 72)] / TABLE_LOAD_MULTIPLIER); }
           }
         }
         break;
@@ -1169,19 +1317,21 @@ byte getPageValue(byte page, uint16_t valueAddress)
         break;
 
     case canbusPage:
-        pnt_configPage = &configPage10; //Create a pointer to Page 10 in memory
+        pnt_configPage = &configPage9; //Create a pointer to Page 10 in memory
         returnValue = *((byte *)pnt_configPage + valueAddress);
         break;
 
     case warmupPage:
-        pnt_configPage = &configPage11; //Create a pointer to Page 11 in memory
+        pnt_configPage = &configPage10; //Create a pointer to Page 11 in memory
         returnValue = *((byte *)pnt_configPage + valueAddress);
         break;
 
     default:
+    #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
+    #endif
         //Just set default Values to avoid warnings
-        pnt_configPage = &configPage11;
+        pnt_configPage = &configPage10;
         break;
   }
   return returnValue;
@@ -1273,7 +1423,8 @@ void receiveCalibration(byte tableID)
 
       //From TS3.x onwards, the EEPROM must be written here as TS restarts immediately after the process completes which is before the EEPROM write completes
       int y = EEPROM_START + (x / 2);
-      EEPROM.update(y, (byte)tempValue);
+      //EEPROM.update(y, (byte)tempValue);
+      storeCalibrationValue(y, (byte)tempValue);
 
       every2nd = false;
       #if defined(CORE_STM32)
@@ -1299,33 +1450,56 @@ Send 256 tooth log entries
 void sendToothLog(bool useChar)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
-  if (toothHistoryIndex >= TOOTH_LOG_SIZE) //Sanity check. Flagging system means this should always be true
+  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
-    unsigned int tempToothHistory[TOOTH_LOG_BUFFER]; //Create a temporary array that will contain a copy of what is in the main toothHistory array
-
-    //Copy the working history into the temporary buffer array. This is done so that, if the history loops whilst the values are being sent over serial, it doesn't affect the values
-    memcpy( (void*)tempToothHistory, (void*)toothHistory, sizeof(tempToothHistory) );
-    toothHistoryIndex = 0; //Reset the history index
-
-    //Loop only needs to go to half the buffer size
-    if (useChar)
-    {
       for (int x = 0; x < TOOTH_LOG_SIZE; x++)
       {
-        Serial.println(tempToothHistory[x]);
+        //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
+        //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
+        Serial.write(toothHistory[toothHistorySerialIndex] >> 24);
+        Serial.write(toothHistory[toothHistorySerialIndex] >> 16);
+        Serial.write(toothHistory[toothHistorySerialIndex] >> 8);
+        Serial.write(toothHistory[toothHistorySerialIndex]);
+
+        if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
+        else { toothHistorySerialIndex++; }
       }
-    }
-    else
-    {
-      for (int x = 0; x < TOOTH_LOG_SIZE; x++)
-      {
-        Serial.write(highByte(tempToothHistory[x]));
-        Serial.write(lowByte(tempToothHistory[x]));
-      }
-      BIT_CLEAR(currentStatus.squirt, BIT_SQUIRT_TOOTHLOG1READY);
-    }
-    toothLogRead = true;
+      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+      cmdPending = false;
   }
+  else { cmdPending = true; } //Mark this request as being incomplete. 
+}
+
+void sendCompositeLog()
+{
+  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
+  {
+      uint32_t runTime = 0;
+      for (int x = 0; x < TOOTH_LOG_SIZE; x++)
+      {
+        runTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
+        
+        //Serial.write(highByte(runTime));
+        //Serial.write(lowByte(runTime));
+        Serial.write(runTime >> 24);
+        Serial.write(runTime >> 16);
+        Serial.write(runTime >> 8);
+        Serial.write(runTime);
+
+        //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
+        //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
+
+        Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates which)
+
+        
+
+        if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
+        else { toothHistorySerialIndex++; }
+      }
+      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+      cmdPending = false;
+  }
+  else { cmdPending = true; } //Mark this request as being incomplete. 
 }
 
 void testComm()

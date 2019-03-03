@@ -3,9 +3,10 @@
 
 int fastMap1023toX(int, int);
 unsigned long percentage(byte, unsigned long);
+inline long powint(int, unsigned int);
+int divs100(long);
+unsigned long divu100(unsigned long);
 
-#define degreesToUS(degrees) (decoderIsLowRes == true ) ? ((degrees * 166666UL) / currentStatus.RPM) : degrees * (unsigned long)timePerDegree
-#define uSToDegrees(time) (((unsigned long)time * currentStatus.RPM) / 166666)
 #define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d)/2)/(d)) : (((n) + (d)/2)/(d)))
 
 //This is a dedicated function that specifically handles the case of mapping 0-1023 values into a 0 to X range

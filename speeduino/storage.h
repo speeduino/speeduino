@@ -1,13 +1,26 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
+#include "globals.h"
+
 void writeAllConfig();
-void writeConfig();
+void writeConfig(byte);
 void loadConfig();
 void loadCalibration();
 void writeCalibration();
 
+//These are utility functions that prevent other files from having to use EEPROM.h directly
+byte readLastBaro();
+void storeLastBaro(byte);
+void storeCalibrationValue(uint16_t, byte);
+byte readEEPROMVersion();
+void storeEEPROMVersion(byte);
+
+#if defined(CORE_STM32) || defined(CORE_TEENSY)
+#define EEPROM_MAX_WRITE_BLOCK 64 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
+#else
 #define EEPROM_MAX_WRITE_BLOCK 30 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
+#endif
 bool eepromWritesPending = false;
 
 /*
@@ -52,8 +65,8 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 | 1441  |2    | X and Y size4                       |
 | 1443  |36   | PAGE 9 MAP4                         |
 | 1479  |6    | X and Y Bins4                       |
-| 1500  |128  | CANBUS config and data (Table 10_)  |
-| 1628  |192  | Table 11 - General settings         |
+| 1500  |192  | CANBUS config and data (Table 10_)  |
+| 1692  |192  | Table 11 - General settings         |
 |                                                   |
 | 2559  |512  | Calibration data (O2)               |
 | 3071  |512  | Calibration data (IAT)              |
@@ -84,42 +97,48 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG5_YBINS  1111
 #define EEPROM_CONFIG6_START  1127
 #define EEPROM_CONFIG6_END    1255
-#define EEPROM_CONFIG8_XSIZE1 1255
-#define EEPROM_CONFIG8_YSIZE1 1256
-#define EEPROM_CONFIG8_MAP1   1257
-#define EEPROM_CONFIG8_XBINS1 1321
-#define EEPROM_CONFIG8_YBINS1 1329
-#define EEPROM_CONFIG8_XSIZE2 1337
-#define EEPROM_CONFIG8_YSIZE2 1338
-#define EEPROM_CONFIG8_MAP2   1339
-#define EEPROM_CONFIG8_XBINS2 1403
-#define EEPROM_CONFIG8_YBINS2 1411
-#define EEPROM_CONFIG8_END    1419
+#define EEPROM_CONFIG7_XSIZE1 1255
+#define EEPROM_CONFIG7_YSIZE1 1256
+#define EEPROM_CONFIG7_MAP1   1257
+#define EEPROM_CONFIG7_XBINS1 1321
+#define EEPROM_CONFIG7_YBINS1 1329
+#define EEPROM_CONFIG7_XSIZE2 1337
+#define EEPROM_CONFIG7_YSIZE2 1338
+#define EEPROM_CONFIG7_MAP2   1339
+#define EEPROM_CONFIG7_XBINS2 1403
+#define EEPROM_CONFIG7_YBINS2 1411
 
-#define EEPROM_CONFIG9_XSIZE1 1419
-#define EEPROM_CONFIG9_YSIZE1 1420
-#define EEPROM_CONFIG9_MAP1   1421
-#define EEPROM_CONFIG9_XBINS1 1457
-#define EEPROM_CONFIG9_YBINS1 1463
-#define EEPROM_CONFIG9_XSIZE2 1469
-#define EEPROM_CONFIG9_YSIZE2 1470
-#define EEPROM_CONFIG9_MAP2   1471
-#define EEPROM_CONFIG9_XBINS2 1507
-#define EEPROM_CONFIG9_YBINS2 1513
-#define EEPROM_CONFIG9_XSIZE3 1519
-#define EEPROM_CONFIG9_YSIZE3 1520
-#define EEPROM_CONFIG9_MAP3   1521
-#define EEPROM_CONFIG9_XBINS3 1557
-#define EEPROM_CONFIG9_YBINS3 1563
-#define EEPROM_CONFIG9_XSIZE4 1569
-#define EEPROM_CONFIG9_YSIZE4 1570
-#define EEPROM_CONFIG9_MAP4   1571
-#define EEPROM_CONFIG9_XBINS4 1607
-#define EEPROM_CONFIG9_YBINS4 1613
-#define EEPROM_CONFIG10_START 1628
-#define EEPROM_CONFIG10_END   1756
-#define EEPROM_CONFIG11_START 1756
-#define EEPROM_CONFIG11_END   1948
+#define EEPROM_CONFIG7_XSIZE3 1419
+#define EEPROM_CONFIG7_YSIZE3 1420
+#define EEPROM_CONFIG7_MAP3   1421
+
+#define EEPROM_CONFIG7_XBINS3 1485
+#define EEPROM_CONFIG7_YBINS3 1493
+#define EEPROM_CONFIG7_END    1501
+#define EEPROM_CONFIG8_XSIZE1 1501
+#define EEPROM_CONFIG8_YSIZE1 1502
+#define EEPROM_CONFIG8_MAP1   1503
+#define EEPROM_CONFIG8_XBINS1 1539
+#define EEPROM_CONFIG8_YBINS1 1545
+#define EEPROM_CONFIG8_XSIZE2 1551
+#define EEPROM_CONFIG8_YSIZE2 1552
+#define EEPROM_CONFIG8_MAP2   1553
+#define EEPROM_CONFIG8_XBINS2 1589
+#define EEPROM_CONFIG8_YBINS2 1595
+#define EEPROM_CONFIG8_XSIZE3 1601
+#define EEPROM_CONFIG8_YSIZE3 1602
+#define EEPROM_CONFIG8_MAP3   1603
+#define EEPROM_CONFIG8_XBINS3 1639
+#define EEPROM_CONFIG8_YBINS3 1645
+#define EEPROM_CONFIG8_XSIZE4 1651
+#define EEPROM_CONFIG8_YSIZE4 1652
+#define EEPROM_CONFIG8_MAP4   1653
+#define EEPROM_CONFIG8_XBINS4 1689
+#define EEPROM_CONFIG8_YBINS4 1695
+#define EEPROM_CONFIG9_START 1710
+#define EEPROM_CONFIG9_END   1902
+#define EEPROM_CONFIG10_START 1902
+#define EEPROM_CONFIG10_END   2094
 
 //Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
 #define EEPROM_LAST_BARO      2558

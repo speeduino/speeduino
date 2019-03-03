@@ -13,23 +13,30 @@ Flood clear mode etc.
 */
 //************************************************************************************************************
 
-#include "corrections.h"
 #include "globals.h"
+#include "corrections.h"
+#include "timers.h"
+#include "maths.h"
+#include "sensors.h"
+#include "src/PID_v1/PID_v1.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
-PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage3.egoKP, configPage3.egoKI, configPage3.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 void initialiseCorrections()
 {
   egoPID.SetMode(AUTOMATIC); //Turn O2 PID on
   currentStatus.flexIgnCorrection = 0;
+  currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
+  AFRnextCycle = 0;
+  currentStatus.knockActive = false;
 }
 
 /*
 correctionsTotal() calls all the other corrections functions and combines their results.
 This is the only function that should be called from anywhere outside the file
 */
-byte correctionsFuel()
+static inline byte correctionsFuel()
 {
   unsigned long sumCorrections = 100;
   byte activeCorrections = 0;
@@ -73,8 +80,8 @@ byte correctionsFuel()
   currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
 
-  bitWrite(currentStatus.squirt, BIT_SQUIRT_DFCO, correctionDFCO());
-  if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) == 1 ) { sumCorrections = 0; }
+  bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
+  if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
   sumCorrections = sumCorrections / powint(100,activeCorrections);
 
@@ -94,7 +101,7 @@ static inline byte correctionWUE()
   {
     //This prevents us doing the 2D lookup if we're already up to temp
     BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP);
-    WUEValue = 100;
+    WUEValue = WUETable.values[9]; //Set the current value to be whatever the final value on the curve is.
   }
   else
   {
@@ -112,7 +119,7 @@ Additional fuel % to be added when the engine is cranking
 static inline byte correctionCranking()
 {
   byte crankingValue = 100;
-  //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage1.crankingPct; }
+  //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage2.crankingPct; }
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
   {
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
@@ -131,10 +138,10 @@ static inline byte correctionASE()
   //Two checks are requiredL:
   //1) Is the negine run time less than the configured ase time
   //2) Make sure we're not still cranking
-  if ( (currentStatus.runSecs < configPage1.aseCount) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
+  if ( (currentStatus.runSecs < configPage2.aseCount) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
   {
     BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-    ASEValue = 100 + configPage1.asePct;
+    ASEValue = 100 + configPage2.asePct;
   }
   else
   {
@@ -148,15 +155,16 @@ static inline byte correctionASE()
 TPS based acceleration enrichment
 Calculates the % change of the throttle over time (%/second) and performs a lookup based on this
 When the enrichment is turned on, it runs at that amount for a fixed period of time (taeTime)
+Note that as the maximum enrichment amount is +255%, the overall return value from this function can be 100+255=355. Hence this function returns a int16_t rather than byte
 */
-static inline byte correctionAccel()
+static inline int16_t correctionAccel()
 {
-  byte accelValue = 100;
+  int16_t accelValue = 100;
   //First, check whether the accel. enrichment is already running
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
   {
     //If it is currently running, check whether it should still be running or whether it's reached it's end time
-    if( micros() >= currentStatus.TAEEndTime )
+    if( micros_safe() >= currentStatus.TAEEndTime )
     {
       //Time to turn enrichment off
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
@@ -186,11 +194,27 @@ static inline byte correctionAccel()
       int rateOfChange = ldiv(1000000, (currentStatus.TPS_time - currentStatus.TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
       currentStatus.tpsDOT = rateOfChange / 10; //The TAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
 
-      if (rateOfChange > configPage1.tpsThresh)
+      if (rateOfChange > configPage2.tpsThresh)
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
-        currentStatus.TAEEndTime = micros() + ((unsigned long)configPage1.taeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
-        accelValue = 100 + table2D_getValue(&taeTable, currentStatus.tpsDOT);
+        currentStatus.TAEEndTime = micros_safe() + ((unsigned long)configPage2.taeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
+        accelValue = table2D_getValue(&taeTable, currentStatus.tpsDOT);
+
+        //Apply the taper to the above
+        //The RPM settings are stored divided by 100:
+        uint16_t trueTaperMin = configPage2.taeTaperMin * 100;
+        uint16_t trueTaperMax = configPage2.taeTaperMax * 100;
+        if (currentStatus.RPM > trueTaperMin)
+        {
+          if(currentStatus.RPM > trueTaperMax) { accelValue = 0; } //RPM is beyond taper max limit, so accel enrich is turned off
+          else 
+          {
+            int16_t taperRange = trueTaperMax - trueTaperMin;
+            int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100) / taperRange; //The percentage of the way through the RPM taper range
+            accelValue = percentage((100-taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
+          }
+        }
+        accelValue = 100 + accelValue; //Add the 100 normalisation to the calculated amount
       }
     }
   }
@@ -209,7 +233,7 @@ static inline byte correctionFloodClear()
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
   {
     //Engine is currently cranking, check what the TPS is
-    if(currentStatus.TPS >= configPage2.floodClear)
+    if(currentStatus.TPS >= configPage4.floodClear)
     {
       //Engine is cranking and TPS is above threshold. Cut all fuel
       floodValue = 0;
@@ -251,7 +275,7 @@ This simple check applies the extra fuel if we're currently launching
 static inline byte correctionLaunch()
 {
   byte launchValue = 100;
-  if(currentStatus.launchingHard || currentStatus.launchingSoft) { launchValue = (100 + configPage3.lnchFuelAdd); }
+  if(currentStatus.launchingHard || currentStatus.launchingSoft) { launchValue = (100 + configPage6.lnchFuelAdd); }
 
   return launchValue;
 }
@@ -262,10 +286,10 @@ static inline byte correctionLaunch()
 static inline bool correctionDFCO()
 {
   bool DFCOValue = false;
-  if ( configPage1.dfcoEnabled == 1 )
+  if ( configPage2.dfcoEnabled == 1 )
   {
-    if ( bitRead(currentStatus.squirt, BIT_SQUIRT_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage2.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
-    else { DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage2.dfcoRPM * 10) + configPage2.dfcoHyster) ) && ( currentStatus.TPS < configPage2.dfcoTPSThresh ); }
+    if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); }
+    else { DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); }
   }
   return DFCOValue;
 }
@@ -277,10 +301,10 @@ static inline bool correctionDFCO()
 static inline byte correctionFlex()
 {
   byte flexValue = 100;
-  if(configPage1.flexEnabled == 1)
+
+  if (configPage2.flexEnabled == 1)
   {
-    byte flexRange = configPage1.flexFuelHigh - configPage1.flexFuelLow;
-    flexValue = percentage(currentStatus.ethanolPct, flexRange) + 100;
+    flexValue = table2D_getValue(&flexFuelTable, currentStatus.ethanolPct);
   }
   return flexValue;
 }
@@ -302,53 +326,55 @@ PID (Best suited to wideband sensors):
 static inline byte correctionAFRClosedLoop()
 {
   byte AFRValue = 100;
-  if( configPage3.egoType > 0 ) //egoType of 0 means no O2 sensor
+  if( configPage6.egoType > 0 ) //egoType of 0 means no O2 sensor
   {
     currentStatus.afrTarget = currentStatus.O2; //Catch all incase the below doesn't run. This prevents the Include AFR option from doing crazy things if the AFR target conditions aren't met. This value is changed again below if all conditions are met.
 
-    //Check the ignition count to see whether the next step is required
-    //This if statement is the equivalent of ( (ignitionCount % configPage3.egoCount) == 0 ) but without the expensive modulus operation. ie It results in True every <egoCount> ignition loops. Note that it only works for power of two vlaues for egoCount
-    //if( (ignitionCount & (configPage3.egoCount - 1)) == 1 )
-    {
-      //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
-      byte yValue;
-      if (configPage1.algorithm == 0) { yValue = currentStatus.MAP; }
-      else  { yValue = currentStatus.TPS; }
-      currentStatus.afrTarget = get3DTableValue(&afrTable, yValue, currentStatus.RPM); //Perform the target lookup
+    //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
+    //Note that this should only run after the sensor warmup delay necause it is used within the Include AFR option
+    if(currentStatus.runSecs > configPage6.ego_sdelay) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
 
-      //Check all other requirements for closed loop adjustments
-      if( (currentStatus.coolant > (int)(configPage3.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage3.egoRPM * 100)) && (currentStatus.TPS < configPage3.egoTPSMax) && (currentStatus.O2 < configPage3.ego_max) && (currentStatus.O2 > configPage3.ego_min) && (currentStatus.runSecs > configPage3.ego_sdelay) )
+    //Check all other requirements for closed loop adjustments
+    if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) )
+    {
+      AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
+
+      if(ignitionCount >= AFRnextCycle)
       {
+        AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
+
         //Check which algorithm is used, simple or PID
-        if (configPage3.egoAlgorithm == 0)
+        if (configPage6.egoAlgorithm == EGO_ALGORITHM_SIMPLE)
         {
           //*************************************************************************************************************************************
           //Simple algorithm
           if(currentStatus.O2 > currentStatus.afrTarget)
           {
             //Running lean
-            if(currentStatus.egoCorrection < (100 + configPage3.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
+            if(currentStatus.egoCorrection < (100 + configPage6.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
             {
-              if(currentStatus.egoCorrection >= 100) { AFRValue = (currentStatus.egoCorrection + 1); } //Increase the fueling by 1%
-              else { AFRValue = 100; } //This means that the last reading had been rich, so simply return back to no adjustment (100%)
+              AFRValue = (currentStatus.egoCorrection + 1); //Increase the fueling by 1%
             }
-            else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return then again
+            else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return that again
           }
-          else
+          else if(currentStatus.O2 < currentStatus.afrTarget)
+          {
             //Running Rich
-            if(currentStatus.egoCorrection > (100 - configPage3.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
+            if(currentStatus.egoCorrection > (100 - configPage6.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
             {
-              if(currentStatus.egoCorrection <= 100) { AFRValue = (currentStatus.egoCorrection - 1); } //Increase the fueling by 1%
-              else { AFRValue = 100; } //This means that the last reading had been lean, so simply return back to no adjustment (100%)
+              AFRValue = (currentStatus.egoCorrection - 1); //Decrease the fueling by 1%
             }
-            else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return then again
+            else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return that again
+          }
+          else { AFRValue = currentStatus.egoCorrection; } //Means we're already right on target
+
         }
-        else if(configPage3.egoAlgorithm == 2)
+        else if(configPage6.egoAlgorithm == EGO_ALGORITHM_PID)
         {
           //*************************************************************************************************************************************
           //PID algorithm
-          egoPID.SetOutputLimits((long)(-configPage3.egoLimit), (long)(configPage3.egoLimit)); //Set the limits again, just incase the user has changed them since the last loop. Note that these are sent to the PID library as (Eg:) -15 and +15
-          egoPID.SetTunings(configPage3.egoKP, configPage3.egoKI, configPage3.egoKD); //Set the PID values again, just incase the user has changed them since the last loop
+          egoPID.SetOutputLimits((long)(-configPage6.egoLimit), (long)(configPage6.egoLimit)); //Set the limits again, just incase the user has changed them since the last loop. Note that these are sent to the PID library as (Eg:) -15 and +15
+          egoPID.SetTunings(configPage6.egoKP, configPage6.egoKI, configPage6.egoKD); //Set the PID values again, just incase the user has changed them since the last loop
           PID_O2 = (long)(currentStatus.O2);
           PID_AFRTarget = (long)(currentStatus.afrTarget);
 
@@ -357,9 +383,8 @@ static inline byte correctionAFRClosedLoop()
           AFRValue = 100 + PID_output;
         }
         else { AFRValue = 100; } // Occurs if the egoAlgorithm is set to 0 (No Correction)
-
-      } //Multi variable check
-    } //ignitionCount
+      } //Ignition count check
+    } //Multi variable check
   } //egoType
 
   return AFRValue; //Catch all (Includes when AFR target = current AFR
@@ -373,8 +398,10 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionFlexTiming(base_advance);
   advance = correctionIATretard(advance);
   advance = correctionSoftRevLimit(advance);
+  advance = correctionNitrous(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
+  advance = correctionKnock(advance);
 
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
@@ -385,28 +412,24 @@ int8_t correctionsIgn(int8_t base_advance)
 
 static inline int8_t correctionFixedTiming(int8_t advance)
 {
-  byte ignFixValue = advance;
-  if (configPage2.FixAng != 0) { ignFixValue = configPage2.FixAng; } //Check whether the user has set a fixed timing angle
+  int8_t ignFixValue = advance;
+  if (configPage2.fixAngEnable == 1) { ignFixValue = configPage4.FixAng; } //Check whether the user has set a fixed timing angle
   return ignFixValue;
 }
 
 static inline int8_t correctionCrankingFixedTiming(int8_t advance)
 {
   byte ignCrankFixValue = advance;
-  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { ignCrankFixValue = configPage2.CrankAng; } //Use the fixed cranking ignition angle
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { ignCrankFixValue = configPage4.CrankAng; } //Use the fixed cranking ignition angle
   return ignCrankFixValue;
 }
 
 static inline int8_t correctionFlexTiming(int8_t advance)
 {
   byte ignFlexValue = advance;
-  if( configPage1.flexEnabled == 1 ) //Check for flex being enabled
+  if( configPage2.flexEnabled == 1 ) //Check for flex being enabled
   {
-    byte flexRange = configPage1.flexAdvHigh - configPage1.flexAdvLow;
-
-    if (currentStatus.ethanolPct != 0) { currentStatus.flexIgnCorrection = percentage(currentStatus.ethanolPct, flexRange); }
-    else { currentStatus.flexIgnCorrection = 0; }
-
+    currentStatus.flexIgnCorrection = (int8_t)table2D_getValue(&flexAdvTable, currentStatus.ethanolPct); //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here. 
     ignFlexValue = advance + currentStatus.flexIgnCorrection;
   }
   return ignFlexValue;
@@ -428,20 +451,40 @@ static inline int8_t correctionSoftRevLimit(int8_t advance)
 {
   byte ignSoftRevValue = advance;
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
-  if (currentStatus.RPM > ((unsigned int)(configPage2.SoftRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); ignSoftRevValue = configPage2.SoftLimRetard;  } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+  if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); ignSoftRevValue = configPage4.SoftLimRetard;  } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
 
   return ignSoftRevValue;
+}
+
+static inline int8_t correctionNitrous(int8_t advance)
+{
+  byte ignNitrous = advance;
+  //Check if nitrous is currently active
+  if(configPage10.n2o_enable > 0)
+  {
+    //Check which stage is running (if any)
+    if( currentStatus.nitrous_status == NITROUS_STAGE1 )
+    {
+      ignNitrous -= configPage10.n2o_stage1_retard;
+    }
+    if( currentStatus.nitrous_status == NITROUS_STAGE2 )
+    {
+      ignNitrous -= configPage10.n2o_stage2_retard;
+    }
+  }
+
+  return ignNitrous;
 }
 
 static inline int8_t correctionSoftLaunch(int8_t advance)
 {
   byte ignSoftLaunchValue = advance;
   //SoftCut rev limit for 2-step launch control.
-  if (configPage3.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage3.lnchSoftLim) * 100)) )
+  if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchSoftLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) )
   {
     currentStatus.launchingSoft = true;
     BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH);
-    ignSoftLaunchValue = configPage3.lnchRetard;
+    ignSoftLaunchValue = configPage6.lnchRetard;
   }
   else
   {
@@ -452,18 +495,53 @@ static inline int8_t correctionSoftLaunch(int8_t advance)
   return ignSoftLaunchValue;
 }
 
-static inline int8_t correctionSoftFlatShift(int8_t  advance)
+static inline int8_t correctionSoftFlatShift(int8_t advance)
 {
   byte ignSoftFlatValue = advance;
 
-  if(configPage3.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage3.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage3.flatSSoftWin) ) )
+  if(configPage6.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage6.flatSSoftWin) ) )
   {
     BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
-    ignSoftFlatValue = configPage3.flatSRetard;
+    ignSoftFlatValue = configPage6.flatSRetard;
   }
   else { BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS); }
 
   return ignSoftFlatValue;
+}
+
+static inline int8_t correctionKnock(int8_t advance)
+{
+  byte knockRetard = 0;
+
+  //First check is to do the window calculations (ASsuming knock is enabled)
+  if( configPage10.knock_mode != KNOCK_MODE_OFF )
+  {
+    knockWindowMin = table2D_getValue(&knockWindowStartTable, currentStatus.RPM);
+    knockWindowMax = knockWindowMin + table2D_getValue(&knockWindowDurationTable, currentStatus.RPM);
+  }
+
+
+  if( (configPage10.knock_mode == KNOCK_MODE_DIGITAL)  )
+  {
+    //
+    if(knockCounter > configPage10.knock_count)
+    {
+      if(currentStatus.knockActive == true)
+      {
+        //Knock retard is currently 
+      }
+      else
+      {
+        //Knock needs to be activated
+        lastKnockCount = knockCounter;
+        knockStartTime = micros();
+        knockRetard = configPage10.knock_firstStep;
+      }
+    }
+
+  }
+
+  return advance - knockRetard;
 }
 
 //******************************** DWELL CORRECTIONS ********************************
@@ -475,19 +553,19 @@ uint16_t correctionsDwell(uint16_t dwell)
   if (currentStatus.dwellCorrection != 100) { tempDwell = divs100(dwell) * currentStatus.dwellCorrection; }
 
   //Dwell limiter
-  uint16_t dwellPerRevolution = tempDwell + (uint16_t)(configPage2.sparkDur * 100); //Spark duration is in mS*10. Multiple it by 100 to get spark duration in uS
+  uint16_t dwellPerRevolution = tempDwell + (uint16_t)(configPage4.sparkDur * 100); //Spark duration is in mS*10. Multiple it by 100 to get spark duration in uS
   int8_t pulsesPerRevolution = 1;
   //Single channel spark mode is the only time there will be more than 1 pulse per revolution on any given output
-  if( ( (configPage2.sparkMode == IGN_MODE_SINGLE) || (configPage2.sparkMode == IGN_MODE_ROTARY) ) && (configPage1.nCylinders > 1) ) //No point in running this for 1 cylinder engines
+  if( ( (configPage4.sparkMode == IGN_MODE_SINGLE) || (configPage4.sparkMode == IGN_MODE_ROTARY) ) && (configPage2.nCylinders > 1) ) //No point in running this for 1 cylinder engines
   {
-    pulsesPerRevolution = (configPage1.nCylinders >> 1);
+    pulsesPerRevolution = (configPage2.nCylinders >> 1);
     dwellPerRevolution = dwellPerRevolution * pulsesPerRevolution;
   }
 
   if(dwellPerRevolution > revolutionTime)
   {
     //Possibly need some method of reducing spark duration here as well, but this is a start
-    tempDwell = (revolutionTime / pulsesPerRevolution) - (configPage2.sparkDur * 100);
+    tempDwell = (revolutionTime / pulsesPerRevolution) - (configPage4.sparkDur * 100);
   }
   return tempDwell;
 }
