@@ -76,6 +76,6 @@ static inline unsigned long micros_safe()
 
   return newMicros;
 } 
-#endif
+#endif //TIMER5_MICROS
 
-#endif
+#endif //CORE_AVR
