@@ -20,8 +20,8 @@
   #define BOARD_H "board_teensy35.h"
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
-  #define CORE_STM32
-  #define BOARD_H "board_stm32.h"
+  #define CORE_STM32_GENERIC
+  #define BOARD_H "board_stm32_generic.h"
   #ifndef word
     #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
   #endif
@@ -32,7 +32,9 @@
       #define LED_BUILTIN PB1 //Maple Mini
     #endif
   #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
-    #define BOARD_H "board_stm32F407VE.h"
+    //Need to identify the official core better
+    #define CORE_STM32_OFFICIAL
+    #define BOARD_H "board_stm32_official.h"
     #define BOARD_DIGITAL_GPIO_PINS 80
     #define BOARD_NR_GPIO_PINS 80
 
@@ -55,8 +57,10 @@
     inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
   #else //libmaple core aka STM32DUINO
     //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
-    #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) )
-    #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) )
+    #ifndef portOutputRegister
+      #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) )
+      #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) )
+    #endif
   #endif
 #elif defined(__SAMD21G18A__)
   #define BOARD_H "board_samd21.h"

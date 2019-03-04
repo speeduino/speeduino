@@ -1,22 +1,23 @@
 #ifndef STM32F407VE_H
 #define STM32F407VE_H
-#if defined(ARDUINO_BLACK_F407VE)
+#if defined(CORE_STM32_OFFICIAL)
 
+#include <timer.h>
 /*
 ***********************************************************************************************************
 * General
 */
-  #define PORT_TYPE uint32_t
-  #define PINMAKS_TYPE uint32_t
-  #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
-  
-  #define USE_SERIAL3
-  void initBoard();
-  uint16_t freeRam();
-//  extern void oneMSIntervalIRQ(stimer_t *Timer);
-  
-  extern void EmptyIRQCallback(stimer_t *Timer, uint32_t channel);
- /*
+#define PORT_TYPE uint32_t
+#define PINMASK_TYPE uint32_t
+#define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
+
+#define USE_SERIAL3
+void initBoard();
+uint16_t freeRam();
+extern void oneMSIntervalIRQ(stimer_t *Timer);
+extern void EmptyIRQCallback(stimer_t *Timer, uint32_t channel);
+
+/*
 ***********************************************************************************************************
 * Schedules
 */

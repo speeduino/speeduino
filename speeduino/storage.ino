@@ -12,7 +12,7 @@ A full copy of the license may be found in the projects root directory
   #include "src/FlashStorage/FlashAsEEPROM.h"
 #elif defined(ARDUINO_BLACK_F407VE)
   #include "src/BackupSram/BackupSramAsEEPROM.h"
-#elif defined(CORE_STM32)
+#elif defined(USE_FRAM)
   #include <Fram.h>
 #else
   #include <EEPROM.h>
