@@ -20,8 +20,6 @@
   #define BOARD_H "board_teensy35.h"
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
-  #define CORE_STM32_GENERIC
-  #define BOARD_H "board_stm32_generic.h"
   #ifndef word
     #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
   #endif
@@ -32,9 +30,6 @@
       #define LED_BUILTIN PB1 //Maple Mini
     #endif
   #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
-    //Need to identify the official core better
-    #define CORE_STM32_OFFICIAL
-    #define BOARD_H "board_stm32_official.h"
     #define BOARD_DIGITAL_GPIO_PINS 80
     #define BOARD_NR_GPIO_PINS 80
 
@@ -43,6 +38,15 @@
     #undef IGN_CHANNELS
     #define INJ_CHANNELS 8
     #define IGN_CHANNELS 8
+  #endif
+
+  #if defined(CORE_STM32_OFFICIAL)
+    //Need to identify the official core better
+    #define CORE_STM32_OFFICIAL
+    #define BOARD_H "board_stm32_official.h"
+  #else
+    #define CORE_STM32_GENERIC
+    #define BOARD_H "board_stm32_generic.h"
   #endif
 
   //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
