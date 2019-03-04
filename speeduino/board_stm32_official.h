@@ -3,6 +3,7 @@
 #if defined(CORE_STM32_OFFICIAL)
 
 #include <timer.h>
+#include <stm32f4xx_ll_tim.h>
 /*
 ***********************************************************************************************************
 * General
@@ -10,6 +11,8 @@
 #define PORT_TYPE uint32_t
 #define PINMASK_TYPE uint32_t
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
+#define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
+#define digitalPinToInterrupt(p) (p)
 
 #define USE_SERIAL3
 void initBoard();

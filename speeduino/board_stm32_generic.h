@@ -11,6 +11,7 @@
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   #ifndef USE_SERIAL3
   #define USE_SERIAL3
+  #define EEPROM_LIB_H <Fram.h>
   #endif
   void initBoard();
   uint16_t freeRam();
