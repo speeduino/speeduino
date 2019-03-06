@@ -65,6 +65,11 @@ void initialiseSchedulers()
     ignitionSchedule7.Status = OFF;
     ignitionSchedule8.Status = OFF;
 
+    IGN1_TIMER_ENABLE();
+    IGN2_TIMER_ENABLE();
+    IGN3_TIMER_ENABLE();
+    IGN4_TIMER_ENABLE();
+
     ignitionSchedule1.schedulesSet = 0;
     ignitionSchedule2.schedulesSet = 0;
     ignitionSchedule3.schedulesSet = 0;
@@ -1009,6 +1014,11 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
       ignitionCount += 1; //Increment the igintion counter
       IGN1_TIMER_DISABLE();
     }
+    else if (ignitionSchedule1.Status == OFF)
+    {
+      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
+      IGN1_TIMER_DISABLE();
+    }
   }
 #endif
 
@@ -1034,6 +1044,11 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
       ignitionSchedule2.schedulesSet = 0;
       ignitionSchedule2.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
+      IGN2_TIMER_DISABLE();
+    }
+    else if (ignitionSchedule2.Status == OFF)
+    {
+      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN2_TIMER_DISABLE();
     }
   }
@@ -1073,6 +1088,11 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
        }
        else { IGN3_TIMER_DISABLE(); }
     }
+    else if (ignitionSchedule3.Status == OFF)
+    {
+      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
+      IGN3_TIMER_DISABLE();
+    }
   }
 #endif
 
@@ -1108,6 +1128,11 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
          ignitionSchedule4.hasNextSchedule = false;
        }
        else { IGN4_TIMER_DISABLE(); }
+    }
+    else if (ignitionSchedule4.Status == OFF)
+    {
+      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
+      IGN4_TIMER_DISABLE();
     }
   }
 #endif

@@ -208,7 +208,7 @@ For each ignition channel, a check is made whether we're at the relevant tooth a
 Only if both these conditions are met will the schedule be updated with the latest timing information.
 If it's the correct tooth, but the schedule is not yet started, calculate and an end compare value (This situation occurs when both the start and end of the ignition pulse happen after the end tooth, but before the next tooth)
 */
-#define MIN_CYCLES_FOR_ENDCOMPARE 5
+#define MIN_CYCLES_FOR_ENDCOMPARE 6
 #define checkPerToothTiming(crankAngle, currentTooth) \
 { \
   if (fixedCrankingOverride == 0 && currentStatus.RPM > 0) \

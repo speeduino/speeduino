@@ -66,7 +66,8 @@ void initBoard()
     //TCCR5B = (1 << CS12);   //Timer5 Control Reg B: Timer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
     //TCCR5B = 0x03;         //aka Divisor = 64 = 490.1Hz
     TCCR5B = (1 << CS11) | (1 << CS10); //Timer5 Control Reg B: Timer Prescaler set to 64. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
-    TIFR5  = 0xFF;
+    TIFR5 |= (1 << OCF5A) | (1<<OCF5B) | (1<<OCF5C);
+    //0xFF;
 
     #if defined(TIMER5_MICROS)
       TIMSK5 |= (1 << TOIE5); //Enable the timer5 overflow interrupt (See timers.ino for ISR)
