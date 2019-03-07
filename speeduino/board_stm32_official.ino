@@ -69,7 +69,8 @@
     if(idle_pwm_max_count > 0) { attachIntHandleOC(&HardwareTimers_1, idleInterrupt, 4, 0);} //on first flash the configPage4.iacAlgorithm is invalid
     //Timer1.setMode(4, TIMER_OUTPUT_COMPARE);
     //timer_set_mode(TIMER1, 4, TIMER_OUTPUT_COMPARE;
-    //if(idle_pwm_max_count > 0) { Timer1.attachInterrupt(4, idleInterrupt);} //on first flash the configPage4.iacAlgorithm is invalid
+    //on first flash the configPage4.iacAlgorithm is invalid:
+    //if(idle_pwm_max_count > 0) { Timer1.attachInterrupt(4, idleInterrupt);} 
     //Timer1.resume();
 
 
@@ -77,9 +78,12 @@
     ***********************************************************************************************************
     * Timers
     */
-    //#if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
-        TimerHandleInit(&HardwareTimers_8, 1000, 168);
-        attachIntHandle(&HardwareTimers_8, oneMSIntervalIRQ);
+    #if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
+      TimerHandleInit(&HardwareTimers_8, 1000, 168);
+      attachIntHandle(&HardwareTimers_8, oneMSIntervalIRQ);
+    #else
+      //Should do something here for other boards
+    #endif
     pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
 
     /*

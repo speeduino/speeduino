@@ -211,7 +211,7 @@ If it's the correct tooth, but the schedule is not yet started, calculate and an
 #define MIN_CYCLES_FOR_ENDCOMPARE 6
 #define checkPerToothTiming(crankAngle, currentTooth) \
 { \
-  if (fixedCrankingOverride == 0 && currentStatus.RPM > 0) \
+  if ( (fixedCrankingOverride == 0) && (currentStatus.RPM > 0) ) \
   { \
     if ( (currentTooth == ignition1EndTooth) ) \
     { \
@@ -372,7 +372,7 @@ void triggerSec_missingTooth()
     {
       targetGap2 = (3 * (toothLastSecToothTime - toothLastMinusOneSecToothTime)) >> 1; //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
       toothLastMinusOneSecToothTime = toothLastSecToothTime;
-      if ( ( curGap2 >= targetGap2 ) || ( secondaryToothCount > 3 ) )
+      if ( (curGap2 >= targetGap2) || (secondaryToothCount > 3) )
       {
         secondaryToothCount = 1;
         revolutionOne = 1; //Sequential revolution reset
@@ -397,7 +397,7 @@ void triggerSec_missingTooth()
 uint16_t getRPM_missingTooth()
 {
   uint16_t tempRPM = 0;
-  if( (currentStatus.RPM < currentStatus.crankRPM) )
+  if( currentStatus.RPM < currentStatus.crankRPM )
   {
     if(toothCurrentCount != 1)
     {
