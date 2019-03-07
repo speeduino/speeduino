@@ -2,8 +2,6 @@
 #if defined(CORE_STM32_OFFICIAL) && defined(SRAM_AS_EEPROM)
 #include "BackupSramAsEEPROM.h"
 
-#include "libmaple/rccF4.h"
-
     BackupSramAsEEPROM::BackupSramAsEEPROM(){
           //Enable the power interface clock
           RCC->APB1ENR |= RCC_APB1ENR_PWREN;
