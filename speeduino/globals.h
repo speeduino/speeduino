@@ -3,23 +3,27 @@
 #include <Arduino.h>
 #include "table.h"
 
-//These are configuration options for changing around the outputs that are used. THese are just the defaults and may be changed in the sections below based on the hardware in use. 
-#define INJ_CHANNELS 4
-#define IGN_CHANNELS 5
-
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define BOARD_DIGITAL_GPIO_PINS 54
   #define BOARD_NR_GPIO_PINS 62
   #define LED_BUILTIN 13
   #define CORE_AVR
   #define BOARD_H "board_avr2560.h"
+  #define INJ_CHANNELS 4
+  #define IGN_CHANNELS 5
 
   //#define TIMER5_MICROS
 
 #elif defined(CORE_TEENSY)
   #define BOARD_H "board_teensy35.h"
+  #define INJ_CHANNELS 8
+  #define IGN_CHANNELS 8
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
+  //These should be updated to 8 later, but there's bits missing currently
+  #define INJ_CHANNELS 4
+  #define IGN_CHANNELS 5
+
   #ifndef word
     #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
   #endif
@@ -32,17 +36,11 @@
   #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
     #define BOARD_DIGITAL_GPIO_PINS 80
     #define BOARD_NR_GPIO_PINS 80
-
-    //These boards always make 8/8 channels available
-    #undef INJ_CHANNELS
-    #undef IGN_CHANNELS
-    #define INJ_CHANNELS 8
-    #define IGN_CHANNELS 8
   #endif
 
   #if defined(CORE_STM32_OFFICIAL)
     //Need to identify the official core better
-    #define CORE_STM32_OFFICIAL
+    //#define CORE_STM32_OFFICIAL
     #define BOARD_H "board_stm32_official.h"
   #else
     #define CORE_STM32_GENERIC
@@ -334,8 +332,10 @@ volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 volatile unsigned int toothHistoryIndex = 0;
 volatile byte toothHistorySerialIndex = 0;
-byte primaryTriggerEdge;
-byte secondaryTriggerEdge;
+
+  byte primaryTriggerEdge;
+  byte secondaryTriggerEdge;
+
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360;
 int CRANK_ANGLE_MAX_INJ = 360; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential

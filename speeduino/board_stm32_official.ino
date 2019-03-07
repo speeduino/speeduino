@@ -15,7 +15,6 @@
   stimer_t HardwareTimers_4;
   stimer_t HardwareTimers_5;
   stimer_t HardwareTimers_8;
-  #define LED_BUILTIN PA7
   //These should really be in the stm32GENERIC libs, but for somereason they only have timers 1-4
   //    #include <stm32_TIM_variant_11.h>
   //      #include "src/HardwareTimers/HardwareTimer.h"
@@ -78,15 +77,9 @@
     ***********************************************************************************************************
     * Timers
     */
-    #if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
+    //#if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
         TimerHandleInit(&HardwareTimers_8, 1000, 168);
         attachIntHandle(&HardwareTimers_8, oneMSIntervalIRQ);
-    #else
-        Timer4.setPeriod(1000);  // Set up period
-        Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
-        Timer4.attachInterrupt(1, oneMSInterval);
-        Timer4.resume(); //Start Timer
-    #endif
     pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
 
     /*

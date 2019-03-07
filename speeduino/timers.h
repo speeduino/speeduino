@@ -32,7 +32,7 @@ volatile uint16_t last250msLoopCount = 1000; //Set to effectively random number 
 #if defined (CORE_TEENSY)
   IntervalTimer lowResTimer;
   void oneMSInterval();
-#elif defined(CORE_STM32)
+#elif defined(CORE_STM32_OFFICIAL) || defined(CORE_STM32_GENERIC)
   void oneMSInterval();
 #endif
 void initialiseTimers();
