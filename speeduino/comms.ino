@@ -604,8 +604,8 @@ void sendValuesLegacy()
   bytestosend -= Serial.write(currentStatus.engine);
   bytestosend -= Serial.write(currentStatus.afrTarget);
   bytestosend -= Serial.write(currentStatus.afrTarget); // send twice so afrtgt1 == afrtgt2
-  bytestosend -= Serial.write(255); // send dummy data as we don't have wbo2_en1
-  bytestosend -= Serial.write(255); // send dummy data as we don't have wbo2_en2
+  bytestosend -= Serial.write(99); // send dummy data as we don't have wbo2_en1
+  bytestosend -= Serial.write(99); // send dummy data as we don't have wbo2_en2
 
   temp = currentStatus.baro * 10;
   bytestosend -= Serial.write(temp>>8);
@@ -634,10 +634,67 @@ void sendValuesLegacy()
   bytestosend -= Serial.write(currentStatus.O2_2>>8);
   bytestosend -= Serial.write(currentStatus.O2_2);
 
+  bytestosend -= Serial.write(99); // knock
+  bytestosend -= Serial.write(99); // knock
+
+  temp = currentStatus.egoCorrection * 10;
+  bytestosend -= Serial.write(temp>>8); // egocor1
+  bytestosend -= Serial.write(temp); // egocor1
+  bytestosend -= Serial.write(temp>>8); // egocor2
+  bytestosend -= Serial.write(temp); // egocor2
+
+  temp = currentStatus.iatCorrection * 10;
+  bytestosend -= Serial.write(temp>>8); // aircor
+  bytestosend -= Serial.write(temp); // aircor
+
+  temp = currentStatus.wueCorrection * 10;
+  bytestosend -= Serial.write(temp>>8); // warmcor
+  bytestosend -= Serial.write(temp); // warmcor
+
+  bytestosend -= Serial.write(99); // accelEnrich
+  bytestosend -= Serial.write(99); // accelEnrich
+  bytestosend -= Serial.write(99); // tpsFuelCut
+  bytestosend -= Serial.write(99); // tpsFuelCut
+  bytestosend -= Serial.write(99); // baroCorrection
+  bytestosend -= Serial.write(99); // baroCorrection
+
+  temp = currentStatus.corrections * 10;
+  bytestosend -= Serial.write(temp>>8); // gammaEnrich
+  bytestosend -= Serial.write(temp); // gammaEnrich
+
+  temp = currentStatus.VE * 10;
+  bytestosend -= Serial.write(temp>>8); // ve1
+  bytestosend -= Serial.write(temp); // ve1
+  bytestosend -= Serial.write(temp>>8); // ve2
+  bytestosend -= Serial.write(temp); // ve2
+
+  bytestosend -= Serial.write(99); // iacstep
+  bytestosend -= Serial.write(99); // iacstep
+  bytestosend -= Serial.write(99); // cold_adv_deg
+  bytestosend -= Serial.write(99); // cold_adv_deg
+
+  temp = currentStatus.tpsDOT * 10;
+  bytestosend -= Serial.write(temp>>8); // TPSdot
+  bytestosend -= Serial.write(temp); // TPSdot
+
+  bytestosend -= Serial.write(99); // MAPdot
+  bytestosend -= Serial.write(99); // MAPdot
+
+  temp = currentStatus.dwell * 10;
+  bytestosend -= Serial.write(temp>>8); // dwell
+  bytestosend -= Serial.write(temp); // dwell
+
+  bytestosend -= Serial.write(99); // MAF
+  bytestosend -= Serial.write(99); // MAF
+  bytestosend -= Serial.write(currentStatus.fuelLoad*10); // fuelload
+  bytestosend -= Serial.write(99); // fuelcor
+  bytestosend -= Serial.write(99); // fuelcor
+  bytestosend -= Serial.write(99); // portStatus
+
   for(int i = 0; i < bytestosend; i++)
   {
     // send dummy data to fill remote's buffer
-    Serial.write(i+1);
+    Serial.write(99);
   }
 }
 
