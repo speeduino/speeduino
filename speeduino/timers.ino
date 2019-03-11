@@ -62,6 +62,24 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil4Charge(); ignitionSchedule4.Status = OFF; } }
   if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil5Charge(); ignitionSchedule5.Status = OFF; } }
 
+  //Tacho output check
+  if(tachoOutputFlag == READY)
+  {
+    TACHO_PULSE_LOW();
+    //ms_counter is cast down to a byte as the tacho duration can only be in the range of 0-5, so no extra 
+    tachoEndTime = (uint8_t)ms_counter + configPage2.tachoDuration;
+    tachoOutputFlag = ACTIVE;
+  }
+  else if(tachoOutputFlag == ACTIVE)
+  {
+    //
+    if((uint8_t)ms_counter > tachoEndTime)
+    {
+      TACHO_PULSE_HIGH();
+      tachoOutputFlag = DEACTIVE;
+    }
+  }
+  
 
 
   //30Hz loop

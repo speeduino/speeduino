@@ -460,7 +460,8 @@ struct config2 {
   byte pinMapping; // The board / ping mapping to be used
   byte tachoPin : 6; //Custom pin setting for tacho output
   byte tachoDiv : 2; //Whether to change the tacho speed
-  byte unused2_17;
+  byte tachoDuration : 3; //The duration of the tacho pulse in mS
+  byte unused2_17d : 5;
   byte unused2_18;
   byte tpsThresh;
   byte taeTime;
