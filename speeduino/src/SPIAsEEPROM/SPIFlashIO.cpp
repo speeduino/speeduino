@@ -596,6 +596,7 @@
      }
 
    }
+   return false; //Failsafe
  }
 
  //Troubleshooting function. Called when #ifdef RUNDIAGNOSTIC is uncommented at the top of this file.

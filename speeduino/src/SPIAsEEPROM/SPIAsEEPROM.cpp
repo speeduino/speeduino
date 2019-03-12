@@ -6,9 +6,10 @@
 
 #include "SPIAsEEPROM.h"
 #include "SPIMemory.h"
+#include <SPI.h>
 
-SPIFlash flash;                   
-//SPIFlash flash(SS1, &SPI1);       //Use this constructor if using an SPI bus other than the default SPI. Only works with chips with more than one hardware SPI bus
+//SPIFlash flash;                   
+SPIFlash flash(SS1, &SPI);       //Use this constructor if using an SPI bus other than the default SPI. Only works with chips with more than one hardware SPI bus
 
 SPIAsEEPROM::SPIAsEEPROM()
 {

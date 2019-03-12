@@ -28,6 +28,7 @@ void initBoard();
 uint16_t freeRam();
 extern void oneMSIntervalIRQ(stimer_t *Timer);
 extern void EmptyIRQCallback(stimer_t *Timer, uint32_t channel);
+extern "C" char* sbrk(int incr);
 
 /*
 ***********************************************************************************************************

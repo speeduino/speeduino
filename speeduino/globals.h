@@ -410,8 +410,8 @@ struct statuses {
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous
   volatile unsigned int loopsPerSecond;
-  boolean launchingSoft; //True when in launch control soft limit mode
-  boolean launchingHard; //True when in launch control hard limit mode
+  bool launchingSoft; //True when in launch control soft limit mode
+  bool launchingHard; //True when in launch control hard limit mode
   uint16_t freeRAM;
   unsigned int clutchEngagedRPM;
   bool flatShiftingHard;

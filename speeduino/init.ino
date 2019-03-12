@@ -1107,7 +1107,7 @@ void setPinMapping(byte boardID)
       break;
 
     case 20:
-    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+    #if defined(CORE_AVR) && !defined(SMALL_FLASH_MODE) //No support for bluepill here anyway
       //Pin mappings as per the Plazomat In/Out shields Rev 0.1
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on
