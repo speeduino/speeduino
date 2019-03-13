@@ -27,6 +27,7 @@ inline void endCoil7Charge() { digitalWrite(pinCoil7, coilLOW); }
 inline void beginCoil8Charge() { digitalWrite(pinCoil8, coilHIGH); tachoOutputFlag = READY; }
 inline void endCoil8Charge() { digitalWrite(pinCoil8, coilLOW); }
 
+//The below 3 calls are all part of the rotary ignition mode
 inline void beginTrailingCoilCharge() { digitalWrite(pinCoil2, coilHIGH); }
 inline void endTrailingCoilCharge1() { digitalWrite(pinCoil2, coilLOW); *ign3_pin_port |= ign3_pin_mask; } //Sets ign3 (Trailing select) high
 inline void endTrailingCoilCharge2() { digitalWrite(pinCoil2, coilLOW); *ign3_pin_port &= ~(ign3_pin_mask); } //sets ign3 (Trailing select) low

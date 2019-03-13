@@ -66,15 +66,25 @@ void oneMSInterval() //Most ARM chips can simply call a function
   //Tacho is flagged as being ready for a pulse by the ignition outputs. 
   if(tachoOutputFlag == READY)
   {
-    TACHO_PULSE_LOW();
-    //ms_counter is cast down to a byte as the tacho duration can only be in the range of 1-6, so no extra resolution above that is required
-    tachoEndTime = (uint8_t)ms_counter + configPage2.tachoDuration;
-    tachoOutputFlag = ACTIVE;
+    //Check for half speed tacho
+    if( (configPage2.tachoDiv == 0) || (tachoAlt == true) ) 
+    { 
+      TACHO_PULSE_LOW();
+      //ms_counter is cast down to a byte as the tacho duration can only be in the range of 1-6, so no extra resolution above that is required
+      tachoEndTime = (uint8_t)ms_counter + configPage2.tachoDuration;
+      tachoOutputFlag = ACTIVE;
+    }
+    else
+    {
+      //Don't run on this pulse (Half speed tacho)
+      tachoOutputFlag = DEACTIVE;
+    }
+    tachoAlt = !tachoAlt; //Flip the alternating value incase half speed tacho is in use. 
   }
   else if(tachoOutputFlag == ACTIVE)
   {
     //If the tacho output is already active, check whether it's reached it's end time
-    if((uint8_t)ms_counter > tachoEndTime)
+    if((uint8_t)ms_counter >= tachoEndTime)
     {
       TACHO_PULSE_HIGH();
       tachoOutputFlag = DEACTIVE;
