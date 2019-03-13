@@ -1,12 +1,12 @@
-#if defined(CORE_STM32)
-#include "board_stm32.h"
+#if defined(CORE_STM32_GENERIC) && !defined(ARDUINO_BLACK_F407VE)
+#include "board_stm32_generic.h"
 #include "globals.h"
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
 #include "HardwareTimer.h"
-#if defined(STM32F4)
-    //These should really be in the stm32GENERIC libs, but for somereason they only have timers 1-4
+#if defined(ARDUINO_ARCH_STM32) && defined(STM32_CORE_VERSION)
+    //These should really be in the stm32 libmaple libs, but for somereason they only have timers 1-4
     #include <stm32_TIM_variant_11.h>
     HardwareTimer Timer5(TIM5, chip_tim5, sizeof(chip_tim5) / sizeof(chip_tim5[0]));
     HardwareTimer Timer8(TIM8, chip_tim8, sizeof(chip_tim8) / sizeof(chip_tim8[0]));
@@ -18,9 +18,10 @@ void initBoard()
     ***********************************************************************************************************
     * General
     */
-   #define FLASH_LENGTH 8192
-
-
+    #ifndef FLASH_LENGTH
+      #define FLASH_LENGTH 8192
+    #endif
+    delay(10);
     /*
     ***********************************************************************************************************
     * Idle
@@ -33,8 +34,7 @@ void initBoard()
     //This must happen at the end of the idle init
     Timer1.setMode(4, TIMER_OUTPUT_COMPARE);
     //timer_set_mode(TIMER1, 4, TIMER_OUTPUT_COMPARE;
-    if(idle_pwm_max_count > 0) { Timer1.attachInterrupt(4, idleInterrupt);} //on first flash the configPage4.iacAlgorithm is invalid
-    Timer1.resume();
+    if(idle_pwm_max_count > 0) { Timer1.attachInterrupt(4, idleInterrupt); } //on first flash the configPage4.iacAlgorithm is invalid
 
 
     /*
@@ -67,32 +67,23 @@ void initBoard()
     Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
     if(boost_pwm_max_count > 0) { Timer1.attachInterrupt(2, boostInterrupt);}
     if(vvt_pwm_max_count > 0) { Timer1.attachInterrupt(3, vvtInterrupt);}
-    Timer1.resume();
 
     /*
     ***********************************************************************************************************
     * Schedules
     */
-    #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
-        //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
-        Timer1.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
-        Timer2.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
-        Timer3.setPrescaleFactor((HAL_RCC_GetHCLKFreq() * 2U)-1);  //2us resolution
-    #else //libmaple core aka STM32DUINO
-        //see https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
-        #if defined (STM32F1) || defined(__STM32F1__)
-            //(CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
-            //Timer2 to 4 is on APB1, Timer1 on APB2.   http://www.st.com/resource/en/datasheet/stm32f103cb.pdf sheet 12
-            Timer1.setPrescaleFactor((72 * 2U)-1); //2us resolution
-            Timer2.setPrescaleFactor((36 * 2U)-1); //2us resolution
-            Timer3.setPrescaleFactor((36 * 2U)-1); //2us resolution
-        #elif defined(STM32F4)
-            //(CYCLES_PER_MICROSECOND == 168, APB2 at 84MHz, APB1 at 42MHz).
-            //Timer2 to 14 is on APB1, Timers 1, 8, 9 and 10 on APB2.   http://www.st.com/resource/en/datasheet/stm32f407vg.pdf sheet 120
-            Timer1.setPrescaleFactor((84 * 2U)-1); //2us resolution
-            Timer2.setPrescaleFactor((42 * 2U)-1); //2us resolution
-            Timer3.setPrescaleFactor((42 * 2U)-1); //2us resolution
-        #endif
+    #if defined (STM32F1) || defined(__STM32F1__)
+        //(CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
+        //Timer2 to 4 is on APB1, Timer1 on APB2.   http://www.st.com/resource/en/datasheet/stm32f103cb.pdf sheet 12
+        Timer1.setPrescaleFactor((72 * 2)-1); //2us resolution
+        Timer2.setPrescaleFactor((36 * 2)-1); //2us resolution
+        Timer3.setPrescaleFactor((36 * 2)-1); //2us resolution
+    #elif defined(STM32F4)
+        //(CYCLES_PER_MICROSECOND == 168, APB2 at 84MHz, APB1 at 42MHz).
+        //Timer2 to 14 is on APB1, Timers 1, 8, 9 and 10 on APB2.   http://www.st.com/resource/en/datasheet/stm32f407vg.pdf sheet 120
+        Timer1.setPrescaleFactor((168 * 2)-1); //2us resolution
+        Timer2.setPrescaleFactor((84 * 2)-1);  //2us resolution
+        Timer3.setPrescaleFactor((84 * 2)-1);  //2us resolution
     #endif
     Timer2.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer2.setMode(2, TIMER_OUTPUT_COMPARE);
@@ -112,51 +103,56 @@ void initBoard()
     Timer2.attachInterrupt(3, fuelSchedule3Interrupt);
     Timer2.attachInterrupt(4, fuelSchedule4Interrupt);
     #if (INJ_CHANNELS >= 5)
+    Timer5.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer5.attachInterrupt(1, fuelSchedule5Interrupt);
     #endif
     #if (INJ_CHANNELS >= 6)
+    Timer5.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer5.attachInterrupt(2, fuelSchedule6Interrupt);
     #endif
     #if (INJ_CHANNELS >= 7)
+    Timer5.setMode(3, TIMER_OUTPUT_COMPARE);
     Timer5.attachInterrupt(3, fuelSchedule7Interrupt);
     #endif
     #if (INJ_CHANNELS >= 8)
+    Timer5.setMode(4, TIMER_OUTPUT_COMPARE);
     Timer5.attachInterrupt(4, fuelSchedule8Interrupt);
     #endif
 
     //Ignition
-    #if (IGN_CHANNELS >= 1) 
     Timer3.attachInterrupt(1, ignitionSchedule1Interrupt); 
-    #endif
-    #if (IGN_CHANNELS >= 2)
     Timer3.attachInterrupt(2, ignitionSchedule2Interrupt);
-    #endif
-    #if (IGN_CHANNELS >= 3)
     Timer3.attachInterrupt(3, ignitionSchedule3Interrupt);
-    #endif
-    #if (IGN_CHANNELS >= 4)
     Timer3.attachInterrupt(4, ignitionSchedule4Interrupt);
-    #endif
     #if (IGN_CHANNELS >= 5)
+    Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer4.attachInterrupt(1, ignitionSchedule5Interrupt);
     #endif
     #if (IGN_CHANNELS >= 6)
+    Timer4.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer4.attachInterrupt(2, ignitionSchedule6Interrupt);
     #endif
     #if (IGN_CHANNELS >= 7)
+    Timer4.setMode(3, TIMER_OUTPUT_COMPARE);
     Timer4.attachInterrupt(3, ignitionSchedule7Interrupt);
     #endif
     #if (IGN_CHANNELS >= 8)
+    Timer4.setMode(4, TIMER_OUTPUT_COMPARE);
     Timer4.attachInterrupt(4, ignitionSchedule8Interrupt);
     #endif
 
+    Timer1.setOverflow(0xFFFF);
     Timer1.resume();
+    Timer2.setOverflow(0xFFFF);
     Timer2.resume();
+    Timer3.setOverflow(0xFFFF);
     Timer3.resume();
     #if (IGN_CHANNELS >= 5)
+    Timer4.setOverflow(0xFFFF);
     Timer4.resume();
     #endif
     #if (INJ_CHANNELS >= 5)
+    Timer5.setOverflow(0xFFFF);
     Timer5.resume();
     #endif
 }

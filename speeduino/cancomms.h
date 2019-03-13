@@ -1,7 +1,5 @@
 #ifndef CANCOMMS_H
 #define CANCOMMS_H
-//These are the page numbers that the Tuner Studio serial protocol uses to transverse the different map and config pages.
-#define veMapPage    1
 
 #define CAN_PACKET_SIZE   75
 
@@ -17,7 +15,7 @@ uint8_t Glow, Ghigh;
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   HardwareSerial &CANSerial = Serial3;
 #elif defined(CORE_STM32)
-  #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
+  #if defined(ARDUINO_ARCH_STM32) && !defined(_VARIANT_ARDUINO_STM32_) // STM32GENERIC core
     SerialUART &CANSerial = Serial2;
   #else //libmaple core aka STM32DUINO
     HardwareSerial &CANSerial = Serial2;

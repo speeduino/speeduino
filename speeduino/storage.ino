@@ -8,24 +8,21 @@ A full copy of the license may be found in the projects root directory
 #include "globals.h"
 #include "table.h"
 #include "comms.h"
-#if defined(CORE_SAMD21)
-  #include "src/FlashStorage/FlashAsEEPROM.h"
-#else
-  #include <EEPROM.h>
-#endif
+#include EEPROM_LIB_H //This is defined in the board .h files
 #include "storage.h"
+
 void writeAllConfig()
 {
-  writeConfig(1);
-  if (eepromWritesPending == false) { writeConfig(2); }
-  if (eepromWritesPending == false) { writeConfig(3); }
-  if (eepromWritesPending == false) { writeConfig(4); }
-  if (eepromWritesPending == false) { writeConfig(5); }
-  if (eepromWritesPending == false) { writeConfig(6); }
-  if (eepromWritesPending == false) { writeConfig(7); }
-  if (eepromWritesPending == false) { writeConfig(8); }
-  if (eepromWritesPending == false) { writeConfig(9); }
-  if (eepromWritesPending == false) { writeConfig(10); }
+  writeConfig(veSetPage);
+  if (eepromWritesPending == false) { writeConfig(veMapPage); }
+  if (eepromWritesPending == false) { writeConfig(ignMapPage); }
+  if (eepromWritesPending == false) { writeConfig(ignSetPage); }
+  if (eepromWritesPending == false) { writeConfig(afrMapPage); }
+  if (eepromWritesPending == false) { writeConfig(afrSetPage); }
+  if (eepromWritesPending == false) { writeConfig(boostvvtPage); }
+  if (eepromWritesPending == false) { writeConfig(seqFuelPage); }
+  if (eepromWritesPending == false) { writeConfig(canbusPage); }
+  if (eepromWritesPending == false) { writeConfig(warmupPage); }
 }
 
 
@@ -652,6 +649,6 @@ void writeCalibration()
 // By having these in this file, it prevents other files from calling EEPROM functions directly. This is useful due to differences in the EEPROM libraries on different devces
 byte readLastBaro() { return EEPROM.read(EEPROM_LAST_BARO); }
 void storeLastBaro(byte newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
-void storeCalibrationValue(byte location, byte value) { EEPROM.update(location, value); } //This is essentially just an abstraction for EEPROM.update()
+void storeCalibrationValue(uint16_t location, byte value) { EEPROM.update(location, value); } //This is essentially just an abstraction for EEPROM.update()
 byte readEEPROMVersion() { return EEPROM.read(EEPROM_DATA_VERSION); }
 void storeEEPROMVersion(byte newVersion) { EEPROM.update(EEPROM_DATA_VERSION, newVersion); }

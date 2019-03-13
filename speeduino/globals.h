@@ -3,25 +3,27 @@
 #include <Arduino.h>
 #include "table.h"
 
-//These are configuration options for changing around the outputs that are used. THese are just the defaults and may be changed in the sections below based on the hardware in use. 
-#define INJ_CHANNELS 4
-#define IGN_CHANNELS 5
-
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define BOARD_DIGITAL_GPIO_PINS 54
   #define BOARD_NR_GPIO_PINS 62
   #define LED_BUILTIN 13
   #define CORE_AVR
   #define BOARD_H "board_avr2560.h"
+  #define INJ_CHANNELS 4
+  #define IGN_CHANNELS 5
 
   //#define TIMER5_MICROS
 
 #elif defined(CORE_TEENSY)
   #define BOARD_H "board_teensy35.h"
+  #define INJ_CHANNELS 8
+  #define IGN_CHANNELS 8
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
-  #define CORE_STM32
-  #define BOARD_H "board_stm32.h"
+  //These should be updated to 8 later, but there's bits missing currently
+  #define INJ_CHANNELS 4
+  #define IGN_CHANNELS 5
+
   #ifndef word
     #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
   #endif
@@ -34,13 +36,15 @@
   #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
     #define BOARD_DIGITAL_GPIO_PINS 80
     #define BOARD_NR_GPIO_PINS 80
-    #define LED_BUILTIN PA7
+  #endif
 
-    //These boards always make 8/8 channels available
-    #undef INJ_CHANNELS
-    #undef IGN_CHANNELS
-    #define INJ_CHANNELS 8
-    #define IGN_CHANNELS 8
+  #if defined(CORE_STM32_OFFICIAL)
+    //Need to identify the official core better
+    //#define CORE_STM32_OFFICIAL
+    #define BOARD_H "board_stm32_official.h"
+  #else
+    #define CORE_STM32_GENERIC
+    #define BOARD_H "board_stm32_generic.h"
   #endif
 
   //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
@@ -48,15 +52,17 @@
     #define SMALL_FLASH_MODE
   #endif
 
+  #if __GNUC__ < 7 //Already included on GCC 7
   extern "C" char* sbrk(int incr); //Used to freeRam
-  #if defined(ARDUINO_ARCH_STM32) // STM32GENERIC core
+  #endif
+  #if !defined(_VARIANT_ARDUINO_STM32_) // STM32GENERIC core
     inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
-    #define portOutputRegister(port) (volatile byte *)( &(port->ODR) )
-    #define portInputRegister(port) (volatile byte *)( &(port->IDR) )
   #else //libmaple core aka STM32DUINO
     //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
-    #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) )
-    #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) )
+    #ifndef portOutputRegister
+      #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) )
+      #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) )
+    #endif
   #endif
 #elif defined(__SAMD21G18A__)
   #define BOARD_H "board_samd21.h"
@@ -141,7 +147,7 @@
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
 #define TOOTH_LOG_SIZE      64
-#define TOOTH_LOG_BUFFER    256
+#define TOOTH_LOG_BUFFER    128 //256
 
 #define COMPOSITE_LOG_PRI   0
 #define COMPOSITE_LOG_SEC   1
@@ -221,7 +227,8 @@ const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 //const byte page_size = 64;
-const int16_t npage_size[11] PROGMEM = {0,288,128,288,128,288,128,240,192,192,192};
+//const int16_t npage_size[11] PROGMEM = {0,288,128,288,128,288,128,240,192,192,192};
+const int16_t npage_size[11] PROGMEM = {0,128,288,288,128,288,128,240,192,192,192};
 //const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
@@ -251,48 +258,48 @@ struct table2D knockWindowDurationTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 volatile PORT_TYPE *inj1_pin_port;
-volatile byte inj1_pin_mask;
+volatile PINMASK_TYPE inj1_pin_mask;
 volatile PORT_TYPE *inj2_pin_port;
-volatile byte inj2_pin_mask;
+volatile PINMASK_TYPE inj2_pin_mask;
 volatile PORT_TYPE *inj3_pin_port;
-volatile byte inj3_pin_mask;
+volatile PINMASK_TYPE inj3_pin_mask;
 volatile PORT_TYPE *inj4_pin_port;
-volatile byte inj4_pin_mask;
+volatile PINMASK_TYPE inj4_pin_mask;
 volatile PORT_TYPE *inj5_pin_port;
-volatile byte inj5_pin_mask;
+volatile PINMASK_TYPE inj5_pin_mask;
 volatile PORT_TYPE *inj6_pin_port;
-volatile byte inj6_pin_mask;
+volatile PINMASK_TYPE inj6_pin_mask;
 volatile PORT_TYPE *inj7_pin_port;
-volatile byte inj7_pin_mask;
+volatile PINMASK_TYPE inj7_pin_mask;
 volatile PORT_TYPE *inj8_pin_port;
-volatile byte inj8_pin_mask;
+volatile PINMASK_TYPE inj8_pin_mask;
 
 volatile PORT_TYPE *ign1_pin_port;
-volatile byte ign1_pin_mask;
+volatile PINMASK_TYPE ign1_pin_mask;
 volatile PORT_TYPE *ign2_pin_port;
-volatile byte ign2_pin_mask;
+volatile PINMASK_TYPE ign2_pin_mask;
 volatile PORT_TYPE *ign3_pin_port;
-volatile byte ign3_pin_mask;
+volatile PINMASK_TYPE ign3_pin_mask;
 volatile PORT_TYPE *ign4_pin_port;
-volatile byte ign4_pin_mask;
+volatile PINMASK_TYPE ign4_pin_mask;
 volatile PORT_TYPE *ign5_pin_port;
-volatile byte ign5_pin_mask;
+volatile PINMASK_TYPE ign5_pin_mask;
 volatile PORT_TYPE *ign6_pin_port;
-volatile byte ign6_pin_mask;
+volatile PINMASK_TYPE ign6_pin_mask;
 volatile PORT_TYPE *ign7_pin_port;
-volatile byte ign7_pin_mask;
+volatile PINMASK_TYPE ign7_pin_mask;
 volatile PORT_TYPE *ign8_pin_port;
-volatile byte ign8_pin_mask;
+volatile PINMASK_TYPE ign8_pin_mask;
 
 volatile PORT_TYPE *tach_pin_port;
-volatile byte tach_pin_mask;
+volatile PINMASK_TYPE tach_pin_mask;
 volatile PORT_TYPE *pump_pin_port;
-volatile byte pump_pin_mask;
+volatile PINMASK_TYPE pump_pin_mask;
 
 volatile PORT_TYPE *triggerPri_pin_port;
-volatile byte triggerPri_pin_mask;
+volatile PINMASK_TYPE triggerPri_pin_mask;
 volatile PORT_TYPE *triggerSec_pin_port;
-volatile byte triggerSec_pin_mask;
+volatile PINMASK_TYPE triggerSec_pin_mask;
 
 //These need to be here as they are used in both speeduino.ino and scheduler.ino
 bool channel1InjEnabled = true;
@@ -312,6 +319,7 @@ int ignition5EndAngle = 0;
 
 //These are variables used across multiple files
 bool initialisationComplete = false; //Tracks whether the setup() function has run completely
+byte fpPrimeTime = 0; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 volatile uint16_t mainLoopCount;
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
@@ -319,13 +327,15 @@ volatile unsigned long ms_counter = 0; //A counter that increments once per ms
 uint16_t fixedCrankingOverride = 0;
 bool clutchTrigger;
 bool previousClutchTrigger;
-volatile uint16_t toothHistory[TOOTH_LOG_BUFFER];
+volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
 volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 volatile unsigned int toothHistoryIndex = 0;
 volatile byte toothHistorySerialIndex = 0;
-byte primaryTriggerEdge;
-byte secondaryTriggerEdge;
+
+  byte primaryTriggerEdge;
+  byte secondaryTriggerEdge;
+
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360;
 int CRANK_ANGLE_MAX_INJ = 360; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
@@ -400,8 +410,8 @@ struct statuses {
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous
   volatile unsigned int loopsPerSecond;
-  boolean launchingSoft; //True when in launch control soft limit mode
-  boolean launchingHard; //True when in launch control hard limit mode
+  bool launchingSoft; //True when in launch control soft limit mode
+  bool launchingHard; //True when in launch control hard limit mode
   uint16_t freeRAM;
   unsigned int clutchEngagedRPM;
   bool flatShiftingHard;
@@ -450,7 +460,7 @@ struct config2 {
   byte pinMapping; // The board / ping mapping to be used
   byte tachoPin : 6; //Custom pin setting for tacho output
   byte tachoDiv : 2; //Whether to change the tacho speed
-  byte unused2_17;
+  byte tachoDuration; //The duration of the tacho pulse in mS
   byte unused2_18;
   byte tpsThresh;
   byte taeTime;
@@ -746,8 +756,8 @@ struct config9 {
   uint8_t Auxinpinb[16];            // digital pin number when internal aux in use
 
   byte iacStepperInv : 1;  //stepper direction of travel to allow reversing. 0=normal, 1=inverted.
+  byte iacCoolTime : 3; // how long to wait for the stepper to cool between steps
 
-  byte unused10_153;
   byte unused10_154;
   byte unused10_155;
   byte unused10_156;

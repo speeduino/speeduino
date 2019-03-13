@@ -62,6 +62,35 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil4Charge(); ignitionSchedule4.Status = OFF; } }
   if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil5Charge(); ignitionSchedule5.Status = OFF; } }
 
+  //Tacho output check
+  //Tacho is flagged as being ready for a pulse by the ignition outputs. 
+  if(tachoOutputFlag == READY)
+  {
+    //Check for half speed tacho
+    if( (configPage2.tachoDiv == 0) || (tachoAlt == true) ) 
+    { 
+      TACHO_PULSE_LOW();
+      //ms_counter is cast down to a byte as the tacho duration can only be in the range of 1-6, so no extra resolution above that is required
+      tachoEndTime = (uint8_t)ms_counter + configPage2.tachoDuration;
+      tachoOutputFlag = ACTIVE;
+    }
+    else
+    {
+      //Don't run on this pulse (Half speed tacho)
+      tachoOutputFlag = DEACTIVE;
+    }
+    tachoAlt = !tachoAlt; //Flip the alternating value incase half speed tacho is in use. 
+  }
+  else if(tachoOutputFlag == ACTIVE)
+  {
+    //If the tacho output is already active, check whether it's reached it's end time
+    if((uint8_t)ms_counter >= tachoEndTime)
+    {
+      TACHO_PULSE_HIGH();
+      tachoOutputFlag = DEACTIVE;
+    }
+  }
+  
 
 
   //30Hz loop
@@ -95,7 +124,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
   {
     loop250ms = 0; //Reset Counter
     BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
-    #if defined(CORE_STM32) //debug purpose, only visal for running code
+    #if defined(CORE_STM32) //debug purpose, only visual for running code
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     #endif
 
@@ -143,7 +172,8 @@ void oneMSInterval() //Most ARM chips can simply call a function
     //Check whether fuel pump priming is complete
     if(fpPrimed == false)
     {
-      if(currentStatus.secl >= configPage2.fpPrime)
+      //fpPrimeTime is the time that the pump priming started. This is 0 on startup, but can be changed if the unit has been running on USB power and then had the ignition turned on (Which starts the priming again)
+      if( (currentStatus.secl - fpPrimeTime) >= configPage2.fpPrime)
       {
         fpPrimed = true; //Mark the priming as being completed
         if(currentStatus.RPM == 0)
@@ -193,7 +223,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
 #if defined(CORE_AVR) //AVR chips use the ISR for this
     //Reset Timer2 to trigger in another ~1ms
     TCNT2 = 131;            //Preload timer2 with 100 cycles, leaving 156 till overflow.
-    TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
+    //TIFR2  = 0x00;          //Timer2 INT Flag Reg: Clear Timer Overflow Flag
 #endif
 }
 

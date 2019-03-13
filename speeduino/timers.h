@@ -19,6 +19,13 @@ Hence we will preload the timer with 131 cycles to leave 125 until overflow (1ms
 #ifndef TIMERS_H
 #define TIMERS_H
 
+volatile bool tachoAlt = false;
+#define TACHO_PULSE_HIGH() *tach_pin_port |= (tach_pin_mask)
+#define TACHO_PULSE_LOW() *tach_pin_port &= ~(tach_pin_mask)
+enum TachoOutputStatus {DEACTIVE, READY, ACTIVE}; //The 3 statuses that the tacho output pulse can have
+volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
+volatile TachoOutputStatus tachoOutputFlag;
+
 volatile byte loop33ms;
 volatile byte loop66ms;
 volatile byte loop100ms;
@@ -32,7 +39,7 @@ volatile uint16_t last250msLoopCount = 1000; //Set to effectively random number 
 #if defined (CORE_TEENSY)
   IntervalTimer lowResTimer;
   void oneMSInterval();
-#elif defined(CORE_STM32)
+#elif defined(CORE_STM32_OFFICIAL) || defined(CORE_STM32_GENERIC)
   void oneMSInterval();
 #endif
 void initialiseTimers();

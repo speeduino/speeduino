@@ -25,17 +25,17 @@ void fanControl();
 #define READ_N2O_ARM_PIN()    ((*n2o_arming_pin_port & n2o_arming_pin_mask) ? true : false)
 
 volatile PORT_TYPE *boost_pin_port;
-volatile byte boost_pin_mask;
+volatile PINMASK_TYPE boost_pin_mask;
 volatile PORT_TYPE *vvt_pin_port;
-volatile byte vvt_pin_mask;
+volatile PINMASK_TYPE vvt_pin_mask;
 volatile PORT_TYPE *fan_pin_port;
-volatile byte fan_pin_mask;
+volatile PINMASK_TYPE fan_pin_mask;
 volatile PORT_TYPE *n2o_stage1_pin_port;
-volatile byte n2o_stage1_pin_mask;
+volatile PINMASK_TYPE n2o_stage1_pin_mask;
 volatile PORT_TYPE *n2o_stage2_pin_port;
-volatile byte n2o_stage2_pin_mask;
+volatile PINMASK_TYPE n2o_stage2_pin_mask;
 volatile PORT_TYPE *n2o_arming_pin_port;
-volatile byte n2o_arming_pin_mask;
+volatile PINMASK_TYPE n2o_arming_pin_mask;
 
 volatile bool boost_pwm_state;
 unsigned int boost_pwm_max_count; //Used for variable PWM frequency
