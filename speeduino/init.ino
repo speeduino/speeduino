@@ -439,6 +439,12 @@ void initialiseAll()
             channel1InjDegrees = 0;
             channel2InjDegrees = 0; 
           }
+          else
+          {
+            // Alternating
+            CRANK_ANGLE_MAX_INJ = 720*2 / currentStatus.nSquirts;
+            channel2InjDegrees = 360*2 / currentStatus.nSquirts;
+          }
         }
         else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
@@ -451,7 +457,7 @@ void initialiseAll()
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
-          req_fuel_uS = req_fuel_uS * 2;
+          // req_fuel_uS = req_fuel_uS * 2;
         }
 
         //Check if injector staging is enabled
@@ -564,6 +570,13 @@ void initialiseAll()
           channel2InjDegrees = 0;
           channel3InjDegrees = 0; 
         } 
+        else
+        {
+          // Alternating
+          CRANK_ANGLE_MAX_INJ = 720*2 / currentStatus.nSquirts;
+          channel2InjDegrees = 240*2 / currentStatus.nSquirts;
+          channel3InjDegrees = 480*2 / currentStatus.nSquirts;
+        }
 
         configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
 
