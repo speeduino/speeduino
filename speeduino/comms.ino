@@ -460,7 +460,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   fullStatus[1] = currentStatus.status1; //status1 Bitfield
   fullStatus[2] = currentStatus.engine; //Engine Status Bitfield
-  fullStatus[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
+  fullStatus[3] = currentStatus.syncLossCounter;
   fullStatus[4] = lowByte(currentStatus.MAP); //2 bytes for MAP
   fullStatus[5] = highByte(currentStatus.MAP);
   fullStatus[6] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
@@ -561,7 +561,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[86] = highByte(currentStatus.fuelLoad);
   fullStatus[87] = lowByte(currentStatus.ignLoad);
   fullStatus[88] = highByte(currentStatus.ignLoad);
-  fullStatus[89] = currentStatus.syncLossCounter;
+  fullStatus[89] = lowByte(currentStatus.dwell);
+  fullStatus[90] = highByte(currentStatus.dwell);
 
   for(byte x=0; x<packetLength; x++)
   {
