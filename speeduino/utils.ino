@@ -65,13 +65,13 @@ uint32_t calculateCRC32(byte pageNo)
   byte raw_value;
   void* pnt_configPage;
 
-  //This sucks (again) for thall the 3D map pages that have to have a translation performed
+  //This sucks (again) for all the 3D map pages that have to have a translation performed
   switch(pageNo)
   {
     case veMapPage:
       raw_value = getPageValue(veMapPage, 0);
       CRC32_val = CRC32.crc32(&raw_value, 1);
-      for(uint16_t x=1; x< sizeof(fuelTable); x++)
+      for(uint16_t x=1; x< npage_size[veMapPage]; x++)
       {
         raw_value = getPageValue(veMapPage, x);
         CRC32_val = CRC32.crc32_upd(&raw_value, 1);
@@ -79,38 +79,71 @@ uint32_t calculateCRC32(byte pageNo)
       break;
 
     case veSetPage:
-      pnt_configPage = &configPage1; //Create a pointer to Page 1 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage1) );
-      break;
-
-    case ignMapPage:
-      break;
-
-    case ignSetPage:
-      pnt_configPage = &configPage2; //Create a pointer to Page 4 in memory
+      //Confirmed working
+      pnt_configPage = &configPage2; //Create a pointer to Page 1 in memory
       CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage2) );
       break;
 
+    case ignMapPage:
+      raw_value = getPageValue(ignMapPage, 0);
+      CRC32_val = CRC32.crc32(&raw_value, 1);
+      for(uint16_t x=1; x< sizeof(ignitionTable); x++)
+      {
+        raw_value = getPageValue(ignMapPage, x);
+        CRC32_val = CRC32.crc32_upd(&raw_value, 1);
+      }
+      break;
+
+    case ignSetPage:
+      //Confirmed working
+      pnt_configPage = &configPage4; //Create a pointer to Page 4 in memory
+      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage4) );
+      break;
+
     case afrMapPage:
+      raw_value = getPageValue(afrMapPage, 0);
+      CRC32_val = CRC32.crc32(&raw_value, 1);
+      for(uint16_t x=1; x< sizeof(afrTable); x++)
+      {
+        raw_value = getPageValue(afrMapPage, x);
+        CRC32_val = CRC32.crc32_upd(&raw_value, 1);
+      }
       break;
 
     case afrSetPage:
-      pnt_configPage = &configPage3; //Create a pointer to Page 4 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage3) );
+      //Confirmed working
+      pnt_configPage = &configPage6; //Create a pointer to Page 4 in memory
+      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage6) );
       break;
 
     case boostvvtPage:
+      raw_value = getPageValue(afrMapPage, 0);
+      CRC32_val = CRC32.crc32(&raw_value, 1);
+      for(uint16_t x=1; x< npage_size[boostvvtPage]; x++)
+      {
+        raw_value = getPageValue(afrMapPage, x);
+        CRC32_val = CRC32.crc32_upd(&raw_value, 1);
+      }
       break;
 
     case seqFuelPage:
+      raw_value = getPageValue(seqFuelPage, 0);
+      CRC32_val = CRC32.crc32(&raw_value, 1);
+      for(uint16_t x=1; x< npage_size[seqFuelPage]; x++)
+      {
+        raw_value = getPageValue(seqFuelPage, x);
+        CRC32_val = CRC32.crc32_upd(&raw_value, 1);
+      }
       break;
 
     case canbusPage:
+      //Confirmed working
       pnt_configPage = &configPage9; //Create a pointer to Page 9 in memory
       CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage9) );
       break;
 
     case warmupPage:
+      //Confirmed working
       pnt_configPage = &configPage10; //Create a pointer to Page 10 in memory
       CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage10) );
       break;

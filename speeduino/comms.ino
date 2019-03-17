@@ -56,6 +56,24 @@ void command()
       Serial.write(highByte(currentStatus.loopsPerSecond));
       break;
 
+    case 'd': // Send a CRC32 value of a given page
+      cmdPending = true;
+
+      if (Serial.available() >= 2)
+      {
+        Serial.read(); //Ignore the first table value, it's always 0
+        uint32_t CRC32_val = calculateCRC32( Serial.read() );
+        
+        //Split the 4 bytes of the CRC32 value into individual bytes and send
+        Serial.write( ((CRC32_val >> 24) & 255) );
+        Serial.write( ((CRC32_val >> 16) & 255) );
+        Serial.write( ((CRC32_val >> 8) & 255) );
+        Serial.write( (CRC32_val & 255) );
+        
+        cmdPending = false;
+      }
+      break;
+
     //The following can be used to show the amount of free memory
 
     case 'E': // receive command button commands
@@ -572,7 +590,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 
 }
 
-void receiveValue(int valueOffset, byte newValue)
+void receiveValue(uint16_t valueOffset, byte newValue)
 {
 
   void* pnt_configPage;//This only stores the address of the value that it's pointing to and not the max size
