@@ -410,7 +410,7 @@ FastCRC32::FastCRC32(){}
 #define CRC_TABLE_CRC32 crc_table_crc32
 #endif
 
-uint32_t FastCRC32::crc32_upd(const uint8_t *data, uint16_t len)
+uint32_t FastCRC32::crc32_upd(const uint8_t *data, uint16_t len, bool reflect)
 {
 
 	uint32_t crc = seed;
@@ -440,17 +440,18 @@ uint32_t FastCRC32::crc32_upd(const uint8_t *data, uint16_t len)
 		crc = (crc >> 8) ^ pgm_read_dword(&CRC_TABLE_CRC32[(crc & 0xff) ^ *data++]);
 	}
 
-	crc = ~crc;
+	if(reflect) { crc = ~crc; }
+	
 
 	seed = crc;
 	return crc;
 }
 
-uint32_t FastCRC32::crc32(const uint8_t *data, const uint16_t datalen)
+uint32_t FastCRC32::crc32(const uint8_t *data, const uint16_t datalen, bool reflect)
 {
   // poly=0x04c11db7 init=0xffffffff refin=true refout=true xorout=0xffffffff check=0xcbf43926
   seed = 0xffffffff;
-  return crc32_upd(data, datalen);
+  return crc32_upd(data, datalen, reflect);
 }
 
 /** CKSUM

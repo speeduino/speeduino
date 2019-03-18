@@ -56,6 +56,24 @@ void command()
       Serial.write(highByte(currentStatus.loopsPerSecond));
       break;
 
+    case 'd': // Send a CRC32 value of a given page
+      cmdPending = true;
+
+      if (Serial.available() >= 2)
+      {
+        Serial.read(); //Ignore the first table value, it's always 0
+        uint32_t CRC32_val = calculateCRC32( Serial.read() );
+        
+        //Split the 4 bytes of the CRC32 value into individual bytes and send
+        Serial.write( ((CRC32_val >> 24) & 255) );
+        Serial.write( ((CRC32_val >> 16) & 255) );
+        Serial.write( ((CRC32_val >> 8) & 255) );
+        Serial.write( (CRC32_val & 255) );
+        
+        cmdPending = false;
+      }
+      break;
+
     //The following can be used to show the amount of free memory
 
     case 'E': // receive command button commands
@@ -460,7 +478,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   fullStatus[1] = currentStatus.status1; //status1 Bitfield
   fullStatus[2] = currentStatus.engine; //Engine Status Bitfield
-  fullStatus[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
+  fullStatus[3] = currentStatus.syncLossCounter;
   fullStatus[4] = lowByte(currentStatus.MAP); //2 bytes for MAP
   fullStatus[5] = highByte(currentStatus.MAP);
   fullStatus[6] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
@@ -561,7 +579,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[86] = highByte(currentStatus.fuelLoad);
   fullStatus[87] = lowByte(currentStatus.ignLoad);
   fullStatus[88] = highByte(currentStatus.ignLoad);
-  fullStatus[89] = currentStatus.syncLossCounter;
+  fullStatus[89] = lowByte(currentStatus.dwell);
+  fullStatus[90] = highByte(currentStatus.dwell);
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -571,7 +590,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 
 }
 
-void receiveValue(int valueOffset, byte newValue)
+void receiveValue(uint16_t valueOffset, byte newValue)
 {
 
   void* pnt_configPage;//This only stores the address of the value that it's pointing to and not the max size
