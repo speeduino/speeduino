@@ -51,5 +51,6 @@ void receiveCalibration(byte);
 void sendToothLog(bool);
 void testComm();
 void commandButtons();
+byte getPageValue(byte, uint16_t);
 
 #endif // COMMS_H

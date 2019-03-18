@@ -69,13 +69,17 @@ uint32_t calculateCRC32(byte pageNo)
   switch(pageNo)
   {
     case veMapPage:
+      //Confirmed working
       raw_value = getPageValue(veMapPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1);
+      CRC32_val = CRC32.crc32(&raw_value, 1, false);
       for(uint16_t x=1; x< npage_size[veMapPage]; x++)
+      //for(uint16_t x=1; x< 288; x++)
       {
         raw_value = getPageValue(veMapPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1);
+        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
       }
+      //Do a manual reflection of the CRC32 value
+      CRC32_val = ~CRC32_val;
       break;
 
     case veSetPage:
@@ -85,13 +89,16 @@ uint32_t calculateCRC32(byte pageNo)
       break;
 
     case ignMapPage:
+      //Confirmed working
       raw_value = getPageValue(ignMapPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1);
-      for(uint16_t x=1; x< sizeof(ignitionTable); x++)
+      CRC32_val = CRC32.crc32(&raw_value, 1, false);
+      for(uint16_t x=1; x< npage_size[ignMapPage]; x++)
       {
         raw_value = getPageValue(ignMapPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1);
+        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
       }
+      //Do a manual reflection of the CRC32 value
+      CRC32_val = ~CRC32_val;
       break;
 
     case ignSetPage:
@@ -101,13 +108,16 @@ uint32_t calculateCRC32(byte pageNo)
       break;
 
     case afrMapPage:
+      //Confirmed working
       raw_value = getPageValue(afrMapPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1);
-      for(uint16_t x=1; x< sizeof(afrTable); x++)
+      CRC32_val = CRC32.crc32(&raw_value, 1, false);
+      for(uint16_t x=1; x< npage_size[afrMapPage]; x++)
       {
         raw_value = getPageValue(afrMapPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1);
+        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
       }
+      //Do a manual reflection of the CRC32 value
+      CRC32_val = ~CRC32_val;
       break;
 
     case afrSetPage:
@@ -117,23 +127,29 @@ uint32_t calculateCRC32(byte pageNo)
       break;
 
     case boostvvtPage:
-      raw_value = getPageValue(afrMapPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1);
+      //Confirmed working
+      raw_value = getPageValue(boostvvtPage, 0);
+      CRC32_val = CRC32.crc32(&raw_value, 1, false);
       for(uint16_t x=1; x< npage_size[boostvvtPage]; x++)
       {
-        raw_value = getPageValue(afrMapPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1);
+        raw_value = getPageValue(boostvvtPage, x);
+        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
       }
+      //Do a manual reflection of the CRC32 value
+      CRC32_val = ~CRC32_val;
       break;
 
     case seqFuelPage:
+      //Confirmed working
       raw_value = getPageValue(seqFuelPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1);
+      CRC32_val = CRC32.crc32(&raw_value, 1, false);
       for(uint16_t x=1; x< npage_size[seqFuelPage]; x++)
       {
         raw_value = getPageValue(seqFuelPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1);
+        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
       }
+      //Do a manual reflection of the CRC32 value
+      CRC32_val = ~CRC32_val;
       break;
 
     case canbusPage:
