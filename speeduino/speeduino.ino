@@ -600,23 +600,20 @@ void loop()
           }
           else if(configPage4.sparkMode == IGN_MODE_ROTARY)
           {
-            if(configPage10.rotaryType == ROTARY_IGN_FC)
-            {
-              byte splitDegrees = 0;
-              if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.MAP/2); }
-              else { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.TPS/2); }
+            byte splitDegrees = 0;
+            if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.MAP/2); }
+            else { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.TPS/2); }
 
-              //The trailing angles are set relative to the leading ones
-              ignition3EndAngle = ignition1EndAngle + splitDegrees;
-              ignition3StartAngle = ignition3EndAngle - dwellAngle;
-              if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
-              if(ignition3StartAngle < 0) {ignition3StartAngle += CRANK_ANGLE_MAX_IGN;}
+            //The trailing angles are set relative to the leading ones
+            ignition3EndAngle = ignition1EndAngle + splitDegrees;
+            ignition3StartAngle = ignition3EndAngle - dwellAngle;
+            if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
+            if(ignition3StartAngle < 0) {ignition3StartAngle += CRANK_ANGLE_MAX_IGN;}
 
-              ignition4EndAngle = ignition2EndAngle + splitDegrees;
-              ignition4StartAngle = ignition4EndAngle - dwellAngle;
-              if(ignition4StartAngle > CRANK_ANGLE_MAX_IGN) {ignition4StartAngle -= CRANK_ANGLE_MAX_IGN;}
-              if(ignition4StartAngle < 0) {ignition4StartAngle += CRANK_ANGLE_MAX_IGN;}
-            }
+            ignition4EndAngle = ignition2EndAngle + splitDegrees;
+            ignition4StartAngle = ignition4EndAngle - dwellAngle;
+            if(ignition4StartAngle > CRANK_ANGLE_MAX_IGN) {ignition4StartAngle -= CRANK_ANGLE_MAX_IGN;}
+            if(ignition4StartAngle < 0) {ignition4StartAngle += CRANK_ANGLE_MAX_IGN;}
           }
           break;
         //5 cylinders
