@@ -80,7 +80,7 @@
 
  // Checks to see if the block of memory has been previously written to
  bool SPIFlash::_notPrevWritten(uint32_t _addr, uint32_t size) {
-   uint8_t _dat;
+   //uint8_t _dat;
    _beginSPI(READDATA);
    for (uint32_t i = 0; i < size; i++) {
      if (_nextByte(READ) != 0xFF) {
@@ -260,7 +260,6 @@
 
  //Reads/Writes next data buffer. Should be called after _beginSPI()
  void SPIFlash::_nextBuf(uint8_t opcode, uint8_t *data_buffer, uint32_t size) {
-   uint8_t *_dataAddr = &(*data_buffer);
    switch (opcode) {
      case READDATA:
      #if defined (ARDUINO_ARCH_SAM)
@@ -274,6 +273,7 @@
      #elif defined (ARDUINO_ARCH_AVR)
        SPI.transfer(&(*data_buffer), size);
      #else
+       uint8_t *_dataAddr = &(*data_buffer);
        for (uint16_t i = 0; i < size; i++) {
          *_dataAddr = xfer(NULLBYTE);
          _dataAddr++;
