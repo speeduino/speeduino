@@ -12,7 +12,7 @@
 #define canbusPage   9//Config Page 9
 #define warmupPage   10 //Config Page 10
 
-#define SERIAL_PACKET_SIZE   90 //Must match ochBlockSize in ini file
+#define SERIAL_PACKET_SIZE   91 //Must match ochBlockSize in ini file
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool isMap = true;
@@ -45,12 +45,13 @@ const char pageTitles[] PROGMEM //This is being stored in the avr flash instead 
 void command();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
 void sendValues(uint16_t, uint16_t,byte, byte);
 void sendValuesLegacy();
-void receiveValue(int, byte);
+void receiveValue(uint16_t, byte);
 void saveConfig();
 void sendPage(bool);
 void receiveCalibration(byte);
 void sendToothLog(bool);
 void testComm();
 void commandButtons();
+byte getPageValue(byte, uint16_t);
 
 #endif // COMMS_H

@@ -62,8 +62,8 @@ script:
   - platformio update
 #  - platformio run -e megaatmega2560 -e teensy35 -e bluepill_f103c8 -e genericSTM32F103RB
   - platformio run -e megaatmega2560 -e teensy35 -e genericSTM32F103RB
-  - curl -v --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pioenvs/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
-  - curl -v --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
+  - curl --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pioenvs/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
+  - curl --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
   - cd ..
   - chmod +x speeduino/misra/check_misra.sh
   - speeduino/misra/check_misra.sh

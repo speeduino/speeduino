@@ -9,6 +9,7 @@ A full copy of the license may be found in the projects root directory
 #include "maths.h"
 #include "storage.h"
 #include "comms.h"
+#include "idle.h"
 
 void initialiseADC()
 {
@@ -47,8 +48,8 @@ void initialiseADC()
      BIT_CLEAR(ADCSRA,ADPS1);
      BIT_CLEAR(ADCSRA,ADPS0);
   #endif
-#elif defined(ARDUINO_ARCH_STM32) //STM32GENERIC lib
-  analogReadResolution(10); //use 10bits for analog
+#elif defined(ARDUINO_ARCH_STM32) //STM32GENERIC core and ST STM32duino core, change analog read to 12 bit
+  analogReadResolution(12); //use 12bits for analog reading on STM32 boards
 #endif
   MAPcurRev = 0;
   MAPcount = 0;
@@ -375,6 +376,24 @@ void readBat()
     tempReading = analogRead(pinBat);
     tempReading = fastMap1023toX(analogRead(pinBat), 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
   #endif
+
+  //The following is a check for if the voltage has jumped up from under 5.5v to over 7v.
+  //If this occurs, it's very likely that the system has gone from being powered by USB to being powered from the 12v power source.
+  //Should that happen, we retrigger the fuel pump priming and idle homing (If using a stepper)
+  if( (currentStatus.battery10 < 55) && (tempReading > 70) && (currentStatus.RPM == 0) )
+  {
+    //Reprime the fuel pump
+    fpPrimeTime = currentStatus.secl;
+    fpPrimed = false;
+    FUEL_PUMP_ON();
+
+    //Redo the stepper homing
+    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
+    {
+      initialiseIdle();
+    }
+  }
+
   currentStatus.battery10 = ADC_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
 }
 

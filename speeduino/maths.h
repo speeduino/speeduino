@@ -11,7 +11,7 @@ unsigned long divu100(unsigned long);
 
 //This is a dedicated function that specifically handles the case of mapping 0-1023 values into a 0 to X range
 //This is a common case because it means converting from a standard 10-bit analog input to a byte or 10-bit analog into 0-511 (Eg the temperature readings)
-#if defined(_VARIANT_ARDUINO_STM32_) //libmaple
+#if defined(_VARIANT_ARDUINO_STM32_) //libmaple //ST stm32duino core returns 0 - 1023 for analog read first use analogReadResolution(12); to make it 12 bit
   #define fastMap1023toX(x, out_max) ( ((unsigned long)x * out_max) >> 12)
   //This is a new version that allows for out_min
   #define fastMap10Bit(x, out_min, out_max) ( ( ((unsigned long)x * (out_max-out_min)) >> 12 ) + out_min)
