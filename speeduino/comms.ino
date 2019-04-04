@@ -68,12 +68,12 @@ void command()
       Serial.write(highByte(currentStatus.loopsPerSecond));
       break;
 
-    case 'd': // Send a CRC32 value of a given page
+    case 'd': // Send a CRC32 hash of a given page
       cmdPending = true;
 
       if (Serial.available() >= 2)
       {
-        Serial.read(); //Ignore the first table value, it's always 0
+        Serial.read(); //Ignore the first byte value, it's always 0
         uint32_t CRC32_val = calculateCRC32( Serial.read() );
         
         //Split the 4 bytes of the CRC32 value into individual bytes and send
@@ -226,7 +226,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 201903-dev"));
+      Serial.print(F("speeduino 201903"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -256,7 +256,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2019.03-dev"));
+      Serial.print(F("Speeduino 2019.03"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
