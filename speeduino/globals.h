@@ -228,7 +228,8 @@ const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 //const byte page_size = 64;
 //const int16_t npage_size[11] PROGMEM = {0,288,128,288,128,288,128,240,192,192,192};
-const int16_t npage_size[11] PROGMEM = {0,128,288,288,128,288,128,240,192,192,192};
+#define NUM_PAGES     11
+const uint16_t npage_size[NUM_PAGES] PROGMEM = {0,128,288,288,128,288,128,240,192,192,192};
 //const byte page11_size = 128;
 #define MAP_PAGE_SIZE 288
 
@@ -883,7 +884,7 @@ struct config10 {
   byte knock_recoveryStepTime;
   byte knock_recoveryStep;
 
-  byte unused11_122_191[69];
+  byte unused11_122_191[70];
 
 #if defined(CORE_AVR)
   };

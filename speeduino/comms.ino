@@ -27,6 +27,18 @@ void command()
   switch (currentCommand)
   {
 
+    case 'a':
+      cmdPending = true;
+
+      if (Serial.available() >= 2)
+      {
+        Serial.read(); //Ignore the first value, it's always 0
+        Serial.read(); //Ignore the second value, it's always 6
+        sendValuesLegacy();
+        cmdPending = false;
+      }
+      break;
+
     case 'A': // send x bytes of realtime values
       sendValues(0, SERIAL_PACKET_SIZE, 0x30, 0);   //send values to serial0
       break;
@@ -54,6 +66,24 @@ void command()
     case 'c': //Send the current loops/sec value
       Serial.write(lowByte(currentStatus.loopsPerSecond));
       Serial.write(highByte(currentStatus.loopsPerSecond));
+      break;
+
+    case 'd': // Send a CRC32 hash of a given page
+      cmdPending = true;
+
+      if (Serial.available() >= 2)
+      {
+        Serial.read(); //Ignore the first byte value, it's always 0
+        uint32_t CRC32_val = calculateCRC32( Serial.read() );
+        
+        //Split the 4 bytes of the CRC32 value into individual bytes and send
+        Serial.write( ((CRC32_val >> 24) & 255) );
+        Serial.write( ((CRC32_val >> 16) & 255) );
+        Serial.write( ((CRC32_val >> 8) & 255) );
+        Serial.write( (CRC32_val & 255) );
+        
+        cmdPending = false;
+      }
       break;
 
     //The following can be used to show the amount of free memory
@@ -196,7 +226,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 201903-dev"));
+      Serial.print(F("speeduino 201903"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -226,7 +256,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2019.03-dev"));
+      Serial.print(F("Speeduino 2019.03"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -460,7 +490,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   fullStatus[1] = currentStatus.status1; //status1 Bitfield
   fullStatus[2] = currentStatus.engine; //Engine Status Bitfield
-  fullStatus[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
+  fullStatus[3] = currentStatus.syncLossCounter;
   fullStatus[4] = lowByte(currentStatus.MAP); //2 bytes for MAP
   fullStatus[5] = highByte(currentStatus.MAP);
   fullStatus[6] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
@@ -561,7 +591,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[86] = highByte(currentStatus.fuelLoad);
   fullStatus[87] = lowByte(currentStatus.ignLoad);
   fullStatus[88] = highByte(currentStatus.ignLoad);
-  fullStatus[89] = currentStatus.syncLossCounter;
+  fullStatus[89] = lowByte(currentStatus.dwell);
+  fullStatus[90] = highByte(currentStatus.dwell);
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -571,7 +602,123 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 
 }
 
-void receiveValue(int valueOffset, byte newValue)
+void sendValuesLegacy()
+{
+  uint16_t temp;
+  int bytestosend = 112;
+
+  bytestosend -= Serial.write(currentStatus.secl>>8);
+  bytestosend -= Serial.write(currentStatus.secl);
+  bytestosend -= Serial.write(currentStatus.PW1>>8);
+  bytestosend -= Serial.write(currentStatus.PW1);
+  bytestosend -= Serial.write(currentStatus.PW2>>8);
+  bytestosend -= Serial.write(currentStatus.PW2);
+  bytestosend -= Serial.write(currentStatus.RPM>>8);
+  bytestosend -= Serial.write(currentStatus.RPM);
+
+  temp = currentStatus.advance * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
+
+  bytestosend -= Serial.write(currentStatus.nSquirts);
+  bytestosend -= Serial.write(currentStatus.engine);
+  bytestosend -= Serial.write(currentStatus.afrTarget);
+  bytestosend -= Serial.write(currentStatus.afrTarget); // send twice so afrtgt1 == afrtgt2
+  bytestosend -= Serial.write(99); // send dummy data as we don't have wbo2_en1
+  bytestosend -= Serial.write(99); // send dummy data as we don't have wbo2_en2
+
+  temp = currentStatus.baro * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
+
+  temp = currentStatus.MAP * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
+
+  temp = currentStatus.IAT * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
+
+  temp = currentStatus.coolant * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
+
+  temp = currentStatus.TPS * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
+
+  bytestosend -= Serial.write(currentStatus.battery10>>8);
+  bytestosend -= Serial.write(currentStatus.battery10);
+  bytestosend -= Serial.write(currentStatus.O2>>8);
+  bytestosend -= Serial.write(currentStatus.O2);
+  bytestosend -= Serial.write(currentStatus.O2_2>>8);
+  bytestosend -= Serial.write(currentStatus.O2_2);
+
+  bytestosend -= Serial.write(99); // knock
+  bytestosend -= Serial.write(99); // knock
+
+  temp = currentStatus.egoCorrection * 10;
+  bytestosend -= Serial.write(temp>>8); // egocor1
+  bytestosend -= Serial.write(temp); // egocor1
+  bytestosend -= Serial.write(temp>>8); // egocor2
+  bytestosend -= Serial.write(temp); // egocor2
+
+  temp = currentStatus.iatCorrection * 10;
+  bytestosend -= Serial.write(temp>>8); // aircor
+  bytestosend -= Serial.write(temp); // aircor
+
+  temp = currentStatus.wueCorrection * 10;
+  bytestosend -= Serial.write(temp>>8); // warmcor
+  bytestosend -= Serial.write(temp); // warmcor
+
+  bytestosend -= Serial.write(99); // accelEnrich
+  bytestosend -= Serial.write(99); // accelEnrich
+  bytestosend -= Serial.write(99); // tpsFuelCut
+  bytestosend -= Serial.write(99); // tpsFuelCut
+  bytestosend -= Serial.write(99); // baroCorrection
+  bytestosend -= Serial.write(99); // baroCorrection
+
+  temp = currentStatus.corrections * 10;
+  bytestosend -= Serial.write(temp>>8); // gammaEnrich
+  bytestosend -= Serial.write(temp); // gammaEnrich
+
+  temp = currentStatus.VE * 10;
+  bytestosend -= Serial.write(temp>>8); // ve1
+  bytestosend -= Serial.write(temp); // ve1
+  bytestosend -= Serial.write(temp>>8); // ve2
+  bytestosend -= Serial.write(temp); // ve2
+
+  bytestosend -= Serial.write(99); // iacstep
+  bytestosend -= Serial.write(99); // iacstep
+  bytestosend -= Serial.write(99); // cold_adv_deg
+  bytestosend -= Serial.write(99); // cold_adv_deg
+
+  temp = currentStatus.tpsDOT * 10;
+  bytestosend -= Serial.write(temp>>8); // TPSdot
+  bytestosend -= Serial.write(temp); // TPSdot
+
+  bytestosend -= Serial.write(99); // MAPdot
+  bytestosend -= Serial.write(99); // MAPdot
+
+  temp = currentStatus.dwell * 10;
+  bytestosend -= Serial.write(temp>>8); // dwell
+  bytestosend -= Serial.write(temp); // dwell
+
+  bytestosend -= Serial.write(99); // MAF
+  bytestosend -= Serial.write(99); // MAF
+  bytestosend -= Serial.write(currentStatus.fuelLoad*10); // fuelload
+  bytestosend -= Serial.write(99); // fuelcor
+  bytestosend -= Serial.write(99); // fuelcor
+  bytestosend -= Serial.write(99); // portStatus
+
+  for(int i = 0; i < bytestosend; i++)
+  {
+    // send dummy data to fill remote's buffer
+    Serial.write(99);
+  }
+}
+
+void receiveValue(uint16_t valueOffset, byte newValue)
 {
 
   void* pnt_configPage;//This only stores the address of the value that it's pointing to and not the max size
