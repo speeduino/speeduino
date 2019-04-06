@@ -1,11 +1,11 @@
-#if defined(CORE_STM32_GENERIC) && !defined(ARDUINO_BLACK_F407VE)
+#if defined(CORE_STM32_GENERIC)
 #include "board_stm32_generic.h"
 #include "globals.h"
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
 #include "HardwareTimer.h"
-#if defined(ARDUINO_ARCH_STM32) && defined(STM32_CORE_VERSION)
+#if !defined(STM32GENERIC)
     //These should really be in the stm32 libmaple libs, but for somereason they only have timers 1-4
     #include <stm32_TIM_variant_11.h>
     HardwareTimer Timer5(TIM5, chip_tim5, sizeof(chip_tim5) / sizeof(chip_tim5[0]));
@@ -28,13 +28,12 @@ void initBoard()
     */
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
     {
-        idle_pwm_max_count = 1000000L / (configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
+        idle_pwm_max_count = 1000000L / (2 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
     } 
 
     //This must happen at the end of the idle init
     Timer1.setMode(4, TIMER_OUTPUT_COMPARE);
-    //timer_set_mode(TIMER1, 4, TIMER_OUTPUT_COMPARE;
-    if(idle_pwm_max_count > 0) { Timer1.attachInterrupt(4, idleInterrupt); } //on first flash the configPage4.iacAlgorithm is invalid
+    Timer1.attachInterrupt(4, idleInterrupt); //on first flash the configPage4.iacAlgorithm is invalid
 
 
     /*
@@ -65,8 +64,8 @@ void initBoard()
     //Need to be initialised last due to instant interrupt
     Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
-    if(boost_pwm_max_count > 0) { Timer1.attachInterrupt(2, boostInterrupt);}
-    if(vvt_pwm_max_count > 0) { Timer1.attachInterrupt(3, vvtInterrupt);}
+    Timer1.attachInterrupt(2, boostInterrupt);
+    Timer1.attachInterrupt(3, vvtInterrupt);
 
     /*
     ***********************************************************************************************************
@@ -84,6 +83,8 @@ void initBoard()
         Timer1.setPrescaleFactor((168 * 2)-1); //2us resolution
         Timer2.setPrescaleFactor((84 * 2)-1);  //2us resolution
         Timer3.setPrescaleFactor((84 * 2)-1);  //2us resolution
+        Timer4.setPrescaleFactor((84 * 2)-1);  //2us resolution
+        Timer5.setPrescaleFactor((84 * 2)-1);  //2us resolution
     #endif
     Timer2.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer2.setMode(2, TIMER_OUTPUT_COMPARE);

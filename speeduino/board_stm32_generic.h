@@ -1,7 +1,7 @@
 #ifndef STM32_H
 #define STM32_H
 #if defined(CORE_STM32_GENERIC)
-
+#define USE_FRAM
 /*
 ***********************************************************************************************************
 * General
@@ -9,9 +9,13 @@
   #define PORT_TYPE uint32_t
   #define PINMASK_TYPE uint32_t
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
+  #if defined(USE_FRAM)
+  #define EEPROM_LIB_H <Fram.h>
+  #else
+  #define EEPROM_LIB_H <EEPROM.h>
+  #endif
   #ifndef USE_SERIAL3
   #define USE_SERIAL3
-  #define EEPROM_LIB_H <Fram.h>
   #endif
   void initBoard();
   uint16_t freeRam();
@@ -87,7 +91,7 @@
   #define MAX_TIMER_PERIOD_SLOW  65535*2 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
   #define uS_TO_TIMER_COMPARE(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
   #define uS_TO_TIMER_COMPARE_SLOW(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
-  #if defined(ARDUINO_ARCH_STM32) && !defined(_VARIANT_ARDUINO_STM32_) // STM32GENERIC core
+  #if defined(STM32GENERIC) // STM32GENERIC core
     #define FUEL1_COUNTER (TIM2)->CNT
     #define FUEL2_COUNTER (TIM2)->CNT
     #define FUEL3_COUNTER (TIM2)->CNT
@@ -261,7 +265,7 @@
 ***********************************************************************************************************
 * Auxilliaries
 */
-    #if defined(ARDUINO_ARCH_STM32) && !defined(_VARIANT_ARDUINO_STM32_) // STM32GENERIC core
+    #if defined(STM32GENERIC) // STM32GENERIC core
         #define ENABLE_BOOST_TIMER()  (TIM1)->CCER |= TIM_CCER_CC2E
         #define DISABLE_BOOST_TIMER() (TIM1)->CCER &= ~TIM_CCER_CC2E
 
@@ -289,7 +293,7 @@
 ***********************************************************************************************************
 * Idle
 */
-    #if defined(ARDUINO_ARCH_STM32) && !defined(_VARIANT_ARDUINO_STM32_) // STM32GENERIC core
+    #if defined(STM32GENERIC) // STM32GENERIC core
         #define IDLE_COUNTER   (TIM1)->CNT
         #define IDLE_COMPARE   (TIM1)->CCR4
 
@@ -313,6 +317,11 @@
 ***********************************************************************************************************
 * CAN / Second serial
 */
+#if defined(STM32GENERIC) // STM32GENERIC core
+  SerialUART &CANSerial = Serial2;
+#else //libmaple core aka STM32DUINO
+  HardwareSerial &CANSerial = Serial2;
+#endif
 
 #endif //CORE_STM32
 #endif //STM32_H
