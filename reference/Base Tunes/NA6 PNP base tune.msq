@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.60.45 - EFI Analytics, Inc." tuneComment="" writeDate="Tue Feb 12 17:05:47 AEDT 2019"/>
-<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2019.02" nPages="10" signature="speeduino 201902"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.60.54 - EFI Analytics, Inc." tuneComment="" writeDate="Thu Apr 04 12:10:43 AEDT 2019"/>
+<versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2019.03" nPages="10" signature="speeduino 201903"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
 <pcVariable cols="1" digits="0" name="algorithmLimits" rows="8">
@@ -16,6 +16,7 @@
       </pcVariable>
 <pcVariable digits="0" name="fuelLoadMax">255.0</pcVariable>
 <pcVariable digits="0" name="ignLoadMax">255.0</pcVariable>
+<pcVariable name="AUXin00Alias">Aux0</pcVariable>
 </page>
 <page number="0" size="128">
 <constant digits="0" name="unused2-1" units="kPa">50.0</constant>
@@ -38,7 +39,7 @@
 <constant name="pinLayout">"NA6 MX5 PNP"</constant>
 <constant name="tachoPin">"Board Default"</constant>
 <constant name="tachoDiv">"Normal"</constant>
-<constant digits="1" name="unused2-17" units="ms">3.2</constant>
+<constant digits="0" name="tachoDuration" units="ms">3.0</constant>
 <constant digits="1" name="unused2-18" units="ms">0.0</constant>
 <constant digits="0" name="tpsThresh" units="%/s">30.0</constant>
 <constant digits="0" name="taeTime" units="ms">400.0</constant>
@@ -177,7 +178,7 @@
          41.0 49.0 50.0 48.0 38.0 42.0 38.0 45.0 53.0 54.0 55.0 56.0 57.0 58.0 58.0 58.0 
          45.0 50.0 51.0 56.0 47.0 50.0 45.0 54.0 59.0 59.0 59.0 59.0 59.0 59.0 59.0 59.0 
          47.0 50.0 52.0 65.0 53.0 52.0 52.0 59.0 69.0 68.0 66.0 65.0 64.0 63.0 62.0 62.0 
-         44.0 49.0 53.0 68.0 59.0 54.0 53.0 61.0 69.0 69.0 69.0 68.0 68.0 68.0 68.0 68.0 
+         44.0 49.0 53.0 68.0 59.0 54.0 53.0 61.0 69.0 69.0 69.0 68.0 62.0 68.0 68.0 68.0 
          46.0 49.0 60.0 69.0 65.0 60.0 59.0 67.0 61.0 61.0 60.0 60.0 60.0 59.0 59.0 59.0 
          47.0 50.0 64.0 71.0 66.0 65.0 64.0 67.0 61.0 61.0 62.0 62.0 62.0 63.0 63.0 63.0 
          52.0 52.0 64.0 70.0 72.0 70.0 68.0 69.0 63.0 66.0 68.0 71.0 73.0 76.0 77.0 77.0 
@@ -185,7 +186,7 @@
          53.0 61.0 65.0 76.0 88.0 90.0 89.0 86.0 93.0 93.0 93.0 93.0 93.0 93.0 93.0 93.0 
          53.0 61.0 68.0 81.0 95.0 96.0 95.0 104.0 98.0 99.0 99.0 100.0 101.0 102.0 102.0 102.0 
          53.0 61.0 69.0 83.0 99.0 102.0 107.0 128.0 141.0 137.0 133.0 128.0 124.0 120.0 118.0 118.0 
-         53.0 58.0 76.0 97.0 106.0 108.0 115.0 119.0 122.0 121.0 121.0 120.0 120.0 119.0 119.0 119.0 
+         54.0 59.0 77.0 98.0 107.0 109.0 116.0 134.0 155.0 140.0 135.0 130.0 121.0 120.0 120.0 120.0 
       </constant>
 <constant cols="1" digits="0" name="rpmBins" rows="16" units="RPM">
          500.0 
@@ -285,7 +286,7 @@
 <constant digits="0" name="FixAng" units="Deg">0.0</constant>
 <constant digits="0" name="CrankAng" units="Deg">5.0</constant>
 <constant digits="0" name="TrigAngMul">10.0</constant>
-<constant name="TrigEdge">"FALLING"</constant>
+<constant name="TrigEdge">"RISING"</constant>
 <constant name="TrigSpeed">"Crank Speed"</constant>
 <constant name="IgInv">"Going Low"</constant>
 <constant name="TrigPattern">"4G63 / Miata / 3000GT"</constant>
@@ -655,8 +656,8 @@
 <constant name="fanInv">"No"</constant>
 <constant name="fanEnable">"On/Off"</constant>
 <constant name="fanPin">"Board Default"</constant>
-<constant digits="0" name="fanSP" units="C">-40.0</constant>
-<constant digits="0" name="fanHyster" units="C">0.0</constant>
+<constant digits="0" name="fanSP" units="C">80.0</constant>
+<constant digits="0" name="fanHyster" units="C">3.0</constant>
 <constant digits="0" name="fanFreq" units="Hz">0.0</constant>
 <constant cols="1" digits="0" name="fanPWMBins" rows="4" units="C">
          -40.0 
@@ -856,85 +857,85 @@
       </constant>
 </page>
 <page number="8" size="192">
-<constant name="enable_secondarySerial">"Enable"</constant>
+<constant name="enable_secondarySerial">"Disable"</constant>
 <constant name="intcan_available">"Disable"</constant>
 <constant name="enable_intcan">"Enable"</constant>
-<constant name="caninput_sel0a">"Digital_local"</constant>
+<constant name="caninput_sel0a">"Off"</constant>
 <constant name="caninput_sel0b">"Digital_local"</constant>
 <constant name="caninput_sel0extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel0extsourceb">"Via Internal CAN"</constant>
 <constant name="caninput_sel0extsourcec">"Via Internal CAN"</constant>
-<constant name="caninput_sel1a">"Digital_local"</constant>
+<constant name="caninput_sel1a">"Off"</constant>
 <constant name="caninput_sel1b">"Digital_local"</constant>
 <constant name="caninput_sel1extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel1extsourceb">"Via Internal CAN"</constant>
 <constant name="caninput_sel1extsourcec">"Via Internal CAN"</constant>
-<constant name="caninput_sel2a">"Digital_local"</constant>
+<constant name="caninput_sel2a">"Off"</constant>
 <constant name="caninput_sel2b">"Digital_local"</constant>
 <constant name="caninput_sel2extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel2extsourceb">"Via Internal CAN"</constant>
 <constant name="caninput_sel2extsourcec">"Via Internal CAN"</constant>
-<constant name="caninput_sel3a">"Digital_local"</constant>
+<constant name="caninput_sel3a">"Off"</constant>
 <constant name="caninput_sel3b">"Digital_local"</constant>
 <constant name="caninput_sel3extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel3extsourceb">"Via Internal CAN"</constant>
 <constant name="caninput_sel3extsourcec">"Via Internal CAN"</constant>
-<constant name="caninput_sel4a">"Digital_local"</constant>
+<constant name="caninput_sel4a">"Off"</constant>
 <constant name="caninput_sel4b">"Digital_local"</constant>
 <constant name="caninput_sel4extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel4extsourceb">"Via Internal CAN"</constant>
 <constant name="caninput_sel4extsourcec">"Via Internal CAN"</constant>
-<constant name="caninput_sel5a">"Digital_local"</constant>
+<constant name="caninput_sel5a">"Off"</constant>
 <constant name="caninput_sel5b">"Digital_local"</constant>
 <constant name="caninput_sel5extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel5extsourceb">"Via Internal CAN"</constant>
 <constant name="caninput_sel5extsourcec">"Via Internal CAN"</constant>
-<constant name="caninput_sel6a">"Digital_local"</constant>
+<constant name="caninput_sel6a">"Off"</constant>
 <constant name="caninput_sel6b">"Digital_local"</constant>
 <constant name="caninput_sel6extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel6extsourceb">"Via Internal CAN"</constant>
 <constant name="caninput_sel6extsourcec">"Via Internal CAN"</constant>
-<constant name="caninput_sel7a">"Digital_local"</constant>
+<constant name="caninput_sel7a">"Off"</constant>
 <constant name="caninput_sel7b">"Digital_local"</constant>
 <constant name="caninput_sel7extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel7extsourceb">"Via Internal CAN"</constant>
 <constant name="caninput_sel7extsourcec">"Via Internal CAN"</constant>
-<constant name="caninput_sel8a">"Digital_local"</constant>
+<constant name="caninput_sel8a">"Off"</constant>
 <constant name="caninput_sel8b">"Digital_local"</constant>
 <constant name="caninput_sel8extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel8extsourceb">"Via Internal CAN"</constant>
 <constant name="caninput_sel8extsourcec">"Via Internal CAN"</constant>
-<constant name="caninput_sel9a">"Digital_local"</constant>
+<constant name="caninput_sel9a">"Off"</constant>
 <constant name="caninput_sel9b">"Digital_local"</constant>
 <constant name="caninput_sel9extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel9extsourceb">"Via Internal CAN"</constant>
 <constant name="caninput_sel9extsourcec">"Via Internal CAN"</constant>
-<constant name="caninput_sel10a">"Digital_local"</constant>
+<constant name="caninput_sel10a">"Off"</constant>
 <constant name="caninput_sel10b">"Digital_local"</constant>
 <constant name="caninput_sel10extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel10extsourceb">"Via Internal CAN"</constant>
 <constant name="caninput_sel10extsourcec">"Via Internal CAN"</constant>
-<constant name="caninput_sel11a">"Digital_local"</constant>
+<constant name="caninput_sel11a">"Off"</constant>
 <constant name="caninput_sel11b">"Digital_local"</constant>
 <constant name="caninput_sel11extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel11extsourceb">"Via Internal CAN"</constant>
 <constant name="caninput_sel11extsourcec">"Via Internal CAN"</constant>
-<constant name="caninput_sel12a">"Digital_local"</constant>
+<constant name="caninput_sel12a">"Off"</constant>
 <constant name="caninput_sel12b">"Digital_local"</constant>
 <constant name="caninput_sel12extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel12extsourceb">"Via Internal CAN"</constant>
 <constant name="caninput_sel12extsourcec">"Via Internal CAN"</constant>
-<constant name="caninput_sel13a">"Digital_local"</constant>
+<constant name="caninput_sel13a">"Off"</constant>
 <constant name="caninput_sel13b">"Digital_local"</constant>
 <constant name="caninput_sel13extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel13extsourceb">"Via Internal CAN"</constant>
 <constant name="caninput_sel13extsourcec">"Via Internal CAN"</constant>
-<constant name="caninput_sel14a">"Digital_local"</constant>
+<constant name="caninput_sel14a">"Off"</constant>
 <constant name="caninput_sel14b">"Digital_local"</constant>
 <constant name="caninput_sel14extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel14extsourceb">"Via Internal CAN"</constant>
 <constant name="caninput_sel14extsourcec">"Via Internal CAN"</constant>
-<constant name="caninput_sel15a">"Digital_local"</constant>
+<constant name="caninput_sel15a">"Off"</constant>
 <constant name="caninput_sel15b">"Digital_local"</constant>
 <constant name="caninput_sel15extsourcea">"Via Secondary Serial"</constant>
 <constant name="caninput_sel15extsourceb">"Via Internal CAN"</constant>
@@ -1061,6 +1062,7 @@
 <constant name="Auxin14pinb">"7"</constant>
 <constant name="Auxin15pinb">"8"</constant>
 <constant name="iacStepperInv">"Yes"</constant>
+<constant name="iacCoolTime">"0"</constant>
 <constant digits="0" name="unused10_154">7.0</constant>
 <constant digits="0" name="unused10_155">20.0</constant>
 <constant digits="0" name="unused10_156">44.0</constant>
@@ -1252,12 +1254,13 @@
 <constant digits="1" name="knock_duration" units="Sec">0.1</constant>
 <constant digits="1" name="knock_recoveryStepTime" units="Sec">0.0</constant>
 <constant digits="0" name="knock_recoveryStep" units="Deg">0.0</constant>
-<constant cols="1" digits="0" name="unused11_122_191" rows="69" units="RPM">
+<constant cols="1" digits="0" name="unused11_122_191" rows="70" units="RPM">
          0.0 
          0.0 
          0.0 
          0.0 
-         20000.0 
+         18800.0 
+         1400.0 
          0.0 
          0.0 
          0.0 
@@ -1320,11 +1323,8 @@
          0.0 
          0.0 
          0.0 
-         0.0 
+         100.0 
          9800.0 
-      </constant>
-<constant digits="0" name="UNALLOCATED_TOP_9" units="RAW">
-         101.0 
       </constant>
 </page>
 <settings Comment="These setting are only used if this msq is opened without a project.">

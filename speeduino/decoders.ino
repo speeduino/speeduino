@@ -779,6 +779,7 @@ void triggerSetEndTeeth_BasicDistributor()
 Name: GM7X
 Desc: GM 7X trigger wheel. It has six equally spaced teeth and a seventh tooth for cylinder identification.
 Note: Within the code below, the sync tooth is referred to as tooth #3 rather than tooth #7. This makes for simpler angle calculations
+https://speeduino.com/forum/download/file.php?id=4743
 */
 void triggerSetup_GM7X()
 {
@@ -790,40 +791,62 @@ void triggerSetup_GM7X()
 
 void triggerPri_GM7X()
 {
-   lastGap = curGap;
-   curTime = micros();
-   curGap = curTime - toothLastToothTime;
-   toothCurrentCount++; //Increment the tooth counter
-   validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+    lastGap = curGap;
+    curTime = micros();
+    curGap = curTime - toothLastToothTime;
+    toothCurrentCount++; //Increment the tooth counter
+    validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
-   //
-   if( toothCurrentCount > 7 )
-   {
-     toothCurrentCount = 1;
-     toothOneMinusOneTime = toothOneTime;
-     toothOneTime = curTime;
+    if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) )
+    {
+      if( toothCurrentCount > 7 )
+      {
+        toothCurrentCount = 1;
+        toothOneMinusOneTime = toothOneTime;
+        toothOneTime = curTime;
 
-     toothLastMinusOneToothTime = toothLastToothTime;
-     toothLastToothTime = curTime;
-     triggerToothAngleIsCorrect = true;
-   }
-   else
-   {
-     targetGap = (lastGap) >> 1; //The target gap is set at half the last tooth gap
-     if ( curGap < targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the magical 3rd tooth
+        triggerToothAngleIsCorrect = true;
+      }
+      else
+      {
+        targetGap = (lastGap) >> 1; //The target gap is set at half the last tooth gap
+        if ( curGap < targetGap ) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the magical 3rd tooth
+        {
+          toothCurrentCount = 3;
+          currentStatus.hasSync = true;
+          triggerToothAngleIsCorrect = false;
+          currentStatus.startRevolutions++; //Counter
+        }
+        else
+        {
+          triggerToothAngleIsCorrect = true;
+        }
+      }
+    }
+
+    //New ignition mode!
+     if(configPage2.perToothIgn == true)
      {
-       toothCurrentCount = 3;
-       currentStatus.hasSync = true;
-       triggerToothAngleIsCorrect = false;
-       currentStatus.startRevolutions++; //Counter
+       if(toothCurrentCount != 3) //Never do the check on the extra tooth. It's not needed anyway
+       {
+          uint16_t crankAngle;
+          if( toothCurrentCount < 3 )
+          {
+            crankAngle = ((toothCurrentCount - 1) * triggerToothAngle) + 42; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+          }
+          else
+          {
+            crankAngle = ((toothCurrentCount - 2) * triggerToothAngle) + 42; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+          }
+          checkPerToothTiming(crankAngle, toothCurrentCount);
+       }
+       
      }
-     else
-     {
-       toothLastMinusOneToothTime = toothLastToothTime;
-       toothLastToothTime = curTime;
-       triggerToothAngleIsCorrect = true;
-     }
-   }
+
+    toothLastMinusOneToothTime = toothLastToothTime;
+    toothLastToothTime = curTime;
+
+
 }
 void triggerSec_GM7X() { return; } //Not required
 uint16_t getRPM_GM7X()
@@ -872,6 +895,19 @@ void triggerSetEndTeeth_GM7X()
 {
 
   lastToothCalcAdvance = currentStatus.advance;
+
+  if(currentStatus.advance < 18 ) 
+  { 
+    ignition1EndTooth = 7;
+    ignition2EndTooth = 2;
+    ignition3EndTooth = 5;
+  }
+  else 
+  { 
+    ignition1EndTooth = 6;
+    ignition2EndTooth = 1;
+    ignition3EndTooth = 4;
+  }
 }
 
 
