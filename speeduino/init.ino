@@ -720,6 +720,7 @@ void initialiseAll()
     case IGN_MODE_ROTARY:
         if(configPage10.rotaryType == ROTARY_IGN_FC)
         {
+          //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
           ign1StartFunction = beginCoil1Charge;
           ign1EndFunction = endCoil1Charge;
           ign2StartFunction = beginCoil1Charge;
@@ -729,6 +730,41 @@ void initialiseAll()
           ign3EndFunction = endTrailingCoilCharge1;
           ign4StartFunction = beginTrailingCoilCharge;
           ign4EndFunction = endTrailingCoilCharge2;
+        }
+        else if(configPage10.rotaryType == ROTARY_IGN_FD)
+        {
+          //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
+          ign1StartFunction = beginCoil1Charge;
+          ign1EndFunction = endCoil1Charge;
+          ign2StartFunction = beginCoil1Charge;
+          ign2EndFunction = endCoil1Charge;
+
+          //Trailing coils have their own channel each
+          //IGN2 = front rotor trailing spark
+          ign3StartFunction = beginCoil2Charge;
+          ign3EndFunction = endCoil2Charge;
+          //IGN3 = rear rotor trailing spark
+          ign4StartFunction = beginCoil3Charge;
+          ign4EndFunction = endCoil3Charge;
+
+          //IGN4 not used
+        }
+        else if(configPage10.rotaryType == ROTARY_IGN_RX8)
+        {
+          //RX8 outputs are simply 1 coil and 1 output per plug
+
+          //IGN1 is front rotor, leading spark
+          ign1StartFunction = beginCoil1Charge;
+          ign1EndFunction = endCoil1Charge;
+          //IGN2 is rear rotor, leading spark
+          ign2StartFunction = beginCoil2Charge;
+          ign2EndFunction = endCoil2Charge;
+          //IGN3 = front rotor trailing spark
+          ign3StartFunction = beginCoil3Charge;
+          ign3EndFunction = endCoil3Charge;
+          //IGN4 = rear rotor trailing spark
+          ign4StartFunction = beginCoil4Charge;
+          ign4EndFunction = endCoil4Charge;
         }
         break;
 
@@ -1107,7 +1143,7 @@ void setPinMapping(byte boardID)
       break;
 
     case 20:
-    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+    #if defined(CORE_AVR) && !defined(SMALL_FLASH_MODE) //No support for bluepill here anyway
       //Pin mappings as per the Plazomat In/Out shields Rev 0.1
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on

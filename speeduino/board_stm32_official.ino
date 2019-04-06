@@ -15,7 +15,6 @@
   stimer_t HardwareTimers_4;
   stimer_t HardwareTimers_5;
   stimer_t HardwareTimers_8;
-  #define LED_BUILTIN PA7
   //These should really be in the stm32GENERIC libs, but for somereason they only have timers 1-4
   //    #include <stm32_TIM_variant_11.h>
   //      #include "src/HardwareTimers/HardwareTimer.h"
@@ -70,7 +69,8 @@
     if(idle_pwm_max_count > 0) { attachIntHandleOC(&HardwareTimers_1, idleInterrupt, 4, 0);} //on first flash the configPage4.iacAlgorithm is invalid
     //Timer1.setMode(4, TIMER_OUTPUT_COMPARE);
     //timer_set_mode(TIMER1, 4, TIMER_OUTPUT_COMPARE;
-    //if(idle_pwm_max_count > 0) { Timer1.attachInterrupt(4, idleInterrupt);} //on first flash the configPage4.iacAlgorithm is invalid
+    //on first flash the configPage4.iacAlgorithm is invalid:
+    //if(idle_pwm_max_count > 0) { Timer1.attachInterrupt(4, idleInterrupt);} 
     //Timer1.resume();
 
 
@@ -79,13 +79,10 @@
     * Timers
     */
     #if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
-        TimerHandleInit(&HardwareTimers_8, 1000, 168);
-        attachIntHandle(&HardwareTimers_8, oneMSIntervalIRQ);
+      TimerHandleInit(&HardwareTimers_8, 1000, 168);
+      attachIntHandle(&HardwareTimers_8, oneMSIntervalIRQ);
     #else
-        Timer4.setPeriod(1000);  // Set up period
-        Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
-        Timer4.attachInterrupt(1, oneMSInterval);
-        Timer4.resume(); //Start Timer
+      //Should do something here for other boards
     #endif
     pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
 

@@ -1,9 +1,9 @@
 #ifndef STM32F407VE_H
 #define STM32F407VE_H
 #if defined(CORE_STM32_OFFICIAL)
-
+#include <Arduino.h>
 #include <timer.h>
-#include <stm32f4xx_ll_tim.h>
+#include "stm32f4xx_ll_tim.h"
 /*
 ***********************************************************************************************************
 * General
@@ -11,14 +11,24 @@
 #define PORT_TYPE uint32_t
 #define PINMASK_TYPE uint32_t
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
-#define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
-#define digitalPinToInterrupt(p) (p)
+#if defined(SRAM_AS_EEPROM)
+    #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
+#elif defined(SPI_AS_EEPROM)
+    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+#else
+    #define EEPROM_LIB_H <EEPROM.h>
+#endif
+
+#ifndef LED_BUILTIN
+  #define LED_BUILTIN PA7
+#endif
 
 #define USE_SERIAL3
 void initBoard();
 uint16_t freeRam();
 extern void oneMSIntervalIRQ(stimer_t *Timer);
 extern void EmptyIRQCallback(stimer_t *Timer, uint32_t channel);
+extern "C" char* sbrk(int incr);
 
 /*
 ***********************************************************************************************************
