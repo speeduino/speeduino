@@ -382,10 +382,11 @@ FastCRC32::FastCRC32(){
  * @param datalen Length of Data
  * @return CRC value
  */
-uint32_t FastCRC32::crc32(const uint8_t *data, const uint16_t datalen)
+uint32_t FastCRC32::crc32(const uint8_t *data, const uint16_t datalen, bool reflect)
 {
   // poly=0x04c11db7 init=0xffffffff refin=true refout=true xorout=0xffffffff check=0xcbf43926
-  return generic(0x04C11DB7L, 0XFFFFFFFFL, CRC_FLAG_REFLECT | CRC_FLAG_XOR, data, datalen);
+  uint32_t flags = CRC_FLAG_REFLECT | (reflect ? CRC_FLAG_XOR : 0);
+  return generic(0x04C11DB7L, 0XFFFFFFFFL, flags, data, datalen);
 }
 
 /** CKSUM
@@ -448,6 +449,6 @@ uint32_t FastCRC32::generic(const uint32_t polynom, const uint32_t seed, const u
   return update(data, datalen);
 }
 
-uint32_t FastCRC32::crc32_upd(const uint8_t *data, uint16_t len){return update(data, len);}
+uint32_t FastCRC32::crc32_upd(const uint8_t *data, uint16_t len, bool reflect){return update(data, len);}
 uint32_t FastCRC32::cksum_upd(const uint8_t *data, uint16_t len){return update(data, len);}
 #endif // #if defined(KINETISK)
