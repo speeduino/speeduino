@@ -75,7 +75,11 @@ script:
 # Do doxygen run and upload to server
   - cd speeduino
   - doxygen
-  - curl --user "speeduino_doxygen@speeduino.com:$WEB_PWD" --basic -T "./reference/doxygen/*" "https://speeduino.com:2078/"
+  - cd reference/doxygen/html
+  - find ./ -type f -exec curl --user "speeduino_doxygen@speeduino.com:$WEB_PWD" --basic -T {} "https://speeduino.com:2078/html/{}" \;
+  #Disable the XML uploading for now as it's not used
+  #- cd ../xml
+  #- find ./ -type f -exec curl --user "speeduino_doxygen@speeduino.com:$WEB_PWD" --basic -T {} "https://speeduino.com:2078/xml/{}" \;
 
 notifications:
     slack: speeduino:Y8Bhhviu4r7HFF3abMYDnH3p
