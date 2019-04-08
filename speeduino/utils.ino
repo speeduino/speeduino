@@ -165,6 +165,7 @@ uint32_t calculateCRC32(byte pageNo)
       break;
 
     default:
+      CRC32_val = 0;
       break;
   }
   

@@ -51,6 +51,8 @@ before_install:
   - cd cppcheck-1.79
 #  - make SRCDIR=build CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
   - sudo make install CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
+# Requirements for doxygen
+  - sudo apt-get install doxygen graphviz
 
 install:
     - pip install -U platformio
@@ -61,12 +63,23 @@ script:
   - cd noisymime/speeduino
   - platformio update
 #  - platformio run -e megaatmega2560 -e teensy35 -e bluepill_f103c8 -e genericSTM32F103RB
+# Run the builds
   - platformio run -e megaatmega2560 -e teensy35 -e genericSTM32F103RB
+# Upload ini and hex files to speeduino.com server
   - curl --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pioenvs/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
   - curl --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
+# Begin MISRA scan
   - cd ..
   - chmod +x speeduino/misra/check_misra.sh
   - speeduino/misra/check_misra.sh
+# Do doxygen run and upload to server
+  - cd speeduino
+  - doxygen
+  - cd reference/doxygen/html
+  - find ./ -type f -exec curl --user "speeduino_doxygen@speeduino.com:$WEB_PWD" --basic -T {} "https://speeduino.com:2078/html/{}" \;
+  #Disable the XML uploading for now as it's not used
+  #- cd ../xml
+  #- find ./ -type f -exec curl --user "speeduino_doxygen@speeduino.com:$WEB_PWD" --basic -T {} "https://speeduino.com:2078/xml/{}" \;
 
 notifications:
     slack: speeduino:Y8Bhhviu4r7HFF3abMYDnH3p
