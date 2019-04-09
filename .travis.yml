@@ -72,11 +72,14 @@ script:
   - cd ..
   - chmod +x speeduino/misra/check_misra.sh
   - speeduino/misra/check_misra.sh
-# Do doxygen run and upload to server
+# Do doxygen run and upload to server. The upload is only performed if the commit message contains the word 'doxygen'
   - cd speeduino
   - doxygen
   - cd reference/doxygen/html
-  - find ./ -type f -exec curl --user "speeduino_doxygen@speeduino.com:$WEB_PWD" --basic -T {} "https://speeduino.com:2078/html/{}" \;
+  - |
+    if [[ $TRAVIS_COMMIT_MESSAGE == *"doxygen"* ]]; then
+      find ./ -type f -exec curl --user "speeduino_doxygen@speeduino.com:$WEB_PWD" --basic -T {} "https://speeduino.com:2078/html/{}" \;
+    fi
   #Disable the XML uploading for now as it's not used
   #- cd ../xml
   #- find ./ -type f -exec curl --user "speeduino_doxygen@speeduino.com:$WEB_PWD" --basic -T {} "https://speeduino.com:2078/xml/{}" \;

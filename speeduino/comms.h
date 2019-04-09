@@ -1,3 +1,12 @@
+/** \file comms.h
+ * @brief File for handling all serial requests 
+ * @author Josh Stewart
+ * 
+ * This file contains all the functions associated with serial comms.
+ * This includes sending of live data, sending/receiving current page data, sending CRC values of pages, receiving sensor calibration data etc
+ * 
+ */
+
 #ifndef COMMS_H
 #define COMMS_H
 //These are the page numbers that the Tuner Studio serial protocol uses to transverse the different map and config pages.
@@ -12,20 +21,17 @@
 #define canbusPage   9//Config Page 9
 #define warmupPage   10 //Config Page 10
 
-#define SERIAL_PACKET_SIZE   91 //Must match ochBlockSize in ini file
+#define SERIAL_PACKET_SIZE   91 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
-bool isMap = true;
-unsigned long requestCount = 0; //The number of times the A command has been issued
-byte currentCommand;
-bool cmdPending = false;
-bool chunkPending = false;
-uint16_t chunkComplete = 0;
-uint16_t chunkSize = 0;
-int valueOffset; //cannot use offset as a variable name, it is a reserved word for several teensy libraries
-byte cmdGroup = 0;
-byte cmdValue = 0;
-int cmdCombined = 0;  //the cmdgroup as high byte and cmdvalue as low byte
+bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
+unsigned long requestCount = 0; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
+byte currentCommand; /**< The serial command that is currently being processed. This is only useful when cmdPending=True */
+bool cmdPending = false; /**< Whether or not a serial request has only been partially received. This occurs when a command character has been received in the serial buffer, but not all of its arguments have yet been received. If true, the active command will be stored in the currentCommand variable */
+bool chunkPending = false; /**< Whether or not the current chucnk write is complete or not */
+uint16_t chunkComplete = 0; /**< The number of bytes in a chunk write that have been written so far */
+uint16_t chunkSize = 0; /**< The complete size of the requested chunk write */
+int valueOffset; /**< THe memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
 byte tsCanId = 0;     // current tscanid requested
 
 const char pageTitles[] PROGMEM //This is being stored in the avr flash instead of SRAM which there is not very much of
