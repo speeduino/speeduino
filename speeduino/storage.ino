@@ -386,6 +386,39 @@ void writeConfig(byte tableNum)
 
       break;
 
+    case fuelMap2Page:
+      /*---------------------------------------------------
+      | Fuel table (See storage.h for data layout) - Page 1
+      | 16x16 table itself + the 16 values along each of the axis
+      -----------------------------------------------------*/
+      EEPROM.update(EEPROM_CONFIG11_XSIZE, fuelTable2.xSize); writeCounter++; //Write the VE Tables RPM dimension size
+      EEPROM.update(EEPROM_CONFIG11_YSIZE, fuelTable2.ySize); writeCounter++; //Write the VE Tables MAP/TPS dimension size
+      for(int x=EEPROM_CONFIG11_MAP; x<EEPROM_CONFIG11_XBINS; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
+        offset = x - EEPROM_CONFIG11_MAP;
+        EEPROM.update(x, fuelTable2.values[15-(offset/16)][offset%16]); writeCounter++; //Write the 16x16 map
+      }
+
+      //RPM bins
+      for(int x=EEPROM_CONFIG11_XBINS; x<EEPROM_CONFIG11_YBINS; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
+        offset = x - EEPROM_CONFIG1_XBINS;
+        EEPROM.update(x, byte(fuelTable2.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; //RPM bins are divided by 100 and converted to a byte
+      }
+      //TPS/MAP bins
+      for(int x=EEPROM_CONFIG11_YBINS; x<EEPROM_CONFIG11_END; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
+        offset = x - EEPROM_CONFIG11_YBINS;
+        EEPROM.update(x, fuelTable2.axisY[offset] / TABLE_LOAD_MULTIPLIER); //Table load is divided by 2 (Allows for MAP up to 511)
+      }
+      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
+      else { eepromWritesPending = false; }
+      break;
+      //That concludes the writing of the 2nd fuel table
+
     default:
       break;
   }
@@ -599,6 +632,26 @@ void loadConfig()
   for(int x=EEPROM_CONFIG10_START; x<EEPROM_CONFIG10_END; x++)
   {
     *(pnt_configPage + byte(x - EEPROM_CONFIG10_START)) = EEPROM.read(x);
+  }
+
+  //*********************************************************************************************************************************************************************************
+  //Fuel table 2 (See storage.h for data layout)
+  for(int x=EEPROM_CONFIG11_MAP; x<EEPROM_CONFIG11_XBINS; x++)
+  {
+    offset = x - EEPROM_CONFIG11_MAP;
+    fuelTable2.values[15-(offset/16)][offset%16] = EEPROM.read(x); //Read the 8x8 map
+  }
+  //RPM bins
+  for(int x=EEPROM_CONFIG11_XBINS; x<EEPROM_CONFIG11_YBINS; x++)
+  {
+    offset = x - EEPROM_CONFIG11_XBINS;
+    fuelTable2.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
+  }
+  //TPS/MAP bins
+  for(int x=EEPROM_CONFIG11_YBINS; x<EEPROM_CONFIG11_END; x++)
+  {
+    offset = x - EEPROM_CONFIG11_YBINS;
+    fuelTable2.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER;
   }
 
 }

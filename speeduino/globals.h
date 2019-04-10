@@ -226,14 +226,12 @@
 const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
-//const byte page_size = 64;
-//const int16_t npage_size[11] PROGMEM = {0,288,128,288,128,288,128,240,192,192,192};
-#define NUM_PAGES     11
-const uint16_t npage_size[NUM_PAGES] PROGMEM = {0,128,288,288,128,288,128,240,192,192,192};
-//const byte page11_size = 128;
+#define NUM_PAGES     12
+const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288};
 #define MAP_PAGE_SIZE 288
 
 struct table3D fuelTable; //16x16 fuel map
+struct table3D fuelTable2; //16x16 fuel map
 struct table3D ignitionTable; //16x16 ignition map
 struct table3D afrTable; //16x16 afr target map
 struct table3D stagingTable; //8x8 fuel staging table
@@ -410,7 +408,8 @@ struct statuses {
   unsigned int PW8; //In uS
   volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
   volatile byte secl; //Continous
-  volatile unsigned int loopsPerSecond;
+  //volatile unsigned int loopsPerSecond;
+  volatile uint32_t loopsPerSecond;
   bool launchingSoft; //True when in launch control soft limit mode
   bool launchingHard; //True when in launch control hard limit mode
   uint16_t freeRAM;
@@ -884,7 +883,11 @@ struct config10 {
   byte knock_recoveryStepTime;
   byte knock_recoveryStep;
 
-  byte unused11_122_191[70];
+  byte fuel2Algorithm : 3;
+  byte fuel2Mode : 2;
+  byte unused10_122 : 3;
+
+  byte unused11_123_191[69];
 
 #if defined(CORE_AVR)
   };

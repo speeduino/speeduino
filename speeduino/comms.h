@@ -20,6 +20,7 @@
 #define seqFuelPage  8
 #define canbusPage   9//Config Page 9
 #define warmupPage   10 //Config Page 10
+#define fuelMap2Page 11
 
 #define SERIAL_PACKET_SIZE   91 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
 
