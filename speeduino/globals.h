@@ -245,11 +245,16 @@ struct table3D trim3Table; //6x6 Fuel trim 3 map
 struct table3D trim4Table; //6x6 Fuel trim 4 map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
+struct table2D ASETable; //4 bin After Start Enrichment map (2D)
+struct table2D ASECountTable; //4 bin After Start duration map (2D)
+struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
 struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
 struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
+struct table2D IDLEAdvanceTable; //6 bin idle advance adjustment table based on RPM difference  (2D)
+struct table2D CLTAdvanceTable; //6 bin ignition adjustment based on coolant temperature  (2D)
 struct table2D rotarySplitTable; //8 bin ignition split curve for rotary leading/trailing  (2D)
 struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
 struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
@@ -454,8 +459,8 @@ struct config2 {
 
   byte unused2_1;
   byte unused2_2;
-  byte asePct;  //Afterstart enrichment (%)
-  byte aseCount; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
+  byte unused2_3;  //Was ASE
+  byte unused2_4;  //Was ASECount
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
@@ -513,7 +518,7 @@ struct config2 {
   byte perToothIgn : 1;
   byte dfcoEnabled : 1; //Whether or not DFCO is turned on
 
-  byte primePulse;
+  byte unused2_39;  //Was primePulse
   byte dutyLim;
   byte flexFreqLow; //Lowest valid frequency reading from the flex sensor
   byte flexFreqHigh; //Highest valid frequency reading from the flex sensor
@@ -549,8 +554,12 @@ struct config2 {
 
   byte fanWhenOff : 1;      // Only run fan when engine is running
   byte fanUnused : 7;
-
-  byte unused1_70[57];
+  byte asePct[4];  //Afterstart enrichment (%)
+  byte aseCount[4]; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
+  byte aseBins[4]; //Afterstart enrichment temp axis
+  byte primePulse[4]; //Priming pulsewidth
+  byte primeBins[4]; //Priming temp axis
+  byte unused2_91[37];
 
 #if defined(CORE_AVR)
   };
@@ -623,8 +632,11 @@ struct config4 {
   byte ADCFILTER_BAT;
   byte ADCFILTER_MAP; //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
   byte ADCFILTER_BARO;
+  
+  byte cltAdvBins[6]; // Coolant Temp timing advance curve bins
+  byte cltAdvValues[6]; // Coolant timing advance curve values
 
-  byte unused2_64[57];
+  byte unused2_64[45];
 
 #if defined(CORE_AVR)
   };

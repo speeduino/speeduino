@@ -138,10 +138,10 @@ static inline byte correctionASE()
   //Two checks are requiredL:
   //1) Is the negine run time less than the configured ase time
   //2) Make sure we're not still cranking
-  if ( (currentStatus.runSecs < configPage2.aseCount) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
+  if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
   {
     BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-    ASEValue = 100 + configPage2.asePct;
+    ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
   }
   else
   {
@@ -397,6 +397,7 @@ int8_t correctionsIgn(int8_t base_advance)
   int8_t advance;
   advance = correctionFlexTiming(base_advance);
   advance = correctionIATretard(advance);
+  advance = correctionCLTadvance(advance);
   advance = correctionSoftRevLimit(advance);
   advance = correctionNitrous(advance);
   advance = correctionSoftLaunch(advance);
@@ -445,6 +446,16 @@ static inline int8_t correctionIATretard(int8_t advance)
   else { ignIATValue = -OFFSET_IGNITION; }
 
   return ignIATValue;
+}
+
+static inline int8_t correctionCLTadvance(int8_t advance)
+{
+  byte ignCLTValue = advance;
+  //Adjust the advance based on CLT.
+  int8_t advanceCLTadjust = table2D_getValue(&CLTAdvanceTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  ignCLTValue = (advance + advanceCLTadjust/10);
+
+  return ignCLTValue;
 }
 
 static inline int8_t correctionSoftRevLimit(int8_t advance)
