@@ -815,7 +815,7 @@ void initialiseAll()
     //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
     if((table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) > 0)
     {
-      setFuelSchedule1(100, (unsigned long)(table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 500));
+      setFuelSchedule1(100, (unsigned long)(table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 500)); //to acheive long enough priming pulses, the values in tuner studio are 0.5ms so those need to be multiplied by 500 to get uS value.
       setFuelSchedule2(100, (unsigned long)(table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 500));
       setFuelSchedule3(100, (unsigned long)(table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 500));
       setFuelSchedule4(100, (unsigned long)(table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 500));
