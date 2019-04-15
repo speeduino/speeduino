@@ -63,6 +63,19 @@ void initialiseAll()
     WUETable.xSize = 10;
     WUETable.values = configPage2.wueValues;
     WUETable.axisX = configPage4.wueBins;
+    ASETable.valueSize = SIZE_BYTE;
+    ASETable.xSize = 4;
+    ASETable.values = configPage2.asePct;
+    ASETable.axisX = configPage2.aseBins;
+    ASECountTable.valueSize = SIZE_BYTE;
+    ASECountTable.xSize = 4;
+    ASECountTable.values = configPage2.aseCount;
+    ASECountTable.axisX = configPage2.aseBins;
+    PrimingPulseTable.valueSize = SIZE_BYTE;
+    PrimingPulseTable.xSize = 4;
+    PrimingPulseTable.values = configPage2.primePulse;
+    PrimingPulseTable.axisX = configPage2.primeBins;
+    crankingEnrichTable.valueSize = SIZE_BYTE;
     crankingEnrichTable.valueSize = SIZE_BYTE;
     crankingEnrichTable.xSize = 4;
     crankingEnrichTable.values = configPage10.crankingEnrichValues;
@@ -84,6 +97,10 @@ void initialiseAll()
     IATRetardTable.xSize = 6;
     IATRetardTable.values = configPage4.iatRetValues;
     IATRetardTable.axisX = configPage4.iatRetBins;
+    CLTAdvanceTable.valueSize = SIZE_BYTE;
+    CLTAdvanceTable.xSize = 6;
+    CLTAdvanceTable.values = configPage4.cltAdvValues;
+    CLTAdvanceTable.axisX = configPage4.cltAdvBins;
     rotarySplitTable.valueSize = SIZE_BYTE;
     rotarySplitTable.xSize = 8;
     rotarySplitTable.values = configPage10.rotarySplitValues;
@@ -796,12 +813,14 @@ void initialiseAll()
 
     interrupts();
     //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
-    if(configPage2.primePulse > 0)
+    readCLT(); // need to read coolant temp to make priming pulsewidth work correctly.
+    unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    if(primingValue > 0)
     {
-      setFuelSchedule1(100, (unsigned long)(configPage2.primePulse * 100));
-      setFuelSchedule2(100, (unsigned long)(configPage2.primePulse * 100));
-      setFuelSchedule3(100, (unsigned long)(configPage2.primePulse * 100));
-      setFuelSchedule4(100, (unsigned long)(configPage2.primePulse * 100));
+      setFuelSchedule1(100, (primingValue * 100 * 5)); //to acheive long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
+      setFuelSchedule2(100, (primingValue * 100 * 5));
+      setFuelSchedule3(100, (primingValue * 100 * 5));
+      setFuelSchedule4(100, (primingValue * 100 * 5));
     }
 
 
