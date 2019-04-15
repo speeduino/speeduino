@@ -929,6 +929,7 @@ void setPinMapping(byte boardID)
 
     case 3:
       //Pin mappings as per the v0.4 shield
+  //Pin mappings as per the v0.4 shield
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
@@ -963,20 +964,6 @@ void setPinMapping(byte boardID)
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 43; //Reset control output
 
-      #if defined(CORE_TEENSY)
-        pinInjector6 = 51;
-
-        pinTrigger = 23;
-        pinTrigger2 = 36;
-        pinStepperDir = 34;
-        pinStepperStep = 35;
-        pinCoil1 = 31;
-        pinCoil2 = 32;
-        pinTachOut = 28;
-        pinFan = 27;
-        pinCoil4 = 29;
-        pinCoil3 = 30;
-        pinO2 = A22;
       #elif defined(STM32F4)
         //Black F407VE http://wiki.stm32duino.com/index.php?title=STM32F407
         //PC8~PC12 SDio
@@ -1382,9 +1369,8 @@ void setPinMapping(byte boardID)
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
       pinCLT = A1; //CLS sensor pin
-      pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
-      pinBaro = A21; //Baro sensor pin
+      pinBaro = A10; //Baro sensor pin
       pinLaunch = 51; //Can be overwritten below
       pinInjector1 = 5; //Output pin injector 1 is on
       pinInjector2 = 6; //Output pin injector 2 is on
@@ -1392,8 +1378,8 @@ void setPinMapping(byte boardID)
       pinInjector4 = 8; //Output pin injector 4 is on
       pinInjector5 = 22; //Output pin injector 5 is on
       pinInjector6 = 21; //Output pin injector 6 is on
-      pinInjector7 = 11; //Output pin injector 7 is on
-      pinInjector8 = 12; //Output pin injector 8 is on     
+      pinIdle1 = 11; //Single wire idle control
+      pinIdle2 = 12; //Single wire idle control     
       pinCoil1 = 31; //Pin for coil 1
       pinCoil2 = 38; //Pin for coil 2
       pinCoil3 = 30; //Pin for coil 3
