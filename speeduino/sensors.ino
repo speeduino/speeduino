@@ -327,10 +327,10 @@ void readBaro()
     int tempReading;
     // readings
     #if defined(ANALOG_ISR_MAP)
-      tempReading = AnChannel[pinBaro-A0];
+      tempReading = AnChannel[21-A0];
     #else
-      tempReading = analogRead(pinBaro);
-      tempReading = analogRead(pinBaro);
+      tempReading = analogRead(21);
+      tempReading = analogRead(21);
     #endif
 
     currentStatus.baroADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); //Very weak filter
