@@ -294,7 +294,7 @@ void readTPS()
   currentStatus.TPS_time = micros();
 }
 
-void readCLT()
+void readCLT(bool useFilter)
 {
   unsigned int tempReading;
   #if defined(ANALOG_ISR)
@@ -303,7 +303,10 @@ void readCLT()
     tempReading = analogRead(pinCLT);
     tempReading = fastMap1023toX(analogRead(pinCLT), 511); //Get the current raw CLT value
   #endif
-  currentStatus.cltADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC);
+  //The use of the filter can be overridden if required. This is used on startup so there can be an immediately accurate coolant value for priming
+  if(useFilter == true) { currentStatus.cltADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC); }
+  else { currentStatus.cltADC = tempReading; }
+  
   currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 }
 

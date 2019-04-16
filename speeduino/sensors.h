@@ -42,8 +42,8 @@ byte mapErrorCount = 0;
 byte iatErrorCount = 0;
 byte cltErrorCount = 0;
 
-/*
- * Simple low pass IIR filter macro for the analog inputs
+/**
+ * @brief Simple low pass IIR filter macro for the analog inputs
  * This is effectively implementing the smooth filter from http://playground.arduino.cc/Main/Smooth
  * But removes the use of floats and uses 8 bits of fixed precision.
  */
@@ -62,7 +62,7 @@ void readO2_2();
 void flexPulse();
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
-void readCLT();
+void readCLT(bool=true); //Allows the option to override the use of the filter
 void readIAT();
 void readO2();
 void readBat();
