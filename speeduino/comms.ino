@@ -592,6 +592,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[88] = highByte(currentStatus.ignLoad);
   fullStatus[89] = lowByte(currentStatus.dwell);
   fullStatus[90] = highByte(currentStatus.dwell);
+  fullStatus[91] = currentStatus.CLIdleTarget;
 
   for(byte x=0; x<packetLength; x++)
   {
