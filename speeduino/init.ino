@@ -964,7 +964,7 @@ void setPinMapping(byte boardID)
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 43; //Reset control output
 
-      #elif defined(STM32F4)
+      #if defined(STM32F4)
         //Black F407VE http://wiki.stm32duino.com/index.php?title=STM32F407
         //PC8~PC12 SDio
         //PA13~PA15 & PB4 SWD(debug) pins
