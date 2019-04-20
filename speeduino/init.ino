@@ -21,6 +21,7 @@ void initialiseAll()
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     table3D_setSize(&fuelTable, 16);
+    table3D_setSize(&fuelTable2, 16);
     table3D_setSize(&ignitionTable, 16);
     table3D_setSize(&afrTable, 16);
     table3D_setSize(&stagingTable, 8);
