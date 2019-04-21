@@ -21,7 +21,7 @@ A full copy of the license may be found in the projects root directory
 */
 void command()
 {
-
+  int valueOffset; /**< THe memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
   if (cmdPending == false) { currentCommand = Serial.read(); }
 
   switch (currentCommand)
@@ -101,7 +101,7 @@ void command()
       break;
 
     case 'F': // send serial protocol version
-      Serial.print("001");
+      Serial.print(F("001"));
       break;
 
     case 'H': //Start the tooth logger
@@ -394,7 +394,7 @@ void command()
       for (int x = 0; x < 10; x++)
       {
         Serial.print(configPage4.wueBins[x]);
-        Serial.print(", ");
+        Serial.print(F(", "));
         Serial.println(configPage2.wueValues[x]);
       }
       Serial.flush();
@@ -1078,7 +1078,7 @@ void sendPageASCII()
       for (byte x = 10; x; x--)// The x between the ';' has the same representation as the "x != 0" test or comparision
       {
         Serial.print(configPage2.wueValues[10 - x]);// This displays the values horizantially on the screen
-        Serial.print(' ');
+        Serial.print(F(" "));
       }
       Serial.println();
       for (pnt_configPage = (byte *)&configPage2.wueValues[9] + 1; pnt_configPage < &configPage2.inj1Ang; pnt_configPage = (byte *)pnt_configPage + 1) {
