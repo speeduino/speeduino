@@ -108,7 +108,6 @@ void loop()
       //toothLastMinusOneToothTime = 0;
       currentStatus.hasSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
-      secCounter = 0; //Reset our seconds counter.
       currentStatus.startRevolutions = 0;
       toothSystemCount = 0;
       secondaryToothCount = 0;
@@ -1092,14 +1091,16 @@ void loop()
     }
 } //loop()
 
-/*
-  This function retuns a pulsewidth time (in us) given the following:
-  REQ_FUEL
-  VE: Lookup from the main fuel table. This can either have been MAP or TPS based, depending on the algorithm used
-  MAP: In KPa, read from the sensor (This is used when performing a multiply of the map only. It is applicable in both Speed density and Alpha-N)
-  GammaE: Sum of Enrichment factors (Cold start, acceleration). This is a multiplication factor (Eg to add 10%, this should be 110)
-  injDT: Injector dead time. The time the injector take to open minus the time it takes to close (Both in uS)
-*/
+/**
+ * @brief This function calculates the required pulsewidth time (in us) given the current system state
+ * 
+ * @param REQ_FUEL The required fuel value in uS, as calculated by TunerStudio
+ * @param VE Lookup from the main fuel table. This can either have been MAP or TPS based, depending on the algorithm used
+ * @param MAP In KPa, read from the sensor (This is used when performing a multiply of the map only. It is applicable in both Speed density and Alpha-N)
+ * @param corrections Sum of Enrichment factors (Cold start, acceleration). This is a multiplication factor (Eg to add 10%, this should be 110)
+ * @param injOpen Injector opening time. The time the injector take to open minus the time it takes to close (Both in uS)
+ * @return uint16_t The injector pulse width in uS
+ */
 uint16_t PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
 {
   //Standard float version of the calculation
@@ -1140,6 +1141,11 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
   return (unsigned int)(intermediate);
 }
 
+/**
+ * @brief Lookup the current VE value from the primary 3D fuel map. The Y axis value used for this lookup varies based on the fuel algorithm selected (speed density, alpha-n etc)
+ * 
+ * @return byte The current VE value
+ */
 byte getVE()
 {
   byte tempVE = 100;
@@ -1164,6 +1170,11 @@ byte getVE()
   return tempVE;
 }
 
+/**
+ * @brief Performs a lookup of the ignition advance table. The values used to look this up will be RPM and whatever load source the user has configured
+ * 
+ * @return byte The current target advance value in degrees
+ */
 byte getAdvance()
 {
   byte tempAdvance = 0;

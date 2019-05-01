@@ -779,6 +779,7 @@ void triggerSetEndTeeth_BasicDistributor()
 Name: GM7X
 Desc: GM 7X trigger wheel. It has six equally spaced teeth and a seventh tooth for cylinder identification.
 Note: Within the code below, the sync tooth is referred to as tooth #3 rather than tooth #7. This makes for simpler angle calculations
+https://speeduino.com/forum/download/file.php?id=4743
 */
 void triggerSetup_GM7X()
 {
@@ -790,40 +791,62 @@ void triggerSetup_GM7X()
 
 void triggerPri_GM7X()
 {
-   lastGap = curGap;
-   curTime = micros();
-   curGap = curTime - toothLastToothTime;
-   toothCurrentCount++; //Increment the tooth counter
-   validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+    lastGap = curGap;
+    curTime = micros();
+    curGap = curTime - toothLastToothTime;
+    toothCurrentCount++; //Increment the tooth counter
+    validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
-   //
-   if( toothCurrentCount > 7 )
-   {
-     toothCurrentCount = 1;
-     toothOneMinusOneTime = toothOneTime;
-     toothOneTime = curTime;
+    if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) )
+    {
+      if( toothCurrentCount > 7 )
+      {
+        toothCurrentCount = 1;
+        toothOneMinusOneTime = toothOneTime;
+        toothOneTime = curTime;
 
-     toothLastMinusOneToothTime = toothLastToothTime;
-     toothLastToothTime = curTime;
-     triggerToothAngleIsCorrect = true;
-   }
-   else
-   {
-     targetGap = (lastGap) >> 1; //The target gap is set at half the last tooth gap
-     if ( curGap < targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the magical 3rd tooth
+        triggerToothAngleIsCorrect = true;
+      }
+      else
+      {
+        targetGap = (lastGap) >> 1; //The target gap is set at half the last tooth gap
+        if ( curGap < targetGap ) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the magical 3rd tooth
+        {
+          toothCurrentCount = 3;
+          currentStatus.hasSync = true;
+          triggerToothAngleIsCorrect = false;
+          currentStatus.startRevolutions++; //Counter
+        }
+        else
+        {
+          triggerToothAngleIsCorrect = true;
+        }
+      }
+    }
+
+    //New ignition mode!
+     if(configPage2.perToothIgn == true)
      {
-       toothCurrentCount = 3;
-       currentStatus.hasSync = true;
-       triggerToothAngleIsCorrect = false;
-       currentStatus.startRevolutions++; //Counter
+       if(toothCurrentCount != 3) //Never do the check on the extra tooth. It's not needed anyway
+       {
+          uint16_t crankAngle;
+          if( toothCurrentCount < 3 )
+          {
+            crankAngle = ((toothCurrentCount - 1) * triggerToothAngle) + 42; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+          }
+          else
+          {
+            crankAngle = ((toothCurrentCount - 2) * triggerToothAngle) + 42; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+          }
+          checkPerToothTiming(crankAngle, toothCurrentCount);
+       }
+       
      }
-     else
-     {
-       toothLastMinusOneToothTime = toothLastToothTime;
-       toothLastToothTime = curTime;
-       triggerToothAngleIsCorrect = true;
-     }
-   }
+
+    toothLastMinusOneToothTime = toothLastToothTime;
+    toothLastToothTime = curTime;
+
+
 }
 void triggerSec_GM7X() { return; } //Not required
 uint16_t getRPM_GM7X()
@@ -872,6 +895,19 @@ void triggerSetEndTeeth_GM7X()
 {
 
   lastToothCalcAdvance = currentStatus.advance;
+
+  if(currentStatus.advance < 18 ) 
+  { 
+    ignition1EndTooth = 7;
+    ignition2EndTooth = 2;
+    ignition3EndTooth = 5;
+  }
+  else 
+  { 
+    ignition1EndTooth = 6;
+    ignition2EndTooth = 1;
+    ignition3EndTooth = 4;
+  }
 }
 
 
@@ -1100,7 +1136,7 @@ void triggerPri_4G63()
       //New ignition mode is ONLY available on 4g63 when the trigger angle is set to the stock value of 0.
       if( (configPage2.perToothIgn == true) && (configPage4.triggerAngle == 0) )
       {
-        if(configPage2.nCylinders == 4)
+        if( (configPage2.nCylinders == 4) && (currentStatus.advance > 0) )
         {
           uint16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
 
@@ -1873,13 +1909,27 @@ void triggerPri_Miata9905()
         else { triggerToothAngle = 110; }
       }
 
+      //EXPERIMENTAL!
+      //New ignition mode is ONLY available on 9905 when the trigger angle is set to the stock value of 0.
+      if( (configPage2.perToothIgn == true) || (configPage4.triggerAngle == 0) )
+      {
+        if (currentStatus.advance > 0)
+        {
+          uint16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
+
+          //Handle non-sequential tooth counts 
+          if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-configPage2.nCylinders) ); }
+          else { checkPerToothTiming(crankAngle, toothCurrentCount); }
+        }
+      }
+
     } //Has sync
 
     toothLastMinusOneToothTime = toothLastToothTime;
     toothLastToothTime = curTime;
 
     //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage4.ignCranklock)
-    if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && configPage4.ignCranklock) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
+    if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && (configPage4.ignCranklock) ) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
     {
       if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) { endCoil1Charge(); endCoil3Charge(); }
       else if( (toothCurrentCount == 3) || (toothCurrentCount == 7) ) { endCoil2Charge(); endCoil4Charge(); }
@@ -1972,6 +2022,43 @@ int getCrankAngle_Miata9905()
 
 void triggerSetEndTeeth_Miata9905()
 {
+
+  if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) 
+  { 
+    if(currentStatus.advance > 10)
+    {
+      ignition1EndTooth = 8;
+      ignition2EndTooth = 2;
+      ignition3EndTooth = 4;
+      ignition4EndTooth = 6;
+    }
+    else if (currentStatus.advance > 0)
+    {
+      ignition1EndTooth = 1;
+      ignition2EndTooth = 3;
+      ignition3EndTooth = 5;
+      ignition4EndTooth = 7;
+    }
+    
+  }
+  else
+  {
+    if(currentStatus.advance >= 10)
+    {
+      ignition1EndTooth = 4;
+      ignition2EndTooth = 2;
+      ignition3EndTooth = 4; //Not used
+      ignition4EndTooth = 2; //Not used
+    }
+    else if(currentStatus.advance > 0)
+    {
+      ignition1EndTooth = 1;
+      ignition2EndTooth = 3;
+      ignition3EndTooth = 1; //Not used
+      ignition4EndTooth = 3; //Not used
+    }
+  }
+
   lastToothCalcAdvance = currentStatus.advance;
 }
 

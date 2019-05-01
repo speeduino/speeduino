@@ -226,14 +226,12 @@
 const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
-//const byte page_size = 64;
-//const int16_t npage_size[11] PROGMEM = {0,288,128,288,128,288,128,240,192,192,192};
-#define NUM_PAGES     11
-const uint16_t npage_size[NUM_PAGES] PROGMEM = {0,128,288,288,128,288,128,240,192,192,192};
-//const byte page11_size = 128;
+#define NUM_PAGES     12
+const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288};
 #define MAP_PAGE_SIZE 288
 
 struct table3D fuelTable; //16x16 fuel map
+struct table3D fuelTable2; //16x16 fuel map
 struct table3D ignitionTable; //16x16 ignition map
 struct table3D afrTable; //16x16 afr target map
 struct table3D stagingTable; //8x8 fuel staging table
@@ -383,24 +381,25 @@ struct statuses {
   int O2ADC;
   int O2_2ADC;
   int dwell;
-  byte dwellCorrection; //The amount of correction being applied to the dwell time.
-  byte battery10; //The current BRV in volts (multiplied by 10. Eg 12.5V = 125)
-  int8_t advance; //Signed 8 bit as advance can now go negative (ATDC)
-  byte corrections;
-  int16_t TAEamount; //The amount of accleration enrichment currently being applied
-  byte egoCorrection; //The amount of closed loop AFR enrichment currently being applied
-  byte wueCorrection; //The amount of warmup enrichment currently being applied
-  byte batCorrection; //The amount of battery voltage enrichment currently being applied
-  byte iatCorrection; //The amount of inlet air temperature adjustment currently being applied
-  byte launchCorrection; //The amount of correction being applied if launch control is active
-  byte flexCorrection; //Amount of correction being applied to compensate for ethanol content
-  int8_t flexIgnCorrection; //Amount of additional advance being applied based on flex. Note the type as this allows for negative values
+  byte dwellCorrection; /**< The amount of correction being applied to the dwell time. */
+  byte battery10; /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
+  int8_t advance; /**< Signed 8 bit as advance can now go negative (ATDC) */
+  byte corrections; /**< The total current corrections % amount */
+  int16_t TAEamount; /**< The amount of accleration enrichment currently being applied */
+  byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
+  byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
+  byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
+  byte iatCorrection; /**< The amount of inlet air temperature adjustment currently being applied */
+  byte launchCorrection; /**< The amount of correction being applied if launch control is active */
+  byte flexCorrection; /**< Amount of correction being applied to compensate for ethanol content */
+  int8_t flexIgnCorrection; /**< Amount of additional advance being applied based on flex. Note the type as this allows for negative values */
   byte afrTarget;
-  byte idleDuty;
-  bool idleUpActive;
-  bool fanOn; //Whether or not the fan is turned on
-  volatile byte ethanolPct; //Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85.
-  unsigned long TAEEndTime; //The target end time used whenever TAE is turned on
+  byte idleDuty; /**< The current idle duty cycle amount if PWM idle is selected and active */
+  byte CLIdleTarget; /**< The target idle RPM (when closed loop idle control is active) */
+  bool idleUpActive; /**< Whether the externally controlled idle up is currently active */
+  bool fanOn; /**< Whether or not the fan is turned on */
+  volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
+  unsigned long TAEEndTime; /**< The target end time used whenever TAE is turned on */
   volatile byte status1;
   volatile byte spark;
   volatile byte spark2;
@@ -413,31 +412,31 @@ struct statuses {
   unsigned int PW6; //In uS
   unsigned int PW7; //In uS
   unsigned int PW8; //In uS
-  volatile byte runSecs; //Counter of seconds since cranking commenced (overflows at 255 obviously)
-  volatile byte secl; //Continous
-  volatile unsigned int loopsPerSecond;
-  bool launchingSoft; //True when in launch control soft limit mode
-  bool launchingHard; //True when in launch control hard limit mode
+  volatile byte runSecs; /**< Counter of seconds since cranking commenced (overflows at 255 obviously) */
+  volatile byte secl; /**< Counter incrementing once per second. Will overflow after 255 and begin again. This is used by TunerStudio to maintain comms sync */
+  volatile uint32_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
+  bool launchingSoft; /**< Indicator showing whether soft launch control adjustments are active */
+  bool launchingHard; /**< Indicator showing whether hard launch control adjustments are active */
   uint16_t freeRAM;
-  unsigned int clutchEngagedRPM;
+  unsigned int clutchEngagedRPM; /**< The RPM at which the clutch was last depressed. Used for distinguishing between launch control and flat shift */ 
   bool flatShiftingHard;
-  volatile uint32_t startRevolutions; //A counter for how many revolutions have been completed since sync was achieved.
+  volatile uint32_t startRevolutions; /**< A counter for how many revolutions have been completed since sync was achieved. */
   uint16_t boostTarget;
   byte testOutputs;
   bool testActive;
   uint16_t boostDuty; //Percentage value * 100 to give 2 points of precision
-  byte idleLoad; //Either the current steps or current duty cycle for the idle control.
+  byte idleLoad; /**< Either the current steps or current duty cycle for the idle control. */
   uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
-  uint8_t current_caninchannel = 0; //start off at channel 0
-  uint16_t crankRPM = 400; //The actual cranking RPM limit. Saves us multiplying it everytime from the config page
+  uint8_t current_caninchannel = 0; /**< Current CAN channel, defaults to 0 */
+  uint16_t crankRPM = 400; /**< The actual cranking RPM limit. This is derived from the value in the config page, but saves us multiplying it everytime it's used (Config page value is stored divided by 10) */
   volatile byte status3;
-  int16_t flexBoostCorrection; //Amount of boost added based on flex
+  int16_t flexBoostCorrection; /**< Amount of boost added based on flex */
   byte nitrous_status;
   byte nSquirts;
-  byte nChannels; //Number of fuel and ignition channels
+  byte nChannels; /**< Number of fuel and ignition channels.  */
   int16_t fuelLoad;
   int16_t ignLoad;
-  bool fuelPumpOn; //The current status of the fuel pump
+  bool fuelPumpOn; /**< Indicator showing the current status of the fuel pump */
   byte syncLossCounter;
   byte knockRetard;
   bool knockActive;
@@ -453,8 +452,12 @@ struct statuses {
 };
 struct statuses currentStatus; //The global status object
 
-//Page 1 of the config - See the ini file for further reference
-//This mostly covers off variables that are required for fuel
+/**
+ * @brief This mostly covers off variables that are required for fuel
+ * 
+ * See the ini file for further reference
+ * 
+ */
 struct config2 {
 
   byte unused2_1;
@@ -896,7 +899,11 @@ struct config10 {
   byte knock_recoveryStepTime;
   byte knock_recoveryStep;
 
-  byte unused11_122_191[70];
+  byte fuel2Algorithm : 3;
+  byte fuel2Mode : 2;
+  byte unused10_122 : 3;
+
+  byte unused11_123_191[69];
 
 #if defined(CORE_AVR)
   };
