@@ -249,7 +249,7 @@ void initialiseAll()
     initialiseTriggers();
 
     //End crank triger interrupt attachment
-    req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
+    //req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
 
     //Initial values for loop times
     previousLoopTime = 0;
@@ -257,8 +257,15 @@ void initialiseAll()
 
     mainLoopCount = 0;
 
-    currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manaully overriden below for sequential setups (Due to TS req_fuel calc limitations)
+    currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested.
+    if(configPage2.injAlternate == 1) { currentStatus.nSquirts /= 2; }
     if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
+    if(configPage2.injLayout == INJ_SEQUENTIAL)
+    {
+      req_fuel_uS *= currentStatus.nSquirts;
+      currentStatus.nSquirts = 1;
+    }
+    
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
@@ -272,13 +279,6 @@ void initialiseAll()
 
         //Sequential ignition works identically on a 1 cylinder whether it's odd or even fire. 
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
-
-        if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
-        {
-          CRANK_ANGLE_MAX_INJ = 720;
-          currentStatus.nSquirts = 1;
-          req_fuel_uS = req_fuel_uS * 2;
-        }
 
         channel1InjEnabled = true;
 
@@ -300,16 +300,10 @@ void initialiseAll()
         //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder). 
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
 
-        if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
-        {
-          CRANK_ANGLE_MAX_INJ = 720;
-          currentStatus.nSquirts = 1;
-          req_fuel_uS = req_fuel_uS * 2;
-        }
         //The below are true regardless of whether this is running sequential or not
         if (configPage2.engineType == EVEN_FIRE ) { channel2InjDegrees = 180; }
         else { channel2InjDegrees = configPage2.oddfire2; }
-        if (!configPage2.injTiming) 
+        if (!configPage2.injAlternate && configPage2.injLayout != INJ_SEQUENTIAL)
         { 
           //For simultaneous, all squirts happen at the same time
           channel1InjDegrees = 0;
@@ -370,7 +364,7 @@ void initialiseAll()
             channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
           }
 
-          if (!configPage2.injTiming) 
+          if (!configPage2.injAlternate) 
           { 
             //For simultaneous, all squirts happen at the same time
             channel1InjDegrees = 0;
@@ -383,9 +377,6 @@ void initialiseAll()
           channel1InjDegrees = 0;
           channel2InjDegrees = 240;
           channel3InjDegrees = 480;
-          CRANK_ANGLE_MAX_INJ = 720;
-          currentStatus.nSquirts = 1;
-          req_fuel_uS = req_fuel_uS * 2;
         }
 
         channel1InjEnabled = true;
@@ -433,7 +424,7 @@ void initialiseAll()
         {
           channel2InjDegrees = 180;
 
-          if (!configPage2.injTiming) 
+          if (!configPage2.injAlternate) 
           { 
             //For simultaneous, all squirts happen at the same time
             channel1InjDegrees = 0;
@@ -442,8 +433,8 @@ void initialiseAll()
           else
           {
             // Alternating
-            CRANK_ANGLE_MAX_INJ = 720*2 / currentStatus.nSquirts;
-            channel2InjDegrees = 360*2 / currentStatus.nSquirts;
+            // CRANK_ANGLE_MAX_INJ = 720*2 / currentStatus.nSquirts;
+            channel2InjDegrees = 360 / currentStatus.nSquirts;
           }
         }
         else if (configPage2.injLayout == INJ_SEQUENTIAL)
@@ -454,10 +445,6 @@ void initialiseAll()
 
           channel3InjEnabled = true;
           channel4InjEnabled = true;
-
-          CRANK_ANGLE_MAX_INJ = 720;
-          currentStatus.nSquirts = 1;
-          // req_fuel_uS = req_fuel_uS * 2;
         }
 
         //Check if injector staging is enabled
@@ -507,11 +494,8 @@ void initialiseAll()
           channel3InjDegrees = 288;
           channel4InjDegrees = 432;
           channel5InjDegrees = 576;
-
-          CRANK_ANGLE_MAX_INJ = 720;
-          currentStatus.nSquirts = 1;
         }
-        if (!configPage2.injTiming) 
+        if (!configPage2.injAlternate) 
         { 
           //For simultaneous, all squirts happen at the same time
           channel1InjDegrees = 0;
@@ -556,14 +540,10 @@ void initialiseAll()
           channel4InjEnabled = true;
           channel5InjEnabled = true;
           channel6InjEnabled = true;
-
-          CRANK_ANGLE_MAX_INJ = 720;
-          currentStatus.nSquirts = 1;
-          req_fuel_uS = req_fuel_uS * 2;
         }
     #endif
 
-        if (!configPage2.injTiming) 
+        if (!configPage2.injAlternate) 
         { 
           //For simultaneous, all squirts happen at the same time
           channel1InjDegrees = 0;
@@ -573,9 +553,9 @@ void initialiseAll()
         else
         {
           // Alternating
-          CRANK_ANGLE_MAX_INJ = 720*2 / currentStatus.nSquirts;
-          channel2InjDegrees = 240*2 / currentStatus.nSquirts;
-          channel3InjDegrees = 480*2 / currentStatus.nSquirts;
+          // CRANK_ANGLE_MAX_INJ = 720*2 / currentStatus.nSquirts;
+          channel2InjDegrees = 240 / currentStatus.nSquirts;
+          channel3InjDegrees = 480 / currentStatus.nSquirts;
         }
 
         configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
@@ -614,16 +594,12 @@ void initialiseAll()
           channel6InjEnabled = true;
           channel7InjEnabled = true;
           channel8InjEnabled = true;
-
-          CRANK_ANGLE_MAX_INJ = 720;
-          currentStatus.nSquirts = 1;
-          req_fuel_uS = req_fuel_uS * 2;
         }
     #endif
 
         maxIgnOutputs = 4;
 
-        if (!configPage2.injTiming) 
+        if (!configPage2.injAlternate) 
         { 
           //For simultaneous, all squirts happen at the same time
           channel1InjDegrees = 0;
@@ -645,9 +621,7 @@ void initialiseAll()
         break;
     }
 
-    if(CRANK_ANGLE_MAX_IGN == CRANK_ANGLE_MAX_INJ) { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_IGN; } //If both the injector max and ignition max angles are the same, make the overall system max this value
-    else if (CRANK_ANGLE_MAX_IGN > CRANK_ANGLE_MAX_INJ) { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_IGN; }
-    else { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_INJ; }
+    CRANK_ANGLE_MAX = max(CRANK_ANGLE_MAX_INJ, CRANK_ANGLE_MAX_IGN);
     currentStatus.status3 = currentStatus.nSquirts << BIT_STATUS3_NSQUIRTS1; //Top 3 bits of the status3 variable are the number of squirts. This must be done after the above section due to nSquirts being forced to 1 for sequential
 
     switch(configPage4.sparkMode)

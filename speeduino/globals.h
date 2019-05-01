@@ -480,7 +480,7 @@ struct config2 {
 
   byte reqFuel;       //24
   byte divider;
-  byte injTiming : 1;
+  byte injAlternate : 1;
   byte multiplyMAP : 1;
   byte includeAFR : 1;
   byte hardCutType : 1;
