@@ -1614,7 +1614,7 @@ void setPinMapping(byte boardID)
   #if defined(CORE_STM32)
   #else
     //Set default values
-    digitalWrite(pinMAP, HIGH);
+    //digitalWrite(pinMAP, HIGH);
     //digitalWrite(pinO2, LOW);
     digitalWrite(pinTPS, LOW);
   #endif
