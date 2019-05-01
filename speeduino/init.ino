@@ -260,13 +260,14 @@ void initialiseAll()
     currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested.
     if(configPage2.injAlternate == 1) { currentStatus.nSquirts /= 2; }
     if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
+    
     if(configPage2.injLayout == INJ_SEQUENTIAL)
     {
       req_fuel_uS *= currentStatus.nSquirts;
       currentStatus.nSquirts = 1;
+      CRANK_ANGLE_MAX_INJ = 720;
     }
-    
-    if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
+    else if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
 
@@ -301,13 +302,16 @@ void initialiseAll()
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
 
         //The below are true regardless of whether this is running sequential or not
-        if (configPage2.engineType == EVEN_FIRE ) { channel2InjDegrees = 180; }
-        else { channel2InjDegrees = configPage2.oddfire2; }
-        if (!configPage2.injAlternate && configPage2.injLayout != INJ_SEQUENTIAL)
+        if (configPage2.injAlternate || configPage2.injLayout == INJ_SEQUENTIAL)
+        {
+          if (configPage2.engineType == EVEN_FIRE ) { channel2InjDegrees = 180; }
+          else { channel2InjDegrees = configPage2.oddfire2; }
+        }
+        else
         { 
           //For simultaneous, all squirts happen at the same time
           channel1InjDegrees = 0;
-          channel2InjDegrees = 0; 
+          channel2InjDegrees = 0;
         }
 
         channel1InjEnabled = true;
@@ -350,33 +354,28 @@ void initialiseAll()
         channel3IgnDegrees = configPage2.oddfire3;
         }
 
-        //For alternatiing injection, the squirt occurs at different times for each channel
-        if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
+        if(configPage2.injLayout == INJ_SEQUENTIAL)
         {
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 120;
-          channel3InjDegrees = 240;
-
-          //Adjust the injection angles based on the number of squirts
-          if (currentStatus.nSquirts > 2)
+          //For alternating injection, the squirt occurs at different times for each channel
+          if(configPage2.strokes == TWO_STROKE)
           {
-            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
-            channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
-          }
-
-          if (!configPage2.injAlternate) 
-          { 
-            //For simultaneous, all squirts happen at the same time
             channel1InjDegrees = 0;
-            channel2InjDegrees = 0;
-            channel3InjDegrees = 0; 
-          } 
+            channel2InjDegrees = 120;
+            channel3InjDegrees = 240;
+          }
+          else
+          {
+            channel1InjDegrees = 0;
+            channel2InjDegrees = 240;
+            channel3InjDegrees = 480;
+          }
         }
-        else if (configPage2.injLayout == INJ_SEQUENTIAL)
+        else
         {
+          //For simultaneous, all squirts happen at the same time
           channel1InjDegrees = 0;
-          channel2InjDegrees = 240;
-          channel3InjDegrees = 480;
+          channel2InjDegrees = 0;
+          channel3InjDegrees = 0;
         }
 
         channel1InjEnabled = true;
@@ -390,11 +389,6 @@ void initialiseAll()
         if (configPage2.engineType == EVEN_FIRE )
         {
           channel2IgnDegrees = 180;
-          //Adjust the injection angles based on the number of squirts
-          if (currentStatus.nSquirts > 2)
-          {
-            channel2InjDegrees = channel2InjDegrees / (currentStatus.nSquirts / 2);
-          }
 
           if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
           {
@@ -419,25 +413,7 @@ void initialiseAll()
           maxIgnOutputs = 4;
         }
 
-        //For alternatiing injection, the squirt occurs at different times for each channel
-        if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
-        {
-          channel2InjDegrees = 180;
-
-          if (!configPage2.injAlternate) 
-          { 
-            //For simultaneous, all squirts happen at the same time
-            channel1InjDegrees = 0;
-            channel2InjDegrees = 0; 
-          }
-          else
-          {
-            // Alternating
-            // CRANK_ANGLE_MAX_INJ = 720*2 / currentStatus.nSquirts;
-            channel2InjDegrees = 360 / currentStatus.nSquirts;
-          }
-        }
-        else if (configPage2.injLayout == INJ_SEQUENTIAL)
+        if( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
         {
           channel2InjDegrees = 180;
           channel3InjDegrees = 360;
@@ -446,6 +422,19 @@ void initialiseAll()
           channel3InjEnabled = true;
           channel4InjEnabled = true;
         }
+        else if(configPage2.injAlternate)
+        {
+          // Alternating
+          channel1InjDegrees = 0 / currentStatus.nSquirts;
+          channel2InjDegrees = 360 / currentStatus.nSquirts;
+        }
+        else
+        {
+          //For simultaneous, all squirts happen at the same time
+          channel1InjDegrees = 0;
+          channel2InjDegrees = 0;
+        }
+        
 
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
