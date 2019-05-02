@@ -2025,7 +2025,7 @@ void triggerSetEndTeeth_Miata9905()
 
   if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) 
   { 
-    if(currentStatus.advance > 10)
+    if(currentStatus.advance >= 10)
     {
       ignition1EndTooth = 8;
       ignition2EndTooth = 2;

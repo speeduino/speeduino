@@ -103,6 +103,7 @@ void loop()
       currentStatus.RPM = 0;
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
+      currentStatus.VE2 = 0;
       toothLastToothTime = 0;
       toothLastSecToothTime = 0;
       //toothLastMinusOneToothTime = 0;
@@ -280,8 +281,33 @@ void loop()
 
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) )  { idleControl(); } //Run idlecontrol every loop for stepper idle.
 
+    byte totalVE = 0;
     //VE calculation was moved outside the sync/RPM check so that the fuel load value will be accurately shown when RPM=0
     currentStatus.VE = getVE();
+
+    //If the secondary fuel table is in use, also get the VE value from there
+    if(configPage10.fuel2Mode > 0)
+    { 
+      currentStatus.VE2 = getVE2();
+
+      if(configPage10.fuel2Mode == FUEL2_MODE_MULTIPLY)
+      {
+        //Fuel 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
+        totalVE = ((uint16_t)currentStatus.VE * (uint16_t)currentStatus.VE2) / 100;
+      }
+      else if(configPage10.fuel2Mode == FUEL2_MODE_ADD)
+      {
+        //Fuel tables are added together, but a check is made to make sure this won't overflow the 8-bit totalVE value
+        uint16_t combinedVE = (uint16_t)currentStatus.VE + (uint16_t)currentStatus.VE2;
+        if(combinedVE <= 255) { totalVE = combinedVE; }
+        else { totalVE = 255; }
+      }
+      else if(configPage10.fuel2Mode == FUEL2_MODE_SWITCH)
+      {
+
+      }
+    }
+    else { totalVE = currentStatus.VE; }
 
     //Always check for sync
     //Main loop runs within this clause
@@ -315,7 +341,8 @@ void loop()
       currentStatus.corrections = correctionsFuel();
 
       currentStatus.advance = getAdvance();
-      currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
+      //currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
+      currentStatus.PW1 = PW(req_fuel_uS, totalVE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
 
       //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
       if(currentStatus.nitrous_status == NITROUS_STAGE1)
@@ -1166,6 +1193,36 @@ byte getVE()
   }
   else { currentStatus.fuelLoad = currentStatus.MAP; } //Fallback position
   tempVE = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
+
+  return tempVE;
+}
+
+/**
+ * @brief Looks up and returns the VE value from the secondary fuel table
+ * 
+ * This performs largely the same operations as getVE() however the lookup is of the secondary fuel table and uses the secondary load source
+ * @return byte 
+ */
+byte getVE2()
+{
+  byte tempVE = 100;
+  if( configPage10.fuel2Algorithm == LOAD_SOURCE_MAP)
+  {
+    //Speed Density
+    currentStatus.fuelLoad2 = currentStatus.MAP;
+  }
+  else if (configPage10.fuel2Algorithm == LOAD_SOURCE_TPS)
+  {
+    //Alpha-N
+    currentStatus.fuelLoad2 = currentStatus.TPS;
+  }
+  else if (configPage10.fuel2Algorithm == LOAD_SOURCE_IMAPEMAP)
+  {
+    //IMAP / EMAP
+    currentStatus.fuelLoad2 = (currentStatus.MAP * 100) / currentStatus.EMAP;
+  }
+  else { currentStatus.fuelLoad2 = currentStatus.MAP; } //Fallback position
+  tempVE = get3DTableValue(&fuelTable2, currentStatus.fuelLoad2, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
 
   return tempVE;
 }
