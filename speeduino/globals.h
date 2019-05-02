@@ -198,6 +198,11 @@
 #define KNOCK_MODE_DIGITAL  1
 #define KNOCK_MODE_ANALOG   2
 
+#define FUEL2_MODE_OFF      0
+#define FUEL2_MODE_MULTIPLY 1
+#define FUEL2_MODE_ADD      2
+#define FUEL2_MODE_SWITCH   3
+
 #define RESET_CONTROL_DISABLED             0
 #define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
 #define RESET_CONTROL_PREVENT_ALWAYS       2
@@ -371,6 +376,7 @@ struct statuses {
   byte tpsDOT;
   volatile int rpmDOT;
   byte VE;
+  byte VE2;
   byte O2;
   byte O2_2;
   int coolant;
@@ -435,6 +441,7 @@ struct statuses {
   byte nSquirts;
   byte nChannels; /**< Number of fuel and ignition channels.  */
   int16_t fuelLoad;
+  int16_t fuelLoad2;
   int16_t ignLoad;
   bool fuelPumpOn; /**< Indicator showing the current status of the fuel pump */
   byte syncLossCounter;
@@ -442,12 +449,6 @@ struct statuses {
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
-
-  //Helpful bitwise operations:
-  //Useful reference: http://playground.arduino.cc/Code/BitMath
-  // y = (x >> n) & 1;    // n=0..15.  stores nth bit of x in y.  y becomes 0 or 1.
-  // x &= ~(1 << n);      // forces nth bit of x to be 0.  all other bits left alone.
-  // x |= (1 << n);       // forces nth bit of x to be 1.  all other bits left alone.
 
 };
 struct statuses currentStatus; //The global status object
