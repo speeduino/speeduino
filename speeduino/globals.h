@@ -2,6 +2,7 @@
 #define GLOBALS_H
 #include <Arduino.h>
 #include "table.h"
+#include <assert.h>
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define BOARD_DIGITAL_GPIO_PINS 54
@@ -993,5 +994,11 @@ volatile uint16_t ignitionCount; //The count of ignition events that have taken 
 extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
+
+static_assert(sizeof(struct config2) == 128, "configPage2 size is not 128");
+static_assert(sizeof(struct config4) == 128, "configPage4 size is not 128");
+static_assert(sizeof(struct config6) == 128, "configPage6 size is not 128");
+static_assert(sizeof(struct config9) == 192, "configPage9 size is not 192");
+static_assert(sizeof(struct config10) == 192, "configPage10 size is not 192");
 
 #endif // GLOBALS_H
