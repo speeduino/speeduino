@@ -197,7 +197,7 @@ static inline int16_t correctionAccel()
       if (rateOfChange > configPage2.tpsThresh)
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
-        currentStatus.TAEEndTime = micros_safe() + ((unsigned long)configPage2.taeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
+        currentStatus.TAEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
         accelValue = table2D_getValue(&taeTable, currentStatus.tpsDOT);
 
         //Apply the taper to the above

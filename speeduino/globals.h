@@ -369,12 +369,13 @@ struct statuses {
   int16_t EMAP;
   int16_t EMAPADC;
   byte baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
-  byte TPS; //The current TPS reading (0% - 100%)
-  byte TPSlast; //The previous TPS reading
+  byte TPS; /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
+  byte TPSlast; /**< The previous TPS reading */
   unsigned long TPS_time; //The time the TPS sample was taken
   unsigned long TPSlast_time; //The time the previous TPS sample was taken
-  byte tpsADC; //0-255 byte representation of the TPS
-  byte tpsDOT;
+  byte tpsADC; /**< 0-255 byte representation of the TPS. Downsampled from the original 10-bit reading, but before any calibration is applied */
+  byte tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Value is divided by 10 to be stored in a byte */
+  byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
   volatile int rpmDOT;
   byte VE;
   byte VE2;
@@ -472,9 +473,9 @@ struct config2 {
   byte tachoPin : 6; //Custom pin setting for tacho output
   byte tachoDiv : 2; //Whether to change the tacho speed
   byte tachoDuration; //The duration of the tacho pulse in mS
-  byte unused2_18;
-  byte tpsThresh;
-  byte taeTime;
+  byte maeThresh; /**< The MAPdot threshold that must be exceeded before AE is engaged */
+  byte tpsThresh; /**< The TPSdot threshold that must be exceeded before AE is engaged */
+  byte aeTime;
 
   //Display config bits
   byte displayType : 3; //21
@@ -638,10 +639,13 @@ struct config4 {
   byte ADCFILTER_MAP; //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
   byte ADCFILTER_BARO;
   
-  byte cltAdvBins[6]; // Coolant Temp timing advance curve bins
-  byte cltAdvValues[6]; // Coolant timing advance curve values
+  byte cltAdvBins[6]; /**< Coolant Temp timing advance curve bins */
+  byte cltAdvValues[6]; /**< Coolant timing advance curve values */
 
-  byte unused2_64[45];
+  byte maeBins[4]; /**< MAP based AE MAPdot bins */
+  byte maeRates[4]; /**< MAP based AE values */
+
+  byte unused2_91[37];
 
 #if defined(CORE_AVR)
   };

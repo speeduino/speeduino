@@ -592,6 +592,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[89] = lowByte(currentStatus.dwell);
   fullStatus[90] = highByte(currentStatus.dwell);
   fullStatus[91] = currentStatus.CLIdleTarget;
+  fullStatus[92] = currentStatus.mapDOT;
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -684,6 +685,7 @@ void sendValuesLegacy()
   temp = currentStatus.VE * 10;
   bytestosend -= Serial.write(temp>>8); // ve1
   bytestosend -= Serial.write(temp); // ve1
+  temp = currentStatus.VE2 * 10;
   bytestosend -= Serial.write(temp>>8); // ve2
   bytestosend -= Serial.write(temp); // ve2
 
@@ -696,8 +698,9 @@ void sendValuesLegacy()
   bytestosend -= Serial.write(temp>>8); // TPSdot
   bytestosend -= Serial.write(temp); // TPSdot
 
-  bytestosend -= Serial.write(99); // MAPdot
-  bytestosend -= Serial.write(99); // MAPdot
+  temp = currentStatus.mapDOT * 10;
+  bytestosend -= Serial.write(temp >> 8); // MAPdot
+  bytestosend -= Serial.write(temp); // MAPdot
 
   temp = currentStatus.dwell * 10;
   bytestosend -= Serial.write(temp>>8); // dwell
