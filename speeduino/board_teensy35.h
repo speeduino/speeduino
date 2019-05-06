@@ -11,9 +11,11 @@
   void initBoard();
   uint16_t freeRam();
   #define PORT_TYPE uint8_t //Size of the port variables
+  #define PINMASK_TYPE uint8_t
   #define BOARD_DIGITAL_GPIO_PINS 34
   #define BOARD_NR_GPIO_PINS 34
   #define USE_SERIAL3
+  #define EEPROM_LIB_H <EEPROM.h>
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 

@@ -21,6 +21,7 @@ void initialiseAll()
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     table3D_setSize(&fuelTable, 16);
+    table3D_setSize(&fuelTable2, 16);
     table3D_setSize(&ignitionTable, 16);
     table3D_setSize(&afrTable, 16);
     table3D_setSize(&stagingTable, 8);
@@ -63,6 +64,19 @@ void initialiseAll()
     WUETable.xSize = 10;
     WUETable.values = configPage2.wueValues;
     WUETable.axisX = configPage4.wueBins;
+    ASETable.valueSize = SIZE_BYTE;
+    ASETable.xSize = 4;
+    ASETable.values = configPage2.asePct;
+    ASETable.axisX = configPage2.aseBins;
+    ASECountTable.valueSize = SIZE_BYTE;
+    ASECountTable.xSize = 4;
+    ASECountTable.values = configPage2.aseCount;
+    ASECountTable.axisX = configPage2.aseBins;
+    PrimingPulseTable.valueSize = SIZE_BYTE;
+    PrimingPulseTable.xSize = 4;
+    PrimingPulseTable.values = configPage2.primePulse;
+    PrimingPulseTable.axisX = configPage2.primeBins;
+    crankingEnrichTable.valueSize = SIZE_BYTE;
     crankingEnrichTable.valueSize = SIZE_BYTE;
     crankingEnrichTable.xSize = 4;
     crankingEnrichTable.values = configPage10.crankingEnrichValues;
@@ -84,6 +98,10 @@ void initialiseAll()
     IATRetardTable.xSize = 6;
     IATRetardTable.values = configPage4.iatRetValues;
     IATRetardTable.axisX = configPage4.iatRetBins;
+    CLTAdvanceTable.valueSize = SIZE_BYTE;
+    CLTAdvanceTable.xSize = 6;
+    CLTAdvanceTable.values = configPage4.cltAdvValues;
+    CLTAdvanceTable.axisX = configPage4.cltAdvBins;
     rotarySplitTable.valueSize = SIZE_BYTE;
     rotarySplitTable.xSize = 8;
     rotarySplitTable.values = configPage10.rotarySplitValues;
@@ -131,6 +149,15 @@ void initialiseAll()
     endCoil3Charge();
     endCoil4Charge();
     endCoil5Charge();
+    #if (INJ_CHANNELS >= 6)
+    endCoil6Charge();
+    #endif
+    #if (INJ_CHANNELS >= 7)
+    endCoil7Charge();
+    #endif
+    #if (INJ_CHANNELS >= 8)
+    endCoil8Charge();
+    #endif
 
     //Similar for injectors, make sure they're turned off
     closeInjector1();
@@ -138,6 +165,15 @@ void initialiseAll()
     closeInjector3();
     closeInjector4();
     closeInjector5();
+    #if (IGN_CHANNELS >= 6)
+    closeInjector6();
+    #endif
+    #if (IGN_CHANNELS >= 7)
+    closeInjector7();
+    #endif
+    #if (IGN_CHANNELS >= 8)
+    closeInjector8();
+    #endif
 
     //Set the tacho output default state
     digitalWrite(pinTachOut, HIGH);
@@ -702,6 +738,7 @@ void initialiseAll()
     case IGN_MODE_ROTARY:
         if(configPage10.rotaryType == ROTARY_IGN_FC)
         {
+          //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
           ign1StartFunction = beginCoil1Charge;
           ign1EndFunction = endCoil1Charge;
           ign2StartFunction = beginCoil1Charge;
@@ -711,6 +748,41 @@ void initialiseAll()
           ign3EndFunction = endTrailingCoilCharge1;
           ign4StartFunction = beginTrailingCoilCharge;
           ign4EndFunction = endTrailingCoilCharge2;
+        }
+        else if(configPage10.rotaryType == ROTARY_IGN_FD)
+        {
+          //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
+          ign1StartFunction = beginCoil1Charge;
+          ign1EndFunction = endCoil1Charge;
+          ign2StartFunction = beginCoil1Charge;
+          ign2EndFunction = endCoil1Charge;
+
+          //Trailing coils have their own channel each
+          //IGN2 = front rotor trailing spark
+          ign3StartFunction = beginCoil2Charge;
+          ign3EndFunction = endCoil2Charge;
+          //IGN3 = rear rotor trailing spark
+          ign4StartFunction = beginCoil3Charge;
+          ign4EndFunction = endCoil3Charge;
+
+          //IGN4 not used
+        }
+        else if(configPage10.rotaryType == ROTARY_IGN_RX8)
+        {
+          //RX8 outputs are simply 1 coil and 1 output per plug
+
+          //IGN1 is front rotor, leading spark
+          ign1StartFunction = beginCoil1Charge;
+          ign1EndFunction = endCoil1Charge;
+          //IGN2 is rear rotor, leading spark
+          ign2StartFunction = beginCoil2Charge;
+          ign2EndFunction = endCoil2Charge;
+          //IGN3 = front rotor trailing spark
+          ign3StartFunction = beginCoil3Charge;
+          ign3EndFunction = endCoil3Charge;
+          //IGN4 = rear rotor trailing spark
+          ign4StartFunction = beginCoil4Charge;
+          ign4EndFunction = endCoil4Charge;
         }
         break;
 
@@ -742,12 +814,14 @@ void initialiseAll()
 
     interrupts();
     //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
-    if(configPage2.primePulse > 0)
+    readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
+    unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    if(primingValue > 0)
     {
-      setFuelSchedule1(100, (unsigned long)(configPage2.primePulse * 100));
-      setFuelSchedule2(100, (unsigned long)(configPage2.primePulse * 100));
-      setFuelSchedule3(100, (unsigned long)(configPage2.primePulse * 100));
-      setFuelSchedule4(100, (unsigned long)(configPage2.primePulse * 100));
+      setFuelSchedule1(100, (primingValue * 100 * 5)); //to acheive long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
+      setFuelSchedule2(100, (primingValue * 100 * 5));
+      setFuelSchedule3(100, (primingValue * 100 * 5));
+      setFuelSchedule4(100, (primingValue * 100 * 5));
     }
 
 
@@ -928,6 +1002,7 @@ void setPinMapping(byte boardID)
         //PC8~PC12 SDio
         //PA13~PA15 & PB4 SWD(debug) pins
         //PB0 EEPROM CS pin
+        //PA9 & PD10 Serial1
         //PD5 & PD6 Serial2
         pinInjector1 = PE7; //Output pin injector 1 is on
         pinInjector2 = PE8; //Output pin injector 2 is on
@@ -935,18 +1010,18 @@ void setPinMapping(byte boardID)
         pinInjector4 = PE10; //Output pin injector 4 is on
         pinInjector5 = PE11; //Output pin injector 5 is on
         pinInjector6 = PE12; //Output pin injector 6 is on
-        pinCoil1 = PB5; //Pin for coil 1
-        pinCoil2 = PB6; //Pin for coil 2
-        pinCoil3 = PB7; //Pin for coil 3
-        pinCoil4 = PB8; //Pin for coil 4
-        pinCoil5 = PB9; //Pin for coil 5
+        pinCoil1 = PD0; //Pin for coil 1
+        pinCoil2 = PD1; //Pin for coil 2
+        pinCoil3 = PD2; //Pin for coil 3
+        pinCoil4 = PD3; //Pin for coil 4
+        pinCoil5 = PD4; //Pin for coil 5
         pinTPS = A0; //TPS input pin
         pinMAP = A1; //MAP sensor pin
         pinIAT = A2; //IAT sensor pin
         pinCLT = A3; //CLT sensor pin
         pinO2 = A4; //O2 Sensor pin
         pinBat = A5; //Battery reference voltage pin
-        pinBaro = A10;
+        pinBaro = A9;
         pinIdle1 = PB8; //Single wire idle control
         pinIdle2 = PB9; //2 wire idle control
         pinBoost = PE0; //Boost control
@@ -956,8 +1031,8 @@ void setPinMapping(byte boardID)
         pinStepperEnable = PD9; //Enable pin for DRV8825
         pinDisplayReset = PE1; // OLED reset pin
         pinFan = PE2; //Pin for the fan output
-        pinFuelPump = PA6; //Fuel pump output
-        pinTachOut = PA7; //Tacho output pin
+        pinFuelPump = PC0; //Fuel pump output
+        pinTachOut = PC1; //Tacho output pin
         //external interrupt enabled pins
         //external interrupts could be enalbed in any pin, except same port numbers (PA4,PE4)
         pinFlex = PE2; // Flex sensor (Must be external interrupt enabled)
@@ -1153,7 +1228,7 @@ void setPinMapping(byte boardID)
   
 
     case 20:
-    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+    #if defined(CORE_AVR) && !defined(SMALL_FLASH_MODE) //No support for bluepill here anyway
       //Pin mappings as per the Plazomat In/Out shields Rev 0.1
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on
@@ -1388,37 +1463,80 @@ void setPinMapping(byte boardID)
     #endif
 
     default:
-    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
-      //Pin mappings as per the v0.2 shield
-      pinInjector1 = 8; //Output pin injector 1 is on
-      pinInjector2 = 9; //Output pin injector 2 is on
-      pinInjector3 = 10; //Output pin injector 3 is on
-      pinInjector4 = 11; //Output pin injector 4 is on
-      pinInjector5 = 12; //Output pin injector 5 is on
-      pinCoil1 = 28; //Pin for coil 1
-      pinCoil2 = 24; //Pin for coil 2
-      pinCoil3 = 40; //Pin for coil 3
-      pinCoil4 = 36; //Pin for coil 4
-      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
-      pinTrigger = 20; //The CAS pin
-      pinTrigger2 = 21; //The Cam Sensor pin
-      pinTPS = A2; //TPS input pin
-      pinMAP = A3; //MAP sensor pin
-      pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLS sensor pin
-      pinO2 = A8; //O2 Sensor pin
-      pinBat = A4; //Battery reference voltage pin
-      pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinStepperStep = 17; //Step pin for DRV8825 driver
-      pinDisplayReset = 48; // OLED reset pin
-      pinFan = 47; //Pin for the fan output
-      pinFuelPump = 4; //Fuel pump output
-      pinTachOut = 49; //Tacho output pin
-      pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
-      pinBoost = 5;
-      pinIdle1 = 6;
-      pinResetControl = 43; //Reset control output
-    #endif
+      #if defined(STM32F4)
+        //Black F407VE http://wiki.stm32duino.com/index.php?title=STM32F407
+        //PC8~PC12 SDio
+        //PA13~PA15 & PB4 SWD(debug) pins
+        //PB0 EEPROM CS pin
+        //PA9 & PD10 Serial1
+        //PD5 & PD6 Serial2
+        pinInjector1 = PE7; //Output pin injector 1 is on
+        pinInjector2 = PE8; //Output pin injector 2 is on
+        pinInjector3 = PE9; //Output pin injector 3 is on
+        pinInjector4 = PE10; //Output pin injector 4 is on
+        pinInjector5 = PE11; //Output pin injector 5 is on
+        pinInjector6 = PE12; //Output pin injector 6 is on
+        pinCoil1 = PD0; //Pin for coil 1
+        pinCoil2 = PD1; //Pin for coil 2
+        pinCoil3 = PD2; //Pin for coil 3
+        pinCoil4 = PD3; //Pin for coil 4
+        pinCoil5 = PD4; //Pin for coil 5
+        pinTPS = A0; //TPS input pin
+        pinMAP = A1; //MAP sensor pin
+        pinIAT = A2; //IAT sensor pin
+        pinCLT = A3; //CLT sensor pin
+        pinO2 = A4; //O2 Sensor pin
+        pinBat = A5; //Battery reference voltage pin
+        pinBaro = A9;
+        pinIdle1 = PB8; //Single wire idle control
+        pinIdle2 = PB9; //2 wire idle control
+        pinBoost = PE0; //Boost control
+        pinVVT_1 = PE1; //Default VVT output
+        pinStepperDir = PD8; //Direction pin  for DRV8825 driver
+        pinStepperStep = PB15; //Step pin for DRV8825 driver
+        pinStepperEnable = PD9; //Enable pin for DRV8825
+        pinDisplayReset = PE1; // OLED reset pin
+        pinFan = PE2; //Pin for the fan output
+        pinFuelPump = PC0; //Fuel pump output
+        pinTachOut = PC1; //Tacho output pin
+        //external interrupt enabled pins
+        //external interrupts could be enalbed in any pin, except same port numbers (PA4,PE4)
+        pinFlex = PE2; // Flex sensor (Must be external interrupt enabled)
+        pinTrigger = PE3; //The CAS pin
+        pinTrigger2 = PE4; //The Cam Sensor pin
+      #else
+        #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+        //Pin mappings as per the v0.2 shield
+        pinInjector1 = 8; //Output pin injector 1 is on
+        pinInjector2 = 9; //Output pin injector 2 is on
+        pinInjector3 = 10; //Output pin injector 3 is on
+        pinInjector4 = 11; //Output pin injector 4 is on
+        pinInjector5 = 12; //Output pin injector 5 is on
+        pinCoil1 = 28; //Pin for coil 1
+        pinCoil2 = 24; //Pin for coil 2
+        pinCoil3 = 40; //Pin for coil 3
+        pinCoil4 = 36; //Pin for coil 4
+        pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+        pinTrigger = 20; //The CAS pin
+        pinTrigger2 = 21; //The Cam Sensor pin
+        pinTPS = A2; //TPS input pin
+        pinMAP = A3; //MAP sensor pin
+        pinIAT = A0; //IAT sensor pin
+        pinCLT = A1; //CLS sensor pin
+        pinO2 = A8; //O2 Sensor pin
+        pinBat = A4; //Battery reference voltage pin
+        pinStepperDir = 16; //Direction pin  for DRV8825 driver
+        pinStepperStep = 17; //Step pin for DRV8825 driver
+        pinDisplayReset = 48; // OLED reset pin
+        pinFan = 47; //Pin for the fan output
+        pinFuelPump = 4; //Fuel pump output
+        pinTachOut = 49; //Tacho output pin
+        pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+        pinBoost = 5;
+        pinIdle1 = 6;
+        pinResetControl = 43; //Reset control output
+        #endif
+      #endif  
       break;
   }
 

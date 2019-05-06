@@ -50,7 +50,7 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
 static inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 
 //The ARM cores use seprate functions for their ISRs
-#if defined(CORE_STM32) || defined(CORE_TEENSY)
+#if defined(CORE_STM32_OFFICIAL) || defined(CORE_STM32_GENERIC) || defined(CORE_TEENSY)
   static inline void fuelSchedule1Interrupt();
   static inline void fuelSchedule2Interrupt();
   static inline void fuelSchedule3Interrupt();
@@ -101,7 +101,7 @@ struct Schedule {
   volatile byte schedulesSet; //A counter of how many times the schedule has been set
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
-  volatile unsigned long startTime; //The system time (in uS) that the schedule started
+  volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
   volatile uint16_t startCompare; //The counter value of the timer when this will start
   volatile uint16_t endCompare;
 

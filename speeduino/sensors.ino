@@ -48,8 +48,8 @@ void initialiseADC()
      BIT_CLEAR(ADCSRA,ADPS1);
      BIT_CLEAR(ADCSRA,ADPS0);
   #endif
-#elif defined(ARDUINO_ARCH_STM32) //STM32GENERIC lib
-  analogReadResolution(10); //use 10bits for analog
+#elif defined(ARDUINO_ARCH_STM32) //STM32GENERIC core and ST STM32duino core, change analog read to 12 bit
+  analogReadResolution(12); //use 12bits for analog reading on STM32 boards
 #endif
   MAPcurRev = 0;
   MAPcount = 0;
@@ -294,7 +294,7 @@ void readTPS()
   currentStatus.TPS_time = micros();
 }
 
-void readCLT()
+void readCLT(bool useFilter)
 {
   unsigned int tempReading;
   #if defined(ANALOG_ISR)
@@ -303,7 +303,10 @@ void readCLT()
     tempReading = analogRead(pinCLT);
     tempReading = fastMap1023toX(analogRead(pinCLT), 511); //Get the current raw CLT value
   #endif
-  currentStatus.cltADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC);
+  //The use of the filter can be overridden if required. This is used on startup so there can be an immediately accurate coolant value for priming
+  if(useFilter == true) { currentStatus.cltADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC); }
+  else { currentStatus.cltADC = tempReading; }
+  
   currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 }
 

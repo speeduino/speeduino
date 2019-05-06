@@ -51,6 +51,8 @@ before_install:
   - cd cppcheck-1.79
 #  - make SRCDIR=build CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
   - sudo make install CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
+# Requirements for doxygen
+  - sudo apt-get install doxygen graphviz
 
 install:
     - pip install -U platformio
@@ -61,12 +63,25 @@ script:
   - cd noisymime/speeduino
   - platformio update
 #  - platformio run -e megaatmega2560 -e teensy35 -e bluepill_f103c8 -e genericSTM32F103RB
+# Run the builds
   - platformio run -e megaatmega2560 -e teensy35 -e genericSTM32F103RB
-  - curl -v --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pioenvs/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
-  - curl -v --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
+# Upload ini and hex files to speeduino.com server
+  - curl --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pioenvs/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
+  - curl --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
+# Begin MISRA scan
   - cd ..
   - chmod +x speeduino/misra/check_misra.sh
   - speeduino/misra/check_misra.sh
+# Do doxygen run and upload to gh-pages server.
+  - cd speeduino
+  - doxygen
+  - cd ..
+  - git clone https://github.com/speeduino/speeduino-doxygen
+  - cp -r speeduino/reference/doxygen/html/* speeduino-doxygen
+  - cd speeduino-doxygen
+  - git add --all
+  - git commit -m "Deploy code docs to GitHub Pages. Travis build ${TRAVIS_BUILD_NUMBER}" -m "Commit ${TRAVIS_COMMIT}"
+  - git push --force "https://${GH_DOXYGEN}@github.com/speeduino/speeduino-doxygen" > /dev/null 2>&1
 
 notifications:
     slack: speeduino:Y8Bhhviu4r7HFF3abMYDnH3p
@@ -74,3 +89,4 @@ notifications:
 env:
   global:
     secure: "L6pyVQKCkOJNPBEbx6pEln+QnGyntouZW1tGSqOysgRFmUOdXH8l+DKq0YwW+civ0yWrF91G5YkWmyAE1jkoDLy7TBOt8Iqq/xAmf+BHIqDl/+uNsVxgvZ6+gqwMeoWBfmo0vmRj3/wY7ZmepNe2jKop/DX2olhBgmRdCKp8nA+SX8/pc2tO7DZeSsbCP0+JozvVhFtQMNwzkVp4llmER2yGr+u5pTTOz4eXCEkEKUCZMZ6JhvPKCDm+7tUQSS4NvShizj7QZIjqxvINQPi9i1TGJRoPTlQqYNGfTHufU3/W7nsUWFdtrZRapLZuKN/ktOr5T0ydQriNlDpBoIWXJvHzZrBjyT2arzz7jw57QZ8Yhyhetdw+zIfBepLEp7nKZGjR3eeWGtRzj8RRIgw19MT+8g2l7a1gKte+L01o4y8RKfQCqt/2PcVelIUv3X08JVOE6q7PumBEUSAkk1ITE80Y8SYoQda62gehH06xloSWJvU79tIC0drWMO+hGvj4LTpoe9ujMYTxkwGjiIfx9I9jButAN0vI2MtcDyVR+9XuKwZc9nFf4z4HR8xav1NmrzEAy0OVsOdjpM3OxAnVzTUo4M0c11dt9sDP7xR3TgwgSs2ptNOamujRFqrONHnn6VglOnWuypfvJfBxfovuRP1+UZoHIH7sbiMXmX/3nyA="
+    secure: "LKvIikE69mmD2yroQ84KFfrCw9sCU6o4zDqdGQM3mFKVi/Tuiyskvk3KMbf5Rxwt6Fy2OhdvitxG1ckbpccdTNlEbef7DtBdjNd5Oh72GseBCwToNTinFCVpJbj2AWceDykSDsaxzZMg3ienXwZ5XB3ClyUi6N+8MLwpsX4kJuGNfOY3z6yC+JQSvuVhIb1zDRYDKAHDuabzo38sk8q/WhBEVvL95lzPHoxMEpaQfwyjZ4lLhDbqe9/y7s7M9bjz1K9AXHS6h5fIWGVKVzL8YKoOVi6Na6vcnS8w7YNr71AMr0d7H0nM9gG6Fy4DDyUsfa9SBhLVxMWbEPe9+eJNZ0MkuwI/6eaxiqnqAcMfFyvw1bwBGCi4+x0+9riwpOYE21q3Mq/XbTKdvI7YG4RPfd2X4Xe6hOVPW/5iEICZdxrpLdyDN7suZX7Y8POcBeJgi6HkdKXfDO6NlCV+Fnmwx/FltHILX2GNASob/o2/dVkPNh3NjxVqgwN9OxyzNQefWC3z1W3YgBwTWc3VkuiuE0eTEkBX5aSGTGZWqysz4U42/7M+MiSC80VpMbsFNd1FEGZR75Y644q+aUHLGNWIK01dslxZUiUEh5CkdOHTqpeHVszJyCblTtIBAXyBhZfnbdOBxpPsZGg2U+iSUSOzXW2W11e52ARhpi0QlnvhdkI="

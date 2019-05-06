@@ -15,6 +15,8 @@ void storeLastBaro(byte);
 void storeCalibrationValue(uint16_t, byte);
 byte readEEPROMVersion();
 void storeEEPROMVersion(byte);
+void storePageCRC32(byte, uint32_t);
+uint32_t readPageCRC32(byte);
 
 #if defined(CORE_STM32) || defined(CORE_TEENSY)
 #define EEPROM_MAX_WRITE_BLOCK 64 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
@@ -68,6 +70,8 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 | 1500  |192  | CANBUS config and data (Table 10_)  |
 | 1692  |192  | Table 11 - General settings         |
 |                                                   |
+| 2514  |44   | Table CRC32 values. Last table first|
+| 2558  |1    | Last recorded Baro value            |
 | 2559  |512  | Calibration data (O2)               |
 | 3071  |512  | Calibration data (IAT)              |
 | 3583  |512  | Calibration data (CLT)              |
@@ -139,8 +143,15 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG9_END   1902
 #define EEPROM_CONFIG10_START 1902
 #define EEPROM_CONFIG10_END   2094
+#define EEPROM_CONFIG11_XSIZE 2094
+#define EEPROM_CONFIG11_YSIZE 2095
+#define EEPROM_CONFIG11_MAP   2096
+#define EEPROM_CONFIG11_XBINS 2352
+#define EEPROM_CONFIG11_YBINS 2369
+#define EEPROM_CONFIG11_END   2385
 
 //Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
+#define EEPROM_PAGE_CRC32     2514 //Size of this is 4 * <number of pages> (CRC32 = 32 bits)
 #define EEPROM_LAST_BARO      2558
 #define EEPROM_CALIBRATION_O2 2559
 #define EEPROM_CALIBRATION_IAT 3071

@@ -8,24 +8,21 @@ A full copy of the license may be found in the projects root directory
 #include "globals.h"
 #include "table.h"
 #include "comms.h"
-#if defined(CORE_SAMD21)
-  #include "src/FlashStorage/FlashAsEEPROM.h"
-#else
-  #include <EEPROM.h>
-#endif
+#include EEPROM_LIB_H //This is defined in the board .h files
 #include "storage.h"
+
 void writeAllConfig()
 {
-  writeConfig(1);
-  if (eepromWritesPending == false) { writeConfig(2); }
-  if (eepromWritesPending == false) { writeConfig(3); }
-  if (eepromWritesPending == false) { writeConfig(4); }
-  if (eepromWritesPending == false) { writeConfig(5); }
-  if (eepromWritesPending == false) { writeConfig(6); }
-  if (eepromWritesPending == false) { writeConfig(7); }
-  if (eepromWritesPending == false) { writeConfig(8); }
-  if (eepromWritesPending == false) { writeConfig(9); }
-  if (eepromWritesPending == false) { writeConfig(10); }
+  writeConfig(veSetPage);
+  if (eepromWritesPending == false) { writeConfig(veMapPage); }
+  if (eepromWritesPending == false) { writeConfig(ignMapPage); }
+  if (eepromWritesPending == false) { writeConfig(ignSetPage); }
+  if (eepromWritesPending == false) { writeConfig(afrMapPage); }
+  if (eepromWritesPending == false) { writeConfig(afrSetPage); }
+  if (eepromWritesPending == false) { writeConfig(boostvvtPage); }
+  if (eepromWritesPending == false) { writeConfig(seqFuelPage); }
+  if (eepromWritesPending == false) { writeConfig(canbusPage); }
+  if (eepromWritesPending == false) { writeConfig(warmupPage); }
 }
 
 
@@ -389,6 +386,39 @@ void writeConfig(byte tableNum)
 
       break;
 
+    case fuelMap2Page:
+      /*---------------------------------------------------
+      | Fuel table (See storage.h for data layout) - Page 1
+      | 16x16 table itself + the 16 values along each of the axis
+      -----------------------------------------------------*/
+      EEPROM.update(EEPROM_CONFIG11_XSIZE, fuelTable2.xSize); writeCounter++; //Write the VE Tables RPM dimension size
+      EEPROM.update(EEPROM_CONFIG11_YSIZE, fuelTable2.ySize); writeCounter++; //Write the VE Tables MAP/TPS dimension size
+      for(int x=EEPROM_CONFIG11_MAP; x<EEPROM_CONFIG11_XBINS; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
+        offset = x - EEPROM_CONFIG11_MAP;
+        EEPROM.update(x, fuelTable2.values[15-(offset/16)][offset%16]); writeCounter++; //Write the 16x16 map
+      }
+
+      //RPM bins
+      for(int x=EEPROM_CONFIG11_XBINS; x<EEPROM_CONFIG11_YBINS; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
+        offset = x - EEPROM_CONFIG1_XBINS;
+        EEPROM.update(x, byte(fuelTable2.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; //RPM bins are divided by 100 and converted to a byte
+      }
+      //TPS/MAP bins
+      for(int x=EEPROM_CONFIG11_YBINS; x<EEPROM_CONFIG11_END; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
+        offset = x - EEPROM_CONFIG11_YBINS;
+        EEPROM.update(x, fuelTable2.axisY[offset] / TABLE_LOAD_MULTIPLIER); //Table load is divided by 2 (Allows for MAP up to 511)
+      }
+      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
+      else { eepromWritesPending = false; }
+      break;
+      //That concludes the writing of the 2nd fuel table
+
     default:
       break;
   }
@@ -604,6 +634,26 @@ void loadConfig()
     *(pnt_configPage + byte(x - EEPROM_CONFIG10_START)) = EEPROM.read(x);
   }
 
+  //*********************************************************************************************************************************************************************************
+  //Fuel table 2 (See storage.h for data layout)
+  for(int x=EEPROM_CONFIG11_MAP; x<EEPROM_CONFIG11_XBINS; x++)
+  {
+    offset = x - EEPROM_CONFIG11_MAP;
+    fuelTable2.values[15-(offset/16)][offset%16] = EEPROM.read(x); //Read the 8x8 map
+  }
+  //RPM bins
+  for(int x=EEPROM_CONFIG11_XBINS; x<EEPROM_CONFIG11_YBINS; x++)
+  {
+    offset = x - EEPROM_CONFIG11_XBINS;
+    fuelTable2.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
+  }
+  //TPS/MAP bins
+  for(int x=EEPROM_CONFIG11_YBINS; x<EEPROM_CONFIG11_END; x++)
+  {
+    offset = x - EEPROM_CONFIG11_YBINS;
+    fuelTable2.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER;
+  }
+
 }
 
 /*
@@ -646,6 +696,46 @@ void writeCalibration()
     if(EEPROM.read(y) != o2CalibrationTable[x]) { EEPROM.write(y, o2CalibrationTable[x]); }
   }
 
+}
+
+/*
+Takes a page number and CRC32 value then stores it in the relevant place in EEPROM
+Note: Each pages requires 4 bytes for its CRC32. These are stored in reverse page order (ie the last page is store first in EEPROM)
+*/
+void storePageCRC32(byte pageNo, uint32_t crc32_val)
+{
+  uint16_t address; //Start address for the relevant page
+  address = EEPROM_PAGE_CRC32 + ((NUM_PAGES - pageNo) * 4);
+
+  //One = Most significant -> Four = Least significant byte
+  byte four = (crc32_val & 0xFF);
+  byte three = ((crc32_val >> 8) & 0xFF);
+  byte two = ((crc32_val >> 16) & 0xFF);
+  byte one = ((crc32_val >> 24) & 0xFF);
+
+  //Write the 4 bytes into the eeprom memory.
+  EEPROM.update(address, four);
+  EEPROM.update(address + 1, three);
+  EEPROM.update(address + 2, two);
+  EEPROM.update(address + 3, one);
+}
+
+/*
+Retrieves and returns the 4 byte CRC32 for a given page from EEPROM
+*/
+uint32_t readPageCRC32(byte pageNo)
+{
+  uint16_t address; //Start address for the relevant page
+  address = EEPROM_PAGE_CRC32 + ((NUM_PAGES - pageNo) * 4);
+
+  //Read the 4 bytes from the eeprom memory.
+  uint32_t four = EEPROM.read(address);
+  uint32_t three = EEPROM.read(address + 1);
+  uint32_t two = EEPROM.read(address + 2);
+  uint32_t one = EEPROM.read(address + 3);
+
+  //Return the recomposed long by using bitshift.
+  return ((four << 0) & 0xFF) + ((three << 8) & 0xFFFF) + ((two << 16) & 0xFFFFFF) + ((one << 24) & 0xFFFFFFFF);
 }
 
 // Utility functions.

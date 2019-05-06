@@ -13,38 +13,6 @@ void initialiseSchedulers()
 {
     nullSchedule.Status = OFF;
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-    //Much help in this from http://arduinomega.blogspot.com.au/2011/05/timer2-and-overflow-interrupt-lets-get.html
-    //Fuel Schedules, which uses timer 3
-    TCCR3B = 0x00;          //Disable Timer3 while we set it up
-    TCNT3  = 0;             //Reset Timer Count
-    TIFR3  = 0x00;          //Timer3 INT Flag Reg: Clear Timer Overflow Flag
-    TCCR3A = 0x00;          //Timer3 Control Reg A: Wave Gen Mode normal
-    TCCR3B = (1 << CS12);   //Timer3 Control Reg B: Timer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
-    //TCCR3B = 0x03;   //Timer3 Control Reg B: Timer Prescaler set to 64. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
-
-    //Ignition Schedules, which uses timer 5. This is also used by the fast version of micros(). If the speed of this timer is changed from 4uS ticks, that MUST be changed as well. See globals.h and timers.ino
-    TCCR5B = 0x00;          //Disable Timer5 while we set it up
-    TCNT5  = 0;             //Reset Timer Count
-    TIFR5  = 0x00;          //Timer5 INT Flag Reg: Clear Timer Overflow Flag
-    TCCR5A = 0x00;          //Timer5 Control Reg A: Wave Gen Mode normal
-    //TCCR5B = (1 << CS12);   //Timer5 Control Reg B: Timer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
-    TCCR5B = 0x03;         //aka Divisor = 64 = 490.1Hz
-
-    #if defined(TIMER5_MICROS)
-      TIMSK5 |= (1 << TOIE5); //Enable the timer5 overflow interrupt (See timers.ino for ISR)
-      TIMSK0 &= ~_BV(TOIE0); // disable timer0 overflow interrupt
-    #endif
-
-    //The remaining Schedules (Schedules 4 for fuel and ignition) use Timer4
-    TCCR4B = 0x00;          //Disable Timer4 while we set it up
-    TCNT4  = 0;             //Reset Timer Count
-    TIFR4  = 0x00;          //Timer4 INT Flag Reg: Clear Timer Overflow Flag
-    TCCR4A = 0x00;          //Timer4 Control Reg A: Wave Gen Mode normal
-    TCCR4B = (1 << CS12);   //Timer4 Control Reg B: aka Divisor = 256 = 122.5HzTimer Prescaler set to 256. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
-  
-#endif
-
     fuelSchedule1.Status = OFF;
     fuelSchedule2.Status = OFF;
     fuelSchedule3.Status = OFF;
@@ -64,20 +32,28 @@ void initialiseSchedulers()
     fuelSchedule8.schedulesSet = 0;
 
     fuelSchedule1.counter = &FUEL1_COUNTER;
+    fuelSchedule1.compare = &FUEL1_COMPARE;
     fuelSchedule2.counter = &FUEL2_COUNTER;
+    fuelSchedule2.compare = &FUEL2_COMPARE;
     fuelSchedule3.counter = &FUEL3_COUNTER;
+    fuelSchedule3.compare = &FUEL3_COMPARE;
     fuelSchedule4.counter = &FUEL4_COUNTER;
+    fuelSchedule4.compare = &FUEL4_COMPARE;
     #if (INJ_CHANNELS >= 5)
     fuelSchedule5.counter = &FUEL5_COUNTER;
+    fuelSchedule5.compare = &FUEL5_COMPARE;
     #endif
     #if (INJ_CHANNELS >= 6)
-    fuelSchedule5.counter = &FUEL6_COUNTER;
+    fuelSchedule6.counter = &FUEL6_COUNTER;
+    fuelSchedule6.compare = &FUEL6_COMPARE;
     #endif
     #if (INJ_CHANNELS >= 7)
-    fuelSchedule5.counter = &FUEL7_COUNTER;
+    fuelSchedule7.counter = &FUEL7_COUNTER;
+    fuelSchedule7.compare = &FUEL7_COMPARE;
     #endif
     #if (INJ_CHANNELS >= 8)
-    fuelSchedule5.counter = &FUEL8_COUNTER;
+    fuelSchedule8.counter = &FUEL8_COUNTER;
+    fuelSchedule8.compare = &FUEL8_COMPARE;
     #endif
 
     ignitionSchedule1.Status = OFF;
@@ -89,6 +65,11 @@ void initialiseSchedulers()
     ignitionSchedule7.Status = OFF;
     ignitionSchedule8.Status = OFF;
 
+    IGN1_TIMER_ENABLE();
+    IGN2_TIMER_ENABLE();
+    IGN3_TIMER_ENABLE();
+    IGN4_TIMER_ENABLE();
+
     ignitionSchedule1.schedulesSet = 0;
     ignitionSchedule2.schedulesSet = 0;
     ignitionSchedule3.schedulesSet = 0;
@@ -97,6 +78,31 @@ void initialiseSchedulers()
     ignitionSchedule6.schedulesSet = 0;
     ignitionSchedule7.schedulesSet = 0;
     ignitionSchedule8.schedulesSet = 0;
+
+    ignitionSchedule1.counter = &IGN1_COUNTER;
+    ignitionSchedule1.compare = &IGN1_COMPARE;
+    ignitionSchedule2.counter = &IGN2_COUNTER;
+    ignitionSchedule2.compare = &IGN2_COMPARE;
+    ignitionSchedule3.counter = &IGN3_COUNTER;
+    ignitionSchedule3.compare = &IGN3_COMPARE;
+    ignitionSchedule4.counter = &IGN4_COUNTER;
+    ignitionSchedule4.compare = &IGN4_COMPARE;
+    #if (INJ_CHANNELS >= 5)
+    ignitionSchedule5.counter = &IGN5_COUNTER;
+    ignitionSchedule5.compare = &IGN5_COMPARE;
+    #endif
+    #if (INJ_CHANNELS >= 6)
+    ignitionSchedule6.counter = &IGN6_COUNTER;
+    ignitionSchedule6.compare = &IGN6_COMPARE;
+    #endif
+    #if (INJ_CHANNELS >= 7)
+    ignitionSchedule7.counter = &IGN7_COUNTER;
+    ignitionSchedule7.compare = &IGN7_COMPARE;
+    #endif
+    #if (INJ_CHANNELS >= 8)
+    ignitionSchedule8.counter = &IGN8_COUNTER;
+    ignitionSchedule8.compare = &IGN8_COMPARE;
+    #endif
 
 }
 
@@ -1008,6 +1014,11 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
       ignitionCount += 1; //Increment the igintion counter
       IGN1_TIMER_DISABLE();
     }
+    else if (ignitionSchedule1.Status == OFF)
+    {
+      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
+      IGN1_TIMER_DISABLE();
+    }
   }
 #endif
 
@@ -1033,6 +1044,11 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
       ignitionSchedule2.schedulesSet = 0;
       ignitionSchedule2.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
+      IGN2_TIMER_DISABLE();
+    }
+    else if (ignitionSchedule2.Status == OFF)
+    {
+      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN2_TIMER_DISABLE();
     }
   }
@@ -1072,6 +1088,11 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
        }
        else { IGN3_TIMER_DISABLE(); }
     }
+    else if (ignitionSchedule3.Status == OFF)
+    {
+      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
+      IGN3_TIMER_DISABLE();
+    }
   }
 #endif
 
@@ -1107,6 +1128,11 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
          ignitionSchedule4.hasNextSchedule = false;
        }
        else { IGN4_TIMER_DISABLE(); }
+    }
+    else if (ignitionSchedule4.Status == OFF)
+    {
+      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
+      IGN4_TIMER_DISABLE();
     }
   }
 #endif
@@ -1248,15 +1274,15 @@ void ftm3_isr(void)
 #endif
 #if (INJ_CHANNELS >= 6)
   bool interrupt2 = (FTM3_C1SC & FTM_CSC_CHF);
-  else if(interrupt2) { FTM3_C1SC &= ~FTM_CSC_CHF; fuelSchedule6Interrupt(); }
+  if(interrupt2) { FTM3_C1SC &= ~FTM_CSC_CHF; fuelSchedule6Interrupt(); }
 #endif
 #if (INJ_CHANNELS >= 7)
   bool interrupt3 = (FTM3_C2SC & FTM_CSC_CHF);
-  else if(interrupt3) { FTM3_C2SC &= ~FTM_CSC_CHF; fuelSchedule7Interrupt(); }
+  if(interrupt3) { FTM3_C2SC &= ~FTM_CSC_CHF; fuelSchedule7Interrupt(); }
 #endif
 #if (INJ_CHANNELS >= 8)
   bool interrupt4 = (FTM3_C3SC & FTM_CSC_CHF);
-  else if(interrupt4) { FTM3_C3SC &= ~FTM_CSC_CHF; fuelSchedule8Interrupt(); }
+  if(interrupt4) { FTM3_C3SC &= ~FTM_CSC_CHF; fuelSchedule8Interrupt(); }
 #endif
 #if (IGN_CHANNELS >= 5)
   bool interrupt5 = (FTM3_C4SC & FTM_CSC_CHF);
@@ -1264,15 +1290,15 @@ void ftm3_isr(void)
 #endif
 #if (IGN_CHANNELS >= 6)
   bool interrupt6 = (FTM3_C5SC & FTM_CSC_CHF);
-  else if(interrupt6) { FTM3_C5SC &= ~FTM_CSC_CHF; ignitionSchedule6Interrupt(); }
+  if(interrupt6) { FTM3_C5SC &= ~FTM_CSC_CHF; ignitionSchedule6Interrupt(); }
 #endif
 #if (IGN_CHANNELS >= 7)
   bool interrupt7 = (FTM3_C6SC & FTM_CSC_CHF);
-  else if(interrupt7) { FTM3_C6SC &= ~FTM_CSC_CHF; ignitionSchedule7Interrupt(); }
+  if(interrupt7) { FTM3_C6SC &= ~FTM_CSC_CHF; ignitionSchedule7Interrupt(); }
 #endif
 #if (IGN_CHANNELS >= 8)
   bool interrupt8 = (FTM3_C7SC & FTM_CSC_CHF);
-  else if(interrupt8) { FTM3_C7SC &= ~FTM_CSC_CHF; ignitionSchedule8Interrupt(); }
+  if(interrupt8) { FTM3_C7SC &= ~FTM_CSC_CHF; ignitionSchedule8Interrupt(); }
 #endif
 
 }
