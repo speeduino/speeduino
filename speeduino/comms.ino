@@ -181,7 +181,19 @@ void command()
       {
         currentPage = Serial.read();
         //This converts the ascii number char into binary. Note that this will break everyything if there are ever more than 48 pages (48 = asci code for '0')
-        if (currentPage >= '0') { currentPage -= '0'; }
+        if ((currentPage >= '0') && (currentPage <= '9')) // 0 - 9
+        {
+          currentPage -= 48;
+        }
+        else if ((currentPage >= 'a') && (currentPage <= 'f')) // 10 - 15
+        {
+          currentPage -= 87;
+        }
+        else if ((currentPage >= 'A') && (currentPage <= 'F'))
+        {
+          currentPage -= 55;
+        }
+        
         // Detecting if the current page is a table/map
         if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) ) { isMap = true; }
         else { isMap = false; }
