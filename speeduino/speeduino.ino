@@ -399,8 +399,9 @@ void loop()
 
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
       unsigned long pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
-      if (CRANK_ANGLE_MAX_INJ == 720) { pwLimit = pwLimit * 2; } //For sequential, the maximum pulse time is double (2 revolutions). Wouldn't work for 2 stroke...
-      else if (CRANK_ANGLE_MAX_INJ < 360) { pwLimit = pwLimit / currentStatus.nSquirts; } //Handle cases where there are multiple squirts per rev
+      //Handle multiple squirts per rev
+      if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2 / currentStatus.nSquirts; } 
+      else { pwLimit = pwLimit / currentStatus.nSquirts; }
       //Apply the pwLimit if staging is dsiabled and engine is not cranking
       if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (configPage10.stagingEnabled == false) ) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
 
@@ -465,7 +466,7 @@ void loop()
       //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
       if(configPage2.inj1Ang > PWdivTimerPerDegree) { injector1StartAngle = configPage2.inj1Ang - ( PWdivTimerPerDegree ); }
       else { injector1StartAngle = configPage2.inj1Ang + CRANK_ANGLE_MAX_INJ - PWdivTimerPerDegree; } //Just incase 
-      if(injector1StartAngle > CRANK_ANGLE_MAX_INJ) {injector1StartAngle -= CRANK_ANGLE_MAX_INJ;}
+      while(injector1StartAngle > CRANK_ANGLE_MAX_INJ) { injector1StartAngle -= CRANK_ANGLE_MAX_INJ; }
 
       //Repeat the above for each cylinder
       switch (configPage2.nCylinders)
