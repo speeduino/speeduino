@@ -267,7 +267,11 @@ void initialiseAll()
     initialiseTriggers();
 
     //End crank triger interrupt attachment
-    req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
+    if(configPage2.strokes == FOUR_STROKE)
+    {
+      //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
+      req_fuel_uS = req_fuel_uS / 2; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
+    }
 
     //Initial values for loop times
     previousLoopTime = 0;
@@ -279,7 +283,6 @@ void initialiseAll()
     if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
-
 
     //Calculate the number of degrees between cylinders
     switch (configPage2.nCylinders) {
@@ -420,7 +423,7 @@ void initialiseAll()
           //Adjust the injection angles based on the number of squirts
           if (currentStatus.nSquirts > 2)
           {
-            channel2InjDegrees = channel2InjDegrees / (currentStatus.nSquirts / 2);
+            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
           }
 
           if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
@@ -551,8 +554,8 @@ void initialiseAll()
         //Adjust the injection angles based on the number of squirts
         if (currentStatus.nSquirts > 2)
         {
-          channel2InjDegrees = channel2InjDegrees / (currentStatus.nSquirts / 2);
-          channel3InjDegrees = channel3InjDegrees / (currentStatus.nSquirts / 2);
+          channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
+          channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
         }
 
     #if INJ_CHANNELS >= 6
@@ -598,9 +601,9 @@ void initialiseAll()
         //Adjust the injection angles based on the number of squirts
         if (currentStatus.nSquirts > 2)
         {
-          channel2InjDegrees = channel2InjDegrees / (currentStatus.nSquirts / 2);
-          channel3InjDegrees = channel3InjDegrees / (currentStatus.nSquirts / 2);
-          channel4InjDegrees = channel4InjDegrees / (currentStatus.nSquirts / 2);
+          channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
+          channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
+          channel4InjDegrees = (channel4InjDegrees * 2) / currentStatus.nSquirts;
         }
 
     #if INJ_CHANNELS >= 8
@@ -654,6 +657,15 @@ void initialiseAll()
     else if (CRANK_ANGLE_MAX_IGN > CRANK_ANGLE_MAX_INJ) { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_IGN; }
     else { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_INJ; }
     currentStatus.status3 = currentStatus.nSquirts << BIT_STATUS3_NSQUIRTS1; //Top 3 bits of the status3 variable are the number of squirts. This must be done after the above section due to nSquirts being forced to 1 for sequential
+    
+    //Special case:
+    //3 or 5 squirts per cycle MUST be tracked over 720 degrees. This is because the angles for them (Eg 720/3=240) are not evenly divisible into 360
+    //This is ONLY the case on 4 stroke systems
+    if( (currentStatus.nSquirts == 3) || (currentStatus.nSquirts == 5) )
+    {
+      if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX = 720; }
+    }
+    
 
     switch(configPage4.sparkMode)
     {
@@ -1612,13 +1624,6 @@ void setPinMapping(byte boardID)
   triggerSec_pin_port = portInputRegister(digitalPinToPort(pinTrigger2));
   triggerSec_pin_mask = digitalPinToBitMask(pinTrigger2);
 
-  #if defined(CORE_STM32)
-  #else
-    //Set default values
-    digitalWrite(pinMAP, HIGH);
-    //digitalWrite(pinO2, LOW);
-    digitalWrite(pinTPS, LOW);
-  #endif
 }
 
 void initialiseTriggers()

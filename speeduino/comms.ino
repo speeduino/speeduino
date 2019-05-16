@@ -173,6 +173,7 @@ void command()
       break;
 
     case 'P': // set the current page
+      //This is a legacy function and is no longer used by TunerStudio. It is maintained for compatibility with other systems
       //A 2nd byte of data is required after the 'P' specifying the new page number.
       cmdPending = true;
 
