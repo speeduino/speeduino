@@ -53,8 +53,8 @@ static inline byte correctionsFuel()
   if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; } // Need to check this to ensure that sumCorrections doesn't overflow. Can occur when the number of corrections is greater than 3 (Which is 100^4) as 100^5 can overflow
 
-  currentStatus.TAEamount = correctionAccel();
-  if (currentStatus.TAEamount != 100) { sumCorrections = (sumCorrections * currentStatus.TAEamount); activeCorrections++; }
+  currentStatus.AEamount = correctionAccel();
+  if (currentStatus.AEamount != 100) { sumCorrections = (sumCorrections * currentStatus.AEamount); activeCorrections++; }
   if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
   result = correctionFloodClear();
@@ -164,23 +164,23 @@ static inline int16_t correctionAccel()
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
   {
     //If it is currently running, check whether it should still be running or whether it's reached it's end time
-    if( micros_safe() >= currentStatus.TAEEndTime )
+    if( micros_safe() >= currentStatus.AEEndTime )
     {
       //Time to turn enrichment off
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
-      currentStatus.TAEamount = 0;
+      currentStatus.AEamount = 0;
       accelValue = 100;
       currentStatus.tpsDOT = 0;
     }
     else
     {
       //Enrichment still needs to keep running. Simply return the total TAE amount
-      accelValue = currentStatus.TAEamount;
+      accelValue = currentStatus.AEamount;
     }
   }
   else
   {
-    int8_t TPS_change = (currentStatus.TPS - currentStatus.TPSlast);
+    int8_t TPS_change = (currentStatus.TPS - TPSlast);
     //Check for deceleration (Deceleration adjustment not yet supported)
     //Also check for only very small movement (Movement less than or equal to 2% is ignored). This not only means we can skip the lookup, but helps reduce false triggering around 0-2% throttle openings
     if (TPS_change <= 2)
@@ -191,13 +191,13 @@ static inline int16_t correctionAccel()
     else
     {
       //If TAE isn't currently turned on, need to check whether it needs to be turned on
-      int rateOfChange = ldiv(1000000, (currentStatus.TPS_time - currentStatus.TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
+      int rateOfChange = ldiv(1000000, (TPS_time - TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
       currentStatus.tpsDOT = rateOfChange / 10; //The TAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
 
-      if (rateOfChange > configPage2.tpsThresh)
+      if (rateOfChange > configPage2.taeThresh)
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
-        currentStatus.TAEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
+        currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
         accelValue = table2D_getValue(&taeTable, currentStatus.tpsDOT);
 
         //Apply the taper to the above

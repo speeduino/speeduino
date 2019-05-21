@@ -195,6 +195,9 @@
 #define NITROUS_STAGE1      1
 #define NITROUS_STAGE2      2
 
+#define AE_MODE_TPS         0
+#define AE_MODE_MAP         1
+
 #define KNOCK_MODE_OFF      0
 #define KNOCK_MODE_DIGITAL  1
 #define KNOCK_MODE_ANALOG   2
@@ -232,7 +235,7 @@ const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 #define NUM_PAGES     12
-const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288};
+const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288}; /**< This array stores the size (in bytes) of each configuration page */
 #define MAP_PAGE_SIZE 288
 
 struct table3D fuelTable; //16x16 fuel map
@@ -247,6 +250,7 @@ struct table3D trim2Table; //6x6 Fuel trim 2 map
 struct table3D trim3Table; //6x6 Fuel trim 3 map
 struct table3D trim4Table; //6x6 Fuel trim 4 map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
+struct table2D maeTable;
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 struct table2D ASETable; //4 bin After Start Enrichment map (2D)
 struct table2D ASECountTable; //4 bin After Start duration map (2D)
@@ -369,9 +373,6 @@ struct statuses {
   int16_t EMAPADC;
   byte baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
   byte TPS; /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
-  byte TPSlast; /**< The previous TPS reading */
-  unsigned long TPS_time; //The time the TPS sample was taken
-  unsigned long TPSlast_time; //The time the previous TPS sample was taken
   byte tpsADC; /**< 0-255 byte representation of the TPS. Downsampled from the original 10-bit reading, but before any calibration is applied */
   byte tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Value is divided by 10 to be stored in a byte */
   byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
@@ -392,7 +393,7 @@ struct statuses {
   byte battery10; /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
   int8_t advance; /**< Signed 8 bit as advance can now go negative (ATDC) */
   byte corrections; /**< The total current corrections % amount */
-  int16_t TAEamount; /**< The amount of accleration enrichment currently being applied */
+  int16_t AEamount; /**< The amount of accleration enrichment currently being applied */
   byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
   byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
   byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
@@ -406,7 +407,7 @@ struct statuses {
   bool idleUpActive; /**< Whether the externally controlled idle up is currently active */
   bool fanOn; /**< Whether or not the fan is turned on */
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
-  unsigned long TAEEndTime; /**< The target end time used whenever TAE is turned on */
+  unsigned long AEEndTime; /**< The target end time used whenever AE is turned on */
   volatile byte status1;
   volatile byte spark;
   volatile byte spark2;
@@ -462,10 +463,11 @@ struct statuses currentStatus; //The global status object
  */
 struct config2 {
 
+  byte unused2_0;
   byte unused2_1;
-  byte unused2_2;
-  byte unused2_3;  //Was ASE
-  byte unused2_4;  //Was ASECount
+  byte unused2_2;  //Was ASE
+  byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
+  byte unused1_3c : 6;
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
@@ -473,7 +475,7 @@ struct config2 {
   byte tachoDiv : 2; //Whether to change the tacho speed
   byte tachoDuration; //The duration of the tacho pulse in mS
   byte maeThresh; /**< The MAPdot threshold that must be exceeded before AE is engaged */
-  byte tpsThresh; /**< The TPSdot threshold that must be exceeded before AE is engaged */
+  byte taeThresh; /**< The TPSdot threshold that must be exceeded before AE is engaged */
   byte aeTime;
 
   //Display config bits
@@ -984,17 +986,18 @@ extern struct table3D fuelTable; //16x16 fuel map
 extern struct table3D ignitionTable; //16x16 ignition map
 extern struct table3D afrTable; //16x16 afr target map
 extern struct table3D stagingTable; //8x8 afr target map
-extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
-extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
-extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
+extern struct table2D taeTable; /**< 4 bin TPS Acceleration Enrichment curve (2D) */
+extern struct table2D maeTable; /**< 4 bin MAP based Acceleration Enrichment curve (2D) */
+extern struct table2D WUETable; /**< 10 bin Warm Up Enrichment curve (2D) */
+extern struct table2D crankingEnrichTable; /**< 4 bin cranking Enrichment curve (2D) */
 extern struct config2 configPage2;
 extern struct config4 configPage4;
 extern struct config6 configPage6;
 extern struct config9 configPage9;
 extern struct config10 configPage10;
-extern unsigned long currentLoopTime; //The time the current loop started (uS)
-extern unsigned long previousLoopTime; //The time the previous loop started (uS)
-volatile uint16_t ignitionCount; //The count of ignition events that have taken place since the engine started
+extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
+extern unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
+volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
 extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];

@@ -60,6 +60,10 @@ void initialiseAll()
     taeTable.xSize = 4;
     taeTable.values = configPage4.taeValues;
     taeTable.axisX = configPage4.taeBins;
+    maeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
+    maeTable.xSize = 4;
+    maeTable.values = configPage4.maeRates;
+    maeTable.axisX = configPage4.maeBins;
     WUETable.valueSize = SIZE_BYTE; //Set this table to use byte values
     WUETable.xSize = 10;
     WUETable.values = configPage2.wueValues;
