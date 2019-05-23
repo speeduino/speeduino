@@ -293,7 +293,9 @@ void loop()
       if(configPage10.fuel2Mode == FUEL2_MODE_MULTIPLY)
       {
         //Fuel 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
-        totalVE = ((uint16_t)currentStatus.VE * (uint16_t)currentStatus.VE2) / 100;
+        uint16_t combinedVE = ((uint16_t)currentStatus.VE * (uint16_t)currentStatus.VE2) / 100;
+        if(combinedVE <= 255) { totalVE = combinedVE; }
+        else { totalVE = 255; }
       }
       else if(configPage10.fuel2Mode == FUEL2_MODE_ADD)
       {
