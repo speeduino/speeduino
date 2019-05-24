@@ -120,6 +120,11 @@ void initialiseADC()
 
 static inline void instanteneousMAPReading()
 {
+  //Update the calculation times and last value. These are used by the MAP based Accel enrich
+  MAPlast = currentStatus.MAP;
+  MAPlast_time = MAP_time;
+  MAP_time = micros();
+
   unsigned int tempReading;
   //Instantaneous MAP readings
   #if defined(ANALOG_ISR_MAP)
@@ -196,6 +201,11 @@ static inline void readMAP()
           //Sanity check
           if( (MAPrunningValue != 0) && (MAPcount != 0) )
           {
+            //Update the calculation times and last value. These are used by the MAP based Accel enrich
+            MAPlast = currentStatus.MAP;
+            MAPlast_time = MAP_time;
+            MAP_time = micros();
+
             currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
             if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
@@ -240,6 +250,12 @@ static inline void readMAP()
         else
         {
           //Reaching here means that the last cylce has completed and the MAP value should be calculated
+
+          //Update the calculation times and last value. These are used by the MAP based Accel enrich
+          MAPlast = currentStatus.MAP;
+          MAPlast_time = MAP_time;
+          MAP_time = micros();
+
           currentStatus.mapADC = MAPrunningValue;
           currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
           if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
@@ -259,8 +275,8 @@ static inline void readMAP()
 
 void readTPS()
 {
-  currentStatus.TPSlast = currentStatus.TPS;
-  currentStatus.TPSlast_time = currentStatus.TPS_time;
+  TPSlast = currentStatus.TPS;
+  TPSlast_time = TPS_time;
   #if defined(ANALOG_ISR)
     byte tempTPS = fastMap1023toX(AnChannel[pinTPS-A0], 255); //Get the current raw TPS ADC value and map it into a byte
   #else
@@ -291,10 +307,10 @@ void readTPS()
     currentStatus.TPS = map(tempADC, configPage2.tpsMax, configPage2.tpsMin, 0, 100);
   }
 
-  currentStatus.TPS_time = micros();
+  TPS_time = micros();
 }
 
-void readCLT()
+void readCLT(bool useFilter)
 {
   unsigned int tempReading;
   #if defined(ANALOG_ISR)
@@ -303,7 +319,10 @@ void readCLT()
     tempReading = analogRead(pinCLT);
     tempReading = fastMap1023toX(analogRead(pinCLT), 511); //Get the current raw CLT value
   #endif
-  currentStatus.cltADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC);
+  //The use of the filter can be overridden if required. This is used on startup so there can be an immediately accurate coolant value for priming
+  if(useFilter == true) { currentStatus.cltADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC); }
+  else { currentStatus.cltADC = tempReading; }
+  
   currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 }
 
