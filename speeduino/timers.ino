@@ -56,11 +56,56 @@ void oneMSInterval() //Most ARM chips can simply call a function
   bool isCrankLocked = configPage4.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
 
-  if(ignitionSchedule1.Status == RUNNING) { if( (ignitionSchedule1.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil1Charge(); ignitionSchedule1.Status = OFF; } }
-  if(ignitionSchedule2.Status == RUNNING) { if( (ignitionSchedule2.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil2Charge(); ignitionSchedule2.Status = OFF; } }
-  if(ignitionSchedule3.Status == RUNNING) { if( (ignitionSchedule3.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil3Charge(); ignitionSchedule3.Status = OFF; } }
-  if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil4Charge(); ignitionSchedule4.Status = OFF; } }
-  if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { endCoil5Charge(); ignitionSchedule5.Status = OFF; } }
+  if (ignitionSchedule1.Status == RUNNING)
+  {
+    if ((ignitionSchedule1.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true))
+    {
+      if (configPage4.sparkMode == IGN_MODE_WASTEDCOP) {
+        endCoil1and3Charge();
+        ignitionSchedule1.Status = OFF;
+      } else {
+        endCoil1Charge();
+        ignitionSchedule1.Status = OFF;
+      }
+    }
+  }
+  if (ignitionSchedule2.Status == RUNNING)
+  {
+    if ((ignitionSchedule2.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true))
+    {
+      if (configPage4.sparkMode == IGN_MODE_WASTEDCOP) {
+        endCoil2and4Charge();
+        ignitionSchedule2.Status = OFF;
+      } else {
+        endCoil2Charge();
+        ignitionSchedule2.Status = OFF;
+      }
+    }
+  }
+  if (ignitionSchedule3.Status == RUNNING)
+  {
+    if ((ignitionSchedule3.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true))
+    {
+      endCoil3Charge();
+      ignitionSchedule3.Status = OFF;
+    }
+  }
+  if (ignitionSchedule4.Status == RUNNING)
+  {
+    if ((ignitionSchedule4.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true))
+    {
+      endCoil4Charge();
+      ignitionSchedule4.Status = OFF;
+    }
+  }
+  if (ignitionSchedule5.Status == RUNNING)
+  {
+    if ((ignitionSchedule5.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true))
+    {
+      endCoil5Charge();
+      ignitionSchedule5.Status = OFF;
+    }
+  }
 
   //Tacho output check
   //Tacho is flagged as being ready for a pulse by the ignition outputs. 
