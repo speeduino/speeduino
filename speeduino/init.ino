@@ -21,6 +21,7 @@ void initialiseAll()
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     table3D_setSize(&fuelTable, 16);
+    table3D_setSize(&fuelTable2, 16);
     table3D_setSize(&ignitionTable, 16);
     table3D_setSize(&afrTable, 16);
     table3D_setSize(&stagingTable, 8);
@@ -59,10 +60,27 @@ void initialiseAll()
     taeTable.xSize = 4;
     taeTable.values = configPage4.taeValues;
     taeTable.axisX = configPage4.taeBins;
+    maeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
+    maeTable.xSize = 4;
+    maeTable.values = configPage4.maeRates;
+    maeTable.axisX = configPage4.maeBins;
     WUETable.valueSize = SIZE_BYTE; //Set this table to use byte values
     WUETable.xSize = 10;
     WUETable.values = configPage2.wueValues;
     WUETable.axisX = configPage4.wueBins;
+    ASETable.valueSize = SIZE_BYTE;
+    ASETable.xSize = 4;
+    ASETable.values = configPage2.asePct;
+    ASETable.axisX = configPage2.aseBins;
+    ASECountTable.valueSize = SIZE_BYTE;
+    ASECountTable.xSize = 4;
+    ASECountTable.values = configPage2.aseCount;
+    ASECountTable.axisX = configPage2.aseBins;
+    PrimingPulseTable.valueSize = SIZE_BYTE;
+    PrimingPulseTable.xSize = 4;
+    PrimingPulseTable.values = configPage2.primePulse;
+    PrimingPulseTable.axisX = configPage2.primeBins;
+    crankingEnrichTable.valueSize = SIZE_BYTE;
     crankingEnrichTable.valueSize = SIZE_BYTE;
     crankingEnrichTable.xSize = 4;
     crankingEnrichTable.values = configPage10.crankingEnrichValues;
@@ -84,6 +102,10 @@ void initialiseAll()
     IATRetardTable.xSize = 6;
     IATRetardTable.values = configPage4.iatRetValues;
     IATRetardTable.axisX = configPage4.iatRetBins;
+    CLTAdvanceTable.valueSize = SIZE_BYTE;
+    CLTAdvanceTable.xSize = 6;
+    CLTAdvanceTable.values = configPage4.cltAdvValues;
+    CLTAdvanceTable.axisX = configPage4.cltAdvBins;
     rotarySplitTable.valueSize = SIZE_BYTE;
     rotarySplitTable.xSize = 8;
     rotarySplitTable.values = configPage10.rotarySplitValues;
@@ -249,7 +271,11 @@ void initialiseAll()
     initialiseTriggers();
 
     //End crank triger interrupt attachment
-    //req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
+    if(configPage2.strokes == FOUR_STROKE)
+    {
+      //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
+      req_fuel_uS = req_fuel_uS / 2; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
+    }
 
     //Initial values for loop times
     previousLoopTime = 0;
@@ -269,7 +295,6 @@ void initialiseAll()
     }
     else if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
-
 
     //Calculate the number of degrees between cylinders
     switch (configPage2.nCylinders) {
@@ -389,6 +414,11 @@ void initialiseAll()
         if (configPage2.engineType == EVEN_FIRE )
         {
           channel2IgnDegrees = 180;
+          //Adjust the injection angles based on the number of squirts
+          if (currentStatus.nSquirts > 2)
+          {
+            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
+          }
 
           if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
           {
@@ -512,8 +542,8 @@ void initialiseAll()
         //Adjust the injection angles based on the number of squirts
         if (currentStatus.nSquirts > 2)
         {
-          channel2InjDegrees = channel2InjDegrees / (currentStatus.nSquirts / 2);
-          channel3InjDegrees = channel3InjDegrees / (currentStatus.nSquirts / 2);
+          channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
+          channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
         }
 
     #if INJ_CHANNELS >= 6
@@ -562,9 +592,9 @@ void initialiseAll()
         //Adjust the injection angles based on the number of squirts
         if (currentStatus.nSquirts > 2)
         {
-          channel2InjDegrees = channel2InjDegrees / (currentStatus.nSquirts / 2);
-          channel3InjDegrees = channel3InjDegrees / (currentStatus.nSquirts / 2);
-          channel4InjDegrees = channel4InjDegrees / (currentStatus.nSquirts / 2);
+          channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
+          channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
+          channel4InjDegrees = (channel4InjDegrees * 2) / currentStatus.nSquirts;
         }
 
     #if INJ_CHANNELS >= 8
@@ -612,6 +642,15 @@ void initialiseAll()
 
     CRANK_ANGLE_MAX = max(CRANK_ANGLE_MAX_INJ, CRANK_ANGLE_MAX_IGN);
     currentStatus.status3 = currentStatus.nSquirts << BIT_STATUS3_NSQUIRTS1; //Top 3 bits of the status3 variable are the number of squirts. This must be done after the above section due to nSquirts being forced to 1 for sequential
+    
+    //Special case:
+    //3 or 5 squirts per cycle MUST be tracked over 720 degrees. This is because the angles for them (Eg 720/3=240) are not evenly divisible into 360
+    //This is ONLY the case on 4 stroke systems
+    if( (currentStatus.nSquirts == 3) || (currentStatus.nSquirts == 5) )
+    {
+      if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX = 720; }
+    }
+    
 
     switch(configPage4.sparkMode)
     {
@@ -772,12 +811,14 @@ void initialiseAll()
 
     interrupts();
     //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
-    if(configPage2.primePulse > 0)
+    readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
+    unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    if(primingValue > 0)
     {
-      setFuelSchedule1(100, (unsigned long)(configPage2.primePulse * 100));
-      setFuelSchedule2(100, (unsigned long)(configPage2.primePulse * 100));
-      setFuelSchedule3(100, (unsigned long)(configPage2.primePulse * 100));
-      setFuelSchedule4(100, (unsigned long)(configPage2.primePulse * 100));
+      setFuelSchedule1(100, (primingValue * 100 * 5)); //to acheive long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
+      setFuelSchedule2(100, (primingValue * 100 * 5));
+      setFuelSchedule3(100, (primingValue * 100 * 5));
+      setFuelSchedule4(100, (primingValue * 100 * 5));
     }
 
 
@@ -1568,13 +1609,6 @@ void setPinMapping(byte boardID)
   triggerSec_pin_port = portInputRegister(digitalPinToPort(pinTrigger2));
   triggerSec_pin_mask = digitalPinToBitMask(pinTrigger2);
 
-  #if defined(CORE_STM32)
-  #else
-    //Set default values
-    digitalWrite(pinMAP, HIGH);
-    //digitalWrite(pinO2, LOW);
-    digitalWrite(pinTPS, LOW);
-  #endif
 }
 
 void initialiseTriggers()

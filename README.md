@@ -2,7 +2,7 @@
 | |  |
 | --- | --- |
 | **Dev Status** | ![Stable](https://img.shields.io/badge/Status-Stable-green.svg) |
-| **Latest Release** | [![GitHub release](https://img.shields.io/github/release/noisymime/speeduino.svg)](https://github.com/noisymime/speeduino/releases/tag/201810) |
+| **Latest Release** | [![GitHub release](https://img.shields.io/github/release/noisymime/speeduino.svg)](https://github.com/noisymime/speeduino/releases/tag/201903) |
 | **MISRA Status** | [![MISRA](https://img.shields.io/travis/noisymime/speeduino.svg)](https://travis-ci.org/noisymime/speeduino/) |
 | **Feature Bounties** | [![Bountysource](https://img.shields.io/bountysource/team/speeduino/activity.svg)](https://www.bountysource.com/teams/speeduino)
 

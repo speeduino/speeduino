@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    10
+  #define CURRENT_DATA_VERSION    11
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -163,6 +163,40 @@ void doUpdates()
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 10);
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 10)
+  {
+    //May 2019 version adds the use of a 2D table for the priming pulse rather than a single value.
+    //This sets all the values in the 2D table to be the same as the previous single value
+    configPage2.primePulse[0] = configPage2.unused2_39 / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
+    configPage2.primePulse[1] = configPage2.unused2_39 / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
+    configPage2.primePulse[2] = configPage2.unused2_39 / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
+    configPage2.primePulse[3] = configPage2.unused2_39 / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
+    //Set some sane default temperatures for this table
+    configPage2.primeBins[0] = 0;
+    configPage2.primeBins[1] = 40;
+    configPage2.primeBins[2] = 70;
+    configPage2.primeBins[3] = 100;
+
+    //March 19 added a tacho pulse duration that could default to stupidly high values. Check if this is the case and fix it if found. 6ms is tha maximum allowed value
+    if(configPage2.tachoDuration > 6) { configPage2.tachoDuration = 3; }
+
+    //MAP based AE was introduced, force the AE mode to be TPS for all existing tunes
+    configPage2.aeMode = AE_MODE_TPS;
+    //Set some sane values for the MAP AE curve
+    configPage4.maeRates[0] = 75;
+    configPage4.maeRates[2] = 75;
+    configPage4.maeRates[3] = 75;
+    configPage4.maeRates[4] = 75;
+    configPage4.maeBins[0] = 7;
+    configPage4.maeBins[1] = 12;
+    configPage4.maeBins[2] = 20;
+    configPage4.maeBins[3] = 40;
+
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 11);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)

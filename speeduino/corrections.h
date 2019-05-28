@@ -25,6 +25,7 @@ static inline int8_t correctionFixedTiming(int8_t);
 static inline int8_t correctionCrankingFixedTiming(int8_t);
 static inline int8_t correctionFlexTiming(int8_t);
 static inline int8_t correctionIATretard(int8_t);
+static inline int8_t correctionCLTadvance(int8_t);
 static inline int8_t correctionSoftRevLimit(int8_t);
 static inline int8_t correctionNitrous(int8_t);
 static inline int8_t correctionSoftLaunch(int8_t);
