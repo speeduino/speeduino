@@ -203,8 +203,11 @@ void doUpdates()
   {
     //June 2019 version fixes the halving of reqFuel for 4-cylinder engines.
     //This sets the injection pattern to what it was before.
-    configPage2.divider /= 2;
-    configPage2.reqFuel /= 2;
+    if(configPage2.nCylinders == 4)
+    {
+      configPage2.divider /= 2;
+      configPage2.reqFuel /= 2;
+    }
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 12);
