@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    11
+  #define CURRENT_DATA_VERSION    12
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -197,6 +197,17 @@ void doUpdates()
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 11);
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 11)
+  {
+    //June 2019 version fixes the halving of reqFuel for 4-cylinder engines.
+    //This sets the injection pattern to what it was before.
+    configPage2.divider /= 2;
+    configPage2.reqFuel /= 2;
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 12);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)
