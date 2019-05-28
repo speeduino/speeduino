@@ -418,17 +418,11 @@ void initialiseAll()
         channel3InjEnabled = true;
         break;
     case 4:
-        channel1IgnDegrees = 0;
-        channel1InjDegrees = 0;
+        // Set ignition
         maxIgnOutputs = 2; //Default value for 4 cylinder, may be changed below
         if (configPage2.engineType == EVEN_FIRE )
         {
           channel2IgnDegrees = 180;
-          //Adjust the injection angles based on the number of squirts
-          if (currentStatus.nSquirts > 2)
-          {
-            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
-          }
 
           if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
           {
@@ -453,30 +447,46 @@ void initialiseAll()
           maxIgnOutputs = 4;
         }
 
-        //For alternatiing injection, the squirt occurs at different times for each channel
-        if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
+        // Set injection
+        // Set constants, could be placed before the switch-case
+        if(configPage2.strokes == FOUR_STROKE) { req_fuel_uS *= 2; } // Cancel the reqFuel division by 2 (above switch-case)
+        
+        if(configPage2.injTiming == 1) { currentStatus.nSquirts /= 2; }
+        if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
+        
+        if(configPage2.injLayout == INJ_SEQUENTIAL)
         {
-          channel2InjDegrees = 180;
-
-          if (!configPage2.injTiming) 
-          { 
-            //For simultaneous, all squirts happen at the same time
-            channel1InjDegrees = 0;
-            channel2InjDegrees = 0; 
-          }
+          // If sequential, revert the effect of the other settings.
+          req_fuel_uS *= currentStatus.nSquirts;
+          currentStatus.nSquirts = 1;
+          CRANK_ANGLE_MAX_INJ = 720;
         }
-        else if (configPage2.injLayout == INJ_SEQUENTIAL)
+        else if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
+        else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
+
+        // Set injection timing
+        if( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
         {
+          // Sequential settings, injectors fire in sequence
+          channel1InjDegrees = 0;
           channel2InjDegrees = 180;
           channel3InjDegrees = 360;
           channel4InjDegrees = 540;
 
           channel3InjEnabled = true;
           channel4InjEnabled = true;
-
-          CRANK_ANGLE_MAX_INJ = 720;
-          currentStatus.nSquirts = 1;
-          req_fuel_uS = req_fuel_uS * 2;
+        }
+        else if(configPage2.injTiming)
+        {
+          // Alternating between two channels
+          channel1InjDegrees = 0 / currentStatus.nSquirts;
+          channel2InjDegrees = 360 / currentStatus.nSquirts;
+        }
+        else
+        {
+          // For simultaneous, all squirts happen at the same time
+          channel1InjDegrees = 0;
+          channel2InjDegrees = 0;
         }
 
         //Check if injector staging is enabled
