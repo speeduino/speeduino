@@ -5,23 +5,52 @@
 #include "variables.h"
 #include "storage.h"
 
-struct config2 myPage2  = *(config2*)(&EEPROM.memory[EEPROM_CONFIG2_START]);
-struct config4 myPage4  = *(config4*)(&EEPROM.memory[EEPROM_CONFIG4_START]);
-struct config6 myPage6  = *(config6*)(&EEPROM.memory[EEPROM_CONFIG6_START]);
-struct config9 myPage9  = *(config9*)(&EEPROM.memory[EEPROM_CONFIG9_START]);
-struct config10 myPage10 = *(config10*)(&EEPROM.memory[EEPROM_CONFIG10_START]);
+void set_constants(float reqFuel, int nCylinders, int nSquirts, bool alternate, int injLayout)
+{
+    reqFuel /= nSquirts;
+    if(alternate) reqFuel *= 2;
+
+    configPage2.reqFuel = (byte)(reqFuel*10);
+    configPage2.nCylinders = nCylinders;
+    configPage2.divider = nCylinders/nSquirts;
+    configPage2.injTiming = alternate;
+    configPage2.strokes = FOUR_STROKE;
+    configPage2.engineType = EVEN_FIRE;
+    configPage2.injLayout = injLayout;
+    configPage10.stagingEnabled = false;
+    writeAllConfig();
+    writeAllConfig();
+}
 
 void init_memory()
 {
     int i = EEPROMClass::mem_size;
-    while(i--) EEPROM.write(i,i);
+    while(i--) EEPROM.write(i,1);
+}
+
+void show()
+{
+    std::cout << "req_fuel_uS\t\t" << (int)req_fuel_uS << std::endl;
+    std::cout << "Channel1 " << (channel1InjEnabled ? "enabled" : "disabled") << ":\t" << channel1InjDegrees << std::endl;
+    std::cout << "Channel2 " << (channel2InjEnabled ? "enabled" : "disabled") << ":\t" << channel2InjDegrees << std::endl;
+    std::cout << "Channel3 " << (channel3InjEnabled ? "enabled" : "disabled") << ":\t" << channel3InjDegrees << std::endl;
+    std::cout << "Channel4 " << (channel4InjEnabled ? "enabled" : "disabled") << ":\t" << channel4InjDegrees << std::endl;
+    std::cout << "Channel5 " << (channel5InjEnabled ? "enabled" : "disabled") << ":\t" << channel5InjDegrees << std::endl;
+    std::cout << "CRANK_ANGLE_MAX_INJ\t" << (int)CRANK_ANGLE_MAX_INJ << std::endl;
+    std::cout << "currentStatus.nSquirts\t" << (int)currentStatus.nSquirts << std::endl;
+    std::cout << std::endl;
 }
 
 int main()
 {
     init_memory();
-    std::cout << "Hello World!" << std::endl;
+
+    set_constants(12.0, 3, 1, false, INJ_PAIRED);
     initialiseAll();
-    std::cout << "Done!" << std::endl;
+    show();
+
+    std::cout << PW(req_fuel_uS, 15, 27, 138, 1000) << std::endl;
+
+
     return 0;
 }
