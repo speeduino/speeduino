@@ -45,12 +45,12 @@ int main()
 {
     init_memory();
 
-    set_constants(12.0, 3, 1, false, INJ_PAIRED);
+    //           ReqFuel    nCyl    nSqrt   alternate   injLayout
+    set_constants(12.0,     3,      1,      false,      INJ_PAIRED);
     initialiseAll();
     show();
 
-    std::cout << PW(req_fuel_uS, 15, 27, 138, 1000) << std::endl;
-
+    std::cout << "PW:"<< PW(req_fuel_uS, 15, 27, 138, 1000) << std::endl;
 
     return 0;
 }
