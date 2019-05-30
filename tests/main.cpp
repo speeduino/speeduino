@@ -2,7 +2,7 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include "init.h"
-#include "variables.h"
+#include "mock_globals.h"
 #include "storage.h"
 
 void set_constants(float reqFuel, int nCylinders, int nSquirts, bool alternate, int injLayout)
