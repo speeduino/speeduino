@@ -12990,6 +12990,8 @@ uint16_t readAuxdigital(uint8_t digitalPin)
 #include EEPROM_LIB_H
 #include "storage.h"
 
+bool eepromWritesPending = false;
+
 void writeAllConfig()
 {
   writeConfig(veSetPage);
