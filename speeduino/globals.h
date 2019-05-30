@@ -546,8 +546,8 @@ struct config2 {
   byte idleUpEnabled : 1;
 
   byte idleUpAdder;
-  byte taeTaperMin;
-  byte taeTaperMax;
+  byte aeTaperMin;
+  byte aeTaperMax;
 
   byte iacCLminDuty;
   byte iacCLmaxDuty;

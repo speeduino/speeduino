@@ -151,12 +151,15 @@ static inline byte correctionASE()
   return ASEValue;
 }
 
-/*
-TPS based acceleration enrichment
-Calculates the % change of the throttle over time (%/second) and performs a lookup based on this
-When the enrichment is turned on, it runs at that amount for a fixed period of time (taeTime)
-Note that as the maximum enrichment amount is +255%, the overall return value from this function can be 100+255=355. Hence this function returns a int16_t rather than byte
-*/
+/**
+ * @brief Acceleration enrichment correction calculation
+ * 
+ * Calculates the % change of the throttle over time (%/second) and performs a lookup based on this
+ * When the enrichment is turned on, it runs at that amount for a fixed period of time (taeTime)
+ * 
+ * @return int16_t The Acceleration enrichment modifier as a %. 100% = No modification. 
+ * As the maximum enrichment amount is +255%, the overall return value from this function can be 100+255=355. Hence this function returns a int16_t rather than byte
+ */
 static inline int16_t correctionAccel()
 {
   int16_t accelValue = 100;
@@ -170,7 +173,10 @@ static inline int16_t correctionAccel()
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
       currentStatus.AEamount = 0;
       accelValue = 100;
-      currentStatus.tpsDOT = 0;
+
+      //Reset the relevant DOT value to 0
+      if(configPage2.aeMode == AE_MODE_MAP) { currentStatus.mapDOT = 0; }
+      else if(configPage2.aeMode == AE_MODE_TPS) { currentStatus.tpsDOT = 0; }
     }
     else
     {
@@ -180,30 +186,24 @@ static inline int16_t correctionAccel()
   }
   else
   {
-    int8_t TPS_change = (currentStatus.TPS - TPSlast);
-    //Check for deceleration (Deceleration adjustment not yet supported)
-    //Also check for only very small movement (Movement less than or equal to 2% is ignored). This not only means we can skip the lookup, but helps reduce false triggering around 0-2% throttle openings
-    if (TPS_change <= 2)
+    if(configPage2.aeMode == AE_MODE_MAP)
     {
-      accelValue = 100;
-      currentStatus.tpsDOT = 0;
-    }
-    else
-    {
-      //If TAE isn't currently turned on, need to check whether it needs to be turned on
-      int rateOfChange = ldiv(1000000, (TPS_time - TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
-      currentStatus.tpsDOT = rateOfChange / 10; //The TAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
+      int16_t MAP_change = (currentStatus.MAP - MAPlast);
 
-      if (rateOfChange > configPage2.taeThresh)
+      //If MAE isn't currently turned on, need to check whether it needs to be turned on
+      int rateOfChange = ldiv(1000000, (MAP_time - MAPlast_time)).quot * MAP_change; //This is the % per second that the TPS has moved
+      currentStatus.mapDOT = rateOfChange / 10; //The MAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
+
+      if (rateOfChange > configPage2.maeThresh)
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
         currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
-        accelValue = table2D_getValue(&taeTable, currentStatus.tpsDOT);
+        accelValue = table2D_getValue(&maeTable, currentStatus.mapDOT);
 
         //Apply the taper to the above
         //The RPM settings are stored divided by 100:
-        uint16_t trueTaperMin = configPage2.taeTaperMin * 100;
-        uint16_t trueTaperMax = configPage2.taeTaperMax * 100;
+        uint16_t trueTaperMin = configPage2.aeTaperMin * 100;
+        uint16_t trueTaperMax = configPage2.aeTaperMax * 100;
         if (currentStatus.RPM > trueTaperMin)
         {
           if(currentStatus.RPM > trueTaperMax) { accelValue = 0; } //RPM is beyond taper max limit, so accel enrich is turned off
@@ -215,9 +215,50 @@ static inline int16_t correctionAccel()
           }
         }
         accelValue = 100 + accelValue; //Add the 100 normalisation to the calculated amount
-      }
+      } //MAE Threshold
     }
-  }
+    else if(configPage2.aeMode == AE_MODE_TPS)
+    {
+    
+      int8_t TPS_change = (currentStatus.TPS - TPSlast);
+      //Check for deceleration (Deceleration adjustment not yet supported)
+      //Also check for only very small movement (Movement less than or equal to 2% is ignored). This not only means we can skip the lookup, but helps reduce false triggering around 0-2% throttle openings
+      if (TPS_change <= 2)
+      {
+        accelValue = 100;
+        currentStatus.tpsDOT = 0;
+      }
+      else
+      {
+        //If TAE isn't currently turned on, need to check whether it needs to be turned on
+        int rateOfChange = ldiv(1000000, (TPS_time - TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
+        currentStatus.tpsDOT = rateOfChange / 10; //The TAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
+
+        if (rateOfChange > configPage2.taeThresh)
+        {
+          BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
+          currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
+          accelValue = table2D_getValue(&taeTable, currentStatus.tpsDOT);
+
+          //Apply the taper to the above
+          //The RPM settings are stored divided by 100:
+          uint16_t trueTaperMin = configPage2.aeTaperMin * 100;
+          uint16_t trueTaperMax = configPage2.aeTaperMax * 100;
+          if (currentStatus.RPM > trueTaperMin)
+          {
+            if(currentStatus.RPM > trueTaperMax) { accelValue = 0; } //RPM is beyond taper max limit, so accel enrich is turned off
+            else 
+            {
+              int16_t taperRange = trueTaperMax - trueTaperMin;
+              int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100) / taperRange; //The percentage of the way through the RPM taper range
+              accelValue = percentage((100-taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
+            }
+          }
+          accelValue = 100 + accelValue; //Add the 100 normalisation to the calculated amount
+        } //TAE Threshold
+      } //TPS change > 2
+    } //AE Mode
+  } //AE active
 
   return accelValue;
 }
