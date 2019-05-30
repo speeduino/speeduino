@@ -346,8 +346,8 @@ volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming ha
 volatile unsigned int toothHistoryIndex = 0;
 volatile byte toothHistorySerialIndex = 0;
 
-  byte primaryTriggerEdge;
-  byte secondaryTriggerEdge;
+byte primaryTriggerEdge;
+byte secondaryTriggerEdge;
 
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360;
@@ -568,11 +568,7 @@ struct config2 {
   byte primeBins[4]; //Priming temp axis
   byte unused2_91[37];
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((__packed__)); //The 32 bi systems require all structs to be fully packed
-#endif
+} __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 
 //Page 4 of the config - See the ini file for further reference
 //This mostly covers off variables that are required for ignition
@@ -648,11 +644,8 @@ struct config4 {
 
   byte unused2_91[37];
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((__packed__)); //The 32 bi systems require all structs to be fully packed
-#endif
+} __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+
 
 //Page 6 of the config - See the ini file for further reference
 //This mostly covers off variables that are required for AFR targets and closed loop
@@ -743,11 +736,7 @@ struct config6 {
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
-#endif
+} __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 
 //Page 9 of the config mostly deals with CANBUS control
 //See ini file for further info (Config Page 10 in the ini)
@@ -820,11 +809,7 @@ struct config9 {
   byte unused10_190;
   byte unused10_191;
   
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
-#endif
+} __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 
 /*
 Page 10 - No specific purpose. Created initially for the cranking enrich curve
@@ -920,11 +905,7 @@ struct config10 {
 
   byte unused11_123_191[69];
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
-#endif
+} __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 
 byte pinInjector1; //Output pin injector 1
 byte pinInjector2; //Output pin injector 2
