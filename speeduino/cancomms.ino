@@ -108,11 +108,11 @@ void canCommand()
       break;
 
     case 's': // send the "a" stream code version
-      CANSerial.write("Speeduino csx02018.7");
+      CANSerial.print(F("Speeduino csx02018.7"));
        break;
 
     case 'S': // send code version
-      CANSerial.write("Speeduino 2018.7-dev");
+      CANSerial.print(F("Speeduino 2018.7-dev"));
       break;
       
     case 'Q': // send code version
@@ -165,7 +165,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[13] = currentStatus.wueCorrection; //Warmup enrichment (%)
   fullStatus[14] = lowByte(currentStatus.RPM); //rpm HB
   fullStatus[15] = highByte(currentStatus.RPM); //rpm LB
-  fullStatus[16] = currentStatus.TAEamount; //acceleration enrichment (%)
+  fullStatus[16] = currentStatus.AEamount; //acceleration enrichment (%)
   fullStatus[17] = currentStatus.corrections; //Total GammaE (%)
   fullStatus[18] = currentStatus.VE; //Current VE 1 (%)
   fullStatus[19] = currentStatus.afrTarget;

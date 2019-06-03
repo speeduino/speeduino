@@ -1136,7 +1136,7 @@ void triggerPri_4G63()
       //New ignition mode is ONLY available on 4g63 when the trigger angle is set to the stock value of 0.
       if( (configPage2.perToothIgn == true) && (configPage4.triggerAngle == 0) )
       {
-        if(configPage2.nCylinders == 4)
+        if( (configPage2.nCylinders == 4) && (currentStatus.advance > 0) )
         {
           uint16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
 
@@ -1909,13 +1909,27 @@ void triggerPri_Miata9905()
         else { triggerToothAngle = 110; }
       }
 
+      //EXPERIMENTAL!
+      //New ignition mode is ONLY available on 9905 when the trigger angle is set to the stock value of 0.
+      if( (configPage2.perToothIgn == true) || (configPage4.triggerAngle == 0) )
+      {
+        if (currentStatus.advance > 0)
+        {
+          uint16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
+
+          //Handle non-sequential tooth counts 
+          if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-configPage2.nCylinders) ); }
+          else { checkPerToothTiming(crankAngle, toothCurrentCount); }
+        }
+      }
+
     } //Has sync
 
     toothLastMinusOneToothTime = toothLastToothTime;
     toothLastToothTime = curTime;
 
     //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage4.ignCranklock)
-    if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && configPage4.ignCranklock) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
+    if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && (configPage4.ignCranklock) ) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
     {
       if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) { endCoil1Charge(); endCoil3Charge(); }
       else if( (toothCurrentCount == 3) || (toothCurrentCount == 7) ) { endCoil2Charge(); endCoil4Charge(); }
@@ -2008,6 +2022,43 @@ int getCrankAngle_Miata9905()
 
 void triggerSetEndTeeth_Miata9905()
 {
+
+  if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) 
+  { 
+    if(currentStatus.advance >= 10)
+    {
+      ignition1EndTooth = 8;
+      ignition2EndTooth = 2;
+      ignition3EndTooth = 4;
+      ignition4EndTooth = 6;
+    }
+    else if (currentStatus.advance > 0)
+    {
+      ignition1EndTooth = 1;
+      ignition2EndTooth = 3;
+      ignition3EndTooth = 5;
+      ignition4EndTooth = 7;
+    }
+    
+  }
+  else
+  {
+    if(currentStatus.advance >= 10)
+    {
+      ignition1EndTooth = 4;
+      ignition2EndTooth = 2;
+      ignition3EndTooth = 4; //Not used
+      ignition4EndTooth = 2; //Not used
+    }
+    else if(currentStatus.advance > 0)
+    {
+      ignition1EndTooth = 1;
+      ignition2EndTooth = 3;
+      ignition3EndTooth = 1; //Not used
+      ignition4EndTooth = 3; //Not used
+    }
+  }
+
   lastToothCalcAdvance = currentStatus.advance;
 }
 
