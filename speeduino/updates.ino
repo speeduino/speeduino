@@ -194,6 +194,9 @@ void doUpdates()
     configPage4.maeBins[2] = 20;
     configPage4.maeBins[3] = 40;
 
+    //The 2nd fuel table was added. To prevent issues, force it to be disabled.
+    configPage10.fuel2Mode = 0;
+
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 11);
