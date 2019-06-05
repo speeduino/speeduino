@@ -360,15 +360,25 @@ void readBaro()
 
 void readO2()
 {
-  unsigned int tempReading;
-  #if defined(ANALOG_ISR)
-    tempReading = fastMap1023toX(AnChannel[pinO2-A0], 511); //Get the current O2 value.
-  #else
-    tempReading = analogRead(pinO2);
-    tempReading = fastMap1023toX(analogRead(pinO2), 511); //Get the current O2 value.
-  #endif
-  currentStatus.O2ADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_O2, currentStatus.O2ADC);
-  currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
+  //An O2 read is only performed if an O2 sensor type is selected. This is to prevent potentially dangerous use of the O2 readings prior to proper setup/calibration
+  if(configPage6.egoType > 0)
+  {
+    unsigned int tempReading;
+    #if defined(ANALOG_ISR)
+      tempReading = fastMap1023toX(AnChannel[pinO2-A0], 511); //Get the current O2 value.
+    #else
+      tempReading = analogRead(pinO2);
+      tempReading = fastMap1023toX(analogRead(pinO2), 511); //Get the current O2 value.
+    #endif
+    currentStatus.O2ADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_O2, currentStatus.O2ADC);
+    currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
+  }
+  else
+  {
+    currentStatus.O2ADC = 0;
+    currentStatus.O2 = 0;
+  }
+  
 }
 
 void readO2_2()
