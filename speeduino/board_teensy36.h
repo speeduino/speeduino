@@ -1,8 +1,6 @@
-#ifndef TEENSY35_H
-#define TEENSY35_H
-#if defined(__MK64FX512__)  // The defines of __MK64FX512__ and __MK66FX1M0__ are for the Teensy 3.5 and 3.6 boards, respectively.
-
-
+#ifndef TEENSY36_H
+#define TEENSY36_H
+#if defined(__MK66FX1M0__)  // The defines of __MK64FX512__ and __MK66FX1M0__ are for the Teensy 3.5 and 3.6 boards, respectively.
 
 /*
 ***********************************************************************************************************
@@ -11,11 +9,9 @@
   void initBoard();
   uint16_t freeRam();
   #define PORT_TYPE uint8_t //Size of the port variables
-  #define PINMASK_TYPE uint8_t
   #define BOARD_DIGITAL_GPIO_PINS 34
   #define BOARD_NR_GPIO_PINS 34
   #define USE_SERIAL3
-  #define EEPROM_LIB_H <EEPROM.h>
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 
@@ -138,5 +134,5 @@
 */
   //Uart CANSerial (&sercom3, 0, 1, SERCOM_RX_PAD_1, UART_TX_PAD_0);
 
-#endif //CORE_TEENSY
-#endif //TEENSY35_H
+#endif //__MK66FX1M0__
+#endif //TEENSY36_H

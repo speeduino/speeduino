@@ -15,10 +15,17 @@
 
   //#define TIMER5_MICROS
 
-#elif defined(CORE_TEENSY)
-  #define BOARD_H "board_teensy35.h"
-  #define INJ_CHANNELS 8
-  #define IGN_CHANNELS 8
+  #elif defined(__MK64FX512__)
+    #define BOARD "Teensy 3.5"
+		#define BOARD_H "board_teensy35.h"
+    #define INJ_CHANNELS 8
+    #define IGN_CHANNELS 8
+  
+  #elif defined(__MK66FX1M0__)
+    #define BOARD "Teensy 3.6"
+		#define BOARD_H "board_teensy36.h"
+    #define INJ_CHANNELS 8
+    #define IGN_CHANNELS 8
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
   //These should be updated to 8 later, but there's bits missing currently
@@ -987,6 +994,32 @@ byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
+byte pinStarterSense; // Starter button pressed sense pin.
+byte pinIgnSense; // Ign on sense pin.
+byte pinStarterEnable; // Starter relay enable pin.
+byte pinSpareDigitalIn1; // Aux digital input. Triggered by being pulled low to ground.
+byte PinVss; // Vechivle Speed Sensor input pin. (VSS)
+byte pinO2Heat; // O2 sensor heat circuit enable. High current mosfet out.
+byte pinClutchSense; // Cluch depressed sensor circuit.
+byte pinSAI; // Secondary Air Injector output pin.
+byte pinBtn1; // On board AUX momentary switch number 1.
+byte pinBtn2; // On board AUX momentary switch number 2.
+byte pinNeutralSense; // Neutral gear sense pin.
+byte pinEMSRelay; // Enable EMS relay output pin.
+byte pinQS; // Quick Shifter input pin.
+byte pinHeadLight; // Enable Headlight relay output pin.
+byte pinCEL; // Enable Check Engine Light (CEL) pin.
+byte pinSideStandSense; // Side stand switch (STAND) sense pin.
+byte pinSpareDigitalIn2; // Aux digital input. Triggered by being pulled low to ground.
+byte pinLED3; // On board LED 3.
+byte pinLED2; // On board LED 2.
+byte pinLED1; // On board LED 1.
+byte pinFLS; // D22. Fuel Level Sensor input pin. (FLS)
+byte pinSpareAnalogIn1; // Aux analog input.
+byte pinSpareAnalogIn2; // Aux analog input.
+byte pinGPS; // Gear Postion Sensor input pin. (GPS)
+byte pinFallSensor; // D49. Fall sensor pin.
+
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino

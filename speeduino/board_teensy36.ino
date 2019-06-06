@@ -1,5 +1,5 @@
-#if defined(__MK64FX512__)   // The defines of __MK64FX512__ and __MK66FX1M0__ are for the Teensy 3.5 and 3.6 boards, respectively.
-#include "board_teensy35.h"
+#if defined(__MK66FX1M0__)   // The defines of __MK64FX512__ and __MK66FX1M0__ are for the Teensy 3.5 and 3.6 boards, respectively.
+#include "board_teensy36.h"
 #include "globals.h"
 #include "auxiliaries.h"
 #include "idle.h"
@@ -259,6 +259,5 @@ uint16_t freeRam()
     // The difference is the free, available ram.
     return (uint16_t)stackTop - heapTop;
 }
-
 
 #endif

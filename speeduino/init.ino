@@ -1178,6 +1178,71 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
+    #if defined(CORE_TEENSY)
+    case 15:
+   //Pin mappings as per "Tobbera Teensy 3.6 PCB v0.6"
+  pinInjector1 = 2; //Output pin injector 1 is on
+  pinInjector2 = 20; //Output pin injector 2 is on
+  pinInjector3 = 6; //Output pin injector 3 is on
+  pinInjector4 = 21; //Output pin injector 4 is on
+  pinInjector5 = 5; //Output pin injector 5 is on
+  pinInjector6 = 42; //Output pin injector 6 is on
+  pinInjector7 = 56; //Output pin injector 7 is on
+  pinInjector8 = 57; //Output pin injector 8 is on
+  pinCoil1 = 29; //Pin for coil 1. When Teensy GPIO goes HIGH, Igntion MOSFET goes low and starts to charge coil. After about 40ms tge MOSFET goes HIGH no matter is the GPIO stays HIGH. This is to protect the ingtion coil from overcharge/over dwell. 
+  pinCoil2 = 30; //Pin for coil 2. When Teensy GPIO goes HIGH, Igntion MOSFET goes low and starts to charge coil. After about 40ms tge MOSFET goes HIGH no matter is the GPIO stays HIGH. This is to protect the ingtion coil from overcharge/over dwell. 
+  pinCoil3 = 31; //Pin for coil 3. When Teensy GPIO goes HIGH, Igntion MOSFET goes low and starts to charge coil. After about 40ms tge MOSFET goes HIGH no matter is the GPIO stays HIGH. This is to protect the ingtion coil from overcharge/over dwell. 
+  pinCoil4 = 32; //Pin for coil 4. When Teensy GPIO goes HIGH, Igntion MOSFET goes low and starts to charge coil. After about 40ms tge MOSFET goes HIGH no matter is the GPIO stays HIGH. This is to protect the ingtion coil from overcharge/over dwell. 
+  pinTrigger = 23; //Crank Position Sensor (CPS). Aka "CAS" pin
+  pinTrigger2 = 36; //The Camshaft Position Sensor. (CAM) pin
+  pinTPS = 16; //TPS input pin
+  pinMAP = 17; //MAP sensor pin
+  pinBaro = A11; //BARO sensor pin.
+  pinIAT = 14; //IAT sensor pin
+  pinCLT = 15; //CLT sensor pin
+  pinO2 = A22; //O2 sensor pin
+  pinO2_2 = A21; //O2 sensor pin (second sensor)
+  pinBat = A24; //Battery reference voltage pin
+  pinTachOut = 13; //Tacho output pin. Not availble on this board.
+  pinIdle1 = 7; //Single wire idle control
+  // pinBoost = 11; //Boost control. Not availble on this board.
+  pinFuelPump = 43; //Fuel pump output
+  pinStepperDir = 34; //Direction pin for DRV8825 driver
+  pinStepperStep = 35; //Step pin for DRV8825 driver
+  // pinStepperEnable = 33; //Enable pin for DRV8825 driver. Not availble on this board.
+  pinFan = 37; //Pin for the fan output
+  pinSpareHOut1 = 8; // High current output spare 1
+  pinSpareHOut2 = 7; // High current output spare 2
+  pinSpareLOut1 = 27; // Low current output spare 1
+  pinStarterSense = 1; // Starter button pressed sense pin.
+  pinIgnSense = 8; // Ign on sense pin.
+  pinStarterEnable = 11; // Starter relay enable pin.
+  pinSpareDigitalIn1 = 12; // Aux digital input. Triggered by being pulled low to ground.
+  PinVss = 24; // Vehicle Speed Sensor input pin. (VSS)
+  pinO2Heat = 25; // O2 sensor heat circuit enable. High current mosfet out.
+  pinClutchSense = 26; // Cluch depressed sensor circuit.
+  pinSAI = 28; // Secondary Air Injector output pin.
+  pinBtn1 = 40; // On board AUX momentary switch number 1.
+  pinBtn2 = 41; // On board AUX momentary switch number 2.
+  pinNeutralSense = 44; // Neutral gear sense pin.
+  pinEMSRelay = 45; // Enable EMS relay output pin.
+  pinQS = 46; // Quick Shifter input pin.
+  pinHeadLight = 47; // Enable Headlight relay output pin.
+  pinCEL = 48; // Enable Check Engine Light (CEL) pin.
+  pinSideStandSense = 51; // Side stand switch (STAND) sense pin.
+  pinSpareDigitalIn2 = 52; // Aux digital input. Triggered by being pulled low to ground.
+  pinLED3 = 53; // On board LED 3.
+  pinLED2 = 54; // On board LED 2.
+  pinLED1 = 55; // On board LED 1.
+  pinFLS = A8; // D22. Fuel Level Sensor input pin. (FLS)
+  pinSpareAnalogIn1 = 33; // Aux analog input.
+  pinSpareAnalogIn2 = 39; // Aux analog input.
+  pinGPS = A10; // Gear Postion Sensor input pin. (GPS)
+  pinFallSensor = A23; // D49. Fall sensor pin.
+   #endif
+  break;
+  
+
     case 20:
     #if defined(CORE_AVR) && !defined(SMALL_FLASH_MODE) //No support for bluepill here anyway
       //Pin mappings as per the Plazomat In/Out shields Rev 0.1
