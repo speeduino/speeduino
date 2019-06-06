@@ -179,11 +179,30 @@ void doUpdates()
     configPage2.primeBins[2] = 70;
     configPage2.primeBins[3] = 100;
 
+    //Also added is coolant based ASE for both duration and amount
+    //All the adder amounts are set to what the single value was previously
+    configPage2.asePct[0] = configPage2.unused2_2;
+    configPage2.asePct[1] = configPage2.unused2_2;
+    configPage2.asePct[2] = configPage2.unused2_2;
+    configPage2.asePct[3] = configPage2.unused2_2;
+    //ASE duration is set to 10s for all coolant values
+    configPage2.aseCount[0] = 10;
+    configPage2.aseCount[1] = 10;
+    configPage2.aseCount[2] = 10;
+    configPage2.aseCount[3] = 10;
+    //Finally the coolant bins for the above are set to sane values (Rememerbing these are offset values)
+    configPage2.aseBins[0] = 0;
+    configPage2.aseBins[1] = 20;
+    configPage2.aseBins[2] = 60;
+    configPage2.aseBins[3] = 80;
+
+
     //March 19 added a tacho pulse duration that could default to stupidly high values. Check if this is the case and fix it if found. 6ms is tha maximum allowed value
     if(configPage2.tachoDuration > 6) { configPage2.tachoDuration = 3; }
 
     //MAP based AE was introduced, force the AE mode to be TPS for all existing tunes
     configPage2.aeMode = AE_MODE_TPS;
+    configPage2.maeThresh = configPage2.taeThresh;
     //Set some sane values for the MAP AE curve
     configPage4.maeRates[0] = 75;
     configPage4.maeRates[2] = 75;
