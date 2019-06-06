@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-<bibliography author="TunerStudio MS(Beta) 3.0.60.55 - EFI Analytics, Inc." tuneComment="" writeDate="Thu Jun 06 20:06:42 AEST 2019"/>
+<bibliography author="TunerStudio MS(Beta) 3.0.60.55 - EFI Analytics, Inc." tuneComment="" writeDate="Thu Jun 06 23:25:47 AEST 2019"/>
 <versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2019.03" nPages="11" signature="speeduino 201905"/>
 <page>
 <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
@@ -341,6 +341,22 @@
 <constant digits="0" name="ADCFILTER_BAT" units="%">128.0</constant>
 <constant digits="0" name="ADCFILTER_MAP" units="%">20.0</constant>
 <constant digits="0" name="ADCFILTER_BARO" units="%">64.0</constant>
+<constant cols="1" digits="0" name="cltAdvBins" rows="6" units="C">
+         0.0 
+         20.0 
+         50.0 
+         70.0 
+         85.0 
+         100.0 
+      </constant>
+<constant cols="1" digits="1" name="cltAdvValues" rows="6" units="deg">
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+      </constant>
 <constant cols="1" digits="0" name="maeBins" rows="4" units="kpa/s">
          10.0 
          260.0 

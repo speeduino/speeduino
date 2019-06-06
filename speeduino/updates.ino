@@ -196,6 +196,20 @@ void doUpdates()
     configPage2.aseBins[2] = 60;
     configPage2.aseBins[3] = 80;
 
+    //Coolant based ignition advance was added also. Set sane values
+    configPage4.cltAdvBins[0] = 0;
+    configPage4.cltAdvBins[1] = 30;
+    configPage4.cltAdvBins[2] = 60;
+    configPage4.cltAdvBins[3] = 70;
+    configPage4.cltAdvBins[4] = 85;
+    configPage4.cltAdvBins[5] = 100;
+    configPage4.cltAdvValues[0] = 0;
+    configPage4.cltAdvValues[1] = 0;
+    configPage4.cltAdvValues[2] = 0;
+    configPage4.cltAdvValues[3] = 0;
+    configPage4.cltAdvValues[4] = 0;
+    configPage4.cltAdvValues[5] = 0;
+
 
     //March 19 added a tacho pulse duration that could default to stupidly high values. Check if this is the case and fix it if found. 6ms is tha maximum allowed value
     if(configPage2.tachoDuration > 6) { configPage2.tachoDuration = 3; }
