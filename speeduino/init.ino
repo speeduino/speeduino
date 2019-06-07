@@ -1411,6 +1411,48 @@ void setPinMapping(byte boardID)
       pinSpareHOut2 = 7; // high current output spare2
       pinSpareLOut1 = 21; //low current output spare1
       break;
+
+   case 52:
+    //Pin mappings Teensy 8x8 shield
+      pinTPS = A2;//TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinBaro = A10; //Baro sensor pin
+      pinLaunch = 51; //Can be overwritten below
+      pinInjector1 = 5; //Output pin injector 1 is on
+      pinInjector2 = 6; //Output pin injector 2 is on
+      pinInjector3 = 7; //Output pin injector 3 is on
+      pinInjector4 = 8; //Output pin injector 4 is on
+      pinInjector5 = 22; //Output pin injector 5 is on
+      pinInjector6 = 21; //Output pin injector 6 is on
+      pinIdle1 = 11; //Single wire idle control
+      pinIdle2 = 12; //Single wire idle control     
+      pinCoil1 = 31; //Pin for coil 1
+      pinCoil2 = 38; //Pin for coil 2
+      pinCoil3 = 30; //Pin for coil 3
+      pinCoil4 = 29; //Pin for coil 4
+      pinCoil5 = 32; //Pin for coil 5
+      pinCoil6 = 33; //Pin for coil 6
+      pinCoil7 = 25; //Pin for coil 7
+      pinCoil8 = 26; //Pin for coil 8
+      pinTrigger = 23; //The CAS pin
+      pinTrigger2 = 36; //The Cam Sensor pin
+      pinStepperDir = 34; //Direction pin  for DRV8825 driver
+      pinStepperStep = 35; //Step pin for DRV8825 driver
+      pinStepperEnable = 24; //Enable pin for DRV8825
+      pinTachOut = 28; //output  (Goes to ULN2803)
+      pinFan = 27; //output  (Goes to ULN2803)
+      pinFuelPump = 37; //Fuel pump output  (Goes to ULN2803)
+      pinO2 = A22;  //O2 Sensor pin
+      pinSpareLOut1 = 2; //low current output spare1
+      pinSpareLOut2 = 39; //low current output spare2
+      pinSpareLOut3 = 1; //HIGH current output spare1
+      pinSpareTemp1 = A6;
+      pinSpareTemp2 = A5;
+      pinSpareLOut4 = 13; //Hardware In out Switched
+      break;
     #endif
 
     default:
