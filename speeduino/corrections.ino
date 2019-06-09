@@ -190,32 +190,40 @@ static inline int16_t correctionAccel()
     {
       int16_t MAP_change = (currentStatus.MAP - MAPlast);
 
-      //If MAE isn't currently turned on, need to check whether it needs to be turned on
-      int rateOfChange = ldiv(1000000, (MAP_time - MAPlast_time)).quot * MAP_change; //This is the % per second that the TPS has moved
-      currentStatus.mapDOT = rateOfChange / 10; //The MAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
-
-      if (rateOfChange > configPage2.maeThresh)
+      if (MAP_change <= 2)
       {
-        BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
-        currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
-        accelValue = table2D_getValue(&maeTable, currentStatus.mapDOT);
+        accelValue = 100;
+        currentStatus.mapDOT = 0;
+      }
+      else
+      {
+        //If MAE isn't currently turned on, need to check whether it needs to be turned on
+        int rateOfChange = ldiv(1000000, (MAP_time - MAPlast_time)).quot * MAP_change; //This is the % per second that the TPS has moved
+        currentStatus.mapDOT = rateOfChange / 10; //The MAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
 
-        //Apply the taper to the above
-        //The RPM settings are stored divided by 100:
-        uint16_t trueTaperMin = configPage2.aeTaperMin * 100;
-        uint16_t trueTaperMax = configPage2.aeTaperMax * 100;
-        if (currentStatus.RPM > trueTaperMin)
+        if (rateOfChange > configPage2.maeThresh)
         {
-          if(currentStatus.RPM > trueTaperMax) { accelValue = 0; } //RPM is beyond taper max limit, so accel enrich is turned off
-          else 
+          BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
+          currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
+          accelValue = table2D_getValue(&maeTable, currentStatus.mapDOT);
+
+          //Apply the taper to the above
+          //The RPM settings are stored divided by 100:
+          uint16_t trueTaperMin = configPage2.aeTaperMin * 100;
+          uint16_t trueTaperMax = configPage2.aeTaperMax * 100;
+          if (currentStatus.RPM > trueTaperMin)
           {
-            int16_t taperRange = trueTaperMax - trueTaperMin;
-            int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100) / taperRange; //The percentage of the way through the RPM taper range
-            accelValue = percentage((100-taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
+            if(currentStatus.RPM > trueTaperMax) { accelValue = 0; } //RPM is beyond taper max limit, so accel enrich is turned off
+            else 
+            {
+              int16_t taperRange = trueTaperMax - trueTaperMin;
+              int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100) / taperRange; //The percentage of the way through the RPM taper range
+              accelValue = percentage((100-taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
+            }
           }
-        }
-        accelValue = 100 + accelValue; //Add the 100 normalisation to the calculated amount
-      } //MAE Threshold
+          accelValue = 100 + accelValue; //Add the 100 normalisation to the calculated amount
+        } //MAE Threshold
+      }
     }
     else if(configPage2.aeMode == AE_MODE_TPS)
     {

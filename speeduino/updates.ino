@@ -179,11 +179,44 @@ void doUpdates()
     configPage2.primeBins[2] = 70;
     configPage2.primeBins[3] = 100;
 
+    //Also added is coolant based ASE for both duration and amount
+    //All the adder amounts are set to what the single value was previously
+    configPage2.asePct[0] = configPage2.unused2_2;
+    configPage2.asePct[1] = configPage2.unused2_2;
+    configPage2.asePct[2] = configPage2.unused2_2;
+    configPage2.asePct[3] = configPage2.unused2_2;
+    //ASE duration is set to 10s for all coolant values
+    configPage2.aseCount[0] = 10;
+    configPage2.aseCount[1] = 10;
+    configPage2.aseCount[2] = 10;
+    configPage2.aseCount[3] = 10;
+    //Finally the coolant bins for the above are set to sane values (Rememerbing these are offset values)
+    configPage2.aseBins[0] = 0;
+    configPage2.aseBins[1] = 20;
+    configPage2.aseBins[2] = 60;
+    configPage2.aseBins[3] = 80;
+
+    //Coolant based ignition advance was added also. Set sane values
+    configPage4.cltAdvBins[0] = 0;
+    configPage4.cltAdvBins[1] = 30;
+    configPage4.cltAdvBins[2] = 60;
+    configPage4.cltAdvBins[3] = 70;
+    configPage4.cltAdvBins[4] = 85;
+    configPage4.cltAdvBins[5] = 100;
+    configPage4.cltAdvValues[0] = 0;
+    configPage4.cltAdvValues[1] = 0;
+    configPage4.cltAdvValues[2] = 0;
+    configPage4.cltAdvValues[3] = 0;
+    configPage4.cltAdvValues[4] = 0;
+    configPage4.cltAdvValues[5] = 0;
+
+
     //March 19 added a tacho pulse duration that could default to stupidly high values. Check if this is the case and fix it if found. 6ms is tha maximum allowed value
     if(configPage2.tachoDuration > 6) { configPage2.tachoDuration = 3; }
 
     //MAP based AE was introduced, force the AE mode to be TPS for all existing tunes
     configPage2.aeMode = AE_MODE_TPS;
+    configPage2.maeThresh = configPage2.taeThresh;
     //Set some sane values for the MAP AE curve
     configPage4.maeRates[0] = 75;
     configPage4.maeRates[2] = 75;
@@ -193,6 +226,9 @@ void doUpdates()
     configPage4.maeBins[1] = 12;
     configPage4.maeBins[2] = 20;
     configPage4.maeBins[3] = 40;
+
+    //The 2nd fuel table was added. To prevent issues, force it to be disabled.
+    configPage10.fuel2Mode = 0;
 
 
     writeAllConfig();

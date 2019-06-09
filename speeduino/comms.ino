@@ -195,7 +195,7 @@ void command()
         }
         
         // Detecting if the current page is a table/map
-        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) ) { isMap = true; }
+        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) ) { isMap = true; }
         else { isMap = false; }
         cmdPending = false;
       }
@@ -236,7 +236,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 201904-dev"));
+      Serial.print(F("speeduino 201905"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -266,7 +266,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2019.04-dev"));
+      Serial.print(F("Speeduino 2019.05"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -923,6 +923,32 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       }
       break;
 
+    case fuelMap2Page:
+      if (valueOffset < 256) //New value is part of the fuel map
+      {
+        fuelTable2.values[15 - (valueOffset / 16)][valueOffset % 16] = newValue;
+      }
+      else
+      {
+        //Check whether this is on the X (RPM) or Y (MAP/TPS) axis
+        if (valueOffset < 272)
+        {
+          //X Axis
+          fuelTable2.axisX[(valueOffset - 256)] = ((int)(newValue) * TABLE_RPM_MULTIPLIER); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+        }
+        else if(valueOffset < 288)
+        {
+          //Y Axis
+          tempOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
+          fuelTable2.axisY[tempOffset] = (int)(newValue) * TABLE_LOAD_MULTIPLIER;
+        }
+        else
+        {
+          //This should never happen. It means there's an invalid offset value coming through
+        }
+      }
+      break;
+
     default:
       break;
   }
@@ -1016,11 +1042,15 @@ void sendPage()
       break;
     }
     case canbusPage:
-      pnt_configPage = &configPage9; //Create a pointer to Page 10 in memory
+      pnt_configPage = &configPage9; //Create a pointer to Page 9 in memory
       break;
 
     case warmupPage:
-      pnt_configPage = &configPage10; //Create a pointer to Page 11 in memory
+      pnt_configPage = &configPage10; //Create a pointer to Page 10 in memory
+      break;
+
+    case fuelMap2Page:
+      currentTable = fuelTable2;
       break;
 
     default:
@@ -1303,6 +1333,11 @@ void sendPageASCII()
         Serial.println(F("\nPage has not been implemented yet"));
       #endif
       sendComplete = true;
+      break;
+
+    case fuelMap2Page:
+      currentTitleIndex = 117;// the index to the first char of the third string in pageTitles
+      currentTable = fuelTable2;
       break;
 
     default:

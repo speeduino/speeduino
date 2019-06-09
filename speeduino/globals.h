@@ -832,80 +832,88 @@ Page 10 - No specific purpose. Created initially for the cranking enrich curve
 See ini file for further info (Config Page 11 in the ini)
 */
 struct config10 {
-  byte crankingEnrichBins[4];
-  byte crankingEnrichValues[4];
+  byte crankingEnrichBins[4]; //Bytes 0-4
+  byte crankingEnrichValues[4]; //Bytes 4-7
 
+  //Byte 8
   byte rotaryType : 2;
   byte stagingEnabled : 1;
   byte stagingMode : 1;
   byte EMAPPin : 4;
 
-  byte rotarySplitValues[8];
-  byte rotarySplitBins[8];
+  byte rotarySplitValues[8]; //Bytes 9-16
+  byte rotarySplitBins[8]; //Bytes 17-24
 
-  uint16_t boostSens;
-  byte boostIntv;
-  uint16_t stagedInjSizePri;
-  uint16_t stagedInjSizeSec;
-  byte lnchCtrlTPS;
+  uint16_t boostSens; //Bytes 25-26
+  byte boostIntv; //Byte 27
+  uint16_t stagedInjSizePri; //Bytes 28-29
+  uint16_t stagedInjSizeSec; //Bytes 30-31
+  byte lnchCtrlTPS; //Byte 32
 
-  uint8_t flexBoostBins[6];
-  int16_t flexBoostAdj[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed)
-  uint8_t flexFuelBins[6];
-  uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%)
-  uint8_t flexAdvBins[6];
-  uint8_t  flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%). NOTE: THIS IS A SIGNED VALUE!
+  uint8_t flexBoostBins[6]; //Byets 33-38
+  int16_t flexBoostAdj[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed). Bytes 39-50
+  uint8_t flexFuelBins[6]; //Bytes 51-56
+  uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%). Bytes 57-62
+  uint8_t flexAdvBins[6]; //Bytes 63-68
+  uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%). NOTE: THIS SHOULD BE A SIGNED VALUE BUT 2d TABLE LOOKUP NOT WORKING WITH IT CURRENTLY!
                             //And another three corn rows die.
+                            //Bytes 69-74
 
+  //Byte 75
   byte n2o_enable : 2;
   byte n2o_arming_pin : 6;
-  byte n2o_minCLT;
-  byte n2o_maxMAP;
-  byte n2o_minTPS;
-  byte n2o_maxAFR;
+  byte n2o_minCLT; //Byte 76
+  byte n2o_maxMAP; //Byte 77
+  byte n2o_minTPS; //Byte 78
+  byte n2o_maxAFR; //Byte 79
 
+  //Byte 80
   byte n2o_stage1_pin : 6;
   byte n2o_pin_polarity : 1;
   byte n2o_stage1_unused : 1;
-  byte n2o_stage1_minRPM;
-  byte n2o_stage1_maxRPM;
-  byte n2o_stage1_adderMin;
-  byte n2o_stage1_adderMax;
-  byte n2o_stage1_retard;
+  byte n2o_stage1_minRPM; //Byte 81
+  byte n2o_stage1_maxRPM; //Byte 82
+  byte n2o_stage1_adderMin; //Byte 83
+  byte n2o_stage1_adderMax; //Byte 84
+  byte n2o_stage1_retard; //Byte 85
 
+  //Byte 86
   byte n2o_stage2_pin : 6;
   byte n2o_stage2_unused : 2;
-  byte n2o_stage2_minRPM;
-  byte n2o_stage2_maxRPM;
-  byte n2o_stage2_adderMin;
-  byte n2o_stage2_adderMax;
-  byte n2o_stage2_retard;
+  byte n2o_stage2_minRPM; //Byte 87
+  byte n2o_stage2_maxRPM; //Byte 88
+  byte n2o_stage2_adderMin; //Byte 89
+  byte n2o_stage2_adderMax; //Byte 90
+  byte n2o_stage2_retard; //Byte 91
 
+  //Byte 92
   byte knock_mode : 2;
   byte knock_pin : 6;
 
+  //Byte 93
   byte knock_trigger : 1;
   byte knock_pullup : 1;
   byte knock_limiterDisable : 1;
   byte knock_unused : 2;
   byte knock_count : 3;
 
-  byte knock_threshold;
-  byte knock_maxMAP;
-  byte knock_maxRPM;
-  byte knock_window_rpms[6];
-  byte knock_window_angle[6];
-  byte knock_window_dur[6];
+  byte knock_threshold; //Byte 94
+  byte knock_maxMAP; //Byte 95
+  byte knock_maxRPM; //Byte 96
+  byte knock_window_rpms[6]; //Bytes 97-102
+  byte knock_window_angle[6]; //Bytes 103-108
+  byte knock_window_dur[6]; //Bytes 109-114
 
-  byte knock_maxRetard;
-  byte knock_firstStep;
-  byte knock_stepSize;
-  byte knock_stepTime;
+  byte knock_maxRetard; //Byte 115
+  byte knock_firstStep; //Byte 116
+  byte knock_stepSize; //Byte 117
+  byte knock_stepTime; //Byte 118
         
-  byte knock_duration; //Time after knock retard starts that it should start recovering
-  byte knock_recoveryStepTime;
-  byte knock_recoveryStep;
+  byte knock_duration; //Time after knock retard starts that it should start recovering. Byte 119
+  byte knock_recoveryStepTime; //Byte 120
+  byte knock_recoveryStep; //Byte 121
 
+  //Byte 122
   byte fuel2Algorithm : 3;
   byte fuel2Mode : 2;
   byte unused10_122 : 3;
@@ -983,6 +991,7 @@ byte pinResetControl; // Output pin used control resetting the Arduino
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
 extern struct table3D fuelTable; //16x16 fuel map
+extern struct table3D fuelTable2; //16x16 fuel map
 extern struct table3D ignitionTable; //16x16 ignition map
 extern struct table3D afrTable; //16x16 afr target map
 extern struct table3D stagingTable; //8x8 afr target map
