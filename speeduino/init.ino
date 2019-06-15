@@ -208,15 +208,17 @@ void initialiseAll()
         */
     if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
      {
-      if((configPage2.fuelAlgorithm == LOAD_SOURCE_TPS) && ( configPage6.useExtBaro != 1 ))
+      if((configPage2.fuelAlgorithm == LOAD_SOURCE_TPS) && ( configPage6.useExtBaro != 1 ) && (configPage2.ignAlgorithm == LOAD_SOURCE_TPS))
+          //chek if fuel and ign is using TPS sourc and not have a second baro sensor on board
       {
         currentStatus.baro = 101;
-         /* turns the pw multiplied by ( map/101 kpa) so when atmospheric pressure drops the PW well be reduced in the same way
+         /* Turns baro correction on with only the internal "map" pressure sensor, need to left it unconnected 
+         * turns the pw multiplied by ( map/101 kpa) so when atmospheric pressure drops the PW well be reduced in the same way
          * example: 101kpa at 25Cº and 50% humidity Air density = 1.1766kg/m³
          * 90kpa at 25Cº and 50% humidity Air density = 1.048kg/m³ (1.048/1.1766)*100 =89,07% or 89% of sea level density
          * So with this the PW is reduced to 89% of the sea level PW
          * (90kpa/101kpa)*100 =89,10% 
-        */
+         */
         storeLastBaro(currentStatus.baro);
       }
       else
