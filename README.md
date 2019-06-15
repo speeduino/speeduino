@@ -1,8 +1,3 @@
-Copy made to modify the init.ino file 
-Mod can be seen in
-https://github.com/RenanBecker/speeduino/commit/d646438e4d8ac98b1bc8f7008e04132134553e4c
-
-
 | |  |
 | --- | --- |
 | **Dev Status** | ![Stable](https://img.shields.io/badge/Status-Stable-green.svg) |
