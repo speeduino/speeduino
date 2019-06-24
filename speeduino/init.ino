@@ -104,7 +104,7 @@ void initialiseAll()
     IATRetardTable.axisX = configPage4.iatRetBins;
     CLTAdvanceTable.valueSize = SIZE_BYTE;
     CLTAdvanceTable.xSize = 6;
-    CLTAdvanceTable.values = configPage4.cltAdvValues;
+    CLTAdvanceTable.values = (byte*)configPage4.cltAdvValues;
     CLTAdvanceTable.axisX = configPage4.cltAdvBins;
     rotarySplitTable.valueSize = SIZE_BYTE;
     rotarySplitTable.xSize = 8;

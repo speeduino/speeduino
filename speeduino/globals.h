@@ -641,7 +641,7 @@ struct config4 {
   byte ADCFILTER_BARO;
   
   byte cltAdvBins[6]; /**< Coolant Temp timing advance curve bins */
-  byte cltAdvValues[6]; /**< Coolant timing advance curve values */
+  byte cltAdvValues[6]; /**< Coolant timing advance curve values. These are multiplied by 10 and translated by 127 to allow for negative values */
 
   byte maeBins[4]; /**< MAP based AE MAPdot bins */
   byte maeRates[4]; /**< MAP based AE values */
