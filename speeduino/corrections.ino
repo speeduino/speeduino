@@ -502,7 +502,6 @@ static inline int8_t correctionCLTadvance(int8_t advance)
   int8_t ignCLTValue = advance;
   //Adjust the advance based on CLT.
   int8_t advanceCLTadjust = (int16_t)(table2D_getValue(&CLTAdvanceTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) - 15;
-  //if(advanceCLTadjust != 0) { ignCLTValue = (advance + advanceCLTadjust/10); }
   ignCLTValue = (advance + advanceCLTadjust);
   
   return ignCLTValue;

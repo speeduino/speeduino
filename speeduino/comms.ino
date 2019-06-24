@@ -92,7 +92,9 @@ void command()
 
       if(Serial.available() >= 2)
       {
-        int cmdCombined = word(Serial.read(), Serial.read());
+        byte cmdGroup = Serial.read();
+        byte cmdValue = Serial.read();
+        int cmdCombined = word(cmdGroup, cmdValue);
         if (currentStatus.RPM == 0) { commandButtons(cmdCombined); }
 
         cmdPending = false;
@@ -1776,11 +1778,11 @@ void commandButtons(int buttonCommand)
       break;
 
     case 513: // cmd group is for injector1 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector1(); }
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector1(); }
       break;
 
     case 514: // cmd group is for injector1 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector1(); }
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector1(); }
       break;
 
     case 515: // cmd group is for injector1 50% dc actions
