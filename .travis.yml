@@ -66,8 +66,8 @@ script:
 # Run the builds
   - platformio run -e megaatmega2560 -e teensy35
 # Upload ini and hex files to speeduino.com server
-  - curl -v --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pioenvs/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
-  - curl -v --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
+  - curl --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pioenvs/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
+  - curl --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
 # Begin MISRA scan
   - cd ..
   - chmod +x speeduino/misra/check_misra_github.sh

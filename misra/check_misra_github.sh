@@ -1,7 +1,8 @@
 #!/bin/bash
 
 cppcheck_path=cppcheck_github/
-cppcheck_bin="${cppcheck_path}cppcheck"
+#cppcheck_bin="${cppcheck_path}cppcheck"
+cppcheck_bin="cppcheck"
 cppcheck_misra="${cppcheck_path}addons/misra.py"
 
 if [ -f ./results.txt ]; then
