@@ -46,10 +46,11 @@ before_install:
   - sudo apt-get update -qq
 #  - sudo apt-get install -t trusty-backports cppcheck
   - sudo apt-get build-dep -qq cppcheck
-  - wget https://github.com/danmar/cppcheck/archive/1.79.zip
-  - unzip 1.79.zip
-  - cd cppcheck-1.79
-#  - make SRCDIR=build CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
+#  - wget https://github.com/danmar/cppcheck/archive/1.79.zip
+#  - unzip 1.79.zip
+#  - cd cppcheck-1.79
+  - git clone --depth=10 https://github.com/noisymime/cppcheck.git
+  - cd cppcheck
   - sudo make install CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
 # Requirements for doxygen
   - sudo apt-get install doxygen graphviz
@@ -59,10 +60,9 @@ install:
 
 script:
   - cd /home/travis/build
-  - git clone --depth=20 https://github.com/noisymime/cppcheck.git noisymime/cppcheck
+  - git clone --depth=10 https://github.com/noisymime/cppcheck.git noisymime/cppcheck_github
   - cd noisymime/speeduino
   - platformio update
-#  - platformio run -e megaatmega2560 -e teensy35 -e bluepill_f103c8 -e genericSTM32F103RB
 # Run the builds
   - platformio run -e megaatmega2560 -e teensy35
 # Upload ini and hex files to speeduino.com server
@@ -70,8 +70,8 @@ script:
   - curl -v --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
 # Begin MISRA scan
   - cd ..
-  - chmod +x speeduino/misra/check_misra.sh
-  - speeduino/misra/check_misra.sh
+  - chmod +x speeduino/misra/check_misra_github.sh
+  - speeduino/misra/check_misra_github.sh
 # Do doxygen run and upload to gh-pages server.
   - cd speeduino
   - doxygen

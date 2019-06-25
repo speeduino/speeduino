@@ -100,7 +100,7 @@ No text specified
 Rule 10.3
 No text specified
 Rule 10.4
-No text specified
+The target of an operation must be of an appropriate type
 Rule 10.5
 No text specified
 Rule 10.6
@@ -232,7 +232,7 @@ Advisory - Use of #undef is not permitted
 Rule 20.6
 No text specified
 Rule 20.7
-No text specified
+Macro expressions must be enclosed in parentheses
 Rule 20.8
 No text specified
 Rule 20.9
