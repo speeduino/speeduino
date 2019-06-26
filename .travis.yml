@@ -49,9 +49,9 @@ before_install:
 #  - wget https://github.com/danmar/cppcheck/archive/1.79.zip
 #  - unzip 1.79.zip
 #  - cd cppcheck-1.79
-  - git clone --depth=10 https://github.com/noisymime/cppcheck.git
-  - cd cppcheck
-  - sudo make install CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
+#  - git clone --depth=10 https://github.com/noisymime/cppcheck.git
+#  - cd cppcheck
+#  - sudo make install CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
 # Requirements for doxygen
   - sudo apt-get install doxygen graphviz
 
@@ -61,7 +61,9 @@ install:
 script:
   - cd /home/travis/build
   - git clone --depth=10 https://github.com/noisymime/cppcheck.git noisymime/cppcheck_github
-  - cd noisymime/speeduino
+  - cd noisymime/cppcheck_github
+  - make
+  - cd ../speeduino
   - platformio update
 # Run the builds
   - platformio run -e megaatmega2560 -e teensy35

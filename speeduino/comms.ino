@@ -1412,7 +1412,7 @@ void sendPageASCII()
           currentTitleIndex = 132; //Change over to vvtTable mid display
           currentTable = vvtTable;
         }
-        else currentTitleIndex = 0;
+        else { currentTitleIndex = 0; }
       }while(currentTitleIndex == 132); //Should never loop unless going to display vvtTable
     } //is map
     else
