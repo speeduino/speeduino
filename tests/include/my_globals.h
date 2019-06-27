@@ -7,8 +7,3 @@ extern int channel2InjDegrees; /**< The number of crank degrees until cylinder 2
 extern int channel3InjDegrees; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
 extern int channel4InjDegrees; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
 extern int channel5InjDegrees; /**< The number of crank degrees until cylinder 5 is at TDC */
-
-uint16_t PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen);
-
-void setup();
-void loop();

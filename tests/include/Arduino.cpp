@@ -132,3 +132,5 @@ int __heap_start;
 int *__brkval;
 
 EEPROMClass EEPROM;
+HardwareSerial Serial;
+HardwareSerial Serial3;

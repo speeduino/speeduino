@@ -1,9 +1,8 @@
 #include <iostream>
 #include <Arduino.h>
 #include <EEPROM.h>
-#include "init.h"
 #include "mock_globals.h"
-#include "storage.h"
+
 
 void set_constants(float reqFuel, int nCylinders, int nSquirts, bool alternate, int injLayout)
 {
@@ -50,8 +49,11 @@ int main()
     set_constants(12.0,     3,      1,      false,      INJ_PAIRED);
 
     setup(); //initialiseAll();
-    loop();
 
+    Serial.put_char('Q');
+
+    loop();
+    std::cout << millis() << std::endl;
     show();
 
     std::cout << "PW:"<< PW(req_fuel_uS, 15, 27, 138, 1000) << std::endl;

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <list>
 
 #include "avr/io.h"
 #include "avr/interrupt.h"
@@ -56,8 +57,16 @@ struct div_result {int quot;};
 
 class HardwareSerial
 {
+  std::list<char> input_buffer;
 public:
-  void begin(...){}
+  void put_char(char c)
+  {
+    input_buffer.push_back(c);
+  }
+  void begin(...)
+  {
+    // input_buffer.clear();
+  }
   int write(byte data)
   {
     std::cout << data;
@@ -73,7 +82,14 @@ public:
   {
     return write((byte*)data, length);
   }
-  int read(){return 'Q';}
+  char read()
+  {
+    if(input_buffer.empty()) return 0;
+
+    char c = input_buffer.front();
+    input_buffer.pop_front();
+    return c;
+  }
   int print(std::string message = "")
   {
     std::cout << message;
@@ -94,9 +110,9 @@ public:
     std::cout << data << std::endl;
     return 1;
   }
-  int available(){return 1;}
-  void flush(...){}
+  int available(){return input_buffer.size();}
+  void flush(){}
   bool operator&& (bool) {return true;}
 };
-static HardwareSerial Serial;
-static HardwareSerial Serial3;
+extern HardwareSerial Serial;
+extern HardwareSerial Serial3;
