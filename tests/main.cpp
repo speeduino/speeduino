@@ -30,6 +30,7 @@ void init_memory()
 
 void show()
 {
+    std::cout << std::endl;
     std::cout << "req_fuel_uS\t\t" << (int)req_fuel_uS << std::endl;
     std::cout << "Channel1 " << (channel1InjEnabled ? "enabled" : "disabled") << ":\t" << channel1InjDegrees << std::endl;
     std::cout << "Channel2 " << (channel2InjEnabled ? "enabled" : "disabled") << ":\t" << channel2InjDegrees << std::endl;
@@ -47,7 +48,10 @@ int main()
 
     //           ReqFuel    nCyl    nSqrt   alternate   injLayout
     set_constants(12.0,     3,      1,      false,      INJ_PAIRED);
-    initialiseAll();
+
+    setup(); //initialiseAll();
+    loop();
+
     show();
 
     std::cout << "PW:"<< PW(req_fuel_uS, 15, 27, 138, 1000) << std::endl;

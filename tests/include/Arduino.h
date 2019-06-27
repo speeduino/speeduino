@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <string>
 
 #include "avr/io.h"
 #include "avr/interrupt.h"
@@ -56,14 +57,46 @@ struct div_result {int quot;};
 class HardwareSerial
 {
 public:
-    void begin(...){}
-    int write(...){return 0;}
-    int read(...){return 0;}
-    int print(...){return 0;}
-    int println(...){return 0;}
-    int available(){return 0;}
-    void flush(...){}
-    bool operator&& (bool) {return true;}
+  void begin(...){}
+  int write(byte data)
+  {
+    std::cout << data;
+    return 1;
+  }
+  int write(byte* data, int length=1)
+  {
+    for(int i = 0; i < length; i++)
+      write(data[i]);
+    return length;
+  }
+  int write(const char* data, int length=1)
+  {
+    return write((byte*)data, length);
+  }
+  int read(){return 'Q';}
+  int print(std::string message = "")
+  {
+    std::cout << message;
+    return message.size();
+  }
+  int print(int data)
+  {
+    std::cout << data;
+    return 1;
+  }
+  int println(std::string message = "")
+  {
+    std::cout << message << std::endl;
+    return message.size();
+  }
+  int println(int data)
+  {
+    std::cout << data << std::endl;
+    return 1;
+  }
+  int available(){return 1;}
+  void flush(...){}
+  bool operator&& (bool) {return true;}
 };
 static HardwareSerial Serial;
 static HardwareSerial Serial3;
