@@ -10,8 +10,8 @@ g++ -c ../speeduino/src/FastCRC/FastCRCsw.cpp -o build/FastCRC.o -I./include -I.
 #compile speeduino
 g++ -fpermissive -DF_CPU=8000000 -D__AVR_ATmega2560__ -I../speeduino -I./include -c -o build/speeduino.o speeduino.cpp
 
-#compile tests
-g++ -fpermissive -c -D__AVR_ATmega2560__ -I../speeduino -I./include -o build/main.o main.cpp
+#compile main
+g++ -fpermissive -D__AVR_ATmega2560__ -I../speeduino -I./include -c -o build/main.o main.cpp
 
 #link all that together into a working program
-g++ -o test build/Arduino.o build/FastCRC.o build/speeduino.o build/main.o build/PID.o
+g++ -o test build/Arduino.o build/FastCRC.o build/speeduino.o build/main.o build/PID.o lib/libgtest.a -lpthread

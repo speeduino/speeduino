@@ -2,7 +2,13 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include "mock_globals.h"
+#include <gtest/gtest.h>
 
+void init_memory()
+{
+    for(int i = 0; i < EEPROMClass::mem_size; i++)
+        EEPROM.write(i,1);
+}
 
 void set_constants(float reqFuel, int nCylinders, int nSquirts, bool alternate, int injLayout)
 {
@@ -21,11 +27,6 @@ void set_constants(float reqFuel, int nCylinders, int nSquirts, bool alternate, 
     writeAllConfig();
 }
 
-void init_memory()
-{
-    int i = EEPROMClass::mem_size;
-    while(i--) EEPROM.write(i,1);
-}
 
 void show()
 {
@@ -41,22 +42,33 @@ void show()
     std::cout << std::endl;
 }
 
-int main()
+TEST(SpeeduinoTestClass, TestTest)
 {
     init_memory();
 
     //           ReqFuel    nCyl    nSqrt   alternate   injLayout
     set_constants(12.0,     3,      1,      false,      INJ_PAIRED);
+    setup();
 
-    setup(); //initialiseAll();
+    EXPECT_EQ(6000, req_fuel_uS);
+    EXPECT_EQ(1, currentStatus.nSquirts);
+    EXPECT_EQ(720, CRANK_ANGLE_MAX_INJ);
 
-    Serial.put_char('Q');
+//    Serial.put_char('Q');
 
-    loop();
-    std::cout << millis() << std::endl;
-    show();
+//    loop();
+//    std::cout << millis() << std::endl;
+//    show();
 
-    std::cout << "PW:"<< PW(req_fuel_uS, 15, 27, 138, 1000) << std::endl;
+//    std::cout << "PW:"<< PW(req_fuel_uS, 15, 27, 138, 1000) << std::endl;
 
-    return 0;
+//    return 0;
 }
+
+
+int main(int pArgCount, char* pArgValues[])
+{
+    ::testing::InitGoogleTest(&pArgCount, pArgValues);
+    return RUN_ALL_TESTS();
+}
+
