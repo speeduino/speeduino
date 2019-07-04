@@ -31,6 +31,7 @@ sed -e 's/^int\|^uint\|^bool\|^volatile\|^unsigned\|^byte/extern \0/' -e '/{/!s/
     -e '/static_assert/d' -e '/const/!s/=.*;/;/g' \
     ../speeduino/globals.h >> include/mock_globals.h
 sed -e '/#line/q' -e '/^#/d' -e '/^\/\/#/d' speeduino.cpp >> include/mock_globals.h
+#ls ../speeduino/*.h | sed -e "s/^/#include \"/" -e "s/$/\"/" -e "/display.h/d" >> include/mock_globals.h
 
 echo "WAITING FOR PLATFORMIO TO FINISH"
 
