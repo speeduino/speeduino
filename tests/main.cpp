@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 
 #include <Arduino.h>
 #include <EEPROM.h>
@@ -20,6 +21,8 @@ bool set_constants(float reqFuel, unsigned nCylinders, unsigned nSquirts, bool a
     // The checks below were removed from TunerStudio.
     //    if(nCylinders < nSquirts) return false;
     //    if(alternate && (nSquirts & 1) == 1) return false; // Can not alternate odd number of squirts
+
+    std::cout << std::endl << "reqFuel:" << reqFuel << ", nCylinders:" << nCylinders << ", nSquirts:" << nSquirts << ", alternate:" << (alternate ? "TRUE":"FALSE") << std::endl;
 
     reqFuel /= nSquirts;
     if (alternate)
@@ -57,17 +60,23 @@ int main()
 
     //            ReqFuel, nCyl, nSqrt, alternate, injLayout
     set_constants(12.0,    4,    2,     false,     INJ_PAIRED);
+    initialiseAll();
     std::cout << "req_fuel_uS:" << req_fuel_uS << std::endl;
-    std::cout << "channel1Inj:" << (channel1InjEnabled ? channel1InjDegrees : "disabled") << req_fuel_uS << std::endl;
-    std::cout << "channel2Inj:" << (channel2InjEnabled ? channel2InjDegrees : "disabled") << req_fuel_uS << std::endl;
-    std::cout << "channel3Inj:" << (channel3InjEnabled ? channel3InjDegrees : "disabled") << req_fuel_uS << std::endl;
-    std::cout << "channel4Inj:" << (channel4InjEnabled ? channel4InjDegrees : "disabled") << req_fuel_uS << std::endl;
+    std::cout << "CRANK_ANGLE_MAX_INJ:" << CRANK_ANGLE_MAX_INJ << std::endl;
+
+    std::cout << "channel1Inj:" << (channel1InjEnabled ? std::to_string(channel1InjDegrees) : "disabled") << std::endl;
+    std::cout << "channel2Inj:" << (channel2InjEnabled ? std::to_string(channel2InjDegrees) : "disabled") << std::endl;
+    std::cout << "channel3Inj:" << (channel3InjEnabled ? std::to_string(channel3InjDegrees) : "disabled") << std::endl;
+    std::cout << "channel4Inj:" << (channel4InjEnabled ? std::to_string(channel4InjDegrees) : "disabled") << std::endl;
 
     //            ReqFuel, nCyl, nSqrt, alternate, injLayout
     set_constants(12.0,    4,    2,     true,     INJ_PAIRED);
+    initialiseAll();
     std::cout << "req_fuel_uS:" << req_fuel_uS << std::endl;
-    std::cout << "channel1Inj:" << (channel1InjEnabled ? channel1InjDegrees : "disabled") << req_fuel_uS << std::endl;
-    std::cout << "channel2Inj:" << (channel2InjEnabled ? channel2InjDegrees : "disabled") << req_fuel_uS << std::endl;
-    std::cout << "channel3Inj:" << (channel3InjEnabled ? channel3InjDegrees : "disabled") << req_fuel_uS << std::endl;
-    std::cout << "channel4Inj:" << (channel4InjEnabled ? channel4InjDegrees : "disabled") << req_fuel_uS << std::endl;
+    std::cout << "CRANK_ANGLE_MAX_INJ:" << CRANK_ANGLE_MAX_INJ << std::endl;
+
+    std::cout << "channel1Inj:" << (channel1InjEnabled ? std::to_string(channel1InjDegrees) : "disabled") << std::endl;
+    std::cout << "channel2Inj:" << (channel2InjEnabled ? std::to_string(channel2InjDegrees) : "disabled") << std::endl;
+    std::cout << "channel3Inj:" << (channel3InjEnabled ? std::to_string(channel3InjDegrees) : "disabled") << std::endl;
+    std::cout << "channel4Inj:" << (channel4InjEnabled ? std::to_string(channel4InjDegrees) : "disabled") << std::endl;
 }
