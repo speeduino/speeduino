@@ -15,7 +15,7 @@ int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 
 /*
 The following are all fast versions of specific divisions
-Ref: http://www.hackersdelight.org/divcMore.pdf
+Ref: www.hackersdelight.org/divcMore.pdf
 */
 
 //Unsigned divide by 10
@@ -28,20 +28,6 @@ unsigned int divu10(unsigned int n)
   q = q + (q >> 16);
   q = q >> 3;
   r = n - (q * 10);
-  return q + ((r + 6) >> 4);
-}
-
-//Signed divide by 10
-int divs10(long n)
-{
-  long q, r, p;
-  p = n + ( (n>>31) & 9);
-  q = (p >> 1) + (p >> 2);
-  q = q + (q >> 4);
-  q = q + (q >> 8);
-  q = q + (q >> 16);
-  q = q >> 3;
-  r = p - (q * 10);
   return q + ((r + 6) >> 4);
 }
 

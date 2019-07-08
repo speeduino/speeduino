@@ -237,7 +237,11 @@ void doUpdates()
 
   if(EEPROM.read(EEPROM_DATA_VERSION) == 11)
   {
+    //A battery calibration offset value was introduced. Set default value to 0
     configPage4.batVoltCorrect = 0;
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 12);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)

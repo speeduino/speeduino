@@ -406,6 +406,9 @@ void readBat()
     tempReading = fastMap1023toX(analogRead(pinBat), 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
   #endif
 
+  //Apply the offset calibration value to the reading
+  tempReading += configPage4.batVoltCorrect;
+
   //The following is a check for if the voltage has jumped up from under 5.5v to over 7v.
   //If this occurs, it's very likely that the system has gone from being powered by USB to being powered from the 12v power source.
   //Should that happen, we retrigger the fuel pump priming and idle homing (If using a stepper)
