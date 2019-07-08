@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    11
+  #define CURRENT_DATA_VERSION    12
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -233,6 +233,11 @@ void doUpdates()
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 11);
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 11)
+  {
+    configPage4.batVoltCorrect = 0;
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)
