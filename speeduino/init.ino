@@ -44,7 +44,7 @@ void initialiseAll()
 
     Serial.begin(115200);
     if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
- 
+
     #if defined(CORE_STM32) || defined(CORE_TEENSY)
     configPage9.intcan_available = 1;   // device has internal canbus
     //Teensy onboard CAN not used currently
@@ -250,7 +250,7 @@ void initialiseAll()
     }
 
     //Begin the main crank trigger interrupt pin setup
-    //The interrupt numbering is a bit odd - See here for reference: http://arduino.cc/en/Reference/AttachInterrupt
+    //The interrupt numbering is a bit odd - See here for reference: arduino.cc/en/Reference/AttachInterrupt
     //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly.
     currentStatus.RPM = 0;
     currentStatus.hasSync = false;
@@ -1014,7 +1014,7 @@ void setPinMapping(byte boardID)
         pinCoil3 = 30;
         pinO2 = A22;
       #elif defined(STM32F4)
-        //Black F407VE http://wiki.stm32duino.com/index.php?title=STM32F407
+        //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
         //PC8~PC12 SDio
         //PA13~PA15 & PB4 SWD(debug) pins
         //PB0 EEPROM CS pin
@@ -1055,8 +1055,8 @@ void setPinMapping(byte boardID)
         pinTrigger = PE3; //The CAS pin
         pinTrigger2 = PE4; //The Cam Sensor pin
       #elif defined(CORE_STM32)
-        //blue pill http://wiki.stm32duino.com/index.php?title=Blue_Pill
-        //Maple mini http://wiki.stm32duino.com/index.php?title=Maple_Mini
+        //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
+        //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
         pinInjector1 = PB7; //Output pin injector 1 is on
         pinInjector2 = PB6; //Output pin injector 2 is on
@@ -1464,7 +1464,7 @@ void setPinMapping(byte boardID)
 
     default:
       #if defined(STM32F4)
-        //Black F407VE http://wiki.stm32duino.com/index.php?title=STM32F407
+        //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
         //PC8~PC12 SDio
         //PA13~PA15 & PB4 SWD(debug) pins
         //PB0 EEPROM CS pin

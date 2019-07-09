@@ -61,8 +61,8 @@
   #else //libmaple core aka STM32DUINO
     //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
     #ifndef portOutputRegister
-      #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) )
-      #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) )
+      #define portOutputRegister(port) ((volatile byte *)( &((port)->regs->ODR) ))
+      #define portInputRegister(port) ((volatile byte *)( &((port)->regs->IDR) ))
     #endif
   #endif
 #elif defined(__SAMD21G18A__)
@@ -76,11 +76,11 @@
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 //Handy bitsetting macros
-#define BIT_SET(a,b) ((a) |= (1<<(b)))
-#define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
-#define BIT_CHECK(var,pos) !!((var) & (1<<(pos)))
+#define BIT_SET(a,b) ((a) |= (1U<<(b)))
+#define BIT_CLEAR(a,b) ((a) &= ~(1U<<(b)))
+#define BIT_CHECK(var,pos) !!((var) & (1U<<(pos)))
 
-#define interruptSafe(c)  noInterrupts(); c interrupts(); //Wraps any code between nointerrupt and interrupt calls
+#define interruptSafe(c) (noInterrupts(); {c} interrupts();) //Wraps any code between nointerrupt and interrupt calls
 
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000
@@ -411,7 +411,7 @@ struct statuses {
   volatile byte status1;
   volatile byte spark;
   volatile byte spark2;
-  byte engine;
+  uint8_t engine;
   unsigned int PW1; //In uS
   unsigned int PW2; //In uS
   unsigned int PW3; //In uS
@@ -642,7 +642,8 @@ struct config4 {
   byte maeBins[4]; /**< MAP based AE MAPdot bins */
   byte maeRates[4]; /**< MAP based AE values */
 
-  byte unused2_91[37];
+  int8_t batVoltCorrect; /**< Battery voltage calibration offset */
+  byte unused2_91[36];
 
 } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 

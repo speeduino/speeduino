@@ -965,21 +965,6 @@ void triggerSetup_4G63()
 
     triggerActualTeeth = 8;
   }
-  /*
-   * forums.libreems.org/attachment.php?aid=34
-  toothAngles[0] = 715; //Falling edge of tooth #1
-  toothAngles[1] = 49;  //Falling edge of wide cam
-  toothAngles[2] = 105; //Rising edge of tooth #2
-  toothAngles[3] = 175; //Falling edge of tooth #2
-  toothAngles[4] = 229; //Rising edge of narrow cam tooth (??)
-  toothAngles[5] = 285; //Rising edge of tooth #3
-  toothAngles[6] = 319; //Falling edge of narrow cam tooth
-  toothAngles[7] = 355; //falling edge of tooth #3
-  toothAngles[8] = 465; //Rising edge of tooth #4
-  toothAngles[9] = 535; //Falling edge of tooth #4
-  toothAngles[10] = 535; //Rising edge of wide cam tooth
-  toothAngles[11] = 645; //Rising edge of tooth #1
-   */
 
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
