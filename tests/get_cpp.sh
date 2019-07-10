@@ -6,14 +6,14 @@ pio_output="../speeduino/speeduino.ino.cpp"
 cd ../ && platformio run -e megaatmega2560 >/dev/null &
 
 #wait until the cpp file is created by platformio
-while [[ ! -f $pio_output ]] ; do
+while ! test -f $pio_output; do
   sleep 0.5;
 done;
 
 echo "CPP FILE FIRST APPARITION"
 
 #try to get the latest file, so it is fully post-processed
-while [[ -f $pio_output ]] ; do
+while test -f $pio_output; do
   cp $pio_output ./ >/dev/null 2>&1;
   sleep 0.1;
 done;
@@ -25,12 +25,12 @@ sed -e 's/# [0-9]*/\/\/\0/' -e 's/#line [0-9]*/\/\/\0/' speeduino.ino.cpp > spee
 rm speeduino.ino.cpp
 
 #copy speeduino/globals.h
-cat include/my_globals.h > include/mock_globals.h
-echo "" >> include/mock_globals.h
-sed -e 's/^int\|^uint\|^bool\|^volatile\|^unsigned\|^byte/extern \0/' -e '/{/!s/^struct*/extern \0/' \
-    -e '/static_assert/d' -e '/const/!s/=.*;/;/g' \
-    ../speeduino/globals.h >> include/mock_globals.h
-sed -e '/#line/q' -e '/^#/d' -e '/^\/\/#/d' speeduino.cpp >> include/mock_globals.h
+#cat include/my_globals.h > include/mock_globals.h
+#echo "" >> include/mock_globals.h
+#sed -e 's/^int\|^uint\|^bool\|^volatile\|^unsigned\|^byte/extern \0/' -e '/{/!s/^struct*/extern \0/' \
+#    -e '/static_assert/d' -e '/const/!s/=.*;/;/g' \
+#    ../speeduino/globals.h >> include/mock_globals.h
+#sed -e '/#line/q' -e '/^#/d' -e '/^\/\/#/d' speeduino.cpp >> include/mock_globals.h
 #ls ../speeduino/*.h | sed -e "s/^/#include \"/" -e "s/$/\"/" -e "/display.h/d" >> include/mock_globals.h
 
 echo "WAITING FOR PLATFORMIO TO FINISH"
