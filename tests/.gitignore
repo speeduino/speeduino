@@ -1,6 +1,5 @@
 build/
-include/mock_globals.h
 myeeprom.bin
-speeduino.cpp
-test
+tests
 main
+src/speeduino.cpp

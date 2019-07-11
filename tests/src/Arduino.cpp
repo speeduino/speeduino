@@ -1,12 +1,35 @@
+#include <iostream>
+#include <map>
+
 #include <Arduino.h>
 #include <EEPROM.h>
 
-void interrupts(){}
-void noInterrupts(){}
+bool hasInterrupts = false;
+void interrupts()
+{
+    hasInterrupts = true;
+}
+void noInterrupts()
+{
+    hasInterrupts = false;
+}
 
-void digitalWrite(...){}
-void analogWrite(...){}
-void pinMode(...){}
+static std::map<unsigned, unsigned> digitalWriteStatus;
+static std::map<unsigned, unsigned> analogWriteStatus;
+static std::map<unsigned, unsigned> pinModeStatus;
+
+void digitalWrite(unsigned pin, unsigned level)
+{
+    digitalWriteStatus[pin] = level;
+}
+void analogWrite(unsigned pin, unsigned level)
+{
+    analogWriteStatus[pin] = level;
+}
+void pinMode(unsigned pin, unsigned mode)
+{
+    pinModeStatus[pin] = mode;
+}
 void attachInterrupt(...){}
 void detachInterrupt(...){}
 void bitWrite(...){}

@@ -1,18 +1,24 @@
 #include <iostream>
 #include <string>
 
-#include <Arduino.h>
-#include <EEPROM.h>
+//#include <Arduino.h>
+//#include <EEPROM.h>
 
-#include "mock_globals.h"
-#include "storage.h"
+//#include "mock_globals.h"
+//#include "storage.h"
+//#include "decoders.h"
 
 
 // Reset EEPROM memory to blank values (1 so setup() doesn't crash).
-void init_memory()
+void init_memory(uint8_t val = 1)
 {
     for (int i = 0; i < EEPROMClass::mem_size; i++)
-        EEPROM.write(i, 1);
+        EEPROM.write(i, val);
+}
+
+uint16_t mock_getRPM()
+{
+    return 120;
 }
 
 // This function takes the input parameters we would put in TunerStudio and converts them to what speeduino knows.
@@ -61,6 +67,7 @@ int main()
     //            ReqFuel, nCyl, nSqrt, alternate, injLayout
     set_constants(12.0,    4,    2,     false,     INJ_PAIRED);
     initialiseAll();
+    std::cout << EEPROM.read(0) << std::endl;
     std::cout << "req_fuel_uS:" << req_fuel_uS << std::endl;
     std::cout << "CRANK_ANGLE_MAX_INJ:" << CRANK_ANGLE_MAX_INJ << std::endl;
 
@@ -79,4 +86,8 @@ int main()
     std::cout << "channel2Inj:" << (channel2InjEnabled ? std::to_string(channel2InjDegrees) : "disabled") << std::endl;
     std::cout << "channel3Inj:" << (channel3InjEnabled ? std::to_string(channel3InjDegrees) : "disabled") << std::endl;
     std::cout << "channel4Inj:" << (channel4InjEnabled ? std::to_string(channel4InjDegrees) : "disabled") << std::endl;
+
+    getRPM = mock_getRPM;
+    std::cout << getRPM() << std::endl;
+
 }

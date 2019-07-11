@@ -1,6 +1,7 @@
 echo "START COMPILATION..."
 
 pio_output="../speeduino/speeduino.ino.cpp"
+my_output="src/speeduino.cpp"
 
 #start platformio compilation
 cd ../ && platformio run -e megaatmega2560 >/dev/null &
@@ -21,17 +22,8 @@ done;
 echo "GOT CPP FILE LAST ITERATION"
 
 #copy speeduino/speeduino.cpp
-sed -e 's/# [0-9]*/\/\/\0/' -e 's/#line [0-9]*/\/\/\0/' speeduino.ino.cpp > speeduino.cpp
+sed -e 's/# [0-9]*/\/\/\0/' -e 's/#line [0-9]*/\/\/\0/' speeduino.ino.cpp > $my_output
 rm speeduino.ino.cpp
-
-#copy speeduino/globals.h
-#cat include/my_globals.h > include/mock_globals.h
-#echo "" >> include/mock_globals.h
-#sed -e 's/^int\|^uint\|^bool\|^volatile\|^unsigned\|^byte/extern \0/' -e '/{/!s/^struct*/extern \0/' \
-#    -e '/static_assert/d' -e '/const/!s/=.*;/;/g' \
-#    ../speeduino/globals.h >> include/mock_globals.h
-#sed -e '/#line/q' -e '/^#/d' -e '/^\/\/#/d' speeduino.cpp >> include/mock_globals.h
-#ls ../speeduino/*.h | sed -e "s/^/#include \"/" -e "s/$/\"/" -e "/display.h/d" >> include/mock_globals.h
 
 echo "WAITING FOR PLATFORMIO TO FINISH"
 

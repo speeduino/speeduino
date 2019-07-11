@@ -19,12 +19,13 @@ enum PIN_CHANGE {RISING,FALLING,CHANGE};
 typedef unsigned char byte;
 typedef char __FlashStringHelper;
 
+extern bool hasInterrupts;
 void interrupts();
 void noInterrupts();
 
-void digitalWrite(...);
-void analogWrite(...);
-void pinMode(...);
+void digitalWrite(unsigned, unsigned);
+void analogWrite(unsigned, unsigned);
+void pinMode(unsigned, unsigned);
 void attachInterrupt(...);
 void detachInterrupt(...);
 void bitWrite(...);

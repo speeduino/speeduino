@@ -2,11 +2,11 @@
 #include <gtest/gtest.h>
 #include <list>
 
-#include <Arduino.h>
-#include <EEPROM.h>
+//#include <Arduino.h>
+//#include <EEPROM.h>
 
-#include "mock_globals.h"
-#include "storage.h"
+//#include "mock_globals.h"
+//#include "storage.h"
 
 const float REQ_FUEL = 12.0;
 const int REQ_FUEL_US = REQ_FUEL * 1000;
@@ -31,13 +31,6 @@ std::list<int> get_divisors(int n)
     return result;
 }
 
-// Reset EEPROM memory to blank values (1 so setup() doesn't crash).
-void init_memory()
-{
-    for (int i = 0; i < EEPROMClass::mem_size; i++)
-        EEPROM.write(i, 1);
-}
-
 // This function takes the input parameters we would put in TunerStudio and converts them to what speeduino knows.
 bool set_constants(float reqFuel, unsigned nCylinders, unsigned nSquirts, bool alternate, int injLayout)
 {
@@ -59,8 +52,8 @@ bool set_constants(float reqFuel, unsigned nCylinders, unsigned nSquirts, bool a
     configPage10.stagingEnabled = false;
 
     // Needs two writes because reasons
-    writeAllConfig();
-    writeAllConfig();
+    do { writeAllConfig(); } while(eepromWritesPending);
+    //writeAllConfig();
 
     // Reset the variables below to their default value.
     channel1InjEnabled = false;
@@ -75,10 +68,16 @@ bool set_constants(float reqFuel, unsigned nCylinders, unsigned nSquirts, bool a
     return true;
 }
 
-TEST(SpeeduinoTestClass, PairedSimTest)
+TEST(SpeeduinoTestClass, ConfigUpdates)
 {
-    init_memory();
+    EEPROM.write(0, 2);
+    setup();
+    EXPECT_EQ(12, EEPROM.read(0));
+    EXPECT_EQ(true, hasInterrupts);
+}
 
+TEST(SpeeduinoInjTestClass, PairedSimTest)
+{
     for (int nCylinders : {1, 2, 3, 4, 5, 6, 8})
         for (int nSquirts : get_divisors(nCylinders))
         {
@@ -90,10 +89,8 @@ TEST(SpeeduinoTestClass, PairedSimTest)
         }
 }
 
-TEST(SpeeduinoTestClass, SemiSequentialSimTest)
+TEST(SpeeduinoInjTestClass, SemiSequentialSimTest)
 {
-    init_memory();
-
     for (int nCylinders : {1, 2, 3, 4, 5, 6, 8})
         for (int nSquirts : get_divisors(nCylinders))
         {
@@ -105,10 +102,8 @@ TEST(SpeeduinoTestClass, SemiSequentialSimTest)
         }
 }
 
-TEST(SpeeduinoTestClass, SequentialSimTest)
+TEST(SpeeduinoInjTestClass, SequentialSimTest)
 {
-    init_memory();
-
     for (int nCylinders : {1, 2, 3, 4}) // sequential doesn't support more than 4 cylinders
         for (int nSquirts : get_divisors(nCylinders))
         {
@@ -120,10 +115,8 @@ TEST(SpeeduinoTestClass, SequentialSimTest)
         }
 }
 
-TEST(SpeeduinoTestClass, PairedAltTest)
+TEST(SpeeduinoInjTestClass, PairedAltTest)
 {
-    init_memory();
-
     for (int nCylinders : {1, 2, 3, 4, 5, 6, 8})
         for (int nSquirts : get_divisors(nCylinders))
         {
@@ -135,10 +128,8 @@ TEST(SpeeduinoTestClass, PairedAltTest)
         }
 }
 
-TEST(SpeeduinoTestClass, SemiSequentialAltTest)
+TEST(SpeeduinoInjTestClass, SemiSequentialAltTest)
 {
-    init_memory();
-
     for (int nCylinders : {1, 2, 3, 4, 5, 6, 8})
         for (int nSquirts : get_divisors(nCylinders))
         {
@@ -150,10 +141,8 @@ TEST(SpeeduinoTestClass, SemiSequentialAltTest)
         }
 }
 
-TEST(SpeeduinoTestClass, SequentialAltTest)
+TEST(SpeeduinoInjTestClass, SequentialAltTest)
 {
-    init_memory();
-
     for (int nCylinders : {1, 2, 3, 4}) // sequential doesn't support more than 4 cylinders
         for (int nSquirts : get_divisors(nCylinders))
         {
@@ -165,10 +154,8 @@ TEST(SpeeduinoTestClass, SequentialAltTest)
         }
 }
 
-TEST(SpeeduinoTestClass, 2CylSemiSeqAltTest)
+TEST(SpeeduinoInjTestClass, 2CylSemiSeqAltTest)
 {
-    init_memory();
-
     //                      ReqFuel    nCyl    nSqrt   alternate   injLayout
     ASSERT_TRUE(set_constants(REQ_FUEL, 2, 2, true, INJ_SEMISEQUENTIAL));
     setup();
@@ -183,10 +170,8 @@ TEST(SpeeduinoTestClass, 2CylSemiSeqAltTest)
     EXPECT_EQ(180, channel2InjDegrees);
 }
 
-TEST(SpeeduinoTestClass, 2CylSeqAltTest)
+TEST(SpeeduinoInjTestClass, 2CylSeqAltTest)
 {
-    init_memory();
-
     //                      ReqFuel    nCyl    nSqrt   alternate   injLayout
     ASSERT_TRUE(set_constants(REQ_FUEL, 2, 2, true, INJ_SEQUENTIAL));
     setup();
@@ -201,10 +186,8 @@ TEST(SpeeduinoTestClass, 2CylSeqAltTest)
     EXPECT_EQ(180, channel2InjDegrees);
 }
 
-TEST(SpeeduinoTestClass, 3CylPairedSimTest)
+TEST(SpeeduinoInjTestClass, 3CylPairedSimTest)
 {
-    init_memory();
-
     //                       ReqFuel    nCyl    nSqrt   alternate   injLayout
     ASSERT_TRUE(set_constants(REQ_FUEL, 3, 1, false, INJ_PAIRED));
     setup();
@@ -220,10 +203,8 @@ TEST(SpeeduinoTestClass, 3CylPairedSimTest)
     EXPECT_EQ(0, channel3InjDegrees);
 }
 
-TEST(SpeeduinoTestClass, 3CylSeqAltTest)
+TEST(SpeeduinoInjTestClass, 3CylSeqAltTest)
 {
-    init_memory();
-
     //                      ReqFuel    nCyl    nSqrt   alternate   injLayout
     ASSERT_TRUE(set_constants(REQ_FUEL, 3, 3, true, INJ_SEQUENTIAL));
     setup();
@@ -239,10 +220,8 @@ TEST(SpeeduinoTestClass, 3CylSeqAltTest)
     EXPECT_EQ(480, channel3InjDegrees);
 }
 
-TEST(SpeeduinoTestClass, 4CylPairedSimTest)
+TEST(SpeeduinoInjTestClass, 4CylPairedSimTest)
 {
-    init_memory();
-
     //                       ReqFuel    nCyl    nSqrt   alternate   injLayout
     ASSERT_TRUE(set_constants(REQ_FUEL, 4, 1, false, INJ_PAIRED));
     setup();
@@ -257,10 +236,8 @@ TEST(SpeeduinoTestClass, 4CylPairedSimTest)
     EXPECT_EQ(0, channel2InjDegrees);
 }
 
-TEST(SpeeduinoTestClass, 4CylSemiSeqAltTest)
+TEST(SpeeduinoInjTestClass, 4CylSemiSeqAltTest)
 {
-    init_memory();
-
     //                      ReqFuel    nCyl    nSqrt   alternate   injLayout
     ASSERT_TRUE(set_constants(REQ_FUEL, 4, 2, true, INJ_SEMISEQUENTIAL));
     setup();
@@ -275,10 +252,8 @@ TEST(SpeeduinoTestClass, 4CylSemiSeqAltTest)
     EXPECT_EQ(180, channel2InjDegrees);
 }
 
-TEST(SpeeduinoTestClass, 4CylSeqAltTest)
+TEST(SpeeduinoInjTestClass, 4CylSeqAltTest)
 {
-    init_memory();
-
     //                      ReqFuel    nCyl    nSqrt   alternate   injLayout
     ASSERT_TRUE(set_constants(REQ_FUEL, 4, 2, true, INJ_SEQUENTIAL));
     setup();

@@ -21,6 +21,10 @@ public:
             file.read(memory, mem_size);
             file.close();
         }
+        else
+        {
+            for(int i = 0; i < EEPROMClass::mem_size; i++) memory[i] = 0xff;
+        }
     }
     ~EEPROMClass()
     {
