@@ -219,9 +219,9 @@ void doUpdates()
     configPage2.maeThresh = configPage2.taeThresh;
     //Set some sane values for the MAP AE curve
     configPage4.maeRates[0] = 75;
+    configPage4.maeRates[1] = 75;
     configPage4.maeRates[2] = 75;
     configPage4.maeRates[3] = 75;
-    configPage4.maeRates[4] = 75;
     configPage4.maeBins[0] = 7;
     configPage4.maeBins[1] = 12;
     configPage4.maeBins[2] = 20;

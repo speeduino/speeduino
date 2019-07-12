@@ -58,7 +58,7 @@ void saveConfig();
 void sendPage();
 void sendPageASCII();
 void receiveCalibration(byte);
-void sendToothLog(bool);
+void sendToothLog();
 void testComm();
 void commandButtons();
 byte getPageValue(byte, uint16_t);
