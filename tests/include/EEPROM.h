@@ -34,16 +34,20 @@ public:
             file.seekp(0, std::ios::beg);
             file.write(memory, mem_size);
             file.close();
+            std::cout << "closing myeeprom.bin" << std::endl;
         }
     }
     int read(int address)
     {
-        if(address >= 0 && address < mem_size) return memory[address];
-        return 0;
+        int value = 255;
+        if(address >= 0 && address < mem_size) value = (memory[address] & 0xff);
+        else std::cout << "read address out of range:" << address << std::endl;
+        return value;
     }
     void write(int address, int value)
     {
-        if(address >= 0 && address < mem_size) memory[address] = value;
+        if(address >= 0 && address < mem_size) memory[address] = (value & 0xff);
+        else std::cout << "write address out of range:" << address << std::endl;
     }
     void update(int address, int value)
     {

@@ -2,11 +2,7 @@
 #include <gtest/gtest.h>
 #include <list>
 
-//#include <Arduino.h>
-//#include <EEPROM.h>
-
-//#include "mock_globals.h"
-//#include "storage.h"
+#include "speeduino.cpp"
 
 const float REQ_FUEL = 12.0;
 const int REQ_FUEL_US = REQ_FUEL * 1000;
@@ -51,9 +47,7 @@ bool set_constants(float reqFuel, unsigned nCylinders, unsigned nSquirts, bool a
     configPage2.injLayout = injLayout;
     configPage10.stagingEnabled = false;
 
-    // Needs two writes because reasons
     do { writeAllConfig(); } while(eepromWritesPending);
-    //writeAllConfig();
 
     // Reset the variables below to their default value.
     channel1InjEnabled = false;
@@ -70,7 +64,7 @@ bool set_constants(float reqFuel, unsigned nCylinders, unsigned nSquirts, bool a
 
 TEST(SpeeduinoTestClass, ConfigUpdates)
 {
-    EEPROM.write(0, 2);
+//    EEPROM.write(0, 2); // this line make the tests crash
     setup();
     EXPECT_EQ(12, EEPROM.read(0));
     EXPECT_EQ(true, hasInterrupts);

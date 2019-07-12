@@ -1,13 +1,7 @@
 #include <iostream>
 #include <string>
 
-//#include <Arduino.h>
-//#include <EEPROM.h>
-
-//#include "mock_globals.h"
-//#include "storage.h"
-//#include "decoders.h"
-
+#include "speeduino.cpp"
 
 // Reset EEPROM memory to blank values (1 so setup() doesn't crash).
 void init_memory(uint8_t val = 1)
