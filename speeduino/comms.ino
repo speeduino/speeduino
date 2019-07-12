@@ -92,7 +92,9 @@ void command()
 
       if(Serial.available() >= 2)
       {
-        int cmdCombined = word(Serial.read(), Serial.read());
+        byte cmdGroup = Serial.read();
+        byte cmdValue = Serial.read();
+        int cmdCombined = word(cmdGroup, cmdValue);
         if (currentStatus.RPM == 0) { commandButtons(cmdCombined); }
 
         cmdPending = false;
@@ -236,7 +238,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 201905"));
+      Serial.print(F("speeduino 201906-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -266,7 +268,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2019.05"));
+      Serial.print(F("Speeduino 2019.06-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -495,7 +497,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
     requestCount++;
   }
 
-  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   fullStatus[1] = currentStatus.status1; //status1 Bitfield
@@ -1207,9 +1209,9 @@ void sendPageASCII()
         if (y == 2) { currentVar = configPage6.voltageCorrectionBins; }
         else { currentVar = configPage6.injVoltageCorrectionValues; }
 
-        for (byte x = 6; x; x--)
+        for (byte i = 6; i; i--)
         {
-          Serial.print(currentVar[6 - x]);
+          Serial.print(currentVar[6 - i]);
           Serial.print(' ');
         }
         Serial.println();
@@ -1220,9 +1222,9 @@ void sendPageASCII()
         if (y == 2) { currentVar = configPage6.airDenBins; }
         else { currentVar = configPage6.airDenRates; }
 
-        for (byte x = 9; x; x--)
+        for (byte i = 9; i; i--)
         {
-          Serial.print(currentVar[9 - x]);
+          Serial.print(currentVar[9 - i]);
           Serial.print(' ');
         }
         Serial.println();
@@ -1248,9 +1250,9 @@ void sendPageASCII()
           case 4: currentVar = configPage6.iacCLValues; break;
           default: break;
         }
-        for (byte x = 10; x; x--)
+        for (byte i = 10; i; i--)
         {
-          Serial.print(currentVar[10 - x]);
+          Serial.print(currentVar[10 - i]);
           Serial.print(' ');
         }
         Serial.println();
@@ -1265,9 +1267,9 @@ void sendPageASCII()
           case 3: currentVar = configPage6.iacCrankSteps; break;
           default: break;
         }
-        for (byte x = 4; x; x--)
+        for (byte i = 4; i; i--)
         {
-          Serial.print(currentVar[4 - x]);
+          Serial.print(currentVar[4 - i]);
           Serial.print(' ');
         }
         Serial.println();
@@ -1297,9 +1299,9 @@ void sendPageASCII()
         }
         Serial.print(axisY);// Vertical Bins
         Serial.write(" ");
-        for (int x = 0; x < currentTable.xSize; x++)
+        for (int i = 0; i < currentTable.xSize; i++)
         {
-          byte value = currentTable.values[y][x];
+          byte value = currentTable.values[y][i];
           if (value < 100)
           {
             Serial.write(" ");
@@ -1354,8 +1356,8 @@ void sendPageASCII()
   {
     if (isMap)
     {
-      do //This is a do while loop that kicks in for the boostvvtPage
-      {
+      //This is a do while loop that kicks in for the boostvvtPage
+      do {
         const char spaceChar = ' ';
 
         Serial.println((const __FlashStringHelper *)&pageTitles[currentTitleIndex]);// F macro hack
@@ -1410,8 +1412,8 @@ void sendPageASCII()
           currentTitleIndex = 132; //Change over to vvtTable mid display
           currentTable = vvtTable;
         }
-        else currentTitleIndex = 0;
-      }while(currentTitleIndex == 132); //Should never loop unless going to display vvtTable
+        else { currentTitleIndex = 0; }
+      } while(currentTitleIndex == 132); //Should never loop unless going to display vvtTable
     } //is map
     else
     {
@@ -1776,11 +1778,11 @@ void commandButtons(int buttonCommand)
       break;
 
     case 513: // cmd group is for injector1 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector1(); }
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector1(); }
       break;
 
     case 514: // cmd group is for injector1 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector1(); }
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector1(); }
       break;
 
     case 515: // cmd group is for injector1 50% dc actions

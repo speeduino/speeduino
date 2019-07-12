@@ -44,7 +44,7 @@ void initialiseAll()
 
     Serial.begin(115200);
     if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
- 
+
     #if defined(CORE_STM32) || defined(CORE_TEENSY)
     configPage9.intcan_available = 1;   // device has internal canbus
     //Teensy onboard CAN not used currently
@@ -104,7 +104,7 @@ void initialiseAll()
     IATRetardTable.axisX = configPage4.iatRetBins;
     CLTAdvanceTable.valueSize = SIZE_BYTE;
     CLTAdvanceTable.xSize = 6;
-    CLTAdvanceTable.values = configPage4.cltAdvValues;
+    CLTAdvanceTable.values = (byte*)configPage4.cltAdvValues;
     CLTAdvanceTable.axisX = configPage4.cltAdvBins;
     rotarySplitTable.valueSize = SIZE_BYTE;
     rotarySplitTable.xSize = 8;
@@ -250,7 +250,7 @@ void initialiseAll()
     }
 
     //Begin the main crank trigger interrupt pin setup
-    //The interrupt numbering is a bit odd - See here for reference: http://arduino.cc/en/Reference/AttachInterrupt
+    //The interrupt numbering is a bit odd - See here for reference: arduino.cc/en/Reference/AttachInterrupt
     //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly.
     currentStatus.RPM = 0;
     currentStatus.hasSync = false;
@@ -1014,7 +1014,7 @@ void setPinMapping(byte boardID)
         pinCoil3 = 30;
         pinO2 = A22;
       #elif defined(STM32F4)
-        //Black F407VE http://wiki.stm32duino.com/index.php?title=STM32F407
+        //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
         //PC8~PC12 SDio
         //PA13~PA15 & PB4 SWD(debug) pins
         //PB0 EEPROM CS pin
@@ -1055,8 +1055,8 @@ void setPinMapping(byte boardID)
         pinTrigger = PE3; //The CAS pin
         pinTrigger2 = PE4; //The Cam Sensor pin
       #elif defined(CORE_STM32)
-        //blue pill http://wiki.stm32duino.com/index.php?title=Blue_Pill
-        //Maple mini http://wiki.stm32duino.com/index.php?title=Maple_Mini
+        //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
+        //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
         pinInjector1 = PB7; //Output pin injector 1 is on
         pinInjector2 = PB6; //Output pin injector 2 is on
@@ -1089,6 +1089,55 @@ void setPinMapping(byte boardID)
         pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
         pinTrigger = PA10; //The CAS pin
         pinTrigger2 = PA13; //The Cam Sensor pin
+      #endif
+      break;
+
+    case 8:
+      //Pin mappings as per the 1996-97 MX5 PNP shield
+      pinInjector1 = 11; //Output pin injector 1 is on
+      pinInjector2 = 10; //Output pin injector 2 is on
+      pinInjector3 = 9; //Output pin injector 3 is on
+      pinInjector4 = 8; //Output pin injector 4 is on
+      pinInjector5 = 14; //Output pin injector 5 is on
+      pinCoil1 = 39; //Pin for coil 1
+      pinCoil2 = 41; //Pin for coil 2
+      pinCoil3 = 32; //Pin for coil 3
+      pinCoil4 = 33; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinTPS = A2;//TPS input pin
+      pinMAP = A5; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A3; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinDisplayReset = 48; // OLED reset pin
+      pinTachOut = A9; //Tacho output pin  (Goes to ULN2803)
+      pinIdle1 = 2; //Single wire idle control
+      pinBoost = 4;
+      pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
+      pinFuelPump = 49; //Fuel pump output
+      pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinStepperEnable = 24;
+      pinFan = 35; //Pin for the fan output
+      pinLaunch = 37; //Can be overwritten below
+      pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+      pinResetControl = 44; //Reset control output
+
+      #if defined(CORE_TEENSY)
+        pinTrigger = 23;
+        pinTrigger2 = 36;
+        pinStepperDir = 34;
+        pinStepperStep = 35;
+        pinCoil1 = 33; //Done
+        pinCoil2 = 24; //Done
+        pinCoil3 = 51; //Won't work (No mapping for pin 32)
+        pinCoil4 = 52; //Won't work (No mapping for pin 33)
+        pinFuelPump = 26; //Requires PVT4 adapter or above
+        pinFan = 50; //Won't work (No mapping for pin 35)
+        pinTachOut = 28; //Done
       #endif
       break;
 
@@ -1415,7 +1464,7 @@ void setPinMapping(byte boardID)
 
     default:
       #if defined(STM32F4)
-        //Black F407VE http://wiki.stm32duino.com/index.php?title=STM32F407
+        //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
         //PC8~PC12 SDio
         //PA13~PA15 & PB4 SWD(debug) pins
         //PB0 EEPROM CS pin
