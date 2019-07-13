@@ -481,8 +481,8 @@ void initialiseAll()
           if(configPage2.injTiming)
           {
             // Alternating between two channels
-            channel1InjDegrees = 0 / currentStatus.nSquirts;
-            channel2InjDegrees = 360 / currentStatus.nSquirts;
+            channel1InjDegrees = 0;
+            channel2InjDegrees = CRANK_ANGLE_MAX_INJ / 2;
           }
           else
           {
