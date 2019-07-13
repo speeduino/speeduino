@@ -465,7 +465,7 @@ void initialiseAll()
         else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
         // Set injection timing
-        if( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
+        if(configPage2.injLayout == INJ_SEQUENTIAL)
         {
           // Sequential settings, injectors fire in sequence
           channel1InjDegrees = 0;
