@@ -476,27 +476,30 @@ void initialiseAll()
           channel3InjEnabled = true;
           channel4InjEnabled = true;
         }
-        else if(configPage2.injTiming)
-        {
-          // Alternating between two channels
-          channel1InjDegrees = 0 / currentStatus.nSquirts;
-          channel2InjDegrees = 360 / currentStatus.nSquirts;
-        }
         else
         {
-          // For simultaneous, all squirts happen at the same time
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 0;
-        }
+          if(configPage2.injTiming)
+          {
+            // Alternating between two channels
+            channel1InjDegrees = 0 / currentStatus.nSquirts;
+            channel2InjDegrees = 360 / currentStatus.nSquirts;
+          }
+          else
+          {
+            // For simultaneous, all squirts happen at the same time
+            channel1InjDegrees = 0;
+            channel2InjDegrees = 0;
+          }
 
-        //Check if injector staging is enabled
-        if(configPage10.stagingEnabled == true)
-        {
-          channel3InjEnabled = true;
-          channel4InjEnabled = true;
+          //Check if injector staging is enabled
+          if(configPage10.stagingEnabled == true)
+          {
+            channel3InjEnabled = true;
+            channel4InjEnabled = true;
 
-          channel3InjDegrees = channel1InjDegrees;
-          channel4InjDegrees = channel2InjDegrees;
+            channel3InjDegrees = channel1InjDegrees;
+            channel4InjDegrees = channel2InjDegrees;
+          }
         }
 
         channel1InjEnabled = true;
