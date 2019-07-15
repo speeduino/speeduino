@@ -62,7 +62,7 @@ bool set_constants(float reqFuel, unsigned nCylinders, unsigned nSquirts, bool a
     return true;
 }
 
-TEST(SpeeduinoTestClass, ConfigUpdates)
+TEST(SpeeduinoInitTests, ConfigUpdates)
 {
 //    EEPROM.write(0, 2); // this line make the tests crash
     setup();
@@ -70,7 +70,7 @@ TEST(SpeeduinoTestClass, ConfigUpdates)
     EXPECT_EQ(true, hasInterrupts);
 }
 
-TEST(SpeeduinoInjTestClass, PairedSimTest)
+TEST(SpeeduinoInjTests, PairedSimTest)
 {
     for (int nCylinders : {1, 2, 3, 4, 5, 6, 8})
         for (int nSquirts : get_divisors(nCylinders))
@@ -83,7 +83,7 @@ TEST(SpeeduinoInjTestClass, PairedSimTest)
         }
 }
 
-TEST(SpeeduinoInjTestClass, SemiSequentialSimTest)
+TEST(SpeeduinoInjTests, SemiSequentialSimTest)
 {
     for (int nCylinders : {1, 2, 3, 4, 5, 6, 8})
         for (int nSquirts : get_divisors(nCylinders))
@@ -96,7 +96,7 @@ TEST(SpeeduinoInjTestClass, SemiSequentialSimTest)
         }
 }
 
-TEST(SpeeduinoInjTestClass, SequentialSimTest)
+TEST(SpeeduinoInjTests, SequentialSimTest)
 {
     for (int nCylinders : {1, 2, 3, 4}) // sequential doesn't support more than 4 cylinders
         for (int nSquirts : get_divisors(nCylinders))
@@ -109,7 +109,7 @@ TEST(SpeeduinoInjTestClass, SequentialSimTest)
         }
 }
 
-TEST(SpeeduinoInjTestClass, PairedAltTest)
+TEST(SpeeduinoInjTests, PairedAltTest)
 {
     for (int nCylinders : {1, 2, 3, 4, 5, 6, 8})
         for (int nSquirts : get_divisors(nCylinders))
@@ -122,7 +122,7 @@ TEST(SpeeduinoInjTestClass, PairedAltTest)
         }
 }
 
-TEST(SpeeduinoInjTestClass, SemiSequentialAltTest)
+TEST(SpeeduinoInjTests, SemiSequentialAltTest)
 {
     for (int nCylinders : {1, 2, 3, 4, 5, 6, 8})
         for (int nSquirts : get_divisors(nCylinders))
@@ -135,7 +135,7 @@ TEST(SpeeduinoInjTestClass, SemiSequentialAltTest)
         }
 }
 
-TEST(SpeeduinoInjTestClass, SequentialAltTest)
+TEST(SpeeduinoInjTests, SequentialAltTest)
 {
     for (int nCylinders : {1, 2, 3, 4}) // sequential doesn't support more than 4 cylinders
         for (int nSquirts : get_divisors(nCylinders))
@@ -148,7 +148,7 @@ TEST(SpeeduinoInjTestClass, SequentialAltTest)
         }
 }
 
-TEST(SpeeduinoInjTestClass, 2CylSemiSeqAltTest)
+TEST(SpeeduinoInjTests, 2CylSemiSeqAltTest)
 {
     //                      ReqFuel    nCyl    nSqrt   alternate   injLayout
     ASSERT_TRUE(set_constants(REQ_FUEL, 2, 2, true, INJ_SEMISEQUENTIAL));
@@ -164,7 +164,7 @@ TEST(SpeeduinoInjTestClass, 2CylSemiSeqAltTest)
     EXPECT_EQ(180, channel2InjDegrees);
 }
 
-TEST(SpeeduinoInjTestClass, 2CylSeqAltTest)
+TEST(SpeeduinoInjTests, 2CylSeqAltTest)
 {
     //                      ReqFuel    nCyl    nSqrt   alternate   injLayout
     ASSERT_TRUE(set_constants(REQ_FUEL, 2, 2, true, INJ_SEQUENTIAL));
@@ -180,7 +180,7 @@ TEST(SpeeduinoInjTestClass, 2CylSeqAltTest)
     EXPECT_EQ(180, channel2InjDegrees);
 }
 
-TEST(SpeeduinoInjTestClass, 3CylPairedSimTest)
+TEST(SpeeduinoInjTests, 3CylPairedSimTest)
 {
     //                       ReqFuel    nCyl    nSqrt   alternate   injLayout
     ASSERT_TRUE(set_constants(REQ_FUEL, 3, 1, false, INJ_PAIRED));
@@ -197,7 +197,7 @@ TEST(SpeeduinoInjTestClass, 3CylPairedSimTest)
     EXPECT_EQ(0, channel3InjDegrees);
 }
 
-TEST(SpeeduinoInjTestClass, 3CylSeqAltTest)
+TEST(SpeeduinoInjTests, 3CylSeqAltTest)
 {
     //                      ReqFuel    nCyl    nSqrt   alternate   injLayout
     ASSERT_TRUE(set_constants(REQ_FUEL, 3, 3, true, INJ_SEQUENTIAL));
@@ -214,7 +214,7 @@ TEST(SpeeduinoInjTestClass, 3CylSeqAltTest)
     EXPECT_EQ(480, channel3InjDegrees);
 }
 
-TEST(SpeeduinoInjTestClass, 4CylPairedSimTest)
+TEST(SpeeduinoInjTests, 4CylPairedSimTest)
 {
     //                       ReqFuel    nCyl    nSqrt   alternate   injLayout
     ASSERT_TRUE(set_constants(REQ_FUEL, 4, 1, false, INJ_PAIRED));
@@ -230,7 +230,7 @@ TEST(SpeeduinoInjTestClass, 4CylPairedSimTest)
     EXPECT_EQ(0, channel2InjDegrees);
 }
 
-TEST(SpeeduinoInjTestClass, 4CylSemiSeqAltTest)
+TEST(SpeeduinoInjTests, 4CylSemiSeqAltTest)
 {
     //                      ReqFuel    nCyl    nSqrt   alternate   injLayout
     ASSERT_TRUE(set_constants(REQ_FUEL, 4, 2, true, INJ_SEMISEQUENTIAL));
@@ -246,7 +246,7 @@ TEST(SpeeduinoInjTestClass, 4CylSemiSeqAltTest)
     EXPECT_EQ(180, channel2InjDegrees);
 }
 
-TEST(SpeeduinoInjTestClass, 4CylSeqAltTest)
+TEST(SpeeduinoInjTests, 4CylSeqAltTest)
 {
     //                      ReqFuel    nCyl    nSqrt   alternate   injLayout
     ASSERT_TRUE(set_constants(REQ_FUEL, 4, 2, true, INJ_SEQUENTIAL));
@@ -262,6 +262,58 @@ TEST(SpeeduinoInjTestClass, 4CylSeqAltTest)
     EXPECT_EQ(180, channel2InjDegrees);
     EXPECT_EQ(360, channel3InjDegrees);
     EXPECT_EQ(540, channel4InjDegrees);
+}
+
+TEST(SpeeduinoScheduleTests, ScheduleTest1)
+{
+  FUEL1_COUNTER = 0;
+
+  setFuelSchedule1(4800, 800);
+  EXPECT_EQ(FUEL1_COUNTER + 300, FUEL1_COMPARE);
+  EXPECT_EQ(PENDING, fuelSchedule1.Status);
+
+  FUEL1_COUNTER = FUEL1_COMPARE;
+  TIMER3_COMPA_vect();
+  EXPECT_EQ(FUEL1_COUNTER + 50, FUEL1_COMPARE);
+  EXPECT_EQ(RUNNING, fuelSchedule1.Status);
+
+  FUEL1_COUNTER = FUEL1_COMPARE;
+  TIMER3_COMPA_vect();
+  EXPECT_EQ(OFF, fuelSchedule1.Status);
+}
+
+TEST(SpeeduinoScheduleTests, ScheduleTest2)
+{
+  FUEL1_COUNTER = 0;
+
+  setFuelSchedule1(3200, 1600);
+  EXPECT_EQ(FUEL1_COUNTER + 200, FUEL1_COMPARE);
+  EXPECT_EQ(PENDING, fuelSchedule1.Status);
+
+  FUEL1_COUNTER = FUEL1_COMPARE;
+  TIMER3_COMPA_vect();
+  EXPECT_EQ(FUEL1_COUNTER + 100, FUEL1_COMPARE);
+  EXPECT_EQ(RUNNING, fuelSchedule1.Status);
+
+  FUEL1_COUNTER += 50;
+
+  setFuelSchedule1(4000, 800);
+  EXPECT_EQ(FUEL1_COUNTER + 50, FUEL1_COMPARE);
+  EXPECT_EQ(RUNNING, fuelSchedule1.Status);
+
+  FUEL1_COUNTER = FUEL1_COMPARE;
+  TIMER3_COMPA_vect();
+  EXPECT_EQ(FUEL1_COUNTER + 200, FUEL1_COMPARE);
+  EXPECT_EQ(PENDING, fuelSchedule1.Status);
+
+  FUEL1_COUNTER = FUEL1_COMPARE;
+  TIMER3_COMPA_vect();
+  EXPECT_EQ(FUEL1_COUNTER + 50, FUEL1_COMPARE);
+  EXPECT_EQ(RUNNING, fuelSchedule1.Status);
+
+  FUEL1_COUNTER = FUEL1_COMPARE;
+  TIMER3_COMPA_vect();
+  EXPECT_EQ(OFF, fuelSchedule1.Status);
 }
 
 int main(int pArgCount, char *pArgValues[])

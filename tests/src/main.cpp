@@ -3,16 +3,9 @@
 
 #include "speeduino.cpp"
 
-// Reset EEPROM memory to blank values (1 so setup() doesn't crash).
-void init_memory(uint8_t val = 1)
-{
-    for (int i = 0; i < EEPROMClass::mem_size; i++)
-        EEPROM.write(i, val);
-}
-
 uint16_t mock_getRPM()
 {
-    return 120;
+    return 1200;
 }
 
 // This function takes the input parameters we would put in TunerStudio and converts them to what speeduino knows.
@@ -56,8 +49,6 @@ bool set_constants(float reqFuel, unsigned nCylinders, unsigned nSquirts, bool a
 
 int main()
 {
-    init_memory();
-
     //            ReqFuel, nCyl, nSqrt, alternate, injLayout
     set_constants(12.0,    4,    2,     false,     INJ_PAIRED);
     initialiseAll();
@@ -84,4 +75,6 @@ int main()
     getRPM = mock_getRPM;
     std::cout << getRPM() << std::endl;
 
+    int pw = PW(12000, 50, 50, 100, 0);
+    std::cout << pw << std::endl;
 }
