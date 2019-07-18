@@ -741,10 +741,10 @@ void loop()
       {
         if(currentStatus.PW1 >= inj_opentime_uS)
         {
-          if ( (injector1StartAngle <= crankAngle) && (fuelSchedule1.Status == RUNNING) ) { injector1StartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( (injector1StartAngle <= crankAngle) && (fuelSchedule1.Status == Schedule::RUNNING) ) { injector1StartAngle += CRANK_ANGLE_MAX_INJ; }
           if (injector1StartAngle > crankAngle)
           {
-            setFuelSchedule1(
+            fuelSchedule1.setSchedule(
                       ((injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW1
                       );
@@ -770,10 +770,10 @@ void loop()
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
           tempStartAngle = injector2StartAngle - channel2InjDegrees;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
-          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule2.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule2.Status == Schedule::RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule2(
+            fuelSchedule2.setSchedule(
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW2
                       );
@@ -788,10 +788,10 @@ void loop()
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
           tempStartAngle = injector3StartAngle - channel3InjDegrees;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
-          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule3.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule3.Status == Schedule::RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule3(
+            fuelSchedule3.setSchedule(
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW3
                       );
@@ -806,10 +806,10 @@ void loop()
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
           tempStartAngle = injector4StartAngle - channel4InjDegrees;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
-          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule4.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule4.Status == Schedule::RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule4(
+            fuelSchedule4.setSchedule(
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW4
                       );
@@ -829,12 +829,12 @@ void loop()
           {
             //Note the hacky use of fuel schedule 3 below
             /*
-            setFuelSchedule3(openInjector3and5,
+            fuelSchedule3.setSchedule(openInjector3and5,
                       ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW1,
                       closeInjector3and5
                     );*/
-            setFuelSchedule3(
+            fuelSchedule3.setSchedule(
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW1
                       );
@@ -849,10 +849,10 @@ void loop()
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
           tempStartAngle = injector6StartAngle - channel6InjDegrees;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
-          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule6.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule6.Status == Schedule::RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule6(
+            fuelSchedule6.setSchedule(
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW6
                       );
@@ -867,10 +867,10 @@ void loop()
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
           tempStartAngle = injector7StartAngle - channel7InjDegrees;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
-          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule7.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule7.Status == Schedule::RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule7(
+            fuelSchedule7.setSchedule(
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW7
                       );
@@ -885,10 +885,10 @@ void loop()
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
           tempStartAngle = injector8StartAngle - channel8InjDegrees;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
-          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule8.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule8.Status == Schedule::RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule8(
+            fuelSchedule8.setSchedule(
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW8
                       );
@@ -955,9 +955,9 @@ void loop()
 #if IGN_CHANNELS >= 1
         if ( (ignition1StartAngle > crankAngle) && (curRollingCut != 1) )
         {
-            if(ignitionSchedule1.Status != RUNNING)
+            if(ignitionSchedule1.Status != Schedule::RUNNING)
             {
-              setIgnitionSchedule1(ign1StartFunction,
+              ignitionSchedule1.setSchedule(ign1StartFunction,
                         //((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                         angleToTime((ignition1StartAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV),
                         currentStatus.dwell + fixedCrankingOverride, //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,
@@ -968,7 +968,7 @@ void loop()
 #endif
 
 #if defined(USE_IGN_REFRESH)
-        if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
+        if( (ignitionSchedule1.Status == Schedule::RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
         {
           unsigned long uSToEnd = 0;
 
@@ -1003,7 +1003,7 @@ void loop()
 
             if( (ignition2StartTime > 0) && (curRollingCut != 2) )
             {
-              setIgnitionSchedule2(ign2StartFunction,
+              ignitionSchedule2.setSchedule(ign2StartFunction,
                         ignition2StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
                         ign2EndFunction
@@ -1026,7 +1026,7 @@ void loop()
 
             if( (ignition3StartTime > 0) && (curRollingCut != 3) )
             {
-              setIgnitionSchedule3(ign3StartFunction,
+              ignitionSchedule3.setSchedule(ign3StartFunction,
                         ignition3StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
                         ign3EndFunction
@@ -1050,7 +1050,7 @@ void loop()
 
             if( (ignition4StartTime > 0) && (curRollingCut != 4) )
             {
-              setIgnitionSchedule4(ign4StartFunction,
+              ignitionSchedule4.setSchedule(ign4StartFunction,
                         ignition4StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
                         ign4EndFunction
@@ -1073,7 +1073,7 @@ void loop()
             else { ignition5StartTime = 0; }
 
             if( (ignition5StartTime > 0) && (curRollingCut != 5) ) {
-            setIgnitionSchedule5(ign5StartFunction,
+            ignitionSchedule5.setSchedule(ign5StartFunction,
                       ignition5StartTime,
                       currentStatus.dwell + fixedCrankingOverride,
                       ign5EndFunction
@@ -1094,7 +1094,7 @@ void loop()
 
             if( (ignition6StartTime > 0) && (curRollingCut != 2) )
             {
-              setIgnitionSchedule6(ign6StartFunction,
+              ignitionSchedule6.setSchedule(ign6StartFunction,
                         ignition6StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
                         ign6EndFunction

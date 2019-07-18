@@ -69,46 +69,43 @@
   #define IGN7_COMPARE  OCR3C //Replaces injector 3
   #define IGN8_COMPARE  OCR3B //Replaces injector 2
 
-  #define FUEL1_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3A) //Turn on the A compare unit (ie turn on the interrupt)
-  #define FUEL2_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3B) //Turn on the B compare unit (ie turn on the interrupt)
-  #define FUEL3_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3C) //Turn on the C compare unit (ie turn on the interrupt)
-  #define FUEL4_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4B) //Turn on the B compare unit (ie turn on the interrupt)
-  #define FUEL5_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4C) //
-  #define FUEL6_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4A) //
-  #define FUEL7_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5C) //
-  #define FUEL8_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5B) //
+  #define FUEL1_TIMER_ENABLE TIMSK3
+  #define FUEL2_TIMER_ENABLE TIMSK3
+  #define FUEL3_TIMER_ENABLE TIMSK3
+  #define FUEL4_TIMER_ENABLE TIMSK4
+  #define FUEL5_TIMER_ENABLE TIMSK4
+  #define FUEL6_TIMER_ENABLE TIMSK4
+  #define FUEL7_TIMER_ENABLE TIMSK5
+  #define FUEL8_TIMER_ENABLE TIMSK5
 
-  #define FUEL1_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3A); //Turn off this output compare unit
-  #define FUEL2_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3B); //Turn off this output compare unit
-  #define FUEL3_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3C); //Turn off this output compare unit
-  #define FUEL4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4B); //Turn off this output compare unit
-  #define FUEL5_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4C); //
-  #define FUEL6_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A); //
-  #define FUEL7_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C); //
-  #define FUEL8_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5B); //
+  #define FUEL1_ENABLE_BITMASK (1 << OCIE3A) //Turn off this output compare unit
+  #define FUEL2_ENABLE_BITMASK (1 << OCIE3B) //Turn off this output compare unit
+  #define FUEL3_ENABLE_BITMASK (1 << OCIE3C) //Turn off this output compare unit
+  #define FUEL4_ENABLE_BITMASK (1 << OCIE4B) //Turn off this output compare unit
+  #define FUEL5_ENABLE_BITMASK (1 << OCIE4C) //
+  #define FUEL6_ENABLE_BITMASK (1 << OCIE4A) //
+  #define FUEL7_ENABLE_BITMASK (1 << OCIE5C) //
+  #define FUEL8_ENABLE_BITMASK (1 << OCIE5B) //
 
   //These have the TIFR5 bits set to 1 to clear the interrupt flag. This prevents a false interrupt being called the first time the channel is enabled.
   //I'm not sure why these are necessary as these should all be reset upon initialisation, but they do for the problem when added here
-  #define IGN1_TIMER_ENABLE() TIFR5 |= (1<<OCF5A); TIMSK5 |= (1 << OCIE5A) //Turn on the A compare unit (ie turn on the interrupt)
-  #define IGN2_TIMER_ENABLE() TIFR5 |= (1<<OCF5B); TIMSK5 |= (1 << OCIE5B) //Turn on the B compare unit (ie turn on the interrupt)
-  #define IGN3_TIMER_ENABLE() TIFR5 |= (1<<OCF5C); TIMSK5 |= (1 << OCIE5C) //Turn on the C compare unit (ie turn on the interrupt)
-  //#define IGN1_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5A) //Turn on the B compare unit (ie turn on the interrupt)
-  //#define IGN2_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5B) //Turn on the B compare unit (ie turn on the interrupt)
-  //#define IGN3_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5C) //Turn on the C compare unit (ie turn on the interrupt)
-  #define IGN4_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4A) //Turn on the A compare unit (ie turn on the interrupt)
-  #define IGN5_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4C) //Turn on the A compare unit (ie turn on the interrupt)
-  #define IGN6_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4B) //Replaces injector 4
-  #define IGN7_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3C) //Replaces injector 3
-  #define IGN8_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3B) //Replaces injector 2
+  #define IGN1_TIMER_ENABLE TIMSK5
+  #define IGN2_TIMER_ENABLE TIMSK5
+  #define IGN3_TIMER_ENABLE TIMSK5
+  #define IGN4_TIMER_ENABLE TIMSK4
+  #define IGN5_TIMER_ENABLE TIMSK4
+  #define IGN6_TIMER_ENABLE TIMSK4
+  #define IGN7_TIMER_ENABLE TIMSK3
+  #define IGN8_TIMER_ENABLE TIMSK3
 
-  #define IGN1_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5A) //Turn off this output compare unit
-  #define IGN2_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5B) //Turn off this output compare unit
-  #define IGN3_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C) //Turn off this output compare unit
-  #define IGN4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A) //Turn off this output compare unit
-  #define IGN5_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4C) //Turn off this output compare unit
-  #define IGN6_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4B) //Replaces injector 4
-  #define IGN7_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3C) //Replaces injector 3
-  #define IGN8_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3B) //Replaces injector 2
+  #define IGN1_ENABLE_BITMASK (1 << OCIE5A) //Turn off this output compare unit
+  #define IGN2_ENABLE_BITMASK (1 << OCIE5B) //Turn off this output compare unit
+  #define IGN3_ENABLE_BITMASK (1 << OCIE5C) //Turn off this output compare unit
+  #define IGN4_ENABLE_BITMASK (1 << OCIE4A) //Turn off this output compare unit
+  #define IGN5_ENABLE_BITMASK (1 << OCIE4C) //Turn off this output compare unit
+  #define IGN6_ENABLE_BITMASK (1 << OCIE4B) //Replaces injector 4
+  #define IGN7_ENABLE_BITMASK (1 << OCIE3C) //Replaces injector 3
+  #define IGN8_ENABLE_BITMASK (1 << OCIE3B) //Replaces injector 2
 
   #define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
   // #define MAX_TIMER_PERIOD_SLOW 1048560UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 16, as each timer tick is 16uS)

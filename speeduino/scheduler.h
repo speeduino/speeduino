@@ -29,23 +29,23 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
 
 void initialiseSchedulers();
-void setFuelSchedule1(unsigned long timeout, unsigned long duration);
-void setFuelSchedule2(unsigned long timeout, unsigned long duration);
-void setFuelSchedule3(unsigned long timeout, unsigned long duration);
-void setFuelSchedule4(unsigned long timeout, unsigned long duration);
-void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)()); //Schedule 5 remains a special case for now due to the way it's implemented 
-//void setFuelSchedule5(unsigned long timeout, unsigned long duration);
-void setFuelSchedule6(unsigned long timeout, unsigned long duration);
-void setFuelSchedule7(unsigned long timeout, unsigned long duration);
-void setFuelSchedule8(unsigned long timeout, unsigned long duration);
-void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+// void setFuelSchedule1(unsigned long timeout, unsigned long duration);
+// void setFuelSchedule2(unsigned long timeout, unsigned long duration);
+// void setFuelSchedule3(unsigned long timeout, unsigned long duration);
+// void setFuelSchedule4(unsigned long timeout, unsigned long duration);
+// void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)()); //Schedule 5 remains a special case for now due to the way it's implemented 
+// //void setFuelSchedule5(unsigned long timeout, unsigned long duration);
+// void setFuelSchedule6(unsigned long timeout, unsigned long duration);
+// void setFuelSchedule7(unsigned long timeout, unsigned long duration);
+// void setFuelSchedule8(unsigned long timeout, unsigned long duration);
+// void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+// void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+// void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+// void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+// void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+// void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+// void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+// void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 
 static inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 
@@ -93,9 +93,21 @@ static inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute
 #endif
 #endif
 
-enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The 3 statuses that a schedule can have
 
-struct Schedule {
+
+class Schedule {
+
+#if defined(CORE_AVR)
+  typedef uint16_t DataRegister;
+  typedef uint8_t EnableRegister;
+#else
+  typedef uint32_t DataRegister;
+  typedef uint32_t EnableRegister;
+#endif
+
+public:
+  enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The 3 statuses that a schedule can have
+
   volatile unsigned long duration;
   volatile ScheduleStatus Status;
   volatile byte schedulesSet; //A counter of how many times the schedule has been set
@@ -109,38 +121,51 @@ struct Schedule {
   unsigned int nextEndCompare;
   volatile bool hasNextSchedule = false;
   volatile bool endScheduleSetByDecoder = false;
-#if defined(CORE_AVR)
-  volatile uint16_t * counter;
-  volatile uint16_t * compare;
-#else
-  volatile uint32_t * counter;
-  volatile uint32_t * compare;
-#endif
+
+  volatile DataRegister& counter;
+  volatile DataRegister& compare;
+  volatile EnableRegister& enableRegister;
+  const EnableRegister enableBitMask;
+
+public:
+  Schedule(volatile DataRegister& _counter, volatile DataRegister& _compare, volatile EnableRegister& _enable, const EnableRegister _bitMask)
+      : Status(OFF), schedulesSet(0), counter(_counter), compare(_compare), enableRegister(_enable), enableBitMask(_bitMask)
+  {
+
+  }
+  void enable() { enableRegister |= enableBitMask; }
+  void disable() { enableRegister &= ~enableBitMask; }
+  void setSchedule(void (*_startCallback)(), uint32_t _timeout, uint32_t _duration, void(*_endCallBack)());
+  void setSchedule(uint32_t _timeout, uint32_t _duration)
+  {
+    setSchedule(nullptr, _timeout, _duration, nullptr);
+  }
+  void interrupt();
 };
 
 //volatile Schedule *timer3Aqueue[4];
 //Schedule *timer3Bqueue[4];
 //Schedule *timer3Cqueue[4];
 
-Schedule fuelSchedule1;
-Schedule fuelSchedule2;
-Schedule fuelSchedule3;
-Schedule fuelSchedule4;
-Schedule fuelSchedule5;
-Schedule fuelSchedule6;
-Schedule fuelSchedule7;
-Schedule fuelSchedule8;
+Schedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE, FUEL1_TIMER_ENABLE, FUEL1_ENABLE_BITMASK);
+Schedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE, FUEL2_TIMER_ENABLE, FUEL2_ENABLE_BITMASK);
+Schedule fuelSchedule3(FUEL3_COUNTER, FUEL3_COMPARE, FUEL3_TIMER_ENABLE, FUEL3_ENABLE_BITMASK);
+Schedule fuelSchedule4(FUEL4_COUNTER, FUEL4_COMPARE, FUEL4_TIMER_ENABLE, FUEL4_ENABLE_BITMASK);
+Schedule fuelSchedule5(FUEL5_COUNTER, FUEL5_COMPARE, FUEL5_TIMER_ENABLE, FUEL5_ENABLE_BITMASK);
+Schedule fuelSchedule6(FUEL6_COUNTER, FUEL6_COMPARE, FUEL6_TIMER_ENABLE, FUEL6_ENABLE_BITMASK);
+Schedule fuelSchedule7(FUEL7_COUNTER, FUEL7_COMPARE, FUEL7_TIMER_ENABLE, FUEL7_ENABLE_BITMASK);
+Schedule fuelSchedule8(FUEL8_COUNTER, FUEL8_COMPARE, FUEL8_TIMER_ENABLE, FUEL8_ENABLE_BITMASK);
 
-Schedule ignitionSchedule1;
-Schedule ignitionSchedule2;
-Schedule ignitionSchedule3;
-Schedule ignitionSchedule4;
-Schedule ignitionSchedule5;
-Schedule ignitionSchedule6;
-Schedule ignitionSchedule7;
-Schedule ignitionSchedule8;
+Schedule ignitionSchedule1(IGN1_COUNTER, IGN1_COMPARE, IGN1_TIMER_ENABLE, IGN1_ENABLE_BITMASK);
+Schedule ignitionSchedule2(IGN2_COUNTER, IGN2_COMPARE, IGN2_TIMER_ENABLE, IGN2_ENABLE_BITMASK);
+Schedule ignitionSchedule3(IGN3_COUNTER, IGN3_COMPARE, IGN3_TIMER_ENABLE, IGN3_ENABLE_BITMASK);
+Schedule ignitionSchedule4(IGN4_COUNTER, IGN4_COMPARE, IGN4_TIMER_ENABLE, IGN4_ENABLE_BITMASK);
+Schedule ignitionSchedule5(IGN5_COUNTER, IGN5_COMPARE, IGN5_TIMER_ENABLE, IGN5_ENABLE_BITMASK);
+Schedule ignitionSchedule6(IGN6_COUNTER, IGN6_COMPARE, IGN6_TIMER_ENABLE, IGN6_ENABLE_BITMASK);
+Schedule ignitionSchedule7(IGN7_COUNTER, IGN7_COMPARE, IGN7_TIMER_ENABLE, IGN7_ENABLE_BITMASK);
+Schedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE, IGN8_TIMER_ENABLE, IGN8_ENABLE_BITMASK);
 
-Schedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
+//Schedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 
 static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned int CNT)
 {
@@ -148,7 +173,7 @@ static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedu
   unsigned int tmpQueue[4];
 
   //Set the initial queue state. This order matches the tmpQueue order
-  if(schedule1->Status == OFF)
+  if(schedule1->Status == Schedule::OFF)
   {
     queue[0] = schedule2;
     queue[1] = schedule2;
@@ -163,7 +188,7 @@ static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedu
     tmpQueue[1] = schedule1->endCompare - CNT;
   }
 
-  if(schedule2->Status == OFF)
+  if(schedule2->Status == Schedule::OFF)
   {
     queue[2] = schedule1;
     queue[3] = schedule1;
@@ -203,10 +228,10 @@ static inline unsigned int popQueue(volatile Schedule *queue[])
   queue[0] = queue[1];
   queue[1] = queue[2];
   queue[2] = queue[3];
-  queue[3] = &nullSchedule;
+  queue[3] = nullptr;
 
   unsigned int returnCompare;
-  if( queue[0]->Status == PENDING ) { returnCompare = queue[0]->startCompare; }
+  if( queue[0]->Status == Schedule::PENDING ) { returnCompare = queue[0]->startCompare; }
   else { returnCompare = queue[0]->endCompare; }
 
   return returnCompare;
