@@ -104,7 +104,7 @@ static inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
   }
 }
 
-static inline void fuelScheduleInterrupt(Schedule& fuelSchedule)
+static inline __attribute__((always_inline)) void fuelScheduleInterrupt(Schedule& fuelSchedule)
 {
   switch(fuelSchedule.Status)
   {
@@ -138,7 +138,7 @@ static inline void fuelScheduleInterrupt(Schedule& fuelSchedule)
   }
 }
 
-static inline void ignitionScheduleInterrupt(Schedule& ignitionSchedule)
+static inline __attribute__((always_inline)) void ignitionScheduleInterrupt(Schedule& ignitionSchedule)
 {
   switch (ignitionSchedule.Status)
   {
