@@ -52,7 +52,7 @@ void initBoard()
     TCCR3B = 0x00;          //Disable Timer3 while we set it up
     TCNT3  = 0;             //Reset Timer Count
     TCCR3A = 0x00;          //Timer3 Control Reg A: Wave Gen Mode normal
-    TCCR3B = (1 << CS12);   //Same as: 0x03. Timer3 Control Reg B: Timer Prescaler set to 256. Refer to www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
+    TCCR3B = (1 << CS11) | (1 << CS10);   //Same as: 0x03. Timer3 Control Reg B: Timer Prescaler set to 256. Refer to www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
     TIFR3 = (1 << OCF3A) | (1<<OCF3B) | (1<<OCF3C) | (1<<TOV3) | (1<<ICF3); //Clear the compare flags, overflow flag and external input flag bits
 
     //Ignition Schedules, which uses timer 5. This is also used by the fast version of micros(). If the speed of this timer is changed from 4uS ticks, that MUST be changed as well. See globals.h and timers.ino
@@ -71,7 +71,7 @@ void initBoard()
     TCCR4B = 0x00;          //Disable Timer4 while we set it up
     TCNT4  = 0;             //Reset Timer Count
     TCCR4A = 0x00;          //Timer4 Control Reg A: Wave Gen Mode normal
-    TCCR4B = (1 << CS12);   //Timer4 Control Reg B: aka Divisor = 256 = 122.5HzTimer Prescaler set to 256. Refer to www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
+    TCCR4B = (1 << CS11) | (1 << CS10);   //Timer4 Control Reg B: aka Divisor = 256 = 122.5HzTimer Prescaler set to 256. Refer to www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
     TIFR4 = (1 << OCF4A) | (1<<OCF4B) | (1<<OCF4C) | (1<<TOV4) | (1<<ICF4); //Clear the compare flags, overflow flag and external input flag bits
 
 }
