@@ -37,7 +37,7 @@
   #define FUEL2_COUNTER TCNT3
   #define FUEL3_COUNTER TCNT3
   #define FUEL4_COUNTER TCNT4
-  #define FUEL5_COUNTER TCNT1
+  #define FUEL5_COUNTER TCNT4
   #define FUEL6_COUNTER TCNT4 //Replaces ignition 4
   #define FUEL7_COUNTER TCNT5 //Replaces ignition 3
   #define FUEL8_COUNTER TCNT5 //Replaces ignition 2
@@ -46,7 +46,7 @@
   #define IGN2_COUNTER  TCNT5
   #define IGN3_COUNTER  TCNT5
   #define IGN4_COUNTER  TCNT4
-  #define IGN5_COUNTER  TCNT1
+  #define IGN5_COUNTER  TCNT4
   #define IGN6_COUNTER  TCNT4 //Replaces injector 4
   #define IGN7_COUNTER  TCNT3 //Replaces injector 3
   #define IGN8_COUNTER  TCNT3 //Replaces injector 2
@@ -55,7 +55,7 @@
   #define FUEL2_COMPARE OCR3B
   #define FUEL3_COMPARE OCR3C
   #define FUEL4_COMPARE OCR4B
-  #define FUEL5_COMPARE OCR1C //Shared with FUEL1
+  #define FUEL5_COMPARE OCR4C //Shared with FUEL1
   #define FUEL6_COMPARE OCR4A //Replaces ignition4
   #define FUEL7_COMPARE OCR5C //Replaces ignition3
   #define FUEL8_COMPARE OCR5B //Replaces ignition2
@@ -64,7 +64,7 @@
   #define IGN2_COMPARE  OCR5B
   #define IGN3_COMPARE  OCR5C
   #define IGN4_COMPARE  OCR4A
-  #define IGN5_COMPARE  OCR1C
+  #define IGN5_COMPARE  OCR4C
   #define IGN6_COMPARE  OCR4B //Replaces injector 4
   #define IGN7_COMPARE  OCR3C //Replaces injector 3
   #define IGN8_COMPARE  OCR3B //Replaces injector 2
