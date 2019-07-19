@@ -90,37 +90,35 @@ public:
   enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The 3 statuses that a schedule can have
 
   volatile unsigned long duration;
-  volatile ScheduleStatus Status;
-  volatile byte schedulesSet; //A counter of how many times the schedule has been set
-  void (*StartCallback)(); //Start Callback function for schedule
-  void (*EndCallback)(); //Start Callback function for schedule
+  volatile ScheduleStatus Status = OFF;
+  volatile byte schedulesSet = 0; //A counter of how many times the schedule has been set
+  void (*StartCallback)() = nullptr;//Start Callback function for schedule
+  void (*EndCallback)() = nullptr; //Start Callback function for schedule
   volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
   volatile uint16_t startCompare; //The counter value of the timer when this will start
   volatile uint16_t endCompare;
 
   unsigned int nextStartCompare;
-  unsigned int nextEndCompare;
+  unsigned int nextDuration;
   volatile bool hasNextSchedule = false;
   volatile bool endScheduleSetByDecoder = false;
 
-  volatile DataRegister& counter;
-  volatile DataRegister& compare;
-  volatile EnableRegister& enableRegister;
-  const EnableRegister enableBitMask;
+  struct {
+    volatile DataRegister& counter;
+    volatile DataRegister& compare;
+    volatile EnableRegister& enableRegister;
+    const EnableRegister enableBitMask;
+  } timer;
 
 public:
   Schedule(volatile DataRegister& _counter, volatile DataRegister& _compare, volatile EnableRegister& _enable, const EnableRegister _bitMask)
-      : Status(OFF), schedulesSet(0), counter(_counter), compare(_compare), enableRegister(_enable), enableBitMask(_bitMask)
+      : timer({_counter, _compare, _enable, _bitMask})
   {
-
+    // Nothing else to do here
   }
-  void enable() { enableRegister |= enableBitMask; }
-  void disable() { enableRegister &= ~enableBitMask; }
+  void enable() { timer.enableRegister |= timer.enableBitMask; }
+  void disable() { timer.enableRegister &= ~timer.enableBitMask; }
   void setSchedule(void (*_startCallback)(), uint32_t _timeout, uint32_t _duration, void(*_endCallBack)());
-  void setSchedule(uint32_t _timeout, uint32_t _duration)
-  {
-    setSchedule(nullptr, _timeout, _duration, nullptr);
-  }
   void interrupt();
 };
 

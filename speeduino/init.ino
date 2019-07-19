@@ -834,10 +834,10 @@ void initialiseAll()
     unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     if(primingValue > 0)
     {
-      fuelSchedule1.setSchedule(100, (primingValue * 100 * 5)); //to acheive long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
-      fuelSchedule2.setSchedule(100, (primingValue * 100 * 5));
-      fuelSchedule3.setSchedule(100, (primingValue * 100 * 5));
-      fuelSchedule4.setSchedule(100, (primingValue * 100 * 5));
+      fuelSchedule1.setSchedule(openInjector1, 100, (primingValue * 100 * 5), closeInjector1); //to acheive long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
+      fuelSchedule2.setSchedule(openInjector2, 100, (primingValue * 100 * 5), closeInjector2);
+      fuelSchedule3.setSchedule(openInjector3, 100, (primingValue * 100 * 5), closeInjector3);
+      fuelSchedule4.setSchedule(openInjector4, 100, (primingValue * 100 * 5), closeInjector4);
     }
 
 

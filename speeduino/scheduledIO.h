@@ -1,6 +1,8 @@
 #ifndef SCHEDULEDIO_H
 #define SCHEDULEDIO_H
 
+#include "globals.h"
+
 //If coil inverse is on, set the output low, else set it high
 //#define beginCoil1Charge() { configPage4.IgInv == 1 ? *ign1_pin_port &= ~(ign1_pin_mask); : *ign1_pin_port |= (ign1_pin_mask); } TACH_PULSE_LOW();
 
@@ -40,32 +42,32 @@ void beginCoil2and4Charge();
 void endCoil2and4Charge();
 
 
-#define openInjector1() *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1)
-#define closeInjector1() *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1)
-#define openInjector2() *inj2_pin_port |= (inj2_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ2)
-#define closeInjector2() *inj2_pin_port &= ~(inj2_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ2)
-#define openInjector3() *inj3_pin_port |= (inj3_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ3)
-#define closeInjector3() *inj3_pin_port &= ~(inj3_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ3)
-#define openInjector4() *inj4_pin_port |= (inj4_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ4)
-#define closeInjector4() *inj4_pin_port &= ~(inj4_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ4)
-#define openInjector5() *inj5_pin_port |= (inj5_pin_mask)
-#define closeInjector5() *inj5_pin_port &= ~(inj5_pin_mask)
+void openInjector1() {*inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1);}
+void closeInjector1() {*inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1);}
+void openInjector2() {*inj2_pin_port |= (inj2_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ2);}
+void closeInjector2() {*inj2_pin_port &= ~(inj2_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ2);}
+void openInjector3() {*inj3_pin_port |= (inj3_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ3);}
+void closeInjector3() {*inj3_pin_port &= ~(inj3_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ3);}
+void openInjector4() {*inj4_pin_port |= (inj4_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ4);}
+void closeInjector4() {*inj4_pin_port &= ~(inj4_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ4);}
+void openInjector5() {*inj5_pin_port |= (inj5_pin_mask);}
+void closeInjector5() {*inj5_pin_port &= ~(inj5_pin_mask);}
 //Dynamic functions below
-#define openInjector6() *inj6_pin_port |= (inj6_pin_mask);
-#define closeInjector6() *inj6_pin_port &= ~(inj6_pin_mask);
-#define openInjector7() *inj7_pin_port |= (inj7_pin_mask);
-#define closeInjector7() *inj7_pin_port &= ~(inj7_pin_mask);
-#define openInjector8() *inj8_pin_port |= (inj8_pin_mask);
-#define closeInjector8() *inj8_pin_port &= ~(inj8_pin_mask);
+void openInjector6() {*inj6_pin_port |= (inj6_pin_mask);}
+void closeInjector6() {*inj6_pin_port &= ~(inj6_pin_mask);}
+void openInjector7() {*inj7_pin_port |= (inj7_pin_mask);}
+void closeInjector7() {*inj7_pin_port &= ~(inj7_pin_mask);}
+void openInjector8() {*inj8_pin_port |= (inj8_pin_mask);}
+void closeInjector8() {*inj8_pin_port &= ~(inj8_pin_mask);}
 
-#define openInjector1and4() openInjector1(); openInjector4()
-#define closeInjector1and4() closeInjector1(); closeInjector4()
-#define openInjector2and3() openInjector2(); openInjector3()
-#define closeInjector2and3() closeInjector2(); closeInjector3()
+void openInjector1andMaybe4() {openInjector1(); if (configPage2.injLayout == INJ_SEMISEQUENTIAL) openInjector4();}
+void closeInjector1andMaybe4() {closeInjector1(); if (configPage2.injLayout == INJ_SEMISEQUENTIAL) closeInjector4();}
+void openInjector2andMaybe3() {openInjector2(); if (configPage2.injLayout == INJ_SEMISEQUENTIAL) openInjector3();}
+void closeInjector2andMaybe3() {closeInjector2(); if (configPage2.injLayout == INJ_SEMISEQUENTIAL) closeInjector3();}
 
 //5 cylinder support doubles up injector 3 as being closese to inj 5 (Crank angle)
-#define openInjector3and5() openInjector3(); openInjector5()
-#define closeInjector3and5() closeInjector3(); closeInjector5()
+void openInjector3and5() {openInjector3(); openInjector5();}
+void closeInjector3and5() {closeInjector3(); closeInjector5();}
 
 #define coil1Low() (*ign1_pin_port &= ~(ign1_pin_mask))
 #define coil1High() (*ign1_pin_port |= (ign1_pin_mask))

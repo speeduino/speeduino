@@ -34,7 +34,7 @@ void Schedule::setSchedule(void (*_startCallback)(), uint32_t _timeout, uint32_t
   {
     StartCallback = _startCallback;
     EndCallback = _endCallback;
-    duration = _duration;
+    duration = uS_TO_TIMER_COMPARE(_duration);
 
     //Need to check that the timeout doesn't exceed the overflow
     uint16_t timeout_timer_compare;
@@ -43,12 +43,10 @@ void Schedule::setSchedule(void (*_startCallback)(), uint32_t _timeout, uint32_t
 
     //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
     noInterrupts();
-    startCompare = counter + timeout_timer_compare;
-    endCompare = startCompare + uS_TO_TIMER_COMPARE(_duration);
+    startCompare = timer.counter + timeout_timer_compare;
     Status = Schedule::PENDING; //Turn this schedule on
     schedulesSet++; //Increment the number of times this schedule has been set
-
-    compare = startCompare;
+    timer.compare = startCompare;
     interrupts();
     enable();
   }
@@ -56,8 +54,8 @@ void Schedule::setSchedule(void (*_startCallback)(), uint32_t _timeout, uint32_t
   {
     //If the schedule is already running, we can set the next schedule so it is ready to go
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-    nextStartCompare = counter + uS_TO_TIMER_COMPARE(_timeout);
-    nextEndCompare = nextStartCompare + uS_TO_TIMER_COMPARE(_duration);
+    nextStartCompare = timer.counter + uS_TO_TIMER_COMPARE(_timeout);
+    nextDuration = uS_TO_TIMER_COMPARE(_duration);
     hasNextSchedule = true;
   }
 }
@@ -70,9 +68,68 @@ static inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
   //if( (timeToEnd < ignitionSchedule1.duration) && (timeToEnd > IGNITION_REFRESH_THRESHOLD) )
   {
     noInterrupts();
-    ignitionSchedule1.endCompare = ignitionSchedule1.counter + uS_TO_TIMER_COMPARE(timeToEnd);
-    ignitionSchedule1.compare = ignitionSchedule1.endCompare;
+    ignitionSchedule1.endCompare = ignitionSchedule1.timer.counter + uS_TO_TIMER_COMPARE(timeToEnd);
+    ignitionSchedule1.timer.compare = ignitionSchedule1.endCompare;
     interrupts();
+  }
+}
+
+static inline void fuelScheduleInterrupt(Schedule& fuelSchedule)
+{
+  if (fuelSchedule.Status == Schedule::PENDING) //Check to see if this schedule is turn on
+  {
+    fuelSchedule.StartCallback();
+    fuelSchedule.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+    fuelSchedule.timer.compare = fuelSchedule.timer.counter + fuelSchedule.duration; //Doing this here prevents a potential overflow on restarts
+  }
+  else if (fuelSchedule.Status == Schedule::RUNNING)
+  {
+      fuelSchedule.EndCallback();
+      fuelSchedule.Status = Schedule::OFF; //Turn off the schedule
+      fuelSchedule.schedulesSet = 0;
+
+      //If there is a next schedule queued up, activate it
+      if(fuelSchedule.hasNextSchedule == true)
+      {
+        fuelSchedule.timer.compare = fuelSchedule.nextStartCompare;
+        fuelSchedule.duration = fuelSchedule.nextDuration;
+        fuelSchedule.Status = Schedule::PENDING;
+        fuelSchedule.schedulesSet = 1;
+        fuelSchedule.hasNextSchedule = false;
+      }
+      else { fuelSchedule.disable(); }
+  }
+  else if (fuelSchedule.Status == Schedule::OFF)
+  {
+    //Safety check. Turn off this output compare unit and return without performing any action
+    fuelSchedule.disable();
+  }
+}
+
+static inline void ignitionScheduleInterrupt(Schedule& ignitionSchedule)
+{
+  if (ignitionSchedule.Status == Schedule::PENDING) //Check to see if this schedule is turn on
+  {
+    ignitionSchedule.StartCallback();
+    ignitionSchedule.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+    ignitionSchedule.startTime = micros();
+    if(ignitionSchedule.endScheduleSetByDecoder == true) { ignitionSchedule.timer.compare = ignitionSchedule.endCompare; }
+    else { ignitionSchedule.timer.compare = ignitionSchedule.timer.counter + ignitionSchedule.duration; } //Doing this here prevents a potential overflow on restarts
+  }
+  else if (ignitionSchedule.Status == Schedule::RUNNING)
+  {
+    ignitionSchedule.EndCallback();
+    ignitionSchedule.Status = Schedule::OFF; //Turn off the schedule
+    ignitionSchedule.schedulesSet = 0;
+    ignitionSchedule.hasNextSchedule = false;
+    ignitionSchedule.endScheduleSetByDecoder = false;
+    ignitionCount += 1; //Increment the igintion counter
+    ignitionSchedule.disable();
+  }
+  else if (ignitionSchedule.Status == Schedule::OFF)
+  {
+    //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
+    ignitionSchedule.disable();
   }
 }
 
@@ -87,35 +144,7 @@ ISR(TIMER3_COMPA_vect) //fuelSchedules 1 and 5
 static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (fuelSchedule1.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-    {
-      //To use timer queue, change fuelShedule1 to timer3Aqueue[0];
-      if (configPage2.injLayout == INJ_SEMISEQUENTIAL) { openInjector1and4(); }
-      else { openInjector1(); }
-      fuelSchedule1.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      fuelSchedule1.compare = fuelSchedule1.counter + uS_TO_TIMER_COMPARE(fuelSchedule1.duration); //Doing this here prevents a potential overflow on restarts
-    }
-    else if (fuelSchedule1.Status == Schedule::RUNNING)
-    {
-       //timer3Aqueue[0]->EndCallback();
-       if (configPage2.injLayout == INJ_SEMISEQUENTIAL) { closeInjector1and4(); }
-       else { closeInjector1(); }
-       fuelSchedule1.Status = Schedule::OFF; //Turn off the schedule
-       fuelSchedule1.schedulesSet = 0;
-       //FUEL1_COMPARE = fuelSchedule1.endCompare;
-
-       //If there is a next schedule queued up, activate it
-       if(fuelSchedule1.hasNextSchedule == true)
-       {
-         fuelSchedule1.compare = fuelSchedule1.nextStartCompare;
-         fuelSchedule1.endCompare = fuelSchedule1.nextEndCompare;
-         fuelSchedule1.Status = Schedule::PENDING;
-         fuelSchedule1.schedulesSet = 1;
-         fuelSchedule1.hasNextSchedule = false;
-       }
-       else { fuelSchedule1.disable(); }
-    }
-    else if (fuelSchedule1.Status == Schedule::OFF) { fuelSchedule1.disable(); } //Safety check. Turn off this output compare unit and return without performing any action
+    fuelScheduleInterrupt(fuelSchedule1);
   }
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
@@ -124,33 +153,7 @@ ISR(TIMER3_COMPB_vect) //fuelSchedule2
 static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (fuelSchedule2.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-    {
-      //fuelSchedule2.StartCallback();
-      if (configPage2.injLayout == INJ_SEMISEQUENTIAL) { openInjector2and3(); }
-      else { openInjector2(); }
-      fuelSchedule2.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      fuelSchedule2.compare = fuelSchedule2.counter + uS_TO_TIMER_COMPARE(fuelSchedule2.duration); //Doing this here prevents a potential overflow on restarts
-    }
-    else if (fuelSchedule2.Status == Schedule::RUNNING)
-    {
-       //fuelSchedule2.EndCallback();
-       if (configPage2.injLayout == INJ_SEMISEQUENTIAL) { closeInjector2and3(); }
-       else { closeInjector2(); }
-       fuelSchedule2.Status = Schedule::OFF; //Turn off the schedule
-       fuelSchedule2.schedulesSet = 0;
-
-       //If there is a next schedule queued up, activate it
-       if(fuelSchedule2.hasNextSchedule == true)
-       {
-         fuelSchedule2.compare = fuelSchedule2.nextStartCompare;
-         fuelSchedule2.endCompare = fuelSchedule2.nextEndCompare;
-         fuelSchedule2.Status = Schedule::PENDING;
-         fuelSchedule2.schedulesSet = 1;
-         fuelSchedule2.hasNextSchedule = false;
-       }
-       else { fuelSchedule2.disable(); }
-    }
+    fuelScheduleInterrupt(fuelSchedule2);
   }
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
@@ -159,35 +162,7 @@ ISR(TIMER3_COMPC_vect) //fuelSchedule3
 static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (fuelSchedule3.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-    {
-      //fuelSchedule3.StartCallback();
-      //Hack for 5 cylinder
-      if(channel5InjEnabled) { openInjector3and5(); }
-      else { openInjector3(); }
-      fuelSchedule3.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      fuelSchedule3.compare = fuelSchedule3.counter + uS_TO_TIMER_COMPARE(fuelSchedule3.duration); //Doing this here prevents a potential overflow on restarts
-    }
-    else if (fuelSchedule3.Status == Schedule::RUNNING)
-    {
-       //fuelSchedule3.EndCallback();
-       //Hack for 5 cylinder
-       if(channel5InjEnabled) { closeInjector3and5(); }
-       else { closeInjector3and5(); }
-       fuelSchedule3.Status = Schedule::OFF; //Turn off the schedule
-       fuelSchedule3.schedulesSet = 0;
-
-       //If there is a next schedule queued up, activate it
-       if(fuelSchedule3.hasNextSchedule == true)
-       {
-         fuelSchedule3.compare = fuelSchedule3.nextStartCompare;
-         fuelSchedule3.endCompare = fuelSchedule3.nextEndCompare;
-         fuelSchedule3.Status = Schedule::PENDING;
-         fuelSchedule3.schedulesSet = 1;
-         fuelSchedule3.hasNextSchedule = false;
-       }
-       else { fuelSchedule3.disable(); }
-    }
+    fuelScheduleInterrupt(fuelSchedule3);
   }
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
@@ -196,31 +171,7 @@ ISR(TIMER4_COMPB_vect) //fuelSchedule4
 static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (fuelSchedule4.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-    {
-      //fuelSchedule4.StartCallback();
-      openInjector4();
-      fuelSchedule4.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      fuelSchedule4.compare = fuelSchedule4.counter + uS_TO_TIMER_COMPARE(fuelSchedule4.duration); //Doing this here prevents a potential overflow on restarts
-    }
-    else if (fuelSchedule4.Status == Schedule::RUNNING)
-    {
-       //fuelSchedule4.EndCallback();
-       closeInjector4();
-       fuelSchedule4.Status = Schedule::OFF; //Turn off the schedule
-       fuelSchedule4.schedulesSet = 0;
-
-       //If there is a next schedule queued up, activate it
-       if(fuelSchedule4.hasNextSchedule == true)
-       {
-         fuelSchedule4.compare = fuelSchedule4.nextStartCompare;
-         fuelSchedule4.endCompare = fuelSchedule4.nextEndCompare;
-         fuelSchedule4.Status = Schedule::PENDING;
-         fuelSchedule4.schedulesSet = 1;
-         fuelSchedule4.hasNextSchedule = false;
-       }
-       else { fuelSchedule4.disable(); }
-    }
+    fuelScheduleInterrupt(fuelSchedule4);
   }
 
 #if (INJ_CHANNELS >= 5)
@@ -230,29 +181,7 @@ ISR(TIMER1_COMPC_vect) //fuelSchedule5
 static inline void fuelSchedule5Interrupt() //Most ARM chips can simply call a function
 #endif
 {
-  if (fuelSchedule5.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-  {
-    openInjector5();
-    fuelSchedule5.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-    fuelSchedule5.compare = fuelSchedule5.endCompare;
-  }
-  else if (fuelSchedule5.Status == Schedule::RUNNING)
-  {
-     closeInjector5();
-     fuelSchedule5.Status = Schedule::OFF; //Turn off the schedule
-     fuelSchedule5.schedulesSet = 0;
-
-     //If there is a next schedule queued up, activate it
-     if(fuelSchedule5.hasNextSchedule == true)
-     {
-       fuelSchedule4.compare = fuelSchedule5.nextStartCompare;
-       fuelSchedule5.endCompare = fuelSchedule5.nextEndCompare;
-       fuelSchedule5.Status = Schedule::PENDING;
-       fuelSchedule5.schedulesSet = 1;
-       fuelSchedule5.hasNextSchedule = false;
-     }
-     else { fuelSchedule5.disable(); }
-  }
+    fuelScheduleInterrupt(fuelSchedule5);
 }
 #endif
 
@@ -263,31 +192,7 @@ ISR(TIMER4_COMPA_vect) //fuelSchedule6
 static inline void fuelSchedule6Interrupt() //Most ARM chips can simply call a function
 #endif
 {
-  if (fuelSchedule6.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-  {
-    //fuelSchedule4.StartCallback();
-    openInjector6();
-    fuelSchedule6.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-    fuelSchedule6.compare = fuelSchedule6.endCompare;
-  }
-  else if (fuelSchedule6.Status == Schedule::RUNNING)
-  {
-     //fuelSchedule4.EndCallback();
-     closeInjector6();
-     fuelSchedule6.Status = Schedule::OFF; //Turn off the schedule
-     fuelSchedule6.schedulesSet = 0;
-
-     //If there is a next schedule queued up, activate it
-     if(fuelSchedule6.hasNextSchedule == true)
-     {
-       fuelSchedule6.compare = fuelSchedule6.nextStartCompare;
-       fuelSchedule6.endCompare = fuelSchedule6.nextEndCompare;
-       fuelSchedule6.Status = Schedule::PENDING;
-       fuelSchedule6.schedulesSet = 1;
-       fuelSchedule6.hasNextSchedule = false;
-     }
-     else { fuelSchedule6.disable(); }
-  }
+    fuelScheduleInterrupt(fuelSchedule6);
 }
 #endif
 
@@ -298,29 +203,7 @@ ISR(TIMER5_COMPC_vect) //fuelSchedule7
 static inline void fuelSchedule7Interrupt() //Most ARM chips can simply call a function
 #endif
 {
-  if (fuelSchedule7.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-  {
-    openInjector7();
-    fuelSchedule7.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-    fuelSchedule7.compare = fuelSchedule7.endCompare;
-  }
-  else if (fuelSchedule7.Status == Schedule::RUNNING)
-  {
-     closeInjector7();
-     fuelSchedule7.Status = Schedule::OFF; //Turn off the schedule
-     fuelSchedule7.schedulesSet = 0;
-
-     //If there is a next schedule queued up, activate it
-     if(fuelSchedule7.hasNextSchedule == true)
-     {
-       fuelSchedule7.compare = fuelSchedule7.nextStartCompare;
-       fuelSchedule7.endCompare = fuelSchedule7.nextEndCompare;
-       fuelSchedule7.Status = Schedule::PENDING;
-       fuelSchedule7.schedulesSet = 1;
-       fuelSchedule7.hasNextSchedule = false;
-     }
-     else { fuelSchedule7.disable(); }
-  }
+    fuelScheduleInterrupt(fuelSchedule7);
 }
 #endif
 
@@ -331,31 +214,7 @@ ISR(TIMER5_COMPB_vect) //fuelSchedule8
 static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a function
 #endif
 {
-  if (fuelSchedule8.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-  {
-    //fuelSchedule4.StartCallback();
-    openInjector8();
-    fuelSchedule8.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-    fuelSchedule8.compare = fuelSchedule8.endCompare;
-  }
-  else if (fuelSchedule8.Status == Schedule::RUNNING)
-  {
-     //fuelSchedule4.EndCallback();
-     closeInjector8();
-     fuelSchedule8.Status = Schedule::OFF; //Turn off the schedule
-     fuelSchedule8.schedulesSet = 0;
-
-     //If there is a next schedule queued up, activate it
-     if(fuelSchedule8.hasNextSchedule == true)
-     {
-       fuelSchedule8.compare = fuelSchedule8.nextStartCompare;
-       fuelSchedule8.endCompare = fuelSchedule8.nextEndCompare;
-       fuelSchedule8.Status = Schedule::PENDING;
-       fuelSchedule8.schedulesSet = 1;
-       fuelSchedule8.hasNextSchedule = false;
-     }
-     else { fuelSchedule8.disable(); }
-  }
+    fuelScheduleInterrupt(fuelSchedule8);
 }
 #endif
 
@@ -366,30 +225,7 @@ ISR(TIMER5_COMPA_vect) //ignitionSchedule1
 static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule1.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule1.StartCallback();
-      ignitionSchedule1.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule1.startTime = micros();
-      if(ignitionSchedule1.endScheduleSetByDecoder == true) { ignitionSchedule1.compare = ignitionSchedule1.endCompare; }
-      else { ignitionSchedule1.compare = ignitionSchedule1.counter + uS_TO_TIMER_COMPARE(ignitionSchedule1.duration); } //Doing this here prevents a potential overflow on restarts
-    }
-    else if (ignitionSchedule1.Status == Schedule::RUNNING)
-    {
-      ignitionSchedule1.EndCallback();
-      //   *ign1_pin_port &= ~(ign1_pin_mask);
-      ignitionSchedule1.Status = Schedule::OFF; //Turn off the schedule
-      ignitionSchedule1.schedulesSet = 0;
-      ignitionSchedule1.hasNextSchedule = false;
-      ignitionSchedule1.endScheduleSetByDecoder = false;
-      ignitionCount += 1; //Increment the igintion counter
-      ignitionSchedule1.disable();
-    }
-    else if (ignitionSchedule1.Status == Schedule::OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      ignitionSchedule1.disable();
-    }
+    ignitionScheduleInterrupt(ignitionSchedule1);
   }
 #endif
 
@@ -400,28 +236,7 @@ ISR(TIMER5_COMPB_vect) //ignitionSchedule2
 static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule2.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule2.StartCallback();
-      ignitionSchedule2.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule2.startTime = micros();
-      if(ignitionSchedule2.endScheduleSetByDecoder == true) { ignitionSchedule2.compare = ignitionSchedule2.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { ignitionSchedule2.compare = ignitionSchedule2.counter + uS_TO_TIMER_COMPARE(ignitionSchedule2.duration); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
-    }
-    else if (ignitionSchedule2.Status == Schedule::RUNNING)
-    {
-      ignitionSchedule2.Status = Schedule::OFF; //Turn off the schedule
-      ignitionSchedule2.EndCallback();
-      ignitionSchedule2.schedulesSet = 0;
-      ignitionSchedule2.endScheduleSetByDecoder = false;
-      ignitionCount += 1; //Increment the igintion counter
-      ignitionSchedule2.disable();
-    }
-    else if (ignitionSchedule2.Status == Schedule::OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      ignitionSchedule2.disable();
-    }
+    ignitionScheduleInterrupt(ignitionSchedule2);
   }
 #endif
 
@@ -432,38 +247,7 @@ ISR(TIMER5_COMPC_vect) //ignitionSchedule3
 static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule3.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule3.StartCallback();
-      ignitionSchedule3.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule3.startTime = micros();
-      if(ignitionSchedule3.endScheduleSetByDecoder == true) { ignitionSchedule3.compare = ignitionSchedule3.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { ignitionSchedule3.compare = ignitionSchedule3.counter + uS_TO_TIMER_COMPARE(ignitionSchedule3.duration); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
-    }
-    else if (ignitionSchedule3.Status == Schedule::RUNNING)
-    {
-       ignitionSchedule3.Status = Schedule::OFF; //Turn off the schedule
-       ignitionSchedule3.EndCallback();
-       ignitionSchedule3.schedulesSet = 0;
-       ignitionSchedule3.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the igintion counter
-
-       //If there is a next schedule queued up, activate it
-       if(ignitionSchedule3.hasNextSchedule == true)
-       {
-         ignitionSchedule3.compare = ignitionSchedule3.nextStartCompare;
-         ignitionSchedule3.endCompare = ignitionSchedule3.nextEndCompare;
-         ignitionSchedule3.Status = Schedule::PENDING;
-         ignitionSchedule3.schedulesSet = 1;
-         ignitionSchedule3.hasNextSchedule = false;
-       }
-       else { ignitionSchedule3.disable(); }
-    }
-    else if (ignitionSchedule3.Status == Schedule::OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      ignitionSchedule3.disable();
-    }
+    ignitionScheduleInterrupt(ignitionSchedule3);
   }
 #endif
 
@@ -474,37 +258,7 @@ ISR(TIMER4_COMPA_vect) //ignitionSchedule4
 static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule4.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule4.StartCallback();
-      ignitionSchedule4.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule4.startTime = micros();
-      ignitionSchedule4.compare = ignitionSchedule4.counter + uS_TO_TIMER_COMPARE(ignitionSchedule4.duration); //Doing this here prevents a potential overflow on restarts
-    }
-    else if (ignitionSchedule4.Status == Schedule::RUNNING)
-    {
-       ignitionSchedule4.Status = Schedule::OFF; //Turn off the schedule
-       ignitionSchedule4.EndCallback();
-       ignitionSchedule4.schedulesSet = 0;
-       ignitionSchedule4.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the igintion counter
-
-       //If there is a next schedule queued up, activate it
-       if(ignitionSchedule4.hasNextSchedule == true)
-       {
-         ignitionSchedule4.compare = ignitionSchedule4.nextStartCompare;
-         ignitionSchedule4.endCompare = ignitionSchedule4.nextEndCompare;
-         ignitionSchedule4.Status = Schedule::PENDING;
-         ignitionSchedule4.schedulesSet = 1;
-         ignitionSchedule4.hasNextSchedule = false;
-       }
-       else { ignitionSchedule4.disable(); }
-    }
-    else if (ignitionSchedule4.Status == Schedule::OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      ignitionSchedule4.disable();
-    }
+    ignitionScheduleInterrupt(ignitionSchedule4);
   }
 #endif
 
@@ -515,22 +269,7 @@ ISR(TIMER1_COMPC_vect) //ignitionSchedule5
 static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule5.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule5.StartCallback();
-      ignitionSchedule5.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule5.startTime = micros();
-      ignitionSchedule5.compare = ignitionSchedule5.counter + uS_TO_TIMER_COMPARE(ignitionSchedule5.duration); //Doing this here prevents a potential overflow on restarts
-    }
-    else if (ignitionSchedule5.Status == Schedule::RUNNING)
-    {
-       ignitionSchedule5.Status = Schedule::OFF; //Turn off the schedule
-       ignitionSchedule5.EndCallback();
-       ignitionSchedule5.schedulesSet = 0;
-       ignitionSchedule5.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the igintion counter
-       ignitionSchedule5.disable();
-    }
+    ignitionScheduleInterrupt(ignitionSchedule5);
   }
 #endif
 
@@ -541,22 +280,7 @@ ISR(TIMER1_COMPC_vect) //ignitionSchedule6  NOT CORRECT!!!
 static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule6.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule6.StartCallback();
-      ignitionSchedule6.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule6.startTime = micros();
-      ignitionSchedule6.compare = ignitionSchedule6.counter + uS_TO_TIMER_COMPARE(ignitionSchedule6.duration); //Doing this here prevents a potential overflow on restarts
-    }
-    else if (ignitionSchedule6.Status == Schedule::RUNNING)
-    {
-       ignitionSchedule6.Status = Schedule::OFF; //Turn off the schedule
-       ignitionSchedule6.EndCallback();
-       ignitionSchedule6.schedulesSet = 0;
-       ignitionSchedule6.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the igintion counter
-       ignitionSchedule6.disable();
-    }
+    ignitionScheduleInterrupt(ignitionSchedule6);
   }
 #endif
 
@@ -567,22 +291,7 @@ ISR(TIMER1_COMPC_vect) //ignitionSchedule6  NOT CORRECT!!!
 static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule7.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule7.StartCallback();
-      ignitionSchedule7.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule7.startTime = micros();
-      ignitionSchedule7.compare = ignitionSchedule7.counter + uS_TO_TIMER_COMPARE(ignitionSchedule7.duration); //Doing this here prevents a potential overflow on restarts
-    }
-    else if (ignitionSchedule7.Status == Schedule::RUNNING)
-    {
-       ignitionSchedule7.Status = Schedule::OFF; //Turn off the schedule
-       ignitionSchedule7.EndCallback();
-       ignitionSchedule7.schedulesSet = 0;
-       ignitionSchedule7.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the igintion counter
-       ignitionSchedule7.disable();
-    }
+    ignitionScheduleInterrupt(ignitionSchedule7);
   }
 #endif
 
@@ -593,22 +302,7 @@ ISR(TIMER1_COMPC_vect) //ignitionSchedule8  NOT CORRECT!!!
 static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule8.Status == Schedule::PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule8.StartCallback();
-      ignitionSchedule8.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule8.startTime = micros();
-      ignitionSchedule8.compare = ignitionSchedule8.counter + uS_TO_TIMER_COMPARE(ignitionSchedule8.duration); //Doing this here prevents a potential overflow on restarts
-    }
-    else if (ignitionSchedule8.Status == Schedule::RUNNING)
-    {
-       ignitionSchedule8.Status = Schedule::OFF; //Turn off the schedule
-       ignitionSchedule8.EndCallback();
-       ignitionSchedule8.schedulesSet = 0;
-       ignitionSchedule8.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the igintion counter
-       ignitionSchedule8.disable();
-    }
+    ignitionScheduleInterrupt(ignitionSchedule8);
   }
 #endif
 
