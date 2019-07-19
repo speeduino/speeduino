@@ -11,10 +11,42 @@ A full copy of the license may be found in the projects root directory
 
 void initialiseSchedulers()
 {
+    // Are the four lanes below needed?
     ignitionSchedule1.enable();
     ignitionSchedule2.enable();
     ignitionSchedule3.enable();
     ignitionSchedule4.enable();
+
+    if (configPage2.injLayout == INJ_SEMISEQUENTIAL)
+    {
+      fuelSchedule1.StartCallback = openInjector1and4;
+      fuelSchedule1.EndCallback   = closeInjector1and4;
+      fuelSchedule2.StartCallback = openInjector2and3;
+      fuelSchedule2.EndCallback   = closeInjector2and3;
+    }
+    else
+    {
+      fuelSchedule1.StartCallback = openInjector1;
+      fuelSchedule1.EndCallback   = closeInjector1;
+      fuelSchedule2.StartCallback = openInjector2;
+      fuelSchedule2.EndCallback   = closeInjector2;
+    }
+
+    fuelSchedule3.StartCallback = openInjector3;
+    fuelSchedule3.EndCallback   = closeInjector3;
+    fuelSchedule4.StartCallback = openInjector4;
+    fuelSchedule4.EndCallback   = closeInjector4;
+
+    //Note the hacky use of fuel schedule 3 below
+    fuelSchedule5.StartCallback = openInjector3and5;
+    fuelSchedule5.EndCallback   = closeInjector3and5;
+
+    fuelSchedule6.StartCallback = openInjector6;
+    fuelSchedule6.EndCallback   = closeInjector6;
+    fuelSchedule7.StartCallback = openInjector7;
+    fuelSchedule7.EndCallback   = closeInjector7;
+    fuelSchedule8.StartCallback = openInjector8;
+    fuelSchedule8.EndCallback   = closeInjector8;
 }
 
 /*
@@ -28,12 +60,10 @@ endCallback: This function is called once the duration time has been reached
 */
 
 //Experimental new generic function
-void Schedule::setSchedule(void (*_startCallback)(), uint32_t _timeout, uint32_t _duration, void(*_endCallback)())
+void Schedule::setSchedule(uint32_t _timeout, uint32_t _duration)
 {
   if(Status != Schedule::RUNNING) //Check that we're not already part way through a schedule
   {
-    StartCallback = _startCallback;
-    EndCallback = _endCallback;
     duration = uS_TO_TIMER_COMPARE(_duration);
 
     //Need to check that the timeout doesn't exceed the overflow
@@ -76,60 +106,64 @@ static inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
 
 static inline void fuelScheduleInterrupt(Schedule& fuelSchedule)
 {
-  if (fuelSchedule.Status == Schedule::PENDING) //Check to see if this schedule is turn on
+  switch(fuelSchedule.Status)
   {
-    fuelSchedule.StartCallback();
+  case Schedule::PENDING: //Check to see if this schedule is turn on
+    if (fuelSchedule.StartCallback) { fuelSchedule.StartCallback(); }
     fuelSchedule.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     fuelSchedule.timer.compare = fuelSchedule.timer.counter + fuelSchedule.duration; //Doing this here prevents a potential overflow on restarts
-  }
-  else if (fuelSchedule.Status == Schedule::RUNNING)
-  {
-      fuelSchedule.EndCallback();
-      fuelSchedule.Status = Schedule::OFF; //Turn off the schedule
-      fuelSchedule.schedulesSet = 0;
+    break;
 
-      //If there is a next schedule queued up, activate it
-      if(fuelSchedule.hasNextSchedule == true)
-      {
-        fuelSchedule.timer.compare = fuelSchedule.nextStartCompare;
-        fuelSchedule.duration = fuelSchedule.nextDuration;
-        fuelSchedule.Status = Schedule::PENDING;
-        fuelSchedule.schedulesSet = 1;
-        fuelSchedule.hasNextSchedule = false;
-      }
-      else { fuelSchedule.disable(); }
-  }
-  else if (fuelSchedule.Status == Schedule::OFF)
-  {
+  case Schedule::RUNNING:
+    if (fuelSchedule.EndCallback) { fuelSchedule.EndCallback(); }
+    fuelSchedule.Status = Schedule::OFF; //Turn off the schedule
+    fuelSchedule.schedulesSet = 0;
+
+    //If there is a next schedule queued up, activate it
+    if(fuelSchedule.hasNextSchedule == true)
+    {
+      fuelSchedule.timer.compare = fuelSchedule.nextStartCompare;
+      fuelSchedule.duration = fuelSchedule.nextDuration;
+      fuelSchedule.Status = Schedule::PENDING;
+      fuelSchedule.schedulesSet = 1;
+      fuelSchedule.hasNextSchedule = false;
+    }
+    else { fuelSchedule.disable(); }
+    break;
+
+  default:
     //Safety check. Turn off this output compare unit and return without performing any action
     fuelSchedule.disable();
+    break;
   }
 }
 
 static inline void ignitionScheduleInterrupt(Schedule& ignitionSchedule)
 {
-  if (ignitionSchedule.Status == Schedule::PENDING) //Check to see if this schedule is turn on
+  switch (ignitionSchedule.Status)
   {
-    ignitionSchedule.StartCallback();
+  case Schedule::PENDING: //Check to see if this schedule is turn on
+    if (ignitionSchedule.StartCallback) { ignitionSchedule.StartCallback(); }
     ignitionSchedule.Status = Schedule::RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     ignitionSchedule.startTime = micros();
     if(ignitionSchedule.endScheduleSetByDecoder == true) { ignitionSchedule.timer.compare = ignitionSchedule.endCompare; }
     else { ignitionSchedule.timer.compare = ignitionSchedule.timer.counter + ignitionSchedule.duration; } //Doing this here prevents a potential overflow on restarts
-  }
-  else if (ignitionSchedule.Status == Schedule::RUNNING)
-  {
-    ignitionSchedule.EndCallback();
+    break;
+
+  case Schedule::RUNNING:
+    if (ignitionSchedule.EndCallback) { ignitionSchedule.EndCallback(); }
     ignitionSchedule.Status = Schedule::OFF; //Turn off the schedule
     ignitionSchedule.schedulesSet = 0;
     ignitionSchedule.hasNextSchedule = false;
     ignitionSchedule.endScheduleSetByDecoder = false;
     ignitionCount += 1; //Increment the igintion counter
     ignitionSchedule.disable();
-  }
-  else if (ignitionSchedule.Status == Schedule::OFF)
-  {
+    break;
+
+  default:
     //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
     ignitionSchedule.disable();
+    break;
   }
 }
 

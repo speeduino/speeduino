@@ -79,26 +79,4 @@ uint16_t staged_req_fuel_mult_pri;
 uint16_t staged_req_fuel_mult_sec;
 ///@}
 
-/** @name IgnitionCallbacks
- * These are the function pointers that get called to begin and end the ignition coil charging. They are required for the various spark output modes
-*/
-///@{
-void (*ign1StartFunction)();
-void (*ign1EndFunction)();
-void (*ign2StartFunction)();
-void (*ign2EndFunction)();
-void (*ign3StartFunction)();
-void (*ign3EndFunction)();
-void (*ign4StartFunction)();
-void (*ign4EndFunction)();
-void (*ign5StartFunction)();
-void (*ign5EndFunction)();
-void (*ign6StartFunction)();
-void (*ign6EndFunction)();
-void (*ign7StartFunction)();
-void (*ign7EndFunction)();
-void (*ign8StartFunction)();
-void (*ign8EndFunction)();
-///@}
-
 #endif

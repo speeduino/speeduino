@@ -60,10 +60,10 @@ void closeInjector7() {*inj7_pin_port &= ~(inj7_pin_mask);}
 void openInjector8() {*inj8_pin_port |= (inj8_pin_mask);}
 void closeInjector8() {*inj8_pin_port &= ~(inj8_pin_mask);}
 
-void openInjector1andMaybe4() {openInjector1(); if (configPage2.injLayout == INJ_SEMISEQUENTIAL) openInjector4();}
-void closeInjector1andMaybe4() {closeInjector1(); if (configPage2.injLayout == INJ_SEMISEQUENTIAL) closeInjector4();}
-void openInjector2andMaybe3() {openInjector2(); if (configPage2.injLayout == INJ_SEMISEQUENTIAL) openInjector3();}
-void closeInjector2andMaybe3() {closeInjector2(); if (configPage2.injLayout == INJ_SEMISEQUENTIAL) closeInjector3();}
+void openInjector1and4() {openInjector1(); openInjector4();}
+void closeInjector1and4() {closeInjector1(); closeInjector4();}
+void openInjector2and3() {openInjector2(); openInjector3();}
+void closeInjector2and3() {closeInjector2(); closeInjector3();}
 
 //5 cylinder support doubles up injector 3 as being closese to inj 5 (Crank angle)
 void openInjector3and5() {openInjector3(); openInjector5();}

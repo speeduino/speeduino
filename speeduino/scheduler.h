@@ -118,7 +118,7 @@ public:
   }
   void enable() { timer.enableRegister |= timer.enableBitMask; }
   void disable() { timer.enableRegister &= ~timer.enableBitMask; }
-  void setSchedule(void (*_startCallback)(), uint32_t _timeout, uint32_t _duration, void(*_endCallBack)());
+  void setSchedule(uint32_t _timeout, uint32_t _duration);
   void interrupt();
 };
 
