@@ -121,17 +121,4 @@ static inline unsigned long micros_safe()
 } 
 #endif //TIMER5_MICROS
 
-// Those are not needed anymore
-#undef TIMER_PRESCALER_OFF
-#undef TIMER_PRESCALER_1
-#undef TIMER_PRESCALER_8
-#undef TIMER_PRESCALER_64
-#undef TIMER_PRESCALER_256
-#undef TIMER_PRESCALER_1024
-
-#undef TIMER_MODE_NORMAL
-#undef TIMER_MODE_PWM
-#undef TIMER_MODE_CTC
-#undef TIMER_MODE_FASTPWM
-
 #endif //CORE_AVR

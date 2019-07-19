@@ -854,7 +854,7 @@ static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a f
 
 #if (INJ_CHANNELS >= 5)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER1_COMPC_vect) //fuelSchedule5
+ISR(TIMER4_COMPC_vect) //fuelSchedule5
 #else
 static inline void fuelSchedule5Interrupt() //Most ARM chips can simply call a function
 #endif
@@ -1139,7 +1139,7 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
 
 #if IGN_CHANNELS >= 5
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER1_COMPC_vect) //ignitionSchedule5
+ISR(TIMER4_COMPC_vect) //ignitionSchedule5
 #else
 static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call a function
 #endif
@@ -1165,7 +1165,7 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
 
 #if IGN_CHANNELS >= 6
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER1_COMPC_vect) //ignitionSchedule6  NOT CORRECT!!!
+ISR(TIMER4_COMPC_vect) //ignitionSchedule6  NOT CORRECT!!!
 #else
 static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call a function
 #endif
@@ -1191,7 +1191,7 @@ static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call
 
 #if IGN_CHANNELS >= 7
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER1_COMPC_vect) //ignitionSchedule6  NOT CORRECT!!!
+ISR(TIMER4_COMPC_vect) //ignitionSchedule6  NOT CORRECT!!!
 #else
 static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call a function
 #endif
@@ -1217,7 +1217,7 @@ static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call
 
 #if IGN_CHANNELS >= 8
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER1_COMPC_vect) //ignitionSchedule8  NOT CORRECT!!!
+ISR(TIMER4_COMPC_vect) //ignitionSchedule8  NOT CORRECT!!!
 #else
 static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call a function
 #endif
