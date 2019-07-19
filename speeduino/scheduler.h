@@ -76,8 +76,6 @@ static inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute
 #endif
 #endif
 
-
-
 class Schedule {
 
 #if defined(CORE_AVR)
