@@ -1,6 +1,7 @@
 #include <iostream>
 #include <gtest/gtest.h>
 #include <list>
+#include <type_traits>
 
 #include "speeduino.cpp"
 
@@ -314,6 +315,20 @@ TEST(SpeeduinoScheduleTests, ScheduleTest2)
   FUEL1_COUNTER = FUEL1_COMPARE;
   TIMER3_COMPA_vect();
   EXPECT_EQ(OFF, fuelSchedule1.Status);
+}
+
+TEST(SpeeduinoScheduleTests, TypeTraits)
+{
+  // Expecting no class overhead
+  EXPECT_EQ(true, std::is_standard_layout<table2D>());
+  EXPECT_EQ(true, std::is_standard_layout<table3D>());
+  EXPECT_EQ(true, std::is_standard_layout<Schedule>());
+
+  EXPECT_EQ(true, std::is_standard_layout<config2>());
+  EXPECT_EQ(true, std::is_standard_layout<config4>());
+  EXPECT_EQ(true, std::is_standard_layout<config6>());
+  EXPECT_EQ(true, std::is_standard_layout<config9>());
+  EXPECT_EQ(true, std::is_standard_layout<config10>());
 }
 
 int main(int pArgCount, char *pArgValues[])

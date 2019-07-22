@@ -4,7 +4,7 @@ pio_output="../speeduino/speeduino.ino.cpp"
 my_output="src/speeduino.cpp"
 
 #start platformio compilation
-cd ../ && platformio run -e megaatmega2560 >/dev/null &
+cd ../ && python -m platformio run -e megaatmega2560 >/dev/null &
 
 #wait until the cpp file is created by platformio
 while ! test -f $pio_output; do
