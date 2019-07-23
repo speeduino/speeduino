@@ -273,7 +273,7 @@ void command()
       break;
 
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
-      if(currentStatus.toothLogEnabled == true) { sendToothLog(false); } //Sends tooth log values as ints
+      if(currentStatus.toothLogEnabled == true) { sendToothLog(); } //Sends tooth log values as ints
       else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(); }
 
       break;
@@ -416,7 +416,7 @@ void command()
       break;
 
     case 'z': //Send 256 tooth log entries to a terminal emulator
-      sendToothLog(true); //Sends tooth log values as chars
+      sendToothLog(); //Sends tooth log values as chars
       break;
 
     case '`': //Custom 16u2 firmware is making its presence known
@@ -1695,7 +1695,7 @@ Send 256 tooth log entries
  * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
  * if useChar is false, the values are sent as a 2 byte integer which is readable by TunerStudios tooth logger
 */
-void sendToothLog(bool useChar)
+void sendToothLog()
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
