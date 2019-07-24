@@ -63,7 +63,7 @@ bool set_constants(float reqFuel, unsigned nCylinders, unsigned nSquirts, bool a
     return true;
 }
 
-TEST(SpeeduinoInitTests, ConfigUpdates)
+TEST(SpeeduinoTests, ConfigUpdates)
 {
 //    EEPROM.write(0, 2); // this line make the tests crash
     setup();
@@ -317,9 +317,9 @@ TEST(SpeeduinoScheduleTests, ScheduleTest2)
   EXPECT_EQ(OFF, fuelSchedule1.Status);
 }
 
-TEST(SpeeduinoScheduleTests, TypeTraits)
+TEST(SpeeduinoTests, TypeTraits)
 {
-  // Expecting no class overhead
+  // Expecting no class overhead over C counterpart
   EXPECT_EQ(true, std::is_standard_layout<table2D>());
   EXPECT_EQ(true, std::is_standard_layout<table3D>());
   EXPECT_EQ(true, std::is_standard_layout<Schedule>());
@@ -329,6 +329,81 @@ TEST(SpeeduinoScheduleTests, TypeTraits)
   EXPECT_EQ(true, std::is_standard_layout<config6>());
   EXPECT_EQ(true, std::is_standard_layout<config9>());
   EXPECT_EQ(true, std::is_standard_layout<config10>());
+}
+
+TEST(SpeeduinoTests, Table2dGetValue)
+{
+  const int tableSize = 8;
+  table2D table;
+
+  table.axisX = nullptr;
+  table.values = nullptr;
+  table.valueSize = SIZE_BYTE;
+
+  initialisationComplete = false;
+  table2D_setSize(&table, tableSize);
+
+  ASSERT_NE(nullptr, table.axisX);
+  ASSERT_NE(nullptr, table.values);
+
+  for(int i = 0; i < tableSize; i++)
+  {
+    table.axisX[i] = i*10;
+    table.values[i] = i*10;
+  }
+
+  EXPECT_EQ(0,  table2D_getValue(&table, -10));
+  EXPECT_EQ(0,  table2D_getValue(&table,   0));
+  EXPECT_EQ(10, table2D_getValue(&table,  10));
+  EXPECT_EQ(35, table2D_getValue(&table,  35));
+  EXPECT_EQ(70, table2D_getValue(&table,  70));
+  EXPECT_EQ(70, table2D_getValue(&table,  80));
+
+}
+
+TEST(SpeeduinoTests, Table3dGetValue)
+{
+  const int tableSize = 8;
+  table3D table;
+
+  table.axisX = nullptr;
+  table.axisY = nullptr;
+  table.values = nullptr;
+
+  initialisationComplete = false;
+  table3D_setSize(&table, tableSize);
+
+  ASSERT_NE(nullptr, table.axisX);
+  ASSERT_NE(nullptr, table.axisY);
+  ASSERT_NE(nullptr, table.values);
+
+  for(int i = 0; i < tableSize; i++)
+  {
+    table.axisX[i] = i*10;
+    table.axisY[tableSize-i-1] = i*10;
+    for(int j = 0; j < tableSize; j++) table.values[tableSize-j-1][i] = i + j;
+  }
+
+  EXPECT_EQ(0, get3DTableValue(&table, -10, 0));
+  EXPECT_EQ(0, get3DTableValue(&table,   0, 0));
+  EXPECT_EQ(1, get3DTableValue(&table,  10, 0));
+  EXPECT_EQ(3, get3DTableValue(&table,  35, 0));
+  EXPECT_EQ(7, get3DTableValue(&table,  70, 0));
+  EXPECT_EQ(7, get3DTableValue(&table,  80, 0));
+
+  EXPECT_EQ(0, get3DTableValue(&table, 0, -10));
+  EXPECT_EQ(0, get3DTableValue(&table, 0,   0));
+  EXPECT_EQ(1, get3DTableValue(&table, 0,  10));
+  EXPECT_EQ(3, get3DTableValue(&table, 0,  35));
+  EXPECT_EQ(7, get3DTableValue(&table, 0,  70));
+  EXPECT_EQ(7, get3DTableValue(&table, 0,  80));
+
+  EXPECT_EQ(0,  get3DTableValue(&table, -10, -10));
+  EXPECT_EQ(0,  get3DTableValue(&table,   0,   0));
+  EXPECT_EQ(2,  get3DTableValue(&table,  10,  10));
+  EXPECT_EQ(7,  get3DTableValue(&table,  35,  35));
+  EXPECT_EQ(14, get3DTableValue(&table,  70,  70));
+  EXPECT_EQ(14, get3DTableValue(&table,  80,  80));
 }
 
 int main(int pArgCount, char *pArgValues[])
