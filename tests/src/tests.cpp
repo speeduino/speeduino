@@ -380,30 +380,34 @@ TEST(SpeeduinoTests, Table3dGetValue)
   for(int i = 0; i < tableSize; i++)
   {
     table.axisX[i] = i*10;
-    table.axisY[tableSize-i-1] = i*10;
-    for(int j = 0; j < tableSize; j++) table.values[tableSize-j-1][i] = i + j;
+    table.axisY[tableSize-1-i] = i*10;
+    for(int j = 0; j < tableSize; j++)
+    {
+      table.values[tableSize-1-j][i] = i + j*10;
+    }
   }
 
-  EXPECT_EQ(0, get3DTableValue(&table, -10, 0));
-  EXPECT_EQ(0, get3DTableValue(&table,   0, 0));
-  EXPECT_EQ(1, get3DTableValue(&table,  10, 0));
-  EXPECT_EQ(3, get3DTableValue(&table,  35, 0));
-  EXPECT_EQ(7, get3DTableValue(&table,  70, 0));
-  EXPECT_EQ(7, get3DTableValue(&table,  80, 0));
+  //                            table   Y    X
+  EXPECT_EQ(0,  get3DTableValue(&table, 0, -10));
+  EXPECT_EQ(0,  get3DTableValue(&table, 0,   0));
+  EXPECT_EQ(1,  get3DTableValue(&table, 0,  10));
+  EXPECT_EQ(3,  get3DTableValue(&table, 0,  35));
+  EXPECT_EQ(7,  get3DTableValue(&table, 0,  70));
+  EXPECT_EQ(7,  get3DTableValue(&table, 0,  80));
 
-  EXPECT_EQ(0, get3DTableValue(&table, 0, -10));
-  EXPECT_EQ(0, get3DTableValue(&table, 0,   0));
-  EXPECT_EQ(1, get3DTableValue(&table, 0,  10));
-  EXPECT_EQ(3, get3DTableValue(&table, 0,  35));
-  EXPECT_EQ(7, get3DTableValue(&table, 0,  70));
-  EXPECT_EQ(7, get3DTableValue(&table, 0,  80));
+  EXPECT_EQ(0,  get3DTableValue(&table, -10, 0));
+  EXPECT_EQ(0,  get3DTableValue(&table,   0, 0));
+  EXPECT_EQ(10, get3DTableValue(&table,  10, 0));
+  EXPECT_EQ(35, get3DTableValue(&table,  35, 0));
+  EXPECT_EQ(70, get3DTableValue(&table,  70, 0));
+  EXPECT_EQ(70, get3DTableValue(&table,  80, 0));
 
   EXPECT_EQ(0,  get3DTableValue(&table, -10, -10));
   EXPECT_EQ(0,  get3DTableValue(&table,   0,   0));
-  EXPECT_EQ(2,  get3DTableValue(&table,  10,  10));
-  EXPECT_EQ(7,  get3DTableValue(&table,  35,  35));
-  EXPECT_EQ(14, get3DTableValue(&table,  70,  70));
-  EXPECT_EQ(14, get3DTableValue(&table,  80,  80));
+  EXPECT_EQ(11, get3DTableValue(&table,  10,  10));
+  EXPECT_EQ(38, get3DTableValue(&table,  35,  35));
+  EXPECT_EQ(77, get3DTableValue(&table,  70,  70));
+  EXPECT_EQ(77, get3DTableValue(&table,  80,  80));
 }
 
 int main(int pArgCount, char *pArgValues[])
