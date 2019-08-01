@@ -267,7 +267,7 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
     else
     //If it's not caught by one of the above scenarios, give up and just run the loop
     {
-      for (byte x = fromTable->xSize-1; x >= 0; x--)
+      for (int8_t x = fromTable->xSize-1; x >= 0; x--)
       {
         //Checks the case where the X value is exactly what was requested
         if ( (X == fromTable->axisX[x]) || (x == 0) )
@@ -336,7 +336,7 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
     //If it's not caught by one of the above scenarios, give up and just run the loop
     {
 
-      for (byte y = fromTable->ySize-1; y >= 0; y--)
+      for (int8_t y = fromTable->ySize-1; y >= 0; y--)
       {
         //Checks the case where the Y value is exactly what was requested
         if ( (Y == fromTable->axisY[y]) || (y==0) )
