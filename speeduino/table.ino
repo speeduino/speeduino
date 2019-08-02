@@ -19,7 +19,9 @@ void table2D_setSize(struct table2D* targetTable, byte newSize)
     //2D tables can contain either bytes or ints, depending on the value of the valueSize field
     if(targetTable->valueSize == SIZE_BYTE)
     {
-      targetTable->values = (byte *)realloc(targetTable->values, newSize * sizeof(byte));
+      //The following lines have MISRA suppressions as realloc is otherwise forbidden. These calls have been verified as unable to be executed from anywhere but controlled areas. 
+      //cppcheck-suppress misra-21.3
+      targetTable->values = (byte *)realloc(targetTable->values, newSize * sizeof(byte)); //cppcheck-suppress misra_21.3
       targetTable->axisX = (byte *)realloc(targetTable->axisX, newSize * sizeof(byte));
       targetTable->xSize = newSize;
     }
@@ -187,7 +189,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
       */
 
       //Non-Float version
-      int yVal;
+      uint16_t yVal;
       if (fromTable->valueSize == SIZE_BYTE)
       {
          //Byte version
@@ -217,7 +219,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
 
 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
-//It performs a 2D linear interpolation as descibred in: http://www.megamanual.com/v22manual/ve_tuner.pdf
+//It performs a 2D linear interpolation as descibred in: www.megamanual.com/v22manual/ve_tuner.pdf
 int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
   {
     int X = X_in;
@@ -267,7 +269,7 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
     else
     //If it's not caught by one of the above scenarios, give up and just run the loop
     {
-      for (byte x = fromTable->xSize-1; x >= 0; x--)
+      for (int8_t x = fromTable->xSize-1; x >= 0; x--)
       {
         //Checks the case where the X value is exactly what was requested
         if ( (X == fromTable->axisX[x]) || (x == 0) )
@@ -336,7 +338,7 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
     //If it's not caught by one of the above scenarios, give up and just run the loop
     {
 
-      for (byte y = fromTable->ySize-1; y >= 0; y--)
+      for (int8_t y = fromTable->ySize-1; y >= 0; y--)
       {
         //Checks the case where the Y value is exactly what was requested
         if ( (Y == fromTable->axisY[y]) || (y==0) )
@@ -391,11 +393,11 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
 
       //Initial check incase the values were hit straight on
 
-      long p = (long)X - xMinValue;
+      unsigned long p = (long)X - xMinValue;
       if (xMaxValue == xMinValue) { p = (p << 8); }  //This only occurs if the requested X value was equal to one of the X axis bins
       else { p = ( (p << 8) / (xMaxValue - xMinValue) ); } //This is the standard case
 
-      long q;
+      unsigned long q;
       if (yMaxValue == yMinValue)
       {
         q = (long)Y - yMinValue;
