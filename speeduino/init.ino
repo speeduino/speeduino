@@ -1686,6 +1686,9 @@ void setPinMapping(byte boardID)
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
 
+  //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
+  if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
+
   inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
   inj1_pin_mask = digitalPinToBitMask(pinInjector1);
   inj2_pin_port = portOutputRegister(digitalPinToPort(pinInjector2));
