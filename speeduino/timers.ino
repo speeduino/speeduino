@@ -84,7 +84,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
   else if(tachoOutputFlag == ACTIVE)
   {
     //If the tacho output is already active, check whether it's reached it's end time
-    if((uint8_t)ms_counter >= tachoEndTime)
+    if((uint8_t)ms_counter == tachoEndTime)
     {
       TACHO_PULSE_HIGH();
       tachoOutputFlag = DEACTIVE;

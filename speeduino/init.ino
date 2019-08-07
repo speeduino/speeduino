@@ -1442,6 +1442,51 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
+    case 45:
+    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+      //Pin mappings for the DIY-EFI CORE4 Module
+      pinInjector1 = 10; //Output pin injector 1 is on
+      pinInjector2 = 11; //Output pin injector 2 is on
+      pinInjector3 = 12; //Output pin injector 3 is on
+      pinInjector4 = 9; //Output pin injector 4 is on
+      pinCoil1 = 39; //Pin for coil 1
+      pinCoil2 = 29; //Pin for coil 2
+      pinCoil3 = 28; //Pin for coil 3
+      pinCoil4 = 27; //Pin for coil 4
+      pinCoil4 = 26; //Placeholder  for coil 5
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinFlex = 20; // Flex sensor
+      pinTPS = A3; //TPS input pin
+      pinMAP = A2; //MAP sensor pin
+      pinBaro = A15; //Baro sensor pin
+      pinIAT = A11; //IAT sensor pin
+      pinCLT = A4; //CLS sensor pin
+      pinO2 = A12; //O2 Sensor pin
+      pinO2_2 = A13; //O2 sensor pin (second sensor)
+      pinBat = A1; //Battery reference voltage pin
+      pinSpareTemp1 = A14; //spare Analog input 1
+      pinLaunch = 24; //Can be overwritten below
+      pinDisplayReset = 48; // OLED reset pin PLACEHOLDER value for now
+      pinTachOut = 38; //Tacho output pin
+      pinIdle1 = 42; //Single wire idle control
+      pinIdle2 = 43; //2 wire idle control
+      pinFuelPump = 41; //Fuel pump output
+      pinVVT_1 = 44; //Default VVT output
+      pinStepperDir = 32; //Direction pin  for DRV8825 driver
+      pinStepperStep = 31; //Step pin for DRV8825 driver
+      pinStepperEnable = 30; //Enable pin for DRV8825 driver
+      pinBoost = 45; //Boost control
+      pinSpareLOut1 = 37; //low current output spare1
+      pinSpareLOut2 = 36; //low current output spare2
+      pinSpareLOut3 = 35; //low current output spare3
+      pinSpareLOut4 = 34; //low current output spare4
+      pinSpareLOut5 = 33; //low current output spare4
+      pinFan = 40; //Pin for the fan output
+      pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+    #endif
+      break;
+
     #if defined(CORE_TEENSY)
     case 50:
       //Pin mappings as per the teensy rev A shield
@@ -1640,6 +1685,9 @@ void setPinMapping(byte boardID)
   pinMode(pinStepperEnable, OUTPUT);
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
+
+  //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
+  if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
 
   inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
   inj1_pin_mask = digitalPinToBitMask(pinInjector1);

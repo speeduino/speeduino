@@ -519,7 +519,7 @@ struct config2 {
   //config3 in ini
   byte engineType : 1;
   byte flexEnabled : 1;
-  byte unused2_38c : 1; //"Speed Density", "Alpha-N"
+  byte legacyMAP  : 1;
   byte baroCorr : 1;
   byte injLayout : 2;
   byte perToothIgn : 1;
