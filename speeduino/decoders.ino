@@ -1941,6 +1941,12 @@ void triggerSec_Miata9905()
     secondaryToothCount++;
 
     //TODO Add some secondary filtering here
+
+    //Record the VVT tooth time
+    if( (toothCurrentCount == 1) && (curTime2 > toothLastToothTime) )
+    {
+      lastVVTtime = curTime2 - toothLastToothTime;
+    }
   }
 }
 
