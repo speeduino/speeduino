@@ -146,7 +146,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
     #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)|| defined(CORE_STM32) || defined (CORE_TEENSY) //ATmega2561 does not have Serial3
       if (offset == 0)
         {
-          if (cmd == 0x30 {CANSerial.write("A");}         // confirm command type
+          if (cmd == 0x30) {CANSerial.write("A");}         // confirm command type
           else
              {
               CANSerial.write("n");                       // confirm command type
