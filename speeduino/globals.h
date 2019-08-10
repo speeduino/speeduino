@@ -221,6 +221,10 @@
 #define OPEN_LOOP_BOOST     0
 #define CLOSED_LOOP_BOOST   1
 
+
+#define VVT_MODE_ONOFF      0
+#define VVT_MODE_OPEN_LOOP  1
+#define VVT_MODE_CLOSED_LOOP 2
 #define VVTCL_LOAD_MAP      0
 #define VVTCL_LOAD_TPS      1
 
@@ -461,6 +465,7 @@ struct statuses {
   bool toothLogEnabled;
   bool compositeLogEnabled;
   byte vvtAngle;
+  byte targetVVTAngle;
 
 };
 struct statuses currentStatus; //The global status object
