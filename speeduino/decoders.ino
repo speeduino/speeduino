@@ -634,7 +634,7 @@ void triggerSetEndTeeth_DualWheel()
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Basic Distributor
 Desc: Tooth equal to the number of cylinders are evenly spaced on the cam. No position sensing (Distributor is retained) so crank angle is a made up figure based purely on the first teeth to be seen
-Note: This is a very simple decoder. See http://www.megamanual.com/ms2/GM_7pinHEI.htm
+Note: This is a very simple decoder. See www.megamanual.com/ms2/GM_7pinHEI.htm
 */
 void triggerSetup_BasicDistributor()
 {
@@ -662,11 +662,11 @@ void triggerPri_BasicDistributor()
   {
     if( (toothCurrentCount == triggerActualTeeth) || (currentStatus.hasSync == false) ) //Check if we're back to the beginning of a revolution
     {
-       toothCurrentCount = 1; //Reset the counter
-       toothOneMinusOneTime = toothOneTime;
-       toothOneTime = curTime;
-       currentStatus.hasSync = true;
-       currentStatus.startRevolutions++; //Counter
+      toothCurrentCount = 1; //Reset the counter
+      toothOneMinusOneTime = toothOneTime;
+      toothOneTime = curTime;
+      currentStatus.hasSync = true;
+      currentStatus.startRevolutions++; //Counter
     }
     else
     {
@@ -779,7 +779,7 @@ void triggerSetEndTeeth_BasicDistributor()
 Name: GM7X
 Desc: GM 7X trigger wheel. It has six equally spaced teeth and a seventh tooth for cylinder identification.
 Note: Within the code below, the sync tooth is referred to as tooth #3 rather than tooth #7. This makes for simpler angle calculations
-https://speeduino.com/forum/download/file.php?id=4743
+www.speeduino.com/forum/download/file.php?id=4743
 */
 void triggerSetup_GM7X()
 {
@@ -914,7 +914,7 @@ void triggerSetEndTeeth_GM7X()
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Mitsubishi 4G63 / NA/NB Miata + MX-5 / 4/2
 Desc: TBA
-Note: https://raw.githubusercontent.com/noisymime/speeduino/master/reference/wiki/decoders/4g63_trace.png
+Note: raw.githubusercontent.com/noisymime/speeduino/master/reference/wiki/decoders/4g63_trace.png
 Tooth #1 is defined as the next crank tooth after the crank signal is HIGH when the cam signal is falling.
 Tooth number one is at 355* ATDC
 */
@@ -965,21 +965,6 @@ void triggerSetup_4G63()
 
     triggerActualTeeth = 8;
   }
-  /*
-   * https://forums.libreems.org/attachment.php?aid=34
-  toothAngles[0] = 715; //Falling edge of tooth #1
-  toothAngles[1] = 49;  //Falling edge of wide cam
-  toothAngles[2] = 105; //Rising edge of tooth #2
-  toothAngles[3] = 175; //Falling edge of tooth #2
-  toothAngles[4] = 229; //Rising edge of narrow cam tooth (??)
-  toothAngles[5] = 285; //Rising edge of tooth #3
-  toothAngles[6] = 319; //Falling edge of narrow cam tooth
-  toothAngles[7] = 355; //falling edge of tooth #3
-  toothAngles[8] = 465; //Rising edge of tooth #4
-  toothAngles[9] = 535; //Falling edge of tooth #4
-  toothAngles[10] = 535; //Rising edge of wide cam tooth
-  toothAngles[11] = 645; //Rising edge of tooth #1
-   */
 
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
@@ -1365,7 +1350,7 @@ void triggerSetEndTeeth_4G63()
 Name: GM
 Desc: TBA
 Note: Useful references:
-http://www.vems.hu/wiki/index.php?page=MembersPage%2FJorgenKarlsson%2FTwentyFourX
+www.vems.hu/wiki/index.php?page=MembersPage%2FJorgenKarlsson%2FTwentyFourX
 Provided that the cam signal is used, this decoder simply counts the teeth and then looks their angles up against a lookup table. The cam signal is used to determine tooth #1
 */
 void triggerSetup_24X()
@@ -1488,7 +1473,7 @@ Name: Jeep 2000
 Desc: For '91 to 2000 6 cylinder Jeep engines
 Note: Quite similar to the 24X setup. 24 crank teeth over 720 degrees, in groups of 4. Crank wheel is high for 360 crank degrees. AS we only need timing within 360 degrees, only 12 tooth angles are defined.
 Tooth number 1 represents the first tooth seen after the cam signal goes high
-http://speeduino.com/forum/download/file.php?id=205
+www.speeduino.com/forum/download/file.php?id=205
 */
 void triggerSetup_Jeep2000()
 {
@@ -1808,7 +1793,7 @@ void triggerSetEndTeeth_HondaD17()
 
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Miata '99 to '05
-Desc: TBA (See: http://forum.diyefi.org/viewtopic.php?f=56&t=1077)
+Desc: TBA (See: www.forum.diyefi.org/viewtopic.php?f=56&t=1077)
 Note: 4x 70 degree duration teeth running at cam speed. Believed to be at the same angles as the 4g63 decoder
 Tooth #1 is defined as the next crank tooth after the crank signal is HIGH when the cam signal is falling.
 Tooth number one is at 355* ATDC
@@ -1956,6 +1941,12 @@ void triggerSec_Miata9905()
     secondaryToothCount++;
 
     //TODO Add some secondary filtering here
+
+    //Record the VVT tooth time
+    if( (toothCurrentCount == 1) && (curTime2 > toothLastToothTime) )
+    {
+      lastVVTtime = curTime2 - toothLastToothTime;
+    }
   }
 }
 
@@ -2290,7 +2281,7 @@ void triggerSetEndTeeth_non360()
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Nissan 360 tooth with cam
 Desc:
-Note: https://wiki.r31skylineclub.com/index.php/Crank_Angle_Sensor
+Note: wiki.r31skylineclub.com/index.php/Crank_Angle_Sensor
 */
 void triggerSetup_Nissan360()
 {
@@ -2767,7 +2758,7 @@ void triggerSetEndTeeth_Subaru67()
 /* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Name: Daihatsu +1 trigger for 3 and 4 cylinder engines
 Desc: Tooth equal to the number of cylinders are evenly spaced on the cam. No position sensing (Distributor is retained) so crank angle is a made up figure based purely on the first teeth to be seen
-Note: This is a very simple decoder. See http://www.megamanual.com/ms2/GM_7pinHEI.htm
+Note: This is a very simple decoder. See www.megamanual.com/ms2/GM_7pinHEI.htm
 */
 void triggerSetup_Daihatsu()
 {
@@ -3070,7 +3061,7 @@ void triggerSetEndTeeth_Harley()
 /*
 Name: 36-2-2-2 trigger wheel wheel
 Desc: A crank based trigger with a nominal 36 teeth, but 6 of these removed in 3 groups of 2. 2 of these groups are located concurrently.
-Note: http://thefactoryfiveforum.com/attachment.php?attachmentid=34279&d=1412431418
+Note: www.thefactoryfiveforum.com/attachment.php?attachmentid=34279&d=1412431418
 */
 void triggerSetup_ThirtySixMinus222()
 {
