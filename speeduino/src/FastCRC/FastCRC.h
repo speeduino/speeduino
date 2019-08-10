@@ -136,10 +136,10 @@ class FastCRC32
 {
 public:
   FastCRC32();
-  uint32_t crc32(const uint8_t *data, const uint16_t datalen);		// Alias CRC-32/ADCCP, PKZIP, Ethernet, 802.3
+  uint32_t crc32(const uint8_t *data, const uint16_t datalen, bool reflect=true);		// Alias CRC-32/ADCCP, PKZIP, Ethernet, 802.3
   uint32_t cksum(const uint8_t *data, const uint16_t datalen);		// Alias CRC-32/POSIX
 
-  uint32_t crc32_upd(const uint8_t *data, uint16_t len);			// Call for subsequent calculations with previous seed
+  uint32_t crc32_upd(const uint8_t *data, uint16_t len, bool reflect=true);			// Call for subsequent calculations with previous seed
   uint32_t cksum_upd(const uint8_t *data, uint16_t len);			// Call for subsequent calculations with previous seed
 #if !CRC_SW
   uint32_t generic(const uint32_t polyom, const uint32_t seed, const uint32_t flags, const uint8_t *data, const uint16_t datalen); //Not available in non-hw-variant (not T3.x)

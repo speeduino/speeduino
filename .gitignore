@@ -12,6 +12,7 @@ reference/hardware/v0.2/~$schematic v0.2_bom.xlsx
 reference/hardware/v0.4/gerbers/Archive.zip
 
 .pioenvs
+.pio
 .piolibdeps
 .clang_complete
 .gcc-flags.json
@@ -22,3 +23,5 @@ reference/hardware/v0.4/gerbers/Archive.zip
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/.browse.c_cpp.db*
+speeduino/board_samd21*
+reference/doxygen

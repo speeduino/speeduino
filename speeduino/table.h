@@ -31,7 +31,8 @@ struct table2D {
   byte cacheTime; //TRacks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
 };
 
-void table2D_setSize(struct table2D targetTable, byte newSize);
+//void table2D_setSize(struct table2D targetTable, byte newSize);
+void table2D_setSize(struct table2D, byte);
 
 struct table3D {
 
@@ -49,7 +50,8 @@ struct table3D {
   byte lastYMax, lastYMin;
 };
 
-void table3D_setSize(struct table3D *targetTable, byte newSize);
+//void table3D_setSize(struct table3D *targetTable, byte);
+void table3D_setSize(struct table3D *targetTable, byte);
 
 /*
 3D Tables have an origin (0,0) in the top left hand corner. Vertical axis is expressed first.

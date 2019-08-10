@@ -25,6 +25,7 @@ static inline int8_t correctionFixedTiming(int8_t);
 static inline int8_t correctionCrankingFixedTiming(int8_t);
 static inline int8_t correctionFlexTiming(int8_t);
 static inline int8_t correctionIATretard(int8_t);
+static inline int8_t correctionCLTadvance(int8_t);
 static inline int8_t correctionSoftRevLimit(int8_t);
 static inline int8_t correctionNitrous(int8_t);
 static inline int8_t correctionSoftLaunch(int8_t);
@@ -34,5 +35,9 @@ static inline int8_t correctionKnock(int8_t);
 uint16_t correctionsDwell(uint16_t dwell);
 
 uint16_t AFRnextCycle;
+unsigned long knockStartTime;
+byte lastKnockCount;
+int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
+int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
 
 #endif // CORRECTIONS_H

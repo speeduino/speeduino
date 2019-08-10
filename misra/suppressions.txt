@@ -1,0 +1,6 @@
+misra_10.4
+misra_5.4
+MISRA_16_4:misra-suppressions1-test.c
+MISRA.16.6:misra-suppressions1-test.c
+MISRA_4_1:misra-suppressions2-test.c
+MISRA.19_2:misra-suppressions2-test.c

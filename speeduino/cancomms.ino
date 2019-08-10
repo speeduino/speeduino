@@ -10,6 +10,11 @@ can_command is called when a command is received over serial3 from the Can inter
 It parses the command and calls the relevant function
 sendcancommand is called when a comman d is to be sent via serial3 to the Can interface
 */
+#include "globals.h"
+#include "cancomms.h"
+#include "maths.h"
+#include "errors.h"
+#include "utils.h"
 
 void canCommand()
 {
@@ -20,10 +25,6 @@ void canCommand()
     case 'A': // sends the bytes of realtime values from the CAN list
         sendcanValues(0, CAN_PACKET_SIZE, 0x30, 1); //send values to serial3
         break;
-
-    //case 'A': // send x bytes of realtime values from the TS list
-    //  sendValues(0, SERIAL_PACKET_SIZE, 0x30, 3);   //send values to serial0
-    //  break;
 
     case 'G': // this is the reply command sent by the Can interface
        byte destcaninchannel;
@@ -107,11 +108,11 @@ void canCommand()
       break;
 
     case 's': // send the "a" stream code version
-      CANSerial.write("Speeduino csx02018.7");
+      CANSerial.print(F("Speeduino csx02018.7"));
        break;
 
     case 'S': // send code version
-      CANSerial.write("Speeduino 2018.7-dev");
+      CANSerial.print(F("Speeduino 2018.7-dev"));
       break;
       
     case 'Q': // send code version
@@ -164,7 +165,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[13] = currentStatus.wueCorrection; //Warmup enrichment (%)
   fullStatus[14] = lowByte(currentStatus.RPM); //rpm HB
   fullStatus[15] = highByte(currentStatus.RPM); //rpm LB
-  fullStatus[16] = currentStatus.TAEamount; //acceleration enrichment (%)
+  fullStatus[16] = currentStatus.AEamount; //acceleration enrichment (%)
   fullStatus[17] = currentStatus.corrections; //Total GammaE (%)
   fullStatus[18] = currentStatus.VE; //Current VE 1 (%)
   fullStatus[19] = currentStatus.afrTarget;

@@ -3,8 +3,8 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
-#include "auxiliaries.h"
 #include "globals.h"
+#include "auxiliaries.h"
 #include "maths.h"
 #include "src/PID_v1/PID_v1.h"
 
@@ -32,15 +32,19 @@ void fanControl()
   {
     int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
     int offTemp = onTemp - configPage6.fanHyster;
+    bool fanPermit = false;
 
-    if ( currentStatus.coolant >= onTemp )
+    if ( configPage2.fanWhenOff ) { fanPermit = true; }
+    else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
+
+    if ( currentStatus.coolant >= onTemp && fanPermit )
     {
       //Fan needs to be turned on. Checked for normal or inverted fan signal
       if( configPage6.fanInv == 0 ) { FAN_PIN_HIGH(); }
       else { FAN_PIN_LOW(); }
       currentStatus.fanOn = true;
     }
-    else if ( currentStatus.coolant <= offTemp )
+    else if ( currentStatus.coolant <= offTemp || !fanPermit )
     {
       //Fan needs to be turned off. Checked for normal or inverted fan signal
       if( configPage6.fanInv == 0 ) { FAN_PIN_LOW(); } 
@@ -52,30 +56,6 @@ void fanControl()
 
 void initialiseAuxPWM()
 {
-  #if defined(CORE_AVR)
-    TCCR1B = 0x00;          //Disbale Timer1 while we set it up
-    TCNT1  = 0;             //Reset Timer Count
-    TIFR1  = 0x00;          //Timer1 INT Flag Reg: Clear Timer Overflow Flag
-    TCCR1A = 0x00;          //Timer1 Control Reg A: Wave Gen Mode normal (Simply counts up from 0 to 65535 (16-bit int)
-    TCCR1B = (1 << CS12);   //Timer1 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS. Refer to http://www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
-  #elif defined(CORE_TEENSY)
-    //FlexTimer 1 is used for boost and VVT. There are 8 channels on this module
-    FTM1_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
-    FTM1_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
-    FTM1_MODE |= FTM_MODE_INIT;
-    FTM1_SC |= FTM_SC_CLKS(0b1); // Set internal clocked
-    FTM1_SC |= FTM_SC_PS(0b111); //Set prescaler to 128 (2.1333uS tick time)
-
-    //Enable each compare channel individually
-    FTM1_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-    FTM1_C0SC |= FTM_CSC_MSA; //Enable Compare mode
-    FTM1_C0SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-    FTM1_C1SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-    FTM1_C1SC |= FTM_CSC_MSA; //Enable Compare mode
-    FTM1_C1SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
-
-  #endif
-
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
   boost_pin_mask = digitalPinToBitMask(pinBoost);
   vvt_pin_port = portOutputRegister(digitalPinToPort(pinVVT_1));
@@ -87,16 +67,13 @@ void initialiseAuxPWM()
   n2o_arming_pin_port = portInputRegister(digitalPinToPort(configPage10.n2o_arming_pin));
   n2o_arming_pin_mask = digitalPinToBitMask(configPage10.n2o_arming_pin);
 
-  if(configPage10.n2o_pin_polarity == 1) { pinMode(configPage10.n2o_arming_pin, INPUT_PULLUP); }
-  else { pinMode(configPage10.n2o_arming_pin, INPUT); }
-
-  #if defined(CORE_STM32) || defined(CORE_TEENSY) //2uS resolution Min 8Hz, Max 5KHz
-    boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
-    vvt_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
-  #else
-    boost_pwm_max_count = 1000000L / (16 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
-    vvt_pwm_max_count = 1000000L / (16 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
-  #endif
+  if(configPage10.n2o_enable > 0)
+  {
+    //The pin modes are only set if the if n2o is enabled to prevent them conflicting with other outputs. 
+    if(configPage10.n2o_pin_polarity == 1) { pinMode(configPage10.n2o_arming_pin, INPUT_PULLUP); }
+    else { pinMode(configPage10.n2o_arming_pin, INPUT); }
+  }
+  
   ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
 
   boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
@@ -105,13 +82,6 @@ void initialiseAuxPWM()
 
   currentStatus.boostDuty = 0;
   boostCounter = 0;
-  #if defined(CORE_STM32) //Need to be initialised last due to instant interrupt
-    Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
-    Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
-    if(boost_pwm_max_count > 0) { Timer1.attachInterrupt(2, boostInterrupt);}
-    if(vvt_pwm_max_count > 0) { Timer1.attachInterrupt(3, vvtInterrupt);}
-    Timer1.resume();
-  #endif
 
   currentStatus.nitrous_status = NITROUS_OFF;
 
@@ -235,6 +205,7 @@ void nitrousControl()
     //Perform the main checks to see if nitrous is ready
     if( (isArmed == true) && (currentStatus.coolant > (configPage10.n2o_minCLT - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.TPS > configPage10.n2o_minTPS) && (currentStatus.O2 < configPage10.n2o_maxAFR) && (currentStatus.MAP < configPage10.n2o_maxMAP) )
     {
+      //Config page values are divided by 100 to fit within a byte. Multiply them back out to real values. 
       uint16_t realStage1MinRPM = (uint16_t)configPage10.n2o_stage1_minRPM * 100;
       uint16_t realStage1MaxRPM = (uint16_t)configPage10.n2o_stage1_maxRPM * 100;
       uint16_t realStage2MinRPM = (uint16_t)configPage10.n2o_stage2_minRPM * 100;
@@ -280,7 +251,7 @@ void boostDisable()
 //The interrupt to control the Boost PWM
 #if defined(CORE_AVR)
   ISR(TIMER1_COMPA_vect)
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
   static inline void boostInterrupt() //Most ARM chips can simply call a function
 #endif
 {
@@ -302,7 +273,7 @@ void boostDisable()
 //The interrupt to control the VVT PWM
 #if defined(CORE_AVR)
   ISR(TIMER1_COMPB_vect)
-#elif defined (CORE_TEENSY) || defined(CORE_STM32)
+#else
   static inline void vvtInterrupt() //Most ARM chips can simply call a function
 #endif
 {
