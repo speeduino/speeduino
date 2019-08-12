@@ -23,6 +23,7 @@ void writeAllConfig()
   if (eepromWritesPending == false) { writeConfig(seqFuelPage); }
   if (eepromWritesPending == false) { writeConfig(canbusPage); }
   if (eepromWritesPending == false) { writeConfig(warmupPage); }
+  if (eepromWritesPending == false) { writeConfig(fuelMap2Page); }
 }
 
 
@@ -397,15 +398,15 @@ void writeConfig(byte tableNum)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
         offset = x - EEPROM_CONFIG11_MAP;
-        EEPROM.update(x, fuelTable2.values[15-(offset/16)][offset%16]); writeCounter++; //Write the 16x16 map
+        if( EEPROM.read(x) != (fuelTable2.values[15-(offset/16)][offset%16]) ) { EEPROM.write(x, fuelTable2.values[15-(offset/16)][offset%16]); writeCounter++; }  //Write the 16x16 map
       }
 
       //RPM bins
       for(int x=EEPROM_CONFIG11_XBINS; x<EEPROM_CONFIG11_YBINS; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG1_XBINS;
-        EEPROM.update(x, byte(fuelTable2.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; //RPM bins are divided by 100 and converted to a byte
+        offset = x - EEPROM_CONFIG11_XBINS;
+        if( EEPROM.read(x) != (byte(fuelTable2.axisX[offset]/TABLE_RPM_MULTIPLIER)) ) { EEPROM.write(x, byte(fuelTable2.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
       }
       //TPS/MAP bins
       for(int x=EEPROM_CONFIG11_YBINS; x<EEPROM_CONFIG11_END; x++)
@@ -422,6 +423,7 @@ void writeConfig(byte tableNum)
     default:
       break;
   }
+
 }
 
 void loadConfig()

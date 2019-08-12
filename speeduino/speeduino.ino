@@ -19,7 +19,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #ifndef UNIT_TEST  // Scope guard for unit testing
 
-#include <stdint.h> //https://developer.mbed.org/handbook/C-Data-Types
+#include <stdint.h> //developer.mbed.org/handbook/C-Data-Types
 //************************************************
 #include "globals.h"
 #include "speeduino.h"
@@ -132,6 +132,7 @@ void loop()
       VVT_PIN_LOW();
       DISABLE_VVT_TIMER();
       boostDisable();
+      if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
     }
 
     //***Perform sensor reads***
@@ -286,6 +287,7 @@ void loop()
     currentStatus.VE = getVE();
 
     //If the secondary fuel table is in use, also get the VE value from there
+    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Clear the bit indicating that the 2nd fuel table is in use. 
     if(configPage10.fuel2Mode > 0)
     { 
       currentStatus.VE2 = getVE2();
@@ -293,7 +295,9 @@ void loop()
       if(configPage10.fuel2Mode == FUEL2_MODE_MULTIPLY)
       {
         //Fuel 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
-        totalVE = ((uint16_t)currentStatus.VE * (uint16_t)currentStatus.VE2) / 100;
+        uint16_t combinedVE = ((uint16_t)currentStatus.VE * (uint16_t)currentStatus.VE2) / 100;
+        if(combinedVE <= 255) { totalVE = combinedVE; }
+        else { totalVE = 255; }
       }
       else if(configPage10.fuel2Mode == FUEL2_MODE_ADD)
       {
@@ -302,7 +306,14 @@ void loop()
         if(combinedVE <= 255) { totalVE = combinedVE; }
         else { totalVE = 255; }
       }
-      else if(configPage10.fuel2Mode == FUEL2_MODE_SWITCH)
+      else if(configPage10.fuel2Mode == FUEL2_MODE_CONDITIONAL_SWITCH )
+      {
+        if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_RPM)
+        {
+
+        }
+      }
+      else if(configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)
       {
 
       }
@@ -463,7 +474,7 @@ void loop()
         configPage2.inj4Ang = configPage2.inj1Ang;
       } 
       unsigned int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
-      //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
+      //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See www.extraefi.co.uk/sequential_fuel.html for more detail
       if(configPage2.inj1Ang > PWdivTimerPerDegree) { injector1StartAngle = configPage2.inj1Ang - ( PWdivTimerPerDegree ); }
       else { injector1StartAngle = configPage2.inj1Ang + CRANK_ANGLE_MAX_INJ - PWdivTimerPerDegree; } //Just incase 
       while(injector1StartAngle > CRANK_ANGLE_MAX_INJ) { injector1StartAngle -= CRANK_ANGLE_MAX_INJ; }
@@ -489,7 +500,6 @@ void loop()
             injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
 
             injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
-            if(injector4StartAngle < 0) {injector4StartAngle += CRANK_ANGLE_MAX_INJ;}
             if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
           }
           break;
@@ -526,7 +536,6 @@ void loop()
             injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
 
             injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
-            if(injector4StartAngle < 0) {injector4StartAngle += CRANK_ANGLE_MAX_INJ;}
             if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
           }
           break;

@@ -10,9 +10,9 @@
 //#define fastDegreesToUS(targetDegrees) ((targetDegrees) * (unsigned long)timePerDegree)
 #define fastDegreesToUS(targetDegrees) (((targetDegrees) * (unsigned long)timePerDegreex16) >> 4)
 //#define fastTimeToAngle(time) (((unsigned long)time * degreesPeruSx2048) / 2048) //Divide by 2048 will be converted at compile time to bitshift
-#define fastTimeToAngle(time) (((unsigned long)time * degreesPeruSx32768) / 32768) //Divide by 32768 will be converted at compile time to bitshift
+#define fastTimeToAngle(time) (((unsigned long)(time) * degreesPeruSx32768) / 32768) //Divide by 32768 will be converted at compile time to bitshift
 
-#define ignitionLimits(angle) ( (((int16_t)angle) >= CRANK_ANGLE_MAX_IGN) ? (angle - CRANK_ANGLE_MAX_IGN) : ( (angle < 0) ? (angle + CRANK_ANGLE_MAX_IGN) : angle) )
+#define ignitionLimits(angle) ( (((int16_t)(angle)) >= CRANK_ANGLE_MAX_IGN) ? ((angle) - CRANK_ANGLE_MAX_IGN) : ( ((int16_t)(angle) < 0) ? ((angle) + CRANK_ANGLE_MAX_IGN) : (angle)) )
 
 
 unsigned long angleToTime(int16_t, byte);

@@ -22,7 +22,7 @@
 #define warmupPage   10 //Config Page 10
 #define fuelMap2Page 11
 
-#define SERIAL_PACKET_SIZE   93 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
+#define SERIAL_PACKET_SIZE   94 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
@@ -46,7 +46,8 @@ const char pageTitles[] PROGMEM //This is being stored in the avr flash instead 
    "\nPg 4 Config\0" //82
    "\nBoost Map\0" //93
    "\nVVT Map\0"//102-No need to put a trailing null because it's the last string and the compliler does it for you.
-   "\nPg 10 Config"
+   "\nPg 10 Config\0"
+   "\n2nd Fuel Map"
   };
 
 void command();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
@@ -57,7 +58,7 @@ void saveConfig();
 void sendPage();
 void sendPageASCII();
 void receiveCalibration(byte);
-void sendToothLog(bool);
+void sendToothLog();
 void testComm();
 void commandButtons();
 byte getPageValue(byte, uint16_t);

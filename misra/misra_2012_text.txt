@@ -94,17 +94,17 @@ No text specified
 Rule 9.5
 No text specified
 Rule 10.1
-No text specified
+Arguments of a conditional operation must be of an essentially boolean type
 Rule 10.2
 No text specified
 Rule 10.3
 No text specified
 Rule 10.4
-No text specified
+The target of an operation must be of an appropriate type
 Rule 10.5
 No text specified
 Rule 10.6
-No text Specified
+An expression should not assign a value to a variable of a narrower or essentially different type
 Rule 10.7
 No text specified
 Rule 10.8
@@ -126,7 +126,7 @@ No text specified
 Rule 11.8
 No text specified
 Rule 11.9
-No text specified
+An integer null pointer shall have no value assigned other than NULL macro
 Rule 12.1
 Advisory - Order of operations within an expression must be explicit. Multiple conditions in a logical operation should have brackets around them.
 Rule 12.2
@@ -166,9 +166,9 @@ No text specified
 Rule 15.5
 Advisory - A function should only have a single return point
 Rule 15.6
-No text specified
+Loops, switch and if/else statements must have brackets around their body
 Rule 15.7
-No text specified
+'else if' statements must terminate with a final 'else'
 Rule 16.1
 No text specified
 Rule 16.2
@@ -232,7 +232,7 @@ Advisory - Use of #undef is not permitted
 Rule 20.6
 No text specified
 Rule 20.7
-No text specified
+Macro expressions must be enclosed in parentheses
 Rule 20.8
 No text specified
 Rule 20.9
@@ -252,7 +252,7 @@ No text specified
 Rule 21.2
 No text specified
 Rule 21.3
-No text specified
+Memory allocation functions (Eg malloc(), talloc() etc) shall not be used
 Rule 21.4
 No text specified
 Rule 21.5
