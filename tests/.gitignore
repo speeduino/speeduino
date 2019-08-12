@@ -3,3 +3,5 @@ myeeprom.bin
 tests
 main
 src/speeduino.cpp
+lib
+include/gtest
