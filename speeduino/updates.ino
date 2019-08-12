@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    12
+  #define CURRENT_DATA_VERSION    13
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -254,10 +254,11 @@ void doUpdates()
     // Req_fuel does not get computed by TS anymore
     const byte& divider = configPage2.nSquirts; // Divider field has been renamed nSquirts
 
-    configPage2.reqFuel = (configPage2.reqFuel * configPage2.nInjectors * divider) / configPage2.nCylinders; // Reset req_fuel at it's "full" value.
+    configPage2.nSquirts = configPage2.nCylinders / divider;
 
-    configPage2.nSquirts = configPage2.nCylinders / divider; // Reset nSquirts at it's real value.
-
+    configPage2.reqFuel *= configPage2.nSquirts;
+    if(configPage2.injTiming) { configPage2.reqFuel /= 2; }
+    
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 13);
   }

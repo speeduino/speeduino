@@ -506,7 +506,7 @@ struct config2 {
   byte displayB2 : 4;
 
   byte reqFuel;       //24
-  byte nSquirts; // was divider;
+  byte nSquirts; // was divider before EEPROM version 13
   byte injTiming : 1;
   byte multiplyMAP : 1;
   byte includeAFR : 1;
