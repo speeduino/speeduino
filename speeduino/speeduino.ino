@@ -287,6 +287,7 @@ void loop()
     currentStatus.VE = getVE();
 
     //If the secondary fuel table is in use, also get the VE value from there
+    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Clear the bit indicating that the 2nd fuel table is in use. 
     if(configPage10.fuel2Mode > 0)
     { 
       currentStatus.VE2 = getVE2();
@@ -305,7 +306,14 @@ void loop()
         if(combinedVE <= 255) { totalVE = combinedVE; }
         else { totalVE = 255; }
       }
-      else if(configPage10.fuel2Mode == FUEL2_MODE_SWITCH)
+      else if(configPage10.fuel2Mode == FUEL2_MODE_CONDITIONAL_SWITCH )
+      {
+        if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_RPM)
+        {
+
+        }
+      }
+      else if(configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)
       {
 
       }

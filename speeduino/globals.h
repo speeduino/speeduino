@@ -137,7 +137,7 @@
 
 #define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
 #define BIT_STATUS3_NITROUS       1
-#define BIT_STATUS3_UNUSED2       2
+#define BIT_STATUS3_FUEL2_ACTIVE  2
 #define BIT_STATUS3_UNUSED3       3
 #define BIT_STATUS3_UNUSED4       4
 #define BIT_STATUS3_NSQUIRTS1     5
@@ -205,7 +205,13 @@
 #define FUEL2_MODE_OFF      0
 #define FUEL2_MODE_MULTIPLY 1
 #define FUEL2_MODE_ADD      2
-#define FUEL2_MODE_SWITCH   3
+#define FUEL2_MODE_CONDITIONAL_SWITCH   3
+#define FUEL2_MODE_INPUT_SWITCH 4
+
+#define FUEL2_CONDITION_RPM 0
+#define FUEL2_CONDITION_MAP 1
+#define FUEL2_CONDITION_TPS 2
+#define FUEL2_CONDITION_ETH 3
 
 #define RESET_CONTROL_DISABLED             0
 #define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
@@ -214,6 +220,13 @@
 
 #define OPEN_LOOP_BOOST     0
 #define CLOSED_LOOP_BOOST   1
+
+
+#define VVT_MODE_ONOFF      0
+#define VVT_MODE_OPEN_LOOP  1
+#define VVT_MODE_CLOSED_LOOP 2
+#define VVTCL_LOAD_MAP      0
+#define VVTCL_LOAD_TPS      1
 
 #define FOUR_STROKE         0
 #define TWO_STROKE          1
@@ -451,6 +464,8 @@ struct statuses {
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
+  byte vvtAngle;
+  byte targetVVTAngle;
 
 };
 struct statuses currentStatus; //The global status object
@@ -663,7 +678,12 @@ struct config6 {
   byte egoKD;
   byte egoTemp; //The temperature above which closed loop functions
   byte egoCount; //The number of ignition cylces per step
-  byte unused6_6;
+  byte vvtMode : 2; //Valid VVT modes are 'on/off', 'open loop' and 'closed loop'
+  byte vvtLoadSource : 2; //Load source for VVT (TPS or MAP)
+  byte vvtCLDir : 1; //VVT direction (advance or retard)
+  byte vvtCLUseHold : 1; //Whether or not to use a hold duty cycle (Most cases are Yes)
+  byte vvtCLAlterFuelTiming : 1;
+  byte unused6_6 : 1;
   byte egoLimit; //Maximum amount the closed loop will vary the fueling
   byte ego_min; //AFR must be above this for closed loop to function
   byte ego_max; //AFR must be below this for closed loop to function
@@ -901,10 +921,18 @@ struct config10 {
 
   //Byte 122
   byte fuel2Algorithm : 3;
-  byte fuel2Mode : 2;
-  byte unused10_122 : 3;
+  byte fuel2Mode : 3;
+  byte fuel2SwitchVariable : 2;
+  uint16_t fuel2SwitchValue;
 
-  byte unused11_123_191[69];
+  byte vvtCLholdDuty;
+  byte vvtCLKP;
+  byte vvtCLKI;
+  byte vvtCLKD;
+  uint16_t vvtCLMinAng;
+  uint16_t vvtCLMaxAng;
+
+  byte unused11_123_191[59];
 
 } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 
