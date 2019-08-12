@@ -150,6 +150,9 @@ volatile uint8_t TCCR1A;
 volatile uint8_t TCCR1B;
 volatile uint8_t TIFR1;
 volatile uint8_t CS12;
+volatile uint8_t WGM01;
+volatile uint8_t WGM00;
+volatile uint8_t TOIE2;
 
 int __heap_start;
 int *__brkval;

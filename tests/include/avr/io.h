@@ -89,3 +89,6 @@ extern volatile uint8_t TCCR1A;
 extern volatile uint8_t TCCR1B;
 extern volatile uint8_t TIFR1;
 extern volatile uint8_t CS12;
+extern volatile uint8_t WGM01;
+extern volatile uint8_t WGM00;
+extern volatile uint8_t TOIE2;
