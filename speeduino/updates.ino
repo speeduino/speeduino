@@ -254,9 +254,9 @@ void doUpdates()
     // Req_fuel does not get computed by TS anymore
     const byte& divider = configPage2.nSquirts; // Divider field has been renamed nSquirts
 
-    configPage2.reqFuel = (configPage2.reqFuel * configPage2.nInjectors * divider) / configPage2.nCylinders;
+    configPage2.reqFuel = (configPage2.reqFuel * configPage2.nInjectors * divider) / configPage2.nCylinders; // Reset req_fuel at it's "full" value.
 
-    configPage2.nSquirts = configPage2.nCylinders / divider;
+    configPage2.nSquirts = configPage2.nCylinders / divider; // Reset nSquirts at it's real value.
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 13);
