@@ -506,7 +506,7 @@ struct config2 {
   byte displayB2 : 4;
 
   byte reqFuel;       //24
-  byte divider;
+  byte nSquirts; // was divider;
   byte injTiming : 1;
   byte multiplyMAP : 1;
   byte includeAFR : 1;

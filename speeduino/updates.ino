@@ -248,6 +248,20 @@ void doUpdates()
     EEPROM.write(EEPROM_DATA_VERSION, 12);
   }
 
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 12)
+  {
+    //August 2019
+    // Req_fuel does not get computed by TS anymore
+    const byte& divider = configPage2.nSquirts; // Divider field has been renamed nSquirts
+
+    configPage2.reqFuel = (configPage2.reqFuel * configPage2.nInjectors * divider) / configPage2.nCylinders;
+
+    configPage2.nSquirts = configPage2.nCylinders / divider;
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 13);
+  }
+
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
   {
