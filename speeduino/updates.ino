@@ -256,9 +256,12 @@ void doUpdates()
 
     configPage2.nSquirts = configPage2.nCylinders / divider;
 
-    configPage2.reqFuel *= configPage2.nSquirts;
-    if(configPage2.injTiming) { configPage2.reqFuel /= 2; }
-    
+    if(configPage2.injLayout != INJ_SEQUENTIAL)
+    {
+      configPage2.reqFuel *= configPage2.nSquirts;
+      configPage2.reqFuel /= 2;
+    }
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 13);
   }
