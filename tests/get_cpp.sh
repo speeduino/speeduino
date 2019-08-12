@@ -6,7 +6,7 @@ my_output="src/speeduino.cpp"
 python -m platformio --version > /dev/null 2>&1
 if [ $? -ne 0 ]; then
   echo "INSTALLING PLATFORMIO..."
-  python -m pip install platformio
+  python -m pip install --user platformio > /dev/null
 
   if [ $? -ne 0 ]; then
     echo "UNABLE TO INSTALL PLATFORMIO, EXITING"
