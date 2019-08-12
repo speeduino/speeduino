@@ -359,8 +359,8 @@ volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming ha
 volatile unsigned int toothHistoryIndex = 0;
 volatile byte toothHistorySerialIndex = 0;
 
-byte primaryTriggerEdge;
-byte secondaryTriggerEdge;
+  byte primaryTriggerEdge;
+  byte secondaryTriggerEdge;
 
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360;
