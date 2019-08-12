@@ -3,6 +3,19 @@ echo "START COMPILATION..."
 pio_output="../speeduino/speeduino.ino.cpp"
 my_output="src/speeduino.cpp"
 
+python -m platformio --version > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "INSTALLING PLATFORMIO..."
+  python -m pip install platformio
+
+  if [ $? -ne 0 ]; then
+    echo "UNABLE TO INSTALL PLATFORMIO, EXITING"
+    exit 1
+  fi
+
+  echo "PLATFORMIO INSTALLED"
+fi
+
 #start platformio compilation
 cd ../ && python -m platformio run -e megaatmega2560 >/dev/null &
 
