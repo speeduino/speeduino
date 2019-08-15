@@ -252,11 +252,13 @@ void doUpdates()
   {
     //August 2019
     // Req_fuel does not get computed by TS anymore
-    const byte& divider = configPage2.nSquirts; // Divider field has been renamed nSquirts
+    configPage2.nSquirts = configPage2.nCylinders / configPage2.nSquirts;
 
-    configPage2.nSquirts = configPage2.nCylinders / divider;
-
-    if(configPage2.injLayout != INJ_SEQUENTIAL)
+    if (configPage2.strokes == TWO_STROKE)
+    {
+      configPage2.reqFuel *= configPage2.nSquirts;
+    }
+    else if (configPage2.injLayout != INJ_SEQUENTIAL)
     {
       configPage2.reqFuel *= configPage2.nSquirts;
       configPage2.reqFuel /= 2;
