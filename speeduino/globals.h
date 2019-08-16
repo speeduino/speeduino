@@ -386,7 +386,7 @@ struct statuses {
   volatile byte status1;
   uint8_t engine;
   uint16_t dwell;
-  long MAP; //Has to be a long for PID calcs (Boost control)
+  uint16_t MAP; //Casted to a long for PID calcs (Boost control) in PID_v1
   int16_t IAT;
   int16_t coolant;
   byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
@@ -395,7 +395,7 @@ struct statuses {
   byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
   byte iatCorrection; /**< The amount of inlet air temperature adjustment currently being applied */
   byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
-  uint16_t RPM;
+  uint16_t RPM; //Casted to a long for PID calcs in PID_v1
   int16_t AEamount; /**< The amount of accleration enrichment currently being applied */
   byte corrections; /**< The total current corrections % amount */
   byte VE; /**< The current VE value being used in the fuel calculation. Can be the same as VE1 or VE2, or a calculated value of both */
@@ -433,10 +433,10 @@ struct statuses {
   byte syncLossCounter;
   byte CLIdleTarget; /**< The target idle RPM (when closed loop idle control is active) */
   byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
-  //int8_t vvtAngle;
-  long vvtAngle;
+  int16_t vvtAngle; //Casted to a long for PID calcs in PID_v1
+  //long vvtAngle; //Sole purpose was for PID_v1. No longer needed.
   volatile bool hasSync;
-  long longRPM;
+  //long longRPM; //Sole purpose was for PID_v1. No longer needed.
   uint16_t mapADC;
   uint16_t baroADC;
   int16_t EMAP;

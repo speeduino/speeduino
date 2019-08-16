@@ -2,6 +2,8 @@
 #define PID_v1_h
 #define LIBRARY_VERSION	1.0.0
 
+#include <stdint.h>
+
 class PID
 {
 
@@ -90,7 +92,7 @@ class integerPID
   #define REVERSE  1
 
   //commonly used functions **************************************************************************
-    integerPID(long*, long*, long*,        // * constructor.  links the PID to the Input, Output, and
+    integerPID(int16_t*, long*, long*,        // * constructor.  links the PID to the Input, Output, and
         byte, byte, byte, byte);     //   Setpoint.  Initial tuning parameters are also set here
 
     void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
@@ -136,7 +138,7 @@ class integerPID
 
 	int controllerDirection;
 
-    long *myInput;              // * Pointers to the Input, Output, and Setpoint variables
+    int16_t *myInput;              // * Pointers to the Input, Output, and Setpoint variables
     long *myOutput;             //   This creates a hard link between the variables and the
     long *mySetpoint;           //   PID, freeing the user from having to constantly tell us
                                   //   what these values are.  with pointers we'll just know.
@@ -163,7 +165,7 @@ class integerPID_ideal
   #define REVERSE  1
 
   //commonly used functions **************************************************************************
-    integerPID_ideal(long*, uint16_t*, uint16_t*, uint16_t*, byte*,        // * constructor.  links the PID to the Input, Output, and
+    integerPID_ideal(int16_t*, uint16_t*, uint16_t*, uint16_t*, byte*,        // * constructor.  links the PID to the Input, Output, and
         byte, byte, byte, byte);     //   Setpoint.  Initial tuning parameters are also set here
 
     bool Compute();                       // * performs the PID calculation.  it should be
@@ -206,7 +208,7 @@ class integerPID_ideal
 
 	int controllerDirection;
 
-    long *myInput;              //
+    int16_t *myInput;              //
     uint16_t *myOutput;         //   This is a percentage figure multipled by 100 (To give 2 points of precision)
     uint16_t *mySetpoint;       //
     uint16_t *mySensitivity;
