@@ -278,20 +278,12 @@ void initialiseAll()
 
     mainLoopCount = 0;
 
-    currentStatus.nSquirts = configPage2.nSquirts; //The number of squirts being requested. This is manaully overriden below for sequential setups (Due to TS req_fuel calc limitations)
+    currentStatus.nSquirts = configPage2.divider; //The number of squirts being requested.
     if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
-    if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
-    {
-      currentStatus.nSquirts = 1;
-      CRANK_ANGLE_MAX_INJ = 720;
-    }
-    else
-    {
-      req_fuel_uS /= currentStatus.nSquirts;
-    }
+    req_fuel_uS /= currentStatus.nSquirts;
 
     //Calculate the number of degrees between cylinders
     switch (configPage2.nCylinders) {
@@ -511,9 +503,6 @@ void initialiseAll()
           channel3InjDegrees = 288;
           channel4InjDegrees = 432;
           channel5InjDegrees = 576;
-
-          CRANK_ANGLE_MAX_INJ = 720;
-          currentStatus.nSquirts = 1;
         }
         if (!configPage2.injTiming) 
         { 

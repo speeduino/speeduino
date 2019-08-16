@@ -252,15 +252,17 @@ void doUpdates()
   {
     //August 2019
     // Req_fuel does not get computed by TS anymore
-    configPage2.nSquirts = configPage2.nCylinders / configPage2.nSquirts;
+    configPage2.divider = configPage2.nCylinders / configPage2.divider;
 
-    if (configPage2.strokes == TWO_STROKE)
+    if (configPage2.strokes == FOUR_STROKE && configPage2.injLayout == INJ_SEQUENTIAL)
     {
-      configPage2.reqFuel *= configPage2.nSquirts;
+      configPage2.divider = 1;
     }
-    else if (configPage2.injLayout != INJ_SEQUENTIAL)
+
+    configPage2.reqFuel *= configPage2.divider;
+
+    if (configPage2.strokes == FOUR_STROKE && configPage2.injLayout != INJ_SEQUENTIAL)
     {
-      configPage2.reqFuel *= configPage2.nSquirts;
       configPage2.reqFuel /= 2;
     }
 
