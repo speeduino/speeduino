@@ -837,7 +837,7 @@ void initialiseAll()
     interrupts();
     //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
     readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
-    unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    unsigned long primingValue = table2D_getValue(&PrimingPulseTable, (int)currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     if(primingValue > 0)
     {
       setFuelSchedule1(100, (primingValue * 100 * 5)); //to acheive long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.

@@ -203,12 +203,12 @@ void idleControl()
       if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         //Currently cranking. Use the cranking table
-        currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, (int)currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
       }
       else
       {
         //Standard running
-        currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        currentStatus.idleDuty = table2D_getValue(&iacPWMTable, (int)currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
       }
 
       if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
@@ -227,7 +227,7 @@ void idleControl()
 
     case IAC_ALGORITHM_PWM_CL:    //Case 3 is PWM closed loop
         //No cranking specific value for closed loop (yet?)
-        currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, (int)currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
         if( (idleCounter & 31) == 1) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
 
@@ -254,7 +254,7 @@ void idleControl()
         if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
         {
           //Currently cranking. Use the cranking table
-          idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+          idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (int)currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
           if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
           doStep();
         }
@@ -265,7 +265,7 @@ void idleControl()
           if (((mainLoopCount & 255) == 1) && (currentStatus.RPM > 0))
           {
             //Only do a lookup of the required value around 4 times per second. Any more than this can create too much jitter and require a hyster value that is too high
-            idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+            idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (int)currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
             if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
             iacStepTime = configPage6.iacStepTime * 1000;
             iacCoolTime = configPage9.iacCoolTime * 1000;
@@ -291,7 +291,7 @@ void idleControl()
           iacCoolTime = configPage9.iacCoolTime * 1000;
         }
 
-        currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, (int)currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //All temps are offset by 40 degrees
         if(currentStatus.idleUpActive == true) { idle_pid_target_value += configPage2.idleUpAdder; } //Add Idle Up amount if active
         idlePID.Compute(true);
@@ -440,7 +440,7 @@ static inline void disableIdle()
            disabling idle, since the only time this function is called in this scenario
            is if the engine stops.
         */
-        idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+        idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (int)currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
         if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active?
     }
   }

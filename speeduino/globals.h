@@ -382,97 +382,100 @@ volatile byte LOOP_TIMER;
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
-  volatile bool hasSync;
-  uint16_t RPM;
-  long longRPM;
-  int mapADC;
-  int baroADC;
+  volatile byte secl; /**< Counter incrementing once per second. Will overflow after 255 and begin again. This is used by TunerStudio to maintain comms sync */
+  volatile byte status1;
+  uint8_t engine;
+  uint16_t dwell;
   long MAP; //Has to be a long for PID calcs (Boost control)
-  int16_t EMAP;
-  int16_t EMAPADC;
-  byte baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
-  byte TPS; /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
-  byte tpsADC; /**< 0-255 byte representation of the TPS. Downsampled from the original 10-bit reading, but before any calibration is applied */
-  byte tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Value is divided by 10 to be stored in a byte */
-  byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
-  volatile int rpmDOT;
-  byte VE; /**< The current VE value being used in the fuel calculation. Can be the same as VE1 or VE2, or a calculated value of both */
-  byte VE1; /**< The VE value from fuel table 1 */
-  byte VE2; /**< The VE value from fuel table 2, if in use (and required conditions are met) */
-  byte O2;
-  byte O2_2;
-  int coolant;
-  int cltADC;
-  int IAT;
-  int iatADC;
-  int batADC;
-  int O2ADC;
-  int O2_2ADC;
-  int dwell;
-  byte dwellCorrection; /**< The amount of correction being applied to the dwell time. */
-  byte battery10; /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
-  int8_t advance; /**< Signed 8 bit as advance can now go negative (ATDC) */
-  byte corrections; /**< The total current corrections % amount */
-  int16_t AEamount; /**< The amount of accleration enrichment currently being applied */
-  byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
-  byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
+  int16_t IAT;
+  int16_t coolant;
   byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
+  byte battery10; /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
+  byte O2;
+  byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
   byte iatCorrection; /**< The amount of inlet air temperature adjustment currently being applied */
-  byte launchCorrection; /**< The amount of correction being applied if launch control is active */
+  byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
+  uint16_t RPM;
+  int16_t AEamount; /**< The amount of accleration enrichment currently being applied */
+  byte corrections; /**< The total current corrections % amount */
+  byte VE; /**< The current VE value being used in the fuel calculation. Can be the same as VE1 or VE2, or a calculated value of both */
+  byte afrTarget;
+  uint16_t PW1; //In uS
+  byte tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Value is divided by 10 to be stored in a byte */
+  int8_t advance; /**< Signed 8 bit as advance can now go negative (ATDC) */
+  byte TPS; /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
+  volatile uint32_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
+  uint16_t freeRAM;
+  uint16_t boostTarget;
+  uint16_t boostDuty; //Percentage value * 100 to give 2 points of precision
+  volatile byte spark;
+  volatile int16_t rpmDOT;
+  volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
   byte flexCorrection; /**< Amount of correction being applied to compensate for ethanol content */
   int8_t flexIgnCorrection; /**< Amount of additional advance being applied based on flex. Note the type as this allows for negative values */
-  byte afrTarget;
-  byte idleDuty; /**< The current idle duty cycle amount if PWM idle is selected and active */
-  byte CLIdleTarget; /**< The target idle RPM (when closed loop idle control is active) */
-  bool idleUpActive; /**< Whether the externally controlled idle up is currently active */
-  bool fanOn; /**< Whether or not the fan is turned on */
-  volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
-  unsigned long AEEndTime; /**< The target end time used whenever AE is turned on */
-  volatile byte status1;
-  volatile byte spark;
-  volatile byte spark2;
-  uint8_t engine;
-  unsigned int PW1; //In uS
-  unsigned int PW2; //In uS
-  unsigned int PW3; //In uS
-  unsigned int PW4; //In uS
-  unsigned int PW5; //In uS
-  unsigned int PW6; //In uS
-  unsigned int PW7; //In uS
-  unsigned int PW8; //In uS
-  volatile byte runSecs; /**< Counter of seconds since cranking commenced (overflows at 255 obviously) */
-  volatile byte secl; /**< Counter incrementing once per second. Will overflow after 255 and begin again. This is used by TunerStudio to maintain comms sync */
-  volatile uint32_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
-  bool launchingSoft; /**< Indicator showing whether soft launch control adjustments are active */
-  bool launchingHard; /**< Indicator showing whether hard launch control adjustments are active */
-  uint16_t freeRAM;
-  unsigned int clutchEngagedRPM; /**< The RPM at which the clutch was last depressed. Used for distinguishing between launch control and flat shift */ 
-  bool flatShiftingHard;
-  volatile uint32_t startRevolutions; /**< A counter for how many revolutions have been completed since sync was achieved. */
-  uint16_t boostTarget;
-  byte testOutputs;
-  bool testActive;
-  uint16_t boostDuty; //Percentage value * 100 to give 2 points of precision
   byte idleLoad; /**< Either the current steps or current duty cycle for the idle control. */
+  byte testOutputs;
+  byte O2_2;
+  byte baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
   uint16_t canin[16];   //16bit raw value of selected canin data for channel 0-15
-  uint8_t current_caninchannel = 0; /**< Current CAN channel, defaults to 0 */
-  uint16_t crankRPM = 400; /**< The actual cranking RPM limit. This is derived from the value in the config page, but saves us multiplying it everytime it's used (Config page value is stored divided by 10) */
+  byte tpsADC; /**< 0-255 byte representation of the TPS. Downsampled from the original 10-bit reading, but before any calibration is applied */
+
+  //When currentStatus is being sent down serial the getNextError() result is inserted here.
+
+  uint16_t PW2; //In uS
+  uint16_t PW3; //In uS
+  uint16_t PW4; //In uS
   volatile byte status3;
   int16_t flexBoostCorrection; /**< Amount of boost added based on flex */
-  byte nitrous_status;
-  byte nSquirts;
   byte nChannels; /**< Number of fuel and ignition channels.  */
   int16_t fuelLoad;
-  int16_t fuelLoad2;
   int16_t ignLoad;
-  bool fuelPumpOn; /**< Indicator showing the current status of the fuel pump */
   byte syncLossCounter;
+  byte CLIdleTarget; /**< The target idle RPM (when closed loop idle control is active) */
+  byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
+  //int8_t vvtAngle;
+  long vvtAngle;
+  volatile bool hasSync;
+  long longRPM;
+  uint16_t mapADC;
+  uint16_t baroADC;
+  int16_t EMAP;
+  int16_t EMAPADC;
+  byte VE1; /**< The VE value from fuel table 1 */
+  byte VE2; /**< The VE value from fuel table 2, if in use (and required conditions are met) */
+  uint16_t cltADC;
+  uint16_t iatADC;
+  uint16_t batADC;
+  uint16_t O2ADC;
+  uint16_t O2_2ADC;
+  byte dwellCorrection; /**< The amount of correction being applied to the dwell time. */
+  byte launchCorrection; /**< The amount of correction being applied if launch control is active */
+  byte idleDuty; /**< The current idle duty cycle amount if PWM idle is selected and active */
+  bool idleUpActive; /**< Whether the externally controlled idle up is currently active */
+  bool fanOn; /**< Whether or not the fan is turned on */
+  uint32_t AEEndTime; /**< The target end time used whenever AE is turned on */
+  volatile byte spark2;
+  uint16_t PW5; //In uS
+  uint16_t PW6; //In uS
+  uint16_t PW7; //In uS
+  uint16_t PW8; //In uS
+  volatile byte runSecs; /**< Counter of seconds since cranking commenced (overflows at 255 obviously) */
+  bool launchingSoft; /**< Indicator showing whether soft launch control adjustments are active */
+  bool launchingHard; /**< Indicator showing whether hard launch control adjustments are active */
+  uint16_t clutchEngagedRPM; /**< The RPM at which the clutch was last depressed. Used for distinguishing between launch control and flat shift */ 
+  bool flatShiftingHard;
+  volatile uint32_t startRevolutions; /**< A counter for how many revolutions have been completed since sync was achieved. */
+  bool testActive;
+  uint8_t current_caninchannel = 0; /**< Current CAN channel, defaults to 0 */
+  uint16_t crankRPM = 400; /**< The actual cranking RPM limit. This is derived from the value in the config page, but saves us multiplying it everytime it's used (Config page value is stored divided by 10) */
+  byte nitrous_status;
+  byte nSquirts;
+  int16_t fuelLoad2;
+  bool fuelPumpOn; /**< Indicator showing the current status of the fuel pump */
   byte knockRetard;
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
-  //int8_t vvtAngle;
-  long vvtAngle;
   byte vvtTargetAngle;
   byte vvtDuty;
 
