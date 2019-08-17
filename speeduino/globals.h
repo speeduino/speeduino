@@ -61,8 +61,8 @@
   #else //libmaple core aka STM32DUINO
     //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
     #ifndef portOutputRegister
-      #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) )
-      #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) )
+      #define portOutputRegister(port) ((volatile byte *)( &((port)->regs->ODR) ))
+      #define portInputRegister(port) ((volatile byte *)( &((port)->regs->IDR) ))
     #endif
   #endif
 #elif defined(__SAMD21G18A__)
@@ -76,11 +76,11 @@
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 //Handy bitsetting macros
-#define BIT_SET(a,b) ((a) |= (1<<(b)))
-#define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
-#define BIT_CHECK(var,pos) !!((var) & (1<<(pos)))
+#define BIT_SET(a,b) ((a) |= (1U<<(b)))
+#define BIT_CLEAR(a,b) ((a) &= ~(1U<<(b)))
+#define BIT_CHECK(var,pos) !!((var) & (1U<<(pos)))
 
-#define interruptSafe(c)  noInterrupts(); c interrupts(); //Wraps any code between nointerrupt and interrupt calls
+#define interruptSafe(c) (noInterrupts(); {c} interrupts();) //Wraps any code between nointerrupt and interrupt calls
 
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000
@@ -137,7 +137,7 @@
 
 #define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
 #define BIT_STATUS3_NITROUS       1
-#define BIT_STATUS3_UNUSED2       2
+#define BIT_STATUS3_FUEL2_ACTIVE  2
 #define BIT_STATUS3_UNUSED3       3
 #define BIT_STATUS3_UNUSED4       4
 #define BIT_STATUS3_NSQUIRTS1     5
@@ -195,6 +195,9 @@
 #define NITROUS_STAGE1      1
 #define NITROUS_STAGE2      2
 
+#define AE_MODE_TPS         0
+#define AE_MODE_MAP         1
+
 #define KNOCK_MODE_OFF      0
 #define KNOCK_MODE_DIGITAL  1
 #define KNOCK_MODE_ANALOG   2
@@ -202,7 +205,13 @@
 #define FUEL2_MODE_OFF      0
 #define FUEL2_MODE_MULTIPLY 1
 #define FUEL2_MODE_ADD      2
-#define FUEL2_MODE_SWITCH   3
+#define FUEL2_MODE_CONDITIONAL_SWITCH   3
+#define FUEL2_MODE_INPUT_SWITCH 4
+
+#define FUEL2_CONDITION_RPM 0
+#define FUEL2_CONDITION_MAP 1
+#define FUEL2_CONDITION_TPS 2
+#define FUEL2_CONDITION_ETH 3
 
 #define RESET_CONTROL_DISABLED             0
 #define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
@@ -212,11 +221,17 @@
 #define OPEN_LOOP_BOOST     0
 #define CLOSED_LOOP_BOOST   1
 
+
+#define VVT_MODE_ONOFF      0
+#define VVT_MODE_OPEN_LOOP  1
+#define VVT_MODE_CLOSED_LOOP 2
+#define VVTCL_LOAD_MAP      0
+#define VVTCL_LOAD_TPS      1
+
 #define FOUR_STROKE         0
 #define TWO_STROKE          1
 
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
-#define engineSquirtsPerCycle 2 //Would be 1 for a 2 stroke
 
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
@@ -233,7 +248,7 @@ const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
 #define NUM_PAGES     12
-const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288};
+const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288}; /**< This array stores the size (in bytes) of each configuration page */
 #define MAP_PAGE_SIZE 288
 
 struct table3D fuelTable; //16x16 fuel map
@@ -248,6 +263,7 @@ struct table3D trim2Table; //6x6 Fuel trim 2 map
 struct table3D trim3Table; //6x6 Fuel trim 3 map
 struct table3D trim4Table; //6x6 Fuel trim 4 map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
+struct table2D maeTable;
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 struct table2D ASETable; //4 bin After Start Enrichment map (2D)
 struct table2D ASECountTable; //4 bin After Start duration map (2D)
@@ -370,9 +386,6 @@ struct statuses {
   int16_t EMAPADC;
   byte baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
   byte TPS; /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
-  byte TPSlast; /**< The previous TPS reading */
-  unsigned long TPS_time; //The time the TPS sample was taken
-  unsigned long TPSlast_time; //The time the previous TPS sample was taken
   byte tpsADC; /**< 0-255 byte representation of the TPS. Downsampled from the original 10-bit reading, but before any calibration is applied */
   byte tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Value is divided by 10 to be stored in a byte */
   byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
@@ -393,7 +406,7 @@ struct statuses {
   byte battery10; /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
   int8_t advance; /**< Signed 8 bit as advance can now go negative (ATDC) */
   byte corrections; /**< The total current corrections % amount */
-  int16_t TAEamount; /**< The amount of accleration enrichment currently being applied */
+  int16_t AEamount; /**< The amount of accleration enrichment currently being applied */
   byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
   byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
   byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
@@ -407,11 +420,11 @@ struct statuses {
   bool idleUpActive; /**< Whether the externally controlled idle up is currently active */
   bool fanOn; /**< Whether or not the fan is turned on */
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
-  unsigned long TAEEndTime; /**< The target end time used whenever TAE is turned on */
+  unsigned long AEEndTime; /**< The target end time used whenever AE is turned on */
   volatile byte status1;
   volatile byte spark;
   volatile byte spark2;
-  byte engine;
+  uint8_t engine;
   unsigned int PW1; //In uS
   unsigned int PW2; //In uS
   unsigned int PW3; //In uS
@@ -451,6 +464,8 @@ struct statuses {
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
+  byte vvtAngle;
+  byte targetVVTAngle;
 
 };
 struct statuses currentStatus; //The global status object
@@ -463,10 +478,11 @@ struct statuses currentStatus; //The global status object
  */
 struct config2 {
 
+  byte unused2_0;
   byte unused2_1;
-  byte unused2_2;
-  byte unused2_3;  //Was ASE
-  byte unused2_4;  //Was ASECount
+  byte unused2_2;  //Was ASE
+  byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
+  byte unused1_3c : 6;
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
@@ -474,7 +490,7 @@ struct config2 {
   byte tachoDiv : 2; //Whether to change the tacho speed
   byte tachoDuration; //The duration of the tacho pulse in mS
   byte maeThresh; /**< The MAPdot threshold that must be exceeded before AE is engaged */
-  byte tpsThresh; /**< The TPSdot threshold that must be exceeded before AE is engaged */
+  byte taeThresh; /**< The TPSdot threshold that must be exceeded before AE is engaged */
   byte aeTime;
 
   //Display config bits
@@ -518,7 +534,7 @@ struct config2 {
   //config3 in ini
   byte engineType : 1;
   byte flexEnabled : 1;
-  byte unused2_38c : 1; //"Speed Density", "Alpha-N"
+  byte legacyMAP  : 1;
   byte baroCorr : 1;
   byte injLayout : 2;
   byte perToothIgn : 1;
@@ -545,8 +561,8 @@ struct config2 {
   byte idleUpEnabled : 1;
 
   byte idleUpAdder;
-  byte taeTaperMin;
-  byte taeTaperMax;
+  byte aeTaperMin;
+  byte aeTaperMax;
 
   byte iacCLminDuty;
   byte iacCLmaxDuty;
@@ -640,12 +656,13 @@ struct config4 {
   byte ADCFILTER_BARO;
   
   byte cltAdvBins[6]; /**< Coolant Temp timing advance curve bins */
-  byte cltAdvValues[6]; /**< Coolant timing advance curve values */
+  byte cltAdvValues[6]; /**< Coolant timing advance curve values. These are translated by 15 to allow for negative values */
 
   byte maeBins[4]; /**< MAP based AE MAPdot bins */
   byte maeRates[4]; /**< MAP based AE values */
 
-  byte unused2_91[37];
+  int8_t batVoltCorrect; /**< Battery voltage calibration offset */
+  byte unused2_91[36];
 
 #if defined(CORE_AVR)
   };
@@ -668,7 +685,12 @@ struct config6 {
   byte egoKD;
   byte egoTemp; //The temperature above which closed loop functions
   byte egoCount; //The number of ignition cylces per step
-  byte unused6_6;
+  byte vvtMode : 2; //Valid VVT modes are 'on/off', 'open loop' and 'closed loop'
+  byte vvtLoadSource : 2; //Load source for VVT (TPS or MAP)
+  byte vvtCLDir : 1; //VVT direction (advance or retard)
+  byte vvtCLUseHold : 1; //Whether or not to use a hold duty cycle (Most cases are Yes)
+  byte vvtCLAlterFuelTiming : 1;
+  byte unused6_6 : 1;
   byte egoLimit; //Maximum amount the closed loop will vary the fueling
   byte ego_min; //AFR must be above this for closed loop to function
   byte ego_max; //AFR must be below this for closed loop to function
@@ -831,85 +853,101 @@ Page 10 - No specific purpose. Created initially for the cranking enrich curve
 See ini file for further info (Config Page 11 in the ini)
 */
 struct config10 {
-  byte crankingEnrichBins[4];
-  byte crankingEnrichValues[4];
+  byte crankingEnrichBins[4]; //Bytes 0-4
+  byte crankingEnrichValues[4]; //Bytes 4-7
 
+  //Byte 8
   byte rotaryType : 2;
   byte stagingEnabled : 1;
   byte stagingMode : 1;
   byte EMAPPin : 4;
 
-  byte rotarySplitValues[8];
-  byte rotarySplitBins[8];
+  byte rotarySplitValues[8]; //Bytes 9-16
+  byte rotarySplitBins[8]; //Bytes 17-24
 
-  uint16_t boostSens;
-  byte boostIntv;
-  uint16_t stagedInjSizePri;
-  uint16_t stagedInjSizeSec;
-  byte lnchCtrlTPS;
+  uint16_t boostSens; //Bytes 25-26
+  byte boostIntv; //Byte 27
+  uint16_t stagedInjSizePri; //Bytes 28-29
+  uint16_t stagedInjSizeSec; //Bytes 30-31
+  byte lnchCtrlTPS; //Byte 32
 
-  uint8_t flexBoostBins[6];
-  int16_t flexBoostAdj[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed)
-  uint8_t flexFuelBins[6];
-  uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%)
-  uint8_t flexAdvBins[6];
-  uint8_t  flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%). NOTE: THIS IS A SIGNED VALUE!
+  uint8_t flexBoostBins[6]; //Byets 33-38
+  int16_t flexBoostAdj[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed). Bytes 39-50
+  uint8_t flexFuelBins[6]; //Bytes 51-56
+  uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%). Bytes 57-62
+  uint8_t flexAdvBins[6]; //Bytes 63-68
+  uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%). NOTE: THIS SHOULD BE A SIGNED VALUE BUT 2d TABLE LOOKUP NOT WORKING WITH IT CURRENTLY!
                             //And another three corn rows die.
+                            //Bytes 69-74
 
+  //Byte 75
   byte n2o_enable : 2;
   byte n2o_arming_pin : 6;
-  byte n2o_minCLT;
-  byte n2o_maxMAP;
-  byte n2o_minTPS;
-  byte n2o_maxAFR;
+  byte n2o_minCLT; //Byte 76
+  byte n2o_maxMAP; //Byte 77
+  byte n2o_minTPS; //Byte 78
+  byte n2o_maxAFR; //Byte 79
 
+  //Byte 80
   byte n2o_stage1_pin : 6;
   byte n2o_pin_polarity : 1;
   byte n2o_stage1_unused : 1;
-  byte n2o_stage1_minRPM;
-  byte n2o_stage1_maxRPM;
-  byte n2o_stage1_adderMin;
-  byte n2o_stage1_adderMax;
-  byte n2o_stage1_retard;
+  byte n2o_stage1_minRPM; //Byte 81
+  byte n2o_stage1_maxRPM; //Byte 82
+  byte n2o_stage1_adderMin; //Byte 83
+  byte n2o_stage1_adderMax; //Byte 84
+  byte n2o_stage1_retard; //Byte 85
 
+  //Byte 86
   byte n2o_stage2_pin : 6;
   byte n2o_stage2_unused : 2;
-  byte n2o_stage2_minRPM;
-  byte n2o_stage2_maxRPM;
-  byte n2o_stage2_adderMin;
-  byte n2o_stage2_adderMax;
-  byte n2o_stage2_retard;
+  byte n2o_stage2_minRPM; //Byte 87
+  byte n2o_stage2_maxRPM; //Byte 88
+  byte n2o_stage2_adderMin; //Byte 89
+  byte n2o_stage2_adderMax; //Byte 90
+  byte n2o_stage2_retard; //Byte 91
 
+  //Byte 92
   byte knock_mode : 2;
   byte knock_pin : 6;
 
+  //Byte 93
   byte knock_trigger : 1;
   byte knock_pullup : 1;
   byte knock_limiterDisable : 1;
   byte knock_unused : 2;
   byte knock_count : 3;
 
-  byte knock_threshold;
-  byte knock_maxMAP;
-  byte knock_maxRPM;
-  byte knock_window_rpms[6];
-  byte knock_window_angle[6];
-  byte knock_window_dur[6];
+  byte knock_threshold; //Byte 94
+  byte knock_maxMAP; //Byte 95
+  byte knock_maxRPM; //Byte 96
+  byte knock_window_rpms[6]; //Bytes 97-102
+  byte knock_window_angle[6]; //Bytes 103-108
+  byte knock_window_dur[6]; //Bytes 109-114
 
-  byte knock_maxRetard;
-  byte knock_firstStep;
-  byte knock_stepSize;
-  byte knock_stepTime;
+  byte knock_maxRetard; //Byte 115
+  byte knock_firstStep; //Byte 116
+  byte knock_stepSize; //Byte 117
+  byte knock_stepTime; //Byte 118
         
-  byte knock_duration; //Time after knock retard starts that it should start recovering
-  byte knock_recoveryStepTime;
-  byte knock_recoveryStep;
+  byte knock_duration; //Time after knock retard starts that it should start recovering. Byte 119
+  byte knock_recoveryStepTime; //Byte 120
+  byte knock_recoveryStep; //Byte 121
 
+  //Byte 122
   byte fuel2Algorithm : 3;
-  byte fuel2Mode : 2;
-  byte unused10_122 : 3;
+  byte fuel2Mode : 3;
+  byte fuel2SwitchVariable : 2;
+  uint16_t fuel2SwitchValue;
 
-  byte unused11_123_191[69];
+  byte vvtCLholdDuty;
+  byte vvtCLKP;
+  byte vvtCLKI;
+  byte vvtCLKD;
+  uint16_t vvtCLMinAng;
+  uint16_t vvtCLMaxAng;
+
+  byte unused11_123_191[59];
 
 #if defined(CORE_AVR)
   };
@@ -982,20 +1020,22 @@ byte pinResetControl; // Output pin used control resetting the Arduino
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
 extern struct table3D fuelTable; //16x16 fuel map
+extern struct table3D fuelTable2; //16x16 fuel map
 extern struct table3D ignitionTable; //16x16 ignition map
 extern struct table3D afrTable; //16x16 afr target map
 extern struct table3D stagingTable; //8x8 afr target map
-extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
-extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
-extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
+extern struct table2D taeTable; /**< 4 bin TPS Acceleration Enrichment curve (2D) */
+extern struct table2D maeTable; /**< 4 bin MAP based Acceleration Enrichment curve (2D) */
+extern struct table2D WUETable; /**< 10 bin Warm Up Enrichment curve (2D) */
+extern struct table2D crankingEnrichTable; /**< 4 bin cranking Enrichment curve (2D) */
 extern struct config2 configPage2;
 extern struct config4 configPage4;
 extern struct config6 configPage6;
 extern struct config9 configPage9;
 extern struct config10 configPage10;
-extern unsigned long currentLoopTime; //The time the current loop started (uS)
-extern unsigned long previousLoopTime; //The time the previous loop started (uS)
-volatile uint16_t ignitionCount; //The count of ignition events that have taken place since the engine started
+extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
+extern unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
+volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
 extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
 extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];

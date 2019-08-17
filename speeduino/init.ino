@@ -44,7 +44,7 @@ void initialiseAll()
 
     Serial.begin(115200);
     if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
- 
+
     #if defined(CORE_STM32) || defined(CORE_TEENSY)
     configPage9.intcan_available = 1;   // device has internal canbus
     //Teensy onboard CAN not used currently
@@ -60,6 +60,10 @@ void initialiseAll()
     taeTable.xSize = 4;
     taeTable.values = configPage4.taeValues;
     taeTable.axisX = configPage4.taeBins;
+    maeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
+    maeTable.xSize = 4;
+    maeTable.values = configPage4.maeRates;
+    maeTable.axisX = configPage4.maeBins;
     WUETable.valueSize = SIZE_BYTE; //Set this table to use byte values
     WUETable.xSize = 10;
     WUETable.values = configPage2.wueValues;
@@ -100,7 +104,7 @@ void initialiseAll()
     IATRetardTable.axisX = configPage4.iatRetBins;
     CLTAdvanceTable.valueSize = SIZE_BYTE;
     CLTAdvanceTable.xSize = 6;
-    CLTAdvanceTable.values = configPage4.cltAdvValues;
+    CLTAdvanceTable.values = (byte*)configPage4.cltAdvValues;
     CLTAdvanceTable.axisX = configPage4.cltAdvBins;
     rotarySplitTable.valueSize = SIZE_BYTE;
     rotarySplitTable.xSize = 8;
@@ -246,7 +250,7 @@ void initialiseAll()
     }
 
     //Begin the main crank trigger interrupt pin setup
-    //The interrupt numbering is a bit odd - See here for reference: http://arduino.cc/en/Reference/AttachInterrupt
+    //The interrupt numbering is a bit odd - See here for reference: arduino.cc/en/Reference/AttachInterrupt
     //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly.
     currentStatus.RPM = 0;
     currentStatus.hasSync = false;
@@ -267,7 +271,11 @@ void initialiseAll()
     initialiseTriggers();
 
     //End crank triger interrupt attachment
-    req_fuel_uS = req_fuel_uS / engineSquirtsPerCycle; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
+    if(configPage2.strokes == FOUR_STROKE)
+    {
+      //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
+      req_fuel_uS = req_fuel_uS / 2; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
+    }
 
     //Initial values for loop times
     previousLoopTime = 0;
@@ -279,7 +287,6 @@ void initialiseAll()
     if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
-
 
     //Calculate the number of degrees between cylinders
     switch (configPage2.nCylinders) {
@@ -420,7 +427,7 @@ void initialiseAll()
           //Adjust the injection angles based on the number of squirts
           if (currentStatus.nSquirts > 2)
           {
-            channel2InjDegrees = channel2InjDegrees / (currentStatus.nSquirts / 2);
+            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
           }
 
           if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
@@ -551,8 +558,8 @@ void initialiseAll()
         //Adjust the injection angles based on the number of squirts
         if (currentStatus.nSquirts > 2)
         {
-          channel2InjDegrees = channel2InjDegrees / (currentStatus.nSquirts / 2);
-          channel3InjDegrees = channel3InjDegrees / (currentStatus.nSquirts / 2);
+          channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
+          channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
         }
 
     #if INJ_CHANNELS >= 6
@@ -598,9 +605,9 @@ void initialiseAll()
         //Adjust the injection angles based on the number of squirts
         if (currentStatus.nSquirts > 2)
         {
-          channel2InjDegrees = channel2InjDegrees / (currentStatus.nSquirts / 2);
-          channel3InjDegrees = channel3InjDegrees / (currentStatus.nSquirts / 2);
-          channel4InjDegrees = channel4InjDegrees / (currentStatus.nSquirts / 2);
+          channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
+          channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
+          channel4InjDegrees = (channel4InjDegrees * 2) / currentStatus.nSquirts;
         }
 
     #if INJ_CHANNELS >= 8
@@ -654,6 +661,15 @@ void initialiseAll()
     else if (CRANK_ANGLE_MAX_IGN > CRANK_ANGLE_MAX_INJ) { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_IGN; }
     else { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_INJ; }
     currentStatus.status3 = currentStatus.nSquirts << BIT_STATUS3_NSQUIRTS1; //Top 3 bits of the status3 variable are the number of squirts. This must be done after the above section due to nSquirts being forced to 1 for sequential
+    
+    //Special case:
+    //3 or 5 squirts per cycle MUST be tracked over 720 degrees. This is because the angles for them (Eg 720/3=240) are not evenly divisible into 360
+    //This is ONLY the case on 4 stroke systems
+    if( (currentStatus.nSquirts == 3) || (currentStatus.nSquirts == 5) )
+    {
+      if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX = 720; }
+    }
+    
 
     switch(configPage4.sparkMode)
     {
@@ -998,7 +1014,7 @@ void setPinMapping(byte boardID)
         pinCoil3 = 30;
         pinO2 = A22;
       #elif defined(STM32F4)
-        //Black F407VE http://wiki.stm32duino.com/index.php?title=STM32F407
+        //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
         //PC8~PC12 SDio
         //PA13~PA15 & PB4 SWD(debug) pins
         //PB0 EEPROM CS pin
@@ -1039,8 +1055,8 @@ void setPinMapping(byte boardID)
         pinTrigger = PE3; //The CAS pin
         pinTrigger2 = PE4; //The Cam Sensor pin
       #elif defined(CORE_STM32)
-        //blue pill http://wiki.stm32duino.com/index.php?title=Blue_Pill
-        //Maple mini http://wiki.stm32duino.com/index.php?title=Maple_Mini
+        //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
+        //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
         pinInjector1 = PB7; //Output pin injector 1 is on
         pinInjector2 = PB6; //Output pin injector 2 is on
@@ -1076,8 +1092,109 @@ void setPinMapping(byte boardID)
       #endif
       break;
 
+    case 6:
+      //Pin mappings as per the 2001-05 MX5 PNP shield
+      pinInjector1 = 44; //Output pin injector 1 is on
+      pinInjector2 = 46; //Output pin injector 2 is on
+      pinInjector3 = 47; //Output pin injector 3 is on
+      pinInjector4 = 45; //Output pin injector 4 is on
+      pinInjector5 = 14; //Output pin injector 5 is on
+      pinCoil1 = 42; //Pin for coil 1
+      pinCoil2 = 43; //Pin for coil 2
+      pinCoil3 = 32; //Pin for coil 3
+      pinCoil4 = 33; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinTPS = A2;//TPS input pin
+      pinMAP = A5; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A3; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinDisplayReset = 48; // OLED reset pin
+      pinTachOut = 23; //Tacho output pin  (Goes to ULN2803)
+      pinIdle1 = 5; //Single wire idle control
+      pinBoost = 4;
+      pinVVT_1 = 11; //Default VVT output
+      pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
+      pinFuelPump = 40; //Fuel pump output
+      pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinStepperEnable = 24;
+      pinFan = 41; //Pin for the fan output
+      pinLaunch = 12; //Can be overwritten below
+      pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+      pinResetControl = 39; //Reset control output
+
+      //This is NOT correct. It has not yet been tested with this board
+      #if defined(CORE_TEENSY)
+        pinTrigger = 23;
+        pinTrigger2 = 36;
+        pinStepperDir = 34;
+        pinStepperStep = 35;
+        pinCoil1 = 33; //Done
+        pinCoil2 = 24; //Done
+        pinCoil3 = 51; //Won't work (No mapping for pin 32)
+        pinCoil4 = 52; //Won't work (No mapping for pin 33)
+        pinFuelPump = 26; //Requires PVT4 adapter or above
+        pinFan = 50; //Won't work (No mapping for pin 35)
+        pinTachOut = 28; //Done
+      #endif
+      break;
+
+    case 8:
+      //Pin mappings as per the 1996-97 MX5 PNP shield
+      pinInjector1 = 11; //Output pin injector 1 is on
+      pinInjector2 = 10; //Output pin injector 2 is on
+      pinInjector3 = 9; //Output pin injector 3 is on
+      pinInjector4 = 8; //Output pin injector 4 is on
+      pinInjector5 = 14; //Output pin injector 5 is on
+      pinCoil1 = 39; //Pin for coil 1
+      pinCoil2 = 41; //Pin for coil 2
+      pinCoil3 = 32; //Pin for coil 3
+      pinCoil4 = 33; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinTPS = A2;//TPS input pin
+      pinMAP = A5; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A3; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinDisplayReset = 48; // OLED reset pin
+      pinTachOut = A9; //Tacho output pin  (Goes to ULN2803)
+      pinIdle1 = 2; //Single wire idle control
+      pinBoost = 4;
+      pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
+      pinFuelPump = 49; //Fuel pump output
+      pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinStepperEnable = 24;
+      pinFan = 35; //Pin for the fan output
+      pinLaunch = 37; //Can be overwritten below
+      pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+      pinResetControl = 44; //Reset control output
+
+      //This is NOT correct. It has not yet been tested with this board
+      #if defined(CORE_TEENSY)
+        pinTrigger = 23;
+        pinTrigger2 = 36;
+        pinStepperDir = 34;
+        pinStepperStep = 35;
+        pinCoil1 = 33; //Done
+        pinCoil2 = 24; //Done
+        pinCoil3 = 51; //Won't work (No mapping for pin 32)
+        pinCoil4 = 52; //Won't work (No mapping for pin 33)
+        pinFuelPump = 26; //Requires PVT4 adapter or above
+        pinFan = 50; //Won't work (No mapping for pin 35)
+        pinTachOut = 28; //Done
+      #endif
+      break;
+
     case 9:
-      //Pin mappings as per the MX5 PNP shield
+      //Pin mappings as per the 89-95 MX5 PNP shield
       pinInjector1 = 11; //Output pin injector 1 is on
       pinInjector2 = 10; //Output pin injector 2 is on
       pinInjector3 = 9; //Output pin injector 3 is on
@@ -1325,6 +1442,51 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
+    case 45:
+    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+      //Pin mappings for the DIY-EFI CORE4 Module
+      pinInjector1 = 10; //Output pin injector 1 is on
+      pinInjector2 = 11; //Output pin injector 2 is on
+      pinInjector3 = 12; //Output pin injector 3 is on
+      pinInjector4 = 9; //Output pin injector 4 is on
+      pinCoil1 = 39; //Pin for coil 1
+      pinCoil2 = 29; //Pin for coil 2
+      pinCoil3 = 28; //Pin for coil 3
+      pinCoil4 = 27; //Pin for coil 4
+      pinCoil4 = 26; //Placeholder  for coil 5
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinFlex = 20; // Flex sensor
+      pinTPS = A3; //TPS input pin
+      pinMAP = A2; //MAP sensor pin
+      pinBaro = A15; //Baro sensor pin
+      pinIAT = A11; //IAT sensor pin
+      pinCLT = A4; //CLS sensor pin
+      pinO2 = A12; //O2 Sensor pin
+      pinO2_2 = A13; //O2 sensor pin (second sensor)
+      pinBat = A1; //Battery reference voltage pin
+      pinSpareTemp1 = A14; //spare Analog input 1
+      pinLaunch = 24; //Can be overwritten below
+      pinDisplayReset = 48; // OLED reset pin PLACEHOLDER value for now
+      pinTachOut = 38; //Tacho output pin
+      pinIdle1 = 42; //Single wire idle control
+      pinIdle2 = 43; //2 wire idle control
+      pinFuelPump = 41; //Fuel pump output
+      pinVVT_1 = 44; //Default VVT output
+      pinStepperDir = 32; //Direction pin  for DRV8825 driver
+      pinStepperStep = 31; //Step pin for DRV8825 driver
+      pinStepperEnable = 30; //Enable pin for DRV8825 driver
+      pinBoost = 45; //Boost control
+      pinSpareLOut1 = 37; //low current output spare1
+      pinSpareLOut2 = 36; //low current output spare2
+      pinSpareLOut3 = 35; //low current output spare3
+      pinSpareLOut4 = 34; //low current output spare4
+      pinSpareLOut5 = 33; //low current output spare4
+      pinFan = 40; //Pin for the fan output
+      pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+    #endif
+      break;
+
     #if defined(CORE_TEENSY)
     case 50:
       //Pin mappings as per the teensy rev A shield
@@ -1399,7 +1561,7 @@ void setPinMapping(byte boardID)
 
     default:
       #if defined(STM32F4)
-        //Black F407VE http://wiki.stm32duino.com/index.php?title=STM32F407
+        //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
         //PC8~PC12 SDio
         //PA13~PA15 & PB4 SWD(debug) pins
         //PB0 EEPROM CS pin
@@ -1524,6 +1686,9 @@ void setPinMapping(byte boardID)
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
 
+  //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
+  if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
+
   inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
   inj1_pin_mask = digitalPinToBitMask(pinInjector1);
   inj2_pin_port = portOutputRegister(digitalPinToPort(pinInjector2));
@@ -1612,13 +1777,6 @@ void setPinMapping(byte boardID)
   triggerSec_pin_port = portInputRegister(digitalPinToPort(pinTrigger2));
   triggerSec_pin_mask = digitalPinToBitMask(pinTrigger2);
 
-  #if defined(CORE_STM32)
-  #else
-    //Set default values
-    digitalWrite(pinMAP, HIGH);
-    //digitalWrite(pinO2, LOW);
-    digitalWrite(pinTPS, LOW);
-  #endif
 }
 
 void initialiseTriggers()

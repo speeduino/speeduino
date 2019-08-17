@@ -82,8 +82,6 @@ bool PID::Compute()
  ******************************************************************************/
 void PID::SetTunings(byte Kp, byte Ki, byte Kd)
 {
-   if (Kp<0 || Ki<0 || Kd<0) return;
-
    dispKp = Kp; dispKi = Ki; dispKd = Kd;
 
    /*
@@ -270,7 +268,6 @@ bool integerPID::Compute()
  ******************************************************************************/
 void integerPID::SetTunings(byte Kp, byte Ki, byte Kd)
 {
-   if (Kp<0 || Ki<0 || Kd<0) return;
    if ( dispKp == Kp && dispKi == Ki && dispKd == Kd ) return; //Only do anything if one of the values has changed
    dispKp = Kp; dispKi = Ki; dispKd = Kd;
 
@@ -479,7 +476,6 @@ bool integerPID_ideal::Compute()
  ******************************************************************************/
 void integerPID_ideal::SetTunings(byte Kp, byte Ki, byte Kd)
 {
-   if (Kp<0 || Ki<0 || Kd<0) return;
    if ( dispKp == Kp && dispKi == Ki && dispKd == Kd ) return; //Only do anything if one of the values has changed
    dispKp = Kp; dispKi = Ki; dispKd = Kd;
 

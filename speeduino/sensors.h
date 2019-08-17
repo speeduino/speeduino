@@ -36,6 +36,12 @@ unsigned long EMAPrunningValue; //As above but for EMAP
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
 uint32_t MAPcurRev; //Tracks which revolution we're sampling on
 bool auxIsEnabled;
+byte TPSlast; /**< The previous TPS reading */
+unsigned long TPS_time; //The time the TPS sample was taken
+unsigned long TPSlast_time; //The time the previous TPS sample was taken
+byte MAPlast; /**< The previous MAP reading */
+unsigned long MAP_time; //The time the MAP sample was taken
+unsigned long MAPlast_time; //The time the previous MAP sample was taken
 
 //These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
 byte mapErrorCount = 0;
@@ -49,10 +55,10 @@ byte cltErrorCount = 0;
  */
 #define ADC_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
 //These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
-#define pinIsInjector(pin)  ( (pin == pinInjector1) || (pin == pinInjector2) || (pin == pinInjector3) || (pin == pinInjector4) )
-#define pinIsIgnition(pin)  ( (pin == pinCoil1) || (pin == pinCoil2) || (pin == pinCoil3) || (pin == pinCoil4) )
-#define pinIsSensor(pin)    ( (pin == pinCLT) || (pin == pinIAT) || (pin == pinMAP) || (pin == pinTPS) || (pin == pinO2) || (pin == pinBat) )
-#define pinIsUsed(pin)      ( pinIsInjector(pin) || pinIsIgnition(pin) || pinIsSensor(pin) )
+#define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) )
+#define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) )
+#define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
+#define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) )
 
 static inline void instanteneousMAPReading() __attribute__((always_inline));
 static inline void readMAP() __attribute__((always_inline));
