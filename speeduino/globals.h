@@ -225,8 +225,8 @@
 #define VVT_MODE_ONOFF      0
 #define VVT_MODE_OPEN_LOOP  1
 #define VVT_MODE_CLOSED_LOOP 2
-#define VVTCL_LOAD_MAP      0
-#define VVTCL_LOAD_TPS      1
+#define VVT_LOAD_MAP      0
+#define VVT_LOAD_TPS      1
 
 #define FOUR_STROKE         0
 #define TWO_STROKE          1
@@ -464,8 +464,10 @@ struct statuses {
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
-  byte vvtAngle;
-  byte targetVVTAngle;
+  //int8_t vvtAngle;
+  long vvtAngle;
+  byte vvtTargetAngle;
+  byte vvtDuty;
 
 };
 struct statuses currentStatus; //The global status object
@@ -940,6 +942,11 @@ struct config10 {
   byte fuel2SwitchVariable : 2;
   uint16_t fuel2SwitchValue;
 
+  //Byte 123
+  byte fuel2InputPin : 6;
+  byte fuel2InputPolarity : 1;
+  byte fuel2InputPullup : 1;
+
   byte vvtCLholdDuty;
   byte vvtCLKP;
   byte vvtCLKI;
@@ -947,7 +954,7 @@ struct config10 {
   uint16_t vvtCLMinAng;
   uint16_t vvtCLMaxAng;
 
-  byte unused11_123_191[59];
+  byte unused11_123_191[58];
 
 #if defined(CORE_AVR)
   };
@@ -989,6 +996,7 @@ byte pinFuelPump; //Fuel pump on/off
 byte pinIdle1; //Single wire idle control
 byte pinIdle2; //2 wire idle control (Not currently used)
 byte pinIdleUp; //Input for triggering Idle Up
+byte pinFuel2Input; //Input for switching to the 2nd fuel table
 byte pinSpareTemp1; // Future use only
 byte pinSpareTemp2; // Future use only
 byte pinSpareOut1; //Generic output

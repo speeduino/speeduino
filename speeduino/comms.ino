@@ -608,7 +608,9 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[90] = highByte(currentStatus.dwell);
   fullStatus[91] = currentStatus.CLIdleTarget;
   fullStatus[92] = currentStatus.mapDOT;
-  fullStatus[93] = currentStatus.vvtAngle;
+  fullStatus[93] = (int8_t)currentStatus.vvtAngle;
+  fullStatus[94] = currentStatus.vvtTargetAngle;
+  fullStatus[95] = currentStatus.vvtDuty;
 
   for(byte x=0; x<packetLength; x++)
   {
