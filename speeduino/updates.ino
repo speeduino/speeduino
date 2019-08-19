@@ -133,8 +133,8 @@ void doUpdates()
   if (EEPROM.read(EEPROM_DATA_VERSION) == 8)
   {
     //May 2018 adds separate load sources for fuel and ignition. Copy the existing load alogirthm into Both
-    configPage2.fuelAlgorithm = configPage2.unused2_38c;
-    configPage2.ignAlgorithm = configPage2.unused2_38c;
+    configPage2.fuelAlgorithm = configPage2.legacyMAP; //Was configPage2.unused2_38c
+    configPage2.ignAlgorithm = configPage2.legacyMAP; //Was configPage2.unused2_38c
 
     //Add option back in for open or closed loop boost. For all current configs to use closed
     configPage4.boostType = 1;
@@ -219,9 +219,9 @@ void doUpdates()
     configPage2.maeThresh = configPage2.taeThresh;
     //Set some sane values for the MAP AE curve
     configPage4.maeRates[0] = 75;
+    configPage4.maeRates[1] = 75;
     configPage4.maeRates[2] = 75;
     configPage4.maeRates[3] = 75;
-    configPage4.maeRates[4] = 75;
     configPage4.maeBins[0] = 7;
     configPage4.maeBins[1] = 12;
     configPage4.maeBins[2] = 20;
@@ -237,8 +237,12 @@ void doUpdates()
 
   if(EEPROM.read(EEPROM_DATA_VERSION) == 11)
   {
+    //July 2019
     //A battery calibration offset value was introduced. Set default value to 0
     configPage4.batVoltCorrect = 0;
+
+    //An option was added to select the older method of performing MAP reads with the pullup resistor active
+    configPage2.legacyMAP = 0;
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 12);

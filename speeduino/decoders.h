@@ -187,6 +187,7 @@ byte checkSyncToothCount; //How many teeth must've been seen on this revolution 
 unsigned long elapsedTime;
 unsigned long lastCrankAngleCalc;
 int16_t lastToothCalcAdvance = 99; //Invalid value here forces calculation of this on first main loop
+unsigned long lastVVTtime; //The time between the vvt reference pulse and the last crank pulse
 
 int16_t ignition1EndTooth = 0;
 int16_t ignition2EndTooth = 0;

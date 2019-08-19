@@ -132,6 +132,7 @@ void loop()
       VVT_PIN_LOW();
       DISABLE_VVT_TIMER();
       boostDisable();
+      if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
     }
 
     //***Perform sensor reads***
@@ -286,6 +287,7 @@ void loop()
     currentStatus.VE = getVE();
 
     //If the secondary fuel table is in use, also get the VE value from there
+    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Clear the bit indicating that the 2nd fuel table is in use. 
     if(configPage10.fuel2Mode > 0)
     { 
       currentStatus.VE2 = getVE2();
@@ -304,7 +306,14 @@ void loop()
         if(combinedVE <= 255) { totalVE = combinedVE; }
         else { totalVE = 255; }
       }
-      else if(configPage10.fuel2Mode == FUEL2_MODE_SWITCH)
+      else if(configPage10.fuel2Mode == FUEL2_MODE_CONDITIONAL_SWITCH )
+      {
+        if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_RPM)
+        {
+
+        }
+      }
+      else if(configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)
       {
 
       }
@@ -491,7 +500,6 @@ void loop()
             injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
 
             injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
-            if(injector4StartAngle < 0) {injector4StartAngle += CRANK_ANGLE_MAX_INJ;}
             if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
           }
           break;
@@ -528,7 +536,6 @@ void loop()
             injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
 
             injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
-            if(injector4StartAngle < 0) {injector4StartAngle += CRANK_ANGLE_MAX_INJ;}
             if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
           }
           break;
