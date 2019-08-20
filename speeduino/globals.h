@@ -16,7 +16,13 @@
   //#define TIMER5_MICROS
 
 #elif defined(CORE_TEENSY)
-  #define BOARD_H "board_teensy35.h"
+  #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+    #define CORE_TEENSY35
+    #define BOARD_H "board_teensy35.h"
+  #elif defined(__IMXRT1062__)
+    #define CORE_TEENSY40
+    #define BOARD_H "board_teensy40.h"
+  #endif
   #define INJ_CHANNELS 8
   #define IGN_CHANNELS 8
 
