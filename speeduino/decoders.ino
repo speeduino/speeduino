@@ -2011,6 +2011,15 @@ int getCrankAngle_Miata9905()
     return crankAngle;
 }
 
+int getCamAngle_Miata9905()
+{
+  //lastVVTtime is the time between tooth #1 (10* BTDC) and the single cam tooth. 
+  //All cam angles in in BTDC, so the actual advance angle is 370 - fastTimeToAngle(lastVVTtime) - <the angle of the cam at 0 advance>
+  currentStatus.vvtAngle = 370 - fastTimeToAngle(lastVVTtime) - configPage10.vvtCLMinAng;
+
+  return currentStatus.vvtAngle;
+}
+
 void triggerSetEndTeeth_Miata9905()
 {
 

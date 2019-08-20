@@ -231,7 +231,7 @@ void idleControl()
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
         if( (idleCounter & 31) == 1) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
 
-        idlePID.Compute();
+        idlePID.Compute(true);
         idle_pwm_target_value = idle_pid_target_value;
         if( idle_pwm_target_value == 0 )
         { 
@@ -294,7 +294,7 @@ void idleControl()
         currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //All temps are offset by 40 degrees
         if(currentStatus.idleUpActive == true) { idle_pid_target_value += configPage2.idleUpAdder; } //Add Idle Up amount if active
-        idlePID.Compute();
+        idlePID.Compute(true);
         idleStepper.targetIdleStep = idle_pid_target_value;
 
         doStep();

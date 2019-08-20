@@ -1648,6 +1648,7 @@ void setPinMapping(byte boardID)
   if ( (configPage6.vvtPin != 0) && (configPage6.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage6.vvtPin); }
   if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage6.baroPin + A0; }
   if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_NR_GPIO_PINS) ) { pinEMAP = configPage10.EMAPPin + A0; }
+  if ( (configPage10.fuel2InputPin != 0) && (configPage10.fuel2InputPin < BOARD_NR_GPIO_PINS) ) { pinFuel2Input = pinTranslate(configPage10.fuel2InputPin); }
 
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
@@ -1768,6 +1769,11 @@ void setPinMapping(byte boardID)
   {
     if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinIdleUp, INPUT); } //inverted setting
+  }
+  if(configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)
+  {
+    if (configPage10.fuel2InputPullup == 1) { pinMode(pinfuel2Input, INPUT_PULLUP); } //Normal setting
+    else { pinMode(pinFuel2Input, INPUT); } //inverted setting
   }
   
 
