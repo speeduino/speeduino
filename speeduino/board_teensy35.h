@@ -1,6 +1,6 @@
 #ifndef TEENSY35_H
 #define TEENSY35_H
-#if defined(CORE_TEENSY)
+#if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
 
 /*
 ***********************************************************************************************************
