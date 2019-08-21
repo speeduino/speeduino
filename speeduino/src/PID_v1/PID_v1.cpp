@@ -284,19 +284,6 @@ bool integerPID::Compute(bool pOnE)
 }
 
 
-	    if(output > outMax) output = outMax;
-      else if(output < outMin) output = outMin;
-	    *myOutput = output;
-
-      /*Remember some variables for next time*/
-      lastInput = input;
-      lastTime = now;
-
-      return true;
-   }
-   else return false;
-}
-
 
 /* SetTunings(...)*************************************************************
  * This function allows the controller's dynamic performance to be adjusted.
