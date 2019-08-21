@@ -11,6 +11,8 @@
 */
   #define PORT_TYPE uint8_t //Size of the port variables (Eg inj1_pin_port).
   #define PINMASK_TYPE uint8_t
+  #define COMPARE_TYPE uint16_t
+  #define COUNTER_TYPE uint16_t
   #define EEPROM_LIB_H <EEPROM.h>
   void initBoard();
   uint16_t freeRam();

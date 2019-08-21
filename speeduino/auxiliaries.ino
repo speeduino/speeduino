@@ -385,7 +385,7 @@ void boostDisable()
   }
 }
 
-#if defined(CORE_TEENSY)
+#if defined(CORE_TEENSY35)
 void ftm1_isr(void)
 {
   //FTM1 only has 2 compare channels
@@ -397,4 +397,6 @@ void ftm1_isr(void)
   else if(interrupt2) { FTM1_C1SC &= ~FTM_CSC_CHF; vvtInterrupt(); }
 
 }
+#elif defined(CORE_TEENSY40)
+//DO STUFF HERE
 #endif

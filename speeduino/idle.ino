@@ -505,7 +505,7 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
   }
 }
 
-#if defined(CORE_TEENSY)
+#if defined(CORE_TEENSY35)
 void ftm2_isr(void)
 { 
   //FTM2 only has 2 compare channels
@@ -516,4 +516,6 @@ void ftm2_isr(void)
   if(interrupt1) { FTM2_C0SC &= ~FTM_CSC_CHF; idleInterrupt(); }
   else if(interrupt2) { FTM2_C1SC &= ~FTM_CSC_CHF; } //Add a callback function here if this is ever used
 }
+#elif defined(CORE_TEENSY40)
+//DO STUFF HERE
 #endif
