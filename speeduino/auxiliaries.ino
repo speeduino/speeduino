@@ -11,6 +11,7 @@ A full copy of the license may be found in the projects root directory
 //Old PID method. Retained incase the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
 integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage10.boostSens, &configPage10.boostIntv, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPID vvtPID(&currentStatus.vvtAngle, &vvt_pwm_value, &vvt_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 /*
 Fan control
@@ -73,15 +74,38 @@ void initialiseAuxPWM()
     if(configPage10.n2o_pin_polarity == 1) { pinMode(configPage10.n2o_arming_pin, INPUT_PULLUP); }
     else { pinMode(configPage10.n2o_arming_pin, INPUT); }
   }
-  
-  ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
 
   boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
   if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(100, 100, 100); }
   else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
 
+  if( configPage6.vvtEnabled > 0)
+  {
+    currentStatus.vvtAngle = 0;
+
+    #if defined(CORE_AVR)
+      vvt_pwm_max_count = 1000000L / (16 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+    #elif defined(CORE_TEENSY)
+      vvt_pwm_max_count = 1000000L / (32 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+    #endif
+
+    if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
+    {
+      vvtPID.SetOutputLimits(0, percentage(80, vvt_pwm_max_count)); //80% is a completely arbitrary amount for the max duty cycle, but seems inline with most VVT documentation
+      vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
+      vvtPID.SetSampleTime(30);
+      vvtPID.SetMode(AUTOMATIC); //Turn PID on
+    }
+
+    currentStatus.vvtDuty = 0;
+    vvt_pwm_value = 0;
+  }
+  ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
+
   currentStatus.boostDuty = 0;
   boostCounter = 0;
+  currentStatus.vvtDuty = 0;
+  vvtCounter = 0;
 
   currentStatus.nitrous_status = NITROUS_OFF;
 
@@ -166,32 +190,101 @@ void boostControl()
 
 void vvtControl()
 {
-  if( configPage6.vvtEnabled == 1 )
+  if( (configPage6.vvtEnabled == 1) && (currentStatus.RPM > 0) )
   {
-    byte vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
+    currentStatus.vvtDuty = 0;
+    if( (configPage6.vvtMode == VVT_MODE_OPEN_LOOP) || (configPage6.vvtMode == VVT_MODE_ONOFF) )
+    {
+      //Lookup VVT duty based on either MAP or TPS
+      if(configPage6.vvtLoadSource == VVT_LOAD_TPS)
+      {
+        currentStatus.vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
+      }
+      else
+      {
+        currentStatus.vvtDuty = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM);
+      }
 
-    //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
-    if( (configPage6.VVTasOnOff == true) && (vvtDuty < 100) ) { vvtDuty = 0; }
+      //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
+      if( (configPage6.VVTasOnOff == true) && (currentStatus.vvtDuty < 100) ) { currentStatus.vvtDuty = 0; }
 
-    if(vvtDuty == 0)
+      vvt_pwm_value = percentage(currentStatus.vvtDuty, vvt_pwm_max_count);
+      if(currentStatus.vvtDuty > 0) { ENABLE_VVT_TIMER(); }
+
+    } //Open loop
+    else if( (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP) )
+    {
+      //Calculate the current cam angle
+      getCamAngle_Miata9905();
+
+      //Lookup VVT duty based on either MAP or TPS
+      if(configPage6.vvtLoadSource == VVT_LOAD_TPS)
+      {
+        currentStatus.vvtTargetAngle = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
+      }
+      else
+      {
+        currentStatus.vvtTargetAngle = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM);
+      }
+
+      if( (vvtCounter & 31) == 1) { vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD); } //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
+
+      //Check that we're not already at the angle we want to be
+      if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvtTargetAngle == currentStatus.vvtAngle) )
+      {
+        currentStatus.vvtDuty = configPage10.vvtCLholdDuty;
+        vvt_pwm_value = percentage(currentStatus.vvtDuty, vvt_pwm_max_count);
+        vvtPID.Initialize();
+      }
+      else
+      {
+        //If not already at target angle, calculate new value from PID
+
+        //This is dumb, but need to convert the current angle into a long pointer
+        vvt_pid_target_angle = currentStatus.vvtTargetAngle;
+
+        if(currentStatus.vvtTargetAngle > 0)
+        {
+          vvtPID.Compute(false);
+          //vvtPID.Compute2(currentStatus.vvtTargetAngle, currentStatus.vvtAngle, false);
+          //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
+          //if (currentStatus.vvtAngle > currentStatus.vvtTargetAngle) { vvt_pwm_target_value = 0; }
+          currentStatus.vvtDuty = (vvt_pwm_value * 100) / vvt_pwm_max_count;
+        }
+        else
+        {
+          currentStatus.vvtDuty = 0;
+        }
+      }
+      
+      if(currentStatus.vvtDuty > 0) { ENABLE_VVT_TIMER(); }
+      
+      //currentStatus.vvtDuty = 0;
+      vvtCounter++;
+    }
+
+    //Set the PWM state based on the above lookups
+    if(currentStatus.vvtDuty == 0)
     {
       //Make sure solenoid is off (0% duty)
       VVT_PIN_LOW();
       DISABLE_VVT_TIMER();
     }
-    else if (vvtDuty >= 100)
+    else if (currentStatus.vvtDuty >= 100)
     {
       //Make sure solenoid is on (100% duty)
       VVT_PIN_HIGH();
       DISABLE_VVT_TIMER();
     }
-    else
-    {
-      vvt_pwm_target_value = percentage(vvtDuty, vvt_pwm_max_count);
-      ENABLE_VVT_TIMER();
-    }
+ 
   }
-  else { DISABLE_VVT_TIMER(); } // Disable timer channel
+  else 
+  { 
+    // Disable timer channel
+    DISABLE_VVT_TIMER(); 
+    currentStatus.vvtDuty = 0;
+    vvt_pwm_value = 0;
+  } 
 }
 
 void nitrousControl()
@@ -286,13 +379,13 @@ void boostDisable()
   else
   {
     VVT_PIN_HIGH();  // Switch pin high
-    VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt_pwm_target_value;
-    vvt_pwm_cur_value = vvt_pwm_target_value;
+    VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt_pwm_value;
+    vvt_pwm_cur_value = vvt_pwm_value;
     vvt_pwm_state = true;
   }
 }
 
-#if defined(CORE_TEENSY)
+#if defined(CORE_TEENSY35)
 void ftm1_isr(void)
 {
   //FTM1 only has 2 compare channels
@@ -304,4 +397,6 @@ void ftm1_isr(void)
   else if(interrupt2) { FTM1_C1SC &= ~FTM_CSC_CHF; vvtInterrupt(); }
 
 }
+#elif defined(CORE_TEENSY40)
+//DO STUFF HERE
 #endif

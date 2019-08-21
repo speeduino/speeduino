@@ -1,6 +1,6 @@
 #ifndef TEENSY35_H
 #define TEENSY35_H
-#if defined(CORE_TEENSY)
+#if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
 
 /*
 ***********************************************************************************************************
@@ -10,6 +10,8 @@
   uint16_t freeRam();
   #define PORT_TYPE uint8_t //Size of the port variables
   #define PINMASK_TYPE uint8_t
+  #define COMPARE_TYPE uint16_t
+  #define COUNTER_TYPE uint16_t
   #define BOARD_DIGITAL_GPIO_PINS 34
   #define BOARD_NR_GPIO_PINS 34
   #define USE_SERIAL3

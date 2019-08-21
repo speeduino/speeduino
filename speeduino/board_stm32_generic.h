@@ -8,6 +8,8 @@
 */
   #define PORT_TYPE uint32_t
   #define PINMASK_TYPE uint32_t
+  #define COMPARE_TYPE uint16_t
+  #define COUNTER_TYPE uint16_t
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   #ifndef USE_SERIAL3
   #define USE_SERIAL3

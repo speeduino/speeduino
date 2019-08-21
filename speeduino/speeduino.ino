@@ -38,9 +38,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "crankMaths.h"
 #include "init.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
-#if defined (CORE_TEENSY)
-#include <FlexCAN.h>
-#endif
 
 void setup()
 {
@@ -200,6 +197,8 @@ void loop()
       BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
       boostControl();
+      //VVT may eventually need to be synced with the cam readings (ie run once per cam rev) but for now run at 30Hz
+      vvtControl();
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
@@ -271,7 +270,6 @@ void loop()
         } //For loop going through each channel
       } //aux channels are enabled
 
-       vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
     } //4Hz timer
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
@@ -290,10 +288,9 @@ void loop()
     BIT_CLEAR(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Clear the bit indicating that the 2nd fuel table is in use. 
     if(configPage10.fuel2Mode > 0)
     { 
-      currentStatus.VE2 = getVE2();
-
       if(configPage10.fuel2Mode == FUEL2_MODE_MULTIPLY)
       {
+        currentStatus.VE2 = getVE2();
         //Fuel 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
         uint16_t combinedVE = ((uint16_t)currentStatus.VE * (uint16_t)currentStatus.VE2) / 100;
         if(combinedVE <= 255) { totalVE = combinedVE; }
@@ -301,6 +298,7 @@ void loop()
       }
       else if(configPage10.fuel2Mode == FUEL2_MODE_ADD)
       {
+        currentStatus.VE2 = getVE2();
         //Fuel tables are added together, but a check is made to make sure this won't overflow the 8-bit totalVE value
         uint16_t combinedVE = (uint16_t)currentStatus.VE + (uint16_t)currentStatus.VE2;
         if(combinedVE <= 255) { totalVE = combinedVE; }
@@ -310,12 +308,44 @@ void loop()
       {
         if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_RPM)
         {
-
+          if(currentStatus.RPM > configPage10.fuel2SwitchValue)
+          {
+            BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
+            currentStatus.VE2 = getVE2();
+          }
+        }
+        else if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_MAP)
+        {
+          if(currentStatus.MAP > configPage10.fuel2SwitchValue)
+          {
+            BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
+            currentStatus.VE2 = getVE2();
+          }
+        }
+        else if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_TPS)
+        {
+          if(currentStatus.TPS > configPage10.fuel2SwitchValue)
+          {
+            BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
+            currentStatus.VE2 = getVE2();
+          }
+        }
+        else if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_ETH)
+        {
+          if(currentStatus.ethanolPct > configPage10.fuel2SwitchValue)
+          {
+            BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
+            currentStatus.VE2 = getVE2();
+          }
         }
       }
       else if(configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)
       {
-
+        if(digitalRead(configPage10.fuel2InputPin) == configPage10.fuel2InputPolarity)
+        {
+          BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
+          currentStatus.VE2 = getVE2();
+        }
       }
     }
     else { totalVE = currentStatus.VE; }

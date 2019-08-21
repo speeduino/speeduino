@@ -1,5 +1,5 @@
-#if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
-#include "board_teensy35.h"
+#if defined(CORE_TEENSY) && defined(__IMXRT1062__)
+#include "board_teensy40.h"
 #include "globals.h"
 #include "auxiliaries.h"
 #include "idle.h"
@@ -20,6 +20,7 @@ void initBoard()
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
     {
         //FlexTimer 2, compare channel 0 is used for idle
+        /*
         FTM2_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
         FTM2_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
         FTM2_MODE |= FTM_MODE_INIT;
@@ -27,7 +28,7 @@ void initBoard()
         FTM2_SC = 0x00; // Set this to zero before changing the modulus
         FTM2_CNTIN = 0x0000; //Shouldn't be needed, but just in case
         FTM2_CNT = 0x0000; // Reset the count to zero
-        FTM2_MOD = 0xFFFF; // max modulus = 65535
+        FTM2_MOD = 0xFFFF; // max modulus = 65535*/
 
         /*
         * Enable the clock for FTM0/1
@@ -36,14 +37,14 @@ void initBoard()
         * 10 Fixed frequency clock (32kHz)
         * 11 External clock
         */
-        FTM2_SC |= FTM_SC_CLKS(0b10);
+        //FTM2_SC |= FTM_SC_CLKS(0b10);
 
         /*
         * Trim the slow clock from 32kHz down to 31.25kHz (The slowest it will go)
         * This is somewhat imprecise and documentation is not good.
         * I poked the chip until I figured out the values associated with 31.25kHz
         */
-        MCG_C3 = 0x9B;
+        //MCG_C3 = 0x9B;
 
         /*
         * Set Prescaler
@@ -60,6 +61,7 @@ void initBoard()
         * 110 Divide by 64
         * 111 Divide by 128
         */
+       /*
         FTM2_SC |= FTM_SC_PS(0b0); //No prescaler
 
         //Setup the channels (See Pg 1014 of K64 DS).
@@ -80,6 +82,7 @@ void initBoard()
 
         //Enable IRQ Interrupt
         NVIC_ENABLE_IRQ(IRQ_FTM2);
+        */
     }
 
     /*
@@ -93,6 +96,7 @@ void initBoard()
     ***********************************************************************************************************
     * Auxilliaries
     */
+   /*
     //FlexTimer 1 is used for boost and VVT. There are 8 channels on this module
     FTM1_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
     FTM1_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
@@ -109,6 +113,7 @@ void initBoard()
     FTM1_C1SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
 
     //NVIC_ENABLE_IRQ(IRQ_FTM1);
+    */
 
     //2uS resolution Min 8Hz, Max 5KHz
     boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
@@ -119,6 +124,7 @@ void initBoard()
     * Schedules
     */
 
+    /*
     //FlexTimer 0 is used for 4 ignition and 4 injection schedules. There are 8 channels on this module, so no other timers are needed
     FTM0_MODE |= FTM_MODE_WPDIS; //Write Protection Disable
     FTM0_MODE |= FTM_MODE_FTMEN; //Flex Timer module enable
@@ -138,6 +144,7 @@ void initBoard()
     FTM3_CNTIN = 0x0000; //Shouldn't be needed, but just in case
     FTM3_CNT = 0x0000; //Reset the count to zero
     FTM3_MOD = 0xFFFF; //max modulus = 65535
+    */
 
     /*
     * Enable the clock for FTM0/1
@@ -146,8 +153,8 @@ void initBoard()
     * 10 Fixed frequency clock
     * 11 External clock
     */
-    FTM0_SC |= FTM_SC_CLKS(0b1);
-    FTM3_SC |= FTM_SC_CLKS(0b1);
+    //FTM0_SC |= FTM_SC_CLKS(0b1);
+    //FTM3_SC |= FTM_SC_CLKS(0b1);
 
     /*
     * Set Prescaler
@@ -164,14 +171,12 @@ void initBoard()
     * 110 Divide by 64
     * 111 Divide by 128
     */
-    FTM0_SC |= FTM_SC_PS(0b111);
-    FTM3_SC |= FTM_SC_PS(0b111);
+    //FTM0_SC |= FTM_SC_PS(0b111);
+    //FTM3_SC |= FTM_SC_PS(0b111);
 
     //Setup the channels (See Pg 1014 of K64 DS).
     //The are probably not needed as power on state should be 0
-    //FTM0_C0SC &= ~FTM_CSC_ELSB;
-    //FTM0_C0SC &= ~FTM_CSC_ELSA;
-    //FTM0_C0SC &= ~FTM_CSC_DMA;
+    /*
     FTM0_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
     FTM0_C0SC |= FTM_CSC_MSA; //Enable Compare mode
     FTM0_C0SC |= FTM_CSC_CHIE; //Enable channel compare interrupt
@@ -240,7 +245,7 @@ void initBoard()
     // enable IRQ Interrupt
     NVIC_ENABLE_IRQ(IRQ_FTM0);
     NVIC_ENABLE_IRQ(IRQ_FTM1);
-    
+    */
 }
 
 uint16_t freeRam()
