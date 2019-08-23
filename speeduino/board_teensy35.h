@@ -97,10 +97,7 @@
   #define IGN8_TIMER_DISABLE() FTM3_C7SC &= ~FTM_CSC_CHIE
 
   #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
-  #define MAX_TIMER_PERIOD_SLOW 139808
   #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
-  //Hack compatibility with AVR timers that run at different speeds
-  #define uS_TO_TIMER_COMPARE_SLOW(uS) ((uS * 15) >> 5)
 
 /*
 ***********************************************************************************************************
