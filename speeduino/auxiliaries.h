@@ -43,6 +43,7 @@ volatile unsigned int boost_pwm_cur_value;
 long boost_pwm_target_value;
 long boost_cl_target_boost;
 byte boostCounter;
+byte vvtCounter;
 
 byte fanHIGH = HIGH;             // Used to invert the cooling fan output
 byte fanLOW = LOW;               // Used to invert the cooling fan output
@@ -50,7 +51,9 @@ byte fanLOW = LOW;               // Used to invert the cooling fan output
 volatile bool vvt_pwm_state;
 unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int vvt_pwm_cur_value;
-long vvt_pwm_target_value;
+long vvt_pwm_value;
+long vvt_pid_target_angle;
+//long vvt_pid_current_angle;
 static inline void boostInterrupt();
 static inline void vvtInterrupt();
 

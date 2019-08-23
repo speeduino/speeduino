@@ -232,8 +232,8 @@ If it's the correct tooth, but the schedule is not yet started, calculate and an
     } \
     else if ( (currentTooth == ignition4EndTooth) ) \
     { \
-      if( (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW( fastDegreesToUS( ignitionLimits( (ignition4EndAngle - crankAngle) ) ) ); } \
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule4.endCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW( fastDegreesToUS( ignitionLimits( (ignition4EndAngle - crankAngle) ) ) ); ignitionSchedule4.endScheduleSetByDecoder = true; } \
+      if( (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition4EndAngle - crankAngle) ) ) ); } \
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule4.endCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition4EndAngle - crankAngle) ) ) ); ignitionSchedule4.endScheduleSetByDecoder = true; } \
     } \
   } \
 }
@@ -2009,6 +2009,15 @@ int getCrankAngle_Miata9905()
     }
 
     return crankAngle;
+}
+
+int getCamAngle_Miata9905()
+{
+  //lastVVTtime is the time between tooth #1 (10* BTDC) and the single cam tooth. 
+  //All cam angles in in BTDC, so the actual advance angle is 370 - fastTimeToAngle(lastVVTtime) - <the angle of the cam at 0 advance>
+  currentStatus.vvtAngle = 370 - fastTimeToAngle(lastVVTtime) - configPage10.vvtCLMinAng;
+
+  return currentStatus.vvtAngle;
 }
 
 void triggerSetEndTeeth_Miata9905()

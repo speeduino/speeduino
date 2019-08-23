@@ -915,7 +915,7 @@ void setPinMapping(byte boardID)
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 50; //Reset control output
 
-      #if defined(CORE_TEENSY)
+      #if defined(CORE_TEENSY35)
         pinTrigger = 23;
         pinStepperDir = 33;
         pinStepperStep = 34;
@@ -965,7 +965,7 @@ void setPinMapping(byte boardID)
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 43; //Reset control output
 
-      #if defined(CORE_TEENSY)
+      #if defined(CORE_TEENSY35)
         pinInjector6 = 51;
 
         pinTrigger = 23;
@@ -1094,7 +1094,7 @@ void setPinMapping(byte boardID)
       pinResetControl = 39; //Reset control output
 
       //This is NOT correct. It has not yet been tested with this board
-      #if defined(CORE_TEENSY)
+      #if defined(CORE_TEENSY35)
         pinTrigger = 23;
         pinTrigger2 = 36;
         pinStepperDir = 34;
@@ -1144,7 +1144,7 @@ void setPinMapping(byte boardID)
       pinResetControl = 44; //Reset control output
 
       //This is NOT correct. It has not yet been tested with this board
-      #if defined(CORE_TEENSY)
+      #if defined(CORE_TEENSY35)
         pinTrigger = 23;
         pinTrigger2 = 36;
         pinStepperDir = 34;
@@ -1192,7 +1192,7 @@ void setPinMapping(byte boardID)
       pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 44; //Reset control output
 
-      #if defined(CORE_TEENSY)
+      #if defined(CORE_TEENSY35)
         pinTrigger = 23;
         pinTrigger2 = 36;
         pinStepperDir = 34;
@@ -1410,7 +1410,8 @@ void setPinMapping(byte boardID)
 
     case 45:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
-      //Pin mappings for the DIY-EFI CORE4 Module
+      //Pin mappings for the DIY-EFI CORE4 Module. This is an AVR only module
+      #if defined(CORE_AVR)
       pinInjector1 = 10; //Output pin injector 1 is on
       pinInjector2 = 11; //Output pin injector 2 is on
       pinInjector3 = 12; //Output pin injector 3 is on
@@ -1450,10 +1451,11 @@ void setPinMapping(byte boardID)
       pinSpareLOut5 = 33; //low current output spare4
       pinFan = 40; //Pin for the fan output
       pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+      #endif
     #endif
       break;
 
-    #if defined(CORE_TEENSY)
+    #if defined(CORE_TEENSY35)
     case 50:
       //Pin mappings as per the teensy rev A shield
       pinInjector1 = 2; //Output pin injector 1 is on
@@ -1614,6 +1616,7 @@ void setPinMapping(byte boardID)
   if ( (configPage6.vvtPin != 0) && (configPage6.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage6.vvtPin); }
   if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage6.baroPin + A0; }
   if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_NR_GPIO_PINS) ) { pinEMAP = configPage10.EMAPPin + A0; }
+  if ( (configPage10.fuel2InputPin != 0) && (configPage10.fuel2InputPin < BOARD_NR_GPIO_PINS) ) { pinFuel2Input = pinTranslate(configPage10.fuel2InputPin); }
 
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
@@ -1734,6 +1737,11 @@ void setPinMapping(byte boardID)
   {
     if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinIdleUp, INPUT); } //inverted setting
+  }
+  if(configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)
+  {
+    if (configPage10.fuel2InputPullup == true) { pinMode(pinFuel2Input, INPUT_PULLUP); } //With pullup
+    else { pinMode(pinFuel2Input, INPUT); } //Normal input
   }
   
 

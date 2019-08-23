@@ -102,14 +102,14 @@ struct Schedule {
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
   volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
-  volatile uint16_t startCompare; //The counter value of the timer when this will start
-  volatile uint16_t endCompare;
+  volatile COMPARE_TYPE startCompare; //The counter value of the timer when this will start
+  volatile COMPARE_TYPE endCompare;
 
   unsigned int nextStartCompare;
   unsigned int nextEndCompare;
   volatile bool hasNextSchedule = false;
   volatile bool endScheduleSetByDecoder = false;
-#if defined(CORE_AVR)
+#if defined(CORE_AVR) || defined(CORE_TEENSY40)
   volatile uint16_t * counter;
   volatile uint16_t * compare;
 #else

@@ -65,8 +65,8 @@ script:
   - make
   - cd ../speeduino
   - platformio update
-# Run the builds
-  - platformio run -e megaatmega2560 -e teensy35
+# Run the builds (Mega must be last so that the hex file isn't cleaned up)
+  - platformio run -e teensy35 -e teensy40 -e megaatmega2560 
 # Upload ini and hex files to speeduino.com server
   - curl --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pioenvs/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
   - curl --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
