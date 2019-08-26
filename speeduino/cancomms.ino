@@ -8,7 +8,7 @@ can_comms was originally contributed by Darren Siepka
 /*
 can_command is called when a command is received over serial3 from the Can interface
 It parses the command and calls the relevant function
-sendcancommand is called when a comman d is to be sent via serial3 to the Can interface
+sendcancommand is called when a command is to be sent via serial3 to the Can interface
 */
 #include "globals.h"
 #include "cancomms.h"
@@ -165,7 +165,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[13] = currentStatus.wueCorrection; //Warmup enrichment (%)
   fullStatus[14] = lowByte(currentStatus.RPM); //rpm HB
   fullStatus[15] = highByte(currentStatus.RPM); //rpm LB
-  fullStatus[16] = currentStatus.TAEamount; //acceleration enrichment (%)
+  fullStatus[16] = currentStatus.AEamount; //acceleration enrichment (%)
   fullStatus[17] = currentStatus.corrections; //Total GammaE (%)
   fullStatus[18] = currentStatus.VE; //Current VE 1 (%)
   fullStatus[19] = currentStatus.afrTarget;

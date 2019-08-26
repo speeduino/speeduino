@@ -8,6 +8,8 @@
 */
   #define PORT_TYPE uint32_t
   #define PINMASK_TYPE uint32_t
+  #define COMPARE_TYPE uint16_t
+  #define COUNTER_TYPE uint16_t
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   #ifndef USE_SERIAL3
   #define USE_SERIAL3
@@ -84,9 +86,8 @@
 *
 */
   #define MAX_TIMER_PERIOD 65535*2 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
-  #define MAX_TIMER_PERIOD_SLOW  65535*2 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
   #define uS_TO_TIMER_COMPARE(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
-  #define uS_TO_TIMER_COMPARE_SLOW(uS) (uS >> 1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
+
   #if defined(ARDUINO_ARCH_STM32) && !defined(_VARIANT_ARDUINO_STM32_) // STM32GENERIC core
     #define FUEL1_COUNTER (TIM2)->CNT
     #define FUEL2_COUNTER (TIM2)->CNT

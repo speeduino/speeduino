@@ -14,6 +14,7 @@
 
 uint16_t PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen);
 byte getVE();
+byte getVE2();
 byte getAdvance();
 
 uint16_t calculateInjector2StartAngle(unsigned int);

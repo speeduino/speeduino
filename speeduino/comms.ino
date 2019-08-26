@@ -21,7 +21,6 @@ A full copy of the license may be found in the projects root directory
 */
 void command()
 {
-  int valueOffset; /**< THe memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
   if (cmdPending == false) { currentCommand = Serial.read(); }
 
   switch (currentCommand)
@@ -93,7 +92,9 @@ void command()
 
       if(Serial.available() >= 2)
       {
-        int cmdCombined = word(Serial.read(), Serial.read());
+        byte cmdGroup = Serial.read();
+        byte cmdValue = Serial.read();
+        int cmdCombined = word(cmdGroup, cmdValue);
         if (currentStatus.RPM == 0) { commandButtons(cmdCombined); }
 
         cmdPending = false;
@@ -174,6 +175,7 @@ void command()
       break;
 
     case 'P': // set the current page
+      //This is a legacy function and is no longer used by TunerStudio. It is maintained for compatibility with other systems
       //A 2nd byte of data is required after the 'P' specifying the new page number.
       cmdPending = true;
 
@@ -181,9 +183,21 @@ void command()
       {
         currentPage = Serial.read();
         //This converts the ascii number char into binary. Note that this will break everyything if there are ever more than 48 pages (48 = asci code for '0')
-        if (currentPage >= '0') { currentPage -= '0'; }
+        if ((currentPage >= '0') && (currentPage <= '9')) // 0 - 9
+        {
+          currentPage -= 48;
+        }
+        else if ((currentPage >= 'a') && (currentPage <= 'f')) // 10 - 15
+        {
+          currentPage -= 87;
+        }
+        else if ((currentPage >= 'A') && (currentPage <= 'F'))
+        {
+          currentPage -= 55;
+        }
+        
         // Detecting if the current page is a table/map
-        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) ) { isMap = true; }
+        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) ) { isMap = true; }
         else { isMap = false; }
         cmdPending = false;
       }
@@ -224,7 +238,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 201904-dev"));
+      Serial.print(F("speeduino 201906-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -254,12 +268,12 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2019.04-dev"));
+      Serial.print(F("Speeduino 2019.06-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
-      if(currentStatus.toothLogEnabled == true) { sendToothLog(false); } //Sends tooth log values as ints
+      if(currentStatus.toothLogEnabled == true) { sendToothLog(); } //Sends tooth log values as ints
       else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(); }
 
       break;
@@ -402,7 +416,7 @@ void command()
       break;
 
     case 'z': //Send 256 tooth log entries to a terminal emulator
-      sendToothLog(true); //Sends tooth log values as chars
+      sendToothLog(); //Sends tooth log values as chars
       break;
 
     case '`': //Custom 16u2 firmware is making its presence known
@@ -483,7 +497,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
     requestCount++;
   }
 
-  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   fullStatus[1] = currentStatus.status1; //status1 Bitfield
@@ -501,7 +515,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[13] = currentStatus.wueCorrection; //Warmup enrichment (%)
   fullStatus[14] = lowByte(currentStatus.RPM); //rpm HB
   fullStatus[15] = highByte(currentStatus.RPM); //rpm LB
-  fullStatus[16] = (byte)(currentStatus.TAEamount >> 1); //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
+  fullStatus[16] = (byte)(currentStatus.AEamount >> 1); //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
   fullStatus[17] = currentStatus.corrections; //Total GammaE (%)
   fullStatus[18] = currentStatus.VE; //Current VE 1 (%)
   fullStatus[19] = currentStatus.afrTarget;
@@ -593,6 +607,10 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[89] = lowByte(currentStatus.dwell);
   fullStatus[90] = highByte(currentStatus.dwell);
   fullStatus[91] = currentStatus.CLIdleTarget;
+  fullStatus[92] = currentStatus.mapDOT;
+  fullStatus[93] = (int8_t)currentStatus.vvtAngle;
+  fullStatus[94] = currentStatus.vvtTargetAngle;
+  fullStatus[95] = currentStatus.vvtDuty;
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -685,6 +703,7 @@ void sendValuesLegacy()
   temp = currentStatus.VE * 10;
   bytestosend -= Serial.write(temp>>8); // ve1
   bytestosend -= Serial.write(temp); // ve1
+  temp = currentStatus.VE2 * 10;
   bytestosend -= Serial.write(temp>>8); // ve2
   bytestosend -= Serial.write(temp); // ve2
 
@@ -697,8 +716,9 @@ void sendValuesLegacy()
   bytestosend -= Serial.write(temp>>8); // TPSdot
   bytestosend -= Serial.write(temp); // TPSdot
 
-  bytestosend -= Serial.write(99); // MAPdot
-  bytestosend -= Serial.write(99); // MAPdot
+  temp = currentStatus.mapDOT * 10;
+  bytestosend -= Serial.write(temp >> 8); // MAPdot
+  bytestosend -= Serial.write(temp); // MAPdot
 
   temp = currentStatus.dwell * 10;
   bytestosend -= Serial.write(temp>>8); // dwell
@@ -908,6 +928,32 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       }
       break;
 
+    case fuelMap2Page:
+      if (valueOffset < 256) //New value is part of the fuel map
+      {
+        fuelTable2.values[15 - (valueOffset / 16)][valueOffset % 16] = newValue;
+      }
+      else
+      {
+        //Check whether this is on the X (RPM) or Y (MAP/TPS) axis
+        if (valueOffset < 272)
+        {
+          //X Axis
+          fuelTable2.axisX[(valueOffset - 256)] = ((int)(newValue) * TABLE_RPM_MULTIPLIER); //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+        }
+        else if(valueOffset < 288)
+        {
+          //Y Axis
+          tempOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
+          fuelTable2.axisY[tempOffset] = (int)(newValue) * TABLE_LOAD_MULTIPLIER;
+        }
+        else
+        {
+          //This should never happen. It means there's an invalid offset value coming through
+        }
+      }
+      break;
+
     default:
       break;
   }
@@ -1001,11 +1047,15 @@ void sendPage()
       break;
     }
     case canbusPage:
-      pnt_configPage = &configPage9; //Create a pointer to Page 10 in memory
+      pnt_configPage = &configPage9; //Create a pointer to Page 9 in memory
       break;
 
     case warmupPage:
-      pnt_configPage = &configPage10; //Create a pointer to Page 11 in memory
+      pnt_configPage = &configPage10; //Create a pointer to Page 10 in memory
+      break;
+
+    case fuelMap2Page:
+      currentTable = fuelTable2;
       break;
 
     default:
@@ -1162,9 +1212,9 @@ void sendPageASCII()
         if (y == 2) { currentVar = configPage6.voltageCorrectionBins; }
         else { currentVar = configPage6.injVoltageCorrectionValues; }
 
-        for (byte x = 6; x; x--)
+        for (byte i = 6; i; i--)
         {
-          Serial.print(currentVar[6 - x]);
+          Serial.print(currentVar[6 - i]);
           Serial.print(' ');
         }
         Serial.println();
@@ -1175,9 +1225,9 @@ void sendPageASCII()
         if (y == 2) { currentVar = configPage6.airDenBins; }
         else { currentVar = configPage6.airDenRates; }
 
-        for (byte x = 9; x; x--)
+        for (byte i = 9; i; i--)
         {
-          Serial.print(currentVar[9 - x]);
+          Serial.print(currentVar[9 - i]);
           Serial.print(' ');
         }
         Serial.println();
@@ -1203,9 +1253,9 @@ void sendPageASCII()
           case 4: currentVar = configPage6.iacCLValues; break;
           default: break;
         }
-        for (byte x = 10; x; x--)
+        for (byte i = 10; i; i--)
         {
-          Serial.print(currentVar[10 - x]);
+          Serial.print(currentVar[10 - i]);
           Serial.print(' ');
         }
         Serial.println();
@@ -1220,9 +1270,9 @@ void sendPageASCII()
           case 3: currentVar = configPage6.iacCrankSteps; break;
           default: break;
         }
-        for (byte x = 4; x; x--)
+        for (byte i = 4; i; i--)
         {
-          Serial.print(currentVar[4 - x]);
+          Serial.print(currentVar[4 - i]);
           Serial.print(' ');
         }
         Serial.println();
@@ -1252,9 +1302,9 @@ void sendPageASCII()
         }
         Serial.print(axisY);// Vertical Bins
         Serial.write(" ");
-        for (int x = 0; x < currentTable.xSize; x++)
+        for (int i = 0; i < currentTable.xSize; i++)
         {
-          byte value = currentTable.values[y][x];
+          byte value = currentTable.values[y][i];
           if (value < 100)
           {
             Serial.write(" ");
@@ -1290,6 +1340,11 @@ void sendPageASCII()
       sendComplete = true;
       break;
 
+    case fuelMap2Page:
+      currentTitleIndex = 117;// the index to the first char of the third string in pageTitles
+      currentTable = fuelTable2;
+      break;
+
     default:
     #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
@@ -1304,8 +1359,8 @@ void sendPageASCII()
   {
     if (isMap)
     {
-      do //This is a do while loop that kicks in for the boostvvtPage
-      {
+      //This is a do while loop that kicks in for the boostvvtPage
+      do {
         const char spaceChar = ' ';
 
         Serial.println((const __FlashStringHelper *)&pageTitles[currentTitleIndex]);// F macro hack
@@ -1360,8 +1415,8 @@ void sendPageASCII()
           currentTitleIndex = 132; //Change over to vvtTable mid display
           currentTable = vvtTable;
         }
-        else currentTitleIndex = 0;
-      }while(currentTitleIndex == 132); //Should never loop unless going to display vvtTable
+        else { currentTitleIndex = 0; }
+      } while(currentTitleIndex == 132); //Should never loop unless going to display vvtTable
     } //is map
     else
     {
@@ -1643,7 +1698,7 @@ Send 256 tooth log entries
  * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
  * if useChar is false, the values are sent as a 2 byte integer which is readable by TunerStudios tooth logger
 */
-void sendToothLog(bool useChar)
+void sendToothLog()
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
@@ -1726,11 +1781,11 @@ void commandButtons(int buttonCommand)
       break;
 
     case 513: // cmd group is for injector1 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector1(); }
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector1(); }
       break;
 
     case 514: // cmd group is for injector1 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector1(); }
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector1(); }
       break;
 
     case 515: // cmd group is for injector1 50% dc actions

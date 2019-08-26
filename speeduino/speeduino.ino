@@ -19,7 +19,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #ifndef UNIT_TEST  // Scope guard for unit testing
 
-#include <stdint.h> //https://developer.mbed.org/handbook/C-Data-Types
+#include <stdint.h> //developer.mbed.org/handbook/C-Data-Types
 //************************************************
 #include "globals.h"
 #include "speeduino.h"
@@ -38,9 +38,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "crankMaths.h"
 #include "init.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
-#if defined (CORE_TEENSY)
-#include <FlexCAN.h>
-#endif
 
 void setup()
 {
@@ -103,6 +100,7 @@ void loop()
       currentStatus.RPM = 0;
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
+      currentStatus.VE2 = 0;
       toothLastToothTime = 0;
       toothLastSecToothTime = 0;
       //toothLastMinusOneToothTime = 0;
@@ -131,6 +129,7 @@ void loop()
       VVT_PIN_LOW();
       DISABLE_VVT_TIMER();
       boostDisable();
+      if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
     }
 
     //***Perform sensor reads***
@@ -198,6 +197,8 @@ void loop()
       BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
       boostControl();
+      //VVT may eventually need to be synced with the cam readings (ie run once per cam rev) but for now run at 30Hz
+      vvtControl();
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
@@ -269,7 +270,6 @@ void loop()
         } //For loop going through each channel
       } //aux channels are enabled
 
-       vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
     } //4Hz timer
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
@@ -280,8 +280,75 @@ void loop()
 
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) )  { idleControl(); } //Run idlecontrol every loop for stepper idle.
 
+    byte totalVE = 0;
     //VE calculation was moved outside the sync/RPM check so that the fuel load value will be accurately shown when RPM=0
     currentStatus.VE = getVE();
+
+    //If the secondary fuel table is in use, also get the VE value from there
+    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Clear the bit indicating that the 2nd fuel table is in use. 
+    if(configPage10.fuel2Mode > 0)
+    { 
+      if(configPage10.fuel2Mode == FUEL2_MODE_MULTIPLY)
+      {
+        currentStatus.VE2 = getVE2();
+        //Fuel 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
+        uint16_t combinedVE = ((uint16_t)currentStatus.VE * (uint16_t)currentStatus.VE2) / 100;
+        if(combinedVE <= 255) { totalVE = combinedVE; }
+        else { totalVE = 255; }
+      }
+      else if(configPage10.fuel2Mode == FUEL2_MODE_ADD)
+      {
+        currentStatus.VE2 = getVE2();
+        //Fuel tables are added together, but a check is made to make sure this won't overflow the 8-bit totalVE value
+        uint16_t combinedVE = (uint16_t)currentStatus.VE + (uint16_t)currentStatus.VE2;
+        if(combinedVE <= 255) { totalVE = combinedVE; }
+        else { totalVE = 255; }
+      }
+      else if(configPage10.fuel2Mode == FUEL2_MODE_CONDITIONAL_SWITCH )
+      {
+        if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_RPM)
+        {
+          if(currentStatus.RPM > configPage10.fuel2SwitchValue)
+          {
+            BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
+            currentStatus.VE2 = getVE2();
+          }
+        }
+        else if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_MAP)
+        {
+          if(currentStatus.MAP > configPage10.fuel2SwitchValue)
+          {
+            BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
+            currentStatus.VE2 = getVE2();
+          }
+        }
+        else if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_TPS)
+        {
+          if(currentStatus.TPS > configPage10.fuel2SwitchValue)
+          {
+            BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
+            currentStatus.VE2 = getVE2();
+          }
+        }
+        else if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_ETH)
+        {
+          if(currentStatus.ethanolPct > configPage10.fuel2SwitchValue)
+          {
+            BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
+            currentStatus.VE2 = getVE2();
+          }
+        }
+      }
+      else if(configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)
+      {
+        if(digitalRead(configPage10.fuel2InputPin) == configPage10.fuel2InputPolarity)
+        {
+          BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
+          currentStatus.VE2 = getVE2();
+        }
+      }
+    }
+    else { totalVE = currentStatus.VE; }
 
     //Always check for sync
     //Main loop runs within this clause
@@ -315,7 +382,8 @@ void loop()
       currentStatus.corrections = correctionsFuel();
 
       currentStatus.advance = getAdvance();
-      currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
+      //currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
+      currentStatus.PW1 = PW(req_fuel_uS, totalVE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
 
       //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
       if(currentStatus.nitrous_status == NITROUS_STAGE1)
@@ -372,8 +440,9 @@ void loop()
 
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
       unsigned long pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
-      if (CRANK_ANGLE_MAX_INJ == 720) { pwLimit = pwLimit * 2; } //For sequential, the maximum pulse time is double (2 revolutions). Wouldn't work for 2 stroke...
-      else if (CRANK_ANGLE_MAX_INJ < 360) { pwLimit = pwLimit / currentStatus.nSquirts; } //Handle cases where there are multiple squirts per rev
+      //Handle multiple squirts per rev
+      if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2 / currentStatus.nSquirts; } 
+      else { pwLimit = pwLimit / currentStatus.nSquirts; }
       //Apply the pwLimit if staging is dsiabled and engine is not cranking
       if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (configPage10.stagingEnabled == false) ) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
 
@@ -435,10 +504,10 @@ void loop()
         configPage2.inj4Ang = configPage2.inj1Ang;
       } 
       unsigned int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
-      //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See http://www.extraefi.co.uk/sequential_fuel.html for more detail
+      //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See www.extraefi.co.uk/sequential_fuel.html for more detail
       if(configPage2.inj1Ang > PWdivTimerPerDegree) { injector1StartAngle = configPage2.inj1Ang - ( PWdivTimerPerDegree ); }
       else { injector1StartAngle = configPage2.inj1Ang + CRANK_ANGLE_MAX_INJ - PWdivTimerPerDegree; } //Just incase 
-      if(injector1StartAngle > CRANK_ANGLE_MAX_INJ) {injector1StartAngle -= CRANK_ANGLE_MAX_INJ;}
+      while(injector1StartAngle > CRANK_ANGLE_MAX_INJ) { injector1StartAngle -= CRANK_ANGLE_MAX_INJ; }
 
       //Repeat the above for each cylinder
       switch (configPage2.nCylinders)
@@ -461,7 +530,6 @@ void loop()
             injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
 
             injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
-            if(injector4StartAngle < 0) {injector4StartAngle += CRANK_ANGLE_MAX_INJ;}
             if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
           }
           break;
@@ -498,7 +566,6 @@ void loop()
             injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
 
             injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
-            if(injector4StartAngle < 0) {injector4StartAngle += CRANK_ANGLE_MAX_INJ;}
             if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
           }
           break;
@@ -1166,6 +1233,36 @@ byte getVE()
   }
   else { currentStatus.fuelLoad = currentStatus.MAP; } //Fallback position
   tempVE = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
+
+  return tempVE;
+}
+
+/**
+ * @brief Looks up and returns the VE value from the secondary fuel table
+ * 
+ * This performs largely the same operations as getVE() however the lookup is of the secondary fuel table and uses the secondary load source
+ * @return byte 
+ */
+byte getVE2()
+{
+  byte tempVE = 100;
+  if( configPage10.fuel2Algorithm == LOAD_SOURCE_MAP)
+  {
+    //Speed Density
+    currentStatus.fuelLoad2 = currentStatus.MAP;
+  }
+  else if (configPage10.fuel2Algorithm == LOAD_SOURCE_TPS)
+  {
+    //Alpha-N
+    currentStatus.fuelLoad2 = currentStatus.TPS;
+  }
+  else if (configPage10.fuel2Algorithm == LOAD_SOURCE_IMAPEMAP)
+  {
+    //IMAP / EMAP
+    currentStatus.fuelLoad2 = (currentStatus.MAP * 100) / currentStatus.EMAP;
+  }
+  else { currentStatus.fuelLoad2 = currentStatus.MAP; } //Fallback position
+  tempVE = get3DTableValue(&fuelTable2, currentStatus.fuelLoad2, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
 
   return tempVE;
 }
