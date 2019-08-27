@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    12
+  #define CURRENT_DATA_VERSION    13
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -246,6 +246,33 @@ void doUpdates()
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 12);
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 12)
+  {
+    //August 2019
+    // Req_fuel does not get computed by TS anymore
+
+    // The divider field now contains the raw nSquirt value
+    configPage2.divider = configPage2.nCylinders / configPage2.divider;
+
+    // Before, the nSquirt value was overwritten to 1 when four stroke and sequential injection was selected 
+    if (configPage2.strokes == FOUR_STROKE && configPage2.injLayout == INJ_SEQUENTIAL)
+    {
+      configPage2.divider = 1;
+    }
+
+    // Before, reqfuel was divided by the divider, now we store the raw value
+    configPage2.reqFuel *= configPage2.divider;
+
+    // Before, reqfuel was multiplied by 2 when alternating injection was selected. 
+    if (configPage2.strokes == FOUR_STROKE && configPage2.injLayout != INJ_SEQUENTIAL)
+    {
+      configPage2.reqFuel /= 2;
+    }
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 13);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)
