@@ -154,10 +154,18 @@ void loop()
         currentStatus.launchingHard = true; 
         BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); 
       } 
-      else { currentStatus.launchingHard = false; BIT_CLEAR(currentStatus.spark, BIT_SPARK_HLAUNCH); }
+      else 
+      { 
+        //FLag launch as being off
+        currentStatus.launchingHard = false; 
+        BIT_CLEAR(currentStatus.spark, BIT_SPARK_HLAUNCH); 
 
-      if(configPage6.flatSEnable && clutchTrigger && (currentStatus.RPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > currentStatus.clutchEngagedRPM) ) { currentStatus.flatShiftingHard = true; }
-      else { currentStatus.flatShiftingHard = false; }
+        //If launch is not active, check whether flat shift should be active
+        if(configPage6.flatSEnable && clutchTrigger && (currentStatus.RPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > currentStatus.clutchEngagedRPM) ) { currentStatus.flatShiftingHard = true; }
+        else { currentStatus.flatShiftingHard = false; }
+      }
+
+
 
       //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
       if( (configPage6.boostCutType > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2)) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
