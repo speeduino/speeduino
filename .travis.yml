@@ -56,14 +56,14 @@ before_install:
   - sudo apt-get install doxygen graphviz
 
 install:
-    - 
+    - pip install -U platformio
 
 script:
   - cd /home/travis/build
   - git clone --depth=10 https://github.com/noisymime/cppcheck.git noisymime/cppcheck_github
-  #- cd noisymime/cppcheck_github
+  - cd noisymime/cppcheck_github
   #- make
-  #- cd ../speeduino
+  - cd ../speeduino
   - platformio update
 # Run the builds (Mega must be last so that the hex file isn't cleaned up)
   - platformio run -e teensy35 -e teensy40 -e megaatmega2560 
