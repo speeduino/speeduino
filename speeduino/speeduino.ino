@@ -135,7 +135,7 @@ void loop()
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
     readMAP();
-
+    
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
@@ -280,9 +280,10 @@ void loop()
 
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) )  { idleControl(); } //Run idlecontrol every loop for stepper idle.
 
-    byte totalVE = 0;
+    
     //VE calculation was moved outside the sync/RPM check so that the fuel load value will be accurately shown when RPM=0
-    currentStatus.VE = getVE();
+    currentStatus.VE1 = getVE1();
+    currentStatus.VE = currentStatus.VE1; //Set the final VE value to be VE 1 as a default. This may be changed in the section belo
 
     //If the secondary fuel table is in use, also get the VE value from there
     BIT_CLEAR(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Clear the bit indicating that the 2nd fuel table is in use. 
@@ -292,17 +293,17 @@ void loop()
       {
         currentStatus.VE2 = getVE2();
         //Fuel 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
-        uint16_t combinedVE = ((uint16_t)currentStatus.VE * (uint16_t)currentStatus.VE2) / 100;
-        if(combinedVE <= 255) { totalVE = combinedVE; }
-        else { totalVE = 255; }
+        uint16_t combinedVE = ((uint16_t)currentStatus.VE1 * (uint16_t)currentStatus.VE2) / 100;
+        if(combinedVE <= 255) { currentStatus.VE = combinedVE; }
+        else { currentStatus.VE = 255; }
       }
       else if(configPage10.fuel2Mode == FUEL2_MODE_ADD)
       {
         currentStatus.VE2 = getVE2();
-        //Fuel tables are added together, but a check is made to make sure this won't overflow the 8-bit totalVE value
-        uint16_t combinedVE = (uint16_t)currentStatus.VE + (uint16_t)currentStatus.VE2;
-        if(combinedVE <= 255) { totalVE = combinedVE; }
-        else { totalVE = 255; }
+        //Fuel tables are added together, but a check is made to make sure this won't overflow the 8-bit VE value
+        uint16_t combinedVE = (uint16_t)currentStatus.VE1 + (uint16_t)currentStatus.VE2;
+        if(combinedVE <= 255) { currentStatus.VE = combinedVE; }
+        else { currentStatus.VE = 255; }
       }
       else if(configPage10.fuel2Mode == FUEL2_MODE_CONDITIONAL_SWITCH )
       {
@@ -312,6 +313,7 @@ void loop()
           {
             BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
             currentStatus.VE2 = getVE2();
+            currentStatus.VE = currentStatus.VE2;
           }
         }
         else if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_MAP)
@@ -320,6 +322,7 @@ void loop()
           {
             BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
             currentStatus.VE2 = getVE2();
+            currentStatus.VE = currentStatus.VE2;
           }
         }
         else if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_TPS)
@@ -328,6 +331,7 @@ void loop()
           {
             BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
             currentStatus.VE2 = getVE2();
+            currentStatus.VE = currentStatus.VE2;
           }
         }
         else if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_ETH)
@@ -336,6 +340,7 @@ void loop()
           {
             BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
             currentStatus.VE2 = getVE2();
+            currentStatus.VE = currentStatus.VE2;
           }
         }
       }
@@ -345,10 +350,10 @@ void loop()
         {
           BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
           currentStatus.VE2 = getVE2();
+          currentStatus.VE = currentStatus.VE2;
         }
       }
     }
-    else { totalVE = currentStatus.VE; }
 
     //Always check for sync
     //Main loop runs within this clause
@@ -383,7 +388,7 @@ void loop()
 
       currentStatus.advance = getAdvance();
       //currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
-      currentStatus.PW1 = PW(req_fuel_uS, totalVE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
+      currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
 
       //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
       if(currentStatus.nitrous_status == NITROUS_STAGE1)
@@ -1213,7 +1218,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
  * 
  * @return byte The current VE value
  */
-byte getVE()
+byte getVE1()
 {
   byte tempVE = 100;
   if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used

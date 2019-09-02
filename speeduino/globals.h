@@ -396,8 +396,9 @@ struct statuses {
   byte tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Value is divided by 10 to be stored in a byte */
   byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
   volatile int rpmDOT;
-  byte VE;
-  byte VE2;
+  byte VE; /**< The current VE value being used in the fuel calculation. Can be the same as VE1 or VE2, or a calculated value of both */
+  byte VE1; /**< The VE value from fuel table 1 */
+  byte VE2; /**< The VE value from fuel table 2, if in use (and required conditions are met) */
   byte O2;
   byte O2_2;
   int coolant;
