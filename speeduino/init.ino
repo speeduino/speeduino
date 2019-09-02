@@ -1454,7 +1454,7 @@ void setPinMapping(byte boardID)
       pinCoil2 = 29; //Pin for coil 2
       pinCoil3 = 28; //Pin for coil 3
       pinCoil4 = 27; //Pin for coil 4
-      pinCoil4 = 26; //Placeholder  for coil 5
+      pinCoil5 = 26; //Placeholder  for coil 5
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinFlex = 20; // Flex sensor
