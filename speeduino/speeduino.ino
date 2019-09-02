@@ -354,7 +354,7 @@ void loop()
       }
       else if(configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)
       {
-        if(digitalRead(configPage10.fuel2InputPin) == configPage10.fuel2InputPolarity)
+        if(digitalRead(pinFuel2Input) == configPage10.fuel2InputPolarity)
         {
           BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
           currentStatus.VE2 = getVE2();
