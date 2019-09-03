@@ -23,9 +23,9 @@ steps:
 - bash: | 
     cd noisymime/cppcheck_github
     make
-    cd ../
   displayName: 'Making cppcheck'
 - bash: | 
+    cd noisymime
     chmod +x speeduino/misra/check_misra_github.sh
     speeduino/misra/check_misra_github.sh
   displayName: 'Running Scan'
@@ -34,7 +34,7 @@ steps:
 - task: PublishTestResults@2
   inputs:
     testResultsFormat: 'JUnit'
-    testResultsFiles: 'misra.xml' 
+    testResultsFiles: '**/misra.xml' 
     #searchFolder: '$(System.DefaultWorkingDirectory)' # Optional
     #mergeTestResults: false # Optional
     #failTaskOnFailedTests: false # Optional
