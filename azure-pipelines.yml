@@ -11,9 +11,9 @@ pool:
 
 steps:
 - bash: |
-    sudo apt-get update -qq
+    sudo apt-get update
     sudo apt-get build-dep -qq cppcheck
-    continueOnError: true
+  continueOnError: true
   displayName: 'Installing deps'
 - bash: | 
     git clone --depth=10 https://github.com/noisymime/speeduino /noisymime/speeduino
