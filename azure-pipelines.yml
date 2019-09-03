@@ -1,0 +1,37 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- script: sudo apt-get update -qq
+- script: sudo apt-get build-dep -qq cppcheck
+  displayName: 'Cloning repos'
+- script: git clone --depth=10 https://github.com/noisymime/speeduino /noisymime/speeduino
+- script: git clone --depth=10 https://github.com/noisymime/cppcheck.git noisymime/cppcheck_github
+  displayName: 'Building cppcheck'
+- script: cd noisymime/cppcheck_github
+- script: make
+- script: cd ../
+  displayName: 'Running Scan'
+- script: chmod +x speeduino/misra/check_misra_github.sh
+- script: speeduino/misra/check_misra_github.sh
+
+# Publish test results to Azure Pipelines
+- task: PublishTestResults@2
+  inputs:
+    testResultsFormat: 'JUnit'
+    testResultsFiles: '**/misra.xml' 
+    #searchFolder: '$(System.DefaultWorkingDirectory)' # Optional
+    #mergeTestResults: false # Optional
+    #failTaskOnFailedTests: false # Optional
+    #testRunTitle: # Optional
+    #buildPlatform: # Optional
+    #buildConfiguration: # Optional
+    #publishRunAttachments: true # Optional
