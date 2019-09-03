@@ -11,6 +11,7 @@ pool:
 
 steps:
 - bash: |
+    sudo sed -i -- 's/#deb-src/deb-src/g' /etc/apt/sources.list && sudo sed -i -- 's/# deb-src/deb-src/g' /etc/apt/sources.list
     sudo apt-get update
     sudo apt-get build-dep -qq cppcheck
   continueOnError: true
@@ -18,13 +19,9 @@ steps:
 - bash: | 
     git clone --depth=10 https://github.com/noisymime/speeduino /noisymime/speeduino
     git clone --depth=10 https://github.com/noisymime/cppcheck.git noisymime/cppcheck_github
-  displayName: 'Cloning repos'
-- bash: |
     cd noisymime/cppcheck_github
     make
     cd ../
-  displayName: 'Building cppcheck'
-- bash: |
     chmod +x speeduino/misra/check_misra_github.sh
     speeduino/misra/check_misra_github.sh
   displayName: 'Running Scan'
