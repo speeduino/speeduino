@@ -17,11 +17,15 @@ steps:
   continueOnError: true
   displayName: 'Installing deps'
 - bash: | 
-    git clone --depth=10 https://github.com/noisymime/speeduino /noisymime/speeduino
+    git clone --depth=10 https://github.com/noisymime/speeduino noisymime/speeduino
     git clone --depth=10 https://github.com/noisymime/cppcheck.git noisymime/cppcheck_github
+  displayName: 'Cloning repos'
+- bash: | 
     cd noisymime/cppcheck_github
     make
     cd ../
+  displayName: 'Making cppcheck'
+- bash: | 
     chmod +x speeduino/misra/check_misra_github.sh
     speeduino/misra/check_misra_github.sh
   displayName: 'Running Scan'
@@ -30,11 +34,11 @@ steps:
 - task: PublishTestResults@2
   inputs:
     testResultsFormat: 'JUnit'
-    testResultsFiles: '**/misra.xml' 
+    testResultsFiles: 'misra.xml' 
     #searchFolder: '$(System.DefaultWorkingDirectory)' # Optional
     #mergeTestResults: false # Optional
     #failTaskOnFailedTests: false # Optional
     #testRunTitle: # Optional
     #buildPlatform: # Optional
     #buildConfiguration: # Optional
-    #publishRunAttachments: true # Optional
+    publishRunAttachments: true # Optional
