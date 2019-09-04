@@ -14,7 +14,6 @@ steps:
     sudo sed -i -- 's/#deb-src/deb-src/g' /etc/apt/sources.list && sudo sed -i -- 's/# deb-src/deb-src/g' /etc/apt/sources.list
     sudo apt-get update
     sudo apt-get build-dep -qq cppcheck
-  continueOnError: true
   displayName: 'Installing deps'
 - bash: | 
     git clone --depth=10 https://github.com/noisymime/speeduino noisymime/speeduino
@@ -28,6 +27,8 @@ steps:
     cd noisymime
     chmod +x speeduino/misra/check_misra_github.sh
     speeduino/misra/check_misra_github.sh
+  #This task is always an error if there are MISRA violations
+  continueOnError: true
   displayName: 'Running Scan'
 
 # Publish test results to Azure Pipelines
