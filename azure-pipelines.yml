@@ -10,18 +10,26 @@ pool:
   vmImage: 'ubuntu-latest'
 
 steps:
-- script: sudo apt-get update -qq
-- script: sudo apt-get build-dep -qq cppcheck
+- bash: |
+    sudo sed -i -- 's/#deb-src/deb-src/g' /etc/apt/sources.list && sudo sed -i -- 's/# deb-src/deb-src/g' /etc/apt/sources.list
+    sudo apt-get update
+    sudo apt-get build-dep -qq cppcheck
+  displayName: 'Installing deps'
+- bash: | 
+    git clone --depth=10 https://github.com/noisymime/speeduino noisymime/speeduino
+    git clone --depth=10 https://github.com/noisymime/cppcheck.git noisymime/cppcheck_github
   displayName: 'Cloning repos'
-- script: git clone --depth=10 https://github.com/noisymime/speeduino /noisymime/speeduino
-- script: git clone --depth=10 https://github.com/noisymime/cppcheck.git noisymime/cppcheck_github
-  displayName: 'Building cppcheck'
-- script: cd noisymime/cppcheck_github
-- script: make
-- script: cd ../
+- bash: | 
+    cd noisymime/cppcheck_github
+    make
+  displayName: 'Making cppcheck'
+- bash: | 
+    cd noisymime
+    chmod +x speeduino/misra/check_misra_github.sh
+    speeduino/misra/check_misra_github.sh
+  #This task is always an error if there are MISRA violations
+  continueOnError: true
   displayName: 'Running Scan'
-- script: chmod +x speeduino/misra/check_misra_github.sh
-- script: speeduino/misra/check_misra_github.sh
 
 # Publish test results to Azure Pipelines
 - task: PublishTestResults@2
@@ -34,4 +42,4 @@ steps:
     #testRunTitle: # Optional
     #buildPlatform: # Optional
     #buildConfiguration: # Optional
-    #publishRunAttachments: true # Optional
+    publishRunAttachments: true # Optional
