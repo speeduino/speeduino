@@ -58,7 +58,7 @@ Unfortunately this means many of the lines are duplicated depending on this
 */
 int table2D_getValue(struct table2D *fromTable, int X_in)
 {
-    int returnValue;
+    int returnValue = 0;
     bool valueFound = false;
 
     int X = X_in;

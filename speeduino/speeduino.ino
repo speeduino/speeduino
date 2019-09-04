@@ -1155,6 +1155,48 @@ void loop()
         }
 #endif
 
+#if IGN_CHANNELS >= 7
+        tempCrankAngle = crankAngle - channel7IgnDegrees;
+        if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
+        tempStartAngle = ignition7StartAngle - channel7IgnDegrees;
+        if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+        {
+            unsigned long ignition7StartTime = 0;
+            if(tempStartAngle > tempCrankAngle) { ignition7StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
+            else { ignition7StartTime = 0; }
+
+            if( (ignition7StartTime > 0) && (curRollingCut != 2) )
+            {
+              setIgnitionSchedule7(ign7StartFunction,
+                        ignition7StartTime,
+                        currentStatus.dwell + fixedCrankingOverride,
+                        ign7EndFunction
+                        );
+            }
+        }
+#endif
+
+#if IGN_CHANNELS >= 8
+        tempCrankAngle = crankAngle - channel8IgnDegrees;
+        if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
+        tempStartAngle = ignition8StartAngle - channel8IgnDegrees;
+        if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+        {
+            unsigned long ignition8StartTime = 0;
+            if(tempStartAngle > tempCrankAngle) { ignition8StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
+            else { ignition8StartTime = 0; }
+
+            if( (ignition8StartTime > 0) && (curRollingCut != 2) )
+            {
+              setIgnitionSchedule8(ign8StartFunction,
+                        ignition8StartTime,
+                        currentStatus.dwell + fixedCrankingOverride,
+                        ign8EndFunction
+                        );
+            }
+        }
+#endif
+
       } //Ignition schedules on
 
       if ( (!BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_PREVENT)) && (resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) ) 

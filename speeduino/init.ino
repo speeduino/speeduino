@@ -699,6 +699,12 @@ void initialiseAll()
         ign4EndFunction = endCoil1Charge;
         ign5StartFunction = beginCoil1Charge;
         ign5EndFunction = endCoil1Charge;
+        ign6StartFunction = beginCoil1Charge;
+        ign6EndFunction = endCoil1Charge;
+        ign7StartFunction = beginCoil1Charge;
+        ign7EndFunction = endCoil1Charge;
+        ign8StartFunction = beginCoil1Charge;
+        ign8EndFunction = endCoil1Charge;
         break;
 
     case IGN_MODE_WASTEDCOP:
