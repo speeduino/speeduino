@@ -613,6 +613,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[95] = currentStatus.vvtDuty;
   fullStatus[96] = lowByte(currentStatus.flexBoostCorrection);
   fullStatus[97] = highByte(currentStatus.flexBoostCorrection);
+  fullStatus[98] = currentStatus.fuelTemp;
 
   for(byte x=0; x<packetLength; x++)
   {

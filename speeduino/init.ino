@@ -224,7 +224,7 @@ void initialiseAll()
     //Check whether the flex sensor is enabled and if so, attach an interupt for it
     if(configPage2.flexEnabled > 0)
     {
-    attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, RISING);
+    attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, CHANGE);
     currentStatus.ethanolPct = 0;
     }
 

@@ -12,6 +12,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 */
 #include "timers.h"
 #include "globals.h"
+#include "maths.h"
 #include "sensors.h"
 #include "scheduler.h"
 #include "scheduledIO.h"
@@ -217,6 +218,11 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
       //Off by 1 error check
       if (currentStatus.ethanolPct == 1) { currentStatus.ethanolPct = 0; }
+
+      //Continental sensor reads temp from 1ms=-40c and 5ms=151.25°C
+      if((flexPulseWidth >= 1000) && (flexPulseWidth <= 5000)) {
+        currentStatus.fuelTemp = fastMap(flexPulseWidth, 1000, 5000, -40, 151.25);
+      }
 
     }
 

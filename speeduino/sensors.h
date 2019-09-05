@@ -28,6 +28,9 @@
 */
 
 volatile byte flexCounter = 0;
+volatile byte flexPulseState = LOW;
+volatile unsigned long flexStartTime = 0;
+unsigned long flexPulseWidth = 0;
 volatile byte knockCounter = 0;
 volatile uint16_t knockAngle;
 

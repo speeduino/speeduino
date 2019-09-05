@@ -435,7 +435,17 @@ void readBat()
  */
 void flexPulse()
 {
-  ++flexCounter;
+  flexPulseState = !flexPulseState;
+  if(flexPulseState) {
+    //if flexPulse is HIGH, increment the counter and calculate pulsewidth
+    ++flexCounter;
+    //convert microseconds to milliseconds
+    flexPulseWidth = micros_safe() - flexStartTime;
+    flexStartTime = 0;
+  } else {
+    //flexPulse is LOW, store micros for calculation later.
+    flexStartTime = micros_safe();
+  }
 }
 
 /*
