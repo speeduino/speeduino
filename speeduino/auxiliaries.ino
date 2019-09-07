@@ -257,13 +257,21 @@ void boostDisable()
 {
   if (boost_pwm_state == true)
   {
+    #ifdef INVERTED_BOOST
     BOOST_PIN_LOW();  // Switch pin to low
+    #else
+    BOOST_PIN_HIGH();  // Switch pin high
+    #endif
     BOOST_TIMER_COMPARE = BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value);
     boost_pwm_state = false;
   }
   else
   {
+    #ifdef INVERTED_BOOST
     BOOST_PIN_HIGH();  // Switch pin high
+    #else
+    BOOST_PIN_LOW();  // Switch pin to low
+    #endif
     BOOST_TIMER_COMPARE = BOOST_TIMER_COUNTER + boost_pwm_target_value;
     boost_pwm_cur_value = boost_pwm_target_value;
     boost_pwm_state = true;

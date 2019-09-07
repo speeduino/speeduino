@@ -42,6 +42,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <FlexCAN.h>
 #endif
 
+// #define INVERTED_BOOST // Uncomment this to invert boost output
+
 void setup()
 {
   initialiseAll();
