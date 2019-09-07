@@ -1,4 +1,4 @@
-#if defined(CORE_TEENSY)
+#if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
 #include "board_teensy35.h"
 #include "globals.h"
 #include "auxiliaries.h"

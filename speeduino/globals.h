@@ -16,7 +16,13 @@
   //#define TIMER5_MICROS
 
 #elif defined(CORE_TEENSY)
-  #define BOARD_H "board_teensy35.h"
+  #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+    #define CORE_TEENSY35
+    #define BOARD_H "board_teensy35.h"
+  #elif defined(__IMXRT1062__)
+    #define CORE_TEENSY40
+    #define BOARD_H "board_teensy40.h"
+  #endif
   #define INJ_CHANNELS 8
   #define IGN_CHANNELS 8
 
@@ -225,8 +231,8 @@
 #define VVT_MODE_ONOFF      0
 #define VVT_MODE_OPEN_LOOP  1
 #define VVT_MODE_CLOSED_LOOP 2
-#define VVTCL_LOAD_MAP      0
-#define VVTCL_LOAD_TPS      1
+#define VVT_LOAD_MAP      0
+#define VVT_LOAD_TPS      1
 
 #define FOUR_STROKE         0
 #define TWO_STROKE          1
@@ -390,8 +396,9 @@ struct statuses {
   byte tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Value is divided by 10 to be stored in a byte */
   byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
   volatile int rpmDOT;
-  byte VE;
-  byte VE2;
+  byte VE; /**< The current VE value being used in the fuel calculation. Can be the same as VE1 or VE2, or a calculated value of both */
+  byte VE1; /**< The VE value from fuel table 1 */
+  byte VE2; /**< The VE value from fuel table 2, if in use (and required conditions are met) */
   byte O2;
   byte O2_2;
   int coolant;
@@ -464,8 +471,10 @@ struct statuses {
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
-  byte vvtAngle;
-  byte targetVVTAngle;
+  //int8_t vvtAngle;
+  long vvtAngle;
+  byte vvtTargetAngle;
+  byte vvtDuty;
 
 };
 struct statuses currentStatus; //The global status object
@@ -940,6 +949,11 @@ struct config10 {
   byte fuel2SwitchVariable : 2;
   uint16_t fuel2SwitchValue;
 
+  //Byte 123
+  byte fuel2InputPin : 6;
+  byte fuel2InputPolarity : 1;
+  byte fuel2InputPullup : 1;
+
   byte vvtCLholdDuty;
   byte vvtCLKP;
   byte vvtCLKI;
@@ -947,7 +961,7 @@ struct config10 {
   uint16_t vvtCLMinAng;
   uint16_t vvtCLMaxAng;
 
-  byte unused11_123_191[59];
+  byte unused11_123_191[58];
 
 #if defined(CORE_AVR)
   };
@@ -989,6 +1003,7 @@ byte pinFuelPump; //Fuel pump on/off
 byte pinIdle1; //Single wire idle control
 byte pinIdle2; //2 wire idle control (Not currently used)
 byte pinIdleUp; //Input for triggering Idle Up
+byte pinFuel2Input; //Input for switching to the 2nd fuel table
 byte pinSpareTemp1; // Future use only
 byte pinSpareTemp2; // Future use only
 byte pinSpareOut1; //Generic output

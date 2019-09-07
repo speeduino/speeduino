@@ -162,7 +162,7 @@ static inline void readMAP()
 
       if ( (currentStatus.RPM > 0) && (currentStatus.hasSync == true) ) //If the engine isn't running, fall back to instantaneous reads
       {
-        if( (MAPcurRev == currentStatus.startRevolutions) || (MAPcurRev == (currentStatus.startRevolutions+1)) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
+        if( (MAPcurRev == currentStatus.startRevolutions) || ( (MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
           #if defined(ANALOG_ISR_MAP)
             tempReading = AnChannel[pinMAP-A0];
@@ -232,7 +232,7 @@ static inline void readMAP()
       //Minimum reading in a cycle
       if (currentStatus.RPM > 0 ) //If the engine isn't running, fall back to instantaneous reads
       {
-        if( (MAPcurRev == currentStatus.startRevolutions) || (MAPcurRev == (currentStatus.startRevolutions+1)) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
+        if( (MAPcurRev == currentStatus.startRevolutions) || ((MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
           #if defined(ANALOG_ISR_MAP)
             tempReading = AnChannel[pinMAP-A0];

@@ -1,6 +1,6 @@
 #ifndef TEENSY35_H
 #define TEENSY35_H
-#if defined(CORE_TEENSY)
+#if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
 
 /*
 ***********************************************************************************************************
@@ -10,6 +10,8 @@
   uint16_t freeRam();
   #define PORT_TYPE uint8_t //Size of the port variables
   #define PINMASK_TYPE uint8_t
+  #define COMPARE_TYPE uint16_t
+  #define COUNTER_TYPE uint16_t
   #define BOARD_DIGITAL_GPIO_PINS 34
   #define BOARD_NR_GPIO_PINS 34
   #define USE_SERIAL3
@@ -95,10 +97,7 @@
   #define IGN8_TIMER_DISABLE() FTM3_C7SC &= ~FTM_CSC_CHIE
 
   #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
-  #define MAX_TIMER_PERIOD_SLOW 139808
   #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
-  //Hack compatibility with AVR timers that run at different speeds
-  #define uS_TO_TIMER_COMPARE_SLOW(uS) ((uS * 15) >> 5)
 
 /*
 ***********************************************************************************************************

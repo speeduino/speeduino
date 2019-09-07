@@ -10,7 +10,7 @@ if [ -f ./results.txt ]; then
 fi
 
 for i in speeduino/speeduino/*.ino; do
-	$cppcheck_bin --dump --max-configs=1 --suppressions-list=speeduino/misra/suppressions.txt --suppress=syntaxError:speeduino/speeduino/src/PID_v1/PID_v1.h --include=${i%.*}.h -DCORE_AVR=1 -D__AVR_ATmega2560__=1 $i > /dev/null
+	$cppcheck_bin --dump --max-configs=1 --inline-suppr --suppressions-list=speeduino/misra/suppressions.txt --suppress=syntaxError:speeduino/speeduino/src/PID_v1/PID_v1.h --include=${i%.*}.h -DCORE_AVR=1 -D__AVR_ATmega2560__=1 $i > /dev/null
 done
 
 mv speeduino/speeduino/*.dump ./
