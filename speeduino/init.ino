@@ -1037,13 +1037,13 @@ void setPinMapping(byte boardID)
         pinCoil3 = PD2; //Pin for coil 3
         pinCoil4 = PD3; //Pin for coil 4
         pinCoil5 = PD4; //Pin for coil 5
-        pinTPS = A0; //TPS input pin
-        pinMAP = A1; //MAP sensor pin
-        pinIAT = A2; //IAT sensor pin
-        pinCLT = A3; //CLT sensor pin
-        pinO2 = A4; //O2 Sensor pin
-        pinBat = A5; //Battery reference voltage pin
-        pinBaro = A9;
+        pinTPS = PA0; //TPS input pin
+        pinMAP = PA1; //MAP sensor pin
+        pinIAT = PA2; //IAT sensor pin
+        pinCLT = PA3; //CLT sensor pin
+        pinO2 = PA4; //O2 Sensor pin
+        pinBat = PA5; //Battery reference voltage pin
+        pinBaro = PA9;
         pinIdle1 = PB8; //Single wire idle control
         pinIdle2 = PB9; //2 wire idle control
         pinBoost = PE0; //Boost control
@@ -1564,6 +1564,114 @@ void setPinMapping(byte boardID)
       pinSpareHOut1 = 8; // high current output spare1
       pinSpareHOut2 = 7; // high current output spare2
       pinSpareLOut1 = 21; //low current output spare1
+      break;
+    #endif
+    
+   #if defined(STM32F407)
+    case 60:
+        //Pin definitions for experimental board Tjeerd 
+        //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
+
+        //******************************************
+        //******** PORTA CONNECTIONS *************** 
+        //******************************************
+        // = PA0 //Wakeup ADC123
+        pinTPS = PA1 //ADC123
+        pinMAP = PA2 //ADC123
+        pinIAT = PA3 //ADC123
+        pinCLT = PA4 //ADC12
+        pinO2 = PA5 //ADC12
+        pinFan = PA6 //ADC12 LED_BUILTIN_1
+        pinFuelPump = PA7 //ADC12 LED_BUILTIN_2
+        pinIdle1 = PA8 //
+        // = PA9 //TXD1
+        // = PA10 //RXD1
+        // = PA11 //(DO NOT USE FOR SPEEDUINO) USB
+        // = PA12 //(DO NOT USE FOR SPEEDUINO) USB 
+        // = PA13 //(DO NOT USE FOR SPEEDUINO) //NOT ON GPIO //DEBUG ST-LINK
+        // = PA14 //(DO NOT USE FOR SPEEDUINO) //NOT ON GPIO //DEBUG ST-LINK
+        // = PA15 //(DO NOT USE FOR SPEEDUINO) //NOT ON GPIO //DEBUG ST-LINK
+
+        //******************************************
+        //******** PORTB CONNECTIONS *************** 
+        //******************************************
+        pinBat = PB0; //ADC12
+        pinBaro = PB1; //ADC12
+        // = PB2; //(DO NOT USE FOR SPEEDUINO) BOOT1 
+        // = PB3; //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
+        // = PB4; //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
+        // = PB5; //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
+        // = PB6; //NRF_CE
+        // = PB7; //NRF_CS
+        // = PB8; //NRF_IRQ
+        pinIdle2 = PB9; //
+        // = PB10; //TXD3
+        // = PB11; //RXD3
+        pinBoost = PB12; //
+        // = PB13; //SPI2_SCK
+        // = PB14; //SPI2_MISO
+        // = PB15; //SPI2_MOSI
+
+        //******************************************
+        //******** PORTC CONNECTIONS *************** 
+        //******************************************
+        // = PC0; (DO NOT USE FOR SPEEDUINO)//ADC123 //SPI FLASH CHIP CS pin
+        // = PC1; //ADC123
+        // = PC2; //ADC123
+        // = PC3; //ADC123
+        // = PC4; //ADC12
+        // = PC5; //ADC12
+        pinVVT_1 = PC6; //
+        pinDisplayReset = PC7; //
+        // = PC8; //(DO NOT USE FOR SPEEDUINO) //SDIO_D0
+        // = PC9; //(DO NOT USE FOR SPEEDUINO) //SDIO_D1
+        // = PC10; //(DO NOT USE FOR SPEEDUINO) //SDIO_D2
+        // = PC11; //(DO NOT USE FOR SPEEDUINO) //SDIO_D3
+        // = PC12; //(DO NOT USE FOR SPEEDUINO) //SDIO_SCK
+        pinTachOut = PC13; //
+        // = PC14; //(DO NOT USE FOR SPEEDUINO) //OSC32_IN
+        // = PC15; //(DO NOT USE FOR SPEEDUINO) //OSC32_OUT
+
+        //******************************************
+        //******** PORTD CONNECTIONS *************** 
+        //******************************************
+        // = PD0; //CANRX
+        // = PD1; //CANTX
+        // = PD2; //(DO NOT USE FOR SPEEDUINO) //SDIO_CMD
+        pinCoil1 = PD3; //
+        pinCoil2 = PD4; //
+        // = PD5;//TXD2
+        // = PD6; //RXD2
+        pinCoil3 = PD7; //
+        pinCoil4 = PD8; //
+        pinCoil5 = PD9;//
+        // = PD10; //
+        // = PD11; //
+        // = PD12; //
+        // = PD13; //
+        // = PD14; //
+        // = PD15; //
+
+        //******************************************
+        //******** PORTE CONNECTIONS *************** 
+        //******************************************
+        pinStepperDir = PE0; //
+        pinStepperStep = PE1; //
+        pinStepperEnable = PE2; //
+        // = PE3; //ONBOARD KEY1
+        // = PE4; //ONBOARD KEY2
+        pinFlex = PE5; //
+        pinTrigger = PE6; //
+        pinInjector1 = PE7; //
+        pinInjector2 = PE8; //
+        pinInjector3 = PE9; //
+        pinInjector4 = PE10; //
+        pinInjector5 = PE11; //
+        pinInjector6 = PE12; //
+        pinTrigger2 = PE13; //
+        // = PE14; //
+        // = PE15; //
+
       break;
     #endif
 
