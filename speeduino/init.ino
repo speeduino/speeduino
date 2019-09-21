@@ -20,6 +20,8 @@ void initialiseAll()
 {
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
+    startstorage();
+
     table3D_setSize(&fuelTable, 16);
     table3D_setSize(&fuelTable2, 16);
     table3D_setSize(&ignitionTable, 16);
@@ -31,14 +33,13 @@ void initialiseAll()
     table3D_setSize(&trim2Table, 6);
     table3D_setSize(&trim3Table, 6);
     table3D_setSize(&trim4Table, 6);
-
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
 
     //Always start with a clean slate on the bootloader capabilities level
     //This should be 0 until we hear otherwise from the 16u2
     configPage4.bootloaderCaps = 0;
-
+    
     initBoard(); //This calls the current individual boards init function. See the board_xxx.ino files for these.
     initialiseTimers();
 
@@ -1020,47 +1021,108 @@ void setPinMapping(byte boardID)
         pinCoil3 = 30;
         pinO2 = A22;
       #elif defined(STM32F4)
-        //Pin definitions for experimental board Tjeerd 
+    //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
-        //PC8~PC12 SDio
-        //PA13~PA15 & PB4 SWD(debug) pins
-        //PB0 EEPROM CS pin
-        //PA9 & PD10 Serial1
-        //PD5 & PD6 Serial2
-        pinInjector1 = PE7; //Output pin injector 1 is on
-        pinInjector2 = PE8; //Output pin injector 2 is on
-        pinInjector3 = PE9; //Output pin injector 3 is on
-        pinInjector4 = PE10; //Output pin injector 4 is on
-        pinInjector5 = PE11; //Output pin injector 5 is on
-        pinInjector6 = PE12; //Output pin injector 6 is on
-        pinCoil1 = PD0; //Pin for coil 1
-        pinCoil2 = PD1; //Pin for coil 2
-        pinCoil3 = PD2; //Pin for coil 3
-        pinCoil4 = PD3; //Pin for coil 4
-        pinCoil5 = PD4; //Pin for coil 5
-        pinTPS = PA0; //TPS input pin
-        pinMAP = PA1; //MAP sensor pin
-        pinIAT = PA2; //IAT sensor pin
-        pinCLT = PA3; //CLT sensor pin
-        pinO2 = PA4; //O2 Sensor pin
-        pinBat = PA5; //Battery reference voltage pin
-        pinBaro = PA9;
-        pinIdle1 = PB8; //Single wire idle control
-        pinIdle2 = PB9; //2 wire idle control
-        pinBoost = PE0; //Boost control
-        pinVVT_1 = PE1; //Default VVT output
-        pinStepperDir = PD8; //Direction pin  for DRV8825 driver
-        pinStepperStep = PB15; //Step pin for DRV8825 driver
-        pinStepperEnable = PD9; //Enable pin for DRV8825
-        pinDisplayReset = PE1; // OLED reset pin
-        pinFan = PE2; //Pin for the fan output
-        pinFuelPump = PC0; //Fuel pump output
-        pinTachOut = PC1; //Tacho output pin
-        //external interrupt enabled pins
-        //external interrupts could be enalbed in any pin, except same port numbers (PA4,PE4)
-        pinFlex = PE2; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = PE3; //The CAS pin
-        pinTrigger2 = PE4; //The Cam Sensor pin
+
+        //******************************************
+        //******** PORTA CONNECTIONS *************** 
+        //******************************************
+        // = PA0 //Wakeup ADC123
+        pinTPS = PA1; //ADC123
+        pinMAP = PA2; //ADC123
+        pinIAT = PA3; //ADC123
+        pinCLT = PA4; //ADC12
+        pinO2 = PA5; //ADC12
+        pinFan = PA6; //ADC12 LED_BUILTIN_1
+        pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
+        pinIdle1 = PA8; //
+        // = PA9 //TXD1
+        // = PA10 //RXD1
+        // = PA11 //(DO NOT USE FOR SPEEDUINO) USB
+        // = PA12 //(DO NOT USE FOR SPEEDUINO) USB 
+        // = PA13 //(DO NOT USE FOR SPEEDUINO) //NOT ON GPIO //DEBUG ST-LINK
+        // = PA14 //(DO NOT USE FOR SPEEDUINO) //NOT ON GPIO //DEBUG ST-LINK
+        // = PA15 //(DO NOT USE FOR SPEEDUINO) //NOT ON GPIO //DEBUG ST-LINK
+
+        //******************************************
+        //******** PORTB CONNECTIONS *************** 
+        //******************************************
+        // = PB0; (DO NOT USE FOR SPEEDUINO)//ADC123 //SPI FLASH CHIP CS pin
+        pinBaro = PB1; //ADC12
+        // = PB2; //(DO NOT USE FOR SPEEDUINO) BOOT1 
+        // = PB3; //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
+        // = PB4; //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
+        // = PB5; //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
+        // = PB6; //NRF_CE
+        // = PB7; //NRF_CS
+        // = PB8; //NRF_IRQ
+        pinIdle2 = PB9; //
+        // = PB10; //TXD3
+        // = PB11; //RXD3
+        pinBoost = PB12; //
+        // = PB13; //SPI2_SCK
+        // = PB14; //SPI2_MISO
+        // = PB15; //SPI2_MOSI
+
+        //******************************************
+        //******** PORTC CONNECTIONS *************** 
+        //******************************************
+        // = PC0; //ADC123 
+        pinBat = PC1; //ADC123
+        // = PC2; //ADC123
+        // = PC3; //ADC123
+        // = PC4; //ADC12
+        // = PC5; //ADC12
+        pinVVT_1 = PC6; //
+        pinDisplayReset = PC7; //
+        // = PC8; //(DO NOT USE FOR SPEEDUINO) //SDIO_D0
+        // = PC9; //(DO NOT USE FOR SPEEDUINO) //SDIO_D1
+        // = PC10; //(DO NOT USE FOR SPEEDUINO) //SDIO_D2
+        // = PC11; //(DO NOT USE FOR SPEEDUINO) //SDIO_D3
+        // = PC12; //(DO NOT USE FOR SPEEDUINO) //SDIO_SCK
+        pinTachOut = PC13; //
+        // = PC14; //(DO NOT USE FOR SPEEDUINO) //OSC32_IN
+        // = PC15; //(DO NOT USE FOR SPEEDUINO) //OSC32_OUT
+
+        //******************************************
+        //******** PORTD CONNECTIONS *************** 
+        //******************************************
+        // = PD0; //CANRX
+        // = PD1; //CANTX
+        // = PD2; //(DO NOT USE FOR SPEEDUINO) //SDIO_CMD
+        pinCoil1 = PD3; //
+        pinCoil2 = PD4; //
+        // = PD5;//TXD2
+        // = PD6; //RXD2
+        pinCoil3 = PD7; //
+        pinCoil4 = PD8; //
+        pinCoil5 = PD9;//
+        // = PD10; //
+        // = PD11; //
+        // = PD12; //
+        // = PD13; //
+        // = PD14; //
+        // = PD15; //
+
+        //******************************************
+        //******** PORTE CONNECTIONS *************** 
+        //******************************************
+        pinStepperDir = PE0; //
+        pinStepperStep = PE1; //
+        pinStepperEnable = PE2; //
+        // = PE3; //ONBOARD KEY1
+        // = PE4; //ONBOARD KEY2
+        pinFlex = PE5; //
+        pinTrigger = PE6; //
+        pinInjector1 = PE7; //
+        pinInjector2 = PE8; //
+        pinInjector3 = PE9; //
+        pinInjector4 = PE10; //
+        pinInjector5 = PE11; //
+        pinInjector6 = PE12; //
+        pinTrigger2 = PE13; //
+        // = PE14; //
+        // = PE15; //
       #elif defined(CORE_STM32)
         //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
         //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
@@ -1568,23 +1630,23 @@ void setPinMapping(byte boardID)
       break;
     #endif
     
-   #if defined(STM32F407)
+   #if defined(STM32F4)
     case 60:
-        //Pin definitions for experimental board Tjeerd 
+     //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 
         //******************************************
         //******** PORTA CONNECTIONS *************** 
         //******************************************
         // = PA0 //Wakeup ADC123
-        pinTPS = PA1 //ADC123
-        pinMAP = PA2 //ADC123
-        pinIAT = PA3 //ADC123
-        pinCLT = PA4 //ADC12
-        pinO2 = PA5 //ADC12
-        pinFan = PA6 //ADC12 LED_BUILTIN_1
-        pinFuelPump = PA7 //ADC12 LED_BUILTIN_2
-        pinIdle1 = PA8 //
+        pinTPS = PA1; //ADC123
+        pinMAP = PA2; //ADC123
+        pinIAT = PA3; //ADC123
+        pinCLT = PA4; //ADC12
+        pinO2 = PA5; //ADC12
+        pinFan = PA6; //ADC12 LED_BUILTIN_1
+        pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
+        pinIdle1 = PA8; //
         // = PA9 //TXD1
         // = PA10 //RXD1
         // = PA11 //(DO NOT USE FOR SPEEDUINO) USB
@@ -1596,7 +1658,7 @@ void setPinMapping(byte boardID)
         //******************************************
         //******** PORTB CONNECTIONS *************** 
         //******************************************
-        pinBat = PB0; //ADC12
+        // = PB0; (DO NOT USE FOR SPEEDUINO)//ADC123 //SPI FLASH CHIP CS pin
         pinBaro = PB1; //ADC12
         // = PB2; //(DO NOT USE FOR SPEEDUINO) BOOT1 
         // = PB3; //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
@@ -1616,8 +1678,8 @@ void setPinMapping(byte boardID)
         //******************************************
         //******** PORTC CONNECTIONS *************** 
         //******************************************
-        // = PC0; (DO NOT USE FOR SPEEDUINO)//ADC123 //SPI FLASH CHIP CS pin
-        // = PC1; //ADC123
+        // = PC0; //ADC123 
+        pinBat = PC1; //ADC123
         // = PC2; //ADC123
         // = PC3; //ADC123
         // = PC4; //ADC12
@@ -1678,7 +1740,7 @@ void setPinMapping(byte boardID)
 
     default:
       #if defined(STM32F4)
-        //Pin definitions for experimental board Tjeerd 
+       //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 
         //******************************************
@@ -1693,18 +1755,18 @@ void setPinMapping(byte boardID)
         pinFan = PA6; //ADC12 LED_BUILTIN_1
         pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
         pinIdle1 = PA8; //
-        // = PA9; //TXD1
-        // = PA10; //RXD1
-        // = PA11; //(DO NOT USE FOR SPEEDUINO) USB
-        // = PA12; //(DO NOT USE FOR SPEEDUINO) USB 
-        // = PA13; //(DO NOT USE FOR SPEEDUINO) //NOT ON GPIO //DEBUG ST-LINK
-        // = PA14; //(DO NOT USE FOR SPEEDUINO) //NOT ON GPIO //DEBUG ST-LINK
-        // = PA15; //(DO NOT USE FOR SPEEDUINO) //NOT ON GPIO //DEBUG ST-LINK
+        // = PA9 //TXD1
+        // = PA10 //RXD1
+        // = PA11 //(DO NOT USE FOR SPEEDUINO) USB
+        // = PA12 //(DO NOT USE FOR SPEEDUINO) USB 
+        // = PA13 //(DO NOT USE FOR SPEEDUINO) //NOT ON GPIO //DEBUG ST-LINK
+        // = PA14 //(DO NOT USE FOR SPEEDUINO) //NOT ON GPIO //DEBUG ST-LINK
+        // = PA15 //(DO NOT USE FOR SPEEDUINO) //NOT ON GPIO //DEBUG ST-LINK
 
         //******************************************
         //******** PORTB CONNECTIONS *************** 
         //******************************************
-        pinBat = PB0; //ADC12
+        // = PB0; (DO NOT USE FOR SPEEDUINO)//ADC123 //SPI FLASH CHIP CS pin
         pinBaro = PB1; //ADC12
         // = PB2; //(DO NOT USE FOR SPEEDUINO) BOOT1 
         // = PB3; //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
@@ -1724,8 +1786,8 @@ void setPinMapping(byte boardID)
         //******************************************
         //******** PORTC CONNECTIONS *************** 
         //******************************************
-        // = PC0; (DO NOT USE FOR SPEEDUINO)//ADC123 //SPI FLASH CHIP CS pin
-        // = PC1; //ADC123
+        // = PC0; //ADC123 
+        pinBat = PC1; //ADC123
         // = PC2; //ADC123
         // = PC3; //ADC123
         // = PC4; //ADC12

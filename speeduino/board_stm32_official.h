@@ -15,7 +15,7 @@
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #if defined(SRAM_AS_EEPROM)
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
-#elif defined(SPI_AS_EEPROM)
+#elif defined(SPIFLASH_AS_EEPROM)
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
 #else
     #define EEPROM_LIB_H <EEPROM.h>
