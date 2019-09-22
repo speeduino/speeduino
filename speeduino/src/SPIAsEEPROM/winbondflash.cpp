@@ -131,39 +131,25 @@ bool winbondFlashClass::checkPartNo(partNumber _partno)
   id |= transfer(0x00);
   deselect();
 
-  //Serial1.print("MANUF=0x");
-  //Serial1.print(manuf,HEX);
-  //Serial1.print(",ID=0x");
-  //Serial1.print(id,HEX);
-  //Serial1.println();
-
-  //Serial1.print("MANUF=0x");
-  //Serial1.println(WINBOND_MANUF,HEX);
-
   if(manuf != WINBOND_MANUF){
-    //Serial1.println("MANUF NOT OK");
     return false;
   }
 
   if(_partno == custom)
     return true;
-    //Serial.println("Not a custom chip type");
 
   if(_partno == autoDetect)
   {
-    //Serial1.print("Autodetect...");
     for(int i=0;i<sizeof(pnList)/sizeof(pnList[0]);i++)
     {
       if(id == pgm_read_word(&(pnList[i].id)))
       {
         _partno = (partNumber)pgm_read_byte(&(pnList[i].pn));
-        //Serial1.println("OK");
         return true;
       }
     }
     if(_partno == autoDetect)
     {
-//      Serial.println("Failed");
       return false;
     }
   }
@@ -179,7 +165,6 @@ bool winbondFlashClass::checkPartNo(partNumber _partno)
         return false;
     }
   }
-  //Serial1.println("partNumber not found");
   return false;//partNo not found
 }
 
@@ -256,8 +241,7 @@ bool winbondFlashClass::begin(partNumber _partno)
   transfer(RELEASE);
   deselect();
   delayMicroseconds(15);//>3us
-  //Serial1.println("Chip Released");
-  
+ 
   if(!checkPartNo(_partno)) return false;
   else return true;
 }
@@ -307,7 +291,7 @@ void winbondFlashClass::writePage(uint32_t addr_start,uint8_t *buf, uint16_t n)
   //do {
   //  transfer(buf[i]);
   //  i++;
-  //}while(i!=sizeof(buf));
+  //}while(i!=0);
   
   deselect();
 }
@@ -371,7 +355,7 @@ bool winbondFlashSPI::begin(partNumber _partno,SPIClass &_spi,uint8_t _nss)
  // pinMode(MISO,INPUT_PULLUP);
   SPI.begin();
   SPI.setBitOrder(MSBFIRST);
-  SPI.setClockDivider(SPI_CLOCK_DIV16);
+  SPI.setClockDivider(SPI_CLOCK_DIV2);
   SPI.setDataMode(SPI_MODE0);
   deselect();
  // Serial.println("SPI OK");
