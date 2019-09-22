@@ -46,7 +46,7 @@ typedef struct {
     winbondFlashClass::partNumber pn;
     uint16_t id;
     uint32_t bytes;
-    uint16_t pages;
+    uint32_t pages;
     uint16_t sectors;
     uint16_t blocks;
 }pnListType;

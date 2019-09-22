@@ -8,7 +8,7 @@
  * wear leveling (256x). When the begin() fuction is called for the first time 
  * it will "format" the flash chip. 
  * !!!!THIS DISTROYS ANY EXISTING DATA ON THE SPI FLASH!!!
- * 
+ *  
  * 1245184 bytes used of the SPI flash resulting in 4228 bytes of usable EEPROM
  *
  * This Library is free software: you can redistribute it and/or modify
