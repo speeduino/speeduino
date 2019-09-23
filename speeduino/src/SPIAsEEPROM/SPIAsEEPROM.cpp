@@ -41,7 +41,7 @@ SPIAsEEPROM::SPIAsEEPROM()
 
   }
   uint8_t SPIAsEEPROM::begin() {
-      uint8_t SpiFlashAvialable = 0;
+      
       SpiFlashAvialable = winbondSPIFlash.begin(_W25Q16,SPI,PB0);
       uint8_t formatted = 0;
       if(SpiFlashAvialable){
@@ -174,6 +174,10 @@ uint8_t SPIAsEEPROM::read(uint16_t addressEEPROM){
     //The first two pages will be used for the infoblock
     //The first 4 bytes of each page must have the magic number 
     //version 0.1 does not check magic number
+    if(!SpiFlashAvialable){
+      begin();
+    }
+
 
     uint8_t buf[INFOBYTES_PER_BYTE];
 

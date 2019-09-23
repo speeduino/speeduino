@@ -53,6 +53,7 @@
 class SPIAsEEPROM {
   private: 
     winbondFlashSPI winbondSPIFlash;
+    uint8_t SpiFlashAvialable = 0;
     uint8_t ReadOutBuffer[BYTESPERSECTOR];
     uint8_t magicbuf[4];
     uint16_t sectorNumber;
