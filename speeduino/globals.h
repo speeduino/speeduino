@@ -404,7 +404,7 @@ struct statuses {
   byte tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Value is divided by 10 to be stored in a byte */
   int8_t advance; /**< Signed 8 bit as advance can now go negative (ATDC) */
   byte TPS; /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
-  volatile uint32_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
+  volatile uint16_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
   uint16_t freeRAM;
   uint16_t boostTarget;
   uint16_t boostDuty; //Percentage value * 100 to give 2 points of precision
@@ -426,15 +426,17 @@ struct statuses {
   uint16_t PW3; //In uS
   uint16_t PW4; //In uS
   volatile byte status3;
-  int16_t flexBoostCorrection; /**< Amount of boost added based on flex */
   byte nChannels; /**< Number of fuel and ignition channels.  */
   int16_t fuelLoad;
   int16_t ignLoad;
   byte syncLossCounter;
   byte CLIdleTarget; /**< The target idle RPM (when closed loop idle control is active) */
   byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
-  int16_t vvtAngle; //Casted to a long for PID calcs in PID_v1
+  int8_t vvtAngle; //Casted to a long for PID calcs in PID_v1
   //long vvtAngle; //Sole purpose was for PID_v1. No longer needed.
+  byte vvtTargetAngle;
+  byte vvtDuty;
+  int16_t flexBoostCorrection; /**< Amount of boost added based on flex */
   volatile bool hasSync;
   //long longRPM; //Sole purpose was for PID_v1. No longer needed.
   uint16_t mapADC;
@@ -476,8 +478,6 @@ struct statuses {
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
-  byte vvtTargetAngle;
-  byte vvtDuty;
 
 };
 struct statuses currentStatus; //The global status object
