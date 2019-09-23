@@ -33,7 +33,6 @@ and writes them to EEPROM as per the layout defined in storage.h
 */
 void writeConfig(byte tableNum)
 {
-  // EEPROM.begin();
   /*
   We only ever write to the EEPROM where the new value is different from the currently stored byte
   This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
