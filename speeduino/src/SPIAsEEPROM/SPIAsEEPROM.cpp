@@ -50,7 +50,7 @@ SPIAsEEPROM::SPIAsEEPROM()
         uint8_t buf[MAGICNUMBER_OFFSET];
         for(uint16_t i=0; i< FLASHSIZEUSED/SECTORSIZE; i++ ){
             winbondSPIFlash.read(sectorNumber*SECTORSIZE, buf, sizeof(buf) - 1);
-            if(buf[0] != MAGICNUMBER1 | buf[1] != MAGICNUMBER2 | buf[2] != MAGICNUMBER3 ){
+            if((buf[0] != MAGICNUMBER1) | (buf[1] != MAGICNUMBER2) | (buf[2] != MAGICNUMBER3)){
               //if one of the SECTORS has no magic numbers it is not formatted
               formatted = 0;
             }
@@ -64,7 +64,7 @@ SPIAsEEPROM::SPIAsEEPROM()
         formatted = 1;
         for(uint16_t i=0; i< FLASHSIZEUSED/SECTORSIZE; i++ ){
             winbondSPIFlash.read(sectorNumber*SECTORSIZE, buf, sizeof(buf) - 1);
-            if(buf[0] != MAGICNUMBER1 | buf[1] != MAGICNUMBER2 | buf[2] != MAGICNUMBER3 ){
+            if((buf[0] != MAGICNUMBER1) | (buf[1] != MAGICNUMBER2) | (buf[2] != MAGICNUMBER3)){
               formatted = 0;
             }
         }
@@ -218,7 +218,7 @@ uint16_t SPIAsEEPROM::count(uint8_t buf[FLASH_PAGESIZE/BITS_PER_BYTE]){
     uint16_t count=0;
     for(uint8_t j=0; j < 32; j++)
       for(uint8_t i=0; i<8; i++){
-        if(buf[j] & 1 == 1){ //if current bit 1
+        if((buf[j] & 1) == 1){ //if current bit 1
           count++;//increase count
         }
         buf[j]=buf[j]>>1;//right shift

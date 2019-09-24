@@ -140,7 +140,7 @@ bool winbondFlashClass::checkPartNo(partNumber _partno)
 
   if(_partno == autoDetect)
   {
-    for(int i=0;i<sizeof(pnList)/sizeof(pnList[0]);i++)
+    for(uint32_t i=0;i<sizeof(pnList)/sizeof(pnList[0]);i++)
     {
       if(id == pgm_read_word(&(pnList[i].id)))
       {
@@ -155,7 +155,7 @@ bool winbondFlashClass::checkPartNo(partNumber _partno)
   }
 
   //test chip id and partNo
-  for(int i=0;i<sizeof(pnList)/sizeof(pnList[0]);i++)
+  for(uint32_t i=0;i<sizeof(pnList)/sizeof(pnList[0]);i++)
   {
     if(_partno == (partNumber)pgm_read_byte(&(pnList[i].pn)))
     {
@@ -189,7 +189,7 @@ void winbondFlashClass::setWriteEnable(bool cmd)
 
 long winbondFlashClass::bytes()
 {
-  for(int i=0;i<sizeof(pnList)/sizeof(pnList[0]);i++)
+  for(uint32_t i=0;i<sizeof(pnList)/sizeof(pnList[0]);i++)
   {
     if(partno == (partNumber)pgm_read_byte(&(pnList[i].pn)))
     {
@@ -201,7 +201,7 @@ long winbondFlashClass::bytes()
 
 uint16_t winbondFlashClass::pages()
 {
-  for(int i=0;i<sizeof(pnList)/sizeof(pnList[0]);i++)
+  for(uint32_t i=0;i<sizeof(pnList)/sizeof(pnList[0]);i++)
   {
     if(partno == (partNumber)pgm_read_byte(&(pnList[i].pn)))
     {
@@ -213,7 +213,7 @@ uint16_t winbondFlashClass::pages()
 
 uint16_t winbondFlashClass::sectors()
 {
-  for(int i=0;i<sizeof(pnList)/sizeof(pnList[0]);i++)
+  for(uint32_t i=0;i<sizeof(pnList)/sizeof(pnList[0]);i++)
   {
     if(partno == (partNumber)pgm_read_byte(&(pnList[i].pn)))
     {
@@ -225,7 +225,7 @@ uint16_t winbondFlashClass::sectors()
 
 uint16_t winbondFlashClass::blocks()
 {
-  for(int i=0;i<sizeof(pnList)/sizeof(pnList[0]);i++)
+  for(uint32_t i=0;i<sizeof(pnList)/sizeof(pnList[0]);i++)
   {
     if(partno == (partNumber)pgm_read_byte(&(pnList[i].pn)))
     {
