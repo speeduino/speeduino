@@ -78,6 +78,10 @@
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif
 
+#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+  #warning Multibyte values will be sent in incorret order down serial!!!
+#endif
+
 //This can only be included after the above section
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
@@ -381,6 +385,7 @@ volatile byte LOOP_TIMER;
 
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
+#pragma pack(push,1)
 struct statuses {
   volatile byte secl; /**< Counter incrementing once per second. Will overflow after 255 and begin again. This is used by TunerStudio to maintain comms sync */
   volatile byte status1;
@@ -432,7 +437,7 @@ struct statuses {
   byte syncLossCounter;
   byte CLIdleTarget; /**< The target idle RPM (when closed loop idle control is active) */
   byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
-  int8_t vvtAngle; //Casted to a long for PID calcs in PID_v1
+  int16_t vvtAngle; //Casted to a long for PID calcs in PID_v1
   //long vvtAngle; //Sole purpose was for PID_v1. No longer needed.
   byte vvtTargetAngle;
   byte vvtDuty;
@@ -481,6 +486,7 @@ struct statuses {
 
 };
 struct statuses currentStatus; //The global status object
+#pragma pack(pop)
 
 /**
  * @brief This mostly covers off variables that are required for fuel

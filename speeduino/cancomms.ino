@@ -18,6 +18,7 @@ sendcancommand is called when a command is to be sent via serial3 to the Can int
 
 void canCommand()
 {
+  if (valuesLeftToWriteCAN) { sendcanValues(0, CAN_PACKET_SIZE, 0x30, 1); }
   currentcanCommand = CANSerial.read();
 
   switch (currentcanCommand)
@@ -140,8 +141,9 @@ void canCommand()
 }
 void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portType)
 {
-  byte fullStatus[NEW_CAN_PACKET_SIZE];    // this must be set to the maximum number of data fullstatus must read in
-
+  //byte fullStatus[NEW_CAN_PACKET_SIZE];    // this must be set to the maximum number of data fullstatus must read in
+  if(!valuesLeftToWriteCAN)
+   {
     //CAN serial
     #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)|| defined(CORE_STM32) || defined (CORE_TEENSY) //ATmega2561 does not have Serial3
       if (offset == 0)
@@ -159,9 +161,10 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
       CANSerial.write(cmd);
         }
     #endif
+   }
 
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
-
+/*
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   fullStatus[1] = currentStatus.status1; //status1 Bitfield
   fullStatus[2] = currentStatus.engine; //Engine Status Bitfield
@@ -249,15 +252,72 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 
   fullStatus[73] = currentStatus.tpsADC;
   fullStatus[74] = getNextError();
+*/
 
-  for(byte x=0; x<packetLength; x++)
+  if (portType == 1)
   {
-    if (portType == 1){ CANSerial.write(fullStatus[offset+x]); }
-    else if (portType == 2)
-            {
-              //sendto canbus transmit routine
-            }
+    for
+    (
+      byte x = offset + valuesLeftToWriteCAN++, innerLoopEnd = 0, byteCastOffset = 0;
+      CANSerial.availableForWrite() && valuesLeftToWriteCAN;
+      valuesLeftToWriteCAN = packetLength + byteCastOffset - x
+    )
+    {
+      if (x < 3) { innerLoopEnd = 3; }
+      else if (x >= 5 && x < 7) { innerLoopEnd = 7; }
+      else if (x >= 11 && x < 19) { innerLoopEnd = 19; }
+      else if (x >= 21 && x < 33) { innerLoopEnd = 33; }
+      else if (x >= 37 && x < 80) { innerLoopEnd = 80; }
+      else { innerLoopEnd = 0; }
+      for
+      (
+        /* "x" is already declared in the outer loop */;
+        x < innerLoopEnd && CANSerial.availableForWrite() && valuesLeftToWriteCAN;
+        valuesLeftToWriteCAN = packetLength + byteCastOffset - ++x
+      )
+      {
+        if (x == 31) { currentStatus.freeRAM = freeRam(); }
+        CANSerial.write(((byte *)&currentStatus)[x]);
+      }
+
+
+      if (x == 3 || x == 35) 
+      {
+        CANSerial.write((byte)(divu100(((byte *)&currentStatus)[x])));
+        byteCastOffset++;
+        x++;
+      }
+      else if (x == 7 || x == 9)
+      {
+        CANSerial.write((byte)(((byte *)&currentStatus)[x] + CALIBRATION_TEMPERATURE_OFFSET));
+        byteCastOffset++;
+        x++;
+      }
+      else if (x == 19)
+      {
+        CANSerial.write((byte)(((byte *)&currentStatus)[x]));      
+        byteCastOffset++;
+        x++;
+      }
+      else if (x == 33)
+      {
+        CANSerial.write((byte)(((byte *)&currentStatus)[x] >> 1));
+        byteCastOffset++;
+        x++;
+      }
+      else if (x == 80)
+      {
+        CANSerial.write(getNextError());
+        x++;
+      }
+      else { x++; }
+
+    }
   }
+  else if (portType == 2)
+              {
+                //sendto canbus transmit routine
+              }
 
 }
 
