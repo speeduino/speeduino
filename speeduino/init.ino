@@ -1644,7 +1644,7 @@ void setPinMapping(byte boardID)
         pinCLT = PA4; //ADC12
         pinO2 = PA5; //ADC12
         // = PA6; //ADC12 LED_BUILTIN_1
-        pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
+        // = PA7; //ADC12 LED_BUILTIN_2
         pinIdle1 = PA8; //
         // = PA9 //TXD1
         // = PA10 //RXD1
@@ -1679,9 +1679,9 @@ void setPinMapping(byte boardID)
         //******************************************
         // = PC0; //ADC123 
         pinBat = PC1; //ADC123
-        // = PC2; //ADC123
-        // = PC3; //ADC123
-        // = PC4; //ADC12
+        //pinCLT_2 = PC2; //ADC123
+        //pinIAT_2 = PC3; //ADC123
+        pinO2_2 = PC4; //ADC12
         // = PC5; //ADC12
         pinVVT_1 = PC6; //
         pinDisplayReset = PC7; //
@@ -1851,7 +1851,7 @@ void setPinMapping(byte boardID)
         pinCoil4 = PD8; //
         pinCoil5 = PD9;//
         // = PD10; //
-        // = PD11; //
+        pinFuelPump = PD11; //
         // = PD12; //
         // = PD13; //
         // = PD14; //

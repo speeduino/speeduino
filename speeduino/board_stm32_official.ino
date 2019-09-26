@@ -66,7 +66,7 @@
     //This must happen at the end of the idle init
     TimerPulseInit(&HardwareTimers_1, 0xFFFF, 0, EmptyIRQCallback);
     //setTimerPrescalerRegister(&HardwareTimers_1, (uint32_t)(getTimerClkFreq(HardwareTimers_1.timer) / (500000)) - 1);
-    if(idle_pwm_max_count > 0) { attachIntHandleOC(&HardwareTimers_1, idleInterrupt, 4, 0);} //on first flash the configPage4.iacAlgorithm is invalid
+    if(idle_pwm_max_count > 0) { attachIntHandleOC(&HardwareTimers_1, idleInterrupt, TIM_CHANNEL_4, 0);} //on first flash the configPage4.iacAlgorithm is invalid
     //Timer1.setMode(4, TIMER_OUTPUT_COMPARE);
     //timer_set_mode(TIMER1, 4, TIMER_OUTPUT_COMPARE;
     //on first flash the configPage4.iacAlgorithm is invalid:
@@ -99,22 +99,22 @@
     //    Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
     //    if(boost_pwm_max_count > 0) { Timer1.attachInterrupt(2, boostInterrupt);}
     //    if(vvt_pwm_max_count > 0) { Timer1.attachInterrupt(3, vvtInterrupt);}
-      if(idle_pwm_max_count > 0) { attachIntHandleOC(&HardwareTimers_1, boostInterrupt, 2, 0);}
-      if(vvt_pwm_max_count > 0) { attachIntHandleOC(&HardwareTimers_1, vvtInterrupt, 3, 0);}
+      if(idle_pwm_max_count > 0) { attachIntHandleOC(&HardwareTimers_1, boostInterrupt, TIM_CHANNEL_2, 0);}
+      if(vvt_pwm_max_count > 0) { attachIntHandleOC(&HardwareTimers_1, vvtInterrupt, TIM_CHANNEL_3, 0);}
     //    Timer1.resume();
         
       TimerPulseInit(&HardwareTimers_3, 0xFFFF, 0, EmptyIRQCallback);
-      attachIntHandleOC(&HardwareTimers_3, fuelSchedule1Interrupt, 1, 0);
-      attachIntHandleOC(&HardwareTimers_3, fuelSchedule2Interrupt, 2, 0);
-      attachIntHandleOC(&HardwareTimers_3, fuelSchedule3Interrupt, 3, 0);
-      attachIntHandleOC(&HardwareTimers_3, fuelSchedule4Interrupt, 4, 0);
+      attachIntHandleOC(&HardwareTimers_3, fuelSchedule1Interrupt, TIM_CHANNEL_1, 0);
+      attachIntHandleOC(&HardwareTimers_3, fuelSchedule2Interrupt, TIM_CHANNEL_2, 0);
+      attachIntHandleOC(&HardwareTimers_3, fuelSchedule3Interrupt, TIM_CHANNEL_3, 0);
+      attachIntHandleOC(&HardwareTimers_3, fuelSchedule4Interrupt, TIM_CHANNEL_4, 0);
       
 
       TimerPulseInit(&HardwareTimers_2, 0xFFFF, 0, EmptyIRQCallback);
-      attachIntHandleOC(&HardwareTimers_2, ignitionSchedule1Interrupt, 1, 0);
-      attachIntHandleOC(&HardwareTimers_2, ignitionSchedule2Interrupt, 2, 0);
-      attachIntHandleOC(&HardwareTimers_2, ignitionSchedule3Interrupt, 3, 0);
-      attachIntHandleOC(&HardwareTimers_2, ignitionSchedule4Interrupt, 4, 0);
+      attachIntHandleOC(&HardwareTimers_2, ignitionSchedule1Interrupt, TIM_CHANNEL_1, 0);
+      attachIntHandleOC(&HardwareTimers_2, ignitionSchedule2Interrupt, TIM_CHANNEL_2, 0);
+      attachIntHandleOC(&HardwareTimers_2, ignitionSchedule3Interrupt, TIM_CHANNEL_3, 0);
+      attachIntHandleOC(&HardwareTimers_2, ignitionSchedule4Interrupt, TIM_CHANNEL_4, 0);
       
       //Attach interupt functions
       //Injection
@@ -122,38 +122,38 @@
       TimerPulseInit(&HardwareTimers_5, 0xFFFF, 0, EmptyIRQCallback);
       //setTimerPrescalerRegister(&HardwareTimers_5, (uint32_t)(getTimerClkFreq(HardwareTimers_5.timer) / (1000000)) - 1);
       #if (INJ_CHANNELS >= 5)
-      attachIntHandleOC(&HardwareTimers_5, fuelSchedule5Interrupt, 1, 0);
+      attachIntHandleOC(&HardwareTimers_5, fuelSchedule5Interrupt, TIM_CHANNEL_1, 0);
       //Timer5.attachInterrupt(1, fuelSchedule5Interrupt);
       #endif
       #if (INJ_CHANNELS >= 6)
-      attachIntHandleOC(&HardwareTimers_5, fuelSchedule6Interrupt, 2, 0);
+      attachIntHandleOC(&HardwareTimers_5, fuelSchedule6Interrupt, TIM_CHANNEL_, 0);
       //Timer5.attachInterrupt(2, fuelSchedule6Interrupt);
       #endif
       #if (INJ_CHANNELS >= 7)
-      attachIntHandleOC(&HardwareTimers_5, fuelSchedule7Interrupt, 3, 0);
+      attachIntHandleOC(&HardwareTimers_5, fuelSchedule7Interrupt, TIM_CHANNEL_3, 0);
       //Timer5.attachInterrupt(3, fuelSchedule7Interrupt);
       #endif
       #if (INJ_CHANNELS >= 8)
-      attachIntHandleOC(&HardwareTimers_5, fuelSchedule8Interrupt, 4, 0);
+      attachIntHandleOC(&HardwareTimers_5, fuelSchedule8Interrupt, TIM_CHANNEL_4, 0);
       //Timer5.attachInterrupt(4, fuelSchedule8Interrupt);
       #endif
 
       TimerPulseInit(&HardwareTimers_4, 0xFFFF, 0, EmptyIRQCallback);
       //setTimerPrescalerRegister(&HardwareTimers_4, (uint32_t)(getTimerClkFreq(HardwareTimers_4.timer) / (1000000)) - 1);
       #if (IGN_CHANNELS >= 5)
-      attachIntHandleOC(&HardwareTimers_4, ignitionSchedule5Interrupt, 1, 0);
+      attachIntHandleOC(&HardwareTimers_4, ignitionSchedule5Interrupt, TIM_CHANNEL_1, 0);
       //Timer4.attachInterrupt(1, ignitionSchedule5Interrupt);
       #endif
       #if (IGN_CHANNELS >= 6)
-      attachIntHandleOC(&HardwareTimers_4, ignitionSchedule6Interrupt, 2, 0);
+      attachIntHandleOC(&HardwareTimers_4, ignitionSchedule6Interrupt, TIM_CHANNEL_2, 0);
       //Timer4.attachInterrupt(2, ignitionSchedule6Interrupt);
       #endif
       #if (IGN_CHANNELS >= 7)
-      attachIntHandleOC(&HardwareTimers_4, ignitionSchedule7Interrupt, 3, 0);
+      attachIntHandleOC(&HardwareTimers_4, ignitionSchedule7Interrupt, TIM_CHANNEL_3, 0);
       //Timer4.attachInterrupt(3, ignitionSchedule7Interrupt);
       #endif
       #if (IGN_CHANNELS >= 8)
-      attachIntHandleOC(&HardwareTimers_4, ignitionSchedule8Interrupt, 4, 0);
+      attachIntHandleOC(&HardwareTimers_4, ignitionSchedule8Interrupt, TIM_CHANNEL_4, 0);
       //Timer4.attachInterrupt(4, ignitionSchedule8Interrupt);
       #endif
       
