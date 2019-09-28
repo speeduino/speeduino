@@ -113,10 +113,7 @@
   #define IGN8_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3B) //Replaces injector 2
 
   #define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
-  #define MAX_TIMER_PERIOD_SLOW 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 16, as each timer tick is 16uS)
   #define uS_TO_TIMER_COMPARE(uS1) ((uS1) >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
-  //This is a hack until I make all the AVR timers run at the same speed
-  #define uS_TO_TIMER_COMPARE_SLOW(uS1) ((uS1) >> 2)
 
 /*
 ***********************************************************************************************************

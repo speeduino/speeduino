@@ -699,6 +699,12 @@ void initialiseAll()
         ign4EndFunction = endCoil1Charge;
         ign5StartFunction = beginCoil1Charge;
         ign5EndFunction = endCoil1Charge;
+        ign6StartFunction = beginCoil1Charge;
+        ign6EndFunction = endCoil1Charge;
+        ign7StartFunction = beginCoil1Charge;
+        ign7EndFunction = endCoil1Charge;
+        ign8StartFunction = beginCoil1Charge;
+        ign8EndFunction = endCoil1Charge;
         break;
 
     case IGN_MODE_WASTEDCOP:
@@ -1454,7 +1460,7 @@ void setPinMapping(byte boardID)
       pinCoil2 = 29; //Pin for coil 2
       pinCoil3 = 28; //Pin for coil 3
       pinCoil4 = 27; //Pin for coil 4
-      pinCoil4 = 26; //Placeholder  for coil 5
+      pinCoil5 = 26; //Placeholder  for coil 5
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinFlex = 20; // Flex sensor

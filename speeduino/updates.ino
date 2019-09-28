@@ -237,12 +237,17 @@ void doUpdates()
 
   if(EEPROM.read(EEPROM_DATA_VERSION) == 11)
   {
-    //July 2019
+    //Sep 2019
     //A battery calibration offset value was introduced. Set default value to 0
     configPage4.batVoltCorrect = 0;
 
     //An option was added to select the older method of performing MAP reads with the pullup resistor active
     configPage2.legacyMAP = 0;
+
+    //Secondary fuel table was added for swtiching. Make sure it's all turned off initially
+    configPage10.fuel2Mode = 0;
+    configPage10.fuel2SwitchVariable = 0; //Set switch variable to RPM
+    configPage10.fuel2SwitchValue = 7000; //7000 RPM switch point is safe
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 12);
