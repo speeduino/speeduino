@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include <HardwareTimer.h>
 #include <HardwareSerial.h>
-#include "stm32f1xx_ll_tim.h"
+#include "stm32f4xx_ll_tim.h"
 /*
 ***********************************************************************************************************
 * General
