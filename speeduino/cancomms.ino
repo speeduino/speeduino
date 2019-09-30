@@ -22,7 +22,7 @@ void canCommand()
 
   switch (currentcanCommand)
   {
-    case 'A': // sends the bytes of realtime values from the CAN list
+    case 'A': // sends the bytes of realtime values from the OLD CAN list
         sendcanValues(0, CAN_PACKET_SIZE, 0x30, 1); //send values to serial3
         break;
 
@@ -60,6 +60,10 @@ void canCommand()
       }
         break;
 
+    case 'k':   //placeholder for new can interface (toucan etc) commands
+
+        break;
+        
     case 'L':
         uint8_t Llength;
         while (CANSerial.available() == 0) { }
@@ -81,6 +85,10 @@ void canCommand()
            Lbuffer[Lcount] = CANSerial.read();
          }
          break;
+
+    case 'n': // sends the bytes of realtime values from the NEW CAN list
+        sendcanValues(0, NEW_CAN_PACKET_SIZE, 0x31, 1); //send values to serial3
+        break;
 
     case 'r': //New format for the optimised OutputChannels
       byte Cmd;
@@ -108,11 +116,11 @@ void canCommand()
       break;
 
     case 's': // send the "a" stream code version
-      CANSerial.print(F("Speeduino csx02018.7"));
+      CANSerial.print(F("Speeduino csx02019.8"));
        break;
 
     case 'S': // send code version
-      CANSerial.print(F("Speeduino 2018.7-dev"));
+      CANSerial.print(F("Speeduino 2019.08-ser"));
       break;
       
     case 'Q': // send code version
@@ -132,13 +140,18 @@ void canCommand()
 }
 void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portType)
 {
-  byte fullStatus[CAN_PACKET_SIZE];
+  byte fullStatus[NEW_CAN_PACKET_SIZE];    // this must be set to the maximum number of data fullstatus must read in
 
     //CAN serial
     #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)|| defined(CORE_STM32) || defined (CORE_TEENSY) //ATmega2561 does not have Serial3
       if (offset == 0)
         {
-          CANSerial.write("A");         //confirm cmd type
+          if (cmd == 0x30) {CANSerial.write("A");}         // confirm command type
+          else
+             {
+              CANSerial.write("n");                       // confirm command type
+              CANSerial.write(NEW_CAN_PACKET_SIZE);       // send the packet size the receiving device should expect.
+             }
         }
       else
         {
