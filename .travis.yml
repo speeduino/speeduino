@@ -60,7 +60,7 @@ script:
 # Run the builds (Mega must be last so that the hex file isn't cleaned up)
   - platformio run -e teensy35 -e teensy40 -e megaatmega2560 
 # Upload ini and hex files to speeduino.com server
-  - curl --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
+  - curl -v --retry 5 --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
   - curl --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
 # Do doxygen run and upload to gh-pages server.
   - doxygen
