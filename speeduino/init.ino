@@ -286,6 +286,12 @@ void initialiseAll()
       // In TunerStudio, the reqFuel value is multiplied by 2 when "Alternating" injection is selected.
       // We undo that operation to keep reqFuel constant across all patterns.
       if (configPage2.injTiming) { req_fuel_uS /= 2; }
+      // If Sequential injection is selected, we override the nSquirts value to 1 so each output fires once per rev.
+      if(configPage2.injLayout == INJ_SEQUENTIAL)
+      {
+        req_fuel_uS *= currentStatus.nSquirts;
+        currentStatus.nSquirts = 1;
+      }
     }
     else if (configPage2.strokes == FOUR_STROKE)
     {
