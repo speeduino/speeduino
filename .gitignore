@@ -25,3 +25,4 @@ reference/hardware/v0.4/gerbers/Archive.zip
 .vscode/.browse.c_cpp.db*
 speeduino/board_samd21*
 reference/doxygen
+speeduino/speeduino.ino.cpp
