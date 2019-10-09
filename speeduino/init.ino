@@ -452,6 +452,12 @@ void initialiseAll()
         {
           channel2InjDegrees = 180;
 
+          //Adjust the injection angles based on the number of squirts
+          if (currentStatus.nSquirts > 2)
+          {
+            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
+          }
+
           if (!configPage2.injTiming) 
           { 
             //For simultaneous, all squirts happen at the same time
