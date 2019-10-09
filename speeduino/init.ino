@@ -453,7 +453,7 @@ void initialiseAll()
           channel2InjDegrees = 180;
 
           //Adjust the injection angles based on the number of squirts
-          if (currentStatus.nSquirts > 2)
+          if (currentStatus.nSquirts > 2 && configPage2.newPwCalc) // check newPwCalc as this wasn't here before october 2019
           {
             channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
           }
