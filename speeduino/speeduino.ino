@@ -771,22 +771,22 @@ void loop()
       int crankAngle = getCrankAngle();
       while(crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle = crankAngle - CRANK_ANGLE_MAX_INJ; } //Continue reducing the crank angle by the max injection amount until it's below the required limit. This will usually only run (at most) once, but in cases where there is sequential ignition and more than 2 squirts per cycle, it may run up to 4 times. 
 
-      if(Serial && false)
-      {
-        if(ignition1StartAngle > crankAngle)
-        {
-          noInterrupts();
-          Serial.print("Time2LastTooth:"); Serial.println(micros()-toothLastToothTime);
-          Serial.print("elapsedTime:"); Serial.println(elapsedTime);
-          Serial.print("CurAngle:"); Serial.println(crankAngle);
-          Serial.print("RPM:"); Serial.println(currentStatus.RPM);
-          Serial.print("Tooth:"); Serial.println(toothCurrentCount);
-          Serial.print("timePerDegree:"); Serial.println(timePerDegree);
-          Serial.print("IGN1Angle:"); Serial.println(ignition1StartAngle);
-          Serial.print("TimeToIGN1:"); Serial.println(angleToTime((ignition1StartAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV));
-          interrupts();
-        }
-      }
+      // if(Serial && false)
+      // {
+      //   if(ignition1StartAngle > crankAngle)
+      //   {
+      //     noInterrupts();
+      //     Serial.print("Time2LastTooth:"); Serial.println(micros()-toothLastToothTime);
+      //     Serial.print("elapsedTime:"); Serial.println(elapsedTime);
+      //     Serial.print("CurAngle:"); Serial.println(crankAngle);
+      //     Serial.print("RPM:"); Serial.println(currentStatus.RPM);
+      //     Serial.print("Tooth:"); Serial.println(toothCurrentCount);
+      //     Serial.print("timePerDegree:"); Serial.println(timePerDegree);
+      //     Serial.print("IGN1Angle:"); Serial.println(ignition1StartAngle);
+      //     Serial.print("TimeToIGN1:"); Serial.println(angleToTime((ignition1StartAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV));
+      //     interrupts();
+      //   }
+      // }
 
 #if INJ_CHANNELS >= 1
       if (fuelOn && !BIT_CHECK(currentStatus.status1, BIT_STATUS1_BOOSTCUT))
