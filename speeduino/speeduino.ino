@@ -395,7 +395,12 @@ void loop()
       currentStatus.corrections = correctionsFuel();
 
       currentStatus.advance = getAdvance();
-      //currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
+
+      if (configPage2.battVCorMode == BATTV_COR_MODE_OPENTIME)
+      {
+        inj_opentime_uS = configPage2.injOpen * table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10); // Apply voltage correction to injector open time.
+      }
+
       currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
 
       //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based

@@ -239,6 +239,9 @@
 
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
+#define BATTV_COR_MODE_WHOLE 0
+#define BATTV_COR_MODE_OPENTIME 1
+
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
 #define CALIBRATION_TEMPERATURE_OFFSET 40 // All temperature measurements are stored offset by 40 degrees. This is so we can use an unsigned byte (0-255) to represent temperature ranges from -40 to 215
@@ -491,7 +494,8 @@ struct config2 {
   byte unused2_1;
   byte unused2_2;  //Was ASE
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
-  byte unused1_3c : 6;
+  byte battVCorMode : 1;
+  byte unused1_3c : 5;
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
