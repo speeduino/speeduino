@@ -18,7 +18,7 @@
   uint16_t freeRam();
 
   #if defined(TIMER5_MICROS)
-    //#define micros() (((timer5_overflow_count << 16) + TCNT5) * 4) //Fast version of micros() that uses the 4uS tick of timer5. See timers.ino for the overflow ISR of timer5
+    /*#define micros() (((timer5_overflow_count << 16) + TCNT5) * 4) */ //Fast version of micros() that uses the 4uS tick of timer5. See timers.ino for the overflow ISR of timer5
     #define millis() (ms_counter) //Replaces the standard millis() function with this macro. It is both faster and more accurate. See timers.ino for its counter increment.
     static inline unsigned long micros_safe(); //A version of micros() that is interrupt safe
   #else
@@ -34,7 +34,7 @@
 ***********************************************************************************************************
 * Schedules
 */
-  //Refer to http://svn.savannah.nongnu.org/viewvc/trunk/avr-libc/include/avr/iomxx0_1.h?root=avr-libc&view=markup
+  //Refer to svn.savannah.nongnu.org/viewvc/trunk/avr-libc/include/avr/iomxx0_1.h?root=avr-libc&view=markup
   #define FUEL1_COUNTER TCNT3
   #define FUEL2_COUNTER TCNT3
   #define FUEL3_COUNTER TCNT3
@@ -94,9 +94,9 @@
   #define IGN1_TIMER_ENABLE() TIFR5 |= (1<<OCF5A); TIMSK5 |= (1 << OCIE5A) //Turn on the A compare unit (ie turn on the interrupt)
   #define IGN2_TIMER_ENABLE() TIFR5 |= (1<<OCF5B); TIMSK5 |= (1 << OCIE5B) //Turn on the B compare unit (ie turn on the interrupt)
   #define IGN3_TIMER_ENABLE() TIFR5 |= (1<<OCF5C); TIMSK5 |= (1 << OCIE5C) //Turn on the C compare unit (ie turn on the interrupt)
-  //#define IGN1_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5A) //Turn on the B compare unit (ie turn on the interrupt)
-  //#define IGN2_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5B) //Turn on the B compare unit (ie turn on the interrupt)
-  //#define IGN3_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5C) //Turn on the C compare unit (ie turn on the interrupt)
+  /*#define IGN1_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5A) */ //Turn on the B compare unit (ie turn on the interrupt)
+  /*#define IGN2_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5B) */ //Turn on the B compare unit (ie turn on the interrupt)
+  /*#define IGN3_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5C) */ //Turn on the C compare unit (ie turn on the interrupt)
   #define IGN4_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4A) //Turn on the A compare unit (ie turn on the interrupt)
   #define IGN5_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4C) //Turn on the A compare unit (ie turn on the interrupt)
   #define IGN6_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4B) //Replaces injector 4
