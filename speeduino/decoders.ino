@@ -262,6 +262,7 @@ void triggerSetup_missingTooth()
   checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
   toothLastMinusOneToothTime = 0;
   toothCurrentCount = 0;
+  secondaryToothCount = 0; 
   toothOneTime = 0;
   toothOneMinusOneTime = 0;
   MAX_STALL_TIME = (3333UL * triggerToothAngle * (configPage4.triggerMissingTeeth + 1)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
@@ -299,23 +300,34 @@ void triggerPri_missingTooth()
          //else if (currentStatus.hasSync == false && toothCurrentCount < checkSyncToothCount ) { triggerFilterTime = 0; }
          else
          {
-           if(currentStatus.hasSync == true)
-           {
-             currentStatus.startRevolutions++; //Counter
-             if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
-           }
-           else { currentStatus.startRevolutions = 0; }
-           
-           toothCurrentCount = 1;
-           revolutionOne = !revolutionOne; //Flip sequential revolution tracker
-           toothOneMinusOneTime = toothOneTime;
-           toothOneTime = curTime;
-           currentStatus.hasSync = true;
+            if(currentStatus.hasSync == true)
+            {
+              currentStatus.startRevolutions++; //Counter
+              if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
+            }
+            else { currentStatus.startRevolutions = 0; }
+            
+            toothCurrentCount = 1;
+            revolutionOne = !revolutionOne; //Flip sequential revolution tracker
+            toothOneMinusOneTime = toothOneTime;
+            toothOneTime = curTime;
 
-           triggerFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-           toothLastMinusOneToothTime = toothLastToothTime;
-           toothLastToothTime = curTime;
-           triggerToothAngleIsCorrect = false; //The tooth angle is double at this point
+            //if Sequential fuel or ignition is in use, further checks are needed before determining sync
+            if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) )
+            {
+              //If either fuel or ignition is sequential, only declare sync if the cam tooth has been seen OR if the missing wheel is on the cam
+              if( (secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) )
+              {
+                currentStatus.hasSync = true;
+                if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE) { secondaryToothCount = 0; } //Reset the secondary tooth counter to prevent it overflowing
+              }
+            }
+            else { currentStatus.hasSync = true; } //If nothing is using sequential, we have sync
+
+            triggerFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
+            toothLastMinusOneToothTime = toothLastToothTime;
+            toothLastToothTime = curTime;
+            triggerToothAngleIsCorrect = false; //The tooth angle is double at this point
          }
        }
        else
@@ -389,6 +401,7 @@ void triggerSec_missingTooth()
       //Standard single tooth cam trigger
       revolutionOne = 1; //Sequential revolution reset
       triggerSecFilterTime = curGap2 >> 1; //Next secondary filter is half the current gap
+      secondaryToothCount++;
     }
     toothLastSecToothTime = curTime2;
   } //Trigger filter
