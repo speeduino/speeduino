@@ -379,6 +379,13 @@ byte resetControl = RESET_CONTROL_DISABLED;
 volatile byte TIMER_mask;
 volatile byte LOOP_TIMER;
 
+//These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
+#define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) )
+#define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) )
+#define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
+#define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) )
+#define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) )
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
@@ -1022,7 +1029,7 @@ byte pinSpareLOut4;
 byte pinSpareLOut5;
 byte pinBoost;
 byte pinVVT_1;		// vvt output 1
-byte pinVVt_2;		// vvt output 2
+byte pinVVT_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver

@@ -1641,10 +1641,14 @@ void receiveCalibration(byte tableID)
   bool every2nd = true;
   int x;
   int counter = 0;
-  // stm32 board has buildin led used as fuel pump
-  // pinMode(LED_BUILTIN, OUTPUT); //pinMode(13, OUTPUT);
+  bool useLEDIndicator = false;
+  if (pinIsOutput(LED_BUILTIN) == false)
+  {
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
+    useLEDIndicator = true;
+  }
 
-  // digitalWrite(LED_BUILTIN, LOW); //digitalWrite(13, LOW);
   for (x = 0; x < 1024; x++)
   {
     //UNlike what is listed in the protocol documentation, the O2 sensor values are sent as bytes rather than ints
@@ -1681,13 +1685,14 @@ void receiveCalibration(byte tableID)
       storeCalibrationValue(y, (byte)tempValue);
 
       every2nd = false;
-      #if defined(CORE_STM32)
-        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-      #elif defined(CORE_STM32_OFFICIAL)
-        //Of core offical do nothing. led is reserved for fuel pump
-      #else
-        analogWrite(LED_BUILTIN, (counter % 50) ); //analogWrite(13, (counter % 50) );
-      #endif
+      if(useLEDIndicator == true)
+      {
+        #if defined(CORE_STM32)
+          digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        #else
+          analogWrite(LED_BUILTIN, (counter % 50) );
+        #endif
+      }
       counter++;
     }
     else {
