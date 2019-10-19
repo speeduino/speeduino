@@ -491,7 +491,7 @@ struct config2 {
   byte unused2_1;
   byte unused2_2;  //Was ASE
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
-  bool newPwCalc:1;
+  bool cstPwCalc:1;
   byte unused2_3:5;
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment

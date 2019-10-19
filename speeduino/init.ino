@@ -282,7 +282,7 @@ void initialiseAll()
     if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
 
     //When alternating, each injector skips 1 of 2 events: half the number of simultaneous.
-    if (configPage2.newPwCalc && configPage2.injTiming)
+    if (configPage2.cstPwCalc && configPage2.injTiming)
     {
       currentStatus.nSquirts /= 2;
     }
@@ -304,7 +304,7 @@ void initialiseAll()
         req_fuel_uS = req_fuel_uS / 2;
         
         CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts;
-        if (configPage2.newPwCalc) { CRANK_ANGLE_MAX_INJ /= 2; }
+        if (configPage2.cstPwCalc) { CRANK_ANGLE_MAX_INJ /= 2; }
       }
     }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
@@ -458,7 +458,7 @@ void initialiseAll()
           channel2InjDegrees = 180;
 
           //Adjust the injection angles based on the number of squirts
-          if (currentStatus.nSquirts > 2 && configPage2.newPwCalc) // check newPwCalc as this wasn't here before october 2019
+          if (currentStatus.nSquirts > 2 && configPage2.cstPwCalc) // check cstPwCalc as this wasn't here before october 2019
           {
             channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
           }
