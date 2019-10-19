@@ -304,7 +304,7 @@ void initialiseAll()
         req_fuel_uS = req_fuel_uS / 2;
         
         CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts;
-        if (configPage2.cstPwCalc) { CRANK_ANGLE_MAX_INJ /= 2; }
+        if (configPage2.cstPwCalc) { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; } //Crank angle is tracked over a single crank revolution
       }
     }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
