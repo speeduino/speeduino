@@ -281,27 +281,32 @@ void initialiseAll()
     currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manaully overriden below for sequential setups (Due to TS req_fuel calc limitations)
     if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
 
-    if (configPage2.newPwCalc)
+    //When alternating, each injector skips 1 of 2 events: half the number of simultaneous.
+    if (configPage2.newPwCalc && configPage2.injTiming)
     {
-      // In TunerStudio, the reqFuel value is multiplied by 2 when "Alternating" injection is selected.
-      // We undo that operation to keep reqFuel constant across all patterns.
-      if (configPage2.injTiming) { req_fuel_uS /= 2; }
+      currentStatus.nSquirts /= 2;
+    }
+
+    if (configPage2.strokes == FOUR_STROKE)
+    {
       // If Sequential injection is selected, we override the nSquirts value to 1 so each output fires once per rev.
       if(configPage2.injLayout == INJ_SEQUENTIAL)
       {
-        req_fuel_uS *= currentStatus.nSquirts;
         currentStatus.nSquirts = 1;
+        CRANK_ANGLE_MAX_INJ = 720;
+      }
+      else
+      {
+        //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
+        //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more
+        //  than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke
+        //  setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
+        req_fuel_uS = req_fuel_uS / 2;
+        
+        CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts;
+        if (configPage2.newPwCalc) { CRANK_ANGLE_MAX_INJ /= 2; }
       }
     }
-    else if (configPage2.strokes == FOUR_STROKE)
-    {
-      // If Sequential injection is selected, we override the nSquirts value to 1 so each output fires once per rev.
-      if(configPage2.injLayout == INJ_SEQUENTIAL) { currentStatus.nSquirts = 1; }
-      // Else, the reqFuel value is divided by 2, to keep the value to what it was before october 2019.
-      else { req_fuel_uS /= 2; }
-    }
-
-    if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
     //Calculate the number of degrees between cylinders
@@ -586,7 +591,7 @@ void initialiseAll()
         channel3InjEnabled = true;
         break;
     case 8:
-        channel1IgnDegrees = 0;
+        channel1IgnDegrees = channel1InjDegrees = 0;
         channel2IgnDegrees = channel2InjDegrees = 90;
         channel3IgnDegrees = channel3InjDegrees = 180;
         channel4IgnDegrees = channel4InjDegrees = 270;
