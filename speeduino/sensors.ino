@@ -142,7 +142,7 @@ static inline void instanteneousMAPReading()
   else { currentStatus.mapADC = tempReading; } //Baro reading (No filter)
 
   currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-  if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
+  //if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check. MAP should never be signed thus the absolute in absolute pressure
 
 }
 
@@ -208,7 +208,7 @@ static inline void readMAP()
 
             currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-            if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
+            //if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check. MAP should never be signed thus the absolute in absolute pressure
 
             //If EMAP is enabled, the process is identical to the above
             if(configPage6.useEMAP == true)
@@ -258,7 +258,7 @@ static inline void readMAP()
 
           currentStatus.mapADC = MAPrunningValue;
           currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-          if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
+          //if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check. MAP should never be signed thus the absolute in absolute pressure
           MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
           MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
         }

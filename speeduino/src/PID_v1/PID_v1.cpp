@@ -209,7 +209,7 @@ int PID::GetDirection(){ return controllerDirection;}
  * 
  * @return byte The current target advance value in degrees
  */
-integerPID::integerPID(long* Input, long* Output, long* Setpoint,
+integerPID::integerPID(int16_t* Input, long* Output, long* Setpoint,
         byte Kp, byte Ki, byte Kd, byte ControllerDirection)
 {
 
@@ -245,7 +245,7 @@ bool integerPID::Compute(bool pOnE)
    if(timeChange >= SampleTime)
    {
       /*Compute all the working error variables*/
-	  long input = *myInput;
+	  long input = (long)*myInput;
       long error = *mySetpoint - input;
       long dInput = (input - lastInput);
 
@@ -374,7 +374,7 @@ void integerPID::SetMode(int Mode)
 void integerPID::Initialize()
 {
    outputSum = *myOutput;
-   lastInput = *myInput;
+   lastInput = (long)*myInput;
    lastMinusOneInput = *myInput;
    if(outputSum > outMax) { outputSum = outMax; }
    else if(outputSum < outMin) { outputSum = outMin; }
@@ -412,12 +412,12 @@ int integerPID::GetDirection(){ return controllerDirection;}
  *    The parameters specified here are those for for which we can't set up
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
-integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity, byte* SampleTime,
+integerPID_ideal::integerPID_ideal(int16_t* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity, byte* SampleTime,
                                    byte Kp, byte Ki, byte Kd, byte ControllerDirection)
 {
 
     myOutput = Output;
-    myInput = (long*)Input;
+    myInput = Input;
     mySetpoint = Setpoint;
     mySensitivity = Sensitivity;
     mySampleTime = SampleTime;
@@ -535,7 +535,7 @@ void integerPID_ideal::SetOutputLimits(long Min, long Max)
 void integerPID_ideal::Initialize()
 {
    ITerm = 0;
-   lastInput = *myInput;
+   lastInput = (long)*myInput;
    lastError = 0;
 }
 

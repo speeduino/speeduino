@@ -89,8 +89,8 @@ void loop()
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
-      currentStatus.longRPM = getRPM(); //Long RPM is included here
-      currentStatus.RPM = currentStatus.longRPM;
+      currentStatus.RPM = getRPM();
+      //currentStatus.RPM = currentStatus.longRPM; //Long RPM is included here. Sole purpose was for PID_v1. No longer needed.
       FUEL_PUMP_ON();
       currentStatus.fuelPumpOn = true; //Not sure if this is needed.
     }
@@ -631,7 +631,7 @@ void loop()
       else { currentStatus.dwell =  (configPage4.dwellRun * 100); }
       currentStatus.dwell = correctionsDwell(currentStatus.dwell);
 
-      int dwellAngle = timeToAngle(currentStatus.dwell, CRANKMATH_METHOD_INTERVAL_REV); //Convert the dwell time to dwell angle based on the current engine speed
+      int dwellAngle = timeToAngle((unsigned long)currentStatus.dwell, CRANKMATH_METHOD_INTERVAL_REV); //Convert the dwell time to dwell angle based on the current engine speed
 
       //Calculate start angle for each channel
       //1 cylinder (Everyone gets this)
