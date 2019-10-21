@@ -153,13 +153,13 @@ void initialiseAll()
     endCoil3Charge();
     endCoil4Charge();
     endCoil5Charge();
-    #if (INJ_CHANNELS >= 6)
+    #if (IGN_CHANNELS >= 6)
     endCoil6Charge();
     #endif
-    #if (INJ_CHANNELS >= 7)
+    #if (IGN_CHANNELS >= 7)
     endCoil7Charge();
     #endif
-    #if (INJ_CHANNELS >= 8)
+    #if (IGN_CHANNELS >= 8)
     endCoil8Charge();
     #endif
 
@@ -169,13 +169,13 @@ void initialiseAll()
     closeInjector3();
     closeInjector4();
     closeInjector5();
-    #if (IGN_CHANNELS >= 6)
+    #if (INJ_CHANNELS >= 6)
     closeInjector6();
     #endif
-    #if (IGN_CHANNELS >= 7)
+    #if (INJ_CHANNELS >= 7)
     closeInjector7();
     #endif
-    #if (IGN_CHANNELS >= 8)
+    #if (INJ_CHANNELS >= 8)
     closeInjector8();
     #endif
 
