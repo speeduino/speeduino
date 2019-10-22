@@ -79,7 +79,7 @@ ISR(ADC_vect)
   byte nChannel;
   int result = ADCL | (ADCH << 8);
 
-  /*ADCSRA = 0x6E;  */ // ADC disabled by clearing bit 7(ADEN)
+  //ADCSRA = 0x6E; - ADC disabled by clearing bit 7(ADEN)
   //BIT_CLEAR(ADCSRA, ADIE);
 
   nChannel = ADMUX & 0x07;
@@ -102,7 +102,7 @@ ISR(ADC_vect)
   AnChannel[nChannel-1] = result;
 
   //BIT_SET(ADCSRA, ADIE);
-  /*ADCSRA = 0xEE; */ // ADC Interrupt Flag enabled
+  //ADCSRA = 0xEE; - ADC Interrupt Flag enabled
 }
 */
 ISR(ADC_vect)
