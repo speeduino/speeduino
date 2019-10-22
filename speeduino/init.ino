@@ -281,19 +281,12 @@ void initialiseAll()
     currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manaully overriden below for sequential setups (Due to TS req_fuel calc limitations)
     if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
 
-    //When alternating, each injector skips 1 of 2 events: half the number of simultaneous.
-    if (configPage2.cstPwCalc && configPage2.injTiming)
-    {
-      currentStatus.nSquirts /= 2;
-    }
-
     if (configPage2.strokes == FOUR_STROKE)
     {
       // If Sequential injection is selected, we override the nSquirts value to 1 so each output fires once per rev.
       if(configPage2.injLayout == INJ_SEQUENTIAL)
       {
         currentStatus.nSquirts = 1;
-        CRANK_ANGLE_MAX_INJ = 720;
       }
       else
       {
@@ -302,10 +295,8 @@ void initialiseAll()
         //  than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke
         //  setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
         req_fuel_uS = req_fuel_uS / 2;
-        
-        CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts;
-        if (configPage2.cstPwCalc) { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; } //Crank angle is tracked over a single crank revolution
       }
+      CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts;
     }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
