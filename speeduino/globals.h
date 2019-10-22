@@ -491,8 +491,7 @@ struct config2 {
   byte unused2_1;
   byte unused2_2;  //Was ASE
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
-  bool cstPwCalc:1;
-  byte unused2_3:5;
+  byte unused1_3c : 6;
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
@@ -596,7 +595,7 @@ struct config2 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+  } __attribute__((__packed__)); //The 32 bi systems require all structs to be fully packed
 #endif
 
 //Page 4 of the config - See the ini file for further reference
@@ -677,7 +676,7 @@ struct config4 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+  } __attribute__((__packed__)); //The 32 bi systems require all structs to be fully packed
 #endif
 
 //Page 6 of the config - See the ini file for further reference

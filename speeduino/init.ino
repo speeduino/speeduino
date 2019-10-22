@@ -419,6 +419,11 @@ void initialiseAll()
         if (configPage2.engineType == EVEN_FIRE )
         {
           channel2IgnDegrees = 180;
+          //Adjust the injection angles based on the number of squirts
+          if (currentStatus.nSquirts > 2)
+          {
+            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
+          }
 
           if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
           {
@@ -447,12 +452,6 @@ void initialiseAll()
         if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
         {
           channel2InjDegrees = 180;
-
-          //Adjust the injection angles based on the number of squirts
-          if (currentStatus.nSquirts > 2 && configPage2.cstPwCalc) // check cstPwCalc as this wasn't here before october 2019
-          {
-            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
-          }
 
           if (!configPage2.injTiming) 
           { 
