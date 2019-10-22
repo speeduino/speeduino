@@ -23,7 +23,7 @@
 ***********************************************************************************************************
 * Schedules
 */
-  //http://shawnhymel.com/661/learning-the-teensy-lc-interrupt-service-routines/
+  //shawnhymel.com/661/learning-the-teensy-lc-interrupt-service-routines/
   #define FUEL1_COUNTER TMR1_CNTR0
   #define FUEL2_COUNTER TMR1_CNTR0
   #define FUEL3_COUNTER TMR1_CNTR1
