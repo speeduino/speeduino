@@ -19,10 +19,10 @@ rm ./utils.*.dump
 python $cppcheck_misra --rule-texts=speeduino/misra/misra_2012_text.txt *.dump 2> results.txt
 #rm *.dump
 
-cat results.txt
+sort results.txt | uniq
 # wc -l results.txt
 
-errors=`wc -l < results.txt | tr -d ' '`
+errors=`sort results.txt | uniq | wc -l`
 echo $errors MISRA violations
 
 if [ $errors -gt 0 ]; then
