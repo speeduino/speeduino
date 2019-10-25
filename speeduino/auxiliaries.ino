@@ -325,12 +325,16 @@ void nitrousControl()
   }
 
   if (nitrousOn == false)
+  {
+    currentStatus.nitrous_status = NITROUS_OFF;
+    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_NITROUS);
+
+    if(configPage10.n2o_enable > 0)
     {
-      currentStatus.nitrous_status = NITROUS_OFF;
-      BIT_CLEAR(currentStatus.status3, BIT_STATUS3_NITROUS);
       N2O_STAGE1_PIN_LOW();
       N2O_STAGE2_PIN_LOW();
     }
+  }
 }
 
 void boostDisable()

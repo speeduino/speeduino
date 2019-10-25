@@ -130,7 +130,7 @@
         #define IGN7_COMPARE (TIM4)->CCR3
         #define IGN8_COMPARE (TIM4)->CCR4
     #endif
-    //https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
+    //github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
     #define FUEL1_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC1E
     #define FUEL2_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC2E
     #define FUEL3_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC3E
@@ -214,7 +214,7 @@
         #define IGN7_COMPARE (TIMER4->regs).gen->CCR3
         #define IGN8_COMPARE (TIMER4->regs).gen->CCR4
     #endif
-    //https://github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
+    //github.com/rogerclarkmelbourne/Arduino_STM32/blob/754bc2969921f1ef262bd69e7faca80b19db7524/STM32F1/system/libmaple/include/libmaple/timer.h#L444
     #define FUEL1_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC1E
     #define FUEL2_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC2E
     #define FUEL3_TIMER_ENABLE() (TIMER2->regs).gen->CCER |= TIMER_CCER_CC3E

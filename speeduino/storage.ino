@@ -428,6 +428,7 @@ void writeConfig(byte tableNum)
 
 void loadConfig()
 {
+  
   int offset;
   //Create a pointer to the config page
   byte* pnt_configPage;
