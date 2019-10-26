@@ -5,12 +5,6 @@
 #include "idle.h"
 #include "scheduler.h"
 #include "HardwareTimer.h"
-#if !defined(STM32GENERIC)
-    //These should really be in the stm32 libmaple libs, but for somereason they only have timers 1-4
-    #include <stm32_TIM_variant_11.h>
-    HardwareTimer Timer5(TIM5, chip_tim5, sizeof(chip_tim5) / sizeof(chip_tim5[0]));
-    HardwareTimer Timer8(TIM8, chip_tim8, sizeof(chip_tim8) / sizeof(chip_tim8[0]));
-#endif
 
 void initBoard()
 {
