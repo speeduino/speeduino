@@ -95,7 +95,7 @@ class integerPID
 
     void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
 
-    bool Compute();                       // * performs the PID calculation.  it should be
+    bool Compute(bool pOnE);                       // * performs the PID calculation.  it should be
                                           //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
@@ -114,25 +114,22 @@ class integerPID
 										  //   means the output will increase when error is positive. REVERSE
 										  //   means the opposite.  it's very unlikely that this will be needed
 										  //   once it is set in the constructor.
-    void SetSampleTime(int);              // * sets the frequency, in Milliseconds, with which
+  void SetSampleTime(uint16_t);              // * sets the frequency, in Milliseconds, with which
                                           //   the PID calculation is performed.  default is 100
 
 
 
   //Display functions ****************************************************************
-	byte GetKp();						  // These functions query the pid for interal values.
-	byte GetKi();						  //  they were created mainly for the pid front-end,
-	byte GetKd();						  // where it's important to know what is actually
 	int GetMode();						  //  inside the PID.
 	int GetDirection();					  //
+  void Initialize();
 
   private:
-	void Initialize();
 
-	byte dispKp;				// * we'll hold on to the tuning parameters in user-entered
-	byte dispKi;				//   format for display purposes
-	byte dispKd;				//
 
+  byte dispKp;
+  byte dispKi;
+  byte dispKd;
 	uint16_t  kp;                  // * (P)roportional Tuning Parameter
   uint16_t  ki;                  // * (I)ntegral Tuning Parameter
   uint16_t  kd;                  // * (D)erivative Tuning Parameter
@@ -145,9 +142,10 @@ class integerPID
                                   //   what these values are.  with pointers we'll just know.
 
 	unsigned long lastTime;
-	long ITerm, lastInput;
+	long outputSum, lastInput, lastMinusOneInput;
+  int16_t lastError;
 
-	unsigned long SampleTime;
+	uint16_t SampleTime;
 	long outMin, outMax;
 	bool inAuto;
 };
@@ -191,9 +189,6 @@ class integerPID_ideal
 
 
   //Display functions ****************************************************************
-	byte GetKp();						  // These functions query the pid for interal values.
-	byte GetKi();						  //  they were created mainly for the pid front-end,
-	byte GetKd();						  // where it's important to know what is actually
 	int GetMode();						  //  inside the PID.
 	int GetDirection();					  //
 	void Initialize();

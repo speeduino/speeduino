@@ -2,10 +2,10 @@
 This scheduler is designed to maintain 2 schedules for use by the fuel and ignition systems.
 It functions by waiting for the overflow vectors from each of the timers in use to overflow, which triggers an interrupt
 
-//Technical
+/Technical
 Currently I am prescaling the 16-bit timers to 256 for injection and 64 for ignition. This means that the counter increments every 16us (injection) / 4uS (ignition) and will overflow every 1048576uS
 Max Period = (Prescale)*(1/Frequency)*(2^17)
-(See http://playground.arduino.cc/code/timer1)
+(See playground.arduino.cc/code/timer1)
 This means that the precision of the scheduler is 16uS (+/- 8uS of target) for fuel and 4uS (+/- 2uS) for ignition
 
 /Features
@@ -16,7 +16,7 @@ Timer identification
 The Arduino timer3 is used for schedule 1
 The Arduino timer4 is used for schedule 2
 Both of these are 16-bit timers (ie count to 65536)
-See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pdf
+See page 136 of the processors datasheet: www.atmel.com/Images/doc2549.pdf
 
 256 prescale gives tick every 16uS
 256 prescale gives overflow every 1048576uS (This means maximum wait time is 1.0485 seconds)
@@ -102,14 +102,14 @@ struct Schedule {
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
   volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
-  volatile uint16_t startCompare; //The counter value of the timer when this will start
-  volatile uint16_t endCompare;
+  volatile COMPARE_TYPE startCompare; //The counter value of the timer when this will start
+  volatile COMPARE_TYPE endCompare;
 
   unsigned int nextStartCompare;
   unsigned int nextEndCompare;
   volatile bool hasNextSchedule = false;
   volatile bool endScheduleSetByDecoder = false;
-#if defined(CORE_AVR)
+#if defined(CORE_AVR) || defined(CORE_TEENSY40)
   volatile uint16_t * counter;
   volatile uint16_t * compare;
 #else
@@ -181,10 +181,10 @@ static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedu
 
   //Sort the queues. Both queues are kept in sync.
   //This implementes a sorting networking based on the Bose-Nelson sorting network
-  //See: http://pages.ripco.net/~jgamble/nw.html
+  //See: pages.ripco.net/~jgamble/nw.html
   #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned int tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; volatile Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
-  //SWAP(0, 1); //Likely not needed
-  //SWAP(2, 3); //Likely not needed
+  /*SWAP(0, 1); */ //Likely not needed
+  /*SWAP(2, 3); */ //Likely not needed
   SWAP(0, 2);
   SWAP(1, 3);
   SWAP(1, 2);

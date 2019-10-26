@@ -1,6 +1,7 @@
 #ifndef CANCOMMS_H
 #define CANCOMMS_H
 
+#define NEW_CAN_PACKET_SIZE   75
 #define CAN_PACKET_SIZE   75
 
 uint8_t currentcanCommand;

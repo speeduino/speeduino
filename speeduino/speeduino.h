@@ -13,7 +13,7 @@
 #define SPEEDUINO_H
 
 uint16_t PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen);
-byte getVE();
+byte getVE1();
 byte getVE2();
 byte getAdvance();
 

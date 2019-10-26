@@ -16,7 +16,13 @@
   //#define TIMER5_MICROS
 
 #elif defined(CORE_TEENSY)
-  #define BOARD_H "board_teensy35.h"
+  #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+    #define CORE_TEENSY35
+    #define BOARD_H "board_teensy35.h"
+  #elif defined(__IMXRT1062__)
+    #define CORE_TEENSY40
+    #define BOARD_H "board_teensy40.h"
+  #endif
   #define INJ_CHANNELS 8
   #define IGN_CHANNELS 8
 
@@ -225,8 +231,8 @@
 #define VVT_MODE_ONOFF      0
 #define VVT_MODE_OPEN_LOOP  1
 #define VVT_MODE_CLOSED_LOOP 2
-#define VVTCL_LOAD_MAP      0
-#define VVTCL_LOAD_TPS      1
+#define VVT_LOAD_MAP      0
+#define VVT_LOAD_TPS      1
 
 #define FOUR_STROKE         0
 #define TWO_STROKE          1
@@ -373,6 +379,13 @@ byte resetControl = RESET_CONTROL_DISABLED;
 volatile byte TIMER_mask;
 volatile byte LOOP_TIMER;
 
+//These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
+#define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) )
+#define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) )
+#define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
+#define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) )
+#define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) )
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
@@ -390,8 +403,9 @@ struct statuses {
   byte tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Value is divided by 10 to be stored in a byte */
   byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
   volatile int rpmDOT;
-  byte VE;
-  byte VE2;
+  byte VE; /**< The current VE value being used in the fuel calculation. Can be the same as VE1 or VE2, or a calculated value of both */
+  byte VE1; /**< The VE value from fuel table 1 */
+  byte VE2; /**< The VE value from fuel table 2, if in use (and required conditions are met) */
   byte O2;
   byte O2_2;
   int coolant;
@@ -464,8 +478,10 @@ struct statuses {
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
-  byte vvtAngle;
-  byte targetVVTAngle;
+  //int8_t vvtAngle;
+  long vvtAngle;
+  byte vvtTargetAngle;
+  byte vvtDuty;
 
 };
 struct statuses currentStatus; //The global status object
@@ -802,7 +818,8 @@ struct config9 {
   byte iacStepperInv : 1;  //stepper direction of travel to allow reversing. 0=normal, 1=inverted.
   byte iacCoolTime : 3; // how long to wait for the stepper to cool between steps
 
-  byte unused10_154;
+  byte iacMaxSteps; // Step limit beyond which the stepper won't be driven. Should always be less than homing steps. Stored div 3 as per home steps.
+
   byte unused10_155;
   byte unused10_156;
   byte unused10_157;
@@ -940,6 +957,11 @@ struct config10 {
   byte fuel2SwitchVariable : 2;
   uint16_t fuel2SwitchValue;
 
+  //Byte 123
+  byte fuel2InputPin : 6;
+  byte fuel2InputPolarity : 1;
+  byte fuel2InputPullup : 1;
+
   byte vvtCLholdDuty;
   byte vvtCLKP;
   byte vvtCLKI;
@@ -947,7 +969,7 @@ struct config10 {
   uint16_t vvtCLMinAng;
   uint16_t vvtCLMaxAng;
 
-  byte unused11_123_191[59];
+  byte unused11_123_191[58];
 
 #if defined(CORE_AVR)
   };
@@ -989,6 +1011,7 @@ byte pinFuelPump; //Fuel pump on/off
 byte pinIdle1; //Single wire idle control
 byte pinIdle2; //2 wire idle control (Not currently used)
 byte pinIdleUp; //Input for triggering Idle Up
+byte pinFuel2Input; //Input for switching to the 2nd fuel table
 byte pinSpareTemp1; // Future use only
 byte pinSpareTemp2; // Future use only
 byte pinSpareOut1; //Generic output
@@ -1006,7 +1029,7 @@ byte pinSpareLOut4;
 byte pinSpareLOut5;
 byte pinBoost;
 byte pinVVT_1;		// vvt output 1
-byte pinVVt_2;		// vvt output 2
+byte pinVVT_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
@@ -1017,7 +1040,7 @@ byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
 
-// global variables // from speeduino.ino
+/* global variables */ // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
 extern struct table3D fuelTable; //16x16 fuel map
 extern struct table3D fuelTable2; //16x16 fuel map

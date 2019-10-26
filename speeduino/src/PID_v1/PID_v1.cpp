@@ -54,7 +54,7 @@ bool PID::Compute()
       /*Compute all the working error variables*/
 	  long input = *myInput;
       long error = *mySetpoint - input;
-      ITerm+= (ki * error)/100;
+      ITerm += (ki * error)/100;
       if(ITerm > outMax) ITerm= outMax;
       else if(ITerm < outMin) ITerm= outMin;
       long dInput = (input - lastInput);
@@ -201,19 +201,27 @@ int PID::GetDirection(){ return controllerDirection;}
  *    The parameters specified here are those for for which we can't set up
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
+/**
+ * @brief A standard integer PID controller. 
+ *
+ * @param Input Pointer to the variable holding the current value that is to be controlled. Eg In an idle control this would point to RPM
+ * @param Output The address in the page that should be returned. This is as per the page definition in the ini
+ * 
+ * @return byte The current target advance value in degrees
+ */
 integerPID::integerPID(long* Input, long* Output, long* Setpoint,
         byte Kp, byte Ki, byte Kd, byte ControllerDirection)
 {
 
     myOutput = Output;
-    myInput = (long*)Input;
+   myInput = Input;
     mySetpoint = Setpoint;
 	inAuto = false;
 
 	integerPID::SetOutputLimits(0, 255);				//default output limit corresponds to
 												//the arduino pwm limits
 
-    SampleTime = 100;							//default Controller Sample Time is 0.1 seconds
+    SampleTime = 250;							//default Controller Sample Time is 0.25 seconds. This is the 4Hz control time for Idle and VVT
 
     integerPID::SetControllerDirection(ControllerDirection);
     integerPID::SetTunings(Kp, Ki, Kd);
@@ -228,7 +236,7 @@ integerPID::integerPID(long* Input, long* Output, long* Setpoint,
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool integerPID::Compute()
+bool integerPID::Compute(bool pOnE)
 {
    if(!inAuto) return false;
    unsigned long now = millis();
@@ -239,17 +247,32 @@ bool integerPID::Compute()
       /*Compute all the working error variables*/
 	  long input = *myInput;
       long error = *mySetpoint - input;
-      ITerm += (ki * error)/1000; //Note that ki is multiplied by 1000 rather than 100, so it must be divided by 1000 here
-      if(ITerm > outMax) { ITerm = outMax; }
-      else if(ITerm < outMin) { ITerm = outMin; }
       long dInput = (input - lastInput);
 
+      outputSum += (ki * error)/1024; //Note that ki is multiplied by 1024 so it must be divided by 1024 here
+      if(outputSum > outMax) { outputSum = outMax; }
+      else if(outputSum < outMin) { outputSum = outMin; }
+      
       /*Compute PID Output*/
-      long output = (kp * error)/100 + ITerm - (kd * dInput)/100;
+      long output;
+      
+      if(pOnE)
+      {
+         output = (kp * error) + outputSum - ((kd * dInput)/128);
+      }
+      else
+      {
+         outputSum -= kp * dInput;
+         if(outputSum > outMax) { outputSum = outMax; }
+         else if(outputSum < outMin) { outputSum = outMin; }
 
-	    if(output > outMax) output = outMax;
+         output = outputSum - ((kd * dInput)/128);
+      }
+      
+
+	   if(output > outMax) output = outMax;
       else if(output < outMin) output = outMin;
-	    *myOutput = output;
+	   *myOutput = output;
 
       /*Remember some variables for next time*/
       lastInput = input;
@@ -259,6 +282,7 @@ bool integerPID::Compute()
    }
    else return false;
 }
+
 
 
 /* SetTunings(...)*************************************************************
@@ -277,10 +301,10 @@ void integerPID::SetTunings(byte Kp, byte Ki, byte Kd)
    ki = Ki * SampleTimeInSec;
    kd = Kd / SampleTimeInSec;
    */
-  long InverseSampleTimeInSec = 100000 / SampleTime;
+  long InverseSampleTimeInSec = 1000 / SampleTime;
   kp = Kp;
-  ki = (long)((long)Ki * 1000) / InverseSampleTimeInSec;
-  kd = ((long)Kd * InverseSampleTimeInSec) / 100;
+  ki = (long)((long)Ki * 1024) / InverseSampleTimeInSec;
+  kd = ((long)Kd * InverseSampleTimeInSec);
 
   if(controllerDirection == REVERSE)
    {
@@ -293,17 +317,15 @@ void integerPID::SetTunings(byte Kp, byte Ki, byte Kd)
 /* SetSampleTime(...) *********************************************************
  * sets the period, in Milliseconds, at which the calculation is performed
  ******************************************************************************/
-void integerPID::SetSampleTime(int NewSampleTime)
+void integerPID::SetSampleTime(uint16_t NewSampleTime)
 {
    if (SampleTime == (unsigned long)NewSampleTime) return; //If new value = old value, no action required.
-   if (NewSampleTime > 0)
-   {
-      unsigned long ratioX1000  = (unsigned long)(NewSampleTime * 1000) / (unsigned long)SampleTime;
-      ki = ((unsigned long)ki * ratioX1000) / 1000;
-      //kd /= ratio;
-      kd = ((unsigned long)kd * 1000) / ratioX1000;
-      SampleTime = (unsigned long)NewSampleTime;
-   }
+   SampleTime = NewSampleTime;
+
+   //This resets the tuning values with the appropriate new scaling
+   //The +1/-1 is there just so that this doesn't trip the check at the beginning of the SetTunings() function
+   SetTunings(dispKp+1, dispKi+1, dispKd+1);
+   SetTunings(dispKp-1, dispKi-1, dispKd-1);
 }
 
 /* SetOutputLimits(...)****************************************************
@@ -325,8 +347,8 @@ void integerPID::SetOutputLimits(long Min, long Max)
 	   if(*myOutput > outMax) *myOutput = outMax;
 	   else if(*myOutput < outMin) *myOutput = outMin;
 
-	   if(ITerm > outMax) ITerm= outMax;
-	   else if(ITerm < outMin) ITerm= outMin;
+	   if(outputSum > outMax) { outputSum = outMax; }
+	   else if(outputSum < outMin) { outputSum = outMin; }
    }
 }
 
@@ -351,10 +373,11 @@ void integerPID::SetMode(int Mode)
  ******************************************************************************/
 void integerPID::Initialize()
 {
-   ITerm = *myOutput;
+   outputSum = *myOutput;
    lastInput = *myInput;
-   if(ITerm > outMax) ITerm = outMax;
-   else if(ITerm < outMin) ITerm = outMin;
+   lastMinusOneInput = *myInput;
+   if(outputSum > outMax) { outputSum = outMax; }
+   else if(outputSum < outMin) { outputSum = outMin; }
 }
 
 /* SetControllerDirection(...)*************************************************
@@ -379,9 +402,6 @@ void integerPID::SetControllerDirection(byte Direction)
  * functions query the internal state of the PID.  they're here for display
  * purposes.  this are the functions the PID Front-end uses for example
  ******************************************************************************/
-byte integerPID::GetKp(){ return  dispKp; }
-byte integerPID::GetKi(){ return  dispKi;}
-byte integerPID::GetKd(){ return  dispKd;}
 int integerPID::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
 int integerPID::GetDirection(){ return controllerDirection;}
 
@@ -541,7 +561,4 @@ void integerPID_ideal::SetControllerDirection(byte Direction)
  * functions query the internal state of the PID.  they're here for display
  * purposes.  this are the functions the PID Front-end uses for example
  ******************************************************************************/
-byte integerPID_ideal::GetKp(){ return  dispKp; }
-byte integerPID_ideal::GetKi(){ return  dispKi;}
-byte integerPID_ideal::GetKd(){ return  dispKd;}
 int integerPID_ideal::GetDirection(){ return controllerDirection;}

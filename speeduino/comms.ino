@@ -238,7 +238,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 201906-dev"));
+      Serial.print(F("speeduino 201910-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -268,7 +268,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2019.06-dev"));
+      Serial.print(F("Speeduino 2019.10-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -517,10 +517,10 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[15] = highByte(currentStatus.RPM); //rpm LB
   fullStatus[16] = (byte)(currentStatus.AEamount >> 1); //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
   fullStatus[17] = currentStatus.corrections; //Total GammaE (%)
-  fullStatus[18] = currentStatus.VE; //Current VE 1 (%)
-  fullStatus[19] = currentStatus.afrTarget;
-  fullStatus[20] = lowByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[21] = highByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[18] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
+  fullStatus[19] = currentStatus.VE1; //VE 1 (%)
+  fullStatus[20] = currentStatus.VE2; //VE 2 (%)
+  fullStatus[21] = currentStatus.afrTarget;
   fullStatus[22] = currentStatus.tpsDOT; //TPS DOT
   fullStatus[23] = currentStatus.advance;
   fullStatus[24] = currentStatus.TPS; // TPS (0% to 100%)
@@ -588,16 +588,16 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[73] = currentStatus.tpsADC;
   fullStatus[74] = getNextError();
 
-  fullStatus[75] = lowByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[76] = highByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[77] = lowByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[78] = highByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[79] = lowByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[80] = highByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[75] = lowByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[76] = highByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[77] = lowByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[78] = highByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[79] = lowByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[80] = highByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[81] = lowByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
+  fullStatus[82] = highByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
 
-  fullStatus[81] = currentStatus.status3;
-  fullStatus[82] = lowByte(currentStatus.flexBoostCorrection);
-  fullStatus[83] = highByte(currentStatus.flexBoostCorrection);
+  fullStatus[83] = currentStatus.status3;
 
   fullStatus[84] = currentStatus.nChannels;
   fullStatus[85] = lowByte(currentStatus.fuelLoad);
@@ -608,7 +608,11 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[90] = highByte(currentStatus.dwell);
   fullStatus[91] = currentStatus.CLIdleTarget;
   fullStatus[92] = currentStatus.mapDOT;
-  fullStatus[93] = currentStatus.vvtAngle;
+  fullStatus[93] = (int8_t)currentStatus.vvtAngle;
+  fullStatus[94] = currentStatus.vvtTargetAngle;
+  fullStatus[95] = currentStatus.vvtDuty;
+  fullStatus[96] = lowByte(currentStatus.flexBoostCorrection);
+  fullStatus[97] = highByte(currentStatus.flexBoostCorrection);
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -1122,7 +1126,7 @@ void sendPageASCII()
       Serial.println((const __FlashStringHelper *)&pageTitles[27]);//27 is the index to the first char in the second sting in pageTitles
       // The following loop displays in human readable form of all byte values in config page 1 up to but not including the first array.
       // incrementing void pointers is cumbersome. Thus we have "pnt_configPage = (byte *)pnt_configPage + 1"
-      for (pnt_configPage = &configPage2; pnt_configPage < &configPage2.wueValues[0]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
+      for (pnt_configPage = (byte *)&configPage2; pnt_configPage < &configPage2.wueValues[0]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
       for (byte x = 10; x; x--)// The x between the ';' has the same representation as the "x != 0" test or comparision
       {
         Serial.print(configPage2.wueValues[10 - x]);// This displays the values horizantially on the screen
@@ -1200,7 +1204,7 @@ void sendPageASCII()
       //currentTitleIndex = 91;
       //To Display Values from Config Page 3
       Serial.println((const __FlashStringHelper *)&pageTitles[91]);//special typecasting to enable suroutine that the F macro uses
-      for (pnt_configPage = &configPage6; pnt_configPage < &configPage6.voltageCorrectionBins[0]; pnt_configPage = (byte *)pnt_configPage + 1)
+      for (pnt_configPage = (byte *)&configPage6; pnt_configPage < &configPage6.voltageCorrectionBins[0]; pnt_configPage = (byte *)pnt_configPage + 1)
       {
         Serial.println(*((byte *)pnt_configPage));// Displaying byte values of config page 3 up to but not including the first array
       }
@@ -1637,9 +1641,14 @@ void receiveCalibration(byte tableID)
   bool every2nd = true;
   int x;
   int counter = 0;
-  pinMode(LED_BUILTIN, OUTPUT); //pinMode(13, OUTPUT);
+  bool useLEDIndicator = false;
+  if (pinIsOutput(LED_BUILTIN) == false)
+  {
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
+    useLEDIndicator = true;
+  }
 
-  digitalWrite(LED_BUILTIN, LOW); //digitalWrite(13, LOW);
   for (x = 0; x < 1024; x++)
   {
     //UNlike what is listed in the protocol documentation, the O2 sensor values are sent as bytes rather than ints
@@ -1676,11 +1685,14 @@ void receiveCalibration(byte tableID)
       storeCalibrationValue(y, (byte)tempValue);
 
       every2nd = false;
-      #if defined(CORE_STM32)
-        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-      #else
-        analogWrite(LED_BUILTIN, (counter % 50) ); //analogWrite(13, (counter % 50) );
-      #endif
+      if(useLEDIndicator == true)
+      {
+        #if defined(CORE_STM32)
+          digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        #else
+          analogWrite(LED_BUILTIN, (counter % 50) );
+        #endif
+      }
       counter++;
     }
     else {
