@@ -1064,9 +1064,8 @@ void setPinMapping(byte boardID)
         pinInjector4 = PB4; //Output pin injector 4 is on
         pinCoil1 = PB3; //Pin for coil 1
         pinCoil2 = PA15; //Pin for coil 2
-        pinCoil3 = PA14; //Pin for coil 3
-        pinCoil4 = PA9; //Pin for coil 4
-        pinCoil5 = PA8; //Pin for coil 5
+        pinCoil3 = PA7; //Pin for coil 3
+        pinCoil4 = PA8; //Pin for coil 4
         pinTPS = A0; //TPS input pin
         pinMAP = A1; //MAP sensor pin
         pinIAT = A2; //IAT sensor pin
@@ -1075,20 +1074,16 @@ void setPinMapping(byte boardID)
         pinBat = A5; //Battery reference voltage pin
         pinBaro = pinMAP;
         pinIdle1 = PB2; //Single wire idle control
-        pinIdle2 = PA2; //2 wire idle control
-        pinBoost = PA1; //Boost control
-        pinVVT_1 = PA0; //Default VVT output
+        pinBoost = PA6; //Boost control
         pinStepperDir = PC15; //Direction pin  for DRV8825 driver
         pinStepperStep = PC14; //Step pin for DRV8825 driver
         pinStepperEnable = PC13; //Enable pin for DRV8825
-        pinDisplayReset = PB2; // OLED reset pin
-        pinFan = PB1; //Pin for the fan output
         pinFuelPump = PB11; //Fuel pump output
-        pinTachOut = PB10; //Tacho output pin
+        pinTachOut = PC13; //Tacho output pin
         //external interrupt enabled pins
-        pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = PA10; //The CAS pin
-        pinTrigger2 = PA13; //The Cam Sensor pin
+        pinFlex = PB1; // Flex sensor (Must be external interrupt enabled)
+        pinTrigger = PB0; //The CAS pin
+        pinTrigger2 = PB10; //The Cam Sensor pin
       #endif
       break;
 
