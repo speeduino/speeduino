@@ -257,17 +257,17 @@ const byte data_structure_version = 2; //This identifies the data structure when
 const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288}; /**< This array stores the size (in bytes) of each configuration page */
 #define MAP_PAGE_SIZE 288
 
-struct table3D fuelTable; //16x16 fuel map
-struct table3D fuelTable2; //16x16 fuel map
-struct table3D ignitionTable; //16x16 ignition map
-struct table3D afrTable; //16x16 afr target map
-struct table3D stagingTable; //8x8 fuel staging table
-struct table3D boostTable; //8x8 boost map
-struct table3D vvtTable; //8x8 vvt map
-struct table3D trim1Table; //6x6 Fuel trim 1 map
-struct table3D trim2Table; //6x6 Fuel trim 2 map
-struct table3D trim3Table; //6x6 Fuel trim 3 map
-struct table3D trim4Table; //6x6 Fuel trim 4 map
+Table3DContainer<16> fuelTable; //16x16 fuel map
+Table3DContainer<16> fuelTable2; //16x16 fuel map
+Table3DContainer<16> ignitionTable; //16x16 ignition map
+Table3DContainer<16> afrTable; //16x16 afr target map
+Table3DContainer<8> stagingTable; //8x8 fuel staging table
+Table3DContainer<8> boostTable; //8x8 boost map
+Table3DContainer<8> vvtTable; //8x8 vvt map
+Table3DContainer<6> trim1Table; //6x6 Fuel trim 1 map
+Table3DContainer<6> trim2Table; //6x6 Fuel trim 2 map
+Table3DContainer<6> trim3Table; //6x6 Fuel trim 3 map
+Table3DContainer<6> trim4Table; //6x6 Fuel trim 4 map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D maeTable;
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
@@ -1041,16 +1041,6 @@ byte pinBaro; //Pin that an external barometric pressure sensor is attached to (
 byte pinResetControl; // Output pin used control resetting the Arduino
 
 /* global variables */ // from speeduino.ino
-extern struct statuses currentStatus; // from speeduino.ino
-extern struct table3D fuelTable; //16x16 fuel map
-extern struct table3D fuelTable2; //16x16 fuel map
-extern struct table3D ignitionTable; //16x16 ignition map
-extern struct table3D afrTable; //16x16 afr target map
-extern struct table3D stagingTable; //8x8 afr target map
-extern struct table2D taeTable; /**< 4 bin TPS Acceleration Enrichment curve (2D) */
-extern struct table2D maeTable; /**< 4 bin MAP based Acceleration Enrichment curve (2D) */
-extern struct table2D WUETable; /**< 10 bin Warm Up Enrichment curve (2D) */
-extern struct table2D crankingEnrichTable; /**< 4 bin cranking Enrichment curve (2D) */
 extern struct config2 configPage2;
 extern struct config4 configPage4;
 extern struct config6 configPage6;
