@@ -259,7 +259,9 @@ void idleControl()
 
           //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
           if (idleStepper.targetIdleStep > configPage9.iacMaxSteps * 3)
-             idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;             
+          {
+            idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+          }
 
           doStep();
         }
@@ -275,9 +277,11 @@ void idleControl()
             iacStepTime = configPage6.iacStepTime * 1000;
             iacCoolTime = configPage9.iacCoolTime * 1000;
 
-          //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
-          if (idleStepper.targetIdleStep > configPage9.iacMaxSteps * 3)
-             idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;             
+            //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
+            if (idleStepper.targetIdleStep > configPage9.iacMaxSteps * 3)
+            {
+              idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+            }
           }
           doStep();
         }
@@ -308,7 +312,9 @@ void idleControl()
 
         //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
         if (idleStepper.targetIdleStep > configPage9.iacMaxSteps * 3)
-           idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;             
+        {
+          idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+        }
 
         doStep();
         currentStatus.idleLoad = idleStepper.curIdleStep >> 1; //Current step count (Divided by 2 for byte)
@@ -458,7 +464,9 @@ static inline void disableIdle()
 
         //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
         if (idleStepper.targetIdleStep > configPage9.iacMaxSteps * 3)
-           idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;             
+        {
+          idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+        }
     }
   }
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off

@@ -1040,7 +1040,7 @@ byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
 
-// global variables // from speeduino.ino
+/* global variables */ // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
 extern struct table3D fuelTable; //16x16 fuel map
 extern struct table3D fuelTable2; //16x16 fuel map
