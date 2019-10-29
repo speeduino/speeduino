@@ -263,7 +263,7 @@ void idleControl()
 
           doStep();
         }
-        else if( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < iacStepTable.axisX[IDLE_TABLE_SIZE-1])
+        else if( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < table2D_getAxisValue(&iacStepTable, (IDLE_TABLE_SIZE-1)) )
         {
           //Standard running
           //We must also have more than zero RPM for the running state

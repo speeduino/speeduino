@@ -97,11 +97,13 @@ static inline byte correctionWUE()
 {
   byte WUEValue;
   //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
-  if (currentStatus.coolant > (WUETable.axisX[9] - CALIBRATION_TEMPERATURE_OFFSET))
+  //if (currentStatus.coolant > (WUETable.axisX[9] - CALIBRATION_TEMPERATURE_OFFSET))
+  if (currentStatus.coolant > (table2D_getAxisValue(&WUETable, 9) - CALIBRATION_TEMPERATURE_OFFSET))
   {
     //This prevents us doing the 2D lookup if we're already up to temp
     BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP);
-    WUEValue = WUETable.values[9]; //Set the current value to be whatever the final value on the curve is.
+    //WUEValue = WUETable.values[9]; //Set the current value to be whatever the final value on the curve is.
+    WUEValue = table2D_getAxisValue(&WUETable, 9);
   }
   else
   {
@@ -298,8 +300,7 @@ Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y 
 static inline byte correctionBatVoltage()
 {
   byte batValue = 100;
-  if (currentStatus.battery10 > (injectorVCorrectionTable.axisX[5])) { batValue = injectorVCorrectionTable.values[injectorVCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the voltage is above maximum
-  else { batValue = table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10); }
+  batValue = table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
 
   return batValue;
 }
@@ -311,8 +312,7 @@ This corrects for changes in air density from movement of the temperature
 static inline byte correctionIATDensity()
 {
   byte IATValue = 100;
-  if ( (currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) > (IATDensityCorrectionTable.axisX[8])) { IATValue = IATDensityCorrectionTable.values[IATDensityCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the intake temp is above maximum
-  else { IATValue = table2D_getValue(&IATDensityCorrectionTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); }//currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
+  IATValue = table2D_getValue(&IATDensityCorrectionTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
 
   return IATValue;
 }
