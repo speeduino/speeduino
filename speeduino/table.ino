@@ -225,25 +225,12 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
   int returnValue = 0;
   bool valueFound = false;
 
-  //Copy the from table values (bytes or ints) into common int temp arrays 
-  int tempAxisX[fromTable->xSize];
-  int tempValues[fromTable->xSize];
-  for(byte x=0; x< fromTable->xSize; x++)
-  {
-    if(fromTable->valueSize == SIZE_INT) { tempValues[x] = ((int16_t*)((*fromTable).values))[x]; }
-    else if(fromTable->valueSize == SIZE_BYTE) { tempValues[x] = ((uint8_t*)((*fromTable).values))[x]; }
-
-    if(fromTable->axisSize == SIZE_INT) { tempAxisX[x] = ((int16_t*)((*fromTable).axisX))[x]; }
-    else if(fromTable->axisSize == SIZE_BYTE) { tempAxisX[x] = ((uint8_t*)((*fromTable).axisX))[x]; }
-  }
-
   int X = X_in;
-  int xMinValue, xMaxValue;
   int xMin = 0;
   int xMax = 0;
 
-  xMinValue = tempAxisX[0];
-  xMaxValue = tempAxisX[fromTable->xSize-1];
+  int xMinValue = table2D_getAxisValue(fromTable, 0);
+  int xMaxValue = table2D_getAxisValue(fromTable, fromTable->xSize-1);
 
   //Check whether the X input is the same as last time this ran
   if( (X_in == fromTable->lastInput) && (fromTable->cacheTime == currentStatus.secl) )
@@ -251,55 +238,51 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
     returnValue = fromTable->lastOutput;
     valueFound = true;
   }
-  //If the requested X value is greater/small than the maximum/minimum bin, reset X to be that value
+  //If the requested X value is greater/small than the maximum/minimum bin, simply return that value
   else if(X > xMaxValue)
   {
-    returnValue = tempValues[fromTable->xSize-1];
+    returnValue = xMaxValue;
     valueFound = true;
   }
   else if(X < xMinValue)
   {
-    returnValue = tempValues[0];
+    returnValue = xMinValue;
     valueFound = true;
   }
   //Finally if none of that is found
   else
   {
     fromTable->cacheTime = currentStatus.secl; //As we're not using the cache value, set the current secl value to track when this new value was calc'd
-
-    //If the requested X value is greater/small than the maximum/minimum bin, reset X to be that value
-    //Failsafe, this should've been handled above
-    if(X > xMaxValue) { X = xMaxValue; }
-    if(X < xMinValue) { X = xMinValue; }
-
-
+    
     //1st check is whether we're still in the same X bin as last time
-    if ( (X <= tempAxisX[fromTable->lastXMax]) && (X > tempAxisX[fromTable->lastXMin]) )
+    xMaxValue = table2D_getAxisValue(fromTable, fromTable->lastXMax);
+    xMinValue = table2D_getAxisValue(fromTable, fromTable->lastXMin);
+    if ( (X <= xMaxValue) && (X > xMinValue) )
     {
-      xMaxValue = tempAxisX[fromTable->lastXMax];
-      xMinValue = tempAxisX[fromTable->lastXMin];
       xMax = fromTable->lastXMax;
       xMin = fromTable->lastXMin;
     }
     else
     {
       //If we're not in the same bin, loop through to find where we are
+      xMinValue = table2D_getAxisValue(fromTable, fromTable->xSize-1);
       for (int x = fromTable->xSize-1; x >= 0; x--)
       {
+        xMaxValue = xMinValue;
+        xMinValue = table2D_getAxisValue(fromTable, x-1);
+
         //Checks the case where the X value is exactly what was requested
-        if ( (X == tempAxisX[x]) || (x == 0) )
+        if ( (X == xMaxValue) || (x == 0) )
         {
-          returnValue = tempValues[x]; //Simply return the coresponding value
+          returnValue = table2D_getRawValue(fromTable, x); //Simply return the coresponding value
           valueFound = true;
           break;
         }
         else
         {
           //Normal case
-          if ( (X <= tempAxisX[x]) && (X > tempAxisX[x-1]) )
+          if ( (X <= xMaxValue) && (X > xMinValue) )
           {
-            xMaxValue = tempAxisX[x];
-            xMinValue = tempAxisX[x-1];
             xMax = x;
             fromTable->lastXMax = xMax;
             xMin = x-1;
@@ -316,6 +299,9 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
     int16_t m = X - xMinValue;
     int16_t n = xMaxValue - xMinValue;
 
+    xMax = table2D_getRawValue(fromTable, xMax);
+    xMin = table2D_getRawValue(fromTable, xMin);
+
     //Float version
     /*
     int yVal = (m / n) * (abs(fromTable.values[xMax] - fromTable.values[xMin]));
@@ -323,11 +309,11 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
 
     //Non-Float version
     int16_t yVal;
-    yVal = ((long)(m << 6) / n) * (abs(tempValues[xMax] - tempValues[xMin]));
+    yVal = ((long)(m << 6) / n) * (abs(xMax - xMin));
     yVal = (yVal >> 6);
 
-    if (tempValues[xMax] > tempValues[xMin]) { yVal = tempValues[xMin] + yVal; }
-    else { yVal = tempValues[xMin] - yVal; }
+    if (xMax > xMin) { yVal = xMin + yVal; }
+    else { yVal = xMin - yVal; }
 
     returnValue = yVal;
   }
@@ -349,8 +335,8 @@ int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in)
 {
   int returnValue = 0;
 
-  if(fromTable->axisSize == SIZE_INT) { returnValue = ((int16_t*)((*fromTable).axisX))[X_in]; }
-  else if(fromTable->axisSize == SIZE_BYTE) { returnValue = ((uint8_t*)((*fromTable).axisX))[X_in]; }
+  if(fromTable->axisSize == SIZE_INT) { returnValue = ((int16_t*)fromTable->axisX)[X_in]; }
+  else if(fromTable->axisSize == SIZE_BYTE) { returnValue = ((uint8_t*)fromTable->axisX)[X_in]; }
 
   return returnValue;
 }
@@ -366,8 +352,8 @@ int16_t table2D_getRawValue(struct table2D *fromTable, byte X_index)
 {
   int returnValue = 0;
 
-  if(fromTable->valueSize == SIZE_INT) { returnValue = ((int16_t*)((*fromTable).values))[X_index]; }
-  else if(fromTable->valueSize == SIZE_BYTE) { returnValue = ((uint8_t*)((*fromTable).values))[X_index]; }
+  if(fromTable->valueSize == SIZE_INT) { returnValue = ((int16_t*)fromTable->values)[X_index]; }
+  else if(fromTable->valueSize == SIZE_BYTE) { returnValue = ((uint8_t*)fromTable->values)[X_index]; }
 
   return returnValue;
 }
