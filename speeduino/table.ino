@@ -226,11 +226,9 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
   bool valueFound = false;
 
   int X = X_in;
+  int xMinValue, xMaxValue;
   int xMin = 0;
-  int xMax = 0;
-
-  int xMinValue = table2D_getAxisValue(fromTable, 0);
-  int xMaxValue = table2D_getAxisValue(fromTable, fromTable->xSize-1);
+  int xMax = fromTable->xSize-1;
 
   //Check whether the X input is the same as last time this ran
   if( (X_in == fromTable->lastInput) && (fromTable->cacheTime == currentStatus.secl) )
@@ -239,21 +237,21 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
     valueFound = true;
   }
   //If the requested X value is greater/small than the maximum/minimum bin, simply return that value
-  else if(X > xMaxValue)
+  else if(X >= table2D_getAxisValue(fromTable, xMax))
   {
-    returnValue = xMaxValue;
+    returnValue = table2D_getRawValue(fromTable, xMax);
     valueFound = true;
   }
-  else if(X < xMinValue)
+  else if(X <= table2D_getAxisValue(fromTable, xMin))
   {
-    returnValue = xMinValue;
+    returnValue = table2D_getRawValue(fromTable, xMin);
     valueFound = true;
   }
   //Finally if none of that is found
   else
   {
     fromTable->cacheTime = currentStatus.secl; //As we're not using the cache value, set the current secl value to track when this new value was calc'd
-    
+
     //1st check is whether we're still in the same X bin as last time
     xMaxValue = table2D_getAxisValue(fromTable, fromTable->lastXMax);
     xMinValue = table2D_getAxisValue(fromTable, fromTable->lastXMin);
@@ -265,11 +263,11 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
     else
     {
       //If we're not in the same bin, loop through to find where we are
-      xMinValue = table2D_getAxisValue(fromTable, fromTable->xSize-1);
+      xMinValue = table2D_getAxisValue(fromTable, fromTable->xSize-1); // init xMinValue so it has the good value 3 lines below.
       for (int x = fromTable->xSize-1; x >= 0; x--)
       {
-        xMaxValue = xMinValue;
-        xMinValue = table2D_getAxisValue(fromTable, x-1);
+        xMaxValue = xMinValue; // we moved one cell below, the last Min is now the Max
+        xMinValue = table2D_getAxisValue(fromTable, x-1); // fetch next Min
 
         //Checks the case where the X value is exactly what was requested
         if ( (X == xMaxValue) || (x == 0) )
@@ -299,21 +297,20 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
     int16_t m = X - xMinValue;
     int16_t n = xMaxValue - xMinValue;
 
-    xMax = table2D_getRawValue(fromTable, xMax);
-    xMin = table2D_getRawValue(fromTable, xMin);
+    int16_t yMax = table2D_getRawValue(fromTable, xMax);
+    int16_t yMin = table2D_getRawValue(fromTable, xMin);
 
     //Float version
     /*
-    int yVal = (m / n) * (abs(fromTable.values[xMax] - fromTable.values[xMin]));
+    int yVal = (m / n) * (abs(yMax - yMin));
     */
 
     //Non-Float version
-    int16_t yVal;
-    yVal = ((long)(m << 6) / n) * (abs(xMax - xMin));
+    int16_t yVal = ((long)(m << 6) / n) * (abs(yMax - yMin));
     yVal = (yVal >> 6);
 
-    if (xMax > xMin) { yVal = xMin + yVal; }
-    else { yVal = xMin - yVal; }
+    if (yMax > yMin) { yVal = yMin + yVal; }
+    else { yVal = yMin - yVal; }
 
     returnValue = yVal;
   }
