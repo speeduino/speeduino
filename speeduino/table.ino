@@ -11,6 +11,7 @@ Note that this may clear some of the existing values of the table
 #include "table.h"
 #include "globals.h"
 
+/*
 void table2D_setSize(struct table2D* targetTable, byte newSize)
 {
   //Table resize is ONLY permitted during system initialisation.
@@ -33,6 +34,7 @@ void table2D_setSize(struct table2D* targetTable, byte newSize)
     } //Byte or int
   } //initialisationComplete
 }
+*/
 
 
 void table3D_setSize(struct table3D *targetTable, byte newSize)
@@ -56,9 +58,10 @@ ie: Given a value on the X axis, it returns a Y value that coresponds to the poi
 This function must take into account whether a table contains 8-bit or 16-bit values.
 Unfortunately this means many of the lines are duplicated depending on this
 */
-int table2D_getValue(struct table2D *fromTable, int X_in)
+/*
+int table2D_getValue_orig(struct table2D *fromTable, int X_in)
 {
-    int returnValue;
+    int returnValue = 0;
     bool valueFound = false;
 
     int X = X_in;
@@ -184,9 +187,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
       unsigned int n = xMaxValue - xMinValue;
 
       //Float version
-      /*
-      int yVal = (m / n) * (abs(fromTable.values[xMax] - fromTable.values[xMin]));
-      */
+      //int yVal = (m / n) * (abs(fromTable.values[xMax] - fromTable.values[xMin]));
 
       //Non-Float version
       uint16_t yVal;
@@ -215,6 +216,160 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
     fromTable->lastOutput = returnValue;
 
     return returnValue;
+}
+*/
+
+int table2D_getValue(struct table2D *fromTable, int X_in)
+{
+  //Orig memory usage = 5414
+  int returnValue = 0;
+  bool valueFound = false;
+
+  //Copy the from table values (bytes or ints) into common int temp arrays 
+  int tempAxisX[fromTable->xSize];
+  int tempValues[fromTable->xSize];
+  for(byte x=0; x< fromTable->xSize; x++)
+  {
+    if(fromTable->valueSize == SIZE_INT) { tempValues[x] = ((int16_t*)((*fromTable).values))[x]; }
+    else if(fromTable->valueSize == SIZE_BYTE) { tempValues[x] = ((uint8_t*)((*fromTable).values))[x]; }
+
+    if(fromTable->axisSize == SIZE_INT) { tempAxisX[x] = ((int16_t*)((*fromTable).axisX))[x]; }
+    else if(fromTable->axisSize == SIZE_BYTE) { tempAxisX[x] = ((uint8_t*)((*fromTable).axisX))[x]; }
+  }
+
+  int X = X_in;
+  int xMinValue, xMaxValue;
+  int xMin = 0;
+  int xMax = 0;
+
+  xMinValue = tempAxisX[0];
+  xMaxValue = tempAxisX[fromTable->xSize-1];
+
+  //Check whether the X input is the same as last time this ran
+  if( (X_in == fromTable->lastInput) && (fromTable->cacheTime == currentStatus.secl) )
+  {
+    returnValue = fromTable->lastOutput;
+    valueFound = true;
+  }
+  //If the requested X value is greater/small than the maximum/minimum bin, reset X to be that value
+  else if(X > xMaxValue)
+  {
+    returnValue = tempValues[fromTable->xSize-1];
+    valueFound = true;
+  }
+  else if(X < xMinValue)
+  {
+    returnValue = tempValues[0];
+    valueFound = true;
+  }
+  //Finally if none of that is found
+  else
+  {
+    fromTable->cacheTime = currentStatus.secl; //As we're not using the cache value, set the current secl value to track when this new value was calc'd
+
+    //If the requested X value is greater/small than the maximum/minimum bin, reset X to be that value
+    //Failsafe, this should've been handled above
+    if(X > xMaxValue) { X = xMaxValue; }
+    if(X < xMinValue) { X = xMinValue; }
+
+
+    //1st check is whether we're still in the same X bin as last time
+    if ( (X <= tempAxisX[fromTable->lastXMax]) && (X > tempAxisX[fromTable->lastXMin]) )
+    {
+      xMaxValue = tempAxisX[fromTable->lastXMax];
+      xMinValue = tempAxisX[fromTable->lastXMin];
+      xMax = fromTable->lastXMax;
+      xMin = fromTable->lastXMin;
+    }
+    else
+    {
+      //If we're not in the same bin, loop through to find where we are
+      for (int x = fromTable->xSize-1; x >= 0; x--)
+      {
+        //Checks the case where the X value is exactly what was requested
+        if ( (X == tempAxisX[x]) || (x == 0) )
+        {
+          returnValue = tempValues[x]; //Simply return the coresponding value
+          valueFound = true;
+          break;
+        }
+        else
+        {
+          //Normal case
+          if ( (X <= tempAxisX[x]) && (X > tempAxisX[x-1]) )
+          {
+            xMaxValue = tempAxisX[x];
+            xMinValue = tempAxisX[x-1];
+            xMax = x;
+            fromTable->lastXMax = xMax;
+            xMin = x-1;
+            fromTable->lastXMin = xMin;
+            break;
+          }
+        }
+      }
+    }
+  } //X_in same as last time
+
+  if (valueFound == false)
+  {
+    int16_t m = X - xMinValue;
+    int16_t n = xMaxValue - xMinValue;
+
+    //Float version
+    /*
+    int yVal = (m / n) * (abs(fromTable.values[xMax] - fromTable.values[xMin]));
+    */
+
+    //Non-Float version
+    int16_t yVal;
+    yVal = ((long)(m << 6) / n) * (abs(tempValues[xMax] - tempValues[xMin]));
+    yVal = (yVal >> 6);
+
+    if (tempValues[xMax] > tempValues[xMin]) { yVal = tempValues[xMin] + yVal; }
+    else { yVal = tempValues[xMin] - yVal; }
+
+    returnValue = yVal;
+  }
+
+  fromTable->lastInput = X_in;
+  fromTable->lastOutput = returnValue;
+
+  return returnValue;
+}
+
+/**
+ * @brief Returns an axis (bin) value from the 2D table. This works regardless of whether that axis is bytes or int16_ts
+ * 
+ * @param fromTable 
+ * @param X_in 
+ * @return int16_t 
+ */
+int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in)
+{
+  int returnValue = 0;
+
+  if(fromTable->axisSize == SIZE_INT) { returnValue = ((int16_t*)((*fromTable).axisX))[X_in]; }
+  else if(fromTable->axisSize == SIZE_BYTE) { returnValue = ((uint8_t*)((*fromTable).axisX))[X_in]; }
+
+  return returnValue;
+}
+
+/**
+ * @brief Returns an value from the 2D table given an index value. No interpolation is performed
+ * 
+ * @param fromTable 
+ * @param X_in 
+ * @return int16_t 
+ */
+int16_t table2D_getRawValue(struct table2D *fromTable, byte X_index)
+{
+  int returnValue = 0;
+
+  if(fromTable->valueSize == SIZE_INT) { returnValue = ((int16_t*)((*fromTable).values))[X_index]; }
+  else if(fromTable->valueSize == SIZE_BYTE) { returnValue = ((uint8_t*)((*fromTable).values))[X_index]; }
+
+  return returnValue;
 }
 
 

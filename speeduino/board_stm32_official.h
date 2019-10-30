@@ -2,7 +2,8 @@
 #define STM32F407VE_H
 #if defined(CORE_STM32_OFFICIAL)
 #include <Arduino.h>
-#include <timer.h>
+#include <HardwareTimer.h>
+#include <HardwareSerial.h>
 #include "stm32f4xx_ll_tim.h"
 /*
 ***********************************************************************************************************
@@ -15,7 +16,7 @@
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #if defined(SRAM_AS_EEPROM)
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
-#elif defined(SPI_AS_EEPROM)
+#elif defined(SPIFLASH_AS_EEPROM)
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
 #else
     #define EEPROM_LIB_H <EEPROM.h>
@@ -28,9 +29,9 @@
 #define USE_SERIAL3
 void initBoard();
 uint16_t freeRam();
-extern void oneMSIntervalIRQ(stimer_t *Timer);
-extern void EmptyIRQCallback(stimer_t *Timer, uint32_t channel);
 extern "C" char* sbrk(int incr);
+
+
 
 /*
 ***********************************************************************************************************
@@ -154,6 +155,26 @@ extern "C" char* sbrk(int incr);
 * Timers
 */
 
+HardwareTimer Timer1(TIM1);
+HardwareTimer Timer2(TIM2);
+HardwareTimer Timer3(TIM3);
+HardwareTimer Timer4(TIM4);
+HardwareTimer Timer5(TIM5);
+HardwareTimer Timer8(TIM8);
+
+void oneMSInterval(HardwareTimer*);
+void boostInterrupt(HardwareTimer*);
+void fuelSchedule1Interrupt(HardwareTimer*);
+void fuelSchedule2Interrupt(HardwareTimer*);
+void fuelSchedule3Interrupt(HardwareTimer*);
+void fuelSchedule4Interrupt(HardwareTimer*);
+void idleInterrupt(HardwareTimer*);
+void vvtInterrupt(HardwareTimer*);
+void ignitionSchedule1Interrupt(HardwareTimer*);
+void ignitionSchedule2Interrupt(HardwareTimer*);
+void ignitionSchedule3Interrupt(HardwareTimer*);
+void ignitionSchedule4Interrupt(HardwareTimer*);
+void ignitionSchedule5Interrupt(HardwareTimer*);
 
 /*
 ***********************************************************************************************************

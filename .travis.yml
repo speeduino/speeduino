@@ -28,7 +28,7 @@ language: python
 python:
     - "2.7"
 
-dist: trusty
+dist: bionic
 sudo: required
 
 cache:
@@ -45,13 +45,6 @@ cache:
 before_install:
   - sudo apt-get update -qq
 #  - sudo apt-get install -t trusty-backports cppcheck
-  - sudo apt-get build-dep -qq cppcheck
-#  - wget https://github.com/danmar/cppcheck/archive/1.79.zip
-#  - unzip 1.79.zip
-#  - cd cppcheck-1.79
-#  - git clone --depth=10 https://github.com/noisymime/cppcheck.git
-#  - cd cppcheck
-#  - sudo make install CFGDIR=/usr/share/cppcheck/ HAVE_RULES=yes
 # Requirements for doxygen
   - sudo apt-get install doxygen graphviz
 
@@ -60,29 +53,24 @@ install:
 
 script:
   - cd /home/travis/build
-  - git clone --depth=10 https://github.com/noisymime/cppcheck.git noisymime/cppcheck_github
-  - cd noisymime/cppcheck_github
-  - make
-  - cd ../speeduino
+  - ls
+  - ls noisymime/
+  - cd noisymime/speeduino
   - platformio update
 # Run the builds (Mega must be last so that the hex file isn't cleaned up)
   - platformio run -e teensy35 -e teensy40 -e megaatmega2560 
 # Upload ini and hex files to speeduino.com server
-  - curl --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pioenvs/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
-  - curl --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
-# Begin MISRA scan
-  - cd ..
-  - chmod +x speeduino/misra/check_misra_github.sh
-  - speeduino/misra/check_misra_github.sh
+  - curl -v https://speeduino.com:2078 || true
+  - curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
+  - curl --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
 # Do doxygen run and upload to gh-pages server.
-  - cd speeduino
   - doxygen
   - cd ..
   - git clone https://github.com/speeduino/speeduino-doxygen
   - cp -r speeduino/reference/doxygen/html/* speeduino-doxygen
   - cd speeduino-doxygen
   - git add --all
-  - git commit -m "Deploy code docs to GitHub Pages. Travis build ${TRAVIS_BUILD_NUMBER}" -m "Commit ${TRAVIS_COMMIT}"
+  - git commit --allow-empty -m "Deploy code docs to GitHub Pages. Travis build ${TRAVIS_BUILD_NUMBER}" -m "Commit ${TRAVIS_COMMIT}"
   - git push --force "https://${GH_DOXYGEN}@github.com/speeduino/speeduino-doxygen" > /dev/null 2>&1
 
 notifications:
