@@ -276,18 +276,16 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
           valueFound = true;
           break;
         }
-        else
+        else if (X > xMinValue)
         {
-          //Normal case
-          if ( (X <= xMaxValue) && (X > xMinValue) )
-          {
-            xMax = x;
-            fromTable->lastXMax = xMax;
-            xMin = x-1;
-            fromTable->lastXMin = xMin;
-            break;
-          }
+          // Value is in the current bin
+          xMax = x;
+          fromTable->lastXMax = xMax;
+          xMin = x-1;
+          fromTable->lastXMin = xMin;
+          break;
         }
+        // Otherwise, continue to next bin
       }
     }
   } //X_in same as last time
