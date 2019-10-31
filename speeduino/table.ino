@@ -263,14 +263,13 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
     else
     {
       //If we're not in the same bin, loop through to find where we are
-      xMinValue = table2D_getAxisValue(fromTable, fromTable->xSize-1); // init xMinValue so it has the good value 3 lines below.
-      for (int x = fromTable->xSize-1; x >= 0; x--)
+      xMaxValue = table2D_getAxisValue(fromTable, fromTable->xSize-1); // init xMaxValue in preparation for loop.
+      for (int x = fromTable->xSize-1; x > 0; x--)
       {
-        xMaxValue = xMinValue; // we moved one cell below, the last Min is now the Max
         xMinValue = table2D_getAxisValue(fromTable, x-1); // fetch next Min
 
         //Checks the case where the X value is exactly what was requested
-        if ( (X == xMaxValue) || (x == 0) )
+        if (X == xMaxValue)
         {
           returnValue = table2D_getRawValue(fromTable, x); //Simply return the coresponding value
           valueFound = true;
@@ -286,6 +285,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
           break;
         }
         // Otherwise, continue to next bin
+        xMaxValue = xMinValue; // for the next bin, our Min is their Max
       }
     }
   } //X_in same as last time
