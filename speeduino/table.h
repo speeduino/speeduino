@@ -50,14 +50,17 @@ struct table3D {
   byte lastYMax, lastYMin;
 
 protected:
-  table3D(const byte& _size, byte** _values, int16_t* _x, int16_t* _y)
+  table3D(const byte& _size, byte* _data, byte** _values, int16_t* _x, int16_t* _y)
   : xSize(_size)
   , ySize(_size)
   , values(_values)
   , axisX(_x)
   , axisY(_y)
   {
-    // Nothing
+    for (size_t i = 0; i < _size; i++)
+    {
+      _values[i] = &_data[i*_size];
+    }
   }
 };
 
@@ -72,13 +75,8 @@ private:
 
 public:
   Table3DContainer()
-  : table3D(SIZE, _values, _x, _y)
-  {
-    for (size_t i = 0; i < SIZE; i++)
-    {
-      _values[i] = &_data[i*SIZE];
-    }
-  }
+  : table3D(SIZE, _data, _values, _x, _y)
+  {  }
 };
 
 //void table3D_setSize(struct table3D *targetTable, byte);
