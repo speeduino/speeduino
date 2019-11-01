@@ -136,9 +136,9 @@ where an additional amount of fuel is added (Over and above the WUE amount)
 */
 static inline byte correctionASE()
 {
-  byte ASEValue;
+  int16_t ASEValue;
   //Two checks are requiredL:
-  //1) Is the negine run time less than the configured ase time
+  //1) Is the engine run time less than the configured ase time
   //2) Make sure we're not still cranking
   if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
   {
@@ -150,7 +150,12 @@ static inline byte correctionASE()
     BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
     ASEValue = 100;
   }
-  return ASEValue;
+
+  //Safety checks
+  if(ASEValue > 255) { ASEValue = 255; }
+  if(ASEValue < 0) { ASEValue = 0; }
+
+  return (byte)ASEValue;
 }
 
 /**
