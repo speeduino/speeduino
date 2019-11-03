@@ -117,6 +117,16 @@ void initialiseAll()
     CLTAdvanceTable.xSize = 6;
     CLTAdvanceTable.values = (byte*)configPage4.cltAdvValues;
     CLTAdvanceTable.axisX = configPage4.cltAdvBins;
+    idleTargetTable.valueSize = SIZE_BYTE;
+    idleTargetTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    idleTargetTable.xSize = 10;
+    idleTargetTable.values = configPage6.iacCLValues;
+    idleTargetTable.axisX = configPage6.iacBins;
+    idleAdvanceTable.valueSize = SIZE_BYTE;
+    idleAdvanceTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    idleAdvanceTable.xSize = 6;
+    idleAdvanceTable.values = (byte*)configPage4.idleAdvValues;
+    idleAdvanceTable.axisX = configPage4.idleAdvBins;
     rotarySplitTable.valueSize = SIZE_BYTE;
     rotarySplitTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     rotarySplitTable.xSize = 8;
@@ -1957,6 +1967,9 @@ void setPinMapping(byte boardID)
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
 
+  //Currently there's no default pin for Idle Switch
+  pinIdleSwitch = pinTranslate(configPage2.idleSwitchPin);
+
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
      because the control pin will go low as soon as the pinMode is set to OUTPUT. */
@@ -2073,6 +2086,11 @@ void setPinMapping(byte boardID)
   {
     if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinIdleUp, INPUT); } //inverted setting
+  }
+  if(configPage2.idleSwitchEnabled > 0)
+  {
+    if (configPage2.idleSwitchPolarity == 0) { pinMode(pinIdleSwitch, INPUT_PULLUP); } //Normal setting
+    else { pinMode(pinIdleSwitch, INPUT); } //inverted setting
   }
   if(configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)
   {

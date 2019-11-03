@@ -307,6 +307,13 @@ void readTPS()
     currentStatus.TPS = map(tempADC, configPage2.tpsMax, configPage2.tpsMin, 0, 100);
   }
 
+  //Check whether the idle switch is active
+  if(configPage2.idleSwitchEnabled == true)
+  {
+    if(configPage2.idleSwitchPolarity == 0) { currentStatus.idleSwitchActive = !digitalRead(pinIdleSwitch); } //Normal mode (ground switched)
+    else { currentStatus.idleSwitchActive = digitalRead(pinIdleSwitch); } //Inverted mode (5v activates idleSwitch)
+  }
+  else { currentStatus.idleSwitchActive = 0; }
   TPS_time = micros();
 }
 

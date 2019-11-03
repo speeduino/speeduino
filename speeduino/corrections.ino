@@ -452,6 +452,7 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionFlexTiming(base_advance);
   advance = correctionIATretard(advance);
   advance = correctionCLTadvance(advance);
+  advance = correctionIdleAdvance(advance);
   advance = correctionSoftRevLimit(advance);
   advance = correctionNitrous(advance);
   advance = correctionSoftLaunch(advance);
@@ -460,7 +461,7 @@ int8_t correctionsIgn(int8_t base_advance)
 
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
-  advance = correctionCrankingFixedTiming(advance); //This overrrides the regular fixed timing, must come last
+  advance = correctionCrankingFixedTiming(advance); //This overrides the regular fixed timing, must come last
 
   return advance;
 }
@@ -510,6 +511,34 @@ static inline int8_t correctionCLTadvance(int8_t advance)
   ignCLTValue = (advance + advanceCLTadjust);
   
   return ignCLTValue;
+}
+
+static inline int8_t correctionIdleAdvance(int8_t advance)
+{
+
+  int8_t ignIdleValue = advance;
+  //Adjust the advance based on idle target rpm.
+  if(configPage2.idleAdvEnabled >= 1)
+  {
+    currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+    int idleRPMdelta = (currentStatus.CLIdleTarget - currentStatus.RPM / 10) + 50;
+    // Limit idle rpm delta between -500rpm - 500rpm
+    if(idleRPMdelta > 100) { idleRPMdelta = 100; }
+    if(idleRPMdelta < 0) { idleRPMdelta = 0; }
+    if(configPage2.idleAdvAlgorithm == 0 && ((currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100)) && (currentStatus.TPS < configPage2.idleAdvTPS))) // TPS based idle state
+    {
+      int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
+      if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
+      else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = advanceIdleAdjust; }
+    }
+    else if(configPage2.idleAdvAlgorithm == 1 && (currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100) && currentStatus.idleSwitchActive == 1)) // Idle switch based idle state
+    {
+      int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
+      if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
+      else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = advanceIdleAdjust; }
+    }
+  }
+  return ignIdleValue;
 }
 
 static inline int8_t correctionSoftRevLimit(int8_t advance)
