@@ -38,7 +38,8 @@ This is the only function that should be called from anywhere outside the file
 */
 static inline byte correctionsFuel()
 {
-  unsigned long sumCorrections = 100;
+  #define MAX_CORRECTIONS 3 //The maximum number of corrections allowed before the sum is reprocessed
+  uint32_t sumCorrections = 100;
   byte activeCorrections = 0;
   byte result; //temporary variable to store the result of each corrections function
 
@@ -51,31 +52,35 @@ static inline byte correctionsFuel()
 
   result = correctionCranking();
   if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
-  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; } // Need to check this to ensure that sumCorrections doesn't overflow. Can occur when the number of corrections is greater than 3 (Which is 100^4) as 100^5 can overflow
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; } // Need to check this to ensure that sumCorrections doesn't overflow. Can occur when the number of corrections is greater than 3 (Which is 100^4) as 100^5 can overflow
 
   currentStatus.AEamount = correctionAccel();
   if (currentStatus.AEamount != 100) { sumCorrections = (sumCorrections * currentStatus.AEamount); activeCorrections++; }
-  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
   result = correctionFloodClear();
   if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
-  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
   currentStatus.egoCorrection = correctionAFRClosedLoop();
   if (currentStatus.egoCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.egoCorrection); activeCorrections++; }
-  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
   currentStatus.batCorrection = correctionBatVoltage();
   if (currentStatus.batCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.batCorrection); activeCorrections++; }
-  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
   currentStatus.iatCorrection = correctionIATDensity();
   if (currentStatus.iatCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.iatCorrection); activeCorrections++; }
-  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+
+  currentStatus.baroCorrection = correctionBaro();
+  if (currentStatus.baroCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.baroCorrection); activeCorrections++; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
   currentStatus.flexCorrection = correctionFlex();
   if (currentStatus.flexCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.flexCorrection); activeCorrections++; }
-  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
   currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
@@ -320,6 +325,18 @@ static inline byte correctionIATDensity()
   IATValue = table2D_getValue(&IATDensityCorrectionTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
 
   return IATValue;
+}
+
+/**
+ * @brief 
+ * 
+ */
+static inline byte correctionBaro()
+{
+  byte baroValue = 100;
+  baroValue = table2D_getValue(&baroFuelTable, currentStatus.baro);
+
+  return baroValue;
 }
 
 /*
