@@ -278,6 +278,7 @@ struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
 struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
+struct table2D baroFuelTable; //8 bin baro correction curve (2D)
 struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
 struct table2D idleTargetTable; //10 bin idle target table for idle timing (2D)
 struct table2D idleAdvanceTable; //6 bin idle advance adjustment table based on RPM difference  (2D)
@@ -426,6 +427,7 @@ struct statuses {
   byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
   byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
   byte iatCorrection; /**< The amount of inlet air temperature adjustment currently being applied */
+  byte baroCorrection; /**< The amount of correction being applied for the current baro reading */
   byte launchCorrection; /**< The amount of correction being applied if launch control is active */
   byte flexCorrection; /**< Amount of correction being applied to compensate for ethanol content */
   int8_t flexIgnCorrection; /**< Amount of additional advance being applied based on flex. Note the type as this allows for negative values */
@@ -690,10 +692,13 @@ struct config4 {
 
   int8_t batVoltCorrect; /**< Battery voltage calibration offset */
 
+  byte baroFuelBins[8];
+  byte baroFuelValues[8];
+
   byte idleAdvBins[6];
   byte idleAdvValues[6];
 
-  byte unused4_104[24];
+  byte unused4_120[8];
 
 #if defined(CORE_AVR)
   };

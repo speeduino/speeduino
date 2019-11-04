@@ -107,6 +107,11 @@ void initialiseAll()
     IATDensityCorrectionTable.xSize = 9;
     IATDensityCorrectionTable.values = configPage6.airDenRates;
     IATDensityCorrectionTable.axisX = configPage6.airDenBins;
+    baroFuelTable.valueSize = SIZE_BYTE;
+    baroFuelTable.axisSize = SIZE_BYTE;
+    baroFuelTable.xSize = 8;
+    baroFuelTable.values = configPage4.baroFuelValues;
+    baroFuelTable.axisX = configPage4.baroFuelBins;
     IATRetardTable.valueSize = SIZE_BYTE;
     IATRetardTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     IATRetardTable.xSize = 6;
