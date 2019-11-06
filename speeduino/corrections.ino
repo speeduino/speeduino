@@ -38,7 +38,8 @@ This is the only function that should be called from anywhere outside the file
 */
 static inline byte correctionsFuel()
 {
-  unsigned long sumCorrections = 100;
+  #define MAX_CORRECTIONS 3 //The maximum number of corrections allowed before the sum is reprocessed
+  uint32_t sumCorrections = 100;
   byte activeCorrections = 0;
   byte result; //temporary variable to store the result of each corrections function
 
@@ -51,31 +52,35 @@ static inline byte correctionsFuel()
 
   result = correctionCranking();
   if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
-  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; } // Need to check this to ensure that sumCorrections doesn't overflow. Can occur when the number of corrections is greater than 3 (Which is 100^4) as 100^5 can overflow
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; } // Need to check this to ensure that sumCorrections doesn't overflow. Can occur when the number of corrections is greater than 3 (Which is 100^4) as 100^5 can overflow
 
   currentStatus.AEamount = correctionAccel();
   if (currentStatus.AEamount != 100) { sumCorrections = (sumCorrections * currentStatus.AEamount); activeCorrections++; }
-  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
   result = correctionFloodClear();
   if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
-  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
   currentStatus.egoCorrection = correctionAFRClosedLoop();
   if (currentStatus.egoCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.egoCorrection); activeCorrections++; }
-  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
   currentStatus.batCorrection = correctionBatVoltage();
   if (currentStatus.batCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.batCorrection); activeCorrections++; }
-  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
   currentStatus.iatCorrection = correctionIATDensity();
   if (currentStatus.iatCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.iatCorrection); activeCorrections++; }
-  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+
+  currentStatus.baroCorrection = correctionBaro();
+  if (currentStatus.baroCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.baroCorrection); activeCorrections++; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
   currentStatus.flexCorrection = correctionFlex();
   if (currentStatus.flexCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.flexCorrection); activeCorrections++; }
-  if (activeCorrections == 3) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
   currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
@@ -97,11 +102,13 @@ static inline byte correctionWUE()
 {
   byte WUEValue;
   //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
-  if (currentStatus.coolant > (WUETable.axisX[9] - CALIBRATION_TEMPERATURE_OFFSET))
+  //if (currentStatus.coolant > (WUETable.axisX[9] - CALIBRATION_TEMPERATURE_OFFSET))
+  if (currentStatus.coolant > (table2D_getAxisValue(&WUETable, 9) - CALIBRATION_TEMPERATURE_OFFSET))
   {
     //This prevents us doing the 2D lookup if we're already up to temp
     BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP);
-    WUEValue = WUETable.values[9]; //Set the current value to be whatever the final value on the curve is.
+    //WUEValue = WUETable.values[9]; //Set the current value to be whatever the final value on the curve is.
+    WUEValue = table2D_getAxisValue(&WUETable, 9);
   }
   else
   {
@@ -134,9 +141,9 @@ where an additional amount of fuel is added (Over and above the WUE amount)
 */
 static inline byte correctionASE()
 {
-  byte ASEValue;
+  int16_t ASEValue;
   //Two checks are requiredL:
-  //1) Is the negine run time less than the configured ase time
+  //1) Is the engine run time less than the configured ase time
   //2) Make sure we're not still cranking
   if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
   {
@@ -148,7 +155,12 @@ static inline byte correctionASE()
     BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
     ASEValue = 100;
   }
-  return ASEValue;
+
+  //Safety checks
+  if(ASEValue > 255) { ASEValue = 255; }
+  if(ASEValue < 0) { ASEValue = 0; }
+
+  return (byte)ASEValue;
 }
 
 /**
@@ -303,6 +315,7 @@ static inline byte correctionBatVoltage()
     if (currentStatus.battery10 > (injectorVCorrectionTable.axisX[5])) { batValue = injectorVCorrectionTable.values[injectorVCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the voltage is above maximum
     else { batValue = table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10); }
   }
+
   return batValue;
 }
 
@@ -313,10 +326,21 @@ This corrects for changes in air density from movement of the temperature
 static inline byte correctionIATDensity()
 {
   byte IATValue = 100;
-  if ( (currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) > (IATDensityCorrectionTable.axisX[8])) { IATValue = IATDensityCorrectionTable.values[IATDensityCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the intake temp is above maximum
-  else { IATValue = table2D_getValue(&IATDensityCorrectionTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); }//currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
+  IATValue = table2D_getValue(&IATDensityCorrectionTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
 
   return IATValue;
+}
+
+/**
+ * @brief 
+ * 
+ */
+static inline byte correctionBaro()
+{
+  byte baroValue = 100;
+  baroValue = table2D_getValue(&baroFuelTable, currentStatus.baro);
+
+  return baroValue;
 }
 
 /*

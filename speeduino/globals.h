@@ -281,6 +281,7 @@ struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
 struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
+struct table2D baroFuelTable; //8 bin baro correction curve (2D)
 struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
 struct table2D IDLEAdvanceTable; //6 bin idle advance adjustment table based on RPM difference  (2D)
 struct table2D CLTAdvanceTable; //6 bin ignition adjustment based on coolant temperature  (2D)
@@ -382,6 +383,13 @@ byte resetControl = RESET_CONTROL_DISABLED;
 volatile byte TIMER_mask;
 volatile byte LOOP_TIMER;
 
+//These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
+#define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) )
+#define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) )
+#define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
+#define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) )
+#define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) )
+
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
 struct statuses {
@@ -421,6 +429,7 @@ struct statuses {
   byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
   byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
   byte iatCorrection; /**< The amount of inlet air temperature adjustment currently being applied */
+  byte baroCorrection; /**< The amount of correction being applied for the current baro reading */
   byte launchCorrection; /**< The amount of correction being applied if launch control is active */
   byte flexCorrection; /**< Amount of correction being applied to compensate for ethanol content */
   int8_t flexIgnCorrection; /**< Amount of additional advance being applied based on flex. Note the type as this allows for negative values */
@@ -675,7 +684,11 @@ struct config4 {
   byte maeRates[4]; /**< MAP based AE values */
 
   int8_t batVoltCorrect; /**< Battery voltage calibration offset */
-  byte unused2_91[36];
+
+  byte baroFuelBins[8];
+  byte baroFuelValues[8];
+
+  byte unused2_91[20];
 
 #if defined(CORE_AVR)
   };
@@ -1026,7 +1039,7 @@ byte pinSpareLOut4;
 byte pinSpareLOut5;
 byte pinBoost;
 byte pinVVT_1;		// vvt output 1
-byte pinVVt_2;		// vvt output 2
+byte pinVVT_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
@@ -1037,7 +1050,7 @@ byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
 
-// global variables // from speeduino.ino
+/* global variables */ // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
 extern struct table3D fuelTable; //16x16 fuel map
 extern struct table3D fuelTable2; //16x16 fuel map

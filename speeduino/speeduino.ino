@@ -466,20 +466,25 @@ void loop()
 
       //Calculate staging pulsewidths if used
       //To run staged injection, the number of cylinders must be less than or equal to the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
-      if( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= INJ_CHANNELS) )
+      if( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= INJ_CHANNELS) && (currentStatus.PW1 > inj_opentime_uS) ) //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)
       {
         //Scale the 'full' pulsewidth by each of the injector capacities
         currentStatus.PW1 -= inj_opentime_uS; //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
-        uint32_t tempPW1 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100) + inj_opentime_uS; //Opening time has to be added back on here (See above where it is subtracted)
+        uint32_t tempPW1 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100);
 
         if(configPage10.stagingMode == STAGING_MODE_TABLE)
         {
-          uint32_t tempPW3 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100) + inj_opentime_uS; //This is ONLY needed in in table mode. Auto mode only calculates the difference. As above, opening time must be readded. 
+          uint32_t tempPW3 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
 
           byte stagingSplit = get3DTableValue(&stagingTable, currentStatus.MAP, currentStatus.RPM);
           currentStatus.PW1 = ((100 - stagingSplit) * tempPW1) / 100;
+          currentStatus.PW1 += inj_opentime_uS; 
 
-          if(stagingSplit > 0) { currentStatus.PW3 = (stagingSplit * tempPW3) / 100; }
+          if(stagingSplit > 0) 
+          { 
+            currentStatus.PW3 = (stagingSplit * tempPW3) / 100; 
+            currentStatus.PW3 += inj_opentime_uS;
+          }
           else { currentStatus.PW3 = 0; }
         }
         else if(configPage10.stagingMode == STAGING_MODE_AUTO)
@@ -489,9 +494,10 @@ void loop()
           //If they exceed their limit, the extra duty is passed to the secondaries
           if(tempPW1 > pwLimit)
           {
-            uint32_t extraPW = tempPW1 - pwLimit;
+            uint32_t extraPW = tempPW1 - pwLimit + inj_opentime_uS; //The open time must be added here AND below because tempPW1 does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
             currentStatus.PW1 = pwLimit;
-            currentStatus.PW3 = ((extraPW * staged_req_fuel_mult_sec) / staged_req_fuel_mult_pri) + inj_opentime_uS; //Convert the 'left over' fuel amount from primary injector scaling to secondary
+            currentStatus.PW3 = ((extraPW * staged_req_fuel_mult_sec) / staged_req_fuel_mult_pri); //Convert the 'left over' fuel amount from primary injector scaling to secondary
+            currentStatus.PW3 += inj_opentime_uS;
           }
           else { currentStatus.PW3 = 0; } //If tempPW1 < pwLImit it means that the entire fuel load can be handled by the primaries. Simply set the secondaries to 0
         }
@@ -1242,7 +1248,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
   if ( configPage2.multiplyMAP == true ) {
     iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
   }
-  if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2)) {
+  if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
   }
   iCorrections = (corrections << 7) / 100;
@@ -1252,8 +1258,9 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
   if ( configPage2.multiplyMAP == true ) {
     intermediate = (intermediate * (unsigned long)iMAP) >> 7;
   }
-  if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) ) {
-    intermediate = (intermediate * (unsigned long)iAFR) >> 7;  //EGO type must be set to wideband for this to be used
+  if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
+    //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
+    intermediate = (intermediate * (unsigned long)iAFR) >> 7;  
   }
   intermediate = (intermediate * (unsigned long)iCorrections) >> 7;
   if (intermediate != 0)

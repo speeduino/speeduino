@@ -87,19 +87,19 @@ void initialiseSchedulers()
     ignitionSchedule3.compare = &IGN3_COMPARE;
     ignitionSchedule4.counter = &IGN4_COUNTER;
     ignitionSchedule4.compare = &IGN4_COMPARE;
-    #if (INJ_CHANNELS >= 5)
+    #if (IGN_CHANNELS >= 5)
     ignitionSchedule5.counter = &IGN5_COUNTER;
     ignitionSchedule5.compare = &IGN5_COMPARE;
     #endif
-    #if (INJ_CHANNELS >= 6)
+    #if (IGN_CHANNELS >= 6)
     ignitionSchedule6.counter = &IGN6_COUNTER;
     ignitionSchedule6.compare = &IGN6_COMPARE;
     #endif
-    #if (INJ_CHANNELS >= 7)
+    #if (IGN_CHANNELS >= 7)
     ignitionSchedule7.counter = &IGN7_COUNTER;
     ignitionSchedule7.compare = &IGN7_COMPARE;
     #endif
-    #if (INJ_CHANNELS >= 8)
+    #if (IGN_CHANNELS >= 8)
     ignitionSchedule8.counter = &IGN8_COUNTER;
     ignitionSchedule8.compare = &IGN8_COMPARE;
     #endif

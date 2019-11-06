@@ -43,12 +43,14 @@ void initialiseIdle()
       //Case 2 is PWM open loop
       iacPWMTable.xSize = 10;
       iacPWMTable.valueSize = SIZE_BYTE;
+      iacPWMTable.axisSize = SIZE_BYTE;
       iacPWMTable.values = configPage6.iacOLPWMVal;
       iacPWMTable.axisX = configPage6.iacBins;
 
 
       iacCrankDutyTable.xSize = 4;
       iacCrankDutyTable.valueSize = SIZE_BYTE;
+      iacCrankDutyTable.axisSize = SIZE_BYTE;
       iacCrankDutyTable.values = configPage6.iacCrankDuty;
       iacCrankDutyTable.axisX = configPage6.iacCrankBins;
 
@@ -68,11 +70,13 @@ void initialiseIdle()
       //Case 3 is PWM closed loop
       iacClosedLoopTable.xSize = 10;
       iacClosedLoopTable.valueSize = SIZE_BYTE;
+      iacClosedLoopTable.axisSize = SIZE_BYTE;
       iacClosedLoopTable.values = configPage6.iacCLValues;
       iacClosedLoopTable.axisX = configPage6.iacBins;
 
       iacCrankDutyTable.xSize = 4;
       iacCrankDutyTable.valueSize = SIZE_BYTE;
+      iacCrankDutyTable.axisSize = SIZE_BYTE;
       iacCrankDutyTable.values = configPage6.iacCrankDuty;
       iacCrankDutyTable.axisX = configPage6.iacCrankBins;
 
@@ -96,11 +100,13 @@ void initialiseIdle()
       //Case 2 is Stepper open loop
       iacStepTable.xSize = 10;
       iacStepTable.valueSize = SIZE_BYTE;
+      iacStepTable.axisSize = SIZE_BYTE;
       iacStepTable.values = configPage6.iacOLStepVal;
       iacStepTable.axisX = configPage6.iacBins;
 
       iacCrankStepsTable.xSize = 4;
       iacCrankStepsTable.valueSize = SIZE_BYTE;
+      iacCrankStepsTable.axisSize = SIZE_BYTE;
       iacCrankStepsTable.values = configPage6.iacCrankSteps;
       iacCrankStepsTable.axisX = configPage6.iacCrankBins;
       iacStepTime = configPage6.iacStepTime * 1000;
@@ -126,11 +132,13 @@ void initialiseIdle()
       //Case 5 is Stepper closed loop
       iacClosedLoopTable.xSize = 10;
       iacClosedLoopTable.valueSize = SIZE_BYTE;
+      iacClosedLoopTable.axisSize = SIZE_BYTE;
       iacClosedLoopTable.values = configPage6.iacCLValues;
       iacClosedLoopTable.axisX = configPage6.iacBins;
 
       iacCrankStepsTable.xSize = 4;
       iacCrankStepsTable.valueSize = SIZE_BYTE;
+      iacCrankStepsTable.axisSize = SIZE_BYTE;
       iacCrankStepsTable.values = configPage6.iacCrankSteps;
       iacCrankStepsTable.axisX = configPage6.iacCrankBins;
       iacStepTime = configPage6.iacStepTime * 1000;
@@ -259,11 +267,13 @@ void idleControl()
 
           //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
           if (idleStepper.targetIdleStep > configPage9.iacMaxSteps * 3)
-             idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;             
+          {
+            idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+          }
 
           doStep();
         }
-        else if( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < iacStepTable.axisX[IDLE_TABLE_SIZE-1])
+        else if( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < table2D_getAxisValue(&iacStepTable, (IDLE_TABLE_SIZE-1)) )
         {
           //Standard running
           //We must also have more than zero RPM for the running state
@@ -275,9 +285,11 @@ void idleControl()
             iacStepTime = configPage6.iacStepTime * 1000;
             iacCoolTime = configPage9.iacCoolTime * 1000;
 
-          //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
-          if (idleStepper.targetIdleStep > configPage9.iacMaxSteps * 3)
-             idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;             
+            //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
+            if (idleStepper.targetIdleStep > configPage9.iacMaxSteps * 3)
+            {
+              idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+            }
           }
           doStep();
         }
@@ -308,7 +320,9 @@ void idleControl()
 
         //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
         if (idleStepper.targetIdleStep > configPage9.iacMaxSteps * 3)
-           idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;             
+        {
+          idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+        }
 
         doStep();
         currentStatus.idleLoad = idleStepper.curIdleStep >> 1; //Current step count (Divided by 2 for byte)
@@ -458,7 +472,9 @@ static inline void disableIdle()
 
         //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
         if (idleStepper.targetIdleStep > configPage9.iacMaxSteps * 3)
-           idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;             
+        {
+          idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+        }
     }
   }
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off

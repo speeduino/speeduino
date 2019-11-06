@@ -1126,7 +1126,7 @@ void sendPageASCII()
       Serial.println((const __FlashStringHelper *)&pageTitles[27]);//27 is the index to the first char in the second sting in pageTitles
       // The following loop displays in human readable form of all byte values in config page 1 up to but not including the first array.
       // incrementing void pointers is cumbersome. Thus we have "pnt_configPage = (byte *)pnt_configPage + 1"
-      for (pnt_configPage = &configPage2; pnt_configPage < &configPage2.wueValues[0]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
+      for (pnt_configPage = (byte *)&configPage2; pnt_configPage < &configPage2.wueValues[0]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
       for (byte x = 10; x; x--)// The x between the ';' has the same representation as the "x != 0" test or comparision
       {
         Serial.print(configPage2.wueValues[10 - x]);// This displays the values horizantially on the screen
@@ -1204,7 +1204,7 @@ void sendPageASCII()
       //currentTitleIndex = 91;
       //To Display Values from Config Page 3
       Serial.println((const __FlashStringHelper *)&pageTitles[91]);//special typecasting to enable suroutine that the F macro uses
-      for (pnt_configPage = &configPage6; pnt_configPage < &configPage6.voltageCorrectionBins[0]; pnt_configPage = (byte *)pnt_configPage + 1)
+      for (pnt_configPage = (byte *)&configPage6; pnt_configPage < &configPage6.voltageCorrectionBins[0]; pnt_configPage = (byte *)pnt_configPage + 1)
       {
         Serial.println(*((byte *)pnt_configPage));// Displaying byte values of config page 3 up to but not including the first array
       }
@@ -1641,10 +1641,14 @@ void receiveCalibration(byte tableID)
   bool every2nd = true;
   int x;
   int counter = 0;
-  // stm32 board has buildin led used as fuel pump
-  // pinMode(LED_BUILTIN, OUTPUT); //pinMode(13, OUTPUT);
+  bool useLEDIndicator = false;
+  if (pinIsOutput(LED_BUILTIN) == false)
+  {
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
+    useLEDIndicator = true;
+  }
 
-  // digitalWrite(LED_BUILTIN, LOW); //digitalWrite(13, LOW);
   for (x = 0; x < 1024; x++)
   {
     //UNlike what is listed in the protocol documentation, the O2 sensor values are sent as bytes rather than ints
@@ -1681,13 +1685,14 @@ void receiveCalibration(byte tableID)
       storeCalibrationValue(y, (byte)tempValue);
 
       every2nd = false;
-      #if defined(CORE_STM32)
-        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-      #elif defined(CORE_STM32_OFFICIAL)
-        //Of core offical do nothing. led is reserved for fuel pump
-      #else
-        analogWrite(LED_BUILTIN, (counter % 50) ); //analogWrite(13, (counter % 50) );
-      #endif
+      if(useLEDIndicator == true)
+      {
+        #if defined(CORE_STM32)
+          digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        #else
+          analogWrite(LED_BUILTIN, (counter % 50) );
+        #endif
+      }
       counter++;
     }
     else {
