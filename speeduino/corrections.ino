@@ -312,8 +312,7 @@ static inline byte correctionBatVoltage()
   byte batValue = 100;
   if (configPage2.battVCorMode == BATTV_COR_MODE_WHOLE)
   {
-    if (currentStatus.battery10 > (injectorVCorrectionTable.axisX[5])) { batValue = injectorVCorrectionTable.values[injectorVCorrectionTable.xSize-1]; } //This prevents us doing the 2D lookup if the voltage is above maximum
-    else { batValue = table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10); }
+    batValue = table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
   }
 
   return batValue;
