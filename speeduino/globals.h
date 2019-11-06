@@ -239,6 +239,9 @@
 
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
+#define BATTV_COR_MODE_WHOLE 0
+#define BATTV_COR_MODE_OPENTIME 1
+
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
 #define CALIBRATION_TEMPERATURE_OFFSET 40 // All temperature measurements are stored offset by 40 degrees. This is so we can use an unsigned byte (0-255) to represent temperature ranges from -40 to 215
@@ -278,6 +281,7 @@ struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
 struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
+struct table2D baroFuelTable; //8 bin baro correction curve (2D)
 struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
 struct table2D IDLEAdvanceTable; //6 bin idle advance adjustment table based on RPM difference  (2D)
 struct table2D CLTAdvanceTable; //6 bin ignition adjustment based on coolant temperature  (2D)
@@ -425,6 +429,7 @@ struct statuses {
   byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
   byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
   byte iatCorrection; /**< The amount of inlet air temperature adjustment currently being applied */
+  byte baroCorrection; /**< The amount of correction being applied for the current baro reading */
   byte launchCorrection; /**< The amount of correction being applied if launch control is active */
   byte flexCorrection; /**< Amount of correction being applied to compensate for ethanol content */
   int8_t flexIgnCorrection; /**< Amount of additional advance being applied based on flex. Note the type as this allows for negative values */
@@ -498,7 +503,8 @@ struct config2 {
   byte unused2_1;
   byte unused2_2;  //Was ASE
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
-  byte unused1_3c : 6;
+  byte battVCorMode : 1;
+  byte unused1_3c : 5;
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
@@ -678,7 +684,11 @@ struct config4 {
   byte maeRates[4]; /**< MAP based AE values */
 
   int8_t batVoltCorrect; /**< Battery voltage calibration offset */
-  byte unused2_91[36];
+
+  byte baroFuelBins[8];
+  byte baroFuelValues[8];
+
+  byte unused2_91[20];
 
 #if defined(CORE_AVR)
   };
