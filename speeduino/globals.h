@@ -291,6 +291,7 @@ struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing adv
 struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
 struct table2D knockWindowStartTable;
 struct table2D knockWindowDurationTable;
+struct table2D smallPwTable; //4 bin small pw map (2D)
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 volatile PORT_TYPE *inj1_pin_port;
@@ -603,7 +604,11 @@ struct config2 {
   byte aseBins[4]; //Afterstart enrichment temp axis
   byte primePulse[4]; //Priming pulsewidth
   byte primeBins[4]; //Priming temp axis
-  byte unused2_91[37];
+  byte smallPwEnabled : 1; //Small pw correction, enable bit.
+  byte smallPwValues[4];   //Small pw correction, new values. Stored in ms*100.
+  byte smallPwBins[4];     //Small pw correction, original values. Stored in ms*100.
+  byte unused2_100[28];
+
 
 #if defined(CORE_AVR)
   };

@@ -1265,6 +1265,15 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
   intermediate = (intermediate * (unsigned long)iCorrections) >> 7;
   if (intermediate != 0)
   {
+    
+    //Small pulsewidth correction. If option is enabled, do the value lookup.
+    if (configPage2.smallPwEnabled) {
+      byte tmp_pw_byte = (unsigned long) intermediate/10UL;                     //Small pw values are stored in ms*100, so need to divide intermediate by 10 for lookup
+      unsigned long lowPwValue = table2D_getValue(&smallPwTable, tmp_pw_byte);
+      lowPwValue = (unsigned long) lowPwValue * 10UL;                           //Multiply by 10 to get uS
+      intermediate = lowPwValue;
+    }
+
     //If intermeditate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
     intermediate += injOpen; //Add the injector opening time
     if ( intermediate > 65535)
