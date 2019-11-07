@@ -186,7 +186,6 @@ void setFuelSchedule1(unsigned long timeout, unsigned long duration)
       //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
       if( (timeout+duration) < MAX_TIMER_PERIOD )
       {
-        Serial.println(" Next Sched Set");
         noInterrupts();
         fuelSchedule1.nextStartCompare = FUEL1_COUNTER + uS_TO_TIMER_COMPARE(timeout);
         fuelSchedule1.nextEndCompare = fuelSchedule1.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
