@@ -435,7 +435,7 @@ struct statuses {
   byte idleDuty; /**< The current idle duty cycle amount if PWM idle is selected and active */
   byte CLIdleTarget; /**< The target idle RPM (when closed loop idle control is active) */
   bool idleUpActive; /**< Whether the externally controlled idle up is currently active */
-  bool idleSwitchActive; /**< Whether the externally controlled idle switch is currently active */
+  bool CTPSActive; /**< Whether the externally controlled closed throttle position sensor is currently active */
   bool fanOn; /**< Whether or not the fan is turned on */
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
   unsigned long AEEndTime; /**< The target end time used whenever AE is turned on */
@@ -602,9 +602,9 @@ struct config2 {
   byte primePulse[4]; //Priming pulsewidth
   byte primeBins[4]; //Priming temp axis
 
-  byte idleSwitchPin : 6;
-  byte idleSwitchPolarity : 1;
-  byte idleSwitchEnabled : 1;
+  byte CTPSPin : 6;
+  byte CTPSPolarity : 1;
+  byte CTPSEnabled : 1;
   byte idleAdvEnabled : 2;
   byte idleAdvAlgorithm : 1;
   byte idleUnused : 5;
@@ -1031,7 +1031,7 @@ byte pinFuelPump; //Fuel pump on/off
 byte pinIdle1; //Single wire idle control
 byte pinIdle2; //2 wire idle control (Not currently used)
 byte pinIdleUp; //Input for triggering Idle Up
-byte pinIdleSwitch; //Input for triggering idle state
+byte pinCTPS; //Input for triggering closed throttle state
 byte pinFuel2Input; //Input for switching to the 2nd fuel table
 byte pinSpareTemp1; // Future use only
 byte pinSpareTemp2; // Future use only

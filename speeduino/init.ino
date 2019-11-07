@@ -1972,8 +1972,8 @@ void setPinMapping(byte boardID)
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
 
-  //Currently there's no default pin for Idle Switch
-  pinIdleSwitch = pinTranslate(configPage2.idleSwitchPin);
+  //Currently there's no default pin for closed throttle position sensor
+  pinCTPS = pinTranslate(configPage2.CTPSPin);
 
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
@@ -2092,10 +2092,10 @@ void setPinMapping(byte boardID)
     if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinIdleUp, INPUT); } //inverted setting
   }
-  if(configPage2.idleSwitchEnabled > 0)
+  if(configPage2.CTPSEnabled > 0)
   {
-    if (configPage2.idleSwitchPolarity == 0) { pinMode(pinIdleSwitch, INPUT_PULLUP); } //Normal setting
-    else { pinMode(pinIdleSwitch, INPUT); } //inverted setting
+    if (configPage2.CTPSPolarity == 0) { pinMode(pinCTPS, INPUT_PULLUP); } //Normal setting
+    else { pinMode(pinCTPS, INPUT); } //inverted setting
   }
   if(configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)
   {
