@@ -310,7 +310,10 @@ Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y 
 static inline byte correctionBatVoltage()
 {
   byte batValue = 100;
-  batValue = table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
+  if (configPage2.battVCorMode == BATTV_COR_MODE_WHOLE)
+  {
+    batValue = table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
+  }
 
   return batValue;
 }
