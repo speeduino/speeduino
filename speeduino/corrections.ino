@@ -538,7 +538,7 @@ static inline int8_t correctionIdleAdvance(int8_t advance)
 
   int8_t ignIdleValue = advance;
   //Adjust the advance based on idle target rpm.
-  if(configPage2.idleAdvEnabled >= 1)
+  if( (configPage2.idleAdvEnabled) >= 1 && (currentStatus.runSecs >= configPage2.IdleAdvDelay))
   {
     currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
     int idleRPMdelta = (currentStatus.CLIdleTarget - currentStatus.RPM / 10) + 50;

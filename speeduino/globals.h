@@ -611,7 +611,7 @@ struct config2 {
   byte CTPSEnabled : 1;
   byte idleAdvEnabled : 2;
   byte idleAdvAlgorithm : 1;
-  byte idleUnused : 5;
+  byte IdleAdvDelay : 5;
   byte idleAdvRPM;
   byte idleAdvTPS;
   byte unused2_95[33];
