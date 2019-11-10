@@ -34,9 +34,9 @@ struct table2D {
 };
 
 //void table2D_setSize(struct table2D targetTable, byte newSize);
-void table2D_setSize(struct table2D, byte);
-int16_t table2D_getAxisValue(struct table2D, byte);
-int16_t table2D_getRawValue(struct table2D, byte);
+void table2D_setSize(struct table2D*, byte);
+int16_t table2D_getAxisValue(struct table2D*, byte);
+int16_t table2D_getRawValue(struct table2D*, byte);
 
 struct table3D {
 

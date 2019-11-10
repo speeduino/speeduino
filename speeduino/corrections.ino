@@ -108,7 +108,7 @@ static inline byte correctionWUE()
     //This prevents us doing the 2D lookup if we're already up to temp
     BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP);
     //WUEValue = WUETable.values[9]; //Set the current value to be whatever the final value on the curve is.
-    WUEValue = table2D_getAxisValue(&WUETable, 9);
+    WUEValue = table2D_getRawValue(&WUETable, 9);
   }
   else
   {
