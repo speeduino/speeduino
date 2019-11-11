@@ -157,44 +157,42 @@ void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, uns
 void setFuelSchedule1(unsigned long timeout, unsigned long duration)
 {
   //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
-  if(timeout < MAX_TIMER_PERIOD)
+  //if(timeout < MAX_TIMER_PERIOD)
   {
     if(fuelSchedule1.Status != RUNNING) //Check that we're not already part way through a schedule
     {
-      //Callbacks no longer used, but retained for now:
-      //fuelSchedule1.StartCallback = startCallback;
-      //fuelSchedule1.EndCallback = endCallback;
-      fuelSchedule1.duration = duration;
-
       //Need to check that the timeout doesn't exceed the overflow
-      uint16_t timeout_timer_compare;
-      if ((timeout+duration) > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1 - duration) ); } // If the timeout is >16x (Each tick represents 16uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
-      else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
-
-      //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
-      noInterrupts();
-      fuelSchedule1.startCompare = FUEL1_COUNTER + timeout_timer_compare;
-      fuelSchedule1.endCompare = fuelSchedule1.startCompare + uS_TO_TIMER_COMPARE(duration);
-      fuelSchedule1.Status = PENDING; //Turn this schedule on
-      fuelSchedule1.schedulesSet++; //Increment the number of times this schedule has been set
-      //Schedule 1 shares a timer with schedule 5
-      //if(channel5InjEnabled) { FUEL1_COMPARE = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, FUEL1_COUNTER); }
-      //else { timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1; FUEL1_COMPARE = fuelSchedule1.startCompare; }
-      //timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1;
-      FUEL1_COMPARE = fuelSchedule1.startCompare;
-      interrupts();
-      FUEL1_TIMER_ENABLE();
+      if ((timeout+duration) < MAX_TIMER_PERIOD)
+      {
+        fuelSchedule1.duration = duration;
+        //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
+        noInterrupts();
+        fuelSchedule1.startCompare = FUEL1_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+        fuelSchedule1.endCompare = fuelSchedule1.startCompare + uS_TO_TIMER_COMPARE(duration);
+        fuelSchedule1.Status = PENDING; //Turn this schedule on
+        fuelSchedule1.schedulesSet++; //Increment the number of times this schedule has been set
+        //Schedule 1 shares a timer with schedule 5
+        //if(channel5InjEnabled) { FUEL1_COMPARE = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, FUEL1_COUNTER); }
+        //else { timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1; FUEL1_COMPARE = fuelSchedule1.startCompare; }
+        //timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1;
+        FUEL1_COMPARE = fuelSchedule1.startCompare;
+        interrupts();
+        FUEL1_TIMER_ENABLE();
+      }
     }
     else
     {
       //If the schedule is already running, we can set the next schedule so it is ready to go
       //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-      noInterrupts();
-      fuelSchedule1.nextStartCompare = FUEL1_COUNTER + uS_TO_TIMER_COMPARE(timeout);
-      fuelSchedule1.nextEndCompare = fuelSchedule1.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      fuelSchedule1.duration = duration;
-      fuelSchedule1.hasNextSchedule = true;
-      interrupts();
+      if( (timeout+duration) < MAX_TIMER_PERIOD )
+      {
+        noInterrupts();
+        fuelSchedule1.nextStartCompare = FUEL1_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+        fuelSchedule1.nextEndCompare = fuelSchedule1.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+        fuelSchedule1.duration = duration;
+        fuelSchedule1.hasNextSchedule = true;
+        interrupts();
+      }
     } //Schedule is RUNNING
   } //Timeout less than threshold
 }
