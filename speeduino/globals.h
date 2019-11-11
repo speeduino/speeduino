@@ -603,7 +603,6 @@ struct config2 {
   byte fanUnused_1_5 : 5;
   byte smallPwEnabled : 1; //Small pw correction, enable bit.  
   byte fanUnused_7 : 1;
-
   byte asePct[4];  //Afterstart enrichment (%)
   byte aseCount[4]; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte aseBins[4]; //Afterstart enrichment temp axis
@@ -618,9 +617,18 @@ struct config2 {
   byte IdleAdvDelay : 5;
   byte idleAdvRPM;
   byte idleAdvTPS;
+  byte CTPSPin : 6;
+  byte CTPSPolarity : 1;
+  byte CTPSEnabled : 1;
+  byte idleAdvEnabled : 2;
+  byte idleAdvAlgorithm : 1;
+  byte IdleAdvDelay : 5;
+  byte idleAdvRPM;
+  byte idleAdvTPS;
+
   byte smallPwValues[4];   //Small pw correction, new values. Stored in ms*100.
   byte smallPwBins[4];     //Small pw correction, original values. Stored in ms*100.
-  byte unused2_100[28];
+  byte unused2_103[25];
 
 #if defined(CORE_AVR)
   };

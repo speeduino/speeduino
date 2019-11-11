@@ -96,7 +96,11 @@ void initialiseAll()
     smallPwTable.xSize = 4;
     smallPwTable.values = configPage2.smallPwValues;
     smallPwTable.axisX = configPage2.smallPwBins;
+<<<<<<< Updated upstream
     
+=======
+
+>>>>>>> Stashed changes
     dwellVCorrectionTable.valueSize = SIZE_BYTE;
     dwellVCorrectionTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     dwellVCorrectionTable.xSize = 6;
