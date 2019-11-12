@@ -33,8 +33,8 @@ void setFuelSchedule1(unsigned long timeout, unsigned long duration);
 void setFuelSchedule2(unsigned long timeout, unsigned long duration);
 void setFuelSchedule3(unsigned long timeout, unsigned long duration);
 void setFuelSchedule4(unsigned long timeout, unsigned long duration);
-void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)()); //Schedule 5 remains a special case for now due to the way it's implemented 
-//void setFuelSchedule5(unsigned long timeout, unsigned long duration);
+//void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)()); //Schedule 5 remains a special case for now due to the way it's implemented 
+void setFuelSchedule5(unsigned long timeout, unsigned long duration);
 void setFuelSchedule6(unsigned long timeout, unsigned long duration);
 void setFuelSchedule7(unsigned long timeout, unsigned long duration);
 void setFuelSchedule8(unsigned long timeout, unsigned long duration);
@@ -109,27 +109,33 @@ struct Schedule {
   unsigned int nextEndCompare;
   volatile bool hasNextSchedule = false;
   volatile bool endScheduleSetByDecoder = false;
-#if defined(CORE_AVR) || defined(CORE_TEENSY40)
-  volatile uint16_t * counter;
-  volatile uint16_t * compare;
-#else
-  volatile uint32_t * counter;
-  volatile uint32_t * compare;
-#endif
+};
+
+//Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables. They are removed in this struct to save RAM
+struct FuelSchedule {
+  volatile unsigned long duration;
+  volatile ScheduleStatus Status;
+  volatile byte schedulesSet; //A counter of how many times the schedule has been set
+  volatile COMPARE_TYPE startCompare; //The counter value of the timer when this will start
+  volatile COMPARE_TYPE endCompare;
+
+  unsigned int nextStartCompare;
+  unsigned int nextEndCompare;
+  volatile bool hasNextSchedule = false;
 };
 
 //volatile Schedule *timer3Aqueue[4];
 //Schedule *timer3Bqueue[4];
 //Schedule *timer3Cqueue[4];
 
-Schedule fuelSchedule1;
-Schedule fuelSchedule2;
-Schedule fuelSchedule3;
-Schedule fuelSchedule4;
-Schedule fuelSchedule5;
-Schedule fuelSchedule6;
-Schedule fuelSchedule7;
-Schedule fuelSchedule8;
+FuelSchedule fuelSchedule1;
+FuelSchedule fuelSchedule2;
+FuelSchedule fuelSchedule3;
+FuelSchedule fuelSchedule4;
+FuelSchedule fuelSchedule5;
+FuelSchedule fuelSchedule6;
+FuelSchedule fuelSchedule7;
+FuelSchedule fuelSchedule8;
 
 Schedule ignitionSchedule1;
 Schedule ignitionSchedule2;
@@ -140,7 +146,7 @@ Schedule ignitionSchedule6;
 Schedule ignitionSchedule7;
 Schedule ignitionSchedule8;
 
-Schedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
+//IgnitionSchedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 
 static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned int CNT)
 {
@@ -203,7 +209,7 @@ static inline unsigned int popQueue(volatile Schedule *queue[])
   queue[0] = queue[1];
   queue[1] = queue[2];
   queue[2] = queue[3];
-  queue[3] = &nullSchedule;
+  //queue[3] = &nullSchedule;
 
   unsigned int returnCompare;
   if( queue[0]->Status == PENDING ) { returnCompare = queue[0]->startCompare; }

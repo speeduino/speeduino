@@ -307,6 +307,13 @@ void readTPS()
     currentStatus.TPS = map(tempADC, configPage2.tpsMax, configPage2.tpsMin, 0, 100);
   }
 
+  //Check whether the closed throttle position sensor is active
+  if(configPage2.CTPSEnabled == true)
+  {
+    if(configPage2.CTPSPolarity == 0) { currentStatus.CTPSActive = !digitalRead(pinCTPS); } //Normal mode (ground switched)
+    else { currentStatus.CTPSActive = digitalRead(pinCTPS); } //Inverted mode (5v activates closed throttle position sensor)
+  }
+  else { currentStatus.CTPSActive = 0; }
   TPS_time = micros();
 }
 
