@@ -617,15 +617,7 @@ struct config2 {
   byte IdleAdvDelay : 5;
   byte idleAdvRPM;
   byte idleAdvTPS;
-  byte CTPSPin : 6;
-  byte CTPSPolarity : 1;
-  byte CTPSEnabled : 1;
-  byte idleAdvEnabled : 2;
-  byte idleAdvAlgorithm : 1;
-  byte IdleAdvDelay : 5;
-  byte idleAdvRPM;
-  byte idleAdvTPS;
-
+ 
   byte smallPwValues[4];   //Small pw correction, new values. Stored in ms*100.
   byte smallPwBins[4];     //Small pw correction, original values. Stored in ms*100.
   byte unused2_103[25];
