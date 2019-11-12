@@ -17,7 +17,7 @@ static inline byte correctionAFRClosedLoop() __attribute__((always_inline)); //C
 static inline byte correctionFlex() __attribute__((always_inline)); //Flex fuel adjustment
 static inline byte correctionBatVoltage() __attribute__((always_inline)); //Battery voltage correction
 static inline byte correctionIATDensity() __attribute__((always_inline)); //Inlet temp density correction
-static inline byte correctionBaro() __attribute__((always_inline)); //Inlet temp density correction
+static inline byte correctionBaro() __attribute__((always_inline)); //Barometric pressure correction
 static inline byte correctionLaunch() __attribute__((always_inline)); //Launch control correction
 static inline bool correctionDFCO() __attribute__((always_inline)); //Decelleration fuel cutoff
 
