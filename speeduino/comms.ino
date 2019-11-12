@@ -773,6 +773,7 @@ void receiveValue(uint16_t valueOffset, byte newValue)
           //This should never happen. It means there's an invalid offset value coming through
         }
       }
+      fuelTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
     case veSetPage:
@@ -795,7 +796,7 @@ void receiveValue(uint16_t valueOffset, byte newValue)
         if (valueOffset < 272)
         {
           //X Axis
-          ignitionTable.axisX[(valueOffset - 256)] = (int)(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+          ignitionTable.axisX[(valueOffset - 256)] = (int)(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiple it back by 100 to make it correct
         }
         else if(valueOffset < 288)
         {
@@ -804,6 +805,7 @@ void receiveValue(uint16_t valueOffset, byte newValue)
           ignitionTable.axisY[tempOffset] = (int)(newValue) * TABLE_LOAD_MULTIPLIER;
         }
       }
+      ignitionTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
     case ignSetPage:
@@ -826,7 +828,7 @@ void receiveValue(uint16_t valueOffset, byte newValue)
         if (valueOffset < 272)
         {
           //X Axis
-          afrTable.axisX[(valueOffset - 256)] = int(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by megasquirt are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+          afrTable.axisX[(valueOffset - 256)] = int(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
         }
         else
         {
@@ -836,6 +838,7 @@ void receiveValue(uint16_t valueOffset, byte newValue)
 
         }
       }
+      afrTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
     case afrSetPage:
@@ -892,6 +895,9 @@ void receiveValue(uint16_t valueOffset, byte newValue)
         tempOffset = valueOffset - 232;
         stagingTable.axisY[(7 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER;
       }
+      boostTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      vvtTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      stagingTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
     case seqFuelPage:
@@ -911,6 +917,10 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       else if (valueOffset < 186) { tempOffset = valueOffset - 180; trim4Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       else if (valueOffset < 192) { tempOffset = valueOffset - 186; trim4Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
 
+      trim1Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      trim2Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      trim3Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      trim4Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
     case canbusPage:
@@ -955,6 +965,7 @@ void receiveValue(uint16_t valueOffset, byte newValue)
           //This should never happen. It means there's an invalid offset value coming through
         }
       }
+      fuelTable2.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
     default:

@@ -48,177 +48,17 @@ void table3D_setSize(struct table3D *targetTable, byte newSize)
     targetTable->axisY = (int16_t *)malloc(newSize * sizeof(int16_t));
     targetTable->xSize = newSize;
     targetTable->ySize = newSize;
+    targetTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
   } //initialisationComplete
 }
 
 /*
-This function simply pulls a 1D linear interpolated (ie averaged) value from a 2D table
+This function pulls a 1D linear interpolated (ie averaged) value from a 2D table
 ie: Given a value on the X axis, it returns a Y value that coresponds to the point on the curve between the nearest two defined X values
 
 This function must take into account whether a table contains 8-bit or 16-bit values.
 Unfortunately this means many of the lines are duplicated depending on this
 */
-/*
-int table2D_getValue_orig(struct table2D *fromTable, int X_in)
-{
-    int returnValue = 0;
-    bool valueFound = false;
-
-    int X = X_in;
-    int xMinValue, xMaxValue;
-    int xMin = 0;
-    int xMax = 0;
-
-    //Check whether the X input is the same as last time this ran
-    if( (X_in == fromTable->lastInput) && (fromTable->cacheTime == currentStatus.secl) )
-    {
-      returnValue = fromTable->lastOutput;
-      valueFound = true;
-    }
-    else
-    {
-      fromTable->cacheTime = currentStatus.secl; //As we're not using the cache value, set the current secl value to track when this new value was calc'd
-
-      if (fromTable->valueSize == SIZE_BYTE)
-      {
-        //Byte version
-        xMinValue = fromTable->axisX[0];
-        xMaxValue = fromTable->axisX[fromTable->xSize-1];
-      }
-      else
-      {
-        //int version
-        xMinValue = fromTable->axisX16[0];
-        xMaxValue = fromTable->axisX16[fromTable->xSize-1];
-      }
-
-      //If the requested X value is greater/small than the maximum/minimum bin, reset X to be that value
-      if(X > xMaxValue) { X = xMaxValue; }
-      if(X < xMinValue) { X = xMinValue; }
-
-
-      if (fromTable->valueSize == SIZE_BYTE)
-      {
-         //**** Byte version ****
-
-         //1st check is whether we're still in the same X bin as last time
-         if ( (X <= fromTable->axisX[fromTable->lastXMax]) && (X > fromTable->axisX[fromTable->lastXMin]) )
-         {
-           xMaxValue = fromTable->axisX[fromTable->lastXMax];
-           xMinValue = fromTable->axisX[fromTable->lastXMin];
-           xMax = fromTable->lastXMax;
-           xMin = fromTable->lastXMin;
-         }
-         else
-         {
-            //If we're not in the same bin, loop through to find where we are
-            for (int x = fromTable->xSize-1; x >= 0; x--)
-            {
-                //Checks the case where the X value is exactly what was requested
-                if ( (X == fromTable->axisX[x]) || (x == 0) )
-                {
-                  returnValue = fromTable->values[x]; //Simply return the coresponding value
-                  valueFound = true;
-                  break;
-                }
-                else
-                {
-                  //Normal case
-                  if ( (X <= fromTable->axisX[x]) && (X > fromTable->axisX[x-1]) )
-                  {
-                    xMaxValue = fromTable->axisX[x];
-                    xMinValue = fromTable->axisX[x-1];
-                    xMax = x;
-                    fromTable->lastXMax = xMax;
-                    xMin = x-1;
-                    fromTable->lastXMin = xMin;
-                    break;
-                  }
-                }
-            }
-         }
-      }
-      else
-      {
-        // **** INT VERSION ****
-
-         //1st check is whether we're still in the same X bin as last time
-         if ( (X <= fromTable->axisX16[fromTable->lastXMax]) && (X > fromTable->axisX16[fromTable->lastXMin]) )
-         {
-           xMaxValue = fromTable->axisX16[fromTable->lastXMax];
-           xMinValue = fromTable->axisX16[fromTable->lastXMin];
-           xMax = fromTable->lastXMax;
-           xMin = fromTable->lastXMin;
-         }
-         else
-         {
-            //If we're not in the same bin, loop through to find where we are
-            for (int x = fromTable->xSize-1; x >= 0; x--)
-            {
-                //Checks the case where the X value is exactly what was requested
-                if ( (X == fromTable->axisX16[x]) || (x == 0) )
-                {
-                  returnValue = fromTable->values16[x]; //Simply return the coresponding value
-                  valueFound = true;
-                  break;
-                }
-                else
-                {
-                  //Normal case
-                  if ( (X <= fromTable->axisX16[x]) && (X > fromTable->axisX16[x-1]) )
-                  {
-                    xMaxValue = fromTable->axisX16[x];
-                    xMinValue = fromTable->axisX16[x-1];
-                    xMax = x;
-                    fromTable->lastXMax = xMax;
-                    xMin = x-1;
-                    fromTable->lastXMin = xMin;
-                    break;
-                  } //Found in loop
-                } //Exact hit
-            } //For loop
-         } //In cache or not
-      } //byte or int values
-    } //X_in same as last time
-
-    if (valueFound == false)
-    {
-      unsigned int m = X - xMinValue;
-      unsigned int n = xMaxValue - xMinValue;
-
-      //Float version
-      //int yVal = (m / n) * (abs(fromTable.values[xMax] - fromTable.values[xMin]));
-
-      //Non-Float version
-      uint16_t yVal;
-      if (fromTable->valueSize == SIZE_BYTE)
-      {
-         //Byte version
-         yVal = ((long)(m << 6) / n) * (abs(fromTable->values[xMax] - fromTable->values[xMin]));
-         yVal = (yVal >> 6);
-
-         if (fromTable->values[xMax] > fromTable->values[xMin]) { yVal = fromTable->values[xMin] + yVal; }
-         else { yVal = fromTable->values[xMin] - yVal; }
-      }
-      else
-      {
-         //int version
-         yVal = ((long)(m << 6) / n) * (abs(fromTable->values16[xMax] - fromTable->values16[xMin]));
-         yVal = (yVal >> 6);
-
-         if (fromTable->values[xMax] > fromTable->values16[xMin]) { yVal = fromTable->values16[xMin] + yVal; }
-         else { yVal = fromTable->values16[xMin] - yVal; }
-      }
-      returnValue = yVal;
-    }
-
-    fromTable->lastInput = X_in;
-    fromTable->lastOutput = returnValue;
-
-    return returnValue;
-}
-*/
-
 int table2D_getValue(struct table2D *fromTable, int X_in)
 {
   //Orig memory usage = 5414
@@ -373,6 +213,14 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
     //If the requested X value is greater/small than the maximum/minimum bin, reset X to be that value
     if(X > xMaxValue) { X = xMaxValue; }
     if(X < xMinValue) { X = xMinValue; }
+
+    //0th check is whether the same X and Y values are being sent as last time. If they are, this not only prevents a lookup of the axis, but prevents the interpolation calcs being performed
+    if( (X_in == fromTable->lastXInput) && (Y_in == fromTable->lastYInput) && (fromTable->cacheIsValid == true))
+    {
+      return fromTable->lastOutput;
+    }
+
+    //Commence the lookups on the X and Y axis
 
     //1st check is whether we're still in the same X bin as last time
     if ( (X <= fromTable->axisX[fromTable->lastXMax]) && (X > fromTable->axisX[fromTable->lastXMin]) )
@@ -558,5 +406,12 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
       int r = (p * q) >> 8;
       tableResult = ( (A * m) + (B * n) + (C * o) + (D * r) ) >> 8;
     }
+
+    //Update the tables cache data
+    fromTable->lastXInput = X_in;
+    fromTable->lastYInput = Y_in;
+    fromTable->lastOutput = tableResult;
+    fromTable->cacheIsValid = true;
+
     return tableResult;
 }
