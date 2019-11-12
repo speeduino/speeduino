@@ -263,27 +263,26 @@ void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses time
 }
 
 #if INJ_CHANNELS >= 5
-void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setFuelSchedule5(unsigned long timeout, unsigned long duration)
 {
   if(fuelSchedule5.Status != RUNNING) //Check that we're not already part way through a schedule
   {
-    fuelSchedule5.StartCallback = startCallback; //Name the start callback function
-    fuelSchedule5.EndCallback = endCallback; //Name the end callback function
     fuelSchedule5.duration = duration;
 
-    /*
-     * The following must be enclosed in the noIntterupts block to avoid contention caused if the relevant interrupts fires before the state is fully set
-     */
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
+
+    //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
     noInterrupts();
-    fuelSchedule5.startCompare = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
-    fuelSchedule5.endCompare = fuelSchedule5.startCompare + (duration >> 4);
+    fuelSchedule5.startCompare = FUEL5_COUNTER + timeout_timer_compare;
+    fuelSchedule5.endCompare = fuelSchedule5.startCompare + uS_TO_TIMER_COMPARE(duration);
+    FUEL5_COMPARE = fuelSchedule5.startCompare; //Use the C copmare unit of timer 3
     fuelSchedule5.Status = PENDING; //Turn this schedule on
     fuelSchedule5.schedulesSet++; //Increment the number of times this schedule has been set
-    OCR3A = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, TCNT3); //Schedule 1 shares a timer with schedule 5
     interrupts();
-    TIMSK3 |= (1 << OCIE3A); //Turn on the A compare unit (ie turn on the interrupt)
-#endif
+    FUEL5_TIMER_ENABLE();
   }
   else
   {

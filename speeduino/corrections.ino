@@ -332,7 +332,7 @@ static inline byte correctionIATDensity()
 
 /**
  * @brief 
- * 
+ * @returns A percentage value indicating the amount the fueling should be changed based on the barometric reading. 100 = No change. 110 = 10% increase. 90 = 10% decrease
  */
 static inline byte correctionBaro()
 {

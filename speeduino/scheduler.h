@@ -33,8 +33,8 @@ void setFuelSchedule1(unsigned long timeout, unsigned long duration);
 void setFuelSchedule2(unsigned long timeout, unsigned long duration);
 void setFuelSchedule3(unsigned long timeout, unsigned long duration);
 void setFuelSchedule4(unsigned long timeout, unsigned long duration);
-void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)()); //Schedule 5 remains a special case for now due to the way it's implemented 
-//void setFuelSchedule5(unsigned long timeout, unsigned long duration);
+//void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)()); //Schedule 5 remains a special case for now due to the way it's implemented 
+void setFuelSchedule5(unsigned long timeout, unsigned long duration);
 void setFuelSchedule6(unsigned long timeout, unsigned long duration);
 void setFuelSchedule7(unsigned long timeout, unsigned long duration);
 void setFuelSchedule8(unsigned long timeout, unsigned long duration);
