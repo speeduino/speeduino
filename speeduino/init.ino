@@ -877,8 +877,12 @@ void initialiseAll()
       setFuelSchedule2(100, (primingValue * 100 * 5));
       setFuelSchedule3(100, (primingValue * 100 * 5));
       setFuelSchedule4(100, (primingValue * 100 * 5));
-//    setFuelSchedule5(100, (primingValue * 100 * 5));
-//    setFuelSchedule6(100, (primingValue * 100 * 5));
+      #if INJ_CHANNELS >= 5
+      setFuelSchedule5(100, (primingValue * 100 * 5));
+      #endif
+      #if INJ_CHANNELS >= 6
+      setFuelSchedule6(100, (primingValue * 100 * 5));
+      #endif
     }
 
 

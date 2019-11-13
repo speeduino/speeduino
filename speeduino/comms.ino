@@ -1795,8 +1795,12 @@ void commandButtons(int buttonCommand)
       closeInjector2();
       closeInjector3();
       closeInjector4();
+      #if INJ_CHANNELS >= 5
       closeInjector5();
+      #endif
+      #if INJ_CHANNELS >= 6
       closeInjector6();
+      #endif
       break;
 
     case 257: // cmd is enable
@@ -1859,11 +1863,15 @@ void commandButtons(int buttonCommand)
       break;
 
     case 525: // cmd group is for injector5 on actions
+        #if INJ_CHANNELS >= 5
         if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector5(); }
+        #endif
       break;
 
     case 526: // cmd group is for injector5 off actions
+        #if INJ_CHANNELS >= 5
         if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector5(); }
+        #endif
       break;
 
     case 527: // cmd group is for injector5 50%dc actions
@@ -1871,11 +1879,15 @@ void commandButtons(int buttonCommand)
       break;
 
     case 528: // cmd group is for injector6 on actions
+        #if INJ_CHANNELS >= 6
         if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector6(); }
+        #endif
       break;
 
     case 529: // cmd group is for injector6 off actions
+        #if INJ_CHANNELS >= 6
         if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector6(); }
+        #endif
       break;
 
     case 530: // cmd group is for injector6 50% dc actions
