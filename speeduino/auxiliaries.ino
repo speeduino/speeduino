@@ -76,7 +76,7 @@ void initialiseAuxPWM()
   }
 
   boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
-  if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(100, 100, 100); }
+  if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(SIMPLE_BOOST_P, SIMPLE_BOOST_I, SIMPLE_BOOST_D); }
   else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
 
   if( configPage6.vvtEnabled > 0)
@@ -151,7 +151,7 @@ void boostControl()
           {
             boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
 
-            if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(100, 100, 100); }
+            if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(SIMPLE_BOOST_P, SIMPLE_BOOST_I, SIMPLE_BOOST_D); }
             else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
           }
 
