@@ -11,7 +11,7 @@ A full copy of the license may be found in the projects root directory
 
 void initialiseSchedulers()
 {
-    nullSchedule.Status = OFF;
+    //nullSchedule.Status = OFF;
 
     fuelSchedule1.Status = OFF;
     fuelSchedule2.Status = OFF;
@@ -30,31 +30,6 @@ void initialiseSchedulers()
     fuelSchedule6.schedulesSet = 0;
     fuelSchedule7.schedulesSet = 0;
     fuelSchedule8.schedulesSet = 0;
-
-    fuelSchedule1.counter = &FUEL1_COUNTER;
-    fuelSchedule1.compare = &FUEL1_COMPARE;
-    fuelSchedule2.counter = &FUEL2_COUNTER;
-    fuelSchedule2.compare = &FUEL2_COMPARE;
-    fuelSchedule3.counter = &FUEL3_COUNTER;
-    fuelSchedule3.compare = &FUEL3_COMPARE;
-    fuelSchedule4.counter = &FUEL4_COUNTER;
-    fuelSchedule4.compare = &FUEL4_COMPARE;
-    #if (INJ_CHANNELS >= 5)
-    fuelSchedule5.counter = &FUEL5_COUNTER;
-    fuelSchedule5.compare = &FUEL5_COMPARE;
-    #endif
-    #if (INJ_CHANNELS >= 6)
-    fuelSchedule6.counter = &FUEL6_COUNTER;
-    fuelSchedule6.compare = &FUEL6_COMPARE;
-    #endif
-    #if (INJ_CHANNELS >= 7)
-    fuelSchedule7.counter = &FUEL7_COUNTER;
-    fuelSchedule7.compare = &FUEL7_COMPARE;
-    #endif
-    #if (INJ_CHANNELS >= 8)
-    fuelSchedule8.counter = &FUEL8_COUNTER;
-    fuelSchedule8.compare = &FUEL8_COMPARE;
-    #endif
 
     ignitionSchedule1.Status = OFF;
     ignitionSchedule2.Status = OFF;
@@ -78,32 +53,6 @@ void initialiseSchedulers()
     ignitionSchedule6.schedulesSet = 0;
     ignitionSchedule7.schedulesSet = 0;
     ignitionSchedule8.schedulesSet = 0;
-
-    ignitionSchedule1.counter = &IGN1_COUNTER;
-    ignitionSchedule1.compare = &IGN1_COMPARE;
-    ignitionSchedule2.counter = &IGN2_COUNTER;
-    ignitionSchedule2.compare = &IGN2_COMPARE;
-    ignitionSchedule3.counter = &IGN3_COUNTER;
-    ignitionSchedule3.compare = &IGN3_COMPARE;
-    ignitionSchedule4.counter = &IGN4_COUNTER;
-    ignitionSchedule4.compare = &IGN4_COMPARE;
-    #if (IGN_CHANNELS >= 5)
-    ignitionSchedule5.counter = &IGN5_COUNTER;
-    ignitionSchedule5.compare = &IGN5_COMPARE;
-    #endif
-    #if (IGN_CHANNELS >= 6)
-    ignitionSchedule6.counter = &IGN6_COUNTER;
-    ignitionSchedule6.compare = &IGN6_COMPARE;
-    #endif
-    #if (IGN_CHANNELS >= 7)
-    ignitionSchedule7.counter = &IGN7_COUNTER;
-    ignitionSchedule7.compare = &IGN7_COMPARE;
-    #endif
-    #if (IGN_CHANNELS >= 8)
-    ignitionSchedule8.counter = &IGN8_COUNTER;
-    ignitionSchedule8.compare = &IGN8_COMPARE;
-    #endif
-
 }
 
 /*
@@ -117,6 +66,7 @@ endCallback: This function is called once the duration time has been reached
 */
 
 //Experimental new generic function
+/*
 void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, unsigned long duration)
 {
   if(targetSchedule->Status != RUNNING) //Check that we're not already part way through a schedule
@@ -151,6 +101,7 @@ void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, uns
     targetSchedule->hasNextSchedule = true;
   }
 }
+*/
 
 
 //void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
@@ -312,27 +263,26 @@ void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses time
 }
 
 #if INJ_CHANNELS >= 5
-void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setFuelSchedule5(unsigned long timeout, unsigned long duration)
 {
   if(fuelSchedule5.Status != RUNNING) //Check that we're not already part way through a schedule
   {
-    fuelSchedule5.StartCallback = startCallback; //Name the start callback function
-    fuelSchedule5.EndCallback = endCallback; //Name the end callback function
     fuelSchedule5.duration = duration;
 
-    /*
-     * The following must be enclosed in the noIntterupts block to avoid contention caused if the relevant interrupts fires before the state is fully set
-     */
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+    //Need to check that the timeout doesn't exceed the overflow
+    uint16_t timeout_timer_compare;
+    if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
+    else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
+
+    //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
     noInterrupts();
-    fuelSchedule5.startCompare = TCNT3 + (timeout >> 4); //As above, but with bit shift instead of / 16
-    fuelSchedule5.endCompare = fuelSchedule5.startCompare + (duration >> 4);
+    fuelSchedule5.startCompare = FUEL5_COUNTER + timeout_timer_compare;
+    fuelSchedule5.endCompare = fuelSchedule5.startCompare + uS_TO_TIMER_COMPARE(duration);
+    FUEL5_COMPARE = fuelSchedule5.startCompare; //Use the C copmare unit of timer 3
     fuelSchedule5.Status = PENDING; //Turn this schedule on
     fuelSchedule5.schedulesSet++; //Increment the number of times this schedule has been set
-    OCR3A = setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, TCNT3); //Schedule 1 shares a timer with schedule 5
     interrupts();
-    TIMSK3 |= (1 << OCIE3A); //Turn on the A compare unit (ie turn on the interrupt)
-#endif
+    FUEL5_TIMER_ENABLE();
   }
   else
   {
