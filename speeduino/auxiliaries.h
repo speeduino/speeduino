@@ -12,6 +12,10 @@ void initialiseFan();
 void nitrousControl();
 void fanControl();
 
+#define SIMPLE_BOOST_P  1
+#define SIMPLE_BOOST_I  1
+#define SIMPLE_BOOST_D  1
+
 #define BOOST_PIN_LOW()  *boost_pin_port &= ~(boost_pin_mask)
 #define BOOST_PIN_HIGH() *boost_pin_port |= (boost_pin_mask)
 #define VVT_PIN_LOW()    *vvt_pin_port &= ~(vvt_pin_mask)
