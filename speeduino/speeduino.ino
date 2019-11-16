@@ -117,7 +117,7 @@ void loop()
       ignitionOn = false;
       fuelOn = false;
       if (fpPrimed == true) { FUEL_PUMP_OFF(); currentStatus.fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete
-      disableIdle(); //Turn off the idle PWM
+      if(!configPage2.idleEngOff) { disableIdle(); } //Turn off the idle PWM
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); //Same as above except for RUNNING status
@@ -286,7 +286,7 @@ void loop()
       readBaro(); //Infrequent baro readings are not an issue.
     } //1Hz timer
 
-    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) )  { idleControl(); } //Run idlecontrol every loop for stepper idle.
+    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_HB) )  { idleControl(); } //Run idlecontrol every loop for stepper and h-bridge dc motor idle.
 
     
     //VE calculation was moved outside the sync/RPM check so that the fuel load value will be accurately shown when RPM=0

@@ -354,12 +354,44 @@ void readTPS()
   }
 
   //Check whether the closed throttle position sensor is active
-  if(configPage2.CTPSEnabled == true)
+  if(configPage2.ctpsEnabled == true)
   {
-    if(configPage2.CTPSPolarity == 0) { currentStatus.CTPSActive = !digitalRead(pinCTPS); } //Normal mode (ground switched)
-    else { currentStatus.CTPSActive = digitalRead(pinCTPS); } //Inverted mode (5v activates closed throttle position sensor)
+    if(configPage2.ctpsPolarity == 0) { currentStatus.ctpsActive = !digitalRead(pinCTPS); } //Normal mode (ground switched)
+    else { currentStatus.ctpsActive = digitalRead(pinCTPS); } //Inverted mode (5v activates closed throttle position sensor)
   }
-  else { currentStatus.CTPSActive = 0; }
+  else { currentStatus.ctpsActive = 0; }
+
+  if(configPage6.iacAlgorithm == IAC_ALGORITHM_HB)
+  {
+    #if defined(ANALOG_ISR)
+      byte tempITPS = fastMap1023toX(AnChannel[pinITPS-A0], 255); //Get the current raw ITPS ADC value and map it into a byte
+    #else
+      analogRead(pinITPS);
+      byte tempITPS = fastMap1023toX(analogRead(pinITPS), 255); //Get the current raw ITPS ADC value and map it into a byte
+    #endif
+
+    currentStatus.itpsADC = ADC_FILTER(tempITPS, configPage4.ADCFILTER_TPS, currentStatus.itpsADC); // Idle range tps shares the adc filter with main tps
+
+    if(configPage2.itpsMax > configPage2.itpsMin)
+    {
+      //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
+      if (currentStatus.itpsADC < configPage2.itpsMin) { currentStatus.itpsADC = configPage2.itpsMin; }
+      else if(currentStatus.itpsADC > configPage2.itpsMax) { currentStatus.itpsADC = configPage2.itpsMax; }
+      currentStatus.ITPS = map(currentStatus.itpsADC, configPage2.itpsMin, configPage2.itpsMax, 0, 100); //Take the raw ITPS ADC value and convert it into a ITPS% based on the calibrated values
+    }
+    else
+    {
+      //This case occurs when the ITPS +5v and gnd are wired backwards, but the user wishes to retain this configuration.
+      //In such a case, itpsMin will be greater then itpsMax and hence checks and mapping needs to be reversed
+
+      currentStatus.itpsADC = 255 - currentStatus.itpsADC; //Reverse the ADC values
+
+      //All checks below are reversed from the standard case above
+      if (currentStatus.itpsADC > configPage2.itpsMin) { currentStatus.itpsADC = configPage2.itpsMin; }
+      else if(currentStatus.itpsADC < configPage2.itpsMax) { currentStatus.itpsADC = configPage2.itpsMax; }
+      currentStatus.ITPS = map(currentStatus.itpsADC, configPage2.itpsMax, configPage2.itpsMin, 0, 100);
+    }
+  }
   TPS_time = micros();
 }
 

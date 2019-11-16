@@ -614,6 +614,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[96] = lowByte(currentStatus.flexBoostCorrection);
   fullStatus[97] = highByte(currentStatus.flexBoostCorrection);
   fullStatus[98] = currentStatus.baroCorrection;
+  fullStatus[99] = currentStatus.ITPS; // ITPS (0% to 100%)
 
   for(byte x=0; x<packetLength; x++)
   {
