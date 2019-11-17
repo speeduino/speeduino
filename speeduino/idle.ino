@@ -366,13 +366,7 @@ void idleControl()
       break;
 
     case IAC_ALGORITHM_HB:      //Case 6 is H-Bridge
-      //If idle state is not active or if tps is over 15% then disable idle control
-      if(currentStatus.ctpsActive == false || currentStatus.TPS >= 50) 
-      {
-        disableIdle();
-        BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off
-        break; 
-      }
+      // Read current idle duty and check if cranking or not
       if ( (mainLoopCount & 255) == 1)
       {
         if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) //Check for cranking pulsewidth
@@ -388,26 +382,36 @@ void idleControl()
       }
       if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
       
-      if( currentStatus.idleDuty == 0 ) 
+      //If idle state is not active, if tps is over 15% or idle duty is set to zero then disable the idle control
+      if(currentStatus.ctpsActive == false || currentStatus.TPS >= 15 || currentStatus.idleDuty == 0) 
       {
+        idleHB_PID.SetMode(MANUAL); // Clear pid values to prevent overshoot when enabling pid control again
         disableIdle();
         BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off
-        break; 
+      }
+      else
+      {
+        idleHB_PID.SetMode(AUTOMATIC); // This is there for pid to know when it needs to be enabled again
       }
 
       if( (mainLoopCount & 1023) == 1) { idleHB_PID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //This only needs to be run very infrequently, once every 1024 loops.
-      bool HBPIDcomputed = idleHB_PID.Compute(true); //Compute() returns false if the required interval has not yet passed.
-      if(HBPIDcomputed == true)
+      bool hbPIDcomputed = idleHB_PID.Compute(true); //Compute() returns false if the required interval has not yet passed.
+      if(hbPIDcomputed == true)
       {
         long idle_pid_hb_target = (idle_pid_hb_target_value - (idle_pwm_max_count >> 1)) * 2;
-        if (idle_pid_hb_target < 0)
+        if (idle_pid_hb_target > 0)
+        {
+          digitalWrite(pinHBdir1, HIGH);
+          digitalWrite(pinHBdir2, LOW);
+        }
+        else if (idle_pid_hb_target < 0)
         {
           digitalWrite(pinHBdir1, LOW);
           digitalWrite(pinHBdir2, HIGH);
         }
-        else
+        else // Motor brake to ground
         {
-          digitalWrite(pinHBdir1, HIGH);
+          digitalWrite(pinHBdir1, LOW);
           digitalWrite(pinHBdir2, LOW);
         }
         idle_pwm_target_value = abs(idle_pid_hb_target);
