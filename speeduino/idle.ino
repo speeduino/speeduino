@@ -17,7 +17,7 @@ Idle Control
 Currently limited to on/off control and open loop PWM and stepper drive
 */
 integerPID idlePID(&currentStatus.longRPM, &idle_pid_target_value, &idle_cl_target_rpm, configPage6.idleKP, configPage6.idleKI, configPage6.idleKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
-integerPID idleHB_PID(&currentStatus.ITPS, &idle_pid_hb_target_value, &currentStatus.idleDuty, configPage6.idleKP, configPage6.idleKI, configPage6.idleKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPID_ideal idleHB_PID(&currentStatus.ITPS, &idle_pid_hb_target_value, &currentStatus.idleDuty, &configPage10.idleSens, &configPage10.idleIntv, configPage6.idleKP, configPage6.idleKI, configPage6.idleKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 void initialiseIdle()
 {
@@ -190,10 +190,8 @@ void initialiseIdle()
         #elif defined(CORE_TEENSY)
           idle_pwm_max_count = 1000000L / (32 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
         #endif
-        idleHB_PID.SetSampleTime(67);
-        idleHB_PID.SetOutputLimits(percentage(configPage2.iacCLminDuty, idle_pwm_max_count), percentage(configPage2.iacCLmaxDuty, idle_pwm_max_count));
+        idleHB_PID.SetOutputLimits(configPage2.iacCLminDuty, configPage2.iacCLmaxDuty);
         idleHB_PID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
-        idleHB_PID.SetMode(AUTOMATIC); //Turn PID on
       }
       break;
 
@@ -382,23 +380,25 @@ void idleControl()
       }
       if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
       
-      //If idle state is not active, if tps is over 15% or idle duty is set to zero then disable the idle control
-      if(currentStatus.ctpsActive == false || currentStatus.TPS >= 15 || currentStatus.idleDuty == 0) 
+      //If idle state is not active, if tps is over 30% or idle duty is set to zero then disable the idle control
+      if(currentStatus.ctpsActive == false || currentStatus.TPS >= 30 || currentStatus.idleDuty == 0) 
       {
-        idleHB_PID.SetMode(MANUAL); // Clear pid values to prevent overshoot when enabling pid control again
         disableIdle();
         BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off
-      }
-      else
-      {
-        idleHB_PID.SetMode(AUTOMATIC); // This is there for pid to know when it needs to be enabled again
+        break;
       }
 
-      if( (mainLoopCount & 1023) == 1) { idleHB_PID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //This only needs to be run very infrequently, once every 1024 loops.
-      bool hbPIDcomputed = idleHB_PID.Compute(true); //Compute() returns false if the required interval has not yet passed.
+      if( (mainLoopCount & 1023) == 1)  //This only needs to be run very infrequently, once every 1024 loops.
+      { 
+        idleHB_PID.SetOutputLimits(configPage2.iacCLminDuty, configPage2.iacCLmaxDuty);
+        idleHB_PID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); 
+      }
+      bool hbPIDcomputed = idleHB_PID.Compute(); //Compute() returns false if the required interval has not yet passed.
       if(hbPIDcomputed == true)
       {
-        long idle_pid_hb_target = (idle_pid_hb_target_value - (idle_pwm_max_count >> 1)) * 2;
+        int16_t idle_pid_hb_target = ((unsigned long)(idle_pid_hb_target_value) * idle_pwm_max_count) / 10000; //Convert idle duty (Which is a % multipled by 100) to a pwm count
+        currentStatus.idleLoad = ((unsigned long)(idle_pid_hb_target * 100UL) / idle_pwm_max_count) >> 1;
+        idle_pid_hb_target = (idle_pid_hb_target - (idle_pwm_max_count >> 1)) * 2;
         if (idle_pid_hb_target > 0)
         {
           digitalWrite(pinHBdir1, HIGH);
@@ -416,7 +416,6 @@ void idleControl()
         }
         idle_pwm_target_value = abs(idle_pid_hb_target);
         BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
-        currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count) >> 1;
       }
       break;
 

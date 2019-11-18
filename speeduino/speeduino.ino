@@ -278,7 +278,7 @@ void loop()
         } //For loop going through each channel
       } //aux channels are enabled
 
-       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
+      if( (configPage6.iacAlgorithm == IAC_ALGORITHM_NONE) || (configPage6.iacAlgorithm == IAC_ALGORITHM_ONOFF) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )  { idleControl(); } //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
     } //4Hz timer
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {

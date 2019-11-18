@@ -437,7 +437,7 @@ struct statuses {
   byte flexCorrection; /**< Amount of correction being applied to compensate for ethanol content */
   int8_t flexIgnCorrection; /**< Amount of additional advance being applied based on flex. Note the type as this allows for negative values */
   byte afrTarget;
-  long idleDuty; /**< The current idle duty cycle amount if PWM idle is selected and active */
+  uint16_t idleDuty; /**< The current idle duty cycle amount if PWM idle is selected and active */
   byte CLIdleTarget; /**< The target idle RPM (when closed loop idle control is active) */
   bool idleUpActive; /**< Whether the externally controlled idle up is currently active */
   bool ctpsActive; /**< Whether the externally controlled closed throttle position sensor is currently active */
@@ -1010,7 +1010,10 @@ struct config10 {
   uint16_t vvtCLMinAng;
   uint16_t vvtCLMaxAng;
 
-  byte unused11_123_191[58];
+  uint16_t idleSens;
+  byte idleIntv;
+  
+  byte unused11_137_191[55];
 
 #if defined(CORE_AVR)
   };
