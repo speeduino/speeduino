@@ -1455,6 +1455,48 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output
     #endif
       break;
+	  
+   case 31:
+   #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+      //Pin mappings for the BMW PnP PCBs by pazi88. This is an AVR only module. At least for now
+      #if defined(CORE_AVR)
+      pinInjector1 = 8; //Output pin injector 1
+      pinInjector2 = 9; //Output pin injector 2
+      pinInjector3 = 10; //Output pin injector 3
+      pinInjector4 = 11; //Output pin injector 4
+      pinInjector5 = 12; //Output pin injector 5
+      pinInjector6 = 50; //Output pin injector 6
+      pinCoil1 = 40; //Pin for coil 1
+      pinCoil2 = 38; //Pin for coil 2
+      pinCoil3 = 52; //Pin for coil 3
+      pinCoil4 = 50; //Pin for coil 4
+      pinCoil5 = 36; //Pin for coil 5
+	  pinCoil6 = 34; //Pin for coil 6
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinTPS = A2;//TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A8; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinDisplayReset = 48; // OLED reset pin
+      pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
+      pinIdle1 = 5; //ICV pin1
+      pinIdle2 = 6; //ICV pin3
+      pinBoost = 7; //Boost control
+      pinVVT_1 = 4; //VVT output
+      pinFuelPump = 45; //Fuel pump output  (Goes to ULN2003)
+      pinStepperDir = 16; //Stepper valve isn't used with these
+      pinStepperStep = 17; //Stepper valve isn't used with these
+      pinStepperEnable = 24; //Stepper valve isn't used with these
+      pinFan = 47; //Pin for the fan output (Goes to ULN2003)
+      pinLaunch = 51; //Launch control pin
+      pinFlex = 2; // Flex sensor
+      pinResetControl = 43; //Reset control output
+	  #endif
+    #endif
+      break;
 
     case 40:
       //Pin mappings as per the NO2C shield
