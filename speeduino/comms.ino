@@ -1762,9 +1762,7 @@ void sendCompositeLog()
         //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
         //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
 
-        Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates which)
-
-        
+        Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
 
         if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
         else { toothHistorySerialIndex++; }
@@ -1772,7 +1770,15 @@ void sendCompositeLog()
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       cmdPending = false;
   }
-  else { cmdPending = true; } //Mark this request as being incomplete. 
+  else 
+  { 
+    //TunerStudio has timed out, send a LOG of all 0s
+    for(int x = 0; x < (5*TOOTH_LOG_SIZE); x++)
+    {
+      Serial.write(0);
+    }
+    cmdPending = false; 
+  } 
 }
 
 void testComm()
