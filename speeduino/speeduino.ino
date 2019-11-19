@@ -1267,11 +1267,11 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
   {
     
     //Small pulsewidth correction. If option is enabled and intermediate is below max x axis value in table, do the value lookup.
-    if ((configPage2.smallPwEnabled) && ((unsigned long) intermediate < ((unsigned long) table2D_getAxisValue(&smallPwTable, smallPwTable.xSize) * 10UL))) {    
+    if ((configPage2.smallPwEnabled) && ((unsigned long) intermediate < ((unsigned long) table2D_getAxisValue(&smallPwTable, (smallPwTable.xSize-1)) * 10UL))) {    
       byte lookup = (unsigned long) intermediate/10UL;                     //Small pw values are stored in ms*100, so need to divide intermediate by 10 for lookup
       unsigned long lowPwValue = (unsigned long) table2D_getValue(&smallPwTable, lookup);
       lowPwValue = (unsigned long) lowPwValue * 10UL;                           //Multiply by 10 to get uS
-      if ((lowPwValue > 0) && (lowPwValue < ((unsigned long) table2D_getAxisValue(&smallPwTable, smallPwTable.xSize) * 10UL))) { //Sanity check
+      if ((lowPwValue > 0) && (lowPwValue <= ((unsigned long) table2D_getAxisValue(&smallPwTable, (smallPwTable.xSize-1)) * 10UL))) { //Sanity check
         intermediate = lowPwValue;
       }
     }
