@@ -474,8 +474,19 @@ bool integerPID_ideal::Compute()
       output = (kp * error) + (ki * ITerm) + (kd * (error - lastError));
       output = (bias * limitMultiplier) + (output / 10); //output is % multipled by 1000. To get % with 2 decimal places, divide it by 10. Likewise, bias is % in whole numbers. Multiply it by 100 to get it with 2 places.
 
-      if(output > (outMax * limitMultiplier)) { output  = (outMax * limitMultiplier);  }
-      if(output < (outMin * limitMultiplier)) { output  = (outMin * limitMultiplier);  }
+      //if(output > (outMax * limitMultiplier)) { output  = (outMax * limitMultiplier);  }
+      //if(output < (outMin * limitMultiplier)) { output  = (outMin * limitMultiplier);  }
+
+      if(output > (outMax * limitMultiplier))
+      { 
+         output  = (outMax * limitMultiplier);
+         ITerm -= error; //Prevent the ITerm from growing indefinitely whilst the output is being limited (error was added to ITerm above, so this is simply setting it back to it's original value)
+      }
+      if(output < (outMin * limitMultiplier)) 
+      { 
+         output  = (outMin * limitMultiplier);
+         ITerm -= error; //Prevent the ITerm from growing indefinitely whilst the output is being limited (error was added to ITerm above, so this is simply setting it back to it's original value)
+      }
 
 	    *myOutput = output;
 

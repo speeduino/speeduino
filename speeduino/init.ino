@@ -57,78 +57,110 @@ void initialiseAll()
 
     //Repoint the 2D table structs to the config pages that were just loaded
     taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
+    taeTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     taeTable.xSize = 4;
     taeTable.values = configPage4.taeValues;
     taeTable.axisX = configPage4.taeBins;
     maeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
+    maeTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     maeTable.xSize = 4;
     maeTable.values = configPage4.maeRates;
     maeTable.axisX = configPage4.maeBins;
     WUETable.valueSize = SIZE_BYTE; //Set this table to use byte values
+    WUETable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     WUETable.xSize = 10;
     WUETable.values = configPage2.wueValues;
     WUETable.axisX = configPage4.wueBins;
     ASETable.valueSize = SIZE_BYTE;
+    ASETable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     ASETable.xSize = 4;
     ASETable.values = configPage2.asePct;
     ASETable.axisX = configPage2.aseBins;
     ASECountTable.valueSize = SIZE_BYTE;
+    ASECountTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     ASECountTable.xSize = 4;
     ASECountTable.values = configPage2.aseCount;
     ASECountTable.axisX = configPage2.aseBins;
     PrimingPulseTable.valueSize = SIZE_BYTE;
+    PrimingPulseTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     PrimingPulseTable.xSize = 4;
     PrimingPulseTable.values = configPage2.primePulse;
     PrimingPulseTable.axisX = configPage2.primeBins;
     crankingEnrichTable.valueSize = SIZE_BYTE;
-    crankingEnrichTable.valueSize = SIZE_BYTE;
+    crankingEnrichTable.axisSize = SIZE_BYTE;
     crankingEnrichTable.xSize = 4;
     crankingEnrichTable.values = configPage10.crankingEnrichValues;
     crankingEnrichTable.axisX = configPage10.crankingEnrichBins;
 
     dwellVCorrectionTable.valueSize = SIZE_BYTE;
+    dwellVCorrectionTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     dwellVCorrectionTable.xSize = 6;
     dwellVCorrectionTable.values = configPage4.dwellCorrectionValues;
     dwellVCorrectionTable.axisX = configPage6.voltageCorrectionBins;
     injectorVCorrectionTable.valueSize = SIZE_BYTE;
+    injectorVCorrectionTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     injectorVCorrectionTable.xSize = 6;
     injectorVCorrectionTable.values = configPage6.injVoltageCorrectionValues;
     injectorVCorrectionTable.axisX = configPage6.voltageCorrectionBins;
     IATDensityCorrectionTable.valueSize = SIZE_BYTE;
+    IATDensityCorrectionTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     IATDensityCorrectionTable.xSize = 9;
     IATDensityCorrectionTable.values = configPage6.airDenRates;
     IATDensityCorrectionTable.axisX = configPage6.airDenBins;
+    baroFuelTable.valueSize = SIZE_BYTE;
+    baroFuelTable.axisSize = SIZE_BYTE;
+    baroFuelTable.xSize = 8;
+    baroFuelTable.values = configPage4.baroFuelValues;
+    baroFuelTable.axisX = configPage4.baroFuelBins;
     IATRetardTable.valueSize = SIZE_BYTE;
+    IATRetardTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     IATRetardTable.xSize = 6;
     IATRetardTable.values = configPage4.iatRetValues;
     IATRetardTable.axisX = configPage4.iatRetBins;
     CLTAdvanceTable.valueSize = SIZE_BYTE;
+    CLTAdvanceTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     CLTAdvanceTable.xSize = 6;
     CLTAdvanceTable.values = (byte*)configPage4.cltAdvValues;
     CLTAdvanceTable.axisX = configPage4.cltAdvBins;
+    idleTargetTable.valueSize = SIZE_BYTE;
+    idleTargetTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    idleTargetTable.xSize = 10;
+    idleTargetTable.values = configPage6.iacCLValues;
+    idleTargetTable.axisX = configPage6.iacBins;
+    idleAdvanceTable.valueSize = SIZE_BYTE;
+    idleAdvanceTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    idleAdvanceTable.xSize = 6;
+    idleAdvanceTable.values = (byte*)configPage4.idleAdvValues;
+    idleAdvanceTable.axisX = configPage4.idleAdvBins;
     rotarySplitTable.valueSize = SIZE_BYTE;
+    rotarySplitTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     rotarySplitTable.xSize = 8;
     rotarySplitTable.values = configPage10.rotarySplitValues;
     rotarySplitTable.axisX = configPage10.rotarySplitBins;
 
     flexFuelTable.valueSize = SIZE_BYTE;
+    flexFuelTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     flexFuelTable.xSize = 6;
     flexFuelTable.values = configPage10.flexFuelAdj;
     flexFuelTable.axisX = configPage10.flexFuelBins;
     flexAdvTable.valueSize = SIZE_BYTE;
+    flexAdvTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     flexAdvTable.xSize = 6;
     flexAdvTable.values = configPage10.flexAdvAdj;
     flexAdvTable.axisX = configPage10.flexAdvBins;
     flexBoostTable.valueSize = SIZE_INT;
+    flexBoostTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins (NOTE THIS IS DIFFERENT TO THE VALUES!!)
     flexBoostTable.xSize = 6;
-    flexBoostTable.values16 = configPage10.flexBoostAdj;
+    flexBoostTable.values = configPage10.flexBoostAdj;
     flexBoostTable.axisX = configPage10.flexBoostBins;
 
     knockWindowStartTable.valueSize = SIZE_BYTE;
+    knockWindowStartTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     knockWindowStartTable.xSize = 6;
     knockWindowStartTable.values = configPage10.knock_window_angle;
     knockWindowStartTable.axisX = configPage10.knock_window_rpms;
     knockWindowDurationTable.valueSize = SIZE_BYTE;
+    knockWindowDurationTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     knockWindowDurationTable.xSize = 6;
     knockWindowDurationTable.values = configPage10.knock_window_dur;
     knockWindowDurationTable.axisX = configPage10.knock_window_rpms;
@@ -1935,6 +1967,9 @@ void setPinMapping(byte boardID)
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
 
+  //Currently there's no default pin for closed throttle position sensor
+  pinCTPS = pinTranslate(configPage2.CTPSPin);
+
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
      because the control pin will go low as soon as the pinMode is set to OUTPUT. */
@@ -2051,6 +2086,11 @@ void setPinMapping(byte boardID)
   {
     if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinIdleUp, INPUT); } //inverted setting
+  }
+  if(configPage2.CTPSEnabled > 0)
+  {
+    if (configPage2.CTPSPolarity == 0) { pinMode(pinCTPS, INPUT_PULLUP); } //Normal setting
+    else { pinMode(pinCTPS, INPUT); } //inverted setting
   }
   if(configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)
   {
