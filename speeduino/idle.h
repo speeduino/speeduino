@@ -48,6 +48,11 @@ volatile PINMASK_TYPE idle_pin_mask;
 volatile PORT_TYPE *idle2_pin_port;
 volatile PINMASK_TYPE idle2_pin_mask;
 
+volatile PORT_TYPE *hbDir1_pin_port;
+volatile PINMASK_TYPE hbDir1_pin_mask;
+volatile PORT_TYPE *hbDir2_pin_port;
+volatile PINMASK_TYPE hbDir2_pin_mask;
+
 volatile bool idle_pwm_state;
 unsigned int idle_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int idle_pwm_cur_value;

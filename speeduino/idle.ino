@@ -185,6 +185,10 @@ void initialiseIdle()
       {
         idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
         idle_pin_mask = digitalPinToBitMask(pinIdle1);
+        hbDir1_pin_port = portOutputRegister(digitalPinToPort(pinHBdir1));
+        hbDir1_pin_mask = digitalPinToBitMask(pinHBdir1);
+        hbDir2_pin_port = portOutputRegister(digitalPinToPort(pinHBdir2));
+        hbDir2_pin_mask = digitalPinToBitMask(pinHBdir2);
         #if defined(CORE_AVR)
           idle_pwm_max_count = 1000000L / (16 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
         #elif defined(CORE_TEENSY)
@@ -401,18 +405,18 @@ void idleControl()
         idle_pid_hb_target = (idle_pid_hb_target - (idle_pwm_max_count >> 1)) * 2;
         if (idle_pid_hb_target > 0)
         {
-          digitalWrite(pinHBdir1, HIGH);
-          digitalWrite(pinHBdir2, LOW);
+          *hbDir1_pin_port |= (hbDir1_pin_mask); // Switch direction pin 1 to high
+          *hbDir2_pin_port &= ~(hbDir2_pin_mask); // Switch direction pin 2 to low
         }
         else if (idle_pid_hb_target < 0)
         {
-          digitalWrite(pinHBdir1, LOW);
-          digitalWrite(pinHBdir2, HIGH);
+          *hbDir1_pin_port &= ~(hbDir1_pin_mask); // Switch direction pin 1 to low
+          *hbDir2_pin_port |= (hbDir2_pin_mask); // Switch direction pin 2 to high
         }
         else // Motor brake to ground
         {
-          digitalWrite(pinHBdir1, LOW);
-          digitalWrite(pinHBdir2, LOW);
+          *hbDir1_pin_port &= ~(hbDir1_pin_mask); // Switch direction pin 1 to low
+          *hbDir2_pin_port &= ~(hbDir2_pin_mask); // Switch direction pin 2 to low
         }
         idle_pwm_target_value = abs(idle_pid_hb_target);
         BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
