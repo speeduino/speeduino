@@ -1457,9 +1457,7 @@ void setPinMapping(byte boardID)
       break;
 	  
    case 31:
-   #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings for the BMW PnP PCBs by pazi88. This is an AVR only module. At least for now
-      #if defined(CORE_AVR)
       pinInjector1 = 8; //Output pin injector 1
       pinInjector2 = 9; //Output pin injector 2
       pinInjector3 = 10; //Output pin injector 3
@@ -1469,7 +1467,7 @@ void setPinMapping(byte boardID)
       pinCoil1 = 40; //Pin for coil 1
       pinCoil2 = 38; //Pin for coil 2
       pinCoil3 = 52; //Pin for coil 3
-      pinCoil4 = 50; //Pin for coil 4
+      pinCoil4 = 48; //Pin for coil 4
       pinCoil5 = 36; //Pin for coil 5
 	  pinCoil6 = 34; //Pin for coil 6
       pinTrigger = 19; //The CAS pin
@@ -1494,8 +1492,6 @@ void setPinMapping(byte boardID)
       pinLaunch = 51; //Launch control pin
       pinFlex = 2; // Flex sensor
       pinResetControl = 43; //Reset control output
-	  #endif
-    #endif
       break;
 
     case 40:
