@@ -909,11 +909,11 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       else if (valueOffset < 90) { tempOffset = valueOffset - 84; trim2Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       else if (valueOffset < 96) { tempOffset = valueOffset - 90; trim2Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
       //Trim table 3
-      else if (valueOffset < 132) { tempOffset = valueOffset - 96; trim3Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim3 map
+      else if (valueOffset < 132) { tempOffset = valueOffset - 96; trim3Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim2 map
       else if (valueOffset < 138) { tempOffset = valueOffset - 132; trim3Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       else if (valueOffset < 144) { tempOffset = valueOffset - 138; trim3Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
       //Trim table 4
-      else if (valueOffset < 180) { tempOffset = valueOffset - 144; trim4Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim4 map
+      else if (valueOffset < 180) { tempOffset = valueOffset - 144; trim4Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim2 map
       else if (valueOffset < 186) { tempOffset = valueOffset - 180; trim4Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       else if (valueOffset < 192) { tempOffset = valueOffset - 186; trim4Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
 
@@ -1795,8 +1795,6 @@ void commandButtons(int buttonCommand)
       closeInjector2();
       closeInjector3();
       closeInjector4();
-      closeInjector5();
-      closeInjector6();
       break;
 
     case 257: // cmd is enable
@@ -1855,30 +1853,6 @@ void commandButtons(int buttonCommand)
       break;
 
     case 524: // cmd group is for injector4 50% dc actions
-
-      break;
-
-    case 525: // cmd group is for injector5 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector5(); }
-      break;
-
-    case 526: // cmd group is for injector5 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector5(); }
-      break;
-
-    case 527: // cmd group is for injector5 50%dc actions
-
-      break;
-
-    case 528: // cmd group is for injector6 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector6(); }
-      break;
-
-    case 529: // cmd group is for injector6 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector6(); }
-      break;
-
-    case 530: // cmd group is for injector6 50% dc actions
 
       break;
 
