@@ -33,6 +33,7 @@ toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
 */
 static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
 {
+  if(BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) { return; }
   //High speed tooth logging history
   if( (currentStatus.toothLogEnabled == true) || (currentStatus.compositeLogEnabled == true) ) 
   {

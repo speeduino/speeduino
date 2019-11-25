@@ -108,6 +108,7 @@ void command()
     case 'H': //Start the tooth logger
       currentStatus.toothLogEnabled = true;
       currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
+      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
       toothHistorySerialIndex = 0;
 
@@ -135,6 +136,7 @@ void command()
     case 'J': //Start the composite logger
       currentStatus.compositeLogEnabled = true;
       currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
+      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
       toothHistorySerialIndex = 0;
       compositeLastToothTime = 0;
@@ -273,8 +275,27 @@ void command()
       break;
 
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
-      if(currentStatus.toothLogEnabled == true) { sendToothLog(); } //Sends tooth log values as ints
-      else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(); }
+      //6 bytes required:
+      //2 - Page identifier
+      //2 - offset
+      //2 - Length
+      cmdPending = true;
+      if(Serial.available() >= 6)
+      {
+        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+
+        if(currentStatus.toothLogEnabled == true) { sendToothLog(); } //Sends tooth log values as ints
+        else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(); }
+
+        cmdPending = false;
+      }
+
+      
 
       break;
 
@@ -1740,7 +1761,15 @@ void sendToothLog()
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       cmdPending = false;
   }
-  else { cmdPending = true; } //Mark this request as being incomplete. 
+  else 
+  { 
+    //TunerStudio has timed out, send a LOG of all 0s
+    for(int x = 0; x < (4*TOOTH_LOG_SIZE); x++)
+    {
+      Serial.write(0);
+    }
+    cmdPending = false; 
+  } 
 }
 
 void sendCompositeLog()
@@ -1768,6 +1797,9 @@ void sendCompositeLog()
         else { toothHistorySerialIndex++; }
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+      toothHistoryIndex = 0;
+      toothHistorySerialIndex = 0;
+      compositeLastToothTime = 0;
       cmdPending = false;
   }
   else 

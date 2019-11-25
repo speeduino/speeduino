@@ -124,7 +124,8 @@ void loop()
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Same as above except for ASE status
       //This is a safety check. If for some reason the interrupts have got screwed up (Leading to 0rpm), this resets them.
       //It can possibly be run much less frequently.
-      initialiseTriggers();
+      //This should only be run if the high speed logger are off because it will change the trigger interrupts back to defaults rather than the logger versions
+      if( (currentStatus.toothLogEnabled == false) && (currentStatus.compositeLogEnabled == false) ) { initialiseTriggers(); }
 
       VVT_PIN_LOW();
       DISABLE_VVT_TIMER();
