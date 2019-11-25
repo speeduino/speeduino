@@ -22,7 +22,7 @@
 #define warmupPage   10 //Config Page 10
 #define fuelMap2Page 11
 
-#define SERIAL_PACKET_SIZE   98 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
+#define SERIAL_PACKET_SIZE   99 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */

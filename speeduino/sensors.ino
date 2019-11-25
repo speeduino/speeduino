@@ -266,6 +266,52 @@ static inline void readMAP()
       else { instanteneousMAPReading(); }
       break;
 
+    case 3:
+      //Average of an ignition event
+      if ( (currentStatus.RPM > 0) && (currentStatus.hasSync == true) ) //If the engine isn't running, fall back to instantaneous reads
+      {
+        if( (MAPcurRev == ignitionCount) ) //Watch for a change in the ignition counter to determine whether we're still on the same event
+        {
+          #if defined(ANALOG_ISR_MAP)
+            tempReading = AnChannel[pinMAP-A0];
+          #else
+            tempReading = analogRead(pinMAP);
+            tempReading = analogRead(pinMAP);
+          #endif
+
+          //Error check
+          if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
+          {
+            currentStatus.mapADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
+            MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
+            MAPcount++;
+          }
+          else { mapErrorCount += 1; }
+        }
+        else
+        {
+          //Reaching here means that the  next ignition event has occured and the MAP value should be calculated
+          //Sanity check
+          if( (MAPrunningValue != 0) && (MAPcount != 0) && (MAPcurRev < ignitionCount) )
+          {
+            //Update the calculation times and last value. These are used by the MAP based Accel enrich
+            MAPlast = currentStatus.MAP;
+            MAPlast_time = MAP_time;
+            MAP_time = micros();
+
+            currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
+            currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
+            if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
+          }
+          else { instanteneousMAPReading(); }
+          MAPcurRev = ignitionCount; //Reset the current event count
+          MAPrunningValue = 0;
+          MAPcount = 0;
+        }
+      }
+      else { instanteneousMAPReading(); }
+
+
     default:
     //Instantaneous MAP readings (Just in case)
     instanteneousMAPReading();
@@ -307,6 +353,13 @@ void readTPS()
     currentStatus.TPS = map(tempADC, configPage2.tpsMax, configPage2.tpsMin, 0, 100);
   }
 
+  //Check whether the closed throttle position sensor is active
+  if(configPage2.CTPSEnabled == true)
+  {
+    if(configPage2.CTPSPolarity == 0) { currentStatus.CTPSActive = !digitalRead(pinCTPS); } //Normal mode (ground switched)
+    else { currentStatus.CTPSActive = digitalRead(pinCTPS); } //Inverted mode (5v activates closed throttle position sensor)
+  }
+  else { currentStatus.CTPSActive = 0; }
   TPS_time = micros();
 }
 

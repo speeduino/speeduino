@@ -30,13 +30,13 @@ struct table2D {
   //Store the last input and output for caching
   int16_t lastInput;
   int16_t lastOutput;
-  byte cacheTime; //TRacks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
+  byte cacheTime; //Tracks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
 };
 
 //void table2D_setSize(struct table2D targetTable, byte newSize);
-void table2D_setSize(struct table2D, byte);
-int16_t table2D_getAxisValue(struct table2D, byte);
-int16_t table2D_getRawValue(struct table2D, byte);
+void table2D_setSize(struct table2D*, byte);
+int16_t table2D_getAxisValue(struct table2D*, byte);
+int16_t table2D_getRawValue(struct table2D*, byte);
 
 struct table3D {
 
@@ -52,6 +52,11 @@ struct table3D {
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
   byte lastXMax, lastXMin;
   byte lastYMax, lastYMin;
+
+  //Store the last input and output values, again for caching purposes
+  int16_t lastXInput, lastYInput;
+  byte lastOutput; //This will need changing if we ever have 16-bit table values
+  bool cacheIsValid; ///< This tracks whether the tables cache should be used. Ordinarily this is true, but is set to false whenever TunerStudio sends a new value for the table
 };
 
 //void table3D_setSize(struct table3D *targetTable, byte);

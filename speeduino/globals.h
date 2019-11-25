@@ -153,7 +153,7 @@
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
-#define TOOTH_LOG_SIZE      64
+#define TOOTH_LOG_SIZE      127
 #define TOOTH_LOG_BUFFER    128 //256
 
 #define COMPOSITE_LOG_PRI   0
@@ -283,7 +283,8 @@ struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D
 struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 struct table2D baroFuelTable; //8 bin baro correction curve (2D)
 struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
-struct table2D IDLEAdvanceTable; //6 bin idle advance adjustment table based on RPM difference  (2D)
+struct table2D idleTargetTable; //10 bin idle target table for idle timing (2D)
+struct table2D idleAdvanceTable; //6 bin idle advance adjustment table based on RPM difference  (2D)
 struct table2D CLTAdvanceTable; //6 bin ignition adjustment based on coolant temperature  (2D)
 struct table2D rotarySplitTable; //8 bin ignition split curve for rotary leading/trailing  (2D)
 struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
@@ -437,6 +438,7 @@ struct statuses {
   byte idleDuty; /**< The current idle duty cycle amount if PWM idle is selected and active */
   byte CLIdleTarget; /**< The target idle RPM (when closed loop idle control is active) */
   bool idleUpActive; /**< Whether the externally controlled idle up is currently active */
+  bool CTPSActive; /**< Whether the externally controlled closed throttle position sensor is currently active */
   bool fanOn; /**< Whether or not the fan is turned on */
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
   unsigned long AEEndTime; /**< The target end time used whenever AE is turned on */
@@ -603,7 +605,16 @@ struct config2 {
   byte aseBins[4]; //Afterstart enrichment temp axis
   byte primePulse[4]; //Priming pulsewidth
   byte primeBins[4]; //Priming temp axis
-  byte unused2_91[37];
+
+  byte CTPSPin : 6;
+  byte CTPSPolarity : 1;
+  byte CTPSEnabled : 1;
+  byte idleAdvEnabled : 2;
+  byte idleAdvAlgorithm : 1;
+  byte IdleAdvDelay : 5;
+  byte idleAdvRPM;
+  byte idleAdvTPS;
+  byte unused2_95[33];
 
 #if defined(CORE_AVR)
   };
@@ -688,7 +699,10 @@ struct config4 {
   byte baroFuelBins[8];
   byte baroFuelValues[8];
 
-  byte unused2_91[20];
+  byte idleAdvBins[6];
+  byte idleAdvValues[6];
+
+  byte unused4_120[8];
 
 #if defined(CORE_AVR)
   };
@@ -1021,6 +1035,7 @@ byte pinFuelPump; //Fuel pump on/off
 byte pinIdle1; //Single wire idle control
 byte pinIdle2; //2 wire idle control (Not currently used)
 byte pinIdleUp; //Input for triggering Idle Up
+byte pinCTPS; //Input for triggering closed throttle state
 byte pinFuel2Input; //Input for switching to the 2nd fuel table
 byte pinSpareTemp1; // Future use only
 byte pinSpareTemp2; // Future use only
