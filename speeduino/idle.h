@@ -38,7 +38,7 @@ struct table2D iacCrankDutyTable;
 struct StepperIdle idleStepper;
 bool idleOn; //Simply tracks whether idle was on last time around
 byte idleInitComplete = 99; //TRacks which idle method was initialised. 99 is a method that will never exist
-unsigned int iacStepTime;
+unsigned int iacStepTime_uS;
 unsigned int iacCoolTime;
 unsigned int completedHomeSteps;
 

@@ -94,7 +94,7 @@ No text specified
 Rule 9.5
 No text specified
 Rule 10.1
-Arguments of a conditional operation must be of an essentially boolean type
+Operations must be of an essentially correct type (Eg no shift on signed values, comparison is not boolean, incrementing/decrementing a bool etc) 
 Rule 10.2
 No text specified
 Rule 10.3

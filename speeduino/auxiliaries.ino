@@ -38,14 +38,14 @@ void fanControl()
     if ( configPage2.fanWhenOff ) { fanPermit = true; }
     else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
 
-    if ( currentStatus.coolant >= onTemp && fanPermit )
+    if ( (currentStatus.coolant >= onTemp) && (fanPermit == true) )
     {
       //Fan needs to be turned on. Checked for normal or inverted fan signal
       if( configPage6.fanInv == 0 ) { FAN_PIN_HIGH(); }
       else { FAN_PIN_LOW(); }
       currentStatus.fanOn = true;
     }
-    else if ( currentStatus.coolant <= offTemp || !fanPermit )
+    else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
       //Fan needs to be turned off. Checked for normal or inverted fan signal
       if( configPage6.fanInv == 0 ) { FAN_PIN_LOW(); } 
@@ -245,11 +245,12 @@ void vvtControl()
 
         if(currentStatus.vvtTargetAngle > 0)
         {
-          vvtPID.Compute(false);
+          bool PID_compute = vvtPID.Compute(false);
           //vvtPID.Compute2(currentStatus.vvtTargetAngle, currentStatus.vvtAngle, false);
           //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
           //if (currentStatus.vvtAngle > currentStatus.vvtTargetAngle) { vvt_pwm_target_value = 0; }
-          currentStatus.vvtDuty = (vvt_pwm_value * 100) / vvt_pwm_max_count;
+          if(PID_compute == true) { currentStatus.vvtDuty = (vvt_pwm_value * 100) / vvt_pwm_max_count; }
+          
         }
         else
         {
