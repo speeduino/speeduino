@@ -109,8 +109,8 @@ void doCrankSpeedCalcs()
           }
           else { angle1 = triggerToothAngle; angle2 = triggerToothAngle; }
 
-          long toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
-          long toothDeltaT = toothHistory[toothHistoryIndex];
+          uint32_t toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
+          uint32_t toothDeltaT = toothHistory[toothHistoryIndex];
           //long timeToLastTooth = micros() - toothLastToothTime;
 
           rpmDelta = (toothDeltaV << 10) / (6 * toothDeltaT);

@@ -153,7 +153,7 @@
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
-#define TOOTH_LOG_SIZE      64
+#define TOOTH_LOG_SIZE      127
 #define TOOTH_LOG_BUFFER    128 //256
 
 #define COMPOSITE_LOG_PRI   0
@@ -427,7 +427,7 @@ struct statuses {
   byte battery10; /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
   int8_t advance; /**< Signed 8 bit as advance can now go negative (ATDC) */
   byte corrections; /**< The total current corrections % amount */
-  int16_t AEamount; /**< The amount of accleration enrichment currently being applied */
+  uint16_t AEamount; /**< The amount of accleration enrichment currently being applied. 100=No change. Varies above 255 */
   byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
   byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
   byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
