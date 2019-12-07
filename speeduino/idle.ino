@@ -381,8 +381,8 @@ void idleControl()
           //Standard running
           currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         }
+        if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
       }
-      if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
       
       //If idle state is not active, if tps is over 30% or idle duty is set to zero then disable the idle control
       if(currentStatus.ctpsActive == false || currentStatus.TPS >= 30 || currentStatus.idleDuty == 0) 
@@ -407,18 +407,20 @@ void idleControl()
         {
           *hbDir1_pin_port |= (hbDir1_pin_mask); // Switch direction pin 1 to high
           *hbDir2_pin_port &= ~(hbDir2_pin_mask); // Switch direction pin 2 to low
+          idle_pwm_target_value = abs(idle_pid_hb_target);
         }
         else if (idle_pid_hb_target < 0)
         {
           *hbDir1_pin_port &= ~(hbDir1_pin_mask); // Switch direction pin 1 to low
           *hbDir2_pin_port |= (hbDir2_pin_mask); // Switch direction pin 2 to high
+          idle_pwm_target_value = abs(idle_pid_hb_target);
         }
         else // Motor brake to ground
         {
           *hbDir1_pin_port &= ~(hbDir1_pin_mask); // Switch direction pin 1 to low
           *hbDir2_pin_port &= ~(hbDir2_pin_mask); // Switch direction pin 2 to low
+          *idle_pin_port &= ~(idle_pin_mask);  // Switch pwm pin to low
         }
-        idle_pwm_target_value = abs(idle_pid_hb_target);
         BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
       }
       break;
