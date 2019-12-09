@@ -260,17 +260,17 @@ const byte data_structure_version = 2; //This identifies the data structure when
 const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288}; /**< This array stores the size (in bytes) of each configuration page */
 #define MAP_PAGE_SIZE 288
 
-struct table3D fuelTable; //16x16 fuel map
-struct table3D fuelTable2; //16x16 fuel map
-struct table3D ignitionTable; //16x16 ignition map
-struct table3D afrTable; //16x16 afr target map
-struct table3D stagingTable; //8x8 fuel staging table
-struct table3D boostTable; //8x8 boost map
-struct table3D vvtTable; //8x8 vvt map
-struct table3D trim1Table; //6x6 Fuel trim 1 map
-struct table3D trim2Table; //6x6 Fuel trim 2 map
-struct table3D trim3Table; //6x6 Fuel trim 3 map
-struct table3D trim4Table; //6x6 Fuel trim 4 map
+DECLARE_TABLE3D(fuelTable, 16); //16x16 fuel map
+DECLARE_TABLE3D(fuelTable2, 16); //16x16 fuel map
+DECLARE_TABLE3D(ignitionTable, 16); //16x16 ignition map
+DECLARE_TABLE3D(afrTable, 16); //16x16 afr target map
+DECLARE_TABLE3D(stagingTable, 8); //8x8 fuel staging table
+DECLARE_TABLE3D(boostTable, 8); //8x8 boost map
+DECLARE_TABLE3D(vvtTable, 8); //8x8 vvt map
+DECLARE_TABLE3D(trim1Table, 6); //6x6 Fuel trim 1 map
+DECLARE_TABLE3D(trim2Table, 6); //6x6 Fuel trim 2 map
+DECLARE_TABLE3D(trim3Table, 6); //6x6 Fuel trim 3 map
+DECLARE_TABLE3D(trim4Table, 6); //6x6 Fuel trim 4 map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D maeTable;
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)

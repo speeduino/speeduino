@@ -20,17 +20,17 @@ void initialiseAll()
 {
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
-    table3D_setSize(&fuelTable, 16);
-    table3D_setSize(&fuelTable2, 16);
-    table3D_setSize(&ignitionTable, 16);
-    table3D_setSize(&afrTable, 16);
-    table3D_setSize(&stagingTable, 8);
-    table3D_setSize(&boostTable, 8);
-    table3D_setSize(&vvtTable, 8);
-    table3D_setSize(&trim1Table, 6);
-    table3D_setSize(&trim2Table, 6);
-    table3D_setSize(&trim3Table, 6);
-    table3D_setSize(&trim4Table, 6);
+    INIT_TABLE3D(fuelTable);
+    INIT_TABLE3D(fuelTable2);
+    INIT_TABLE3D(ignitionTable);
+    INIT_TABLE3D(afrTable);
+    INIT_TABLE3D(stagingTable);
+    INIT_TABLE3D(boostTable);
+    INIT_TABLE3D(vvtTable);
+    INIT_TABLE3D(trim1Table);
+    INIT_TABLE3D(trim2Table);
+    INIT_TABLE3D(trim3Table);
+    INIT_TABLE3D(trim4Table);
 
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
