@@ -108,6 +108,7 @@ void command()
     case 'H': //Start the tooth logger
       currentStatus.toothLogEnabled = true;
       currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
+      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
       toothHistorySerialIndex = 0;
 
@@ -135,6 +136,7 @@ void command()
     case 'J': //Start the composite logger
       currentStatus.compositeLogEnabled = true;
       currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
+      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
       toothHistorySerialIndex = 0;
       compositeLastToothTime = 0;
@@ -238,7 +240,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 201910-dev"));
+      Serial.print(F("speeduino 201912-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -268,13 +270,32 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2019.10-dev"));
+      Serial.print(F("Speeduino 2019.12-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
-      if(currentStatus.toothLogEnabled == true) { sendToothLog(); } //Sends tooth log values as ints
-      else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(); }
+      //6 bytes required:
+      //2 - Page identifier
+      //2 - offset
+      //2 - Length
+      cmdPending = true;
+      if(Serial.available() >= 6)
+      {
+        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+
+        if(currentStatus.toothLogEnabled == true) { sendToothLog(); } //Sends tooth log values as ints
+        else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(); }
+
+        cmdPending = false;
+      }
+
+      
 
       break;
 
@@ -613,6 +634,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[95] = currentStatus.vvtDuty;
   fullStatus[96] = lowByte(currentStatus.flexBoostCorrection);
   fullStatus[97] = highByte(currentStatus.flexBoostCorrection);
+  fullStatus[98] = currentStatus.baroCorrection;
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -772,6 +794,7 @@ void receiveValue(uint16_t valueOffset, byte newValue)
           //This should never happen. It means there's an invalid offset value coming through
         }
       }
+      fuelTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
     case veSetPage:
@@ -794,7 +817,7 @@ void receiveValue(uint16_t valueOffset, byte newValue)
         if (valueOffset < 272)
         {
           //X Axis
-          ignitionTable.axisX[(valueOffset - 256)] = (int)(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct
+          ignitionTable.axisX[(valueOffset - 256)] = (int)(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiple it back by 100 to make it correct
         }
         else if(valueOffset < 288)
         {
@@ -803,6 +826,7 @@ void receiveValue(uint16_t valueOffset, byte newValue)
           ignitionTable.axisY[tempOffset] = (int)(newValue) * TABLE_LOAD_MULTIPLIER;
         }
       }
+      ignitionTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
     case ignSetPage:
@@ -825,7 +849,7 @@ void receiveValue(uint16_t valueOffset, byte newValue)
         if (valueOffset < 272)
         {
           //X Axis
-          afrTable.axisX[(valueOffset - 256)] = int(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by megasquirt are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+          afrTable.axisX[(valueOffset - 256)] = int(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
         }
         else
         {
@@ -835,6 +859,7 @@ void receiveValue(uint16_t valueOffset, byte newValue)
 
         }
       }
+      afrTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
     case afrSetPage:
@@ -891,6 +916,9 @@ void receiveValue(uint16_t valueOffset, byte newValue)
         tempOffset = valueOffset - 232;
         stagingTable.axisY[(7 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER;
       }
+      boostTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      vvtTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      stagingTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
     case seqFuelPage:
@@ -910,6 +938,10 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       else if (valueOffset < 186) { tempOffset = valueOffset - 180; trim4Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       else if (valueOffset < 192) { tempOffset = valueOffset - 186; trim4Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
 
+      trim1Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      trim2Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      trim3Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      trim4Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
     case canbusPage:
@@ -954,6 +986,7 @@ void receiveValue(uint16_t valueOffset, byte newValue)
           //This should never happen. It means there's an invalid offset value coming through
         }
       }
+      fuelTable2.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
     default:
@@ -1728,7 +1761,15 @@ void sendToothLog()
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       cmdPending = false;
   }
-  else { cmdPending = true; } //Mark this request as being incomplete. 
+  else 
+  { 
+    //TunerStudio has timed out, send a LOG of all 0s
+    for(int x = 0; x < (4*TOOTH_LOG_SIZE); x++)
+    {
+      Serial.write(0);
+    }
+    cmdPending = false; 
+  } 
 }
 
 void sendCompositeLog()
@@ -1750,17 +1791,26 @@ void sendCompositeLog()
         //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
         //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
 
-        Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates which)
-
-        
+        Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
 
         if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
         else { toothHistorySerialIndex++; }
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+      toothHistoryIndex = 0;
+      toothHistorySerialIndex = 0;
+      compositeLastToothTime = 0;
       cmdPending = false;
   }
-  else { cmdPending = true; } //Mark this request as being incomplete. 
+  else 
+  { 
+    //TunerStudio has timed out, send a LOG of all 0s
+    for(int x = 0; x < (5*TOOTH_LOG_SIZE); x++)
+    {
+      Serial.write(0);
+    }
+    cmdPending = false; 
+  } 
 }
 
 void testComm()

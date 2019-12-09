@@ -153,7 +153,7 @@
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
-#define TOOTH_LOG_SIZE      64
+#define TOOTH_LOG_SIZE      127
 #define TOOTH_LOG_BUFFER    128 //256
 
 #define COMPOSITE_LOG_PRI   0
@@ -260,17 +260,17 @@ const byte data_structure_version = 2; //This identifies the data structure when
 const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288}; /**< This array stores the size (in bytes) of each configuration page */
 #define MAP_PAGE_SIZE 288
 
-Table3DContainer<16> fuelTable; //16x16 fuel map
-Table3DContainer<16> fuelTable2; //16x16 fuel map
-Table3DContainer<16> ignitionTable; //16x16 ignition map
-Table3DContainer<16> afrTable; //16x16 afr target map
-Table3DContainer<8> stagingTable; //8x8 fuel staging table
-Table3DContainer<8> boostTable; //8x8 boost map
-Table3DContainer<8> vvtTable; //8x8 vvt map
-Table3DContainer<6> trim1Table; //6x6 Fuel trim 1 map
-Table3DContainer<6> trim2Table; //6x6 Fuel trim 2 map
-Table3DContainer<6> trim3Table; //6x6 Fuel trim 3 map
-Table3DContainer<6> trim4Table; //6x6 Fuel trim 4 map
+struct table3D fuelTable; //16x16 fuel map
+struct table3D fuelTable2; //16x16 fuel map
+struct table3D ignitionTable; //16x16 ignition map
+struct table3D afrTable; //16x16 afr target map
+struct table3D stagingTable; //8x8 fuel staging table
+struct table3D boostTable; //8x8 boost map
+struct table3D vvtTable; //8x8 vvt map
+struct table3D trim1Table; //6x6 Fuel trim 1 map
+struct table3D trim2Table; //6x6 Fuel trim 2 map
+struct table3D trim3Table; //6x6 Fuel trim 3 map
+struct table3D trim4Table; //6x6 Fuel trim 4 map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D maeTable;
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
@@ -283,7 +283,8 @@ struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D
 struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 struct table2D baroFuelTable; //8 bin baro correction curve (2D)
 struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
-struct table2D IDLEAdvanceTable; //6 bin idle advance adjustment table based on RPM difference  (2D)
+struct table2D idleTargetTable; //10 bin idle target table for idle timing (2D)
+struct table2D idleAdvanceTable; //6 bin idle advance adjustment table based on RPM difference  (2D)
 struct table2D CLTAdvanceTable; //6 bin ignition adjustment based on coolant temperature  (2D)
 struct table2D rotarySplitTable; //8 bin ignition split curve for rotary leading/trailing  (2D)
 struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
@@ -424,7 +425,7 @@ struct statuses {
   byte battery10; /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
   int8_t advance; /**< Signed 8 bit as advance can now go negative (ATDC) */
   byte corrections; /**< The total current corrections % amount */
-  int16_t AEamount; /**< The amount of accleration enrichment currently being applied */
+  uint16_t AEamount; /**< The amount of accleration enrichment currently being applied. 100=No change. Varies above 255 */
   byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
   byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
   byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
@@ -437,6 +438,7 @@ struct statuses {
   byte idleDuty; /**< The current idle duty cycle amount if PWM idle is selected and active */
   byte CLIdleTarget; /**< The target idle RPM (when closed loop idle control is active) */
   bool idleUpActive; /**< Whether the externally controlled idle up is currently active */
+  bool CTPSActive; /**< Whether the externally controlled closed throttle position sensor is currently active */
   bool fanOn; /**< Whether or not the fan is turned on */
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
   unsigned long AEEndTime; /**< The target end time used whenever AE is turned on */
@@ -603,7 +605,16 @@ struct config2 {
   byte aseBins[4]; //Afterstart enrichment temp axis
   byte primePulse[4]; //Priming pulsewidth
   byte primeBins[4]; //Priming temp axis
-  byte unused2_91[37];
+
+  byte CTPSPin : 6;
+  byte CTPSPolarity : 1;
+  byte CTPSEnabled : 1;
+  byte idleAdvEnabled : 2;
+  byte idleAdvAlgorithm : 1;
+  byte IdleAdvDelay : 5;
+  byte idleAdvRPM;
+  byte idleAdvTPS;
+  byte unused2_95[33];
 
 #if defined(CORE_AVR)
   };
@@ -688,7 +699,10 @@ struct config4 {
   byte baroFuelBins[8];
   byte baroFuelValues[8];
 
-  byte unused2_91[20];
+  byte idleAdvBins[6];
+  byte idleAdvValues[6];
+
+  byte unused4_120[8];
 
 #if defined(CORE_AVR)
   };
@@ -1021,6 +1035,7 @@ byte pinFuelPump; //Fuel pump on/off
 byte pinIdle1; //Single wire idle control
 byte pinIdle2; //2 wire idle control (Not currently used)
 byte pinIdleUp; //Input for triggering Idle Up
+byte pinCTPS; //Input for triggering closed throttle state
 byte pinFuel2Input; //Input for switching to the 2nd fuel table
 byte pinSpareTemp1; // Future use only
 byte pinSpareTemp2; // Future use only
@@ -1051,6 +1066,16 @@ byte pinBaro; //Pin that an external barometric pressure sensor is attached to (
 byte pinResetControl; // Output pin used control resetting the Arduino
 
 /* global variables */ // from speeduino.ino
+extern struct statuses currentStatus; // from speeduino.ino
+extern struct table3D fuelTable; //16x16 fuel map
+extern struct table3D fuelTable2; //16x16 fuel map
+extern struct table3D ignitionTable; //16x16 ignition map
+extern struct table3D afrTable; //16x16 afr target map
+extern struct table3D stagingTable; //8x8 afr target map
+extern struct table2D taeTable; /**< 4 bin TPS Acceleration Enrichment curve (2D) */
+extern struct table2D maeTable; /**< 4 bin MAP based Acceleration Enrichment curve (2D) */
+extern struct table2D WUETable; /**< 10 bin Warm Up Enrichment curve (2D) */
+extern struct table2D crankingEnrichTable; /**< 4 bin cranking Enrichment curve (2D) */
 extern struct config2 configPage2;
 extern struct config4 configPage4;
 extern struct config6 configPage6;

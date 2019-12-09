@@ -30,13 +30,13 @@ struct table2D {
   //Store the last input and output for caching
   int16_t lastInput;
   int16_t lastOutput;
-  byte cacheTime; //TRacks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
+  byte cacheTime; //Tracks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
 };
 
 //void table2D_setSize(struct table2D targetTable, byte newSize);
-void table2D_setSize(struct table2D, byte);
-int16_t table2D_getAxisValue(struct table2D, byte);
-int16_t table2D_getRawValue(struct table2D, byte);
+void table2D_setSize(struct table2D*, byte);
+int16_t table2D_getAxisValue(struct table2D*, byte);
+int16_t table2D_getRawValue(struct table2D*, byte);
 
 struct table3D {
 
@@ -53,34 +53,10 @@ struct table3D {
   byte lastXMax, lastXMin;
   byte lastYMax, lastYMin;
 
-protected:
-  table3D(const byte& _size, byte* _data, byte** _values, int16_t* _x, int16_t* _y)
-  : xSize(_size)
-  , ySize(_size)
-  , values(_values)
-  , axisX(_x)
-  , axisY(_y)
-  {
-    for (size_t i = 0; i < _size; i++)
-    {
-      _values[i] = &_data[i*_size];
-    }
-  }
-};
-
-template<size_t SIZE>
-struct Table3DContainer : public table3D
-{
-private:
-  byte _data[SIZE*SIZE];
-  byte* _values[SIZE];
-  int16_t _x[SIZE];
-  int16_t _y[SIZE];
-
-public:
-  Table3DContainer()
-  : table3D(SIZE, _data, _values, _x, _y)
-  {  }
+  //Store the last input and output values, again for caching purposes
+  int16_t lastXInput, lastYInput;
+  byte lastOutput; //This will need changing if we ever have 16-bit table values
+  bool cacheIsValid; ///< This tracks whether the tables cache should be used. Ordinarily this is true, but is set to false whenever TunerStudio sends a new value for the table
 };
 
 //void table3D_setSize(struct table3D *targetTable, byte);
