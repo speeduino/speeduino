@@ -38,7 +38,7 @@ void table2D_setSize(struct table2D*, byte);
 int16_t table2D_getAxisValue(struct table2D*, byte);
 int16_t table2D_getRawValue(struct table2D*, byte);
 
-// Declare a container for the internal values of table3D
+// Declare a container for the internal storage of table3D
 #define DECLARE_TABLE3D(name, size)\
 struct {\
   byte values[size*size];\
@@ -48,7 +48,7 @@ struct {\
 } _##name;\
 struct table3D name = { .xSize=size, .ySize=size, .values=_##name.rows, .axisX=_##name.axisX, .axisY=_##name.axisY};
 
-// Link the table with its container
+// Link the table to its container
 #define INIT_TABLE3D(name) do {\
   for(int _i = 0; _i < name.ySize; _i++) { name.values[_i] = &_##name.values[_i*name.xSize]; }\
   name.cacheIsValid = false;\
