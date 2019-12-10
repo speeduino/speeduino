@@ -36,7 +36,7 @@ void table2D_setSize(struct table2D* targetTable, byte newSize)
 }
 */
 
-
+/*
 void table3D_setSize(struct table3D *targetTable, byte newSize)
 {
   if(initialisationComplete == false)
@@ -51,6 +51,7 @@ void table3D_setSize(struct table3D *targetTable, byte newSize)
     targetTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
   } //initialisationComplete
 }
+*/
 
 /*
 This function pulls a 1D linear interpolated (ie averaged) value from a 2D table

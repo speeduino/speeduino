@@ -272,7 +272,7 @@ DECLARE_TABLE3D(trim1Table, 6); //6x6 Fuel trim 1 map
 DECLARE_TABLE3D(trim2Table, 6); //6x6 Fuel trim 2 map
 DECLARE_TABLE3D(trim3Table, 6); //6x6 Fuel trim 3 map
 DECLARE_TABLE3D(trim4Table, 6); //6x6 Fuel trim 4 map
-#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop // Restore warnings to default
 
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D maeTable;
