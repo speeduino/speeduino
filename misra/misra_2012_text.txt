@@ -238,7 +238,7 @@ No text specified
 Rule 20.9
 No text specified
 Rule 20.10
-No text specified
+Advisory - The # and ## preprocessor operators should not be used
 Rule 20.11
 No text specified
 Rule 20.12
