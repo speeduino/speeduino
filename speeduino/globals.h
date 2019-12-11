@@ -260,7 +260,6 @@ const byte data_structure_version = 2; //This identifies the data structure when
 const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288}; /**< This array stores the size (in bytes) of each configuration page */
 #define MAP_PAGE_SIZE 288
 
-#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 DECLARE_TABLE3D(fuelTable, 16); //16x16 fuel map
 DECLARE_TABLE3D(fuelTable2, 16); //16x16 fuel map
 DECLARE_TABLE3D(ignitionTable, 16); //16x16 ignition map
@@ -272,8 +271,6 @@ DECLARE_TABLE3D(trim1Table, 6); //6x6 Fuel trim 1 map
 DECLARE_TABLE3D(trim2Table, 6); //6x6 Fuel trim 2 map
 DECLARE_TABLE3D(trim3Table, 6); //6x6 Fuel trim 3 map
 DECLARE_TABLE3D(trim4Table, 6); //6x6 Fuel trim 4 map
-#pragma GCC diagnostic pop // Restore warnings to default
-
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D maeTable;
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)

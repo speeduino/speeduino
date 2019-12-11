@@ -46,7 +46,7 @@ struct {\
   int16_t axisX[size];\
   int16_t axisY[size];\
 } _##name;\
-struct table3D name = { .xSize=size, .ySize=size, .values=_##name.rows, .axisX=_##name.axisX, .axisY=_##name.axisY};
+struct table3D name = { .xSize=size, .ySize=size, .values=_##name.rows, .axisX=_##name.axisX, .axisY=_##name.axisY ,0,0,0,0,0,0,0,0 };
 
 // Link the table to its container
 #define INIT_TABLE3D(name) do {\
