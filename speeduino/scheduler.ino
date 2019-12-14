@@ -71,9 +71,6 @@ void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, uns
 {
   if(targetSchedule->Status != RUNNING) //Check that we're not already part way through a schedule
   {
-    //Callbacks no longer used, but retained for now:
-    //fuelSchedule1.StartCallback = startCallback;
-    //fuelSchedule1.EndCallback = endCallback;
     targetSchedule->duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow

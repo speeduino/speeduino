@@ -17,7 +17,7 @@
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 void initialiseAll()
-{
+{   
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     table3D_setSize(&fuelTable, 16);
@@ -31,7 +31,7 @@ void initialiseAll()
     table3D_setSize(&trim2Table, 6);
     table3D_setSize(&trim3Table, 6);
     table3D_setSize(&trim4Table, 6);
-
+        
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
 
@@ -233,7 +233,7 @@ void initialiseAll()
     }
     else
     {
-    /*
+     /*
         * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
         * with record highs close to 108.5 kPa.
         * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
@@ -877,7 +877,6 @@ void initialiseAll()
       setFuelSchedule3(100, (primingValue * 100 * 5));
       setFuelSchedule4(100, (primingValue * 100 * 5));
     }
-
 
     initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
@@ -1660,6 +1659,41 @@ void setPinMapping(byte boardID)
       pinSpareLOut1 = 21; //low current output spare1
       break;
     #endif
+
+    case 55:
+      //Pin mappings for the DropBear
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinFlex = A16; // Flex sensor
+      pinTPS = A22; //TPS input pin
+      pinMAP = A1; //MAP sensor pin
+      pinBaro = A0; //Baro sensor pin
+      pinIAT = A19; //IAT sensor pin
+      pinCLT = A20; //CLS sensor pin
+      pinO2 = A21; //O2 Sensor pin
+      pinO2_2 = A18; //Spare 2
+      pinBat = A14; //Battery reference voltage pin
+      pinSpareTemp1 = A17; //spare Analog input 1
+      pinLaunch = A15; //Can be overwritten below
+      pinTachOut = 7; //Tacho output pin
+      pinIdle1 = 27; //Single wire idle control
+      pinIdle2 = 29; //2 wire idle control. Shared with Spare 1 output
+      pinFuelPump = 8; //Fuel pump output
+      pinVVT_1 = 28; //Default VVT output
+      pinStepperDir = 32; //Direction pin  for DRV8825 driver
+      pinStepperStep = 31; //Step pin for DRV8825 driver
+      pinStepperEnable = 30; //Enable pin for DRV8825 driver
+      pinBoost = 24; //Boost control
+      pinSpareLOut1 = 29; //low current output spare1
+      pinSpareLOut2 = 26; //low current output spare2
+      pinSpareLOut3 = 28; //low current output spare3
+      pinSpareLOut4 = 29; //low current output spare4
+      pinFan = 25; //Pin for the fan output
+      pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+
+      pinMC33810_1_CS = 10;
+      pinMC33810_2_CS = 9;
+      break;
     
    #if defined(STM32F4)
     case 60:
@@ -1978,25 +2012,15 @@ void setPinMapping(byte boardID)
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
      because the control pin will go low as soon as the pinMode is set to OUTPUT. */
-  if ( (configPage4.resetControl != 0) && (configPage4.resetControlPin < BOARD_NR_GPIO_PINS) )
+  if ( (configPage4.resetControlConfig != 0) && (configPage4.resetControlPin < BOARD_NR_GPIO_PINS) )
   {
-    resetControl = configPage4.resetControl;
+    resetControl = configPage4.resetControlConfig;
     pinResetControl = pinTranslate(configPage4.resetControlPin);
     setResetControlPinState();
     pinMode(pinResetControl, OUTPUT);
   }
 
   //Finally, set the relevant pin modes for outputs
-  pinMode(pinCoil1, OUTPUT);
-  pinMode(pinCoil2, OUTPUT);
-  pinMode(pinCoil3, OUTPUT);
-  pinMode(pinCoil4, OUTPUT);
-  pinMode(pinCoil5, OUTPUT);
-  pinMode(pinInjector1, OUTPUT);
-  pinMode(pinInjector2, OUTPUT);
-  pinMode(pinInjector3, OUTPUT);
-  pinMode(pinInjector4, OUTPUT);
-  pinMode(pinInjector5, OUTPUT);
   pinMode(pinTachOut, OUTPUT);
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
@@ -2012,39 +2036,59 @@ void setPinMapping(byte boardID)
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
 
-  inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
-  inj1_pin_mask = digitalPinToBitMask(pinInjector1);
-  inj2_pin_port = portOutputRegister(digitalPinToPort(pinInjector2));
-  inj2_pin_mask = digitalPinToBitMask(pinInjector2);
-  inj3_pin_port = portOutputRegister(digitalPinToPort(pinInjector3));
-  inj3_pin_mask = digitalPinToBitMask(pinInjector3);
-  inj4_pin_port = portOutputRegister(digitalPinToPort(pinInjector4));
-  inj4_pin_mask = digitalPinToBitMask(pinInjector4);
-  inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
-  inj5_pin_mask = digitalPinToBitMask(pinInjector5);
-  inj6_pin_port = portOutputRegister(digitalPinToPort(pinInjector6));
-  inj6_pin_mask = digitalPinToBitMask(pinInjector6);
-  inj7_pin_port = portOutputRegister(digitalPinToPort(pinInjector7));
-  inj7_pin_mask = digitalPinToBitMask(pinInjector7);
-  inj8_pin_port = portOutputRegister(digitalPinToPort(pinInjector8));
-  inj8_pin_mask = digitalPinToBitMask(pinInjector8);
+  #ifndef USE_MC33810
+    pinMode(pinCoil1, OUTPUT);
+    pinMode(pinCoil2, OUTPUT);
+    pinMode(pinCoil3, OUTPUT);
+    pinMode(pinCoil4, OUTPUT);
+    pinMode(pinCoil5, OUTPUT);
+    pinMode(pinInjector1, OUTPUT);
+    pinMode(pinInjector2, OUTPUT);
+    pinMode(pinInjector3, OUTPUT);
+    pinMode(pinInjector4, OUTPUT);
+    pinMode(pinInjector5, OUTPUT);
 
-  ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
-  ign1_pin_mask = digitalPinToBitMask(pinCoil1);
-  ign2_pin_port = portOutputRegister(digitalPinToPort(pinCoil2));
-  ign2_pin_mask = digitalPinToBitMask(pinCoil2);
-  ign3_pin_port = portOutputRegister(digitalPinToPort(pinCoil3));
-  ign3_pin_mask = digitalPinToBitMask(pinCoil3);
-  ign4_pin_port = portOutputRegister(digitalPinToPort(pinCoil4));
-  ign4_pin_mask = digitalPinToBitMask(pinCoil4);
-  ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
-  ign5_pin_mask = digitalPinToBitMask(pinCoil5);
-  ign6_pin_port = portOutputRegister(digitalPinToPort(pinCoil6));
-  ign6_pin_mask = digitalPinToBitMask(pinCoil6);
-  ign7_pin_port = portOutputRegister(digitalPinToPort(pinCoil7));
-  ign7_pin_mask = digitalPinToBitMask(pinCoil7);
-  ign8_pin_port = portOutputRegister(digitalPinToPort(pinCoil8));
-  ign8_pin_mask = digitalPinToBitMask(pinCoil8);
+    inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
+    inj1_pin_mask = digitalPinToBitMask(pinInjector1);
+    inj2_pin_port = portOutputRegister(digitalPinToPort(pinInjector2));
+    inj2_pin_mask = digitalPinToBitMask(pinInjector2);
+    inj3_pin_port = portOutputRegister(digitalPinToPort(pinInjector3));
+    inj3_pin_mask = digitalPinToBitMask(pinInjector3);
+    inj4_pin_port = portOutputRegister(digitalPinToPort(pinInjector4));
+    inj4_pin_mask = digitalPinToBitMask(pinInjector4);
+    inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
+    inj5_pin_mask = digitalPinToBitMask(pinInjector5);
+    inj6_pin_port = portOutputRegister(digitalPinToPort(pinInjector6));
+    inj6_pin_mask = digitalPinToBitMask(pinInjector6);
+    inj7_pin_port = portOutputRegister(digitalPinToPort(pinInjector7));
+    inj7_pin_mask = digitalPinToBitMask(pinInjector7);
+    inj8_pin_port = portOutputRegister(digitalPinToPort(pinInjector8));
+    inj8_pin_mask = digitalPinToBitMask(pinInjector8);
+
+    ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
+    ign1_pin_mask = digitalPinToBitMask(pinCoil1);
+    ign2_pin_port = portOutputRegister(digitalPinToPort(pinCoil2));
+    ign2_pin_mask = digitalPinToBitMask(pinCoil2);
+    ign3_pin_port = portOutputRegister(digitalPinToPort(pinCoil3));
+    ign3_pin_mask = digitalPinToBitMask(pinCoil3);
+    ign4_pin_port = portOutputRegister(digitalPinToPort(pinCoil4));
+    ign4_pin_mask = digitalPinToBitMask(pinCoil4);
+    ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
+    ign5_pin_mask = digitalPinToBitMask(pinCoil5);
+    ign6_pin_port = portOutputRegister(digitalPinToPort(pinCoil6));
+    ign6_pin_mask = digitalPinToBitMask(pinCoil6);
+    ign7_pin_port = portOutputRegister(digitalPinToPort(pinCoil7));
+    ign7_pin_mask = digitalPinToBitMask(pinCoil7);
+    ign8_pin_port = portOutputRegister(digitalPinToPort(pinCoil8));
+    ign8_pin_mask = digitalPinToBitMask(pinCoil8);
+  #else
+    mc33810_1_pin_port = portOutputRegister(pinMC33810_1_CS);
+    mc33810_1_pin_mask = digitalPinToBitMask(pinMC33810_1_CS);
+    mc33810_2_pin_port = portOutputRegister(pinMC33810_2_CS);
+    mc33810_2_pin_mask = digitalPinToBitMask(pinMC33810_2_CS);
+
+    initMC33810();
+  #endif
 
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);

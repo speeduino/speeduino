@@ -1064,6 +1064,11 @@ byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
+#ifdef USE_MC33810
+//If the MC33810 IC\s are in use, these are the chip select pins
+byte pinMC33810_1_CS;
+byte pinMC33810_2_CS;
+#endif
 
 /* global variables */ // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
