@@ -1190,7 +1190,7 @@ void sendPageASCII()
       Serial.println((const __FlashStringHelper *)&pageTitles[56]);
       Serial.println(configPage4.triggerAngle);// configPsge2.triggerAngle is an int so just display it without complication
       // Following loop displays byte values after that first int up to but not including the first array in config page 2
-      for (pnt_configPage = (int *)&configPage4 + 1; pnt_configPage < &configPage4.taeBins[0]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
+      for (pnt_configPage = (byte *)&configPage4 + 1; pnt_configPage < &configPage4.taeBins[0]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
       for (byte y = 2; y; y--)// Displaying two equal sized arrays
       {
         byte * currentVar;// A placeholder for each array

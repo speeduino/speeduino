@@ -310,7 +310,7 @@ static inline void readMAP()
         }
       }
       else { instanteneousMAPReading(); }
-
+      break; 
 
     default:
     //Instantaneous MAP readings (Just in case)

@@ -110,7 +110,7 @@ void initialiseIdle()
       iacCrankStepsTable.values = configPage6.iacCrankSteps;
       iacCrankStepsTable.axisX = configPage6.iacCrankBins;
       iacStepTime_uS = configPage6.iacStepTime * 1000;
-      iacCoolTime = configPage9.iacCoolTime * 1000;
+      iacCoolTime_uS = configPage9.iacCoolTime * 1000;
 
       completedHomeSteps = 0;
       idleStepper.curIdleStep = 0;
@@ -142,7 +142,7 @@ void initialiseIdle()
       iacCrankStepsTable.values = configPage6.iacCrankSteps;
       iacCrankStepsTable.axisX = configPage6.iacCrankBins;
       iacStepTime_uS = configPage6.iacStepTime * 1000;
-      iacCoolTime = configPage9.iacCoolTime * 1000;
+      iacCoolTime_uS = configPage9.iacCoolTime * 1000;
 
       completedHomeSteps = 0;
       idleCounter = 0;
@@ -288,7 +288,7 @@ void idleControl()
             idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
             if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
             iacStepTime_uS = configPage6.iacStepTime * 1000;
-            iacCoolTime = configPage9.iacCoolTime * 1000;
+            iacCoolTime_uS = configPage9.iacCoolTime * 1000;
 
             //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
             if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
@@ -314,7 +314,7 @@ void idleControl()
           //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
           idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
           iacStepTime_uS = configPage6.iacStepTime * 1000;
-          iacCoolTime = configPage9.iacCoolTime * 1000;
+          iacCoolTime_uS = configPage9.iacCoolTime * 1000;
         }
 
         currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
@@ -386,7 +386,7 @@ static inline byte checkForStepping()
     }
     else 
     {
-      timeCheck = iacCoolTime;
+      timeCheck = iacCoolTime_uS;
     }
 
     if(micros_safe() > (idleStepper.stepStartTime + timeCheck) )
@@ -398,7 +398,7 @@ static inline byte checkForStepping()
         idleStepper.stepStartTime = micros_safe();
         
         // if there is no cool time we can miss that step out completely.
-        if (iacCoolTime > 0)
+        if (iacCoolTime_uS > 0)
         {
           idleStepper.stepperStatus = COOLING; //'Cooling' is the time the stepper needs to sit in LOW state before the next step can be made
         }
