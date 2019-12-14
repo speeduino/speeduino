@@ -1661,6 +1661,7 @@ void setPinMapping(byte boardID)
     #endif
 
     case 55:
+      #if defined(CORE_TEENSY35)
       //Pin mappings for the DropBear
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
@@ -1693,6 +1694,7 @@ void setPinMapping(byte boardID)
 
       pinMC33810_1_CS = 10;
       pinMC33810_2_CS = 9;
+      #endif
       break;
     
    #if defined(STM32F4)
