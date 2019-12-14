@@ -456,11 +456,6 @@ void initialiseAll()
         if (configPage2.engineType == EVEN_FIRE )
         {
           channel2IgnDegrees = 180;
-          //Adjust the injection angles based on the number of squirts
-          if (currentStatus.nSquirts > 2)
-          {
-            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
-          }
 
           if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
           {
@@ -495,6 +490,11 @@ void initialiseAll()
             //For simultaneous, all squirts happen at the same time
             channel1InjDegrees = 0;
             channel2InjDegrees = 0; 
+          }
+          else if (currentStatus.nSquirts > 2)
+          {
+            //Adjust the injection angles based on the number of squirts
+            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
           }
         }
         else if (configPage2.injLayout == INJ_SEQUENTIAL)
