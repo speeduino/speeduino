@@ -35,17 +35,17 @@ void fanControl()
     int offTemp = onTemp - configPage6.fanHyster;
     bool fanPermit = false;
 
-    if ( configPage2.fanWhenOff ) { fanPermit = true; }
+    if ( configPage2.fanWhenOff == true) { fanPermit = true; }
     else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
 
-    if ( currentStatus.coolant >= onTemp && fanPermit )
+    if ( (currentStatus.coolant >= onTemp) && (fanPermit == true) )
     {
       //Fan needs to be turned on. Checked for normal or inverted fan signal
       if( configPage6.fanInv == 0 ) { FAN_PIN_HIGH(); }
       else { FAN_PIN_LOW(); }
       currentStatus.fanOn = true;
     }
-    else if ( currentStatus.coolant <= offTemp || !fanPermit )
+    else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
       //Fan needs to be turned off. Checked for normal or inverted fan signal
       if( configPage6.fanInv == 0 ) { FAN_PIN_LOW(); } 
@@ -76,7 +76,7 @@ void initialiseAuxPWM()
   }
 
   boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
-  if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(100, 100, 100); }
+  if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(SIMPLE_BOOST_P, SIMPLE_BOOST_I, SIMPLE_BOOST_D); }
   else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
 
   if( configPage6.vvtEnabled > 0)
@@ -151,7 +151,7 @@ void boostControl()
           {
             boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
 
-            if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(100, 100, 100); }
+            if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(SIMPLE_BOOST_P, SIMPLE_BOOST_I, SIMPLE_BOOST_D); }
             else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
           }
 
@@ -245,11 +245,12 @@ void vvtControl()
 
         if(currentStatus.vvtTargetAngle > 0)
         {
-          vvtPID.Compute(false);
+          bool PID_compute = vvtPID.Compute(false);
           //vvtPID.Compute2(currentStatus.vvtTargetAngle, currentStatus.vvtAngle, false);
           //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
           //if (currentStatus.vvtAngle > currentStatus.vvtTargetAngle) { vvt_pwm_target_value = 0; }
-          currentStatus.vvtDuty = (vvt_pwm_value * 100) / vvt_pwm_max_count;
+          if(PID_compute == true) { currentStatus.vvtDuty = (vvt_pwm_value * 100) / vvt_pwm_max_count; }
+          
         }
         else
         {
