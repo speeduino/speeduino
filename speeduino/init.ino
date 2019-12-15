@@ -584,13 +584,6 @@ void initialiseAll()
         channel3IgnDegrees = 240;
         maxIgnOutputs = 3;
 
-        //Adjust the injection angles based on the number of squirts
-        if (currentStatus.nSquirts > 2)
-        {
-          channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
-          channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
-        }
-
         //For alternating injection, the squirt occurs at different times for each channel
         if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
         {
@@ -603,6 +596,12 @@ void initialiseAll()
             channel1InjDegrees = 0;
             channel2InjDegrees = 0;
             channel3InjDegrees = 0;
+          }
+          else if (currentStatus.nSquirts > 2)
+          {
+            //Adjust the injection angles based on the number of squirts
+            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
+            channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
           }
         }
     #if INJ_CHANNELS >= 6
@@ -2030,7 +2029,6 @@ void setPinMapping(byte boardID)
   }
 
   //Finally, set the relevant pin modes for outputs
-
   pinMode(pinTachOut, OUTPUT);
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
