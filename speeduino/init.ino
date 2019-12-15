@@ -561,6 +561,8 @@ void initialiseAll()
             channel3InjDegrees = 144;
             channel4InjDegrees = 216;
             channel5InjDegrees = 288;
+
+            //Divide by currentStatus.nSquirts ?
           }
         }
         else if (configPage2.injLayout == INJ_SEQUENTIAL)
@@ -573,6 +575,7 @@ void initialiseAll()
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
+          req_fuel_uS = req_fuel_uS * 2;
         }
 
         channel1InjEnabled = true;
