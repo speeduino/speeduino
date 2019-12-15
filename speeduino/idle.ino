@@ -401,8 +401,9 @@ void idleControl()
         idleHB_PID.SetOutputLimits(configPage2.iacCLminDuty, configPage2.iacCLmaxDuty);
         idleHB_PID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); 
       }
-      bool hbPIDcomputed = idleHB_PID.Compute(); //Compute() returns false if the required interval has not yet passed.
-      if(hbPIDcomputed == true)
+
+      PID_computed = idleHB_PID.Compute(); //Compute() returns false if the required interval has not yet passed.
+      if(PID_computed == true)
       {
         int16_t idle_pid_hb_target = ((unsigned long)(idle_pid_hb_target_value) * idle_pwm_max_count) / 10000; //Convert idle duty (Which is a % multipled by 100) to a pwm count
         currentStatus.idleLoad = ((unsigned long)(idle_pid_hb_target * 100UL) / idle_pwm_max_count) >> 1;

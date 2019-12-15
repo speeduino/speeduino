@@ -371,26 +371,26 @@ void readTPS()
     #endif
 
     currentStatus.itpsADC = ADC_FILTER(tempITPS, configPage4.ADCFILTER_TPS, currentStatus.itpsADC); // Idle range tps shares the adc filter with main tps
-    byte tempADC2 = currentStatus.itpsADC;
+    tempADC = currentStatus.itpsADC;
 
     if(configPage2.itpsMax > configPage2.itpsMin)
     {
       //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
-      if (currentStatus.itpsADC < configPage2.itpsMin) { tempADC2 = configPage2.itpsMin; }
-      else if(currentStatus.itpsADC > configPage2.itpsMax) { tempADC2 = configPage2.itpsMax; }
-      currentStatus.ITPS = map(tempADC2, configPage2.itpsMin, configPage2.itpsMax, 0, 100); //Take the raw ITPS ADC value and convert it into a ITPS% based on the calibrated values
+      if (currentStatus.itpsADC < configPage2.itpsMin) { tempADC = configPage2.itpsMin; }
+      else if(currentStatus.itpsADC > configPage2.itpsMax) { tempADC = configPage2.itpsMax; }
+      currentStatus.ITPS = map(tempADC, configPage2.itpsMin, configPage2.itpsMax, 0, 100); //Take the raw ITPS ADC value and convert it into a ITPS% based on the calibrated values
     }
     else
     {
       //This case occurs when the ITPS +5v and gnd are wired backwards, but the user wishes to retain this configuration.
       //In such a case, itpsMin will be greater then itpsMax and hence checks and mapping needs to be reversed
 
-      tempADC2 = 255 - currentStatus.itpsADC; //Reverse the ADC values
+      tempADC = 255 - currentStatus.itpsADC; //Reverse the ADC values
 
       //All checks below are reversed from the standard case above
-      if (tempADC2 > configPage2.itpsMin) { tempADC2 = configPage2.itpsMin; }
-      else if(tempADC2 < configPage2.itpsMax) { tempADC2 = configPage2.itpsMax; }
-      currentStatus.ITPS = map(tempADC2, configPage2.itpsMax, configPage2.itpsMin, 0, 100);
+      if (tempADC > configPage2.itpsMin) { tempADC = configPage2.itpsMin; }
+      else if(tempADC < configPage2.itpsMax) { tempADC = configPage2.itpsMax; }
+      currentStatus.ITPS = map(tempADC, configPage2.itpsMax, configPage2.itpsMin, 0, 100);
     }
   }
   TPS_time = micros();
