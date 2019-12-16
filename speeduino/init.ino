@@ -2004,12 +2004,23 @@ void setPinMapping(byte boardID)
   if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage6.baroPin + A0; }
   if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_NR_GPIO_PINS) ) { pinEMAP = configPage10.EMAPPin + A0; }
   if ( (configPage10.fuel2InputPin != 0) && (configPage10.fuel2InputPin < BOARD_NR_GPIO_PINS) ) { pinFuel2Input = pinTranslate(configPage10.fuel2InputPin); }
+  if ( (configPage2.pinIdle1 != 0) && (configPage2.pinIdle1 < BOARD_NR_GPIO_PINS) ) { pinIdle1 = pinTranslate(configPage2.pinIdle1); }
+  if ( (configPage2.pinIdle2 != 0) && (configPage2.pinIdle2 < BOARD_NR_GPIO_PINS) ) { pinIdle2 = pinTranslate(configPage2.pinIdle2); }
 
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
 
   //Currently there's no default pin for closed throttle position sensor
-  pinCTPS = pinTranslate(configPage2.CTPSPin);
+  pinCTPS = pinTranslate(configPage2.ctpsPin);
+  
+  //Currently there's no default pin for idle throttle position sensor
+  pinITPS = pinTranslate(configPage2.itpsPin);
+
+  //Currently there's no default pin for H-Bridge driver direction 1
+  pinHBdir1 = pinTranslate(configPage2.hbDirPin1);
+
+  //Currently there's no default pin for H-Bridge driver direction 2
+  pinHBdir2 = pinTranslate(configPage2.hbDirPin2);
 
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
@@ -2034,6 +2045,8 @@ void setPinMapping(byte boardID)
   pinMode(pinStepperEnable, OUTPUT);
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
+  pinMode(pinHBdir1, OUTPUT);
+  pinMode(pinHBdir2, OUTPUT);
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
@@ -2104,6 +2117,7 @@ void setPinMapping(byte boardID)
       pinMode(pinO2, INPUT_ANALOG);
       pinMode(pinO2_2, INPUT_ANALOG);
       pinMode(pinTPS, INPUT_ANALOG);
+      pinMode(pinITPS, INPUT_ANALOG);
       pinMode(pinIAT, INPUT_ANALOG);
       pinMode(pinCLT, INPUT_ANALOG);
       pinMode(pinBat, INPUT_ANALOG);
@@ -2113,6 +2127,7 @@ void setPinMapping(byte boardID)
       pinMode(pinO2, INPUT);
       pinMode(pinO2_2, INPUT);
       pinMode(pinTPS, INPUT);
+      pinMode(pinITPS, INPUT);
       pinMode(pinIAT, INPUT);
       pinMode(pinCLT, INPUT);
       pinMode(pinBat, INPUT);
@@ -2138,9 +2153,9 @@ void setPinMapping(byte boardID)
     if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinIdleUp, INPUT); } //inverted setting
   }
-  if(configPage2.CTPSEnabled > 0)
+  if(configPage2.ctpsEnabled > 0)
   {
-    if (configPage2.CTPSPolarity == 0) { pinMode(pinCTPS, INPUT_PULLUP); } //Normal setting
+    if (configPage2.ctpsPolarity == 0) { pinMode(pinCTPS, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinCTPS, INPUT); } //inverted setting
   }
   if(configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)

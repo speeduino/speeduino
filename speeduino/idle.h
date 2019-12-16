@@ -11,6 +11,7 @@
 #define IAC_ALGORITHM_PWM_CL  3
 #define IAC_ALGORITHM_STEP_OL 4
 #define IAC_ALGORITHM_STEP_CL 5
+#define IAC_ALGORITHM_HB      6
 
 #define STEPPER_FORWARD 0
 #define STEPPER_BACKWARD 1
@@ -47,10 +48,16 @@ volatile PINMASK_TYPE idle_pin_mask;
 volatile PORT_TYPE *idle2_pin_port;
 volatile PINMASK_TYPE idle2_pin_mask;
 
+volatile PORT_TYPE *hbDir1_pin_port;
+volatile PINMASK_TYPE hbDir1_pin_mask;
+volatile PORT_TYPE *hbDir2_pin_port;
+volatile PINMASK_TYPE hbDir2_pin_mask;
+
 volatile bool idle_pwm_state;
 unsigned int idle_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int idle_pwm_cur_value;
 long idle_pid_target_value;
+uint16_t idle_pid_hb_target_value;
 long idle_pwm_target_value;
 long idle_cl_target_rpm;
 byte idleCounter; //Used for tracking the number of calls to the idle control function

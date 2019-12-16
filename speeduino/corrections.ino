@@ -551,7 +551,7 @@ static inline int8_t correctionIdleAdvance(int8_t advance)
       if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
       else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = advanceIdleAdjust; }
     }
-    else if( (configPage2.idleAdvAlgorithm == 1) && (currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100) && (currentStatus.CTPSActive == 1) )) // closed throttle position sensor (CTPS) based idle state
+    else if( (configPage2.idleAdvAlgorithm == 1) && (currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100) && (currentStatus.ctpsActive == 1) )) // closed throttle position sensor (CTPS) based idle state
     {
       int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
       if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }

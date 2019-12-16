@@ -387,7 +387,7 @@ volatile byte LOOP_TIMER;
 //These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
 #define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) )
 #define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) )
-#define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
+#define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinITPS) || ((pin) == pinO2) || ((pin) == pinBat) )
 #define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) )
 #define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) )
 
@@ -405,6 +405,8 @@ struct statuses {
   byte baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
   byte TPS; /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
   byte tpsADC; /**< 0-255 byte representation of the TPS. Downsampled from the original 10-bit reading, but before any calibration is applied */
+  long ITPS; /**< The current ITPS reading (0% - 100%). Is the itpsADC value after the calibration is applied */
+  byte itpsADC; /**< 0-255 byte representation of the ITPS. Downsampled from the original 10-bit reading, but before any calibration is applied */
   byte tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Value is divided by 10 to be stored in a byte */
   byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
   volatile int rpmDOT;
@@ -435,10 +437,10 @@ struct statuses {
   byte flexCorrection; /**< Amount of correction being applied to compensate for ethanol content */
   int8_t flexIgnCorrection; /**< Amount of additional advance being applied based on flex. Note the type as this allows for negative values */
   byte afrTarget;
-  byte idleDuty; /**< The current idle duty cycle amount if PWM idle is selected and active */
+  uint16_t idleDuty; /**< The current idle duty cycle amount if PWM idle is selected and active */
   byte CLIdleTarget; /**< The target idle RPM (when closed loop idle control is active) */
   bool idleUpActive; /**< Whether the externally controlled idle up is currently active */
-  bool CTPSActive; /**< Whether the externally controlled closed throttle position sensor is currently active */
+  bool ctpsActive; /**< Whether the externally controlled closed throttle position sensor is currently active */
   bool fanOn; /**< Whether or not the fan is turned on */
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
   unsigned long AEEndTime; /**< The target end time used whenever AE is turned on */
@@ -606,15 +608,30 @@ struct config2 {
   byte primePulse[4]; //Priming pulsewidth
   byte primeBins[4]; //Priming temp axis
 
-  byte CTPSPin : 6;
-  byte CTPSPolarity : 1;
-  byte CTPSEnabled : 1;
+  byte ctpsPin : 6;
+  byte ctpsPolarity : 1;
+  byte ctpsEnabled : 1;
   byte idleAdvEnabled : 2;
   byte idleAdvAlgorithm : 1;
   byte IdleAdvDelay : 5;
   byte idleAdvRPM;
   byte idleAdvTPS;
-  byte unused2_95[33];
+
+  byte itpsMin;
+  byte itpsMax;
+  byte itpsPin : 4;
+  byte idleEngOff : 2;
+  byte hbDriver : 2;
+  byte pinIdle1 : 6;
+  byte unused_idle_bits1 : 2;
+  byte pinIdle2 : 6;
+  byte unused_idle_bits2 : 2;
+  byte hbDirPin1 : 6;
+  byte unused_idle_bits3 : 2;
+  byte hbDirPin2 : 6;
+  byte unused_idle_bits4 : 2;
+
+  byte unused2_102[26];
 
 #if defined(CORE_AVR)
   };
@@ -993,7 +1010,10 @@ struct config10 {
   uint16_t vvtCLMinAng;
   uint16_t vvtCLMaxAng;
 
-  byte unused11_123_191[58];
+  uint16_t idleSens;
+  byte idleIntv;
+  
+  byte unused11_137_191[55];
 
 #if defined(CORE_AVR)
   };
@@ -1034,8 +1054,11 @@ byte pinTachOut; //Tacho output
 byte pinFuelPump; //Fuel pump on/off
 byte pinIdle1; //Single wire idle control
 byte pinIdle2; //2 wire idle control (Not currently used)
+byte pinHBdir1; //H-bridge Idle direction pin 1
+byte pinHBdir2; //H-bridge Idle direction pin 2
 byte pinIdleUp; //Input for triggering Idle Up
 byte pinCTPS; //Input for triggering closed throttle state
+byte pinITPS; //Input for idle range TPS
 byte pinFuel2Input; //Input for switching to the 2nd fuel table
 byte pinSpareTemp1; // Future use only
 byte pinSpareTemp2; // Future use only
