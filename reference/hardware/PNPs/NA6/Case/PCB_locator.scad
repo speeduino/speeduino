@@ -34,7 +34,7 @@ module baseWedge(hole_dia,base_thickness)
   //standoff_thickness = hole_dia * .75;     // thickness of standoff bar
     standoff_thickness = HEIGHT;     // thickness of standoff bar
   
-  translate([0,-base_thickness,0])
+  translate([0,-base_thickness+0.2,0])
     linear_extrude(height=standoff_thickness)
     {
       polygon
