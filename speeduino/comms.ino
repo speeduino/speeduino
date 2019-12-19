@@ -6,12 +6,12 @@ A full copy of the license may be found in the projects root directory
 #include "globals.h"
 #include "comms.h"
 #include "cancomms.h"
-#include "errors.h"
 #include "storage.h"
 #include "maths.h"
 #include "utils.h"
 #include "decoders.h"
 #include "scheduledIO.h"
+#include "logger.h"
 
 /*
   Processes the data on the serial buffer.
@@ -39,7 +39,7 @@ void command()
       break;
 
     case 'A': // send x bytes of realtime values
-      sendValues(0, SERIAL_PACKET_SIZE, 0x30, 0);   //send values to serial0
+      sendValues(0, LOG_ENTRY_SIZE, 0x30, 0);   //send values to serial0
       break;
 
 
@@ -495,7 +495,7 @@ This function returns the current values of a fixed group of variables
 //void sendValues(int packetlength, byte portNum)
 void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 {
-  byte fullStatus[SERIAL_PACKET_SIZE];
+  byte fullStatus[LOG_ENTRY_SIZE];
 
   if (portNum == 3)
   {

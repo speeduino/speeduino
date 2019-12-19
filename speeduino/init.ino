@@ -1692,8 +1692,10 @@ void setPinMapping(byte boardID)
       pinFan = 25; //Pin for the fan output
       pinResetControl = 46; //Reset control output PLACEHOLDER value for now
 
-      pinMC33810_1_CS = 10;
-      pinMC33810_2_CS = 9;
+      #ifdef USE_MC33810
+        pinMC33810_1_CS = 10;
+        pinMC33810_2_CS = 9;
+      #endif
       #endif
       break;
     
