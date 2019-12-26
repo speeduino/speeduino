@@ -91,6 +91,11 @@ void initialiseAll()
     crankingEnrichTable.xSize = 4;
     crankingEnrichTable.values = configPage10.crankingEnrichValues;
     crankingEnrichTable.axisX = configPage10.crankingEnrichBins;
+    smallPwTable.valueSize = SIZE_BYTE;
+    smallPwTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    smallPwTable.xSize = 5;
+    smallPwTable.values = configPage2.smallPwValues;
+    smallPwTable.axisX = configPage2.smallPwBins;
 
     dwellVCorrectionTable.valueSize = SIZE_BYTE;
     dwellVCorrectionTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
