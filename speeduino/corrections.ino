@@ -107,7 +107,6 @@ static inline byte correctionWUE()
   {
     //This prevents us doing the 2D lookup if we're already up to temp
     BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP);
-    //WUEValue = WUETable.values[9]; //Set the current value to be whatever the final value on the curve is.
     WUEValue = table2D_getRawValue(&WUETable, 9);
   }
   else
@@ -169,10 +168,10 @@ static inline byte correctionASE()
  * Calculates the % change of the throttle over time (%/second) and performs a lookup based on this
  * When the enrichment is turned on, it runs at that amount for a fixed period of time (taeTime)
  * 
- * @return int16_t The Acceleration enrichment modifier as a %. 100% = No modification. 
- * As the maximum enrichment amount is +255%, the overall return value from this function can be 100+255=355. Hence this function returns a int16_t rather than byte
+ * @return uint16_t The Acceleration enrichment modifier as a %. 100% = No modification. 
+ * As the maximum enrichment amount is +255%, the overall return value from this function can be 100+255=355. Hence this function returns a uint16_t rather than byte
  */
-static inline int16_t correctionAccel()
+static inline uint16_t correctionAccel()
 {
   int16_t accelValue = 100;
   //First, check whether the accel. enrichment is already running
@@ -452,9 +451,10 @@ static inline byte correctionAFRClosedLoop()
           PID_O2 = (long)(currentStatus.O2);
           PID_AFRTarget = (long)(currentStatus.afrTarget);
 
-          egoPID.Compute();
+          bool PID_compute = egoPID.Compute();
           //currentStatus.egoCorrection = 100 + PID_output;
-          AFRValue = 100 + PID_output;
+          if(PID_compute == true) { AFRValue = 100 + PID_output; }
+          
         }
         else { AFRValue = 100; } // Occurs if the egoAlgorithm is set to 0 (No Correction)
       } //Ignition count check
@@ -538,20 +538,20 @@ static inline int8_t correctionIdleAdvance(int8_t advance)
 
   int8_t ignIdleValue = advance;
   //Adjust the advance based on idle target rpm.
-  if( (configPage2.idleAdvEnabled) >= 1 && (currentStatus.runSecs >= configPage2.IdleAdvDelay))
+  if( (configPage2.idleAdvEnabled >= 1) && (currentStatus.runSecs >= configPage2.IdleAdvDelay))
   {
     currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
-    int idleRPMdelta = (currentStatus.CLIdleTarget - currentStatus.RPM / 10) + 50;
+    int idleRPMdelta = (currentStatus.CLIdleTarget - (currentStatus.RPM / 10) ) + 50;
     // Limit idle rpm delta between -500rpm - 500rpm
     if(idleRPMdelta > 100) { idleRPMdelta = 100; }
     if(idleRPMdelta < 0) { idleRPMdelta = 0; }
-    if(configPage2.idleAdvAlgorithm == 0 && ((currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100)) && (currentStatus.TPS < configPage2.idleAdvTPS))) // TPS based idle state
+    if( (configPage2.idleAdvAlgorithm == 0) && ((currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100)) && (currentStatus.TPS < configPage2.idleAdvTPS))) // TPS based idle state
     {
       int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
       if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
       else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = advanceIdleAdjust; }
     }
-    else if(configPage2.idleAdvAlgorithm == 1 && (currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100) && currentStatus.CTPSActive == 1)) // closed throttle position sensor (CTPS) based idle state
+    else if( (configPage2.idleAdvAlgorithm == 1) && (currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100) && (currentStatus.CTPSActive == 1) )) // closed throttle position sensor (CTPS) based idle state
     {
       int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
       if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }

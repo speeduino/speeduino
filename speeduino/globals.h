@@ -19,6 +19,7 @@
   #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
     #define CORE_TEENSY35
     #define BOARD_H "board_teensy35.h"
+    #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
   #elif defined(__IMXRT1062__)
     #define CORE_TEENSY40
     #define BOARD_H "board_teensy40.h"
@@ -153,7 +154,7 @@
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
-#define TOOTH_LOG_SIZE      64
+#define TOOTH_LOG_SIZE      127
 #define TOOTH_LOG_BUFFER    128 //256
 
 #define COMPOSITE_LOG_PRI   0
@@ -425,7 +426,7 @@ struct statuses {
   byte battery10; /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
   int8_t advance; /**< Signed 8 bit as advance can now go negative (ATDC) */
   byte corrections; /**< The total current corrections % amount */
-  int16_t AEamount; /**< The amount of accleration enrichment currently being applied */
+  uint16_t AEamount; /**< The amount of accleration enrichment currently being applied. 100=No change. Varies above 255 */
   byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
   byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
   byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
@@ -644,7 +645,7 @@ struct config4 {
   byte trigPatternSec; //Mode for Missing tooth secondary trigger.  Either single tooth cam wheel or 4-1
   uint8_t bootloaderCaps; //Capabilities of the bootloader over stock. e.g., 0=Stock, 1=Reset protection, etc.
 
-  byte resetControl : 2; //Which method of reset control to use (0=None, 1=Prevent When Running, 2=Prevent Always, 3=Serial Command)
+  byte resetControlConfig : 2; //Which method of reset control to use (0=None, 1=Prevent When Running, 2=Prevent Always, 3=Serial Command)
   byte resetControlPin : 6;
 
   byte StgCycles; //The number of initial cycles before the ignition should fire when first cranking
@@ -1064,6 +1065,11 @@ byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
+#ifdef USE_MC33810
+//If the MC33810 IC\s are in use, these are the chip select pins
+byte pinMC33810_1_CS;
+byte pinMC33810_2_CS;
+#endif
 
 /* global variables */ // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino
