@@ -156,7 +156,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
         else if (cmd == 0x32)
           {
            CANSerial.write("n");                       // confirm command type
-           CANSerial.write(cmd);                       // send command type  , 0x32 is ascii '2'
+           CANSerial.write(cmd);                       // send command type  , 0x32 (dec50) is ascii '2'
            CANSerial.write(NEW_CAN_PACKET_SIZE);       // send the packet size the receiving device should expect.
           }
     #endif
