@@ -94,7 +94,7 @@ No text specified
 Rule 9.5
 No text specified
 Rule 10.1
-Arguments of a conditional operation must be of an essentially boolean type
+Operations must be of an essentially correct type (Eg no shift on signed values, comparison is not boolean, incrementing/decrementing a bool etc) 
 Rule 10.2
 No text specified
 Rule 10.3
@@ -114,7 +114,7 @@ No text specified
 Rule 11.2
 No text specified
 Rule 11.3
-No text specified
+A cast shall not be performed between a pointer to object type and a pointer to a different object type
 Rule 11.4
 Advisory - Object pointers should not be treated as or converted to integers
 Rule 11.5
@@ -186,7 +186,7 @@ No text specified
 Rule 17.1
 No text specified
 Rule 17.2
-No text specified
+Functions shall not call themselves, either directly or indirectly
 Rule 17.3
 No text specified
 Rule 17.4
@@ -196,7 +196,7 @@ No text specified
 Rule 17.6
 No text specified
 Rule 17.7
-No text specified
+The value returned by a function having non-void return type shall be used
 Rule 17.8
 Advisory - An argument to a function should be treated as read-only
 Rule 18.1
@@ -206,7 +206,7 @@ No text specified
 Rule 18.3
 No text specified
 Rule 18.4
-No text specified
+Advisory - The +, -, += and -= operators should not be applied to an expression of pointer type
 Rule 18.5
 No text specified
 Rule 18.6

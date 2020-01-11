@@ -11,12 +11,14 @@
 */
   #define PORT_TYPE uint8_t //Size of the port variables (Eg inj1_pin_port).
   #define PINMASK_TYPE uint8_t
+  #define COMPARE_TYPE uint16_t
+  #define COUNTER_TYPE uint16_t
   #define EEPROM_LIB_H <EEPROM.h>
   void initBoard();
   uint16_t freeRam();
 
   #if defined(TIMER5_MICROS)
-    //#define micros() (((timer5_overflow_count << 16) + TCNT5) * 4) //Fast version of micros() that uses the 4uS tick of timer5. See timers.ino for the overflow ISR of timer5
+    /*#define micros() (((timer5_overflow_count << 16) + TCNT5) * 4) */ //Fast version of micros() that uses the 4uS tick of timer5. See timers.ino for the overflow ISR of timer5
     #define millis() (ms_counter) //Replaces the standard millis() function with this macro. It is both faster and more accurate. See timers.ino for its counter increment.
     static inline unsigned long micros_safe(); //A version of micros() that is interrupt safe
   #else
@@ -32,7 +34,7 @@
 ***********************************************************************************************************
 * Schedules
 */
-  //Refer to http://svn.savannah.nongnu.org/viewvc/trunk/avr-libc/include/avr/iomxx0_1.h?root=avr-libc&view=markup
+  //Refer to svn.savannah.nongnu.org/viewvc/trunk/avr-libc/include/avr/iomxx0_1.h?root=avr-libc&view=markup
   #define FUEL1_COUNTER TCNT3
   #define FUEL2_COUNTER TCNT3
   #define FUEL3_COUNTER TCNT3
@@ -69,14 +71,15 @@
   #define IGN7_COMPARE  OCR3C //Replaces injector 3
   #define IGN8_COMPARE  OCR3B //Replaces injector 2
 
-  #define FUEL1_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3A) //Turn on the A compare unit (ie turn on the interrupt)
-  #define FUEL2_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3B) //Turn on the B compare unit (ie turn on the interrupt)
-  #define FUEL3_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3C) //Turn on the C compare unit (ie turn on the interrupt)
-  #define FUEL4_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4B) //Turn on the B compare unit (ie turn on the interrupt)
-  #define FUEL5_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4C) //
-  #define FUEL6_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4A) //
-  #define FUEL7_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5C) //
-  #define FUEL8_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5B) //
+  //Note that the interrupt flag is reset BEFORE the interrupt is enabled
+  #define FUEL1_TIMER_ENABLE() TIFR3 |= (1<<OCF3A); TIMSK3 |= (1 << OCIE3A) //Turn on the A compare unit (ie turn on the interrupt)
+  #define FUEL2_TIMER_ENABLE() TIFR3 |= (1<<OCF3B); TIMSK3 |= (1 << OCIE3B) //Turn on the B compare unit (ie turn on the interrupt)
+  #define FUEL3_TIMER_ENABLE() TIFR3 |= (1<<OCF3C); TIMSK3 |= (1 << OCIE3C) //Turn on the C compare unit (ie turn on the interrupt)
+  #define FUEL4_TIMER_ENABLE() TIFR4 |= (1<<OCF4B); TIMSK4 |= (1 << OCIE4B) //Turn on the B compare unit (ie turn on the interrupt)
+  #define FUEL5_TIMER_ENABLE() TIFR4 |= (1<<OCF4C); TIMSK4 |= (1 << OCIE4C) //
+  #define FUEL6_TIMER_ENABLE() TIFR4 |= (1<<OCF4A); TIMSK4 |= (1 << OCIE4A) //
+  #define FUEL7_TIMER_ENABLE() TIFR5 |= (1<<OCF5C); TIMSK5 |= (1 << OCIE5C) //
+  #define FUEL8_TIMER_ENABLE() TIFR5 |= (1<<OCF5B); TIMSK5 |= (1 << OCIE5B) //
 
   #define FUEL1_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3A); //Turn off this output compare unit
   #define FUEL2_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3B); //Turn off this output compare unit
@@ -88,16 +91,12 @@
   #define FUEL8_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5B); //
 
   //These have the TIFR5 bits set to 1 to clear the interrupt flag. This prevents a false interrupt being called the first time the channel is enabled.
-  //I'm not sure why these are necessary as these should all be reset upon initialisation, but they do for the problem when added here
   #define IGN1_TIMER_ENABLE() TIFR5 |= (1<<OCF5A); TIMSK5 |= (1 << OCIE5A) //Turn on the A compare unit (ie turn on the interrupt)
   #define IGN2_TIMER_ENABLE() TIFR5 |= (1<<OCF5B); TIMSK5 |= (1 << OCIE5B) //Turn on the B compare unit (ie turn on the interrupt)
   #define IGN3_TIMER_ENABLE() TIFR5 |= (1<<OCF5C); TIMSK5 |= (1 << OCIE5C) //Turn on the C compare unit (ie turn on the interrupt)
-  //#define IGN1_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5A) //Turn on the B compare unit (ie turn on the interrupt)
-  //#define IGN2_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5B) //Turn on the B compare unit (ie turn on the interrupt)
-  //#define IGN3_TIMER_ENABLE() TIMSK5 |= (1 << OCIE5C) //Turn on the C compare unit (ie turn on the interrupt)
-  #define IGN4_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4A) //Turn on the A compare unit (ie turn on the interrupt)
-  #define IGN5_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4C) //Turn on the A compare unit (ie turn on the interrupt)
-  #define IGN6_TIMER_ENABLE() TIMSK4 |= (1 << OCIE4B) //Replaces injector 4
+  #define IGN4_TIMER_ENABLE() TIFR4 |= (1<<OCF4A); TIMSK4 |= (1 << OCIE4A) //Turn on the A compare unit (ie turn on the interrupt)
+  #define IGN5_TIMER_ENABLE() TIFR4 |= (1<<OCF4C); TIMSK4 |= (1 << OCIE4C) //Turn on the A compare unit (ie turn on the interrupt)
+  #define IGN6_TIMER_ENABLE() TIFR4 |= (1<<OCF4B); TIMSK4 |= (1 << OCIE4B) //Replaces injector 4
   #define IGN7_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3C) //Replaces injector 3
   #define IGN8_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3B) //Replaces injector 2
 
@@ -111,10 +110,7 @@
   #define IGN8_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3B) //Replaces injector 2
 
   #define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
-  #define MAX_TIMER_PERIOD_SLOW 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 16, as each timer tick is 16uS)
   #define uS_TO_TIMER_COMPARE(uS1) ((uS1) >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
-  //This is a hack until I make all the AVR timers run at the same speed
-  #define uS_TO_TIMER_COMPARE_SLOW(uS1) ((uS1) >> 2)
 
 /*
 ***********************************************************************************************************

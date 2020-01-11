@@ -12,8 +12,8 @@
 #ifndef SPEEDUINO_H
 #define SPEEDUINO_H
 
-uint16_t PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen);
-byte getVE();
+uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen);
+byte getVE1();
 byte getVE2();
 byte getAdvance();
 

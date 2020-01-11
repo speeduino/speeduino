@@ -12,6 +12,10 @@ void initialiseFan();
 void nitrousControl();
 void fanControl();
 
+#define SIMPLE_BOOST_P  1
+#define SIMPLE_BOOST_I  1
+#define SIMPLE_BOOST_D  1
+
 #define BOOST_PIN_LOW()  *boost_pin_port &= ~(boost_pin_mask)
 #define BOOST_PIN_HIGH() *boost_pin_port |= (boost_pin_mask)
 #define VVT_PIN_LOW()    *vvt_pin_port &= ~(vvt_pin_mask)
@@ -43,6 +47,7 @@ volatile unsigned int boost_pwm_cur_value;
 long boost_pwm_target_value;
 long boost_cl_target_boost;
 byte boostCounter;
+byte vvtCounter;
 
 byte fanHIGH = HIGH;             // Used to invert the cooling fan output
 byte fanLOW = LOW;               // Used to invert the cooling fan output
@@ -50,7 +55,9 @@ byte fanLOW = LOW;               // Used to invert the cooling fan output
 volatile bool vvt_pwm_state;
 unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int vvt_pwm_cur_value;
-long vvt_pwm_target_value;
+long vvt_pwm_value;
+long vvt_pid_target_angle;
+//long vvt_pid_current_angle;
 static inline void boostInterrupt();
 static inline void vvtInterrupt();
 

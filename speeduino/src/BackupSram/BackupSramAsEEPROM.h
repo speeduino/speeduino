@@ -12,7 +12,7 @@
 
 class BackupSramAsEEPROM {
   private: 
-    const uint16_t backup_size = 0x4000; //maximum of 4kb backuped sram available.
+    const uint16_t backup_size = 4096; //maximum of 4kb backuped sram available.
     int8_t write_byte( uint8_t *data, uint16_t bytes, uint16_t offset ); 
     int8_t read_byte( uint8_t *data, uint16_t bytes, uint16_t offset ); 
    

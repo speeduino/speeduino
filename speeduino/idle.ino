@@ -43,12 +43,14 @@ void initialiseIdle()
       //Case 2 is PWM open loop
       iacPWMTable.xSize = 10;
       iacPWMTable.valueSize = SIZE_BYTE;
+      iacPWMTable.axisSize = SIZE_BYTE;
       iacPWMTable.values = configPage6.iacOLPWMVal;
       iacPWMTable.axisX = configPage6.iacBins;
 
 
       iacCrankDutyTable.xSize = 4;
       iacCrankDutyTable.valueSize = SIZE_BYTE;
+      iacCrankDutyTable.axisSize = SIZE_BYTE;
       iacCrankDutyTable.values = configPage6.iacCrankDuty;
       iacCrankDutyTable.axisX = configPage6.iacCrankBins;
 
@@ -68,11 +70,13 @@ void initialiseIdle()
       //Case 3 is PWM closed loop
       iacClosedLoopTable.xSize = 10;
       iacClosedLoopTable.valueSize = SIZE_BYTE;
+      iacClosedLoopTable.axisSize = SIZE_BYTE;
       iacClosedLoopTable.values = configPage6.iacCLValues;
       iacClosedLoopTable.axisX = configPage6.iacBins;
 
       iacCrankDutyTable.xSize = 4;
       iacCrankDutyTable.valueSize = SIZE_BYTE;
+      iacCrankDutyTable.axisSize = SIZE_BYTE;
       iacCrankDutyTable.values = configPage6.iacCrankDuty;
       iacCrankDutyTable.axisX = configPage6.iacCrankBins;
 
@@ -96,15 +100,17 @@ void initialiseIdle()
       //Case 2 is Stepper open loop
       iacStepTable.xSize = 10;
       iacStepTable.valueSize = SIZE_BYTE;
+      iacStepTable.axisSize = SIZE_BYTE;
       iacStepTable.values = configPage6.iacOLStepVal;
       iacStepTable.axisX = configPage6.iacBins;
 
       iacCrankStepsTable.xSize = 4;
       iacCrankStepsTable.valueSize = SIZE_BYTE;
+      iacCrankStepsTable.axisSize = SIZE_BYTE;
       iacCrankStepsTable.values = configPage6.iacCrankSteps;
       iacCrankStepsTable.axisX = configPage6.iacCrankBins;
-      iacStepTime = configPage6.iacStepTime * 1000;
-      iacCoolTime = configPage9.iacCoolTime * 1000;
+      iacStepTime_uS = configPage6.iacStepTime * 1000;
+      iacCoolTime_uS = configPage9.iacCoolTime * 1000;
 
       completedHomeSteps = 0;
       idleStepper.curIdleStep = 0;
@@ -126,15 +132,17 @@ void initialiseIdle()
       //Case 5 is Stepper closed loop
       iacClosedLoopTable.xSize = 10;
       iacClosedLoopTable.valueSize = SIZE_BYTE;
+      iacClosedLoopTable.axisSize = SIZE_BYTE;
       iacClosedLoopTable.values = configPage6.iacCLValues;
       iacClosedLoopTable.axisX = configPage6.iacBins;
 
       iacCrankStepsTable.xSize = 4;
       iacCrankStepsTable.valueSize = SIZE_BYTE;
+      iacCrankStepsTable.axisSize = SIZE_BYTE;
       iacCrankStepsTable.values = configPage6.iacCrankSteps;
       iacCrankStepsTable.axisX = configPage6.iacCrankBins;
-      iacStepTime = configPage6.iacStepTime * 1000;
-      iacCoolTime = configPage9.iacCoolTime * 1000;
+      iacStepTime_uS = configPage6.iacStepTime * 1000;
+      iacCoolTime_uS = configPage9.iacCoolTime * 1000;
 
       completedHomeSteps = 0;
       idleCounter = 0;
@@ -152,7 +160,8 @@ void initialiseIdle()
         idleStepper.moreAirDirection = STEPPER_BACKWARD;
       }
 
-      idlePID.SetOutputLimits(0, (configPage6.iacStepHome * 3)); //Maximum number of steps probably needs its own setting
+      idlePID.SetSampleTime(100);
+      idlePID.SetOutputLimits(0, (configPage9.iacMaxSteps * 3)); //Maximum number of steps; always less than home steps count.
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       break;
@@ -178,6 +187,7 @@ void idleControl()
   }
   else { currentStatus.idleUpActive = false; }
 
+  bool PID_computed = false;
   switch(configPage6.iacAlgorithm)
   {
     case IAC_ALGORITHM_NONE:       //Case 0 is no idle control ('None')
@@ -231,18 +241,21 @@ void idleControl()
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
         if( (idleCounter & 31) == 1) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
 
-        idlePID.Compute();
-        idle_pwm_target_value = idle_pid_target_value;
-        if( idle_pwm_target_value == 0 )
-        { 
-          disableIdle(); 
-          BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off
-          break; 
-        }
-        BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
-        currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count) >> 1;
-        if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
+        PID_computed = idlePID.Compute(true);
+        if(PID_computed == true)
+        {
+          idle_pwm_target_value = idle_pid_target_value;
+          if( idle_pwm_target_value == 0 )
+          { 
+            disableIdle(); 
+            BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off
+            break; 
+          }
+          BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
+          currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count) >> 1;
+          if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
 
+        }
         idleCounter++;
       break;
 
@@ -256,9 +269,16 @@ void idleControl()
           //Currently cranking. Use the cranking table
           idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
           if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
+
+          //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
+          if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
+          {
+            idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+          }
+
           doStep();
         }
-        else if( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < iacStepTable.axisX[IDLE_TABLE_SIZE-1])
+        else if( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < table2D_getAxisValue(&iacStepTable, (IDLE_TABLE_SIZE-1)) )
         {
           //Standard running
           //We must also have more than zero RPM for the running state
@@ -267,12 +287,18 @@ void idleControl()
             //Only do a lookup of the required value around 4 times per second. Any more than this can create too much jitter and require a hyster value that is too high
             idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
             if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
-            iacStepTime = configPage6.iacStepTime * 1000;
-            iacCoolTime = configPage9.iacCoolTime * 1000;
+            iacStepTime_uS = configPage6.iacStepTime * 1000;
+            iacCoolTime_uS = configPage9.iacCoolTime * 1000;
+
+            //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
+            if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
+            {
+              idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+            }
           }
           doStep();
         }
-        currentStatus.idleLoad = idleStepper.curIdleStep >> 1; //Current step count (Divided by 2 for byte)
+        currentStatus.idleLoad = idleStepper.curIdleStep / 2; //Current step count (Divided by 2 for byte)
       }
       //Set or clear the idle active flag
       if(idleStepper.targetIdleStep != idleStepper.curIdleStep) { BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); }
@@ -287,18 +313,24 @@ void idleControl()
         {
           //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
           idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
-          iacStepTime = configPage6.iacStepTime * 1000;
-          iacCoolTime = configPage9.iacCoolTime * 1000;
+          iacStepTime_uS = configPage6.iacStepTime * 1000;
+          iacCoolTime_uS = configPage9.iacCoolTime * 1000;
         }
 
         currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //All temps are offset by 40 degrees
         if(currentStatus.idleUpActive == true) { idle_pid_target_value += configPage2.idleUpAdder; } //Add Idle Up amount if active
-        idlePID.Compute();
+        PID_computed = idlePID.Compute(true);
         idleStepper.targetIdleStep = idle_pid_target_value;
 
+        //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
+        if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
+        {
+          idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+        }
+
         doStep();
-        currentStatus.idleLoad = idleStepper.curIdleStep >> 1; //Current step count (Divided by 2 for byte)
+        currentStatus.idleLoad = idleStepper.curIdleStep / 2; //Current step count (Divided by 2 for byte)
         idleCounter++;
       }
       //Set or clear the idle active flag
@@ -350,11 +382,11 @@ static inline byte checkForStepping()
   {
     if (idleStepper.stepperStatus == STEPPING)
     {
-      timeCheck = iacStepTime;
+      timeCheck = iacStepTime_uS;
     }
     else 
     {
-      timeCheck = iacCoolTime;
+      timeCheck = iacCoolTime_uS;
     }
 
     if(micros_safe() > (idleStepper.stepStartTime + timeCheck) )
@@ -366,7 +398,7 @@ static inline byte checkForStepping()
         idleStepper.stepStartTime = micros_safe();
         
         // if there is no cool time we can miss that step out completely.
-        if (iacCoolTime > 0)
+        if (iacCoolTime_uS > 0)
         {
           idleStepper.stepperStatus = COOLING; //'Cooling' is the time the stepper needs to sit in LOW state before the next step can be made
         }
@@ -442,6 +474,12 @@ static inline void disableIdle()
         */
         idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
         if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active?
+
+        //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
+        if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
+        {
+          idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+        }
     }
   }
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off
@@ -505,7 +543,7 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
   }
 }
 
-#if defined(CORE_TEENSY)
+#if defined(CORE_TEENSY35)
 void ftm2_isr(void)
 { 
   //FTM2 only has 2 compare channels
@@ -516,4 +554,6 @@ void ftm2_isr(void)
   if(interrupt1) { FTM2_C0SC &= ~FTM_CSC_CHF; idleInterrupt(); }
   else if(interrupt2) { FTM2_C1SC &= ~FTM_CSC_CHF; } //Add a callback function here if this is ever used
 }
+#elif defined(CORE_TEENSY40)
+//DO STUFF HERE
 #endif

@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    12
+  #define CURRENT_DATA_VERSION    13
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -237,15 +237,66 @@ void doUpdates()
 
   if(EEPROM.read(EEPROM_DATA_VERSION) == 11)
   {
-    //July 2019
+    //Sep 2019
     //A battery calibration offset value was introduced. Set default value to 0
     configPage4.batVoltCorrect = 0;
 
     //An option was added to select the older method of performing MAP reads with the pullup resistor active
     configPage2.legacyMAP = 0;
 
+    //Secondary fuel table was added for swtiching. Make sure it's all turned off initially
+    configPage10.fuel2Mode = 0;
+    configPage10.fuel2SwitchVariable = 0; //Set switch variable to RPM
+    configPage10.fuel2SwitchValue = 7000; //7000 RPM switch point is safe
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 12);
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 12)
+  {
+    //Nov 2019
+    //New option to only apply voltage correction to dead time. Set existing tunes to use old method
+    configPage2.battVCorMode = BATTV_COR_MODE_WHOLE;
+
+    //Manual baro correction curve was added. Give it some default values (All baro readings set to 100%)
+    configPage4.baroFuelBins[0] = 80;
+    configPage4.baroFuelBins[1] = 85;
+    configPage4.baroFuelBins[2] = 90;
+    configPage4.baroFuelBins[3] = 95;
+    configPage4.baroFuelBins[4] = 100;
+    configPage4.baroFuelBins[5] = 105;
+    configPage4.baroFuelBins[6] = 110;
+    configPage4.baroFuelBins[7] = 115;
+
+    configPage4.baroFuelValues[0] = 100;
+    configPage4.baroFuelValues[1] = 100;
+    configPage4.baroFuelValues[2] = 100;
+    configPage4.baroFuelValues[3] = 100;
+    configPage4.baroFuelValues[4] = 100;
+    configPage4.baroFuelValues[5] = 100;
+    configPage4.baroFuelValues[6] = 100;
+    configPage4.baroFuelValues[7] = 100;
+
+    //Idle advance curve was added. Add default values
+    configPage2.idleAdvEnabled = 0; //Turn this off by default
+    configPage2.idleAdvTPS = 5; //Active below 5% tps
+    configPage2.idleAdvRPM = 20; //Active below 2000 RPM
+    configPage4.idleAdvBins[0] = 30;
+    configPage4.idleAdvBins[1] = 40;
+    configPage4.idleAdvBins[2] = 50;
+    configPage4.idleAdvBins[3] = 60;
+    configPage4.idleAdvBins[4] = 70;
+    configPage4.idleAdvBins[5] = 80;
+    configPage4.idleAdvValues[0] = 15; //These values offset by 15, so this is just making this equal to 0
+    configPage4.idleAdvValues[1] = 15;
+    configPage4.idleAdvValues[2] = 15;
+    configPage4.idleAdvValues[3] = 15;
+    configPage4.idleAdvValues[4] = 15;
+    configPage4.idleAdvValues[5] = 15;
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 13);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)

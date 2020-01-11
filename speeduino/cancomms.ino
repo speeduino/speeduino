@@ -8,7 +8,7 @@ can_comms was originally contributed by Darren Siepka
 /*
 can_command is called when a command is received over serial3 from the Can interface
 It parses the command and calls the relevant function
-sendcancommand is called when a comman d is to be sent via serial3 to the Can interface
+sendcancommand is called when a command is to be sent via serial3 to the Can interface
 */
 #include "globals.h"
 #include "cancomms.h"
@@ -39,7 +39,7 @@ void canCommand()
                 Gdata[Gx] = CANSerial.read();
               }
             Glow = Gdata[(configPage9.caninput_source_start_byte[destcaninchannel]&7)];
-            if ((BIT_CHECK(configPage9.caninput_source_num_bytes,destcaninchannel)))  //if true then num bytes is 2
+            if ((BIT_CHECK(configPage9.caninput_source_num_bytes,destcaninchannel) > 0))  //if true then num bytes is 2
                {
                 if ((configPage9.caninput_source_start_byte[destcaninchannel]&7) < 8)   //you cant have a 2 byte value starting at byte 7(8 on the list)
                    {
@@ -160,7 +160,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
         }
     #endif
 
-  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   fullStatus[1] = currentStatus.status1; //status1 Bitfield

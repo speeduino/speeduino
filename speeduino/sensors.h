@@ -50,15 +50,10 @@ byte cltErrorCount = 0;
 
 /**
  * @brief Simple low pass IIR filter macro for the analog inputs
- * This is effectively implementing the smooth filter from http://playground.arduino.cc/Main/Smooth
+ * This is effectively implementing the smooth filter from playground.arduino.cc/Main/Smooth
  * But removes the use of floats and uses 8 bits of fixed precision.
  */
 #define ADC_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
-//These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
-#define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) )
-#define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) )
-#define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
-#define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) )
 
 static inline void instanteneousMAPReading() __attribute__((always_inline));
 static inline void readMAP() __attribute__((always_inline));
@@ -84,7 +79,7 @@ ISR(ADC_vect)
   byte nChannel;
   int result = ADCL | (ADCH << 8);
 
-  //ADCSRA = 0x6E;  // ADC disabled by clearing bit 7(ADEN)
+  //ADCSRA = 0x6E; - ADC disabled by clearing bit 7(ADEN)
   //BIT_CLEAR(ADCSRA, ADIE);
 
   nChannel = ADMUX & 0x07;
@@ -107,7 +102,7 @@ ISR(ADC_vect)
   AnChannel[nChannel-1] = result;
 
   //BIT_SET(ADCSRA, ADIE);
-  //ADCSRA = 0xEE; // ADC Interrupt Flag enabled
+  //ADCSRA = 0xEE; - ADC Interrupt Flag enabled
 }
 */
 ISR(ADC_vect)

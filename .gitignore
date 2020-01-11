@@ -5,8 +5,6 @@ table.py
 
 .DS_Store
 
-.DS_Store
-
 reference/hardware/v0.2/~$schematic v0.2_bom.xlsx
 
 reference/hardware/v0.4/gerbers/Archive.zip
@@ -25,3 +23,4 @@ reference/hardware/v0.4/gerbers/Archive.zip
 .vscode/.browse.c_cpp.db*
 speeduino/board_samd21*
 reference/doxygen
+speeduino.ino.cpp
