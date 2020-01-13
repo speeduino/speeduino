@@ -1066,9 +1066,12 @@ byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
 #ifdef USE_MC33810
-//If the MC33810 IC\s are in use, these are the chip select pins
-byte pinMC33810_1_CS;
-byte pinMC33810_2_CS;
+  //If the MC33810 IC\s are in use, these are the chip select pins
+  byte pinMC33810_1_CS;
+  byte pinMC33810_2_CS;
+#endif
+#ifdef USE_SPI_EEPROM
+  byte pinSPIFlash_CS;
 #endif
 
 /* global variables */ // from speeduino.ino
