@@ -40,7 +40,7 @@ void command()
       break;
 
     case 'A': // send x bytes of realtime values
-      sendValues(0, LOG_ENTRY_SIZE, 0x30, 0);   //send values to serial0
+      sendValues(0, LOG_ENTRY_SIZE, 0x31, 0);   //send values to serial0
       break;
 
 
@@ -502,14 +502,15 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   {
     //CAN serial
     #if defined(USE_SERIAL3)
-      if (offset == 0)
-      {
-        CANSerial.write("A");         //confirm cmd type
-      }
-      else
+      if (cmd == 30)
       {
         CANSerial.write("r");         //confirm cmd type
         CANSerial.write(cmd);
+        
+      }
+      else if (cmd == 31)
+      {
+        CANSerial.write("A");         //confirm cmd type
       }
     #endif
   }
