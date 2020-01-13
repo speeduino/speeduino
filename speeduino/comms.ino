@@ -12,6 +12,7 @@ A full copy of the license may be found in the projects root directory
 #include "decoders.h"
 #include "scheduledIO.h"
 #include "logger.h"
+#include "errors.h"
 
 /*
   Processes the data on the serial buffer.
