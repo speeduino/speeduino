@@ -23,7 +23,7 @@ void canCommand()
   switch (currentcanCommand)
   {
     case 'A': // sends the bytes of realtime values from the OLD CAN list
-        sendcanValues(0, CAN_PACKET_SIZE, 0x30, 1); //send values to serial3
+        sendcanValues(0, CAN_PACKET_SIZE, 0x31, 1); //send values to serial3
         break;
 
     case 'G': // this is the reply command sent by the Can interface
@@ -39,7 +39,7 @@ void canCommand()
                 Gdata[Gx] = CANSerial.read();
               }
             Glow = Gdata[(configPage9.caninput_source_start_byte[destcaninchannel]&7)];
-            if ((BIT_CHECK(configPage9.caninput_source_num_bytes,destcaninchannel)))  //if true then num bytes is 2
+            if ((BIT_CHECK(configPage9.caninput_source_num_bytes,destcaninchannel) > 0))  //if true then num bytes is 2
                {
                 if ((configPage9.caninput_source_start_byte[destcaninchannel]&7) < 8)   //you cant have a 2 byte value starting at byte 7(8 on the list)
                    {
@@ -87,7 +87,7 @@ void canCommand()
          break;
 
     case 'n': // sends the bytes of realtime values from the NEW CAN list
-        sendcanValues(0, NEW_CAN_PACKET_SIZE, 0x31, 1); //send values to serial3
+        sendcanValues(0, NEW_CAN_PACKET_SIZE, 0x32, 1); //send values to serial3
         break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -144,23 +144,24 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 
     //CAN serial
     #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)|| defined(CORE_STM32) || defined (CORE_TEENSY) //ATmega2561 does not have Serial3
-      if (offset == 0)
-        {
-          if (cmd == 0x30) {CANSerial.write("A");}         // confirm command type
-          else
-             {
-              CANSerial.write("n");                       // confirm command type
-              CANSerial.write(NEW_CAN_PACKET_SIZE);       // send the packet size the receiving device should expect.
-             }
-        }
-      else
-        {
-      CANSerial.write("r");         //confirm cmd type
-      CANSerial.write(cmd);
-        }
+      if (cmd == 0x30) 
+          {
+           CANSerial.write("r");         //confirm cmd type
+           CANSerial.write(cmd);
+          }
+        else if (cmd == 0x31)
+          {
+           CANSerial.write("A");         // confirm command type   
+          }
+        else if (cmd == 0x32)
+          {
+           CANSerial.write("n");                       // confirm command type
+           CANSerial.write(cmd);                       // send command type  , 0x32 (dec50) is ascii '0'
+           CANSerial.write(NEW_CAN_PACKET_SIZE);       // send the packet size the receiving device should expect.
+          }
     #endif
 
-  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1 << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   fullStatus[1] = currentStatus.status1; //status1 Bitfield

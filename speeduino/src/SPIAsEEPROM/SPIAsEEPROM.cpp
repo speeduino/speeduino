@@ -26,23 +26,26 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#if defined(CORE_STM32_OFFICIAL) && defined(SPIFLASH_AS_EEPROM)
+//#if defined(CORE_STM32_OFFICIAL) && defined(SPIFLASH_AS_EEPROM)
+#if defined(USE_SPI_EEPROM)
 
 #include "SPIAsEEPROM.h"
-#include "SPI.h"             
+#include "SPI.h"        
+//#include "globals.h"     
 
 SPIAsEEPROM::SPIAsEEPROM()
 {
-    pinMode(PB0, OUTPUT);
+    //pinMode(PB0, OUTPUT);
     magicbuf[0] = MAGICNUMBER1;
     magicbuf[1] = MAGICNUMBER2;
     magicbuf[2] = MAGICNUMBER3;
     magicbuf[3] = 0x00;
 
   }
-  uint8_t SPIAsEEPROM::begin() {
-      
-      SpiFlashAvialable = winbondSPIFlash.begin(_W25Q16,SPI,PB0);
+  uint8_t SPIAsEEPROM::begin(uint8_t pinSPIFlash_CS=6)
+  {
+      pinMode(pinSPIFlash_CS, OUTPUT);
+      SpiFlashAvialable = winbondSPIFlash.begin(_W25Q16,SPI, pinSPIFlash_CS);
       uint8_t formatted = 0;
       if(SpiFlashAvialable){
         //check for magic numbers

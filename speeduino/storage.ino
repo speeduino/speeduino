@@ -433,9 +433,8 @@ void loadConfig()
   //Create a pointer to the config page
   byte* pnt_configPage;
 
-
   //Fuel table (See storage.h for data layout)
-  for(int x=EEPROM_CONFIG1_MAP; x<EEPROM_CONFIG1_XBINS; x++)
+  for(uint16_t x=EEPROM_CONFIG1_MAP; x<EEPROM_CONFIG1_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG1_MAP;
     fuelTable.values[15-(offset/16)][offset%16] = EEPROM.read(x); //Read the 8x8 map
@@ -452,14 +451,13 @@ void loadConfig()
     offset = x - EEPROM_CONFIG1_YBINS;
     fuelTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER;
   }
-
   pnt_configPage = (byte *)&configPage2; //Create a pointer to Page 1 in memory
   for(int x=EEPROM_CONFIG2_START; x<EEPROM_CONFIG2_END; x++)
   {
     *(pnt_configPage + byte(x - EEPROM_CONFIG2_START)) = EEPROM.read(x);
   }
   //That concludes the reading of the VE table
-
+  
   //*********************************************************************************************************************************************************************************
   //IGNITION CONFIG PAGE (2)
 
