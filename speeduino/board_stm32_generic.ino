@@ -34,16 +34,16 @@ void initBoard()
     ***********************************************************************************************************
     * Timers
     */
-    #if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
-        Timer8.setPeriod(1000);  // Set up period
-        Timer8.setMode(1, TIMER_OUTPUT_COMPARE);
-        Timer8.attachInterrupt(1, oneMSInterval);
-        Timer8.resume(); //Start Timer
-    #else
+    #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB)
         Timer4.setPeriod(1000);  // Set up period
         Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
         Timer4.attachInterrupt(1, oneMSInterval);
         Timer4.resume(); //Start Timer
+    #else
+        Timer11.setPeriod(1000);  // Set up period
+        Timer11.setMode(1, TIMER_OUTPUT_COMPARE);
+        Timer11.attachInterrupt(1, oneMSInterval);
+        Timer11.resume(); //Start Timer
     #endif
     pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
 
@@ -65,13 +65,13 @@ void initBoard()
     ***********************************************************************************************************
     * Schedules
     */
-    #if defined (STM32F1) || defined(__STM32F1__)
+    #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB)
         //(CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
         //Timer2 to 4 is on APB1, Timer1 on APB2.   www.st.com/resource/en/datasheet/stm32f103cb.pdf sheet 12
         Timer1.setPrescaleFactor((72 * 2)-1); //2us resolution
         Timer2.setPrescaleFactor((36 * 2)-1); //2us resolution
         Timer3.setPrescaleFactor((36 * 2)-1); //2us resolution
-    #elif defined(STM32F4)
+    #else
         //(CYCLES_PER_MICROSECOND == 168, APB2 at 84MHz, APB1 at 42MHz).
         //Timer2 to 14 is on APB1, Timers 1, 8, 9 and 10 on APB2.   www.st.com/resource/en/datasheet/stm32f407vg.pdf sheet 120
         Timer1.setPrescaleFactor((168 * 2)-1); //2us resolution

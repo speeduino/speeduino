@@ -159,8 +159,14 @@ HardwareTimer Timer1(TIM1);
 HardwareTimer Timer2(TIM2);
 HardwareTimer Timer3(TIM3);
 HardwareTimer Timer4(TIM4);
+#if !defined(ARDUINO_BLUEPILL_F103C8) && !defined(ARDUINO_BLUEPILL_F103CB) //F103 just have 4 timers
 HardwareTimer Timer5(TIM5);
-HardwareTimer Timer8(TIM8);
+#if defined(TIM11)
+HardwareTimer Timer11(TIM11);
+#elif defined(TIM7)
+HardwareTimer Timer11(TIM7);
+#endif
+#endif
 
 void oneMSInterval(HardwareTimer*);
 void boostInterrupt(HardwareTimer*);
