@@ -1766,7 +1766,7 @@ void sendToothLog()
     //TunerStudio has timed out, send a LOG of all 0s
     for(int x = 0; x < (4*TOOTH_LOG_SIZE); x++)
     {
-      Serial.write(0);
+      Serial.write(static_cast<byte>(0x00)); //GCC9 fix
     }
     cmdPending = false; 
   } 
@@ -1807,7 +1807,7 @@ void sendCompositeLog()
     //TunerStudio has timed out, send a LOG of all 0s
     for(int x = 0; x < (5*TOOTH_LOG_SIZE); x++)
     {
-      Serial.write(0);
+      Serial.write(static_cast<byte>(0x00)); //GCC9 fix
     }
     cmdPending = false; 
   } 
