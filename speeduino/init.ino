@@ -45,14 +45,21 @@ void initialiseAll()
     Serial.begin(115200);
     if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
 
-    #if defined(CORE_STM32) || defined(CORE_TEENSY)
+    #if defined(CORE_STM32)
     configPage9.intcan_available = 1;   // device has internal canbus
-    //Teensy onboard CAN not used currently
+    //STM32 can not currently enabled
+    #endif
+
+    #if defined(CORE_TEENSY)
+    configPage9.intcan_available = 1;   // device has internal canbus
+    //Teensy uses the Flexcan_T4 library to use the internal canbus
     //enable local can interface
-    //setup can interface to 250k
-    //FlexCAN CANbus0(2500000, 0);
-    //static CAN_message_t txmsg,rxmsg;
-    //CANbus0.begin();
+    //setup can interface to 500k
+      //volatile CAN_message_t outMsg;
+      //volatile CAN_message_t inMsg;
+      Can0.begin();
+      Can0.setBaudRate(500000);
+      Can0.enableFIFO();
     #endif
 
     //Repoint the 2D table structs to the config pages that were just loaded

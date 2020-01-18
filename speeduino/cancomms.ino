@@ -290,6 +290,17 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
      case 3:
         //send to truecan send routine
         //canaddress == speeduino canid, candata1 == canin channel dest, paramgroup == can address  to request from
+        outMsg.id = (canaddress);
+        outMsg.len = 8;
+        outMsg.buf[0] = 0x0B ;  //11;   
+        outMsg.buf[1] = 0x145;
+        outMsg.buf[2] = candata1;
+        outMsg.buf[3] = 0x24;
+        outMsg.buf[4] = 0x7F;
+        outMsg.buf[5] = 0x70;
+        outMsg.buf[6] = 0x9E;
+        outMsg.buf[7] = 0x4D;
+        Can0.write(outMsg);
         break;
 
      default:
