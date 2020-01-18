@@ -29,7 +29,8 @@
 #ifndef SPI_AS_EEPROM_H
 #define SPI_AS_EEPROM_H
 
-#if defined(CORE_STM32_OFFICIAL) && defined(SPIFLASH_AS_EEPROM)
+//#if defined(CORE_STM32_OFFICIAL) && defined(SPIFLASH_AS_EEPROM)
+#if defined(USE_SPI_EEPROM)
 
 #define FLASHSIZEUSED 1757184 //must be a multiple of sectorsize //1757184 = 6006 bytes of EEPROM
 #define BYTESPERSECTOR 14 
@@ -63,11 +64,12 @@ class SPIAsEEPROM {
     uint32_t infoFlashAddress;
     uint8_t writeMagicNumber(uint16_t sectorNumber);
     uint16_t count(uint8_t buf[FLASH_PAGESIZE/BITS_PER_BYTE]);
+    uint8_t pinSPIFlash_CS;
       
   public:
     
     SPIAsEEPROM();
-    uint8_t begin();
+    uint8_t begin(uint8_t pinSPIFlash_CS);
     uint8_t formatFlashForUse();
     uint8_t read(uint16_t addressEEPROM);  
     int8_t write(uint16_t addressEEPROM, uint8_t val);
