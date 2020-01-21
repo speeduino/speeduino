@@ -39,6 +39,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "init.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
+// #define INVERTED_BOOST // Uncomment this to invert boost output
+
 void setup()
 {
   initialiseAll();
