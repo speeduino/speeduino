@@ -612,6 +612,8 @@ void initialiseAll()
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
         }
+    #else 
+        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
     #endif
 
         if (!configPage2.injTiming) 
@@ -621,8 +623,6 @@ void initialiseAll()
           channel2InjDegrees = 0;
           channel3InjDegrees = 0; 
         } 
-
-        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
 
         channel1InjEnabled = true;
         channel2InjEnabled = true;
@@ -663,6 +663,8 @@ void initialiseAll()
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
         }
+    #else
+        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
     #endif
 
         maxIgnOutputs = 4;
@@ -675,8 +677,6 @@ void initialiseAll()
           channel3InjDegrees = 0;
           channel4InjDegrees = 0; 
         }
-
-        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
 
         channel1InjEnabled = true;
         channel2InjEnabled = true;
