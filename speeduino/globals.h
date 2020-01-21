@@ -425,7 +425,7 @@ struct statuses {
   byte dwellCorrection; /**< The amount of correction being applied to the dwell time. */
   byte battery10; /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
   int8_t advance; /**< Signed 8 bit as advance can now go negative (ATDC) */
-  byte corrections; /**< The total current corrections % amount */
+  uint16_t corrections; /**< The total current corrections % amount */
   uint16_t AEamount; /**< The amount of accleration enrichment currently being applied. 100=No change. Varies above 255 */
   byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
   byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
@@ -610,9 +610,11 @@ struct config2 {
   byte CTPSPin : 6;
   byte CTPSPolarity : 1;
   byte CTPSEnabled : 1;
+
   byte idleAdvEnabled : 2;
   byte idleAdvAlgorithm : 1;
   byte IdleAdvDelay : 5;
+  
   byte idleAdvRPM;
   byte idleAdvTPS;
   byte unused2_95[33];
