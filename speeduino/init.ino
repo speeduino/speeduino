@@ -545,11 +545,25 @@ void initialiseAll()
         //For alternatiing injection, the squirt occurs at different times for each channel
         if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
         {
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 72;
-          channel3InjDegrees = 144;
-          channel4InjDegrees = 216;
-          channel5InjDegrees = 288;
+          if (!configPage2.injTiming) 
+          { 
+            //For simultaneous, all squirts happen at the same time
+            channel1InjDegrees = 0;
+            channel2InjDegrees = 0;
+            channel3InjDegrees = 0;
+            channel4InjDegrees = 0;
+            channel5InjDegrees = 0; 
+          }
+          else
+          {
+            channel1InjDegrees = 0;
+            channel2InjDegrees = 72;
+            channel3InjDegrees = 144;
+            channel4InjDegrees = 216;
+            channel5InjDegrees = 288;
+
+            //Divide by currentStatus.nSquirts ?
+          }
         }
         else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
@@ -561,15 +575,7 @@ void initialiseAll()
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
-        }
-        if (!configPage2.injTiming) 
-        { 
-          //For simultaneous, all squirts happen at the same time
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 0;
-          channel3InjDegrees = 0;
-          channel4InjDegrees = 0;
-          channel5InjDegrees = 0; 
+          req_fuel_uS = req_fuel_uS * 2;
         }
 
         channel1InjEnabled = true;
