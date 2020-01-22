@@ -1050,7 +1050,7 @@ void setPinMapping(byte boardID)
         pinCoil4 = 29;
         pinCoil3 = 30;
         pinO2 = A22;
-      #elif defined(STM32F4)
+      #elif defined(ARDUINO_BLACK_F407VE)
         //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 
@@ -1161,28 +1161,29 @@ void setPinMapping(byte boardID)
         pinInjector2 = PB6; //Output pin injector 2 is on
         pinInjector3 = PB5; //Output pin injector 3 is on
         pinInjector4 = PB4; //Output pin injector 4 is on
-        pinCoil1 = PB3; //Pin for coil 1
-        pinCoil2 = PA15; //Pin for coil 2
-        pinCoil3 = PA7; //Pin for coil 3
-        pinCoil4 = PA8; //Pin for coil 4
-        pinTPS = A0; //TPS input pin
-        pinMAP = A1; //MAP sensor pin
-        pinIAT = A2; //IAT sensor pin
-        pinCLT = A3; //CLS sensor pin
-        pinO2 = A4; //O2 Sensor pin
-        pinBat = A5; //Battery reference voltage pin
+        pinCoil1 = PB9; //Pin for coil 1
+        pinCoil2 = PB8; //Pin for coil 2
+        pinCoil3 = PB3; //Pin for coil 3
+        pinCoil4 = PA15; //Pin for coil 4
+        pinTPS = A2;//TPS input pin
+        pinMAP = A3; //MAP sensor pin
+        pinIAT = A0; //IAT sensor pin
+        pinCLT = A1; //CLS sensor pin
+        pinO2 = A8; //O2 Sensor pin
+        pinBat = A4; //Battery reference voltage pin
         pinBaro = pinMAP;
         pinIdle1 = PB2; //Single wire idle control
-        pinBoost = PA6; //Boost control
+        pinBoost = PA8; //Boost control
+        //pinVVT_1 = 4; //Default VVT output
         pinStepperDir = PC15; //Direction pin  for DRV8825 driver
         pinStepperStep = PC14; //Step pin for DRV8825 driver
         pinStepperEnable = PC13; //Enable pin for DRV8825
-        pinFuelPump = PB11; //Fuel pump output
+        pinFuelPump = PB10; //Fuel pump output
         pinTachOut = PC13; //Tacho output pin
         //external interrupt enabled pins
         pinFlex = PB1; // Flex sensor (Must be external interrupt enabled)
         pinTrigger = PB0; //The CAS pin
-        pinTrigger2 = PB10; //The Cam Sensor pin
+        pinTrigger2 = PB2; //The Cam Sensor pin
       #endif
       break;
 
@@ -1694,7 +1695,7 @@ void setPinMapping(byte boardID)
       #endif
       break;
     
-   #if defined(STM32F4)
+   #if defined(ARDUINO_BLACK_F407VE)
     case 60:
        //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
@@ -1844,7 +1845,7 @@ void setPinMapping(byte boardID)
     #endif
       break;
     default:
-      #if defined(STM32F4)
+      #if defined(ARDUINO_BLACK_F407VE)
        //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 

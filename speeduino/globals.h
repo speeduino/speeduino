@@ -35,7 +35,9 @@
   #ifndef word
     #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
   #endif
-  #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) || defined(ARDUINO_BLACKPILL_F401CC)  || defined(ARDUINO_BLACKPILL_F411CE)
+  
+  #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
+   || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
     //STM32 Pill boards
     #define BOARD_DIGITAL_GPIO_PINS 34
     #define BOARD_NR_GPIO_PINS 34
