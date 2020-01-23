@@ -1,7 +1,7 @@
 #ifndef STM32_H
 #define STM32_H
 #if defined(CORE_STM32_GENERIC)
-#define USE_FRAM
+//#define USE_FRAM
 /*
 ***********************************************************************************************************
 * General
