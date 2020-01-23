@@ -11,10 +11,14 @@
   #define COMPARE_TYPE uint16_t
   #define COUNTER_TYPE uint16_t
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
-  #if defined(USE_FRAM)
-  #define EEPROM_LIB_H <Fram.h>
+  #if defined(SRAM_AS_EEPROM)
+    #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
+  #elif defined(SPIFLASH_AS_EEPROM)
+    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  #elif defined(USE_FRAM) //https://github.com/VitorBoss/FRAM
+    #define EEPROM_LIB_H <Fram.h>
   #else
-  #define EEPROM_LIB_H <EEPROM.h>
+    #define EEPROM_LIB_H <EEPROM.h>
   #endif
   #ifndef USE_SERIAL3
   #define USE_SERIAL3

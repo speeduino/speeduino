@@ -18,6 +18,8 @@
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
 #elif defined(SPIFLASH_AS_EEPROM)
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+#elif defined(USE_FRAM) //https://github.com/VitorBoss/FRAM
+    #define EEPROM_LIB_H <Fram.h>
 #else
     #define EEPROM_LIB_H <EEPROM.h>
 #endif
