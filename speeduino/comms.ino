@@ -12,6 +12,7 @@ A full copy of the license may be found in the projects root directory
 #include "decoders.h"
 #include "scheduledIO.h"
 #include "logger.h"
+#include "errors.h"
 
 /*
   Processes the data on the serial buffer.
@@ -39,7 +40,7 @@ void command()
       break;
 
     case 'A': // send x bytes of realtime values
-      sendValues(0, LOG_ENTRY_SIZE, 0x30, 0);   //send values to serial0
+      sendValues(0, LOG_ENTRY_SIZE, 0x31, 0);   //send values to serial0
       break;
 
 
@@ -501,14 +502,15 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   {
     //CAN serial
     #if defined(USE_SERIAL3)
-      if (offset == 0)
-      {
-        CANSerial.write("A");         //confirm cmd type
-      }
-      else
+      if (cmd == 30)
       {
         CANSerial.write("r");         //confirm cmd type
         CANSerial.write(cmd);
+        
+      }
+      else if (cmd == 31)
+      {
+        CANSerial.write("A");         //confirm cmd type
       }
     #endif
   }
@@ -537,8 +539,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[14] = lowByte(currentStatus.RPM); //rpm HB
   fullStatus[15] = highByte(currentStatus.RPM); //rpm LB
   fullStatus[16] = (byte)(currentStatus.AEamount >> 1); //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
-  fullStatus[17] = currentStatus.corrections; //Total GammaE (%)
-  fullStatus[18] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
+  fullStatus[17] = lowByte(currentStatus.corrections); //Total GammaE (%)
+  fullStatus[18] = highByte(currentStatus.corrections); //Total GammaE (%)
   fullStatus[19] = currentStatus.VE1; //VE 1 (%)
   fullStatus[20] = currentStatus.VE2; //VE 2 (%)
   fullStatus[21] = currentStatus.afrTarget;
@@ -635,6 +637,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[96] = lowByte(currentStatus.flexBoostCorrection);
   fullStatus[97] = highByte(currentStatus.flexBoostCorrection);
   fullStatus[98] = currentStatus.baroCorrection;
+  fullStatus[99] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
 
   for(byte x=0; x<packetLength; x++)
   {
