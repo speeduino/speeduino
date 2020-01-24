@@ -14,7 +14,7 @@
 #include "corrections.h"
 #include "idle.h"
 #include "table.h"
-#include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
+#include "board.h" //Note that this is not a real file, it is defined in globals.h. 
 
 void initialiseAll()
 {   
