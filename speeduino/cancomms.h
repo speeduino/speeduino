@@ -1,6 +1,14 @@
 #ifndef CANCOMMS_H
 #define CANCOMMS_H
 
+#if defined(CORE_TEENSY)
+  #include <FlexCAN_T4.h>
+  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
+  
+  static CAN_message_t outMsg;
+  static CAN_message_t inMsg;
+#endif
+
 #define NEW_CAN_PACKET_SIZE   75
 #define CAN_PACKET_SIZE   75
 

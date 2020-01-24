@@ -36,13 +36,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "crankMaths.h"
 #include "init.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
-#if defined(CORE_TEENSY)
-  #include <FlexCAN_T4.h>
-  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
-  
-  static CAN_message_t outMsg;
-  static CAN_message_t inMsg;
-#endif
 
 #ifndef UNIT_TEST // Scope guard for unit testing
 void setup()
