@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-
+#include "tests_corrections.h"
 #include "tests_init.h"
 #include <unity.h>
 
@@ -21,6 +21,7 @@ uint8_t max_blinks = 5;
 void loop() 
 {
   testInitialisation();
+  testCorrections();
 
   UNITY_END(); // stop unit testing
 }

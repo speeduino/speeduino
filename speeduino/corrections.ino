@@ -23,6 +23,12 @@ Flood clear mode etc.
 long PID_O2, PID_output, PID_AFRTarget;
 PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
+uint16_t AFRnextCycle;
+unsigned long knockStartTime;
+byte lastKnockCount;
+int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
+int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
+
 void initialiseCorrections()
 {
   egoPID.SetMode(AUTOMATIC); //Turn O2 PID on
@@ -36,7 +42,7 @@ void initialiseCorrections()
 correctionsTotal() calls all the other corrections functions and combines their results.
 This is the only function that should be called from anywhere outside the file
 */
-static inline uint16_t correctionsFuel()
+uint16_t correctionsFuel()
 {
   #define MAX_CORRECTIONS 3 //The maximum number of corrections allowed before the sum is reprocessed
   uint32_t sumCorrections = 100;
@@ -102,14 +108,13 @@ static inline byte correctionsFuel_new()
 {
   uint32_t sumCorrections = 100;
   byte numCorrections = 0;
-  byte result; //temporary variable to store the result of each corrections function
 
   //The values returned by each of the correction functions are multipled together and then divided back to give a single 0-255 value.
   currentStatus.wueCorrection = correctionWUE(); numCorrections++;
   uint16_t correctionASEvalue = correctionASE(); numCorrections++;
   uint16_t correctionCrankingValue = correctionCranking(); numCorrections++;
   currentStatus.AEamount = correctionAccel(); numCorrections++;
-  result = correctionFloodClear(); numCorrections++;
+  uint8_t correctionFloodClearValue = correctionFloodClear(); numCorrections++;
   currentStatus.egoCorrection = correctionAFRClosedLoop(); numCorrections++;
 
   currentStatus.batCorrection = correctionBatVoltage(); numCorrections++;
@@ -121,7 +126,17 @@ static inline byte correctionsFuel_new()
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
   if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
-  return ( currentStatus.wueCorrection + correctionASEvalue + correctionCrankingValue);
+  sumCorrections = currentStatus.wueCorrection \
+                  + correctionASEvalue \
+                  + correctionCrankingValue \
+                  + currentStatus.AEamount \
+                  + correctionFloodClearValue \
+                  + currentStatus.batCorrection \
+                  + currentStatus.iatCorrection \
+                  + currentStatus.baroCorrection \
+                  + currentStatus.flexCorrection \
+                  + currentStatus.launchCorrection;
+  return (sumCorrections);
 
 }
 
@@ -129,7 +144,7 @@ static inline byte correctionsFuel_new()
 Warm Up Enrichment (WUE)
 Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add
 */
-static inline byte correctionWUE()
+byte correctionWUE()
 {
   byte WUEValue;
   //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
@@ -153,7 +168,7 @@ static inline byte correctionWUE()
 Cranking Enrichment
 Additional fuel % to be added when the engine is cranking
 */
-static inline byte correctionCranking()
+byte correctionCranking()
 {
   byte crankingValue = 100;
   //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage2.crankingPct; }
@@ -164,12 +179,15 @@ static inline byte correctionCranking()
   return crankingValue;
 }
 
-/*
-After Start Enrichment
-This is a short period (Usually <20 seconds) immediately after the engine first fires (But not when cranking)
-where an additional amount of fuel is added (Over and above the WUE amount)
-*/
-static inline byte correctionASE()
+/**
+ * @brief Afer Start Enrichment calculation
+ * 
+ * This is a short period (Usually <20 seconds) immediately after the engine first fires (But not when cranking)
+ * where an additional amount of fuel is added (Over and above the WUE amount)
+ * 
+ * @return uint8_t The After Start Enrichment modifier as a %. 100% = No modification. 
+ */
+byte correctionASE()
 {
   int16_t ASEValue;
   //Two checks are requiredL:
@@ -202,7 +220,7 @@ static inline byte correctionASE()
  * @return uint16_t The Acceleration enrichment modifier as a %. 100% = No modification. 
  * As the maximum enrichment amount is +255%, the overall return value from this function can be 100+255=355. Hence this function returns a uint16_t rather than byte
  */
-static inline uint16_t correctionAccel()
+uint16_t correctionAccel()
 {
   int16_t accelValue = 100;
   //First, check whether the accel. enrichment is already running
@@ -317,8 +335,7 @@ static inline uint16_t correctionAccel()
 Simple check to see whether we are cranking with the TPS above the flood clear threshold
 This function always returns either 100 or 0
 */
-
-static inline byte correctionFloodClear()
+byte correctionFloodClear()
 {
   byte floodValue = 100;
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
@@ -337,7 +354,7 @@ static inline byte correctionFloodClear()
 Battery Voltage correction
 Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add
 */
-static inline byte correctionBatVoltage()
+byte correctionBatVoltage()
 {
   byte batValue = 100;
   if (configPage2.battVCorMode == BATTV_COR_MODE_WHOLE)
@@ -352,7 +369,7 @@ static inline byte correctionBatVoltage()
 Simple temperature based corrections lookup based on the inlet air temperature.
 This corrects for changes in air density from movement of the temperature
 */
-static inline byte correctionIATDensity()
+byte correctionIATDensity()
 {
   byte IATValue = 100;
   IATValue = table2D_getValue(&IATDensityCorrectionTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
@@ -364,7 +381,7 @@ static inline byte correctionIATDensity()
  * @brief 
  * @returns A percentage value indicating the amount the fueling should be changed based on the barometric reading. 100 = No change. 110 = 10% increase. 90 = 10% decrease
  */
-static inline byte correctionBaro()
+byte correctionBaro()
 {
   byte baroValue = 100;
   baroValue = table2D_getValue(&baroFuelTable, currentStatus.baro);
@@ -376,7 +393,7 @@ static inline byte correctionBaro()
 Launch control has a setting to increase the fuel load to assist in bringing up boost
 This simple check applies the extra fuel if we're currently launching
 */
-static inline byte correctionLaunch()
+byte correctionLaunch()
 {
   byte launchValue = 100;
   if(currentStatus.launchingHard || currentStatus.launchingSoft) { launchValue = (100 + configPage6.lnchFuelAdd); }
@@ -387,7 +404,7 @@ static inline byte correctionLaunch()
 /*
  * Returns true if decelleration fuel cutoff should be on, false if its off
  */
-static inline bool correctionDFCO()
+bool correctionDFCO()
 {
   bool DFCOValue = false;
   if ( configPage2.dfcoEnabled == 1 )
@@ -402,7 +419,7 @@ static inline bool correctionDFCO()
  * Flex fuel adjustment to vary fuel based on ethanol content
  * The amount of extra fuel required is a linear relationship based on the % of ethanol.
 */
-static inline byte correctionFlex()
+byte correctionFlex()
 {
   byte flexValue = 100;
 
@@ -426,8 +443,7 @@ This continues until either:
 PID (Best suited to wideband sensors):
 
 */
-
-static inline byte correctionAFRClosedLoop()
+byte correctionAFRClosedLoop()
 {
   byte AFRValue = 100;
   if( configPage6.egoType > 0 ) //egoType of 0 means no O2 sensor

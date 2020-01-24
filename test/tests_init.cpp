@@ -18,7 +18,7 @@ void test_initialisation_complete(void)
 
 void test_initialisation_ports(void)
 {
-  initialiseAll(); //Run the main initialise function
+  //initialiseAll(); //Run the main initialise function
   TEST_ASSERT_NOT_EQUAL(0, inj1_pin_port);
   TEST_ASSERT_NOT_EQUAL(0, inj2_pin_port);
   TEST_ASSERT_NOT_EQUAL(0, inj3_pin_port);
