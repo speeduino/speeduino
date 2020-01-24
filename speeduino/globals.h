@@ -27,7 +27,7 @@
   #define INJ_CHANNELS 8
   #define IGN_CHANNELS 8
 
-#elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(__STM32F1__) || defined(STM32F4) || defined(STM32)
+#elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(STM32)
   //These should be updated to 8 later, but there's bits missing currently
   #define INJ_CHANNELS 4
   #define IGN_CHANNELS 5
@@ -35,20 +35,23 @@
   #ifndef word
     #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
   #endif
-  #if defined (STM32F1) || defined(__STM32F1__)
+  
+  #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
+   || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
+    //STM32 Pill boards
     #define BOARD_DIGITAL_GPIO_PINS 34
     #define BOARD_NR_GPIO_PINS 34
     #ifndef LED_BUILTIN
       #define LED_BUILTIN PB1 //Maple Mini
     #endif
-  #elif defined(ARDUINO_BLACK_F407VE) || defined(STM32F4)
-    #define BOARD_DIGITAL_GPIO_PINS 80
-    #define BOARD_NR_GPIO_PINS 80
+  #elif defined(ARDUINO_BLACK_F407VE)
+    #define BOARD_DIGITAL_GPIO_PINS 74
+    #define BOARD_NR_GPIO_PINS 74
   #endif
 
-  #if defined(CORE_STM32_OFFICIAL)
+  #if defined(STM32_CORE_VERSION)
     //Need to identify the official core better
-    //#define CORE_STM32_OFFICIAL
+    #define CORE_STM32_OFFICIAL
     #define BOARD_H "board_stm32_official.h"
   #else
     #define CORE_STM32_GENERIC
@@ -63,14 +66,8 @@
   #if __GNUC__ < 7 //Already included on GCC 7
   extern "C" char* sbrk(int incr); //Used to freeRam
   #endif
-  #if !defined(_VARIANT_ARDUINO_STM32_) // STM32GENERIC core
-    inline unsigned char  digitalPinToInterrupt(unsigned char Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
-  #else //libmaple core aka STM32DUINO
-    //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
-    #ifndef portOutputRegister
-      #define portOutputRegister(port) ((volatile byte *)( &((port)->regs->ODR) ))
-      #define portInputRegister(port) ((volatile byte *)( &((port)->regs->IDR) ))
-    #endif
+  #ifndef digitalPinToInterrupt
+  inline uint32_t  digitalPinToInterrupt(uint32_t Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
   #endif
 #elif defined(__SAMD21G18A__)
   #define BOARD_H "board_samd21.h"

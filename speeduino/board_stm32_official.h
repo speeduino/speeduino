@@ -18,6 +18,8 @@
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
 #elif defined(USE_SPI_FLASH)
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+#elif defined(USE_FRAM) //https://github.com/VitorBoss/FRAM
+    #define EEPROM_LIB_H <Fram.h>
 #else
     #define EEPROM_LIB_H <EEPROM.h>
 #endif
@@ -159,8 +161,14 @@ HardwareTimer Timer1(TIM1);
 HardwareTimer Timer2(TIM2);
 HardwareTimer Timer3(TIM3);
 HardwareTimer Timer4(TIM4);
+#if !defined(ARDUINO_BLUEPILL_F103C8) && !defined(ARDUINO_BLUEPILL_F103CB) //F103 just have 4 timers
 HardwareTimer Timer5(TIM5);
-HardwareTimer Timer8(TIM8);
+#if defined(TIM11)
+HardwareTimer Timer11(TIM11);
+#elif defined(TIM7)
+HardwareTimer Timer11(TIM7);
+#endif
+#endif
 
 void oneMSInterval(HardwareTimer*);
 void boostInterrupt(HardwareTimer*);
@@ -180,7 +188,9 @@ void ignitionSchedule5Interrupt(HardwareTimer*);
 ***********************************************************************************************************
 * CAN / Second serial
 */
-HardwareSerial CANSerial(PD6,PD5);
+#if defined(ARDUINO_BLACK_F407VE)
+HardwareSerial CANSerial(PD6, PD5);
+#endif
 
 #endif //CORE_STM32
 #endif //STM32_H
