@@ -18,6 +18,9 @@
 
 void initialiseAll()
 {   
+    initialisationComplete = false; //Tracks whether the setup() function has run completely
+    fpPrimed = false;
+
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     table3D_setSize(&fuelTable, 16);
@@ -298,6 +301,11 @@ void initialiseAll()
     dwellLimit_uS = (1000 * configPage4.dwellLimit);
     currentStatus.nChannels = ((uint8_t)INJ_CHANNELS << 4) + IGN_CHANNELS; //First 4 bits store the number of injection channels, 2nd 4 store the number of ignition channels
     fpPrimeTime = 0;
+    ms_counter = 0;
+    fixedCrankingOverride = 0;
+    timer5_overflow_count = 0;
+    toothHistoryIndex = 0;
+    toothHistorySerialIndex = 0;
 
     noInterrupts();
     initialiseTriggers();
@@ -312,7 +320,6 @@ void initialiseAll()
     //Initial values for loop times
     previousLoopTime = 0;
     currentLoopTime = micros_safe();
-
     mainLoopCount = 0;
 
     currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manaully overriden below for sequential setups (Due to TS req_fuel calc limitations)
@@ -321,6 +328,25 @@ void initialiseAll()
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
     //Calculate the number of degrees between cylinders
+    //Swet some default values. These will be updated below if required. 
+    CRANK_ANGLE_MAX = 720;
+    CRANK_ANGLE_MAX_IGN = 360;
+    CRANK_ANGLE_MAX_INJ = 360;
+    channel1InjEnabled = true;
+    channel2InjEnabled = false;
+    channel3InjEnabled = false;
+    channel4InjEnabled = false;
+    channel5InjEnabled = false;
+    channel6InjEnabled = false;
+    channel7InjEnabled = false;
+    channel8InjEnabled = false;
+
+    ignition1EndAngle = 0;
+    ignition2EndAngle = 0;
+    ignition3EndAngle = 0;
+    ignition4EndAngle = 0;
+    ignition5EndAngle = 0;
+
     switch (configPage2.nCylinders) {
     case 1:
         channel1IgnDegrees = 0;

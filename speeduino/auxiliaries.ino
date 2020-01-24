@@ -7,6 +7,7 @@ A full copy of the license may be found in the projects root directory
 #include "auxiliaries.h"
 #include "maths.h"
 #include "src/PID_v1/PID_v1.h"
+#include "decoders.h"
 
 //Old PID method. Retained incase the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);

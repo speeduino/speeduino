@@ -17,8 +17,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#ifndef UNIT_TEST  // Scope guard for unit testing
-
 #include <stdint.h> //developer.mbed.org/handbook/C-Data-Types
 //************************************************
 #include "globals.h"
@@ -39,6 +37,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "init.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
+#ifndef UNIT_TEST // Scope guard for unit testing
 void setup()
 {
   initialiseAll();
@@ -882,7 +881,7 @@ void loop()
 #endif
 
 #if INJ_CHANNELS >= 5
-        if( (channel5InjEnabled) && (currentStatus.PW4 >= inj_opentime_uS) )
+        if( (channel5InjEnabled) && (currentStatus.PW5 >= inj_opentime_uS) )
         {
           tempCrankAngle = crankAngle - channel5InjDegrees;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
@@ -898,9 +897,10 @@ void loop()
                       (unsigned long)currentStatus.PW1,
                       closeInjector3and5
                     );*/
-            setFuelSchedule3(
+            
+            setFuelSchedule5(
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW1
+                      (unsigned long)currentStatus.PW5
                       );
           }
         }
@@ -1229,6 +1229,7 @@ void loop()
       BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
     }
 } //loop()
+#endif //Unit test guard
 
 /**
  * @brief This function calculates the required pulsewidth time (in us) given the current system state
@@ -1406,5 +1407,3 @@ uint16_t calculateInjector5StartAngle(unsigned int PWdivTimerPerDegree)
 
   return tempInjector5StartAngle;
 }
-
-#endif //Unit testing scope guard
