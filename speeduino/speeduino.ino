@@ -122,7 +122,7 @@ static int16_t ignition7StartAngle = 0;
 static int16_t ignition8StartAngle = 0;
 #endif
 
-void checkSerial()
+inline void checkSerial()
 {
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
       // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
@@ -179,7 +179,7 @@ bool isEngineStalled()
     return ( (timeToLastTooth >= MAX_STALL_TIME) && (toothLastToothTime <= currentLoopTime) ); //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
 }
 
-void resetCurrentStatus()
+inline void resetCurrentStatus()
 {
       //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
       currentStatus.RPM = 0;
@@ -218,7 +218,7 @@ void resetCurrentStatus()
       if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
 }
 
-void updateSensors()
+inline void updateSensors()
 {
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
@@ -464,7 +464,7 @@ bool hasSyncAndRPM()
     return currentStatus.hasSync && (currentStatus.RPM > 0);
 }
 
-void setStatus()
+inline void setStatus()
 {
         if(currentStatus.startRevolutions >= configPage4.StgCycles)  { ignitionOn = true; fuelOn = true; } //Enable the fuel and ignition, assuming staging revolutions are complete
         //Check whether running or cranking
@@ -490,7 +490,7 @@ void setStatus()
       //-----------------------------------------------------------------------------------------------------
 }
 
-void doFuelCalc()
+inline void doFuelCalc()
 {
       //Begin the fuel calculation
       //Calculate an injector pulsewidth from the VE
@@ -698,7 +698,7 @@ void doFuelCalc()
       }
 }
 
-void doSparkCalc()
+inline void doSparkCalc()
 {
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
@@ -843,7 +843,7 @@ void doSparkCalc()
       //if( (configPage2.perToothIgn == true) ) { triggerSetEndTeeth(); }
 }
 
-void setFuelSchedules()
+inline void setFuelSchedules()
 {
       //***********************************************************************************************
       //| BEGIN FUEL SCHEDULES
@@ -1040,7 +1040,7 @@ void setFuelSchedules()
       }
 }
 
-void setSparkSchedules()
+inline void setSparkSchedules()
 {
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
@@ -1340,7 +1340,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   }
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
-    intermediate = (intermediate * (unsigned long)iAFR) >> 7; 
+    intermediate = (intermediate * (unsigned long)iAFR) >> 7;  
   }
   intermediate = (intermediate * (unsigned long)iCorrections) >> 7;
   if (intermediate != 0)
