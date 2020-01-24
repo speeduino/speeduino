@@ -35,7 +35,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "storage.h"
 #include "crankMaths.h"
 #include "init.h"
-#include "board.h" //Note that this is not a real file, it is defined in globals.h. 
+#include "board.h"
 
 #ifndef UNIT_TEST // Scope guard for unit testing
 void setup()

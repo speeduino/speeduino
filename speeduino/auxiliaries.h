@@ -1,7 +1,7 @@
 #ifndef AUX_H
 #define AUX_H
 
-#include "board.h" //Note that this is not a real file, it is defined in globals.h. 
+#include "board.h"
 
 void initialiseAuxPWM();
 void boostControl();
