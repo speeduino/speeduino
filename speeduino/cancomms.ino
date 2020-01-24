@@ -124,7 +124,8 @@ void canCommand()
       break;
       
     case 'Q': // send code version
-       for (unsigned int revn = 0; revn < sizeof( TSfirmwareVersion) - 1; revn++)
+       //for (unsigned int revn = 0; revn < sizeof( TSfirmwareVersion) - 1; revn++)
+       for (unsigned int revn = 0; revn < 10 - 1; revn++)
        {
          CANSerial.write( TSfirmwareVersion[revn]);
        }

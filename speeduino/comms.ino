@@ -12,6 +12,7 @@ A full copy of the license may be found in the projects root directory
 #include "decoders.h"
 #include "scheduledIO.h"
 #include "logger.h"
+#include "errors.h"
 
 /*
   Processes the data on the serial buffer.
@@ -538,8 +539,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[14] = lowByte(currentStatus.RPM); //rpm HB
   fullStatus[15] = highByte(currentStatus.RPM); //rpm LB
   fullStatus[16] = (byte)(currentStatus.AEamount >> 1); //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
-  fullStatus[17] = currentStatus.corrections; //Total GammaE (%)
-  fullStatus[18] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
+  fullStatus[17] = lowByte(currentStatus.corrections); //Total GammaE (%)
+  fullStatus[18] = highByte(currentStatus.corrections); //Total GammaE (%)
   fullStatus[19] = currentStatus.VE1; //VE 1 (%)
   fullStatus[20] = currentStatus.VE2; //VE 2 (%)
   fullStatus[21] = currentStatus.afrTarget;
@@ -636,6 +637,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[96] = lowByte(currentStatus.flexBoostCorrection);
   fullStatus[97] = highByte(currentStatus.flexBoostCorrection);
   fullStatus[98] = currentStatus.baroCorrection;
+  fullStatus[99] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -1767,7 +1769,7 @@ void sendToothLog()
     //TunerStudio has timed out, send a LOG of all 0s
     for(int x = 0; x < (4*TOOTH_LOG_SIZE); x++)
     {
-      Serial.write(0);
+      Serial.write(static_cast<byte>(0x00)); //GCC9 fix
     }
     cmdPending = false; 
   } 
@@ -1808,7 +1810,7 @@ void sendCompositeLog()
     //TunerStudio has timed out, send a LOG of all 0s
     for(int x = 0; x < (5*TOOTH_LOG_SIZE); x++)
     {
-      Serial.write(0);
+      Serial.write(static_cast<byte>(0x00)); //GCC9 fix
     }
     cmdPending = false; 
   } 

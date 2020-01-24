@@ -18,6 +18,9 @@
 
 void initialiseAll()
 {   
+    initialisationComplete = false; //Tracks whether the setup() function has run completely
+    fpPrimed = false;
+
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     table3D_setSize(&fuelTable, 16);
@@ -305,6 +308,11 @@ void initialiseAll()
     dwellLimit_uS = (1000 * configPage4.dwellLimit);
     currentStatus.nChannels = ((uint8_t)INJ_CHANNELS << 4) + IGN_CHANNELS; //First 4 bits store the number of injection channels, 2nd 4 store the number of ignition channels
     fpPrimeTime = 0;
+    ms_counter = 0;
+    fixedCrankingOverride = 0;
+    timer5_overflow_count = 0;
+    toothHistoryIndex = 0;
+    toothHistorySerialIndex = 0;
 
     noInterrupts();
     initialiseTriggers();
@@ -319,7 +327,6 @@ void initialiseAll()
     //Initial values for loop times
     previousLoopTime = 0;
     currentLoopTime = micros_safe();
-
     mainLoopCount = 0;
 
     currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manaully overriden below for sequential setups (Due to TS req_fuel calc limitations)
@@ -328,6 +335,25 @@ void initialiseAll()
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
     //Calculate the number of degrees between cylinders
+    //Swet some default values. These will be updated below if required. 
+    CRANK_ANGLE_MAX = 720;
+    CRANK_ANGLE_MAX_IGN = 360;
+    CRANK_ANGLE_MAX_INJ = 360;
+    channel1InjEnabled = true;
+    channel2InjEnabled = false;
+    channel3InjEnabled = false;
+    channel4InjEnabled = false;
+    channel5InjEnabled = false;
+    channel6InjEnabled = false;
+    channel7InjEnabled = false;
+    channel8InjEnabled = false;
+
+    ignition1EndAngle = 0;
+    ignition2EndAngle = 0;
+    ignition3EndAngle = 0;
+    ignition4EndAngle = 0;
+    ignition5EndAngle = 0;
+
     switch (configPage2.nCylinders) {
     case 1:
         channel1IgnDegrees = 0;
@@ -552,11 +578,25 @@ void initialiseAll()
         //For alternatiing injection, the squirt occurs at different times for each channel
         if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
         {
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 72;
-          channel3InjDegrees = 144;
-          channel4InjDegrees = 216;
-          channel5InjDegrees = 288;
+          if (!configPage2.injTiming) 
+          { 
+            //For simultaneous, all squirts happen at the same time
+            channel1InjDegrees = 0;
+            channel2InjDegrees = 0;
+            channel3InjDegrees = 0;
+            channel4InjDegrees = 0;
+            channel5InjDegrees = 0; 
+          }
+          else
+          {
+            channel1InjDegrees = 0;
+            channel2InjDegrees = 72;
+            channel3InjDegrees = 144;
+            channel4InjDegrees = 216;
+            channel5InjDegrees = 288;
+
+            //Divide by currentStatus.nSquirts ?
+          }
         }
         else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
@@ -568,15 +608,7 @@ void initialiseAll()
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
-        }
-        if (!configPage2.injTiming) 
-        { 
-          //For simultaneous, all squirts happen at the same time
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 0;
-          channel3InjDegrees = 0;
-          channel4InjDegrees = 0;
-          channel5InjDegrees = 0; 
+          req_fuel_uS = req_fuel_uS * 2;
         }
 
         channel1InjEnabled = true;
@@ -619,6 +651,8 @@ void initialiseAll()
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
         }
+    #else 
+        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
     #endif
 
         if (!configPage2.injTiming) 
@@ -628,8 +662,6 @@ void initialiseAll()
           channel2InjDegrees = 0;
           channel3InjDegrees = 0; 
         } 
-
-        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
 
         channel1InjEnabled = true;
         channel2InjEnabled = true;
@@ -670,6 +702,8 @@ void initialiseAll()
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
         }
+    #else
+        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
     #endif
 
         maxIgnOutputs = 4;
@@ -682,8 +716,6 @@ void initialiseAll()
           channel3InjDegrees = 0;
           channel4InjDegrees = 0; 
         }
-
-        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
 
         channel1InjEnabled = true;
         channel2InjEnabled = true;
@@ -1057,7 +1089,7 @@ void setPinMapping(byte boardID)
         pinCoil4 = 29;
         pinCoil3 = 30;
         pinO2 = A22;
-      #elif defined(STM32F4)
+      #elif defined(ARDUINO_BLACK_F407VE)
         //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 
@@ -1168,33 +1200,29 @@ void setPinMapping(byte boardID)
         pinInjector2 = PB6; //Output pin injector 2 is on
         pinInjector3 = PB5; //Output pin injector 3 is on
         pinInjector4 = PB4; //Output pin injector 4 is on
-        pinCoil1 = PB3; //Pin for coil 1
-        pinCoil2 = PA15; //Pin for coil 2
-        pinCoil3 = PA14; //Pin for coil 3
-        pinCoil4 = PA9; //Pin for coil 4
-        pinCoil5 = PA8; //Pin for coil 5
-        pinTPS = A0; //TPS input pin
-        pinMAP = A1; //MAP sensor pin
-        pinIAT = A2; //IAT sensor pin
-        pinCLT = A3; //CLS sensor pin
-        pinO2 = A4; //O2 Sensor pin
-        pinBat = A5; //Battery reference voltage pin
+        pinCoil1 = PB9; //Pin for coil 1
+        pinCoil2 = PB8; //Pin for coil 2
+        pinCoil3 = PB3; //Pin for coil 3
+        pinCoil4 = PA15; //Pin for coil 4
+        pinTPS = A2;//TPS input pin
+        pinMAP = A3; //MAP sensor pin
+        pinIAT = A0; //IAT sensor pin
+        pinCLT = A1; //CLS sensor pin
+        pinO2 = A8; //O2 Sensor pin
+        pinBat = A4; //Battery reference voltage pin
         pinBaro = pinMAP;
         pinIdle1 = PB2; //Single wire idle control
-        pinIdle2 = PA2; //2 wire idle control
-        pinBoost = PA1; //Boost control
-        pinVVT_1 = PA0; //Default VVT output
+        pinBoost = PA8; //Boost control
+        //pinVVT_1 = 4; //Default VVT output
         pinStepperDir = PC15; //Direction pin  for DRV8825 driver
         pinStepperStep = PC14; //Step pin for DRV8825 driver
         pinStepperEnable = PC13; //Enable pin for DRV8825
-        pinDisplayReset = PB2; // OLED reset pin
-        pinFan = PB1; //Pin for the fan output
-        pinFuelPump = PB11; //Fuel pump output
-        pinTachOut = PB10; //Tacho output pin
+        pinFuelPump = PB10; //Fuel pump output
+        pinTachOut = PC13; //Tacho output pin
         //external interrupt enabled pins
-        pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = PA10; //The CAS pin
-        pinTrigger2 = PA13; //The Cam Sensor pin
+        pinFlex = PB1; // Flex sensor (Must be external interrupt enabled)
+        pinTrigger = PB0; //The CAS pin
+        pinTrigger2 = PB2; //The Cam Sensor pin
       #endif
       break;
 
@@ -1460,6 +1488,44 @@ void setPinMapping(byte boardID)
       pinSpareLOut5 = 53;
       pinFan = 47; //Pin for the fan output
     #endif
+      break;
+
+   case 31:
+      //Pin mappings for the BMW PnP PCBs by pazi88. This is an AVR only module. At least for now
+      pinInjector1 = 8; //Output pin injector 1
+      pinInjector2 = 9; //Output pin injector 2
+      pinInjector3 = 10; //Output pin injector 3
+      pinInjector4 = 11; //Output pin injector 4
+      pinInjector5 = 12; //Output pin injector 5
+      pinInjector6 = 50; //Output pin injector 6
+      pinCoil1 = 40; //Pin for coil 1
+      pinCoil2 = 38; //Pin for coil 2
+      pinCoil3 = 52; //Pin for coil 3
+      pinCoil4 = 48; //Pin for coil 4
+      pinCoil5 = 36; //Pin for coil 5
+	  pinCoil6 = 34; //Pin for coil 6
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinTPS = A2;//TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A8; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinDisplayReset = 48; // OLED reset pin
+      pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
+      pinIdle1 = 5; //ICV pin1
+      pinIdle2 = 6; //ICV pin3
+      pinBoost = 7; //Boost control
+      pinVVT_1 = 4; //VVT output
+      pinFuelPump = 45; //Fuel pump output  (Goes to ULN2003)
+      pinStepperDir = 16; //Stepper valve isn't used with these
+      pinStepperStep = 17; //Stepper valve isn't used with these
+      pinStepperEnable = 24; //Stepper valve isn't used with these
+      pinFan = 47; //Pin for the fan output (Goes to ULN2003)
+      pinLaunch = 51; //Launch control pin
+      pinFlex = 2; // Flex sensor
+      pinResetControl = 43; //Reset control output
       break;
 
     case 40:
@@ -1729,7 +1795,7 @@ void setPinMapping(byte boardID)
       #endif
       break;
     
-   #if defined(STM32F4)
+   #if defined(ARDUINO_BLACK_F407VE)
     case 60:
        //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
@@ -1879,7 +1945,7 @@ void setPinMapping(byte boardID)
     #endif
       break;
     default:
-      #if defined(STM32F4)
+      #if defined(ARDUINO_BLACK_F407VE)
        //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 

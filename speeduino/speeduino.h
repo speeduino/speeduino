@@ -11,6 +11,7 @@
 
 #ifndef SPEEDUINO_H
 #define SPEEDUINO_H
+//#include "globals.h"
 
 uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen);
 byte getVE1();
@@ -22,11 +23,13 @@ uint16_t calculateInjector3StartAngle(unsigned int);
 uint16_t calculateInjector4StartAngle(unsigned int);
 uint16_t calculateInjector5StartAngle(unsigned int);
 
+/*
 struct config2 configPage2;
 struct config4 configPage4;
 struct config6 configPage6;
 struct config9 configPage9;
 struct config10 configPage10;
+*/
 
 uint16_t req_fuel_uS; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 uint16_t inj_opentime_uS; /**< The injector opening time. This is set within Tuner Studio, but stored here in uS rather than mS */
@@ -34,12 +37,9 @@ uint16_t inj_opentime_uS; /**< The injector opening time. This is set within Tun
 bool ignitionOn = false; /**< The current state of the ignition system (on or off) */
 bool fuelOn = false; /**< The current state of the fuel system (on or off) */
 
-byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
-byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
-byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
-
-unsigned long currentLoopTime; /**< The time the current loop started (uS) */
-unsigned long previousLoopTime; /**< The time the previous loop started (uS) */
+//byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
+//byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
+//byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
 
 byte maxIgnOutputs = 1; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
 byte curRollingCut = 0; /**< Rolling rev limiter, current ignition channel being cut */
