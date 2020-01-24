@@ -1,7 +1,7 @@
 #ifndef CANCOMMS_H
 #define CANCOMMS_H
 
-#if defined(CORE_TEENSY)
+#if defined(CORE_TEENSY35)
   #include <FlexCAN_T4.h>
   FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
   

@@ -69,7 +69,7 @@ void loop()
                   if (CANSerial.available() > 0)  { canCommand(); }
                 }
           }
-      #if  defined(CORE_TEENSY)
+      #if  defined(CORE_TEENSY35)
           //currentStatus.canin[12] = configPage9.enable_intcan;
           if (configPage9.enable_intcan == 1) // use internal can module
           {
