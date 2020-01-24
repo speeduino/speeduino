@@ -45,8 +45,85 @@ void setup()
 
 void loop()
 {
-      mainLoopCount++;
-      LOOP_TIMER = TIMER_mask;
+    mainLoopCount++;
+    LOOP_TIMER = TIMER_mask;
+
+    checkSerial();
+
+    if (!isEngineStalled())
+    {
+      currentStatus.longRPM = getRPM(); //Long RPM is included here
+      currentStatus.RPM = currentStatus.longRPM;
+      FUEL_PUMP_ON();
+      currentStatus.fuelPumpOn = true; //Not sure if this is needed.
+    }
+    else
+    {
+      resetCurrentStatus();
+    }
+
+    updateSensors();
+
+    if(hasSyncAndRPM())
+    {
+      setStatus();
+
+      doFuelCalc();
+      doSparkCalc();
+
+      setFuelSchedules();
+      setSparkSchedules();
+
+      if ( (!BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_PREVENT)) && (resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) )
+      {
+        //Reset prevention is supposed to be on while the engine is running but isn't. Fix that.
+        digitalWrite(pinResetControl, HIGH);
+        BIT_SET(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
+      }
+    } //Has sync and RPM
+    else if ( (BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_PREVENT) > 0) && (resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) )
+    {
+      digitalWrite(pinResetControl, LOW);
+      BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
+    }
+} //loop()
+#endif //Unit test guard
+
+static int16_t injector1StartAngle = 0;
+static int16_t injector2StartAngle = 0;
+static int16_t injector3StartAngle = 0;
+static int16_t injector4StartAngle = 0;
+#if INJ_CHANNELS >= 5
+static int16_t injector5StartAngle = 0;
+#endif
+#if INJ_CHANNELS >= 6
+static int16_t injector6StartAngle = 0;
+#endif
+#if INJ_CHANNELS >= 7
+static int16_t injector7StartAngle = 0;
+#endif
+#if INJ_CHANNELS >= 8
+static int16_t injector8StartAngle = 0;
+#endif
+static int16_t ignition1StartAngle = 0;
+static int16_t ignition2StartAngle = 0;
+static int16_t ignition3StartAngle = 0;
+static int16_t ignition4StartAngle = 0;
+#if IGN_CHANNELS >= 5
+static int16_t ignition5StartAngle = 0;
+#endif
+#if IGN_CHANNELS >= 6
+static int16_t ignition6StartAngle = 0;
+#endif
+#if IGN_CHANNELS >= 7
+static int16_t ignition7StartAngle = 0;
+#endif
+#if IGN_CHANNELS >= 8
+static int16_t ignition8StartAngle = 0;
+#endif
+
+void checkSerial()
+{
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
       // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
@@ -92,19 +169,18 @@ void loop()
           
     //Displays currently disabled
     // if (configPage2.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
+}
 
+bool isEngineStalled()
+{
     previousLoopTime = currentLoopTime;
     currentLoopTime = micros_safe();
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
-    if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
-    {
-      currentStatus.longRPM = getRPM(); //Long RPM is included here
-      currentStatus.RPM = currentStatus.longRPM;
-      FUEL_PUMP_ON();
-      currentStatus.fuelPumpOn = true; //Not sure if this is needed.
-    }
-    else
-    {
+    return ( (timeToLastTooth >= MAX_STALL_TIME) && (toothLastToothTime <= currentLoopTime) ); //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
+}
+
+void resetCurrentStatus()
+{
       //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
       currentStatus.RPM = 0;
       currentStatus.PW1 = 0;
@@ -140,8 +216,10 @@ void loop()
       DISABLE_VVT_TIMER();
       boostDisable();
       if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
-    }
+}
 
+void updateSensors()
+{
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
     readMAP();
@@ -379,11 +457,15 @@ void loop()
         }
       }
     }
+}
 
-    //Always check for sync
-    //Main loop runs within this clause
-    if (currentStatus.hasSync && (currentStatus.RPM > 0))
-    {
+bool hasSyncAndRPM()
+{
+    return currentStatus.hasSync && (currentStatus.RPM > 0);
+}
+
+void setStatus()
+{
         if(currentStatus.startRevolutions >= configPage4.StgCycles)  { ignitionOn = true; fuelOn = true; } //Enable the fuel and ignition, assuming staging revolutions are complete
         //Check whether running or cranking
         if(currentStatus.RPM > currentStatus.crankRPM) //Crank RPM in the config is stored as a x10. currentStatus.crankRPM is set in timers.ino and represents the true value
@@ -406,7 +488,10 @@ void loop()
         }
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
+}
 
+void doFuelCalc()
+{
       //Begin the fuel calculation
       //Calculate an injector pulsewidth from the VE
       currentStatus.corrections = correctionsFuel();
@@ -435,41 +520,6 @@ void loop()
         adderPercent = 100 - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
         currentStatus.PW1 = currentStatus.PW1 + (configPage10.n2o_stage2_adderMax + percentage(adderPercent, (configPage10.n2o_stage2_adderMin - configPage10.n2o_stage2_adderMax))) * 100; //Calculate the above percentage of the calculated ms value.
       }
-
-      int injector1StartAngle = 0;
-      uint16_t injector2StartAngle = 0;
-      uint16_t injector3StartAngle = 0;
-      uint16_t injector4StartAngle = 0;
-      #if INJ_CHANNELS >= 5
-      uint16_t injector5StartAngle = 0; //For 5 cylinder testing
-      #endif
-      #if INJ_CHANNELS >= 6
-      int injector6StartAngle = 0;
-      #endif
-      #if INJ_CHANNELS >= 7
-      int injector7StartAngle = 0;
-      #endif
-      #if INJ_CHANNELS >= 8
-      int injector8StartAngle = 0;
-      #endif
-      int ignition1StartAngle = 0;
-      int ignition2StartAngle = 0;
-      int ignition3StartAngle = 0;
-      int ignition4StartAngle = 0;
-      int ignition5StartAngle = 0;
-      #if IGN_CHANNELS >= 6
-      int ignition6StartAngle = 0;
-      #endif
-      #if IGN_CHANNELS >= 7
-      int ignition7StartAngle = 0;
-      #endif
-      #if IGN_CHANNELS >= 8
-      int ignition8StartAngle = 0;
-      #endif
-      //These are used for comparisons on channels above 1 where the starting angle (for injectors or ignition) can be less than a single loop time
-      //(Don't ask why this is needed, it's just there)
-      int tempCrankAngle;
-      int tempStartAngle;
 
       doCrankSpeedCalcs(); //In crankMaths.ino
 
@@ -571,7 +621,7 @@ void loop()
             injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
 
             injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
-            if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
+            if(injector4StartAngle > CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
           }
           break;
         //3 cylinders
@@ -607,7 +657,7 @@ void loop()
             injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
 
             injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
-            if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
+            if(injector4StartAngle > CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
           }
           break;
         //5 cylinders
@@ -646,7 +696,10 @@ void loop()
         default:
           break;
       }
+}
 
+void doSparkCalc()
+{
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
       if (currentStatus.RPM > ((unsigned int)(configPage4.HardRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); } //Hardcut RPM limit
@@ -788,12 +841,20 @@ void loop()
       //This only needs to be run if the advance figure has changed, otherwise the end teeth will still be the same
       if( (configPage2.perToothIgn == true) && (lastToothCalcAdvance != currentStatus.advance) ) { triggerSetEndTeeth(); }
       //if( (configPage2.perToothIgn == true) ) { triggerSetEndTeeth(); }
+}
 
+void setFuelSchedules()
+{
       //***********************************************************************************************
       //| BEGIN FUEL SCHEDULES
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
       //We only need to set the shcedule if we're BEFORE the open angle
       //This may potentially be called a number of times as we get closer and closer to the opening time
+
+      //These are used for comparisons on channels above 1 where the starting angle (for injectors or ignition) can be less than a single loop time
+      //(Don't ask why this is needed, it's just there)
+      int16_t tempCrankAngle;
+      int16_t tempStartAngle;
 
       //Determine the current crank angle
       int crankAngle = getCrankAngle();
@@ -977,9 +1038,18 @@ void loop()
         }
 #endif
       }
+}
+
+void setSparkSchedules()
+{
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
       //Same as above, except for ignition
+
+      //These are used for comparisons on channels above 1 where the starting angle (for injectors or ignition) can be less than a single loop time
+      //(Don't ask why this is needed, it's just there)
+      int16_t tempCrankAngle;
+      int16_t tempStartAngle;
 
       //fixedCrankingOverride is used to extend the dwell during cranking so that the decoder can trigger the spark upon seeing a certain tooth. Currently only available on the basic distributor and 4g63 decoders.
       if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (decoderHasFixedCrankingTiming == true) )
@@ -1030,7 +1100,7 @@ void loop()
       {
         //Refresh the current crank angle info
         //ignition1StartAngle = 335;
-        crankAngle = getCrankAngle(); //Refresh with the latest crank angle
+        int crankAngle = getCrankAngle(); //Refresh with the latest crank angle
         if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
 
 #if IGN_CHANNELS >= 1
@@ -1064,7 +1134,7 @@ void loop()
 
           refreshIgnitionSchedule1( uSToEnd + fixedCrankingOverride );
         }
-  #endif
+#endif
         
 
 
@@ -1232,21 +1302,7 @@ void loop()
 #endif
 
       } //Ignition schedules on
-
-      if ( (!BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_PREVENT)) && (resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) ) 
-      {
-        //Reset prevention is supposed to be on while the engine is running but isn't. Fix that.
-        digitalWrite(pinResetControl, HIGH);
-        BIT_SET(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
-      }
-    } //Has sync and RPM
-    else if ( (BIT_CHECK(currentStatus.status3, BIT_STATUS3_RESET_PREVENT) > 0) && (resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) )
-    {
-      digitalWrite(pinResetControl, LOW);
-      BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
-    }
-} //loop()
-#endif //Unit test guard
+}
 
 /**
  * @brief This function calculates the required pulsewidth time (in us) given the current system state
@@ -1284,7 +1340,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   }
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
-    intermediate = (intermediate * (unsigned long)iAFR) >> 7;  
+    intermediate = (intermediate * (unsigned long)iAFR) >> 7; 
   }
   intermediate = (intermediate * (unsigned long)iCorrections) >> 7;
   if (intermediate != 0)
