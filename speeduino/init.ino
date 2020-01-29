@@ -331,8 +331,6 @@ void initialiseAll()
 
     currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manaully overriden below for sequential setups (Due to TS req_fuel calc limitations)
     if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
-    if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
-    else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
     //Calculate the number of degrees between cylinders
     //Swet some default values. These will be updated below if required. 
@@ -353,6 +351,9 @@ void initialiseAll()
     ignition3EndAngle = 0;
     ignition4EndAngle = 0;
     ignition5EndAngle = 0;
+
+    if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
+    else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
     switch (configPage2.nCylinders) {
     case 1:
