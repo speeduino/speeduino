@@ -18,7 +18,7 @@
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
 #elif defined(SPIFLASH_AS_EEPROM)
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-#elif defined(USE_FRAM) //https://github.com/VitorBoss/FRAM
+#elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
     #define EEPROM_LIB_H <Fram.h>
 #else
     #define EEPROM_LIB_H <EEPROM.h>
@@ -28,12 +28,33 @@
   #define LED_BUILTIN PA7
 #endif
 
+#if defined(FRAM_AS_EEPROM)
+  #include <Fram.h>
+  #if defined(ARDUINO_BLACK_F407VE)
+  FramClass EEPROM(PB0, PB3, PB4, PB5, 15000000);
+  #else
+  FramClass EEPROM(PB12, PB13, PB14, PB15, 15000000); //Blue/Black Pills
+  #endif
+#endif
+
 #define USE_SERIAL3
 void initBoard();
 uint16_t freeRam();
 extern "C" char* sbrk(int incr);
 
 
+#ifndef PB11 //Hack for F4 BlackPills
+  #define PB11 PB10
+#endif
+//Hack to alow compile on small STM boards
+#ifndef A10
+  #define A10  PA0
+  #define A11  PA1
+  #define A12  PA2
+  #define A13  PA3
+  #define A14  PA4
+  #define A15  PA5
+#endif
 
 /*
 ***********************************************************************************************************

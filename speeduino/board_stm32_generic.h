@@ -1,7 +1,6 @@
 #ifndef STM32_H
 #define STM32_H
 #if defined(CORE_STM32_GENERIC)
-//#define USE_FRAM
 /*
 ***********************************************************************************************************
 * General
@@ -15,7 +14,7 @@
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
   #elif defined(SPIFLASH_AS_EEPROM)
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  #elif defined(USE_FRAM) //https://github.com/VitorBoss/FRAM
+  #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
     #define EEPROM_LIB_H <Fram.h>
   #else
     #define EEPROM_LIB_H <EEPROM.h>
@@ -30,12 +29,12 @@
     #define Serial Serial1
   #endif
 
-  #if defined(USE_FRAM)
+  #if defined(FRAM_AS_EEPROM)
     #include <Fram.h>
-    #ifdef(ARDUINO_BLACK_F407VE)
+    #if defined(ARDUINO_BLACK_F407VE)
     FramClass EEPROM(PB0, PB3, PB4, PB5, 15000000);
     #else
-    FramClass EEPROM(PB12, PB13, PB14, PB15, 15000000); //BluePill
+    FramClass EEPROM(PB12, PB13, PB14, PB15, 15000000); //Blue/Black Pills
     #endif
   #endif
 
@@ -76,6 +75,9 @@
     #define A13  PA3
     #define A14  PA4
     #define A15  PA5
+  #endif
+  #ifndef PB11 //Hack for F4 BlackPills
+    #define PB11 PB10
   #endif
 
 
