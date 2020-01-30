@@ -4,15 +4,17 @@
 #include "globals.h"
 #include "init.h"
 
-#include "test_initial_status_off.h"
-#include "test_tansit_status_pending.h"
+#include "test_schedule.h"
 
 void do_tests()
 {
-    UNITY_BEGIN(); // start unit testing
-    test_initial_status_off();
-    test_transit_status_pending();
-    UNITY_END(); // stop unit testing
+    test_status_off_to_pending();
+    test_status_pending_to_running();
+    test_status_running_to_pending();
+    test_status_running_to_off();
+
+    test_accuracy_timeout();
+    test_accuracy_duration();
 }
 
 void setup() {
@@ -23,7 +25,11 @@ void setup() {
     // if board doesn't support software reset via Serial.DTR/RTS
     delay(2000);
 
+    UNITY_BEGIN(); // start unit testing
+
     do_tests();
+
+    UNITY_END(); // stop unit testing
 }
 
 void loop()
