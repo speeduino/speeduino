@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name SpeedyMAP-rescue)(type Legacy)(uri ${KIPRJMOD}/SpeedyMAP-rescue.lib)(options "")(descr ""))
+  (lib (name mpx4250)(type Legacy)(uri ${KIPRJMOD}/libs/mpx4250.lib)(options "")(descr ""))
+)

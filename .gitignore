@@ -24,3 +24,4 @@ reference/hardware/v0.4/gerbers/Archive.zip
 speeduino/board_samd21*
 reference/doxygen
 speeduino.ino.cpp
+test/output_export.cpp
