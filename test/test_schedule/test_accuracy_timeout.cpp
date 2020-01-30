@@ -4,7 +4,6 @@
 
 #include "test_schedule.h"
 
-#include "globals.h"
 #include "scheduler.h"
 
 #define TIMEOUT 1000
@@ -17,7 +16,7 @@ static void endCallback(void) { /*Empty*/ }
 
 void test_accuracy_timeout_inj1(void)
 {
-    fuelSchedule1.Status = OFF;
+    initialiseSchedulers();
     start_time = micros();
     setFuelSchedule1(TIMEOUT, DURATION);
     while(fuelSchedule1.Status != OFF) /*Wait*/ ;
@@ -27,7 +26,7 @@ void test_accuracy_timeout_inj1(void)
 
 void test_accuracy_timeout_inj2(void)
 {
-    fuelSchedule2.Status = OFF;
+    initialiseSchedulers();
     start_time = micros();
     setFuelSchedule2(TIMEOUT, DURATION);
     while(fuelSchedule2.Status != OFF) /*Wait*/ ;
@@ -37,7 +36,7 @@ void test_accuracy_timeout_inj2(void)
 
 void test_accuracy_timeout_inj3(void)
 {
-    fuelSchedule3.Status = OFF;
+    initialiseSchedulers();
     start_time = micros();
     setFuelSchedule3(TIMEOUT, DURATION);
     while(fuelSchedule3.Status != OFF) /*Wait*/ ;
@@ -47,7 +46,7 @@ void test_accuracy_timeout_inj3(void)
 
 void test_accuracy_timeout_inj4(void)
 {
-    fuelSchedule4.Status = OFF;
+    initialiseSchedulers();
     start_time = micros();
     setFuelSchedule4(TIMEOUT, DURATION);
     while(fuelSchedule4.Status != OFF) /*Wait*/ ;
@@ -58,7 +57,7 @@ void test_accuracy_timeout_inj4(void)
 void test_accuracy_timeout_inj5(void)
 {
 #if INJ_CHANNELS >= 5
-    fuelSchedule5.Status = OFF;
+    initialiseSchedulers();
     start_time = micros();
     setFuelSchedule5(TIMEOUT, DURATION);
     while(fuelSchedule5.Status != OFF) /*Wait*/ ;
@@ -70,7 +69,7 @@ void test_accuracy_timeout_inj5(void)
 void test_accuracy_timeout_inj6(void)
 {
 #if INJ_CHANNELS >= 6
-    fuelSchedule6.Status = OFF;
+    initialiseSchedulers();
     start_time = micros();
     setFuelSchedule6(TIMEOUT, DURATION);
     while(fuelSchedule6.Status != OFF) /*Wait*/ ;
@@ -82,7 +81,7 @@ void test_accuracy_timeout_inj6(void)
 void test_accuracy_timeout_inj7(void)
 {
 #if INJ_CHANNELS >= 7
-    fuelSchedule7.Status = OFF;
+    initialiseSchedulers();
     start_time = micros();
     setFuelSchedule7(TIMEOUT, DURATION);
     while(fuelSchedule7.Status != OFF) /*Wait*/ ;
@@ -94,7 +93,7 @@ void test_accuracy_timeout_inj7(void)
 void test_accuracy_timeout_inj8(void)
 {
 #if INJ_CHANNELS >= 8
-    fuelSchedule8.Status = OFF;
+    initialiseSchedulers();
     start_time = micros();
     setFuelSchedule8(TIMEOUT, DURATION);
     while(fuelSchedule8.Status != OFF) /*Wait*/ ;
@@ -106,7 +105,7 @@ void test_accuracy_timeout_inj8(void)
 
 void test_accuracy_timeout_ign1(void)
 {
-    ignitionSchedule1.Status = OFF;
+    initialiseSchedulers();
     start_time = micros();
     setIgnitionSchedule1(startCallback, TIMEOUT, DURATION, endCallback);
     while(ignitionSchedule1.Status != OFF) /*Wait*/ ;
@@ -115,7 +114,7 @@ void test_accuracy_timeout_ign1(void)
 
 void test_accuracy_timeout_ign2(void)
 {
-    ignitionSchedule2.Status = OFF;
+    initialiseSchedulers();
     start_time = micros();
     setIgnitionSchedule2(startCallback, TIMEOUT, DURATION, endCallback);
     while(ignitionSchedule2.Status != OFF) /*Wait*/ ;
@@ -124,7 +123,7 @@ void test_accuracy_timeout_ign2(void)
 
 void test_accuracy_timeout_ign3(void)
 {
-    ignitionSchedule3.Status = OFF;
+    initialiseSchedulers();
     start_time = micros();
     setIgnitionSchedule3(startCallback, TIMEOUT, DURATION, endCallback);
     while(ignitionSchedule3.Status != OFF) /*Wait*/ ;
@@ -133,7 +132,7 @@ void test_accuracy_timeout_ign3(void)
 
 void test_accuracy_timeout_ign4(void)
 {
-    ignitionSchedule4.Status = OFF;
+    initialiseSchedulers();
     start_time = micros();
     setIgnitionSchedule4(startCallback, TIMEOUT, DURATION, endCallback);
     while(ignitionSchedule4.Status != OFF) /*Wait*/ ;
@@ -143,7 +142,7 @@ void test_accuracy_timeout_ign4(void)
 void test_accuracy_timeout_ign5(void)
 {
 #if IGN_CHANNELS >= 5
-    ignitionSchedule5.Status = OFF;
+    initialiseSchedulers();
     start_time = micros();
     setIgnitionSchedule5(startCallback, TIMEOUT, DURATION, endCallback);
     while(ignitionSchedule5.Status != OFF) /*Wait*/ ;
@@ -154,7 +153,7 @@ void test_accuracy_timeout_ign5(void)
 void test_accuracy_timeout_ign6(void)
 {
 #if INJ_CHANNELS >= 6
-    ignitionSchedule6.Status = OFF;
+    initialiseSchedulers();
     start_time = micros();
     setIgnitionSchedule6(startCallback, TIMEOUT, DURATION, endCallback);
     while(ignitionSchedule6.Status != OFF) /*Wait*/ ;
@@ -165,7 +164,7 @@ void test_accuracy_timeout_ign6(void)
 void test_accuracy_timeout_ign7(void)
 {
 #if INJ_CHANNELS >= 7
-    ignitionSchedule7.Status = OFF;
+    initialiseSchedulers();
     setIgnitionSchedule7(startCallback, TIMEOUT, DURATION, endCallback);
     while(ignitionSchedule7.Status != OFF) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
@@ -175,7 +174,7 @@ void test_accuracy_timeout_ign7(void)
 void test_accuracy_timeout_ign8(void)
 {
 #if INJ_CHANNELS >= 8
-    ignitionSchedule8.Status = OFF;
+    initialiseSchedulers();
     start_time = micros();
     setIgnitionSchedule8(startCallback, TIMEOUT, DURATION, endCallback);
     while(ignitionSchedule8.Status != OFF) /*Wait*/ ;

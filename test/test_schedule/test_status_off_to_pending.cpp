@@ -2,7 +2,6 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "globals.h"
 #include "scheduler.h"
 
 #define TIMEOUT 1000
@@ -12,28 +11,28 @@ static void emptyCallback(void) {  }
 
 void test_status_off_to_pending_inj1(void)
 {
-    fuelSchedule1.Status = OFF;
+    initialiseSchedulers();
     setFuelSchedule1(TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule1.Status);
 }
 
 void test_status_off_to_pending_inj2(void)
 {
-    fuelSchedule2.Status = OFF;
+    initialiseSchedulers();
     setFuelSchedule2(TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule2.Status);
 }
 
 void test_status_off_to_pending_inj3(void)
 {
-    fuelSchedule3.Status = OFF;
+    initialiseSchedulers();
     setFuelSchedule3(TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule3.Status);
 }
 
 void test_status_off_to_pending_inj4(void)
 {
-    fuelSchedule4.Status = OFF;
+    initialiseSchedulers();
     setFuelSchedule4(TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule4.Status);
 }
@@ -41,7 +40,7 @@ void test_status_off_to_pending_inj4(void)
 void test_status_off_to_pending_inj5(void)
 {
 #if INJ_CHANNELS >= 5
-    fuelSchedule5.Status = OFF;
+    initialiseSchedulers();
     setFuelSchedule5(TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule5.Status);
 #endif
@@ -50,7 +49,7 @@ void test_status_off_to_pending_inj5(void)
 void test_status_off_to_pending_inj6(void)
 {
 #if INJ_CHANNELS >= 6
-    fuelSchedule6.Status = OFF;
+    initialiseSchedulers();
     setFuelSchedule6(TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule6.Status);
 #endif
@@ -59,7 +58,7 @@ void test_status_off_to_pending_inj6(void)
 void test_status_off_to_pending_inj7(void)
 {
 #if INJ_CHANNELS >= 7
-    fuelSchedule7.Status = OFF;
+    initialiseSchedulers();
     setFuelSchedule7(TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule7.Status);
 #endif
@@ -68,7 +67,7 @@ void test_status_off_to_pending_inj7(void)
 void test_status_off_to_pending_inj8(void)
 {
 #if INJ_CHANNELS >= 8
-    fuelSchedule8.Status = OFF;
+    initialiseSchedulers();
     setFuelSchedule8(TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule8.Status);
 #endif
@@ -77,28 +76,28 @@ void test_status_off_to_pending_inj8(void)
 
 void test_status_off_to_pending_ign1(void)
 {
-    ignitionSchedule1.Status = OFF;
+    initialiseSchedulers();
     setIgnitionSchedule1(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule1.Status);
 }
 
 void test_status_off_to_pending_ign2(void)
 {
-    ignitionSchedule2.Status = OFF;
+    initialiseSchedulers();
     setIgnitionSchedule2(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule2.Status);
 }
 
 void test_status_off_to_pending_ign3(void)
 {
-    ignitionSchedule3.Status = OFF;
+    initialiseSchedulers();
     setIgnitionSchedule3(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule3.Status);
 }
 
 void test_status_off_to_pending_ign4(void)
 {
-    ignitionSchedule4.Status = OFF;
+    initialiseSchedulers();
     setIgnitionSchedule4(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule4.Status);
 }
@@ -106,7 +105,7 @@ void test_status_off_to_pending_ign4(void)
 void test_status_off_to_pending_ign5(void)
 {
 #if IGN_CHANNELS >= 5
-    ignitionSchedule5.Status = OFF;
+    initialiseSchedulers();
     setIgnitionSchedule5(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule5.Status);
 #endif
@@ -115,7 +114,7 @@ void test_status_off_to_pending_ign5(void)
 void test_status_off_to_pending_ign6(void)
 {
 #if INJ_CHANNELS >= 6
-    ignitionSchedule6.Status = OFF;
+    initialiseSchedulers();
     setIgnitionSchedule6(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule6.Status);
 #endif
@@ -124,7 +123,7 @@ void test_status_off_to_pending_ign6(void)
 void test_status_off_to_pending_ign7(void)
 {
 #if INJ_CHANNELS >= 7
-    ignitionSchedule7.Status = OFF;
+    initialiseSchedulers();
     setIgnitionSchedule7(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule7.Status);
 #endif
@@ -133,7 +132,7 @@ void test_status_off_to_pending_ign7(void)
 void test_status_off_to_pending_ign8(void)
 {
 #if INJ_CHANNELS >= 8
-    ignitionSchedule8.Status = OFF;
+    initialiseSchedulers();
     setIgnitionSchedule8(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule8.Status);
 #endif

@@ -1,13 +1,13 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "globals.h"
-#include "init.h"
-
 #include "test_schedule.h"
+
+#include "init.h"
 
 void do_tests()
 {
+    test_status_initial_off();
     test_status_off_to_pending();
     test_status_pending_to_running();
     test_status_running_to_pending();
