@@ -599,7 +599,8 @@ void initialiseAll()
             //Divide by currentStatus.nSquirts ?
           }
         }
-        else if (configPage2.injLayout == INJ_SEQUENTIAL)
+    #if INJ_CHANNELS >= 5
+        if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
           channel1InjDegrees = 0;
           channel2InjDegrees = 144;
@@ -611,10 +612,11 @@ void initialiseAll()
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
         }
+    #endif
 
         channel1InjEnabled = true;
         channel2InjEnabled = true;
-        channel3InjEnabled = false; //this is disabled as injector 5 function calls 3 & 5 together
+        channel3InjEnabled = true;
         channel4InjEnabled = true;
         channel5InjEnabled = true;
         break;
@@ -644,6 +646,7 @@ void initialiseAll()
             channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
           }
         }
+
     #if INJ_CHANNELS >= 6
         if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
@@ -662,8 +665,6 @@ void initialiseAll()
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
         }
-    #else 
-        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
     #endif
 
         channel1InjEnabled = true;
@@ -744,6 +745,91 @@ void initialiseAll()
       if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX = 720; }
     }
     
+    switch(configPage2.injLayout)
+    {
+    case INJ_PAIRED:
+        //Paired injection
+        inj1StartFunction = openInjector1;
+        inj1EndFunction = closeInjector1;
+        inj2StartFunction = openInjector2;
+        inj2EndFunction = closeInjector2;
+        inj3StartFunction = openInjector3;
+        inj3EndFunction = closeInjector3;
+        inj4StartFunction = openInjector4;
+        inj4EndFunction = closeInjector4;
+        inj5StartFunction = openInjector5;
+        inj5EndFunction = closeInjector5;
+        break;
+
+    case INJ_SEMISEQUENTIAL:
+        //Semi-Sequential injection. Currently possible with 4 and 6 cylinders
+        if( configPage2.nCylinders == 4 )
+        {
+          inj1StartFunction = openInjector1and4;
+          inj1EndFunction = closeInjector1and4;
+          inj2StartFunction = openInjector2and3;
+          inj2EndFunction = closeInjector2and3;
+        }
+        else if( configPage2.nCylinders == 6 )
+        {
+          inj1StartFunction = openInjector1and4;
+          inj1EndFunction = closeInjector1and4;
+          inj2StartFunction = openInjector2and5;
+          inj2EndFunction = closeInjector2and5;
+          inj3StartFunction = openInjector3and6;
+          inj3EndFunction = closeInjector3and6;
+        }
+        else
+        {
+          // Fall back to paired injection
+          inj1StartFunction = openInjector1;
+          inj1EndFunction = closeInjector1;
+          inj2StartFunction = openInjector2;
+          inj2EndFunction = closeInjector2;
+          inj3StartFunction = openInjector3;
+          inj3EndFunction = closeInjector3;
+          inj4StartFunction = openInjector4;
+          inj4EndFunction = closeInjector4;
+          inj5StartFunction = openInjector5;
+          inj5EndFunction = closeInjector5;
+        }
+        
+        break;
+
+    case INJ_SEQUENTIAL:
+        //Sequential injection
+        inj1StartFunction = openInjector1;
+        inj1EndFunction = closeInjector1;
+        inj2StartFunction = openInjector2;
+        inj2EndFunction = closeInjector2;
+        inj3StartFunction = openInjector3;
+        inj3EndFunction = closeInjector3;
+        inj4StartFunction = openInjector4;
+        inj4EndFunction = closeInjector4;
+        inj5StartFunction = openInjector5;
+        inj5EndFunction = closeInjector5;
+        inj6StartFunction = openInjector6;
+        inj6EndFunction = closeInjector6;
+        inj7StartFunction = openInjector7;
+        inj7EndFunction = closeInjector7;
+        inj8StartFunction = openInjector8;
+        inj8EndFunction = closeInjector8;
+        break;
+
+    default:
+        //Paired injection
+        inj1StartFunction = openInjector1;
+        inj1EndFunction = closeInjector1;
+        inj2StartFunction = openInjector2;
+        inj2EndFunction = closeInjector2;
+        inj3StartFunction = openInjector3;
+        inj3EndFunction = closeInjector3;
+        inj4StartFunction = openInjector4;
+        inj4EndFunction = closeInjector4;
+        inj5StartFunction = openInjector5;
+        inj5EndFunction = closeInjector5;
+        break;
+    }
 
     switch(configPage4.sparkMode)
     {
@@ -2156,7 +2242,7 @@ void setPinMapping(byte boardID)
     pinMode(pinInjector3, OUTPUT);
     pinMode(pinInjector4, OUTPUT);
     pinMode(pinInjector5, OUTPUT);
-  //pinMode(pinInjector6, OUTPUT);
+    pinMode(pinInjector6, OUTPUT);
 
     inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
     inj1_pin_mask = digitalPinToBitMask(pinInjector1);

@@ -1,6 +1,42 @@
 #ifndef SCHEDULEDIO_H
 #define SCHEDULEDIO_H
 
+inline void openInjector1();
+inline void closeInjector1();
+
+inline void openInjector2();
+inline void closeInjector2();
+
+inline void openInjector3();
+inline void closeInjector3();
+
+inline void openInjector4();
+inline void closeInjector4();
+
+inline void openInjector5();
+inline void closeInjector5();
+
+inline void openInjector6();
+inline void closeInjector6();
+
+inline void openInjector7();
+inline void closeInjector7();
+
+inline void openInjector8();
+inline void closeInjector8();
+
+// These are for Semi-Sequential and 5 Cylinder injection
+void openInjector1and4();
+void closeInjector1and4();
+void openInjector2and3();
+void closeInjector2and3();
+void openInjector2and5();
+void closeInjector2and5();
+void openInjector3and5();
+void closeInjector3and5();
+void openInjector3and6();
+void closeInjector3and6();
+
 //If coil inverse is on, set the output low, else set it high
 //#define beginCoil1Charge() { configPage4.IgInv == 1 ? coil1Low(); : coil1High(); } tachoOutputFlag = READY;
 //#define beginCoil2Charge() { configPage4.IgInv == 1 ? coil2Low(); : coil2High(); } tachoOutputFlag = READY;
@@ -52,6 +88,7 @@ void endCoil2and4Charge();
 #define endCoil2and4Charge();
 */
 
+/*
 #ifndef USE_MC33810
 #define openInjector1() *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1)
 #define closeInjector1() *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1)
@@ -61,8 +98,8 @@ void endCoil2and4Charge();
 #define closeInjector3() *inj3_pin_port &= ~(inj3_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ3)
 #define openInjector4() *inj4_pin_port |= (inj4_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ4)
 #define closeInjector4() *inj4_pin_port &= ~(inj4_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ4)
-#define openInjector5() *inj5_pin_port |= (inj5_pin_mask)
-#define closeInjector5() *inj5_pin_port &= ~(inj5_pin_mask)
+#define openInjector5() *inj5_pin_port |= (inj5_pin_mask);
+#define closeInjector5() *inj5_pin_port &= ~(inj5_pin_mask);
 #define openInjector6() *inj6_pin_port |= (inj6_pin_mask);
 #define closeInjector6() *inj6_pin_port &= ~(inj6_pin_mask);
 #define openInjector7() *inj7_pin_port |= (inj7_pin_mask);
@@ -90,7 +127,9 @@ void endCoil2and4Charge();
 #define closeInjector8() closeInjector8_MC33810()
 
 #endif
+*/
 
+/*
 #define openInjector1and4() openInjector1(); openInjector4()
 #define closeInjector1and4() closeInjector1(); closeInjector4()
 #define openInjector2and3() openInjector2(); openInjector3()
@@ -99,6 +138,7 @@ void endCoil2and4Charge();
 //5 cylinder support doubles up injector 3 as being closese to inj 5 (Crank angle)
 #define openInjector3and5() openInjector3(); openInjector5()
 #define closeInjector3and5() closeInjector3(); closeInjector5()
+*/
 
 #ifndef USE_MC33810
 #define coil1Low() (*ign1_pin_port &= ~(ign1_pin_mask))
