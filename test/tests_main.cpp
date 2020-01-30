@@ -1,8 +1,9 @@
 #include <Arduino.h>
+#include <unity.h>
 
 #include "tests_corrections.h"
 #include "tests_init.h"
-#include <unity.h>
+#include "tests_schedules.h"
 
 void setup() {
     // NOTE!!! Wait for >2 secs
@@ -22,6 +23,7 @@ void loop()
 {
   testInitialisation();
   testCorrections();
+  testSchedules();
 
   UNITY_END(); // stop unit testing
 }
