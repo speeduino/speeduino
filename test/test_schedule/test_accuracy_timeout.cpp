@@ -2,8 +2,6 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "test_schedule.h"
-
 #include "scheduler.h"
 
 #define TIMEOUT 1000
