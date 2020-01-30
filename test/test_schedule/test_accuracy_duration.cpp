@@ -26,10 +26,10 @@ void test_accuracy_duration_inj1(void)
 void test_accuracy_duration_inj2(void)
 {
     initialiseSchedulers();
-    setFuelSchedule1(TIMEOUT, DURATION);
-    while(fuelSchedule1.Status == PENDING) /*Wait*/ ;
+    setFuelSchedule2(TIMEOUT, DURATION);
+    while(fuelSchedule2.Status == PENDING) /*Wait*/ ;
     start_time = micros();
-    while(fuelSchedule1.Status == RUNNING) /*Wait*/ ;
+    while(fuelSchedule2.Status == RUNNING) /*Wait*/ ;
     end_time = micros();
     TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
 }
@@ -37,10 +37,10 @@ void test_accuracy_duration_inj2(void)
 void test_accuracy_duration_inj3(void)
 {
     initialiseSchedulers();
-    setFuelSchedule1(TIMEOUT, DURATION);
-    while(fuelSchedule1.Status == PENDING) /*Wait*/ ;
+    setFuelSchedule3(TIMEOUT, DURATION);
+    while(fuelSchedule3.Status == PENDING) /*Wait*/ ;
     start_time = micros();
-    while(fuelSchedule1.Status == RUNNING) /*Wait*/ ;
+    while(fuelSchedule3.Status == RUNNING) /*Wait*/ ;
     end_time = micros();
     TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
 }
@@ -48,10 +48,10 @@ void test_accuracy_duration_inj3(void)
 void test_accuracy_duration_inj4(void)
 {
     initialiseSchedulers();
-    setFuelSchedule1(TIMEOUT, DURATION);
-    while(fuelSchedule1.Status == PENDING) /*Wait*/ ;
+    setFuelSchedule4(TIMEOUT, DURATION);
+    while(fuelSchedule4.Status == PENDING) /*Wait*/ ;
     start_time = micros();
-    while(fuelSchedule1.Status == RUNNING) /*Wait*/ ;
+    while(fuelSchedule4.Status == RUNNING) /*Wait*/ ;
     end_time = micros();
     TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
 }
@@ -60,10 +60,10 @@ void test_accuracy_duration_inj5(void)
 {
 #if INJ_CHANNELS >= 5
     initialiseSchedulers();
-    setFuelSchedule1(TIMEOUT, DURATION);
-    while(fuelSchedule1.Status == PENDING) /*Wait*/ ;
+    setFuelSchedule5(TIMEOUT, DURATION);
+    while(fuelSchedule5.Status == PENDING) /*Wait*/ ;
     start_time = micros();
-    while(fuelSchedule1.Status == RUNNING) /*Wait*/ ;
+    while(fuelSchedule5.Status == RUNNING) /*Wait*/ ;
     end_time = micros();
     TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
 #endif
@@ -73,10 +73,10 @@ void test_accuracy_duration_inj6(void)
 {
 #if INJ_CHANNELS >= 6
     initialiseSchedulers();
-    setFuelSchedule1(TIMEOUT, DURATION);
-    while(fuelSchedule1.Status == PENDING) /*Wait*/ ;
+    setFuelSchedule6(TIMEOUT, DURATION);
+    while(fuelSchedule6.Status == PENDING) /*Wait*/ ;
     start_time = micros();
-    while(fuelSchedule1.Status == RUNNING) /*Wait*/ ;
+    while(fuelSchedule6.Status == RUNNING) /*Wait*/ ;
     end_time = micros();
     TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
 #endif
@@ -86,10 +86,10 @@ void test_accuracy_duration_inj7(void)
 {
 #if INJ_CHANNELS >= 7
     initialiseSchedulers();
-    setFuelSchedule1(TIMEOUT, DURATION);
-    while(fuelSchedule1.Status == PENDING) /*Wait*/ ;
+    setFuelSchedule7(TIMEOUT, DURATION);
+    while(fuelSchedule7.Status == PENDING) /*Wait*/ ;
     start_time = micros();
-    while(fuelSchedule1.Status == RUNNING) /*Wait*/ ;
+    while(fuelSchedule7.Status == RUNNING) /*Wait*/ ;
     end_time = micros();
     TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
 #endif
@@ -99,10 +99,10 @@ void test_accuracy_duration_inj8(void)
 {
 #if INJ_CHANNELS >= 8
     initialiseSchedulers();
-    setFuelSchedule1(TIMEOUT, DURATION);
-    while(fuelSchedule1.Status == PENDING) /*Wait*/ ;
+    setFuelSchedule8(TIMEOUT, DURATION);
+    while(fuelSchedule8.Status == PENDING) /*Wait*/ ;
     start_time = micros();
-    while(fuelSchedule1.Status == RUNNING) /*Wait*/ ;
+    while(fuelSchedule8.Status == RUNNING) /*Wait*/ ;
     end_time = micros();
     TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
 #endif
@@ -114,7 +114,7 @@ void test_accuracy_duration_ign1(void)
 {
     initialiseSchedulers();
     setIgnitionSchedule1(startCallback, TIMEOUT, DURATION, endCallback);
-    while(ignitionSchedule1.Status != OFF) /*Wait*/ ;
+    while( (ignitionSchedule1.Status == PENDING) || (ignitionSchedule1.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
 }
 
@@ -122,7 +122,7 @@ void test_accuracy_duration_ign2(void)
 {
     initialiseSchedulers();
     setIgnitionSchedule2(startCallback, TIMEOUT, DURATION, endCallback);
-    while(ignitionSchedule2.Status != OFF) /*Wait*/ ;
+    while( (ignitionSchedule2.Status == PENDING) || (ignitionSchedule2.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 
@@ -130,7 +130,7 @@ void test_accuracy_duration_ign3(void)
 {
     initialiseSchedulers();
     setIgnitionSchedule3(startCallback, TIMEOUT, DURATION, endCallback);
-    while(ignitionSchedule3.Status != OFF) /*Wait*/ ;
+    while( (ignitionSchedule3.Status == PENDING) || (ignitionSchedule3.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 
@@ -138,7 +138,7 @@ void test_accuracy_duration_ign4(void)
 {
     initialiseSchedulers();
     setIgnitionSchedule4(startCallback, TIMEOUT, DURATION, endCallback);
-    while(ignitionSchedule4.Status != OFF) /*Wait*/ ;
+    while( (ignitionSchedule4.Status == PENDING) || (ignitionSchedule4.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 
@@ -147,7 +147,7 @@ void test_accuracy_duration_ign5(void)
 #if IGN_CHANNELS >= 5
     initialiseSchedulers();
     setIgnitionSchedule5(startCallback, TIMEOUT, DURATION, endCallback);
-    while(ignitionSchedule5.Status != OFF) /*Wait*/ ;
+    while( (ignitionSchedule5.Status == PENDING) || (ignitionSchedule5.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 #endif
 }
@@ -157,7 +157,7 @@ void test_accuracy_duration_ign6(void)
 #if INJ_CHANNELS >= 6
     initialiseSchedulers();
     setIgnitionSchedule6(startCallback, TIMEOUT, DURATION, endCallback);
-    while(ignitionSchedule6.Status != OFF) /*Wait*/ ;
+    while( (ignitionSchedule6.Status == PENDING) || (ignitionSchedule6.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 #endif
 }
@@ -167,7 +167,7 @@ void test_accuracy_duration_ign7(void)
 #if INJ_CHANNELS >= 7
     initialiseSchedulers();
     setIgnitionSchedule7(startCallback, TIMEOUT, DURATION, endCallback);
-    while(ignitionSchedule7.Status != OFF) /*Wait*/ ;
+    while( (ignitionSchedule7.Status == PENDING) || (ignitionSchedule7.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 #endif
 }
@@ -177,7 +177,7 @@ void test_accuracy_duration_ign8(void)
 #if INJ_CHANNELS >= 8
     initialiseSchedulers();
     setIgnitionSchedule8(startCallback, TIMEOUT, DURATION, endCallback);
-    while(ignitionSchedule8.Status != OFF) /*Wait*/ ;
+    while( (ignitionSchedule8.Status == PENDING) || (ignitionSchedule8.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 #endif
 }
