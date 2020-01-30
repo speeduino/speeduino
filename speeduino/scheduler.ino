@@ -458,7 +458,7 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
   }
 }
 
-static inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
+inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
 {
   if( (ignitionSchedule1.Status == RUNNING) && (timeToEnd < ignitionSchedule1.duration) )
   //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
