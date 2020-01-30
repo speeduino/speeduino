@@ -45,6 +45,14 @@ void beginCoil1and3Charge();
 void endCoil1and3Charge();
 void beginCoil2and4Charge();
 void endCoil2and4Charge();
+
+//For 6-cyl cop
+void beginCoil1and4Charge();
+void endCoil1and4Charge();
+void beginCoil2and5Charge();
+void endCoil2and5Charge();
+void beginCoil3and6Charge();
+void endCoil3and6Charge();
 /*
 #define beginCoil1and3Charge() beginCoil1Charge(); beginCoil3Charge()
 #define endCoil1and3Charge()

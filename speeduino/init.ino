@@ -780,8 +780,8 @@ void initialiseAll()
         break;
 
     case IGN_MODE_WASTEDCOP:
-        //Wasted COP mode. Ignition channels 1&3 and 2&4 are paired together
-        //This is not a valid mode for >4 cylinders
+        //Wasted COP mode. This is not a valid mode for >6 cylinders
+        //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
         if( configPage2.nCylinders <= 4 )
         {
           ign1StartFunction = beginCoil1and3Charge;
@@ -794,9 +794,26 @@ void initialiseAll()
           ign4StartFunction = nullCallback;
           ign4EndFunction = nullCallback;
         }
+        //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
+        else if( configPage2.nCylinders == 6 )
+          {
+          ign1StartFunction = beginCoil1and4Charge;
+          ign1EndFunction = endCoil1and4Charge;
+          ign2StartFunction = beginCoil2and5Charge;
+          ign2EndFunction = endCoil2and5Charge;
+          ign3StartFunction = beginCoil3and6Charge;
+          ign3EndFunction = endCoil3and6Charge;
+
+          ign4StartFunction = nullCallback;
+          ign4EndFunction = nullCallback;
+          ign5StartFunction = nullCallback;
+          ign5EndFunction = nullCallback;
+          ign6StartFunction = nullCallback;
+          ign6EndFunction = nullCallback;
+        }
         else
         {
-          //If the person has inadvertantly selected this when running more than 4 cylinders, just use standard Wasted spark mode
+          //If the person has inadvertantly selected this when running more than 4 cylinders or other than 6 cylinders, just use standard Wasted spark mode
           ign1StartFunction = beginCoil1Charge;
           ign1EndFunction = endCoil1Charge;
           ign2StartFunction = beginCoil2Charge;
@@ -2143,6 +2160,7 @@ void setPinMapping(byte boardID)
     pinMode(pinCoil3, OUTPUT);
     pinMode(pinCoil4, OUTPUT);
     pinMode(pinCoil5, OUTPUT);
+	pinMode(pinCoil6, OUTPUT);
     pinMode(pinInjector1, OUTPUT);
     pinMode(pinInjector2, OUTPUT);
     pinMode(pinInjector3, OUTPUT);
