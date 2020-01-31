@@ -3,27 +3,33 @@
 
 #include "tests_corrections.h"
 #include "tests_init.h"
-#include "tests_schedules.h"
 
-void setup() {
+void doTests()
+{
+    testInitialisation();
+    testCorrections();
+}
+
+void setup()
+{
+    pinMode(LED_BUILTIN, OUTPUT);
+
     // NOTE!!! Wait for >2 secs
     // if board doesn't support software reset via Serial.DTR/RTS
     delay(2000);
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 
-    pinMode(LED_BUILTIN, OUTPUT);
-    
+    doTests();
+
+    UNITY_END(); // stop unit testing
 }
 
-uint8_t i = 0;
-uint8_t max_blinks = 5;
-
-void loop() 
+void loop()
 {
-  testInitialisation();
-  testCorrections();
-  testSchedules();
-
-  UNITY_END(); // stop unit testing
+    // Blink to indicate end of test
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(250);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(250);
 }

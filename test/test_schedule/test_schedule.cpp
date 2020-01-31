@@ -3,7 +3,22 @@
 
 #include "test_schedule.h"
 
-#include "init.h"
+#include "globals.h"
+
+void two_second_blink()
+{
+    // NOTE!!! Wait for >2 secs
+    // if board doesn't support software reset via Serial.DTR/RTS
+
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(667);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(667);
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(667);
+    digitalWrite(LED_BUILTIN, LOW);
+}
 
 void do_tests()
 {
@@ -17,19 +32,19 @@ void do_tests()
     test_accuracy_duration();
 }
 
-void setup() {
-    initialiseAll();
-    pinMode(LED_BUILTIN, OUTPUT);
+void setup()
+{
+    initBoard(); // Not using initialiseAll() as it will cause memory overflow
 
-    // NOTE!!! Wait for >2 secs
-    // if board doesn't support software reset via Serial.DTR/RTS
-    delay(2000);
+    two_second_blink(); // Very important line
 
     UNITY_BEGIN(); // start unit testing
 
     do_tests();
 
     UNITY_END(); // stop unit testing
+
+    pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop()
