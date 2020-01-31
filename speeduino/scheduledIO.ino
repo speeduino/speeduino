@@ -42,17 +42,19 @@ inline void closeInjector8() { closeInjector8_MC33810(); }
 
 #endif
 
-// These are for Semi-Sequential and 5 Cylinder injection
+// These are for Semi-Sequential injection
 void openInjector1and4() { openInjector1(); openInjector4(); }
 void closeInjector1and4() { closeInjector1(); closeInjector4(); }
 void openInjector2and3() { openInjector2(); openInjector3(); }
 void closeInjector2and3() { closeInjector2(); closeInjector3(); }
 void openInjector2and5() { openInjector2(); openInjector5(); }
 void closeInjector2and5() { closeInjector2(); closeInjector5(); }
-void openInjector3and5() { openInjector3(); openInjector5(); }
-void closeInjector3and5() { closeInjector3(); closeInjector5(); }
 void openInjector3and6() { openInjector3(); openInjector6(); }
 void closeInjector3and6() { closeInjector3(); closeInjector6(); }
+
+//5 cylinder support doubles up injector 3 as being close to inj 5 (Crank angle)
+void openInjector3and5() { openInjector3(); openInjector5(); }
+void closeInjector3and5() { closeInjector3(); closeInjector5(); }
 
 inline void beginCoil1Charge() { digitalWrite(pinCoil1, coilHIGH); tachoOutputFlag = READY; }
 inline void endCoil1Charge() { digitalWrite(pinCoil1, coilLOW); }

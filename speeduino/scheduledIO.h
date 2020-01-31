@@ -127,9 +127,7 @@ void endCoil2and4Charge();
 #define closeInjector8() closeInjector8_MC33810()
 
 #endif
-*/
 
-/*
 #define openInjector1and4() openInjector1(); openInjector4()
 #define closeInjector1and4() closeInjector1(); closeInjector4()
 #define openInjector2and3() openInjector2(); openInjector3()
