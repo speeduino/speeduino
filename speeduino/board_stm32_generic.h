@@ -32,9 +32,9 @@
   #if defined(FRAM_AS_EEPROM)
     #include <Fram.h>
     #if defined(ARDUINO_BLACK_F407VE)
-    FramClass EEPROM(PB0, PB3, PB4, PB5, 15000000);
+    FramClass EEPROM(PB5, PB4, PB3, PB0); /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
     #else
-    FramClass EEPROM(PB12, PB13, PB14, PB15, 15000000); //Blue/Black Pills
+    FramClass EEPROM(PB15, PB12, PB13, PB12); //Blue/Black Pills
     #endif
   #endif
 
