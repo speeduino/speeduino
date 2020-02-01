@@ -36,7 +36,7 @@ void initialiseCorrections()
 correctionsTotal() calls all the other corrections functions and combines their results.
 This is the only function that should be called from anywhere outside the file
 */
-static inline byte correctionsFuel()
+static inline uint16_t correctionsFuel()
 {
   #define MAX_CORRECTIONS 3 //The maximum number of corrections allowed before the sum is reprocessed
   uint32_t sumCorrections = 100;
@@ -90,8 +90,39 @@ static inline byte correctionsFuel()
 
   sumCorrections = sumCorrections / powint(100,activeCorrections);
 
-  if(sumCorrections > 255) { sumCorrections = 255; } //This is the maximum allowable increase
-  return (byte)sumCorrections;
+  if(sumCorrections > 511) { sumCorrections = 511; } //This is the maximum allowable increase as higher than this can potentially cause overflow in the PW() function (Can be fixed, but 511 is probably enough)
+  return (uint16_t)sumCorrections;
+}
+
+/*
+correctionsTotal() calls all the other corrections functions and combines their results.
+This is the only function that should be called from anywhere outside the file
+*/
+static inline byte correctionsFuel_new()
+{
+  uint32_t sumCorrections = 100;
+  byte numCorrections = 0;
+  byte result; //temporary variable to store the result of each corrections function
+
+  //The values returned by each of the correction functions are multipled together and then divided back to give a single 0-255 value.
+  currentStatus.wueCorrection = correctionWUE(); numCorrections++;
+  uint16_t correctionASEvalue = correctionASE(); numCorrections++;
+  uint16_t correctionCrankingValue = correctionCranking(); numCorrections++;
+  currentStatus.AEamount = correctionAccel(); numCorrections++;
+  result = correctionFloodClear(); numCorrections++;
+  currentStatus.egoCorrection = correctionAFRClosedLoop(); numCorrections++;
+
+  currentStatus.batCorrection = correctionBatVoltage(); numCorrections++;
+  currentStatus.iatCorrection = correctionIATDensity(); numCorrections++;
+  currentStatus.baroCorrection = correctionBaro(); numCorrections++; 
+  currentStatus.flexCorrection = correctionFlex(); numCorrections++;
+  currentStatus.launchCorrection = correctionLaunch(); numCorrections++;
+
+  bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
+  if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
+
+  return ( currentStatus.wueCorrection + correctionASEvalue + correctionCrankingValue);
+
 }
 
 /*

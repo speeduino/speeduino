@@ -428,7 +428,7 @@ struct statuses {
   byte dwellCorrection; /**< The amount of correction being applied to the dwell time. */
   byte battery10; /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
   int8_t advance; /**< Signed 8 bit as advance can now go negative (ATDC) */
-  byte corrections; /**< The total current corrections % amount */
+  uint16_t corrections; /**< The total current corrections % amount */
   uint16_t AEamount; /**< The amount of accleration enrichment currently being applied. 100=No change. Varies above 255 */
   byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
   byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
@@ -613,9 +613,11 @@ struct config2 {
   byte CTPSPin : 6;
   byte CTPSPolarity : 1;
   byte CTPSEnabled : 1;
+
   byte idleAdvEnabled : 2;
   byte idleAdvAlgorithm : 1;
   byte IdleAdvDelay : 5;
+  
   byte idleAdvRPM;
   byte idleAdvTPS;
   byte unused2_95[33];
@@ -1069,9 +1071,12 @@ byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
 #ifdef USE_MC33810
-//If the MC33810 IC\s are in use, these are the chip select pins
-byte pinMC33810_1_CS;
-byte pinMC33810_2_CS;
+  //If the MC33810 IC\s are in use, these are the chip select pins
+  byte pinMC33810_1_CS;
+  byte pinMC33810_2_CS;
+#endif
+#ifdef USE_SPI_EEPROM
+  byte pinSPIFlash_CS;
 #endif
 
 /* global variables */ // from speeduino.ino

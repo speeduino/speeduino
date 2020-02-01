@@ -7,7 +7,7 @@ All functions in the gamma file return
 
 void initialiseCorrections();
 
-static inline byte correctionsFuel() __attribute__((always_inline));
+static inline uint16_t correctionsFuel() __attribute__((always_inline));
 static inline byte correctionWUE() __attribute__((always_inline)); //Warmup enrichment
 static inline byte correctionCranking() __attribute__((always_inline)); //Cranking enrichment
 static inline byte correctionASE() __attribute__((always_inline)); //After Start Enrichment

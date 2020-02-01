@@ -545,11 +545,25 @@ void initialiseAll()
         //For alternatiing injection, the squirt occurs at different times for each channel
         if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
         {
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 72;
-          channel3InjDegrees = 144;
-          channel4InjDegrees = 216;
-          channel5InjDegrees = 288;
+          if (!configPage2.injTiming) 
+          { 
+            //For simultaneous, all squirts happen at the same time
+            channel1InjDegrees = 0;
+            channel2InjDegrees = 0;
+            channel3InjDegrees = 0;
+            channel4InjDegrees = 0;
+            channel5InjDegrees = 0; 
+          }
+          else
+          {
+            channel1InjDegrees = 0;
+            channel2InjDegrees = 72;
+            channel3InjDegrees = 144;
+            channel4InjDegrees = 216;
+            channel5InjDegrees = 288;
+
+            //Divide by currentStatus.nSquirts ?
+          }
         }
         else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
@@ -561,15 +575,7 @@ void initialiseAll()
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
-        }
-        if (!configPage2.injTiming) 
-        { 
-          //For simultaneous, all squirts happen at the same time
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 0;
-          channel3InjDegrees = 0;
-          channel4InjDegrees = 0;
-          channel5InjDegrees = 0; 
+          req_fuel_uS = req_fuel_uS * 2;
         }
 
         channel1InjEnabled = true;
@@ -612,6 +618,8 @@ void initialiseAll()
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
         }
+    #else 
+        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
     #endif
 
         if (!configPage2.injTiming) 
@@ -621,8 +629,6 @@ void initialiseAll()
           channel2InjDegrees = 0;
           channel3InjDegrees = 0; 
         } 
-
-        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
 
         channel1InjEnabled = true;
         channel2InjEnabled = true;
@@ -663,6 +669,8 @@ void initialiseAll()
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
         }
+    #else
+        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
     #endif
 
         maxIgnOutputs = 4;
@@ -675,8 +683,6 @@ void initialiseAll()
           channel3InjDegrees = 0;
           channel4InjDegrees = 0; 
         }
-
-        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
 
         channel1InjEnabled = true;
         channel2InjEnabled = true;
@@ -1451,6 +1457,44 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
+   case 31:
+      //Pin mappings for the BMW PnP PCBs by pazi88. This is an AVR only module. At least for now
+      pinInjector1 = 8; //Output pin injector 1
+      pinInjector2 = 9; //Output pin injector 2
+      pinInjector3 = 10; //Output pin injector 3
+      pinInjector4 = 11; //Output pin injector 4
+      pinInjector5 = 12; //Output pin injector 5
+      pinInjector6 = 50; //Output pin injector 6
+      pinCoil1 = 40; //Pin for coil 1
+      pinCoil2 = 38; //Pin for coil 2
+      pinCoil3 = 52; //Pin for coil 3
+      pinCoil4 = 48; //Pin for coil 4
+      pinCoil5 = 36; //Pin for coil 5
+	  pinCoil6 = 34; //Pin for coil 6
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinTPS = A2;//TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A8; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinDisplayReset = 48; // OLED reset pin
+      pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
+      pinIdle1 = 5; //ICV pin1
+      pinIdle2 = 6; //ICV pin3
+      pinBoost = 7; //Boost control
+      pinVVT_1 = 4; //VVT output
+      pinFuelPump = 45; //Fuel pump output  (Goes to ULN2003)
+      pinStepperDir = 16; //Stepper valve isn't used with these
+      pinStepperStep = 17; //Stepper valve isn't used with these
+      pinStepperEnable = 24; //Stepper valve isn't used with these
+      pinFan = 47; //Pin for the fan output (Goes to ULN2003)
+      pinLaunch = 51; //Launch control pin
+      pinFlex = 2; // Flex sensor
+      pinResetControl = 43; //Reset control output
+      break;
+
     case 40:
       //Pin mappings as per the NO2C shield
       pinInjector1 = 8; //Output pin injector 1 is on
@@ -1691,7 +1735,30 @@ void setPinMapping(byte boardID)
       #ifdef USE_MC33810
         pinMC33810_1_CS = 10;
         pinMC33810_2_CS = 9;
+
+        //Pin alignment to the MC33810 outputs
+        MC33810_BIT_INJ1 = 3;
+        MC33810_BIT_INJ2 = 1;
+        MC33810_BIT_INJ3 = 0;
+        MC33810_BIT_INJ4 = 2;
+        MC33810_BIT_IGN1 = 5;
+        MC33810_BIT_IGN2 = 6;
+        MC33810_BIT_IGN3 = 7;
+        MC33810_BIT_IGN4 = 8;
+        MC33810_BIT_INJ5 = 3;
+        MC33810_BIT_INJ6 = 1;
+        MC33810_BIT_INJ7 = 0;
+        MC33810_BIT_INJ8 = 2;
+        MC33810_BIT_IGN5 = 5;
+        MC33810_BIT_IGN6 = 6;
+        MC33810_BIT_IGN7 = 7;
+        MC33810_BIT_IGN8 = 8;
       #endif
+
+      #ifdef USE_SPI_EEPROM
+        pinSPIFlash_CS = 6;
+      #endif
+
       #endif
       break;
     
@@ -2089,6 +2156,11 @@ void setPinMapping(byte boardID)
 
     initMC33810();
   #endif
+
+#ifdef USE_SPI_EEPROM
+  //We need to send the flash CS (SS) pin if we're using SPI flash. It cannot read from globals.h
+  EEPROM.begin(pinSPIFlash_CS);
+#endif
 
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
