@@ -124,7 +124,8 @@ void canCommand()
       break;
       
     case 'Q': // send code version
-       for (unsigned int revn = 0; revn < sizeof( TSfirmwareVersion) - 1; revn++)
+       //for (unsigned int revn = 0; revn < sizeof( TSfirmwareVersion) - 1; revn++)
+       for (unsigned int revn = 0; revn < 10 - 1; revn++)
        {
          CANSerial.write( TSfirmwareVersion[revn]);
        }
@@ -290,6 +291,19 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
      case 3:
         //send to truecan send routine
         //canaddress == speeduino canid, candata1 == canin channel dest, paramgroup == can address  to request from
+        #if defined(CORE_TEENSY35) //Scope guarding this for now, but this needs a bit of a rethink for how it can be handled better across multiple archs
+        outMsg.id = (canaddress);
+        outMsg.len = 8;
+        outMsg.buf[0] = 0x0B ;  //11;   
+        outMsg.buf[1] = 0x145;
+        outMsg.buf[2] = candata1;
+        outMsg.buf[3] = 0x24;
+        outMsg.buf[4] = 0x7F;
+        outMsg.buf[5] = 0x70;
+        outMsg.buf[6] = 0x9E;
+        outMsg.buf[7] = 0x4D;
+        Can0.write(outMsg);
+        #endif
         break;
 
      default:

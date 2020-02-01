@@ -1,6 +1,7 @@
 #ifndef STM32_H
 #define STM32_H
 #if defined(CORE_STM32_GENERIC)
+
 /*
 ***********************************************************************************************************
 * General
@@ -76,6 +77,7 @@
     #define A14  PA4
     #define A15  PA5
   #endif
+
   #ifndef PB11 //Hack for F4 BlackPills
     #define PB11 PB10
   #endif

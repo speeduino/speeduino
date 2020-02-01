@@ -58,7 +58,8 @@ void sendPageASCII();
 void receiveCalibration(byte);
 void sendToothLog();
 void testComm();
-void commandButtons();
+void commandButtons(int16_t);
+void sendCompositeLog();
 byte getPageValue(byte, uint16_t);
 
 #endif // COMMS_H

@@ -93,6 +93,7 @@ void triggerSec_Miata9905();
 uint16_t getRPM_Miata9905();
 int getCrankAngle_Miata9905();
 void triggerSetEndTeeth_Miata9905();
+int getCamAngle_Miata9905();
 
 void triggerSetup_MazdaAU();
 void triggerPri_MazdaAU();

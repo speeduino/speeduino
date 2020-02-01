@@ -257,136 +257,137 @@
 #define FUEL_PUMP_ON() *pump_pin_port |= (pump_pin_mask)
 #define FUEL_PUMP_OFF() *pump_pin_port &= ~(pump_pin_mask)
 
-const char TSfirmwareVersion[] PROGMEM = "Speeduino";
+extern const char TSfirmwareVersion[] PROGMEM;
 
-const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
+extern const byte data_structure_version; //This identifies the data structure when reading / writing.
 #define NUM_PAGES     12
-const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288}; /**< This array stores the size (in bytes) of each configuration page */
+extern const uint16_t npage_size[NUM_PAGES]; /**< This array stores the size (in bytes) of each configuration page */
 #define MAP_PAGE_SIZE 288
 
-struct table3D fuelTable; //16x16 fuel map
-struct table3D fuelTable2; //16x16 fuel map
-struct table3D ignitionTable; //16x16 ignition map
-struct table3D afrTable; //16x16 afr target map
-struct table3D stagingTable; //8x8 fuel staging table
-struct table3D boostTable; //8x8 boost map
-struct table3D vvtTable; //8x8 vvt map
-struct table3D trim1Table; //6x6 Fuel trim 1 map
-struct table3D trim2Table; //6x6 Fuel trim 2 map
-struct table3D trim3Table; //6x6 Fuel trim 3 map
-struct table3D trim4Table; //6x6 Fuel trim 4 map
-struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
-struct table2D maeTable;
-struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
-struct table2D ASETable; //4 bin After Start Enrichment map (2D)
-struct table2D ASECountTable; //4 bin After Start duration map (2D)
-struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
-struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
-struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
-struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
-struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
-struct table2D baroFuelTable; //8 bin baro correction curve (2D)
-struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
-struct table2D idleTargetTable; //10 bin idle target table for idle timing (2D)
-struct table2D idleAdvanceTable; //6 bin idle advance adjustment table based on RPM difference  (2D)
-struct table2D CLTAdvanceTable; //6 bin ignition adjustment based on coolant temperature  (2D)
-struct table2D rotarySplitTable; //8 bin ignition split curve for rotary leading/trailing  (2D)
-struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
-struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
-struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
-struct table2D knockWindowStartTable;
-struct table2D knockWindowDurationTable;
+extern struct table3D fuelTable; //16x16 fuel map
+extern struct table3D fuelTable2; //16x16 fuel map
+extern struct table3D ignitionTable; //16x16 ignition map
+extern struct table3D afrTable; //16x16 afr target map
+extern struct table3D stagingTable; //8x8 fuel staging table
+extern struct table3D boostTable; //8x8 boost map
+extern struct table3D vvtTable; //8x8 vvt map
+extern struct table3D trim1Table; //6x6 Fuel trim 1 map
+extern struct table3D trim2Table; //6x6 Fuel trim 2 map
+extern struct table3D trim3Table; //6x6 Fuel trim 3 map
+extern struct table3D trim4Table; //6x6 Fuel trim 4 map
+extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
+extern struct table2D maeTable;
+extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
+extern struct table2D ASETable; //4 bin After Start Enrichment map (2D)
+extern struct table2D ASECountTable; //4 bin After Start duration map (2D)
+extern struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
+extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
+extern struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
+extern struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
+extern struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
+extern struct table2D baroFuelTable; //8 bin baro correction curve (2D)
+extern struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
+extern struct table2D idleTargetTable; //10 bin idle target table for idle timing (2D)
+extern struct table2D idleAdvanceTable; //6 bin idle advance adjustment table based on RPM difference  (2D)
+extern struct table2D CLTAdvanceTable; //6 bin ignition adjustment based on coolant temperature  (2D)
+extern struct table2D rotarySplitTable; //8 bin ignition split curve for rotary leading/trailing  (2D)
+extern struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
+extern struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
+extern struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
+extern struct table2D knockWindowStartTable;
+extern struct table2D knockWindowDurationTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
-volatile PORT_TYPE *inj1_pin_port;
-volatile PINMASK_TYPE inj1_pin_mask;
-volatile PORT_TYPE *inj2_pin_port;
-volatile PINMASK_TYPE inj2_pin_mask;
-volatile PORT_TYPE *inj3_pin_port;
-volatile PINMASK_TYPE inj3_pin_mask;
-volatile PORT_TYPE *inj4_pin_port;
-volatile PINMASK_TYPE inj4_pin_mask;
-volatile PORT_TYPE *inj5_pin_port;
-volatile PINMASK_TYPE inj5_pin_mask;
-volatile PORT_TYPE *inj6_pin_port;
-volatile PINMASK_TYPE inj6_pin_mask;
-volatile PORT_TYPE *inj7_pin_port;
-volatile PINMASK_TYPE inj7_pin_mask;
-volatile PORT_TYPE *inj8_pin_port;
-volatile PINMASK_TYPE inj8_pin_mask;
+extern volatile PORT_TYPE *inj1_pin_port;
+extern volatile PINMASK_TYPE inj1_pin_mask;
+extern volatile PORT_TYPE *inj2_pin_port;
+extern volatile PINMASK_TYPE inj2_pin_mask;
+extern volatile PORT_TYPE *inj3_pin_port;
+extern volatile PINMASK_TYPE inj3_pin_mask;
+extern volatile PORT_TYPE *inj4_pin_port;
+extern volatile PINMASK_TYPE inj4_pin_mask;
+extern volatile PORT_TYPE *inj5_pin_port;
+extern volatile PINMASK_TYPE inj5_pin_mask;
+extern volatile PORT_TYPE *inj6_pin_port;
+extern volatile PINMASK_TYPE inj6_pin_mask;
+extern volatile PORT_TYPE *inj7_pin_port;
+extern volatile PINMASK_TYPE inj7_pin_mask;
+extern volatile PORT_TYPE *inj8_pin_port;
+extern volatile PINMASK_TYPE inj8_pin_mask;
 
-volatile PORT_TYPE *ign1_pin_port;
-volatile PINMASK_TYPE ign1_pin_mask;
-volatile PORT_TYPE *ign2_pin_port;
-volatile PINMASK_TYPE ign2_pin_mask;
-volatile PORT_TYPE *ign3_pin_port;
-volatile PINMASK_TYPE ign3_pin_mask;
-volatile PORT_TYPE *ign4_pin_port;
-volatile PINMASK_TYPE ign4_pin_mask;
-volatile PORT_TYPE *ign5_pin_port;
-volatile PINMASK_TYPE ign5_pin_mask;
-volatile PORT_TYPE *ign6_pin_port;
-volatile PINMASK_TYPE ign6_pin_mask;
-volatile PORT_TYPE *ign7_pin_port;
-volatile PINMASK_TYPE ign7_pin_mask;
-volatile PORT_TYPE *ign8_pin_port;
-volatile PINMASK_TYPE ign8_pin_mask;
+extern volatile PORT_TYPE *ign1_pin_port;
+extern volatile PINMASK_TYPE ign1_pin_mask;
+extern volatile PORT_TYPE *ign2_pin_port;
+extern volatile PINMASK_TYPE ign2_pin_mask;
+extern volatile PORT_TYPE *ign3_pin_port;
+extern volatile PINMASK_TYPE ign3_pin_mask;
+extern volatile PORT_TYPE *ign4_pin_port;
+extern volatile PINMASK_TYPE ign4_pin_mask;
+extern volatile PORT_TYPE *ign5_pin_port;
+extern volatile PINMASK_TYPE ign5_pin_mask;
+extern volatile PORT_TYPE *ign6_pin_port;
+extern volatile PINMASK_TYPE ign6_pin_mask;
+extern volatile PORT_TYPE *ign7_pin_port;
+extern volatile PINMASK_TYPE ign7_pin_mask;
+extern volatile PORT_TYPE *ign8_pin_port;
+extern volatile PINMASK_TYPE ign8_pin_mask;
 
-volatile PORT_TYPE *tach_pin_port;
-volatile PINMASK_TYPE tach_pin_mask;
-volatile PORT_TYPE *pump_pin_port;
-volatile PINMASK_TYPE pump_pin_mask;
+extern volatile PORT_TYPE *tach_pin_port;
+extern volatile PINMASK_TYPE tach_pin_mask;
+extern volatile PORT_TYPE *pump_pin_port;
+extern volatile PINMASK_TYPE pump_pin_mask;
 
-volatile PORT_TYPE *triggerPri_pin_port;
-volatile PINMASK_TYPE triggerPri_pin_mask;
-volatile PORT_TYPE *triggerSec_pin_port;
-volatile PINMASK_TYPE triggerSec_pin_mask;
+extern volatile PORT_TYPE *triggerPri_pin_port;
+extern volatile PINMASK_TYPE triggerPri_pin_mask;
+extern volatile PORT_TYPE *triggerSec_pin_port;
+extern volatile PINMASK_TYPE triggerSec_pin_mask;
 
 //These need to be here as they are used in both speeduino.ino and scheduler.ino
-bool channel1InjEnabled = true;
-bool channel2InjEnabled = false;
-bool channel3InjEnabled = false;
-bool channel4InjEnabled = false;
-bool channel5InjEnabled = false;
-bool channel6InjEnabled = false;
-bool channel7InjEnabled = false;
-bool channel8InjEnabled = false;
+extern bool channel1InjEnabled;
+extern bool channel2InjEnabled;
+extern bool channel3InjEnabled;
+extern bool channel4InjEnabled;
+extern bool channel5InjEnabled;
+extern bool channel6InjEnabled;
+extern bool channel7InjEnabled;
+extern bool channel8InjEnabled;
 
-int ignition1EndAngle = 0;
-int ignition2EndAngle = 0;
-int ignition3EndAngle = 0;
-int ignition4EndAngle = 0;
-int ignition5EndAngle = 0;
+extern int ignition1EndAngle;
+extern int ignition2EndAngle;
+extern int ignition3EndAngle;
+extern int ignition4EndAngle;
+extern int ignition5EndAngle;
 
 //These are variables used across multiple files
-bool initialisationComplete = false; //Tracks whether the setup() function has run completely
-byte fpPrimeTime = 0; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
-volatile uint16_t mainLoopCount;
-unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
-volatile unsigned long ms_counter = 0; //A counter that increments once per ms
-uint16_t fixedCrankingOverride = 0;
-bool clutchTrigger;
-bool previousClutchTrigger;
-volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
-volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
-volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
-volatile unsigned int toothHistoryIndex = 0;
-volatile byte toothHistorySerialIndex = 0;
-
-  byte primaryTriggerEdge;
-  byte secondaryTriggerEdge;
-
-int CRANK_ANGLE_MAX = 720;
-int CRANK_ANGLE_MAX_IGN = 360;
-int CRANK_ANGLE_MAX_INJ = 360; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+extern bool initialisationComplete; //Tracks whether the setup() function has run completely
+extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
+extern volatile uint16_t mainLoopCount;
+extern unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+extern volatile unsigned long timer5_overflow_count; //Increments every time counter 5 overflows. Used for the fast version of micros()
+extern volatile unsigned long ms_counter; //A counter that increments once per ms
+extern uint16_t fixedCrankingOverride;
+extern bool clutchTrigger;
+extern bool previousClutchTrigger;
+extern volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
+extern volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
+extern volatile bool fpPrimed; //Tracks whether or not the fuel pump priming has been completed yet
+extern volatile unsigned int toothHistoryIndex;
+extern volatile byte toothHistorySerialIndex;
+extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
+extern unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
+extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
+extern byte primaryTriggerEdge;
+extern byte secondaryTriggerEdge;
+extern int CRANK_ANGLE_MAX;
+extern int CRANK_ANGLE_MAX_IGN;
+extern int CRANK_ANGLE_MAX_INJ; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
   
 
 //This needs to be here because using the config page directly can prevent burning the setting
-byte resetControl = RESET_CONTROL_DISABLED;
+extern byte resetControl;
 
-volatile byte TIMER_mask;
-volatile byte LOOP_TIMER;
+extern volatile byte TIMER_mask;
+extern volatile byte LOOP_TIMER;
 
 //These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
 #define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) )
@@ -495,7 +496,6 @@ struct statuses {
   byte vvtDuty;
 
 };
-struct statuses currentStatus; //The global status object
 
 /**
  * @brief This mostly covers off variables that are required for fuel
@@ -1007,69 +1007,69 @@ struct config10 {
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
 
-byte pinInjector1; //Output pin injector 1
-byte pinInjector2; //Output pin injector 2
-byte pinInjector3; //Output pin injector 3 is on
-byte pinInjector4; //Output pin injector 4 is on
-byte pinInjector5; //Output pin injector 5 NOT USED YET
-byte pinInjector6; //Placeholder only - NOT USED
-byte pinInjector7; //Placeholder only - NOT USED
-byte pinInjector8; //Placeholder only - NOT USED
-byte pinCoil1; //Pin for coil 1
-byte pinCoil2; //Pin for coil 2
-byte pinCoil3; //Pin for coil 3
-byte pinCoil4; //Pin for coil 4
-byte pinCoil5; //Pin for coil 5
-byte pinCoil6; //Pin for coil 6
-byte pinCoil7; //Pin for coil 7
-byte pinCoil8; //Pin for coil 8
-byte pinTrigger; //The CAS pin
-byte pinTrigger2; //The Cam Sensor pin
-byte pinTrigger3;	//the 2nd cam sensor pin
-byte pinTPS;//TPS input pin
-byte pinMAP; //MAP sensor pin
-byte pinEMAP; //EMAP sensor pin
-byte pinMAP2; //2nd MAP sensor (Currently unused)
-byte pinIAT; //IAT sensor pin
-byte pinCLT; //CLS sensor pin
-byte pinO2; //O2 Sensor pin
-byte pinO2_2; //second O2 pin
-byte pinBat; //Battery voltage pin
-byte pinDisplayReset; // OLED reset pin
-byte pinTachOut; //Tacho output
-byte pinFuelPump; //Fuel pump on/off
-byte pinIdle1; //Single wire idle control
-byte pinIdle2; //2 wire idle control (Not currently used)
-byte pinIdleUp; //Input for triggering Idle Up
-byte pinCTPS; //Input for triggering closed throttle state
-byte pinFuel2Input; //Input for switching to the 2nd fuel table
-byte pinSpareTemp1; // Future use only
-byte pinSpareTemp2; // Future use only
-byte pinSpareOut1; //Generic output
-byte pinSpareOut2; //Generic output
-byte pinSpareOut3; //Generic output
-byte pinSpareOut4; //Generic output
-byte pinSpareOut5; //Generic output
-byte pinSpareOut6; //Generic output
-byte pinSpareHOut1; //spare high current output
-byte pinSpareHOut2; // spare high current output
-byte pinSpareLOut1; // spare low current output
-byte pinSpareLOut2; // spare low current output
-byte pinSpareLOut3;
-byte pinSpareLOut4;
-byte pinSpareLOut5;
-byte pinBoost;
-byte pinVVT_1;		// vvt output 1
-byte pinVVT_2;		// vvt output 2
-byte pinFan;       // Cooling fan output
-byte pinStepperDir; //Direction pin for the stepper motor driver
-byte pinStepperStep; //Step pin for the stepper motor driver
-byte pinStepperEnable; //Turning the DRV8825 driver on/off
-byte pinLaunch;
-byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
-byte pinFlex; //Pin with the flex sensor attached
-byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
-byte pinResetControl; // Output pin used control resetting the Arduino
+extern byte pinInjector1; //Output pin injector 1
+extern byte pinInjector2; //Output pin injector 2
+extern byte pinInjector3; //Output pin injector 3 is on
+extern byte pinInjector4; //Output pin injector 4 is on
+extern byte pinInjector5; //Output pin injector 5 NOT USED YET
+extern byte pinInjector6; //Placeholder only - NOT USED
+extern byte pinInjector7; //Placeholder only - NOT USED
+extern byte pinInjector8; //Placeholder only - NOT USED
+extern byte pinCoil1; //Pin for coil 1
+extern byte pinCoil2; //Pin for coil 2
+extern byte pinCoil3; //Pin for coil 3
+extern byte pinCoil4; //Pin for coil 4
+extern byte pinCoil5; //Pin for coil 5
+extern byte pinCoil6; //Pin for coil 6
+extern byte pinCoil7; //Pin for coil 7
+extern byte pinCoil8; //Pin for coil 8
+extern byte pinTrigger; //The CAS pin
+extern byte pinTrigger2; //The Cam Sensor pin
+extern byte pinTrigger3;	//the 2nd cam sensor pin
+extern byte pinTPS;//TPS input pin
+extern byte pinMAP; //MAP sensor pin
+extern byte pinEMAP; //EMAP sensor pin
+extern byte pinMAP2; //2nd MAP sensor (Currently unused)
+extern byte pinIAT; //IAT sensor pin
+extern byte pinCLT; //CLS sensor pin
+extern byte pinO2; //O2 Sensor pin
+extern byte pinO2_2; //second O2 pin
+extern byte pinBat; //Battery voltage pin
+extern byte pinDisplayReset; // OLED reset pin
+extern byte pinTachOut; //Tacho output
+extern byte pinFuelPump; //Fuel pump on/off
+extern byte pinIdle1; //Single wire idle control
+extern byte pinIdle2; //2 wire idle control (Not currently used)
+extern byte pinIdleUp; //Input for triggering Idle Up
+extern byte pinCTPS; //Input for triggering closed throttle state
+extern byte pinFuel2Input; //Input for switching to the 2nd fuel table
+extern byte pinSpareTemp1; // Future use only
+extern byte pinSpareTemp2; // Future use only
+extern byte pinSpareOut1; //Generic output
+extern byte pinSpareOut2; //Generic output
+extern byte pinSpareOut3; //Generic output
+extern byte pinSpareOut4; //Generic output
+extern byte pinSpareOut5; //Generic output
+extern byte pinSpareOut6; //Generic output
+extern byte pinSpareHOut1; //spare high current output
+extern byte pinSpareHOut2; // spare high current output
+extern byte pinSpareLOut1; // spare low current output
+extern byte pinSpareLOut2; // spare low current output
+extern byte pinSpareLOut3;
+extern byte pinSpareLOut4;
+extern byte pinSpareLOut5;
+extern byte pinBoost;
+extern byte pinVVT_1;		// vvt output 1
+extern byte pinVVT_2;		// vvt output 2
+extern byte pinFan;       // Cooling fan output
+extern byte pinStepperDir; //Direction pin for the stepper motor driver
+extern byte pinStepperStep; //Step pin for the stepper motor driver
+extern byte pinStepperEnable; //Turning the DRV8825 driver on/off
+extern byte pinLaunch;
+extern byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
+extern byte pinFlex; //Pin with the flex sensor attached
+extern byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
+extern byte pinResetControl; // Output pin used control resetting the Arduino
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   byte pinMC33810_1_CS;
@@ -1079,28 +1079,21 @@ byte pinResetControl; // Output pin used control resetting the Arduino
   byte pinSPIFlash_CS;
 #endif
 
+
 /* global variables */ // from speeduino.ino
-extern struct statuses currentStatus; // from speeduino.ino
-extern struct table3D fuelTable; //16x16 fuel map
-extern struct table3D fuelTable2; //16x16 fuel map
-extern struct table3D ignitionTable; //16x16 ignition map
-extern struct table3D afrTable; //16x16 afr target map
-extern struct table3D stagingTable; //8x8 afr target map
-extern struct table2D taeTable; /**< 4 bin TPS Acceleration Enrichment curve (2D) */
-extern struct table2D maeTable; /**< 4 bin MAP based Acceleration Enrichment curve (2D) */
-extern struct table2D WUETable; /**< 10 bin Warm Up Enrichment curve (2D) */
-extern struct table2D crankingEnrichTable; /**< 4 bin cranking Enrichment curve (2D) */
+//#ifndef UNIT_TEST
+
+//#endif
+
+extern struct statuses currentStatus; //The global status object
 extern struct config2 configPage2;
 extern struct config4 configPage4;
 extern struct config6 configPage6;
 extern struct config9 configPage9;
 extern struct config10 configPage10;
-extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
-extern unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
-volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
-extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE];
-extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE];
-extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE];
+extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
+extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
+extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
 
 static_assert(sizeof(struct config2) == 128, "configPage2 size is not 128");
 static_assert(sizeof(struct config4) == 128, "configPage4 size is not 128");

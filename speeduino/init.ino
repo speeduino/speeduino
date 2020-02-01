@@ -18,6 +18,9 @@
 
 void initialiseAll()
 {   
+    initialisationComplete = false; //Tracks whether the setup() function has run completely
+    fpPrimed = false;
+
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     table3D_setSize(&fuelTable, 16);
@@ -45,14 +48,21 @@ void initialiseAll()
     Serial.begin(115200);
     if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
 
-    #if defined(CORE_STM32) || defined(CORE_TEENSY)
+    #if defined(CORE_STM32)
     configPage9.intcan_available = 1;   // device has internal canbus
-    //Teensy onboard CAN not used currently
+    //STM32 can not currently enabled
+    #endif
+
+    #if defined(CORE_TEENSY35)
+    configPage9.intcan_available = 1;   // device has internal canbus
+    //Teensy uses the Flexcan_T4 library to use the internal canbus
     //enable local can interface
-    //setup can interface to 250k
-    //FlexCAN CANbus0(2500000, 0);
-    //static CAN_message_t txmsg,rxmsg;
-    //CANbus0.begin();
+    //setup can interface to 500k
+      //volatile CAN_message_t outMsg;
+      //volatile CAN_message_t inMsg;
+      Can0.begin();
+      Can0.setBaudRate(500000);
+      Can0.enableFIFO();
     #endif
 
     //Repoint the 2D table structs to the config pages that were just loaded
@@ -298,6 +308,11 @@ void initialiseAll()
     dwellLimit_uS = (1000 * configPage4.dwellLimit);
     currentStatus.nChannels = ((uint8_t)INJ_CHANNELS << 4) + IGN_CHANNELS; //First 4 bits store the number of injection channels, 2nd 4 store the number of ignition channels
     fpPrimeTime = 0;
+    ms_counter = 0;
+    fixedCrankingOverride = 0;
+    timer5_overflow_count = 0;
+    toothHistoryIndex = 0;
+    toothHistorySerialIndex = 0;
 
     noInterrupts();
     initialiseTriggers();
@@ -312,15 +327,34 @@ void initialiseAll()
     //Initial values for loop times
     previousLoopTime = 0;
     currentLoopTime = micros_safe();
-
     mainLoopCount = 0;
 
     currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manaully overriden below for sequential setups (Due to TS req_fuel calc limitations)
     if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
+
+    //Calculate the number of degrees between cylinders
+    //Swet some default values. These will be updated below if required. 
+    CRANK_ANGLE_MAX = 720;
+    CRANK_ANGLE_MAX_IGN = 360;
+    CRANK_ANGLE_MAX_INJ = 360;
+    channel1InjEnabled = true;
+    channel2InjEnabled = false;
+    channel3InjEnabled = false;
+    channel4InjEnabled = false;
+    channel5InjEnabled = false;
+    channel6InjEnabled = false;
+    channel7InjEnabled = false;
+    channel8InjEnabled = false;
+
+    ignition1EndAngle = 0;
+    ignition2EndAngle = 0;
+    ignition3EndAngle = 0;
+    ignition4EndAngle = 0;
+    ignition5EndAngle = 0;
+
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
-    //Calculate the number of degrees between cylinders
     switch (configPage2.nCylinders) {
     case 1:
         channel1IgnDegrees = 0;

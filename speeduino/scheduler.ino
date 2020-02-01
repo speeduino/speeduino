@@ -8,6 +8,23 @@ A full copy of the license may be found in the projects root directory
 #include "scheduler.h"
 #include "scheduledIO.h"
 
+FuelSchedule fuelSchedule1;
+FuelSchedule fuelSchedule2;
+FuelSchedule fuelSchedule3;
+FuelSchedule fuelSchedule4;
+FuelSchedule fuelSchedule5;
+FuelSchedule fuelSchedule6;
+FuelSchedule fuelSchedule7;
+FuelSchedule fuelSchedule8;
+
+Schedule ignitionSchedule1;
+Schedule ignitionSchedule2;
+Schedule ignitionSchedule3;
+Schedule ignitionSchedule4;
+Schedule ignitionSchedule5;
+Schedule ignitionSchedule6;
+Schedule ignitionSchedule7;
+Schedule ignitionSchedule8;
 
 void initialiseSchedulers()
 {
