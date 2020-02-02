@@ -128,23 +128,23 @@ struct FuelSchedule {
 //Schedule *timer3Bqueue[4];
 //Schedule *timer3Cqueue[4];
 
-FuelSchedule fuelSchedule1;
-FuelSchedule fuelSchedule2;
-FuelSchedule fuelSchedule3;
-FuelSchedule fuelSchedule4;
-FuelSchedule fuelSchedule5;
-FuelSchedule fuelSchedule6;
-FuelSchedule fuelSchedule7;
-FuelSchedule fuelSchedule8;
+extern FuelSchedule fuelSchedule1;
+extern FuelSchedule fuelSchedule2;
+extern FuelSchedule fuelSchedule3;
+extern FuelSchedule fuelSchedule4;
+extern FuelSchedule fuelSchedule5;
+extern FuelSchedule fuelSchedule6;
+extern FuelSchedule fuelSchedule7;
+extern FuelSchedule fuelSchedule8;
 
-Schedule ignitionSchedule1;
-Schedule ignitionSchedule2;
-Schedule ignitionSchedule3;
-Schedule ignitionSchedule4;
-Schedule ignitionSchedule5;
-Schedule ignitionSchedule6;
-Schedule ignitionSchedule7;
-Schedule ignitionSchedule8;
+extern Schedule ignitionSchedule1;
+extern Schedule ignitionSchedule2;
+extern Schedule ignitionSchedule3;
+extern Schedule ignitionSchedule4;
+extern Schedule ignitionSchedule5;
+extern Schedule ignitionSchedule6;
+extern Schedule ignitionSchedule7;
+extern Schedule ignitionSchedule8;
 
 //IgnitionSchedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 
