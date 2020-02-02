@@ -65,8 +65,7 @@ duration: The number of uS after startCallback is called before endCallback is c
 endCallback: This function is called once the duration time has been reached
 */
 
-//Experimental new generic function
-/*
+//Experimental new generic function. This is NOT yet ready and functional
 void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, unsigned long duration)
 {
   if(targetSchedule->Status != RUNNING) //Check that we're not already part way through a schedule
@@ -80,12 +79,12 @@ void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, uns
 
     //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
     noInterrupts();
-    targetSchedule->startCompare = *targetSchedule->counter + timeout_timer_compare;
+    //targetSchedule->startCompare = *targetSchedule->counter + timeout_timer_compare;
     targetSchedule->endCompare = targetSchedule->startCompare + uS_TO_TIMER_COMPARE(duration);
     targetSchedule->Status = PENDING; //Turn this schedule on
     targetSchedule->schedulesSet++; //Increment the number of times this schedule has been set
 
-    *targetSchedule->compare = targetSchedule->startCompare;
+    //*targetSchedule->compare = targetSchedule->startCompare;
     interrupts();
     FUEL1_TIMER_ENABLE();
   }
@@ -93,12 +92,11 @@ void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, uns
   {
     //If the schedule is already running, we can set the next schedule so it is ready to go
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-    targetSchedule->nextStartCompare = *targetSchedule->counter + uS_TO_TIMER_COMPARE(timeout);
+    //targetSchedule->nextStartCompare = *targetSchedule->counter + uS_TO_TIMER_COMPARE(timeout);
     targetSchedule->nextEndCompare = targetSchedule->nextStartCompare + uS_TO_TIMER_COMPARE(duration);
     targetSchedule->hasNextSchedule = true;
   }
 }
-*/
 
 
 //void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
