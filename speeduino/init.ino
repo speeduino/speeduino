@@ -18,7 +18,6 @@
 
 void initialiseAll()
 {   
-    initialisationComplete = false; //Tracks whether the setup() function has run completely
     fpPrimed = false;
 
     pinMode(LED_BUILTIN, OUTPUT);

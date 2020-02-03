@@ -40,6 +40,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef UNIT_TEST // Scope guard for unit testing
 void setup()
 {
+  initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
   initialiseAll();
 }
 
