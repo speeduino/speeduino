@@ -25,6 +25,7 @@ void test_corrections_WUE_active(void)
 {
   //Check for WUE being active
   currentStatus.coolant = 0;
+  ((uint8_t*)WUETable.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET; //Set a WUE end value of 120
   correctionWUE();
   TEST_ASSERT_BIT_HIGH(BIT_ENGINE_WARMUP, currentStatus.engine);
 }
@@ -33,6 +34,7 @@ void test_corrections_WUE_inactive(void)
 {
   //Check for WUE being inactive due to the temp being too high
   currentStatus.coolant = 200;
+  ((uint8_t*)WUETable.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET; //Set a WUE end value of 120
   correctionWUE();
   TEST_ASSERT_BIT_LOW(BIT_ENGINE_WARMUP, currentStatus.engine);
 }

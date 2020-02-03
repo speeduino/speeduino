@@ -533,21 +533,21 @@ int8_t correctionsIgn(int8_t base_advance)
   return advance;
 }
 
-static inline int8_t correctionFixedTiming(int8_t advance)
+int8_t correctionFixedTiming(int8_t advance)
 {
   int8_t ignFixValue = advance;
   if (configPage2.fixAngEnable == 1) { ignFixValue = configPage4.FixAng; } //Check whether the user has set a fixed timing angle
   return ignFixValue;
 }
 
-static inline int8_t correctionCrankingFixedTiming(int8_t advance)
+int8_t correctionCrankingFixedTiming(int8_t advance)
 {
   byte ignCrankFixValue = advance;
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { ignCrankFixValue = configPage4.CrankAng; } //Use the fixed cranking ignition angle
   return ignCrankFixValue;
 }
 
-static inline int8_t correctionFlexTiming(int8_t advance)
+int8_t correctionFlexTiming(int8_t advance)
 {
   byte ignFlexValue = advance;
   if( configPage2.flexEnabled == 1 ) //Check for flex being enabled
@@ -558,7 +558,7 @@ static inline int8_t correctionFlexTiming(int8_t advance)
   return ignFlexValue;
 }
 
-static inline int8_t correctionIATretard(int8_t advance)
+int8_t correctionIATretard(int8_t advance)
 {
   byte ignIATValue = advance;
   //Adjust the advance based on IAT. If the adjustment amount is greater than the current advance, just set advance to 0
@@ -570,7 +570,7 @@ static inline int8_t correctionIATretard(int8_t advance)
   return ignIATValue;
 }
 
-static inline int8_t correctionCLTadvance(int8_t advance)
+int8_t correctionCLTadvance(int8_t advance)
 {
   int8_t ignCLTValue = advance;
   //Adjust the advance based on CLT.
@@ -580,7 +580,7 @@ static inline int8_t correctionCLTadvance(int8_t advance)
   return ignCLTValue;
 }
 
-static inline int8_t correctionIdleAdvance(int8_t advance)
+int8_t correctionIdleAdvance(int8_t advance)
 {
 
   int8_t ignIdleValue = advance;
@@ -608,7 +608,7 @@ static inline int8_t correctionIdleAdvance(int8_t advance)
   return ignIdleValue;
 }
 
-static inline int8_t correctionSoftRevLimit(int8_t advance)
+int8_t correctionSoftRevLimit(int8_t advance)
 {
   byte ignSoftRevValue = advance;
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
@@ -617,7 +617,7 @@ static inline int8_t correctionSoftRevLimit(int8_t advance)
   return ignSoftRevValue;
 }
 
-static inline int8_t correctionNitrous(int8_t advance)
+int8_t correctionNitrous(int8_t advance)
 {
   byte ignNitrous = advance;
   //Check if nitrous is currently active
@@ -637,7 +637,7 @@ static inline int8_t correctionNitrous(int8_t advance)
   return ignNitrous;
 }
 
-static inline int8_t correctionSoftLaunch(int8_t advance)
+int8_t correctionSoftLaunch(int8_t advance)
 {
   byte ignSoftLaunchValue = advance;
   //SoftCut rev limit for 2-step launch control.
@@ -656,7 +656,7 @@ static inline int8_t correctionSoftLaunch(int8_t advance)
   return ignSoftLaunchValue;
 }
 
-static inline int8_t correctionSoftFlatShift(int8_t advance)
+int8_t correctionSoftFlatShift(int8_t advance)
 {
   byte ignSoftFlatValue = advance;
 
@@ -670,7 +670,7 @@ static inline int8_t correctionSoftFlatShift(int8_t advance)
   return ignSoftFlatValue;
 }
 
-static inline int8_t correctionKnock(int8_t advance)
+int8_t correctionKnock(int8_t advance)
 {
   byte knockRetard = 0;
 
