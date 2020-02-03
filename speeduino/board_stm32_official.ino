@@ -25,29 +25,28 @@
     */
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
     {
-        idle_pwm_max_count = 1000000L / (configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
+        idle_pwm_max_count = 1000000L / (2 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
     } 
 
     //This must happen at the end of the idle init
     Timer1.setMode(4, TIMER_OUTPUT_COMPARE);
-    //timer_set_mode(TIMER1, 4, TIMER_OUTPUT_COMPARE;
-    if(idle_pwm_max_count > 0) { Timer1.attachInterrupt(4, idleInterrupt); } //on first flash the configPage4.iacAlgorithm is invalid
+    Timer1.attachInterrupt(4, idleInterrupt);  //on first flash the configPage4.iacAlgorithm is invalid
 
 
     /*
     ***********************************************************************************************************
     * Timers
     */
-    #if defined(ARDUINO_BLACK_F407VE) || defined(STM32F4) || defined(_STM32F4_)
-        Timer8.setOverflow(1000, MICROSEC_FORMAT);  // Set up period
-        Timer8.setMode(1, TIMER_OUTPUT_COMPARE);
-        Timer8.attachInterrupt(1, oneMSInterval);
-        Timer8.resume(); //Start Timer
+    #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB)
+      Timer4.setOverflow(1000, MICROSEC_FORMAT);  // Set up period
+      Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
+      Timer4.attachInterrupt(1, oneMSInterval);
+      Timer4.resume(); //Start Timer
     #else
-        Timer4.setOverflow(1000, MICROSEC_FORMAT);  // Set up period
-        Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
-        Timer4.attachInterrupt(1, oneMSInterval);
-        Timer4.resume(); //Start Timer
+      Timer11.setOverflow(1000, MICROSEC_FORMAT);  // Set up period
+      Timer11.setMode(1, TIMER_OUTPUT_COMPARE);
+      Timer11.attachInterrupt(1, oneMSInterval);
+      Timer11.resume(); //Start Timer
     #endif
     pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
 
@@ -62,16 +61,16 @@
     //Need to be initialised last due to instant interrupt
     Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
-    if(boost_pwm_max_count > 0) { Timer1.attachInterrupt(2, boostInterrupt);}
-    if(vvt_pwm_max_count > 0) { Timer1.attachInterrupt(3, vvtInterrupt);}
+    Timer1.attachInterrupt(2, boostInterrupt);
+    Timer1.attachInterrupt(3, vvtInterrupt);
 
     /*
     ***********************************************************************************************************
     * Schedules
     */
-    Timer1.setOverflow(MAX_TIMER_PERIOD, MICROSEC_FORMAT);
-    Timer2.setOverflow(MAX_TIMER_PERIOD, MICROSEC_FORMAT);
-    Timer3.setOverflow(MAX_TIMER_PERIOD, MICROSEC_FORMAT);
+    Timer1.setOverflow(0xFFFF, MICROSEC_FORMAT);
+    Timer2.setOverflow(0xFFFF, MICROSEC_FORMAT);
+    Timer3.setOverflow(0xFFFF, MICROSEC_FORMAT);
 
 
     Timer2.setMode(1, TIMER_OUTPUT_COMPARE);
@@ -92,6 +91,7 @@
     Timer3.attachInterrupt(3, fuelSchedule3Interrupt);
     Timer3.attachInterrupt(4, fuelSchedule4Interrupt);
     #if (INJ_CHANNELS >= 5)
+    Timer5.setOverflow(0xFFFF, MICROSEC_FORMAT);
     Timer5.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer5.attachInterrupt(1, fuelSchedule5Interrupt);
     #endif
@@ -114,6 +114,7 @@
     Timer2.attachInterrupt(3, ignitionSchedule3Interrupt);
     Timer2.attachInterrupt(4, ignitionSchedule4Interrupt);
     #if (IGN_CHANNELS >= 5)
+    Timer4.setOverflow(0xFFFF, MICROSEC_FORMAT);
     Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer4.attachInterrupt(1, ignitionSchedule5Interrupt);
     #endif

@@ -58,20 +58,26 @@ script:
   - cd noisymime/speeduino
   - platformio update
 # Run the builds (Mega must be last so that the hex file isn't cleaned up)
-  - platformio run -e teensy35 -e teensy40 -e megaatmega2560 
-# Upload ini and hex files to speeduino.com server
-  - curl -v https://speeduino.com:2078 || true
-  - curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
-  - curl --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
-# Do doxygen run and upload to gh-pages server.
-  - doxygen
-  - cd ..
-  - git clone https://github.com/speeduino/speeduino-doxygen
-  - cp -r speeduino/reference/doxygen/html/* speeduino-doxygen
-  - cd speeduino-doxygen
-  - git add --all
-  - git commit --allow-empty -m "Deploy code docs to GitHub Pages. Travis build ${TRAVIS_BUILD_NUMBER}" -m "Commit ${TRAVIS_COMMIT}"
-  - git push --force "https://${GH_DOXYGEN}@github.com/speeduino/speeduino-doxygen" > /dev/null 2>&1
+  - platformio run -e teensy35 -e teensy40 -e megaatmega2560
+# Run the remote unit tests
+  - platformio remote test --environment megaatmega2560
+# The uploading of the firmware and doxygen files are only performed on the master branch
+  - |
+    if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
+      # Upload ini and hex files to speeduino.com server
+      curl -v https://speeduino.com:2078 || true
+      curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
+      curl --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
+      # Do doxygen run and upload to gh-pages server.
+      doxygen
+      cd ..
+      git clone https://github.com/speeduino/speeduino-doxygen
+      cp -r speeduino/reference/doxygen/html/* speeduino-doxygen
+      cd speeduino-doxygen
+      git add --all
+      git commit --allow-empty -m "Deploy code docs to GitHub Pages. Travis build ${TRAVIS_BUILD_NUMBER}" -m "Commit ${TRAVIS_COMMIT}"
+      git push --force "https://${GH_DOXYGEN}@github.com/speeduino/speeduino-doxygen" > /dev/null 2>&1
+    fi
 
 notifications:
     slack: speeduino:Y8Bhhviu4r7HFF3abMYDnH3p
