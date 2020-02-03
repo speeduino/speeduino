@@ -97,11 +97,13 @@ void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, uns
     //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
     noInterrupts();
     //targetSchedule->startCompare = *targetSchedule->counter + timeout_timer_compare;
+    targetSchedule->startCompare = FUEL1_COUNTER + timeout_timer_compare; //Insert correct counter HERE!
     targetSchedule->endCompare = targetSchedule->startCompare + uS_TO_TIMER_COMPARE(duration);
     targetSchedule->Status = PENDING; //Turn this schedule on
     targetSchedule->schedulesSet++; //Increment the number of times this schedule has been set
 
     //*targetSchedule->compare = targetSchedule->startCompare;
+    FUEL1_COMPARE = targetSchedule->startCompare; //Insert corrector compare HERE!
     interrupts();
     FUEL1_TIMER_ENABLE();
   }
