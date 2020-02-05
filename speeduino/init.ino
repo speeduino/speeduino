@@ -1491,7 +1491,9 @@ void setPinMapping(byte boardID)
       break;
 
    case 31:
-      //Pin mappings for the BMW PnP PCBs by pazi88. This is an AVR only module. At least for now
+      //Pin mappings for the BMW PnP PCBs by pazi88.
+      #if defined(CORE_AVR)
+      //This is the regular MEGA2560 pin mapping
       pinInjector1 = 8; //Output pin injector 1
       pinInjector2 = 9; //Output pin injector 2
       pinInjector3 = 10; //Output pin injector 3
@@ -1503,7 +1505,7 @@ void setPinMapping(byte boardID)
       pinCoil3 = 52; //Pin for coil 3
       pinCoil4 = 48; //Pin for coil 4
       pinCoil5 = 36; //Pin for coil 5
-	  pinCoil6 = 34; //Pin for coil 6
+      pinCoil6 = 34; //Pin for coil 6
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTPS = A2;//TPS input pin
@@ -1512,7 +1514,7 @@ void setPinMapping(byte boardID)
       pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
-      pinDisplayReset = 48; // OLED reset pin
+      pinDisplayReset = 52; // OLED reset pin
       pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
       pinIdle1 = 5; //ICV pin1
       pinIdle2 = 6; //ICV pin3
@@ -1526,6 +1528,90 @@ void setPinMapping(byte boardID)
       pinLaunch = 51; //Launch control pin
       pinFlex = 2; // Flex sensor
       pinResetControl = 43; //Reset control output
+      #endif
+      #if defined(ARDUINO_BLACK_F407VE)
+      //Pin mapping for MEGA replacement F407VE PCB by pazi88
+        /* = PA0 */ //Wakeup ADC123
+        pinTPS = PA1; //ADC123
+        pinMAP = PA2; //ADC123
+        pinIAT = PA3; //ADC123
+        pinCLT = PA4; //ADC12
+        pinO2 = PA5; //ADC12
+        /* = PA6; */ //ADC12
+        pinFuelPump = PA7; //ADC12
+        pinIdle1 = PA8; //
+        /* = PA9 */ //TXD1
+        /* = PA10 */ //RXD1
+        /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
+        /* = PA12 */ //(DO NOT USE FOR SPEEDUINO) USB 
+        /* = PA13 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+        /* = PA14 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+        /* = PA15 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+        /* = PB0; */ //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
+        pinBaro = PB1; //ADC12
+        /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1 
+        /* = PB3; */ //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
+        /* = PB4; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
+        /* = PB5; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
+        /* = PB6; */ //NRF_CE
+        /* = PB7; */ //NRF_CS
+        /* = PB8; */ //NRF_IRQ
+        pinIdle2 = PB9; //
+        /* = PB10; */ //TXD3
+        /* = PB11; */ //RXD3
+        pinBoost = PB12; //
+        /* = PB13; */ //SPI2_SCK
+        /* = PB14; */ //SPI2_MISO
+        /* = PB15; */ //SPI2_MOSI
+        /* = PC0; */ //ADC123 
+        pinBat = PC1; //ADC123
+        /* = PC2; */ //ADC123
+        /* = PC3; */ //ADC123
+        /* = PC4; */ //ADC12
+        /* = PC5; */ //ADC12
+        pinVVT_1 = PC6; //
+        pinDisplayReset = PC7; //
+        /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
+        /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
+        /* = PC10; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
+        /* = PC11; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
+        /* = PC12; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
+        pinTachOut = PC13; //
+        /* = PC14; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
+        /* = PC15; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
+        /* = PD0; */ //CANRX
+        /* = PD1; */ //CANTX
+        /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
+        pinCoil1 = PD3; //
+        pinCoil2 = PD4; //
+        /* = PD5;*/ //TXD2
+        /* = PD6; */ //RXD2
+        pinCoil3 = PD7; //
+        pinCoil4 = PD8; //
+        pinCoil5 = PD9;//
+        pinFan = PD10; //
+        /* = PD11; */ //
+        /* = PD12; */ //
+        /* = PD13; */ //
+        /* = PD14; */ //
+        /* = PD15; */ //
+        pinStepperDir = PE0; //
+        pinStepperStep = PE1; //
+        pinStepperEnable = PE2; //
+        /* = PE3; */ //ONBOARD KEY1
+        /* = PE4; */ //ONBOARD KEY2
+        pinFlex = PE5; //
+        pinTrigger = PE6; //
+        pinInjector1 = PE7; //
+        pinInjector2 = PE8; //
+        pinInjector3 = PE9; //
+        pinInjector4 = PE10; //
+        pinInjector5 = PE11; //
+        pinInjector6 = PE12; //
+        pinTrigger2 = PE13; //
+        /* = PE14; */ //
+        /* = PE15; */ //
+      #endif
       break;
 
     case 40:
