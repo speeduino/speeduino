@@ -28,9 +28,15 @@
   #define IGN_CHANNELS 8
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(STM32)
+  #define CORE_STM32
   //These should be updated to 8 later, but there's bits missing currently
   #define INJ_CHANNELS 4
   #define IGN_CHANNELS 5
+
+//Select one for EEPROM, default is emulated and is very slow
+//#define SRAM_AS_EEPROM /*Use RTC registers, requires a 3V battery connected to Vbat pin */
+//#define SPIFLASH_AS_EEPROM /*Use M25Qxx SPI flash */
+//#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
 
   #ifndef word
     #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
