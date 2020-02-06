@@ -856,23 +856,23 @@ void triggerPri_GM7X()
     }
 
     //New ignition mode!
-     if(configPage2.perToothIgn == true)
-     {
-       if(toothCurrentCount != 3) //Never do the check on the extra tooth. It's not needed anyway
-       {
-          uint16_t crankAngle;
-          if( toothCurrentCount < 3 )
-          {
-            crankAngle = ((toothCurrentCount - 1) * triggerToothAngle) + 42; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-          }
-          else
-          {
-            crankAngle = ((toothCurrentCount - 2) * triggerToothAngle) + 42; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-          }
-          checkPerToothTiming(crankAngle, toothCurrentCount);
-       }
-       
-     }
+    if(configPage2.perToothIgn == true)
+    {
+      if(toothCurrentCount != 3) //Never do the check on the extra tooth. It's not needed anyway
+      {
+        //configPage4.triggerAngle must currently be below 48 and above -81
+        uint16_t crankAngle;
+        if( toothCurrentCount < 3 )
+        {
+          crankAngle = ((toothCurrentCount - 1) * triggerToothAngle) + 42 + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+        }
+        else
+        {
+          crankAngle = ((toothCurrentCount - 2) * triggerToothAngle) + 42 + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+        }
+        checkPerToothTiming(crankAngle, toothCurrentCount);
+      } 
+    }
 
     toothLastMinusOneToothTime = toothLastToothTime;
     toothLastToothTime = curTime;
@@ -900,7 +900,7 @@ int getCrankAngle_GM7X()
     int crankAngle;
     if( tempToothCurrentCount < 3 )
     {
-      crankAngle = ((tempToothCurrentCount - 1) * triggerToothAngle) + 42; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+      crankAngle = ((tempToothCurrentCount - 1) * triggerToothAngle) + 42 + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
     }
     else if( tempToothCurrentCount == 3 )
     {
@@ -908,7 +908,7 @@ int getCrankAngle_GM7X()
     }
     else
     {
-      crankAngle = ((tempToothCurrentCount - 2) * triggerToothAngle) + 42; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+      crankAngle = ((tempToothCurrentCount - 2) * triggerToothAngle) + 42 + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
     }
 
     //Estimate the number of degrees travelled since the last tooth}
