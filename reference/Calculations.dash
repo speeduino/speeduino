@@ -1615,7 +1615,7 @@
 <Dirty type="boolean">false</Dirty>
 <LongClickAction type="String"/>
 <ShortClickAction type="String"/>
-<OutputChannel type="String">batCorrection</OutputChannel>
+<OutputChannel type="String">bat_correction</OutputChannel>
 <Id type="String"/>
 <EcuConfigurationName type="String"/>
 <FontFamily type="String"/>
