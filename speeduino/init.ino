@@ -626,6 +626,17 @@ void initialiseAll()
         channel3InjDegrees = 240;
         maxIgnOutputs = 3;
 
+    #if IGN_CHANNELS >= 6
+        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
+        {
+        channel4IgnDegrees = 360;
+        channel5IgnDegrees = 480;
+        channel6IgnDegrees = 600;
+        CRANK_ANGLE_MAX_IGN = 720;
+        maxIgnOutputs = 6;
+        }
+    #endif
+
         //Adjust the injection angles based on the number of squirts
         if (currentStatus.nSquirts > 2)
         {
@@ -672,6 +683,18 @@ void initialiseAll()
         channel2IgnDegrees = channel2InjDegrees = 90;
         channel3IgnDegrees = channel3InjDegrees = 180;
         channel4IgnDegrees = channel4InjDegrees = 270;
+
+    #if IGN_CHANNELS >= 8
+        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
+        {
+        channel5IgnDegrees = 360;
+        channel6IgnDegrees = 450;
+        channel7IgnDegrees = 540;
+        channel8IgnDegrees = 630;
+        maxIgnOutputs = 8;
+        CRANK_ANGLE_MAX_IGN = 720;
+        }
+    #endif
 
         //Adjust the injection angles based on the number of squirts
         if (currentStatus.nSquirts > 2)

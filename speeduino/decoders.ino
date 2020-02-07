@@ -496,6 +496,16 @@ void triggerSetEndTeeth_missingTooth()
   if(ignition4EndTooth <= 0) { ignition4EndTooth += (configPage4.triggerTeeth + toothAdder); }
   if(ignition4EndTooth > (triggerActualTeeth + toothAdder)) { ignition4EndTooth = (triggerActualTeeth + toothAdder); }
 
+  ignition5EndTooth = ( (ignition5EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
+  if(ignition5EndTooth > (configPage4.triggerTeeth + toothAdder)) { ignition5EndTooth -= (configPage4.triggerTeeth + toothAdder); }
+  if(ignition5EndTooth <= 0) { ignition5EndTooth += configPage4.triggerTeeth; }
+  if(ignition5EndTooth > (triggerActualTeeth + toothAdder)) { ignition5EndTooth = (triggerActualTeeth + toothAdder); }
+  
+  ignition6EndTooth = ( (ignition6EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
+  if(ignition6EndTooth > (configPage4.triggerTeeth + toothAdder)) { ignition6EndTooth -= (configPage4.triggerTeeth + toothAdder); }
+  if(ignition6EndTooth <= 0) { ignition6EndTooth += configPage4.triggerTeeth; }
+  if(ignition6EndTooth > (triggerActualTeeth + toothAdder)) { ignition6EndTooth = (triggerActualTeeth + toothAdder); }
+
   lastToothCalcAdvance = currentStatus.advance;
 }
 
@@ -657,6 +667,16 @@ void triggerSetEndTeeth_DualWheel()
   if(ignition4EndTooth > (configPage4.triggerTeeth + toothAdder)) { ignition4EndTooth -= (configPage4.triggerTeeth + toothAdder); }
   if(ignition4EndTooth <= 0) { ignition4EndTooth += configPage4.triggerTeeth; }
   if(ignition4EndTooth > (triggerActualTeeth + toothAdder)) { ignition4EndTooth = (triggerActualTeeth + toothAdder); }
+  
+  ignition5EndTooth = ( (ignition5EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
+  if(ignition5EndTooth > (configPage4.triggerTeeth + toothAdder)) { ignition5EndTooth -= (configPage4.triggerTeeth + toothAdder); }
+  if(ignition5EndTooth <= 0) { ignition5EndTooth += configPage4.triggerTeeth; }
+  if(ignition5EndTooth > (triggerActualTeeth + toothAdder)) { ignition5EndTooth = (triggerActualTeeth + toothAdder); }
+  
+  ignition6EndTooth = ( (ignition6EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
+  if(ignition6EndTooth > (configPage4.triggerTeeth + toothAdder)) { ignition6EndTooth -= (configPage4.triggerTeeth + toothAdder); }
+  if(ignition6EndTooth <= 0) { ignition6EndTooth += configPage4.triggerTeeth; }
+  if(ignition6EndTooth > (triggerActualTeeth + toothAdder)) { ignition6EndTooth = (triggerActualTeeth + toothAdder); }
 
   lastToothCalcAdvance = currentStatus.advance;
 
