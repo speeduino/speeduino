@@ -4,6 +4,8 @@ This file is used for everything related to maps/tables including their definiti
 #ifndef TABLE_H
 #define TABLE_H
 
+#include <Arduino.h>
+
 #define TABLE_RPM_MULTIPLIER  100
 #define TABLE_LOAD_MULTIPLIER 2
 

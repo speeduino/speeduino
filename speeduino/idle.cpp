@@ -8,10 +8,40 @@ A full copy of the license may be found in the projects root directory
 #include "timers.h"
 #include "src/PID_v1/PID_v1.h"
 
+static inline void enableIdle();
+static inline byte isStepperHomed();
+static inline byte checkForStepping();
+static inline void doStep();
 /*
 These functions cover the PWM and stepper idle control
 */
 
+struct table2D iacClosedLoopTable;
+struct table2D iacPWMTable;
+struct table2D iacStepTable;
+//Open loop tables specifically for cranking
+struct table2D iacCrankStepsTable;
+struct table2D iacCrankDutyTable;
+
+struct StepperIdle idleStepper;
+bool idleOn; //Simply tracks whether idle was on last time around
+byte idleInitComplete = 99; //TRacks which idle method was initialised. 99 is a method that will never exist
+unsigned int iacStepTime_uS;
+unsigned int iacCoolTime_uS;
+unsigned int completedHomeSteps;
+
+volatile PORT_TYPE *idle_pin_port;
+volatile PINMASK_TYPE idle_pin_mask;
+volatile PORT_TYPE *idle2_pin_port;
+volatile PINMASK_TYPE idle2_pin_mask;
+
+volatile bool idle_pwm_state;
+unsigned int idle_pwm_max_count; //Used for variable PWM frequency
+volatile unsigned int idle_pwm_cur_value;
+long idle_pid_target_value;
+long idle_pwm_target_value;
+long idle_cl_target_rpm;
+byte idleCounter; //Used for tracking the number of calls to the idle control function
 /*
 Idle Control
 Currently limited to on/off control and open loop PWM and stepper drive
@@ -456,7 +486,7 @@ static inline void doStep()
 }
 
 //This function simply turns off the idle PWM and sets the pin low
-static inline void disableIdle()
+void disableIdle()
 {
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
   {

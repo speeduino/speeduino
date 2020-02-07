@@ -16,6 +16,30 @@ sendcancommand is called when a command is to be sent via serial3 to the Can int
 #include "errors.h"
 #include "utils.h"
 
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+  HardwareSerial &CANSerial = Serial3;
+#elif defined(CORE_STM32)
+  #ifndef Serial2
+    #define Serial2 Serial1
+  #endif
+  #if defined(STM32GENERIC) // STM32GENERIC core
+    SerialUART &CANSerial = Serial2;
+  #else //libmaple core aka STM32DUINO
+    HardwareSerial &CANSerial = Serial2;
+  #endif
+#elif defined(CORE_TEENSY)
+  HardwareSerial &CANSerial = Serial2;
+#endif
+
+uint8_t currentcanCommand;
+uint8_t currentCanPage = 1;//Not the same as the speeduino config page numbers
+uint8_t nCanretry = 0;      //no of retrys
+uint8_t cancmdfail = 0;     //command fail yes/no
+uint8_t canlisten = 0;
+uint8_t Lbuffer[8];         //8 byte buffer to store incomng can data
+uint8_t Gdata[9];
+uint8_t Glow, Ghigh;
+
 void canCommand()
 {
   currentcanCommand = CANSerial.read();

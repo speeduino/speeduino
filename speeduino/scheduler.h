@@ -49,8 +49,6 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
 void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 
-inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
-
 //The ARM cores use seprate functions for their ISRs
 #if defined(CORE_STM32_OFFICIAL) || defined(CORE_STM32_GENERIC) || defined(CORE_TEENSY)
   static inline void fuelSchedule1Interrupt();
@@ -147,6 +145,20 @@ extern Schedule ignitionSchedule5;
 extern Schedule ignitionSchedule6;
 extern Schedule ignitionSchedule7;
 extern Schedule ignitionSchedule8;
+
+inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
+inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
+{
+  if( (ignitionSchedule1.Status == RUNNING) && (timeToEnd < ignitionSchedule1.duration) )
+  //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
+  //if( (timeToEnd < ignitionSchedule1.duration) && (timeToEnd > IGNITION_REFRESH_THRESHOLD) )
+  {
+    noInterrupts();
+    ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeToEnd);
+    IGN1_COMPARE = ignitionSchedule1.endCompare;
+    interrupts();
+  }
+}
 
 //IgnitionSchedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 

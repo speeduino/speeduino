@@ -458,19 +458,6 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
   }
 }
 
-inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
-{
-  if( (ignitionSchedule1.Status == RUNNING) && (timeToEnd < ignitionSchedule1.duration) )
-  //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
-  //if( (timeToEnd < ignitionSchedule1.duration) && (timeToEnd > IGNITION_REFRESH_THRESHOLD) )
-  {
-    noInterrupts();
-    ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeToEnd);
-    IGN1_COMPARE = ignitionSchedule1.endCompare;
-    interrupts();
-  }
-}
-
 void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
   if(ignitionSchedule2.Status != RUNNING) //Check that we're not already part way through a schedule

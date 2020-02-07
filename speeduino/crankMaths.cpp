@@ -3,6 +3,15 @@
 #include "decoders.h"
 #include "timers.h"
 
+volatile uint16_t timePerDegree;
+volatile uint16_t timePerDegreex16;
+volatile uint16_t degreesPeruSx2048;
+volatile unsigned long degreesPeruSx32768;
+
+//These are only part of the experimental 2nd deriv calcs
+byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
+int rpmDelta;
+
 /*
 * Converts a crank angle into a time from or since that angle occurred.
 * Positive angles are assumed to be in the future, negative angles in the past:

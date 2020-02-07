@@ -49,8 +49,8 @@ struct packedError
 byte getNextError();
 byte setError(byte);
 
-byte errorCount = 0;
-byte errorCodes[4];
+// byte errorCount = 0;
+// byte errorCodes[4];
 
 
 #endif

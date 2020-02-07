@@ -22,6 +22,21 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
   #include <avr/wdt.h>
 #endif
 
+volatile bool tachoAlt = false;
+volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
+volatile TachoOutputStatus tachoOutputFlag;
+
+volatile byte loop33ms;
+volatile byte loop66ms;
+volatile byte loop100ms;
+volatile byte loop250ms;
+volatile int loopSec;
+
+volatile unsigned int dwellLimit_uS;
+volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
+volatile uint16_t last250msLoopCount = 1000; //Set to effectively random number on startup. Just need this to be different to what mainLoopCount equals initially (Probably 0)
+
+
 void initialiseTimers()
 {
   lastRPM_100ms = 0;

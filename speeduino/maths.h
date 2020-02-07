@@ -1,11 +1,23 @@
 #ifndef MATH_H
 #define MATH_H
 
+#include <Arduino.h>
+
 int fastMap1023toX(int, int);
 unsigned long percentage(byte, unsigned long);
-inline long powint(int, unsigned int);
 int divs100(long);
 unsigned long divu100(unsigned long);
+
+/*
+ * Calculates integer power values. Same as pow() but with ints
+ */
+inline long powint(int factor, unsigned int exponent)
+{
+   long product = 1;
+   unsigned int counter = exponent;
+   while ( (counter--) > 0) { product *= factor; }
+   return product;
+}
 
 #define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d)/2)/(d)) : (((n) + (d)/2)/(d)))
 

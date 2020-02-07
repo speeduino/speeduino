@@ -28,38 +28,38 @@ void fanControl();
 #define N2O_STAGE2_PIN_HIGH() *n2o_stage2_pin_port |= (n2o_stage2_pin_mask)
 #define READ_N2O_ARM_PIN()    ((*n2o_arming_pin_port & n2o_arming_pin_mask) ? true : false)
 
-volatile PORT_TYPE *boost_pin_port;
-volatile PINMASK_TYPE boost_pin_mask;
-volatile PORT_TYPE *vvt_pin_port;
-volatile PINMASK_TYPE vvt_pin_mask;
-volatile PORT_TYPE *fan_pin_port;
-volatile PINMASK_TYPE fan_pin_mask;
-volatile PORT_TYPE *n2o_stage1_pin_port;
-volatile PINMASK_TYPE n2o_stage1_pin_mask;
-volatile PORT_TYPE *n2o_stage2_pin_port;
-volatile PINMASK_TYPE n2o_stage2_pin_mask;
-volatile PORT_TYPE *n2o_arming_pin_port;
-volatile PINMASK_TYPE n2o_arming_pin_mask;
+extern volatile PORT_TYPE *boost_pin_port;
+extern volatile PINMASK_TYPE boost_pin_mask;
+extern volatile PORT_TYPE *vvt_pin_port;
+extern volatile PINMASK_TYPE vvt_pin_mask;
+// volatile PORT_TYPE *fan_pin_port;
+// volatile PINMASK_TYPE fan_pin_mask;
+// volatile PORT_TYPE *n2o_stage1_pin_port;
+// volatile PINMASK_TYPE n2o_stage1_pin_mask;
+// volatile PORT_TYPE *n2o_stage2_pin_port;
+// volatile PINMASK_TYPE n2o_stage2_pin_mask;
+// volatile PORT_TYPE *n2o_arming_pin_port;
+// volatile PINMASK_TYPE n2o_arming_pin_mask;
 
-volatile bool boost_pwm_state;
-unsigned int boost_pwm_max_count; //Used for variable PWM frequency
-volatile unsigned int boost_pwm_cur_value;
-long boost_pwm_target_value;
-long boost_cl_target_boost;
-byte boostCounter;
-byte vvtCounter;
+// volatile bool boost_pwm_state;
+extern unsigned int boost_pwm_max_count; //Used for variable PWM frequency
+// volatile unsigned int boost_pwm_cur_value;
+// long boost_pwm_target_value;
+// long boost_cl_target_boost;
+// byte boostCounter;
+// byte vvtCounter;
 
-byte fanHIGH = HIGH;             // Used to invert the cooling fan output
-byte fanLOW = LOW;               // Used to invert the cooling fan output
+// byte fanHIGH = HIGH;             // Used to invert the cooling fan output
+// byte fanLOW = LOW;               // Used to invert the cooling fan output
 
-volatile bool vvt_pwm_state;
-unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
-volatile unsigned int vvt_pwm_cur_value;
-long vvt_pwm_value;
-long vvt_pid_target_angle;
+// volatile bool vvt_pwm_state;
+extern unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
+// volatile unsigned int vvt_pwm_cur_value;
+// long vvt_pwm_value;
+// long vvt_pid_target_angle;
 //long vvt_pid_current_angle;
-static inline void boostInterrupt();
-static inline void vvtInterrupt();
+void boostInterrupt();
+void vvtInterrupt();
 
 
 #endif

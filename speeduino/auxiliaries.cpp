@@ -9,6 +9,36 @@ A full copy of the license may be found in the projects root directory
 #include "src/PID_v1/PID_v1.h"
 #include "decoders.h"
 
+volatile PORT_TYPE *boost_pin_port;
+volatile PINMASK_TYPE boost_pin_mask;
+volatile PORT_TYPE *vvt_pin_port;
+volatile PINMASK_TYPE vvt_pin_mask;
+volatile PORT_TYPE *fan_pin_port;
+volatile PINMASK_TYPE fan_pin_mask;
+volatile PORT_TYPE *n2o_stage1_pin_port;
+volatile PINMASK_TYPE n2o_stage1_pin_mask;
+volatile PORT_TYPE *n2o_stage2_pin_port;
+volatile PINMASK_TYPE n2o_stage2_pin_mask;
+volatile PORT_TYPE *n2o_arming_pin_port;
+volatile PINMASK_TYPE n2o_arming_pin_mask;
+
+volatile bool boost_pwm_state;
+unsigned int boost_pwm_max_count; //Used for variable PWM frequency
+volatile unsigned int boost_pwm_cur_value;
+long boost_pwm_target_value;
+long boost_cl_target_boost;
+byte boostCounter;
+byte vvtCounter;
+
+byte fanHIGH = HIGH;             // Used to invert the cooling fan output
+byte fanLOW = LOW;               // Used to invert the cooling fan output
+
+volatile bool vvt_pwm_state;
+unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
+volatile unsigned int vvt_pwm_cur_value;
+long vvt_pwm_value;
+long vvt_pid_target_angle;
+
 //Old PID method. Retained incase the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
 integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage10.boostSens, &configPage10.boostIntv, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call

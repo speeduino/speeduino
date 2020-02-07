@@ -11,6 +11,9 @@ A full copy of the license may be found in the projects root directory
 #include "globals.h"
 #include "errors.h"
 
+byte errorCount = 0;
+byte errorCodes[4];
+
 byte setError(byte errorID)
 {
   if(errorCount < MAX_ERRORS)

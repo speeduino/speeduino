@@ -67,14 +67,3 @@ unsigned long percentage(byte x, unsigned long y)
   return (y * x) / 100; //For some reason this is faster
   //return divu100(y * x);
 }
-
-/*
- * Calculates integer power values. Same as pow() but with ints
- */
-inline long powint(int factor, unsigned int exponent)
-{
-   long product = 1;
-   unsigned int counter = exponent;
-   while ( (counter--) > 0) { product *= factor; }
-   return product;
-}

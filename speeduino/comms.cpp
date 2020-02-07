@@ -14,6 +14,17 @@ A full copy of the license may be found in the projects root directory
 #include "logger.h"
 #include "errors.h"
 
+byte currentPage = 1;//Not the same as the speeduino config page numbers
+bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
+unsigned long requestCount = 0; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
+byte currentCommand; /**< The serial command that is currently being processed. This is only useful when cmdPending=True */
+bool cmdPending = false; /**< Whether or not a serial request has only been partially received. This occurs when a command character has been received in the serial buffer, but not all of its arguments have yet been received. If true, the active command will be stored in the currentCommand variable */
+bool chunkPending = false; /**< Whether or not the current chucnk write is complete or not */
+uint16_t chunkComplete = 0; /**< The number of bytes in a chunk write that have been written so far */
+uint16_t chunkSize = 0; /**< The complete size of the requested chunk write */
+int valueOffset; /**< THe memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
+byte tsCanId = 0;     // current tscanid requested
+
 /*
   Processes the data on the serial buffer.
   Can be either a new command or a continuation of one that is already in progress:

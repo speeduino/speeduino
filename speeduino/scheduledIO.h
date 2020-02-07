@@ -1,6 +1,8 @@
 #ifndef SCHEDULEDIO_H
 #define SCHEDULEDIO_H
 
+#include <Arduino.h>
+
 //If coil inverse is on, set the output low, else set it high
 //#define beginCoil1Charge() { configPage4.IgInv == 1 ? coil1Low(); : coil1High(); } tachoOutputFlag = READY;
 //#define beginCoil2Charge() { configPage4.IgInv == 1 ? coil2Low(); : coil2High(); } tachoOutputFlag = READY;
@@ -11,34 +13,34 @@
 //#define beginCoil7Charge() { configPage4.IgInv == 1 ? coil7Low(); : coil7High(); } tachoOutputFlag = READY;
 //#define beginCoil8Charge() { configPage4.IgInv == 1 ? coil8Low(); : coil8High(); } tachoOutputFlag = READY;
 
-inline void beginCoil1Charge();
-inline void endCoil1Charge();
+void beginCoil1Charge();
+void endCoil1Charge();
 
-inline void beginCoil2Charge();
-inline void endCoil2Charge();
+void beginCoil2Charge();
+void endCoil2Charge();
 
-inline void beginCoil3Charge();
-inline void endCoil3Charge();
+void beginCoil3Charge();
+void endCoil3Charge();
 
-inline void beginCoil4Charge();
-inline void endCoil4Charge();
+void beginCoil4Charge();
+void endCoil4Charge();
 
-inline void beginCoil5Charge();
-inline void endCoil5Charge();
+void beginCoil5Charge();
+void endCoil5Charge();
 
-inline void beginCoil6Charge();
-inline void endCoil6Charge();
+void beginCoil6Charge();
+void endCoil6Charge();
 
-inline void beginCoil7Charge();
-inline void endCoil7Charge();
+void beginCoil7Charge();
+void endCoil7Charge();
 
-inline void beginCoil8Charge();
-inline void endCoil8Charge();
+void beginCoil8Charge();
+void endCoil8Charge();
 
 //The following functions are used specifically for the trailing coil on rotary engines. They are separate as they also control the switching of the trailing select pin
-inline void beginTrailingCoilCharge();
-inline void endTrailingCoilCharge1();
-inline void endTrailingCoilCharge2();
+void beginTrailingCoilCharge();
+void endTrailingCoilCharge1();
+void endTrailingCoilCharge2();
 
 //And the combined versions of the above for simplicity
 void beginCoil1and3Charge();
@@ -138,7 +140,7 @@ void endCoil2and4Charge();
 
 void nullCallback();
 
-static byte coilHIGH = HIGH;
-static byte coilLOW = LOW;
+extern byte coilHIGH;
+extern byte coilLOW;
 
 #endif
