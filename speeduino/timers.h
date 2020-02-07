@@ -29,10 +29,7 @@ extern volatile TachoOutputStatus tachoOutputFlag;
 
 extern volatile unsigned int dwellLimit_uS;
 
-#if defined (CORE_TEENSY)
-  IntervalTimer lowResTimer;
-  void oneMSInterval();
-#elif defined(CORE_STM32_OFFICIAL) || defined(CORE_STM32_GENERIC)
+#if defined (CORE_TEENSY) || defined(CORE_STM32_OFFICIAL) || defined(CORE_STM32_GENERIC)
   void oneMSInterval();
 #endif
 void initialiseTimers();

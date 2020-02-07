@@ -31,6 +31,14 @@ sendcancommand is called when a command is to be sent via serial3 to the Can int
   HardwareSerial &CANSerial = Serial2;
 #endif
 
+#if defined(CORE_TEENSY35)
+  #include <FlexCAN_T4.h>
+  static FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
+  
+  static CAN_message_t outMsg;
+  static CAN_message_t inMsg;
+#endif
+
 uint8_t currentcanCommand;
 uint8_t currentCanPage = 1;//Not the same as the speeduino config page numbers
 uint8_t nCanretry = 0;      //no of retrys
@@ -39,6 +47,38 @@ uint8_t canlisten = 0;
 uint8_t Lbuffer[8];         //8 byte buffer to store incomng can data
 uint8_t Gdata[9];
 uint8_t Glow, Ghigh;
+
+void canInit()
+{
+  #if defined(CORE_TEENSY35)
+  configPage9.intcan_available = 1;   // device has internal canbus
+  //Teensy uses the Flexcan_T4 library to use the internal canbus
+  //enable local can interface
+  //setup can interface to 500k
+    //volatile CAN_message_t outMsg;
+    //volatile CAN_message_t inMsg;
+    Can0.begin();
+    Can0.setBaudRate(500000);
+    Can0.enableFIFO();
+  #endif
+}
+
+void checkCanRx()
+{
+  #if  defined(CORE_TEENSY35)
+      //currentStatus.canin[12] = configPage9.enable_intcan;
+      if (configPage9.enable_intcan == 1) // use internal can module
+      {
+        //check local can module
+        // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
+        while (Can0.read(inMsg) ) 
+              {
+              Can0.read(inMsg);
+              //currentStatus.canin[12] = inMsg.buf[5];
+              } 
+      }
+  #endif
+}
 
 void canCommand()
 {

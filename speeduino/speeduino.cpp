@@ -136,25 +136,13 @@ void loop()
       }
       //if can or secondary serial interface is enabled then check for requests.
       if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
-          {
-            if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-                {
-                  if (CANSerial.available() > 0)  { canCommand(); }
-                }
-          }
-      #if  defined(CORE_TEENSY35)
-          //currentStatus.canin[12] = configPage9.enable_intcan;
-          if (configPage9.enable_intcan == 1) // use internal can module
-          {
-            //check local can module
-            // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
-            while (Can0.read(inMsg) ) 
-                 {
-                  Can0.read(inMsg);
-                  //currentStatus.canin[12] = inMsg.buf[5];
-                 } 
-          }
-      #endif
+      {
+        if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+        {
+          if (CANSerial.available() > 0)  { canCommand(); }
+        }
+      }
+      checkCanRx();
       
       #if  defined(CORE_STM32)
           else if (configPage9.enable_intcan == 1) // can module enabled

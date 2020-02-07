@@ -5,6 +5,9 @@
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
+#include "timers.h"
+
+static IntervalTimer lowResTimer;
 
 void initBoard()
 {

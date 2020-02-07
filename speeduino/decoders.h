@@ -9,12 +9,9 @@
   #define READ_SEC_TRIGGER() digitalRead(pinTrigger2)
 #endif
 
-static inline void addToothLogEntry(unsigned long, bool);
 void loggerPrimaryISR();
 void loggerSecondaryISR();
-static inline uint16_t stdGetRPM(uint16_t);
-static inline void setFilter(unsigned long);
-static inline int crankingGetRPM(byte);
+
 //static inline void doPerToothTiming(uint16_t);
 
 extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)

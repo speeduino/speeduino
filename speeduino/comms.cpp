@@ -106,7 +106,7 @@ void command()
       {
         byte cmdGroup = Serial.read();
         byte cmdValue = Serial.read();
-        int cmdCombined = word(cmdGroup, cmdValue);
+        int16_t cmdCombined = word(cmdGroup, cmdValue);
         if (currentStatus.RPM == 0) { commandButtons(cmdCombined); }
 
         cmdPending = false;
@@ -1833,7 +1833,7 @@ void testComm()
   return;
 }
 
-void commandButtons(int buttonCommand)
+void commandButtons(int16_t buttonCommand)
 {
   switch (buttonCommand)
   {

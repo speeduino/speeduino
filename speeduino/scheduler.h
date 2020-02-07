@@ -50,46 +50,46 @@ void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsign
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 
 //The ARM cores use seprate functions for their ISRs
-#if defined(CORE_STM32_OFFICIAL) || defined(CORE_STM32_GENERIC) || defined(CORE_TEENSY)
-  static inline void fuelSchedule1Interrupt();
-  static inline void fuelSchedule2Interrupt();
-  static inline void fuelSchedule3Interrupt();
-  static inline void fuelSchedule4Interrupt();
+#if !defined(CORE_AVR)
+  void fuelSchedule1Interrupt();
+  void fuelSchedule2Interrupt();
+  void fuelSchedule3Interrupt();
+  void fuelSchedule4Interrupt();
 #if (INJ_CHANNELS >= 5)
-  static inline void fuelSchedule5Interrupt();
+  void fuelSchedule5Interrupt();
 #endif
 #if (INJ_CHANNELS >= 6)
-  static inline void fuelSchedule6Interrupt();
+  void fuelSchedule6Interrupt();
 #endif
 #if (INJ_CHANNELS >= 7)
-  static inline void fuelSchedule7Interrupt();
+  void fuelSchedule7Interrupt();
 #endif
 #if (INJ_CHANNELS >= 8)
-  static inline void fuelSchedule8Interrupt();
+  void fuelSchedule8Interrupt();
 #endif
 #if (IGN_CHANNELS >= 1)
-  static inline void ignitionSchedule1Interrupt();
+  void ignitionSchedule1Interrupt();
 #endif
 #if (IGN_CHANNELS >= 2)
-  static inline void ignitionSchedule2Interrupt();
+  void ignitionSchedule2Interrupt();
 #endif
 #if (IGN_CHANNELS >= 3)
-  static inline void ignitionSchedule3Interrupt();
+  void ignitionSchedule3Interrupt();
 #endif
 #if (IGN_CHANNELS >= 4)
-  static inline void ignitionSchedule4Interrupt();
+  void ignitionSchedule4Interrupt();
 #endif
 #if (IGN_CHANNELS >= 5)
-  static inline void ignitionSchedule5Interrupt();
+  void ignitionSchedule5Interrupt();
 #endif
 #if (IGN_CHANNELS >= 6)
-  static inline void ignitionSchedule6Interrupt();
+  void ignitionSchedule6Interrupt();
 #endif
 #if (IGN_CHANNELS >= 7)
-  static inline void ignitionSchedule7Interrupt();
+  void ignitionSchedule7Interrupt();
 #endif
 #if (IGN_CHANNELS >= 8)
-  static inline void ignitionSchedule8Interrupt();
+  void ignitionSchedule8Interrupt();
 #endif
 #endif
 

@@ -86,6 +86,11 @@ uint16_t ignition4EndTooth = 0;
 
 int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 
+static inline void addToothLogEntry(unsigned long, bool);
+static inline int crankingGetRPM(byte);
+static inline uint16_t stdGetRPM(uint16_t);
+static inline void setFilter(unsigned long);
+
 /*
 *
 * whichTooth - 0 for Primary (Crank), 1 for Secondary (Cam)

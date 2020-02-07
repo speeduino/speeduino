@@ -381,7 +381,7 @@ void boostDisable()
 #if defined(CORE_AVR)
   ISR(TIMER1_COMPA_vect)
 #else
-  static inline void boostInterrupt() //Most ARM chips can simply call a function
+  void boostInterrupt() //Most ARM chips can simply call a function
 #endif
 {
   if (boost_pwm_state == true)
@@ -403,7 +403,7 @@ void boostDisable()
 #if defined(CORE_AVR)
   ISR(TIMER1_COMPB_vect)
 #else
-  static inline void vvtInterrupt() //Most ARM chips can simply call a function
+  void vvtInterrupt() //Most ARM chips can simply call a function
 #endif
 {
   if (vvt_pwm_state == true)

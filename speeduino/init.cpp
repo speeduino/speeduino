@@ -52,17 +52,7 @@ void initialiseAll()
     //STM32 can not currently enabled
     #endif
 
-    #if defined(CORE_TEENSY35)
-    configPage9.intcan_available = 1;   // device has internal canbus
-    //Teensy uses the Flexcan_T4 library to use the internal canbus
-    //enable local can interface
-    //setup can interface to 500k
-      //volatile CAN_message_t outMsg;
-      //volatile CAN_message_t inMsg;
-      Can0.begin();
-      Can0.setBaudRate(500000);
-      Can0.enableFIFO();
-    #endif
+    canInit();
 
     //Repoint the 2D table structs to the config pages that were just loaded
     taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values

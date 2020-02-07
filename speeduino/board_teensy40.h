@@ -114,8 +114,8 @@
   #define VVT_TIMER_COMPARE     TMR3_COMP20
   #define VVT_TIMER_COUNTER     TMR3_CNTR0
 
-  static inline void boostInterrupt();
-  static inline void vvtInterrupt();
+  void boostInterrupt();
+  void vvtInterrupt();
 
 /*
 ***********************************************************************************************************
@@ -127,7 +127,7 @@
   #define IDLE_TIMER_ENABLE() TMR3_CSCTRL1 |= TMR_CSCTRL_TCF1EN
   #define IDLE_TIMER_DISABLE() TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN
 
-  static inline void idleInterrupt();
+  void idleInterrupt();
 
 /*
 ***********************************************************************************************************
