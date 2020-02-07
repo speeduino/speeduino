@@ -29,10 +29,7 @@
 
 extern volatile byte flexCounter;
 extern volatile byte knockCounter;
-// volatile uint16_t knockAngle;
 
-// unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
-// unsigned long EMAPrunningValue; //As above but for EMAP
 extern unsigned int MAPcount; //Number of samples taken in the current MAP cycle
 extern uint32_t MAPcurRev; //Tracks which revolution we're sampling on
 extern bool auxIsEnabled;
@@ -42,11 +39,6 @@ extern unsigned long TPSlast_time; //The time the previous TPS sample was taken
 extern byte MAPlast; /**< The previous MAP reading */
 extern unsigned long MAP_time; //The time the MAP sample was taken
 extern unsigned long MAPlast_time; //The time the previous MAP sample was taken
-
-// //These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
-// byte mapErrorCount = 0;
-// byte iatErrorCount = 0;
-// byte cltErrorCount = 0;
 
 /**
  * @brief Simple low pass IIR filter macro for the analog inputs

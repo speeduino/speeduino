@@ -146,56 +146,23 @@ void triggerSetEndTeeth_ThirtySixMinus222();
 
 extern unsigned long MAX_STALL_TIME; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
 
-// volatile unsigned long curTime;
-// volatile unsigned long curGap;
-// volatile unsigned long curTime2;
-// volatile unsigned long curGap2;
-// volatile unsigned long lastGap;
-// volatile unsigned long targetGap;
 extern volatile unsigned long compositeLastToothTime;
 
 extern volatile uint16_t toothCurrentCount; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
 extern volatile byte toothSystemCount; //Used for decoders such as Audi 135 where not every tooth is used for calculating crank angle. This variable stores the actual number of teeth, not the number being used to calculate crank angle
-// volatile unsigned long toothSystemLastToothTime = 0; //As below, but used for decoders where not every tooth count is used for calculation
 extern volatile unsigned long toothLastToothTime; //The time (micros()) that the last tooth was registered
 extern volatile unsigned long toothLastSecToothTime; //The time (micros()) that the last tooth was registered on the secondary input
 extern volatile unsigned long toothLastMinusOneToothTime; //The time (micros()) that the tooth before the last tooth was registered
-// #ifndef SMALL_FLASH_MODE
-// volatile unsigned long toothLastMinusOneSecToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered on secondary input
-// volatile unsigned long targetGap2;
-// #endif
-// volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
-// volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
-// volatile bool revolutionOne = 0; // For sequential operation, this tracks whether the current revolution is 1 or 2 (not 1)
 
 extern volatile unsigned int secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
-// volatile unsigned long secondaryLastToothTime = 0; //The time (micros()) that the last tooth was registered (Cam input)
-// volatile unsigned long secondaryLastToothTime1 = 0; //The time (micros()) that the last tooth was registered (Cam input)
 
-// volatile uint16_t triggerActualTeeth;
 extern volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
-// volatile unsigned long triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
-// volatile bool validTrigger; //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
-// unsigned int triggerSecFilterTime_duration; // The shortest valid time (in uS) pulse DURATION
 extern volatile uint16_t triggerToothAngle; //The number of crank degrees that elapse per tooth
 extern volatile bool triggerToothAngleIsCorrect; //Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.
 extern bool secondDerivEnabled; //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
-// bool decoderIsSequential; //Whether or not the decoder supports sequential operation
-// bool decoderIsLowRes = false; //Is set true, certain extra calculations are performed for better timing accuracy
 extern bool decoderHasSecondary; //Whether or not the pattern uses a secondary input
 extern bool decoderHasFixedCrankingTiming; //Whether or not the decoder supports fixed cranking timing
-// byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
-// unsigned long elapsedTime;
-// unsigned long lastCrankAngleCalc;
 extern int16_t lastToothCalcAdvance; //Invalid value here forces calculation of this on first main loop
-// unsigned long lastVVTtime; //The time between the vvt reference pulse and the last crank pulse
-
-// uint16_t ignition1EndTooth = 0;
-// uint16_t ignition2EndTooth = 0;
-// uint16_t ignition3EndTooth = 0;
-// uint16_t ignition4EndTooth = 0;
-
-// int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 
 //Used for identifying long and short pulses on the 4G63 (And possibly other) trigger patterns
 #define LONG 0;

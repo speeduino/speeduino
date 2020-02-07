@@ -37,10 +37,6 @@ extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set wit
 extern bool ignitionOn; /**< The current state of the ignition system (on or off) */
 extern bool fuelOn; /**< The current state of the fuel system (on or off) */
 
-//byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
-//byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
-//byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
-
 extern byte maxIgnOutputs; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
 extern byte curRollingCut; /**< Rolling rev limiter, current ignition channel being cut */
 extern byte rollingCutCounter; /**< how many times (revolutions) the ignition has been cut in a row */

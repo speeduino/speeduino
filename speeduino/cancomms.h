@@ -12,15 +12,6 @@
 #define NEW_CAN_PACKET_SIZE   75
 #define CAN_PACKET_SIZE   75
 
-// uint8_t currentcanCommand;
-// uint8_t currentCanPage = 1;//Not the same as the speeduino config page numbers
-// uint8_t nCanretry = 0;      //no of retrys
-// uint8_t cancmdfail = 0;     //command fail yes/no
-// uint8_t canlisten = 0;
-// uint8_t Lbuffer[8];         //8 byte buffer to store incomng can data
-// uint8_t Gdata[9];
-// uint8_t Glow, Ghigh;
-
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   extern HardwareSerial &CANSerial;
 #elif defined(CORE_STM32)

@@ -22,16 +22,8 @@
 #define warmupPage   10 //Config Page 10
 #define fuelMap2Page 11
 
-// byte currentPage = 1;//Not the same as the speeduino config page numbers
-// bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
-// unsigned long requestCount = 0; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
 extern byte currentCommand; /**< The serial command that is currently being processed. This is only useful when cmdPending=True */
 extern bool cmdPending; /**< Whether or not a serial request has only been partially received. This occurs when a command character has been received in the serial buffer, but not all of its arguments have yet been received. If true, the active command will be stored in the currentCommand variable */
-// bool chunkPending = false; /**< Whether or not the current chucnk write is complete or not */
-// uint16_t chunkComplete = 0; /**< The number of bytes in a chunk write that have been written so far */
-// uint16_t chunkSize = 0; /**< The complete size of the requested chunk write */
-// int valueOffset; /**< THe memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
-// byte tsCanId = 0;     // current tscanid requested
 
 const char pageTitles[] PROGMEM //This is being stored in the avr flash instead of SRAM which there is not very much of
   {

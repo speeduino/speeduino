@@ -1,6 +1,7 @@
+
+#include "globals.h"
 #if defined(CORE_STM32_GENERIC)
 #include "board_stm32_generic.h"
-#include "globals.h"
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
