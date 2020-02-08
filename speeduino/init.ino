@@ -2165,11 +2165,17 @@ void setPinMapping(byte boardID)
     pinMode(pinCoil3, OUTPUT);
     pinMode(pinCoil4, OUTPUT);
     pinMode(pinCoil5, OUTPUT);
+    pinMode(pinCoil6, OUTPUT);
+    pinMode(pinCoil7, OUTPUT);
+    pinMode(pinCoil8, OUTPUT);
     pinMode(pinInjector1, OUTPUT);
     pinMode(pinInjector2, OUTPUT);
     pinMode(pinInjector3, OUTPUT);
     pinMode(pinInjector4, OUTPUT);
     pinMode(pinInjector5, OUTPUT);
+    pinMode(pinInjector6, OUTPUT);
+    pinMode(pinInjector7, OUTPUT);
+    pinMode(pinInjector8, OUTPUT);
 
     inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
     inj1_pin_mask = digitalPinToBitMask(pinInjector1);
