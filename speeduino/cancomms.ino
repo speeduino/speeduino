@@ -18,7 +18,8 @@ sendcancommand is called when a command is to be sent via serial3 to the Can int
 
 void canCommand()
 {
-  currentcanCommand = CANSerial.read();
+  if (! canCmdPending)  
+  {  currentcanCommand = CANSerial.read();  }
 
   switch (currentcanCommand)
   {
@@ -30,6 +31,7 @@ void canCommand()
        byte destcaninchannel;
       if (CANSerial.available() >= 9)
       {
+        canCmdPending = false;
         cancmdfail = CANSerial.read();        //0 == fail,  1 == good.
         destcaninchannel = CANSerial.read();  // the input channel that requested the data value
         if (cancmdfail != 0)
@@ -58,6 +60,11 @@ void canCommand()
         else{}  //continue as command request failed and/or data/device was not available
 
       }
+      else
+      {
+        canCmdPending = true;
+      }
+      
         break;
 
     case 'k':   //placeholder for new can interface (toucan etc) commands
@@ -106,6 +113,7 @@ void canCommand()
           tmp = CANSerial.read();
           length = word(CANSerial.read(), tmp);
           sendcanValues(offset, length,Cmd, 1);
+          canCmdPending = false;
 //Serial.print(Cmd);
         }
         else
@@ -113,6 +121,11 @@ void canCommand()
           //No other r/ commands should be called
         }
       }
+      else
+      {
+        canCmdPending = true;
+      }
+      
       break;
 
     case 's': // send the "a" stream code version
