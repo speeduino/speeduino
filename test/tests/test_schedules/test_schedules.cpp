@@ -1,10 +1,9 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "test_schedule.h"
-
+#include "test_schedules.h"
 #include "globals.h"
-
+/*
 void two_second_blink()
 {
     // NOTE!!! Wait for >2 secs
@@ -18,9 +17,8 @@ void two_second_blink()
     digitalWrite(LED_BUILTIN, HIGH);
     delay(667);
     digitalWrite(LED_BUILTIN, LOW);
-}
 
-void do_tests()
+void test_schedules()
 {
     test_status_initial_off();
     test_status_off_to_pending();
@@ -53,4 +51,19 @@ void loop()
     delay(250);
     digitalWrite(LED_BUILTIN, LOW);
     delay(250);
+}
+*/
+void testSchedules()
+{
+    
+    test_status_initial_off();
+    test_status_off_to_pending();
+    test_status_pending_to_running();
+    test_status_running_to_pending();
+    
+    TEST_ASSERT_GREATER_THAN(freeRam(), 100);
+    test_status_running_to_off();
+
+    test_accuracy_timeout();
+    test_accuracy_duration();
 }
