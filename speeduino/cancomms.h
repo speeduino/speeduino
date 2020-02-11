@@ -20,6 +20,7 @@ uint8_t canlisten = 0;
 uint8_t Lbuffer[8];         //8 byte buffer to store incomng can data
 uint8_t Gdata[9];
 uint8_t Glow, Ghigh;
+bool canCmdPending = false;
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   HardwareSerial &CANSerial = Serial3;
