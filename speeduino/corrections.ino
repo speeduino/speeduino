@@ -73,8 +73,15 @@ uint16_t correctionsFuel()
   if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
   currentStatus.batCorrection = correctionBatVoltage();
-  if (currentStatus.batCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.batCorrection); activeCorrections++; }
-  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  if (configPage2.battVCorMode == BATTV_COR_MODE_OPENTIME)
+  {
+    inj_opentime_uS = configPage2.injOpen * currentStatus.batCorrection; // Apply voltage correction to injector open time.
+  }
+  if (configPage2.battVCorMode == BATTV_COR_MODE_WHOLE)
+  {
+    if (currentStatus.batCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.batCorrection); activeCorrections++; }
+    if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }    
+  }
 
   currentStatus.iatCorrection = correctionIATDensity();
   if (currentStatus.iatCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.iatCorrection); activeCorrections++; }
@@ -357,11 +364,7 @@ Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y 
 byte correctionBatVoltage()
 {
   byte batValue = 100;
-  if (configPage2.battVCorMode == BATTV_COR_MODE_WHOLE)
-  {
-    batValue = table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
-  }
-
+  batValue = table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
   return batValue;
 }
 
