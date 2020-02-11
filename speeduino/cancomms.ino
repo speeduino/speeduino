@@ -18,8 +18,7 @@ sendcancommand is called when a command is to be sent via serial3 to the Can int
 
 void canCommand()
 {
-  if (! canCmdPending)  
-  {  currentcanCommand = CANSerial.read();  }
+  if (! canCmdPending) {  currentcanCommand = CANSerial.read();  }
 
   switch (currentcanCommand)
   {
