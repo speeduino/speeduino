@@ -779,7 +779,7 @@ void initialiseAll()
         break;
 
     case IGN_MODE_WASTEDCOP:
-        //Wasted COP mode. This is not a valid mode for >6 cylinders
+        //Wasted COP mode. Note, most of the boards can only run this for 4-cyl only.
         //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
         if( configPage2.nCylinders <= 4 )
         {
@@ -809,6 +809,29 @@ void initialiseAll()
           ign5EndFunction = nullCallback;
           ign6StartFunction = nullCallback;
           ign6EndFunction = nullCallback;
+        }
+        //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
+        else if( configPage2.nCylinders == 8 )
+          {
+          ign1StartFunction = beginCoil1and5Charge;
+          ign1EndFunction = endCoil1and5Charge;
+          ign2StartFunction = beginCoil2and6Charge;
+          ign2EndFunction = endCoil2and6Charge;
+          ign3StartFunction = beginCoil3and7Charge;
+          ign3EndFunction = endCoil3and7Charge;
+          ign3StartFunction = beginCoil4and8Charge;
+          ign3EndFunction = endCoil4and8Charge;
+
+          ign4StartFunction = nullCallback;
+          ign4EndFunction = nullCallback;
+          ign5StartFunction = nullCallback;
+          ign5EndFunction = nullCallback;
+          ign6StartFunction = nullCallback;
+          ign6EndFunction = nullCallback;
+          ign7StartFunction = nullCallback;
+          ign7EndFunction = nullCallback;
+          ign8StartFunction = nullCallback;
+          ign8EndFunction = nullCallback;
         }
         else
         {
@@ -2159,7 +2182,9 @@ void setPinMapping(byte boardID)
     pinMode(pinCoil3, OUTPUT);
     pinMode(pinCoil4, OUTPUT);
     pinMode(pinCoil5, OUTPUT);
-	pinMode(pinCoil6, OUTPUT);
+    pinMode(pinCoil6, OUTPUT);
+    pinMode(pinCoil7, OUTPUT);
+    pinMode(pinCoil8, OUTPUT);
     pinMode(pinInjector1, OUTPUT);
     pinMode(pinInjector2, OUTPUT);
     pinMode(pinInjector3, OUTPUT);
