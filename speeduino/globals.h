@@ -157,8 +157,13 @@
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
+#ifndef UNIT_TEST 
 #define TOOTH_LOG_SIZE      127
 #define TOOTH_LOG_BUFFER    128 //256
+#else
+#define TOOTH_LOG_SIZE      1
+#define TOOTH_LOG_BUFFER    1 //256
+#endif
 
 #define COMPOSITE_LOG_PRI   0
 #define COMPOSITE_LOG_SEC   1
