@@ -7,5 +7,5 @@
 
 void testDecoders()
 {
-    RUN_TEST(test_missingtooth_newIgn_1);
+  testMissingTooth();
 }
