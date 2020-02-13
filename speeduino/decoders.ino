@@ -3209,7 +3209,7 @@ void triggerPri_ThirtySixMinus222()
        {
          if(toothSystemCount == 1)
          {
-           //This occurs when where at the first tooth after the 2 lots of 2x missing tooth.
+           //This occurs when we're at the first tooth after the 2 lots of 2x missing tooth.
            toothCurrentCount = 19;
            toothSystemCount = 0;
            currentStatus.hasSync = true;
@@ -3267,6 +3267,25 @@ void triggerPri_ThirtySixMinus222()
 void triggerSec_ThirtySixMinus222()
 {
   //NOT USED - This pattern uses the missing tooth version of this function
+}
+
+uint16_t getRPM_ThirtySixMinus222()
+{
+  uint16_t tempRPM = 0;
+  if( currentStatus.RPM < currentStatus.crankRPM)
+  {
+    //
+    if( (toothCurrentCount != 19) && (toothCurrentCount != 16) && (toothCurrentCount != 34) && (triggerToothAngleIsCorrect == true) )
+    {
+      tempRPM = crankingGetRPM(36);
+    }
+    else { tempRPM = currentStatus.RPM; } //Can't do per tooth RPM if we're at tooth #1 as the missing tooth messes the calculation
+  }
+  else
+  {
+    tempRPM = stdGetRPM(360);
+  }
+  return tempRPM;
 }
 
 int getCrankAngle_ThirtySixMinus222()
