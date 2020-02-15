@@ -40,6 +40,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef UNIT_TEST // Scope guard for unit testing
 void setup()
 {
+  initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
   initialiseAll();
 }
 
@@ -412,11 +413,6 @@ void loop()
       currentStatus.corrections = correctionsFuel();
 
       currentStatus.advance = getAdvance();
-
-      if (configPage2.battVCorMode == BATTV_COR_MODE_OPENTIME)
-      {
-        inj_opentime_uS = configPage2.injOpen * table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10); // Apply voltage correction to injector open time.
-      }
 
       currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
 

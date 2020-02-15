@@ -18,7 +18,6 @@
 
 void initialiseAll()
 {   
-    initialisationComplete = false; //Tracks whether the setup() function has run completely
     fpPrimed = false;
 
     pinMode(LED_BUILTIN, OUTPUT);
@@ -2601,7 +2600,7 @@ void initialiseTriggers()
       triggerHandler = triggerPri_ThirtySixMinus222;
       triggerSecondaryHandler = triggerSec_ThirtySixMinus222;
       decoderHasSecondary = true;
-      getRPM = getRPM_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
+      getRPM = getRPM_ThirtySixMinus222;
       getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
       triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus222;
 

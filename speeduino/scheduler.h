@@ -25,6 +25,8 @@ See page 136 of the processors datasheet: www.atmel.com/Images/doc2549.pdf
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
+#include "globals.h"
+
 #define USE_IGN_REFRESH
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
 
@@ -47,7 +49,7 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
 void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 
-static inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
+inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 
 //The ARM cores use seprate functions for their ISRs
 #if defined(CORE_STM32_OFFICIAL) || defined(CORE_STM32_GENERIC) || defined(CORE_TEENSY)
