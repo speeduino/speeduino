@@ -47,7 +47,8 @@ void setup()
 void loop()
 {
       mainLoopCount++;
-      LOOP_TIMER = TIMER_mask ^ CLEAR_mask; //New timer sets vs already performed
+      TIMER_mask = TIMER_mask ^ CLEAR_mask; //New timer sets vs already performed
+      LOOP_TIMER = TIMER_mask;
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
       // 1) Every 32 loops (32 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 32) == 1) but is considerably faster due to not using the mod or division operations
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
