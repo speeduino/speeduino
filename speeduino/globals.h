@@ -395,6 +395,7 @@ extern byte resetControl;
 
 extern volatile byte TIMER_mask;
 extern volatile byte LOOP_TIMER;
+extern volatile byte CLEAR_mask;
 
 //These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
 #define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) )
