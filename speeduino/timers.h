@@ -26,11 +26,13 @@ enum TachoOutputStatus {DEACTIVE, READY, ACTIVE}; //The 3 statuses that the tach
 volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
 volatile TachoOutputStatus tachoOutputFlag;
 
-volatile byte loop33ms;
-volatile byte loop66ms;
-volatile byte loop100ms;
-volatile byte loop250ms;
-volatile int loopSec;
+volatile byte loop33ms;   //30Hz
+volatile byte loop50ms;   //20Hz
+volatile byte loop66ms;   //15Hz
+volatile byte loop100ms;  //10Hz
+volatile byte loop200ms;  //5Hz
+volatile byte loop250ms;  //4Hz
+volatile int loopSec;     //1Hz
 
 volatile unsigned int dwellLimit_uS;
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation

@@ -45,8 +45,10 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
   //Increment Loop Counters
   loop33ms++;
+  loop50ms++;
   loop66ms++;
   loop100ms++;
+  loop200ms++;
   loop250ms++;
   loopSec++;
 
@@ -101,6 +103,13 @@ void oneMSInterval() //Most ARM chips can simply call a function
     BIT_SET(TIMER_mask, BIT_TIMER_30HZ);
   }
 
+  //20Hz loop
+  if (loop50ms == 50)
+  {
+    loop50ms = 0;
+    BIT_SET(TIMER_mask, BIT_TIMER_20HZ);
+  }
+
   //15Hz loop
   if (loop66ms == 66)
   {
@@ -117,6 +126,13 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
+  }
+
+  //5Hz loop
+  if (loop200ms == 200)
+  {
+    loop200ms = 0; //Reset counter
+    BIT_SET(TIMER_mask, BIT_TIMER_5HZ);
   }
 
   //Loop executed every 250ms loop (1ms x 250 = 250ms)

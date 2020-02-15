@@ -33,7 +33,7 @@
   #define INJ_CHANNELS 4
   #define IGN_CHANNELS 5
 
-//Select one for EEPROM, default is emulated and is very slow
+//Select one for EEPROM, default are emulated and is very slow
 //#define SRAM_AS_EEPROM /*Use RTC registers, requires a 3V battery connected to Vbat pin */
 //#define SPIFLASH_AS_EEPROM /*Use M25Qxx SPI flash */
 //#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
@@ -141,9 +141,11 @@
 
 #define BIT_TIMER_1HZ             0
 #define BIT_TIMER_4HZ             1
-#define BIT_TIMER_10HZ            2
-#define BIT_TIMER_15HZ            3
-#define BIT_TIMER_30HZ            4
+#define BIT_TIMER_5HZ             2
+#define BIT_TIMER_10HZ            3
+#define BIT_TIMER_15HZ            4
+#define BIT_TIMER_20HZ            5
+#define BIT_TIMER_30HZ            6
 
 #define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
 #define BIT_STATUS3_NITROUS       1

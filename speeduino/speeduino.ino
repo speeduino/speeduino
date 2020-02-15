@@ -47,11 +47,11 @@ void setup()
 void loop()
 {
       mainLoopCount++;
-      LOOP_TIMER = TIMER_mask;
+      LOOP_TIMER = TIMER_mask ^ CLEAR_mask; //New timer sets vs already performed
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
-      // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
+      // 1) Every 32 loops (32 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 32) == 1) but is considerably faster due to not using the mod or division operations
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
-      //if ( (BIT_CHECK(TIMER_mask, BIT_TIMER_15HZ)) || (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+      //if ( (BIT_CHECK(TIMER_mask, BIT_TIMER_30HZ)) || (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       {
         if (Serial.available() > 0) { command(); }
@@ -149,7 +149,8 @@ void loop()
     
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
-      BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
+      //BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
+      BIT_SET(CLEAR_mask, BIT_TIMER_15HZ);
       readTPS(); //TPS reading to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
       #if  defined(CORE_TEENSY)       
           if (configPage9.enable_intcan == 1) // use internal can module
@@ -220,7 +221,8 @@ void loop()
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
-      BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
+      //BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
+      BIT_SET(CLEAR_mask, BIT_TIMER_30HZ);
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
       boostControl();
       //VVT may eventually need to be synced with the cam readings (ie run once per cam rev) but for now run at 30Hz
@@ -228,7 +230,8 @@ void loop()
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
-      BIT_CLEAR(TIMER_mask, BIT_TIMER_4HZ);
+      //BIT_CLEAR(TIMER_mask, BIT_TIMER_4HZ);
+      BIT_SET(CLEAR_mask, BIT_TIMER_4HZ);
       //The IAT and CLT readings can be done less frequently (4 times per second)
       readCLT();
       readIAT();
@@ -300,7 +303,8 @@ void loop()
     } //4Hz timer
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
-      BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
+      //BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
+      BIT_SET(CLEAR_mask, BIT_TIMER_1HZ);
       readBaro(); //Infrequent baro readings are not an issue.
     } //1Hz timer
 

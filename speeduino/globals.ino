@@ -129,6 +129,7 @@ byte resetControl = RESET_CONTROL_DISABLED;
 
 volatile byte TIMER_mask;
 volatile byte LOOP_TIMER;
+volatile byte CLEAR_mask;
 
 
 byte pinInjector1; //Output pin injector 1
