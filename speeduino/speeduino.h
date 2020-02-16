@@ -23,6 +23,7 @@ uint16_t calculateInjector3StartAngle(unsigned int);
 uint16_t calculateInjector4StartAngle(unsigned int);
 uint16_t calculateInjector5StartAngle(unsigned int);
 
+void calculateIgnitionAngles(int);
 /*
 struct config2 configPage2;
 struct config4 configPage4;
