@@ -362,6 +362,14 @@ extern int ignition2EndAngle;
 extern int ignition3EndAngle;
 extern int ignition4EndAngle;
 extern int ignition5EndAngle;
+extern int ignition1StartAngle;
+extern int ignition2StartAngle;
+extern int ignition3StartAngle;
+extern int ignition4StartAngle;
+extern int ignition5StartAngle;
+extern int ignition6StartAngle;
+extern int ignition7StartAngle;
+extern int ignition8StartAngle;
 
 //These are variables used across multiple files
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
