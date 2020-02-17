@@ -599,15 +599,13 @@ void initialiseAll()
           }
         }
     #if INJ_CHANNELS >= 5
-        if (configPage2.injLayout == INJ_SEQUENTIAL)
+        else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
           channel1InjDegrees = 0;
           channel2InjDegrees = 144;
           channel3InjDegrees = 288;
           channel4InjDegrees = 432;
           channel5InjDegrees = 576;
-
-          channel5InjEnabled = true;
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -619,6 +617,7 @@ void initialiseAll()
         channel2InjEnabled = true;
         channel3InjEnabled = true;
         channel4InjEnabled = true;
+        channel5InjEnabled = true;
         break;
     case 6:
         channel1IgnDegrees = 0;
@@ -648,7 +647,7 @@ void initialiseAll()
         }
 
     #if INJ_CHANNELS >= 6
-        if (configPage2.injLayout == INJ_SEQUENTIAL)
+        else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
           channel1InjDegrees = 0;
           channel2InjDegrees = 120;
@@ -757,27 +756,18 @@ void initialiseAll()
         inj3EndFunction = closeInjector3;
         inj4StartFunction = openInjector4;
         inj4EndFunction = closeInjector4;
+        inj5StartFunction = openInjector5;
+        inj5EndFunction = closeInjector5;
         break;
 
     case INJ_SEMISEQUENTIAL:
-        //Semi-Sequential injection. Currently possible with 4 and 6 cylinders. 5 cylinder is a special case
+        //Semi-Sequential injection. Currently possible with 4 and 6 cylinders
         if( configPage2.nCylinders == 4 )
         {
           inj1StartFunction = openInjector1and4;
           inj1EndFunction = closeInjector1and4;
           inj2StartFunction = openInjector2and3;
           inj2EndFunction = closeInjector2and3;
-        }
-        else if( configPage2.nCylinders == 5 )
-        {
-          inj1StartFunction = openInjector1;
-          inj1EndFunction = closeInjector1;
-          inj2StartFunction = openInjector2;
-          inj2EndFunction = closeInjector2;
-          inj3StartFunction = openInjector3and5;
-          inj3EndFunction = closeInjector3and5;
-          inj4StartFunction = openInjector4;
-          inj4EndFunction = closeInjector4;
         }
         else if( configPage2.nCylinders == 6 )
         {
@@ -790,7 +780,7 @@ void initialiseAll()
         }
         else
         {
-          //Paired injection if semi-sequential is not supported
+          // Fall back to paired injection
           inj1StartFunction = openInjector1;
           inj1EndFunction = closeInjector1;
           inj2StartFunction = openInjector2;
@@ -799,6 +789,8 @@ void initialiseAll()
           inj3EndFunction = closeInjector3;
           inj4StartFunction = openInjector4;
           inj4EndFunction = closeInjector4;
+          inj5StartFunction = openInjector5;
+          inj5EndFunction = closeInjector5;
         }
         break;
 
@@ -832,6 +824,8 @@ void initialiseAll()
         inj3EndFunction = closeInjector3;
         inj4StartFunction = openInjector4;
         inj4EndFunction = closeInjector4;
+        inj5StartFunction = openInjector5;
+        inj5EndFunction = closeInjector5;
         break;
     }
 
@@ -1004,15 +998,21 @@ void initialiseAll()
     unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     if(primingValue > 0)
     {
-      setFuelSchedule1(100, (primingValue * 100 * 5)); //to achieve long enough priming pulses, the values in tunerstudio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
-      setFuelSchedule2(100, (primingValue * 100 * 5));
-      setFuelSchedule3(100, (primingValue * 100 * 5));
-      setFuelSchedule4(100, (primingValue * 100 * 5));
+      if(channel1InjEnabled == true) { setFuelSchedule1(100, (primingValue * 100 * 5)); } //to achieve long enough priming pulses, the values in tunerstudio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
+      if(channel2InjEnabled == true) { setFuelSchedule2(100, (primingValue * 100 * 5)); }
+      if(channel3InjEnabled == true) { setFuelSchedule3(100, (primingValue * 100 * 5)); }
+      if(channel4InjEnabled == true) { setFuelSchedule4(100, (primingValue * 100 * 5)); }
       #if INJ_CHANNELS >= 5
-      setFuelSchedule5(100, (primingValue * 100 * 5));
+      if(channel5InjEnabled == true) { setFuelSchedule5(100, (primingValue * 100 * 5)); }
       #endif
       #if INJ_CHANNELS >= 6
-      setFuelSchedule6(100, (primingValue * 100 * 5));
+      if(channel6InjEnabled == true) { setFuelSchedule6(100, (primingValue * 100 * 5)); }
+      #endif
+      #if INJ_CHANNELS >= 7
+      if(channel7InjEnabled == true) { setFuelSchedule7(100, (primingValue * 100 * 5)); }
+      #endif
+      #if INJ_CHANNELS >= 8
+      if(channel8InjEnabled == true) { setFuelSchedule8(100, (primingValue * 100 * 5)); }
       #endif
     }
 
