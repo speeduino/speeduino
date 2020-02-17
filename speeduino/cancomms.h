@@ -20,10 +20,14 @@ uint8_t canlisten = 0;
 uint8_t Lbuffer[8];         //8 byte buffer to store incomng can data
 uint8_t Gdata[9];
 uint8_t Glow, Ghigh;
+bool canCmdPending = false;
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   HardwareSerial &CANSerial = Serial3;
 #elif defined(CORE_STM32)
+  #ifndef Serial2
+    #define Serial2 Serial1
+  #endif
   #if defined(STM32GENERIC) // STM32GENERIC core
     SerialUART &CANSerial = Serial2;
   #else //libmaple core aka STM32DUINO
