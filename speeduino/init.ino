@@ -1211,12 +1211,12 @@ void setPinMapping(byte boardID)
         pinO2 = A8; //O2 Sensor pin
         pinBat = A4; //Battery reference voltage pin
         pinBaro = pinMAP;
-        pinIdle1 = PB2; //Single wire idle control
-        pinBoost = PA8; //Boost control
+        pinIdle1 = PA5; //Single wire idle control
+        pinBoost = PA6; //Boost control
         //pinVVT_1 = 4; //Default VVT output
         pinStepperDir = PC15; //Direction pin  for DRV8825 driver
         pinStepperStep = PC14; //Step pin for DRV8825 driver
-        pinStepperEnable = PC13; //Enable pin for DRV8825
+        //pinStepperEnable = PC13; //Enable pin for DRV8825
         pinFuelPump = PB10; //Fuel pump output
         pinTachOut = PC13; //Tacho output pin
         //external interrupt enabled pins
