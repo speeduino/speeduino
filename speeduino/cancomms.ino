@@ -18,7 +18,7 @@ sendcancommand is called when a command is to be sent via serial3 to the Can int
 
 void canCommand()
 {
-  currentcanCommand = CANSerial.read();
+  if (! canCmdPending) {  currentcanCommand = CANSerial.read();  }
 
   switch (currentcanCommand)
   {
@@ -30,6 +30,7 @@ void canCommand()
        byte destcaninchannel;
       if (CANSerial.available() >= 9)
       {
+        canCmdPending = false;
         cancmdfail = CANSerial.read();        //0 == fail,  1 == good.
         destcaninchannel = CANSerial.read();  // the input channel that requested the data value
         if (cancmdfail != 0)
@@ -58,6 +59,11 @@ void canCommand()
         else{}  //continue as command request failed and/or data/device was not available
 
       }
+      else
+      {
+        canCmdPending = true;
+      }
+      
         break;
 
     case 'k':   //placeholder for new can interface (toucan etc) commands
@@ -106,6 +112,7 @@ void canCommand()
           tmp = CANSerial.read();
           length = word(CANSerial.read(), tmp);
           sendcanValues(offset, length,Cmd, 1);
+          canCmdPending = false;
 //Serial.print(Cmd);
         }
         else
@@ -113,6 +120,11 @@ void canCommand()
           //No other r/ commands should be called
         }
       }
+      else
+      {
+        canCmdPending = true;
+      }
+      
       break;
 
     case 's': // send the "a" stream code version
@@ -291,6 +303,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
      case 3:
         //send to truecan send routine
         //canaddress == speeduino canid, candata1 == canin channel dest, paramgroup == can address  to request from
+<<<<<<< .mine
         outMsg.id = (canaddress);
         outMsg.len = 8;
         outMsg.buf[0] = 0x0B ;  //11;   
@@ -302,6 +315,23 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
         outMsg.buf[6] = 0x9E;
         outMsg.buf[7] = 0x4D;
         Can0.write(outMsg);
+
+
+=======
+        #if defined(CORE_TEENSY35) //Scope guarding this for now, but this needs a bit of a rethink for how it can be handled better across multiple archs
+        outMsg.id = (canaddress);
+        outMsg.len = 8;
+        outMsg.buf[0] = 0x0B ;  //11;   
+        outMsg.buf[1] = 0x145;
+        outMsg.buf[2] = candata1;
+        outMsg.buf[3] = 0x24;
+        outMsg.buf[4] = 0x7F;
+        outMsg.buf[5] = 0x70;
+        outMsg.buf[6] = 0x9E;
+        outMsg.buf[7] = 0x4D;
+        Can0.write(outMsg);
+        #endif
+>>>>>>> .theirs
         break;
 
      default:

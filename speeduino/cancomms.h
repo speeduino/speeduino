@@ -1,6 +1,14 @@
 #ifndef CANCOMMS_H
 #define CANCOMMS_H
 
+#if defined(CORE_TEENSY35)
+  #include <FlexCAN_T4.h>
+  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
+  
+  static CAN_message_t outMsg;
+  static CAN_message_t inMsg;
+#endif
+
 #define NEW_CAN_PACKET_SIZE   75
 #define CAN_PACKET_SIZE   75
 
@@ -12,10 +20,14 @@ uint8_t canlisten = 0;
 uint8_t Lbuffer[8];         //8 byte buffer to store incomng can data
 uint8_t Gdata[9];
 uint8_t Glow, Ghigh;
+bool canCmdPending = false;
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
   HardwareSerial &CANSerial = Serial3;
 #elif defined(CORE_STM32)
+  #ifndef Serial2
+    #define Serial2 Serial1
+  #endif
   #if defined(STM32GENERIC) // STM32GENERIC core
     SerialUART &CANSerial = Serial2;
   #else //libmaple core aka STM32DUINO

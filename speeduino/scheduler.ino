@@ -8,6 +8,23 @@ A full copy of the license may be found in the projects root directory
 #include "scheduler.h"
 #include "scheduledIO.h"
 
+FuelSchedule fuelSchedule1;
+FuelSchedule fuelSchedule2;
+FuelSchedule fuelSchedule3;
+FuelSchedule fuelSchedule4;
+FuelSchedule fuelSchedule5;
+FuelSchedule fuelSchedule6;
+FuelSchedule fuelSchedule7;
+FuelSchedule fuelSchedule8;
+
+Schedule ignitionSchedule1;
+Schedule ignitionSchedule2;
+Schedule ignitionSchedule3;
+Schedule ignitionSchedule4;
+Schedule ignitionSchedule5;
+Schedule ignitionSchedule6;
+Schedule ignitionSchedule7;
+Schedule ignitionSchedule8;
 
 void initialiseSchedulers()
 {
@@ -65,8 +82,7 @@ duration: The number of uS after startCallback is called before endCallback is c
 endCallback: This function is called once the duration time has been reached
 */
 
-//Experimental new generic function
-/*
+//Experimental new generic function. This is NOT yet ready and functional
 void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, unsigned long duration)
 {
   if(targetSchedule->Status != RUNNING) //Check that we're not already part way through a schedule
@@ -80,12 +96,14 @@ void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, uns
 
     //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
     noInterrupts();
-    targetSchedule->startCompare = *targetSchedule->counter + timeout_timer_compare;
+    //targetSchedule->startCompare = *targetSchedule->counter + timeout_timer_compare;
+    targetSchedule->startCompare = FUEL1_COUNTER + timeout_timer_compare; //Insert correct counter HERE!
     targetSchedule->endCompare = targetSchedule->startCompare + uS_TO_TIMER_COMPARE(duration);
     targetSchedule->Status = PENDING; //Turn this schedule on
     targetSchedule->schedulesSet++; //Increment the number of times this schedule has been set
 
-    *targetSchedule->compare = targetSchedule->startCompare;
+    //*targetSchedule->compare = targetSchedule->startCompare;
+    FUEL1_COMPARE = targetSchedule->startCompare; //Insert corrector compare HERE!
     interrupts();
     FUEL1_TIMER_ENABLE();
   }
@@ -93,12 +111,11 @@ void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, uns
   {
     //If the schedule is already running, we can set the next schedule so it is ready to go
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-    targetSchedule->nextStartCompare = *targetSchedule->counter + uS_TO_TIMER_COMPARE(timeout);
+    //targetSchedule->nextStartCompare = *targetSchedule->counter + uS_TO_TIMER_COMPARE(timeout);
     targetSchedule->nextEndCompare = targetSchedule->nextStartCompare + uS_TO_TIMER_COMPARE(duration);
     targetSchedule->hasNextSchedule = true;
   }
 }
-*/
 
 
 //void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
@@ -441,7 +458,7 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
   }
 }
 
-static inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
+inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
 {
   if( (ignitionSchedule1.Status == RUNNING) && (timeToEnd < ignitionSchedule1.duration) )
   //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end

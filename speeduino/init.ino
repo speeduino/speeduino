@@ -18,7 +18,6 @@
 
 void initialiseAll()
 {   
-    initialisationComplete = false; //Tracks whether the setup() function has run completely
     fpPrimed = false;
 
     pinMode(LED_BUILTIN, OUTPUT);
@@ -50,12 +49,21 @@ void initialiseAll()
 
     #if defined(CORE_STM32)
     configPage9.intcan_available = 1;   // device has internal canbus
+<<<<<<< .mine
     //STM32 can not currently enabled
     #endif
 
     #if defined(CORE_TEENSY)
     configPage9.intcan_available = 1;   // device has internal canbus
     //Teensy uses the Flexcan_T4 library to use the internal canbus
+=======
+    //STM32 can not currently enabled
+    #endif
+
+    #if defined(CORE_TEENSY35)
+    configPage9.intcan_available = 1;   // device has internal canbus
+    //Teensy uses the Flexcan_T4 library to use the internal canbus
+>>>>>>> .theirs
     //enable local can interface
     //setup can interface to 500k
       //volatile CAN_message_t outMsg;
@@ -331,8 +339,6 @@ void initialiseAll()
 
     currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manaully overriden below for sequential setups (Due to TS req_fuel calc limitations)
     if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
-    if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
-    else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
     //Calculate the number of degrees between cylinders
     //Swet some default values. These will be updated below if required. 
@@ -353,6 +359,9 @@ void initialiseAll()
     ignition3EndAngle = 0;
     ignition4EndAngle = 0;
     ignition5EndAngle = 0;
+
+    if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
+    else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
     switch (configPage2.nCylinders) {
     case 1:
@@ -1211,12 +1220,12 @@ void setPinMapping(byte boardID)
         pinO2 = A8; //O2 Sensor pin
         pinBat = A4; //Battery reference voltage pin
         pinBaro = pinMAP;
-        pinIdle1 = PB2; //Single wire idle control
-        pinBoost = PA8; //Boost control
+        pinIdle1 = PA5; //Single wire idle control
+        pinBoost = PA6; //Boost control
         //pinVVT_1 = 4; //Default VVT output
         pinStepperDir = PC15; //Direction pin  for DRV8825 driver
         pinStepperStep = PC14; //Step pin for DRV8825 driver
-        pinStepperEnable = PC13; //Enable pin for DRV8825
+        //pinStepperEnable = PC13; //Enable pin for DRV8825
         pinFuelPump = PB10; //Fuel pump output
         pinTachOut = PC13; //Tacho output pin
         //external interrupt enabled pins
@@ -2600,7 +2609,7 @@ void initialiseTriggers()
       triggerHandler = triggerPri_ThirtySixMinus222;
       triggerSecondaryHandler = triggerSec_ThirtySixMinus222;
       decoderHasSecondary = true;
-      getRPM = getRPM_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
+      getRPM = getRPM_ThirtySixMinus222;
       getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
       triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus222;
 

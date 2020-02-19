@@ -1,7 +1,7 @@
 #ifndef STM32_H
 #define STM32_H
 #if defined(CORE_STM32_GENERIC)
-//#define USE_FRAM
+
 /*
 ***********************************************************************************************************
 * General
@@ -15,7 +15,7 @@
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
   #elif defined(SPIFLASH_AS_EEPROM)
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  #elif defined(USE_FRAM) //https://github.com/VitorBoss/FRAM
+  #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
     #define EEPROM_LIB_H <Fram.h>
   #else
     #define EEPROM_LIB_H <EEPROM.h>
@@ -30,18 +30,16 @@
     #define Serial Serial1
   #endif
 
-  #if defined(USE_FRAM)
+  #if defined(FRAM_AS_EEPROM)
     #include <Fram.h>
-    #ifdef(ARDUINO_BLACK_F407VE)
-    FramClass EEPROM(PB0, PB3, PB4, PB5, 15000000);
+    #if defined(ARDUINO_BLACK_F407VE)
+    FramClass EEPROM(PB5, PB4, PB3, PB0); /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
     #else
-    FramClass EEPROM(PB12, PB13, PB14, PB15, 15000000); //BluePill
+    FramClass EEPROM(PB15, PB12, PB13, PB12); //Blue/Black Pills
     #endif
   #endif
 
-  //Much of the below is not correct, but included to allow compilation
-  //STM32F1/variants/.../board.cpp
-  #if defined (STM32F4)
+  #if !defined (A0)
     #define A0  PA0
     #define A1  PA1
     #define A2  PA2
@@ -52,30 +50,19 @@
     #define A7  PA7
     #define A8  PB0
     #define A9  PB1
-    #define A10  PC0
-    #define A11  PC1
-    #define A12  PC2
-    #define A13  PC3
-    #define A14  PC4
-    #define A15  PC5
-  #else
-    #define A0  PA0
-    #define A1  PA1
-    #define A2  PA2
-    #define A3  PA3
-    #define A4  PA4
-    #define A5  PA5
-    #define A6  PA6
-    #define A7  PA7
-    #define A8  PB0
-    #define A9  PB1
+  #endif
     //STM32F1 have only 10 12bit adc
+  #if !defined (A10)
     #define A10  PA0
     #define A11  PA1
     #define A12  PA2
     #define A13  PA3
     #define A14  PA4
     #define A15  PA5
+  #endif
+
+  #ifndef PB11 //Hack for F4 BlackPills
+    #define PB11 PB10
   #endif
 
 

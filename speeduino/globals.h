@@ -28,9 +28,15 @@
   #define IGN_CHANNELS 8
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(STM32)
+  #define CORE_STM32
   //These should be updated to 8 later, but there's bits missing currently
   #define INJ_CHANNELS 4
   #define IGN_CHANNELS 5
+
+//Select one for EEPROM, default are emulated and is very slow
+//#define SRAM_AS_EEPROM /*Use RTC registers, requires a 3V battery connected to Vbat pin */
+//#define SPIFLASH_AS_EEPROM /*Use M25Qxx SPI flash */
+//#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
 
   #ifndef word
     #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
@@ -151,8 +157,13 @@
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
+#ifndef UNIT_TEST 
 #define TOOTH_LOG_SIZE      127
 #define TOOTH_LOG_BUFFER    128 //256
+#else
+#define TOOTH_LOG_SIZE      1
+#define TOOTH_LOG_BUFFER    1 //256
+#endif
 
 #define COMPOSITE_LOG_PRI   0
 #define COMPOSITE_LOG_SEC   1
@@ -351,6 +362,14 @@ extern int ignition2EndAngle;
 extern int ignition3EndAngle;
 extern int ignition4EndAngle;
 extern int ignition5EndAngle;
+extern int ignition1StartAngle;
+extern int ignition2StartAngle;
+extern int ignition3StartAngle;
+extern int ignition4StartAngle;
+extern int ignition5StartAngle;
+extern int ignition6StartAngle;
+extern int ignition7StartAngle;
+extern int ignition8StartAngle;
 
 //These are variables used across multiple files
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
