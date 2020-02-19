@@ -36,13 +36,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "crankMaths.h"
 #include "init.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
-#if defined(CORE_TEENSY)
-  #include <FlexCAN_T4.h>
-  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
-  
-  static CAN_message_t outMsg;
-  static CAN_message_t inMsg;
-#endif
 
 int ignition1StartAngle = 0;
 int ignition2StartAngle = 0;
@@ -83,10 +76,10 @@ void loop()
           {
             if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
                 {
-                  if (CANSerial.available() > 0)  { canCommand(); }
+                  if (CANSerial.available() > 0)  { secondserial_Command(); }
                 }
           }
-      #if  defined(CORE_TEENSY35)
+      #if  defined(CORE_TEENSY)
           //currentStatus.canin[12] = configPage9.enable_intcan;
           if (configPage9.enable_intcan == 1) // use internal can module
           {
@@ -94,8 +87,10 @@ void loop()
             // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
             while (Can0.read(inMsg) ) 
                  {
-                  Can0.read(inMsg);
+                  can_Command();
+                  //Can0.read(inMsg);
                   //currentStatus.canin[12] = inMsg.buf[5];
+                  //currentStatus.canin[13] = inMsg.id;
                  } 
           }
       #endif
