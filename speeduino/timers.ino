@@ -26,8 +26,10 @@ void initialiseTimers()
 {
   lastRPM_100ms = 0;
   loop33ms = 0;
+  loop50ms = 0;
   loop66ms = 0;
   loop100ms = 0;
+  loop200ms = 0;
   loop250ms = 0;
   loopSec = 0;
 }
@@ -45,8 +47,10 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
   //Increment Loop Counters
   loop33ms++;
+  loop50ms++;
   loop66ms++;
   loop100ms++;
+  loop200ms++;
   loop250ms++;
   loopSec++;
 
@@ -101,6 +105,13 @@ void oneMSInterval() //Most ARM chips can simply call a function
     BIT_SET(TIMER_mask, BIT_TIMER_30HZ);
   }
 
+  //20Hz loop
+  if (loop50ms == 50)
+  {
+    loop50ms = 0;
+    BIT_SET(TIMER_mask, BIT_TIMER_20HZ);
+  }
+
   //15Hz loop
   if (loop66ms == 66)
   {
@@ -119,7 +130,14 @@ void oneMSInterval() //Most ARM chips can simply call a function
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
   }
 
-  //Loop executed every 250ms loop (1ms x 250 = 250ms)
+  //5Hz loop
+  if (loop200ms == 200)
+  {
+    loop200ms = 0; //Reset counter
+    BIT_SET(TIMER_mask, BIT_TIMER_5HZ);
+  }
+
+//Loop executed every 250ms loop (1ms x 250 = 250ms)
   //Anything inside this if statement will run every 250ms.
   if (loop250ms == 250)
   {

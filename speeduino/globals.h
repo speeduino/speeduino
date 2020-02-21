@@ -141,9 +141,11 @@
 
 #define BIT_TIMER_1HZ             0
 #define BIT_TIMER_4HZ             1
-#define BIT_TIMER_10HZ            2
-#define BIT_TIMER_15HZ            3
-#define BIT_TIMER_30HZ            4
+#define BIT_TIMER_5HZ             2
+#define BIT_TIMER_10HZ            3
+#define BIT_TIMER_15HZ            4
+#define BIT_TIMER_20HZ            5
+#define BIT_TIMER_30HZ            6
 
 #define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
 #define BIT_STATUS3_NITROUS       1
