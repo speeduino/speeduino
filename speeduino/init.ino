@@ -15,6 +15,7 @@
 #include "idle.h"
 #include "table.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
+#include EEPROM_LIB_H 
 
 void initialiseAll()
 {   
@@ -1774,18 +1775,19 @@ void setPinMapping(byte boardID)
         MC33810_BIT_INJ2 = 1;
         MC33810_BIT_INJ3 = 0;
         MC33810_BIT_INJ4 = 2;
-        MC33810_BIT_IGN1 = 5;
-        MC33810_BIT_IGN2 = 6;
-        MC33810_BIT_IGN3 = 7;
-        MC33810_BIT_IGN4 = 8;
+        MC33810_BIT_IGN1 = 4;
+        MC33810_BIT_IGN2 = 5;
+        MC33810_BIT_IGN3 = 6;
+        MC33810_BIT_IGN4 = 7;
+
         MC33810_BIT_INJ5 = 3;
         MC33810_BIT_INJ6 = 1;
         MC33810_BIT_INJ7 = 0;
         MC33810_BIT_INJ8 = 2;
-        MC33810_BIT_IGN5 = 5;
-        MC33810_BIT_IGN6 = 6;
-        MC33810_BIT_IGN7 = 7;
-        MC33810_BIT_IGN8 = 8;
+        MC33810_BIT_IGN5 = 4;
+        MC33810_BIT_IGN6 = 5;
+        MC33810_BIT_IGN7 = 6;
+        MC33810_BIT_IGN8 = 7;
       #endif
 
       #ifdef USE_SPI_EEPROM
@@ -2182,9 +2184,9 @@ void setPinMapping(byte boardID)
     ign8_pin_port = portOutputRegister(digitalPinToPort(pinCoil8));
     ign8_pin_mask = digitalPinToBitMask(pinCoil8);
   #else
-    mc33810_1_pin_port = portOutputRegister(pinMC33810_1_CS);
+    mc33810_1_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_1_CS));
     mc33810_1_pin_mask = digitalPinToBitMask(pinMC33810_1_CS);
-    mc33810_2_pin_port = portOutputRegister(pinMC33810_2_CS);
+    mc33810_2_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_2_CS));
     mc33810_2_pin_mask = digitalPinToBitMask(pinMC33810_2_CS);
 
     initMC33810();
