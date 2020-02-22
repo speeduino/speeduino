@@ -27,7 +27,7 @@
  */
 
 //#if defined(CORE_STM32_OFFICIAL) && defined(SPIFLASH_AS_EEPROM)
-#if defined(USE_SPI_EEPROM)
+#if defined(USE_SPI_FLASH)
 
 #include "SPIAsEEPROM.h"
 #include "SPI.h"        
@@ -178,7 +178,7 @@ uint8_t SPIAsEEPROM::read(uint16_t addressEEPROM){
     //The first 4 bytes of each page must have the magic number 
     //version 0.1 does not check magic number
     if(!SpiFlashAvialable){
-      begin();
+      begin(PB0);
     }
 
 
