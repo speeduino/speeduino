@@ -607,6 +607,8 @@ void initialiseAll()
           channel4InjDegrees = 432;
           channel5InjDegrees = 576;
 
+          channel5InjEnabled = true;
+
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
@@ -617,7 +619,6 @@ void initialiseAll()
         channel2InjEnabled = true;
         channel3InjEnabled = true;
         channel4InjEnabled = true;
-        channel5InjEnabled = true;
         break;
     case 6:
         channel1IgnDegrees = 0;
@@ -761,13 +762,24 @@ void initialiseAll()
         break;
 
     case INJ_SEMISEQUENTIAL:
-        //Semi-Sequential injection. Currently possible with 4 and 6 cylinders
+        //Semi-Sequential injection. Currently possible with 4 and 6 cylinders. 5 cylinder is a special case
         if( configPage2.nCylinders == 4 )
         {
           inj1StartFunction = openInjector1and4;
           inj1EndFunction = closeInjector1and4;
           inj2StartFunction = openInjector2and3;
           inj2EndFunction = closeInjector2and3;
+        }
+        else if( configPage2.nCylinders == 5 )
+        {
+          inj1StartFunction = openInjector1;
+          inj1EndFunction = closeInjector1;
+          inj2StartFunction = openInjector2;
+          inj2EndFunction = closeInjector2;
+          inj3StartFunction = openInjector3and5;
+          inj3EndFunction = closeInjector3and5;
+          inj4StartFunction = openInjector4;
+          inj4EndFunction = closeInjector4;
         }
         else if( configPage2.nCylinders == 6 )
         {
@@ -780,7 +792,7 @@ void initialiseAll()
         }
         else
         {
-          // Fall back to paired injection
+          //Fall back to paired injection
           inj1StartFunction = openInjector1;
           inj1EndFunction = closeInjector1;
           inj2StartFunction = openInjector2;
