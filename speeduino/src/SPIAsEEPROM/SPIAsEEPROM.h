@@ -30,7 +30,7 @@
 #define SPI_AS_EEPROM_H
 
 //#if defined(CORE_STM32_OFFICIAL) && defined(SPIFLASH_AS_EEPROM)
-#if defined(USE_SPI_FLASH)
+#if defined(USE_SPI_EEPROM)
 
 #define FLASHSIZEUSED 1757184 //must be a multiple of sectorsize //1757184 = 6006 bytes of EEPROM
 #define BYTESPERSECTOR 14 

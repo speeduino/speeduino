@@ -16,6 +16,7 @@
 #include "table.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
+
 void initialiseAll()
 {   
     fpPrimed = false;
@@ -1090,21 +1091,21 @@ void setPinMapping(byte boardID)
         pinCoil3 = 30;
         pinO2 = A22;
       #elif defined(ARDUINO_BLACK_F407VE)
-        //Pin definitions for experimental board Tjeerd 
+     //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 
         //******************************************
         //******** PORTA CONNECTIONS *************** 
         //******************************************
         /* = PA0 */ //Wakeup ADC123
-        pinTPS = PA1; //ADC123
-        pinMAP = PA2; //ADC123
-        pinIAT = PA3; //ADC123
-        pinCLT = PA4; //ADC12
-        pinO2 = PA5; //ADC12
-        /* = PA6; */ //ADC12 LED_BUILTIN_1
-        pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
-        pinIdle1 = PA8; //
+        // = PA1;
+        // = PA2;
+        // = PA3;
+        // = PA4;
+        /* = PA5; */ //ADC12
+        pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
+        /* = PA7; */ //ADC12 LED_BUILTIN_2
+        pinCoil3 = PA8;
         /* = PA9 */ //TXD1
         /* = PA10 */ //RXD1
         /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
@@ -1125,10 +1126,12 @@ void setPinMapping(byte boardID)
         /* = PB6; */ //NRF_CE
         /* = PB7; */ //NRF_CS
         /* = PB8; */ //NRF_IRQ
-        pinIdle2 = PB9; //
-        /* = PB10; */ //TXD3
-        /* = PB11; */ //RXD3
-        pinBoost = PB12; //
+        pinCoil2 = PB9; //
+        /* = PB9; */ //
+        pinCoil4 = PB10; //TXD3
+        pinIdle1 = PB11; //RXD3
+        pinIdle2 = PB12; //
+        /* pinBoost = PB12; */ //
         /* = PB13; */ //SPI2_SCK
         /* = PB14; */ //SPI2_MISO
         /* = PB15; */ //SPI2_MOSI
@@ -1136,13 +1139,14 @@ void setPinMapping(byte boardID)
         //******************************************
         //******** PORTC CONNECTIONS *************** 
         //******************************************
-        /* = PC0; */ //ADC123 
-        pinBat = PC1; //ADC123
-        /* = PC2; */ //ADC123
-        /* = PC3; */ //ADC123
-        /* = PC4; */ //ADC12
+        pinMAP = PC0; //ADC123 
+        pinTPS = PC1; //ADC123
+        pinIAT = PC2; //ADC123
+        pinCLT = PC3; //ADC123
+        pinO2 = PC4; //ADC12
         /* = PC5; */ //ADC12
-        pinVVT_1 = PC6; //
+        /*pinVVT_1 = PC6; */ //
+        pinBat = PC6; //
         pinDisplayReset = PC7; //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
@@ -1159,39 +1163,42 @@ void setPinMapping(byte boardID)
         /* = PD0; */ //CANRX
         /* = PD1; */ //CANTX
         /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        pinCoil1 = PD3; //
-        pinCoil2 = PD4; //
+        /* = PD3; */ //
+        /* = PD4; */ //
+        pinFlex = PD4;
         /* = PD5;*/ //TXD2
         /* = PD6; */ //RXD2
-        pinCoil3 = PD7; //
-        pinCoil4 = PD8; //
+        pinCoil1 = PD7; //
+        /* = PD7; */ //
+        /* = PD8; */ //
         pinCoil5 = PD9;//
-        pinFan = PD10; //
+        /* = PD10; */ //
         /* = PD11; */ //
-        /* = PD12; */ //
-        /* = PD13; */ //
-        /* = PD14; */ //
-        /* = PD15; */ //
+        pinInjector1 = PD12; //
+        pinInjector2 = PD13; //
+        pinInjector3 = PD14; //
+        pinInjector4 = PD15; //
 
         //******************************************
         //******** PORTE CONNECTIONS *************** 
         //******************************************
-        pinStepperDir = PE0; //
-        pinStepperStep = PE1; //
+        pinTrigger = PE0; //
+        pinTrigger2 = PE1; //
         pinStepperEnable = PE2; //
         /* = PE3; */ //ONBOARD KEY1
         /* = PE4; */ //ONBOARD KEY2
-        pinFlex = PE5; //
-        pinTrigger = PE6; //
-        pinInjector1 = PE7; //
-        pinInjector2 = PE8; //
-        pinInjector3 = PE9; //
-        pinInjector4 = PE10; //
+        pinStepperStep = PE5; //
+        pinFan = PE6; //
+        pinStepperDir = PE7; //
+        /* = PE8; */ //
+        /* = PE9; */ //
+        /* = PE10; */ //
         pinInjector5 = PE11; //
         pinInjector6 = PE12; //
-        pinTrigger2 = PE13; //
+        /* = PE13; */ //
         /* = PE14; */ //
         /* = PE15; */ //
+
       #elif defined(CORE_STM32)
         //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
         //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
@@ -1804,11 +1811,10 @@ void setPinMapping(byte boardID)
         //******** PORTA CONNECTIONS *************** 
         //******************************************
         /* = PA0 */ //Wakeup ADC123
-        pinInjector1 = PA1;
-        pinInjector2 = PA2;
-        pinInjector3 = PA3;
-        pinInjector4 = PA4;
-        
+        // = PA1;
+        // = PA2;
+        // = PA3;
+        // = PA4;
         /* = PA5; */ //ADC12
         pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
         /* = PA7; */ //ADC12 LED_BUILTIN_2
@@ -1881,16 +1887,16 @@ void setPinMapping(byte boardID)
         pinCoil5 = PD9;//
         /* = PD10; */ //
         /* = PD11; */ //
-        /* = PD12; */ //
-        pinTrigger = PD13; //
-        pinTrigger2 = PD14; //
-        /* = PD15; */ //
+        pinInjector1 = PD12; //
+        pinInjector2 = PD13; //
+        pinInjector3 = PD14; //
+        pinInjector4 = PD15; //
 
         //******************************************
         //******** PORTE CONNECTIONS *************** 
         //******************************************
-        /* = PE0; */ //
-        /* = PE1; */ //
+        pinTrigger = PE0; //
+        pinTrigger2 = PE1; //
         pinStepperEnable = PE2; //
         /* = PE3; */ //ONBOARD KEY1
         /* = PE4; */ //ONBOARD KEY2
@@ -1905,7 +1911,7 @@ void setPinMapping(byte boardID)
         /* = PE13; */ //
         /* = PE14; */ //
         /* = PE15; */ //
-        
+       
      #elif defined(CORE_STM32)
         //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
         //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
@@ -1946,20 +1952,19 @@ void setPinMapping(byte boardID)
       break;
     default:
       #if defined(ARDUINO_BLACK_F407VE)
-       //Pin definitions for experimental board Tjeerd 
+      //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 
         //******************************************
         //******** PORTA CONNECTIONS *************** 
         //******************************************
         /* = PA0 */ //Wakeup ADC123
-        pinInjector1 = PA1;
-        pinInjector2 = PA2;
-        pinInjector3 = PA3;
-        pinInjector4 = PA4;
-        
-        pinFuelPump = PA5; //ADC12
-        /* = PA6; */ //ADC12 LED_BUILTIN_1
+        // = PA1;
+        // = PA2;
+        // = PA3;
+        // = PA4;
+        /* = PA5; */ //ADC12
+        pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
         /* = PA7; */ //ADC12 LED_BUILTIN_2
         pinCoil3 = PA8;
         /* = PA9 */ //TXD1
@@ -2030,16 +2035,16 @@ void setPinMapping(byte boardID)
         pinCoil5 = PD9;//
         /* = PD10; */ //
         /* = PD11; */ //
-        /* = PD12; */ //
-        pinTrigger = PD13; //
-        pinTrigger2 = PD14; //
-        /* = PD15; */ //
+        pinInjector1 = PD12; //
+        pinInjector2 = PD13; //
+        pinInjector3 = PD14; //
+        pinInjector4 = PD15; //
 
         //******************************************
         //******** PORTE CONNECTIONS *************** 
         //******************************************
-        /* = PE0; */ //
-        /* = PE1; */ //
+        pinTrigger = PE0; //
+        pinTrigger2 = PE1; //
         pinStepperEnable = PE2; //
         /* = PE3; */ //ONBOARD KEY1
         /* = PE4; */ //ONBOARD KEY2
@@ -2191,7 +2196,7 @@ void setPinMapping(byte boardID)
   #endif
 
 #ifdef USE_SPI_EEPROM
-  //We need to send the flash CS (SS) pin if we're using SPI flash. It cannot read from globals.h
+  //We need to send the flash CS (SS) pin if we're using SPI flash. It cannot read from globals.
   EEPROM.begin(pinSPIFlash_CS);
 #endif
 

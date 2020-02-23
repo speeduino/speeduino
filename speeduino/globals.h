@@ -1089,7 +1089,7 @@ extern byte pinResetControl; // Output pin used control resetting the Arduino
   byte pinMC33810_2_CS;
 #endif
 #ifdef USE_SPI_EEPROM
-  byte pinSPIFlash_CS;
+  extern byte pinSPIFlash_CS;
 #endif
 
 
