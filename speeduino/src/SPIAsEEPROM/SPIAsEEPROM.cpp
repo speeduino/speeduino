@@ -27,7 +27,7 @@
  */
 
 //#if defined(CORE_STM32_OFFICIAL) && defined(SPIFLASH_AS_EEPROM)
-#if defined(USE_SPI_FLASH)
+#if defined(USE_SPI_EEPROM)
 
 #include "SPIAsEEPROM.h"
 #include "SPI.h"        
@@ -42,7 +42,7 @@ SPIAsEEPROM::SPIAsEEPROM()
     magicbuf[3] = 0x00;
 
   }
-  uint8_t SPIAsEEPROM::begin(uint8_t pinSPIFlash_CS=6)
+  uint8_t SPIAsEEPROM::begin(uint8_t pinSPIFlash_CS=56)
   {
       pinMode(pinSPIFlash_CS, OUTPUT);
       SpiFlashAvialable = winbondSPIFlash.begin(_W25Q16,SPI, pinSPIFlash_CS);
@@ -178,7 +178,7 @@ uint8_t SPIAsEEPROM::read(uint16_t addressEEPROM){
     //The first 4 bytes of each page must have the magic number 
     //version 0.1 does not check magic number
     if(!SpiFlashAvialable){
-      begin(PB0);
+      begin();
     }
 
 
@@ -229,6 +229,6 @@ uint16_t SPIAsEEPROM::count(uint8_t buf[FLASH_PAGESIZE/BITS_PER_BYTE]){
     return count;
 }
 
-SPIAsEEPROM EEPROM;
+//SPIAsEEPROM EEPROM;
 
 #endif

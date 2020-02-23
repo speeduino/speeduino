@@ -5,9 +5,11 @@
 #include "idle.h"
 #include "scheduler.h"
 #include "HardwareTimer.h"
-
-
-
+#ifdef USE_SPI_EEPROM
+  //We need to include and make a instance of the SPI flash EEPROM emulation if flag is set.
+  #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  SPIAsEEPROM EEPROM;
+#endif
 
   void initBoard()
   {
