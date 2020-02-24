@@ -42,7 +42,7 @@ SPIAsEEPROM::SPIAsEEPROM()
     magicbuf[3] = 0x00;
 
   }
-  uint8_t SPIAsEEPROM::begin(uint8_t pinSPIFlash_CS=56)
+  uint8_t SPIAsEEPROM::begin(uint8_t pinSPIFlash_CS=6)
   {
       pinMode(pinSPIFlash_CS, OUTPUT);
       SpiFlashAvialable = winbondSPIFlash.begin(_W25Q16,SPI, pinSPIFlash_CS);
@@ -178,7 +178,7 @@ uint8_t SPIAsEEPROM::read(uint16_t addressEEPROM){
     //The first 4 bytes of each page must have the magic number 
     //version 0.1 does not check magic number
     if(!SpiFlashAvialable){
-      begin();
+      begin(USE_SPI_EEPROM);
     }
 
 

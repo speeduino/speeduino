@@ -1827,9 +1827,10 @@ void setPinMapping(byte boardID)
         MC33810_BIT_IGN8 = 7;
       #endif
 
-      #ifdef USE_SPI_EEPROM
-        pinSPIFlash_CS = 6;
-      #endif
+      //CS pin number is now set in a compile flag. 
+      // #ifdef USE_SPI_EEPROM
+      //   pinSPIFlash_CS = 6;
+      // #endif
 
       #endif
       break;
@@ -2233,10 +2234,11 @@ void setPinMapping(byte boardID)
     initMC33810();
   #endif
 
-#ifdef USE_SPI_EEPROM
-  //We need to send the flash CS (SS) pin if we're using SPI flash. It cannot read from globals.
-  EEPROM.begin(pinSPIFlash_CS);
-#endif
+//CS pin number is now set in a compile flag. 
+// #ifdef USE_SPI_EEPROM
+//   //We need to send the flash CS (SS) pin if we're using SPI flash. It cannot read from globals.
+//   EEPROM.begin(USE_SPI_EEPROM);
+// #endif
 
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
