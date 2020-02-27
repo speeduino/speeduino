@@ -15,6 +15,7 @@ Flood clear mode etc.
 
 #include "globals.h"
 #include "corrections.h"
+#include "speeduino.h"
 #include "timers.h"
 #include "maths.h"
 #include "sensors.h"
