@@ -241,7 +241,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202002"));
+      Serial.print(F("speeduino 202003-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
