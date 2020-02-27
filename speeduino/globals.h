@@ -36,7 +36,7 @@
 //Select one for EEPROM, default are emulated and is very slow
 //#define SRAM_AS_EEPROM /*Use RTC registers, requires a 3V battery connected to Vbat pin */
 //#define SPIFLASH_AS_EEPROM /*Use M25Qxx SPI flash */
-#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
+//#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
 
   #ifndef word
     #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
