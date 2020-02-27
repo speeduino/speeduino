@@ -446,6 +446,7 @@ void loop()
       uint16_t injector2StartAngle = 0;
       uint16_t injector3StartAngle = 0;
       uint16_t injector4StartAngle = 0;
+
       #if INJ_CHANNELS >= 5
       uint16_t injector5StartAngle = 0; //For 5 cylinder testing
       #endif
@@ -1399,6 +1400,25 @@ void calculateIgnitionAngles(int dwellAngle)
       if(ignition3EndAngle > CRANK_ANGLE_MAX_IGN) {ignition3EndAngle -= CRANK_ANGLE_MAX_IGN;}
       ignition3StartAngle = ignition3EndAngle - dwellAngle;
       if(ignition3StartAngle < 0) {ignition3StartAngle += CRANK_ANGLE_MAX_IGN;}
+      #if IGN_CHANNELS >= 6
+      if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
+      {
+        ignition4EndAngle = channel4IgnDegrees - currentStatus.advance;
+        if(ignition4EndAngle > CRANK_ANGLE_MAX_IGN) {ignition4EndAngle -= CRANK_ANGLE_MAX_IGN;}
+        ignition4StartAngle = ignition4EndAngle - dwellAngle;
+        if(ignition4StartAngle < 0) {ignition4StartAngle += CRANK_ANGLE_MAX_IGN;}
+
+        ignition5EndAngle = channel5IgnDegrees - currentStatus.advance;
+        if(ignition5EndAngle > CRANK_ANGLE_MAX_IGN) {ignition5EndAngle -= CRANK_ANGLE_MAX_IGN;}
+        ignition5StartAngle = ignition5EndAngle - dwellAngle;
+        if(ignition5StartAngle < 0) {ignition5StartAngle += CRANK_ANGLE_MAX_IGN;}
+
+        ignition6EndAngle = channel6IgnDegrees - currentStatus.advance;
+        if(ignition6EndAngle > CRANK_ANGLE_MAX_IGN) {ignition6EndAngle -= CRANK_ANGLE_MAX_IGN;}
+        ignition6StartAngle = ignition6EndAngle - dwellAngle;
+        if(ignition6StartAngle < 0) {ignition6StartAngle += CRANK_ANGLE_MAX_IGN;}
+      }
+      #endif
       break;
     //8 cylinders
     case 8:
@@ -1416,6 +1436,30 @@ void calculateIgnitionAngles(int dwellAngle)
       if(ignition4EndAngle > CRANK_ANGLE_MAX_IGN) {ignition4EndAngle -= CRANK_ANGLE_MAX_IGN;}
       ignition4StartAngle = ignition4EndAngle - dwellAngle;
       if(ignition4StartAngle < 0) {ignition4StartAngle += CRANK_ANGLE_MAX_IGN;}
+      #if IGN_CHANNELS >= 8
+      if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
+      {
+        ignition5EndAngle = channel5IgnDegrees - currentStatus.advance;
+        if(ignition3EndAngle > CRANK_ANGLE_MAX_IGN) {ignition5EndAngle -= CRANK_ANGLE_MAX_IGN;}
+        ignition5StartAngle = ignition5EndAngle - dwellAngle;
+        if(ignition5StartAngle < 0) {ignition5StartAngle += CRANK_ANGLE_MAX_IGN;}
+
+        ignition6EndAngle = channel6IgnDegrees - currentStatus.advance;
+        if(ignition6EndAngle > CRANK_ANGLE_MAX_IGN) {ignition6EndAngle -= CRANK_ANGLE_MAX_IGN;}
+        ignition6StartAngle = ignition6EndAngle - dwellAngle;
+        if(ignition6StartAngle < 0) {ignition6StartAngle += CRANK_ANGLE_MAX_IGN;}
+
+        ignition7EndAngle = channel7IgnDegrees - currentStatus.advance;
+        if(ignition7EndAngle > CRANK_ANGLE_MAX_IGN) {ignition7EndAngle -= CRANK_ANGLE_MAX_IGN;}
+        ignition7StartAngle = ignition7EndAngle - dwellAngle;
+        if(ignition7StartAngle < 0) {ignition7StartAngle += CRANK_ANGLE_MAX_IGN;}
+
+        ignition8EndAngle = channel8IgnDegrees - currentStatus.advance;
+        if(ignition8EndAngle > CRANK_ANGLE_MAX_IGN) {ignition8EndAngle -= CRANK_ANGLE_MAX_IGN;}
+        ignition8StartAngle = ignition8EndAngle - dwellAngle;
+        if(ignition8StartAngle < 0) {ignition8StartAngle += CRANK_ANGLE_MAX_IGN;}
+      }
+      #endif
       break;
 
     //Will hit the default case on 1 cylinder or >8 cylinders. Do nothing in these cases
