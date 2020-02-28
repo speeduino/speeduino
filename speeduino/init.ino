@@ -350,6 +350,9 @@ void initialiseAll()
     ignition3EndAngle = 0;
     ignition4EndAngle = 0;
     ignition5EndAngle = 0;
+    ignition6EndAngle = 0;
+    ignition7EndAngle = 0;
+    ignition8EndAngle = 0;
 
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
