@@ -948,6 +948,7 @@ static inline void fuelSchedule7Interrupt() //Most ARM chips can simply call a f
 {
   if (fuelSchedule7.Status == PENDING) //Check to see if this schedule is turn on
   {
+    //fuelSchedule7.StartCallback();
     inj7StartFunction();
     fuelSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     FUEL7_COMPARE = FUEL7_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule7.duration); //Doing this here prevents a potential overflow on restarts

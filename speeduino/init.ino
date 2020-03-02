@@ -727,7 +727,7 @@ void initialiseAll()
         }
 
     #if INJ_CHANNELS >= 8
-        if (configPage2.injLayout == INJ_SEQUENTIAL)
+        else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
           channel1InjDegrees = 0;
           channel2InjDegrees = 90;
