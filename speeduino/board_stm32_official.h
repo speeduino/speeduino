@@ -1,10 +1,19 @@
-#ifndef STM32F407VE_H
-#define STM32F407VE_H
+#ifndef STM32OFFICIAL_H
+#define STM32OFFICIAL_H
 #if defined(CORE_STM32_OFFICIAL)
 #include <Arduino.h>
 #include <HardwareTimer.h>
 #include <HardwareSerial.h>
+
+#if defined(STM32F1)
+#include "stm32f1xx_ll_tim.h"
+#elif defined(STM32F3)
+#include "stm32f3xx_ll_tim.h"
+#elif defined(STM32F4)
 #include "stm32f4xx_ll_tim.h"
+#else /*Default should be STM32F4*/
+#include "stm32f4xx_ll_tim.h"
+#endif
 /*
 ***********************************************************************************************************
 * General

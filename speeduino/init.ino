@@ -15,6 +15,7 @@
 #include "idle.h"
 #include "table.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
+#include EEPROM_LIB_H 
 
 void initialiseAll()
 {   
@@ -52,13 +53,12 @@ void initialiseAll()
     //STM32 can not currently enabled
     #endif
 
-    #if defined(CORE_TEENSY35)
+    #if defined(CORE_TEENSY)
     configPage9.intcan_available = 1;   // device has internal canbus
     //Teensy uses the Flexcan_T4 library to use the internal canbus
     //enable local can interface
     //setup can interface to 500k
-      //volatile CAN_message_t outMsg;
-      //volatile CAN_message_t inMsg;
+
       Can0.begin();
       Can0.setBaudRate(500000);
       Can0.enableFIFO();
@@ -626,6 +626,17 @@ void initialiseAll()
         channel3IgnDegrees = 240;
         maxIgnOutputs = 3;
 
+    #if IGN_CHANNELS >= 6
+        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
+        {
+        channel4IgnDegrees = 360;
+        channel5IgnDegrees = 480;
+        channel6IgnDegrees = 600;
+        CRANK_ANGLE_MAX_IGN = 720;
+        maxIgnOutputs = 6;
+        }
+    #endif
+
         //For alternating injection, the squirt occurs at different times for each channel
         if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
         {
@@ -676,6 +687,18 @@ void initialiseAll()
         channel2IgnDegrees = channel2InjDegrees = 90;
         channel3IgnDegrees = channel3InjDegrees = 180;
         channel4IgnDegrees = channel4InjDegrees = 270;
+
+    #if IGN_CHANNELS >= 8
+        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
+        {
+        channel5IgnDegrees = 360;
+        channel6IgnDegrees = 450;
+        channel7IgnDegrees = 540;
+        channel8IgnDegrees = 630;
+        maxIgnOutputs = 8;
+        CRANK_ANGLE_MAX_IGN = 720;
+        }
+    #endif
 
         //Adjust the injection angles based on the number of squirts
         if (currentStatus.nSquirts > 2)
@@ -1322,12 +1345,12 @@ void setPinMapping(byte boardID)
         pinO2 = A8; //O2 Sensor pin
         pinBat = A4; //Battery reference voltage pin
         pinBaro = pinMAP;
-        pinIdle1 = PB2; //Single wire idle control
-        pinBoost = PA8; //Boost control
+        pinIdle1 = PA5; //Single wire idle control
+        pinBoost = PA6; //Boost control
         //pinVVT_1 = 4; //Default VVT output
         pinStepperDir = PC15; //Direction pin  for DRV8825 driver
         pinStepperStep = PC14; //Step pin for DRV8825 driver
-        pinStepperEnable = PC13; //Enable pin for DRV8825
+        //pinStepperEnable = PC13; //Enable pin for DRV8825
         pinFuelPump = PB10; //Fuel pump output
         pinTachOut = PC13; //Tacho output pin
         //external interrupt enabled pins
@@ -1885,18 +1908,19 @@ void setPinMapping(byte boardID)
         MC33810_BIT_INJ2 = 1;
         MC33810_BIT_INJ3 = 0;
         MC33810_BIT_INJ4 = 2;
-        MC33810_BIT_IGN1 = 5;
-        MC33810_BIT_IGN2 = 6;
-        MC33810_BIT_IGN3 = 7;
-        MC33810_BIT_IGN4 = 8;
+        MC33810_BIT_IGN1 = 4;
+        MC33810_BIT_IGN2 = 5;
+        MC33810_BIT_IGN3 = 6;
+        MC33810_BIT_IGN4 = 7;
+
         MC33810_BIT_INJ5 = 3;
         MC33810_BIT_INJ6 = 1;
         MC33810_BIT_INJ7 = 0;
         MC33810_BIT_INJ8 = 2;
-        MC33810_BIT_IGN5 = 5;
-        MC33810_BIT_IGN6 = 6;
-        MC33810_BIT_IGN7 = 7;
-        MC33810_BIT_IGN8 = 8;
+        MC33810_BIT_IGN5 = 4;
+        MC33810_BIT_IGN6 = 5;
+        MC33810_BIT_IGN7 = 6;
+        MC33810_BIT_IGN8 = 7;
       #endif
 
       #ifdef USE_SPI_EEPROM
@@ -2253,12 +2277,17 @@ void setPinMapping(byte boardID)
     pinMode(pinCoil3, OUTPUT);
     pinMode(pinCoil4, OUTPUT);
     pinMode(pinCoil5, OUTPUT);
+    pinMode(pinCoil6, OUTPUT);
+    pinMode(pinCoil7, OUTPUT);
+    pinMode(pinCoil8, OUTPUT);
     pinMode(pinInjector1, OUTPUT);
     pinMode(pinInjector2, OUTPUT);
     pinMode(pinInjector3, OUTPUT);
     pinMode(pinInjector4, OUTPUT);
     pinMode(pinInjector5, OUTPUT);
     pinMode(pinInjector6, OUTPUT);
+    pinMode(pinInjector7, OUTPUT);
+    pinMode(pinInjector8, OUTPUT);
 
     inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
     inj1_pin_mask = digitalPinToBitMask(pinInjector1);
@@ -2294,9 +2323,9 @@ void setPinMapping(byte boardID)
     ign8_pin_port = portOutputRegister(digitalPinToPort(pinCoil8));
     ign8_pin_mask = digitalPinToBitMask(pinCoil8);
   #else
-    mc33810_1_pin_port = portOutputRegister(pinMC33810_1_CS);
+    mc33810_1_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_1_CS));
     mc33810_1_pin_mask = digitalPinToBitMask(pinMC33810_1_CS);
-    mc33810_2_pin_port = portOutputRegister(pinMC33810_2_CS);
+    mc33810_2_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_2_CS));
     mc33810_2_pin_mask = digitalPinToBitMask(pinMC33810_2_CS);
 
     initMC33810();

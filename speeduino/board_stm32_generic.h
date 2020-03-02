@@ -39,9 +39,7 @@
     #endif
   #endif
 
-  //Much of the below is not correct, but included to allow compilation
-  //STM32F1/variants/.../board.cpp
-  #if defined (STM32F4)
+  #if !defined (A0)
     #define A0  PA0
     #define A1  PA1
     #define A2  PA2
@@ -52,24 +50,9 @@
     #define A7  PA7
     #define A8  PB0
     #define A9  PB1
-    #define A10  PC0
-    #define A11  PC1
-    #define A12  PC2
-    #define A13  PC3
-    #define A14  PC4
-    #define A15  PC5
-  #else
-    #define A0  PA0
-    #define A1  PA1
-    #define A2  PA2
-    #define A3  PA3
-    #define A4  PA4
-    #define A5  PA5
-    #define A6  PA6
-    #define A7  PA7
-    #define A8  PB0
-    #define A9  PB1
+  #endif
     //STM32F1 have only 10 12bit adc
+  #if !defined (A10)
     #define A10  PA0
     #define A11  PA1
     #define A12  PA2

@@ -1,18 +1,10 @@
 #ifndef CANCOMMS_H
 #define CANCOMMS_H
 
-#if defined(CORE_TEENSY35)
-  #include <FlexCAN_T4.h>
-  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
-  
-  static CAN_message_t outMsg;
-  static CAN_message_t inMsg;
-#endif
-
 #define NEW_CAN_PACKET_SIZE   75
 #define CAN_PACKET_SIZE   75
 
-uint8_t currentcanCommand;
+uint8_t currentsecondserialCommand;
 uint8_t currentCanPage = 1;//Not the same as the speeduino config page numbers
 uint8_t nCanretry = 0;      //no of retrys
 uint8_t cancmdfail = 0;     //command fail yes/no
@@ -37,8 +29,10 @@ bool canCmdPending = false;
   HardwareSerial &CANSerial = Serial2;
 #endif
 
-void canCommand();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
+void secondserial_Command();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
 void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum);
+void can_Command();
 void sendCancommand(uint8_t cmdtype , uint16_t canadddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress);
+void obd_response(uint8_t therequestedPID , uint8_t therequestedPIDlow, uint8_t therequestedPIDhigh);
 
 #endif // CANCOMMS_H

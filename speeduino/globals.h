@@ -33,7 +33,7 @@
   #define INJ_CHANNELS 4
   #define IGN_CHANNELS 5
 
-//Select one for EEPROM, default is emulated and is very slow
+//Select one for EEPROM, default are emulated and is very slow
 //#define SRAM_AS_EEPROM /*Use RTC registers, requires a 3V battery connected to Vbat pin */
 //#define SPIFLASH_AS_EEPROM /*Use M25Qxx SPI flash */
 //#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
@@ -362,6 +362,10 @@ extern int ignition2EndAngle;
 extern int ignition3EndAngle;
 extern int ignition4EndAngle;
 extern int ignition5EndAngle;
+extern int ignition6EndAngle;
+extern int ignition7EndAngle;
+extern int ignition8EndAngle;
+
 extern int ignition1StartAngle;
 extern int ignition2StartAngle;
 extern int ignition3StartAngle;
@@ -403,8 +407,8 @@ extern volatile byte TIMER_mask;
 extern volatile byte LOOP_TIMER;
 
 //These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
-#define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) || ((pin) == pinInjector5) || ((pin) == pinInjector6) )
-#define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) )
+#define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) || ((pin) == pinInjector5) || ((pin) == pinInjector6) || ((pin) == pinInjector7) || ((pin) == pinInjector8) )
+#define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) || ((pin) == pinCoil5) || ((pin) == pinCoil6) || ((pin) == pinCoil7) || ((pin) == pinCoil8) )
 #define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
 #define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) )
 #define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) )
@@ -1090,11 +1094,11 @@ extern byte pinBaro; //Pin that an external barometric pressure sensor is attach
 extern byte pinResetControl; // Output pin used control resetting the Arduino
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
-  byte pinMC33810_1_CS;
-  byte pinMC33810_2_CS;
+  extern byte pinMC33810_1_CS;
+  extern byte pinMC33810_2_CS;
 #endif
 #ifdef USE_SPI_EEPROM
-  byte pinSPIFlash_CS;
+  extern byte pinSPIFlash_CS;
 #endif
 
 
