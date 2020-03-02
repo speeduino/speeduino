@@ -30,12 +30,23 @@ void openInjector1and4();
 void closeInjector1and4();
 void openInjector2and3();
 void closeInjector2and3();
-void openInjector2and5();
-void closeInjector2and5();
+
 void openInjector3and5();
 void closeInjector3and5();
+
+void openInjector2and5();
+void closeInjector2and5();
 void openInjector3and6();
 void closeInjector3and6();
+
+void openInjector1and5();
+void closeInjector1and5();
+void openInjector2and6();
+void closeInjector2and6();
+void openInjector3and7();
+void closeInjector3and7();
+void openInjector4and8();
+void closeInjector4and8();
 
 //If coil inverse is on, set the output low, else set it high
 //#define beginCoil1Charge() { configPage4.IgInv == 1 ? coil1Low(); : coil1High(); } tachoOutputFlag = READY;

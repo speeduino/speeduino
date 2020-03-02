@@ -638,11 +638,13 @@ struct config2 {
   byte idleAdvRPM;
   byte idleAdvTPS;
 
-// These might be better to be at the same place as the first four but for now they are here
+  // These might be better to be at the same place as the first four but for now they are here
   uint16_t inj5Ang;
   uint16_t inj6Ang;
+  uint16_t inj7Ang;
+  uint16_t inj8Ang;
   
-  byte unused2_99[29];
+  byte unused2_99[25];
 
 #if defined(CORE_AVR)
   };
@@ -1035,8 +1037,8 @@ extern byte pinInjector3; //Output pin injector 3
 extern byte pinInjector4; //Output pin injector 4
 extern byte pinInjector5; //Output pin injector 5
 extern byte pinInjector6; //Output pin injector 6
-extern byte pinInjector7; //Placeholder only - NOT USED
-extern byte pinInjector8; //Placeholder only - NOT USED
+extern byte pinInjector7; //Output pin injector 7
+extern byte pinInjector8; //Output pin injector 8
 extern byte pinCoil1; //Pin for coil 1
 extern byte pinCoil2; //Pin for coil 2
 extern byte pinCoil3; //Pin for coil 3

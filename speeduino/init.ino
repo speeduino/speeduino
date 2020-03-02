@@ -684,9 +684,10 @@ void initialiseAll()
         break;
     case 8:
         channel1IgnDegrees = 0;
-        channel2IgnDegrees = channel2InjDegrees = 90;
-        channel3IgnDegrees = channel3InjDegrees = 180;
-        channel4IgnDegrees = channel4InjDegrees = 270;
+        channel2IgnDegrees = 90;
+        channel3IgnDegrees = 180;
+        channel4IgnDegrees = 270;
+        maxIgnOutputs = 4;
 
     #if IGN_CHANNELS >= 8
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
@@ -700,12 +701,29 @@ void initialiseAll()
         }
     #endif
 
-        //Adjust the injection angles based on the number of squirts
-        if (currentStatus.nSquirts > 2)
+        //For alternating injection, the squirt occurs at different times for each channel
+        if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
         {
-          channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
-          channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
-          channel4InjDegrees = (channel4InjDegrees * 2) / currentStatus.nSquirts;
+          channel1InjDegrees = 0;
+          channel2InjDegrees = 90;
+          channel3InjDegrees = 180;
+          channel4InjDegrees = 270;
+
+          if (!configPage2.injTiming)
+          {
+            //For simultaneous, all squirts happen at the same time
+            channel1InjDegrees = 0;
+            channel2InjDegrees = 0;
+            channel3InjDegrees = 0;
+            channel4InjDegrees = 0;
+          }
+          else if (currentStatus.nSquirts > 2)
+          {
+            //Adjust the injection angles based on the number of squirts
+            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
+            channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
+            channel4InjDegrees = (channel4InjDegrees * 2) / currentStatus.nSquirts;
+          }
         }
 
     #if INJ_CHANNELS >= 8
@@ -729,20 +747,7 @@ void initialiseAll()
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
         }
-    #else
-        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 6 cylinders
     #endif
-
-        maxIgnOutputs = 4;
-
-        if (!configPage2.injTiming) 
-        { 
-          //For simultaneous, all squirts happen at the same time
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 0;
-          channel3InjDegrees = 0;
-          channel4InjDegrees = 0; 
-        }
 
         channel1InjEnabled = true;
         channel2InjEnabled = true;
@@ -785,7 +790,7 @@ void initialiseAll()
         break;
 
     case INJ_SEMISEQUENTIAL:
-        //Semi-Sequential injection. Currently possible with 4 and 6 cylinders. 5 cylinder is a special case
+        //Semi-Sequential injection. Currently possible with 4, 6 and 8 cylinders. 5 cylinder is a special case
         if( configPage2.nCylinders == 4 )
         {
           inj1StartFunction = openInjector1and4;
@@ -793,7 +798,7 @@ void initialiseAll()
           inj2StartFunction = openInjector2and3;
           inj2EndFunction = closeInjector2and3;
         }
-        else if( configPage2.nCylinders == 5 )
+        else if( configPage2.nCylinders == 5 ) //This is similar to the paired injection but uses five injector outputs instead of four
         {
           inj1StartFunction = openInjector1;
           inj1EndFunction = closeInjector1;
@@ -812,6 +817,17 @@ void initialiseAll()
           inj2EndFunction = closeInjector2and5;
           inj3StartFunction = openInjector3and6;
           inj3EndFunction = closeInjector3and6;
+        }
+        else if( configPage2.nCylinders == 8 )
+        {
+          inj1StartFunction = openInjector1and5;
+          inj1EndFunction = closeInjector1and5;
+          inj2StartFunction = openInjector2and6;
+          inj2EndFunction = closeInjector2and6;
+          inj3StartFunction = openInjector3and7;
+          inj3EndFunction = closeInjector3and7;
+          inj4StartFunction = openInjector4and8;
+          inj4EndFunction = closeInjector4and8;
         }
         else
         {

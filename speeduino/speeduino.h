@@ -23,6 +23,8 @@ uint16_t calculateInjector3StartAngle(unsigned int);
 uint16_t calculateInjector4StartAngle(unsigned int);
 uint16_t calculateInjector5StartAngle(unsigned int);
 uint16_t calculateInjector6StartAngle(unsigned int);
+uint16_t calculateInjector7StartAngle(unsigned int);
+uint16_t calculateInjector8StartAngle(unsigned int);
 
 void calculateIgnitionAngles(int);
 /*
