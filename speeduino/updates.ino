@@ -299,6 +299,19 @@ void doUpdates()
     EEPROM.write(EEPROM_DATA_VERSION, 13);
   }
 
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 13)
+  {
+    //202003-dev
+    //Cranking enrichment range 0..1275% instead of older 0.255, so need to divide old values by 5
+    configPage10.crankingEnrichValues[0] = configPage10.crankingEnrichValues[0] / 5;
+    configPage10.crankingEnrichValues[1] = configPage10.crankingEnrichValues[1] / 5;
+    configPage10.crankingEnrichValues[2] = configPage10.crankingEnrichValues[2] / 5;
+    configPage10.crankingEnrichValues[3] = configPage10.crankingEnrichValues[3] / 5;
+    
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 14);
+  }
+  
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
   {
