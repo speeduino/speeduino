@@ -8,6 +8,23 @@ A full copy of the license may be found in the projects root directory
 #include "scheduler.h"
 #include "scheduledIO.h"
 
+FuelSchedule fuelSchedule1;
+FuelSchedule fuelSchedule2;
+FuelSchedule fuelSchedule3;
+FuelSchedule fuelSchedule4;
+FuelSchedule fuelSchedule5;
+FuelSchedule fuelSchedule6;
+FuelSchedule fuelSchedule7;
+FuelSchedule fuelSchedule8;
+
+Schedule ignitionSchedule1;
+Schedule ignitionSchedule2;
+Schedule ignitionSchedule3;
+Schedule ignitionSchedule4;
+Schedule ignitionSchedule5;
+Schedule ignitionSchedule6;
+Schedule ignitionSchedule7;
+Schedule ignitionSchedule8;
 
 void initialiseSchedulers()
 {
@@ -44,6 +61,10 @@ void initialiseSchedulers()
     IGN2_TIMER_ENABLE();
     IGN3_TIMER_ENABLE();
     IGN4_TIMER_ENABLE();
+    IGN5_TIMER_ENABLE();
+    IGN6_TIMER_ENABLE();
+    IGN7_TIMER_ENABLE();
+    IGN8_TIMER_ENABLE();
 
     ignitionSchedule1.schedulesSet = 0;
     ignitionSchedule2.schedulesSet = 0;
@@ -65,15 +86,11 @@ duration: The number of uS after startCallback is called before endCallback is c
 endCallback: This function is called once the duration time has been reached
 */
 
-//Experimental new generic function
-/*
+//Experimental new generic function. This is NOT yet ready and functional
 void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, unsigned long duration)
 {
   if(targetSchedule->Status != RUNNING) //Check that we're not already part way through a schedule
   {
-    //Callbacks no longer used, but retained for now:
-    //fuelSchedule1.StartCallback = startCallback;
-    //fuelSchedule1.EndCallback = endCallback;
     targetSchedule->duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
@@ -83,12 +100,14 @@ void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, uns
 
     //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
     noInterrupts();
-    targetSchedule->startCompare = *targetSchedule->counter + timeout_timer_compare;
+    //targetSchedule->startCompare = *targetSchedule->counter + timeout_timer_compare;
+    targetSchedule->startCompare = FUEL1_COUNTER + timeout_timer_compare; //Insert correct counter HERE!
     targetSchedule->endCompare = targetSchedule->startCompare + uS_TO_TIMER_COMPARE(duration);
     targetSchedule->Status = PENDING; //Turn this schedule on
     targetSchedule->schedulesSet++; //Increment the number of times this schedule has been set
 
-    *targetSchedule->compare = targetSchedule->startCompare;
+    //*targetSchedule->compare = targetSchedule->startCompare;
+    FUEL1_COMPARE = targetSchedule->startCompare; //Insert corrector compare HERE!
     interrupts();
     FUEL1_TIMER_ENABLE();
   }
@@ -96,12 +115,11 @@ void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, uns
   {
     //If the schedule is already running, we can set the next schedule so it is ready to go
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-    targetSchedule->nextStartCompare = *targetSchedule->counter + uS_TO_TIMER_COMPARE(timeout);
+    //targetSchedule->nextStartCompare = *targetSchedule->counter + uS_TO_TIMER_COMPARE(timeout);
     targetSchedule->nextEndCompare = targetSchedule->nextStartCompare + uS_TO_TIMER_COMPARE(duration);
     targetSchedule->hasNextSchedule = true;
   }
 }
-*/
 
 
 //void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
@@ -430,9 +448,21 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
     interrupts();
     IGN1_TIMER_ENABLE();
   }
+  else
+  {
+    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    if (timeout < MAX_TIMER_PERIOD)
+    {
+      ignitionSchedule1.nextStartCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule1.nextEndCompare = ignitionSchedule1.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule1.hasNextSchedule = true;
+    }
+
+  }
 }
 
-static inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
+inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
 {
   if( (ignitionSchedule1.Status == RUNNING) && (timeToEnd < ignitionSchedule1.duration) )
   //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
@@ -467,6 +497,17 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     interrupts();
     IGN2_TIMER_ENABLE();
   }
+  else
+  {
+    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    if (timeout < MAX_TIMER_PERIOD)
+    {
+      ignitionSchedule2.nextStartCompare = IGN2_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule2.nextEndCompare = ignitionSchedule2.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule2.hasNextSchedule = true;
+    }
+  }
 }
 void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
@@ -495,9 +536,12 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
   {
     //If the schedule is already running, we can set the next schedule so it is ready to go
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-    ignitionSchedule3.nextStartCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE(timeout);
-    ignitionSchedule3.nextEndCompare = ignitionSchedule3.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-    ignitionSchedule3.hasNextSchedule = true;
+    if (timeout < MAX_TIMER_PERIOD)
+    {
+      ignitionSchedule3.nextStartCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule3.nextEndCompare = ignitionSchedule3.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule3.hasNextSchedule = true;
+    }
   }
 }
 void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
@@ -527,9 +571,12 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
   {
     //If the schedule is already running, we can set the next schedule so it is ready to go
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-    ignitionSchedule4.nextStartCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE(timeout);
-    ignitionSchedule4.nextEndCompare = ignitionSchedule4.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-    ignitionSchedule4.hasNextSchedule = true;
+    if (timeout < MAX_TIMER_PERIOD)
+    {
+      ignitionSchedule4.nextStartCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule4.nextEndCompare = ignitionSchedule4.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule4.hasNextSchedule = true;
+    }
   }
 }
 void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
@@ -554,6 +601,17 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     ignitionSchedule5.schedulesSet++;
     interrupts();
     IGN5_TIMER_ENABLE();
+  }
+  else
+  {
+    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    if (timeout < MAX_TIMER_PERIOD)
+    {
+      ignitionSchedule5.nextStartCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule5.nextEndCompare = ignitionSchedule5.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule5.hasNextSchedule = true;
+    }
   }
 }
 void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
@@ -583,9 +641,12 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
   {
     //If the schedule is already running, we can set the next schedule so it is ready to go
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-    ignitionSchedule6.nextStartCompare = IGN6_COUNTER + uS_TO_TIMER_COMPARE(timeout);
-    ignitionSchedule6.nextEndCompare = ignitionSchedule6.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-    ignitionSchedule6.hasNextSchedule = true;
+    if (timeout < MAX_TIMER_PERIOD)
+    {
+      ignitionSchedule6.nextStartCompare = IGN6_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule6.nextEndCompare = ignitionSchedule6.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule6.hasNextSchedule = true;
+    }
   }
 }
 void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
@@ -615,9 +676,12 @@ void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsign
   {
     //If the schedule is already running, we can set the next schedule so it is ready to go
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-    ignitionSchedule7.nextStartCompare = IGN7_COUNTER + uS_TO_TIMER_COMPARE(timeout);
-    ignitionSchedule7.nextEndCompare = ignitionSchedule7.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-    ignitionSchedule7.hasNextSchedule = true;
+    if (timeout < MAX_TIMER_PERIOD)
+    {
+      ignitionSchedule7.nextStartCompare = IGN7_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule7.nextEndCompare = ignitionSchedule7.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule7.hasNextSchedule = true;
+    }
   }
 }
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
@@ -647,9 +711,12 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
   {
     //If the schedule is already running, we can set the next schedule so it is ready to go
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-    ignitionSchedule8.nextStartCompare = IGN8_COUNTER + uS_TO_TIMER_COMPARE(timeout);
-    ignitionSchedule8.nextEndCompare = ignitionSchedule8.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-    ignitionSchedule8.hasNextSchedule = true;
+    if (timeout < MAX_TIMER_PERIOD)
+    {
+      ignitionSchedule8.nextStartCompare = IGN8_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule8.nextEndCompare = ignitionSchedule8.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule8.hasNextSchedule = true;
+    }
   }
 }
 
@@ -658,6 +725,7 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
 //This calls the relevant callback function (startCallback or endCallback) depending on the status of the schedule.
 //If the startCallback function is called, we put the scheduler into RUNNING state
 //Timer3A (fuel schedule 1) Compare Vector
+#if (INJ_CHANNELS >= 1)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPA_vect) //fuelSchedules 1 and 5
 #else
@@ -694,7 +762,9 @@ static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a f
     }
     else if (fuelSchedule1.Status == OFF) { FUEL1_TIMER_DISABLE(); } //Safety check. Turn off this output compare unit and return without performing any action
   }
+#endif
 
+#if (INJ_CHANNELS >= 2)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect) //fuelSchedule2
 #else
@@ -729,7 +799,9 @@ static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a f
        else { FUEL2_TIMER_DISABLE(); }
     }
   }
+#endif
 
+#if (INJ_CHANNELS >= 3)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect) //fuelSchedule3
 #else
@@ -766,7 +838,9 @@ static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a f
        else { FUEL3_TIMER_DISABLE(); }
     }
   }
+#endif
 
+#if (INJ_CHANNELS >= 4)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect) //fuelSchedule4
 #else
@@ -799,6 +873,7 @@ static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a f
        else { FUEL4_TIMER_DISABLE(); }
     }
   }
+#endif
 
 #if (INJ_CHANNELS >= 5)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
@@ -954,13 +1029,20 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
     else if (ignitionSchedule1.Status == RUNNING)
     {
       ignitionSchedule1.EndCallback();
-      //   *ign1_pin_port &= ~(ign1_pin_mask);
       ignitionSchedule1.Status = OFF; //Turn off the schedule
       ignitionSchedule1.schedulesSet = 0;
-      ignitionSchedule1.hasNextSchedule = false;
       ignitionSchedule1.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
-      IGN1_TIMER_DISABLE();
+
+      //If there is a next schedule queued up, activate it
+      if(ignitionSchedule1.hasNextSchedule == true)
+      {
+        IGN1_COMPARE = ignitionSchedule1.nextStartCompare;
+        ignitionSchedule1.Status = PENDING;
+        ignitionSchedule1.schedulesSet = 1;
+        ignitionSchedule1.hasNextSchedule = false;
+      }
+      else{ IGN1_TIMER_DISABLE(); }
     }
     else if (ignitionSchedule1.Status == OFF)
     {
@@ -992,7 +1074,16 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
       ignitionSchedule2.schedulesSet = 0;
       ignitionSchedule2.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
-      IGN2_TIMER_DISABLE();
+      
+      //If there is a next schedule queued up, activate it
+      if(ignitionSchedule2.hasNextSchedule == true)
+      {
+        IGN2_COMPARE = ignitionSchedule2.nextStartCompare;
+        ignitionSchedule2.Status = PENDING;
+        ignitionSchedule2.schedulesSet = 1;
+        ignitionSchedule2.hasNextSchedule = false;
+      }
+      else{ IGN2_TIMER_DISABLE(); }
     }
     else if (ignitionSchedule2.Status == OFF)
     {
@@ -1029,7 +1120,6 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
        if(ignitionSchedule3.hasNextSchedule == true)
        {
          IGN3_COMPARE = ignitionSchedule3.nextStartCompare;
-         ignitionSchedule3.endCompare = ignitionSchedule3.nextEndCompare;
          ignitionSchedule3.Status = PENDING;
          ignitionSchedule3.schedulesSet = 1;
          ignitionSchedule3.hasNextSchedule = false;
@@ -1070,7 +1160,6 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
        if(ignitionSchedule4.hasNextSchedule == true)
        {
          IGN4_COMPARE = ignitionSchedule4.nextStartCompare;
-         ignitionSchedule4.endCompare = ignitionSchedule4.nextEndCompare;
          ignitionSchedule4.Status = PENDING;
          ignitionSchedule4.schedulesSet = 1;
          ignitionSchedule4.hasNextSchedule = false;
@@ -1101,19 +1190,33 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule5.Status == RUNNING)
     {
-       ignitionSchedule5.Status = OFF; //Turn off the schedule
-       ignitionSchedule5.EndCallback();
-       ignitionSchedule5.schedulesSet = 0;
-       ignitionSchedule5.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the igintion counter
-       IGN5_TIMER_DISABLE();
+      ignitionSchedule5.Status = OFF; //Turn off the schedule
+      ignitionSchedule5.EndCallback();
+      ignitionSchedule5.schedulesSet = 0;
+      ignitionSchedule5.endScheduleSetByDecoder = false;
+      ignitionCount += 1; //Increment the igintion counter
+
+      //If there is a next schedule queued up, activate it
+      if(ignitionSchedule5.hasNextSchedule == true)
+      {
+        IGN5_COMPARE = ignitionSchedule5.nextStartCompare;
+        ignitionSchedule5.Status = PENDING;
+        ignitionSchedule5.schedulesSet = 1;
+        ignitionSchedule5.hasNextSchedule = false;
+      }
+      else{ IGN5_TIMER_DISABLE(); }
+    }
+    else if (ignitionSchedule5.Status == OFF)
+    {
+      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
+      IGN5_TIMER_DISABLE();
     }
   }
 #endif
 
 #if IGN_CHANNELS >= 6
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPC_vect) //ignitionSchedule6  NOT CORRECT!!!
+ISR(TIMER4_COMPB_vect) //ignitionSchedule6
 #else
 static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call a function
 #endif
@@ -1127,19 +1230,33 @@ static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule6.Status == RUNNING)
     {
-       ignitionSchedule6.Status = OFF; //Turn off the schedule
-       ignitionSchedule6.EndCallback();
-       ignitionSchedule6.schedulesSet = 0;
-       ignitionSchedule6.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the igintion counter
-       IGN6_TIMER_DISABLE();
+      ignitionSchedule6.Status = OFF; //Turn off the schedule
+      ignitionSchedule6.EndCallback();
+      ignitionSchedule6.schedulesSet = 0;
+      ignitionSchedule6.endScheduleSetByDecoder = false;
+      ignitionCount += 1; //Increment the igintion counter
+
+      //If there is a next schedule queued up, activate it
+      if(ignitionSchedule6.hasNextSchedule == true)
+      {
+        IGN6_COMPARE = ignitionSchedule6.nextStartCompare;
+        ignitionSchedule6.Status = PENDING;
+        ignitionSchedule6.schedulesSet = 1;
+        ignitionSchedule6.hasNextSchedule = false;
+      }
+      else{ IGN6_TIMER_DISABLE(); }
+    }
+    else if (ignitionSchedule6.Status == OFF)
+    {
+      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
+      IGN6_TIMER_DISABLE();
     }
   }
 #endif
 
 #if IGN_CHANNELS >= 7
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPC_vect) //ignitionSchedule6  NOT CORRECT!!!
+ISR(TIMER3_COMPC_vect) //ignitionSchedule6
 #else
 static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call a function
 #endif
@@ -1153,19 +1270,33 @@ static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule7.Status == RUNNING)
     {
-       ignitionSchedule7.Status = OFF; //Turn off the schedule
-       ignitionSchedule7.EndCallback();
-       ignitionSchedule7.schedulesSet = 0;
-       ignitionSchedule7.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the igintion counter
-       IGN7_TIMER_DISABLE();
+      ignitionSchedule7.Status = OFF; //Turn off the schedule
+      ignitionSchedule7.EndCallback();
+      ignitionSchedule7.schedulesSet = 0;
+      ignitionSchedule7.endScheduleSetByDecoder = false;
+      ignitionCount += 1; //Increment the igintion counter
+
+      //If there is a next schedule queued up, activate it
+      if(ignitionSchedule7.hasNextSchedule == true)
+      {
+        IGN7_COMPARE = ignitionSchedule7.nextStartCompare;
+        ignitionSchedule7.Status = PENDING;
+        ignitionSchedule7.schedulesSet = 1;
+        ignitionSchedule7.hasNextSchedule = false;
+      }
+      else{ IGN7_TIMER_DISABLE(); }
+    }
+    else if (ignitionSchedule7.Status == OFF)
+    {
+      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
+      IGN7_TIMER_DISABLE();
     }
   }
 #endif
 
 #if IGN_CHANNELS >= 8
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPC_vect) //ignitionSchedule8  NOT CORRECT!!!
+ISR(TIMER3_COMPB_vect) //ignitionSchedule8
 #else
 static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call a function
 #endif
@@ -1179,12 +1310,26 @@ static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule8.Status == RUNNING)
     {
-       ignitionSchedule8.Status = OFF; //Turn off the schedule
-       ignitionSchedule8.EndCallback();
-       ignitionSchedule8.schedulesSet = 0;
-       ignitionSchedule8.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the igintion counter
-       IGN8_TIMER_DISABLE();
+      ignitionSchedule8.Status = OFF; //Turn off the schedule
+      ignitionSchedule8.EndCallback();
+      ignitionSchedule8.schedulesSet = 0;
+      ignitionSchedule8.endScheduleSetByDecoder = false;
+      ignitionCount += 1; //Increment the igintion counter
+
+      //If there is a next schedule queued up, activate it
+      if(ignitionSchedule8.hasNextSchedule == true)
+      {
+        IGN8_COMPARE = ignitionSchedule8.nextStartCompare;
+        ignitionSchedule8.Status = PENDING;
+        ignitionSchedule8.schedulesSet = 1;
+        ignitionSchedule8.hasNextSchedule = false;
+      }
+      else{ IGN8_TIMER_DISABLE(); }
+    }
+    else if (ignitionSchedule8.Status == OFF)
+    {
+      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
+      IGN8_TIMER_DISABLE();
     }
   }
 #endif

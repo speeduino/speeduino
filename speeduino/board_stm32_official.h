@@ -1,10 +1,19 @@
-#ifndef STM32F407VE_H
-#define STM32F407VE_H
+#ifndef STM32OFFICIAL_H
+#define STM32OFFICIAL_H
 #if defined(CORE_STM32_OFFICIAL)
 #include <Arduino.h>
 #include <HardwareTimer.h>
 #include <HardwareSerial.h>
+
+#if defined(STM32F1)
+#include "stm32f1xx_ll_tim.h"
+#elif defined(STM32F3)
+#include "stm32f3xx_ll_tim.h"
+#elif defined(STM32F4)
 #include "stm32f4xx_ll_tim.h"
+#else /*Default should be STM32F4*/
+#include "stm32f4xx_ll_tim.h"
+#endif
 /*
 ***********************************************************************************************************
 * General
@@ -16,8 +25,10 @@
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #if defined(SRAM_AS_EEPROM)
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
-#elif defined(SPIFLASH_AS_EEPROM)
+#elif defined(USE_SPI_FLASH)
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+#elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
+    #define EEPROM_LIB_H <Fram.h>
 #else
     #define EEPROM_LIB_H <EEPROM.h>
 #endif
@@ -26,12 +37,33 @@
   #define LED_BUILTIN PA7
 #endif
 
+#if defined(FRAM_AS_EEPROM)
+  #include <Fram.h>
+  #if defined(ARDUINO_BLACK_F407VE)
+  FramClass EEPROM(PB5, PB4, PB3, PB0); /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
+  #else
+  FramClass EEPROM(PB15, PB12, PB13, PB12); //Blue/Black Pills
+  #endif
+#endif
+
 #define USE_SERIAL3
 void initBoard();
 uint16_t freeRam();
 extern "C" char* sbrk(int incr);
 
 
+#ifndef PB11 //Hack for F4 BlackPills
+  #define PB11 PB10
+#endif
+//Hack to alow compile on small STM boards
+#ifndef A10
+  #define A10  PA0
+  #define A11  PA1
+  #define A12  PA2
+  #define A13  PA3
+  #define A14  PA4
+  #define A15  PA5
+#endif
 
 /*
 ***********************************************************************************************************
@@ -159,8 +191,14 @@ HardwareTimer Timer1(TIM1);
 HardwareTimer Timer2(TIM2);
 HardwareTimer Timer3(TIM3);
 HardwareTimer Timer4(TIM4);
+#if !defined(ARDUINO_BLUEPILL_F103C8) && !defined(ARDUINO_BLUEPILL_F103CB) //F103 just have 4 timers
 HardwareTimer Timer5(TIM5);
-HardwareTimer Timer8(TIM8);
+#if defined(TIM11)
+HardwareTimer Timer11(TIM11);
+#elif defined(TIM7)
+HardwareTimer Timer11(TIM7);
+#endif
+#endif
 
 void oneMSInterval(HardwareTimer*);
 void boostInterrupt(HardwareTimer*);
@@ -180,7 +218,9 @@ void ignitionSchedule5Interrupt(HardwareTimer*);
 ***********************************************************************************************************
 * CAN / Second serial
 */
-HardwareSerial CANSerial(PD6,PD5);
+#if defined(ARDUINO_BLACK_F407VE)
+//HardwareSerial CANSerial(PD6, PD5);
+#endif
 
 #endif //CORE_STM32
 #endif //STM32_H

@@ -22,8 +22,6 @@
 #define warmupPage   10 //Config Page 10
 #define fuelMap2Page 11
 
-#define SERIAL_PACKET_SIZE   99 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
-
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
 unsigned long requestCount = 0; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
@@ -60,7 +58,8 @@ void sendPageASCII();
 void receiveCalibration(byte);
 void sendToothLog();
 void testComm();
-void commandButtons();
+void commandButtons(int16_t);
+void sendCompositeLog();
 byte getPageValue(byte, uint16_t);
 
 #endif // COMMS_H
