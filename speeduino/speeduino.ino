@@ -1143,7 +1143,8 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
 
   //If corrections are huge, use less bitshift to avoid overflow. Sacrifices a bit more accuracy (basically only during very cold temp cranking)
   byte bitShift = 7;
-  if (corrections > 511) { bitShift = 6; }
+  if (corrections > 511 ) { bitShift = 6; }
+  if (corrections > 1023) { bitShift = 5; }
   
   iVE = ((unsigned int)VE << bitShift) / 100;
   if ( configPage2.multiplyMAP == true ) {
