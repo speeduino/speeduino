@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    13
+  #define CURRENT_DATA_VERSION    14
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
