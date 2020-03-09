@@ -53,13 +53,12 @@ void initialiseAll()
     //STM32 can not currently enabled
     #endif
 
-    #if defined(CORE_TEENSY35)
+    #if defined(CORE_TEENSY)
     configPage9.intcan_available = 1;   // device has internal canbus
     //Teensy uses the Flexcan_T4 library to use the internal canbus
     //enable local can interface
     //setup can interface to 500k
-      //volatile CAN_message_t outMsg;
-      //volatile CAN_message_t inMsg;
+
       Can0.begin();
       Can0.setBaudRate(500000);
       Can0.enableFIFO();
@@ -351,6 +350,9 @@ void initialiseAll()
     ignition3EndAngle = 0;
     ignition4EndAngle = 0;
     ignition5EndAngle = 0;
+    ignition6EndAngle = 0;
+    ignition7EndAngle = 0;
+    ignition8EndAngle = 0;
 
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
@@ -627,6 +629,17 @@ void initialiseAll()
         channel3InjDegrees = 240;
         maxIgnOutputs = 3;
 
+    #if IGN_CHANNELS >= 6
+        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
+        {
+        channel4IgnDegrees = 360;
+        channel5IgnDegrees = 480;
+        channel6IgnDegrees = 600;
+        CRANK_ANGLE_MAX_IGN = 720;
+        maxIgnOutputs = 6;
+        }
+    #endif
+
         //Adjust the injection angles based on the number of squirts
         if (currentStatus.nSquirts > 2)
         {
@@ -673,6 +686,18 @@ void initialiseAll()
         channel2IgnDegrees = channel2InjDegrees = 90;
         channel3IgnDegrees = channel3InjDegrees = 180;
         channel4IgnDegrees = channel4InjDegrees = 270;
+
+    #if IGN_CHANNELS >= 8
+        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
+        {
+        channel5IgnDegrees = 360;
+        channel6IgnDegrees = 450;
+        channel7IgnDegrees = 540;
+        channel8IgnDegrees = 630;
+        maxIgnOutputs = 8;
+        CRANK_ANGLE_MAX_IGN = 720;
+        }
+    #endif
 
         //Adjust the injection angles based on the number of squirts
         if (currentStatus.nSquirts > 2)
@@ -2179,11 +2204,17 @@ void setPinMapping(byte boardID)
     pinMode(pinCoil3, OUTPUT);
     pinMode(pinCoil4, OUTPUT);
     pinMode(pinCoil5, OUTPUT);
+    pinMode(pinCoil6, OUTPUT);
+    pinMode(pinCoil7, OUTPUT);
+    pinMode(pinCoil8, OUTPUT);
     pinMode(pinInjector1, OUTPUT);
     pinMode(pinInjector2, OUTPUT);
     pinMode(pinInjector3, OUTPUT);
     pinMode(pinInjector4, OUTPUT);
     pinMode(pinInjector5, OUTPUT);
+    pinMode(pinInjector6, OUTPUT);
+    pinMode(pinInjector7, OUTPUT);
+    pinMode(pinInjector8, OUTPUT);
 
     inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
     inj1_pin_mask = digitalPinToBitMask(pinInjector1);
