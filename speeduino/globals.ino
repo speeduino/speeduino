@@ -98,6 +98,9 @@ int ignition2EndAngle = 0;
 int ignition3EndAngle = 0;
 int ignition4EndAngle = 0;
 int ignition5EndAngle = 0;
+int ignition6EndAngle = 0;
+int ignition7EndAngle = 0;
+int ignition8EndAngle = 0;
 
 //These are variables used across multiple files
 bool initialisationComplete = false; //Tracks whether the setup() function has run completely

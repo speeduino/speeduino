@@ -14,7 +14,6 @@
   #define COUNTER_TYPE uint32_t
   #define BOARD_DIGITAL_GPIO_PINS 34
   #define BOARD_NR_GPIO_PINS 34
-  #define USE_SERIAL3
   #define EEPROM_LIB_H <EEPROM.h>
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
@@ -133,7 +132,13 @@
 ***********************************************************************************************************
 * CAN / Second serial
 */
-  //Uart CANSerial (&sercom3, 0, 1, SERCOM_RX_PAD_1, UART_TX_PAD_0);
-
+   #define USE_SERIAL3
+  #include <FlexCAN_T4.h>
+  FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
+  FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1;
+  FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can2;
+  static CAN_message_t outMsg;
+  static CAN_message_t inMsg;
+  
 #endif //CORE_TEENSY
 #endif //TEENSY40_H

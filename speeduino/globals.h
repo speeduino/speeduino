@@ -33,7 +33,7 @@
   #define INJ_CHANNELS 4
   #define IGN_CHANNELS 5
 
-//Select one for EEPROM, default is emulated and is very slow
+//Select one for EEPROM, default are emulated and is very slow
 //#define SRAM_AS_EEPROM /*Use RTC registers, requires a 3V battery connected to Vbat pin */
 //#define SPIFLASH_AS_EEPROM /*Use M25Qxx SPI flash */
 //#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
@@ -362,6 +362,18 @@ extern int ignition2EndAngle;
 extern int ignition3EndAngle;
 extern int ignition4EndAngle;
 extern int ignition5EndAngle;
+extern int ignition6EndAngle;
+extern int ignition7EndAngle;
+extern int ignition8EndAngle;
+
+extern int ignition1StartAngle;
+extern int ignition2StartAngle;
+extern int ignition3StartAngle;
+extern int ignition4StartAngle;
+extern int ignition5StartAngle;
+extern int ignition6StartAngle;
+extern int ignition7StartAngle;
+extern int ignition8StartAngle;
 
 //These are variables used across multiple files
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
@@ -1077,11 +1089,11 @@ extern byte pinBaro; //Pin that an external barometric pressure sensor is attach
 extern byte pinResetControl; // Output pin used control resetting the Arduino
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
-  byte pinMC33810_1_CS;
-  byte pinMC33810_2_CS;
+  extern byte pinMC33810_1_CS;
+  extern byte pinMC33810_2_CS;
 #endif
 #ifdef USE_SPI_EEPROM
-  byte pinSPIFlash_CS;
+  extern byte pinSPIFlash_CS;
 #endif
 
 
