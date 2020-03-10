@@ -1146,23 +1146,23 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   if (corrections > 511 ) { bitShift = 6; }
   if (corrections > 1023) { bitShift = 5; }
   
-  iVE = ((unsigned int)VE << bitShift) / 100;
+  iVE = ((unsigned int)VE << 7) / 100;
   if ( configPage2.multiplyMAP == true ) {
-    iMAP = ((unsigned int)MAP << bitShift) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
+    iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
   }
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
-    iAFR = ((unsigned int)currentStatus.O2 << bitShift) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+    iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
   }
   iCorrections = (corrections << bitShift) / 100;
 
 
-  unsigned long intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> bitShift; //Need to use an intermediate value to avoid overflowing the long
+  unsigned long intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
   if ( configPage2.multiplyMAP == true ) {
-    intermediate = (intermediate * (unsigned long)iMAP) >> bitShift;
+    intermediate = (intermediate * (unsigned long)iMAP) >> 7;
   }
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
-    intermediate = (intermediate * (unsigned long)iAFR) >> bitShift;  
+    intermediate = (intermediate * (unsigned long)iAFR) >> 7;  
   }
   intermediate = (intermediate * (unsigned long)iCorrections) >> bitShift;
   if (intermediate != 0)
