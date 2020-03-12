@@ -72,7 +72,7 @@
     Timer2.setOverflow(0xFFFF, MICROSEC_FORMAT);
     Timer3.setOverflow(0xFFFF, MICROSEC_FORMAT);
 
-    Timer1.setPrescaleFactor(((Timer1.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
+    Timer1.setPrescaleFactor(((Timer1.getTimerClkFreq()/1000000) * 2)-1);   //2us resolution
     Timer2.setPrescaleFactor(((Timer2.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
     Timer3.setPrescaleFactor(((Timer3.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
 
