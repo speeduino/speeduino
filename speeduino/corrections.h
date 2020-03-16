@@ -9,7 +9,7 @@ void initialiseCorrections();
 
 uint16_t correctionsFuel();
 byte correctionWUE(); //Warmup enrichment
-byte correctionCranking(); //Cranking enrichment
+uint16_t correctionCranking(); //Cranking enrichment
 byte correctionASE(); //After Start Enrichment
 uint16_t correctionAccel(); //Acceleration Enrichment
 byte correctionFloodClear(); //Check for flood clear on cranking
