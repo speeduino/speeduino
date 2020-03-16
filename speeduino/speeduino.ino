@@ -1140,6 +1140,12 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   uint16_t iAFR = 147;
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
+
+  //If corrections are huge, use less bitshift to avoid overflow. Sacrifices a bit more accuracy (basically only during very cold temp cranking)
+  byte bitShift = 7;
+  if (corrections > 511 ) { bitShift = 6; }
+  if (corrections > 1023) { bitShift = 5; }
+  
   iVE = ((unsigned int)VE << 7) / 100;
   if ( configPage2.multiplyMAP == true ) {
     iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
@@ -1147,7 +1153,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
   }
-  iCorrections = (corrections << 7) / 100;
+  iCorrections = (corrections << bitShift) / 100;
 
 
   unsigned long intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
@@ -1158,7 +1164,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
     //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
     intermediate = (intermediate * (unsigned long)iAFR) >> 7;  
   }
-  intermediate = (intermediate * (unsigned long)iCorrections) >> 7;
+  intermediate = (intermediate * (unsigned long)iCorrections) >> bitShift;
   if (intermediate != 0)
   {
     //If intermeditate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
