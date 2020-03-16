@@ -664,7 +664,7 @@ void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsign
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
     noInterrupts();
-    ignitionSchedule7.startCompare = IGN4_COUNTER + timeout_timer_compare;
+    ignitionSchedule7.startCompare = IGN7_COUNTER + timeout_timer_compare;
     if(ignitionSchedule7.endScheduleSetByDecoder == false) { ignitionSchedule7.endCompare = ignitionSchedule7.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
     IGN7_COMPARE = ignitionSchedule7.startCompare;
     ignitionSchedule7.Status = PENDING; //Turn this schedule on
