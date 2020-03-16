@@ -1440,7 +1440,7 @@ void calculateIgnitionAngles(int dwellAngle)
       if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
       {
         ignition5EndAngle = channel5IgnDegrees - currentStatus.advance;
-        if(ignition3EndAngle > CRANK_ANGLE_MAX_IGN) {ignition5EndAngle -= CRANK_ANGLE_MAX_IGN;}
+        if(ignition5EndAngle > CRANK_ANGLE_MAX_IGN) {ignition5EndAngle -= CRANK_ANGLE_MAX_IGN;}
         ignition5StartAngle = ignition5EndAngle - dwellAngle;
         if(ignition5StartAngle < 0) {ignition5StartAngle += CRANK_ANGLE_MAX_IGN;}
 
