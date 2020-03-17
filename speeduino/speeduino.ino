@@ -1288,6 +1288,7 @@ byte getAdvance()
   return tempAdvance;
 }
 
+/*
 uint16_t calculateInjector2StartAngle(unsigned int PWdivTimerPerDegree)
 {
   uint16_t tempInjector2StartAngle = (currentStatus.injAngle + channel2InjDegrees); //This makes the start angle equal to the end angle
@@ -1297,8 +1298,9 @@ uint16_t calculateInjector2StartAngle(unsigned int PWdivTimerPerDegree)
 
   return tempInjector2StartAngle;
 }
+*/
 
-uint16_t calculateInjectorStartAngle(unsigned int PWdivTimerPerDegree, int16_t injChannelDegrees)
+uint16_t calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_t injChannelDegrees)
 {
   uint16_t tempInjectorStartAngle = (currentStatus.injAngle + injChannelDegrees);
   if(tempInjectorStartAngle < PWdivTimerPerDegree) { tempInjectorStartAngle += CRANK_ANGLE_MAX_INJ; }
