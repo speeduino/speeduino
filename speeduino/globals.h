@@ -289,6 +289,7 @@ extern struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
 extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 extern struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 extern struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
+extern struct table2D injectorAngleTable; //4 bin injector timing curve (2D)
 extern struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 extern struct table2D baroFuelTable; //8 bin baro correction curve (2D)
 extern struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
@@ -511,7 +512,7 @@ struct statuses {
   long vvtAngle;
   byte vvtTargetAngle;
   byte vvtDuty;
-
+  uint16_t injAngle;
 };
 
 /**
@@ -559,10 +560,7 @@ struct config2 {
   byte ignAlgorithm : 3;
   byte indInjAng : 1;
   byte injOpen; //Injector opening time (ms * 10)
-  uint16_t inj1Ang;
-  uint16_t inj2Ang;
-  uint16_t inj3Ang;
-  uint16_t inj4Ang;
+  uint16_t injAng[4];
 
   //config1 in ini
   byte mapSample : 2;
@@ -637,7 +635,10 @@ struct config2 {
   
   byte idleAdvRPM;
   byte idleAdvTPS;
-  byte unused2_95[33];
+
+  byte injAngRPM[4];
+
+  byte unused2_95[29];
 
 #if defined(CORE_AVR)
   };

@@ -622,7 +622,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 
   fullStatus[83] = currentStatus.status3;
 
-  fullStatus[84] = currentStatus.nChannels;
+  fullStatus[84] = currentStatus.nChannels; //THIS IS CURRENTLY UNUSED!
   fullStatus[85] = lowByte(currentStatus.fuelLoad);
   fullStatus[86] = highByte(currentStatus.fuelLoad);
   fullStatus[87] = lowByte(currentStatus.ignLoad);
@@ -1169,14 +1169,14 @@ void sendPageASCII()
         Serial.print(F(" "));
       }
       Serial.println();
-      for (pnt_configPage = (byte *)&configPage2.wueValues[9] + 1; pnt_configPage < &configPage2.inj1Ang; pnt_configPage = (byte *)pnt_configPage + 1) {
+      for (pnt_configPage = (byte *)&configPage2.wueValues[9] + 1; pnt_configPage < &configPage2.injAng; pnt_configPage = (byte *)pnt_configPage + 1) {
         Serial.println(*((byte *)pnt_configPage));// This displays all the byte values between the last array up to but not including the first unsigned int on config page 1
       }
       // The following loop displays four unsigned ints
-      for (pnt16_configPage = (uint16_t *)&configPage2.inj1Ang; pnt16_configPage < (uint16_t*)&configPage2.inj4Ang + 1; pnt16_configPage = (uint16_t*)pnt16_configPage + 1)
+      for (pnt16_configPage = (uint16_t *)&configPage2.injAng; pnt16_configPage < (uint16_t*)&configPage2.injAng + 9; pnt16_configPage = (uint16_t*)pnt16_configPage + 1)
       { Serial.println(*((uint16_t *)pnt16_configPage)); }
       // Following loop displays byte values between the unsigned ints
-      for (pnt_configPage = (uint16_t *)&configPage2.inj4Ang + 1; pnt_configPage < &configPage2.mapMax; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
+      for (pnt_configPage = (uint16_t *)&configPage2.injAng + 9; pnt_configPage < &configPage2.mapMax; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
       Serial.println(configPage2.mapMax);
       // Following loop displays remaining byte values of the page
       for (pnt_configPage = (uint16_t *)&configPage2.mapMax + 1; pnt_configPage < (byte *)&configPage2 + npage_size[veSetPage]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
