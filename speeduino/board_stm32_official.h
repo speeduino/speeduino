@@ -51,18 +51,20 @@ void initBoard();
 uint16_t freeRam();
 extern "C" char* sbrk(int incr);
 
-
-#ifndef PB11 //Hack for F4 BlackPills
-  #define PB11 PB10
-#endif
-//Hack to alow compile on small STM boards
-#ifndef A10
-  #define A10  PA0
-  #define A11  PA1
-  #define A12  PA2
-  #define A13  PA3
-  #define A14  PA4
-  #define A15  PA5
+#if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
+ || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
+  #ifndef PB11 //Hack for F4 BlackPills
+    #define PB11 PB10
+  #endif
+  //Hack to alow compile on small STM boards
+  #ifndef A10
+    #define A10  PA0
+    #define A11  PA1
+    #define A12  PA2
+    #define A13  PA3
+    #define A14  PA4
+    #define A15  PA5
+  #endif
 #endif
 
 /*
