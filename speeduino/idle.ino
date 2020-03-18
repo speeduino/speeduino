@@ -278,13 +278,13 @@ void idleControl()
 
           doStep();
         }
-        else if( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < table2D_getAxisValue(&iacStepTable, (IDLE_TABLE_SIZE-1)) )
+        else
         {
           //Standard running
+          //Only do a lookup of the required value around 4 times per second (Once every 255 mainloops). Any more than this can create too much jitter and require a hyster value that is too high
           //We must also have more than zero RPM for the running state
           if (((mainLoopCount & 255) == 1) && (currentStatus.RPM > 0))
           {
-            //Only do a lookup of the required value around 4 times per second. Any more than this can create too much jitter and require a hyster value that is too high
             idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
             if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
             iacStepTime_uS = configPage6.iacStepTime * 1000;

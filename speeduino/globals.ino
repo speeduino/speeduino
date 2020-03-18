@@ -25,6 +25,7 @@ struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
 struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
+struct table2D injectorAngleTable; //4 bin injector angle curve (2D)
 struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 struct table2D baroFuelTable; //8 bin baro correction curve (2D)
 struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
@@ -98,6 +99,9 @@ int ignition2EndAngle = 0;
 int ignition3EndAngle = 0;
 int ignition4EndAngle = 0;
 int ignition5EndAngle = 0;
+int ignition6EndAngle = 0;
+int ignition7EndAngle = 0;
+int ignition8EndAngle = 0;
 
 //These are variables used across multiple files
 bool initialisationComplete = false; //Tracks whether the setup() function has run completely
