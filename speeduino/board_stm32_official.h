@@ -208,13 +208,36 @@ void fuelSchedule1Interrupt(HardwareTimer*);
 void fuelSchedule2Interrupt(HardwareTimer*);
 void fuelSchedule3Interrupt(HardwareTimer*);
 void fuelSchedule4Interrupt(HardwareTimer*);
+#if (INJ_CHANNELS >= 5)
+void fuelSchedule5Interrupt(HardwareTimer*);
+#endif
+#if (INJ_CHANNELS >= 6)
+void fuelSchedule6Interrupt(HardwareTimer*);
+#endif
+#if (INJ_CHANNELS >= 7)
+void fuelSchedule7Interrupt(HardwareTimer*);
+#endif
+#if (INJ_CHANNELS >= 8)
+void fuelSchedule8Interrupt(HardwareTimer*);
+#endif
 void idleInterrupt(HardwareTimer*);
 void vvtInterrupt(HardwareTimer*);
 void ignitionSchedule1Interrupt(HardwareTimer*);
 void ignitionSchedule2Interrupt(HardwareTimer*);
 void ignitionSchedule3Interrupt(HardwareTimer*);
 void ignitionSchedule4Interrupt(HardwareTimer*);
+#if (IGN_CHANNELS >= 5)
 void ignitionSchedule5Interrupt(HardwareTimer*);
+#endif
+#if (IGN_CHANNELS >= 6)
+void ignitionSchedule6Interrupt(HardwareTimer*);
+#endif
+#if (IGN_CHANNELS >= 7)
+void ignitionSchedule7Interrupt(HardwareTimer*);
+#endif
+#if (IGN_CHANNELS >= 8)
+void ignitionSchedule8Interrupt(HardwareTimer*);
+#endif
 
 /*
 ***********************************************************************************************************
