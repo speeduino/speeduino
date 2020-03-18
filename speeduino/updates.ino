@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    13
+  #define CURRENT_DATA_VERSION    14
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -299,6 +299,30 @@ void doUpdates()
     EEPROM.write(EEPROM_DATA_VERSION, 13);
   }
 
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 13)
+  {
+    //202003-dev
+    //Cranking enrichment range 0..1275% instead of older 0.255, so need to divide old values by 5
+    configPage10.crankingEnrichValues[0] = configPage10.crankingEnrichValues[0] / 5;
+    configPage10.crankingEnrichValues[1] = configPage10.crankingEnrichValues[1] / 5;
+    configPage10.crankingEnrichValues[2] = configPage10.crankingEnrichValues[2] / 5;
+    configPage10.crankingEnrichValues[3] = configPage10.crankingEnrichValues[3] / 5;
+
+    //Added the injector timing curve
+    configPage2.injAng[0] = 355;
+    configPage2.injAng[1] = 355;
+    configPage2.injAng[2] = 355;
+    configPage2.injAng[3] = 355;
+    //The RPMs are divided by 100
+    configPage2.injAngRPM[0] = 5;
+    configPage2.injAngRPM[1] = 25;
+    configPage2.injAngRPM[2] = 45;
+    configPage2.injAngRPM[3] = 65;
+    
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 14);
+  }
+  
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
   {

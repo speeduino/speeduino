@@ -6,9 +6,14 @@ can_comms was originally contributed by Darren Siepka
 */
 
 /*
-can_command is called when a command is received over serial3 from the Can interface
-It parses the command and calls the relevant function
-sendcancommand is called when a command is to be sent via serial3 to the Can interface
+secondserial_command is called when a command is received from the secondary serial port
+It parses the command and calls the relevant function.
+
+can_command is called when a command is recieved by the onboard/attached canbus module
+It parses the command and calls the relevant function.
+
+sendcancommand is called when a command is to be sent either to serial3 
+,to the external Can interface, or to the onboard/attached can interface
 */
 #include "globals.h"
 #include "cancomms.h"
@@ -16,11 +21,11 @@ sendcancommand is called when a command is to be sent via serial3 to the Can int
 #include "errors.h"
 #include "utils.h"
 
-void canCommand()
+void secondserial_Command()
 {
-  if (! canCmdPending) {  currentcanCommand = CANSerial.read();  }
+  if (! canCmdPending) {  currentsecondserialCommand = CANSerial.read();  }
 
-  switch (currentcanCommand)
+  switch (currentsecondserialCommand)
   {
     case 'A': // sends the bytes of realtime values from the OLD CAN list
         sendcanValues(0, CAN_PACKET_SIZE, 0x31, 1); //send values to serial3
@@ -275,7 +280,49 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 
 }
 
-
+void can_Command()
+{
+ //int currentcanCommand = inMsg.id;
+ #if defined(CORE_TEENSY)
+       currentStatus.canin[12] = (inMsg.id);
+ if ((inMsg.id == configPage9.obd_address)  || (inMsg.id == 0x7DF))      
+  {
+    // The address is the speeduino specific ecu canbus address 
+    // or the 0x7df(2015 dec) broadcast address
+    if (inMsg.buf[1] == 0x01)
+      {
+        // PID mode 0 , realtime data stream
+        obd_response(inMsg.buf[1], inMsg.buf[2], 0);     // get the obd response based on the data in byte2
+        outMsg.id = (0x7E8);//(configPage9.obd_address+8);
+        Can0.write(outMsg);       // send the 8 bytes of obd data   
+      }
+    if (inMsg.buf[1] == 0x22)
+      {
+        // PID mode 22h , custom mode , non standard data
+        obd_response(inMsg.buf[1], inMsg.buf[2], inMsg.buf[3]);     // get the obd response based on the data in byte2
+        outMsg.id = (0x7E8); //configPage9.obd_address+8);
+        Can0.write(outMsg);       // send the 8 bytes of obd data
+      }
+  }
+ if (inMsg.id == configPage9.obd_address)      
+  {
+    // The address is only the speeduino specific ecu canbus address    
+    if (inMsg.buf[1] == 0x09)
+      {
+       // PID mode 9 , vehicle information request
+       if (inMsg.buf[2] == 02)
+         {
+          //send the VIN number , 17 char long VIN sent in 5 messages.
+         }
+      else if (inMsg.buf[2] == 0x0A)
+         {
+          //code 20: send 20 ascii characters with ECU name , "ECU -SpeeduinoXXXXXX" , change the XXXXXX ONLY as required.  
+         }
+      }
+  }
+#endif  
+}  
+    
 // this routine sends a request(either "0" for a "G" , "1" for a "L" , "2" for a "R" to the Can interface or "3" sends the request via the actual local canbus
 void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress)
 {
@@ -303,11 +350,12 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
      case 3:
         //send to truecan send routine
         //canaddress == speeduino canid, candata1 == canin channel dest, paramgroup == can address  to request from
-        #if defined(CORE_TEENSY35) //Scope guarding this for now, but this needs a bit of a rethink for how it can be handled better across multiple archs
+        //This section is to be moved to the correct can output routine later
+        #if defined(CORE_TEENSY) //Scope guarding this for now, but this needs a bit of a rethink for how it can be handled better across multiple archs
         outMsg.id = (canaddress);
         outMsg.len = 8;
         outMsg.buf[0] = 0x0B ;  //11;   
-        outMsg.buf[1] = 0x145;
+        outMsg.buf[1] = 0x15;
         outMsg.buf[2] = candata1;
         outMsg.buf[3] = 0x24;
         outMsg.buf[4] = 0x7F;
@@ -321,4 +369,25 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
      default:
         break;
     }
+}
+
+// This routine builds the realtime data into packets that the obd requesting device can understand. This is only used by teensy and stm32 with onboard canbus
+void obd_response(uint8_t thePIDmode, uint8_t therequestedPIDlow, uint8_t therequestedPIDhigh)
+{
+
+#if defined(CORE_STM32) || defined(CORE_TEENSY)  
+//only build the PID if the mcu has onboard/attached can 
+
+  uint16_t obdcalcA;    //used in obd calcs
+  uint16_t obdcalcB;    //used in obd calcs 
+  uint16_t obdcalcC;    //used in obd calcs 
+  uint16_t obdcalcD;    //used in obd calcs
+  uint32_t obdcalcE32;    //used in calcs 
+  uint32_t obdcalcF32;    //used in calcs 
+  uint16_t obdcalcG16;    //used in calcs
+  uint16_t obdcalcH16;    //used in calcs  
+
+  outMsg.len = 8;
+
+#endif
 }

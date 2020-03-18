@@ -18,10 +18,13 @@ byte getVE1();
 byte getVE2();
 byte getAdvance();
 
+uint16_t calculateInjectorStartAngle(uint16_t, int16_t);
+/*
 uint16_t calculateInjector2StartAngle(unsigned int);
 uint16_t calculateInjector3StartAngle(unsigned int);
 uint16_t calculateInjector4StartAngle(unsigned int);
 uint16_t calculateInjector5StartAngle(unsigned int);
+*/
 
 void calculateIgnitionAngles(int);
 /*

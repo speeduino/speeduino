@@ -15,6 +15,7 @@ Flood clear mode etc.
 
 #include "globals.h"
 #include "corrections.h"
+#include "speeduino.h"
 #include "timers.h"
 #include "maths.h"
 #include "sensors.h"
@@ -47,7 +48,7 @@ uint16_t correctionsFuel()
   #define MAX_CORRECTIONS 3 //The maximum number of corrections allowed before the sum is reprocessed
   uint32_t sumCorrections = 100;
   byte activeCorrections = 0;
-  byte result; //temporary variable to store the result of each corrections function
+  uint16_t result; //temporary variable to store the result of each corrections function
 
   //The values returned by each of the correction functions are multipled together and then divided back to give a single 0-255 value.
   currentStatus.wueCorrection = correctionWUE();
@@ -103,7 +104,7 @@ uint16_t correctionsFuel()
 
   sumCorrections = sumCorrections / powint(100,activeCorrections);
 
-  if(sumCorrections > 511) { sumCorrections = 511; } //This is the maximum allowable increase as higher than this can potentially cause overflow in the PW() function (Can be fixed, but 511 is probably enough)
+  if(sumCorrections > 1500) { sumCorrections = 1500; } //This is the maximum allowable increase during cranking
   return (uint16_t)sumCorrections;
 }
 
@@ -175,13 +176,14 @@ byte correctionWUE()
 Cranking Enrichment
 Additional fuel % to be added when the engine is cranking
 */
-byte correctionCranking()
+uint16_t correctionCranking()
 {
-  byte crankingValue = 100;
+  uint16_t crankingValue = 100;
   //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage2.crankingPct; }
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
   {
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
   }
   return crankingValue;
 }
