@@ -68,9 +68,9 @@
     ***********************************************************************************************************
     * Schedules
     */
-    Timer1.setOverflow(0xFFFF, MICROSEC_FORMAT);
-    Timer2.setOverflow(0xFFFF, MICROSEC_FORMAT);
-    Timer3.setOverflow(0xFFFF, MICROSEC_FORMAT);
+    Timer1.setOverflow(0xFFFF, TICK_FORMAT);
+    Timer2.setOverflow(0xFFFFFFFF, TICK_FORMAT); //32bit timer
+    Timer3.setOverflow(0xFFFF, TICK_FORMAT);
 
     Timer1.setPrescaleFactor(((Timer1.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
     Timer2.setPrescaleFactor(((Timer2.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
@@ -87,14 +87,14 @@
     Timer3.setMode(4, TIMER_OUTPUT_COMPARE);
     Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
 
-    //Attach interupt functions
+    //Attach interrupt functions
     //Injection
     Timer3.attachInterrupt(1, fuelSchedule1Interrupt);
     Timer3.attachInterrupt(2, fuelSchedule2Interrupt);
     Timer3.attachInterrupt(3, fuelSchedule3Interrupt);
     Timer3.attachInterrupt(4, fuelSchedule4Interrupt);
     #if (INJ_CHANNELS >= 5)
-    Timer5.setOverflow(0xFFFF, MICROSEC_FORMAT);
+    Timer5.setOverflow(0xFFFFFFFF, TICK_FORMAT); //32bit timer
     Timer5.setPrescaleFactor(((Timer5.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
     Timer5.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer5.attachInterrupt(1, fuelSchedule5Interrupt);
@@ -118,8 +118,8 @@
     Timer2.attachInterrupt(3, ignitionSchedule3Interrupt);
     Timer2.attachInterrupt(4, ignitionSchedule4Interrupt);
     #if (IGN_CHANNELS >= 5)
+    Timer4.setOverflow(0xFFFF, TICK_FORMAT);
     Timer4.setPrescaleFactor(((Timer4.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
-    Timer4.setOverflow(0xFFFF, MICROSEC_FORMAT);
     Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer4.attachInterrupt(1, ignitionSchedule5Interrupt);
     #endif
