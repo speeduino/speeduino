@@ -209,6 +209,7 @@
 #define NITROUS_OFF         0
 #define NITROUS_STAGE1      1
 #define NITROUS_STAGE2      2
+#define NITROUS_BOTH        3
 
 #define AE_MODE_TPS         0
 #define AE_MODE_MAP         1

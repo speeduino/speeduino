@@ -629,11 +629,11 @@ int8_t correctionNitrous(int8_t advance)
   if(configPage10.n2o_enable > 0)
   {
     //Check which stage is running (if any)
-    if( currentStatus.nitrous_status == NITROUS_STAGE1 )
+    if( (currentStatus.nitrous_status == NITROUS_STAGE1) || (currentStatus.nitrous_status == NITROUS_BOTH) )
     {
       ignNitrous -= configPage10.n2o_stage1_retard;
     }
-    if( currentStatus.nitrous_status == NITROUS_STAGE2 )
+    if( (currentStatus.nitrous_status == NITROUS_STAGE2) || (currentStatus.nitrous_status == NITROUS_BOTH) )
     {
       ignNitrous -= configPage10.n2o_stage2_retard;
     }
