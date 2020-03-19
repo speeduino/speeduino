@@ -1613,7 +1613,7 @@
             <GoingDead type="boolean">false</GoingDead>
             <Value type="double">0.0</Value>
             <Dirty type="boolean">false</Dirty>
-            <OutputChannel type="String">batCorrection</OutputChannel>
+            <OutputChannel type="String">bat_correction</OutputChannel>
             <LongClickAction type="String"/>
             <ShortClickAction type="String"/>
             <Id type="String"/>
