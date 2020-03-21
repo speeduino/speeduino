@@ -25,7 +25,7 @@
     */
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
     {
-        idle_pwm_max_count = 1000000L / (2 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
+        idle_pwm_max_count = 1000000L / (4 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
     } 
 
     //This must happen at the end of the idle init
@@ -55,8 +55,8 @@
     * Auxilliaries
     */
     //2uS resolution Min 8Hz, Max 5KHz
-    boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
-    vvt_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
+    boost_pwm_max_count = 1000000L / (4 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+    vvt_pwm_max_count = 1000000L / (4 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle
 
     //Need to be initialised last due to instant interrupt
     Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
@@ -69,12 +69,16 @@
     * Schedules
     */
     Timer1.setOverflow(0xFFFF, TICK_FORMAT);
+    #if defined(STM32F4)
     Timer2.setOverflow(0xFFFFFFFF, TICK_FORMAT); //32bit timer
+    #else
+    Timer2.setOverflow(0xFFFF, TICK_FORMAT);
+    #endif
     Timer3.setOverflow(0xFFFF, TICK_FORMAT);
 
-    Timer1.setPrescaleFactor(((Timer1.getTimerClkFreq()/1000000) * 2)-1);   //2us resolution
-    Timer2.setPrescaleFactor(((Timer2.getTimerClkFreq()/1000000) * 2)-1);   //2us resolution
-    Timer3.setPrescaleFactor(((Timer3.getTimerClkFreq()/1000000) * 2)-1);   //2us resolution
+    Timer1.setPrescaleFactor(((Timer1.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
+    Timer2.setPrescaleFactor(((Timer2.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
+    Timer3.setPrescaleFactor(((Timer3.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
 
     Timer2.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer2.setMode(2, TIMER_OUTPUT_COMPARE);
@@ -94,8 +98,12 @@
     Timer3.attachInterrupt(3, fuelSchedule3Interrupt);
     Timer3.attachInterrupt(4, fuelSchedule4Interrupt);
     #if (INJ_CHANNELS >= 5)
+    #if defined(STM32F4)
     Timer5.setOverflow(0xFFFFFFFF, TICK_FORMAT); //32bit timer
-    Timer5.setPrescaleFactor(((Timer5.getTimerClkFreq()/1000000) * 2)-1);   //2us resolution
+    #else
+    Timer5.setOverflow(0xFFFF, TICK_FORMAT);
+    #endif
+    Timer5.setPrescaleFactor(((Timer5.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
     Timer5.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer5.attachInterrupt(1, fuelSchedule5Interrupt);
     #endif
@@ -119,7 +127,7 @@
     Timer2.attachInterrupt(4, ignitionSchedule4Interrupt);
     #if (IGN_CHANNELS >= 5)
     Timer4.setOverflow(0xFFFF, TICK_FORMAT);
-    Timer4.setPrescaleFactor(((Timer4.getTimerClkFreq()/1000000) * 2)-1);   //2us resolution
+    Timer4.setPrescaleFactor(((Timer4.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
     Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer4.attachInterrupt(1, ignitionSchedule5Interrupt);
     #endif

@@ -71,8 +71,8 @@ extern "C" char* sbrk(int incr);
 ***********************************************************************************************************
 * Schedules
 */
-#define MAX_TIMER_PERIOD 65535*2 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
-#define uS_TO_TIMER_COMPARE(uS) (uS>>1) //Converts a given number of uS into the required number of timer ticks until that time has passed.
+#define MAX_TIMER_PERIOD 65535*4 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
+#define uS_TO_TIMER_COMPARE(uS) (uS>>2) //Converts a given number of uS into the required number of timer ticks until that time has passed.
 
 #define FUEL1_COUNTER (TIM3)->CNT
 #define FUEL2_COUNTER (TIM3)->CNT
