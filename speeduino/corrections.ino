@@ -530,6 +530,7 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
   advance = correctionKnock(advance);
+  if (advance < -OFFSET_IGNITION) { advance = -OFFSET_IGNITION; } //Prevents values below -40
 
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);

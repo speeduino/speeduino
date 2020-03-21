@@ -686,7 +686,7 @@ struct config4 {
   byte crankRPM; //RPM below which the engine is considered to be cranking
   byte floodClear; //TPS value that triggers flood clear mode (No fuel whilst cranking)
   byte SoftRevLim; //Soft rev limit (RPM/100)
-  byte SoftLimRetard; //Amount soft limit retards (degrees)
+  int8_t SoftLimRetard; //Amount soft limit retards (degrees)
   byte SoftLimMax; //Time the soft limit can run
   byte HardRevLim; //Hard rev limit (RPM/100)
   byte taeBins[4]; //TPS based acceleration enrichment bins (%/s)
@@ -799,7 +799,7 @@ struct config6 {
   byte flatSEnable : 1;
   byte baroPin : 4;
   byte flatSSoftWin;
-  byte flatSRetard;
+  int8_t flatSRetard; //Allow for negative advance value (ATDC)
   byte flatSArm;
 
   byte iacCLValues[10]; //Closed loop target RPM value
