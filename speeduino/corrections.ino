@@ -29,6 +29,7 @@ unsigned long knockStartTime;
 byte lastKnockCount;
 int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
+byte aseTsnStart;
 
 void initialiseCorrections()
 {
@@ -206,16 +207,27 @@ byte correctionASE()
   {
     BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
     ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    aseTsnStart = runSecsX10;
   }
   else
   {
-    BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
-    ASEValue = 100;
+    if ( (runSecsX10 - aseTsnStart) < configPage2.aseTsnDelay )
+    {
+      BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
+      ASEValue = 100 + map((runSecsX10 - aseTsnStart), 0, configPage2.aseTsnDelay,\
+        table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
+    }
+    else
+    {
+      BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
+      ASEValue = 100;
+    }
   }
-
+  
   //Safety checks
   if(ASEValue > 255) { ASEValue = 255; }
   if(ASEValue < 0) { ASEValue = 0; }
+  configPage2.ASEValue = ASEValue;
 
   return (byte)ASEValue;
 }

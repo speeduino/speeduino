@@ -120,6 +120,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
+    //Count 0.1S up to 109+H(6553.5S)
+    if ( (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) && (runSecsX10 < 65535) ) { runSecsX10++; }
+    else { runSecsX10 = 0; }
   }
 
   //Loop executed every 250ms loop (1ms x 250 = 250ms)
