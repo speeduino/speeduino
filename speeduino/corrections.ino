@@ -203,7 +203,7 @@ byte correctionASE()
   //Two checks are requiredL:
   //1) Is the engine run time less than the configured ase time
   //2) Make sure we're not still cranking
-  if ( BIT_CHECK(TIMER_mask, BIT_TIMER_10HZ) )
+  if ( BIT_CHECK(TIMER_mask, BIT_TIMER_10HZ) || (configPage2.ASEValue == 0) )
   {
     if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
     {
