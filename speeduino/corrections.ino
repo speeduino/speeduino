@@ -203,33 +203,35 @@ byte correctionASE()
   //Two checks are requiredL:
   //1) Is the engine run time less than the configured ase time
   //2) Make sure we're not still cranking
-  if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
+  if ( BIT_CHECK(TIMER_mask, BIT_TIMER_10HZ) )
   {
-    BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-    ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-    aseTsnStart = runSecsX10;
-  }
-  else
-  {
-    if ( (runSecsX10 - aseTsnStart) < configPage2.aseTsnDelay )
+    if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
     {
       BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-      ASEValue = 100 + map((runSecsX10 - aseTsnStart), 0, configPage2.aseTsnDelay,\
-        table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
+      ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+      aseTsnStart = runSecsX10;
     }
     else
     {
-      BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
-      ASEValue = 100;
+      if ( (runSecsX10 - aseTsnStart) < configPage2.aseTsnDelay )
+      {
+        BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
+        ASEValue = 100 + map((runSecsX10 - aseTsnStart), 0, configPage2.aseTsnDelay,\
+          table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
+      }
+      else
+      {
+        BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
+        ASEValue = 100;
+      }
     }
+    
+    //Safety checks
+    if(ASEValue > 255) { ASEValue = 255; }
+    if(ASEValue < 0) { ASEValue = 0; }
+    configPage2.ASEValue = (byte)ASEValue;
   }
-  
-  //Safety checks
-  if(ASEValue > 255) { ASEValue = 255; }
-  if(ASEValue < 0) { ASEValue = 0; }
-  configPage2.ASEValue = ASEValue;
-
-  return (byte)ASEValue;
+  return configPage2.ASEValue;
 }
 
 /**
