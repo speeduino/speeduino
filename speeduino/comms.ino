@@ -638,7 +638,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[97] = highByte(currentStatus.flexBoostCorrection);
   fullStatus[98] = currentStatus.baroCorrection;
   fullStatus[99] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
-  fullStatus[100] = configPage2.ASEValue; //Current ASE (%)
+  fullStatus[100] = currentStatus.ASEValue; //Current ASE (%)
 
   for(byte x=0; x<packetLength; x++)
   {

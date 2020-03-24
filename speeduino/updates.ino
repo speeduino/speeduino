@@ -116,7 +116,7 @@ void doUpdates()
       configPage10.flexFuelBins[x] = pct;
       configPage10.flexAdvBins[x] = pct;
 
-      int16_t boostAdder = (((configPage2.ASEValue - (int8_t)configPage2.unused2_1) * pct) / 100) + (int8_t)configPage2.unused2_1;
+      int16_t boostAdder = (((configPage2.unused2_2 - (int8_t)configPage2.unused2_1) * pct) / 100) + (int8_t)configPage2.unused2_1;
       configPage10.flexBoostAdj[x] = boostAdder;
 
       uint8_t fuelAdder = (((configPage2.idleUpAdder - configPage2.idleUpPin) * pct) / 100) + configPage2.idleUpPin;
@@ -181,10 +181,10 @@ void doUpdates()
 
     //Also added is coolant based ASE for both duration and amount
     //All the adder amounts are set to what the single value was previously
-    configPage2.asePct[0] = configPage2.ASEValue;
-    configPage2.asePct[1] = configPage2.ASEValue;
-    configPage2.asePct[2] = configPage2.ASEValue;
-    configPage2.asePct[3] = configPage2.ASEValue;
+    configPage2.asePct[0] = configPage2.unused2_2;
+    configPage2.asePct[1] = configPage2.unused2_2;
+    configPage2.asePct[2] = configPage2.unused2_2;
+    configPage2.asePct[3] = configPage2.unused2_2;
     //ASE duration is set to 10s for all coolant values
     configPage2.aseCount[0] = 10;
     configPage2.aseCount[1] = 10;
