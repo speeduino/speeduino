@@ -641,7 +641,9 @@ struct config2 {
 
   byte injAngRPM[4];
 
-  byte unused2_95[29];
+  byte idleTaperSize;
+
+  byte unused2_95[28];
 
 #if defined(CORE_AVR)
   };
