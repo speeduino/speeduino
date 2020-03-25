@@ -525,7 +525,7 @@ void loop()
         currentStatus.PW5 = currentStatus.PW1;
         currentStatus.PW6 = currentStatus.PW1;
         currentStatus.PW7 = currentStatus.PW1;
-        currentStatus.PW8 = currentStatus.PW1; 
+        currentStatus.PW8 = currentStatus.PW1;
       }
 
       //***********************************************************************************************
