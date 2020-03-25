@@ -209,6 +209,7 @@
 #define NITROUS_OFF         0
 #define NITROUS_STAGE1      1
 #define NITROUS_STAGE2      2
+#define NITROUS_BOTH        3
 
 #define AE_MODE_TPS         0
 #define AE_MODE_MAP         1
@@ -289,6 +290,7 @@ extern struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
 extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 extern struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 extern struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
+extern struct table2D injectorAngleTable; //4 bin injector timing curve (2D)
 extern struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 extern struct table2D baroFuelTable; //8 bin baro correction curve (2D)
 extern struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
@@ -398,6 +400,7 @@ extern byte secondaryTriggerEdge;
 extern int CRANK_ANGLE_MAX;
 extern int CRANK_ANGLE_MAX_IGN;
 extern int CRANK_ANGLE_MAX_INJ; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+extern volatile uint16_t runSecsX10;
   
 
 //This needs to be here because using the config page directly can prevent burning the setting
@@ -511,7 +514,8 @@ struct statuses {
   long vvtAngle;
   byte vvtTargetAngle;
   byte vvtDuty;
-
+  uint16_t injAngle;
+  byte ASEValue;
 };
 
 /**
@@ -522,9 +526,9 @@ struct statuses {
  */
 struct config2 {
 
-  byte unused2_0;
+  byte aseTsnDelay;
   byte unused2_1;
-  byte unused2_2;  //Was ASE
+  byte unused2_2;  //was ASE
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
   byte battVCorMode : 1;
   byte unused1_3c : 5;
@@ -559,10 +563,7 @@ struct config2 {
   byte ignAlgorithm : 3;
   byte indInjAng : 1;
   byte injOpen; //Injector opening time (ms * 10)
-  uint16_t inj1Ang;
-  uint16_t inj2Ang;
-  uint16_t inj3Ang;
-  uint16_t inj4Ang;
+  uint16_t injAng[4];
 
   //config1 in ini
   byte mapSample : 2;
@@ -638,13 +639,11 @@ struct config2 {
   byte idleAdvRPM;
   byte idleAdvTPS;
 
-  // These might be better to be at the same place as the first four but for now they are here
-  uint16_t inj5Ang;
-  uint16_t inj6Ang;
-  uint16_t inj7Ang;
-  uint16_t inj8Ang;
-  
-  byte unused2_99[25];
+  byte injAngRPM[4];
+
+  byte idleTaperTime;
+
+  byte unused2_95[28];
 
 #if defined(CORE_AVR)
   };

@@ -111,6 +111,11 @@ void initialiseAll()
     injectorVCorrectionTable.xSize = 6;
     injectorVCorrectionTable.values = configPage6.injVoltageCorrectionValues;
     injectorVCorrectionTable.axisX = configPage6.voltageCorrectionBins;
+    injectorAngleTable.valueSize = SIZE_INT;
+    injectorAngleTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    injectorAngleTable.xSize = 4;
+    injectorAngleTable.values = configPage2.injAng;
+    injectorAngleTable.axisX = configPage2.injAngRPM;
     IATDensityCorrectionTable.valueSize = SIZE_BYTE;
     IATDensityCorrectionTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     IATDensityCorrectionTable.xSize = 9;
