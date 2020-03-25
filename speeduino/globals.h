@@ -641,7 +641,7 @@ struct config2 {
 
   byte injAngRPM[4];
 
-  byte idleTaperSize;
+  byte idleTaperTime;
 
   byte unused2_95[28];
 
