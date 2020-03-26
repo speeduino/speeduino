@@ -76,4 +76,22 @@
   void endCoil2and4Charge()   { digitalWrite(pinCoil2, coilLOW);  digitalWrite(pinCoil4, coilLOW);  }
 #endif
 
+//For 6cyl wasted COP mode)
+void beginCoil1and4Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinCoil4, coilHIGH); tachoOutputFlag = READY; }
+void endCoil1and4Charge()   { digitalWrite(pinCoil1, coilLOW);  digitalWrite(pinCoil4, coilLOW);  }
+void beginCoil2and5Charge() { digitalWrite(pinCoil2, coilHIGH); digitalWrite(pinCoil5, coilHIGH); tachoOutputFlag = READY; }
+void endCoil2and5Charge()   { digitalWrite(pinCoil2, coilLOW);  digitalWrite(pinCoil5, coilLOW);  }
+void beginCoil3and6Charge() { digitalWrite(pinCoil3, coilHIGH); digitalWrite(pinCoil6, coilHIGH); tachoOutputFlag = READY; }
+void endCoil3and6Charge()   { digitalWrite(pinCoil3, coilLOW);  digitalWrite(pinCoil6, coilLOW);  }
+
+//For 8cyl wasted COP mode)
+void beginCoil1and5Charge() { digitalWrite(pinCoil1, coilHIGH); digitalWrite(pinCoil5, coilHIGH); tachoOutputFlag = READY; }
+void endCoil1and5Charge()   { digitalWrite(pinCoil1, coilLOW);  digitalWrite(pinCoil5, coilLOW);  }
+void beginCoil2and6Charge() { digitalWrite(pinCoil2, coilHIGH); digitalWrite(pinCoil6, coilHIGH); tachoOutputFlag = READY; }
+void endCoil2and6Charge()   { digitalWrite(pinCoil2, coilLOW);  digitalWrite(pinCoil6, coilLOW);  }
+void beginCoil3and7Charge() { digitalWrite(pinCoil3, coilHIGH); digitalWrite(pinCoil7, coilHIGH); tachoOutputFlag = READY; }
+void endCoil3and7Charge()   { digitalWrite(pinCoil3, coilLOW);  digitalWrite(pinCoil7, coilLOW);  }
+void beginCoil4and8Charge() { digitalWrite(pinCoil4, coilHIGH); digitalWrite(pinCoil8, coilHIGH); tachoOutputFlag = READY; }
+void endCoil4and8Charge()   { digitalWrite(pinCoil4, coilLOW);  digitalWrite(pinCoil8, coilLOW);  }
+
 void nullCallback() { return; }
