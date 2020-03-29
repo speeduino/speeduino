@@ -15,6 +15,7 @@
 #include "idle.h"
 #include "table.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
+#include EEPROM_LIB_H 
 
 void initialiseAll()
 {   
@@ -110,6 +111,11 @@ void initialiseAll()
     injectorVCorrectionTable.xSize = 6;
     injectorVCorrectionTable.values = configPage6.injVoltageCorrectionValues;
     injectorVCorrectionTable.axisX = configPage6.voltageCorrectionBins;
+    injectorAngleTable.valueSize = SIZE_INT;
+    injectorAngleTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    injectorAngleTable.xSize = 4;
+    injectorAngleTable.values = configPage2.injAng;
+    injectorAngleTable.axisX = configPage2.injAngRPM;
     IATDensityCorrectionTable.valueSize = SIZE_BYTE;
     IATDensityCorrectionTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     IATDensityCorrectionTable.xSize = 9;
@@ -349,6 +355,9 @@ void initialiseAll()
     ignition3EndAngle = 0;
     ignition4EndAngle = 0;
     ignition5EndAngle = 0;
+    ignition6EndAngle = 0;
+    ignition7EndAngle = 0;
+    ignition8EndAngle = 0;
 
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
@@ -625,6 +634,17 @@ void initialiseAll()
         channel3InjDegrees = 240;
         maxIgnOutputs = 3;
 
+    #if IGN_CHANNELS >= 6
+        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
+        {
+        channel4IgnDegrees = 360;
+        channel5IgnDegrees = 480;
+        channel6IgnDegrees = 600;
+        CRANK_ANGLE_MAX_IGN = 720;
+        maxIgnOutputs = 6;
+        }
+    #endif
+
         //Adjust the injection angles based on the number of squirts
         if (currentStatus.nSquirts > 2)
         {
@@ -671,6 +691,18 @@ void initialiseAll()
         channel2IgnDegrees = channel2InjDegrees = 90;
         channel3IgnDegrees = channel3InjDegrees = 180;
         channel4IgnDegrees = channel4InjDegrees = 270;
+
+    #if IGN_CHANNELS >= 8
+        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
+        {
+        channel5IgnDegrees = 360;
+        channel6IgnDegrees = 450;
+        channel7IgnDegrees = 540;
+        channel8IgnDegrees = 630;
+        maxIgnOutputs = 8;
+        CRANK_ANGLE_MAX_IGN = 720;
+        }
+    #endif
 
         //Adjust the injection angles based on the number of squirts
         if (currentStatus.nSquirts > 2)
@@ -778,8 +810,8 @@ void initialiseAll()
         break;
 
     case IGN_MODE_WASTEDCOP:
-        //Wasted COP mode. Ignition channels 1&3 and 2&4 are paired together
-        //This is not a valid mode for >4 cylinders
+        //Wasted COP mode. Note, most of the boards can only run this for 4-cyl only.
+        //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
         if( configPage2.nCylinders <= 4 )
         {
           ign1StartFunction = beginCoil1and3Charge;
@@ -792,9 +824,49 @@ void initialiseAll()
           ign4StartFunction = nullCallback;
           ign4EndFunction = nullCallback;
         }
+        //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
+        else if( configPage2.nCylinders == 6 )
+          {
+          ign1StartFunction = beginCoil1and4Charge;
+          ign1EndFunction = endCoil1and4Charge;
+          ign2StartFunction = beginCoil2and5Charge;
+          ign2EndFunction = endCoil2and5Charge;
+          ign3StartFunction = beginCoil3and6Charge;
+          ign3EndFunction = endCoil3and6Charge;
+
+          ign4StartFunction = nullCallback;
+          ign4EndFunction = nullCallback;
+          ign5StartFunction = nullCallback;
+          ign5EndFunction = nullCallback;
+          ign6StartFunction = nullCallback;
+          ign6EndFunction = nullCallback;
+        }
+        //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
+        else if( configPage2.nCylinders == 8 )
+          {
+          ign1StartFunction = beginCoil1and5Charge;
+          ign1EndFunction = endCoil1and5Charge;
+          ign2StartFunction = beginCoil2and6Charge;
+          ign2EndFunction = endCoil2and6Charge;
+          ign3StartFunction = beginCoil3and7Charge;
+          ign3EndFunction = endCoil3and7Charge;
+          ign3StartFunction = beginCoil4and8Charge;
+          ign3EndFunction = endCoil4and8Charge;
+
+          ign4StartFunction = nullCallback;
+          ign4EndFunction = nullCallback;
+          ign5StartFunction = nullCallback;
+          ign5EndFunction = nullCallback;
+          ign6StartFunction = nullCallback;
+          ign6EndFunction = nullCallback;
+          ign7StartFunction = nullCallback;
+          ign7EndFunction = nullCallback;
+          ign8StartFunction = nullCallback;
+          ign8EndFunction = nullCallback;
+        }
         else
         {
-          //If the person has inadvertantly selected this when running more than 4 cylinders, just use standard Wasted spark mode
+          //If the person has inadvertantly selected this when running more than 4 cylinders or other than 6 cylinders, just use standard Wasted spark mode
           ign1StartFunction = beginCoil1Charge;
           ign1EndFunction = endCoil1Charge;
           ign2StartFunction = beginCoil2Charge;
@@ -1773,18 +1845,19 @@ void setPinMapping(byte boardID)
         MC33810_BIT_INJ2 = 1;
         MC33810_BIT_INJ3 = 0;
         MC33810_BIT_INJ4 = 2;
-        MC33810_BIT_IGN1 = 5;
-        MC33810_BIT_IGN2 = 6;
-        MC33810_BIT_IGN3 = 7;
-        MC33810_BIT_IGN4 = 8;
+        MC33810_BIT_IGN1 = 4;
+        MC33810_BIT_IGN2 = 5;
+        MC33810_BIT_IGN3 = 6;
+        MC33810_BIT_IGN4 = 7;
+
         MC33810_BIT_INJ5 = 3;
         MC33810_BIT_INJ6 = 1;
         MC33810_BIT_INJ7 = 0;
         MC33810_BIT_INJ8 = 2;
-        MC33810_BIT_IGN5 = 5;
-        MC33810_BIT_IGN6 = 6;
-        MC33810_BIT_IGN7 = 7;
-        MC33810_BIT_IGN8 = 8;
+        MC33810_BIT_IGN5 = 4;
+        MC33810_BIT_IGN6 = 5;
+        MC33810_BIT_IGN7 = 6;
+        MC33810_BIT_IGN8 = 7;
       #endif
 
       #ifdef USE_SPI_EEPROM
@@ -2141,11 +2214,17 @@ void setPinMapping(byte boardID)
     pinMode(pinCoil3, OUTPUT);
     pinMode(pinCoil4, OUTPUT);
     pinMode(pinCoil5, OUTPUT);
+    pinMode(pinCoil6, OUTPUT);
+    pinMode(pinCoil7, OUTPUT);
+    pinMode(pinCoil8, OUTPUT);
     pinMode(pinInjector1, OUTPUT);
     pinMode(pinInjector2, OUTPUT);
     pinMode(pinInjector3, OUTPUT);
     pinMode(pinInjector4, OUTPUT);
     pinMode(pinInjector5, OUTPUT);
+    pinMode(pinInjector6, OUTPUT);
+    pinMode(pinInjector7, OUTPUT);
+    pinMode(pinInjector8, OUTPUT);
 
     inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
     inj1_pin_mask = digitalPinToBitMask(pinInjector1);
@@ -2181,9 +2260,9 @@ void setPinMapping(byte boardID)
     ign8_pin_port = portOutputRegister(digitalPinToPort(pinCoil8));
     ign8_pin_mask = digitalPinToBitMask(pinCoil8);
   #else
-    mc33810_1_pin_port = portOutputRegister(pinMC33810_1_CS);
+    mc33810_1_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_1_CS));
     mc33810_1_pin_mask = digitalPinToBitMask(pinMC33810_1_CS);
-    mc33810_2_pin_port = portOutputRegister(pinMC33810_2_CS);
+    mc33810_2_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_2_CS));
     mc33810_2_pin_mask = digitalPinToBitMask(pinMC33810_2_CS);
 
     initMC33810();

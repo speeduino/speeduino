@@ -209,6 +209,7 @@
 #define NITROUS_OFF         0
 #define NITROUS_STAGE1      1
 #define NITROUS_STAGE2      2
+#define NITROUS_BOTH        3
 
 #define AE_MODE_TPS         0
 #define AE_MODE_MAP         1
@@ -289,6 +290,7 @@ extern struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
 extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 extern struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 extern struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
+extern struct table2D injectorAngleTable; //4 bin injector timing curve (2D)
 extern struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 extern struct table2D baroFuelTable; //8 bin baro correction curve (2D)
 extern struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
@@ -362,6 +364,10 @@ extern int ignition2EndAngle;
 extern int ignition3EndAngle;
 extern int ignition4EndAngle;
 extern int ignition5EndAngle;
+extern int ignition6EndAngle;
+extern int ignition7EndAngle;
+extern int ignition8EndAngle;
+
 extern int ignition1StartAngle;
 extern int ignition2StartAngle;
 extern int ignition3StartAngle;
@@ -394,6 +400,7 @@ extern byte secondaryTriggerEdge;
 extern int CRANK_ANGLE_MAX;
 extern int CRANK_ANGLE_MAX_IGN;
 extern int CRANK_ANGLE_MAX_INJ; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+extern volatile uint16_t runSecsX10;
   
 
 //This needs to be here because using the config page directly can prevent burning the setting
@@ -404,7 +411,7 @@ extern volatile byte LOOP_TIMER;
 
 //These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
 #define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) )
-#define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) )
+#define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) || ((pin) == pinCoil5) || ((pin) == pinCoil6) || ((pin) == pinCoil7) || ((pin) == pinCoil8) )
 #define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
 #define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) )
 #define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) )
@@ -507,7 +514,8 @@ struct statuses {
   long vvtAngle;
   byte vvtTargetAngle;
   byte vvtDuty;
-
+  uint16_t injAngle;
+  byte ASEValue;
 };
 
 /**
@@ -518,9 +526,9 @@ struct statuses {
  */
 struct config2 {
 
-  byte unused2_0;
+  byte aseTsnDelay;
   byte unused2_1;
-  byte unused2_2;  //Was ASE
+  byte unused2_2;  //was ASE
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
   byte battVCorMode : 1;
   byte unused1_3c : 5;
@@ -555,10 +563,7 @@ struct config2 {
   byte ignAlgorithm : 3;
   byte indInjAng : 1;
   byte injOpen; //Injector opening time (ms * 10)
-  uint16_t inj1Ang;
-  uint16_t inj2Ang;
-  uint16_t inj3Ang;
-  uint16_t inj4Ang;
+  uint16_t injAng[4];
 
   //config1 in ini
   byte mapSample : 2;
@@ -633,7 +638,12 @@ struct config2 {
   
   byte idleAdvRPM;
   byte idleAdvTPS;
-  byte unused2_95[33];
+
+  byte injAngRPM[4];
+
+  byte idleTaperTime;
+
+  byte unused2_95[28];
 
 #if defined(CORE_AVR)
   };
@@ -1085,11 +1095,11 @@ extern byte pinBaro; //Pin that an external barometric pressure sensor is attach
 extern byte pinResetControl; // Output pin used control resetting the Arduino
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
-  byte pinMC33810_1_CS;
-  byte pinMC33810_2_CS;
+  extern byte pinMC33810_1_CS;
+  extern byte pinMC33810_2_CS;
 #endif
 #ifdef USE_SPI_EEPROM
-  byte pinSPIFlash_CS;
+  extern byte pinSPIFlash_CS;
 #endif
 
 

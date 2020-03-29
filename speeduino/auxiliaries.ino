@@ -306,9 +306,15 @@ void nitrousControl()
       uint16_t realStage2MinRPM = (uint16_t)configPage10.n2o_stage2_minRPM * 100;
       uint16_t realStage2MaxRPM = (uint16_t)configPage10.n2o_stage2_maxRPM * 100;
 
+      //The nitrous state is set to 0 and then the subsequent stages are added
+      // OFF    = 0
+      // STAGE1 = 1
+      // STAGE2 = 2
+      // BOTH   = 3 (ie STAGE1 + STAGE2 = BOTH)
+      currentStatus.nitrous_status = NITROUS_OFF;
       if( (currentStatus.RPM > realStage1MinRPM) && (currentStatus.RPM < realStage1MaxRPM) )
       {
-        currentStatus.nitrous_status = NITROUS_STAGE1;
+        currentStatus.nitrous_status += NITROUS_STAGE1;
         BIT_SET(currentStatus.status3, BIT_STATUS3_NITROUS);
         N2O_STAGE1_PIN_HIGH();
         nitrousOn = true;
@@ -317,7 +323,7 @@ void nitrousControl()
       {
         if( (currentStatus.RPM > realStage2MinRPM) && (currentStatus.RPM < realStage2MaxRPM) )
         {
-          currentStatus.nitrous_status = NITROUS_STAGE2;
+          currentStatus.nitrous_status += NITROUS_STAGE2;
           BIT_SET(currentStatus.status3, BIT_STATUS3_NITROUS);
           N2O_STAGE2_PIN_HIGH();
           nitrousOn = true;

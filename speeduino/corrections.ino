@@ -15,6 +15,7 @@ Flood clear mode etc.
 
 #include "globals.h"
 #include "corrections.h"
+#include "speeduino.h"
 #include "timers.h"
 #include "maths.h"
 #include "sensors.h"
@@ -28,6 +29,7 @@ unsigned long knockStartTime;
 byte lastKnockCount;
 int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
+byte aseTsnStart;
 
 void initialiseCorrections()
 {
@@ -47,7 +49,7 @@ uint16_t correctionsFuel()
   #define MAX_CORRECTIONS 3 //The maximum number of corrections allowed before the sum is reprocessed
   uint32_t sumCorrections = 100;
   byte activeCorrections = 0;
-  byte result; //temporary variable to store the result of each corrections function
+  uint16_t result; //temporary variable to store the result of each corrections function
 
   //The values returned by each of the correction functions are multipled together and then divided back to give a single 0-255 value.
   currentStatus.wueCorrection = correctionWUE();
@@ -103,7 +105,7 @@ uint16_t correctionsFuel()
 
   sumCorrections = sumCorrections / powint(100,activeCorrections);
 
-  if(sumCorrections > 511) { sumCorrections = 511; } //This is the maximum allowable increase as higher than this can potentially cause overflow in the PW() function (Can be fixed, but 511 is probably enough)
+  if(sumCorrections > 1500) { sumCorrections = 1500; } //This is the maximum allowable increase during cranking
   return (uint16_t)sumCorrections;
 }
 
@@ -175,13 +177,14 @@ byte correctionWUE()
 Cranking Enrichment
 Additional fuel % to be added when the engine is cranking
 */
-byte correctionCranking()
+uint16_t correctionCranking()
 {
-  byte crankingValue = 100;
+  uint16_t crankingValue = 100;
   //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage2.crankingPct; }
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
   {
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
   }
   return crankingValue;
 }
@@ -200,22 +203,35 @@ byte correctionASE()
   //Two checks are requiredL:
   //1) Is the engine run time less than the configured ase time
   //2) Make sure we're not still cranking
-  if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
+  if ( BIT_CHECK(TIMER_mask, BIT_TIMER_10HZ) || (currentStatus.ASEValue == 0) )
   {
-    BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-    ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
+    {
+      BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
+      ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+      aseTsnStart = runSecsX10;
+    }
+    else
+    {
+      if ( (runSecsX10 - aseTsnStart) < configPage2.aseTsnDelay )
+      {
+        BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
+        ASEValue = 100 + map((runSecsX10 - aseTsnStart), 0, configPage2.aseTsnDelay,\
+          table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
+      }
+      else
+      {
+        BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
+        ASEValue = 100;
+      }
+    }
+    
+    //Safety checks
+    if(ASEValue > 255) { ASEValue = 255; }
+    if(ASEValue < 0) { ASEValue = 0; }
+    currentStatus.ASEValue = (byte)ASEValue;
   }
-  else
-  {
-    BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
-    ASEValue = 100;
-  }
-
-  //Safety checks
-  if(ASEValue > 255) { ASEValue = 255; }
-  if(ASEValue < 0) { ASEValue = 0; }
-
-  return (byte)ASEValue;
+  return currentStatus.ASEValue;
 }
 
 /**
@@ -627,11 +643,11 @@ int8_t correctionNitrous(int8_t advance)
   if(configPage10.n2o_enable > 0)
   {
     //Check which stage is running (if any)
-    if( currentStatus.nitrous_status == NITROUS_STAGE1 )
+    if( (currentStatus.nitrous_status == NITROUS_STAGE1) || (currentStatus.nitrous_status == NITROUS_BOTH) )
     {
       ignNitrous -= configPage10.n2o_stage1_retard;
     }
-    if( currentStatus.nitrous_status == NITROUS_STAGE2 )
+    if( (currentStatus.nitrous_status == NITROUS_STAGE2) || (currentStatus.nitrous_status == NITROUS_BOTH) )
     {
       ignNitrous -= configPage10.n2o_stage2_retard;
     }
