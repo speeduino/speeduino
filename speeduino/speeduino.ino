@@ -1170,7 +1170,9 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   
   iVE = ((unsigned int)VE << 7) / 100;
   if ( configPage2.multiplyMAP == true ) {
-    iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
+    if ( configPage2.fixedMultiplyMAP == true) { iMAP = ((unsigned int)MAP << 7) / 100; }
+    //Include multiply MAP (vs baro) if enabled
+    else { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; }
   }
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
