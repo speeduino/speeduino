@@ -375,7 +375,8 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
 void obd_response(uint8_t thePIDmode, uint8_t therequestedPIDlow, uint8_t therequestedPIDhigh)
 {
 
-#if (defined(CORE_STM32) || defined(CORE_TEENSY)) && !defined(ARDUINO_BLACK_F407VE) 
+// #if defined(CORE_STM32) || defined(CORE_TEENSY)
+#if defined(CORE_TEENSY)
 //only build the PID if the mcu has onboard/attached can 
 
   uint16_t obdcalcA;    //used in obd calcs

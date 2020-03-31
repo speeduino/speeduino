@@ -20,8 +20,8 @@
 */
 #define PORT_TYPE uint32_t
 #define PINMASK_TYPE uint32_t
-#define COMPARE_TYPE uint16_t
-#define COUNTER_TYPE uint16_t
+#define COMPARE_TYPE uint32_t
+#define COUNTER_TYPE uint32_t
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #if defined(SRAM_AS_EEPROM)
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
@@ -51,25 +51,27 @@ void initBoard();
 uint16_t freeRam();
 extern "C" char* sbrk(int incr);
 
-
-#ifndef PB11 //Hack for F4 BlackPills
-  #define PB11 PB10
-#endif
-//Hack to alow compile on small STM boards
-#ifndef A10
-  #define A10  PA0
-  #define A11  PA1
-  #define A12  PA2
-  #define A13  PA3
-  #define A14  PA4
-  #define A15  PA5
+#if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
+ || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
+  #ifndef PB11 //Hack for F4 BlackPills
+    #define PB11 PB10
+  #endif
+  //Hack to alow compile on small STM boards
+  #ifndef A10
+    #define A10  PA0
+    #define A11  PA1
+    #define A12  PA2
+    #define A13  PA3
+    #define A14  PA4
+    #define A15  PA5
+  #endif
 #endif
 
 /*
 ***********************************************************************************************************
 * Schedules
 */
-#define MAX_TIMER_PERIOD 65535*4 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 2, as each timer tick is 2uS)
+#define MAX_TIMER_PERIOD 65535*4 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
 #define uS_TO_TIMER_COMPARE(uS) (uS>>2) //Converts a given number of uS into the required number of timer ticks until that time has passed.
 
 #define FUEL1_COUNTER (TIM3)->CNT
@@ -206,13 +208,36 @@ void fuelSchedule1Interrupt(HardwareTimer*);
 void fuelSchedule2Interrupt(HardwareTimer*);
 void fuelSchedule3Interrupt(HardwareTimer*);
 void fuelSchedule4Interrupt(HardwareTimer*);
+#if (INJ_CHANNELS >= 5)
+void fuelSchedule5Interrupt(HardwareTimer*);
+#endif
+#if (INJ_CHANNELS >= 6)
+void fuelSchedule6Interrupt(HardwareTimer*);
+#endif
+#if (INJ_CHANNELS >= 7)
+void fuelSchedule7Interrupt(HardwareTimer*);
+#endif
+#if (INJ_CHANNELS >= 8)
+void fuelSchedule8Interrupt(HardwareTimer*);
+#endif
 void idleInterrupt(HardwareTimer*);
 void vvtInterrupt(HardwareTimer*);
 void ignitionSchedule1Interrupt(HardwareTimer*);
 void ignitionSchedule2Interrupt(HardwareTimer*);
 void ignitionSchedule3Interrupt(HardwareTimer*);
 void ignitionSchedule4Interrupt(HardwareTimer*);
+#if (IGN_CHANNELS >= 5)
 void ignitionSchedule5Interrupt(HardwareTimer*);
+#endif
+#if (IGN_CHANNELS >= 6)
+void ignitionSchedule6Interrupt(HardwareTimer*);
+#endif
+#if (IGN_CHANNELS >= 7)
+void ignitionSchedule7Interrupt(HardwareTimer*);
+#endif
+#if (IGN_CHANNELS >= 8)
+void ignitionSchedule8Interrupt(HardwareTimer*);
+#endif
 
 /*
 ***********************************************************************************************************
