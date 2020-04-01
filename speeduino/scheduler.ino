@@ -26,6 +26,23 @@ Schedule ignitionSchedule6;
 Schedule ignitionSchedule7;
 Schedule ignitionSchedule8;
 
+void (*inj1StartFunction)();
+void (*inj1EndFunction)();
+void (*inj2StartFunction)();
+void (*inj2EndFunction)();
+void (*inj3StartFunction)();
+void (*inj3EndFunction)();
+void (*inj4StartFunction)();
+void (*inj4EndFunction)();
+void (*inj5StartFunction)();
+void (*inj5EndFunction)();
+void (*inj6StartFunction)();
+void (*inj6EndFunction)();
+void (*inj7StartFunction)();
+void (*inj7EndFunction)();
+void (*inj8StartFunction)();
+void (*inj8EndFunction)();
+
 void initialiseSchedulers()
 {
     //nullSchedule.Status = OFF;
