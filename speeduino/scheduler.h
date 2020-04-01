@@ -30,6 +30,23 @@ See page 136 of the processors datasheet: www.atmel.com/Images/doc2549.pdf
 #define USE_IGN_REFRESH
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
 
+void (*inj1StartFunction)();
+void (*inj1EndFunction)();
+void (*inj2StartFunction)();
+void (*inj2EndFunction)();
+void (*inj3StartFunction)();
+void (*inj3EndFunction)();
+void (*inj4StartFunction)();
+void (*inj4EndFunction)();
+void (*inj5StartFunction)();
+void (*inj5EndFunction)();
+void (*inj6StartFunction)();
+void (*inj6EndFunction)();
+void (*inj7StartFunction)();
+void (*inj7EndFunction)();
+void (*inj8StartFunction)();
+void (*inj8EndFunction)();
+
 void initialiseSchedulers();
 void setFuelSchedule1(unsigned long timeout, unsigned long duration);
 void setFuelSchedule2(unsigned long timeout, unsigned long duration);
