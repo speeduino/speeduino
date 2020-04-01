@@ -849,6 +849,9 @@ void triggerPri_BasicDistributor()
   curGap = curTime - toothLastToothTime;
   if ( (curGap >= triggerFilterTime) )
   {
+    if(currentStatus.hasSync == true) { setFilter(curGap); } //Recalc the new filter value
+    else { triggerFilterTime = 0; } //If we don't yet have sync, ensure that the filter won't prevent future valid pulses from being ignored. 
+    
     if( (toothCurrentCount == triggerActualTeeth) || (currentStatus.hasSync == false) ) //Check if we're back to the beginning of a revolution
     {
       toothCurrentCount = 1; //Reset the counter
@@ -873,7 +876,6 @@ void triggerPri_BasicDistributor()
       
     }
 
-    setFilter(curGap); //Recalc the new filter value
     validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
     if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
