@@ -1100,6 +1100,7 @@ extern byte pinResetControl; // Output pin used control resetting the Arduino
 extern byte pinVARlaunch; // Pin potentiometer VARlaunch
 extern byte pinOil; // Pin Oil pressure switch or analog
 extern byte pinWarnOil; // Pin warning Leds low pressure Oil
+extern byte LedPixels; // Leds control for shitlight and warning oil pressure/CLTmax neopixel type
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   extern byte pinMC33810_1_CS;
