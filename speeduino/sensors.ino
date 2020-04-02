@@ -486,6 +486,19 @@ void readBat()
   currentStatus.battery10 = ADC_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
 }
 
+void readVARlaunch()
+{
+  unsigned int tempReading;
+  #if defined(ANALOG_ISR)
+    tempReading = fastMap1023toX(AnChannel[pinVARlaunch-A3], 511); //Get the current raw VARlaunch value
+  #else
+    tempReading = analogRead(pinVARlaunch);
+    tempReading = fastMap1023toX(analogRead(pinVARlaunch), 511); //Get the current raw VARlaunch value
+  #endif
+  currentStatus.VARlaunchADC = tempReading;
+  currentStatus.VARlaunch = map(currentStatus.VARlaunchADC, 0, 511, ((unsigned int)(configPage6.lnchHardMini) * 100), ((unsigned int)(configPage6.lnchHardLim) * 100));   
+}
+
 /*
  * The interrupt function for reading the flex sensor frequency
  * This value is incremented with every pulse and reset back to 0 once per second
