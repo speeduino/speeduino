@@ -642,8 +642,9 @@ struct config2 {
   byte injAngRPM[4];
 
   byte idleTaperTime;
+  byte dfcoDelay;
 
-  byte unused2_95[28];
+  byte unused2_95[27];
 
 #if defined(CORE_AVR)
   };
