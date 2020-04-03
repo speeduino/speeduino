@@ -318,6 +318,9 @@ void doUpdates()
     configPage2.injAngRPM[1] = 25;
     configPage2.injAngRPM[2] = 45;
     configPage2.injAngRPM[3] = 65;
+
+    //Introdced a DFCO delay option. Default it to 0
+    configPage2.dfcoDelay = 0;
     
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 14);
