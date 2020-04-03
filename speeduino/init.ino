@@ -1094,8 +1094,9 @@ void initialiseAll()
     interrupts();
     //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
     readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
+    readTPS(false); // Need to read tps to detect flood clear state
     unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-    if(primingValue > 0)
+    if((primingValue > 0) && (currentStatus.TPS < configPage4.floodClear))
     {
       if(channel1InjEnabled == true) { setFuelSchedule1(100, (primingValue * 100 * 5)); } //to achieve long enough priming pulses, the values in tunerstudio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
       if(channel2InjEnabled == true) { setFuelSchedule2(100, (primingValue * 100 * 5)); }
