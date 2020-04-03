@@ -516,6 +516,7 @@ struct statuses {
   byte vvtDuty;
   uint16_t injAngle;
   byte ASEValue;
+  uint8_t seclx10;
 };
 
 /**
@@ -643,8 +644,9 @@ struct config2 {
 
   byte idleTaperTime;
   byte dfcoDelay;
+  byte primingDelay;
 
-  byte unused2_95[27];
+  byte unused2_95[26];
 
 #if defined(CORE_AVR)
   };

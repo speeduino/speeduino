@@ -48,6 +48,7 @@ extern void (*inj8StartFunction)();
 extern void (*inj8EndFunction)();
 
 void initialiseSchedulers();
+void StartPriming();
 void setFuelSchedule1(unsigned long timeout, unsigned long duration);
 void setFuelSchedule2(unsigned long timeout, unsigned long duration);
 void setFuelSchedule3(unsigned long timeout, unsigned long duration);
