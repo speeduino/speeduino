@@ -209,6 +209,7 @@
 #define NITROUS_OFF         0
 #define NITROUS_STAGE1      1
 #define NITROUS_STAGE2      2
+#define NITROUS_BOTH        3
 
 #define AE_MODE_TPS         0
 #define AE_MODE_MAP         1
@@ -289,6 +290,7 @@ extern struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
 extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 extern struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 extern struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
+extern struct table2D injectorAngleTable; //4 bin injector timing curve (2D)
 extern struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 extern struct table2D baroFuelTable; //8 bin baro correction curve (2D)
 extern struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
@@ -398,6 +400,7 @@ extern byte secondaryTriggerEdge;
 extern int CRANK_ANGLE_MAX;
 extern int CRANK_ANGLE_MAX_IGN;
 extern int CRANK_ANGLE_MAX_INJ; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+extern volatile uint16_t runSecsX10;
   
 
 //This needs to be here because using the config page directly can prevent burning the setting
@@ -407,7 +410,7 @@ extern volatile byte TIMER_mask;
 extern volatile byte LOOP_TIMER;
 
 //These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
-#define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) )
+#define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) || ((pin) == pinInjector5) || ((pin) == pinInjector6) || ((pin) == pinInjector7) || ((pin) == pinInjector8) )
 #define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) || ((pin) == pinCoil5) || ((pin) == pinCoil6) || ((pin) == pinCoil7) || ((pin) == pinCoil8) )
 #define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
 #define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) )
@@ -511,7 +514,8 @@ struct statuses {
   long vvtAngle;
   byte vvtTargetAngle;
   byte vvtDuty;
-
+  uint16_t injAngle;
+  byte ASEValue;
 };
 
 /**
@@ -522,9 +526,9 @@ struct statuses {
  */
 struct config2 {
 
-  byte unused2_0;
+  byte aseTsnDelay;
   byte unused2_1;
-  byte unused2_2;  //Was ASE
+  byte unused2_2;  //was ASE
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
   byte battVCorMode : 1;
   byte unused1_3c : 5;
@@ -559,10 +563,7 @@ struct config2 {
   byte ignAlgorithm : 3;
   byte indInjAng : 1;
   byte injOpen; //Injector opening time (ms * 10)
-  uint16_t inj1Ang;
-  uint16_t inj2Ang;
-  uint16_t inj3Ang;
-  uint16_t inj4Ang;
+  uint16_t injAng[4];
 
   //config1 in ini
   byte mapSample : 2;
@@ -637,7 +638,13 @@ struct config2 {
   
   byte idleAdvRPM;
   byte idleAdvTPS;
-  byte unused2_95[33];
+
+  byte injAngRPM[4];
+
+  byte idleTaperTime;
+  byte dfcoDelay;
+
+  byte unused2_95[27];
 
 #if defined(CORE_AVR)
   };
@@ -1026,12 +1033,12 @@ struct config10 {
 
 extern byte pinInjector1; //Output pin injector 1
 extern byte pinInjector2; //Output pin injector 2
-extern byte pinInjector3; //Output pin injector 3 is on
-extern byte pinInjector4; //Output pin injector 4 is on
-extern byte pinInjector5; //Output pin injector 5 NOT USED YET
-extern byte pinInjector6; //Placeholder only - NOT USED
-extern byte pinInjector7; //Placeholder only - NOT USED
-extern byte pinInjector8; //Placeholder only - NOT USED
+extern byte pinInjector3; //Output pin injector 3
+extern byte pinInjector4; //Output pin injector 4
+extern byte pinInjector5; //Output pin injector 5
+extern byte pinInjector6; //Output pin injector 6
+extern byte pinInjector7; //Output pin injector 7
+extern byte pinInjector8; //Output pin injector 8
 extern byte pinCoil1; //Pin for coil 1
 extern byte pinCoil2; //Pin for coil 2
 extern byte pinCoil3; //Pin for coil 3

@@ -60,17 +60,17 @@
   #define FUEL1_COMPARE OCR3A
   #define FUEL2_COMPARE OCR3B
   #define FUEL3_COMPARE OCR3C
-  #define FUEL4_COMPARE OCR4B
-  #define FUEL5_COMPARE OCR4C //Shared with IGN5
-  #define FUEL6_COMPARE OCR4A //Replaces ignition4
-  #define FUEL7_COMPARE OCR5C //Replaces ignition3
-  #define FUEL8_COMPARE OCR5B //Replaces ignition2
+  #define FUEL4_COMPARE OCR4B //Replaces ignition 6
+  #define FUEL5_COMPARE OCR4C //Replaces ignition 5
+  #define FUEL6_COMPARE OCR4A //Replaces ignition 4
+  #define FUEL7_COMPARE OCR5C //Replaces ignition 3
+  #define FUEL8_COMPARE OCR5B //Replaces ignition 2
 
   #define IGN1_COMPARE  OCR5A
   #define IGN2_COMPARE  OCR5B
   #define IGN3_COMPARE  OCR5C
-  #define IGN4_COMPARE  OCR4A
-  #define IGN5_COMPARE  OCR4C
+  #define IGN4_COMPARE  OCR4A //Replaces injector 6
+  #define IGN5_COMPARE  OCR4C //Replaces injector 5
   #define IGN6_COMPARE  OCR4B //Replaces injector 4
   #define IGN7_COMPARE  OCR3C //Replaces injector 3
   #define IGN8_COMPARE  OCR3B //Replaces injector 2
@@ -80,8 +80,8 @@
   #define FUEL2_TIMER_ENABLE() TIFR3 |= (1<<OCF3B); TIMSK3 |= (1 << OCIE3B) //Turn on the B compare unit (ie turn on the interrupt)
   #define FUEL3_TIMER_ENABLE() TIFR3 |= (1<<OCF3C); TIMSK3 |= (1 << OCIE3C) //Turn on the C compare unit (ie turn on the interrupt)
   #define FUEL4_TIMER_ENABLE() TIFR4 |= (1<<OCF4B); TIMSK4 |= (1 << OCIE4B) //Turn on the B compare unit (ie turn on the interrupt)
-  #define FUEL5_TIMER_ENABLE() TIFR4 |= (1<<OCF4C); TIMSK4 |= (1 << OCIE4C) //
-  #define FUEL6_TIMER_ENABLE() TIFR4 |= (1<<OCF4A); TIMSK4 |= (1 << OCIE4A) //
+  #define FUEL5_TIMER_ENABLE() TIFR4 |= (1<<OCF4C); TIMSK4 |= (1 << OCIE4C) //Turn on the C compare unit (ie turn on the interrupt)
+  #define FUEL6_TIMER_ENABLE() TIFR4 |= (1<<OCF4A); TIMSK4 |= (1 << OCIE4A) //Turn on the A compare unit (ie turn on the interrupt)
   #define FUEL7_TIMER_ENABLE() TIFR5 |= (1<<OCF5C); TIMSK5 |= (1 << OCIE5C) //
   #define FUEL8_TIMER_ENABLE() TIFR5 |= (1<<OCF5B); TIMSK5 |= (1 << OCIE5B) //
 

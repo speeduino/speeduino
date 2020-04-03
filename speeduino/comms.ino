@@ -622,7 +622,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 
   fullStatus[83] = currentStatus.status3;
 
-  fullStatus[84] = currentStatus.nChannels;
+  fullStatus[84] = currentStatus.nChannels; //THIS IS CURRENTLY UNUSED!
   fullStatus[85] = lowByte(currentStatus.fuelLoad);
   fullStatus[86] = highByte(currentStatus.fuelLoad);
   fullStatus[87] = lowByte(currentStatus.ignLoad);
@@ -638,6 +638,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[97] = highByte(currentStatus.flexBoostCorrection);
   fullStatus[98] = currentStatus.baroCorrection;
   fullStatus[99] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
+  fullStatus[100] = currentStatus.ASEValue; //Current ASE (%)
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -933,11 +934,11 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       else if (valueOffset < 90) { tempOffset = valueOffset - 84; trim2Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       else if (valueOffset < 96) { tempOffset = valueOffset - 90; trim2Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
       //Trim table 3
-      else if (valueOffset < 132) { tempOffset = valueOffset - 96; trim3Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim2 map
+      else if (valueOffset < 132) { tempOffset = valueOffset - 96; trim3Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim3 map
       else if (valueOffset < 138) { tempOffset = valueOffset - 132; trim3Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       else if (valueOffset < 144) { tempOffset = valueOffset - 138; trim3Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
       //Trim table 4
-      else if (valueOffset < 180) { tempOffset = valueOffset - 144; trim4Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim2 map
+      else if (valueOffset < 180) { tempOffset = valueOffset - 144; trim4Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim4 map
       else if (valueOffset < 186) { tempOffset = valueOffset - 180; trim4Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       else if (valueOffset < 192) { tempOffset = valueOffset - 186; trim4Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
 
@@ -1169,14 +1170,14 @@ void sendPageASCII()
         Serial.print(F(" "));
       }
       Serial.println();
-      for (pnt_configPage = (byte *)&configPage2.wueValues[9] + 1; pnt_configPage < &configPage2.inj1Ang; pnt_configPage = (byte *)pnt_configPage + 1) {
+      for (pnt_configPage = (byte *)&configPage2.wueValues[9] + 1; pnt_configPage < &configPage2.injAng; pnt_configPage = (byte *)pnt_configPage + 1) {
         Serial.println(*((byte *)pnt_configPage));// This displays all the byte values between the last array up to but not including the first unsigned int on config page 1
       }
       // The following loop displays four unsigned ints
-      for (pnt16_configPage = (uint16_t *)&configPage2.inj1Ang; pnt16_configPage < (uint16_t*)&configPage2.inj4Ang + 1; pnt16_configPage = (uint16_t*)pnt16_configPage + 1)
+      for (pnt16_configPage = (uint16_t *)&configPage2.injAng; pnt16_configPage < (uint16_t*)&configPage2.injAng + 9; pnt16_configPage = (uint16_t*)pnt16_configPage + 1)
       { Serial.println(*((uint16_t *)pnt16_configPage)); }
       // Following loop displays byte values between the unsigned ints
-      for (pnt_configPage = (uint16_t *)&configPage2.inj4Ang + 1; pnt_configPage < &configPage2.mapMax; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
+      for (pnt_configPage = (uint16_t *)&configPage2.injAng + 9; pnt_configPage < &configPage2.mapMax; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
       Serial.println(configPage2.mapMax);
       // Following loop displays remaining byte values of the page
       for (pnt_configPage = (uint16_t *)&configPage2.mapMax + 1; pnt_configPage < (byte *)&configPage2 + npage_size[veSetPage]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
@@ -1836,6 +1837,18 @@ void commandButtons(int buttonCommand)
       closeInjector2();
       closeInjector3();
       closeInjector4();
+      #if INJ_CHANNELS >= 5
+      closeInjector5();
+      #endif
+      #if INJ_CHANNELS >= 6
+      closeInjector6();
+      #endif
+      #if INJ_CHANNELS >= 7
+      closeInjector7();
+      #endif
+      #if INJ_CHANNELS >= 8
+      closeInjector8();
+      #endif
       break;
 
     case 257: // cmd is enable
@@ -1894,6 +1907,70 @@ void commandButtons(int buttonCommand)
       break;
 
     case 524: // cmd group is for injector4 50% dc actions
+
+      break;
+
+    case 525: // cmd group is for injector5 on actions
+        #if INJ_CHANNELS >= 5
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector5(); }
+        #endif
+      break;
+
+    case 526: // cmd group is for injector5 off actions
+        #if INJ_CHANNELS >= 5
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector5(); }
+        #endif
+      break;
+
+    case 527: // cmd group is for injector5 50%dc actions
+
+      break;
+
+    case 528: // cmd group is for injector6 on actions
+        #if INJ_CHANNELS >= 6
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector6(); }
+        #endif
+      break;
+
+    case 529: // cmd group is for injector6 off actions
+        #if INJ_CHANNELS >= 6
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector6(); }
+        #endif
+      break;
+
+    case 530: // cmd group is for injector6 50% dc actions
+
+      break;
+
+    case 531: // cmd group is for injector5 on actions
+        #if INJ_CHANNELS >= 7
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector7(); }
+        #endif
+      break;
+
+    case 532: // cmd group is for injector5 off actions
+        #if INJ_CHANNELS >= 7
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector7(); }
+        #endif
+      break;
+
+    case 533: // cmd group is for injector5 50%dc actions
+
+      break;
+
+    case 534: // cmd group is for injector6 on actions
+        #if INJ_CHANNELS >= 8
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector8(); }
+        #endif
+      break;
+
+    case 535: // cmd group is for injector6 off actions
+        #if INJ_CHANNELS >= 8
+        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector8(); }
+        #endif
+      break;
+
+    case 536: // cmd group is for injector6 50% dc actions
 
       break;
 

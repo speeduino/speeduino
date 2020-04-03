@@ -427,14 +427,14 @@ void loop()
       currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
 
       //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
-      if(currentStatus.nitrous_status == NITROUS_STAGE1)
+      if( (currentStatus.nitrous_status == NITROUS_STAGE1) || (currentStatus.nitrous_status == NITROUS_BOTH) )
       { 
         int16_t adderRange = (configPage10.n2o_stage1_maxRPM - configPage10.n2o_stage1_minRPM) * 100;
         int16_t adderPercent = ((currentStatus.RPM - (configPage10.n2o_stage1_minRPM * 100)) * 100) / adderRange; //The percentage of the way through the RPM range
         adderPercent = 100 - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
         currentStatus.PW1 = currentStatus.PW1 + (configPage10.n2o_stage1_adderMax + percentage(adderPercent, (configPage10.n2o_stage1_adderMin - configPage10.n2o_stage1_adderMax))) * 100; //Calculate the above percentage of the calculated ms value.
       }
-      if(currentStatus.nitrous_status == NITROUS_STAGE2)
+      if( (currentStatus.nitrous_status == NITROUS_STAGE2) || (currentStatus.nitrous_status == NITROUS_BOTH) )
       {
         int16_t adderRange = (configPage10.n2o_stage2_maxRPM - configPage10.n2o_stage2_minRPM) * 100;
         int16_t adderPercent = ((currentStatus.RPM - (configPage10.n2o_stage2_minRPM * 100)) * 100) / adderRange; //The percentage of the way through the RPM range
@@ -448,16 +448,16 @@ void loop()
       uint16_t injector4StartAngle = 0;
 
       #if INJ_CHANNELS >= 5
-      uint16_t injector5StartAngle = 0; //For 5 cylinder testing
+      uint16_t injector5StartAngle = 0;
       #endif
       #if INJ_CHANNELS >= 6
-      int injector6StartAngle = 0;
+      uint16_t injector6StartAngle = 0;
       #endif
       #if INJ_CHANNELS >= 7
-      int injector7StartAngle = 0;
+      uint16_t injector7StartAngle = 0;
       #endif
       #if INJ_CHANNELS >= 8
-      int injector8StartAngle = 0;
+      uint16_t injector8StartAngle = 0;
       #endif
       //These are used for comparisons on channels above 1 where the starting angle (for injectors or ignition) can be less than a single loop time
       //(Don't ask why this is needed, it's just there)
@@ -524,24 +524,21 @@ void loop()
         currentStatus.PW4 = currentStatus.PW1;
         currentStatus.PW5 = currentStatus.PW1;
         currentStatus.PW6 = currentStatus.PW1;
-        currentStatus.PW7 = currentStatus.PW1; 
+        currentStatus.PW7 = currentStatus.PW1;
+        currentStatus.PW8 = currentStatus.PW1;
       }
 
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
-      //Determine next firing angles
-      if(!configPage2.indInjAng) 
-      {
-        //Forcing all injector close angles to be the same.
-        configPage2.inj2Ang = configPage2.inj1Ang;
-        configPage2.inj3Ang = configPage2.inj1Ang;
-        configPage2.inj4Ang = configPage2.inj1Ang;
-      } 
+      currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPM / 100);
       unsigned int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
+
       //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See www.extraefi.co.uk/sequential_fuel.html for more detail
-      if(configPage2.inj1Ang > PWdivTimerPerDegree) { injector1StartAngle = configPage2.inj1Ang - ( PWdivTimerPerDegree ); }
-      else { injector1StartAngle = configPage2.inj1Ang + CRANK_ANGLE_MAX_INJ - PWdivTimerPerDegree; } //Just incase 
-      while(injector1StartAngle > CRANK_ANGLE_MAX_INJ) { injector1StartAngle -= CRANK_ANGLE_MAX_INJ; }
+      //if(configPage2.inj1Ang > PWdivTimerPerDegree) { injector1StartAngle = configPage2.inj1Ang - ( PWdivTimerPerDegree ); }
+      //else { injector1StartAngle = configPage2.inj1Ang + CRANK_ANGLE_MAX_INJ - PWdivTimerPerDegree; } //Just incase 
+      //while(injector1StartAngle > CRANK_ANGLE_MAX_INJ) { injector1StartAngle -= CRANK_ANGLE_MAX_INJ; }
+
+      injector1StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees);
 
       //Repeat the above for each cylinder
       switch (configPage2.nCylinders)
@@ -552,16 +549,19 @@ void loop()
           if( (configPage10.stagingEnabled == true) && (currentStatus.PW3 > 0) )
           {
             PWdivTimerPerDegree = div(currentStatus.PW3, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
-            injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
+            //injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
+            injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees);
           }
           break;
         //2 cylinders
         case 2:
-          injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
+          //injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
+          injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees);
           if( (configPage10.stagingEnabled == true) && (currentStatus.PW3 > 0) )
           {
             PWdivTimerPerDegree = div(currentStatus.PW3, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
-            injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
+            //injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
+            injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees);
 
             injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
             if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
@@ -569,17 +569,22 @@ void loop()
           break;
         //3 cylinders
         case 3:
-          injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
-          injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
+          //injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
+          //injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
+          injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees);
+          injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees);
           break;
         //4 cylinders
         case 4:
-          injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
+          //injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
+          injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees);
 
           if(configPage2.injLayout == INJ_SEQUENTIAL)
           {
-            injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
-            injector4StartAngle = calculateInjector4StartAngle(PWdivTimerPerDegree);
+            //injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
+            //injector4StartAngle = calculateInjector4StartAngle(PWdivTimerPerDegree);
+            injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees);
+            injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees);
 
             if(configPage6.fuelTrimEnabled > 0)
             {
@@ -597,7 +602,8 @@ void loop()
           else if( (configPage10.stagingEnabled == true) && (currentStatus.PW3 > 0) )
           {
             PWdivTimerPerDegree = div(currentStatus.PW3, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
-            injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
+            //injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
+            injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees);
 
             injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
             if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
@@ -605,34 +611,51 @@ void loop()
           break;
         //5 cylinders
         case 5:
-          injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree); //Note the shared timing with INJ2
-          injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
-          injector4StartAngle = calculateInjector4StartAngle(PWdivTimerPerDegree);
+          injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees);
+          injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees);
+          injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees);
           #if INJ_CHANNELS >= 5
-            injector5StartAngle = calculateInjector5StartAngle(PWdivTimerPerDegree);
+            injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel5InjDegrees);
           #endif
           break;
         //6 cylinders
         case 6:
-          injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
-          injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
+          //injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
+          //injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
+
+          injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees);
+          injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees);
+          
           #if INJ_CHANNELS >= 6
             if(configPage2.injLayout == INJ_SEQUENTIAL)
             {
-              injector4StartAngle = (configPage2.inj1Ang + channel4InjDegrees - ( PWdivTimerPerDegree ));
-              if(injector4StartAngle > CRANK_ANGLE_MAX_INJ) {injector4StartAngle -= CRANK_ANGLE_MAX_INJ;}
-              injector5StartAngle = (configPage2.inj2Ang + channel5InjDegrees - ( PWdivTimerPerDegree ));
-              if(injector5StartAngle > CRANK_ANGLE_MAX_INJ) {injector5StartAngle -= CRANK_ANGLE_MAX_INJ;}
-              injector6StartAngle = (configPage2.inj3Ang + channel6InjDegrees - ( PWdivTimerPerDegree ));
-              if(injector6StartAngle > CRANK_ANGLE_MAX_INJ) {injector6StartAngle -= CRANK_ANGLE_MAX_INJ;}
+              injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees);
+              injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel5InjDegrees);
+              injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel6InjDegrees);
             }
           #endif
           break;
         //8 cylinders
         case 8:
+        /*
           injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
           injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
           injector4StartAngle = calculateInjector4StartAngle(PWdivTimerPerDegree);
+          */
+
+          injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees);
+          injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees);
+          injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees);
+
+          #if INJ_CHANNELS >= 8
+            if(configPage2.injLayout == INJ_SEQUENTIAL)
+            {
+              injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel5InjDegrees);
+              injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel6InjDegrees);
+              injector7StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel7InjDegrees);
+              injector8StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel8InjDegrees);
+            }
+          #endif
           break;
 
         //Will hit the default case on 1 cylinder or >8 cylinders. Do nothing in these cases
@@ -776,7 +799,7 @@ void loop()
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
           tempStartAngle = injector5StartAngle - channel5InjDegrees;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
-          if (tempStartAngle <= tempCrankAngle && fuelSchedule5.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule5.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
             //Note the hacky use of fuel schedule 3 below
@@ -971,10 +994,10 @@ void loop()
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
         //if (tempStartAngle > tempCrankAngle)
         {
-            long ignition3StartTime = 0;
+            unsigned long ignition3StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule3.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition3StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
-            //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition3StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition3StartTime = 0; }
 
             if( (ignition3StartTime > 0) && (curRollingCut != 3) )
@@ -996,7 +1019,7 @@ void loop()
         //if (tempStartAngle > tempCrankAngle)
         {
 
-            long ignition4StartTime = 0;
+            unsigned long ignition4StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule4.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition4StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
@@ -1021,18 +1044,19 @@ void loop()
         //if (tempStartAngle > tempCrankAngle)
         {
 
-            long ignition5StartTime = 0;
+            unsigned long ignition5StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule5.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition5StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
-            //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition5StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition5StartTime = 0; }
 
-            if( (ignition5StartTime > 0) && (curRollingCut != 5) ) {
-            setIgnitionSchedule5(ign5StartFunction,
-                      ignition5StartTime,
-                      currentStatus.dwell + fixedCrankingOverride,
-                      ign5EndFunction
-                      );
+            if( (ignition5StartTime > 0) && (curRollingCut != 5) )
+            {
+              setIgnitionSchedule5(ign5StartFunction,
+                        ignition5StartTime,
+                        currentStatus.dwell + fixedCrankingOverride,
+                        ign5EndFunction
+                        );
             }
         }
 #endif
@@ -1042,13 +1066,15 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition6StartAngle - channel6IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+        //if (tempStartAngle > tempCrankAngle)
         {
             unsigned long ignition6StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule6.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition6StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition6StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition6StartTime = 0; }
 
-            if( (ignition6StartTime > 0) && (curRollingCut != 2) )
+            if( (ignition6StartTime > 0) && (curRollingCut != 6) )
             {
               setIgnitionSchedule6(ign6StartFunction,
                         ignition6StartTime,
@@ -1064,13 +1090,15 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition7StartAngle - channel7IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+        //if (tempStartAngle > tempCrankAngle)
         {
             unsigned long ignition7StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule7.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition7StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition7StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition7StartTime = 0; }
 
-            if( (ignition7StartTime > 0) && (curRollingCut != 2) )
+            if( (ignition7StartTime > 0) && (curRollingCut != 7) )
             {
               setIgnitionSchedule7(ign7StartFunction,
                         ignition7StartTime,
@@ -1086,13 +1114,15 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition8StartAngle - channel8IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+        //if (tempStartAngle > tempCrankAngle)
         {
             unsigned long ignition8StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule8.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition8StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition8StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition8StartTime = 0; }
 
-            if( (ignition8StartTime > 0) && (curRollingCut != 2) )
+            if( (ignition8StartTime > 0) && (curRollingCut != 8) )
             {
               setIgnitionSchedule8(ign8StartFunction,
                         ignition8StartTime,
@@ -1140,6 +1170,12 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   uint16_t iAFR = 147;
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
+
+  //If corrections are huge, use less bitshift to avoid overflow. Sacrifices a bit more accuracy (basically only during very cold temp cranking)
+  byte bitShift = 7;
+  if (corrections > 511 ) { bitShift = 6; }
+  if (corrections > 1023) { bitShift = 5; }
+  
   iVE = ((unsigned int)VE << 7) / 100;
   if ( configPage2.multiplyMAP == true ) {
     iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
@@ -1147,7 +1183,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
   }
-  iCorrections = (corrections << 7) / 100;
+  iCorrections = (corrections << bitShift) / 100;
 
 
   unsigned long intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
@@ -1158,7 +1194,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
     //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
     intermediate = (intermediate * (unsigned long)iAFR) >> 7;  
   }
-  intermediate = (intermediate * (unsigned long)iCorrections) >> 7;
+  intermediate = (intermediate * (unsigned long)iCorrections) >> bitShift;
   if (intermediate != 0)
   {
     //If intermeditate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
@@ -1260,41 +1296,26 @@ byte getAdvance()
   return tempAdvance;
 }
 
+/*
 uint16_t calculateInjector2StartAngle(unsigned int PWdivTimerPerDegree)
 {
-  uint16_t tempInjector2StartAngle = (configPage2.inj2Ang + channel2InjDegrees); //This makes the start angle equal to the end angle
+  uint16_t tempInjector2StartAngle = (currentStatus.injAngle + channel2InjDegrees); //This makes the start angle equal to the end angle
   if(tempInjector2StartAngle < PWdivTimerPerDegree) { tempInjector2StartAngle += CRANK_ANGLE_MAX_INJ; }
   tempInjector2StartAngle -= PWdivTimerPerDegree; //Subtract the number of degrees the PW will take to get the start angle
   if(tempInjector2StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { tempInjector2StartAngle -= CRANK_ANGLE_MAX_INJ; }
 
   return tempInjector2StartAngle;
 }
-uint16_t calculateInjector3StartAngle(unsigned int PWdivTimerPerDegree)
-{
-  uint16_t tempInjector3StartAngle = (configPage2.inj3Ang + channel3InjDegrees);
-  if(tempInjector3StartAngle < PWdivTimerPerDegree) { tempInjector3StartAngle += CRANK_ANGLE_MAX_INJ; }
-  tempInjector3StartAngle -= PWdivTimerPerDegree;
-  if(tempInjector3StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { tempInjector3StartAngle -= CRANK_ANGLE_MAX_INJ; }
+*/
 
-  return tempInjector3StartAngle;
-}
-uint16_t calculateInjector4StartAngle(unsigned int PWdivTimerPerDegree)
+uint16_t calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_t injChannelDegrees)
 {
-  uint16_t tempInjector4StartAngle = (configPage2.inj4Ang + channel4InjDegrees);
-  if(tempInjector4StartAngle < PWdivTimerPerDegree) { tempInjector4StartAngle += CRANK_ANGLE_MAX_INJ; }
-  tempInjector4StartAngle -= PWdivTimerPerDegree;
-  if(tempInjector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { tempInjector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
+  uint16_t tempInjectorStartAngle = (currentStatus.injAngle + injChannelDegrees);
+  if(tempInjectorStartAngle < PWdivTimerPerDegree) { tempInjectorStartAngle += CRANK_ANGLE_MAX_INJ; }
+  tempInjectorStartAngle -= PWdivTimerPerDegree;
+  while(tempInjectorStartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { tempInjectorStartAngle -= CRANK_ANGLE_MAX_INJ; }
 
-  return tempInjector4StartAngle;
-}
-uint16_t calculateInjector5StartAngle(unsigned int PWdivTimerPerDegree)
-{
-  uint16_t tempInjector5StartAngle = (configPage2.inj1Ang + channel4InjDegrees); //Note the use of inj1Ang here
-  if(tempInjector5StartAngle < PWdivTimerPerDegree) { tempInjector5StartAngle += CRANK_ANGLE_MAX_INJ; }
-  tempInjector5StartAngle -= PWdivTimerPerDegree;
-  if(tempInjector5StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { tempInjector5StartAngle -= CRANK_ANGLE_MAX_INJ; }
-
-  return tempInjector5StartAngle;
+  return tempInjectorStartAngle;
 }
 
 void calculateIgnitionAngles(int dwellAngle)
@@ -1440,7 +1461,7 @@ void calculateIgnitionAngles(int dwellAngle)
       if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
       {
         ignition5EndAngle = channel5IgnDegrees - currentStatus.advance;
-        if(ignition3EndAngle > CRANK_ANGLE_MAX_IGN) {ignition5EndAngle -= CRANK_ANGLE_MAX_IGN;}
+        if(ignition5EndAngle > CRANK_ANGLE_MAX_IGN) {ignition5EndAngle -= CRANK_ANGLE_MAX_IGN;}
         ignition5StartAngle = ignition5EndAngle - dwellAngle;
         if(ignition5StartAngle < 0) {ignition5StartAngle += CRANK_ANGLE_MAX_IGN;}
 
