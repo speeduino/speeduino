@@ -643,8 +643,9 @@ struct config2 {
 
   byte idleTaperTime;
   byte dfcoDelay;
+  byte dfcoMinCLT;
 
-  byte unused2_95[27];
+  byte unused2_95[26];
 
 #if defined(CORE_AVR)
   };
