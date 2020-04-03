@@ -9,7 +9,7 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#define LOG_ENTRY_SIZE   100 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
+#define LOG_ENTRY_SIZE   101 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
 
 void createLog(uint8_t *array);
 

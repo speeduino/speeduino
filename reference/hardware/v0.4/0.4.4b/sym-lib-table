@@ -1,0 +1,6 @@
+(sym_lib_table
+  (lib (name Arduino)(type Legacy)(uri ${KIPRJMOD}/lib/Shields/Shields.lib)(options "")(descr ""))
+  (lib (name Connector)(type Legacy)(uri ${KIPRJMOD}/lib/Connector_Automotive/Connector_Automotive.lib)(options "")(descr ""))
+  (lib (name Misc)(type Legacy)(uri ${KIPRJMOD}/lib/Misc/Misc.lib)(options "")(descr ""))
+  (lib (name IC_Automotive)(type Legacy)(uri ${KIPRJMOD}/lib/IC_Automotive/IC_Automotive.lib)(options "")(descr ""))
+)
