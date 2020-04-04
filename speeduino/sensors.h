@@ -68,6 +68,7 @@ void readIAT();
 void readO2();
 void readBat();
 void readBaro();
+void readVARlaunch();
 
 #if defined(ANALOG_ISR)
 volatile int AnChannel[15];

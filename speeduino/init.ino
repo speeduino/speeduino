@@ -1932,6 +1932,34 @@ void setPinMapping(byte boardID)
       break;
     #endif
 
+    #if defined(CORE_TEENSY35)
+    case 52:
+      //Pin mappings as per the teensy 3.5 MicroEFI board shield
+      pinInjector1 = 30; //Output pin injector 1 is on
+      pinInjector2 = 33; //Output pin injector 2 is on
+      pinCoil1 = 29; //Pin for coil 1
+      pinCoil2 = 28; //Pin for coil 2
+      pinTrigger = 6; //The CAS pin
+      pinTPS = A0; //14 //TPS input pin
+      pinMAP = A5; //19 //MAP sensor pin
+      pinBaro = A1; //15 //Baro sensor pin      
+      pinIAT = A4; //18 //IAT sensor pin
+      pinCLT = A6; //20 //CLT sensor pin
+      pinO2 = A8; //22 //O2 sensor pin
+      pinBat = A2; //16 //Battery reference voltage pin
+      pinTachOut = 11; //Tacho output pin
+      pinBoost = 21; //Boost control
+      pinFuelPump = 38; //Fuel pump output
+      pinLaunch = 24; //Can be overwritten below
+      pinFan = 27; //Pin for the fan output 
+      pinFlex = A18; // Flex sensor
+      pinVARlaunch = A3; //VARlaunch sensor pin
+      pinOil = 39; // Pin Oil pressure switch or analog 39 = A20 
+      pinWarnOil = 26; // Pin warning Leds low Oil pressure 3A max
+      LedPixels = 35; // Pin for led neopixel control
+      break;
+    #endif
+
     case 55:
       #if defined(CORE_TEENSY35)
       //Pin mappings for the DropBear
@@ -2302,6 +2330,7 @@ void setPinMapping(byte boardID)
   if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage6.baroPin + A0; }
   if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_NR_GPIO_PINS) ) { pinEMAP = configPage10.EMAPPin + A0; }
   if ( (configPage10.fuel2InputPin != 0) && (configPage10.fuel2InputPin < BOARD_NR_GPIO_PINS) ) { pinFuel2Input = pinTranslate(configPage10.fuel2InputPin); }
+  if ( (configPage6.varlaunchPin != 0) && (configPage6.varlaunchPin < BOARD_NR_GPIO_PINS) ) { pinVARlaunch = pinTranslate(configPage6.varlaunchPin); }
 
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);

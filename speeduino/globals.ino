@@ -199,6 +199,10 @@ byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an al barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
+byte pinVARlaunch; // Pin potentiometer VARlaunch
+byte pinOil; // Pin Oil pressure switch on/off or analog
+byte pinWarnOil;// Pin warning Output Leds low pressure Oil
+byte LedPixels;// Leds control for shitlight and warning oil pressure/CLTmax neopixel type
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   byte pinMC33810_1_CS;

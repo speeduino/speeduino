@@ -412,7 +412,7 @@ extern volatile byte LOOP_TIMER;
 //These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
 #define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) || ((pin) == pinInjector5) || ((pin) == pinInjector6) || ((pin) == pinInjector7) || ((pin) == pinInjector8) )
 #define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) || ((pin) == pinCoil5) || ((pin) == pinCoil6) || ((pin) == pinCoil7) || ((pin) == pinCoil8) )
-#define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
+#define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) || ((pin) == pinVARlaunch))
 #define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) )
 #define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) )
 
@@ -445,6 +445,8 @@ struct statuses {
   int batADC;
   int O2ADC;
   int O2_2ADC;
+  int VARlaunch;
+  int VARlaunchADC;
   int dwell;
   byte dwellCorrection; /**< The amount of correction being applied to the dwell time. */
   byte battery10; /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
@@ -784,9 +786,11 @@ struct config6 {
   byte launchPin : 6;
   byte launchEnabled : 1;
   byte launchHiLo : 1;
-
-  byte lnchSoftLim;
+  byte varlaunchPin : 6;
+  byte unused6_49 :2; //byte lnchSoftLim;
+  byte lnchSoftLimZone;
   int8_t lnchRetard; //Allow for negative advance value (ATDC)
+  byte lnchHardMini;
   byte lnchHardLim;
   byte lnchFuelAdd;
 
@@ -1094,6 +1098,10 @@ extern byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 extern byte pinFlex; //Pin with the flex sensor attached
 extern byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 extern byte pinResetControl; // Output pin used control resetting the Arduino
+extern byte pinVARlaunch; // Pin potentiometer VARlaunch
+extern byte pinOil; // Pin Oil pressure switch or analog
+extern byte pinWarnOil; // Pin warning Leds low pressure Oil
+extern byte LedPixels; // Leds control for shitlight and warning oil pressure/CLTmax neopixel type
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   extern byte pinMC33810_1_CS;
@@ -1121,7 +1129,7 @@ extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing
 
 static_assert(sizeof(struct config2) == 128, "configPage2 size is not 128");
 static_assert(sizeof(struct config4) == 128, "configPage4 size is not 128");
-static_assert(sizeof(struct config6) == 128, "configPage6 size is not 128");
+static_assert(sizeof(struct config6) == 130, "configPage6 size is not 130");
 static_assert(sizeof(struct config9) == 192, "configPage9 size is not 192");
 static_assert(sizeof(struct config10) == 192, "configPage10 size is not 192");
 
