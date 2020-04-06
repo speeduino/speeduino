@@ -926,7 +926,7 @@ void loop()
         //Refresh the current crank angle info
         //ignition1StartAngle = 335;
         crankAngle = getCrankAngle(); //Refresh with the latest crank angle
-        if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
+        while (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
 
 #if IGN_CHANNELS >= 1
         if ( (ignition1StartAngle <= crankAngle) && (ignitionSchedule1.Status == RUNNING) ) { ignition1StartAngle += CRANK_ANGLE_MAX_IGN; }
