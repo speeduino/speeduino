@@ -435,7 +435,8 @@ bool correctionDFCO()
     }
     else {
       if ( dfcoStart == 0 ) { dfcoStart = runSecsX10; }
-      if ( ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) && ( (runSecsX10 - dfcoStart) > configPage2.dfcoDelay ) ){
+      if ( ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh )
+      && ( (runSecsX10 - dfcoStart) > configPage2.dfcoDelay ) && ((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) > configPage2.dfcoTemp) ){
         DFCOValue = true;
       }
     }
