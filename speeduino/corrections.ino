@@ -429,17 +429,20 @@ bool correctionDFCO()
   bool DFCOValue = false;
   if ( configPage2.dfcoEnabled == 1 )
   {
-    if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) {
+    if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) 
+    {
       DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); 
       if ( DFCOValue == false) { dfcoStart = 0; }
     }
-    else {
+    else 
+    {
       if ( dfcoStart == 0 ) { dfcoStart = runSecsX10; }
-      if ( ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) && ( (runSecsX10 - dfcoStart) > configPage2.dfcoDelay ) ){
+      if ( ( currentStatus.coolant >= (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET) ) && ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) && ( (runSecsX10 - dfcoStart) > configPage2.dfcoDelay ) )
+      {
         DFCOValue = true;
       }
-    }
-  }
+    } // DFCO active check
+  } // DFCO enabled check
   return DFCOValue;
 }
 
