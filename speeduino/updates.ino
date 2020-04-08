@@ -321,6 +321,8 @@ void doUpdates()
 
     //Introdced a DFCO delay option. Default it to 0
     configPage2.dfcoDelay = 0;
+    //Introdced a minimum temperature for DFCO. Default it to 40C
+    configPage2.dfcoMinCLT = 40;
     
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 14);

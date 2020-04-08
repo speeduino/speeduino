@@ -644,6 +644,7 @@ struct config2 {
 
   byte idleTaperTime;
   byte dfcoDelay;
+  byte dfcoMinCLT;
 
   //VSS Stuff
   byte vssEnable : 1;
@@ -658,7 +659,7 @@ struct config2 {
   byte vssRatio5;
   byte vssRatio6;
 
-  byte unused2_95[15];
+  byte unused2_95[14];
 
 #if defined(CORE_AVR)
   };
