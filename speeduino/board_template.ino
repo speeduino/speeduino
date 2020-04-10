@@ -34,4 +34,9 @@ uint16_t freeRam()
 
 }
 
+uint32_t GetHWid()
+{
+  return 0;
+}
+
 #endif

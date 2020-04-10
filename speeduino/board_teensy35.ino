@@ -301,4 +301,9 @@ uint16_t freeRam()
     return (uint16_t)stackTop - heapTop;
 }
 
+uint32_t GetHWid()
+{
+    return SIM_SDID;
+}
+
 #endif

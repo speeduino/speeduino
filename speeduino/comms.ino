@@ -106,6 +106,10 @@ void command()
       Serial.print(F("001"));
       break;
 
+    case 'g': // send serial protocol version
+      Serial.print(GetHWid(), HEX);
+      break;
+
     case 'H': //Start the tooth logger
       currentStatus.toothLogEnabled = true;
       currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)

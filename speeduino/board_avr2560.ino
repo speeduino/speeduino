@@ -108,6 +108,17 @@ uint16_t freeRam()
     return (uint16_t) &v - currentVal; //cppcheck-suppress misra-c2012-11.4
 }
 
+uint32_t GetHWid()
+{
+  uint32_t result = 0;
+  noInterrupts();
+  ((uint8_t *)&result)[2] = boot_signature_byte_get(0);
+  ((uint8_t *)&result)[1] = boot_signature_byte_get(2);
+  ((uint8_t *)&result)[0] = boot_signature_byte_get(4);
+  interrupts();
+  return result; //Expected 1E9801
+}
+
 #if defined(TIMER5_MICROS)
 //This is used by the fast version of micros(). We just need to increment the timer overflow counter
 ISR(TIMER5_OVF_vect)

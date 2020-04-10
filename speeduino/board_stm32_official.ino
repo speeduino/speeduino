@@ -161,6 +161,11 @@
       return &top - reinterpret_cast<char*>(sbrk(0));
   }
 
+  uint32_t GetHWid()
+  {
+    return HAL_GetDEVID();
+  }
+
     /*
   ***********************************************************************************************************
   * Interrupt callback functions

@@ -158,4 +158,9 @@ uint16_t freeRam()
     return &top - reinterpret_cast<char*>(sbrk(0));
 }
 
+uint32_t GetHWid()
+{
+  return ( (DBGMCU->IDCODE) & DBGMCU_IDCODE_DEV_ID_Msk );
+}
+
 #endif
