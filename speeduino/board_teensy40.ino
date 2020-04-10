@@ -71,7 +71,7 @@ uint16_t freeRam()
 
 uint32_t GetHWid()
 {
-    return SIM_SDID;
+    return 0UL;
 }
 
 #endif
