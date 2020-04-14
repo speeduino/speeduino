@@ -580,11 +580,11 @@ int8_t correctionCrankingFixedTiming(int8_t advance)
 
 int8_t correctionFlexTiming(int8_t advance)
 {
-  int8_t ignFlexValue = advance;
+  int16_t ignFlexValue = advance;
   if( configPage2.flexEnabled == 1 ) //Check for flex being enabled
   {
-    int16_t flexIgnCorrection = table2D_getValue(&flexAdvTable, currentStatus.ethanolPct) - OFFSET_IGNITION; //Negative values are achieved with offset
-    currentStatus.flexIgnCorrection = (int8_t) flexIgnCorrection; //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here. 
+    ignFlexValue = (int16_t) table2D_getValue(&flexAdvTable, currentStatus.ethanolPct) - OFFSET_IGNITION; //Negative values are achieved with offset
+    currentStatus.flexIgnCorrection = (int8_t) ignFlexValue; //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here. 
     ignFlexValue = (int8_t) advance + currentStatus.flexIgnCorrection;
   }
   return (int8_t) ignFlexValue;
