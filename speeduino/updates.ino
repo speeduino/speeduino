@@ -101,7 +101,7 @@ void doUpdates()
     //Convert whatever flex fuel settings are there into the new tables
 
     configPage10.flexBoostBins[0] = 0;
-    configPage10.flexBoostAdj[0]  = (int8_t)configPage2.unused2_1;
+    configPage10.flexBoostAdj[0]  = (int8_t)configPage2.aeColdPct;
 
     configPage10.flexFuelBins[0] = 0;
     configPage10.flexFuelAdj[0]  = configPage2.idleUpPin;
@@ -116,7 +116,7 @@ void doUpdates()
       configPage10.flexFuelBins[x] = pct;
       configPage10.flexAdvBins[x] = pct;
 
-      int16_t boostAdder = (((configPage2.unused2_2 - (int8_t)configPage2.unused2_1) * pct) / 100) + (int8_t)configPage2.unused2_1;
+      int16_t boostAdder = (((configPage2.aeColdTaperMin - (int8_t)configPage2.aeColdPct) * pct) / 100) + (int8_t)configPage2.aeColdPct;
       configPage10.flexBoostAdj[x] = boostAdder;
 
       uint8_t fuelAdder = (((configPage2.idleUpAdder - configPage2.idleUpPin) * pct) / 100) + configPage2.idleUpPin;
@@ -169,10 +169,10 @@ void doUpdates()
   {
     //May 2019 version adds the use of a 2D table for the priming pulse rather than a single value.
     //This sets all the values in the 2D table to be the same as the previous single value
-    configPage2.primePulse[0] = configPage2.unused2_39 / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
-    configPage2.primePulse[1] = configPage2.unused2_39 / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
-    configPage2.primePulse[2] = configPage2.unused2_39 / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
-    configPage2.primePulse[3] = configPage2.unused2_39 / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
+    configPage2.primePulse[0] = configPage2.aeColdTaperMax / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
+    configPage2.primePulse[1] = configPage2.aeColdTaperMax / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
+    configPage2.primePulse[2] = configPage2.aeColdTaperMax / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
+    configPage2.primePulse[3] = configPage2.aeColdTaperMax / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
     //Set some sane default temperatures for this table
     configPage2.primeBins[0] = 0;
     configPage2.primeBins[1] = 40;
@@ -181,10 +181,10 @@ void doUpdates()
 
     //Also added is coolant based ASE for both duration and amount
     //All the adder amounts are set to what the single value was previously
-    configPage2.asePct[0] = configPage2.unused2_2;
-    configPage2.asePct[1] = configPage2.unused2_2;
-    configPage2.asePct[2] = configPage2.unused2_2;
-    configPage2.asePct[3] = configPage2.unused2_2;
+    configPage2.asePct[0] = configPage2.aeColdTaperMin;
+    configPage2.asePct[1] = configPage2.aeColdTaperMin;
+    configPage2.asePct[2] = configPage2.aeColdTaperMin;
+    configPage2.asePct[3] = configPage2.aeColdTaperMin;
     //ASE duration is set to 10s for all coolant values
     configPage2.aseCount[0] = 10;
     configPage2.aseCount[1] = 10;
@@ -329,6 +329,11 @@ void doUpdates()
     {
       configPage10.flexAdvAdj[i] += 40;
     }
+    
+    //AE cold modifier added. Default to sane values
+    configPage2.aeColdPct = 100;
+    configPage2.aeColdTaperMin = 40;
+    configPage2.aeColdTaperMax = 100;
     
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 14);
