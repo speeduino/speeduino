@@ -291,7 +291,7 @@ uint16_t correctionAccel()
           currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
           accelValue = table2D_getValue(&maeTable, currentStatus.mapDOT);
 
-          //Apply the taper to the above
+          //Apply the RPM taper to the above
           //The RPM settings are stored divided by 100:
           uint16_t trueTaperMin = configPage2.aeTaperMin * 100;
           uint16_t trueTaperMax = configPage2.aeTaperMax * 100;
@@ -305,6 +305,25 @@ uint16_t correctionAccel()
               accelValue = percentage((100-taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
             }
           }
+
+          //Apply AE cold coolant modifier, if CLT is less than taper end temperature
+          if ( currentStatus.coolant < (int)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) )
+          {
+            //If CLT is less than taper min temp, apply full modifier on top of accelValue
+            if ( currentStatus.coolant <= (int)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
+            {
+              accelValue += configPage2.aeColdPct;
+            }
+            //If CLT is between taper min and max, taper the modifier value and apply it on top of accelValue
+            else
+            {
+              int16_t taperRange = (int) configPage2.aeColdTaperMax - configPage2.aeColdTaperMin;
+              int16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
+              int16_t coldPct = (int) 100+ percentage((100-taperPercent), configPage2.aeColdPct-100);
+              accelValue = (int) accelValue * coldPct / 100;
+            }
+          }
+          
           accelValue = 100 + accelValue; //Add the 100 normalisation to the calculated amount
         } //MAE Threshold
       }
@@ -332,7 +351,7 @@ uint16_t correctionAccel()
           currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
           accelValue = table2D_getValue(&taeTable, currentStatus.tpsDOT);
 
-          //Apply the taper to the above
+          //Apply the RPM taper to the above
           //The RPM settings are stored divided by 100:
           uint16_t trueTaperMin = configPage2.aeTaperMin * 100;
           uint16_t trueTaperMax = configPage2.aeTaperMax * 100;
@@ -346,6 +365,25 @@ uint16_t correctionAccel()
               accelValue = percentage((100-taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
             }
           }
+
+          //Apply AE cold coolant modifier, if CLT is less than taper end temperature
+          if ( currentStatus.coolant < (int)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) )
+          {
+            //If CLT is less than taper min temp, apply full modifier on top of accelValue
+            if ( currentStatus.coolant <= (int)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
+            {
+              accelValue = accelValue * configPage2.aeColdPct / 100;
+            }
+            //If CLT is between taper min and max, taper the modifier value and apply it on top of accelValue
+            else
+            {
+              int16_t taperRange = (int) configPage2.aeColdTaperMax - configPage2.aeColdTaperMin;
+              int16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
+              int16_t coldPct = (int) 100+ percentage((100-taperPercent), configPage2.aeColdPct-100);
+              accelValue = (int) accelValue * coldPct / 100;
+            }
+          }
+
           accelValue = 100 + accelValue; //Add the 100 normalisation to the calculated amount
         } //TAE Threshold
       } //TPS change > 2
