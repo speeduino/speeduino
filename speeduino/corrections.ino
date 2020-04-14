@@ -239,10 +239,12 @@ byte correctionASE()
  * @brief Acceleration enrichment correction calculation
  * 
  * Calculates the % change of the throttle over time (%/second) and performs a lookup based on this
+ * Coolant-based modifier is applied on the top of this.
  * When the enrichment is turned on, it runs at that amount for a fixed period of time (taeTime)
  * 
  * @return uint16_t The Acceleration enrichment modifier as a %. 100% = No modification. 
- * As the maximum enrichment amount is +255%, the overall return value from this function can be 100+255=355. Hence this function returns a uint16_t rather than byte
+ * As the maximum enrichment amount is +255% and maximum cold adjustment for this is 255%, the overall return value
+ * from this function can be 100+(255*255/100)=750. Hence this function returns a uint16_t rather than byte
  */
 uint16_t correctionAccel()
 {
