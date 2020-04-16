@@ -10,8 +10,8 @@
   #define LED_BUILTIN 13
   #define CORE_AVR
   #define BOARD_H "board_avr2560.h"
-  #define INJ_CHANNELS 4
-  #define IGN_CHANNELS 5
+  #define INJ_CHANNELS 8
+  #define IGN_CHANNELS 1
 
   //#define TIMER5_MICROS
 
