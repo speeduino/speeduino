@@ -697,6 +697,14 @@ void initialiseAll()
         channel4IgnDegrees = 270;
         maxIgnOutputs = 4;
 
+    #if IGN_CHANNELS >= 1
+        if( (configPage4.sparkMode == IGN_MODE_SINGLE))
+        {
+        maxIgnOutputs = 1;
+        CRANK_ANGLE_MAX_IGN = 90;
+        }
+    #endif
+
     #if IGN_CHANNELS >= 8
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
         {
@@ -1852,8 +1860,8 @@ void setPinMapping(byte boardID)
       pinSpareLOut1 = 37; //low current output spare1
       pinSpareLOut2 = 36; //low current output spare2
       pinSpareLOut3 = 35; //low current output spare3
-      pinSpareLOut4 = 34; //low current output spare4
-      pinSpareLOut5 = 33; //low current output spare4
+      pinInjector5 = 33; //Output pin injector 5 is on
+      pinInjector6 = 34; //Output pin injector 6 is on
       pinFan = 40; //Pin for the fan output
       pinResetControl = 46; //Reset control output PLACEHOLDER value for now
       #endif

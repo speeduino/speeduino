@@ -429,17 +429,20 @@ bool correctionDFCO()
   bool DFCOValue = false;
   if ( configPage2.dfcoEnabled == 1 )
   {
-    if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) {
+    if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) 
+    {
       DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); 
       if ( DFCOValue == false) { dfcoStart = 0; }
     }
-    else {
+    else 
+    {
       if ( dfcoStart == 0 ) { dfcoStart = runSecsX10; }
-      if ( ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) && ( (runSecsX10 - dfcoStart) > configPage2.dfcoDelay ) ){
+      if ( ( currentStatus.coolant >= (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET) ) && ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) && ( (runSecsX10 - dfcoStart) > configPage2.dfcoDelay ) )
+      {
         DFCOValue = true;
       }
-    }
-  }
+    } // DFCO active check
+  } // DFCO enabled check
   return DFCOValue;
 }
 
@@ -482,14 +485,14 @@ byte correctionAFRClosedLoop()
     //Note that this should only run after the sensor warmup delay necause it is used within the Include AFR option
     if(currentStatus.runSecs > configPage6.ego_sdelay) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
 
-    //Check all other requirements for closed loop adjustments
-    if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) )
+    if(ignitionCount >= AFRnextCycle)
     {
-      AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
-
-      if(ignitionCount >= AFRnextCycle)
+      AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
+        
+      //Check all other requirements for closed loop adjustments
+      if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) )
       {
-        AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
+        AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
 
         //Check which algorithm is used, simple or PID
         if (configPage6.egoAlgorithm == EGO_ALGORITHM_SIMPLE)
@@ -532,8 +535,8 @@ byte correctionAFRClosedLoop()
           
         }
         else { AFRValue = 100; } // Occurs if the egoAlgorithm is set to 0 (No Correction)
-      } //Ignition count check
-    } //Multi variable check
+      } //Multi variable check 
+    } //Ignition count check
   } //egoType
 
   return AFRValue; //Catch all (Includes when AFR target = current AFR
@@ -577,13 +580,14 @@ int8_t correctionCrankingFixedTiming(int8_t advance)
 
 int8_t correctionFlexTiming(int8_t advance)
 {
-  byte ignFlexValue = advance;
+  int16_t ignFlexValue = advance;
   if( configPage2.flexEnabled == 1 ) //Check for flex being enabled
   {
-    currentStatus.flexIgnCorrection = (int8_t)table2D_getValue(&flexAdvTable, currentStatus.ethanolPct); //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here. 
-    ignFlexValue = advance + currentStatus.flexIgnCorrection;
+    ignFlexValue = (int16_t) table2D_getValue(&flexAdvTable, currentStatus.ethanolPct) - OFFSET_IGNITION; //Negative values are achieved with offset
+    currentStatus.flexIgnCorrection = (int8_t) ignFlexValue; //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here. 
+    ignFlexValue = (int8_t) advance + currentStatus.flexIgnCorrection;
   }
-  return ignFlexValue;
+  return (int8_t) ignFlexValue;
 }
 
 int8_t correctionIATretard(int8_t advance)
