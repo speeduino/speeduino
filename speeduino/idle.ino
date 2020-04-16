@@ -217,11 +217,23 @@ void idleControl()
       }
       else
       {
-        //Standard running
-        currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        
+        if ( runSecsX10 < configPage2.idleTaperTime )
+        {
+          //Tapering between cranking IAC value and running
+          currentStatus.idleDuty = map(runSecsX10, 0, configPage2.idleTaperTime,\
+          table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET),\
+          table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
+        }
+        else
+        {
+          //Standard running
+          currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        }
       }
 
       if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
+      if( currentStatus.idleDuty > 100 ) { currentStatus.idleDuty = 100; } //Safety Check
       if( currentStatus.idleDuty == 0 ) 
       { 
         disableIdle();
@@ -230,7 +242,7 @@ void idleControl()
       }
       BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
       idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
-      currentStatus.idleLoad = currentStatus.idleDuty >> 1; //Idle Load is divided by 2 in order to send to TS
+      currentStatus.idleLoad = currentStatus.idleDuty;
       idleOn = true;
       
       break;
@@ -252,7 +264,7 @@ void idleControl()
             break; 
           }
           BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
-          currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count) >> 1;
+          currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);
           if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
 
         }

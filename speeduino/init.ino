@@ -454,7 +454,7 @@ void initialiseAll()
         channel3IgnDegrees = configPage2.oddfire3;
         }
 
-        //For alternatiing injection, the squirt occurs at different times for each channel
+        //For alternating injection, the squirt occurs at different times for each channel
         if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
         {
           channel1InjDegrees = 0;
@@ -521,7 +521,7 @@ void initialiseAll()
           maxIgnOutputs = 4;
         }
 
-        //For alternatiing injection, the squirt occurs at different times for each channel
+        //For alternating injection, the squirt occurs at different times for each channel
         if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
         {
           channel2InjDegrees = 180;
@@ -583,7 +583,7 @@ void initialiseAll()
           CRANK_ANGLE_MAX_IGN = 720;
         }
 
-        //For alternatiing injection, the squirt occurs at different times for each channel
+        //For alternating injection, the squirt occurs at different times for each channel
         if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
         {
           if (!configPage2.injTiming) 
@@ -606,6 +606,7 @@ void initialiseAll()
             //Divide by currentStatus.nSquirts ?
           }
         }
+    #if INJ_CHANNELS >= 5
         else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
           channel1InjDegrees = 0;
@@ -614,24 +615,23 @@ void initialiseAll()
           channel4InjDegrees = 432;
           channel5InjDegrees = 576;
 
+          channel5InjEnabled = true;
+
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
         }
+    #endif
 
         channel1InjEnabled = true;
         channel2InjEnabled = true;
-        channel3InjEnabled = false; //this is disabled as injector 5 function calls 3 & 5 together
+        channel3InjEnabled = true;
         channel4InjEnabled = true;
-        channel5InjEnabled = true;
         break;
     case 6:
         channel1IgnDegrees = 0;
-        channel1InjDegrees = 0;
         channel2IgnDegrees = 120;
-        channel2InjDegrees = 120;
         channel3IgnDegrees = 240;
-        channel3InjDegrees = 240;
         maxIgnOutputs = 3;
 
     #if IGN_CHANNELS >= 6
@@ -645,15 +645,29 @@ void initialiseAll()
         }
     #endif
 
-        //Adjust the injection angles based on the number of squirts
-        if (currentStatus.nSquirts > 2)
+        //For alternating injection, the squirt occurs at different times for each channel
+        if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
         {
-          channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
-          channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
+          channel1InjDegrees = 0;
+          channel2InjDegrees = 120;
+          channel3InjDegrees = 240;
+          if (!configPage2.injTiming)
+          {
+            //For simultaneous, all squirts happen at the same time
+            channel1InjDegrees = 0;
+            channel2InjDegrees = 0;
+            channel3InjDegrees = 0;
+          }
+          else if (currentStatus.nSquirts > 2)
+          {
+            //Adjust the injection angles based on the number of squirts
+            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
+            channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
+          }
         }
 
     #if INJ_CHANNELS >= 6
-        if (configPage2.injLayout == INJ_SEQUENTIAL)
+        else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
           channel1InjDegrees = 0;
           channel2InjDegrees = 120;
@@ -670,17 +684,7 @@ void initialiseAll()
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
         }
-    #else 
-        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
     #endif
-
-        if (!configPage2.injTiming) 
-        { 
-          //For simultaneous, all squirts happen at the same time
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 0;
-          channel3InjDegrees = 0; 
-        } 
 
         channel1InjEnabled = true;
         channel2InjEnabled = true;
@@ -688,9 +692,18 @@ void initialiseAll()
         break;
     case 8:
         channel1IgnDegrees = 0;
-        channel2IgnDegrees = channel2InjDegrees = 90;
-        channel3IgnDegrees = channel3InjDegrees = 180;
-        channel4IgnDegrees = channel4InjDegrees = 270;
+        channel2IgnDegrees = 90;
+        channel3IgnDegrees = 180;
+        channel4IgnDegrees = 270;
+        maxIgnOutputs = 4;
+
+    #if IGN_CHANNELS >= 1
+        if( (configPage4.sparkMode == IGN_MODE_SINGLE))
+        {
+        maxIgnOutputs = 1;
+        CRANK_ANGLE_MAX_IGN = 90;
+        }
+    #endif
 
     #if IGN_CHANNELS >= 8
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
@@ -704,16 +717,33 @@ void initialiseAll()
         }
     #endif
 
-        //Adjust the injection angles based on the number of squirts
-        if (currentStatus.nSquirts > 2)
+        //For alternating injection, the squirt occurs at different times for each channel
+        if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
         {
-          channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
-          channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
-          channel4InjDegrees = (channel4InjDegrees * 2) / currentStatus.nSquirts;
+          channel1InjDegrees = 0;
+          channel2InjDegrees = 90;
+          channel3InjDegrees = 180;
+          channel4InjDegrees = 270;
+
+          if (!configPage2.injTiming)
+          {
+            //For simultaneous, all squirts happen at the same time
+            channel1InjDegrees = 0;
+            channel2InjDegrees = 0;
+            channel3InjDegrees = 0;
+            channel4InjDegrees = 0;
+          }
+          else if (currentStatus.nSquirts > 2)
+          {
+            //Adjust the injection angles based on the number of squirts
+            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
+            channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
+            channel4InjDegrees = (channel4InjDegrees * 2) / currentStatus.nSquirts;
+          }
         }
 
     #if INJ_CHANNELS >= 8
-        if (configPage2.injLayout == INJ_SEQUENTIAL)
+        else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
           channel1InjDegrees = 0;
           channel2InjDegrees = 90;
@@ -733,20 +763,7 @@ void initialiseAll()
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
         }
-    #else
-        configPage2.injLayout = 0; //This is a failsafe. We can never run semi-sequential with more than 4 cylinders
     #endif
-
-        maxIgnOutputs = 4;
-
-        if (!configPage2.injTiming) 
-        { 
-          //For simultaneous, all squirts happen at the same time
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 0;
-          channel3InjDegrees = 0;
-          channel4InjDegrees = 0; 
-        }
 
         channel1InjEnabled = true;
         channel2InjEnabled = true;
@@ -772,6 +789,112 @@ void initialiseAll()
       if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX = 720; }
     }
     
+    switch(configPage2.injLayout)
+    {
+    case INJ_PAIRED:
+        //Paired injection
+        inj1StartFunction = openInjector1;
+        inj1EndFunction = closeInjector1;
+        inj2StartFunction = openInjector2;
+        inj2EndFunction = closeInjector2;
+        inj3StartFunction = openInjector3;
+        inj3EndFunction = closeInjector3;
+        inj4StartFunction = openInjector4;
+        inj4EndFunction = closeInjector4;
+        inj5StartFunction = openInjector5;
+        inj5EndFunction = closeInjector5;
+        break;
+
+    case INJ_SEMISEQUENTIAL:
+        //Semi-Sequential injection. Currently possible with 4, 6 and 8 cylinders. 5 cylinder is a special case
+        if( configPage2.nCylinders == 4 )
+        {
+          inj1StartFunction = openInjector1and4;
+          inj1EndFunction = closeInjector1and4;
+          inj2StartFunction = openInjector2and3;
+          inj2EndFunction = closeInjector2and3;
+        }
+        else if( configPage2.nCylinders == 5 ) //This is similar to the paired injection but uses five injector outputs instead of four
+        {
+          inj1StartFunction = openInjector1;
+          inj1EndFunction = closeInjector1;
+          inj2StartFunction = openInjector2;
+          inj2EndFunction = closeInjector2;
+          inj3StartFunction = openInjector3and5;
+          inj3EndFunction = closeInjector3and5;
+          inj4StartFunction = openInjector4;
+          inj4EndFunction = closeInjector4;
+        }
+        else if( configPage2.nCylinders == 6 )
+        {
+          inj1StartFunction = openInjector1and4;
+          inj1EndFunction = closeInjector1and4;
+          inj2StartFunction = openInjector2and5;
+          inj2EndFunction = closeInjector2and5;
+          inj3StartFunction = openInjector3and6;
+          inj3EndFunction = closeInjector3and6;
+        }
+        else if( configPage2.nCylinders == 8 )
+        {
+          inj1StartFunction = openInjector1and5;
+          inj1EndFunction = closeInjector1and5;
+          inj2StartFunction = openInjector2and6;
+          inj2EndFunction = closeInjector2and6;
+          inj3StartFunction = openInjector3and7;
+          inj3EndFunction = closeInjector3and7;
+          inj4StartFunction = openInjector4and8;
+          inj4EndFunction = closeInjector4and8;
+        }
+        else
+        {
+          //Fall back to paired injection
+          inj1StartFunction = openInjector1;
+          inj1EndFunction = closeInjector1;
+          inj2StartFunction = openInjector2;
+          inj2EndFunction = closeInjector2;
+          inj3StartFunction = openInjector3;
+          inj3EndFunction = closeInjector3;
+          inj4StartFunction = openInjector4;
+          inj4EndFunction = closeInjector4;
+          inj5StartFunction = openInjector5;
+          inj5EndFunction = closeInjector5;
+        }
+        break;
+
+    case INJ_SEQUENTIAL:
+        //Sequential injection
+        inj1StartFunction = openInjector1;
+        inj1EndFunction = closeInjector1;
+        inj2StartFunction = openInjector2;
+        inj2EndFunction = closeInjector2;
+        inj3StartFunction = openInjector3;
+        inj3EndFunction = closeInjector3;
+        inj4StartFunction = openInjector4;
+        inj4EndFunction = closeInjector4;
+        inj5StartFunction = openInjector5;
+        inj5EndFunction = closeInjector5;
+        inj6StartFunction = openInjector6;
+        inj6EndFunction = closeInjector6;
+        inj7StartFunction = openInjector7;
+        inj7EndFunction = closeInjector7;
+        inj8StartFunction = openInjector8;
+        inj8EndFunction = closeInjector8;
+        break;
+
+    default:
+        //Paired injection
+        inj1StartFunction = openInjector1;
+        inj1EndFunction = closeInjector1;
+        inj2StartFunction = openInjector2;
+        inj2EndFunction = closeInjector2;
+        inj3StartFunction = openInjector3;
+        inj3EndFunction = closeInjector3;
+        inj4StartFunction = openInjector4;
+        inj4EndFunction = closeInjector4;
+        inj5StartFunction = openInjector5;
+        inj5EndFunction = closeInjector5;
+        break;
+    }
 
     switch(configPage4.sparkMode)
     {
@@ -810,8 +933,8 @@ void initialiseAll()
         break;
 
     case IGN_MODE_WASTEDCOP:
-        //Wasted COP mode. Ignition channels 1&3 and 2&4 are paired together
-        //This is not a valid mode for >4 cylinders
+        //Wasted COP mode. Note, most of the boards can only run this for 4-cyl only.
+        //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
         if( configPage2.nCylinders <= 4 )
         {
           ign1StartFunction = beginCoil1and3Charge;
@@ -824,9 +947,49 @@ void initialiseAll()
           ign4StartFunction = nullCallback;
           ign4EndFunction = nullCallback;
         }
+        //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
+        else if( configPage2.nCylinders == 6 )
+          {
+          ign1StartFunction = beginCoil1and4Charge;
+          ign1EndFunction = endCoil1and4Charge;
+          ign2StartFunction = beginCoil2and5Charge;
+          ign2EndFunction = endCoil2and5Charge;
+          ign3StartFunction = beginCoil3and6Charge;
+          ign3EndFunction = endCoil3and6Charge;
+
+          ign4StartFunction = nullCallback;
+          ign4EndFunction = nullCallback;
+          ign5StartFunction = nullCallback;
+          ign5EndFunction = nullCallback;
+          ign6StartFunction = nullCallback;
+          ign6EndFunction = nullCallback;
+        }
+        //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
+        else if( configPage2.nCylinders == 8 )
+          {
+          ign1StartFunction = beginCoil1and5Charge;
+          ign1EndFunction = endCoil1and5Charge;
+          ign2StartFunction = beginCoil2and6Charge;
+          ign2EndFunction = endCoil2and6Charge;
+          ign3StartFunction = beginCoil3and7Charge;
+          ign3EndFunction = endCoil3and7Charge;
+          ign3StartFunction = beginCoil4and8Charge;
+          ign3EndFunction = endCoil4and8Charge;
+
+          ign4StartFunction = nullCallback;
+          ign4EndFunction = nullCallback;
+          ign5StartFunction = nullCallback;
+          ign5EndFunction = nullCallback;
+          ign6StartFunction = nullCallback;
+          ign6EndFunction = nullCallback;
+          ign7StartFunction = nullCallback;
+          ign7EndFunction = nullCallback;
+          ign8StartFunction = nullCallback;
+          ign8EndFunction = nullCallback;
+        }
         else
         {
-          //If the person has inadvertantly selected this when running more than 4 cylinders, just use standard Wasted spark mode
+          //If the person has inadvertantly selected this when running more than 4 cylinders or other than 6 cylinders, just use standard Wasted spark mode
           ign1StartFunction = beginCoil1Charge;
           ign1EndFunction = endCoil1Charge;
           ign2StartFunction = beginCoil2Charge;
@@ -939,13 +1102,26 @@ void initialiseAll()
     interrupts();
     //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
     readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
+    readTPS(false); // Need to read tps to detect flood clear state
     unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-    if(primingValue > 0)
+    if((primingValue > 0) && (currentStatus.TPS < configPage4.floodClear))
     {
-      setFuelSchedule1(100, (primingValue * 100 * 5)); //to acheive long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
-      setFuelSchedule2(100, (primingValue * 100 * 5));
-      setFuelSchedule3(100, (primingValue * 100 * 5));
-      setFuelSchedule4(100, (primingValue * 100 * 5));
+      if(channel1InjEnabled == true) { setFuelSchedule1(100, (primingValue * 100 * 5)); } //to achieve long enough priming pulses, the values in tunerstudio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
+      if(channel2InjEnabled == true) { setFuelSchedule2(100, (primingValue * 100 * 5)); }
+      if(channel3InjEnabled == true) { setFuelSchedule3(100, (primingValue * 100 * 5)); }
+      if(channel4InjEnabled == true) { setFuelSchedule4(100, (primingValue * 100 * 5)); }
+      #if INJ_CHANNELS >= 5
+      if(channel5InjEnabled == true) { setFuelSchedule5(100, (primingValue * 100 * 5)); }
+      #endif
+      #if INJ_CHANNELS >= 6
+      if(channel6InjEnabled == true) { setFuelSchedule6(100, (primingValue * 100 * 5)); }
+      #endif
+      #if INJ_CHANNELS >= 7
+      if(channel7InjEnabled == true) { setFuelSchedule7(100, (primingValue * 100 * 5)); }
+      #endif
+      #if INJ_CHANNELS >= 8
+      if(channel8InjEnabled == true) { setFuelSchedule8(100, (primingValue * 100 * 5)); }
+      #endif
     }
 
     initialisationComplete = true;
@@ -1684,8 +1860,8 @@ void setPinMapping(byte boardID)
       pinSpareLOut1 = 37; //low current output spare1
       pinSpareLOut2 = 36; //low current output spare2
       pinSpareLOut3 = 35; //low current output spare3
-      pinSpareLOut4 = 34; //low current output spare4
-      pinSpareLOut5 = 33; //low current output spare4
+      pinInjector5 = 33; //Output pin injector 5 is on
+      pinInjector6 = 34; //Output pin injector 6 is on
       pinFan = 40; //Pin for the fan output
       pinResetControl = 46; //Reset control output PLACEHOLDER value for now
       #endif

@@ -318,6 +318,17 @@ void doUpdates()
     configPage2.injAngRPM[1] = 25;
     configPage2.injAngRPM[2] = 45;
     configPage2.injAngRPM[3] = 65;
+
+    //Introdced a DFCO delay option. Default it to 0
+    configPage2.dfcoDelay = 0;
+    //Introdced a minimum temperature for DFCO. Default it to 40C
+    configPage2.dfcoMinCLT = 40;
+
+    //Update flexfuel ignition config values for 40 degrees offset
+    for (int i=0; i<6; i++)
+    {
+      configPage10.flexAdvAdj[i] += 40;
+    }
     
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 14);
