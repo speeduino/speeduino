@@ -528,8 +528,8 @@ struct statuses {
 struct config2 {
 
   byte aseTsnDelay;
-  byte unused2_1;
-  byte unused2_2;  //was ASE
+  byte aeColdPct;  //AE cold clt modifier %
+  byte aeColdTaperMin; //AE cold modifier, taper start temp (full modifier), was ASE in early versions
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
   byte battVCorMode : 1;
   byte unused1_3c : 5;
@@ -587,7 +587,7 @@ struct config2 {
   byte perToothIgn : 1;
   byte dfcoEnabled : 1; //Whether or not DFCO is turned on
 
-  byte unused2_39;  //Was primePulse
+  byte aeColdTaperMax;  //AE cold modifier, taper end temp (no modifier applied), was primePulse in early versions
   byte dutyLim;
   byte flexFreqLow; //Lowest valid frequency reading from the flex sensor
   byte flexFreqHigh; //Highest valid frequency reading from the flex sensor
