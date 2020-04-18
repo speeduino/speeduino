@@ -315,7 +315,7 @@ uint16_t correctionAccel()
             if ( currentStatus.coolant <= (int)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
             {
               uint16_t accelValue_uint = (uint16_t) accelValue * configPage2.aeColdPct / 100;
-              accelValue = (uint16_t) accelValue_uint;
+              accelValue = (int16_t) accelValue_uint;
             }
             //If CLT is between taper min and max, taper the modifier value and apply it on top of accelValue
             else
@@ -323,8 +323,8 @@ uint16_t correctionAccel()
               int16_t taperRange = (int16_t) configPage2.aeColdTaperMax - configPage2.aeColdTaperMin;
               int16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
               int16_t coldPct = (int16_t) 100+ percentage((100-taperPercent), configPage2.aeColdPct-100);
-              unsigned long accelValue_long = (unsigned long) accelValue * coldPct / 100; //Potential overflow (if AE is large) without using uint16_t
-              accelValue = (uint16_t) accelValue_long;
+              uint16_t accelValue_uint = (uint16_t) accelValue * coldPct / 100; //Potential overflow (if AE is large) without using uint16_t
+              accelValue = (int16_t) accelValue_uint;
             }
           }
           
@@ -376,8 +376,8 @@ uint16_t correctionAccel()
             //If CLT is less than taper min temp, apply full modifier on top of accelValue
             if ( currentStatus.coolant <= (int)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
             {
-              unsigned long accelValue_long = (unsigned long) accelValue * configPage2.aeColdPct / 100;
-              accelValue = (uint16_t) accelValue_long;
+              uint16_t accelValue_uint = (uint16_t) accelValue * configPage2.aeColdPct / 100;
+              accelValue = (int16_t) accelValue_uint;
             }
             //If CLT is between taper min and max, taper the modifier value and apply it on top of accelValue
             else
@@ -386,7 +386,7 @@ uint16_t correctionAccel()
               int16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
               int16_t coldPct = (int16_t) 100+ percentage((100-taperPercent), configPage2.aeColdPct-100);
               uint16_t accelValue_uint = (uint16_t) accelValue * coldPct / 100; //Potential overflow (if AE is large) without using uint16_t
-              accelValue = (uint16_t) accelValue_uint;
+              accelValue = (int16_t) accelValue_uint;
             }
           }
 
