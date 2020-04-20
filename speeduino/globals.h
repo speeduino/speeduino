@@ -651,7 +651,7 @@ struct config2 {
   byte vssPullup : 1;
   
   uint16_t vssPulsesPerKm;
-  byte vssSpare;
+  byte vssSmoothing;
   uint16_t vssRatio1;
   uint16_t vssRatio2;
   byte vssRatio3;
