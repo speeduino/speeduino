@@ -187,12 +187,15 @@ uint16_t correctionCranking()
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
 
-  //If we're not cranking, check if if cranking enrichment tapering to ASE still applies
+  //If we're not cranking, check if if cranking enrichment tapering to ASE should be done
   } else if ( (uint16_t) (currentStatus.runSecs*10) < configPage10.crankingEnrichTaper)
   {
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
-    crankingValue = (uint16_t) map(runSecsX10, 0, configPage10.crankingEnrichTaper, (crankingValue - currentStatus.ASEValue + 100), 100);
+    //Taper start value needs to account for ASE that is now running, so total correction does not increase when taper begins
+    unsigned long taperStart = (unsigned long) crankingValue * 100 / currentStatus.ASEValue;
+    crankingValue = (uint16_t) map(runSecsX10, 0, configPage10.crankingEnrichTaper, taperStart, 100); //Taper from start value to 100%
+    if (crankingValue < 100) { crankingValue = 100; } //Sanity check
   }
   return crankingValue;
 }
