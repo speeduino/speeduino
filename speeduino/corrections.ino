@@ -181,11 +181,18 @@ Additional fuel % to be added when the engine is cranking
 uint16_t correctionCranking()
 {
   uint16_t crankingValue = 100;
-  //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage2.crankingPct; }
+  //Check if we are actually cranking
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
   {
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
+
+  //If we're not cranking, check if if cranking enrichment tapering to ASE still applies
+  } else if ( (uint16_t) (currentStatus.runSecs*10) < configPage10.crankingEnrichTaper)
+  {
+    crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
+    crankingValue = (uint16_t) map(runSecsX10, 0, configPage10.crankingEnrichTaper, (crankingValue - currentStatus.ASEValue + 100), 100);
   }
   return crankingValue;
 }

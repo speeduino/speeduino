@@ -1035,21 +1035,24 @@ struct config10 {
   byte fuel2Algorithm : 3;
   byte fuel2Mode : 3;
   byte fuel2SwitchVariable : 2;
+
+  //Bytes 123-124
   uint16_t fuel2SwitchValue;
 
-  //Byte 123
+  //Byte 125
   byte fuel2InputPin : 6;
   byte fuel2InputPolarity : 1;
   byte fuel2InputPullup : 1;
 
-  byte vvtCLholdDuty;
-  byte vvtCLKP;
-  byte vvtCLKI;
-  byte vvtCLKD;
-  uint16_t vvtCLMinAng;
-  uint16_t vvtCLMaxAng;
+  byte vvtCLholdDuty; //Byte 126
+  byte vvtCLKP; //Byte 127
+  byte vvtCLKI; //Byte 128
+  byte vvtCLKD; //Byte 129
+  uint16_t vvtCLMinAng; //Bytes 130-131
+  uint16_t vvtCLMaxAng; //Bytes 132-133
 
-  byte unused11_123_191[58];
+  byte crankingEnrichTaper; //Byte 134
+  byte unused11_135_191[57]; //Bytes 135-191
 
 #if defined(CORE_AVR)
   };
