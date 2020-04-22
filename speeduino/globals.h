@@ -654,12 +654,12 @@ struct config2 {
   byte vssSmoothing;
   uint16_t vssRatio1;
   uint16_t vssRatio2;
-  byte vssRatio3;
-  byte vssRatio4;
-  byte vssRatio5;
-  byte vssRatio6;
+  uint16_t vssRatio3;
+  uint16_t vssRatio4;
+  uint16_t vssRatio5;
+  uint16_t vssRatio6;
 
-  byte unused2_95[14];
+  byte unused2_95[10];
 
 #if defined(CORE_AVR)
   };
