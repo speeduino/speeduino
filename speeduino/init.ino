@@ -1733,6 +1733,7 @@ void setPinMapping(byte boardID)
       pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
+      pinBaro = A5; //Barometric sensor pin
       pinDisplayReset = 52; // OLED reset pin
       pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
       pinIdle1 = 5; //ICV pin1
@@ -1747,8 +1748,7 @@ void setPinMapping(byte boardID)
       pinLaunch = 51; //Launch control pin
       pinFlex = 2; // Flex sensor
       pinResetControl = 43; //Reset control output
-	  pinVSS = 3;
-	  
+      pinVSS = 3;
       #endif
       #if defined(ARDUINO_BLACK_F407VE)
       //Pin mapping for MEGA replacement F407VE PCB by pazi88
