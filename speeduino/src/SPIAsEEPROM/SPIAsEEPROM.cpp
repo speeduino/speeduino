@@ -178,7 +178,7 @@ uint8_t SPIAsEEPROM::read(uint16_t addressEEPROM){
     //The first 4 bytes of each page must have the magic number 
     //version 0.1 does not check magic number
     if(!SpiFlashAvialable){
-      begin();
+      begin(USE_SPI_EEPROM);
     }
 
 
@@ -229,6 +229,6 @@ uint16_t SPIAsEEPROM::count(uint8_t buf[FLASH_PAGESIZE/BITS_PER_BYTE]){
     return count;
 }
 
-SPIAsEEPROM EEPROM;
+//SPIAsEEPROM EEPROM;
 
 #endif

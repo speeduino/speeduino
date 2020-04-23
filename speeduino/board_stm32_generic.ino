@@ -68,17 +68,17 @@ void initBoard()
     #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB)
         //(CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
         //Timer2 to 4 is on APB1, Timer1 on APB2.   www.st.com/resource/en/datasheet/stm32f103cb.pdf sheet 12
-        Timer1.setPrescaleFactor((72 * 2)-1); //2us resolution
-        Timer2.setPrescaleFactor((36 * 2)-1); //2us resolution
-        Timer3.setPrescaleFactor((36 * 2)-1); //2us resolution
+        Timer1.setPrescaleFactor(((Timer1.getBaseFrequency()/1000000) * 2)-1); //2us resolution
+        Timer2.setPrescaleFactor(((Timer2.getBaseFrequency()/1000000) * 2)-1); //2us resolution
+        Timer3.setPrescaleFactor(((Timer3.getBaseFrequency()/1000000) * 2)-1); //2us resolution
     #else
         //(CYCLES_PER_MICROSECOND == 168, APB2 at 84MHz, APB1 at 42MHz).
         //Timer2 to 14 is on APB1, Timers 1, 8, 9 and 10 on APB2.   www.st.com/resource/en/datasheet/stm32f407vg.pdf sheet 120
-        Timer1.setPrescaleFactor((168 * 2)-1); //2us resolution
-        Timer2.setPrescaleFactor((84 * 2)-1);  //2us resolution
-        Timer3.setPrescaleFactor((84 * 2)-1);  //2us resolution
-        Timer4.setPrescaleFactor((84 * 2)-1);  //2us resolution
-        Timer5.setPrescaleFactor((84 * 2)-1);  //2us resolution
+        Timer1.setPrescaleFactor(((Timer1.getBaseFrequency()/1000000) * 2)-1); //2us resolution
+        Timer2.setPrescaleFactor(((Timer2.getBaseFrequency()/1000000) * 2)-1);  //2us resolution
+        Timer3.setPrescaleFactor(((Timer3.getBaseFrequency()/1000000) * 2)-1);  //2us resolution
+        Timer4.setPrescaleFactor(((Timer4.getBaseFrequency()/1000000) * 2)-1);  //2us resolution
+        Timer5.setPrescaleFactor(((Timer5.getBaseFrequency()/1000000) * 2)-1);  //2us resolution
     #endif
     Timer2.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer2.setMode(2, TIMER_OUTPUT_COMPARE);

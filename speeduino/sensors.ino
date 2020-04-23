@@ -10,6 +10,7 @@ A full copy of the license may be found in the projects root directory
 #include "storage.h"
 #include "comms.h"
 #include "idle.h"
+#include "corrections.h"
 
 void initialiseADC()
 {
@@ -321,7 +322,7 @@ static inline void readMAP()
   }
 }
 
-void readTPS()
+void readTPS(bool useFilter)
 {
   TPSlast = currentStatus.TPS;
   TPSlast_time = TPS_time;
@@ -331,7 +332,9 @@ void readTPS()
     analogRead(pinTPS);
     byte tempTPS = fastMap1023toX(analogRead(pinTPS), 255); //Get the current raw TPS ADC value and map it into a byte
   #endif
-  currentStatus.tpsADC = ADC_FILTER(tempTPS, configPage4.ADCFILTER_TPS, currentStatus.tpsADC);
+  //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
+  if(useFilter == true) { currentStatus.tpsADC = ADC_FILTER(tempTPS, configPage4.ADCFILTER_TPS, currentStatus.tpsADC); }
+  else { currentStatus.tpsADC = tempTPS; }
   //currentStatus.tpsADC = ADC_FILTER(tempTPS, 128, currentStatus.tpsADC);
   byte tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
 
@@ -484,6 +487,48 @@ void readBat()
   currentStatus.battery10 = ADC_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
 }
 
+uint16_t getSpeed()
+{
+  uint16_t tempSpeed = 0;
+  uint32_t pulseTime = 0;
+  if(configPage2.vssMode == 1)
+  {
+    //VSS mode 1 is (Will be) CAN
+  }
+  else if(configPage2.vssMode > 1)
+  {
+    if( (vssLastPulseTime > 0) && (vssLastMinusOnePulseTime > 0) ) //Check we've had at least 2 pulses
+    {
+      if(vssLastPulseTime < vssLastMinusOnePulseTime) { tempSpeed = currentStatus.vss; } //Check for overflow of micros()
+      else
+      {
+        pulseTime = vssLastPulseTime - vssLastMinusOnePulseTime;
+        tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
+        tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply spped smoothing factor
+      }
+    }
+  }
+  return tempSpeed;
+}
+
+byte getGear()
+{
+  byte tempGear = 0; //Unknown gear
+  if(currentStatus.vss > 0)
+  {
+    uint16_t pulsesPer1000rpm = (currentStatus.vss * 10000) / currentStatus.RPM; //Gives the current pulses per 1000RPM, multipled by 10 (10x is the multiplication factor for the ratios in TS)
+    //Begin gear detection
+    if( (pulsesPer1000rpm > (configPage2.vssRatio1 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio1 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 1; }
+    else if( (pulsesPer1000rpm > (configPage2.vssRatio2 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio2 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 2; }
+    else if( (pulsesPer1000rpm > (configPage2.vssRatio3 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio3 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 3; }
+    else if( (pulsesPer1000rpm > (configPage2.vssRatio4 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio4 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 4; }
+    else if( (pulsesPer1000rpm > (configPage2.vssRatio5 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio5 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 5; }
+    else if( (pulsesPer1000rpm > (configPage2.vssRatio6 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio6 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 6; }
+  }
+  
+  return tempGear;
+}
+
 /*
  * The interrupt function for reading the flex sensor frequency
  * This value is incremented with every pulse and reset back to 0 once per second
@@ -508,6 +553,17 @@ void knockPulse()
   }
   else { ++knockCounter; } //Knock has already started, so just increment the counter for this
 
+}
+
+/**
+ * @brief The ISR function for VSS pulses
+ * 
+ */
+void vssPulse()
+{
+  //TODO: Add basic filtering here
+  vssLastMinusOnePulseTime = vssLastPulseTime;
+  vssLastPulseTime = micros();
 }
 
 uint16_t readAuxanalog(uint8_t analogPin)

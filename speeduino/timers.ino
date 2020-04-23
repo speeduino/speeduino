@@ -16,6 +16,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "scheduler.h"
 #include "scheduledIO.h"
 #include "speeduino.h"
+#include "scheduler.h"
 #include "auxiliaries.h"
 
 #if defined(CORE_AVR)
@@ -62,6 +63,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if(ignitionSchedule3.Status == RUNNING) { if( (ignitionSchedule3.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign3EndFunction(); ignitionSchedule3.Status = OFF; } }
   if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign4EndFunction(); ignitionSchedule4.Status = OFF; } }
   if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign5EndFunction(); ignitionSchedule5.Status = OFF; } }
+  if(ignitionSchedule6.Status == RUNNING) { if( (ignitionSchedule6.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign6EndFunction(); ignitionSchedule6.Status = OFF; } }
+  if(ignitionSchedule7.Status == RUNNING) { if( (ignitionSchedule7.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign7EndFunction(); ignitionSchedule7.Status = OFF; } }
+  if(ignitionSchedule8.Status == RUNNING) { if( (ignitionSchedule8.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign8EndFunction(); ignitionSchedule8.Status = OFF; } }
 
   //Tacho output check
   //Tacho is flagged as being ready for a pulse by the ignition outputs. 
@@ -117,6 +121,8 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
+    if ( (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) && (runSecsX10 < 65535) ) { runSecsX10++; }
+    else { runSecsX10 = 0; }
   }
 
   //Loop executed every 250ms loop (1ms x 250 = 250ms)

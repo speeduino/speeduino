@@ -25,6 +25,7 @@ struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
 struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
+struct table2D injectorAngleTable; //4 bin injector angle curve (2D)
 struct table2D IATDensityCorrectionTable; //9 bin inlet air temperature density correction (2D)
 struct table2D baroFuelTable; //8 bin baro correction curve (2D)
 struct table2D IATRetardTable; //6 bin ignition adjustment based on inlet air temperature  (2D)
@@ -98,6 +99,9 @@ int ignition2EndAngle = 0;
 int ignition3EndAngle = 0;
 int ignition4EndAngle = 0;
 int ignition5EndAngle = 0;
+int ignition6EndAngle = 0;
+int ignition7EndAngle = 0;
+int ignition8EndAngle = 0;
 
 //These are variables used across multiple files
 bool initialisationComplete = false; //Tracks whether the setup() function has run completely
@@ -122,6 +126,7 @@ byte secondaryTriggerEdge;
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360;
 int CRANK_ANGLE_MAX_INJ = 360; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+volatile uint16_t runSecsX10;
 
 
 //This needs to be here because using the config page directly can prevent burning the setting
@@ -133,12 +138,12 @@ volatile byte LOOP_TIMER;
 
 byte pinInjector1; //Output pin injector 1
 byte pinInjector2; //Output pin injector 2
-byte pinInjector3; //Output pin injector 3 is on
-byte pinInjector4; //Output pin injector 4 is on
-byte pinInjector5; //Output pin injector 5 NOT USED YET
-byte pinInjector6; //Placeholder only - NOT USED
-byte pinInjector7; //Placeholder only - NOT USED
-byte pinInjector8; //Placeholder only - NOT USED
+byte pinInjector3; //Output pin injector 3
+byte pinInjector4; //Output pin injector 4
+byte pinInjector5; //Output pin injector 5
+byte pinInjector6; //Output pin injector 6
+byte pinInjector7; //Output pin injector 7
+byte pinInjector8; //Output pin injector 8
 byte pinCoil1; //Pin for coil 1
 byte pinCoil2; //Pin for coil 2
 byte pinCoil3; //Pin for coil 3
@@ -192,6 +197,7 @@ byte pinStepperEnable; //Turning the DRV8825 driver on/off
 byte pinLaunch;
 byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached
+byte pinVSS;
 byte pinBaro; //Pin that an al barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
 #ifdef USE_MC33810

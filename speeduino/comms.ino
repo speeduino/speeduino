@@ -10,7 +10,7 @@ A full copy of the license may be found in the projects root directory
 #include "maths.h"
 #include "utils.h"
 #include "decoders.h"
-#include "scheduledIO.h"
+#include "TS_CommandButtonHandler.h"
 #include "logger.h"
 #include "errors.h"
 
@@ -86,20 +86,38 @@ void command()
       }
       break;
 
-    //The following can be used to show the amount of free memory
-
     case 'E': // receive command button commands
-      cmdPending = true;
 
-      if(Serial.available() >= 2)
+      if(cmdPending == true)
       {
-        byte cmdGroup = Serial.read();
-        byte cmdValue = Serial.read();
-        int cmdCombined = word(cmdGroup, cmdValue);
-        if (currentStatus.RPM == 0) { commandButtons(cmdCombined); }
+        //
 
-        cmdPending = false;
       }
+      else
+      {
+        cmdPending = true;
+
+        if(Serial.available() >= 2)
+        {
+          byte cmdGroup = Serial.read();
+          byte cmdValue = Serial.read();
+          uint16_t cmdCombined = word(cmdGroup, cmdValue);
+
+          if ( (cmdCombined >= TS_CMD_INJ1_ON) && (cmdCombined <=TS_CMD_IGN8_50PC) )
+          {
+            //Hardware test buttons
+            if (currentStatus.RPM == 0) { TS_CommandButtonsHandler(cmdCombined); }
+            cmdPending = false;
+          }
+          else if( (cmdCombined >= TS_CMD_VSS_60KMH) && (cmdCombined <= TS_CMD_VSS_RATIO6) )
+          {
+            //VSS Calibration commands
+            TS_CommandButtonsHandler(cmdCombined);
+            cmdPending = false;
+          }
+        }
+      }
+
       break;
 
     case 'F': // send serial protocol version
@@ -241,7 +259,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 201912-dev"));
+      Serial.print(F("speeduino 202003-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -271,7 +289,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2019.12-dev"));
+      Serial.print(F("Speeduino 2020.03-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -622,7 +640,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 
   fullStatus[83] = currentStatus.status3;
 
-  fullStatus[84] = currentStatus.nChannels;
+  fullStatus[84] = currentStatus.nChannels; //THIS IS CURRENTLY UNUSED!
   fullStatus[85] = lowByte(currentStatus.fuelLoad);
   fullStatus[86] = highByte(currentStatus.fuelLoad);
   fullStatus[87] = lowByte(currentStatus.ignLoad);
@@ -638,6 +656,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[97] = highByte(currentStatus.flexBoostCorrection);
   fullStatus[98] = currentStatus.baroCorrection;
   fullStatus[99] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
+  fullStatus[100] = currentStatus.ASEValue; //Current ASE (%)
+  fullStatus[101] = currentStatus.vss;
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -933,11 +953,11 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       else if (valueOffset < 90) { tempOffset = valueOffset - 84; trim2Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       else if (valueOffset < 96) { tempOffset = valueOffset - 90; trim2Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
       //Trim table 3
-      else if (valueOffset < 132) { tempOffset = valueOffset - 96; trim3Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim2 map
+      else if (valueOffset < 132) { tempOffset = valueOffset - 96; trim3Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim3 map
       else if (valueOffset < 138) { tempOffset = valueOffset - 132; trim3Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       else if (valueOffset < 144) { tempOffset = valueOffset - 138; trim3Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
       //Trim table 4
-      else if (valueOffset < 180) { tempOffset = valueOffset - 144; trim4Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim2 map
+      else if (valueOffset < 180) { tempOffset = valueOffset - 144; trim4Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim4 map
       else if (valueOffset < 186) { tempOffset = valueOffset - 180; trim4Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       else if (valueOffset < 192) { tempOffset = valueOffset - 186; trim4Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
 
@@ -1169,14 +1189,14 @@ void sendPageASCII()
         Serial.print(F(" "));
       }
       Serial.println();
-      for (pnt_configPage = (byte *)&configPage2.wueValues[9] + 1; pnt_configPage < &configPage2.inj1Ang; pnt_configPage = (byte *)pnt_configPage + 1) {
+      for (pnt_configPage = (byte *)&configPage2.wueValues[9] + 1; pnt_configPage < &configPage2.injAng; pnt_configPage = (byte *)pnt_configPage + 1) {
         Serial.println(*((byte *)pnt_configPage));// This displays all the byte values between the last array up to but not including the first unsigned int on config page 1
       }
       // The following loop displays four unsigned ints
-      for (pnt16_configPage = (uint16_t *)&configPage2.inj1Ang; pnt16_configPage < (uint16_t*)&configPage2.inj4Ang + 1; pnt16_configPage = (uint16_t*)pnt16_configPage + 1)
+      for (pnt16_configPage = (uint16_t *)&configPage2.injAng; pnt16_configPage < (uint16_t*)&configPage2.injAng + 9; pnt16_configPage = (uint16_t*)pnt16_configPage + 1)
       { Serial.println(*((uint16_t *)pnt16_configPage)); }
       // Following loop displays byte values between the unsigned ints
-      for (pnt_configPage = (uint16_t *)&configPage2.inj4Ang + 1; pnt_configPage < &configPage2.mapMax; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
+      for (pnt_configPage = (uint16_t *)&configPage2.injAng + 9; pnt_configPage < &configPage2.mapMax; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
       Serial.println(configPage2.mapMax);
       // Following loop displays remaining byte values of the page
       for (pnt_configPage = (uint16_t *)&configPage2.mapMax + 1; pnt_configPage < (byte *)&configPage2 + npage_size[veSetPage]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
@@ -1822,130 +1842,3 @@ void testComm()
   return;
 }
 
-void commandButtons(int buttonCommand)
-{
-  switch (buttonCommand)
-  {
-    case 256: // cmd is stop
-      BIT_CLEAR(currentStatus.testOutputs, 1);
-      endCoil1Charge();
-      endCoil2Charge();
-      endCoil3Charge();
-      endCoil4Charge();
-      closeInjector1();
-      closeInjector2();
-      closeInjector3();
-      closeInjector4();
-      break;
-
-    case 257: // cmd is enable
-      // currentStatus.testactive = 1;
-      BIT_SET(currentStatus.testOutputs, 1);
-      break;
-
-    case 513: // cmd group is for injector1 on actions
-      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector1(); }
-      break;
-
-    case 514: // cmd group is for injector1 off actions
-      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector1(); }
-      break;
-
-    case 515: // cmd group is for injector1 50% dc actions
-      //for (byte dcloop = 0; dcloop < 11; dcloop++)
-      //{
-      //  digitalWrite(pinInjector1, HIGH);
-      //  delay(500);
-      //  digitalWrite(pinInjector1, LOW);
-      //  delay(500);
-      //}
-      break;
-
-    case 516: // cmd group is for injector2 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector2(); }
-      break;
-
-    case 517: // cmd group is for injector2 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector2(); }
-      break;
-
-    case 518: // cmd group is for injector2 50%dc actions
-
-      break;
-
-    case 519: // cmd group is for injector3 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector3(); }
-      break;
-
-    case 520: // cmd group is for injector3 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector3(); }
-      break;
-
-    case 521: // cmd group is for injector3 50%dc actions
-
-      break;
-
-    case 522: // cmd group is for injector4 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector4(); }
-      break;
-
-    case 523: // cmd group is for injector4 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector4(); }
-      break;
-
-    case 524: // cmd group is for injector4 50% dc actions
-
-      break;
-
-    case 769: // cmd group is for spark1 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil1, coilHIGH); }
-      break;
-
-    case 770: // cmd group is for spark1 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil1, coilLOW); }
-      break;
-
-    case 771: // cmd group is for spark1 50%dc actions
-
-      break;
-
-    case 772: // cmd group is for spark2 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil2, coilHIGH); }
-      break;
-
-    case 773: // cmd group is for spark2 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil2, coilLOW); }
-      break;
-
-    case 774: // cmd group is for spark2 50%dc actions
-
-      break;
-
-    case 775: // cmd group is for spark3 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil3, coilHIGH); }
-      break;
-
-    case 776: // cmd group is for spark3 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil3, coilLOW); }
-      break;
-
-    case 777: // cmd group is for spark3 50%dc actions
-
-      break;
-
-    case 778: // cmd group is for spark4 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil4, coilHIGH); }
-      break;
-
-    case 779: // cmd group is for spark4 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil4, coilLOW); }
-      break;
-
-    case 780: // cmd group is for spark4 50%dc actions
-
-      break;
-
-    default:
-      break;
-  }
-}

@@ -1,48 +1,39 @@
+<div align="center">
 
-| |  |
-| --- | --- |
-| **Dev Status** | ![Stable](https://img.shields.io/badge/Status-Stable-green.svg) |
-| **Latest Release** | [![GitHub release](https://img.shields.io/github/release/noisymime/speeduino.svg)](https://github.com/noisymime/speeduino/releases/latest) |
-| **Build Status** | [![Build](https://img.shields.io/travis/noisymime/speeduino.svg)](https://travis-ci.org/noisymime/speeduino/) |
-| **MISRA Status** | ![MISRA](https://img.shields.io/azure-devops/tests/speeduino/Speeduino/1?label=MISRA&passed_label=warnings&failed_label=violations) |
-| **Feature Bounties** | [![Bountysource](https://img.shields.io/bountysource/team/speeduino/activity.svg)](https://www.bountysource.com/teams/speeduino)
+<img src="https://github.com/speeduino/wiki.js/raw/master/img/Speeduino%20logo_med.png" alt="Speeduino" width="600" />
 
-Speeduino
-=========
+[![Release](https://img.shields.io/github/release/noisymime/speeduino.svg)](https://github.com/noisymime/speeduino/releases/latest)
+[![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://github.com/noisymime/speeduino/blob/master/LICENSE)
+[![Build Status](https://img.shields.io/travis/noisymime/speeduino.svg)](https://travis-ci.org/noisymime/speeduino/)
+[![Open Bounties](https://img.shields.io/bountysource/team/speeduino/activity.svg)](https://www.bountysource.com/teams/speeduino)
+[![GitHub commits](https://img.shields.io/github/commits-since/noisymime/speeduino/202002.svg)](https://github.com/noisymime/speeduino/compare/202002...master)
+![MISRA](https://img.shields.io/azure-devops/tests/speeduino/Speeduino/1?label=MISRA&passed_label=warnings&failed_label=violations)
+[![Chat on Slack](https://img.shields.io/badge/slack-speeduino-CC2B5E.svg?style=flat&logo=slack)](https://speeduino.com/home/community/slack)
 
-The Speeduino project is a flexible, fully featured Engine Management Systems (EMS aka ECU) based on the low cost and open source Arduino platform. It provides all standard engine management functions and is constantly growing to support more features and with wider engine compatibility. 
+##### A low cost, DIY friendly Engine Management System (ECU) based on the Arduino framework
+</div>
 
-FAQ:
-=========
 
-========================================================================
+## Speeduino
+The Speeduino project is a flexible, fully featured Engine Management Systems (EMS aka ECU) based on the low cost and open source Arduino platform. It provides the hardware, firmware and software components that make up an engine management system, all provided under open licenses. With over 1000 installations, Speeduino has matured into a product that meets the needs of the hobbyist and enthusiast community without driving prices to the levels of traditional aftermarket ECUs
 
-Q: Arduino ECU,pffft, heard THAT before. Does this one actually work?
+## Documentation
+The Speeduino online manual can be found at: https://wiki.speeduino.com
 
-A: Yep! 1, 2, 3, 4, 5, 6 and 8 cylinder engines have all run using Speeduino. At last count over 700 engines were running on this platform, but this figure is growing all the time. 
+## Where to Buy
+[Pre-made Speeduino units/boards are available from a number of official resellers](https://speeduino.com/home/where-to-buy)
 
-========================================================================
+These resellers all contribute a portion of sales back to the project to allow for continued development to take place and we encourage sales through them whenever possible. 
+ 
+Of course, being open source, you are free to use the design files provided here to create your own hardware! 
 
-Q: So what can it do?
+## Support
+In addition the manual referenced above, Speeduino has a large and very vibrant community of people to help out with your setup or any questions you might add. 
 
-A: Take a look at this page for details: http://speeduino.com/wiki/index.php/Overview
+* [Speeduino Forum](https://speeduino.com/forum) 
+* [Slack](https://speeduino.com/home/community/slack)
+* [Facebook](https://www.facebook.com/groups/191918764521976/)
 
-========================================================================
+## Contributors
 
-Q: Target platform?
-
-A: Arduino Mega (or other ATmega2560 powered SKU) will be required. Standard arduino models are not suitable for multi-cylinder engines due to their lack of 16-bit timers. The shield board has been designed around the Mega and it is not expected that there will be a non-Mega variant. 
-
-========================================================================
-
-Q: I'm trying to get started or need some general help. What should I do?
-
-A: Support is all through the forum at: http://speeduino.com/forum
-
-========================================================================
-
-Q: I must know more! How can I contact you?
-
-A: Come and visit the forum : http://speeduino.com/forum
-
-If you still need some more info, feel free to jump on our Slack team: http://slack.speeduino.com:3000/
+This project exists thanks to all the people who contribute, both in terms of code and testing provided. If you'd like to get involved, please have a read through [Contributing](contributing.md) and then jump on Slack to discuss things further

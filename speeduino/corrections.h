@@ -9,7 +9,7 @@ void initialiseCorrections();
 
 uint16_t correctionsFuel();
 byte correctionWUE(); //Warmup enrichment
-byte correctionCranking(); //Cranking enrichment
+uint16_t correctionCranking(); //Cranking enrichment
 byte correctionASE(); //After Start Enrichment
 uint16_t correctionAccel(); //Acceleration Enrichment
 byte correctionFloodClear(); //Check for flood clear on cranking
@@ -41,5 +41,7 @@ extern unsigned long knockStartTime;
 extern byte lastKnockCount;
 extern int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 extern int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
+extern byte aseTsnStart;
+extern uint16_t dfcoStart;
 
 #endif // CORRECTIONS_H
