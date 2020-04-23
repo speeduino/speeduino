@@ -1747,6 +1747,8 @@ void setPinMapping(byte boardID)
       pinLaunch = 51; //Launch control pin
       pinFlex = 2; // Flex sensor
       pinResetControl = 43; //Reset control output
+	  pinVSS = 3;
+	  
       #endif
       #if defined(ARDUINO_BLACK_F407VE)
       //Pin mapping for MEGA replacement F407VE PCB by pazi88
@@ -1830,6 +1832,7 @@ void setPinMapping(byte boardID)
         pinTrigger2 = PE13; //
         /* = PE14; */ //
         /* = PE15; */ //
+		pinVSS = PD7;
       #endif
       break;
 
