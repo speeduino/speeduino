@@ -271,8 +271,13 @@ void initialiseAll()
     //Check whether the flex sensor is enabled and if so, attach an interupt for it
     if(configPage2.flexEnabled > 0)
     {
-    attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, RISING);
-    currentStatus.ethanolPct = 0;
+      attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, RISING);
+      currentStatus.ethanolPct = 0;
+    }
+    //Same as above, but for the VSS input
+    if(configPage2.vssMode > 1) // VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
+    {
+      attachInterrupt(digitalPinToInterrupt(pinVSS), vssPulse, RISING);
     }
 
     //Once the configs have been loaded, a number of one time calculations can be completed
@@ -2451,6 +2456,10 @@ void setPinMapping(byte boardID)
   if(configPage2.flexEnabled > 0)
   {
     pinMode(pinFlex, INPUT); //Standard GM / Continental flex sensor requires pullup, but this should be onboard. The internal pullup will not work (Requires ~3.3k)!
+  }
+  if(configPage2.vssMode > 1)
+  {
+    pinMode(pinVSS, INPUT); //Standard GM / Continental flex sensor requires pullup, but this should be onboard. The internal pullup will not work (Requires ~3.3k)!
   }
   if(configPage6.launchEnabled > 0)
   {

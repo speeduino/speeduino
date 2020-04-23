@@ -647,8 +647,8 @@ struct config2 {
   byte dfcoMinCLT;
 
   //VSS Stuff
-  byte vssEnable : 1;
-  byte vssPullup : 1;
+  byte vssMode : 2;
+  byte vssPin : 6;
   
   uint16_t vssPulsesPerKm;
   byte vssSmoothing;
@@ -1107,6 +1107,7 @@ extern byte pinStepperEnable; //Turning the DRV8825 driver on/off
 extern byte pinLaunch;
 extern byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 extern byte pinFlex; //Pin with the flex sensor attached
+extern byte pinVSS; 
 extern byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 extern byte pinResetControl; // Output pin used control resetting the Arduino
 #ifdef USE_MC33810

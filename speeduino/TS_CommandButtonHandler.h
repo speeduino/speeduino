@@ -54,5 +54,12 @@
 #define TS_CMD_IGN8_OFF   791
 #define TS_CMD_IGN8_50PC  792
 
+#define TS_CMD_VSS_60KMH  39168 //0x99x00
+#define TS_CMD_VSS_RATIO1 39169
+#define TS_CMD_VSS_RATIO2 39170
+#define TS_CMD_VSS_RATIO3 39171
+#define TS_CMD_VSS_RATIO4 39172
+#define TS_CMD_VSS_RATIO5 39173
+#define TS_CMD_VSS_RATIO6 39174
 
-void TS_CommandButtonsHandler(int);
+uint16_t TS_CommandButtonsHandler(int);

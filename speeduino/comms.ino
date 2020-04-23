@@ -86,20 +86,38 @@ void command()
       }
       break;
 
-    //The following can be used to show the amount of free memory
-
     case 'E': // receive command button commands
-      cmdPending = true;
 
-      if(Serial.available() >= 2)
+      if(cmdPending == true)
       {
-        byte cmdGroup = Serial.read();
-        byte cmdValue = Serial.read();
-        int cmdCombined = word(cmdGroup, cmdValue);
-        if (currentStatus.RPM == 0) { TS_CommandButtonsHandler(cmdCombined); }
+        //
 
-        cmdPending = false;
       }
+      else
+      {
+        cmdPending = true;
+
+        if(Serial.available() >= 2)
+        {
+          byte cmdGroup = Serial.read();
+          byte cmdValue = Serial.read();
+          uint16_t cmdCombined = word(cmdGroup, cmdValue);
+
+          if ( (cmdCombined >= TS_CMD_INJ1_ON) && (cmdCombined <=TS_CMD_IGN8_50PC) )
+          {
+            //Hardware test buttons
+            if (currentStatus.RPM == 0) { TS_CommandButtonsHandler(cmdCombined); }
+            cmdPending = false;
+          }
+          else if( (cmdCombined >= TS_CMD_VSS_60KMH) && (cmdCombined <= TS_CMD_VSS_RATIO6) )
+          {
+            //VSS Calibration commands
+            TS_CommandButtonsHandler(cmdCombined);
+            cmdPending = false;
+          }
+        }
+      }
+
       break;
 
     case 'F': // send serial protocol version

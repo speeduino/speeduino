@@ -8,9 +8,17 @@
 #include "globals.h"
 #include "utils.h"
 #include "scheduledIO.h"
+#include "sensors.h"
 
-void TS_CommandButtonsHandler(int buttonCommand)
+/**
+ * @brief 
+ * 
+ * @param buttonCommand The command number of the button that was clicked. See TS_CommendButtonHandler.h for a list of button IDs
+ * @return uint16_t If the button command remains incomplete (IE When it must wait for a certain action to complete) the return value is eqaul to the button ID. Otherwise this function returns 0
+ */
+uint16_t TS_CommandButtonsHandler(int buttonCommand)
 {
+  uint16_t returnValue = 0;
   switch (buttonCommand)
   {
     case 256: // cmd is stop
@@ -280,7 +288,64 @@ void TS_CommandButtonsHandler(int buttonCommand)
       #endif
       break;
 
+    //VSS Calibration routines
+    case TS_CMD_VSS_60KMH:
+      //Calibrate the actual pulses per distance
+      if( (vssLastPulseTime > 0) && (vssLastMinusOnePulseTime > 0) )
+      {
+        if(vssLastPulseTime > vssLastMinusOnePulseTime)
+        {
+          configPage2.vssPulsesPerKm = 60000000UL / (vssLastPulseTime - vssLastMinusOnePulseTime);
+        }
+      }
+      break;
+
+    //Calculate the RPM to speed ratio for each gear
+    case TS_CMD_VSS_RATIO1:
+      if(currentStatus.vss > 0)
+      {
+        configPage2.vssRatio1 = (currentStatus.vss * 10000) / currentStatus.RPM;
+      }
+      break;
+
+    case TS_CMD_VSS_RATIO2:
+      if(currentStatus.vss > 0)
+      {
+        configPage2.vssRatio2 = (currentStatus.vss * 10000) / currentStatus.RPM;
+      }
+      break;
+
+    case TS_CMD_VSS_RATIO3:
+      if(currentStatus.vss > 0)
+      {
+        configPage2.vssRatio3 = (currentStatus.vss * 10000) / currentStatus.RPM;
+      }
+      break;
+
+    case TS_CMD_VSS_RATIO4: 
+      if(currentStatus.vss > 0)
+      {
+        configPage2.vssRatio4 = (currentStatus.vss * 10000) / currentStatus.RPM;
+      }
+      break;
+
+    case TS_CMD_VSS_RATIO5:
+      if(currentStatus.vss > 0)
+      {
+        configPage2.vssRatio5 = (currentStatus.vss * 10000) / currentStatus.RPM;
+      }
+      break;
+
+    case TS_CMD_VSS_RATIO6:
+      if(currentStatus.vss > 0)
+      {
+        configPage2.vssRatio6 = (currentStatus.vss * 10000) / currentStatus.RPM;
+      }
+      break;
+
     default:
       break;
   }
+
+  return returnValue;
 }

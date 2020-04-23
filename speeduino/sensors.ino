@@ -491,7 +491,11 @@ uint16_t getSpeed()
 {
   uint16_t tempSpeed = 0;
   uint32_t pulseTime = 0;
-  if(configPage2.vssEnable == true)
+  if(configPage2.vssMode == 1)
+  {
+    //VSS mode 1 is (Will be) CAN
+  }
+  else if(configPage2.vssMode > 1)
   {
     if( (vssLastPulseTime > 0) && (vssLastMinusOnePulseTime > 0) ) //Check we've had at least 2 pulses
     {
