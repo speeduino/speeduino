@@ -410,7 +410,7 @@ extern volatile byte TIMER_mask;
 extern volatile byte LOOP_TIMER;
 
 //These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
-#define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) )
+#define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) || ((pin) == pinInjector5) || ((pin) == pinInjector6) || ((pin) == pinInjector7) || ((pin) == pinInjector8) )
 #define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) || ((pin) == pinCoil5) || ((pin) == pinCoil6) || ((pin) == pinCoil7) || ((pin) == pinCoil8) )
 #define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
 #define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) )
@@ -516,6 +516,7 @@ struct statuses {
   byte vvtDuty;
   uint16_t injAngle;
   byte ASEValue;
+  uint16_t vss; /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
 };
 
 /**
@@ -527,8 +528,8 @@ struct statuses {
 struct config2 {
 
   byte aseTsnDelay;
-  byte unused2_1;
-  byte unused2_2;  //was ASE
+  byte aeColdPct;  //AE cold clt modifier %
+  byte aeColdTaperMin; //AE cold modifier, taper start temp (full modifier), was ASE in early versions
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
   byte battVCorMode : 1;
   byte unused1_3c : 4;
@@ -587,7 +588,7 @@ struct config2 {
   byte perToothIgn : 1;
   byte dfcoEnabled : 1; //Whether or not DFCO is turned on
 
-  byte unused2_39;  //Was primePulse
+  byte aeColdTaperMax;  //AE cold modifier, taper end temp (no modifier applied), was primePulse in early versions
   byte dutyLim;
   byte flexFreqLow; //Lowest valid frequency reading from the flex sensor
   byte flexFreqHigh; //Highest valid frequency reading from the flex sensor
@@ -643,8 +644,23 @@ struct config2 {
   byte injAngRPM[4];
 
   byte idleTaperTime;
+  byte dfcoDelay;
+  byte dfcoMinCLT;
 
-  byte unused2_95[28];
+  //VSS Stuff
+  byte vssMode : 2;
+  byte vssPin : 6;
+  
+  uint16_t vssPulsesPerKm;
+  byte vssSmoothing;
+  uint16_t vssRatio1;
+  uint16_t vssRatio2;
+  uint16_t vssRatio3;
+  uint16_t vssRatio4;
+  uint16_t vssRatio5;
+  uint16_t vssRatio6;
+
+  byte unused2_95[10];
 
 #if defined(CORE_AVR)
   };
@@ -1033,12 +1049,12 @@ struct config10 {
 
 extern byte pinInjector1; //Output pin injector 1
 extern byte pinInjector2; //Output pin injector 2
-extern byte pinInjector3; //Output pin injector 3 is on
-extern byte pinInjector4; //Output pin injector 4 is on
-extern byte pinInjector5; //Output pin injector 5 NOT USED YET
-extern byte pinInjector6; //Placeholder only - NOT USED
-extern byte pinInjector7; //Placeholder only - NOT USED
-extern byte pinInjector8; //Placeholder only - NOT USED
+extern byte pinInjector3; //Output pin injector 3
+extern byte pinInjector4; //Output pin injector 4
+extern byte pinInjector5; //Output pin injector 5
+extern byte pinInjector6; //Output pin injector 6
+extern byte pinInjector7; //Output pin injector 7
+extern byte pinInjector8; //Output pin injector 8
 extern byte pinCoil1; //Pin for coil 1
 extern byte pinCoil2; //Pin for coil 2
 extern byte pinCoil3; //Pin for coil 3
@@ -1092,6 +1108,7 @@ extern byte pinStepperEnable; //Turning the DRV8825 driver on/off
 extern byte pinLaunch;
 extern byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 extern byte pinFlex; //Pin with the flex sensor attached
+extern byte pinVSS; 
 extern byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 extern byte pinResetControl; // Output pin used control resetting the Arduino
 #ifdef USE_MC33810
