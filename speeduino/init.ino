@@ -1751,7 +1751,7 @@ void setPinMapping(byte boardID)
       #endif
       #if defined(ARDUINO_BLACK_F407VE) || defined(ARDUINO_BLACK_F407VG)
       //Pin mapping for MEGA replacement STM32F407 PCB by pazi88
-        pinIAT = PA0 //IAT sensor pin
+        pinIAT = PA0; //IAT sensor pin
         pinCLT = PA1; //CLT sensor pin
         pinTPS = PA2; //TPS input pin
         pinMAP = PA3; //MAP sensor pin
