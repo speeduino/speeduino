@@ -529,6 +529,8 @@ byte correctionAFRClosedLoop()
     //Note that this should only run after the sensor warmup delay necause it is used within the Include AFR option
     if(currentStatus.runSecs > configPage6.ego_sdelay) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
 
+    AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
+    
     if(ignitionCount >= AFRnextCycle)
     {
       AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
@@ -536,7 +538,6 @@ byte correctionAFRClosedLoop()
       //Check all other requirements for closed loop adjustments
       if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) )
       {
-        AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
 
         //Check which algorithm is used, simple or PID
         if (configPage6.egoAlgorithm == EGO_ALGORITHM_SIMPLE)
@@ -580,6 +581,7 @@ byte correctionAFRClosedLoop()
         }
         else { AFRValue = 100; } // Occurs if the egoAlgorithm is set to 0 (No Correction)
       } //Multi variable check 
+      else { AFRValue = 100; } // If multivariable check fails disable correction
     } //Ignition count check
   } //egoType
 
