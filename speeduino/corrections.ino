@@ -189,7 +189,7 @@ uint16_t correctionCranking()
   }
   
   //If we're not cranking, check if if cranking enrichment tapering to ASE should be done
-  else if ( (uint16_t) (currentStatus.runSecs*10) <= configPage10.crankingEnrichTaper)
+  else if ( (uint32_t) runSecsX10 <= configPage10.crankingEnrichTaper)
   {
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
