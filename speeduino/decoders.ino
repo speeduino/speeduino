@@ -388,6 +388,7 @@ void triggerPri_missingTooth()
             { 
                 //This occurs when we're at tooth #1, but haven't seen all the other teeth. This indicates a signal issue so we flag lost sync so this will attempt to resync on the next revolution.
                 currentStatus.hasSync = false;
+                BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //No sync at all, so also clear HalfSync bit.
                 currentStatus.syncLossCounter++;
             }
             //This is to handle a special case on startup where sync can be obtained and the system immediately thinks the revs have jumped:
@@ -397,6 +398,7 @@ void triggerPri_missingTooth()
                 if(currentStatus.hasSync == true)
                 {
                   currentStatus.startRevolutions++; //Counter
+                  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
                   if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
                 }
                 else { currentStatus.startRevolutions = 0; }
@@ -413,8 +415,10 @@ void triggerPri_missingTooth()
                   if( (secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) )
                   {
                     currentStatus.hasSync = true;
+                    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
                     if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE) { secondaryToothCount = 0; } //Reset the secondary tooth counter to prevent it overflowing
                   }
+                  else { BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If there is primary trigger but no secondary we only have half sync.
                 }
                 else { currentStatus.hasSync = true; } //If nothing is using sequential, we have sync
 
@@ -656,6 +660,7 @@ void triggerPri_DualWheel()
 
       if ( currentStatus.hasSync == true )
       {
+        BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
         if ( (toothCurrentCount == 1) || (toothCurrentCount > configPage4.triggerTeeth) )
         {
           toothCurrentCount = 1;
@@ -667,6 +672,7 @@ void triggerPri_DualWheel()
 
         setFilter(curGap); //Recalc the new filter value
       }
+      else { BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //There is signal valid trigger from crank, but no full sync yet
 
       //NEW IGNITION MODE
       if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
@@ -2035,6 +2041,7 @@ void triggerPri_Miata9905()
     validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
     if( (toothCurrentCount == (triggerActualTeeth + 1)) )
     {
+       BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); //there is trigger signal on crank, so we can set the Half Sync bit
        toothCurrentCount = 1; //Reset the counter
        toothOneMinusOneTime = toothOneTime;
        toothOneTime = curTime;
@@ -2049,6 +2056,7 @@ void triggerPri_Miata9905()
         {
           toothCurrentCount = 6;
           currentStatus.hasSync = true;
+          BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
         }
       }
     }
