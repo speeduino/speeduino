@@ -1710,10 +1710,8 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
-   case 31:
-      //Pin mappings for the BMW PnP PCBs by pazi88.
-      #if defined(CORE_AVR)
-      //This is the regular MEGA2560 pin mapping
+    case 31:
+      //Pin mappings for the BMW PnP PCBs by pazi88. This is an AVR only module. At least for now
       pinInjector1 = 8; //Output pin injector 1
       pinInjector2 = 9; //Output pin injector 2
       pinInjector3 = 10; //Output pin injector 3
@@ -1725,16 +1723,16 @@ void setPinMapping(byte boardID)
       pinCoil3 = 52; //Pin for coil 3
       pinCoil4 = 48; //Pin for coil 4
       pinCoil5 = 36; //Pin for coil 5
-      pinCoil6 = 34; //Pin for coil 6
+	  pinCoil6 = 34; //Pin for coil 6
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
-      pinTPS = A2; //TPS input pin
+      pinTPS = A2;//TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLT sensor pin
+      pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
-      pinBaro = A5; //Barometric sensor pin
+      pinDisplayReset = 48; // OLED reset pin
       pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
       pinIdle1 = 5; //ICV pin1
       pinIdle2 = 6; //ICV pin3
@@ -1748,91 +1746,6 @@ void setPinMapping(byte boardID)
       pinLaunch = 51; //Launch control pin
       pinFlex = 2; // Flex sensor
       pinResetControl = 43; //Reset control output
-      pinVSS = 3; //VSS input pin
-      #endif
-      #if defined(ARDUINO_BLACK_F407VE) || defined(ARDUINO_BLACK_F407VG)
-      //Pin mapping for MEGA replacement STM32F407 PCB by pazi88
-        pinIAT = PA0; //IAT sensor pin
-        pinCLT = PA1; //CLT sensor pin
-        pinTPS = PA2; //TPS input pin
-        pinMAP = PA3; //MAP sensor pin
-        pinBat = PA4; //Battery reference voltage pin
-        pinBaro = PA5; //Barometric sensor pin
-        /* = PA6; */ //Spare 0-5v analog input A6
-        /* = PA7; */ //Spare 0-5v analog input A7
-        pinInjector5 = PA8; //Output pin injector 5
-        /* = PA9 */ //TXD1
-        /* = PA10 */ //RXD1
-        /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
-        /* = PA12 */ //(DO NOT USE FOR SPEEDUINO) USB
-        /* = PA13 */ //(DO NOT USE FOR SPEEDUINO) - DEBUG ST-LINK
-        /* = PA14 */ //(DO NOT USE FOR SPEEDUINO) - DEBUG ST-LINK
-        //pinStepperEnable = PA15; //Stepper valve isn't used with these (D24), 3.3v!
-        pinO2 = PB0; //O2 Sensor pin
-        /* = PB1; */ //Spare analog input A9
-        /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1 
-        /* = PB3; */ //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
-        /* = PB4; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
-        /* = PB5; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
-        pinVSS = PB6; //VSS input pin
-        pinResetControl = PB7; //Just placeholder (D43), 3.3v!
-        pinLaunch = PB8; //Launch control pin
-        /* = PB9; */ //Spare D53, 3.3v!
-        pinStepperDir = PB10; //Stepper valve isn't used with these. (TXD3/D17), 3.3v!
-        pinStepperStep = PB11; //Stepper valve isn't used with these. (RXD3/D16), 3.3v!
-        pinInjector3 = PB12; //Output pin injector 3
-        pinInjector4 = PB13; //Output pin injector 4
-        pinInjector2 = PB14; //Output pin injector 2
-        pinInjector1 = PB15; //Output pin injector 1
-        /* = PC0; */ //Spare 0-5v analog input A10
-        /* = PC1; */ //Spare 0-5v analog input A11
-        /* = PC2; */ //Spare 0-5v analog input A12
-        /* = PC3; */ //Spare 0-5v analog input A13
-        /* = PC4; */ //Spare 0-5v analog input A14
-        /* = PC5; */ //Spare 0-5v analog input A15
-        /* = PC6; */ //Spare 0-5v Output D28
-        /* = PC7; */ //Spare 0-5v Output D26
-        /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
-        /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
-        /* = PC10; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
-        /* = PC11; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
-        /* = PC12; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
-        pinCoil3 = PC13; //Pin for coil 3
-        /* = PC14; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
-        /* = PC15; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
-        /* = PD0; */ //CANRX
-        /* = PD1; */ //CANTX
-        /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        pinTrigger = PD3; //The CAS pin
-        pinTrigger2 = PD4; //The Cam Sensor pin
-        /* = PD5;*/ //TXD2
-        /* = PD6; */ //RXD2
-        pinFlex = PD7; //Flex sensor
-        pinBoost = PD8; //Boost control
-        pinIdle2 = PD9; //ICV pin3
-        pinIdle1 = PD10; //ICV pin1
-        pinVVT_1 = PD11; //VVT output
-        /* = PD12; */ //Spare 0-5v Output D32
-        /* = PD13; */ //Spare 0-5v Output D33
-        /* = PD14; */ //Spare 0-5v Output D30
-        /* = PD15; */ //Spare 0-5v Output D31
-        /* = PE0; */ //Spare D46, 3.3v!
-        /* = PE1; */ //SPI FLASH CHIP CS pin
-        pinCoil1 = PE2; //Pin for coil 1
-        pinCoil2 = PE3; //Pin for coil 2
-        pinCoil5 = PE4; //Pin for coil 5
-        pinCoil6 = PE5; //Pin for coil 6
-        pinCoil4 = PE6; //Pin for coil 4
-        pinInjector6 = PE7; //Output pin injector 6
-        pinTachOut = PE8; //Tacho output pin
-        pinFan = PE9; //Pin for the fan output (Goes to ULN2003)
-        /* = PE10; */ //Spare 0-5v Output D42
-        pinFuelPump = PE11; //Fuel pump output  (Goes to ULN2003)
-        /* = PE12; */ //Spare 0-5v Output D41
-        /* = PE13; */ //Spare 0-5v Output D39
-        /* = PE14; */ //Spare 0-5v Output D37
-        /* = PE15; */ //Spare 0-5v Output D35
-      #endif
       break;
 
     case 40:
