@@ -659,7 +659,6 @@ void triggerPri_DualWheel()
 
       if ( currentStatus.hasSync == true )
       {
-        BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
         if ( (toothCurrentCount == 1) || (toothCurrentCount > configPage4.triggerTeeth) )
         {
           toothCurrentCount = 1;
@@ -671,7 +670,6 @@ void triggerPri_DualWheel()
 
         setFilter(curGap); //Recalc the new filter value
       }
-      else { BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //There is signal valid trigger from crank, but no full sync yet
 
       //NEW IGNITION MODE
       if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
@@ -2040,7 +2038,6 @@ void triggerPri_Miata9905()
     validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
     if( (toothCurrentCount == (triggerActualTeeth + 1)) )
     {
-       BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); //there is trigger signal on crank, so we can set the Half Sync bit
        toothCurrentCount = 1; //Reset the counter
        toothOneMinusOneTime = toothOneTime;
        toothOneTime = curTime;
@@ -2055,7 +2052,6 @@ void triggerPri_Miata9905()
         {
           toothCurrentCount = 6;
           currentStatus.hasSync = true;
-          BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
         }
       }
     }
