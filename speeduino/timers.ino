@@ -226,6 +226,33 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
     }
 
+    //**************************************************************************************************************************************************
+    //Handle any of the hardware testing outputs
+    if( BIT_CHECK(currentStatus.testOutputs, 1) )
+    {
+      //Check whether any of the fuel outputs is on
+
+      //Check for injector outputs on 50%
+      if(BIT_CHECK(HWTest_INJ_50pc, 1)) { injector1Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, 2)) { injector2Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, 3)) { injector3Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, 4)) { injector4Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, 5)) { injector5Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, 6)) { injector6Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, 7)) { injector7Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, 8)) { injector8Toggle(); }
+
+      //Check for ignition outputs on 50%
+      if(BIT_CHECK(HWTest_IGN_50pc, 1)) { coil1Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, 2)) { coil2Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, 3)) { coil3Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, 4)) { coil4Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, 5)) { coil5Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, 6)) { coil6Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, 7)) { coil7Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, 8)) { coil8Toggle(); }
+    }
+
   }
 #if defined(CORE_AVR) //AVR chips use the ISR for this
     //Reset Timer2 to trigger in another ~1ms

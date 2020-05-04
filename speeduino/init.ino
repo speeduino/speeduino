@@ -1287,6 +1287,7 @@ void setPinMapping(byte boardID)
       pinLaunch = 51; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 43; //Reset control output
+      pinBaro = A5;
 
       #if defined(CORE_TEENSY35)
         pinInjector6 = 51;
@@ -1578,6 +1579,7 @@ void setPinMapping(byte boardID)
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 44; //Reset control output
+      pinVSS = 20;
 
       #if defined(CORE_TEENSY35)
         pinTrigger = 23;

@@ -184,6 +184,25 @@ void endCoil4and8Charge();
 #define coil7High() (*ign7_pin_port |= (ign7_pin_mask))
 #define coil8Low() (*ign8_pin_port &= ~(ign8_pin_mask))
 #define coil8High() (*ign8_pin_port |= (ign8_pin_mask))
+
+#define coil1Toggle() (*ign1_pin_port ^= ign1_pin_mask )
+#define coil2Toggle() (*ign2_pin_port ^= ign2_pin_mask )
+#define coil3Toggle() (*ign3_pin_port ^= ign3_pin_mask )
+#define coil4Toggle() (*ign4_pin_port ^= ign4_pin_mask )
+#define coil5Toggle() (*ign5_pin_port ^= ign5_pin_mask )
+#define coil6Toggle() (*ign6_pin_port ^= ign6_pin_mask )
+#define coil7Toggle() (*ign7_pin_port ^= ign7_pin_mask )
+#define coil8Toggle() (*ign8_pin_port ^= ign8_pin_mask )
+
+#define injector1Toggle() (*inj1_pin_port ^= inj1_pin_mask )
+#define injector2Toggle() (*inj2_pin_port ^= inj2_pin_mask )
+#define injector3Toggle() (*inj3_pin_port ^= inj3_pin_mask )
+#define injector4Toggle() (*inj4_pin_port ^= inj4_pin_mask )
+#define injector5Toggle() (*inj5_pin_port ^= inj5_pin_mask )
+#define injector6Toggle() (*inj6_pin_port ^= inj6_pin_mask )
+#define injector7Toggle() (*inj7_pin_port ^= inj7_pin_mask )
+#define injector8Toggle() (*inj8_pin_port ^= inj8_pin_mask )
+
 #else
 #define coil1Low() coil1Low_MC33810()
 #define coil1High() coil1High_MC33810()
@@ -201,6 +220,24 @@ void endCoil4and8Charge();
 #define coil7High() coil7High_MC33810()
 #define coil8Low() coil8Low_MC33810()
 #define coil8High() coil8High_MC33810()
+
+#define coil1Toggle() coil1Toggle_MC33810()
+#define coil2Toggle() coil2Toggle_MC33810()
+#define coil3Toggle() coil3Toggle_MC33810()
+#define coil4Toggle() coil4Toggle_MC33810()
+#define coil5Toggle() coil5Toggle_MC33810()
+#define coil6Toggle() coil6Toggle_MC33810()
+#define coil7Toggle() coil7Toggle_MC33810()
+#define coil8Toggle() coil8Toggle_MC33810()
+
+#define injector1Toggle() injector1Toggle_MC33810()
+#define injector2Toggle() injector2Toggle_MC33810()
+#define injector3Toggle() injector3Toggle_MC33810()
+#define injector4Toggle() injector4Toggle_MC33810()
+#define injector5Toggle() injector5Toggle_MC33810()
+#define injector6Toggle() injector6Toggle_MC33810()
+#define injector7Toggle() injector7Toggle_MC33810()
+#define injector8Toggle() injector8Toggle_MC33810()
 #endif
 
 void nullCallback();
