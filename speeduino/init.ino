@@ -323,6 +323,7 @@ void initialiseAll()
     timer5_overflow_count = 0;
     toothHistoryIndex = 0;
     toothHistorySerialIndex = 0;
+    BIT_CLEAR(currentStatus.status3, BIT_STATUS4_CONFIG_ERROR); //Clear the config error bit. The bit will be set later if there is problem in pin mapping.
 
     noInterrupts();
     initialiseTriggers();
