@@ -5,7 +5,7 @@
  *
  * This file is part of the Speeduino project. This library started out for
  * Winbond SPI flash memory modules. As of version 2.0 it also works with internal
- * flash memory of the STM32F407.  In its current form it enables reading
+ * flash memory of the STM32F407. In its current form it enables reading
  * and writing individual bytes as if it where an AVR EEPROM. When the begin() 
  * fuction is called for the first time it will "format" the flash chip. 
  * !!!!THIS DISTROYS ANY EXISTING DATA ON THE FLASH!!!!
@@ -100,7 +100,14 @@ byte FLASH_EEPROM_BaseClass::read(uint16_t addressEEPROM){
     //Check at what flash address the EEPROM byte information resides 
     _addressFLASH = (_sectorFlash*_config.Flash_Sector_Size) + ((addressEEPROM % _config.EEPROM_Bytes_Per_Sector) + 1) * _Flash_Size_Per_EEPROM_Byte;
 
-    readFlashBytes(_addressFLASH, _ReadWriteBuffer, _Flash_Size_Per_EEPROM_Byte);
+    //reset buffer to all 0xFF
+    for (uint32_t i = 0; i < _Flash_Size_Per_EEPROM_Byte; i++)
+    {
+        _ReadWriteBuffer[i] = 0xFF;
+    }
+
+    //read address translation part
+    readFlashBytes(_addressFLASH, _ReadWriteBuffer, _Addres_Translation_Size);
 
     //calculate address of the valid data by couting the bits in the Address translation section
     _nrOfOnes = count(_ReadWriteBuffer, _Addres_Translation_Size);
@@ -108,13 +115,16 @@ byte FLASH_EEPROM_BaseClass::read(uint16_t addressEEPROM){
     //Bring number of ones within specification of buffer size. 
     if(_nrOfOnes >=_Flash_Size_Per_EEPROM_Byte){_nrOfOnes =_Flash_Size_Per_EEPROM_Byte;}
 
-    //The buffer is already filled with the latest information. Read the valid data at the correct address.
-
     //If it is the first read after clear (all ones still set), return 0xFF;
     if (_nrOfOnes==_Flash_Size_Per_EEPROM_Byte){
       EEPROMbyte = 0xFF;
     }else{
-      EEPROMbyte = _ReadWriteBuffer[_nrOfOnes];
+      byte tempBuf[1]; 
+      //read actual eeprom value of flash
+      readFlashBytes(_addressFLASH+_nrOfOnes, tempBuf, 1);
+      EEPROMbyte = tempBuf[0];
+      //make buffer correct, because write function expects a correct buffer.
+      _ReadWriteBuffer[_nrOfOnes] = EEPROMbyte;
     }
     
     return EEPROMbyte;
@@ -177,15 +187,15 @@ int8_t FLASH_EEPROM_BaseClass::write(uint16_t addressEEPROM, byte val){
       // writeFlashBytes(_addressFLASH, _ReadWriteBuffer, _Flash_Size_Per_EEPROM_Byte);
 
       //Write actual value part of the buffer to flash   
-      byte tempBuffer[4];
-      _nrOfOnes &= ~(0x3); //align address with 2 byte (uint16_t) for write to flash for 32bit MCU
-      memcpy(&tempBuffer, &_ReadWriteBuffer[_nrOfOnes], sizeof(uint32_t));
-      writeFlashBytes(_addressFLASH +_nrOfOnes, tempBuffer, sizeof(uint32_t));
+      byte tempBuffer[2];
+      _nrOfOnes &= ~(0x1); //align address with 2 byte (uint16_t) for write to flash for 32bit STM32 MCU
+      memcpy(&tempBuffer, &_ReadWriteBuffer[_nrOfOnes], sizeof(uint16_t));
+      writeFlashBytes(_addressFLASH +_nrOfOnes, tempBuffer, sizeof(uint16_t));
 
       //Write address translation part of the buffer to flash
-      AdressInAddressTranslation &= ~(0x3); //align address with 4 byte for write to flash for 32bit MCU
-      memcpy(&tempBuffer, &_ReadWriteBuffer[AdressInAddressTranslation], sizeof(uint32_t));
-      writeFlashBytes(_addressFLASH+AdressInAddressTranslation, tempBuffer, sizeof(uint32_t));
+      AdressInAddressTranslation &= ~(0x1); //align address with 2 byte for write to flash for 32bit STM32 MCU
+      memcpy(&tempBuffer, &_ReadWriteBuffer[AdressInAddressTranslation], sizeof(uint16_t));
+      writeFlashBytes(_addressFLASH+AdressInAddressTranslation, tempBuffer, sizeof(uint16_t));
       return 1;
     }  
   return 0;
@@ -370,15 +380,15 @@ int8_t InternalSTM32F4_EEPROM_Class::readFlashBytes(uint32_t address, byte *buf,
 int8_t InternalSTM32F4_EEPROM_Class::writeFlashBytes(uint32_t flashAddress, byte *buf, uint32_t length){
  {
   uint32_t translatedAddress = flashAddress+_config.EEPROM_Flash_BaseAddress;
-  uint32_t data = 0;
+  uint16_t data = 0;
   uint32_t offset = 0;
   uint32_t countaddress = translatedAddress; 
   HAL_FLASH_Unlock();
   while (countaddress < translatedAddress + length) {
-      memcpy(&data, buf + offset, sizeof(uint32_t));
-      if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, countaddress, data) == HAL_OK) {
-        countaddress += 4;
-        offset += 4;
+      memcpy(&data, buf + offset, sizeof(uint16_t));
+      if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, countaddress, data) == HAL_OK) {
+        countaddress += 2;
+        offset += 2;
       } else {
         countaddress = translatedAddress + length + 1;
       }
