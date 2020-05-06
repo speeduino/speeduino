@@ -690,7 +690,13 @@ int8_t correctionSoftRevLimit(int8_t advance)
 {
   byte ignSoftRevValue = advance;
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
-  if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard;  } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+  if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) //Softcut RPM limit
+  {
+    BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
+    if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
+    else if (configPage2.SoftLimitMode == SOFT_LIMIT_FIXED) { ignSoftRevValue = configPage4.SoftLimRetard; } //delay timing to configured number of degrees in fixed mode
+    
+  }
 
   return ignSoftRevValue;
 }

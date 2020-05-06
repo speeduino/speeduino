@@ -338,8 +338,8 @@ void doUpdates()
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 14);
 
-    //changed behaviour of the seft limit from absolute timing to retard by set degrees, so change what is there to lets say 7 degrees of retard which should work well in 99% of setups
-    configPage4.SoftLimRetard = 7;
+    // there is now optioon for fixed and relative timing retard for soft limit. This sets the soft limiter to the old fixed timing mode.
+    configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)
