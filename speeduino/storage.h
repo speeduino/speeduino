@@ -18,7 +18,7 @@ void storeEEPROMVersion(byte);
 void storePageCRC32(byte, uint32_t);
 uint32_t readPageCRC32(byte);
 
-#if defined(CORE_STM32) || defined(CORE_TEENSY)
+#if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
 #define EEPROM_MAX_WRITE_BLOCK 64 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
 #else
 #define EEPROM_MAX_WRITE_BLOCK 30 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
