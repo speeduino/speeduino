@@ -23,6 +23,12 @@ void initialiseIdle()
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
   IDLE_TIMER_DISABLE();
 
+  //pins must always be initialized. 
+  idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
+  idle_pin_mask = digitalPinToBitMask(pinIdle1);
+  idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
+  idle2_pin_mask = digitalPinToBitMask(pinIdle2);
+
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
   switch(configPage6.iacAlgorithm)
   {
