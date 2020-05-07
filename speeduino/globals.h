@@ -184,6 +184,7 @@
 
 #define SEC_TRIGGER_SINGLE  0
 #define SEC_TRIGGER_4_1     1
+#define SEC_TRIGGER_POLL    2
 
 #define ROTARY_IGN_FC       0
 #define ROTARY_IGN_FD       1
@@ -690,7 +691,7 @@ struct config4 {
   byte useResync : 1;
 
   byte sparkDur; //Spark duration in ms * 10
-  byte trigPatternSec; //Mode for Missing tooth secondary trigger.  Either single tooth cam wheel or 4-1
+  byte trigPatternSec; //Mode for Missing tooth secondary trigger.  Either single tooth cam wheel, 4-1 or poll level
   uint8_t bootloaderCaps; //Capabilities of the bootloader over stock. e.g., 0=Stock, 1=Reset protection, etc.
 
   byte resetControlConfig : 2; //Which method of reset control to use (0=None, 1=Prevent When Running, 2=Prevent Always, 3=Serial Command)
