@@ -1,1 +1,1 @@
-void testDualWheel();
+void test_dualWheel();

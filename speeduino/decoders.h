@@ -11,13 +11,12 @@
   #define READ_SEC_TRIGGER() digitalRead(pinTrigger2)
 #endif
 
-static inline void addToothLogEntry(unsigned long, bool);
+inline void decoderAddToothLogEntry(unsigned long, bool);
 void loggerPrimaryISR();
 void loggerSecondaryISR();
-static inline uint16_t stdGetRPM(uint16_t);
-static inline void setFilter(unsigned long);
-static inline int crankingGetRPM(byte);
-//static inline void doPerToothTiming(uint16_t);
+inline uint16_t decoderStdGetRPM(uint16_t);
+inline void decoderSetFilter(unsigned long);
+inline int decoderCrankingGetRPM(byte);
 
 //All of the below are the 6 required functions for each decoder / pattern
 void triggerSetup_missingTooth();
