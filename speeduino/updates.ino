@@ -334,7 +334,14 @@ void doUpdates()
     configPage2.aeColdPct = 100;
     configPage2.aeColdTaperMin = 40;
     configPage2.aeColdTaperMax = 100;
-    
+    //New PID resolution, old resolution was 100% for each increase, 100% now is stored as 32
+    configPage6.idleKP = configPage6.idleKP<<5;
+    configPage6.idleKI = configPage6.idleKI<<5;
+    configPage6.idleKD = configPage6.idleKD<<5;
+    configPage10.vvtCLKP = configPage10.vvtCLKP<<5;
+    configPage10.vvtCLKI = configPage10.vvtCLKI<<5;
+    configPage10.vvtCLKD = configPage10.vvtCLKD<<5;
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 14);
 
