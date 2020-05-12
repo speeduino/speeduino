@@ -505,6 +505,7 @@ uint16_t getSpeed()
         pulseTime = vssLastPulseTime - vssLastMinusOnePulseTime;
         tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
         tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply spped smoothing factor
+        if(tempSpeed > 1000) { tempSpeed = 0; } //Safety check. This usually occurs when there is a hardware issue
       }
     }
   }
@@ -516,7 +517,7 @@ byte getGear()
   byte tempGear = 0; //Unknown gear
   if(currentStatus.vss > 0)
   {
-    uint16_t pulsesPer1000rpm = (currentStatus.vss * 10000) / currentStatus.RPM; //Gives the current pulses per 1000RPM, multipled by 10 (10x is the multiplication factor for the ratios in TS)
+    uint16_t pulsesPer1000rpm = (currentStatus.vss * 10000UL) / currentStatus.RPM; //Gives the current pulses per 1000RPM, multipled by 10 (10x is the multiplication factor for the ratios in TS)
     //Begin gear detection
     if( (pulsesPer1000rpm > (configPage2.vssRatio1 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio1 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 1; }
     else if( (pulsesPer1000rpm > (configPage2.vssRatio2 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio2 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 2; }

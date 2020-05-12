@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "scheduledIO.h"
 #include "sensors.h"
+#include "storage.h"
 #ifdef USE_MC33810
   #include "acc_mc33810.h"
 #endif
@@ -320,6 +321,8 @@ uint16_t TS_CommandButtonsHandler(int buttonCommand)
         if(vssLastPulseTime > vssLastMinusOnePulseTime)
         {
           configPage2.vssPulsesPerKm = 60000000UL / (vssLastPulseTime - vssLastMinusOnePulseTime);
+          writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
+          BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
         }
       }
       break;
@@ -328,42 +331,54 @@ uint16_t TS_CommandButtonsHandler(int buttonCommand)
     case TS_CMD_VSS_RATIO1:
       if(currentStatus.vss > 0)
       {
-        configPage2.vssRatio1 = (currentStatus.vss * 10000) / currentStatus.RPM;
+        configPage2.vssRatio1 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
+        writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
+        BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
       }
       break;
 
     case TS_CMD_VSS_RATIO2:
       if(currentStatus.vss > 0)
       {
-        configPage2.vssRatio2 = (currentStatus.vss * 10000) / currentStatus.RPM;
+        configPage2.vssRatio2 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
+        writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
+        BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
       }
       break;
 
     case TS_CMD_VSS_RATIO3:
       if(currentStatus.vss > 0)
       {
-        configPage2.vssRatio3 = (currentStatus.vss * 10000) / currentStatus.RPM;
+        configPage2.vssRatio3 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
+        writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
+        BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
       }
       break;
 
     case TS_CMD_VSS_RATIO4: 
       if(currentStatus.vss > 0)
       {
-        configPage2.vssRatio4 = (currentStatus.vss * 10000) / currentStatus.RPM;
+        configPage2.vssRatio4 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
+        writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
+        BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
       }
       break;
 
     case TS_CMD_VSS_RATIO5:
       if(currentStatus.vss > 0)
       {
-        configPage2.vssRatio5 = (currentStatus.vss * 10000) / currentStatus.RPM;
+        configPage2.vssRatio5 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
+        writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
+        BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
       }
       break;
 
     case TS_CMD_VSS_RATIO6:
       if(currentStatus.vss > 0)
       {
-        configPage2.vssRatio6 = (currentStatus.vss * 10000) / currentStatus.RPM;
+        configPage2.vssRatio6 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
+        writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
+        BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
       }
       break;
 
