@@ -18,6 +18,7 @@ I added the antilag to the speeduino code. On tunerstudio there is a modal where
 1) Max TPS before disabling
 2) Static Ignition Timing while active
 3) Amount of fuel to add while active
+
 Once configured, just activate it. If it is active, it will appear under a green rectangle with the word BANG ON.
 The antilag procedure is activated when the switch is set to 1. The switch connection pin is pin 26 (board 0.4)
 
