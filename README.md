@@ -13,6 +13,13 @@
 ##### A low cost, DIY friendly Engine Management System (ECU) based on the Arduino framework
 </div>
 
+## ANTI-LAG FUNCTIONALITY
+I added the antilag to the speeduino code. On tunerstudio there is a modal where you can configure the anti lag. There are 3 options to configure:
+1) Max TPS before disabling
+2) Static Ignition Timing while active
+3) Amount of fuel to add while active
+Once configured, just activate it. If it is active, it will appear under a green rectangle with the word BANG ON.
+The antilag procedure is activated when the switch is set to 1. The switch connection pin is pin 26 (board 0.4)
 
 ## Speeduino
 The Speeduino project is a flexible, fully featured Engine Management Systems (EMS aka ECU) based on the low cost and open source Arduino platform. It provides the hardware, firmware and software components that make up an engine management system, all provided under open licenses. With over 1000 installations, Speeduino has matured into a product that meets the needs of the hobbyist and enthusiast community without driving prices to the levels of traditional aftermarket ECUs
