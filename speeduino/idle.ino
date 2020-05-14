@@ -242,7 +242,7 @@ void idleControl()
       }
       BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
       idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
-      currentStatus.idleLoad = currentStatus.idleDuty >> 1; //Idle Load is divided by 2 in order to send to TS
+      currentStatus.idleLoad = currentStatus.idleDuty;
       idleOn = true;
       
       break;
@@ -264,7 +264,7 @@ void idleControl()
             break; 
           }
           BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
-          currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count) >> 1;
+          currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);
           if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
 
         }
@@ -321,6 +321,24 @@ void idleControl()
       //First thing to check is whether there is currently a step going on and if so, whether it needs to be turned off
       if( (checkForStepping() == false) && (isStepperHomed() == true) ) //Check that homing is complete and that there's not currently a step already taking place. MUST BE IN THIS ORDER!
       {
+          if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK )/* ||currentStatus.rpmDOT>=500||currentStatus.rpmDOT<=-500*/)
+        {
+          //Currently cranking. Use the cranking table
+          idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+          if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
+
+          //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
+          if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
+          {
+            idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+          }
+          
+          doStep();
+         
+        }
+
+        else 
+        {
         if( (idleCounter & 31) == 1)
         {
           //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
@@ -342,8 +360,10 @@ void idleControl()
         }
 
         doStep();
-        currentStatus.idleLoad = idleStepper.curIdleStep / 2; //Current step count (Divided by 2 for byte)
+        
         idleCounter++;
+      }
+     currentStatus.idleLoad = idleStepper.curIdleStep / 2; //Current step count (Divided by 2 for byte)
       }
       //Set or clear the idle active flag
       if(idleStepper.targetIdleStep != idleStepper.curIdleStep) { BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); }

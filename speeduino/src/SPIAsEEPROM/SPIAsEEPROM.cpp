@@ -1,16 +1,15 @@
-/* Speeduino SPIAsEEPROM Library v.1.0.0
- * Copyright (C) 2019 by Tjeerd Hoogendijk
+/* Speeduino SPIAsEEPROM Library v.2.0.4
+ * Copyright (C) 2020 by Tjeerd Hoogendijk
  * Created by Tjeerd Hoogendijk - 21/09/2019
+ * Updated by Tjeerd Hoogendijk - 19/04/2020
  *
- * This file is part of the Speeduino project. This library is for
- * Winbond SPI flash memory modules. In its current form it enables reading
- * and writing individual bytes as if it where an AVR EEPROM. It uses some 
- * wear leveling (256x). When the begin() fuction is called for the first time 
- * it will "format" the flash chip. 
- * !!!!THIS DISTROYS ANY EXISTING DATA ON THE SPI FLASH!!!
+ * This file is part of the Speeduino project. This library started out for
+ * Winbond SPI flash memory modules. As of version 2.0 it also works with internal
+ * flash memory of the STM32F407. In its current form it enables reading
+ * and writing individual bytes as if it where an AVR EEPROM. When the begin() 
+ * fuction is called for the first time it will "format" the flash chip. 
+ * !!!!THIS DISTROYS ANY EXISTING DATA ON THE FLASH!!!!
  *  
- * 1245184 bytes used of the SPI flash resulting in 4228 bytes of usable EEPROM
- *
  * This Library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -22,213 +21,425 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License v3.0
- * along with the Arduino SPIMemory Library.  If not, see
+ * along with the Speeduino SPIAsEEPROM Library.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
 
-//#if defined(CORE_STM32_OFFICIAL) && defined(SPIFLASH_AS_EEPROM)
-#if defined(USE_SPI_EEPROM)
+#if defined(USE_SPI_EEPROM) | defined(STM32F407xx) | defined(STM32F103xB)
 
 #include "SPIAsEEPROM.h"
-#include "SPI.h"        
-//#include "globals.h"     
 
-SPIAsEEPROM::SPIAsEEPROM()
+static EEPROM_Emulation_Config EmulatedEEPROMMconfig{
+    FLASH_SECTORS_USED,
+    FLASH_SECTOR_SIZE,
+    EEPROM_BYTES_PER_SECTOR,
+    EEPROM_FLASH_BASEADRESS
+};
+
+// EmulatedEEPROMMconfig.Flash_Sectors_Used = FLASH_SECTORS_USED;
+
+FLASH_EEPROM_BaseClass::FLASH_EEPROM_BaseClass(EEPROM_Emulation_Config config)
 {
-    //pinMode(PB0, OUTPUT);
-    magicbuf[0] = MAGICNUMBER1;
-    magicbuf[1] = MAGICNUMBER2;
-    magicbuf[2] = MAGICNUMBER3;
-    magicbuf[3] = 0x00;
+    //Class indicating if the emulated EEPROM flash is initialized  
+   _EmulatedEEPROMAvailable=false;
 
-  }
-  uint8_t SPIAsEEPROM::begin(uint8_t pinSPIFlash_CS=6)
-  {
-      pinMode(pinSPIFlash_CS, OUTPUT);
-      SpiFlashAvialable = winbondSPIFlash.begin(_W25Q16,SPI, pinSPIFlash_CS);
-      uint8_t formatted = 0;
-      if(SpiFlashAvialable){
-        //check for magic numbers
-        formatted = 1;
-        uint8_t buf[MAGICNUMBER_OFFSET];
-        for(uint16_t i=0; i< FLASHSIZEUSED/SECTORSIZE; i++ ){
-            winbondSPIFlash.read(sectorNumber*SECTORSIZE, buf, sizeof(buf) - 1);
-            if((buf[0] != MAGICNUMBER1) | (buf[1] != MAGICNUMBER2) | (buf[2] != MAGICNUMBER3)){
-              //if one of the SECTORS has no magic numbers it is not formatted
-              formatted = 0;
-            }
-        }
-        //If not formatted format flash. This takes 10 seconds or more!
-        if(!formatted){
-          formatFlashForUse();
-        }
+    //Class variable storing number of ones counted in adres translation block
+    _nrOfOnes = 0;
 
+    //Class variable storing what sector we are working in.
+    _sectorFlash = 0;
+
+    //Class variable storing what flash address we are working in.
+    _addressFLASH = 0;
+
+    //Class bool indicating if the flash is initialized and available for use
+    _FlashAvailable=false;
+
+    //save configuration 
+    _config = config;
+
+    _Flash_Size_Used = _config.Flash_Sectors_Used*_config.Flash_Sector_Size;
+    _Flash_Size_Per_EEPROM_Byte = _config.Flash_Sector_Size/(_config.EEPROM_Bytes_Per_Sector +1);
+    _Addres_Translation_Size = _Flash_Size_Per_EEPROM_Byte/8;
+    _EEPROM_Emulation_Size = _config.Flash_Sectors_Used*_config.EEPROM_Bytes_Per_Sector;
+}
+
+int8_t FLASH_EEPROM_BaseClass::initialize(bool flashavailable)
+{
+    bool formatted = false;
+    _FlashAvailable = flashavailable;
+    _EmulatedEEPROMAvailable = false;
+
+    if(_FlashAvailable)
+    {
+      formatted = checkForMagicNumbers(); 
+
+      //If not formatted format flash. This takes 10 seconds or more!
+      if(!formatted){
+        clear();
         //check if format succeeded
-        formatted = 1;
-        for(uint16_t i=0; i< FLASHSIZEUSED/SECTORSIZE; i++ ){
-            winbondSPIFlash.read(sectorNumber*SECTORSIZE, buf, sizeof(buf) - 1);
-            if((buf[0] != MAGICNUMBER1) | (buf[1] != MAGICNUMBER2) | (buf[2] != MAGICNUMBER3)){
-              formatted = 0;
-            }
-        }
+        formatted = checkForMagicNumbers();
       }
-      if(formatted & SpiFlashAvialable){return true;}else{return false;}
-  }
 
-int8_t SPIAsEEPROM::write(uint16_t addressEEPROM, uint8_t writeValue){ 
-    uint8_t ByteBuf[1];
+      if(formatted){_EmulatedEEPROMAvailable=true;}
+    }
+    return _EmulatedEEPROMAvailable;
+}
 
-    //Check if adress is in the EEPROM space  
-    if (addressEEPROM >= FLASHSIZEUSED/SECTORSIZE * (SECTORSIZE/FLASH_PAGESIZE - 2)){addressEEPROM = FLASHSIZEUSED/SECTORSIZE * (SECTORSIZE/FLASH_PAGESIZE - 2);}
+byte FLASH_EEPROM_BaseClass::read(uint16_t addressEEPROM){
+    //version 0.1 does not check magic number
+
+    byte EEPROMbyte;
+   
+    //Check if address is outside of the maximum. return zero if address is out of range.
+    if (addressEEPROM > _EEPROM_Emulation_Size){addressEEPROM = _EEPROM_Emulation_Size - 1; return 0;}  
+    
+    //Check at what flash sector the EEPROM byte information resides 
+    _sectorFlash = addressEEPROM/_config.EEPROM_Bytes_Per_Sector;
+
+    //Check at what flash address the EEPROM byte information resides 
+    _addressFLASH = (_sectorFlash*_config.Flash_Sector_Size) + ((addressEEPROM % _config.EEPROM_Bytes_Per_Sector) + 1) * _Flash_Size_Per_EEPROM_Byte;
+
+    //reset buffer to all 0xFF
+    for (uint32_t i = 0; i < _Flash_Size_Per_EEPROM_Byte; i++)
+    {
+        _ReadWriteBuffer[i] = 0xFF;
+    }
+
+    //read address translation part
+    readFlashBytes(_addressFLASH, _ReadWriteBuffer, _Addres_Translation_Size);
+
+    //calculate address of the valid data by couting the bits in the Address translation section
+    _nrOfOnes = count(_ReadWriteBuffer, _Addres_Translation_Size);
+    
+    //Bring number of ones within specification of buffer size. 
+    if(_nrOfOnes >=_Flash_Size_Per_EEPROM_Byte){_nrOfOnes =_Flash_Size_Per_EEPROM_Byte;}
+
+    //If it is the first read after clear (all ones still set), return 0xFF;
+    if (_nrOfOnes==_Flash_Size_Per_EEPROM_Byte){
+      EEPROMbyte = 0xFF;
+    }else{
+      byte tempBuf[1]; 
+      //read actual eeprom value of flash
+      readFlashBytes(_addressFLASH+_nrOfOnes, tempBuf, 1);
+      EEPROMbyte = tempBuf[0];
+      //make buffer correct, because write function expects a correct buffer.
+      _ReadWriteBuffer[_nrOfOnes] = EEPROMbyte;
+    }
+    
+    return EEPROMbyte;
+}
+
+int8_t FLASH_EEPROM_BaseClass::write(uint16_t addressEEPROM, byte val){    
+    //Check if address is outside of the maximum. limit to get inside maximum and return an error.
+    if (addressEEPROM > _EEPROM_Emulation_Size){addressEEPROM = _EEPROM_Emulation_Size - 1; return -1;}  
     
     //read the current value
     uint8_t readValue = read(addressEEPROM);
-    //After reading the current byte all global variables containing inforamtion about the address are set correctly. 
+
+    //After reading the current byte all global variables containing information about the address are set correctly. 
 
     //only write if value is changed. 
-    if (readValue != writeValue){
-
-      //Check if buffer is full and an erase must be performed.
-      if (nrOfOnes < 1){
+    if (readValue != val){
+      //Check if section is full and an erase must be performed.
+      if (_nrOfOnes < _Addres_Translation_Size + 1){
 
         //First read all the values in this sector that will get distroyed when erasing
-        uint8_t tempBuf[14];
-        for(uint8_t i = 0; i<14; i++){
-            tempBuf[i] = read((sectorNumber*14) + i);
+        byte tempBuf[_config.EEPROM_Bytes_Per_Sector];
+        for(uint16_t i = 0; i<_config.EEPROM_Bytes_Per_Sector; i++){
+            uint16_t TempEEPROMaddress = (_sectorFlash*_config.EEPROM_Bytes_Per_Sector) + i;
+            tempBuf[i] = read(TempEEPROMaddress);
         }
 
-        //now erase the sector
-        writeMagicNumber(sectorNumber);
+        //Now erase the sector
+        eraseFlashSector(_sectorFlash*_config.Flash_Sector_Size, _config.Flash_Sector_Size);
+
+        //Write the magic numbers 
+        writeMagicNumbers(_sectorFlash);
 
         //write all the values back
-        for(uint8_t i=0; i<14; i++){
-            write((sectorNumber*14) + i, tempBuf[i]);
+        for(uint16_t i=0; i<_config.EEPROM_Bytes_Per_Sector; i++){
+            write((_sectorFlash*_config.EEPROM_Bytes_Per_Sector) + i, tempBuf[i]);
         }
 
-        //also do not forget to write the new value!
-        write(addressEEPROM, writeValue);
-        return 0;
+        //Do not forget to write the new value!
+        write(addressEEPROM, val);
+
+        //Return we have writen a whole sector. 
+        return 0xFF;
         
       }
 
-      //determine the adress of the byte in the infoblock where one bit must be reset when writing new values 
-      uint8_t RelativeAdressInInfoBlock = (nrOfOnes - 1)/8;
+      //determine the adress of the byte in the address translation section where one bit must be reset when writing new values 
+      uint8_t AdressInAddressTranslation = (_nrOfOnes - 1)/8;
 
       //determine value of the infoblock byte after writing one more time.
-      uint8_t ValueInInfoBlock = 0xFF << (8 - (nrOfOnes - 1 - ((RelativeAdressInInfoBlock) * 8)));  
+      uint8_t ValueInAddressTranslation = 0xFF << (8 - (_nrOfOnes - 1 - ((AdressInAddressTranslation) * 8)));  
       
-      //write the new value at the new location 
-      ByteBuf[0] = writeValue;
-      winbondSPIFlash.WE();
-      winbondSPIFlash.writePage(dataFlashAddress - 1, ByteBuf, sizeof(ByteBuf));
-      while(winbondSPIFlash.busy());
+      //write the new adress translation value at the new location in buffer
+      _ReadWriteBuffer[AdressInAddressTranslation] = ValueInAddressTranslation;
 
-      //write where read can find the new value
-      ByteBuf[0] = ValueInInfoBlock;
-      winbondSPIFlash.WE();
-      winbondSPIFlash.writePage(infoFlashAddress + RelativeAdressInInfoBlock, ByteBuf, sizeof(ByteBuf));
-      while(winbondSPIFlash.busy());
+      //Write the new EEPROM value at the new location in the buffer.
+      _nrOfOnes--; 
+      _ReadWriteBuffer[_nrOfOnes] = val;
 
+      //Write the buffer to the undelying flash storage. 
+      // writeFlashBytes(_addressFLASH, _ReadWriteBuffer, _Flash_Size_Per_EEPROM_Byte);
 
-      return 0;
-    }else{
-      return 0;
-    }
-}
+      //Write actual value part of the buffer to flash   
+      byte tempBuffer[2];
+      _nrOfOnes &= ~(0x1); //align address with 2 byte (uint16_t) for write to flash for 32bit STM32 MCU
+      memcpy(&tempBuffer, &_ReadWriteBuffer[_nrOfOnes], sizeof(uint16_t));
+      writeFlashBytes(_addressFLASH +_nrOfOnes, tempBuffer, sizeof(uint16_t));
 
-int8_t SPIAsEEPROM::update(uint16_t address, uint8_t val){
-    //a write function call is already an update. 
-    write(address, val);
-    return 0;
-}
-
-uint8_t SPIAsEEPROM::writeMagicNumber(uint16_t sectorNumber){
-    //sector adress is for 0 to (FLASHSIZEUSED/SECTORSIZE -1)
-    //Function is used to write a magic number at the start of each Sector.
-    //This number can be used to identify if the flash is formated for use as EEPROM
-    if (sectorNumber>=FLASHSIZEUSED/SECTORSIZE){
-      sectorNumber = (FLASHSIZEUSED/SECTORSIZE - 1);
-    }
-
-    //First erase the sector (4KiB at the time)
-    winbondSPIFlash.WE();
-    winbondSPIFlash.eraseSector(sectorNumber*SECTORSIZE);
-    while(winbondSPIFlash.busy()); //if no spi flash present or accessible this hangs forever!  
-
-    //Write the magic numbers at the start of the sector for identification.
-    winbondSPIFlash.WE();
-    winbondSPIFlash.writePage(sectorNumber*SECTORSIZE, magicbuf, MAGICNUMBER_OFFSET);
-    while(winbondSPIFlash.busy()); //if no spi flash present or accessible this hangs forever!  
-
-    return 0;
-}
-
-uint8_t SPIAsEEPROM::formatFlashForUse(){
-  //Format the flash for use by erasing all sectors used and 
-  //write the magic number at the start of each erased sector
-  for(uint16_t i = 0; i<FLASHSIZEUSED/SECTORSIZE; i++){
-    writeMagicNumber(i);
-  } 
+      //Write address translation part of the buffer to flash
+      AdressInAddressTranslation &= ~(0x1); //align address with 2 byte for write to flash for 32bit STM32 MCU
+      memcpy(&tempBuffer, &_ReadWriteBuffer[AdressInAddressTranslation], sizeof(uint16_t));
+      writeFlashBytes(_addressFLASH+AdressInAddressTranslation, tempBuffer, sizeof(uint16_t));
+      return 1;
+    }  
   return 0;
 }
 
-uint8_t SPIAsEEPROM::read(uint16_t addressEEPROM){
-    //The infoblock is at the start of each sector 
-    //The first two pages will be used for the infoblock
-    //The first 4 bytes of each page must have the magic number 
-    //version 0.1 does not check magic number
-    if(!SpiFlashAvialable){
-      begin();
-    }
-
-
-    uint8_t buf[INFOBYTES_PER_BYTE];
-
-    //Check if address is outside of the maximum. limit to get inside maximum and continue as normal.
-    //Should be changed so that it returns -1 (error)
-    if (addressEEPROM >= FLASHSIZEUSED/SECTORSIZE * (SECTORSIZE/FLASH_PAGESIZE - 2)){addressEEPROM = FLASHSIZEUSED/SECTORSIZE * (SECTORSIZE/FLASH_PAGESIZE - 2);}  
-    
-    //Check at what sector number the adress resides. 14 bytes per sector
-    sectorNumber = addressEEPROM/(SECTORSIZE/FLASH_PAGESIZE - 2);
-
-    //Check at what page number in the sector the adress can be found (16 pages per sector, 14 used)
-    pageNumber = addressEEPROM - (sectorNumber * ((SECTORSIZE/FLASH_PAGESIZE) - 2));
-
-    //The absulute adress of the infoblock of the byte in flash adress
-    infoFlashAddress = sectorNumber*SECTORSIZE + pageNumber * INFOBYTES_PER_BYTE + MAGICNUMBER_OFFSET;
-
-    //read the infoblock and put into the buffer
-    winbondSPIFlash.read(infoFlashAddress, buf, sizeof(buf));
-    while(winbondSPIFlash.busy()); //if no spi flash present or accessible this hangs forever!  
-
-    //calculate actual flash address of the data
-    //Count de number of set bits in the infoblock
-    nrOfOnes = count(buf);
-
-    //Calulate the adress from all previous information.
-    dataFlashAddress = sectorNumber*SECTORSIZE  + (pageNumber * FLASH_PAGESIZE) + INFOBYTESSECTOROFFSET + nrOfOnes - 1;
-
-    uint8_t ByteBuf[1];
-    //read the actual byte with information
-
-    winbondSPIFlash.read(dataFlashAddress, ByteBuf, sizeof(ByteBuf));
-    while(winbondSPIFlash.busy()); //if no spi flash present or accessible this hangs forever!  
-
-    return ByteBuf[0];
+int8_t FLASH_EEPROM_BaseClass::update(uint16_t addressEEPROM, uint8_t val){
+  return write(addressEEPROM, val);
 }
 
-uint16_t SPIAsEEPROM::count(uint8_t buf[FLASH_PAGESIZE/BITS_PER_BYTE]){
+int16_t FLASH_EEPROM_BaseClass::clear(){
+      uint32_t i;
+      for(i=0; i< _config.Flash_Sectors_Used; i++ ){
+          eraseFlashSector(i*_config.Flash_Sector_Size, _config.Flash_Sector_Size);
+          writeMagicNumbers(i);
+      }
+      return i;
+}
+
+uint16_t FLASH_EEPROM_BaseClass::length(){ return _EEPROM_Emulation_Size; }
+
+
+bool FLASH_EEPROM_BaseClass::checkForMagicNumbers(){
+      bool magicnumbers = true;
+      for(uint32_t i=0; i< _config.Flash_Sectors_Used; i++ ){
+          readFlashBytes(i*_config.Flash_Sector_Size, _ReadWriteBuffer, _Flash_Size_Per_EEPROM_Byte);
+          if((_ReadWriteBuffer[0] != MAGICNUMBER1) | (_ReadWriteBuffer[1] != MAGICNUMBER2) | (_ReadWriteBuffer[2] != MAGICNUMBER3) | (_ReadWriteBuffer[3] != EEPROM_VERSION)){magicnumbers=false;}
+      }
+      return magicnumbers;
+}
+
+int8_t FLASH_EEPROM_BaseClass::writeMagicNumbers(uint32_t sector){ 
+    _ReadWriteBuffer[0] = MAGICNUMBER1;
+    _ReadWriteBuffer[1] = MAGICNUMBER2;
+    _ReadWriteBuffer[2] = MAGICNUMBER3;
+    _ReadWriteBuffer[3] = EEPROM_VERSION;
+    writeFlashBytes(sector*_config.Flash_Sector_Size, _ReadWriteBuffer, MAGICNUMBER_OFFSET); 
+  return true;
+}
+
+uint16_t FLASH_EEPROM_BaseClass::count(byte* buffer, uint32_t length){
+    byte tempBuffer[length];
+    memcpy(&tempBuffer, buffer, length);
     uint16_t count=0;
-    for(uint8_t j=0; j < 32; j++)
+    for(uint8_t j=0; j < length; j++)
       for(uint8_t i=0; i<8; i++){
-        if((buf[j] & 1) == 1){ //if current bit 1
+        if((tempBuffer[j] & 1) == 1){ //if current bit 1
           count++;//increase count
         }
-        buf[j]=buf[j]>>1;//right shift
+        tempBuffer[j]=tempBuffer[j]>>1;//right shift
       }
     return count;
 }
 
-SPIAsEEPROM EEPROM;
+int8_t FLASH_EEPROM_BaseClass::readFlashBytes(uint32_t address , byte* buffer, uint32_t length){return -1;}
+int8_t FLASH_EEPROM_BaseClass::writeFlashBytes(uint32_t address, byte* buffer, uint32_t length){return -1;}
+int8_t FLASH_EEPROM_BaseClass::eraseFlashSector(uint32_t address, uint32_t length){return -1;}
 
 #endif
+
+#if defined(USE_SPI_EEPROM)
+SPI_EEPROM_Class::SPI_EEPROM_Class(EEPROM_Emulation_Config config):FLASH_EEPROM_BaseClass(config)
+{
+
+}
+
+byte SPI_EEPROM_Class::read(uint16_t addressEEPROM){
+    //Check if emulated EEPROM is available if not yet start it first.
+    if(!_EmulatedEEPROMAvailable){
+      //22.5Mhz is highest it could get with this. But should be ~45Mhz :-(. 
+      SPISettings settings(22500000, MSBFIRST, SPI_MODE0);
+      SPI.beginTransaction(settings);
+      begin(SPI, USE_SPI_EEPROM);
+    }
+    
+    return FLASH_EEPROM_BaseClass::read(addressEEPROM);
+}
+
+int8_t SPI_EEPROM_Class::begin(SPIClass &_spi, uint8_t pinSPIFlash_CS=6){
+    pinMode(pinSPIFlash_CS, OUTPUT);
+    bool flashavailable;
+    flashavailable = winbondSPIFlash.begin(_W25Q16,_spi, pinSPIFlash_CS);
+    return FLASH_EEPROM_BaseClass::initialize(flashavailable);
+}    
+
+int8_t SPI_EEPROM_Class::readFlashBytes(uint32_t address, byte *buf, uint32_t length){
+  while(winbondSPIFlash.busy());
+  return winbondSPIFlash.read(address+_config.EEPROM_Flash_BaseAddress, buf, length);
+}
+
+int8_t SPI_EEPROM_Class::writeFlashBytes(uint32_t address, byte *buf, uint32_t length){
+  winbondSPIFlash.setWriteEnable(true);
+  winbondSPIFlash.writePage(address+_config.EEPROM_Flash_BaseAddress, buf, length);
+  while(winbondSPIFlash.busy());
+  return 0;
+}
+
+int8_t SPI_EEPROM_Class::eraseFlashSector(uint32_t address, uint32_t length){
+  winbondSPIFlash.setWriteEnable(true);
+  winbondSPIFlash.eraseSector(address+_config.EEPROM_Flash_BaseAddress);
+  while(winbondSPIFlash.busy());
+  return 0;
+}
+
+
+//THIS IS NOT WORKING! FOR STM32F103 YOU CAN ONLY WRITE IN JUST ERASED HALFWORDS(UINT16_T). THE PHILISOPHY IS FLAWWED THERE.
+// #elif defined(STM32F103xB)
+
+// InternalSTM32F1_EEPROM_Class::InternalSTM32F1_EEPROM_Class(EEPROM_Emulation_Config config):FLASH_EEPROM_BaseClass(config)
+// {
+  
+// }
+
+// byte InternalSTM32F1_EEPROM_Class::read(uint16_t addressEEPROM){  
+//   if(!_EmulatedEEPROMAvailable){
+//       FLASH_EEPROM_BaseClass::initialize(true);
+//   }
+//   return FLASH_EEPROM_BaseClass::read(addressEEPROM);
+// }
+
+// int8_t InternalSTM32F1_EEPROM_Class::readFlashBytes(uint32_t address, byte *buf, uint32_t length){
+//   memcpy(buf, (uint8_t *)(_config.EEPROM_Flash_BaseAddress + address), length);
+//   return 0;
+// }
+
+// int8_t InternalSTM32F1_EEPROM_Class::writeFlashBytes(uint32_t flashAddress, byte *buf, uint32_t length){
+//  {
+//   uint32_t translatedAddress = flashAddress+_config.EEPROM_Flash_BaseAddress;
+//   uint32_t data = 0;
+//   uint32_t countaddress = translatedAddress; 
+//   HAL_FLASH_Unlock();
+//   while (countaddress < translatedAddress + length) {
+//       memcpy(&data, buf, sizeof(uint32_t));
+//       if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, countaddress, data) == HAL_OK) {
+//         countaddress += 4;
+//         offset += 4;
+//       } else {
+//         countaddress = translatedAddress + length + 1;
+//       }
+//     }
+//   }
+//   HAL_FLASH_Lock();
+//   return 0;
+// }
+
+// int8_t InternalSTM32F1_EEPROM_Class::eraseFlashSector(uint32_t address, uint32_t length){
+//   FLASH_EraseInitTypeDef EraseInitStruct;
+//   uint32_t pageError = 0;
+//   uint32_t realAddress = _config.EEPROM_Flash_BaseAddress+address;
+//   bool EraseSucceed=false;
+
+//   /* ERASING page */
+//   EraseInitStruct.TypeErase = FLASH_TYPEERASE_PAGES;
+//   EraseInitStruct.Banks = 1;
+//   EraseInitStruct.PageAddress = realAddress;
+//   EraseInitStruct.NbPages = 1;
+
+//   HAL_FLASH_Unlock();
+//   if (HAL_FLASHEx_Erase(&EraseInitStruct, &pageError) == HAL_OK){EraseSucceed=true;}
+//   HAL_FLASH_Lock();
+//   return EraseSucceed;
+// }
+
+#elif defined(STM32F407xx)
+
+InternalSTM32F4_EEPROM_Class::InternalSTM32F4_EEPROM_Class(EEPROM_Emulation_Config config) : FLASH_EEPROM_BaseClass(config)
+{
+  
+}
+
+byte InternalSTM32F4_EEPROM_Class::read(uint16_t addressEEPROM){  
+  if(!_EmulatedEEPROMAvailable){
+      FLASH_EEPROM_BaseClass::initialize(true);
+  }
+  return FLASH_EEPROM_BaseClass::read(addressEEPROM);
+}
+
+int8_t InternalSTM32F4_EEPROM_Class::readFlashBytes(uint32_t address, byte *buf, uint32_t length){
+  memcpy(buf, (uint8_t *)(_config.EEPROM_Flash_BaseAddress + address), length);
+  return 0;
+}
+
+int8_t InternalSTM32F4_EEPROM_Class::writeFlashBytes(uint32_t flashAddress, byte *buf, uint32_t length){
+ {
+  uint32_t translatedAddress = flashAddress+_config.EEPROM_Flash_BaseAddress;
+  uint16_t data = 0;
+  uint32_t offset = 0;
+  uint32_t countaddress = translatedAddress; 
+  HAL_FLASH_Unlock();
+  while (countaddress < translatedAddress + length) {
+      memcpy(&data, buf + offset, sizeof(uint16_t));
+      if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, countaddress, data) == HAL_OK) {
+        countaddress += 2;
+        offset += 2;
+      } else {
+        countaddress = translatedAddress + length + 1;
+      }
+    }
+  }
+  HAL_FLASH_Lock();
+  return 0;
+}
+
+int8_t InternalSTM32F4_EEPROM_Class::eraseFlashSector(uint32_t address, uint32_t length){
+  FLASH_EraseInitTypeDef EraseInitStruct;
+  // uint32_t offset = 0;
+  uint32_t realAddress = _config.EEPROM_Flash_BaseAddress+address;
+  // uint32_t address_end = FLASH_BASE_ADDRESS + E2END;
+  bool EraseSucceed=false;
+  uint32_t SectorError = 0;
+  uint32_t _Sector = 11;
+
+  //Look in the datasheet for more information about flash sectors and sizes
+  //This is the correct sector allocation for the STM32F407 all types
+  if ((realAddress>=0x08000000UL)&(realAddress<=0x08003FFFUL)){_Sector = 0;}
+  if ((realAddress>=0x08004000UL)&(realAddress<=0x08007FFFUL)){_Sector = 1;}
+  if ((realAddress>=0x08008000UL)&(realAddress<=0x0800BFFFUL)){_Sector = 2;}
+  if ((realAddress>=0x0800C000UL)&(realAddress<=0x0800FFFFUL)){_Sector = 3;}
+  if ((realAddress>=0x08010000UL)&(realAddress<=0x0801FFFFUL)){_Sector = 4;}
+  if ((realAddress>=0x08020000UL)&(realAddress<=0x0803FFFFUL)){_Sector = 5;}
+  if ((realAddress>=0x08040000UL)&(realAddress<=0x0805FFFFUL)){_Sector = 6;}
+  if ((realAddress>=0x08050000UL)&(realAddress<=0x0807FFFFUL)){_Sector = 7;}
+  if ((realAddress>=0x08080000UL)&(realAddress<=0x0809FFFFUL)){_Sector = 8;}
+  if ((realAddress>=0x080A0000UL)&(realAddress<=0x080BFFFFUL)){_Sector = 9;}
+  if ((realAddress>=0x080C0000UL)&(realAddress<=0x080DFFFFUL)){_Sector = 10;}
+  if ((realAddress>=0x080E0000UL)&(realAddress<=0x080FFFFFUL)){_Sector = 11;}
+
+  EraseInitStruct.TypeErase = FLASH_TYPEERASE_SECTORS;
+  EraseInitStruct.VoltageRange = FLASH_VOLTAGE_RANGE_3;
+  EraseInitStruct.Sector = _Sector;
+  EraseInitStruct.NbSectors = 1;
+
+  HAL_FLASH_Unlock();
+  if (HAL_FLASHEx_Erase(&EraseInitStruct, &SectorError) == HAL_OK){EraseSucceed=true;}
+  HAL_FLASH_Lock();
+  return EraseSucceed;
+}
+#endif
+
+#if defined(USE_SPI_EEPROM)
+  SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+#elif defined(STM32F407xx) 
+  InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+#endif
+
+
+
+

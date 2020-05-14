@@ -10,7 +10,7 @@ A full copy of the license may be found in the projects root directory
 #include "maths.h"
 #include "utils.h"
 #include "decoders.h"
-#include "scheduledIO.h"
+#include "TS_CommandButtonHandler.h"
 #include "logger.h"
 #include "errors.h"
 
@@ -86,8 +86,6 @@ void command()
       }
       break;
 
-    //The following can be used to show the amount of free memory
-
     case 'E': // receive command button commands
       cmdPending = true;
 
@@ -95,10 +93,20 @@ void command()
       {
         byte cmdGroup = Serial.read();
         byte cmdValue = Serial.read();
-        int cmdCombined = word(cmdGroup, cmdValue);
-        if (currentStatus.RPM == 0) { commandButtons(cmdCombined); }
+        uint16_t cmdCombined = word(cmdGroup, cmdValue);
 
-        cmdPending = false;
+        if ( ((cmdCombined >= TS_CMD_INJ1_ON) && (cmdCombined <= TS_CMD_IGN8_50PC)) || (cmdCombined == TS_CMD_TEST_ENBL) || (cmdCombined == TS_CMD_TEST_DSBL) )
+        {
+          //Hardware test buttons
+          if (currentStatus.RPM == 0) { TS_CommandButtonsHandler(cmdCombined); }
+          cmdPending = false;
+        }
+        else if( (cmdCombined >= TS_CMD_VSS_60KMH) && (cmdCombined <= TS_CMD_VSS_RATIO6) )
+        {
+          //VSS Calibration commands
+          TS_CommandButtonsHandler(cmdCombined);
+          cmdPending = false;
+        }
       }
       break;
 
@@ -639,12 +647,18 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[98] = currentStatus.baroCorrection;
   fullStatus[99] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
   fullStatus[100] = currentStatus.ASEValue; //Current ASE (%)
+  fullStatus[101] = lowByte(currentStatus.vss);
+  fullStatus[102] = highByte(currentStatus.vss);
+  fullStatus[103] = currentStatus.gear;
 
   for(byte x=0; x<packetLength; x++)
   {
     if (portNum == 0) { Serial.write(fullStatus[offset+x]); }
     else if (portNum == 3){ CANSerial.write(fullStatus[offset+x]); }
   }
+
+  // Reset any flags that are being used to trigger page refreshes
+  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
 
 }
 
@@ -1823,206 +1837,3 @@ void testComm()
   return;
 }
 
-void commandButtons(int buttonCommand)
-{
-  switch (buttonCommand)
-  {
-    case 256: // cmd is stop
-      BIT_CLEAR(currentStatus.testOutputs, 1);
-      endCoil1Charge();
-      endCoil2Charge();
-      endCoil3Charge();
-      endCoil4Charge();
-      closeInjector1();
-      closeInjector2();
-      closeInjector3();
-      closeInjector4();
-      #if INJ_CHANNELS >= 5
-      closeInjector5();
-      #endif
-      #if INJ_CHANNELS >= 6
-      closeInjector6();
-      #endif
-      #if INJ_CHANNELS >= 7
-      closeInjector7();
-      #endif
-      #if INJ_CHANNELS >= 8
-      closeInjector8();
-      #endif
-      break;
-
-    case 257: // cmd is enable
-      // currentStatus.testactive = 1;
-      BIT_SET(currentStatus.testOutputs, 1);
-      break;
-
-    case 513: // cmd group is for injector1 on actions
-      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector1(); }
-      break;
-
-    case 514: // cmd group is for injector1 off actions
-      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector1(); }
-      break;
-
-    case 515: // cmd group is for injector1 50% dc actions
-      //for (byte dcloop = 0; dcloop < 11; dcloop++)
-      //{
-      //  digitalWrite(pinInjector1, HIGH);
-      //  delay(500);
-      //  digitalWrite(pinInjector1, LOW);
-      //  delay(500);
-      //}
-      break;
-
-    case 516: // cmd group is for injector2 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector2(); }
-      break;
-
-    case 517: // cmd group is for injector2 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector2(); }
-      break;
-
-    case 518: // cmd group is for injector2 50%dc actions
-
-      break;
-
-    case 519: // cmd group is for injector3 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector3(); }
-      break;
-
-    case 520: // cmd group is for injector3 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector3(); }
-      break;
-
-    case 521: // cmd group is for injector3 50%dc actions
-
-      break;
-
-    case 522: // cmd group is for injector4 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector4(); }
-      break;
-
-    case 523: // cmd group is for injector4 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector4(); }
-      break;
-
-    case 524: // cmd group is for injector4 50% dc actions
-
-      break;
-
-    case 525: // cmd group is for injector5 on actions
-        #if INJ_CHANNELS >= 5
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector5(); }
-        #endif
-      break;
-
-    case 526: // cmd group is for injector5 off actions
-        #if INJ_CHANNELS >= 5
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector5(); }
-        #endif
-      break;
-
-    case 527: // cmd group is for injector5 50%dc actions
-
-      break;
-
-    case 528: // cmd group is for injector6 on actions
-        #if INJ_CHANNELS >= 6
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector6(); }
-        #endif
-      break;
-
-    case 529: // cmd group is for injector6 off actions
-        #if INJ_CHANNELS >= 6
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector6(); }
-        #endif
-      break;
-
-    case 530: // cmd group is for injector6 50% dc actions
-
-      break;
-
-    case 531: // cmd group is for injector5 on actions
-        #if INJ_CHANNELS >= 7
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector7(); }
-        #endif
-      break;
-
-    case 532: // cmd group is for injector5 off actions
-        #if INJ_CHANNELS >= 7
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector7(); }
-        #endif
-      break;
-
-    case 533: // cmd group is for injector5 50%dc actions
-
-      break;
-
-    case 534: // cmd group is for injector6 on actions
-        #if INJ_CHANNELS >= 8
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector8(); }
-        #endif
-      break;
-
-    case 535: // cmd group is for injector6 off actions
-        #if INJ_CHANNELS >= 8
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector8(); }
-        #endif
-      break;
-
-    case 536: // cmd group is for injector6 50% dc actions
-
-      break;
-
-    case 769: // cmd group is for spark1 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil1, coilHIGH); }
-      break;
-
-    case 770: // cmd group is for spark1 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil1, coilLOW); }
-      break;
-
-    case 771: // cmd group is for spark1 50%dc actions
-
-      break;
-
-    case 772: // cmd group is for spark2 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil2, coilHIGH); }
-      break;
-
-    case 773: // cmd group is for spark2 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil2, coilLOW); }
-      break;
-
-    case 774: // cmd group is for spark2 50%dc actions
-
-      break;
-
-    case 775: // cmd group is for spark3 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil3, coilHIGH); }
-      break;
-
-    case 776: // cmd group is for spark3 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil3, coilLOW); }
-      break;
-
-    case 777: // cmd group is for spark3 50%dc actions
-
-      break;
-
-    case 778: // cmd group is for spark4 on actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil4, coilHIGH); }
-      break;
-
-    case 779: // cmd group is for spark4 off actions
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { digitalWrite(pinCoil4, coilLOW); }
-      break;
-
-    case 780: // cmd group is for spark4 50%dc actions
-
-      break;
-
-    default:
-      break;
-  }
-}

@@ -43,6 +43,23 @@ void (*inj7EndFunction)();
 void (*inj8StartFunction)();
 void (*inj8EndFunction)();
 
+void (*ign1StartFunction)();
+void (*ign1EndFunction)();
+void (*ign2StartFunction)();
+void (*ign2EndFunction)();
+void (*ign3StartFunction)();
+void (*ign3EndFunction)();
+void (*ign4StartFunction)();
+void (*ign4EndFunction)();
+void (*ign5StartFunction)();
+void (*ign5EndFunction)();
+void (*ign6StartFunction)();
+void (*ign6EndFunction)();
+void (*ign7StartFunction)();
+void (*ign7EndFunction)();
+void (*ign8StartFunction)();
+void (*ign8EndFunction)();
+
 void initialiseSchedulers()
 {
     //nullSchedule.Status = OFF;

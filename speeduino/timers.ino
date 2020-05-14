@@ -16,6 +16,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "scheduler.h"
 #include "scheduledIO.h"
 #include "speeduino.h"
+#include "scheduler.h"
 #include "auxiliaries.h"
 
 #if defined(CORE_AVR)
@@ -120,7 +121,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
-    if ( (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) && (runSecsX10 < 65535) ) { runSecsX10++; }
+    if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) { runSecsX10++; }
     else { runSecsX10 = 0; }
   }
 
@@ -223,6 +224,33 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //Off by 1 error check
       if (currentStatus.ethanolPct == 1) { currentStatus.ethanolPct = 0; }
 
+    }
+
+    //**************************************************************************************************************************************************
+    //Handle any of the hardware testing outputs
+    if( BIT_CHECK(currentStatus.testOutputs, 1) )
+    {
+      //Check whether any of the fuel outputs is on
+
+      //Check for injector outputs on 50%
+      if(BIT_CHECK(HWTest_INJ_50pc, 1)) { injector1Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, 2)) { injector2Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, 3)) { injector3Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, 4)) { injector4Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, 5)) { injector5Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, 6)) { injector6Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, 7)) { injector7Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, 8)) { injector8Toggle(); }
+
+      //Check for ignition outputs on 50%
+      if(BIT_CHECK(HWTest_IGN_50pc, 1)) { coil1Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, 2)) { coil2Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, 3)) { coil3Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, 4)) { coil4Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, 5)) { coil5Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, 6)) { coil6Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, 7)) { coil7Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, 8)) { coil8Toggle(); }
     }
 
   }
