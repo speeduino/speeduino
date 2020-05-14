@@ -1289,6 +1289,7 @@ void setPinMapping(byte boardID)
       pinResetControl = 43; //Reset control output
       pinBaro = A5;
       pinVSS = 20;
+      pinALS = 26; //Anti-Lag System Switch
 
       #if defined(CORE_TEENSY35)
         pinInjector6 = 51;
@@ -2448,7 +2449,8 @@ void setPinMapping(byte boardID)
       pinMode(pinIAT, INPUT);
       pinMode(pinCLT, INPUT);
       pinMode(pinBat, INPUT);
-      pinMode(pinBaro, INPUT);
+      pinMode(pinBaro,INPUT);
+      pinMode(pinALS, INPUT); //Anti-lag Switch Input
     #endif
   #endif
   pinMode(pinTrigger, INPUT);

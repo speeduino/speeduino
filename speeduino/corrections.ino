@@ -101,6 +101,9 @@ uint16_t correctionsFuel()
   currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
 
+  currentStatus.antilagCorrection = correctionAntiLagfuel();
+  if (currentStatus.antilagCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.antilagCorrection); activeCorrections++; }
+
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
   if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
@@ -506,6 +509,17 @@ byte correctionFlex()
 }
 
 /*
+* Antilag has a setting to increase the fuel load to assist in Keeping the turbo spooled
+* This simple check applies the extra fuel if we're currently in antilag mode
+*/
+byte correctionAntiLagfuel()
+{
+  byte antilagFuel = 100;
+  if(currentStatus.antilagActive && BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)) { antilagFuel = (100 + configPage10.antilagFuelAdder); }
+
+  return antilagFuel;
+}
+/*
 Lookup the AFR target table and perform either a simple or PID adjustment based on this
 
 Simple (Best suited to narrowband sensors):
@@ -602,6 +616,9 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
   advance = correctionKnock(advance);
+  advance = correctionAntiLagIgn(advance); //Advance AntiLag System
+
+
 
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
@@ -753,7 +770,6 @@ int8_t correctionSoftFlatShift(int8_t advance)
 
   return ignSoftFlatValue;
 }
-
 int8_t correctionKnock(int8_t advance)
 {
   byte knockRetard = 0;
@@ -788,6 +804,27 @@ int8_t correctionKnock(int8_t advance)
 
   return advance - knockRetard;
 }
+
+// Anti-lag ignition Retard.
+int8_t correctionAntiLagIgn(int8_t advance)
+{
+  byte ignAntilag = advance;
+  if (configPage10.antilagEnable &&
+  (currentStatus.TPS <= configPage10.antilagTPS) && digitalRead(pinALS) == HIGH)
+  {
+    currentStatus.antilagActive = true;
+    BIT_SET(currentStatus.spark2, BIT_SPARK2_ANTILAG);
+    ignAntilag = configPage10.antilagRetard;
+  }
+  else
+  {
+    currentStatus.antilagActive= false;
+    BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_ANTILAG);
+  }
+
+  return ignAntilag;
+}
+
 
 //******************************** DWELL CORRECTIONS ********************************
 uint16_t correctionsDwell(uint16_t dwell)

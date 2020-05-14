@@ -133,7 +133,7 @@
 
 #define BIT_SPARK2_FLATSH         0  //Flat shift hard cut
 #define BIT_SPARK2_FLATSS         1  //Flat shift soft cut
-#define BIT_SPARK2_UNUSED3        2
+#define BIT_SPARK2_ANTILAG        2 //Antilag Indicator
 #define BIT_SPARK2_UNUSED4        3
 #define BIT_SPARK2_UNUSED5        4
 #define BIT_SPARK2_UNUSED6        5
@@ -504,6 +504,8 @@ struct statuses {
   uint16_t crankRPM = 400; /**< The actual cranking RPM limit. This is derived from the value in the config page, but saves us multiplying it everytime it's used (Config page value is stored divided by 10) */
   volatile byte status3;
   int16_t flexBoostCorrection; /**< Amount of boost added based on flex */
+  boolean antilagActive; //true when all conditions are met
+  byte antilagCorrection;  //Fuel correction when antilag is enabled
   byte nitrous_status;
   byte nSquirts;
   byte nChannels; /**< Number of fuel and ignition channels.  */
@@ -1045,8 +1047,14 @@ struct config10 {
   byte vvtCLKD;
   uint16_t vvtCLMinAng;
   uint16_t vvtCLMaxAng;
+  //Byte 134
+  byte antilagEnable : 1;
+  byte antilagTPS;
+  byte antilagRetard;
+  byte antilagFuelAdder;
 
-  byte unused11_123_191[58];
+  //Byte 138
+  byte unused11_138_191[54];
 
 #if defined(CORE_AVR)
   };
@@ -1118,6 +1126,7 @@ extern byte pinFlex; //Pin with the flex sensor attached
 extern byte pinVSS; 
 extern byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 extern byte pinResetControl; // Output pin used control resetting the Arduino
+extern byte pinALS; //Antilag Switch
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   extern byte pinMC33810_1_CS;

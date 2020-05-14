@@ -20,6 +20,7 @@ byte correctionIATDensity(); //Inlet temp density correction
 byte correctionBaro(); //Barometric pressure correction
 byte correctionLaunch(); //Launch control correction
 bool correctionDFCO(); //Decelleration fuel cutoff
+byte correctionAntiLagfuel(); //Antilag Fuel Adder
 
 int8_t correctionsIgn(int8_t advance);
 int8_t correctionFixedTiming(int8_t);
@@ -33,6 +34,7 @@ int8_t correctionNitrous(int8_t);
 int8_t correctionSoftLaunch(int8_t);
 int8_t correctionSoftFlatShift(int8_t);
 int8_t correctionKnock(int8_t);
+int8_t correctionAntiLagIgn(int8_t); //Antilag Ignition Retard
 
 uint16_t correctionsDwell(uint16_t dwell);
 
