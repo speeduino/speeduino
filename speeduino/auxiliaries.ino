@@ -311,7 +311,7 @@ void nitrousControl()
       // STAGE1 = 1
       // STAGE2 = 2
       // BOTH   = 3 (ie STAGE1 + STAGE2 = BOTH)
-      currentStatus.nitrous_status = NITROUS_OFF;
+      currentStatus.nitrous_status = NITROUS_OFF; //Reset the current state
       if( (currentStatus.RPM > realStage1MinRPM) && (currentStatus.RPM < realStage1MaxRPM) )
       {
         currentStatus.nitrous_status += NITROUS_STAGE1;
