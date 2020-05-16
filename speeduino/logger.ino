@@ -120,4 +120,5 @@ void createLog(uint8_t *logBuffer)
     logBuffer[96] = lowByte(currentStatus.flexBoostCorrection);
     logBuffer[97] = highByte(currentStatus.flexBoostCorrection);
     logBuffer[98] = currentStatus.baroCorrection;
+    logBuffer[99] = currentStatus.ethanolPctFuel; //Ethanol % for fuelling purposes (or 0 if not used)
 }

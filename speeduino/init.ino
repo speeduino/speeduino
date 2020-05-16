@@ -273,6 +273,7 @@ void initialiseAll()
     {
       attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, RISING);
       currentStatus.ethanolPct = 0;
+      currentStatus.ethanolPctFuel = configPage10.flexFallbackPct; // set to default fallback value
     }
     //Same as above, but for the VSS input
     if(configPage2.vssMode > 1) // VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)

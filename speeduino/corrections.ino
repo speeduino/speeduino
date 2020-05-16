@@ -500,7 +500,7 @@ byte correctionFlex()
 
   if (configPage2.flexEnabled == 1)
   {
-    flexValue = table2D_getValue(&flexFuelTable, currentStatus.ethanolPct);
+    flexValue = table2D_getValue(&flexFuelTable, currentStatus.ethanolPctFuel);
   }
   return flexValue;
 }
