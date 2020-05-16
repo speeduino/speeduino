@@ -268,6 +268,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 
   fullStatus[73] = currentStatus.tpsADC;
   fullStatus[74] = getNextError();
+  fullStatus[75] = currentStatus.ethanolPctFuel; //Ethanol % for fuelling purposes (or 0 if not used)
 
   for(byte x=0; x<packetLength; x++)
   {

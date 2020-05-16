@@ -406,7 +406,7 @@ void loop()
         }
         else if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_ETH)
         {
-          if(currentStatus.ethanolPct > configPage10.fuel2SwitchValue)
+          if(currentStatus.ethanolPctFuel > configPage10.fuel2SwitchValue)
           {
             BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
             currentStatus.VE2 = getVE2();

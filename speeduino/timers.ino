@@ -198,6 +198,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
       if(flexCounter < 50)
       {
         currentStatus.ethanolPct = 0; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
+        currentStatus.ethanolPctFuel = configPage10.flexFallbackPct; //TODO: Should there be a margin eg below 40 pulses to set fallback value?
         flexCounter = 0;
       }
       else if (flexCounter > 151) //1 pulse buffer
@@ -206,23 +207,27 @@ void oneMSInterval() //Most ARM chips can simply call a function
         if(flexCounter < 169)
         {
           currentStatus.ethanolPct = 100;
+          currentStatus.ethanolPctFuel = currentStatus.ethanolPct;
           flexCounter = 0;
         }
         else
         {
           //This indicates an error condition. Spec of the sensor is that errors are above 170Hz)
           currentStatus.ethanolPct = 0;
+          currentStatus.ethanolPctFuel = configPage10.flexFallbackPct; // Set to default value
           flexCounter = 0;
         }
       }
       else
       {
         currentStatus.ethanolPct = flexCounter - 50; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
+        currentStatus.ethanolPctFuel = currentStatus.ethanolPct;
         flexCounter = 0;
       }
 
       //Off by 1 error check
       if (currentStatus.ethanolPct == 1) { currentStatus.ethanolPct = 0; }
+      if (currentStatus.ethanolPctFuel == 1) { currentStatus.ethanolPctFuel = 0; }
 
     }
 
@@ -259,4 +264,3 @@ void oneMSInterval() //Most ARM chips can simply call a function
     TCNT2 = 131;            //Preload timer2 with 100 cycles, leaving 156 till overflow.
 #endif
 }
-
