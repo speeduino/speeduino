@@ -21,7 +21,7 @@
 #define KNOCK_MODE_DIGITAL  1
 #define KNOCK_MODE_ANALOG   2
 
-#define VSS_GEAR_HYSTERESIS 5
+#define VSS_GEAR_HYSTERESIS 10
 
 /*
 #if defined(CORE_AVR)

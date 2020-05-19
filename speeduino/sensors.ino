@@ -491,20 +491,28 @@ uint16_t getSpeed()
 {
   uint16_t tempSpeed = 0;
   uint32_t pulseTime = 0;
+
+  //Need to temp store the pulse time variables to prevent them changing during an interrupt
+  noInterrupts();
+  uint32_t temp_vssLastPulseTime = vssLastPulseTime;
+  uint32_t temp_vssLastMinusOnePulseTime  = vssLastMinusOnePulseTime;
+  interrupts();
+
   if(configPage2.vssMode == 1)
   {
     //VSS mode 1 is (Will be) CAN
   }
   else if(configPage2.vssMode > 1)
   {
-    if( (vssLastPulseTime > 0) && (vssLastMinusOnePulseTime > 0) ) //Check we've had at least 2 pulses
+    if( (temp_vssLastPulseTime > 0) && (temp_vssLastMinusOnePulseTime > 0) ) //Check we've had at least 2 pulses
     {
-      if(vssLastPulseTime < vssLastMinusOnePulseTime) { tempSpeed = currentStatus.vss; } //Check for overflow of micros()
+      if(temp_vssLastPulseTime < temp_vssLastMinusOnePulseTime) { tempSpeed = currentStatus.vss; } //Check for overflow of micros()
+      else if ( (micros() - temp_vssLastPulseTime) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop (1s timeout)
       else
       {
-        pulseTime = vssLastPulseTime - vssLastMinusOnePulseTime;
+        pulseTime = temp_vssLastPulseTime - temp_vssLastMinusOnePulseTime;
         tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
-        tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply spped smoothing factor
+        tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
         if(tempSpeed > 1000) { tempSpeed = 0; } //Safety check. This usually occurs when there is a hardware issue
       }
     }
@@ -517,6 +525,9 @@ byte getGear()
   byte tempGear = 0; //Unknown gear
   if(currentStatus.vss > 0)
   {
+    //If the speed is non-zero, default to the last calculated gear
+    tempGear = currentStatus.gear;
+
     uint16_t pulsesPer1000rpm = (currentStatus.vss * 10000UL) / currentStatus.RPM; //Gives the current pulses per 1000RPM, multipled by 10 (10x is the multiplication factor for the ratios in TS)
     //Begin gear detection
     if( (pulsesPer1000rpm > (configPage2.vssRatio1 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio1 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 1; }
