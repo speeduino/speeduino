@@ -422,7 +422,7 @@ class InternalSTM32F4_EEPROM_Class : public FLASH_EEPROM_BaseClass
 
 #if defined(USE_SPI_EEPROM)
   extern SPI_EEPROM_Class EEPROM;
-#elif defined(STM32F407xx)
+#elif defined(STM32F407xx) & !defined(SRAM_AS_EEPROM)
   extern InternalSTM32F4_EEPROM_Class EEPROM;
 #endif
 
