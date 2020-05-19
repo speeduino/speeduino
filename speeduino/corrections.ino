@@ -181,11 +181,22 @@ Additional fuel % to be added when the engine is cranking
 uint16_t correctionCranking()
 {
   uint16_t crankingValue = 100;
-  //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage2.crankingPct; }
+  //Check if we are actually cranking
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
   {
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
+  }
+  
+  //If we're not cranking, check if if cranking enrichment tapering to ASE should be done
+  else if ( (uint32_t) runSecsX10 <= configPage10.crankingEnrichTaper)
+  {
+    crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
+    //Taper start value needs to account for ASE that is now running, so total correction does not increase when taper begins
+    unsigned long taperStart = (unsigned long) crankingValue * 100 / currentStatus.ASEValue;
+    crankingValue = (uint16_t) map(runSecsX10, 0, configPage10.crankingEnrichTaper, taperStart, 100); //Taper from start value to 100%
+    if (crankingValue < 100) { crankingValue = 100; } //Sanity check
   }
   return crankingValue;
 }

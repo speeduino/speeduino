@@ -335,6 +335,9 @@ void doUpdates()
     configPage2.aeColdTaperMin = 40;
     configPage2.aeColdTaperMax = 100;
     
+    //Cranking enrichment to run taper added. Default it to 0,1 secs
+    configPage10.crankingEnrichTaper = 1;
+    
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 14);
 
