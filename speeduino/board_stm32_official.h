@@ -200,6 +200,7 @@ HardwareTimer Timer11(TIM7);
 #endif
 #endif
 
+#if ((STM32_CORE_VERSION_MINOR<=8) & (STM32_CORE_VERSION_MAJOR==1)) 
 void oneMSInterval(HardwareTimer*);
 void boostInterrupt(HardwareTimer*);
 void fuelSchedule1Interrupt(HardwareTimer*);
@@ -236,6 +237,7 @@ void ignitionSchedule7Interrupt(HardwareTimer*);
 #if (IGN_CHANNELS >= 8)
 void ignitionSchedule8Interrupt(HardwareTimer*);
 #endif
+#endif //End core<=1.8
 
 /*
 ***********************************************************************************************************
