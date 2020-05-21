@@ -23,7 +23,7 @@ void initialiseIdle()
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
   IDLE_TIMER_DISABLE();
 
-  //pins must always be initialized. 
+  //Pin masks must always be initialized, regardless of whether PWM idle is used. This is required for STM32 to prevent issues if the IRQ function fires on restat/overflow
   idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
   idle_pin_mask = digitalPinToBitMask(pinIdle1);
   idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));

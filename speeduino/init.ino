@@ -1841,7 +1841,7 @@ void setPinMapping(byte boardID)
     case 45:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings for the DIY-EFI CORE4 Module. This is an AVR only module
-      #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+      #if defined(CORE_AVR)
       pinInjector1 = 10; //Output pin injector 1 is on
       pinInjector2 = 11; //Output pin injector 2 is on
       pinInjector3 = 12; //Output pin injector 3 is on

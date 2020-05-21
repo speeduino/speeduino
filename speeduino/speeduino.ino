@@ -102,27 +102,29 @@ void loop()
         }
         
       }
-      //if can or secondary serial interface is enabled then check for requests.
-      if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+      #if defined(CANSerial_AVAILABLE)
+        //if can or secondary serial interface is enabled then check for requests.
+        if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+        {
+          if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
           {
-            if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-                {
-                  if (CANSerial.available() > 0)  { secondserial_Command(); }
-                }
+            if (CANSerial.available() > 0)  { secondserial_Command(); }
           }
-      #if  defined(CORE_TEENSY)
+        }
+      #endif
+      #if defined(CORE_TEENSY)
           //currentStatus.canin[12] = configPage9.enable_intcan;
           if (configPage9.enable_intcan == 1) // use internal can module
           {
             //check local can module
             // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
             while (Can0.read(inMsg) ) 
-                 {
-                  can_Command();
-                  //Can0.read(inMsg);
-                  //currentStatus.canin[12] = inMsg.buf[5];
-                  //currentStatus.canin[13] = inMsg.id;
-                 } 
+            {
+              can_Command();
+              //Can0.read(inMsg);
+              //currentStatus.canin[12] = inMsg.buf[5];
+              //currentStatus.canin[13] = inMsg.id;
+            } 
           }
       #endif
       
