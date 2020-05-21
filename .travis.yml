@@ -57,8 +57,9 @@ script:
   - ls noisymime/
   - cd noisymime/speeduino
   - platformio update
+  - platformio platform update
 # Run the builds (Mega must be last so that the hex file isn't cleaned up)
-  - platformio run -e teensy35 -e teensy40 -e megaatmega2560
+  - platformio run -e teensy35 -e teensy40 -e megaatmega2561 -e megaatmega2560
 # Run the remote unit tests (only on master)
   - 'if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then platformio remote test --environment megaatmega2560; fi'
 # Uploading the firmware to speeduino.com (Only on master)

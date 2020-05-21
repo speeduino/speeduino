@@ -23,6 +23,12 @@ void initialiseIdle()
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
   IDLE_TIMER_DISABLE();
 
+  //Pin masks must always be initialized, regardless of whether PWM idle is used. This is required for STM32 to prevent issues if the IRQ function fires on restat/overflow
+  idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
+  idle_pin_mask = digitalPinToBitMask(pinIdle1);
+  idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
+  idle2_pin_mask = digitalPinToBitMask(pinIdle2);
+
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
   switch(configPage6.iacAlgorithm)
   {
@@ -54,10 +60,6 @@ void initialiseIdle()
       iacCrankDutyTable.values = configPage6.iacCrankDuty;
       iacCrankDutyTable.axisX = configPage6.iacCrankBins;
 
-      idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
-      idle_pin_mask = digitalPinToBitMask(pinIdle1);
-      idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
-      idle2_pin_mask = digitalPinToBitMask(pinIdle2);
       #if defined(CORE_AVR)
         idle_pwm_max_count = 1000000L / (16 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       #elif defined(CORE_TEENSY)
@@ -80,10 +82,6 @@ void initialiseIdle()
       iacCrankDutyTable.values = configPage6.iacCrankDuty;
       iacCrankDutyTable.axisX = configPage6.iacCrankBins;
 
-      idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
-      idle_pin_mask = digitalPinToBitMask(pinIdle1);
-      idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
-      idle2_pin_mask = digitalPinToBitMask(pinIdle2);
       #if defined(CORE_AVR)
         idle_pwm_max_count = 1000000L / (16 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       #elif defined(CORE_TEENSY)

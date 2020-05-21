@@ -7,11 +7,26 @@
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define BOARD_DIGITAL_GPIO_PINS 54
   #define BOARD_NR_GPIO_PINS 62
+#ifndef LED_BUILTIN
   #define LED_BUILTIN 13
+#endif
   #define CORE_AVR
   #define BOARD_H "board_avr2560.h"
   #define INJ_CHANNELS 4
   #define IGN_CHANNELS 5
+
+  #if defined(__AVR_ATmega2561__)
+    //This is a workaround to avoid having to change all the references to higher ADC channels. We simply define the channels (Which don't exist on the 2561) as being the same as A0-A7
+    //These Analog inputs should never be used on any 2561 board defintion (Because they don't exist on the MCU), so it will not cause any isses
+    #define A8  A0
+    #define A9  A1
+    #define A10  A2
+    #define A11  A3
+    #define A12  A4
+    #define A13  A5
+    #define A14  A6
+    #define A15  A7
+  #endif
 
   //#define TIMER5_MICROS
 
@@ -149,7 +164,7 @@
 #define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
 #define BIT_STATUS3_NITROUS       1
 #define BIT_STATUS3_FUEL2_ACTIVE  2
-#define BIT_STATUS3_UNUSED3       3
+#define BIT_STATUS3_VSS_REFRESH   3
 #define BIT_STATUS3_UNUSED4       4
 #define BIT_STATUS3_NSQUIRTS1     5
 #define BIT_STATUS3_NSQUIRTS2     6
@@ -523,6 +538,7 @@ struct statuses {
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss; /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
+  byte gear; /**< Current gear (Calculated from vss) */
 };
 
 /**
@@ -629,7 +645,8 @@ struct config2 {
   uint16_t EMAPMax;
 
   byte fanWhenOff : 1;      // Only run fan when engine is running
-  byte fanUnused : 7;
+  byte fanWhenCranking : 1;      //**< Setting whether the fan output will stay on when the engine is cranking */ 
+  byte fanUnused : 6;
   byte asePct[4];  //Afterstart enrichment (%)
   byte aseCount[4]; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte aseBins[4]; //Afterstart enrichment temp axis
@@ -1031,21 +1048,24 @@ struct config10 {
   byte fuel2Algorithm : 3;
   byte fuel2Mode : 3;
   byte fuel2SwitchVariable : 2;
+
+  //Bytes 123-124
   uint16_t fuel2SwitchValue;
 
-  //Byte 123
+  //Byte 125
   byte fuel2InputPin : 6;
   byte fuel2InputPolarity : 1;
   byte fuel2InputPullup : 1;
 
-  byte vvtCLholdDuty;
-  byte vvtCLKP;
-  byte vvtCLKI;
-  byte vvtCLKD;
-  uint16_t vvtCLMinAng;
-  uint16_t vvtCLMaxAng;
+  byte vvtCLholdDuty; //Byte 126
+  byte vvtCLKP; //Byte 127
+  byte vvtCLKI; //Byte 128
+  byte vvtCLKD; //Byte 129
+  uint16_t vvtCLMinAng; //Bytes 130-131
+  uint16_t vvtCLMaxAng; //Bytes 132-133
 
-  byte unused11_123_191[58];
+  byte crankingEnrichTaper; //Byte 134
+  byte unused11_135_191[57]; //Bytes 135-191
 
 #if defined(CORE_AVR)
   };

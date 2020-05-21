@@ -21,7 +21,7 @@
 #define KNOCK_MODE_DIGITAL  1
 #define KNOCK_MODE_ANALOG   2
 
-#define VSS_GEAR_HYSTERESIS 2
+#define VSS_GEAR_HYSTERESIS 10
 
 /*
 #if defined(CORE_AVR)
@@ -44,8 +44,8 @@ unsigned long TPSlast_time; //The time the previous TPS sample was taken
 byte MAPlast; /**< The previous MAP reading */
 unsigned long MAP_time; //The time the MAP sample was taken
 unsigned long MAPlast_time; //The time the previous MAP sample was taken
-unsigned long vssLastPulseTime; /**< The times of the last VSS_NUM_SAMPLES pulses of the VSS are stored in this array */
-unsigned long vssLastMinusOnePulseTime; /**< The times of the last VSS_NUM_SAMPLES pulses of the VSS are stored in this array */
+volatile unsigned long vssLastPulseTime; /**< The times of the last VSS_NUM_SAMPLES pulses of the VSS are stored in this array */
+volatile unsigned long vssLastMinusOnePulseTime; /**< The times of the last VSS_NUM_SAMPLES pulses of the VSS are stored in this array */
 
 //These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
 byte mapErrorCount = 0;
@@ -66,6 +66,8 @@ void readTPS(bool=true); //Allows the option to override the use of the filter
 void readO2_2();
 void flexPulse();
 void vssPulse();
+uint16_t getSpeed();
+byte getGear();
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
 void readCLT(bool=true); //Allows the option to override the use of the filter
