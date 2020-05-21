@@ -213,13 +213,12 @@ integerPID::integerPID(long* Input, long* Output, long* Setpoint,
         byte Kp, byte Ki, byte Kd, byte ControllerDirection)
 {
 
-    myOutput = Output;
+   myOutput = Output;
    myInput = Input;
-    mySetpoint = Setpoint;
+   mySetpoint = Setpoint;
 	inAuto = false;
 
-	integerPID::SetOutputLimits(0, 255);				//default output limit corresponds to
-												//the arduino pwm limits
+	integerPID::SetOutputLimits(0, 255);   //default output limit corresponds to the arduino pwm limits
 
     SampleTime = 250;							//default Controller Sample Time is 0.25 seconds. This is the 4Hz control time for Idle and VVT
 
@@ -240,45 +239,57 @@ bool integerPID::Compute(bool pOnE)
 {
    if(!inAuto) return false;
    unsigned long now = millis();
-   //SampleTime = (now - lastTime);
    unsigned long timeChange = (now - lastTime);
    if(timeChange >= SampleTime)
    {
       /*Compute all the working error variables*/
-	  long input = *myInput;
-      long error = *mySetpoint - input;
-      long dInput = (input - lastInput);
-
-      outputSum += (ki * error)/1024; //Note that ki is multiplied by 1024 so it must be divided by 1024 here
-      if(outputSum > outMax) { outputSum = outMax; }
-      else if(outputSum < outMin) { outputSum = outMin; }
-      
-      /*Compute PID Output*/
-      long output;
-      
-      if(pOnE)
+	   long input = *myInput;
+      if(input > 0) //Fail safe, should never be 0
       {
-         output = (kp * error) + outputSum - ((kd * dInput)/128);
+         long error = *mySetpoint - input;
+         long dInput = (input - lastInput);
+         long outMinResized = outMin<<PID_SHIFTS;
+         long outMaxResized = outMax<<PID_SHIFTS;
+
+         if (ki != 0)
+         {
+            outputSum += (ki * error); //integral += error × dt
+            if(outputSum > outMaxResized) { outputSum = outMaxResized; }
+            else if(outputSum < outMinResized) { outputSum = outMinResized; }
+         }
+
+         /*Compute PID Output*/
+         long output;
+         
+         if(pOnE)
+         {
+            output = (kp * error);
+            if (ki != 0) { output += outputSum; }
+            if (kd != 0) { output -= (kd * dInput)>>2; }
+            output >>= PID_SHIFTS;
+         }
+         else
+         {
+            outputSum -= (kp * dInput);
+            if(outputSum > outMaxResized) { outputSum = outMaxResized; }
+            else if(outputSum < outMinResized) { outputSum = outMinResized; }
+
+            output = outputSum;
+            if (kd != 0) { output -= (kd * dInput)>>2; }
+            output >>= PID_SHIFTS;
+         }
+         
+
+         if(output > outMax) output = outMax;
+         else if(output < outMin) output = outMin;
+         *myOutput = output;
+
+         /*Remember some variables for next time*/
+         lastInput = input;
+         lastTime = now;
+
+         return true;
       }
-      else
-      {
-         outputSum -= kp * dInput;
-         if(outputSum > outMax) { outputSum = outMax; }
-         else if(outputSum < outMin) { outputSum = outMin; }
-
-         output = outputSum - ((kd * dInput)/128);
-      }
-      
-
-	   if(output > outMax) output = outMax;
-      else if(output < outMin) output = outMin;
-	   *myOutput = output;
-
-      /*Remember some variables for next time*/
-      lastInput = input;
-      lastTime = now;
-
-      return true;
    }
    else return false;
 }
@@ -302,9 +313,10 @@ void integerPID::SetTunings(byte Kp, byte Ki, byte Kd)
    kd = Kd / SampleTimeInSec;
    */
   long InverseSampleTimeInSec = 1000 / SampleTime;
-  kp = Kp;
-  ki = (long)((long)Ki * 1024) / InverseSampleTimeInSec;
-  kd = ((long)Kd * InverseSampleTimeInSec);
+  //New resolution, 2 shifts to improve ki here | kp 1.563% | ki 1.563% | kd 0.195%
+  kp = (uint16_t)Kp<<2;
+  ki = (long)(Ki<<2) / InverseSampleTimeInSec;
+  kd = (long)(Kd<<2) * InverseSampleTimeInSec;
 
   if(controllerDirection == REVERSE)
    {
@@ -347,8 +359,8 @@ void integerPID::SetOutputLimits(long Min, long Max)
 	   if(*myOutput > outMax) *myOutput = outMax;
 	   else if(*myOutput < outMin) *myOutput = outMin;
 
-	   if(outputSum > outMax) { outputSum = outMax; }
-	   else if(outputSum < outMin) { outputSum = outMin; }
+	   if((outputSum>>PID_SHIFTS) > outMax) { outputSum = outMax<<PID_SHIFTS; }
+	   else if((outputSum>>PID_SHIFTS) < outMin) { outputSum = outMin<<PID_SHIFTS; }
    }
 }
 
@@ -373,11 +385,11 @@ void integerPID::SetMode(int Mode)
  ******************************************************************************/
 void integerPID::Initialize()
 {
-   outputSum = *myOutput;
+   outputSum = *myOutput<<PID_SHIFTS;
    lastInput = *myInput;
    lastMinusOneInput = *myInput;
-   if(outputSum > outMax) { outputSum = outMax; }
-   else if(outputSum < outMin) { outputSum = outMin; }
+   if((outputSum>>PID_SHIFTS) > outMax) { outputSum = outMax<<PID_SHIFTS; }
+   else if((outputSum>>PID_SHIFTS) < outMin) { outputSum = outMin<<PID_SHIFTS; }
 }
 
 /* SetControllerDirection(...)*************************************************
