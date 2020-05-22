@@ -705,7 +705,7 @@ void initialiseAll()
         channel4IgnDegrees = 270;
         maxIgnOutputs = 4;
 
-    #if IGN_CHANNELS >= 1
+    #if IGN_CHANNELS == 1
         if( (configPage4.sparkMode == IGN_MODE_SINGLE))
         {
         maxIgnOutputs = 1;
