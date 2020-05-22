@@ -283,6 +283,68 @@ bool integerPID::Compute(bool pOnE)
    else return false;
 }
 
+bool integerPID::Compute2(int target, int input, bool pOnE)
+{
+   if(!inAuto) return false;
+   unsigned long now = millis();
+   //SampleTime = (now - lastTime);
+   uint16_t timeChange = (now - lastTime);
+   if(timeChange >= SampleTime)
+   {
+      long Kp, Ki, Kd;
+      long PV; 
+      long output;
+      long SP1;
+      long error;
+      long pid_deriv;
+
+      #define pid_divider 1024
+      #define pid_multiplier 100
+      
+      //pid_divider = 128;
+      //pid_multiplier = 10;
+
+      //convert_unitless_percent(min, max, targ, raw_PV, &PV, &SP);
+      PV = (((long)input - outMin) * 10000L) / (outMax - outMin); //125
+      SP1 = (((long)target - outMin) * 10000L) / (outMax - outMin); //500
+   
+      error = SP1 - PV; //375
+      pid_deriv = PV - (2 * lastInput) + lastMinusOneInput; //125
+
+      if(!pOnE) 
+      {
+         Kp = ((long) ((PV - lastInput) * (long)kp)); //125 * kp
+      } 
+      else
+      {
+        Kp = ((long) ((error - lastError) * (long)kp)); 
+      }
+      Ki = ((((long) error * timeChange) / (long)pid_divider) * (long)ki); //12*ki
+      Kd = ((long) pid_deriv * (((long) kd * pid_multiplier) / timeChange)); 
+
+      if(!pOnE) 
+      {
+        output = Kp - Ki + Kd;
+      } 
+      else 
+      {
+        output = Kp + Ki - Kd;
+      }
+
+	    if(output > outMax) output = outMax;
+      else if(output < outMin) output = outMin;
+	    *myOutput = output;
+
+      /*Remember some variables for next time*/
+      lastMinusOneInput = lastInput;
+      lastInput = input;
+      lastError = error;
+      lastTime = now;
+
+      return true;
+   }
+   else return false;
+}
 
 
 /* SetTunings(...)*************************************************************
