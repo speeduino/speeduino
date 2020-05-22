@@ -6,7 +6,7 @@ If you haven't already, jump onto our Slack team as that is where most of the de
 
 Here are some important resources:
 
-  * [Coding style guide](https://wiki.speeduino.com/en/dev/Style_code)
+  * [Coding style guide](https://wiki.speeduino.com/dev/Style_code)
   * [Project forum](https://speeduino.com/forum)
   * [Slack team](https://speeduino.com/forum/app.php/page/slack)
 
@@ -33,4 +33,4 @@ This ensures that all contributions made to the project are licensed in the same
 
 ## Coding conventions
 
-The coding style guide can be found on the project wiki: https://wiki.speeduino.com/en/dev/Style_code
+The coding style guide can be found on the project wiki: https://wiki.speeduino.com/dev/Style_code
