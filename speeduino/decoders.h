@@ -140,6 +140,13 @@ uint16_t getRPM_ThirtySixMinus222();
 int getCrankAngle_ThirtySixMinus222();
 void triggerSetEndTeeth_ThirtySixMinus222();
 
+void triggerSetup_ThirtySixMinus21();
+void triggerPri_ThirtySixMinus21();
+void triggerSec_ThirtySixMinus21();
+uint16_t getRPM_ThirtySixMinus21();
+int getCrankAngle_ThirtySixMinus21();
+void triggerSetEndTeeth_ThirtySixMinus21();
+
 extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 extern void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
 extern uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
