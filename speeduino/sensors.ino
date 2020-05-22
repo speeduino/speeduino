@@ -10,6 +10,7 @@ A full copy of the license may be found in the projects root directory
 #include "storage.h"
 #include "comms.h"
 #include "idle.h"
+#include "errors.h"
 #include "corrections.h"
 
 void initialiseADC()
@@ -119,6 +120,32 @@ void initialiseADC()
 
 }
 
+static inline void validateMAP()
+{
+  //Error checks
+  if(currentStatus.MAP < VALID_MAP_MIN)
+  {
+    currentStatus.MAP = ERR_DEFAULT_MAP_LOW;
+    mapErrorCount += 1;
+    setError(ERR_MAP_LOW);
+  }
+  else if(currentStatus.MAP > VALID_MAP_MAX)
+  {
+    currentStatus.MAP = ERR_DEFAULT_MAP_HIGH;
+    mapErrorCount += 1;
+    setError(ERR_MAP_HIGH);
+  }
+  else
+  {
+    if(errorCount > 0)
+    {
+      clearError(ERR_MAP_HIGH);
+      clearError(ERR_MAP_LOW);
+    }
+    mapErrorCount = 0;
+  }
+}
+
 static inline void instanteneousMAPReading()
 {
   //Update the calculation times and last value. These are used by the MAP based Accel enrich
@@ -209,7 +236,7 @@ static inline void readMAP()
 
             currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-            if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
+            validateMAP();
 
             //If EMAP is enabled, the process is identical to the above
             if(configPage6.useEMAP == true)
@@ -260,9 +287,10 @@ static inline void readMAP()
 
           currentStatus.mapADC = MAPrunningValue;
           currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-          if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
           MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
           MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
+
+          validateMAP();
         }
       }
       else { instanteneousMAPReading(); }
@@ -303,7 +331,7 @@ static inline void readMAP()
 
             currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-            if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
+            validateMAP();
           }
           else { instanteneousMAPReading(); }
 
