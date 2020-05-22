@@ -88,6 +88,7 @@ class integerPID
   #define MANUAL	0
   #define DIRECT  0
   #define REVERSE  1
+  #define PID_SHIFTS  7 //Increased resolution
 
   //commonly used functions **************************************************************************
     integerPID(long*, long*, long*,        // * constructor.  links the PID to the Input, Output, and
