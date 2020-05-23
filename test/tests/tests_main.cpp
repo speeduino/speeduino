@@ -4,6 +4,7 @@
 #include "test_misc/tests_corrections.h"
 #include "test_misc/tests_init.h"
 #include "test_misc/tests_tables.h"
+#include "test_misc/tests_PW.h"
 #include "test_schedules/test_schedules.h"
 #include "test_decoders/test_decoders.h"
 
@@ -12,6 +13,7 @@ void doTests()
 {
     testInitialisation();
     testCorrections();
+    testPW();
     //testSchedules(); //This is currently causing issues
     testDecoders();
     testTables();

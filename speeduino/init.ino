@@ -17,6 +17,7 @@
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 #include EEPROM_LIB_H 
 
+
 void initialiseAll()
 {   
     fpPrimed = false;
@@ -46,7 +47,9 @@ void initialiseAll()
     initialiseTimers();
 
     Serial.begin(115200);
-    if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
+    #if defined(CANSerial_AVAILABLE)
+      if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
+    #endif
 
     #if defined(CORE_STM32)
     configPage9.intcan_available = 1;   // device has internal canbus
@@ -270,8 +273,13 @@ void initialiseAll()
     //Check whether the flex sensor is enabled and if so, attach an interupt for it
     if(configPage2.flexEnabled > 0)
     {
-    attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, RISING);
-    currentStatus.ethanolPct = 0;
+      attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, RISING);
+      currentStatus.ethanolPct = 0;
+    }
+    //Same as above, but for the VSS input
+    if(configPage2.vssMode > 1) // VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
+    {
+      attachInterrupt(digitalPinToInterrupt(pinVSS), vssPulse, RISING);
     }
 
     //Once the configs have been loaded, a number of one time calculations can be completed
@@ -696,6 +704,14 @@ void initialiseAll()
         channel3IgnDegrees = 180;
         channel4IgnDegrees = 270;
         maxIgnOutputs = 4;
+
+    #if IGN_CHANNELS >= 1
+        if( (configPage4.sparkMode == IGN_MODE_SINGLE))
+        {
+        maxIgnOutputs = 1;
+        CRANK_ANGLE_MAX_IGN = 90;
+        }
+    #endif
 
     #if IGN_CHANNELS >= 8
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
@@ -1273,6 +1289,8 @@ void setPinMapping(byte boardID)
       pinLaunch = 51; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 43; //Reset control output
+      pinBaro = A5;
+      pinVSS = 20;
 
       #if defined(CORE_TEENSY35)
         pinInjector6 = 51;
@@ -1289,21 +1307,21 @@ void setPinMapping(byte boardID)
         pinCoil3 = 30;
         pinO2 = A22;
       #elif defined(ARDUINO_BLACK_F407VE)
-        //Pin definitions for experimental board Tjeerd 
+     //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 
         //******************************************
         //******** PORTA CONNECTIONS *************** 
         //******************************************
         /* = PA0 */ //Wakeup ADC123
-        pinTPS = PA1; //ADC123
-        pinMAP = PA2; //ADC123
-        pinIAT = PA3; //ADC123
-        pinCLT = PA4; //ADC12
-        pinO2 = PA5; //ADC12
-        /* = PA6; */ //ADC12 LED_BUILTIN_1
-        pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
-        pinIdle1 = PA8; //
+        // = PA1;
+        // = PA2;
+        // = PA3;
+        // = PA4;
+        /* = PA5; */ //ADC12
+        pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
+        /* = PA7; */ //ADC12 LED_BUILTIN_2
+        pinCoil3 = PA8;
         /* = PA9 */ //TXD1
         /* = PA10 */ //RXD1
         /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
@@ -1324,10 +1342,12 @@ void setPinMapping(byte boardID)
         /* = PB6; */ //NRF_CE
         /* = PB7; */ //NRF_CS
         /* = PB8; */ //NRF_IRQ
-        pinIdle2 = PB9; //
-        /* = PB10; */ //TXD3
-        /* = PB11; */ //RXD3
-        pinBoost = PB12; //
+        pinCoil2 = PB9; //
+        /* = PB9; */ //
+        pinCoil4 = PB10; //TXD3
+        pinIdle1 = PB11; //RXD3
+        pinIdle2 = PB12; //
+        /* pinBoost = PB12; */ //
         /* = PB13; */ //SPI2_SCK
         /* = PB14; */ //SPI2_MISO
         /* = PB15; */ //SPI2_MOSI
@@ -1335,13 +1355,14 @@ void setPinMapping(byte boardID)
         //******************************************
         //******** PORTC CONNECTIONS *************** 
         //******************************************
-        /* = PC0; */ //ADC123 
-        pinBat = PC1; //ADC123
-        /* = PC2; */ //ADC123
-        /* = PC3; */ //ADC123
-        /* = PC4; */ //ADC12
+        pinMAP = PC0; //ADC123 
+        pinTPS = PC1; //ADC123
+        pinIAT = PC2; //ADC123
+        pinCLT = PC3; //ADC123
+        pinO2 = PC4; //ADC12
         /* = PC5; */ //ADC12
-        pinVVT_1 = PC6; //
+        /*pinVVT_1 = PC6; */ //
+        pinBat = PC6; //
         pinDisplayReset = PC7; //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
@@ -1358,39 +1379,42 @@ void setPinMapping(byte boardID)
         /* = PD0; */ //CANRX
         /* = PD1; */ //CANTX
         /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        pinCoil1 = PD3; //
-        pinCoil2 = PD4; //
+        /* = PD3; */ //
+        /* = PD4; */ //
+        pinFlex = PD4;
         /* = PD5;*/ //TXD2
         /* = PD6; */ //RXD2
-        pinCoil3 = PD7; //
-        pinCoil4 = PD8; //
+        pinCoil1 = PD7; //
+        /* = PD7; */ //
+        /* = PD8; */ //
         pinCoil5 = PD9;//
-        pinFan = PD10; //
+        /* = PD10; */ //
         /* = PD11; */ //
-        /* = PD12; */ //
-        /* = PD13; */ //
-        /* = PD14; */ //
-        /* = PD15; */ //
+        pinInjector1 = PD12; //
+        pinInjector2 = PD13; //
+        pinInjector3 = PD14; //
+        pinInjector4 = PD15; //
 
         //******************************************
         //******** PORTE CONNECTIONS *************** 
         //******************************************
-        pinStepperDir = PE0; //
-        pinStepperStep = PE1; //
+        pinTrigger = PE0; //
+        pinTrigger2 = PE1; //
         pinStepperEnable = PE2; //
         /* = PE3; */ //ONBOARD KEY1
         /* = PE4; */ //ONBOARD KEY2
-        pinFlex = PE5; //
-        pinTrigger = PE6; //
-        pinInjector1 = PE7; //
-        pinInjector2 = PE8; //
-        pinInjector3 = PE9; //
-        pinInjector4 = PE10; //
+        pinStepperStep = PE5; //
+        pinFan = PE6; //
+        pinStepperDir = PE7; //
+        /* = PE8; */ //
+        /* = PE9; */ //
+        /* = PE10; */ //
         pinInjector5 = PE11; //
         pinInjector6 = PE12; //
-        pinTrigger2 = PE13; //
+        /* = PE13; */ //
         /* = PE14; */ //
         /* = PE15; */ //
+
       #elif defined(CORE_STM32)
         //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
         //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
@@ -1558,6 +1582,7 @@ void setPinMapping(byte boardID)
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 44; //Reset control output
+      pinVSS = 20;
 
       #if defined(CORE_TEENSY35)
         pinTrigger = 23;
@@ -1988,9 +2013,10 @@ void setPinMapping(byte boardID)
         MC33810_BIT_IGN8 = 7;
       #endif
 
-      #ifdef USE_SPI_EEPROM
-        pinSPIFlash_CS = 6;
-      #endif
+      //CS pin number is now set in a compile flag. 
+      // #ifdef USE_SPI_EEPROM
+      //   pinSPIFlash_CS = 6;
+      // #endif
 
       #endif
       break;
@@ -2004,11 +2030,10 @@ void setPinMapping(byte boardID)
         //******** PORTA CONNECTIONS *************** 
         //******************************************
         /* = PA0 */ //Wakeup ADC123
-        pinInjector1 = PA1;
-        pinInjector2 = PA2;
-        pinInjector3 = PA3;
-        pinInjector4 = PA4;
-        
+        // = PA1;
+        // = PA2;
+        // = PA3;
+        // = PA4;
         /* = PA5; */ //ADC12
         pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
         /* = PA7; */ //ADC12 LED_BUILTIN_2
@@ -2081,16 +2106,16 @@ void setPinMapping(byte boardID)
         pinCoil5 = PD9;//
         /* = PD10; */ //
         /* = PD11; */ //
-        /* = PD12; */ //
-        pinTrigger = PD13; //
-        pinTrigger2 = PD14; //
-        /* = PD15; */ //
+        pinInjector1 = PD12; //
+        pinInjector2 = PD13; //
+        pinInjector3 = PD14; //
+        pinInjector4 = PD15; //
 
         //******************************************
         //******** PORTE CONNECTIONS *************** 
         //******************************************
-        /* = PE0; */ //
-        /* = PE1; */ //
+        pinTrigger = PE0; //
+        pinTrigger2 = PE1; //
         pinStepperEnable = PE2; //
         /* = PE3; */ //ONBOARD KEY1
         /* = PE4; */ //ONBOARD KEY2
@@ -2105,7 +2130,7 @@ void setPinMapping(byte boardID)
         /* = PE13; */ //
         /* = PE14; */ //
         /* = PE15; */ //
-        
+       
      #elif defined(CORE_STM32)
         //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
         //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
@@ -2146,20 +2171,19 @@ void setPinMapping(byte boardID)
       break;
     default:
       #if defined(ARDUINO_BLACK_F407VE)
-       //Pin definitions for experimental board Tjeerd 
+      //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 
         //******************************************
         //******** PORTA CONNECTIONS *************** 
         //******************************************
         /* = PA0 */ //Wakeup ADC123
-        pinInjector1 = PA1;
-        pinInjector2 = PA2;
-        pinInjector3 = PA3;
-        pinInjector4 = PA4;
-        
-        pinFuelPump = PA5; //ADC12
-        /* = PA6; */ //ADC12 LED_BUILTIN_1
+        // = PA1;
+        // = PA2;
+        // = PA3;
+        // = PA4;
+        /* = PA5; */ //ADC12
+        pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
         /* = PA7; */ //ADC12 LED_BUILTIN_2
         pinCoil3 = PA8;
         /* = PA9 */ //TXD1
@@ -2230,16 +2254,16 @@ void setPinMapping(byte boardID)
         pinCoil5 = PD9;//
         /* = PD10; */ //
         /* = PD11; */ //
-        /* = PD12; */ //
-        pinTrigger = PD13; //
-        pinTrigger2 = PD14; //
-        /* = PD15; */ //
+        pinInjector1 = PD12; //
+        pinInjector2 = PD13; //
+        pinInjector3 = PD14; //
+        pinInjector4 = PD15; //
 
         //******************************************
         //******** PORTE CONNECTIONS *************** 
         //******************************************
-        /* = PE0; */ //
-        /* = PE1; */ //
+        pinTrigger = PE0; //
+        pinTrigger2 = PE1; //
         pinStepperEnable = PE2; //
         /* = PE3; */ //ONBOARD KEY1
         /* = PE4; */ //ONBOARD KEY2
@@ -2273,7 +2297,9 @@ void setPinMapping(byte boardID)
         pinMAP = A3; //MAP sensor pin
         pinIAT = A0; //IAT sensor pin
         pinCLT = A1; //CLS sensor pin
+        #ifdef A8 //Bit hacky, but needed for the atmega2561
         pinO2 = A8; //O2 Sensor pin
+        #endif
         pinBat = A4; //Battery reference voltage pin
         pinStepperDir = 16; //Direction pin  for DRV8825 driver
         pinStepperStep = 17; //Step pin for DRV8825 driver
@@ -2302,6 +2328,7 @@ void setPinMapping(byte boardID)
   if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage6.baroPin + A0; }
   if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_NR_GPIO_PINS) ) { pinEMAP = configPage10.EMAPPin + A0; }
   if ( (configPage10.fuel2InputPin != 0) && (configPage10.fuel2InputPin < BOARD_NR_GPIO_PINS) ) { pinFuel2Input = pinTranslate(configPage10.fuel2InputPin); }
+  if ( (configPage2.vssPin != 0) && (configPage2.vssPin < BOARD_NR_GPIO_PINS) ) { pinVSS = pinTranslate(configPage2.vssPin); }
 
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
@@ -2396,10 +2423,11 @@ void setPinMapping(byte boardID)
     initMC33810();
   #endif
 
-#ifdef USE_SPI_EEPROM
-  //We need to send the flash CS (SS) pin if we're using SPI flash. It cannot read from globals.h
-  EEPROM.begin(pinSPIFlash_CS);
-#endif
+//CS pin number is now set in a compile flag. 
+// #ifdef USE_SPI_EEPROM
+//   //We need to send the flash CS (SS) pin if we're using SPI flash. It cannot read from globals.
+//   EEPROM.begin(USE_SPI_EEPROM);
+// #endif
 
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
@@ -2436,6 +2464,10 @@ void setPinMapping(byte boardID)
   if(configPage2.flexEnabled > 0)
   {
     pinMode(pinFlex, INPUT); //Standard GM / Continental flex sensor requires pullup, but this should be onboard. The internal pullup will not work (Requires ~3.3k)!
+  }
+  if(configPage2.vssMode > 1) //Pin mode 1 for VSS is CAN
+  {
+    pinMode(pinVSS, INPUT);
   }
   if(configPage6.launchEnabled > 0)
   {
@@ -2809,6 +2841,25 @@ void initialiseTriggers()
       getRPM = getRPM_ThirtySixMinus222;
       getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
       triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus222;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case 17:
+      //36-2-1
+      triggerSetup_ThirtySixMinus21();
+      triggerHandler = triggerPri_ThirtySixMinus21;
+      triggerSecondaryHandler = triggerSec_ThirtySixMinus21;
+      decoderHasSecondary = true;
+      getRPM = getRPM_ThirtySixMinus21;
+      getCrankAngle = getCrankAngle_ThirtySixMinus21;
+      triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus21;
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }

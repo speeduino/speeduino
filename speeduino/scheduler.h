@@ -47,6 +47,28 @@ extern void (*inj7EndFunction)();
 extern void (*inj8StartFunction)();
 extern void (*inj8EndFunction)();
 
+/** @name IgnitionCallbacks
+ * These are the function pointers that get called to begin and end the ignition coil charging. They are required for the various spark output modes
+*/
+///@{
+extern void (*ign1StartFunction)();
+extern void (*ign1EndFunction)();
+extern void (*ign2StartFunction)();
+extern void (*ign2EndFunction)();
+extern void (*ign3StartFunction)();
+extern void (*ign3EndFunction)();
+extern void (*ign4StartFunction)();
+extern void (*ign4EndFunction)();
+extern void (*ign5StartFunction)();
+extern void (*ign5EndFunction)();
+extern void (*ign6StartFunction)();
+extern void (*ign6EndFunction)();
+extern void (*ign7StartFunction)();
+extern void (*ign7EndFunction)();
+extern void (*ign8StartFunction)();
+extern void (*ign8EndFunction)();
+///@}
+
 void initialiseSchedulers();
 void setFuelSchedule1(unsigned long timeout, unsigned long duration);
 void setFuelSchedule2(unsigned long timeout, unsigned long duration);
