@@ -102,27 +102,29 @@ void loop()
         }
         
       }
-      //if can or secondary serial interface is enabled then check for requests.
-      if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+      #if defined(CANSerial_AVAILABLE)
+        //if can or secondary serial interface is enabled then check for requests.
+        if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+        {
+          if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
           {
-            if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-                {
-                  if (CANSerial.available() > 0)  { secondserial_Command(); }
-                }
+            if (CANSerial.available() > 0)  { secondserial_Command(); }
           }
-      #if  defined(CORE_TEENSY)
+        }
+      #endif
+      #if defined(CORE_TEENSY)
           //currentStatus.canin[12] = configPage9.enable_intcan;
           if (configPage9.enable_intcan == 1) // use internal can module
           {
             //check local can module
             // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
             while (Can0.read(inMsg) ) 
-                 {
-                  can_Command();
-                  //Can0.read(inMsg);
-                  //currentStatus.canin[12] = inMsg.buf[5];
-                  //currentStatus.canin[13] = inMsg.id;
-                 } 
+            {
+              can_Command();
+              //Can0.read(inMsg);
+              //currentStatus.canin[12] = inMsg.buf[5];
+              //currentStatus.canin[13] = inMsg.id;
+            } 
           }
       #endif
       
@@ -174,6 +176,7 @@ void loop()
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); //Same as above except for RUNNING status
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Same as above except for ASE status
+      BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Same as above but the accel enrich (If using MAP accel enrich a stall will cause this to trigger)
       //This is a safety check. If for some reason the interrupts have got screwed up (Leading to 0rpm), this resets them.
       //It can possibly be run much less frequently.
       //This should only be run if the high speed logger are off because it will change the trigger interrupts back to defaults rather than the logger versions
@@ -279,6 +282,8 @@ void loop()
       readBat();
       nitrousControl();
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
+      currentStatus.vss = getSpeed();
+      currentStatus.gear = getGear();
 
       if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
@@ -445,6 +450,9 @@ void loop()
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN);
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
           if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); }
+
+          //Check whether the user has selected to disable to the fan during cranking
+          if(configPage2.fanWhenCranking == 0) { FAN_OFF(); }
         }
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------

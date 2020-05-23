@@ -88,10 +88,12 @@ class integerPID
   #define MANUAL	0
   #define DIRECT  0
   #define REVERSE  1
+  #define PID_SHIFTS  7 //Increased resolution
 
   //commonly used functions **************************************************************************
     integerPID(long*, long*, long*,        // * constructor.  links the PID to the Input, Output, and
         byte, byte, byte, byte);     //   Setpoint.  Initial tuning parameters are also set here
+
 
     void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
 
@@ -99,6 +101,7 @@ class integerPID
                                           //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
+    bool Compute2(int, int, bool);
 
     void SetOutputLimits(long, long); //clamps the output to a specific range. 0-255 by default, but
 										  //it's likely the user will want to change this depending on

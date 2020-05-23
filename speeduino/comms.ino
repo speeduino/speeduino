@@ -87,37 +87,27 @@ void command()
       break;
 
     case 'E': // receive command button commands
+      cmdPending = true;
 
-      if(cmdPending == true)
+      if(Serial.available() >= 2)
       {
-        //
+        byte cmdGroup = Serial.read();
+        byte cmdValue = Serial.read();
+        uint16_t cmdCombined = word(cmdGroup, cmdValue);
 
-      }
-      else
-      {
-        cmdPending = true;
-
-        if(Serial.available() >= 2)
+        if ( ((cmdCombined >= TS_CMD_INJ1_ON) && (cmdCombined <= TS_CMD_IGN8_50PC)) || (cmdCombined == TS_CMD_TEST_ENBL) || (cmdCombined == TS_CMD_TEST_DSBL) )
         {
-          byte cmdGroup = Serial.read();
-          byte cmdValue = Serial.read();
-          uint16_t cmdCombined = word(cmdGroup, cmdValue);
-
-          if ( (cmdCombined >= TS_CMD_INJ1_ON) && (cmdCombined <=TS_CMD_IGN8_50PC) )
-          {
-            //Hardware test buttons
-            if (currentStatus.RPM == 0) { TS_CommandButtonsHandler(cmdCombined); }
-            cmdPending = false;
-          }
-          else if( (cmdCombined >= TS_CMD_VSS_60KMH) && (cmdCombined <= TS_CMD_VSS_RATIO6) )
-          {
-            //VSS Calibration commands
-            TS_CommandButtonsHandler(cmdCombined);
-            cmdPending = false;
-          }
+          //Hardware test buttons
+          if (currentStatus.RPM == 0) { TS_CommandButtonsHandler(cmdCombined); }
+          cmdPending = false;
+        }
+        else if( (cmdCombined >= TS_CMD_VSS_60KMH) && (cmdCombined <= TS_CMD_VSS_RATIO6) )
+        {
+          //VSS Calibration commands
+          TS_CommandButtonsHandler(cmdCombined);
+          cmdPending = false;
         }
       }
-
       break;
 
     case 'F': // send serial protocol version
@@ -259,7 +249,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202003-dev"));
+      Serial.print(F("speeduino 202005"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -289,7 +279,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2020.03-dev"));
+      Serial.print(F("Speeduino 2020.05"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -657,13 +647,20 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[98] = currentStatus.baroCorrection;
   fullStatus[99] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
   fullStatus[100] = currentStatus.ASEValue; //Current ASE (%)
-  fullStatus[101] = currentStatus.vss;
+  fullStatus[101] = lowByte(currentStatus.vss);
+  fullStatus[102] = highByte(currentStatus.vss);
+  fullStatus[103] = currentStatus.gear;
 
   for(byte x=0; x<packetLength; x++)
   {
     if (portNum == 0) { Serial.write(fullStatus[offset+x]); }
-    else if (portNum == 3){ CANSerial.write(fullStatus[offset+x]); }
+    #if defined(CANSerial_AVAILABLE)
+      else if (portNum == 3){ CANSerial.write(fullStatus[offset+x]); }
+    #endif
   }
+
+  // Reset any flags that are being used to trigger page refreshes
+  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
 
 }
 

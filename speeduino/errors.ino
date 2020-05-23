@@ -59,6 +59,12 @@ byte getNextError()
     currentError.errorNum = currentErrorNum;
     currentError.errorID = errorCodes[currentErrorNum];
   }
+  else
+  {
+    currentError.errorNum = 0;
+    currentError.errorID = 0;
+  }
+
 
   return *(byte*)&currentError; //Ugly, but this forces the cast of the currentError struct to a byte.
 }

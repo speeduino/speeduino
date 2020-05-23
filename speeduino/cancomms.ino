@@ -23,6 +23,7 @@ sendcancommand is called when a command is to be sent either to serial3
 
 void secondserial_Command()
 {
+  #if defined(CANSerial_AVAILABLE)
   if (! canCmdPending) {  currentsecondserialCommand = CANSerial.read();  }
 
   switch (currentsecondserialCommand)
@@ -81,27 +82,27 @@ void secondserial_Command()
         canlisten = CANSerial.read();
 
         if (canlisten == 0)
-         {
+        {
           //command request failed and/or data/device was not available
           break;
-         }
+        }
 
-         while (CANSerial.available() == 0) { }
-         Llength= CANSerial.read();              // next the number of bytes expected value
+        while (CANSerial.available() == 0) { }
+        Llength= CANSerial.read();              // next the number of bytes expected value
 
-         for (uint8_t Lcount = 0; Lcount <Llength ;Lcount++)
-         {
-           while (CANSerial.available() == 0){}
-           // receive all x bytes into "Lbuffer"
-           Lbuffer[Lcount] = CANSerial.read();
-         }
-         break;
+        for (uint8_t Lcount = 0; Lcount <Llength ;Lcount++)
+        {
+          while (CANSerial.available() == 0){}
+          // receive all x bytes into "Lbuffer"
+          Lbuffer[Lcount] = CANSerial.read();
+        }
+        break;
 
     case 'n': // sends the bytes of realtime values from the NEW CAN list
         sendcanValues(0, NEW_CAN_PACKET_SIZE, 0x32, 1); //send values to serial3
         break;
 
-    case 'r': //New format for the optimised OutputChannels
+    case 'r': //New format for the optimised OutputChannels over CAN
       byte Cmd;
       if (CANSerial.available() >= 6)
       {
@@ -118,7 +119,7 @@ void secondserial_Command()
           length = word(CANSerial.read(), tmp);
           sendcanValues(offset, length,Cmd, 1);
           canCmdPending = false;
-//Serial.print(Cmd);
+          //Serial.print(Cmd);
         }
         else
         {
@@ -129,12 +130,11 @@ void secondserial_Command()
       {
         canCmdPending = true;
       }
-      
       break;
 
     case 's': // send the "a" stream code version
       CANSerial.print(F("Speeduino csx02019.8"));
-       break;
+      break;
 
     case 'S': // send code version
       CANSerial.print(F("Speeduino 2019.08-ser"));
@@ -155,6 +155,7 @@ void secondserial_Command()
     default:
        break;
   }
+  #endif
 }
 void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portType)
 {
@@ -271,11 +272,13 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 
   for(byte x=0; x<packetLength; x++)
   {
-    if (portType == 1){ CANSerial.write(fullStatus[offset+x]); }
-    else if (portType == 2)
-            {
-              //sendto canbus transmit routine
-            }
+    #if defined(CANSerial_AVAILABLE)
+      if (portType == 1){ CANSerial.write(fullStatus[offset+x]); }
+      else if (portType == 2)
+      {
+        //sendto canbus transmit routine
+      }
+    #endif
   }
 
 }
@@ -326,6 +329,7 @@ void can_Command()
 // this routine sends a request(either "0" for a "G" , "1" for a "L" , "2" for a "R" to the Can interface or "3" sends the request via the actual local canbus
 void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress)
 {
+  #if defined(CANSerial_AVAILABLE)
     switch (cmdtype)
     {
       case 0:
@@ -369,6 +373,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
      default:
         break;
     }
+  #endif
 }
 
 // This routine builds the realtime data into packets that the obd requesting device can understand. This is only used by teensy and stm32 with onboard canbus

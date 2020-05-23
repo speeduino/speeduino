@@ -47,7 +47,9 @@ void initialiseAll()
     initialiseTimers();
 
     Serial.begin(115200);
-    if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
+    #if defined(CANSerial_AVAILABLE)
+      if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
+    #endif
 
     #if defined(CORE_STM32)
     configPage9.intcan_available = 1;   // device has internal canbus
@@ -1287,6 +1289,8 @@ void setPinMapping(byte boardID)
       pinLaunch = 51; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 43; //Reset control output
+      pinBaro = A5;
+      pinVSS = 20;
 
       #if defined(CORE_TEENSY35)
         pinInjector6 = 51;
@@ -1578,6 +1582,7 @@ void setPinMapping(byte boardID)
       pinLaunch = 12; //Can be overwritten below
       pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 44; //Reset control output
+      pinVSS = 20;
 
       #if defined(CORE_TEENSY35)
         pinTrigger = 23;
@@ -2292,7 +2297,9 @@ void setPinMapping(byte boardID)
         pinMAP = A3; //MAP sensor pin
         pinIAT = A0; //IAT sensor pin
         pinCLT = A1; //CLS sensor pin
+        #ifdef A8 //Bit hacky, but needed for the atmega2561
         pinO2 = A8; //O2 Sensor pin
+        #endif
         pinBat = A4; //Battery reference voltage pin
         pinStepperDir = 16; //Direction pin  for DRV8825 driver
         pinStepperStep = 17; //Step pin for DRV8825 driver
@@ -2321,6 +2328,7 @@ void setPinMapping(byte boardID)
   if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage6.baroPin + A0; }
   if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_NR_GPIO_PINS) ) { pinEMAP = configPage10.EMAPPin + A0; }
   if ( (configPage10.fuel2InputPin != 0) && (configPage10.fuel2InputPin < BOARD_NR_GPIO_PINS) ) { pinFuel2Input = pinTranslate(configPage10.fuel2InputPin); }
+  if ( (configPage2.vssPin != 0) && (configPage2.vssPin < BOARD_NR_GPIO_PINS) ) { pinVSS = pinTranslate(configPage2.vssPin); }
 
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
@@ -2457,9 +2465,9 @@ void setPinMapping(byte boardID)
   {
     pinMode(pinFlex, INPUT); //Standard GM / Continental flex sensor requires pullup, but this should be onboard. The internal pullup will not work (Requires ~3.3k)!
   }
-  if(configPage2.vssMode > 1)
+  if(configPage2.vssMode > 1) //Pin mode 1 for VSS is CAN
   {
-    pinMode(pinVSS, INPUT); //Standard GM / Continental flex sensor requires pullup, but this should be onboard. The internal pullup will not work (Requires ~3.3k)!
+    pinMode(pinVSS, INPUT);
   }
   if(configPage6.launchEnabled > 0)
   {
@@ -2833,6 +2841,25 @@ void initialiseTriggers()
       getRPM = getRPM_ThirtySixMinus222;
       getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
       triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus222;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case 17:
+      //36-2-1
+      triggerSetup_ThirtySixMinus21();
+      triggerHandler = triggerPri_ThirtySixMinus21;
+      triggerSecondaryHandler = triggerSec_ThirtySixMinus21;
+      decoderHasSecondary = true;
+      getRPM = getRPM_ThirtySixMinus21;
+      getCrankAngle = getCrankAngle_ThirtySixMinus21;
+      triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus21;
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }

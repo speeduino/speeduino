@@ -5,11 +5,6 @@
 #include "idle.h"
 #include "scheduler.h"
 #include "HardwareTimer.h"
-#ifdef USE_SPI_EEPROM
-  //We need to include and make a instance of the SPI flash EEPROM emulation if flag is set.
-  #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  SPIAsEEPROM EEPROM;
-#endif
 
   void initBoard()
   {
@@ -167,6 +162,7 @@
   ***********************************************************************************************************
   * Interrupt callback functions
   */
+  #if ((STM32_CORE_VERSION_MINOR<=8) & (STM32_CORE_VERSION_MAJOR==1)) 
   void oneMSInterval(HardwareTimer*){oneMSInterval();}
   void boostInterrupt(HardwareTimer*){boostInterrupt();}
   void fuelSchedule1Interrupt(HardwareTimer*){fuelSchedule1Interrupt();}
@@ -203,5 +199,5 @@
   #if (IGN_CHANNELS >= 8)
   void ignitionSchedule8Interrupt(HardwareTimer*){ignitionSchedule8Interrupt();}
   #endif
-
+  #endif //End core<=1.8
 #endif

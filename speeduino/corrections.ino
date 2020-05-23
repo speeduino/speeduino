@@ -181,11 +181,22 @@ Additional fuel % to be added when the engine is cranking
 uint16_t correctionCranking()
 {
   uint16_t crankingValue = 100;
-  //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage2.crankingPct; }
+  //Check if we are actually cranking
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
   {
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
+  }
+  
+  //If we're not cranking, check if if cranking enrichment tapering to ASE should be done
+  else if ( (uint32_t) runSecsX10 <= configPage10.crankingEnrichTaper)
+  {
+    crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
+    //Taper start value needs to account for ASE that is now running, so total correction does not increase when taper begins
+    unsigned long taperStart = (unsigned long) crankingValue * 100 / currentStatus.ASEValue;
+    crankingValue = (uint16_t) map(runSecsX10, 0, configPage10.crankingEnrichTaper, taperStart, 100); //Taper from start value to 100%
+    if (crankingValue < 100) { crankingValue = 100; } //Sanity check
   }
   return crankingValue;
 }
@@ -214,7 +225,7 @@ byte correctionASE()
     }
     else
     {
-      if ( (runSecsX10 - aseTsnStart) < configPage2.aseTsnDelay )
+      if (( (runSecsX10 - aseTsnStart) < configPage2.aseTsnDelay ) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) //Cranking check needs to be here also, so cranking and afterstart enrichments won't run simultaneously
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
         ASEValue = 100 + map((runSecsX10 - aseTsnStart), 0, configPage2.aseTsnDelay,\
@@ -529,6 +540,8 @@ byte correctionAFRClosedLoop()
     //Note that this should only run after the sensor warmup delay necause it is used within the Include AFR option
     if(currentStatus.runSecs > configPage6.ego_sdelay) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
 
+    AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
+    
     if(ignitionCount >= AFRnextCycle)
     {
       AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
@@ -536,7 +549,6 @@ byte correctionAFRClosedLoop()
       //Check all other requirements for closed loop adjustments
       if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) )
       {
-        AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
 
         //Check which algorithm is used, simple or PID
         if (configPage6.egoAlgorithm == EGO_ALGORITHM_SIMPLE)
@@ -580,6 +592,7 @@ byte correctionAFRClosedLoop()
         }
         else { AFRValue = 100; } // Occurs if the egoAlgorithm is set to 0 (No Correction)
       } //Multi variable check 
+      else { AFRValue = 100; } // If multivariable check fails disable correction
     } //Ignition count check
   } //egoType
 
@@ -688,7 +701,13 @@ int8_t correctionSoftRevLimit(int8_t advance)
 {
   byte ignSoftRevValue = advance;
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
-  if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM); ignSoftRevValue = configPage4.SoftLimRetard;  } //Softcut RPM limit (If we're above softcut limit, delay timing by configured number of degrees)
+  if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) //Softcut RPM limit
+  {
+    BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
+    if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
+    else if (configPage2.SoftLimitMode == SOFT_LIMIT_FIXED) { ignSoftRevValue = configPage4.SoftLimRetard; } //delay timing to configured number of degrees in fixed mode
+    
+  }
 
   return ignSoftRevValue;
 }

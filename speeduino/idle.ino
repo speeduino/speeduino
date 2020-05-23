@@ -23,6 +23,12 @@ void initialiseIdle()
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
   IDLE_TIMER_DISABLE();
 
+  //Pin masks must always be initialized, regardless of whether PWM idle is used. This is required for STM32 to prevent issues if the IRQ function fires on restat/overflow
+  idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
+  idle_pin_mask = digitalPinToBitMask(pinIdle1);
+  idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
+  idle2_pin_mask = digitalPinToBitMask(pinIdle2);
+
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
   switch(configPage6.iacAlgorithm)
   {
@@ -54,10 +60,6 @@ void initialiseIdle()
       iacCrankDutyTable.values = configPage6.iacCrankDuty;
       iacCrankDutyTable.axisX = configPage6.iacCrankBins;
 
-      idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
-      idle_pin_mask = digitalPinToBitMask(pinIdle1);
-      idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
-      idle2_pin_mask = digitalPinToBitMask(pinIdle2);
       #if defined(CORE_AVR)
         idle_pwm_max_count = 1000000L / (16 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       #elif defined(CORE_TEENSY)
@@ -80,16 +82,12 @@ void initialiseIdle()
       iacCrankDutyTable.values = configPage6.iacCrankDuty;
       iacCrankDutyTable.axisX = configPage6.iacCrankBins;
 
-      idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
-      idle_pin_mask = digitalPinToBitMask(pinIdle1);
-      idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
-      idle2_pin_mask = digitalPinToBitMask(pinIdle2);
       #if defined(CORE_AVR)
         idle_pwm_max_count = 1000000L / (16 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       #elif defined(CORE_TEENSY)
         idle_pwm_max_count = 1000000L / (32 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       #endif
-      idlePID.SetOutputLimits(percentage(configPage2.iacCLminDuty, idle_pwm_max_count), percentage(configPage2.iacCLmaxDuty, idle_pwm_max_count));
+      idlePID.SetOutputLimits(percentage(configPage2.iacCLminDuty, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxDuty, idle_pwm_max_count<<2));
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
 
@@ -161,7 +159,7 @@ void initialiseIdle()
       }
 
       idlePID.SetSampleTime(100);
-      idlePID.SetOutputLimits(0, (configPage9.iacMaxSteps * 3)); //Maximum number of steps; always less than home steps count.
+      idlePID.SetOutputLimits(0, (configPage9.iacMaxSteps * 3)<<2); //Maximum number of steps; always less than home steps count.
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       break;
@@ -249,6 +247,17 @@ void idleControl()
 
     case IAC_ALGORITHM_PWM_CL:    //Case 3 is PWM closed loop
         //No cranking specific value for closed loop (yet?)
+      if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+      {
+        //Currently cranking. Use the cranking table
+        currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        currentStatus.idleLoad = currentStatus.idleDuty;
+        idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
+        idle_pid_target_value = idle_pwm_target_value<<2; //Resolution increased
+        idlePID.Initialize(); //Update output to smooth transition
+      }
+      else
+      {
         currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
         if( (idleCounter & 31) == 1) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
@@ -256,7 +265,7 @@ void idleControl()
         PID_computed = idlePID.Compute(true);
         if(PID_computed == true)
         {
-          idle_pwm_target_value = idle_pid_target_value;
+          idle_pwm_target_value = idle_pid_target_value>>2; //increased resolution
           if( idle_pwm_target_value == 0 )
           { 
             disableIdle(); 
@@ -269,6 +278,7 @@ void idleControl()
 
         }
         idleCounter++;
+      }  
       break;
 
     case IAC_ALGORITHM_STEP_OL:    //Case 4 is open loop stepper control
@@ -293,9 +303,9 @@ void idleControl()
         else
         {
           //Standard running
-          //Only do a lookup of the required value around 4 times per second (Once every 255 mainloops). Any more than this can create too much jitter and require a hyster value that is too high
+          //Only do a lookup of the required value around 4 times per second. Any more than this can create too much jitter and require a hyster value that is too high
           //We must also have more than zero RPM for the running state
-          if (((mainLoopCount & 255) == 1) && (currentStatus.RPM > 0))
+          if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ) && (currentStatus.RPM > 0))
           {
             idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
             if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
@@ -321,29 +331,48 @@ void idleControl()
       //First thing to check is whether there is currently a step going on and if so, whether it needs to be turned off
       if( (checkForStepping() == false) && (isStepperHomed() == true) ) //Check that homing is complete and that there's not currently a step already taking place. MUST BE IN THIS ORDER!
       {
-        if( (idleCounter & 31) == 1)
+        if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
         {
-          //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
-          idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
-          iacStepTime_uS = configPage6.iacStepTime * 1000;
-          iacCoolTime_uS = configPage9.iacCoolTime * 1000;
+          //Currently cranking. Use the cranking table
+          idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+          if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
+
+          //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
+          if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
+          {
+            idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+          }
+          
+          doStep();
+          idle_pid_target_value = idleStepper.targetIdleStep<<2; //Resolution increased
+          idlePID.Initialize(); //Update output to smooth transition
         }
-
-        currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
-        idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //All temps are offset by 40 degrees
-        if(currentStatus.idleUpActive == true) { idle_pid_target_value += configPage2.idleUpAdder; } //Add Idle Up amount if active
-        PID_computed = idlePID.Compute(true);
-        idleStepper.targetIdleStep = idle_pid_target_value;
-
-        //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
-        if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
+        else 
         {
-          idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
-        }
+          if( (idleCounter & 31) == 1)
+          {
+            //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
+            idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
+            iacStepTime_uS = configPage6.iacStepTime * 1000;
+            iacCoolTime_uS = configPage9.iacCoolTime * 1000;
+          }
 
-        doStep();
+          currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+          idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //All temps are offset by 40 degrees
+          PID_computed = idlePID.Compute(true);
+          idleStepper.targetIdleStep = idle_pid_target_value>>2; //Increase resolution
+          if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
+
+          //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
+          if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
+          {
+            idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+          }
+
+          doStep();
+          idleCounter++;
+        }
         currentStatus.idleLoad = idleStepper.curIdleStep / 2; //Current step count (Divided by 2 for byte)
-        idleCounter++;
       }
       //Set or clear the idle active flag
       if(idleStepper.targetIdleStep != idleStepper.curIdleStep) { BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); }

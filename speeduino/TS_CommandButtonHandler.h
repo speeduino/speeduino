@@ -4,6 +4,9 @@
  * The command handler manages all the inputs FROM TS which are issued when a command button is clicked by the user
  */
 
+#define TS_CMD_TEST_DSBL  256
+#define TS_CMD_TEST_ENBL  257
+
 #define TS_CMD_INJ1_ON    513
 #define TS_CMD_INJ1_OFF   514
 #define TS_CMD_INJ1_50PC  515

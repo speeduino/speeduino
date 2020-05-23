@@ -10,6 +10,7 @@ A full copy of the license may be found in the projects root directory
 #include "storage.h"
 #include "comms.h"
 #include "idle.h"
+#include "errors.h"
 #include "corrections.h"
 
 void initialiseADC()
@@ -119,6 +120,32 @@ void initialiseADC()
 
 }
 
+static inline void validateMAP()
+{
+  //Error checks
+  if(currentStatus.MAP < VALID_MAP_MIN)
+  {
+    currentStatus.MAP = ERR_DEFAULT_MAP_LOW;
+    mapErrorCount += 1;
+    setError(ERR_MAP_LOW);
+  }
+  else if(currentStatus.MAP > VALID_MAP_MAX)
+  {
+    currentStatus.MAP = ERR_DEFAULT_MAP_HIGH;
+    mapErrorCount += 1;
+    setError(ERR_MAP_HIGH);
+  }
+  else
+  {
+    if(errorCount > 0)
+    {
+      clearError(ERR_MAP_HIGH);
+      clearError(ERR_MAP_LOW);
+    }
+    mapErrorCount = 0;
+  }
+}
+
 static inline void instanteneousMAPReading()
 {
   //Update the calculation times and last value. These are used by the MAP based Accel enrich
@@ -209,7 +236,7 @@ static inline void readMAP()
 
             currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-            if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
+            validateMAP();
 
             //If EMAP is enabled, the process is identical to the above
             if(configPage6.useEMAP == true)
@@ -260,9 +287,10 @@ static inline void readMAP()
 
           currentStatus.mapADC = MAPrunningValue;
           currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-          if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
           MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
           MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
+
+          validateMAP();
         }
       }
       else { instanteneousMAPReading(); }
@@ -303,7 +331,7 @@ static inline void readMAP()
 
             currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-            if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
+            validateMAP();
           }
           else { instanteneousMAPReading(); }
 
@@ -491,20 +519,29 @@ uint16_t getSpeed()
 {
   uint16_t tempSpeed = 0;
   uint32_t pulseTime = 0;
+
+  //Need to temp store the pulse time variables to prevent them changing during an interrupt
+  noInterrupts();
+  uint32_t temp_vssLastPulseTime = vssLastPulseTime;
+  uint32_t temp_vssLastMinusOnePulseTime  = vssLastMinusOnePulseTime;
+  interrupts();
+
   if(configPage2.vssMode == 1)
   {
     //VSS mode 1 is (Will be) CAN
   }
   else if(configPage2.vssMode > 1)
   {
-    if( (vssLastPulseTime > 0) && (vssLastMinusOnePulseTime > 0) ) //Check we've had at least 2 pulses
+    if( (temp_vssLastPulseTime > 0) && (temp_vssLastMinusOnePulseTime > 0) ) //Check we've had at least 2 pulses
     {
-      if(vssLastPulseTime < vssLastMinusOnePulseTime) { tempSpeed = currentStatus.vss; } //Check for overflow of micros()
+      if(temp_vssLastPulseTime < temp_vssLastMinusOnePulseTime) { tempSpeed = currentStatus.vss; } //Check for overflow of micros()
+      else if ( (micros() - temp_vssLastPulseTime) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop (1s timeout)
       else
       {
-        pulseTime = vssLastPulseTime - vssLastMinusOnePulseTime;
+        pulseTime = temp_vssLastPulseTime - temp_vssLastMinusOnePulseTime;
         tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
-        tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply spped smoothing factor
+        tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
+        if(tempSpeed > 1000) { tempSpeed = 0; } //Safety check. This usually occurs when there is a hardware issue
       }
     }
   }
@@ -516,7 +553,10 @@ byte getGear()
   byte tempGear = 0; //Unknown gear
   if(currentStatus.vss > 0)
   {
-    uint16_t pulsesPer1000rpm = (currentStatus.vss * 10000) / currentStatus.RPM; //Gives the current pulses per 1000RPM, multipled by 10 (10x is the multiplication factor for the ratios in TS)
+    //If the speed is non-zero, default to the last calculated gear
+    tempGear = currentStatus.gear;
+
+    uint16_t pulsesPer1000rpm = (currentStatus.vss * 10000UL) / currentStatus.RPM; //Gives the current pulses per 1000RPM, multipled by 10 (10x is the multiplication factor for the ratios in TS)
     //Begin gear detection
     if( (pulsesPer1000rpm > (configPage2.vssRatio1 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio1 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 1; }
     else if( (pulsesPer1000rpm > (configPage2.vssRatio2 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio2 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 2; }
