@@ -41,16 +41,22 @@ void fanControl()
 
     if ( (currentStatus.coolant >= onTemp) && (fanPermit == true) )
     {
-      //Fan needs to be turned on. Checked for normal or inverted fan signal
-      if( configPage6.fanInv == 0 ) { FAN_PIN_HIGH(); }
-      else { FAN_PIN_LOW(); }
+      //Fan needs to be turned on.
+      if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
+      {
+        //If the user has elected to disable the fan during cranking, make sure it's off 
+        FAN_OFF();
+      }
+      else 
+      {
+        FAN_ON(); 
+      }
       currentStatus.fanOn = true;
     }
     else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
-      //Fan needs to be turned off. Checked for normal or inverted fan signal
-      if( configPage6.fanInv == 0 ) { FAN_PIN_LOW(); } 
-      else { FAN_PIN_HIGH(); }
+      //Fan needs to be turned off. 
+      FAN_OFF();
       currentStatus.fanOn = false;
     }
   }
@@ -311,7 +317,7 @@ void nitrousControl()
       // STAGE1 = 1
       // STAGE2 = 2
       // BOTH   = 3 (ie STAGE1 + STAGE2 = BOTH)
-      currentStatus.nitrous_status = NITROUS_OFF;
+      currentStatus.nitrous_status = NITROUS_OFF; //Reset the current state
       if( (currentStatus.RPM > realStage1MinRPM) && (currentStatus.RPM < realStage1MaxRPM) )
       {
         currentStatus.nitrous_status += NITROUS_STAGE1;

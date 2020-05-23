@@ -46,6 +46,37 @@ int ignition6StartAngle = 0;
 int ignition7StartAngle = 0;
 int ignition8StartAngle = 0;
 
+int channel1IgnDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
+int channel2IgnDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+int channel3IgnDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
+int channel4IgnDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
+int channel5IgnDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
+int channel6IgnDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
+int channel7IgnDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
+int channel8IgnDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
+int channel1InjDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
+int channel2InjDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+int channel3InjDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
+int channel4InjDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
+int channel5InjDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
+int channel6InjDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
+int channel7InjDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
+int channel8InjDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
+
+uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by TunerStudio) in uS */
+uint16_t inj_opentime_uS = 0;
+
+bool ignitionOn = false; /**< The current state of the ignition system (on or off) */
+bool fuelOn = false; /**< The current state of the fuel system (on or off) */
+
+byte maxIgnOutputs = 1; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
+byte curRollingCut = 0; /**< Rolling rev limiter, current ignition channel being cut */
+byte rollingCutCounter = 0; /**< how many times (revolutions) the ignition has been cut in a row */
+uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
+
+uint16_t staged_req_fuel_mult_pri = 0;
+uint16_t staged_req_fuel_mult_sec = 0;
+
 #ifndef UNIT_TEST // Scope guard for unit testing
 void setup()
 {
@@ -71,27 +102,29 @@ void loop()
         }
         
       }
-      //if can or secondary serial interface is enabled then check for requests.
-      if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+      #if defined(CANSerial_AVAILABLE)
+        //if can or secondary serial interface is enabled then check for requests.
+        if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+        {
+          if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
           {
-            if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-                {
-                  if (CANSerial.available() > 0)  { secondserial_Command(); }
-                }
+            if (CANSerial.available() > 0)  { secondserial_Command(); }
           }
-      #if  defined(CORE_TEENSY)
+        }
+      #endif
+      #if defined(CORE_TEENSY)
           //currentStatus.canin[12] = configPage9.enable_intcan;
           if (configPage9.enable_intcan == 1) // use internal can module
           {
             //check local can module
             // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
             while (Can0.read(inMsg) ) 
-                 {
-                  can_Command();
-                  //Can0.read(inMsg);
-                  //currentStatus.canin[12] = inMsg.buf[5];
-                  //currentStatus.canin[13] = inMsg.id;
-                 } 
+            {
+              can_Command();
+              //Can0.read(inMsg);
+              //currentStatus.canin[12] = inMsg.buf[5];
+              //currentStatus.canin[13] = inMsg.id;
+            } 
           }
       #endif
       
@@ -143,6 +176,7 @@ void loop()
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); //Same as above except for RUNNING status
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Same as above except for ASE status
+      BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Same as above but the accel enrich (If using MAP accel enrich a stall will cause this to trigger)
       //This is a safety check. If for some reason the interrupts have got screwed up (Leading to 0rpm), this resets them.
       //It can possibly be run much less frequently.
       //This should only be run if the high speed logger are off because it will change the trigger interrupts back to defaults rather than the logger versions
@@ -248,6 +282,8 @@ void loop()
       readBat();
       nitrousControl();
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
+      currentStatus.vss = getSpeed();
+      currentStatus.gear = getGear();
 
       if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
@@ -414,6 +450,9 @@ void loop()
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN);
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
           if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); }
+
+          //Check whether the user has selected to disable to the fan during cranking
+          if(configPage2.fanWhenCranking == 0) { FAN_OFF(); }
         }
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
@@ -926,7 +965,7 @@ void loop()
         //Refresh the current crank angle info
         //ignition1StartAngle = 335;
         crankAngle = getCrankAngle(); //Refresh with the latest crank angle
-        if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
+        while (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
 
 #if IGN_CHANNELS >= 1
         if ( (ignition1StartAngle <= crankAngle) && (ignitionSchedule1.Status == RUNNING) ) { ignition1StartAngle += CRANK_ANGLE_MAX_IGN; }

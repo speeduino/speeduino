@@ -49,12 +49,22 @@ void clearError(byte errorID)
 byte getNextError()
 {
   packedError currentError;
+  byte currentErrorNum = 0;
 
-  //We alternate through the errors once per second
-  byte currentErrorNum = currentStatus.secl % MAX_ERRORS; //Which error number will be returned. This changes once per second. Note that as long as MAX_ERRORS is a power of 2, this % operation is performed very quickly.
+  if(errorCount > 0)
+  {
+    //We alternate through the errors once per second
+    currentErrorNum = currentStatus.secl % errorCount; //Which error number will be returned. This changes once per second. 
 
-  currentError.errorNum = currentErrorNum;
-  currentError.errorID = errorCodes[currentErrorNum];
+    currentError.errorNum = currentErrorNum;
+    currentError.errorID = errorCodes[currentErrorNum];
+  }
+  else
+  {
+    currentError.errorNum = 0;
+    currentError.errorID = 0;
+  }
+
 
   return *(byte*)&currentError; //Ugly, but this forces the cast of the currentError struct to a byte.
 }

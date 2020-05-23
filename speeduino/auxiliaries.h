@@ -28,6 +28,9 @@ void fanControl();
 #define N2O_STAGE2_PIN_HIGH() *n2o_stage2_pin_port |= (n2o_stage2_pin_mask)
 #define READ_N2O_ARM_PIN()    ((*n2o_arming_pin_port & n2o_arming_pin_mask) ? true : false)
 
+#define FAN_ON()         ((configPage6.fanInv) ? FAN_PIN_LOW() : FAN_PIN_HIGH())
+#define FAN_OFF()        ((configPage6.fanInv) ? FAN_PIN_HIGH() : FAN_PIN_LOW())
+
 volatile PORT_TYPE *boost_pin_port;
 volatile PINMASK_TYPE boost_pin_mask;
 volatile PORT_TYPE *vvt_pin_port;

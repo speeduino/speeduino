@@ -25,12 +25,10 @@
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #if defined(SRAM_AS_EEPROM)
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
-#elif defined(USE_SPI_FLASH)
-    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
 #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
     #define EEPROM_LIB_H <Fram.h>
 #else
-    #define EEPROM_LIB_H <EEPROM.h>
+    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
 #endif
 
 #ifndef LED_BUILTIN
@@ -202,6 +200,7 @@ HardwareTimer Timer11(TIM7);
 #endif
 #endif
 
+#if ((STM32_CORE_VERSION_MINOR<=8) & (STM32_CORE_VERSION_MAJOR==1)) 
 void oneMSInterval(HardwareTimer*);
 void boostInterrupt(HardwareTimer*);
 void fuelSchedule1Interrupt(HardwareTimer*);
@@ -238,6 +237,7 @@ void ignitionSchedule7Interrupt(HardwareTimer*);
 #if (IGN_CHANNELS >= 8)
 void ignitionSchedule8Interrupt(HardwareTimer*);
 #endif
+#endif //End core<=1.8
 
 /*
 ***********************************************************************************************************
