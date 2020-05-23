@@ -557,7 +557,7 @@ struct config2 {
   byte SoftLimitMode : 1;
   byte unused1_3c : 2;
   byte fixedMultiplyMAP : 1; //0 multiplyMAP = baro | 1 multiplyMAP = 100
-  byte unused1_3c : 1;
+  byte unused1_3d : 1;
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
