@@ -541,7 +541,7 @@ uint16_t getSpeed()
         pulseTime = temp_vssLastPulseTime - temp_vssLastMinusOnePulseTime;
         tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
         tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
-        if(tempSpeed > 1000) { tempSpeed = 0; } //Safety check. This usually occurs when there is a hardware issue
+        if(tempSpeed > 1000) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
       }
     }
   }
