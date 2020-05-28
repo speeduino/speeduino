@@ -322,7 +322,7 @@ void doUpdates()
     //Introdced a DFCO delay option. Default it to 0
     configPage2.dfcoDelay = 0;
     //Introdced a minimum temperature for DFCO. Default it to 40C
-    configPage2.dfcoMinCLT = 40;
+    configPage2.dfcoMinCLT = 80; //CALIBRATION_TEMPERATURE_OFFSET is 40
 
     //Update flexfuel ignition config values for 40 degrees offset
     for (int i=0; i<6; i++)
@@ -352,6 +352,9 @@ void doUpdates()
     //Cranking enrichment to run taper added. Default it to 0,1 secs
     configPage10.crankingEnrichTaper = 1;
     
+    //ASE to run taper added. Default it to 0,1 secs
+    configPage2.aseTaperTime = 1;
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 14);
 
