@@ -301,7 +301,7 @@ void doUpdates()
 
   if(EEPROM.read(EEPROM_DATA_VERSION) == 13)
   {
-    //202003-dev
+    //202005
     //Cranking enrichment range 0..1275% instead of older 0.255, so need to divide old values by 5
     configPage10.crankingEnrichValues[0] = configPage10.crankingEnrichValues[0] / 5;
     configPage10.crankingEnrichValues[1] = configPage10.crankingEnrichValues[1] / 5;
@@ -336,12 +336,18 @@ void doUpdates()
     configPage2.aeColdTaperMax = 100;
 
     //New PID resolution, old resolution was 100% for each increase, 100% now is stored as 32
-    configPage6.idleKP = configPage6.idleKP<<5;
-    configPage6.idleKI = configPage6.idleKI<<5;
-    configPage6.idleKD = configPage6.idleKD<<5;
-    configPage10.vvtCLKP = configPage10.vvtCLKP<<5;
-    configPage10.vvtCLKI = configPage10.vvtCLKI<<5;
-    configPage10.vvtCLKD = configPage10.vvtCLKD<<5;
+    if(configPage6.idleKP >= 8) { configPage6.idleKP = 255; }
+    else { configPage6.idleKP = configPage6.idleKP<<5; }
+    if(configPage6.idleKI >= 8) { configPage6.idleKI = 255; }
+    else { configPage6.idleKI = configPage6.idleKI<<5; }
+    if(configPage6.idleKD >= 8) { configPage6.idleKD = 255; }
+    else { configPage6.idleKD = configPage6.idleKD<<5; }
+    if(configPage10.vvtCLKP >= 8) { configPage10.vvtCLKP = 255; }
+    else { configPage10.vvtCLKP = configPage10.vvtCLKP<<5; }
+    if(configPage10.vvtCLKI >= 8) { configPage10.vvtCLKI = 255; }
+    else { configPage10.vvtCLKI = configPage10.vvtCLKI<<5; }
+    if(configPage10.vvtCLKD >= 8) { configPage10.vvtCLKD = 255; }
+    else { configPage10.vvtCLKD = configPage10.vvtCLKD<<5; }
 
     //Cranking enrichment to run taper added. Default it to 0,1 secs
     configPage10.crankingEnrichTaper = 1;
