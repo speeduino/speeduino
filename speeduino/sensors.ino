@@ -569,6 +569,24 @@ byte getGear()
   return tempGear;
 }
 
+byte getFuelPressure()
+{
+  int16_t tempFuelPressure = 0;
+  uint16_t tempReading;
+
+  //Perform ADC read
+  tempReading = analogRead(pinFuelPressure);
+  tempReading = analogRead(pinFuelPressure);
+
+
+  tempFuelPressure = fastMap10Bit(tempReading, configPage10.fuelPressureMin, configPage10.fuelPressureMax);
+  //Sanity checks
+  if(tempFuelPressure < 0) { tempFuelPressure = 0; }
+  if(tempFuelPressure > configPage10.fuelPressureMax) { tempFuelPressure = configPage10.fuelPressureMax; }
+
+  return (byte)tempFuelPressure;
+}
+
 /*
  * The interrupt function for reading the flex sensor frequency
  * This value is incremented with every pulse and reset back to 0 once per second
