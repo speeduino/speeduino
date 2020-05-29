@@ -307,7 +307,18 @@ void idleControl()
           //We must also have more than zero RPM for the running state
           if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ) && (currentStatus.RPM > 0))
           {
-            idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+            if ( runSecsX10 < configPage2.idleTaperTime )
+            {
+              //Tapering between cranking IAC value and running
+              idleStepper.targetIdleStep = map(runSecsX10, 0, configPage2.idleTaperTime,\
+              table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3,\
+              table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3);
+            }
+            else
+            {
+              //Standard running
+              idleStepper.targetIdleStep = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+            }
             if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
             iacStepTime_uS = configPage6.iacStepTime * 1000;
             iacCoolTime_uS = configPage9.iacCoolTime * 1000;
