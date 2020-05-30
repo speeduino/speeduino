@@ -29,6 +29,7 @@ unsigned long knockStartTime;
 byte lastKnockCount;
 int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
+uint16_t aseTaperStart;
 uint16_t dfcoStart;
 
 void initialiseCorrections()
@@ -220,13 +221,14 @@ byte correctionASE()
     {
       BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
       ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+      aseTaperStart = runSecsX10;
     }
     else
     {
-      if ( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (runSecsX10 < configPage2.aseTaperTime) ) //Cranking check needs to be here also, so cranking and afterstart enrichments won't run simultaneously
+      if ( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && ((runSecsX10 - aseTaperStart) < configPage2.aseTaperTime) ) //Cranking check needs to be here also, so cranking and afterstart enrichments won't run simultaneously
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-        ASEValue = 100 + map(runSecsX10, 0, configPage2.aseTaperTime,\
+        ASEValue = 100 + map((runSecsX10 - aseTaperStart), 0, configPage2.aseTaperTime,\
           table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
       }
       else
