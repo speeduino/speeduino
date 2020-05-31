@@ -224,6 +224,10 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //Off by 1 error check
       if (currentStatus.ethanolPct == 1) { currentStatus.ethanolPct = 0; }
 
+      //Continental flex sensor fuel temperature can be read with following formula: (Temperature = (41.25 * pulse width(ms)) - 81.25). 1000μs = -40C and 5000μs = 125C
+      if(flexPW > 5000) { flexPW = 5000; }
+      else if(flexPW < 1000) { flexPW = 1000; }
+      currentStatus.fuelTemp = (((4125L * flexPW) / 1000) - 8125) / 100;
     }
 
     //**************************************************************************************************************************************************

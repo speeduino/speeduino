@@ -588,12 +588,20 @@ byte getFuelPressure()
 }
 
 /*
- * The interrupt function for reading the flex sensor frequency
- * This value is incremented with every pulse and reset back to 0 once per second
+ * The interrupt function for reading the flex sensor frequency and pulse width
+ * flexCounter value is incremented with every pulse and reset back to 0 once per second
  */
 void flexPulse()
 {
-  ++flexCounter;
+  if(READ_FLEX() == true)
+  {
+    flexPW = (micros() - flexFallingEdge); //Calculate the pulse width
+    ++flexCounter;
+  }
+  else
+  {
+    flexFallingEdge = micros(); //Start pulse width measurement.
+  }
 }
 
 /*
