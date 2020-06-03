@@ -110,79 +110,55 @@ uint16_t TS_CommandButtonsHandler(int buttonCommand)
       break;
 
     case TS_CMD_INJ5_ON: // cmd group is for injector5 on actions
-      #if INJ_CHANNELS >= 5
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector5(); }
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector5(); }
       break;
 
     case TS_CMD_INJ5_OFF: // cmd group is for injector5 off actions
-        #if INJ_CHANNELS >= 5
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector5(); BIT_CLEAR(HWTest_INJ_50pc, 5); }
-        #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector5(); BIT_CLEAR(HWTest_INJ_50pc, 5); }
       break;
 
     case TS_CMD_INJ5_50PC: // cmd group is for injector5 50%dc actions
-      #if INJ_CHANNELS >= 5
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_INJ_50pc, 5); }
-        if(!BIT_CHECK(HWTest_INJ_50pc, 5)) { closeInjector5(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_INJ_50pc, 5); }
+      if(!BIT_CHECK(HWTest_INJ_50pc, 5)) { closeInjector5(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_INJ6_ON: // cmd group is for injector6 on actions
-        #if INJ_CHANNELS >= 6
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector6(); }
-        #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector6(); }
       break;
 
     case TS_CMD_INJ6_OFF: // cmd group is for injector6 off actions
-        #if INJ_CHANNELS >= 6
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector6(); BIT_CLEAR(HWTest_INJ_50pc, 6); }
-        #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector6(); BIT_CLEAR(HWTest_INJ_50pc, 6); }
       break;
 
     case TS_CMD_INJ6_50PC: // cmd group is for injector6 50% dc actions
-      #if INJ_CHANNELS >= 6
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_INJ_50pc, 6); }
-        if(!BIT_CHECK(HWTest_INJ_50pc, 6)) { closeInjector6(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_INJ_50pc, 6); }
+      if(!BIT_CHECK(HWTest_INJ_50pc, 6)) { closeInjector6(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_INJ7_ON: // cmd group is for injector7 on actions
-        #if INJ_CHANNELS >= 7
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector7(); }
-        #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector7(); }
       break;
 
     case TS_CMD_INJ7_OFF: // cmd group is for injector7 off actions
-        #if INJ_CHANNELS >= 7
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector7(); BIT_CLEAR(HWTest_INJ_50pc, 7); }
-        #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector7(); BIT_CLEAR(HWTest_INJ_50pc, 7); }
       break;
 
     case TS_CMD_INJ7_50PC: // cmd group is for injector7 50%dc actions
-      #if INJ_CHANNELS >= 7
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_INJ_50pc, 7); }
-        if(!BIT_CHECK(HWTest_INJ_50pc, 7)) { closeInjector7(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_INJ_50pc, 7); }
+      if(!BIT_CHECK(HWTest_INJ_50pc, 7)) { closeInjector7(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_INJ8_ON: // cmd group is for injector8 on actions
-        #if INJ_CHANNELS >= 8
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector8(); }
-        #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ openInjector8(); }
       break;
 
     case TS_CMD_INJ8_OFF: // cmd group is for injector8 off actions
-      #if INJ_CHANNELS >= 8
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector8(); BIT_CLEAR(HWTest_INJ_50pc, 8); }
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ closeInjector8(); BIT_CLEAR(HWTest_INJ_50pc, 8); }
       break;
 
     case TS_CMD_INJ8_50PC: // cmd group is for injector8 50% dc actions
-      #if INJ_CHANNELS >= 8
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_INJ_50pc, 8); }
-        if(!BIT_CHECK(HWTest_INJ_50pc, 8)) { closeInjector8(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_INJ_50pc, 8); }
+      if(!BIT_CHECK(HWTest_INJ_50pc, 8)) { closeInjector8(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_IGN1_ON: // cmd group is for spark1 on actions
@@ -238,79 +214,55 @@ uint16_t TS_CommandButtonsHandler(int buttonCommand)
       break;
 
     case TS_CMD_IGN5_ON: // cmd group is for spark5 on actions
-      #if IGN_CHANNELS >= 5
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { beginCoil5Charge(); }
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { beginCoil5Charge(); }
       break;
 
     case TS_CMD_IGN5_OFF: // cmd group is for spark5 off actions
-      #if IGN_CHANNELS >= 5
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { endCoil5Charge(); BIT_CLEAR(HWTest_IGN_50pc, 5); }
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { endCoil5Charge(); BIT_CLEAR(HWTest_IGN_50pc, 5); }
       break;
 
     case TS_CMD_IGN5_50PC: // cmd group is for spark4 50%dc actions
-      #if IGN_CHANNELS >= 5
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_IGN_50pc, 5); }
-        if(!BIT_CHECK(HWTest_IGN_50pc, 5)) { coil5Low(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_IGN_50pc, 5); }
+      if(!BIT_CHECK(HWTest_IGN_50pc, 5)) { coil5Low(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_IGN6_ON: // cmd group is for spark6 on actions
-      #if IGN_CHANNELS >= 6
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { beginCoil6Charge(); }
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { beginCoil6Charge(); }
       break;
 
     case TS_CMD_IGN6_OFF: // cmd group is for spark6 off actions
-      #if IGN_CHANNELS >= 6
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { endCoil6Charge(); BIT_CLEAR(HWTest_IGN_50pc, 6); }
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { endCoil6Charge(); BIT_CLEAR(HWTest_IGN_50pc, 6); }
       break;
 
     case TS_CMD_IGN6_50PC: // cmd group is for spark6 50%dc actions
-      #if IGN_CHANNELS >= 6
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_IGN_50pc, 6); }
-        if(!BIT_CHECK(HWTest_IGN_50pc, 6)) { coil6Low(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_IGN_50pc, 6); }
+      if(!BIT_CHECK(HWTest_IGN_50pc, 6)) { coil6Low(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_IGN7_ON: // cmd group is for spark7 on actions
-      #if IGN_CHANNELS >= 7
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { beginCoil7Charge(); }
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { beginCoil7Charge(); }
       break;
 
     case TS_CMD_IGN7_OFF: // cmd group is for spark7 off actions
-      #if IGN_CHANNELS >= 7
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { endCoil7Charge(); BIT_CLEAR(HWTest_IGN_50pc, 7); }
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { endCoil7Charge(); BIT_CLEAR(HWTest_IGN_50pc, 7); }
       break;
 
     case TS_CMD_IGN7_50PC: // cmd group is for spark7 50%dc actions
-      #if IGN_CHANNELS >= 7
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_IGN_50pc, 7); }
-        if(!BIT_CHECK(HWTest_IGN_50pc, 7)) { coil7Low(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_IGN_50pc, 7); }
+      if(!BIT_CHECK(HWTest_IGN_50pc, 7)) { coil7Low(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_IGN8_ON: // cmd group is for spark8 on actions
-      #if IGN_CHANNELS >= 8
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { beginCoil8Charge(); }
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { beginCoil8Charge(); }
       break;
 
     case TS_CMD_IGN8_OFF: // cmd group is for spark8 off actions
-      #if IGN_CHANNELS >= 8
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { endCoil8Charge(); BIT_CLEAR(HWTest_IGN_50pc, 8); }
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { endCoil8Charge(); BIT_CLEAR(HWTest_IGN_50pc, 8); }
       break;
 
     case TS_CMD_IGN8_50PC: // cmd group is for spark8 50%dc actions
-      #if IGN_CHANNELS >= 8
-        if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_IGN_50pc, 8); }
-        if(!BIT_CHECK(HWTest_IGN_50pc, 8)) { coil8Low(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
-      #endif
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_IGN_50pc, 8); }
+      if(!BIT_CHECK(HWTest_IGN_50pc, 8)) { coil8Low(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     //VSS Calibration routines
