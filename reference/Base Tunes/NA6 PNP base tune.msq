@@ -314,7 +314,7 @@
         <pcVariable digits="0" name="tsEtRollOut" units="in">0.0</pcVariable>
     </page>
     <page number="0" size="128">
-        <constant digits="1" name="aseTsnDelay" units="S">4.0</constant>
+        <constant digits="1" name="aseTaperTime" units="S">4.0</constant>
         <constant digits="0" name="aeColdPct" units="%">100.0</constant>
         <constant digits="0" name="aeColdTaperMin" units="C">0.0</constant>
         <constant name="aeMode">"TPS"</constant>
