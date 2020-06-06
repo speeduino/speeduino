@@ -288,6 +288,11 @@
 #define IGN7_CMD_BIT      6
 #define IGN8_CMD_BIT      7
 
+#define ENGINE_PROTECT_BIT_RPM  0
+#define ENGINE_PROTECT_BIT_MAP  1
+#define ENGINE_PROTECT_BIT_OIL  2
+#define ENGINE_PROTECT_BIT_AFR  3
+
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
 #define CALIBRATION_TEMPERATURE_OFFSET 40 // All temperature measurements are stored offset by 40 degrees. This is so we can use an unsigned byte (0-255) to represent temperature ranges from -40 to 215
@@ -339,6 +344,7 @@ extern struct table2D flexAdvTable;   //6 bin flex fuel correction table for tim
 extern struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
 extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
+extern struct table2D oilPressureProtectTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -460,6 +466,7 @@ extern volatile byte LOOP_TIMER;
 struct statuses {
   volatile bool hasSync;
   uint16_t RPM;
+  byte RPMdiv100;
   long longRPM;
   int mapADC;
   int baroADC;
@@ -559,6 +566,7 @@ struct statuses {
   byte gear; /**< Current gear (Calculated from vss) */
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure; /**< Oil pressure in PSI */
+  byte engineProtectStatus;
 };
 
 /**
@@ -791,7 +799,9 @@ struct config4 {
   byte idleAdvBins[6];
   byte idleAdvValues[6];
 
-  byte unused4_120[8];
+  byte engineProtectMaxRPM;
+
+  byte unused4_120[7];
 
 #if defined(CORE_AVR)
   };
@@ -1088,7 +1098,8 @@ struct config10 {
 
   byte fuelPressureEnable : 1;
   byte oilPressureEnable : 1;
-  byte unused10_135 : 6;
+  byte oilPressureProtEnbl : 1;
+  byte unused10_135 : 5;
 
   byte fuelPressurePin : 4;
   byte oilPressurePin : 4;
@@ -1098,7 +1109,10 @@ struct config10 {
   int8_t oilPressureMin;
   byte oilPressureMax;
 
-  byte unused11_135_191[51]; //Bytes 135-191
+  byte oilPressureProtRPM[4];
+  byte oilPressureProtMins[4];
+
+  byte unused11_135_191[43]; //Bytes 135-191
 
 #if defined(CORE_AVR)
   };
