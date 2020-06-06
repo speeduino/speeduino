@@ -578,13 +578,30 @@ byte getFuelPressure()
   tempReading = analogRead(pinFuelPressure);
   tempReading = analogRead(pinFuelPressure);
 
-
   tempFuelPressure = fastMap10Bit(tempReading, configPage10.fuelPressureMin, configPage10.fuelPressureMax);
   //Sanity checks
   if(tempFuelPressure < 0) { tempFuelPressure = 0; }
   if(tempFuelPressure > configPage10.fuelPressureMax) { tempFuelPressure = configPage10.fuelPressureMax; }
 
   return (byte)tempFuelPressure;
+}
+
+byte getOilPressure()
+{
+  int16_t tempOilPressure = 0;
+  uint16_t tempReading;
+
+  //Perform ADC read
+  tempReading = analogRead(pinOilPressure);
+  tempReading = analogRead(pinOilPressure);
+
+
+  tempOilPressure = fastMap10Bit(tempReading, configPage10.oilPressureMin, configPage10.oilPressureMax);
+  //Sanity checks
+  if(tempOilPressure < 0) { tempOilPressure = 0; }
+  if(tempOilPressure > configPage10.oilPressureMax) { tempOilPressure = configPage10.oilPressureMax; }
+
+  return (byte)tempOilPressure;
 }
 
 /*

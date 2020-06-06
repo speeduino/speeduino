@@ -284,6 +284,8 @@ void loop()
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
+      currentStatus.fuelPressure = getFuelPressure();
+      currentStatus.oilPressure = getOilPressure();
 
       if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
