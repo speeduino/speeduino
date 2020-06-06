@@ -227,6 +227,11 @@
 #define NITROUS_STAGE2      2
 #define NITROUS_BOTH        3
 
+#define PROTECT_CUT_OFF     0
+#define PROTECT_CUT_IGN     1
+#define PROTECT_CUT_FUEL    2
+#define PROTECT_CUT_BOTH    3
+
 #define AE_MODE_TPS         0
 #define AE_MODE_MAP         1
 
@@ -817,7 +822,7 @@ struct config6 {
   byte egoType : 2;
   byte boostEnabled : 1;
   byte vvtEnabled : 1;
-  byte boostCutType : 2;
+  byte engineProtectType : 2;
 
   byte egoKP;
   byte egoKI;
@@ -829,7 +834,7 @@ struct config6 {
   byte vvtCLDir : 1; //VVT direction (advance or retard)
   byte vvtCLUseHold : 1; //Whether or not to use a hold duty cycle (Most cases are Yes)
   byte vvtCLAlterFuelTiming : 1;
-  byte unused6_6 : 1;
+  byte boostCutEnabled : 1;
   byte egoLimit; //Maximum amount the closed loop will vary the fueling
   byte ego_min; //AFR must be above this for closed loop to function
   byte ego_max; //AFR must be below this for closed loop to function
