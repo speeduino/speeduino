@@ -629,8 +629,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[82] = highByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
 
   fullStatus[83] = currentStatus.status3;
-
-  fullStatus[84] = currentStatus.nChannels; //THIS IS CURRENTLY UNUSED!
+  fullStatus[84] = currentStatus.engineProtectStatus;
   fullStatus[85] = lowByte(currentStatus.fuelLoad);
   fullStatus[86] = highByte(currentStatus.fuelLoad);
   fullStatus[87] = lowByte(currentStatus.ignLoad);

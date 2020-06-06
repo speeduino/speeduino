@@ -233,24 +233,24 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //Check whether any of the fuel outputs is on
 
       //Check for injector outputs on 50%
-      if(BIT_CHECK(HWTest_INJ_50pc, 1)) { injector1Toggle(); }
-      if(BIT_CHECK(HWTest_INJ_50pc, 2)) { injector2Toggle(); }
-      if(BIT_CHECK(HWTest_INJ_50pc, 3)) { injector3Toggle(); }
-      if(BIT_CHECK(HWTest_INJ_50pc, 4)) { injector4Toggle(); }
-      if(BIT_CHECK(HWTest_INJ_50pc, 5)) { injector5Toggle(); }
-      if(BIT_CHECK(HWTest_INJ_50pc, 6)) { injector6Toggle(); }
-      if(BIT_CHECK(HWTest_INJ_50pc, 7)) { injector7Toggle(); }
-      if(BIT_CHECK(HWTest_INJ_50pc, 8)) { injector8Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ1_CMD_BIT)) { injector1Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ2_CMD_BIT)) { injector2Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ3_CMD_BIT)) { injector3Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ4_CMD_BIT)) { injector4Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ5_CMD_BIT)) { injector5Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ6_CMD_BIT)) { injector6Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ7_CMD_BIT)) { injector7Toggle(); }
+      if(BIT_CHECK(HWTest_INJ_50pc, INJ8_CMD_BIT)) { injector8Toggle(); }
 
       //Check for ignition outputs on 50%
-      if(BIT_CHECK(HWTest_IGN_50pc, 1)) { coil1Toggle(); }
-      if(BIT_CHECK(HWTest_IGN_50pc, 2)) { coil2Toggle(); }
-      if(BIT_CHECK(HWTest_IGN_50pc, 3)) { coil3Toggle(); }
-      if(BIT_CHECK(HWTest_IGN_50pc, 4)) { coil4Toggle(); }
-      if(BIT_CHECK(HWTest_IGN_50pc, 5)) { coil5Toggle(); }
-      if(BIT_CHECK(HWTest_IGN_50pc, 6)) { coil6Toggle(); }
-      if(BIT_CHECK(HWTest_IGN_50pc, 7)) { coil7Toggle(); }
-      if(BIT_CHECK(HWTest_IGN_50pc, 8)) { coil8Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN1_CMD_BIT)) { coil1Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN2_CMD_BIT)) { coil2Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN3_CMD_BIT)) { coil3Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN4_CMD_BIT)) { coil4Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN5_CMD_BIT)) { coil5Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN6_CMD_BIT)) { coil6Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN7_CMD_BIT)) { coil7Toggle(); }
+      if(BIT_CHECK(HWTest_IGN_50pc, IGN8_CMD_BIT)) { coil8Toggle(); }
     }
 
   }

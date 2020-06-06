@@ -182,6 +182,12 @@ void initialiseAll()
     knockWindowDurationTable.values = configPage10.knock_window_dur;
     knockWindowDurationTable.axisX = configPage10.knock_window_rpms;
 
+    oilPressureProtectTable.valueSize = SIZE_BYTE;
+    oilPressureProtectTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    oilPressureProtectTable.xSize = 4;
+    oilPressureProtectTable.values = configPage10.oilPressureProtMins;
+    oilPressureProtectTable.axisX = configPage10.oilPressureProtRPM;
+
     //Setup the calibration tables
     loadCalibration();
 
@@ -316,6 +322,7 @@ void initialiseAll()
     currentStatus.launchingHard = false;
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
     currentStatus.fuelPumpOn = false;
+    currentStatus.engineProtectStatus = 0;
     triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
     dwellLimit_uS = (1000 * configPage4.dwellLimit);
     currentStatus.nChannels = ((uint8_t)INJ_CHANNELS << 4) + IGN_CHANNELS; //First 4 bits store the number of injection channels, 2nd 4 store the number of ignition channels
@@ -325,7 +332,7 @@ void initialiseAll()
     timer5_overflow_count = 0;
     toothHistoryIndex = 0;
     toothHistorySerialIndex = 0;
-
+    
     noInterrupts();
     initialiseTriggers();
 

@@ -35,6 +35,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "storage.h"
 #include "crankMaths.h"
 #include "init.h"
+#include "engineProtection.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 int ignition1StartAngle = 0;
@@ -145,6 +146,7 @@ void loop()
     {
       currentStatus.longRPM = getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
+      currentStatus.RPMdiv100 = currentStatus.RPM / 100;
       FUEL_PUMP_ON();
       currentStatus.fuelPumpOn = true; //Not sure if this is needed.
     }
@@ -226,37 +228,6 @@ void loop()
         //If launch is not active, check whether flat shift should be active
         if(configPage6.flatSEnable && clutchTrigger && (currentStatus.RPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > currentStatus.clutchEngagedRPM) ) { currentStatus.flatShiftingHard = true; }
         else { currentStatus.flatShiftingHard = false; }
-      }
-
-
-
-      //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
-      if( (configPage6.boostCutType > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2)) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
-      {
-        switch(configPage6.boostCutType)
-        {
-          case 1:
-            BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-            BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-            break;
-          case 2:
-            BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-            BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-            break;
-          case 3:
-            BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-            BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-            break;
-          default:
-            //Shouldn't ever happen, but just in case, disable all cuts
-            BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-            BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-        }
-      }
-      else
-      {
-        BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-        BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
       }
 
       //And check whether the tooth log buffer is ready
@@ -934,7 +905,7 @@ void loop()
 
       //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
       //Check for any of the hard cut rev limits being on
-      if(currentStatus.launchingHard || BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) || BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) || currentStatus.flatShiftingHard)
+      if(checkEngineProtect() || currentStatus.launchingHard || BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) || currentStatus.flatShiftingHard)
       {
         if(configPage2.hardCutType == HARD_CUT_FULL) { ignitionOn = false; }
         else 
