@@ -266,14 +266,15 @@ int16_t ProgrammableIOGetData(uint16_t index)
 {
   int16_t result;
   uint8_t x;
-  for(x = 0; x<sizeof(fsIntIndex); x++)
+  if ( index < LOG_ENTRY_SIZE )
   {
-    if (fsIntIndex[x] == index)
+    for(x = 0; x<sizeof(fsIntIndex); x++)
     {
-      result = word(fullStatus[index+1], fullStatus[index]);
-      break;
+      if (fsIntIndex[x] == index) { break; }
     }
+    if (x >= sizeof(fsIntIndex)) { result = fullStatus[index]; }
+    else { result = word(fullStatus[index+1], fullStatus[index]); }
   }
-  if (x >= sizeof(fsIntIndex)) { result = fullStatus[index]; }
+  else { result = -1; } //Index is bigger than fullStatus array
   return result;
 }
