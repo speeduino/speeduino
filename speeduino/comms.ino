@@ -11,7 +11,6 @@ A full copy of the license may be found in the projects root directory
 #include "utils.h"
 #include "decoders.h"
 #include "TS_CommandButtonHandler.h"
-#include "logger.h"
 #include "errors.h"
 
 /*
@@ -498,38 +497,8 @@ void command()
   }
 }
 
-/*
-This function returns the current values of a fixed group of variables
-*/
-//void sendValues(int packetlength, byte portNum)
-void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
+void updateFullStatus()
 {
-  byte fullStatus[LOG_ENTRY_SIZE];
-
-  if (portNum == 3)
-  {
-    //CAN serial
-    #if defined(USE_SERIAL3)
-      if (cmd == 30)
-      {
-        CANSerial.write("r");         //confirm cmd type
-        CANSerial.write(cmd);
-        
-      }
-      else if (cmd == 31)
-      {
-        CANSerial.write("A");         //confirm cmd type
-      }
-    #endif
-  }
-  else
-  {
-    if(requestCount == 0) { currentStatus.secl = 0; }
-    requestCount++;
-  }
-
-  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
-
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   fullStatus[1] = currentStatus.status1; //status1 Bitfield
   fullStatus[2] = currentStatus.engine; //Engine Status Bitfield
@@ -651,6 +620,37 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[103] = currentStatus.gear;
   fullStatus[104] = currentStatus.fuelPressure;
   fullStatus[105] = currentStatus.oilPressure;
+  fullStatus[106] = currentStatus.outputsStatus;
+
+}
+/*
+This function returns the current values of a fixed group of variables
+*/
+//void sendValues(int packetlength, byte portNum)
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
+{
+
+  if (portNum == 3)
+  {
+    //CAN serial
+    #if defined(USE_SERIAL3)
+      if (cmd == 30)
+      {
+        CANSerial.write("r");         //confirm cmd type
+        CANSerial.write(cmd);
+      }
+      else if (cmd == 31) { CANSerial.write("A"); }        //confirm cmd type
+    #endif
+  }
+  else
+  {
+    if(requestCount == 0) { currentStatus.secl = 0; }
+    requestCount++;
+  }
+
+  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+
+  updateFullStatus();
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -1010,6 +1010,15 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       fuelTable2.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
+    case progOutsPage:
+      pnt_configPage = &configPage12;
+      //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
+      if (valueOffset < npage_size[currentPage])
+      {
+        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
+      }
+      break;
+
     default:
       break;
   }
@@ -1112,6 +1121,10 @@ void sendPage()
 
     case fuelMap2Page:
       currentTable = fuelTable2;
+      break;
+
+    case progOutsPage:
+      pnt_configPage = &configPage12; //Create a pointer to Page 12 in memory
       break;
 
     default:
@@ -1401,6 +1414,14 @@ void sendPageASCII()
       currentTable = fuelTable2;
       break;
 
+    case progOutsPage:
+      //NOT WRITTEN YET
+      #ifndef SMALL_FLASH_MODE
+        Serial.println(F("\nPage has not been implemented yet"));
+      #endif
+      sendComplete = true;
+      break;
+
     default:
     #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
@@ -1629,6 +1650,11 @@ byte getPageValue(byte page, uint16_t valueAddress)
         if( valueAddress < 256) { returnValue = fuelTable2.values[15 - (valueAddress / 16)][valueAddress % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
         else if(valueAddress < 272) { returnValue =  byte(fuelTable2.axisX[(valueAddress - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
         else if (valueAddress < 288) { returnValue = byte(fuelTable2.axisY[15 - (valueAddress - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
+        break;
+
+    case progOutsPage:
+        pnt_configPage = &configPage12; //Create a pointer to Page 12 in memory
+        returnValue = *((byte *)pnt_configPage + valueAddress);
         break;
 
     default:

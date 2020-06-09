@@ -24,6 +24,7 @@ void writeAllConfig()
   if (eepromWritesPending == false) { writeConfig(canbusPage); }
   if (eepromWritesPending == false) { writeConfig(warmupPage); }
   if (eepromWritesPending == false) { writeConfig(fuelMap2Page); }
+  if (eepromWritesPending == false) { writeConfig(progOutsPage); }
 }
 
 
@@ -420,6 +421,23 @@ void writeConfig(byte tableNum)
       break;
       //That concludes the writing of the 2nd fuel table
 
+    case progOutsPage:
+      /*---------------------------------------------------
+      | Config page 12 (See storage.h for data layout)
+      -----------------------------------------------------*/
+      pnt_configPage = (byte *)&configPage12; //Create a pointer to Page 12 in memory
+      //As there are no 3d tables in this page, all bytes can simply be read in
+      for(int x=EEPROM_CONFIG12_START; x<EEPROM_CONFIG12_END; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
+        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG12_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG12_START))); writeCounter++; }
+      }
+
+      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
+      else { eepromWritesPending = false; }
+
+      break;
+
     default:
       break;
   }
@@ -653,6 +671,15 @@ void loadConfig()
   {
     offset = x - EEPROM_CONFIG11_YBINS;
     fuelTable2.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER;
+  }
+
+  //*********************************************************************************************************************************************************************************
+  //CONFIG PAGE (12)
+  pnt_configPage = (byte *)&configPage12; //Create a pointer to Page 12 in memory
+  //All bytes can simply be pulled straight from the configTable
+  for(int x=EEPROM_CONFIG12_START; x<EEPROM_CONFIG12_END; x++)
+  {
+    *(pnt_configPage + byte(x - EEPROM_CONFIG12_START)) = EEPROM.read(x);
   }
 
 }
