@@ -253,9 +253,9 @@ void checkProgrammableIO()
       else
       {
         if ( outputPin[y] <= 128 ) { digitalWrite(outputPin[y], (configPage12.outputInverted & (1U << y)) ^ firstCheck); }
-        if ( !firstCheck ) { ioDelay[y] = 0; }
+        if ( firstCheck == false ) { ioDelay[y] = 0; }
       }
-      if ( firstCheck ) { BIT_SET(currentStatus.outputsStatus, y); }
+      if ( firstCheck == true ) { BIT_SET(currentStatus.outputsStatus, y); }
       else { BIT_CLEAR(currentStatus.outputsStatus, y); }
     }
     else { BIT_CLEAR(currentStatus.outputsStatus, y); }
