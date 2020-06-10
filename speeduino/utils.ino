@@ -219,8 +219,8 @@ void checkProgrammableIO()
       else if ( (configPage12.operation[y].firstCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { firstCheck = true; }
       else if ( (configPage12.operation[y].firstCompType == COMPARATOR_GREATER) && (data > data2) ) { firstCheck = true; }
       else if ( (configPage12.operation[y].firstCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { firstCheck = true; }
-      else if ( (configPage12.operation[y].firstCompType == COMPARATOR_SMALLER) && (data < data2) ) { firstCheck = true; }
-      else if ( (configPage12.operation[y].firstCompType == COMPARATOR_SMALLER_EQUAL) && (data <= data2) ) { firstCheck = true; }
+      else if ( (configPage12.operation[y].firstCompType == COMPARATOR_LESS) && (data < data2) ) { firstCheck = true; }
+      else if ( (configPage12.operation[y].firstCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { firstCheck = true; }
 
       if (configPage12.operation[y].bitwise != BITWISE_DISABLED)
       {
@@ -233,8 +233,8 @@ void checkProgrammableIO()
           else if ( (configPage12.operation[y].secondCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { secondCheck = true; }
           else if ( (configPage12.operation[y].secondCompType == COMPARATOR_GREATER) && (data > data2) ) { secondCheck = true; }
           else if ( (configPage12.operation[y].secondCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { secondCheck = true; }
-          else if ( (configPage12.operation[y].secondCompType == COMPARATOR_SMALLER) && (data < data2) ) { secondCheck = true; }
-          else if ( (configPage12.operation[y].secondCompType == COMPARATOR_SMALLER_EQUAL) && (data <= data2) ) { secondCheck = true; }
+          else if ( (configPage12.operation[y].secondCompType == COMPARATOR_LESS) && (data < data2) ) { secondCheck = true; }
+          else if ( (configPage12.operation[y].secondCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { secondCheck = true; }
 
           if (configPage12.operation[y].bitwise == BITWISE_AND) { firstCheck &= secondCheck; }
           if (configPage12.operation[y].bitwise == BITWISE_OR) { firstCheck |= secondCheck; }

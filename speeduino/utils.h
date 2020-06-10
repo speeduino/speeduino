@@ -12,8 +12,8 @@ These are some utility functions and variables used through the main code
 #define COMPARATOR_NOT_EQUAL 1
 #define COMPARATOR_GREATER 2
 #define COMPARATOR_GREATER_EQUAL 3
-#define COMPARATOR_SMALLER 4
-#define COMPARATOR_SMALLER_EQUAL 5
+#define COMPARATOR_LESS 4
+#define COMPARATOR_LESS_EQUAL 5
 #define COMPARATOR_CHANGE 6
 
 #define BITWISE_DISABLED 0
