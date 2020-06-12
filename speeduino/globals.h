@@ -7,11 +7,26 @@
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define BOARD_DIGITAL_GPIO_PINS 54
   #define BOARD_NR_GPIO_PINS 62
+#ifndef LED_BUILTIN
   #define LED_BUILTIN 13
+#endif
   #define CORE_AVR
   #define BOARD_H "board_avr2560.h"
   #define INJ_CHANNELS 4
   #define IGN_CHANNELS 5
+
+  #if defined(__AVR_ATmega2561__)
+    //This is a workaround to avoid having to change all the references to higher ADC channels. We simply define the channels (Which don't exist on the 2561) as being the same as A0-A7
+    //These Analog inputs should never be used on any 2561 board defintion (Because they don't exist on the MCU), so it will not cause any isses
+    #define A8  A0
+    #define A9  A1
+    #define A10  A2
+    #define A11  A3
+    #define A12  A4
+    #define A13  A5
+    #define A14  A6
+    #define A15  A7
+  #endif
 
   //#define TIMER5_MICROS
 
@@ -149,8 +164,9 @@
 #define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
 #define BIT_STATUS3_NITROUS       1
 #define BIT_STATUS3_FUEL2_ACTIVE  2
-#define BIT_STATUS3_UNUSED3       3
+#define BIT_STATUS3_VSS_REFRESH   3
 #define BIT_STATUS3_CONFIG_ERROR  4
+
 #define BIT_STATUS3_NSQUIRTS1     5
 #define BIT_STATUS3_NSQUIRTS2     6
 #define BIT_STATUS3_NSQUIRTS3     7
@@ -212,6 +228,11 @@
 #define NITROUS_STAGE2      2
 #define NITROUS_BOTH        3
 
+#define PROTECT_CUT_OFF     0
+#define PROTECT_CUT_IGN     1
+#define PROTECT_CUT_FUEL    2
+#define PROTECT_CUT_BOTH    3
+
 #define AE_MODE_TPS         0
 #define AE_MODE_MAP         1
 
@@ -238,6 +259,8 @@
 #define OPEN_LOOP_BOOST     0
 #define CLOSED_LOOP_BOOST   1
 
+#define SOFT_LIMIT_FIXED        0
+#define SOFT_LIMIT_RELATIVE     1
 
 #define VVT_MODE_ONOFF      0
 #define VVT_MODE_OPEN_LOOP  1
@@ -252,6 +275,29 @@
 
 #define BATTV_COR_MODE_WHOLE 0
 #define BATTV_COR_MODE_OPENTIME 1
+
+#define INJ1_CMD_BIT      0
+#define INJ2_CMD_BIT      1
+#define INJ3_CMD_BIT      2
+#define INJ4_CMD_BIT      3
+#define INJ5_CMD_BIT      4
+#define INJ6_CMD_BIT      5
+#define INJ7_CMD_BIT      6
+#define INJ8_CMD_BIT      7
+
+#define IGN1_CMD_BIT      0
+#define IGN2_CMD_BIT      1
+#define IGN3_CMD_BIT      2
+#define IGN4_CMD_BIT      3
+#define IGN5_CMD_BIT      4
+#define IGN6_CMD_BIT      5
+#define IGN7_CMD_BIT      6
+#define IGN8_CMD_BIT      7
+
+#define ENGINE_PROTECT_BIT_RPM  0
+#define ENGINE_PROTECT_BIT_MAP  1
+#define ENGINE_PROTECT_BIT_OIL  2
+#define ENGINE_PROTECT_BIT_AFR  3
 
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
@@ -304,6 +350,7 @@ extern struct table2D flexAdvTable;   //6 bin flex fuel correction table for tim
 extern struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
 extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
+extern struct table2D oilPressureProtectTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -425,6 +472,7 @@ extern volatile byte LOOP_TIMER;
 struct statuses {
   volatile bool hasSync;
   uint16_t RPM;
+  byte RPMdiv100;
   long longRPM;
   int mapADC;
   int baroADC;
@@ -521,6 +569,10 @@ struct statuses {
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss; /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
+  byte gear; /**< Current gear (Calculated from vss) */
+  byte fuelPressure; /**< Fuel pressure in PSI */
+  byte oilPressure; /**< Oil pressure in PSI */
+  byte engineProtectStatus;
 };
 
 /**
@@ -531,12 +583,13 @@ struct statuses {
  */
 struct config2 {
 
-  byte aseTsnDelay;
+  byte aseTaperTime;
   byte aeColdPct;  //AE cold clt modifier %
   byte aeColdTaperMin; //AE cold modifier, taper start temp (full modifier), was ASE in early versions
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
   byte battVCorMode : 1;
-  byte unused1_3c : 5;
+  byte SoftLimitMode : 1;
+  byte unused1_3c : 4;
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
@@ -626,7 +679,8 @@ struct config2 {
   uint16_t EMAPMax;
 
   byte fanWhenOff : 1;      // Only run fan when engine is running
-  byte fanUnused : 7;
+  byte fanWhenCranking : 1;      //**< Setting whether the fan output will stay on when the engine is cranking */ 
+  byte fanUnused : 6;
   byte asePct[4];  //Afterstart enrichment (%)
   byte aseCount[4]; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte aseBins[4]; //Afterstart enrichment temp axis
@@ -751,7 +805,9 @@ struct config4 {
   byte idleAdvBins[6];
   byte idleAdvValues[6];
 
-  byte unused4_120[8];
+  byte engineProtectMaxRPM;
+
+  byte unused4_120[7];
 
 #if defined(CORE_AVR)
   };
@@ -767,7 +823,7 @@ struct config6 {
   byte egoType : 2;
   byte boostEnabled : 1;
   byte vvtEnabled : 1;
-  byte boostCutType : 2;
+  byte engineProtectType : 2;
 
   byte egoKP;
   byte egoKI;
@@ -779,7 +835,7 @@ struct config6 {
   byte vvtCLDir : 1; //VVT direction (advance or retard)
   byte vvtCLUseHold : 1; //Whether or not to use a hold duty cycle (Most cases are Yes)
   byte vvtCLAlterFuelTiming : 1;
-  byte unused6_6 : 1;
+  byte boostCutEnabled : 1;
   byte egoLimit; //Maximum amount the closed loop will vary the fueling
   byte ego_min; //AFR must be above this for closed loop to function
   byte ego_max; //AFR must be below this for closed loop to function
@@ -1028,21 +1084,41 @@ struct config10 {
   byte fuel2Algorithm : 3;
   byte fuel2Mode : 3;
   byte fuel2SwitchVariable : 2;
+
+  //Bytes 123-124
   uint16_t fuel2SwitchValue;
 
-  //Byte 123
+  //Byte 125
   byte fuel2InputPin : 6;
   byte fuel2InputPolarity : 1;
   byte fuel2InputPullup : 1;
 
-  byte vvtCLholdDuty;
-  byte vvtCLKP;
-  byte vvtCLKI;
-  byte vvtCLKD;
-  uint16_t vvtCLMinAng;
-  uint16_t vvtCLMaxAng;
+  byte vvtCLholdDuty; //Byte 126
+  byte vvtCLKP; //Byte 127
+  byte vvtCLKI; //Byte 128
+  byte vvtCLKD; //Byte 129
+  uint16_t vvtCLMinAng; //Bytes 130-131
+  uint16_t vvtCLMaxAng; //Bytes 132-133
 
-  byte unused11_123_191[58];
+  byte crankingEnrichTaper; //Byte 134
+
+  byte fuelPressureEnable : 1;
+  byte oilPressureEnable : 1;
+  byte oilPressureProtEnbl : 1;
+  byte unused10_135 : 5;
+
+  byte fuelPressurePin : 4;
+  byte oilPressurePin : 4;
+
+  int8_t fuelPressureMin;
+  byte fuelPressureMax;
+  int8_t oilPressureMin;
+  byte oilPressureMax;
+
+  byte oilPressureProtRPM[4];
+  byte oilPressureProtMins[4];
+
+  byte unused11_135_191[43]; //Bytes 135-191
 
 #if defined(CORE_AVR)
   };
@@ -1114,6 +1190,8 @@ extern byte pinFlex; //Pin with the flex sensor attached
 extern byte pinVSS; 
 extern byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 extern byte pinResetControl; // Output pin used control resetting the Arduino
+extern byte pinFuelPressure;
+extern byte pinOilPressure;
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   extern byte pinMC33810_1_CS;

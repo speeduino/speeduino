@@ -249,7 +249,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202003-dev"));
+      Serial.print(F("speeduino 202006-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -279,7 +279,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2020.03-dev"));
+      Serial.print(F("Speeduino 2020.06-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -629,8 +629,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[82] = highByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
 
   fullStatus[83] = currentStatus.status3;
-
-  fullStatus[84] = currentStatus.nChannels; //THIS IS CURRENTLY UNUSED!
+  fullStatus[84] = currentStatus.engineProtectStatus;
   fullStatus[85] = lowByte(currentStatus.fuelLoad);
   fullStatus[86] = highByte(currentStatus.fuelLoad);
   fullStatus[87] = lowByte(currentStatus.ignLoad);
@@ -647,13 +646,22 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[98] = currentStatus.baroCorrection;
   fullStatus[99] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
   fullStatus[100] = currentStatus.ASEValue; //Current ASE (%)
-  fullStatus[101] = currentStatus.vss;
+  fullStatus[101] = lowByte(currentStatus.vss);
+  fullStatus[102] = highByte(currentStatus.vss);
+  fullStatus[103] = currentStatus.gear;
+  fullStatus[104] = currentStatus.fuelPressure;
+  fullStatus[105] = currentStatus.oilPressure;
 
   for(byte x=0; x<packetLength; x++)
   {
     if (portNum == 0) { Serial.write(fullStatus[offset+x]); }
-    else if (portNum == 3){ CANSerial.write(fullStatus[offset+x]); }
+    #if defined(CANSerial_AVAILABLE)
+      else if (portNum == 3){ CANSerial.write(fullStatus[offset+x]); }
+    #endif
   }
+
+  // Reset any flags that are being used to trigger page refreshes
+  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
 
 }
 

@@ -38,6 +38,7 @@ struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing adv
 struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
 struct table2D knockWindowStartTable;
 struct table2D knockWindowDurationTable;
+struct table2D oilPressureProtectTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 volatile PORT_TYPE *inj1_pin_port;
@@ -204,6 +205,8 @@ byte pinFlex; //Pin with the flex sensor attached
 byte pinVSS;
 byte pinBaro; //Pin that an al barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
+byte pinFuelPressure;
+byte pinOilPressure;
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   byte pinMC33810_1_CS;
