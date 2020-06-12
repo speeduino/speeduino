@@ -243,6 +243,7 @@ void initialiseAll()
     initialiseFan();
     initialiseAuxPWM();
     initialiseCorrections();
+	BIT_CLEAR(currentStatus.status3, BIT_STATUS3_IO_ERROR); //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
     initialiseADC();
 
     //Lookup the current MAP reading for barometric pressure
@@ -332,7 +333,6 @@ void initialiseAll()
     timer5_overflow_count = 0;
     toothHistoryIndex = 0;
     toothHistorySerialIndex = 0;
-    BIT_CLEAR(currentStatus.status3, BIT_STATUS4_CONFIG_ERROR); //Clear the config error bit. The bit will be set later if there is problem in pin mapping.
 
     noInterrupts();
     initialiseTriggers();

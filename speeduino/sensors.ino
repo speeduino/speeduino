@@ -76,7 +76,7 @@ void initialiseADC()
       if( pinIsUsed(pinNumber) )
       {
         //Do nothing here as the pin is already in use.
-        BIT_SET(currentStatus.status3, BIT_STATUS4_CONFIG_ERROR); //Tell user that there is problem by lighting up the Config error indicator
+        BIT_SET(currentStatus.status3, BIT_STATUS3_IO_ERROR); //Tell user that there is problem by lighting up the I/O error indicator
       }
       else
       {
@@ -94,7 +94,7 @@ void initialiseADC()
        if( pinIsUsed(pinNumber) )
        {
          //Do nothing here as the pin is already in use.
-         BIT_SET(currentStatus.status3, BIT_STATUS4_CONFIG_ERROR); //Tell user that there is problem by lighting up the Config error indicator
+         BIT_SET(currentStatus.status3, BIT_STATUS3_IO_ERROR); //Tell user that there is problem by lighting up the I/O error indicator
        }
        else
        {
