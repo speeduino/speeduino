@@ -333,7 +333,7 @@ void initialiseAll()
     timer5_overflow_count = 0;
     toothHistoryIndex = 0;
     toothHistorySerialIndex = 0;
-
+    
     noInterrupts();
     initialiseTriggers();
 
