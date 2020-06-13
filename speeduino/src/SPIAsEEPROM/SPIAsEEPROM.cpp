@@ -25,6 +25,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#if !defined(FRAM_AS_EEPROM) && !defined(SRAM_AS_EEPROM)
 #if defined(USE_SPI_EEPROM) | defined(STM32F407xx) | defined(STM32F103xB)
 
 #include "SPIAsEEPROM.h"
@@ -440,6 +441,6 @@ int8_t InternalSTM32F4_EEPROM_Class::eraseFlashSector(uint32_t address, uint32_t
   InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 #endif
 
-
+#endif
 
 

@@ -10,16 +10,16 @@
   #define PINMASK_TYPE uint32_t
   #define COMPARE_TYPE uint16_t
   #define COUNTER_TYPE uint16_t
+  #define TIMER_RESOLUTION 2
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   #if defined(SRAM_AS_EEPROM)
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
-  #elif defined(SPIFLASH_AS_EEPROM)
-    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
     #define EEPROM_LIB_H <Fram.h>
   #else
-    #define EEPROM_LIB_H <EEPROM.h>
+    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   #endif
+
   #ifndef USE_SERIAL3
   #define USE_SERIAL3
   #endif
@@ -35,7 +35,7 @@
     #if defined(ARDUINO_BLACK_F407VE)
     FramClass EEPROM(PB5, PB4, PB3, PB0); /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
     #else
-    FramClass EEPROM(PB15, PB12, PB13, PB12); //Blue/Black Pills
+    FramClass EEPROM(PB15, PB14, PB13, PB12); //Blue/Black Pills
     #endif
   #endif
 
