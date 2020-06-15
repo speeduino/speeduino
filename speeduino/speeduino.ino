@@ -729,6 +729,10 @@ void loop()
           { 
             switch(configPage6.engineProtectType)
             {
+              case PROTECT_CUT_OFF:
+                ignitionOn = true;
+                fuelOn = true;
+                break;
               case PROTECT_CUT_IGN:
                 ignitionOn = false;
                 break;
@@ -766,7 +770,8 @@ void loop()
               ignitionOn = false; //Finally the ignition is fully cut completely
             }
           } //Hard/Rolling cut check
-        } //RPM Check 
+        } //RPM Check
+        else { currentStatus.engineProtectStatus = 0; } //Force all engine protection flags to be off as we're below the minimum RPM
       } //Protection active check
       else { curRollingCut = 0; } //Disables the rolling hard cut
 

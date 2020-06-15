@@ -418,14 +418,14 @@ void command()
       {
         Serial.print(x);
         Serial.print(", ");
-        Serial.println(cltCalibrationTable[x]);
+        //Serial.println(cltCalibrationTable[x]);
       }
       Serial.println(F("Inlet temp"));
       for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
       {
         Serial.print(x);
         Serial.print(", ");
-        Serial.println(iatCalibrationTable[x]);
+        //Serial.println(iatCalibrationTable[x]);
       }
       Serial.println(F("O2"));
       for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
@@ -1656,7 +1656,7 @@ void receiveCalibration(byte tableID)
   {
     case 0:
       //coolant table
-      pnt_TargetTable = (byte *)&cltCalibrationTable;
+      //pnt_TargetTable = (byte *)&cltCalibrationTable;
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
       DIVISION_FACTOR = 10;
       BYTES_PER_VALUE = 2;
@@ -1664,7 +1664,7 @@ void receiveCalibration(byte tableID)
       break;
     case 1:
       //Inlet air temp table
-      pnt_TargetTable = (byte *)&iatCalibrationTable;
+      //pnt_TargetTable = (byte *)&iatCalibrationTable;
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
       DIVISION_FACTOR = 10;
       BYTES_PER_VALUE = 2;

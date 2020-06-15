@@ -361,6 +361,25 @@ void doUpdates()
     // there is now optioon for fixed and relative timing retard for soft limit. This sets the soft limiter to the old fixed timing mode.
     configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
   }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 14)
+  {
+    //202006
+
+    //MAJOR update to move the coolant, IAT and O2 calibrations to 2D tables
+    int y;
+    for(int x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
+    {
+      y = EEPROM_CALIBRATION_CLT + (x * 16);
+      cltCalibration_values[x] = EEPROM.read(y);
+      cltCalibration_bins[x] = (x * 16);
+
+      y = EEPROM_CALIBRATION_IAT + (x * 16);
+      iatCalibration_values[x] = EEPROM.read(y);
+      iatCalibration_bins[x] = (x * 16);
+    }
+
+  }
   
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
