@@ -8,6 +8,9 @@ A full copy of the license may be found in the projects root directory
 #include "scheduler.h"
 #include "scheduledIO.h"
 
+/* We only need this one extern from speeduino.h for injector open time accumulation, just grab it */
+extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set within Tuner Studio, but stored here in uS rather than mS */
+
 FuelSchedule fuelSchedule1;
 FuelSchedule fuelSchedule2;
 FuelSchedule fuelSchedule3;
@@ -776,6 +779,7 @@ static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a f
       inj1StartFunction();
       fuelSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       FUEL1_COMPARE = FUEL1_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule1.duration); //Doing this here prevents a potential overflow on restarts
+      if (fuelSchedule1.duration > inj_opentime_uS) { injectionTimeAccumulator += (fuelSchedule1.duration - inj_opentime_uS); }
     }
     else if (fuelSchedule1.Status == RUNNING)
     {
@@ -813,6 +817,7 @@ static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a f
       inj2StartFunction();
       fuelSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       FUEL2_COMPARE = FUEL2_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule2.duration); //Doing this here prevents a potential overflow on restarts
+      if (fuelSchedule2.duration > inj_opentime_uS) { injectionTimeAccumulator += (fuelSchedule2.duration - inj_opentime_uS); }
     }
     else if (fuelSchedule2.Status == RUNNING)
     {
@@ -848,6 +853,7 @@ static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a f
       inj3StartFunction();
       fuelSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       FUEL3_COMPARE = FUEL3_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule3.duration); //Doing this here prevents a potential overflow on restarts
+      if (fuelSchedule3.duration > inj_opentime_uS) { injectionTimeAccumulator += (fuelSchedule3.duration - inj_opentime_uS); }
     }
     else if (fuelSchedule3.Status == RUNNING)
     {
@@ -883,6 +889,7 @@ static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a f
       inj4StartFunction();
       fuelSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       FUEL4_COMPARE = FUEL4_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule4.duration); //Doing this here prevents a potential overflow on restarts
+      if (fuelSchedule4.duration > inj_opentime_uS) { injectionTimeAccumulator += (fuelSchedule4.duration - inj_opentime_uS); }
     }
     else if (fuelSchedule4.Status == RUNNING)
     {
@@ -917,6 +924,7 @@ static inline void fuelSchedule5Interrupt() //Most ARM chips can simply call a f
     inj5StartFunction();
     fuelSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     FUEL5_COMPARE = FUEL5_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule5.duration); //Doing this here prevents a potential overflow on restarts
+    if (fuelSchedule5.duration > inj_opentime_uS) { injectionTimeAccumulator += (fuelSchedule5.duration - inj_opentime_uS); }
   }
   else if (fuelSchedule5.Status == RUNNING)
   {
@@ -951,6 +959,7 @@ static inline void fuelSchedule6Interrupt() //Most ARM chips can simply call a f
     inj6StartFunction();
     fuelSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     FUEL6_COMPARE = FUEL6_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule6.duration); //Doing this here prevents a potential overflow on restarts
+    if (fuelSchedule6.duration > inj_opentime_uS) { injectionTimeAccumulator += (fuelSchedule6.duration - inj_opentime_uS); }
   }
   else if (fuelSchedule6.Status == RUNNING)
   {
@@ -986,6 +995,7 @@ static inline void fuelSchedule7Interrupt() //Most ARM chips can simply call a f
     inj7StartFunction();
     fuelSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     FUEL7_COMPARE = FUEL7_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule7.duration); //Doing this here prevents a potential overflow on restarts
+    if (fuelSchedule7.duration > inj_opentime_uS) { injectionTimeAccumulator += (fuelSchedule7.duration - inj_opentime_uS); }
   }
   else if (fuelSchedule7.Status == RUNNING)
   {
@@ -1021,6 +1031,7 @@ static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a f
     inj8StartFunction();
     fuelSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     FUEL8_COMPARE = FUEL8_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule8.duration); //Doing this here prevents a potential overflow on restarts
+    if (fuelSchedule8.duration > inj_opentime_uS) { injectionTimeAccumulator += (fuelSchedule8.duration - inj_opentime_uS); }
   }
   else if (fuelSchedule8.Status == RUNNING)
   {

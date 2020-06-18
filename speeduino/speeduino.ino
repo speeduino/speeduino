@@ -258,6 +258,14 @@ void loop()
       currentStatus.fuelPressure = getFuelPressure();
       currentStatus.oilPressure = getOilPressure();
 
+      // Update fuel injection time
+      //Serial.print("injection us: "); Serial.println(injectionTimeAccumulator);
+      if (injectionTimeAccumulator >= US_IN_SECOND)
+      {
+        injectionTimeAccumulator -= US_IN_SECOND;
+        ++currentStatus.injectionTimeTotalSeconds;
+      }
+
       if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
       if(auxIsEnabled == true)

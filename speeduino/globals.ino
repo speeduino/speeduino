@@ -140,6 +140,7 @@ byte resetControl = RESET_CONTROL_DISABLED;
 volatile byte TIMER_mask;
 volatile byte LOOP_TIMER;
 
+volatile uint32_t injectionTimeAccumulator = 0;
 
 byte pinInjector1; //Output pin injector 1
 byte pinInjector2; //Output pin injector 2
