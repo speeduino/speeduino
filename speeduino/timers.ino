@@ -18,6 +18,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "speeduino.h"
 #include "scheduler.h"
 #include "auxiliaries.h"
+#include "knock.h"
 
 #if defined(CORE_AVR)
   #include <avr/wdt.h>
@@ -67,6 +68,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if(ignitionSchedule7.Status == RUNNING) { if( (ignitionSchedule7.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign7EndFunction(); ignitionSchedule7.Status = OFF; } }
   if(ignitionSchedule8.Status == RUNNING) { if( (ignitionSchedule8.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign8EndFunction(); ignitionSchedule8.Status = OFF; } }
 
+#if !defined(CORE_TEENSY35)  // Teensy35 uses PIT for Tacho
   //Tacho output check
   //Tacho is flagged as being ready for a pulse by the ignition outputs. 
   if(tachoOutputFlag == READY)
@@ -95,6 +97,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
       tachoOutputFlag = DEACTIVE;
     }
   }
+#endif  
   
 
 
@@ -118,6 +121,10 @@ void oneMSInterval() //Most ARM chips can simply call a function
   {
     loop100ms = 0; //Reset counter
     BIT_SET(TIMER_mask, BIT_TIMER_10HZ);
+
+#if defined(KNOCK)
+    determineRetard();
+#endif 
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc

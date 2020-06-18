@@ -35,17 +35,28 @@ byte tsCanId = 0;     // current tscanid requested
 
 const char pageTitles[] PROGMEM //This is being stored in the avr flash instead of SRAM which there is not very much of
   {
-   "\nVE Map\0"//This is an alternative to using a 2D array which would waste space because of the different lengths of the strings
-   "\nPg 1 Config\0"// 21-The configuration page titles' indexes are found by counting the chars
-   "\nIgnition Map\0"//35-The map page titles' indexes are put into a var called currentTitleIndex. That represents the first char of each string.
-   "\nPg 2 Config\0" //48
-   "\nAFR Map\0" //56
-   "\nPg 3 Config\0" //69
-   "\nPg 4 Config\0" //82
-   "\nBoost Map\0" //93
-   "\nVVT Map\0"//102-No need to put a trailing null because it's the last string and the compliler does it for you.
-   "\nPg 10 Config\0"
-   "\n2nd Fuel Map"
+   "\nVE Map\0"       // 0 - This is an alternative to using a 2D array which would waste space because of the different lengths of the strings
+   "\nPg 1 Config\0"  // 8 - The configuration page titles' indexes are found by counting the chars
+   "\nIgnition Map\0" // 21 - The map page titles' indexes are put into a var called currentTitleIndex. That represents the first char of each string.
+   "\nPg 2 Config\0"  // 35
+   "\nAFR Map\0"      // 48
+   "\nPg 3 Config\0"  // 57
+   "\nPg 4 Config\0"  // 70
+   "\nBoost Map\0"    // 83
+   "\nCanBus\0"       // 94
+   "\nwarmup Page \0" // 102
+   "\nfuelMap2\0"     // 116
+   "\nvvtMap 1\0"     // 126
+   "\nstagingMap\0"   // 136
+   "\nvvtMap 2\0"     // 148
+   "\nfuelTrim 1\0"   // 158
+   "\nfuelTrim 2\0"   // 170
+   "\nfuelTrim 3\0"   // 182
+   "\nfuelTrim 4\0"   // 194
+//   "\nfuelTrim 5\0"   // 206
+//   "\nfuelTrim 6\0"   // 218
+//   "\nfuelTrim 7\0"   // 230
+//   "\nfuelTrim 8\0"   // 242
   };
 
 void command();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.

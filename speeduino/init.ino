@@ -14,6 +14,7 @@
 #include "corrections.h"
 #include "idle.h"
 #include "table.h"
+#include "knock.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 #include EEPROM_LIB_H 
 
@@ -45,6 +46,10 @@ void initialiseAll()
     
     initBoard(); //This calls the current individual boards init function. See the board_xxx.ino files for these.
     initialiseTimers();
+
+#if defined(DIAG)
+    DSERIAL.begin(115200);
+#endif
 
     Serial.begin(115200);
     #if defined(CANSerial_AVAILABLE)
@@ -173,14 +178,19 @@ void initialiseAll()
 
     knockWindowStartTable.valueSize = SIZE_BYTE;
     knockWindowStartTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    knockWindowStartTable.xSize = 6;
+    knockWindowStartTable.xSize = 8;
     knockWindowStartTable.values = configPage10.knock_window_angle;
     knockWindowStartTable.axisX = configPage10.knock_window_rpms;
     knockWindowDurationTable.valueSize = SIZE_BYTE;
     knockWindowDurationTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    knockWindowDurationTable.xSize = 6;
+    knockWindowDurationTable.xSize = 8;
     knockWindowDurationTable.values = configPage10.knock_window_dur;
     knockWindowDurationTable.axisX = configPage10.knock_window_rpms;
+    knockWindowSensitivityTable.valueSize = SIZE_BYTE;
+    knockWindowSensitivityTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    knockWindowSensitivityTable.xSize = 8;
+    knockWindowSensitivityTable.values = configPage10.knock_window_sensitivity;
+    knockWindowSensitivityTable.axisX = configPage10.knock_window_rpms;
 
     oilPressureProtectTable.valueSize = SIZE_BYTE;
     oilPressureProtectTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
@@ -246,8 +256,25 @@ void initialiseAll()
     closeInjector8();
     #endif
 
+#if defined(CORE_TEENSY35)
+    // new tacho    
+    // longest permissable tach duration is 50% of time between ign events used for tacho pulse
+    // if calculated time is greater than TunerStudio pulse duration, then use TS pulse duration
+
+    int maxCalcDuration = 0;  // microsec
+
+    // PIT clock - 60MHz - PIT counts down to 0 for interrupt
+    tachPulseDuration =  (configPage2.tachoDuration * 1000 * 60) - 1; // pulse duration from TS, convert to uS (mS x 1000 x 60)
+    // longest duration in uS for max revs at nCyl and 50% dc
+    maxCalcDuration = 60000000/(((configPage4.HardRevLim*100)/60) * configPage2.nCylinders) - 1;
+    if (maxCalcDuration < tachPulseDuration)
+    {
+      tachPulseDuration = maxCalcDuration;
+    }
+#endif
+
     //Set the tacho output default state
-    digitalWrite(pinTachOut, HIGH);
+//    digitalWrite(pinTachOut, HIGH); **** can't be here, pinTachOut not yet defined. ****
     //Perform all initialisations
     initialiseSchedulers();
     //initialiseDisplay();
@@ -256,6 +283,12 @@ void initialiseAll()
     initialiseAuxPWM();
     initialiseCorrections();
     initialiseADC();
+#if defined(KNOCK)
+    if (configPage10.knock_mode == KNOCK_MODE_DIGITAL)
+    {
+      initialiseKnock();
+    }
+#endif
 
     //Lookup the current MAP reading for barometric pressure
     instanteneousMAPReading();
@@ -1150,6 +1183,8 @@ void initialiseAll()
       if(channel8InjEnabled == true) { setFuelSchedule8(100, (primingValue * 100 * 5)); }
       #endif
     }
+    // set tacho default state
+    TACHO_PULSE_HIGH();
 
     initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
@@ -2039,7 +2074,139 @@ void setPinMapping(byte boardID)
 
       #endif
       break;
-    
+  
+    #if defined(CORE_TEENSY35)
+    case 57:
+#if defined(V1) // proto version
+      //Pin mappings as per the teensy 3.5 X3V0.1 board shield
+      // firing order 1-3-4-2 (only affects injectors - using wasted spark)
+      pinInjector1 = 5; // HW INJ1
+      pinInjector2 = 3; // HW INJ3
+      pinInjector3 = 2; // HW INJ4
+      pinInjector4 = 4; // HW INJ2
+      pinCoil1 = 14;    // fire 1 & 3
+      pinCoil2 = 15;    // fire 2 & 4
+
+      pinTrigger = 32;  // Crank Sensor pin
+      pinTrigger2 = 39; // Cam Sensor pin
+      pinTPS = A6;      // TPS input pin
+      pinMAP = A9;      // MAP sensor pin
+      pinIAT = A4;      // IAT sensor pin
+      pinCLT = A5;      // CLT sensor pin
+      pinO2 =  A8;      // Hego sensor pin
+      pinBat = A12;     // Battery reference voltage pin
+      pinTachOut = 25;  // Tacho output pin
+      pinIdle1 = 9;     // Single wire idle control pin
+      pinIdle2 = 10;    // Two wire idle control pin
+      pinFuelPump = 24; // Fuel pump output pin
+      pinFan = 11;      // Fan output pin
+      CS0 = 26;
+      pinKnockWin = 16;
+      SCK0 = 27; // alternate clock
+      // MISO0 = 12
+      // MOSI0 = 28;  (Alt)
+      // RX3 = 7
+      // TX3 = 8
+
+#else // V2 - beta version
+      //Pin mappings as per the teensy 3.5 X3V0.2 board shield
+      // firing order 1-3-4-2 (only affects injectors - using wasted spark)
+
+      pinInjector1 = 8; // HW INJ1
+      pinInjector2 = 6; // HW INJ3
+      pinInjector3 = 5; // HW INJ4
+      pinInjector4 = 7; // HW INJ2
+
+      pinCoil1 = 36;    // fire 1 & 3
+      pinCoil2 = 37;    // fire 2 & 4
+
+      pinTrigger = 15;  // Crank Sensor 
+      pinTrigger2 = 19; // Cam Sensor 
+
+      pinIAT = A4;      // IAT sensor 
+      pinTPS = A6;      // TPS input 
+      pinCLT = A7;      // CLT sensor 
+      pinO2 =  A8;      // Hego sensor 
+      pinMAP = A9;      // MAP sensor 
+      pinBat = A12;     // Battery reference voltage 
+
+      pinIdle1 = 9;     // Single wire idle control 
+      pinIdle2 = 10;    // Two wire idle control 
+      pinFan = 24;      // Fan output 
+      pinKnockWin = 25; // TPIC8101 integrate/hold
+      pinTachOut = 26;  // Tacho output 
+      pinFuelPump = 27; // Fuel pump output 
+
+      SCK0 = 14;        // alternate clock - leave 13 for LED
+      CS0 = 32;         // TPIC8101 (knock) select
+
+      // pin1 RX1
+      // pin2 TX1
+      // pin11 MOSI0
+      // pin12 MISO0
+      // pin3 can0TX 
+      // pin4 can0RX 
+      // Trigger angle = 240 deg
+      // injector rate = 170 cc/min
+
+#endif
+      break;
+ 
+      case 58:
+      //Pin mappings as per the teensy 3.5 FV6.0 board shield
+      pinInjector1 = 5;
+      pinInjector2 = 6;
+      pinInjector3 = 7;
+      pinInjector4 = 8;
+      pinInjector5 = 9;
+      pinInjector6 = 10;
+      pinInjector7 = 22;
+      pinInjector8 = 23;
+      pinCoil1 = 21;
+      pinCoil2 = 20;
+      pinCoil3 = 19;
+      pinCoil4 = 18;
+      pinCoil5 = 17;
+      pinCoil6 = 16;
+      pinCoil7 = 30;
+      pinCoil8 = 31;      
+      pinVVT_1 = 37;     // VVT1 
+      pinVVT_2 = 38;     // VVT2       
+      pinTrigger = 26;  // CAS 
+      pinTrigger2 = 28; // ECam Sensor 
+      pinTrigger3 = 27; // ICam Sensor      
+      pinTPS = A26;     // TPS input  - not used with Ford Barra
+      pinMAP = A15;     // MAP sensor 
+      pinIAT = A11;     // IAT sensor 
+      pinCLT = A10;     // CLT sensor 
+      pinO2 =  A21;     // O2 sensor 
+      pinO2_2 = A23;    // O2-2 sensor 
+      pinBat = A22;     // Battery reference voltage 
+      pinBaro = A25;    // Baro sensor 
+      pinTachOut = 2;   // Tacho output 
+      pinBoost = 40;    // Boost control
+      pinFuelPump = 36; // Fuel pump output
+      pinLaunch = 25;   // Input
+      pinFlex = 39;     // Flex sensor (Must be external interrupt enabled)
+      pinFan = 35;      // Fan output
+      pinIMCC = 29;     // Intake Manifold Charge Control (Ford L6 Barra)        
+      pinKnockWin = 24; // Integrate/Hold for TPIC8101
+      // special pins
+      CS0 = 32;         // Chip Select; Knock
+      CS1 = 33;         // Chip select; Flash
+      CS2 = 15;         // Chip select; DriveByWire Throttle
+      SCK0 = 14;        // Flash, Knock and Throttle Clock (alternate clock)
+      // RX1 = 0
+      // RX2 = 1
+      // CANTX = 3;
+      // CANRX = 4;
+      // MOSI0 = 11 
+      // MISO0 = 12 
+      // trigger angle = 300
+      // injector rate = ?? cc/pin
+      break;    
+    #endif
+  
    #if defined(ARDUINO_BLACK_F407VE)
     case 60:
        //Pin definitions for experimental board Tjeerd 
@@ -2373,6 +2540,8 @@ void setPinMapping(byte boardID)
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
+  pinMode(pinIMCC, OUTPUT);   // intake manifold charge control
+  pinMode(pinKnockWin, OUTPUT);
   pinMode(pinIgnBypass, OUTPUT);
   pinMode(pinFan, OUTPUT);
   pinMode(pinStepperDir, OUTPUT);
@@ -2380,6 +2549,10 @@ void setPinMapping(byte boardID)
   pinMode(pinStepperEnable, OUTPUT);
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
+  pinMode(pinVVT_2, OUTPUT);
+  pinMode(CS0, OUTPUT);  // Chip Select; Knock
+  pinMode(CS1, OUTPUT);  // Chip select; Flash
+  pinMode(CS2, OUTPUT);  // Chip select; FlyByWire Throttle
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
@@ -2454,6 +2627,10 @@ void setPinMapping(byte boardID)
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
   pump_pin_port = portOutputRegister(digitalPinToPort(pinFuelPump));
   pump_pin_mask = digitalPinToBitMask(pinFuelPump);
+#if defined(KNOCK)
+  knock_win_pin_port = portOutputRegister(digitalPinToPort(pinKnockWin));
+  knock_win_pin_mask = digitalPinToBitMask(pinKnockWin);
+#endif
 
   //And for inputs
   #if defined(CORE_STM32)

@@ -253,6 +253,7 @@ void loop()
       readBat();
       nitrousControl();
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
+      imccControl();
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
       currentStatus.fuelPressure = getFuelPressure();
@@ -316,11 +317,39 @@ void loop()
           } //Channel type
         } //For loop going through each channel
       } //aux channels are enabled
-    } //4Hz timer
+#if defined(KNOCK)    
+    if ((configPage10.knock_mode==KNOCK_MODE_DIGITAL) &&(currentStatus.hasSync))
+    {
+      refreshKnockParameters();
+    }
+#endif
+} //4Hz timer
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
       readBaro(); //Infrequent baro readings are not an issue.
+#if defined(DIAG)
+    DSERIAL.printf("BRD %d CYL %d IGN %d INJ %d\n",configPage2.pinMapping,configPage2.nCylinders,configPage4.sparkMode,configPage2.injLayout);
+    if (DIAG1) {DSERIAL.printf("D1 %d\n",DIAG1);}
+    if (DIAG2) {DSERIAL.printf("D2 %d\n",DIAG2);}
+    if (DIAG3) {DSERIAL.printf("D3 %d\n",DIAG3);}
+    if (DIAG4) {DSERIAL.printf("D4 %d\n",DIAG4);}
+    if (DIAG5) {DSERIAL.printf("D5 %d\n",DIAG5);}
+    if (DIAG6) {DSERIAL.printf("D6 %d\n",DIAG6);}
+    if (DIAG7) {DSERIAL.printf("D7 %d\n",DIAG7);}
+    if (DIAG8) {DSERIAL.printf("D8 %d\n",DIAG8);}
+    DIAG1=0;
+    DIAG2=0;
+    DIAG3=0;
+    DIAG4=0;
+    DIAG5=0;
+    DIAG6=0;
+    DIAG7=0;
+    DIAG8=0;
+#endif
+#if defined(CORE_TEENSY) //debug purpose, only visal for running code
+    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+#endif
     } //1Hz timer
 
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) )  { idleControl(); } //Run idlecontrol every loop for stepper idle.

@@ -7,6 +7,7 @@ A full copy of the license may be found in the projects root directory
 #include "globals.h"
 #include "scheduler.h"
 #include "scheduledIO.h"
+#include "knock.h"
 
 FuelSchedule fuelSchedule1;
 FuelSchedule fuelSchedule2;
@@ -1052,6 +1053,9 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
   {
     if (ignitionSchedule1.Status == PENDING) //Check to see if this schedule is turn on
     {
+#if defined(CORE_TEENSY35)
+      startTacho();
+#endif
       ignitionSchedule1.StartCallback();
       ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule1.startTime = micros();
@@ -1060,6 +1064,9 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule1.Status == RUNNING)
     {
+#if defined(KNOCK)   
+      launchKnockWindow();
+#endif
       ignitionSchedule1.EndCallback();
       ignitionSchedule1.Status = OFF; //Turn off the schedule
       ignitionSchedule1.schedulesSet = 0;
@@ -1093,6 +1100,9 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
   {
     if (ignitionSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
+#if defined(CORE_TEENSY35)
+      startTacho();
+#endif
       ignitionSchedule2.StartCallback();
       ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule2.startTime = micros();
@@ -1101,6 +1111,9 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule2.Status == RUNNING)
     {
+#if defined(KNOCK)   
+      launchKnockWindow();
+#endif
       ignitionSchedule2.Status = OFF; //Turn off the schedule
       ignitionSchedule2.EndCallback();
       ignitionSchedule2.schedulesSet = 0;
@@ -1134,6 +1147,9 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
   {
     if (ignitionSchedule3.Status == PENDING) //Check to see if this schedule is turn on
     {
+#if defined(CORE_TEENSY35)
+      startTacho();
+#endif
       ignitionSchedule3.StartCallback();
       ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule3.startTime = micros();
@@ -1142,6 +1158,9 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule3.Status == RUNNING)
     {
+#if defined(KNOCK)   
+      launchKnockWindow();
+#endif
        ignitionSchedule3.Status = OFF; //Turn off the schedule
        ignitionSchedule3.EndCallback();
        ignitionSchedule3.schedulesSet = 0;
@@ -1175,6 +1194,9 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
   {
     if (ignitionSchedule4.Status == PENDING) //Check to see if this schedule is turn on
     {
+#if defined(CORE_TEENSY35)
+      startTacho();
+#endif
       ignitionSchedule4.StartCallback();
       ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule4.startTime = micros();
@@ -1182,6 +1204,9 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule4.Status == RUNNING)
     {
+#if defined(KNOCK)   
+      launchKnockWindow();
+#endif
        ignitionSchedule4.Status = OFF; //Turn off the schedule
        ignitionSchedule4.EndCallback();
        ignitionSchedule4.schedulesSet = 0;
@@ -1215,6 +1240,9 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
   {
     if (ignitionSchedule5.Status == PENDING) //Check to see if this schedule is turn on
     {
+#if defined(CORE_TEENSY35)
+      startTacho();
+#endif
       ignitionSchedule5.StartCallback();
       ignitionSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule5.startTime = micros();
@@ -1222,6 +1250,9 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule5.Status == RUNNING)
     {
+#if defined(KNOCK)   
+      launchKnockWindow();
+#endif
       ignitionSchedule5.Status = OFF; //Turn off the schedule
       ignitionSchedule5.EndCallback();
       ignitionSchedule5.schedulesSet = 0;
@@ -1255,6 +1286,9 @@ static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call
   {
     if (ignitionSchedule6.Status == PENDING) //Check to see if this schedule is turn on
     {
+#if defined(CORE_TEENSY35)
+      startTacho();
+#endif
       ignitionSchedule6.StartCallback();
       ignitionSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule6.startTime = micros();
@@ -1262,6 +1296,9 @@ static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule6.Status == RUNNING)
     {
+#if defined(KNOCK)   
+      launchKnockWindow();
+#endif
       ignitionSchedule6.Status = OFF; //Turn off the schedule
       ignitionSchedule6.EndCallback();
       ignitionSchedule6.schedulesSet = 0;
@@ -1295,6 +1332,9 @@ static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call
   {
     if (ignitionSchedule7.Status == PENDING) //Check to see if this schedule is turn on
     {
+#if defined(CORE_TEENSY35)
+      startTacho();
+#endif
       ignitionSchedule7.StartCallback();
       ignitionSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule7.startTime = micros();
@@ -1302,6 +1342,9 @@ static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule7.Status == RUNNING)
     {
+#if defined(KNOCK)   
+      launchKnockWindow();
+#endif
       ignitionSchedule7.Status = OFF; //Turn off the schedule
       ignitionSchedule7.EndCallback();
       ignitionSchedule7.schedulesSet = 0;
@@ -1335,6 +1378,9 @@ static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call
   {
     if (ignitionSchedule8.Status == PENDING) //Check to see if this schedule is turn on
     {
+#if defined(CORE_TEENSY35)
+      startTacho();
+#endif
       ignitionSchedule8.StartCallback();
       ignitionSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule8.startTime = micros();
@@ -1342,6 +1388,9 @@ static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call
     }
     else if (ignitionSchedule8.Status == RUNNING)
     {
+#if defined(KNOCK)   
+      launchKnockWindow();
+#endif
       ignitionSchedule8.Status = OFF; //Turn off the schedule
       ignitionSchedule8.EndCallback();
       ignitionSchedule8.schedulesSet = 0;
@@ -1370,6 +1419,22 @@ static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call
 #if defined(CORE_TEENSY35)
 void ftm0_isr(void)
 {
+  uint8_t status = FTM0_STATUS; // get all 8 channels
+  FTM0_STATUS = 0x00; // clear all channels
+  
+  // which channel(s) interrupted
+  if(status & FTM_STATUS_CH0F) { fuelSchedule1Interrupt(); }
+  if(status & FTM_STATUS_CH1F) { fuelSchedule2Interrupt(); }
+  if(status & FTM_STATUS_CH2F) { fuelSchedule3Interrupt(); }
+  if(status & FTM_STATUS_CH3F) { fuelSchedule4Interrupt(); }
+  if(status & FTM_STATUS_CH4F) { ignitionSchedule1Interrupt(); }
+  if(status & FTM_STATUS_CH5F) { ignitionSchedule2Interrupt(); }
+  if(status & FTM_STATUS_CH6F) { ignitionSchedule3Interrupt(); }
+  if(status & FTM_STATUS_CH7F) { ignitionSchedule4Interrupt(); }
+}
+/*
+void ftm0_isr(void)
+{
   //Use separate variables for each test to ensure conversion to bool
   bool interrupt1 = (FTM0_C0SC & FTM_CSC_CHF);
   bool interrupt2 = (FTM0_C1SC & FTM_CSC_CHF);
@@ -1390,6 +1455,39 @@ void ftm0_isr(void)
   else if(interrupt8) { FTM0_C7SC &= ~FTM_CSC_CHF; ignitionSchedule4Interrupt(); }
 
 }
+*/
+void ftm3_isr(void)
+{
+  uint8_t status = FTM3_STATUS;
+  FTM3_STATUS = 0x00;
+
+#if (INJ_CHANNELS >= 5)  
+  if(status & FTM_STATUS_CH0F) { fuelSchedule5Interrupt(); }
+#endif
+#if (INJ_CHANNELS >= 6)
+  if(status & FTM_STATUS_CH1F) { fuelSchedule6Interrupt(); }
+#endif
+#if (INJ_CHANNELS >= 7)
+  if(status & FTM_STATUS_CH2F) { fuelSchedule7Interrupt(); }
+#endif
+#if (INJ_CHANNELS >= 8)
+  if(status & FTM_STATUS_CH3F) { fuelSchedule8Interrupt(); }
+#endif 
+#if IGN_CHANNELS >= 5 
+  if(status & FTM_STATUS_CH4F) { ignitionSchedule5Interrupt(); }
+#endif
+#if IGN_CHANNELS >= 6 
+  if(status & FTM_STATUS_CH5F) { ignitionSchedule6Interrupt(); }
+#endif
+#if (IGN_CHANNELS >= 7)
+  if(status & FTM_STATUS_CH6F) { ignitionSchedule7Interrupt(); }
+#endif
+#if (IGN_CHANNELS >= 8)
+  if(status & FTM_STATUS_CH7F) { ignitionSchedule8Interrupt(); }
+#endif
+}
+/*
+
 void ftm3_isr(void)
 {
 
@@ -1427,4 +1525,5 @@ void ftm3_isr(void)
 #endif
 
 }
+*/
 #endif

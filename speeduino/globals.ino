@@ -39,6 +39,7 @@ struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adju
 struct table2D knockWindowStartTable;
 struct table2D knockWindowDurationTable;
 struct table2D oilPressureProtectTable;
+struct table2D knockWindowSensitivityTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 volatile PORT_TYPE *inj1_pin_port;
@@ -84,6 +85,8 @@ volatile PORT_TYPE *triggerPri_pin_port;
 volatile PINMASK_TYPE triggerPri_pin_mask;
 volatile PORT_TYPE *triggerSec_pin_port;
 volatile PINMASK_TYPE triggerSec_pin_mask;
+volatile PORT_TYPE *knock_win_pin_port;
+volatile PINMASK_TYPE knock_win_pin_mask;
 
 //These need to be here as they are used in both speeduino.ino and scheduler.ino
 bool channel1InjEnabled = true;
@@ -132,6 +135,7 @@ volatile byte HWTest_INJ = 0; /**< Each bit in this variable represents one of t
 volatile byte HWTest_INJ_50pc = 0; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
 volatile byte HWTest_IGN = 0; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 volatile byte HWTest_IGN_50pc = 0; 
+uint8_t knockRetard;
 
 
 //This needs to be here because using the config page directly can prevent burning the setting
@@ -196,6 +200,8 @@ byte pinBoost;
 byte pinVVT_1;		// vvt output 1
 byte pinVVT_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
+byte pinIMCC;     // Intake Manifold Charge Control
+byte pinKnockWin; // knock window
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
 byte pinStepperEnable; //Turning the DRV8825 driver on/off
@@ -207,6 +213,10 @@ byte pinBaro; //Pin that an al barometric pressure sensor is attached to (If use
 byte pinResetControl; // Output pin used control resetting the Arduino
 byte pinFuelPressure;
 byte pinOilPressure;
+byte CS0;  // TPC8101 - knock
+byte CS1;  // FLASH on PCB
+byte CS2;  // DBW pocessor
+byte SCK0; // alternative clock - leave LED_BUILTIN = 13 available
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   byte pinMC33810_1_CS;

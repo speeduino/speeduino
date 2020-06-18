@@ -408,13 +408,29 @@ void ftm1_isr(void)
 {
   //FTM1 only has 2 compare channels
   //Use separate variables for each test to ensure conversion to bool
-  bool interrupt1 = (FTM1_C0SC & FTM_CSC_CHF);
-  bool interrupt2 = (FTM1_C1SC & FTM_CSC_CHF);
+//  bool interrupt1 = (FTM1_C0SC & FTM_CSC_CHF);
+//  bool interrupt2 = (FTM1_C1SC & FTM_CSC_CHF);
 
-  if(interrupt1) { FTM1_C0SC &= ~FTM_CSC_CHF; boostInterrupt(); }
-  else if(interrupt2) { FTM1_C1SC &= ~FTM_CSC_CHF; vvtInterrupt(); }
+//  if(interrupt1) { FTM1_C0SC &= ~FTM_CSC_CHF; boostInterrupt(); }
+//  else if(interrupt2) { FTM1_C1SC &= ~FTM_CSC_CHF; vvtInterrupt(); }
+  uint8_t status = FTM1_STATUS; // get both channels
+  FTM1_STATUS = 0x00; // clear both channels
 
+  if(status & FTM_STATUS_CH0F) { boostInterrupt(); }
+  if(status & FTM_STATUS_CH1F) { vvtInterrupt(); }
 }
 #elif defined(CORE_TEENSY40)
 //DO STUFF HERE
 #endif
+
+void imccControl()
+{
+  if (currentStatus.RPM > IMCC_HI_RPM)
+  {
+    digitalWrite(pinIMCC,1);
+  }
+  else if (currentStatus.RPM < IMCC_LO_RPM)
+  {
+    digitalWrite(pinIMCC,0);
+  }
+}

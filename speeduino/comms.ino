@@ -208,7 +208,7 @@ void command()
         }
         
         // Detecting if the current page is a table/map
-        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) ) { isMap = true; }
+        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == seqFuelPage) || (currentPage == boostvvtPage) || (currentPage == fuelMap2Page) ) { isMap = true; }
         else { isMap = false; }
         cmdPending = false;
       }
@@ -1166,7 +1166,7 @@ void sendPageASCII()
   byte currentTitleIndex = 0;// This corresponds to the count up to the first char of a string in pageTitles
   bool sendComplete = false; //Used to track whether all send operations are complete
 
-  switch (currentPage)
+switch (currentPage)
   {
     case veMapPage:
       currentTitleIndex = 0;
@@ -1177,7 +1177,7 @@ void sendPageASCII()
       uint16_t* pnt16_configPage;
       // To Display Values from Config Page 1
       // When casting to the __FlashStringHelper type Serial.println uses the same subroutine as when using the F macro
-      Serial.println((const __FlashStringHelper *)&pageTitles[27]);//27 is the index to the first char in the second sting in pageTitles
+      Serial.println((const __FlashStringHelper *)&pageTitles[8]);//8 is the index to the first char in the second sting in pageTitles
       // The following loop displays in human readable form of all byte values in config page 1 up to but not including the first array.
       // incrementing void pointers is cumbersome. Thus we have "pnt_configPage = (byte *)pnt_configPage + 1"
       for (pnt_configPage = (byte *)&configPage2; pnt_configPage < &configPage2.wueValues[0]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
@@ -1202,13 +1202,13 @@ void sendPageASCII()
       break;
 
     case ignMapPage:
-      currentTitleIndex = 42;// the index to the first char of the third string in pageTitles
+      currentTitleIndex = 21;// the index to the first char of the third string in pageTitles
       currentTable = ignitionTable;
       break;
 
     case ignSetPage:
       //To Display Values from Config Page 2
-      Serial.println((const __FlashStringHelper *)&pageTitles[56]);
+      Serial.println((const __FlashStringHelper *)&pageTitles[35]);
       Serial.println(configPage4.triggerAngle);// configPsge2.triggerAngle is an int so just display it without complication
       // Following loop displays byte values after that first int up to but not including the first array in config page 2
       for (pnt_configPage = (byte *)&configPage4 + 1; pnt_configPage < &configPage4.taeBins[0]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
@@ -1250,14 +1250,14 @@ void sendPageASCII()
       break;
 
     case afrMapPage:
-      currentTitleIndex = 71;//Array index to next string
+      currentTitleIndex = 48;//Array index to next string
       currentTable = afrTable;
       break;
 
     case afrSetPage:
-      //currentTitleIndex = 91;
+      //currentTitleIndex = 57;
       //To Display Values from Config Page 3
-      Serial.println((const __FlashStringHelper *)&pageTitles[91]);//special typecasting to enable suroutine that the F macro uses
+      Serial.println((const __FlashStringHelper *)&pageTitles[57]);//special typecasting to enable suroutine that the F macro uses
       for (pnt_configPage = (byte *)&configPage6; pnt_configPage < &configPage6.voltageCorrectionBins[0]; pnt_configPage = (byte *)pnt_configPage + 1)
       {
         Serial.println(*((byte *)pnt_configPage));// Displaying byte values of config page 3 up to but not including the first array
@@ -1296,8 +1296,8 @@ void sendPageASCII()
       sendComplete = true;
 
       //Old configPage4 STARTED HERE!
-      //currentTitleIndex = 106;
-      Serial.println((const __FlashStringHelper *)&pageTitles[106]);// F macro hack
+      //currentTitleIndex = 66;
+      Serial.println((const __FlashStringHelper *)&pageTitles[70]);// F macro hack
       for (byte y = 4; y; y--)// Display four equally sized arrays
       {
         byte * currentVar;
@@ -1340,47 +1340,18 @@ void sendPageASCII()
 
     case boostvvtPage:
       currentTable = boostTable;
-      currentTitleIndex = 121;
+      currentTitleIndex = 83;
       break;
 
     case seqFuelPage:
       currentTable = trim1Table;
-      for (int y = 0; y < currentTable.ySize; y++)
-      {
-        byte axisY = byte(currentTable.axisY[y]);
-        if (axisY < 100)
-        {
-          Serial.write(" ");
-          if (axisY < 10)
-          {
-            Serial.write(" ");
-          }
-        }
-        Serial.print(axisY);// Vertical Bins
-        Serial.write(" ");
-        for (int i = 0; i < currentTable.xSize; i++)
-        {
-          byte value = currentTable.values[y][i];
-          if (value < 100)
-          {
-            Serial.write(" ");
-            if (value < 10)
-            {
-              Serial.write(" ");
-            }
-          }
-          Serial.print(value);
-          Serial.write(" ");
-        }
-        Serial.println("");
-      }
-      sendComplete = true;
+      currentTitleIndex = 158;
       break;
 
     case canbusPage:
-      //currentTitleIndex = 141;
+      //currentTitleIndex = 94;
       //To Display Values from Config Page 10
-      Serial.println((const __FlashStringHelper *)&pageTitles[103]);//special typecasting to enable suroutine that the F macro uses
+      Serial.println((const __FlashStringHelper *)&pageTitles[94]);//special typecasting to enable suroutine that the F macro uses
       for (pnt_configPage = &configPage9; pnt_configPage < ( (byte *)&configPage9 + npage_size[canbusPage]); pnt_configPage = (byte *)pnt_configPage + 1)
       {
         Serial.println(*((byte *)pnt_configPage));// Displaying byte values of config page 9 up to but not including the first array
@@ -1389,15 +1360,22 @@ void sendPageASCII()
       break;
 
     case warmupPage:
-      //NOT WRITTEN YET
       #ifndef SMALL_FLASH_MODE
-        Serial.println(F("\nPage has not been implemented yet"));
+      //currentTitleIndex = 102;
+      //currentTable = warmup page;
+      //To Display Values from Config Page 10
+      Serial.println((const __FlashStringHelper *)&pageTitles[102]); //special typecasting to enable suroutine that the F macro uses
+      for (pnt_configPage = &configPage10; pnt_configPage < ((byte *)&configPage10 + npage_size[warmupPage]); pnt_configPage = (byte *)pnt_configPage + 1)
+      {
+        Serial.println(*((byte *)pnt_configPage)); //   Displaying byte values of config page 10
+      }
+//        Serial.println(F("\nPage has not been implemented yet"));
       #endif
       sendComplete = true;
       break;
 
     case fuelMap2Page:
-      currentTitleIndex = 117;// the index to the first char of the third string in pageTitles
+      currentTitleIndex = 116;
       currentTable = fuelTable2;
       break;
 
@@ -1413,9 +1391,8 @@ void sendPageASCII()
   }
   if(!sendComplete)
   {
-    if (isMap)
+  if (isMap)
     {
-      //This is a do while loop that kicks in for the boostvvtPage
       do {
         const char spaceChar = ' ';
 
@@ -1466,30 +1443,88 @@ void sendPageASCII()
           Serial.write(spaceChar);
         }
         Serial.println();
-        if(currentTitleIndex == 121) //Check to see if on boostTable
+        switch (currentTitleIndex)
         {
-          currentTitleIndex = 132; //Change over to vvtTable mid display
-          currentTable = vvtTable;
+          case 83: // boostTable complete
+            currentTitleIndex = 126; // setup for next table
+            currentTable = vvtTable;
+            break;
+        
+          case 126: // vvt table complete
+            currentTitleIndex = 136;
+            currentTable = stagingTable;
+            break;
+
+//          case 136: //  staging table complete
+//           currentTitleIndex = 148;
+//            currentTable = boostTable;
+//            break;
+          case 136: //  staging table complete
+           currentTitleIndex = 0; // drop out of loop
+            break;
+     
+//          case 148: // vvt2 table complete
+//            currentTitleIndex = 0; // drop out of loop
+//            break;
+
+          
+          case 158: // FuelTrim 1 table complete
+            currentTitleIndex = 170;
+            currentTable = trim2Table;
+            break;
+          
+          case 170: // FuelTrim 2 table complete
+            currentTitleIndex = 182;
+            currentTable = trim3Table;
+            break;
+          
+          case 182: // FuelTrim 3 table complete
+            currentTitleIndex = 194;
+            currentTable = trim4Table;
+            break;
+
+//          #if (INJ_CHANNELS >= 6)
+
+//          case 194: // FuelTrim 4 table complete
+//            currentTitleIndex = 206;
+//            currentTable = trim5Table;
+//            break;
+
+//          case 206: // FuelTrim 5 table complete
+//            currentTitleIndex = 218;
+//            currentTable = trim6Table;
+//            break;
+          
+//          case 218: // FuelTrim 6 table complete
+//            currentTitleIndex = 230;
+//            currentTable = trim7Table;
+//            break;
+          
+//           case 230: // FuelTrim 7 table complete
+//            currentTitleIndex = 242;
+//            currentTable = trim8Table;
+//            break;
+          
+//          case 242: // FuelTrim 8 table complete
+//            currentTitleIndex = 0;  // drop out of loop
+//            break;
+
+//          #else
+                    
+          case 194: // FuelTrim 4 table complete
+            currentTitleIndex = 0;
+            break;
+
+//          #endif
+         
+         default:
+            currentTitleIndex = 0;  // drop out of loop
+            break;
         }
-        else { currentTitleIndex = 0; }
-      } while(currentTitleIndex == 132); //Should never loop unless going to display vvtTable
-    } //is map
+      } while (currentTitleIndex != 0); 
+    }
     else
     {
-      /*if(useChar)
-      {
-       while(pageTitles[currentTitleIndex])
-       {
-        Serial.print(pageTitles[currentTitleIndex]);
-        currentTitleIndex++;
-       }
-       Serial.println();
-       for(byte x=0;x<page_size;x++) Serial.println(*((byte *)pnt_configPage + x));
-      }
-      else
-      {*/
-      //All other bytes can simply be copied from the config table
-      //byte response[npage_size[currentPage]];
       for (byte x = 0; x < npage_size[currentPage]; x++)
       {
         //response[x] = *((byte *)pnt_configPage + x);
