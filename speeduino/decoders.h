@@ -147,6 +147,9 @@ uint16_t getRPM_ThirtySixMinus21();
 int getCrankAngle_ThirtySixMinus21();
 void triggerSetEndTeeth_ThirtySixMinus21();
 
+void triggerPri_Webber();
+void triggerSec_Webber();
+
 extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 extern void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
 extern uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
