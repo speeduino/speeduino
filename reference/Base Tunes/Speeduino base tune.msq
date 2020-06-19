@@ -1561,16 +1561,16 @@
         <constant digits="1" name="n2o_stage2_adderMin" units="ms">3.0</constant>
         <constant digits="1" name="n2o_stage2_adderMax" units="ms">1.5</constant>
         <constant digits="0" name="n2o_stage2_retard" units="Deg">5.0</constant>
-        <constant name="knock_mode">"Analog"</constant>
-        <constant name="knock_pin">"3"</constant>
+        <constant name="knock_mode">"Off"</constant>
+        <constant name="knock_pin">"0"</constant>
         <constant name="knock_trigger">"LOW"</constant>
         <constant name="knock_pullup">"Off"</constant>
         <constant name="knock_limiterDisable">"No"</constant>
         <constant name="knock_unused">"3"</constant>
         <constant name="knock_count">"3"</constant>
-        <constant digits="1" name="knock_threshold" units="Volts">7.5</constant>
+        <constant digits="1" name="knock_threshold" units="Volts">2.0</constant>
         <constant digits="0" name="knock_maxMAP" units="kPa">100.0</constant>
-        <constant digits="0" name="knock_maxRPM" units="RPM">1000.0</constant>
+        <constant digits="0" name="knock_maxRPM" units="RPM">7000.0</constant>
         <constant cols="1" digits="0" name="knock_window_rpms" rows="8" units="RPM">
          1000.0 
          2000.0 
@@ -1578,7 +1578,7 @@
          4000.0 
          5000.0 
          6000.0 
-         5000.0 
+         7000.0 
          8000.0 
       </constant>
         <constant cols="1" digits="0" name="knock_window_angle" rows="8" units="deg">
@@ -1613,13 +1613,13 @@
       </constant>        
         <constant digits="0" name="band_pass_frequency" units="Hz">3000.0</constant>   
         <constant digits="0" name="knock_sensor_output" units="mV">300.0</constant>
-        <constant digits="0" name="knock_maxRetard" units="Deg">3.0</constant>
-        <constant digits="0" name="knock_firstStep" units="Deg">1.0</constant>
-        <constant digits="0" name="knock_stepSize" units="Deg">2.0</constant>
-        <constant digits="1" name="knock_stepTime" units="Sec">2.0</constant>
+        <constant digits="0" name="knock_maxRetard" units="Deg">30.0</constant>
+        <constant digits="0" name="knock_firstStep" units="Deg">2.0</constant>
+        <constant digits="0" name="knock_stepSize" units="Deg">1.0</constant>
+        <constant digits="1" name="knock_stepTime" units="Sec">0.1</constant>
         <constant digits="1" name="knock_duration" units="Sec">0.2</constant>
         <constant digits="1" name="knock_recoveryStepTime" units="Sec">0.1</constant>
-        <constant digits="0" name="knock_recoveryStep" units="Deg">0.0</constant>
+        <constant digits="0" name="knock_recoveryStep" units="Deg">1.0</constant>
         <constant name="fuel2Algorithm">"MAP"</constant>
         <constant name="fuel2Mode">"Off"</constant>
         <constant name="fuel2SwitchVariable">"MAP"</constant>
