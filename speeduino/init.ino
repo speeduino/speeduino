@@ -2077,38 +2077,6 @@ void setPinMapping(byte boardID)
   
     #if defined(CORE_TEENSY35)
     case 57:
-#if defined(V1) // proto version
-      //Pin mappings as per the teensy 3.5 X3V0.1 board shield
-      // firing order 1-3-4-2 (only affects injectors - using wasted spark)
-      pinInjector1 = 5; // HW INJ1
-      pinInjector2 = 3; // HW INJ3
-      pinInjector3 = 2; // HW INJ4
-      pinInjector4 = 4; // HW INJ2
-      pinCoil1 = 14;    // fire 1 & 3
-      pinCoil2 = 15;    // fire 2 & 4
-
-      pinTrigger = 32;  // Crank Sensor pin
-      pinTrigger2 = 39; // Cam Sensor pin
-      pinTPS = A6;      // TPS input pin
-      pinMAP = A9;      // MAP sensor pin
-      pinIAT = A4;      // IAT sensor pin
-      pinCLT = A5;      // CLT sensor pin
-      pinO2 =  A8;      // Hego sensor pin
-      pinBat = A12;     // Battery reference voltage pin
-      pinTachOut = 25;  // Tacho output pin
-      pinIdle1 = 9;     // Single wire idle control pin
-      pinIdle2 = 10;    // Two wire idle control pin
-      pinFuelPump = 24; // Fuel pump output pin
-      pinFan = 11;      // Fan output pin
-      CS0 = 26;
-      pinKnockWin = 16;
-      SCK0 = 27; // alternate clock
-      // MISO0 = 12
-      // MOSI0 = 28;  (Alt)
-      // RX3 = 7
-      // TX3 = 8
-
-#else // V2 - beta version
       //Pin mappings as per the teensy 3.5 X3V0.2 board shield
       // firing order 1-3-4-2 (only affects injectors - using wasted spark)
 
@@ -2149,7 +2117,6 @@ void setPinMapping(byte boardID)
       // Trigger angle = 240 deg
       // injector rate = 170 cc/min
 
-#endif
       break;
  
       case 58:

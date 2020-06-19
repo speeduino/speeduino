@@ -20,10 +20,7 @@ void initialiseKnock()
     integratorGain = 121530 / configPage10.knock_sensor_output; // sensor out in mVpp scaled to Vpp
     // setup SPI for knock detector TPIC8101 - NB the chip uses CS to load values to internal registers
     uint8_t ret;
-    SPI.setSCK(SCK0); // alternate clock pin
-#if defined(V1)
-    SPI.setMOSI(28);
-#endif
+    SPI.setSCK(SCK0); // alternate clock pin to leave LED_BUILTIN free
     SPI.begin();      // init CPU hardware
     knockSettings = SPISettings(1000000, MSBFIRST, SPI_MODE1);
     SPI.beginTransaction(knockSettings);

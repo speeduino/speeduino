@@ -40,12 +40,7 @@
     #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
 //    #define DIAG
 //    #define KNOCK
-    #define V1               // temporary for proto X3 board
-    #if defined(V1)          // used elsewhere
-    #define DSERIAL Serial3  // X3 proto version
-    #else
     #define DSERIAL Serial1  // Barra and X3 beta version
-    #endif
 
   #elif defined(__IMXRT1062__)
     #define CORE_TEENSY40
