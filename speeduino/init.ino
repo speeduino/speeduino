@@ -47,10 +47,6 @@ void initialiseAll()
     initBoard(); //This calls the current individual boards init function. See the board_xxx.ino files for these.
     initialiseTimers();
 
-#if defined(DIAG)
-    DSERIAL.begin(115200);
-#endif
-
     Serial.begin(115200);
     #if defined(CANSerial_AVAILABLE)
       if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }

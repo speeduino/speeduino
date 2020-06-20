@@ -38,7 +38,6 @@
     #define CORE_TEENSY35
     #define BOARD_H "board_teensy35.h"
     #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
-//    #define DIAG
 //    #define KNOCK
     #define DSERIAL Serial1  // Barra and X3 beta version
 
@@ -48,16 +47,6 @@
   #endif
   #define INJ_CHANNELS 8
   #define IGN_CHANNELS 8
-  #if defined(DIAG)
-  volatile unsigned long DIAG1 = 0;
-  volatile unsigned long DIAG2 = 0;
-  volatile unsigned long DIAG3 = 0;
-  volatile unsigned long DIAG4 = 0;
-  volatile unsigned long DIAG5 = 0;
-  volatile unsigned long DIAG6 = 0;
-  volatile unsigned long DIAG7 = 0;
-  volatile unsigned long DIAG8 = 0;
-  #endif
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(STM32)
   #define CORE_STM32
