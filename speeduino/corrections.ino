@@ -29,7 +29,7 @@ unsigned long knockStartTime;
 byte lastKnockCount;
 int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
-byte aseTsnStart;
+uint16_t aseTaperStart;
 uint16_t dfcoStart;
 
 void initialiseCorrections()
@@ -102,7 +102,7 @@ uint16_t correctionsFuel()
   if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
 
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
-  if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
+  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
   sumCorrections = sumCorrections / powint(100,activeCorrections);
 
@@ -134,7 +134,7 @@ static inline byte correctionsFuel_new()
   currentStatus.launchCorrection = correctionLaunch(); numCorrections++;
 
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
-  if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
+  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
   sumCorrections = currentStatus.wueCorrection \
                   + correctionASEvalue \
@@ -181,11 +181,22 @@ Additional fuel % to be added when the engine is cranking
 uint16_t correctionCranking()
 {
   uint16_t crankingValue = 100;
-  //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { crankingValue = 100 + configPage2.crankingPct; }
+  //Check if we are actually cranking
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
   {
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
+  }
+  
+  //If we're not cranking, check if if cranking enrichment tapering to ASE should be done
+  else if ( (uint32_t) runSecsX10 <= configPage10.crankingEnrichTaper)
+  {
+    crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
+    //Taper start value needs to account for ASE that is now running, so total correction does not increase when taper begins
+    unsigned long taperStart = (unsigned long) crankingValue * 100 / currentStatus.ASEValue;
+    crankingValue = (uint16_t) map(runSecsX10, 0, configPage10.crankingEnrichTaper, taperStart, 100); //Taper from start value to 100%
+    if (crankingValue < 100) { crankingValue = 100; } //Sanity check
   }
   return crankingValue;
 }
@@ -210,14 +221,14 @@ byte correctionASE()
     {
       BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
       ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-      aseTsnStart = runSecsX10;
+      aseTaperStart = runSecsX10;
     }
     else
     {
-      if (( (runSecsX10 - aseTsnStart) < configPage2.aseTsnDelay ) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) //Cranking check needs to be here also, so cranking and afterstart enrichments won't run simultaneously
+      if ( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && ((runSecsX10 - aseTaperStart) < configPage2.aseTaperTime) ) //Cranking check needs to be here also, so cranking and afterstart enrichments won't run simultaneously
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-        ASEValue = 100 + map((runSecsX10 - aseTsnStart), 0, configPage2.aseTsnDelay,\
+        ASEValue = 100 + map((runSecsX10 - aseTaperStart), 0, configPage2.aseTaperTime,\
           table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
       }
       else
@@ -473,7 +484,7 @@ bool correctionDFCO()
   bool DFCOValue = false;
   if ( configPage2.dfcoEnabled == 1 )
   {
-    if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) 
+    if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) 
     {
       DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); 
       if ( DFCOValue == false) { dfcoStart = 0; }
@@ -485,6 +496,7 @@ bool correctionDFCO()
         if ( dfcoStart == 0 ) { dfcoStart = runSecsX10; }
         if( (runSecsX10 - dfcoStart) > configPage2.dfcoDelay ) { DFCOValue = true; }
       }
+      else { dfcoStart = 0; } //Prevent future activation right away if previous time wasn't activated
     } // DFCO active check
   } // DFCO enabled check
   return DFCOValue;
@@ -761,8 +773,8 @@ int8_t correctionKnock(int8_t advance)
   //First check is to do the window calculations (ASsuming knock is enabled)
   if( configPage10.knock_mode != KNOCK_MODE_OFF )
   {
-    knockWindowMin = table2D_getValue(&knockWindowStartTable, currentStatus.RPM);
-    knockWindowMax = knockWindowMin + table2D_getValue(&knockWindowDurationTable, currentStatus.RPM);
+    knockWindowMin = table2D_getValue(&knockWindowStartTable, currentStatus.RPMdiv100);
+    knockWindowMax = knockWindowMin + table2D_getValue(&knockWindowDurationTable, currentStatus.RPMdiv100);
   }
 
 

@@ -21,7 +21,7 @@
 #define KNOCK_MODE_DIGITAL  1
 #define KNOCK_MODE_ANALOG   2
 
-#define VSS_GEAR_HYSTERESIS 5
+#define VSS_GEAR_HYSTERESIS 10
 
 /*
 #if defined(CORE_AVR)
@@ -61,6 +61,7 @@ byte cltErrorCount = 0;
 
 static inline void instanteneousMAPReading() __attribute__((always_inline));
 static inline void readMAP() __attribute__((always_inline));
+static inline void validateMAP();
 void initialiseADC();
 void readTPS(bool=true); //Allows the option to override the use of the filter
 void readO2_2();
@@ -68,6 +69,8 @@ void flexPulse();
 void vssPulse();
 uint16_t getSpeed();
 byte getGear();
+byte getFuelPressure();
+byte getOilPressure();
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
 void readCLT(bool=true); //Allows the option to override the use of the filter

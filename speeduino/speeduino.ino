@@ -35,6 +35,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "storage.h"
 #include "crankMaths.h"
 #include "init.h"
+#include "engineProtection.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 int ignition1StartAngle = 0;
@@ -102,27 +103,29 @@ void loop()
         }
         
       }
-      //if can or secondary serial interface is enabled then check for requests.
-      if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+      #if defined(CANSerial_AVAILABLE)
+        //if can or secondary serial interface is enabled then check for requests.
+        if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+        {
+          if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
           {
-            if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-                {
-                  if (CANSerial.available() > 0)  { secondserial_Command(); }
-                }
+            if (CANSerial.available() > 0)  { secondserial_Command(); }
           }
-      #if  defined(CORE_TEENSY)
+        }
+      #endif
+      #if defined(CORE_TEENSY)
           //currentStatus.canin[12] = configPage9.enable_intcan;
           if (configPage9.enable_intcan == 1) // use internal can module
           {
             //check local can module
             // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
             while (Can0.read(inMsg) ) 
-                 {
-                  can_Command();
-                  //Can0.read(inMsg);
-                  //currentStatus.canin[12] = inMsg.buf[5];
-                  //currentStatus.canin[13] = inMsg.id;
-                 } 
+            {
+              can_Command();
+              //Can0.read(inMsg);
+              //currentStatus.canin[12] = inMsg.buf[5];
+              //currentStatus.canin[13] = inMsg.id;
+            } 
           }
       #endif
       
@@ -143,6 +146,7 @@ void loop()
     {
       currentStatus.longRPM = getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
+      currentStatus.RPMdiv100 = currentStatus.RPM / 100;
       FUEL_PUMP_ON();
       currentStatus.fuelPumpOn = true; //Not sure if this is needed.
     }
@@ -226,37 +230,6 @@ void loop()
         else { currentStatus.flatShiftingHard = false; }
       }
 
-
-
-      //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
-      if( (configPage6.boostCutType > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2)) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
-      {
-        switch(configPage6.boostCutType)
-        {
-          case 1:
-            BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-            BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-            break;
-          case 2:
-            BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-            BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-            break;
-          case 3:
-            BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-            BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-            break;
-          default:
-            //Shouldn't ever happen, but just in case, disable all cuts
-            BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-            BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-        }
-      }
-      else
-      {
-        BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-        BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-      }
-
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
 
@@ -282,6 +255,8 @@ void loop()
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
+      currentStatus.fuelPressure = getFuelPressure();
+      currentStatus.oilPressure = getOilPressure();
 
       if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
@@ -448,6 +423,9 @@ void loop()
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN);
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
           if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); }
+
+          //Check whether the user has selected to disable to the fan during cranking
+          if(configPage2.fanWhenCranking == 0) { FAN_OFF(); }
         }
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
@@ -699,9 +677,6 @@ void loop()
 
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
-      if (currentStatus.RPM > ((unsigned int)(configPage4.HardRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); } //Hardcut RPM limit
-      else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM); }
-
 
       //Set dwell
       //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage4. This number therefore needs to be multiplied by 100 to get dwell in uS
@@ -744,6 +719,61 @@ void loop()
       //     interrupts();
       //   }
       // }
+      
+      //Check for any of the engine protections or rev limiters being turned on
+      if(checkEngineProtect() || currentStatus.launchingHard || currentStatus.flatShiftingHard)
+      {
+        if(currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM)
+        {
+          if(configPage2.hardCutType == HARD_CUT_FULL) 
+          { 
+            switch(configPage6.engineProtectType)
+            {
+              case PROTECT_CUT_OFF:
+                ignitionOn = true;
+                fuelOn = true;
+                break;
+              case PROTECT_CUT_IGN:
+                ignitionOn = false;
+                break;
+              case PROTECT_CUT_FUEL:
+                fuelOn = false;
+                break;
+              case PROTECT_CUT_BOTH:
+                ignitionOn = false;
+                fuelOn = false;
+                break;
+              default:
+                ignitionOn = false;
+                fuelOn = false;
+                break;
+            }
+          }
+          else 
+          { 
+            if(rollingCutCounter >= 2) //Vary this number to change the intensity of the roll. The higher the number, the closer is it to full cut
+            { 
+              //Rolls through each of the active ignition channels based on how many revolutions have taken place
+              //curRollingCut = ( (currentStatus.startRevolutions / 2) % maxIgnOutputs) + 1;
+              rollingCutCounter = 0;
+              ignitionOn = true;
+              curRollingCut = 0;
+            }
+            else
+            {
+              if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //
+              if (rollingCutLastRev != currentStatus.startRevolutions)
+              {
+                rollingCutLastRev = currentStatus.startRevolutions;
+                rollingCutCounter++;
+              }
+              ignitionOn = false; //Finally the ignition is fully cut completely
+            }
+          } //Hard/Rolling cut check
+        } //RPM Check
+        else { currentStatus.engineProtectStatus = 0; } //Force all engine protection flags to be off as we're below the minimum RPM
+      } //Protection active check
+      else { curRollingCut = 0; } //Disables the rolling hard cut
 
 #if INJ_CHANNELS >= 1
       if (fuelOn && !BIT_CHECK(currentStatus.status1, BIT_STATUS1_BOOSTCUT))
@@ -921,40 +951,14 @@ void loop()
           ignition2StartAngle -= 5;
           ignition3StartAngle -= 5;
           ignition4StartAngle -= 5;
+          ignition5StartAngle -= 5;
+          ignition6StartAngle -= 5;
+          ignition7StartAngle -= 5;
+          ignition8StartAngle -= 5;
         }
       }
       else { fixedCrankingOverride = 0; }
 
-      //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
-      //Check for any of the hard cut rev limits being on
-      if(currentStatus.launchingHard || BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) || BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) || currentStatus.flatShiftingHard)
-      {
-        if(configPage2.hardCutType == HARD_CUT_FULL) { ignitionOn = false; }
-        else 
-        { 
-          if(rollingCutCounter >= 2) //Vary this number to change the intensity of the roll. The higher the number, the closer is it to full cut
-          { 
-            //Rolls through each of the active ignition channels based on how many revolutions have taken place
-            //curRollingCut = ( (currentStatus.startRevolutions / 2) % maxIgnOutputs) + 1;
-            rollingCutCounter = 0;
-            ignitionOn = true;
-            curRollingCut = 0;
-          }
-          else
-          {
-            if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //
-            if (rollingCutLastRev != currentStatus.startRevolutions)
-            {
-              rollingCutLastRev = currentStatus.startRevolutions;
-              rollingCutCounter++;
-            }
-            ignitionOn = false; //Finally the ignition is fully cut completely
-          }
-        } 
-      }
-      else { curRollingCut = 0; } //Disables the rolling hard cut
-
-      //if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) && !BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) && !currentStatus.flatShiftingHard)
       if(ignitionOn)
       {
         //Refresh the current crank angle info

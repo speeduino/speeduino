@@ -41,16 +41,22 @@ void fanControl()
 
     if ( (currentStatus.coolant >= onTemp) && (fanPermit == true) )
     {
-      //Fan needs to be turned on. Checked for normal or inverted fan signal
-      if( configPage6.fanInv == 0 ) { FAN_PIN_HIGH(); }
-      else { FAN_PIN_LOW(); }
+      //Fan needs to be turned on.
+      if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
+      {
+        //If the user has elected to disable the fan during cranking, make sure it's off 
+        FAN_OFF();
+      }
+      else 
+      {
+        FAN_ON(); 
+      }
       currentStatus.fanOn = true;
     }
     else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
-      //Fan needs to be turned off. Checked for normal or inverted fan signal
-      if( configPage6.fanInv == 0 ) { FAN_PIN_LOW(); } 
-      else { FAN_PIN_HIGH(); }
+      //Fan needs to be turned off. 
+      FAN_OFF();
       currentStatus.fanOn = false;
     }
   }

@@ -38,6 +38,7 @@ struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing adv
 struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
 struct table2D knockWindowStartTable;
 struct table2D knockWindowDurationTable;
+struct table2D oilPressureProtectTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 volatile PORT_TYPE *inj1_pin_port;
@@ -204,6 +205,8 @@ byte pinFlex; //Pin with the flex sensor attached
 byte pinVSS;
 byte pinBaro; //Pin that an al barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
+byte pinFuelPressure;
+byte pinOilPressure;
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   byte pinMC33810_1_CS;
@@ -220,6 +223,13 @@ struct config6 configPage6;
 struct config9 configPage9;
 struct config10 configPage10;
 
-byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
-byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
+//byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
+//byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
 byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
+
+uint16_t cltCalibration_bins[32];
+uint16_t cltCalibration_values[32];
+struct table2D cltCalibrationTable_new;
+uint16_t iatCalibration_bins[32];
+uint16_t iatCalibration_values[32];
+struct table2D iatCalibrationTable_new;

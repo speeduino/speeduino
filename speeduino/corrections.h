@@ -41,7 +41,7 @@ extern unsigned long knockStartTime;
 extern byte lastKnockCount;
 extern int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 extern int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
-extern byte aseTsnStart;
+extern uint16_t aseTaperStart;
 extern uint16_t dfcoStart;
 
 #endif // CORRECTIONS_H
