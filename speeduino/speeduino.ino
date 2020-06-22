@@ -253,7 +253,6 @@ void loop()
       readBat();
       nitrousControl();
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
-      imccControl();
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
       currentStatus.fuelPressure = getFuelPressure();

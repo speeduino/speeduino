@@ -422,15 +422,3 @@ void ftm1_isr(void)
 #elif defined(CORE_TEENSY40)
 //DO STUFF HERE
 #endif
-
-void imccControl()
-{
-  if (currentStatus.RPM > IMCC_HI_RPM)
-  {
-    digitalWrite(pinIMCC,1);
-  }
-  else if (currentStatus.RPM < IMCC_LO_RPM)
-  {
-    digitalWrite(pinIMCC,0);
-  }
-}

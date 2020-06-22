@@ -37,7 +37,7 @@ volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
 volatile uint16_t last250msLoopCount = 1000; //Set to effectively random number on startup. Just need this to be different to what mainLoopCount equals initially (Probably 0)
 
 #if defined (CORE_TEENSY)
-//  IntervalTimer lowResTimer;
+//  IntervalTimer lowResTimer; - using bare metal version of PIT
   void oneMSInterval();
 #elif defined(CORE_STM32_OFFICIAL) || defined(CORE_STM32_GENERIC)
   void oneMSInterval();

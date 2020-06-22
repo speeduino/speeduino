@@ -3,7 +3,6 @@
 #include <Arduino.h>
 #include "table.h"
 #include <assert.h>
-#include <SPI.h>
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define BOARD_DIGITAL_GPIO_PINS 54
@@ -36,8 +35,6 @@
     #define CORE_TEENSY35
     #define BOARD_H "board_teensy35.h"
     #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
-    #define DSERIAL Serial1  // Barra and X3 beta version
-
   #elif defined(__IMXRT1062__)
     #define CORE_TEENSY40
     #define BOARD_H "board_teensy40.h"
@@ -273,9 +270,6 @@
 #define FOUR_STROKE         0
 #define TWO_STROKE          1
 
-#define IMCC_HI_RPM   1500
-#define IMCC_LO_RPM   1400
-
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
 #define BATTV_COR_MODE_WHOLE 0
@@ -355,7 +349,6 @@ extern struct table2D flexAdvTable;   //6 bin flex fuel correction table for tim
 extern struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
 extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
-extern struct table2D knockWindowSensitivityTable;  // 8 bin
 extern struct table2D oilPressureProtectTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
@@ -402,8 +395,6 @@ extern volatile PORT_TYPE *triggerPri_pin_port;
 extern volatile PINMASK_TYPE triggerPri_pin_mask;
 extern volatile PORT_TYPE *triggerSec_pin_port;
 extern volatile PINMASK_TYPE triggerSec_pin_mask;
-extern volatile PORT_TYPE *knock_win_pin_port;
-extern volatile PINMASK_TYPE knock_win_pin_mask;
 
 //These need to be here as they are used in both speeduino.ino and scheduler.ino
 extern bool channel1InjEnabled;
@@ -456,7 +447,6 @@ extern byte secondaryTriggerEdge;
 extern int CRANK_ANGLE_MAX;
 extern int CRANK_ANGLE_MAX_IGN;
 extern int CRANK_ANGLE_MAX_INJ; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
-extern uint8_t knockRetard;  
 extern volatile uint32_t runSecsX10; /**< Counter of seconds since cranking commenced (similar to runSecs) but in increments of 0.1 seconds */
 extern volatile byte HWTest_INJ; /**< Each bit in this variable represents one of the injector channels and it's HW test status */
 extern volatile byte HWTest_INJ_50pc; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
@@ -474,7 +464,7 @@ extern volatile byte LOOP_TIMER;
 #define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) || ((pin) == pinCoil5) || ((pin) == pinCoil6) || ((pin) == pinCoil7) || ((pin) == pinCoil8) )
 #define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
 #define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) )
-#define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) || ((pin) == pinIMCC) || ((pin) == pinKnockWin) )
+#define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) )
 
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
@@ -1076,61 +1066,58 @@ struct config10 {
   byte knock_threshold; //Byte 94
   byte knock_maxMAP; //Byte 95
   byte knock_maxRPM; //Byte 96
-  byte knock_window_rpms[8]; //Bytes 97-104
-  byte knock_window_angle[8]; //Bytes 105-112
-  byte knock_window_dur[8]; //Bytes 113-120
-  byte knock_window_sensitivity[8]; //Bytes 121-128
-  uint16_t band_pass_frequency; // Knock sensor centre frequency bytes 129,130
-  uint16_t knock_sensor_output; // Bytes 131, 132
+  byte knock_window_rpms[6]; //Bytes 97-102
+  byte knock_window_angle[6]; //Bytes 103-108
+  byte knock_window_dur[6]; //Bytes 109-114
 
-  byte knock_maxRetard; //Byte 133
-  byte knock_firstStep; //Byte 134
-  byte knock_stepSize; //Byte 135
-  byte knock_stepTime; //Byte 136
+  byte knock_maxRetard; //Byte 115
+  byte knock_firstStep; //Byte 116
+  byte knock_stepSize; //Byte 117
+  byte knock_stepTime; //Byte 118
         
-  byte knock_duration; //Time after knock retard starts that it should start recovering. Byte 137
-  byte knock_recoveryStepTime; //Byte 138
-  byte knock_recoveryStep; //Byte 139
+  byte knock_duration; //Time after knock retard starts that it should start recovering. Byte 119
+  byte knock_recoveryStepTime; //Byte 120
+  byte knock_recoveryStep; //Byte 121
 
-  //Byte 140
+  //Byte 122
   byte fuel2Algorithm : 3;
   byte fuel2Mode : 3;
   byte fuel2SwitchVariable : 2;
 
-  //Bytes 141-142
+  //Bytes 123-124
   uint16_t fuel2SwitchValue;
 
-  //Byte 143
+  //Byte 125
   byte fuel2InputPin : 6;
   byte fuel2InputPolarity : 1;
   byte fuel2InputPullup : 1;
 
-  byte vvtCLholdDuty; //Byte 144
-  byte vvtCLKP; //Byte 145
-  byte vvtCLKI; //Byte 146
-  byte vvtCLKD; //Byte 147
-  uint16_t vvtCLMinAng; //Bytes 148-149
-  uint16_t vvtCLMaxAng; //Bytes 150-151
+  byte vvtCLholdDuty; //Byte 126
+  byte vvtCLKP; //Byte 127
+  byte vvtCLKI; //Byte 128
+  byte vvtCLKD; //Byte 129
+  uint16_t vvtCLMinAng; //Bytes 130-131
+  uint16_t vvtCLMaxAng; //Bytes 132-133
 
-  byte crankingEnrichTaper; //Byte 152
+  byte crankingEnrichTaper; //Byte 134
 
-  byte fuelPressureEnable : 1;  // Byte 153
+  byte fuelPressureEnable : 1;
   byte oilPressureEnable : 1;
   byte oilPressureProtEnbl : 1;
-  byte unused10_153 : 5;
+  byte unused10_135 : 5;
 
-  byte fuelPressurePin : 4; // Byte 154
+  byte fuelPressurePin : 4;
   byte oilPressurePin : 4;
 
-  int8_t fuelPressureMin; // Byte 155
-  byte fuelPressureMax;   // Byte 156
-  int8_t oilPressureMin;  // Byte 157
-  byte oilPressureMax;    // Byte 158
+  int8_t fuelPressureMin;
+  byte fuelPressureMax;
+  int8_t oilPressureMin;
+  byte oilPressureMax;
 
-  byte oilPressureProtRPM[4]; // Bytes 159-162
-  byte oilPressureProtMins[4];  // Bytes 163-166
+  byte oilPressureProtRPM[4];
+  byte oilPressureProtMins[4];
 
-  byte unused11_167_191[25]; //Bytes 167-191
+  byte unused11_135_191[43]; //Bytes 135-191
 
 #if defined(CORE_AVR)
   };
@@ -1193,13 +1180,6 @@ extern byte pinBoost;
 extern byte pinVVT_1;		// vvt output 1
 extern byte pinVVT_2;		// vvt output 2
 extern byte pinFan;       // Cooling fan output
-extern byte pinIMCC;     // Intake Manifold Charge Control
-extern byte pinKnockWin;
-extern byte CS0;  // TPC8101 - knock
-extern byte CS1;  // FLASH on PCB
-extern byte CS2;  // DriveByWire processor
-extern byte SCK0; // alternative clock - leave LED_BUILTIN = 13 available
-
 extern byte pinStepperDir; //Direction pin for the stepper motor driver
 extern byte pinStepperStep; //Step pin for the stepper motor driver
 extern byte pinStepperEnable; //Turning the DRV8825 driver on/off
@@ -1211,6 +1191,12 @@ extern byte pinBaro; //Pin that an external barometric pressure sensor is attach
 extern byte pinResetControl; // Output pin used control resetting the Arduino
 extern byte pinFuelPressure;
 extern byte pinOilPressure;
+extern byte pinKnockWin;
+extern byte pinIMCC;
+extern byte SCK0;
+extern byte CS0;
+extern byte CS1;
+extern byte CS2;
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   extern byte pinMC33810_1_CS;

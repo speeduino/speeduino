@@ -624,7 +624,6 @@ void flexPulse()
   ++flexCounter;
 }
 
-#if !defined(CORE_TEENSY35)
 /*
  * The interrupt function for pulses from a knock conditioner / controller
  * 
@@ -641,7 +640,6 @@ void knockPulse()
   else { ++knockCounter; } //Knock has already started, so just increment the counter for this
 
 }
-#endif
 
 /**
  * @brief The ISR function for VSS pulses

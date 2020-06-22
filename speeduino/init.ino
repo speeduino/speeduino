@@ -173,19 +173,14 @@ void initialiseAll()
 
     knockWindowStartTable.valueSize = SIZE_BYTE;
     knockWindowStartTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    knockWindowStartTable.xSize = 8;
+    knockWindowStartTable.xSize = 6;
     knockWindowStartTable.values = configPage10.knock_window_angle;
     knockWindowStartTable.axisX = configPage10.knock_window_rpms;
     knockWindowDurationTable.valueSize = SIZE_BYTE;
     knockWindowDurationTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    knockWindowDurationTable.xSize = 8;
+    knockWindowDurationTable.xSize = 6;
     knockWindowDurationTable.values = configPage10.knock_window_dur;
     knockWindowDurationTable.axisX = configPage10.knock_window_rpms;
-    knockWindowSensitivityTable.valueSize = SIZE_BYTE;
-    knockWindowSensitivityTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    knockWindowSensitivityTable.xSize = 8;
-    knockWindowSensitivityTable.values = configPage10.knock_window_sensitivity;
-    knockWindowSensitivityTable.axisX = configPage10.knock_window_rpms;
 
     oilPressureProtectTable.valueSize = SIZE_BYTE;
     oilPressureProtectTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
@@ -2132,6 +2127,7 @@ void setPinMapping(byte boardID)
       pinVVT_1    = 37; // VVT1 output
       pinVVT_2    = 38; // VVT2 output
       pinVSS      = 39; // Vehicle Speed Control
+// pinTPS  = A20;  // 39 - alt source of TPS for bench testing without DriveByWire
       pinFlex     = 47; // Flex sensor input
       pinBoost    = 48; // Boost control output
       pinIdleUp   = 50; // Idle Up output
