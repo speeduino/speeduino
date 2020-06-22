@@ -39,6 +39,7 @@ struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adju
 struct table2D knockWindowStartTable;
 struct table2D knockWindowDurationTable;
 struct table2D oilPressureProtectTable;
+struct table2D fanPWMTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 volatile PORT_TYPE *inj1_pin_port;

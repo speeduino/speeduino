@@ -188,6 +188,12 @@ void initialiseAll()
     oilPressureProtectTable.values = configPage10.oilPressureProtMins;
     oilPressureProtectTable.axisX = configPage10.oilPressureProtRPM;
 
+    fanPWMTable.valueSize = SIZE_BYTE;
+    fanPWMTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    fanPWMTable.xSize = 4;
+    fanPWMTable.values = configPage10.PWMFanDuty;
+    fanPWMTable.axisX = configPage10.fanPWMBins;
+
     cltCalibrationTable_new.valueSize = SIZE_INT;
     cltCalibrationTable_new.axisSize = SIZE_INT;
     cltCalibrationTable_new.xSize = 32;

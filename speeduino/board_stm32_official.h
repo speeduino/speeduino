@@ -168,10 +168,15 @@ extern "C" char* sbrk(int incr);
 #define ENABLE_VVT_TIMER()    (TIM1)->SR = ~TIM_FLAG_CC3; (TIM1)->DIER |= TIM_DIER_CC3IE
 #define DISABLE_VVT_TIMER()   (TIM1)->DIER &= ~TIM_DIER_CC3IE
 
+#define ENABLE_FAN_TIMER()  (TIM1)->CCER |= TIM_CCER_CC1E
+#define DISABLE_FAN_TIMER() (TIM1)->CCER &= ~TIM_CCER_CC1E
+
 #define BOOST_TIMER_COMPARE   (TIM1)->CCR2
 #define BOOST_TIMER_COUNTER   (TIM1)->CNT
 #define VVT_TIMER_COMPARE     (TIM1)->CCR3
 #define VVT_TIMER_COUNTER     (TIM1)->CNT
+#define FAN_TIMER_COMPARE     (TIM1)->CCR1
+#define FAN_TIMER_COUNTER     (TIM1)->CNT
 
 /*
 ***********************************************************************************************************
