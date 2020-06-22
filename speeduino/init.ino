@@ -2087,15 +2087,16 @@ void setPinMapping(byte boardID)
       pinTrigger = 15;  // Crank Sensor 
       pinTrigger2 = 19; // Cam Sensor 
 
-      pinIAT = A4;      // IAT sensor 
-      pinTPS = A6;      // TPS input 
-      pinCLT = A7;      // CLT sensor 
-      pinO2 =  A8;      // Hego sensor 
-      pinMAP = A9;      // MAP sensor 
-      pinBat = A12;     // Battery reference voltage 
+      pinIAT = A4;      // 18 IAT sensor 
+      pinTPS = A6;      // 20 TPS input 
+      pinCLT = A7;      // 21 CLT sensor 
+      pinO2 =  A8;      // 22 Hego sensor 
+      pinMAP = A9;      // 23 MAP sensor 
+      pinBat = A12;     // 31 Battery reference voltage 
 
       pinIdle1 = 9;     // Single wire idle control 
       pinIdle2 = 10;    // Two wire idle control 
+      pinVSS = 16;      // Vehicle Speed Sensor 
       pinFan = 24;      // Fan output 
       pinKnockWin = 25; // TPIC8101 integrate/hold
       pinTachOut = 26;  // Tacho output 
@@ -2125,6 +2126,7 @@ void setPinMapping(byte boardID)
       pinInjector6 = 10;
       pinInjector7 = 22;
       pinInjector8 = 23;
+
       pinCoil1 = 21;
       pinCoil2 = 20;
       pinCoil3 = 19;
@@ -2133,38 +2135,45 @@ void setPinMapping(byte boardID)
       pinCoil6 = 16;
       pinCoil7 = 30;
       pinCoil8 = 31;      
-      pinVVT_1 = 37;     // VVT1 
-      pinVVT_2 = 38;     // VVT2       
-      pinTrigger = 26;  // CAS 
-      pinTrigger2 = 28; // ECam Sensor 
-      pinTrigger3 = 27; // ICam Sensor      
-      pinTPS = A26;     // TPS input  - not used with Ford Barra
-      pinMAP = A15;     // MAP sensor 
-      pinIAT = A11;     // IAT sensor 
-      pinCLT = A10;     // CLT sensor 
-      pinO2 =  A21;     // O2 sensor 
-      pinO2_2 = A23;    // O2-2 sensor 
-      pinBat = A22;     // Battery reference voltage 
-      pinBaro = A25;    // Baro sensor 
-      pinTachOut = 2;   // Tacho output 
-      pinBoost = 40;    // Boost control
-      pinFuelPump = 36; // Fuel pump output
-      pinLaunch = 25;   // Input
-      pinFlex = 39;     // Flex sensor (Must be external interrupt enabled)
-      pinFan = 35;      // Fan output
-      pinIMCC = 29;     // Intake Manifold Charge Control (Ford L6 Barra)        
+
+      pinCLT  = A10;    // A10 CLT sensor 
+      pinIAT  = A11;    // A11 IAT sensor 
+      pinMAP  = A15;    // 34 MAP sensor 
+      pinO2   = A21;    // A21 O2 sensor 
+      pinBat  = A22;    // A22 Battery reference voltage 
+      pinO2_2 = A23;    // 49 O2-2 sensor 
+      pinEMAP = A25;    // A24
+      pinBaro = A26;    // A26 Baro sensor 
+
+      pinTachOut  = 2;  // Tacho output 
+      SCK0        = 14; // Flash, Knock and Throttle Clock (alternate clock)
       pinKnockWin = 24; // Integrate/Hold for TPIC8101
-      // special pins
-      CS0 = 32;         // Chip Select; Knock
-      CS1 = 33;         // Chip select; Flash
-      CS2 = 15;         // Chip select; DriveByWire Throttle
-      SCK0 = 14;        // Flash, Knock and Throttle Clock (alternate clock)
-      // RX1 = 0
-      // RX2 = 1
-      // CANTX = 3;
-      // CANRX = 4;
+      pinLaunch   = 25; // Launch input
+      pinTrigger  = 26; // Crank sensor 
+      pinTrigger3 = 27; // ICam Sensor      
+      pinTrigger2 = 28; // ECam Sensor 
+      pinIMCC     = 29; // Intake Manifold Charge Control (Ford L6 Barra)        
+      pinFan      = 35; // Fan output
+      pinFuelPump = 36; // Fuel pump output
+      pinVVT_1    = 37; // VVT1 output
+      pinVVT_2    = 38; // VVT2 output
+      pinVSS      = 39; // Vehicle Speed Control
+      pinFlex     = 47; // Flex sensor input
+      pinBoost    = 48; // Boost control output
+      pinIdleUp   = 50; // Idle Up output
+
+      // reserved pins
+      CS0      = 32;         // Chip Select; Knock
+      CS1      = 33;         // Chip select; Flash
+      CS2      = 15;         // Chip select; DriveByWire Throttle
+      // RX1   = 0
+      // RX2   = 1
+      // CANTX = 3
+      // CANRX = 4
       // MOSI0 = 11 
-      // MISO0 = 12 
+      // MISO0 = 12
+      // LED   = 13
+
       // trigger angle = 300
       // injector rate = ?? cc/pin
       break;    
