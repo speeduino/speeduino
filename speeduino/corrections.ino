@@ -20,7 +20,6 @@ Flood clear mode etc.
 #include "maths.h"
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
-#include "knock.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
 PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
@@ -769,34 +768,17 @@ int8_t correctionSoftFlatShift(int8_t advance)
 
 int8_t correctionKnock(int8_t advance)
 {
-#if !defined(CORE_TEENSY35)&&defined(KNOCK)
   byte knockRetard = 0;
-#endif
   //First check is to do the window calculations (ASsuming knock is enabled)
   if( configPage10.knock_mode != KNOCK_MODE_OFF )
   {
-  #if defined(CORE_TEENSY35)&&defined(KNOCK)
-    int tsRpmVal = currentStatus.RPM/100; // to match value stored by Tuner Studio
-    knockWindowDelay = table2D_getValue(&knockWindowStartTable, tsRpmVal);
-    knockWindowSize = table2D_getValue(&knockWindowDurationTable, tsRpmVal);
-#else
     knockWindowMin = table2D_getValue(&knockWindowStartTable, currentStatus.RPMdiv100);
     knockWindowMax = knockWindowMin + table2D_getValue(&knockWindowDurationTable, currentStatus.RPMdiv100);
-  #endif
   }
 
 
   if( (configPage10.knock_mode == KNOCK_MODE_DIGITAL)  )
   {
-#if defined(CORE_TEENSY35)&&defined(KNOCK)
-// Each ign pulse isr starts PIT2 with knock window start countdown. PIT2 triggers PIT2 with knock window duration countdown
-// the following computes the countdown values.
-// Convert degrees to PIT_countdown_val, PIT clock 60Mhz, counts down to 0
-// Timing algorithm ((60000000/(currentStatus.RPM/60)) * (number_of_degrees/360)) - 1
-  uint32_t down_count = 10000000/currentStatus.RPM;
-  knockWindowStartDelay = (down_count * knockWindowDelay) - 1;  // global (knockWindowDelay in deg)
-  knockWindowDuration = (down_count * knockWindowSize) - 1;     // global - (uSec knockWindowSize in deg)
-#else
     //
     if(knockCounter > configPage10.knock_count)
     {
@@ -812,7 +794,6 @@ int8_t correctionKnock(int8_t advance)
         knockRetard = configPage10.knock_firstStep;
       }
     }
-#endif
   }
   return advance - knockRetard;
 }

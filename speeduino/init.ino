@@ -14,7 +14,6 @@
 #include "corrections.h"
 #include "idle.h"
 #include "table.h"
-#include "knock.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 #include EEPROM_LIB_H 
 
@@ -252,25 +251,8 @@ void initialiseAll()
     closeInjector8();
     #endif
 
-#if defined(CORE_TEENSY35)
-    // new tacho    
-    // longest permissable tach duration is 50% of time between ign events used for tacho pulse
-    // if calculated time is greater than TunerStudio pulse duration, then use TS pulse duration
-
-    int maxCalcDuration = 0;  // microsec
-
-    // PIT clock - 60MHz - PIT counts down to 0 for interrupt
-    tachPulseDuration =  (configPage2.tachoDuration * 1000 * 60) - 1; // pulse duration from TS, convert to uS (mS x 1000 x 60)
-    // longest duration in uS for max revs at nCyl and 50% dc
-    maxCalcDuration = 60000000/(((configPage4.HardRevLim*100)/60) * configPage2.nCylinders) - 1;
-    if (maxCalcDuration < tachPulseDuration)
-    {
-      tachPulseDuration = maxCalcDuration;
-    }
-#endif
-
     //Set the tacho output default state
-//    digitalWrite(pinTachOut, HIGH); **** can't be here, pinTachOut not yet defined. ****
+    digitalWrite(pinTachOut, HIGH);
     //Perform all initialisations
     initialiseSchedulers();
     //initialiseDisplay();
@@ -279,12 +261,6 @@ void initialiseAll()
     initialiseAuxPWM();
     initialiseCorrections();
     initialiseADC();
-#if defined(KNOCK)
-    if (configPage10.knock_mode == KNOCK_MODE_DIGITAL)
-    {
-      initialiseKnock();
-    }
-#endif
 
     //Lookup the current MAP reading for barometric pressure
     instanteneousMAPReading();
@@ -1179,8 +1155,6 @@ void initialiseAll()
       if(channel8InjEnabled == true) { setFuelSchedule8(100, (primingValue * 100 * 5)); }
       #endif
     }
-    // set tacho default state
-    TACHO_PULSE_HIGH();
 
     initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
@@ -2599,10 +2573,6 @@ void setPinMapping(byte boardID)
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
   pump_pin_port = portOutputRegister(digitalPinToPort(pinFuelPump));
   pump_pin_mask = digitalPinToBitMask(pinFuelPump);
-#if defined(KNOCK)
-  knock_win_pin_port = portOutputRegister(digitalPinToPort(pinKnockWin));
-  knock_win_pin_mask = digitalPinToBitMask(pinKnockWin);
-#endif
 
   //And for inputs
   #if defined(CORE_STM32)

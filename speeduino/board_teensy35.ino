@@ -4,7 +4,6 @@
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
-#include "knock.h"
 
 void initBoard()
 {
@@ -167,27 +166,6 @@ void initBoard()
     PIT_TCTRL0 |= PIT_TCTRL_TIE; // enable interrupt;
     PIT_TCTRL0 |= PIT_TCTRL_TEN; // timer 0 enable
 
-    // Use PIT1 for Tacho duration (oneshot)
-    PIT_LDVAL1 = tach_pulse_duration;
-    PIT_TFLG1 = 1;               // clear any interrupts
-    PIT_TCTRL1 |= PIT_TCTRL_TIE; // enable interrupt;
-    NVIC_ENABLE_IRQ(IRQ_PIT_CH1);
-
-#if defined(KNOCK)
-    if (configPage10.knock_mode == KNOCK_MODE_DIGITAL)
-    {
-      // Use PIT2 for Knock window start (oneshot)
-      PIT_TFLG2 = 1;               // clear any interrupts
-      PIT_TCTRL2 |= PIT_TCTRL_TIE; // enable interrupt;
-      NVIC_ENABLE_IRQ(IRQ_PIT_CH2);
-
-      // Use PIT3 for Knock window duration (oneshot)
-      PIT_TFLG3 = 1;               // clear any interrupts
-      PIT_TCTRL3 |= PIT_TCTRL_TIE; // enable interrupt;
-      NVIC_ENABLE_IRQ(IRQ_PIT_CH3);
-    }
-#endif
-
     /*
     ***********************************************************************************************************
     * Schedules
@@ -338,57 +316,4 @@ void pit0_isr() // free running one mS timer
   PIT_TFLG0 = 1; // clear interrupt - loads timer value, restarts timer countdown
   oneMSInterval();
 }
-
-void pit1_isr() // Tach pulse end (oneshot)
-{
-  PIT_TCTRL1 &= ~PIT_TCTRL_TEN; // disable PIT1
-  PIT_TFLG1 = 1;                // clear interrupt flag - reloads (fixed) countdown value from PIT_LDVAL1
-  TACHO_PULSE_HIGH();
-}
-
-// called by each ignition isr at the end of the ign dwell
-static inline void launchKnockWindow()
-{
-  PIT_LDVAL2 = knockWindowStartDelay;
-  PIT_TFLG2 = 1;               // clear interrupt flag
-  PIT_TCTRL2 |= PIT_TCTRL_TEN; // start timer
-}
-
-#if defined(KNOCK)
-// PIT2 (oneshot) determines the time between ignition pulse start and knock window start
-// when PIT2 interrupts, start the knock window duration timer PIT3
-void pit2_isr() // (oneshot)
-{
-  PIT_TCTRL2 &= ~PIT_TCTRL_TEN; // stop PIT2
-  PIT_TFLG2 = 1;                // clear interrupt flag
-  // start knock window duration timer PIT3
-  PIT_LDVAL3 = knockWindowDuration;
-  PIT_TCTRL3 |= PIT_TCTRL_TEN; // start PIT3
-  OPEN_KNOCK_WINDOW();  // on TPC8101
-}
-
-void pit3_isr() // knock window end (oneshot)
-{
-  PIT_TCTRL3 &= ~PIT_TCTRL_TEN; // stop PIT3
-  PIT_TFLG3 = 1;                // clear interrupt flag - reloads countdown value from PIT_LDVAL3
-  CLOSE_KNOCK_WINDOW();
-  getKnockValue();
-}
-#endif
-
-static inline void startTacho(void) // skip pulses if required
-{
-  if (skipFlag == 0)
-  {
-    skipFlag = configPage2.tachoDiv;
-    TACHO_PULSE_LOW();
-    PIT_LDVAL1 = tachPulseDuration;
-    PIT_TCTRL1 |= PIT_TCTRL_TEN; // start PIT1
-  }
-  else
-  {
-    skipFlag--;
-  }
-}
-
 #endif

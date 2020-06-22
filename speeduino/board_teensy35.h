@@ -146,10 +146,5 @@
 #endif
   static CAN_message_t outMsg;
   static CAN_message_t inMsg;
-/*
-  New tacho
- */
-static inline void startTacho(void);  // includes skip setup
-int tachPulseDuration;
 #endif //CORE_TEENSY
 #endif //TEENSY35_H

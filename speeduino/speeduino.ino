@@ -317,12 +317,6 @@ void loop()
           } //Channel type
         } //For loop going through each channel
       } //aux channels are enabled
-#if defined(KNOCK)    
-    if ((configPage10.knock_mode==KNOCK_MODE_DIGITAL) &&(currentStatus.hasSync))
-    {
-      refreshKnockParameters();
-    }
-#endif
 } //4Hz timer
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
