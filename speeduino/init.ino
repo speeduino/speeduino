@@ -188,6 +188,18 @@ void initialiseAll()
     oilPressureProtectTable.values = configPage10.oilPressureProtMins;
     oilPressureProtectTable.axisX = configPage10.oilPressureProtRPM;
 
+    cltCalibrationTable_new.valueSize = SIZE_INT;
+    cltCalibrationTable_new.axisSize = SIZE_INT;
+    cltCalibrationTable_new.xSize = 32;
+    cltCalibrationTable_new.values = cltCalibration_values;
+    cltCalibrationTable_new.axisX = cltCalibration_bins;
+
+    iatCalibrationTable_new.valueSize = SIZE_INT;
+    iatCalibrationTable_new.axisSize = SIZE_INT;
+    iatCalibrationTable_new.xSize = 32;
+    iatCalibrationTable_new.values = iatCalibration_values;
+    iatCalibrationTable_new.axisX = iatCalibration_bins;
+
     //Setup the calibration tables
     loadCalibration();
 
