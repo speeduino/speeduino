@@ -379,11 +379,13 @@ void readTPS(bool useFilter)
     //In such a case, tpsMin will be greater then tpsMax and hence checks and mapping needs to be reversed
 
     tempADC = 255 - currentStatus.tpsADC; //Reverse the ADC values
+    uint16_t tempTPSMax = 255 - configPage2.tpsMax;
+    uint16_t tempTPSMin = 255 - configPage2.tpsMin;
 
     //All checks below are reversed from the standard case above
-    if (tempADC > configPage2.tpsMin) { tempADC = configPage2.tpsMin; }
-    else if(tempADC < configPage2.tpsMax) { tempADC = configPage2.tpsMax; }
-    currentStatus.TPS = map(tempADC, configPage2.tpsMax, configPage2.tpsMin, 0, 100);
+    if (tempADC > tempTPSMax) { tempADC = tempTPSMax; }
+    else if(tempADC < tempTPSMin) { tempADC = tempTPSMin; }
+    currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 100);
   }
 
   //Check whether the closed throttle position sensor is active
