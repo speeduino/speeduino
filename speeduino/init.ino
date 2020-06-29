@@ -598,7 +598,7 @@ void initialiseAll()
         channel3IgnDegrees = 144;
         channel4IgnDegrees = 216;
         channel5IgnDegrees = 288;
-        maxIgnOutputs = 4; //Only 4 actual outputs, so that's all that can be cut
+        maxIgnOutputs = 5; //Only 4 actual outputs, so that's all that can be cut
 
         if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
         {
