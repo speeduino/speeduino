@@ -725,13 +725,15 @@ void loop()
       {
         if(currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM)
         {
-          if(configPage2.hardCutType == HARD_CUT_FULL) 
+          if( (configPage2.hardCutType == HARD_CUT_FULL) || (configPage6.engineProtectType == PROTECT_CUT_FUEL) ) 
           { 
+            //Full hard cut turns outputs off completely. Note that hard cut is ALWAYS used on fuel cut only. 
             switch(configPage6.engineProtectType)
             {
               case PROTECT_CUT_OFF:
                 ignitionOn = true;
                 fuelOn = true;
+                currentStatus.engineProtectStatus = 0;
                 break;
               case PROTECT_CUT_IGN:
                 ignitionOn = false;
@@ -751,14 +753,22 @@ void loop()
           }
           else 
           { 
-            if(rollingCutCounter >= 2) //Vary this number to change the intensity of the roll. The higher the number, the closer is it to full cut
+            //if(rollingCutCounter >= 2) //Vary this number to change the intensity of the roll. The higher the number, the closer is it to full cut
+            if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //
+            if (currentStatus.startRevolutions > (rollingCutLastRev+1) )
             { 
               //Rolls through each of the active ignition channels based on how many revolutions have taken place
               //curRollingCut = ( (currentStatus.startRevolutions / 2) % maxIgnOutputs) + 1;
-              rollingCutCounter = 0;
-              ignitionOn = true;
               curRollingCut = 0;
+              rollingCutCounter += 1;
+              if(rollingCutCounter > (maxIgnOutputs-1)) { rollingCutCounter = 0; }
+              BIT_SET(curRollingCut, rollingCutCounter);
+
+              ignitionOn = true;
+              rollingCutLastRev = currentStatus.startRevolutions;
+              //curRollingCut = 0;
             }
+            /*
             else
             {
               if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //
@@ -769,6 +779,7 @@ void loop()
               }
               ignitionOn = false; //Finally the ignition is fully cut completely
             }
+            */
           } //Hard/Rolling cut check
         } //RPM Check
         else { currentStatus.engineProtectStatus = 0; } //Force all engine protection flags to be off as we're below the minimum RPM
@@ -968,8 +979,10 @@ void loop()
 
 #if IGN_CHANNELS >= 1
         if ( (ignition1StartAngle <= crankAngle) && (ignitionSchedule1.Status == RUNNING) ) { ignition1StartAngle += CRANK_ANGLE_MAX_IGN; }
-        if ( (ignition1StartAngle > crankAngle) && (curRollingCut != 1) )
+        //if ( (ignition1StartAngle > crankAngle) && (curRollingCut != 1) )
+        if ( (ignition1StartAngle > crankAngle) && (!BIT_CHECK(curRollingCut, IGN1_CMD_BIT)) )
         {
+          
           setIgnitionSchedule1(ign1StartFunction,
                     //((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                     angleToTime((ignition1StartAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV),
@@ -1014,7 +1027,7 @@ void loop()
             //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition2StartTime = 0; }
 
-            if( (ignition2StartTime > 0) && (curRollingCut != 2) )
+            if ( (ignition2StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN2_CMD_BIT)) )
             {
               setIgnitionSchedule2(ign2StartFunction,
                         ignition2StartTime,
@@ -1038,7 +1051,7 @@ void loop()
             //else if (tempStartAngle < tempCrankAngle) { ignition3StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition3StartTime = 0; }
 
-            if( (ignition3StartTime > 0) && (curRollingCut != 3) )
+            if ( (ignition3StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN3_CMD_BIT)) )
             {
               setIgnitionSchedule3(ign3StartFunction,
                         ignition3StartTime,
@@ -1063,7 +1076,7 @@ void loop()
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition4StartTime = 0; }
 
-            if( (ignition4StartTime > 0) && (curRollingCut != 4) )
+            if ( (ignition4StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN4_CMD_BIT)) )
             {
               setIgnitionSchedule4(ign4StartFunction,
                         ignition4StartTime,
@@ -1088,7 +1101,7 @@ void loop()
             //else if (tempStartAngle < tempCrankAngle) { ignition5StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition5StartTime = 0; }
 
-            if( (ignition5StartTime > 0) && (curRollingCut != 5) )
+            if ( (ignition5StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN5_CMD_BIT)) )
             {
               setIgnitionSchedule5(ign5StartFunction,
                         ignition5StartTime,
@@ -1112,7 +1125,7 @@ void loop()
             //else if (tempStartAngle < tempCrankAngle) { ignition6StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition6StartTime = 0; }
 
-            if( (ignition6StartTime > 0) && (curRollingCut != 6) )
+            if ( (ignition6StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN6_CMD_BIT)) )
             {
               setIgnitionSchedule6(ign6StartFunction,
                         ignition6StartTime,
@@ -1136,7 +1149,7 @@ void loop()
             //else if (tempStartAngle < tempCrankAngle) { ignition7StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition7StartTime = 0; }
 
-            if( (ignition7StartTime > 0) && (curRollingCut != 7) )
+            if ( (ignition7StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN7_CMD_BIT)) )
             {
               setIgnitionSchedule7(ign7StartFunction,
                         ignition7StartTime,
@@ -1160,7 +1173,7 @@ void loop()
             //else if (tempStartAngle < tempCrankAngle) { ignition8StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition8StartTime = 0; }
 
-            if( (ignition8StartTime > 0) && (curRollingCut != 8) )
+            if ( (ignition8StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN8_CMD_BIT)) )
             {
               setIgnitionSchedule8(ign8StartFunction,
                         ignition8StartTime,
