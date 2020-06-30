@@ -75,17 +75,9 @@ void fanControl()
     }
     else
     {
-      //Lookup fan duty based on either coolant or external temp
-      if(configPage6.fanCtrlSrc == 0)
-      {
-        currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.CLT);
-      }
-      else
-      {
-        currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.AUX);
-      }
-    fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count);
-  }
+      currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.CLT);
+    }
+  fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count);
 }
 
 void initialiseAuxPWM()
@@ -416,13 +408,13 @@ void boostDisable()
 {
   if (vvt_pwm_state == true)
   {
-    FAN_PIN_LOW();  // Switch pin to low
+    VVT_PIN_LOW();  // Switch pin to low
     VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt_pwm_cur_value);
     vvt_pwm_state = false;
   }
   else
   {
-    FAN_PIN_HIGH();  // Switch pin high
+    VVT_PIN_HIGH();  // Switch pin high
     VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt_pwm_value;
     vvt_pwm_cur_value = vvt_pwm_value;
     vvt_pwm_state = true;
@@ -454,13 +446,13 @@ void ftm1_isr(void)
 {
   if (fan_pwm_state == true)
   {
-    FAN_PIN_LOW();  // Switch pin to low
+    digitalWrite(pinFan, fanLOW);     // Switch pin to low
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
     fan_pwm_state = false;
   }
   else
   {
-    FAN_PIN_HIGH();  // Switch pin high
+    digitalWrite(pinFan, fanHIGH);    // Switch pin high
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
     fan_pwm_cur_value = fan_pwm_value;
     fan_pwm_state = true;
