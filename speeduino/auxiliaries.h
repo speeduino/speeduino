@@ -56,7 +56,6 @@ volatile bool fan_pwm_state;
 unsigned int fan_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int fan_pwm_cur_value;
 long fan_pwm_value;
-long fan_pid_target_angle;
 byte fanHIGH = HIGH;             // Used to invert the cooling fan output
 byte fanLOW = LOW;               // Used to invert the cooling fan output
 

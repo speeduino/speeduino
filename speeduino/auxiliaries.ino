@@ -77,7 +77,8 @@ void fanControl()
     {
       currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     }
-  fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count);
+    fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count);
+  }
 }
 
 void initialiseAuxPWM()
