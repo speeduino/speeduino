@@ -377,6 +377,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
 }
 
 // This routine builds the realtime data into packets that the obd requesting device can understand. This is only used by teensy and stm32 with onboard canbus
+/* NOTE: I'm commenting this out for now to remove the warnings it generates - Josh (29/6/20)
 void obd_response(uint8_t thePIDmode, uint8_t therequestedPIDlow, uint8_t therequestedPIDhigh)
 {
 
@@ -397,3 +398,4 @@ void obd_response(uint8_t thePIDmode, uint8_t therequestedPIDlow, uint8_t thereq
 
 #endif
 }
+*/
