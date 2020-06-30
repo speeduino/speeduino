@@ -241,6 +241,7 @@ void fuelSchedule8Interrupt(HardwareTimer*);
 #endif
 void idleInterrupt(HardwareTimer*);
 void vvtInterrupt(HardwareTimer*);
+void fanInterrupt(HardwareTimer*);
 void ignitionSchedule1Interrupt(HardwareTimer*);
 void ignitionSchedule2Interrupt(HardwareTimer*);
 void ignitionSchedule3Interrupt(HardwareTimer*);

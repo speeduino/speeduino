@@ -179,6 +179,7 @@
   #endif
   void idleInterrupt(HardwareTimer*){idleInterrupt();}
   void vvtInterrupt(HardwareTimer*){vvtInterrupt();}
+  void fanInterrupt(HardwareTimer*){fanInterrupt();}
   void ignitionSchedule1Interrupt(HardwareTimer*){ignitionSchedule1Interrupt();}
   void ignitionSchedule2Interrupt(HardwareTimer*){ignitionSchedule2Interrupt();}
   void ignitionSchedule3Interrupt(HardwareTimer*){ignitionSchedule3Interrupt();}

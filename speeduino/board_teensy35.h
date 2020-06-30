@@ -125,7 +125,7 @@
 
   static inline void boostInterrupt();
   static inline void vvtInterrupt();
-  static inline void fanInterrupt()
+  static inline void fanInterrupt();
 
 /*
 ***********************************************************************************************************

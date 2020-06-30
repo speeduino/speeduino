@@ -422,12 +422,9 @@ void boostDisable()
   }
 }
 
-//The interrupt to control the FAN PWM
-#if defined(CORE_AVR)
-//nothing to do here, because not enough timers
-#else
+#if defined(CORE_TEENSY) || defined(CORE_STM32)
+//The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
   static inline void fanInterrupt() //Most ARM chips can simply call a function
-#endif
 {
   if (fan_pwm_state == true)
   {
@@ -443,6 +440,7 @@ void boostDisable()
     fan_pwm_state = true;
   }
 }
+#endif
 
 #if defined(CORE_TEENSY35)
 void ftm1_isr(void)
