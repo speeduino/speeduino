@@ -26,6 +26,7 @@ void initialiseFan()
 
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
+#if defined(CORE_TEENSY) || defined(CORE_STM32)//PWM fan not available on Arduino MEGA
   if ( configPage6.fanEnable == 2 ) // PWM Fan control
   {
      currentStatus.fanDuty = 0; 
@@ -33,6 +34,7 @@ void initialiseFan()
       fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     #endif
   }
+#endif
 }
 
 void fanControl()
@@ -67,18 +69,33 @@ void fanControl()
       currentStatus.fanOn = false;
     }
   }
+#if defined(CORE_TEENSY) || defined(CORE_STM32)//PWM fan not available on Arduino MEGA
   else if ( configPage6.fanEnable == 2 ) // PWM Fan control
   {
-    if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
-    {
-      currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
+    bool fanPermit = false;
+    if ( configPage2.fanWhenOff == true) { fanPermit = true; }
+    else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
+    if (fanPermit == true)
+      {
+      if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
+      {
+        currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
+        currentStatus.fanOn = false;
+      }
+      else
+      {
+        currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+        currentStatus.fanOn = true;
+        fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count);
+      }
     }
-    else
+    else if (!fanPermit)
     {
-      currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+      currentStatus.fanDuty = 0;
+      currentStatus.fanOn = false;
     }
-    fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count);
   }
+#endif
 }
 
 void initialiseAuxPWM()
