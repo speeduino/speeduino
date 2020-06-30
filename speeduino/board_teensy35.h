@@ -111,14 +111,21 @@
 
   #define ENABLE_VVT_TIMER()    FTM1_C1SC |= FTM_CSC_CHIE
   #define DISABLE_VVT_TIMER()   FTM1_C1SC &= ~FTM_CSC_CHIE
+  
+  #define ENABLE_FAN_TIMER()    FTM1_C2SC |= FTM_CSC_CHIE
+  #define DISABLE_FAN_TIMER()   FTM1_C2SC &= ~FTM_CSC_CHIE
 
   #define BOOST_TIMER_COMPARE   FTM1_C0V
   #define BOOST_TIMER_COUNTER   FTM1_CNT
   #define VVT_TIMER_COMPARE     FTM1_C1V
   #define VVT_TIMER_COUNTER     FTM1_CNT
 
+  #define FAN_TIMER_COMPARE     FTM1_C2V
+  #define FAN_TIMER_COUNTER     FTM1_CNT
+
   static inline void boostInterrupt();
   static inline void vvtInterrupt();
+  static inline void fanInterrupt()
 
 /*
 ***********************************************************************************************************
