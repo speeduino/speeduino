@@ -71,14 +71,14 @@
 * Schedules
 * Timers Table for STM32F1
 *   TIMER1    TIMER2    TIMER3    TIMER4
-* 1 -       1 - INJ1  1 - IGN1  1 - oneMSInterval
+* 1 - FAN   1 - INJ1  1 - IGN1  1 - oneMSInterval
 * 2 - BOOST 2 - INJ2  2 - IGN2  2 -
 * 3 - VVT   3 - INJ3  3 - IGN3  3 -
 * 4 - IDLE  4 - INJ4  4 - IGN4  4 -
 *
 * Timers Table for STM32F4
 *   TIMER1    TIMER2    TIMER3    TIMER4    TIMER5    TIMER8
-* 1 -       1 - INJ1  1 - IGN1  1 - IGN5  1 - INJ5  1 - oneMSInterval
+* 1 - FAN   1 - INJ1  1 - IGN1  1 - IGN5  1 - INJ5  1 - oneMSInterval
 * 2 - BOOST 2 - INJ2  2 - IGN2  2 - IGN6  2 - INJ6  2 - 
 * 3 - VVT   3 - INJ3  3 - IGN3  3 - IGN7  3 - INJ7  3 - 
 * 4 - IDLE  4 - INJ4  4 - IGN4  4 - IGN8  4 - INJ8  4 - 
@@ -181,10 +181,15 @@
   #define ENABLE_VVT_TIMER()    (TIM1)->SR = ~TIM_FLAG_CC3; (TIM1)->DIER |= TIM_DIER_CC3IE
   #define DISABLE_VVT_TIMER()   (TIM1)->DIER &= ~TIM_DIER_CC3IE
 
+  #define ENABLE_FAN_TIMER()  (TIM1)->CCER |= TIM_CCER_CC1E
+  #define DISABLE_FAN_TIMER() (TIM1)->CCER &= ~TIM_CCER_CC1E
+
   #define BOOST_TIMER_COMPARE   (TIM1)->CCR2
   #define BOOST_TIMER_COUNTER   (TIM1)->CNT
   #define VVT_TIMER_COMPARE     (TIM1)->CCR3
   #define VVT_TIMER_COUNTER     (TIM1)->CNT
+  #define FAN_TIMER_COMPARE     (TIM1)->CCR1
+  #define FAN_TIMER_COUNTER     (TIM1)->CNT
 
 /*
 ***********************************************************************************************************
