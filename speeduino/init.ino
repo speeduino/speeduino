@@ -1379,9 +1379,8 @@ void setPinMapping(byte boardID)
         pinIAT = PC2; //ADC123
         pinCLT = PC3; //ADC123
         pinO2 = PC4; //ADC12
-        /* = PC5; */ //ADC12
+        pinBat = PC5; //ADC12
         /*pinVVT_1 = PC6; */ //
-        pinBat = PC6; //
         pinDisplayReset = PC7; //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
@@ -2095,9 +2094,8 @@ void setPinMapping(byte boardID)
         pinIAT = PC2; //ADC123
         pinCLT = PC3; //ADC123
         pinO2 = PC4; //ADC12
-        /* = PC5; */ //ADC12
+        pinBat = PC5; //ADC12
         /*pinVVT_1 = PC6; */ //
-        pinBat = PC6; //
         pinDisplayReset = PC7; //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
@@ -2243,9 +2241,8 @@ void setPinMapping(byte boardID)
         pinIAT = PC2; //ADC123
         pinCLT = PC3; //ADC123
         pinO2 = PC4; //ADC12
-        /* = PC5; */ //ADC12
+        pinBat = PC5; //ADC12
         /*pinVVT_1 = PC6; */ //
-        pinBat = PC6; //
         pinDisplayReset = PC7; //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
