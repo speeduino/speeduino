@@ -27,8 +27,10 @@ void initialiseFan()
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
 #if defined(CORE_TEENSY) || defined(CORE_STM32)//PWM fan not available on Arduino MEGA
+  DISABLE_FAN_TIMER();
   if ( configPage6.fanEnable == 2 ) // PWM Fan control
   {
+     ENABLE_FAN_TIMER()
      currentStatus.fanDuty = 0; 
     #if defined(CORE_TEENSY)
       fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
@@ -39,7 +41,7 @@ void initialiseFan()
 
 void fanControl()
 {
-  if( configPage6.fanEnable == 1 ) // on/off Fan control
+  if( configPage6.fanEnable == 1 ) //on/off Fan control
   {
     int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
     int offTemp = onTemp - configPage6.fanHyster;
@@ -69,7 +71,7 @@ void fanControl()
       currentStatus.fanOn = false;
     }
   }
-#if defined(CORE_TEENSY) || defined(CORE_STM32)//PWM fan not available on Arduino MEGA
+#if defined(CORE_TEENSY) || defined(CORE_STM32)//PWM fan not available on Arduino MEGA currently
   else if ( configPage6.fanEnable == 2 ) // PWM Fan control
   {
     bool fanPermit = false;
@@ -84,16 +86,16 @@ void fanControl()
       }
       else
       {
-        currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-        currentStatus.fanOn = true;
-        fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count);
+        currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
+		if (currentStatus.fanDuty > 0) { currentStatus.fanOn = true; } // update fan on status. Is this even used anywhere??
       }
     }
     else if (!fanPermit)
     {
-      currentStatus.fanDuty = 0;
+      currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
       currentStatus.fanOn = false;
     }
+  fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
   }
 #endif
 }
