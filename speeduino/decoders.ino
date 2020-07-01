@@ -3556,10 +3556,10 @@ void triggerSetup_420a()
   toothAngles[6] = toothAngles[2] + 180;
   toothAngles[7] = toothAngles[3] + 180;
   toothAngles[8] = toothAngles[4] + 180; //Just before #4 TDC
-  toothAngles[9] = toothAngles[1] + 360;
+  toothAngles[9]  = toothAngles[1] + 360;
   toothAngles[10] = toothAngles[2] + 360;
   toothAngles[11] = toothAngles[3] + 360;
-  toothAngles[12] = toothAngles[4] + 360; //Just before #4 TDC
+  toothAngles[12] = toothAngles[4] + 360; //Just before #2 TDC
   toothAngles[13] = toothAngles[1] + 540;
   toothAngles[14] = toothAngles[2] + 540;
   toothAngles[15] = toothAngles[3] + 540;

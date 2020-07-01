@@ -295,14 +295,14 @@ void can_Command()
     if (inMsg.buf[1] == 0x01)
       {
         // PID mode 0 , realtime data stream
-        obd_response(inMsg.buf[1], inMsg.buf[2], 0);     // get the obd response based on the data in byte2
+        //obd_response(inMsg.buf[1], inMsg.buf[2], 0);     // get the obd response based on the data in byte2
         outMsg.id = (0x7E8);//(configPage9.obd_address+8);
         Can0.write(outMsg);       // send the 8 bytes of obd data   
       }
     if (inMsg.buf[1] == 0x22)
       {
         // PID mode 22h , custom mode , non standard data
-        obd_response(inMsg.buf[1], inMsg.buf[2], inMsg.buf[3]);     // get the obd response based on the data in byte2
+        //obd_response(inMsg.buf[1], inMsg.buf[2], inMsg.buf[3]);     // get the obd response based on the data in byte2
         outMsg.id = (0x7E8); //configPage9.obd_address+8);
         Can0.write(outMsg);       // send the 8 bytes of obd data
       }
