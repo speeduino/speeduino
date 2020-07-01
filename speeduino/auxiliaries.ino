@@ -30,7 +30,7 @@ void initialiseFan()
   DISABLE_FAN_TIMER();
   if ( configPage6.fanEnable == 2 ) // PWM Fan control
   {
-     ENABLE_FAN_TIMER()
+     ENABLE_FAN_TIMER();
      currentStatus.fanDuty = 0; 
     #if defined(CORE_TEENSY)
       fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
