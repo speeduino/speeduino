@@ -2882,22 +2882,28 @@ void initialiseTriggers()
 
     case 17:
       //36-2-1
-      triggerSetup_ThirtySixMinus21();
-      triggerHandler = triggerPri_ThirtySixMinus21;
-      triggerSecondaryHandler = triggerSec_ThirtySixMinus21;
+      //NOT YET WRITTEN
+      break;
+
+    case 18:
+      //DSM 420a
+      triggerSetup_420a();
+      triggerHandler = triggerPri_420a;
+      triggerSecondaryHandler = triggerSec_420a;
       decoderHasSecondary = true;
-      getRPM = getRPM_ThirtySixMinus21;
-      getCrankAngle = getCrankAngle_ThirtySixMinus21;
-      triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus21;
+      getRPM = getRPM_420a;
+      getCrankAngle = getCrankAngle_420a;
+      triggerSetEndTeeth = triggerSetEndTeeth_420a;
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
-      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
-      else { secondaryTriggerEdge = FALLING; }
+      secondaryTriggerEdge = FALLING; //Always falling edge
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
+
+    
 
     default:
       triggerHandler = triggerPri_missingTooth;
