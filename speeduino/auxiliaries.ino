@@ -87,7 +87,7 @@ void fanControl()
       else
       {
         currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
-		if (currentStatus.fanDuty > 0) { currentStatus.fanOn = true; } // update fan on status. Is this even used anywhere??
+        if (currentStatus.fanDuty > 0) { currentStatus.fanOn = true; } // update fan on status. Is this even used anywhere??
       }
     }
     else if (!fanPermit)
