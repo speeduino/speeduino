@@ -66,11 +66,7 @@
     * Schedules
     */
     Timer1.setOverflow(0xFFFF, TICK_FORMAT);
-    #if defined(STM32F4)
-    Timer2.setOverflow(0xFFFFFFFF, TICK_FORMAT); //32bit timer
-    #else
     Timer2.setOverflow(0xFFFF, TICK_FORMAT);
-    #endif
     Timer3.setOverflow(0xFFFF, TICK_FORMAT);
 
     Timer1.setPrescaleFactor(((Timer1.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
@@ -95,11 +91,7 @@
     Timer3.attachInterrupt(3, fuelSchedule3Interrupt);
     Timer3.attachInterrupt(4, fuelSchedule4Interrupt);
     #if (INJ_CHANNELS >= 5)
-    #if defined(STM32F4)
-    Timer5.setOverflow(0xFFFFFFFF, TICK_FORMAT); //32bit timer
-    #else
     Timer5.setOverflow(0xFFFF, TICK_FORMAT);
-    #endif
     Timer5.setPrescaleFactor(((Timer5.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
     Timer5.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer5.attachInterrupt(1, fuelSchedule5Interrupt);
