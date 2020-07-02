@@ -188,6 +188,18 @@ void initialiseAll()
     oilPressureProtectTable.values = configPage10.oilPressureProtMins;
     oilPressureProtectTable.axisX = configPage10.oilPressureProtRPM;
 
+    cltCalibrationTable_new.valueSize = SIZE_INT;
+    cltCalibrationTable_new.axisSize = SIZE_INT;
+    cltCalibrationTable_new.xSize = 32;
+    cltCalibrationTable_new.values = cltCalibration_values;
+    cltCalibrationTable_new.axisX = cltCalibration_bins;
+
+    iatCalibrationTable_new.valueSize = SIZE_INT;
+    iatCalibrationTable_new.axisSize = SIZE_INT;
+    iatCalibrationTable_new.xSize = 32;
+    iatCalibrationTable_new.values = iatCalibration_values;
+    iatCalibrationTable_new.axisX = iatCalibration_bins;
+
     //Setup the calibration tables
     loadCalibration();
 
@@ -586,7 +598,7 @@ void initialiseAll()
         channel3IgnDegrees = 144;
         channel4IgnDegrees = 216;
         channel5IgnDegrees = 288;
-        maxIgnOutputs = 4; //Only 4 actual outputs, so that's all that can be cut
+        maxIgnOutputs = 5; //Only 4 actual outputs, so that's all that can be cut
 
         if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
         {
@@ -2902,22 +2914,28 @@ void initialiseTriggers()
 
     case 17:
       //36-2-1
-      triggerSetup_ThirtySixMinus21();
-      triggerHandler = triggerPri_ThirtySixMinus21;
-      triggerSecondaryHandler = triggerSec_ThirtySixMinus21;
+      //NOT YET WRITTEN
+      break;
+
+    case 18:
+      //DSM 420a
+      triggerSetup_420a();
+      triggerHandler = triggerPri_420a;
+      triggerSecondaryHandler = triggerSec_420a;
       decoderHasSecondary = true;
-      getRPM = getRPM_ThirtySixMinus21;
-      getCrankAngle = getCrankAngle_ThirtySixMinus21;
-      triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus21;
+      getRPM = getRPM_420a;
+      getCrankAngle = getCrankAngle_420a;
+      triggerSetEndTeeth = triggerSetEndTeeth_420a;
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
-      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
-      else { secondaryTriggerEdge = FALLING; }
+      secondaryTriggerEdge = FALLING; //Always falling edge
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
+
+    
 
     default:
       triggerHandler = triggerPri_missingTooth;

@@ -92,6 +92,6 @@ byte checkAFRLimit()
 {
   byte checkAFRLimitActive = 0;
 
-  return checkAFRLimitActive ;
+  return checkAFRLimitActive;
 }
 
