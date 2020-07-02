@@ -1189,6 +1189,39 @@ void setPinMapping(byte boardID)
       pinFlex = 19; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 43; //Reset control output
     #endif
+    //New FRAM chips reads 0
+    #if defined(CORE_STM32)
+      //https://github.com/stm32duino/Arduino_Core_STM32/blob/master/variants/Generic_F411Cx/variant.h#L28
+      //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
+      //pins PB12, PB13, PB14 and PB15 are used to SPI FLASH
+      pinInjector1 = PB7; //Output pin injector 1 is on
+      pinInjector2 = PB6; //Output pin injector 2 is on
+      pinInjector3 = PB5; //Output pin injector 3 is on
+      pinInjector4 = PB4; //Output pin injector 4 is on
+      pinCoil1 = PB9; //Pin for coil 1
+      pinCoil2 = PB8; //Pin for coil 2
+      pinCoil3 = PB3; //Pin for coil 3
+      pinCoil4 = PA15; //Pin for coil 4
+      pinTPS = A2;//TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A8; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinBaro = pinMAP;
+      pinIdle1 = PA5; //Single wire idle control
+      pinBoost = PA6; //Boost control
+      //pinVVT_1 = 4; //Default VVT output
+      //pinStepperDir = PC15; //Direction pin  for DRV8825 driver
+      //pinStepperStep = PC14; //Step pin for DRV8825 driver
+      //pinStepperEnable = PC13; //Enable pin for DRV8825
+      pinFuelPump = PB10; //Fuel pump output
+      pinTachOut = PC13; //Tacho output pin
+      //external interrupt enabled pins
+      //pinFlex = PB2; // Flex sensor (Must be external interrupt enabled)
+      pinTrigger = PB1; //The CAS pin
+      pinTrigger2 = PB10; //The Cam Sensor pin
+    #endif
       break;
     case 1:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
@@ -1338,8 +1371,8 @@ void setPinMapping(byte boardID)
         // = PA3;
         // = PA4;
         /* = PA5; */ //ADC12
-        pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
-        /* = PA7; */ //ADC12 LED_BUILTIN_2
+        /* = PA6; */ //ADC12 LED_BUILTIN_1
+        pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
         pinCoil3 = PA8;
         /* = PA9 */ //TXD1
         /* = PA10 */ //RXD1
@@ -1366,7 +1399,7 @@ void setPinMapping(byte boardID)
         pinCoil4 = PB10; //TXD3
         pinIdle1 = PB11; //RXD3
         pinIdle2 = PB12; //
-        /* pinBoost = PB12; */ //
+        pinBoost = PB12; //
         /* = PB13; */ //SPI2_SCK
         /* = PB14; */ //SPI2_MISO
         /* = PB15; */ //SPI2_MOSI
@@ -1378,10 +1411,9 @@ void setPinMapping(byte boardID)
         pinTPS = PC1; //ADC123
         pinIAT = PC2; //ADC123
         pinCLT = PC3; //ADC123
-        pinO2 = PC4; //ADC12
-        /* = PC5; */ //ADC12
-        /*pinVVT_1 = PC6; */ //
-        pinBat = PC6; //
+        pinO2 = PC4;  //ADC12
+        pinBat = PC5; //ADC12
+        pinVVT_1 = PC6; //
         pinDisplayReset = PC7; //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
@@ -1435,9 +1467,9 @@ void setPinMapping(byte boardID)
         /* = PE15; */ //
 
       #elif defined(CORE_STM32)
-        //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
-        //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
+        //https://github.com/stm32duino/Arduino_Core_STM32/blob/master/variants/Generic_F411Cx/variant.h#L28
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
+        //pins PB12, PB13, PB14 and PB15 are used to SPI FLASH
         pinInjector1 = PB7; //Output pin injector 1 is on
         pinInjector2 = PB6; //Output pin injector 2 is on
         pinInjector3 = PB5; //Output pin injector 3 is on
@@ -1462,9 +1494,9 @@ void setPinMapping(byte boardID)
         pinFuelPump = PB10; //Fuel pump output
         pinTachOut = PC13; //Tacho output pin
         //external interrupt enabled pins
-        pinFlex = PB1; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = PB0; //The CAS pin
-        pinTrigger2 = PB2; //The Cam Sensor pin
+        pinFlex = PB2; // Flex sensor (Must be external interrupt enabled)
+        pinTrigger = PB1; //The CAS pin
+        pinTrigger2 = PB10; //The Cam Sensor pin
       #endif
       break;
 
