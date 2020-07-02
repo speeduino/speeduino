@@ -137,18 +137,18 @@ void initBoard()
     #endif
 
     Timer1.setOverflow(0xFFFF);
-    //Timer1.resume();
+    Timer1.resume();
     Timer2.setOverflow(0xFFFF);
-    //Timer2.resume();
+    Timer2.resume();
     Timer3.setOverflow(0xFFFF);
-    //Timer3.resume();
+    Timer3.resume();
     #if (IGN_CHANNELS >= 5)
     Timer4.setOverflow(0xFFFF);
-    //Timer4.resume();
+    Timer4.resume();
     #endif
     #if (INJ_CHANNELS >= 5)
     Timer5.setOverflow(0xFFFF);
-    //Timer5.resume();
+    Timer5.resume();
     #endif
 }
 
