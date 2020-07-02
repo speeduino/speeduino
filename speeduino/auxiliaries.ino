@@ -30,11 +30,11 @@ void initialiseFan()
   DISABLE_FAN_TIMER();
   if ( configPage6.fanEnable == 2 ) // PWM Fan control
   {
-     ENABLE_FAN_TIMER();
-     currentStatus.fanDuty = 0; 
     #if defined(CORE_TEENSY)
-      fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+     fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     #endif
+    currentStatus.fanDuty = 0;
+    fan_pwm_value = 0;
   }
 #endif
 }
@@ -88,7 +88,12 @@ void fanControl()
       else
       {
         currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
-        if (currentStatus.fanDuty > 0) { currentStatus.fanOn = true; } // update fan on status. Is this even used anywhere??
+        if (currentStatus.fanDuty > 0)
+        {
+          fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
+          currentStatus.fanOn = true; // update fan on status. Is this even used anywhere??
+          ENABLE_FAN_TIMER();
+        }
       }
     }
     else if (!fanPermit)
@@ -97,22 +102,19 @@ void fanControl()
       currentStatus.fanOn = false;
       DISABLE_FAN_TIMER();
     }
-  fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
-  if(currentStatus.vvtDuty > 0) { ENABLE_VVT_TIMER();
 
-  if(currentStatus.vvtDuty == 0)
+  if(currentStatus.fanDuty == 0)
     {
       //Make sure fan has 0% duty)
       digitalWrite(pinFan, fanLOW);     // Switch pin to low
       DISABLE_FAN_TIMER();
     }
-    else if (currentStatus.vvtDuty >= 100)
+    else if (currentStatus.fanDuty >= 100)
     {
       //Make sure fan has 100% duty
       digitalWrite(pinFan, fanHIGH);     // Switch pin to high
       DISABLE_FAN_TIMER();
     }
-  }
   }
 #endif
 }
