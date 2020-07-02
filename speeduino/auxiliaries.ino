@@ -83,6 +83,7 @@ void fanControl()
       {
         currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
         currentStatus.fanOn = false;
+        DISABLE_FAN_TIMER();
       }
       else
       {
@@ -94,8 +95,24 @@ void fanControl()
     {
       currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
       currentStatus.fanOn = false;
+      DISABLE_FAN_TIMER();
     }
   fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
+  if(currentStatus.vvtDuty > 0) { ENABLE_VVT_TIMER();
+
+  if(currentStatus.vvtDuty == 0)
+    {
+      //Make sure fan has 0% duty)
+      digitalWrite(pinFan, fanLOW);     // Switch pin to low
+      DISABLE_FAN_TIMER();
+    }
+    else if (currentStatus.vvtDuty >= 100)
+    {
+      //Make sure fan has 100% duty
+      digitalWrite(pinFan, fanHIGH);     // Switch pin to high
+      DISABLE_FAN_TIMER();
+    }
+  }
   }
 #endif
 }
@@ -445,34 +462,18 @@ void boostDisable()
 //The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
   static inline void fanInterrupt() //Most ARM chips can simply call a function
 {
-  if ( configPage6.fanEnable == 2 )//Prevent the interrupt of messing the on/off fan control
+  if (fan_pwm_state == true)
   {
-    if(currentStatus.fanDuty == 0)
-    {
-      //Make sure fan output has 0% duty
-      digitalWrite(pinFan, fanLOW);     // Switch pin to low
-    }
-    else if (currentStatus.vvtDuty >= 100)
-    {
-      //Make sure fan output has 100% duty
-      digitalWrite(pinFan, fanHIGH);    // Switch pin high
-    }
-    else
-    {
-      if (fan_pwm_state == true)
-      {
-        digitalWrite(pinFan, fanLOW);     // Switch pin to low
-        FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
-        fan_pwm_state = false;
-      }
-      else
-      {
-        digitalWrite(pinFan, fanHIGH);    // Switch pin high
-        FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
-        fan_pwm_cur_value = fan_pwm_value;
-        fan_pwm_state = true;
-      }
-    }
+    digitalWrite(pinFan, fanLOW);     // Switch pin to low
+    FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
+    fan_pwm_state = false;
+  }
+  else
+  {
+    digitalWrite(pinFan, fanHIGH);    // Switch pin high
+    FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
+    fan_pwm_cur_value = fan_pwm_value;
+    fan_pwm_state = true;
   }
 }
 #endif
