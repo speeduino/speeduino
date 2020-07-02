@@ -64,7 +64,7 @@
   #ifndef PB11 //Hack for F4 BlackPills
     #define PB11 PB10
   #endif
-
+#define PWM_FAN_AVAILABLE
 
 /*
 ***********************************************************************************************************

@@ -65,7 +65,7 @@ extern "C" char* sbrk(int incr);
     #define A15  PA5
   #endif
 #endif
-
+#define PWM_FAN_AVAILABLE
 /*
 ***********************************************************************************************************
 * Schedules

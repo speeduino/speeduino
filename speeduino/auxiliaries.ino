@@ -26,7 +26,7 @@ void initialiseFan()
 
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
-#if defined(CORE_TEENSY) || defined(CORE_STM32)//PWM fan not available on Arduino MEGA
+#if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
   DISABLE_FAN_TIMER();
   if ( configPage6.fanEnable == 2 ) // PWM Fan control
   {
@@ -71,7 +71,7 @@ void fanControl()
       currentStatus.fanOn = false;
     }
   }
-#if defined(CORE_TEENSY) || defined(CORE_STM32)//PWM fan not available on Arduino MEGA currently
+#if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA currently
   else if ( configPage6.fanEnable == 2 ) // PWM Fan control
   {
     bool fanPermit = false;
@@ -458,7 +458,7 @@ void boostDisable()
   }
 }
 
-#if defined(CORE_TEENSY) || defined(CORE_STM32)
+#if defined(PWM_FAN_AVAILABLE)
 //The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
   static inline void fanInterrupt() //Most ARM chips can simply call a function
 {
