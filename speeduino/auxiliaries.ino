@@ -487,11 +487,11 @@ void ftm1_isr(void)
   //Use separate variables for each test to ensure conversion to bool
   bool interrupt1 = (FTM1_C0SC & FTM_CSC_CHF);
   bool interrupt2 = (FTM1_C1SC & FTM_CSC_CHF);
-  bool interrupt3 = (FTM1_C2SC & FTM_CSC_CHF);
+  bool interrupt3 = (FTM2_C1SC & FTM_CSC_CHF);
 
   if(interrupt1) { FTM1_C0SC &= ~FTM_CSC_CHF; boostInterrupt(); }
   else if(interrupt2) { FTM1_C1SC &= ~FTM_CSC_CHF; vvtInterrupt(); }
-  else if(interrupt3) { FTM1_C2SC &= ~FTM_CSC_CHF; fanInterrupt(); }
+  else if(interrupt3) { FTM2_C1SC &= ~FTM_CSC_CHF; fanInterrupt(); }
 
 }
 #elif defined(CORE_TEENSY40)

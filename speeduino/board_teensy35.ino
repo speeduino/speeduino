@@ -141,8 +141,8 @@ void initBoard()
         //Enable channel compare interrupt (This is currently disabled as not in use)
         //FTM1_C1SC |= FTM_CSC_CHIE;
 
-        FTM1_C2SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
-        FTM1_C2SC |= FTM_CSC_MSA;  //Enable Compare mode
+        FTM2_C1SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+        FTM2_C1SC |= FTM_CSC_MSA;  //Enable Compare mode
         //Enable channel compare interrupt (This is currently disabled as not in use)
         //FTM1_C2SC |= FTM_CSC_CHIE;
 
