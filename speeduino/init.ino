@@ -1128,6 +1128,7 @@ void initialiseAll()
 
     interrupts();
     readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
+    readTPS(false); // Need to read tps to detect flood clear state
 
     initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
