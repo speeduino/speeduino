@@ -762,7 +762,7 @@ extern void StartPriming()
 {
   //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
   unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-  if(primingValue > 0) && (currentStatus.TPS < configPage4.floodClear))
+  if( (primingValue > 0) && (currentStatus.TPS < configPage4.floodClear) )
   {
     setFuelSchedule1(100, (primingValue * 100 * 5)); //to acheive long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
     if ( configPage2.nInjectors > 1 ) { setFuelSchedule2(100, (primingValue * 100 * 5)); }
