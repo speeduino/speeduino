@@ -758,6 +758,31 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
   }
 }
 
+extern void StartPriming()
+{
+  //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
+  unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  if(primingValue > 0) && (currentStatus.TPS < configPage4.floodClear))
+  {
+    setFuelSchedule1(100, (primingValue * 100 * 5)); //to acheive long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
+    if ( configPage2.nInjectors > 1 ) { setFuelSchedule2(100, (primingValue * 100 * 5)); }
+    if ( configPage2.nInjectors > 2 ) { setFuelSchedule3(100, (primingValue * 100 * 5)); }
+    if ( configPage2.nInjectors > 3 ) { setFuelSchedule4(100, (primingValue * 100 * 5)); }
+#if (INJ_CHANNELS >= 5)
+    if ( configPage2.nInjectors > 4 ) { setFuelSchedule5(100, (primingValue * 100 * 5)); }
+#endif
+#if (INJ_CHANNELS >= 6)
+    if ( configPage2.nInjectors > 5 ) { setFuelSchedule6(100, (primingValue * 100 * 5)); }
+#endif
+#if (INJ_CHANNELS >= 7)
+    if ( configPage2.nInjectors > 6 ) { setFuelSchedule7(100, (primingValue * 100 * 5)); }
+#endif
+#if (INJ_CHANNELS >= 8)
+    if ( configPage2.nInjectors > 7 ) { setFuelSchedule8(100, (primingValue * 100 * 5)); }
+#endif
+  }
+}
+
 /*******************************************************************************************************************************************************************************************************/
 //This function (All 8 ISR functions that are below) gets called when either the start time or the duration time are reached
 //This calls the relevant callback function (startCallback or endCallback) depending on the status of the schedule.

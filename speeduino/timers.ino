@@ -123,6 +123,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
     if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) { runSecsX10++; }
     else { runSecsX10 = 0; }
+
+    if ( (fpPrimed == false) && (seclx10 == configPage2.primingDelay) ) { StartPriming(); }
+    seclx10++;
   }
 
   //Loop executed every 250ms loop (1ms x 250 = 250ms)
