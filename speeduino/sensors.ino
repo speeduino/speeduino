@@ -10,6 +10,8 @@ A full copy of the license may be found in the projects root directory
 #include "storage.h"
 #include "comms.h"
 #include "idle.h"
+#include "errors.h"
+#include "corrections.h"
 
 void initialiseADC()
 {
@@ -118,6 +120,32 @@ void initialiseADC()
 
 }
 
+static inline void validateMAP()
+{
+  //Error checks
+  if(currentStatus.MAP < VALID_MAP_MIN)
+  {
+    currentStatus.MAP = ERR_DEFAULT_MAP_LOW;
+    mapErrorCount += 1;
+    setError(ERR_MAP_LOW);
+  }
+  else if(currentStatus.MAP > VALID_MAP_MAX)
+  {
+    currentStatus.MAP = ERR_DEFAULT_MAP_HIGH;
+    mapErrorCount += 1;
+    setError(ERR_MAP_HIGH);
+  }
+  else
+  {
+    if(errorCount > 0)
+    {
+      clearError(ERR_MAP_HIGH);
+      clearError(ERR_MAP_LOW);
+    }
+    mapErrorCount = 0;
+  }
+}
+
 static inline void instanteneousMAPReading()
 {
   //Update the calculation times and last value. These are used by the MAP based Accel enrich
@@ -208,7 +236,7 @@ static inline void readMAP()
 
             currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-            if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
+            validateMAP();
 
             //If EMAP is enabled, the process is identical to the above
             if(configPage6.useEMAP == true)
@@ -259,9 +287,10 @@ static inline void readMAP()
 
           currentStatus.mapADC = MAPrunningValue;
           currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-          if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
           MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
           MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
+
+          validateMAP();
         }
       }
       else { instanteneousMAPReading(); }
@@ -302,7 +331,7 @@ static inline void readMAP()
 
             currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-            if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
+            validateMAP();
           }
           else { instanteneousMAPReading(); }
 
@@ -321,7 +350,7 @@ static inline void readMAP()
   }
 }
 
-void readTPS()
+void readTPS(bool useFilter)
 {
   TPSlast = currentStatus.TPS;
   TPSlast_time = TPS_time;
@@ -331,7 +360,9 @@ void readTPS()
     analogRead(pinTPS);
     byte tempTPS = fastMap1023toX(analogRead(pinTPS), 255); //Get the current raw TPS ADC value and map it into a byte
   #endif
-  currentStatus.tpsADC = ADC_FILTER(tempTPS, configPage4.ADCFILTER_TPS, currentStatus.tpsADC);
+  //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
+  if(useFilter == true) { currentStatus.tpsADC = ADC_FILTER(tempTPS, configPage4.ADCFILTER_TPS, currentStatus.tpsADC); }
+  else { currentStatus.tpsADC = tempTPS; }
   //currentStatus.tpsADC = ADC_FILTER(tempTPS, 128, currentStatus.tpsADC);
   byte tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
 
@@ -348,11 +379,13 @@ void readTPS()
     //In such a case, tpsMin will be greater then tpsMax and hence checks and mapping needs to be reversed
 
     tempADC = 255 - currentStatus.tpsADC; //Reverse the ADC values
+    uint16_t tempTPSMax = 255 - configPage2.tpsMax;
+    uint16_t tempTPSMin = 255 - configPage2.tpsMin;
 
     //All checks below are reversed from the standard case above
-    if (tempADC > configPage2.tpsMin) { tempADC = configPage2.tpsMin; }
-    else if(tempADC < configPage2.tpsMax) { tempADC = configPage2.tpsMax; }
-    currentStatus.TPS = map(tempADC, configPage2.tpsMax, configPage2.tpsMin, 0, 100);
+    if (tempADC > tempTPSMax) { tempADC = tempTPSMax; }
+    else if(tempADC < tempTPSMin) { tempADC = tempTPSMin; }
+    currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 100);
   }
 
   //Check whether the closed throttle position sensor is active
@@ -378,7 +411,8 @@ void readCLT(bool useFilter)
   if(useFilter == true) { currentStatus.cltADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC); }
   else { currentStatus.cltADC = tempReading; }
   
-  currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
+  //currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
+  currentStatus.coolant = table2D_getValue(&cltCalibrationTable_new, currentStatus.cltADC) - CALIBRATION_TEMPERATURE_OFFSET;
 }
 
 void readIAT()
@@ -391,7 +425,8 @@ void readIAT()
     tempReading = fastMap1023toX(analogRead(pinIAT), 511); //Get the current raw IAT value
   #endif
   currentStatus.iatADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_IAT, currentStatus.iatADC);
-  currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
+  //currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
+  currentStatus.IAT = table2D_getValue(&iatCalibrationTable_new, currentStatus.iatADC) - CALIBRATION_TEMPERATURE_OFFSET;
 }
 
 void readBaro()
@@ -484,6 +519,104 @@ void readBat()
   currentStatus.battery10 = ADC_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
 }
 
+uint16_t getSpeed()
+{
+  uint16_t tempSpeed = 0;
+  uint32_t pulseTime = 0;
+
+  //Need to temp store the pulse time variables to prevent them changing during an interrupt
+  noInterrupts();
+  uint32_t temp_vssLastPulseTime = vssLastPulseTime;
+  uint32_t temp_vssLastMinusOnePulseTime  = vssLastMinusOnePulseTime;
+  interrupts();
+
+  if(configPage2.vssMode == 1)
+  {
+    //VSS mode 1 is (Will be) CAN
+  }
+  else if(configPage2.vssMode > 1)
+  {
+    if( (temp_vssLastPulseTime > 0) && (temp_vssLastMinusOnePulseTime > 0) ) //Check we've had at least 2 pulses
+    {
+      if(temp_vssLastPulseTime < temp_vssLastMinusOnePulseTime) { tempSpeed = currentStatus.vss; } //Check for overflow of micros()
+      else if ( (micros() - temp_vssLastPulseTime) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop (1s timeout)
+      else
+      {
+        pulseTime = temp_vssLastPulseTime - temp_vssLastMinusOnePulseTime;
+        tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
+        tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
+        if(tempSpeed > 1000) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
+      }
+    }
+  }
+  return tempSpeed;
+}
+
+byte getGear()
+{
+  byte tempGear = 0; //Unknown gear
+  if(currentStatus.vss > 0)
+  {
+    //If the speed is non-zero, default to the last calculated gear
+    tempGear = currentStatus.gear;
+
+    uint16_t pulsesPer1000rpm = (currentStatus.vss * 10000UL) / currentStatus.RPM; //Gives the current pulses per 1000RPM, multipled by 10 (10x is the multiplication factor for the ratios in TS)
+    //Begin gear detection
+    if( (pulsesPer1000rpm > (configPage2.vssRatio1 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio1 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 1; }
+    else if( (pulsesPer1000rpm > (configPage2.vssRatio2 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio2 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 2; }
+    else if( (pulsesPer1000rpm > (configPage2.vssRatio3 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio3 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 3; }
+    else if( (pulsesPer1000rpm > (configPage2.vssRatio4 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio4 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 4; }
+    else if( (pulsesPer1000rpm > (configPage2.vssRatio5 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio5 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 5; }
+    else if( (pulsesPer1000rpm > (configPage2.vssRatio6 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio6 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 6; }
+  }
+  
+  return tempGear;
+}
+
+byte getFuelPressure()
+{
+  int16_t tempFuelPressure = 0;
+  uint16_t tempReading;
+
+  if(configPage10.fuelPressureEnable)
+  {
+    //Perform ADC read
+    tempReading = analogRead(pinFuelPressure);
+    tempReading = analogRead(pinFuelPressure);
+
+    tempFuelPressure = fastMap10Bit(tempReading, configPage10.fuelPressureMin, configPage10.fuelPressureMax);
+    tempFuelPressure = ADC_FILTER(tempFuelPressure, 150, currentStatus.fuelPressure); //Apply speed smoothing factor
+    //Sanity checks
+    if(tempFuelPressure < 0) { tempFuelPressure = 0; }
+    if(tempFuelPressure > configPage10.fuelPressureMax) { tempFuelPressure = configPage10.fuelPressureMax; }
+  }
+
+  return (byte)tempFuelPressure;
+}
+
+byte getOilPressure()
+{
+  int16_t tempOilPressure = 0;
+  uint16_t tempReading;
+
+  if(configPage10.oilPressureEnable)
+  {
+    //Perform ADC read
+    tempReading = analogRead(pinOilPressure);
+    tempReading = analogRead(pinOilPressure);
+
+
+    tempOilPressure = fastMap10Bit(tempReading, configPage10.oilPressureMin, configPage10.oilPressureMax);
+    tempOilPressure = ADC_FILTER(tempOilPressure, 150, currentStatus.oilPressure); //Apply speed smoothing factor
+    //Sanity checks
+    if(tempOilPressure < 0) { tempOilPressure = 0; }
+    if(tempOilPressure > configPage10.oilPressureMax) { tempOilPressure = configPage10.oilPressureMax; }
+  }
+
+
+  return (byte)tempOilPressure;
+}
+
 /*
  * The interrupt function for reading the flex sensor frequency
  * This value is incremented with every pulse and reset back to 0 once per second
@@ -508,6 +641,17 @@ void knockPulse()
   }
   else { ++knockCounter; } //Knock has already started, so just increment the counter for this
 
+}
+
+/**
+ * @brief The ISR function for VSS pulses
+ * 
+ */
+void vssPulse()
+{
+  //TODO: Add basic filtering here
+  vssLastMinusOnePulseTime = vssLastPulseTime;
+  vssLastPulseTime = micros();
 }
 
 uint16_t readAuxanalog(uint8_t analogPin)

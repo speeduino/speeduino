@@ -35,6 +35,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "storage.h"
 #include "crankMaths.h"
 #include "init.h"
+#include "engineProtection.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 int ignition1StartAngle = 0;
@@ -45,6 +46,37 @@ int ignition5StartAngle = 0;
 int ignition6StartAngle = 0;
 int ignition7StartAngle = 0;
 int ignition8StartAngle = 0;
+
+int channel1IgnDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
+int channel2IgnDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+int channel3IgnDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
+int channel4IgnDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
+int channel5IgnDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
+int channel6IgnDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
+int channel7IgnDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
+int channel8IgnDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
+int channel1InjDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
+int channel2InjDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+int channel3InjDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
+int channel4InjDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
+int channel5InjDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
+int channel6InjDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
+int channel7InjDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
+int channel8InjDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
+
+uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by TunerStudio) in uS */
+uint16_t inj_opentime_uS = 0;
+
+bool ignitionOn = false; /**< The current state of the ignition system (on or off) */
+bool fuelOn = false; /**< The current state of the fuel system (on or off) */
+
+byte maxIgnOutputs = 1; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
+byte curRollingCut = 0; /**< Rolling rev limiter, current ignition channel being cut */
+byte rollingCutCounter = 0; /**< how many times (revolutions) the ignition has been cut in a row */
+uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
+
+uint16_t staged_req_fuel_mult_pri = 0;
+uint16_t staged_req_fuel_mult_sec = 0;
 
 #ifndef UNIT_TEST // Scope guard for unit testing
 void setup()
@@ -71,27 +103,29 @@ void loop()
         }
         
       }
-      //if can or secondary serial interface is enabled then check for requests.
-      if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+      #if defined(CANSerial_AVAILABLE)
+        //if can or secondary serial interface is enabled then check for requests.
+        if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+        {
+          if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
           {
-            if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
-                {
-                  if (CANSerial.available() > 0)  { secondserial_Command(); }
-                }
+            if (CANSerial.available() > 0)  { secondserial_Command(); }
           }
-      #if  defined(CORE_TEENSY)
+        }
+      #endif
+      #if defined(CORE_TEENSY)
           //currentStatus.canin[12] = configPage9.enable_intcan;
           if (configPage9.enable_intcan == 1) // use internal can module
           {
             //check local can module
             // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
             while (Can0.read(inMsg) ) 
-                 {
-                  can_Command();
-                  //Can0.read(inMsg);
-                  //currentStatus.canin[12] = inMsg.buf[5];
-                  //currentStatus.canin[13] = inMsg.id;
-                 } 
+            {
+              can_Command();
+              //Can0.read(inMsg);
+              //currentStatus.canin[12] = inMsg.buf[5];
+              //currentStatus.canin[13] = inMsg.id;
+            } 
           }
       #endif
       
@@ -112,6 +146,7 @@ void loop()
     {
       currentStatus.longRPM = getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
+      currentStatus.RPMdiv100 = currentStatus.RPM / 100;
       FUEL_PUMP_ON();
       currentStatus.fuelPumpOn = true; //Not sure if this is needed.
     }
@@ -143,6 +178,7 @@ void loop()
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); //Same as above except for RUNNING status
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Same as above except for ASE status
+      BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Same as above but the accel enrich (If using MAP accel enrich a stall will cause this to trigger)
       //This is a safety check. If for some reason the interrupts have got screwed up (Leading to 0rpm), this resets them.
       //It can possibly be run much less frequently.
       //This should only be run if the high speed logger are off because it will change the trigger interrupts back to defaults rather than the logger versions
@@ -194,37 +230,6 @@ void loop()
         else { currentStatus.flatShiftingHard = false; }
       }
 
-
-
-      //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
-      if( (configPage6.boostCutType > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2)) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
-      {
-        switch(configPage6.boostCutType)
-        {
-          case 1:
-            BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-            BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-            break;
-          case 2:
-            BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-            BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-            break;
-          case 3:
-            BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-            BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-            break;
-          default:
-            //Shouldn't ever happen, but just in case, disable all cuts
-            BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-            BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-        }
-      }
-      else
-      {
-        BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
-        BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-      }
-
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
 
@@ -248,6 +253,10 @@ void loop()
       readBat();
       nitrousControl();
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
+      currentStatus.vss = getSpeed();
+      currentStatus.gear = getGear();
+      currentStatus.fuelPressure = getFuelPressure();
+      currentStatus.oilPressure = getOilPressure();
 
       if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
@@ -414,6 +423,9 @@ void loop()
           BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN);
           currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
           if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); }
+
+          //Check whether the user has selected to disable to the fan during cranking
+          if(configPage2.fanWhenCranking == 0) { FAN_OFF(); }
         }
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
@@ -448,16 +460,16 @@ void loop()
       uint16_t injector4StartAngle = 0;
 
       #if INJ_CHANNELS >= 5
-      uint16_t injector5StartAngle = 0; //For 5 cylinder testing
+      uint16_t injector5StartAngle = 0;
       #endif
       #if INJ_CHANNELS >= 6
-      int injector6StartAngle = 0;
+      uint16_t injector6StartAngle = 0;
       #endif
       #if INJ_CHANNELS >= 7
-      int injector7StartAngle = 0;
+      uint16_t injector7StartAngle = 0;
       #endif
       #if INJ_CHANNELS >= 8
-      int injector8StartAngle = 0;
+      uint16_t injector8StartAngle = 0;
       #endif
       //These are used for comparisons on channels above 1 where the starting angle (for injectors or ignition) can be less than a single loop time
       //(Don't ask why this is needed, it's just there)
@@ -524,7 +536,8 @@ void loop()
         currentStatus.PW4 = currentStatus.PW1;
         currentStatus.PW5 = currentStatus.PW1;
         currentStatus.PW6 = currentStatus.PW1;
-        currentStatus.PW7 = currentStatus.PW1; 
+        currentStatus.PW7 = currentStatus.PW1;
+        currentStatus.PW8 = currentStatus.PW1;
       }
 
       //***********************************************************************************************
@@ -664,9 +677,6 @@ void loop()
 
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
-      if (currentStatus.RPM > ((unsigned int)(configPage4.HardRevLim) * 100) ) { BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); } //Hardcut RPM limit
-      else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM); }
-
 
       //Set dwell
       //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage4. This number therefore needs to be multiplied by 100 to get dwell in uS
@@ -709,6 +719,72 @@ void loop()
       //     interrupts();
       //   }
       // }
+      
+      //Check for any of the engine protections or rev limiters being turned on
+      if(checkEngineProtect() || currentStatus.launchingHard || currentStatus.flatShiftingHard)
+      {
+        if(currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM)
+        {
+          if( (configPage2.hardCutType == HARD_CUT_FULL) || (configPage6.engineProtectType == PROTECT_CUT_FUEL) ) 
+          { 
+            //Full hard cut turns outputs off completely. Note that hard cut is ALWAYS used on fuel cut only. 
+            switch(configPage6.engineProtectType)
+            {
+              case PROTECT_CUT_OFF:
+                ignitionOn = true;
+                fuelOn = true;
+                currentStatus.engineProtectStatus = 0;
+                break;
+              case PROTECT_CUT_IGN:
+                ignitionOn = false;
+                break;
+              case PROTECT_CUT_FUEL:
+                fuelOn = false;
+                break;
+              case PROTECT_CUT_BOTH:
+                ignitionOn = false;
+                fuelOn = false;
+                break;
+              default:
+                ignitionOn = false;
+                fuelOn = false;
+                break;
+            }
+          }
+          else 
+          { 
+            //if(rollingCutCounter >= 2) //Vary this number to change the intensity of the roll. The higher the number, the closer is it to full cut
+            if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //
+            if (currentStatus.startRevolutions > (rollingCutLastRev+1) )
+            { 
+              //Rolls through each of the active ignition channels based on how many revolutions have taken place
+              //curRollingCut = ( (currentStatus.startRevolutions / 2) % maxIgnOutputs) + 1;
+              curRollingCut = 0;
+              rollingCutCounter += 1;
+              if(rollingCutCounter > (maxIgnOutputs-1)) { rollingCutCounter = 0; }
+              BIT_SET(curRollingCut, rollingCutCounter);
+
+              ignitionOn = true;
+              rollingCutLastRev = currentStatus.startRevolutions;
+              //curRollingCut = 0;
+            }
+            /*
+            else
+            {
+              if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //
+              if (rollingCutLastRev != currentStatus.startRevolutions)
+              {
+                rollingCutLastRev = currentStatus.startRevolutions;
+                rollingCutCounter++;
+              }
+              ignitionOn = false; //Finally the ignition is fully cut completely
+            }
+            */
+          } //Hard/Rolling cut check
+        } //RPM Check
+        else { currentStatus.engineProtectStatus = 0; } //Force all engine protection flags to be off as we're below the minimum RPM
+      } //Protection active check
+      else { curRollingCut = 0; } //Disables the rolling hard cut
 
 #if INJ_CHANNELS >= 1
       if (fuelOn && !BIT_CHECK(currentStatus.status1, BIT_STATUS1_BOOSTCUT))
@@ -728,13 +804,12 @@ void loop()
 
         /*-----------------------------------------------------------------------------------------
         | A Note on tempCrankAngle and tempStartAngle:
-        |   The use of tempCrankAngle/tempStartAngle is described below. It is then used in the same way for channels 2, 3 and 4 on both injectors and ignition
+        |   The use of tempCrankAngle/tempStartAngle is described below. It is then used in the same way for channels 2, 3 and 4+ on both injectors and ignition
         |   Essentially, these 2 variables are used to realign the current crank angle and the desired start angle around 0 degrees for the given cylinder/output
         |   Eg: If cylinder 2 TDC is 180 degrees after cylinder 1 (Eg a standard 4 cylidner engine), then tempCrankAngle is 180* less than the current crank angle and
         |       tempStartAngle is the desired open time less 180*. Thus the cylinder is being treated relative to its own TDC, regardless of its offset
         |
         |   This is done to avoid problems with very short of very long times until tempStartAngle.
-        |   This will very likely need to be rewritten when sequential is enabled
         |------------------------------------------------------------------------------------------
         */
 #if INJ_CHANNELS >= 2
@@ -798,7 +873,7 @@ void loop()
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
           tempStartAngle = injector5StartAngle - channel5InjDegrees;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
-          if (tempStartAngle <= tempCrankAngle && fuelSchedule5.schedulesSet == 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule5.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
             //Note the hacky use of fuel schedule 3 below
@@ -886,51 +961,27 @@ void loop()
           ignition2StartAngle -= 5;
           ignition3StartAngle -= 5;
           ignition4StartAngle -= 5;
+          ignition5StartAngle -= 5;
+          ignition6StartAngle -= 5;
+          ignition7StartAngle -= 5;
+          ignition8StartAngle -= 5;
         }
       }
       else { fixedCrankingOverride = 0; }
 
-      //Perform an initial check to see if the ignition is turned on (Ignition only turns on after a preset number of cranking revolutions and:
-      //Check for any of the hard cut rev limits being on
-      if(currentStatus.launchingHard || BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) || BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) || currentStatus.flatShiftingHard)
-      {
-        if(configPage2.hardCutType == HARD_CUT_FULL) { ignitionOn = false; }
-        else 
-        { 
-          if(rollingCutCounter >= 2) //Vary this number to change the intensity of the roll. The higher the number, the closer is it to full cut
-          { 
-            //Rolls through each of the active ignition channels based on how many revolutions have taken place
-            //curRollingCut = ( (currentStatus.startRevolutions / 2) % maxIgnOutputs) + 1;
-            rollingCutCounter = 0;
-            ignitionOn = true;
-            curRollingCut = 0;
-          }
-          else
-          {
-            if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //
-            if (rollingCutLastRev != currentStatus.startRevolutions)
-            {
-              rollingCutLastRev = currentStatus.startRevolutions;
-              rollingCutCounter++;
-            }
-            ignitionOn = false; //Finally the ignition is fully cut completely
-          }
-        } 
-      }
-      else { curRollingCut = 0; } //Disables the rolling hard cut
-
-      //if(ignitionOn && !currentStatus.launchingHard && !BIT_CHECK(currentStatus.spark, BIT_SPARK_BOOSTCUT) && !BIT_CHECK(currentStatus.spark, BIT_SPARK_HRDLIM) && !currentStatus.flatShiftingHard)
       if(ignitionOn)
       {
         //Refresh the current crank angle info
         //ignition1StartAngle = 335;
         crankAngle = getCrankAngle(); //Refresh with the latest crank angle
-        if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
+        while (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
 
 #if IGN_CHANNELS >= 1
         if ( (ignition1StartAngle <= crankAngle) && (ignitionSchedule1.Status == RUNNING) ) { ignition1StartAngle += CRANK_ANGLE_MAX_IGN; }
-        if ( (ignition1StartAngle > crankAngle) && (curRollingCut != 1) )
+        //if ( (ignition1StartAngle > crankAngle) && (curRollingCut != 1) )
+        if ( (ignition1StartAngle > crankAngle) && (!BIT_CHECK(curRollingCut, IGN1_CMD_BIT)) )
         {
+          
           setIgnitionSchedule1(ign1StartFunction,
                     //((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                     angleToTime((ignition1StartAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV),
@@ -960,14 +1011,12 @@ void loop()
         }
   #endif
         
-
-
 #if IGN_CHANNELS >= 2
         tempCrankAngle = crankAngle - channel2IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition2StartAngle - channel2IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
-        //if (tempStartAngle > tempCrankAngle)
+        if (maxIgnOutputs >= 2)
         {
             unsigned long ignition2StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule2.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
@@ -975,7 +1024,7 @@ void loop()
             //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition2StartTime = 0; }
 
-            if( (ignition2StartTime > 0) && (curRollingCut != 2) )
+            if ( (ignition2StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN2_CMD_BIT)) )
             {
               setIgnitionSchedule2(ign2StartFunction,
                         ignition2StartTime,
@@ -991,15 +1040,15 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition3StartAngle - channel3IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
-        //if (tempStartAngle > tempCrankAngle)
+        if (maxIgnOutputs >= 3)
         {
-            long ignition3StartTime = 0;
+            unsigned long ignition3StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule3.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition3StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
-            //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition3StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition3StartTime = 0; }
 
-            if( (ignition3StartTime > 0) && (curRollingCut != 3) )
+            if ( (ignition3StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN3_CMD_BIT)) )
             {
               setIgnitionSchedule3(ign3StartFunction,
                         ignition3StartTime,
@@ -1015,16 +1064,16 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition4StartAngle - channel4IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
-        //if (tempStartAngle > tempCrankAngle)
+        if (maxIgnOutputs >= 4)
         {
 
-            long ignition4StartTime = 0;
+            unsigned long ignition4StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule4.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition4StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition4StartTime = 0; }
 
-            if( (ignition4StartTime > 0) && (curRollingCut != 4) )
+            if ( (ignition4StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN4_CMD_BIT)) )
             {
               setIgnitionSchedule4(ign4StartFunction,
                         ignition4StartTime,
@@ -1040,21 +1089,22 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition5StartAngle - channel5IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
-        //if (tempStartAngle > tempCrankAngle)
+        if (maxIgnOutputs >= 5)
         {
 
-            long ignition5StartTime = 0;
+            unsigned long ignition5StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule5.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition5StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
-            //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition5StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition5StartTime = 0; }
 
-            if( (ignition5StartTime > 0) && (curRollingCut != 5) ) {
-            setIgnitionSchedule5(ign5StartFunction,
-                      ignition5StartTime,
-                      currentStatus.dwell + fixedCrankingOverride,
-                      ign5EndFunction
-                      );
+            if ( (ignition5StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN5_CMD_BIT)) )
+            {
+              setIgnitionSchedule5(ign5StartFunction,
+                        ignition5StartTime,
+                        currentStatus.dwell + fixedCrankingOverride,
+                        ign5EndFunction
+                        );
             }
         }
 #endif
@@ -1064,13 +1114,15 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition6StartAngle - channel6IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+        if (maxIgnOutputs >= 6)
         {
             unsigned long ignition6StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule6.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition6StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition6StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition6StartTime = 0; }
 
-            if( (ignition6StartTime > 0) && (curRollingCut != 2) )
+            if ( (ignition6StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN6_CMD_BIT)) )
             {
               setIgnitionSchedule6(ign6StartFunction,
                         ignition6StartTime,
@@ -1086,13 +1138,15 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition7StartAngle - channel7IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+        if (maxIgnOutputs >= 7)
         {
             unsigned long ignition7StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule7.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition7StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition7StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition7StartTime = 0; }
 
-            if( (ignition7StartTime > 0) && (curRollingCut != 2) )
+            if ( (ignition7StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN7_CMD_BIT)) )
             {
               setIgnitionSchedule7(ign7StartFunction,
                         ignition7StartTime,
@@ -1108,13 +1162,15 @@ void loop()
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempStartAngle = ignition8StartAngle - channel8IgnDegrees;
         if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+        if (maxIgnOutputs >= 8)
         {
             unsigned long ignition8StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule8.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition8StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition8StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition8StartTime = 0; }
 
-            if( (ignition8StartTime > 0) && (curRollingCut != 2) )
+            if ( (ignition8StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN8_CMD_BIT)) )
             {
               setIgnitionSchedule8(ign8StartFunction,
                         ignition8StartTime,
