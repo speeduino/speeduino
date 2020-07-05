@@ -316,7 +316,7 @@ If it's the correct tooth, but the schedule is not yet started, calculate and an
     { \
       if( (ignitionSchedule8.Status == RUNNING) ) { IGN8_COMPARE = IGN8_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition8EndAngle - crankAngle) ) ) ); } \
       else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule8.endCompare = IGN8_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition8EndAngle - crankAngle) ) ) ); ignitionSchedule8.endScheduleSetByDecoder = true; } \
-    } \  
+    } \
   } \
 }
 
