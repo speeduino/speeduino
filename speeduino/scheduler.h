@@ -70,7 +70,7 @@ extern void (*ign8EndFunction)();
 ///@}
 
 void initialiseSchedulers();
-void StartPriming();
+void beginInjectorPriming();
 void setFuelSchedule1(unsigned long timeout, unsigned long duration);
 void setFuelSchedule2(unsigned long timeout, unsigned long duration);
 void setFuelSchedule3(unsigned long timeout, unsigned long duration);

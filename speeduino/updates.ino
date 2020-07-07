@@ -370,14 +370,19 @@ void doUpdates()
     int y;
     for(int x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
     {
-      y = EEPROM_CALIBRATION_CLT + (x * 16);
+      y = EEPROM_CALIBRATION_CLT_OLD + (x * 16);
       cltCalibration_values[x] = EEPROM.read(y);
       cltCalibration_bins[x] = (x * 16);
 
-      y = EEPROM_CALIBRATION_IAT + (x * 16);
+      y = EEPROM_CALIBRATION_IAT_OLD + (x * 16);
       iatCalibration_values[x] = EEPROM.read(y);
       iatCalibration_bins[x] = (x * 16);
     }
+
+    //Oil and fuel pressure inputs were introduced. Disable them both by default
+    configPage10.oilPressureProtEnbl = false;
+    configPage10.oilPressureEnable = false;
+    configPage10.fuelPressureEnable = false;
 
   }
   
