@@ -498,7 +498,7 @@ void readBat()
 
   //Apply the offset calibration value to the reading
   tempReading += configPage4.batVoltCorrect;
-  if(tempReading > 0){
+  if(tempReading < 0){
     tempReading=0;
   }  //with negative overflow prevention
 
