@@ -202,7 +202,7 @@ void loop()
           if (configPage9.enable_intcan == 1) // use internal can module
           {
            // this is just to test the interface is sending
-           sendCancommand(3,(configPage9.realtime_base_address+ 0x100),currentStatus.TPS,0,0x200);
+           //sendCancommand(3,((configPage9.realtime_base_address & 0x3FF)+ 0x100),currentStatus.TPS,0,0x200);
           }
       #endif     
 
