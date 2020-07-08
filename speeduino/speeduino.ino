@@ -76,13 +76,21 @@ byte rollingCutCounter = 0; /**< how many times (revolutions) the ignition has b
 uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 
 uint16_t staged_req_fuel_mult_pri = 0;
-uint16_t staged_req_fuel_mult_sec = 0;
-
+uint16_t staged_req_fuel_mult_sec = 0;   
 #ifndef UNIT_TEST // Scope guard for unit testing
 void setup()
 {
   initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
   initialiseAll();
+    #if defined(CORE_TEENSY)
+    //Teensy uses the Flexcan_T4 library to use the internal canbus
+    //enable local can interface
+    //setup can interface to 500k
+    
+    Can0.begin();
+    Can0.setBaudRate(500000);
+    Can0.enableFIFO();
+    #endif 
 }
 
 void loop()
