@@ -488,7 +488,7 @@ void readO2_2()
 
 void readBat()
 {
-  unsigned int tempReading;
+  int tempReading;
   #if defined(ANALOG_ISR)
     tempReading = fastMap1023toX(AnChannel[pinBat-A0], 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
   #else
@@ -498,6 +498,10 @@ void readBat()
 
   //Apply the offset calibration value to the reading
   tempReading += configPage4.batVoltCorrect;
+  if(tempReading < 0){
+    tempReading=0;
+  }  //with negative overflow prevention
+
 
   //The following is a check for if the voltage has jumped up from under 5.5v to over 7v.
   //If this occurs, it's very likely that the system has gone from being powered by USB to being powered from the 12v power source.
