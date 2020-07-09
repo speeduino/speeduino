@@ -700,7 +700,7 @@
         <constant digits="0" name="egoCount">16.0</constant>
         <constant name="vvtMode">"On/Off"</constant>
         <constant name="vvtLoadSource">"MAP"</constant>
-        <constant name="vvtCLDir">"Advance"</constant>
+        <constant name="vvtPWMdir">"Advance"</constant>
         <constant name="vvtCLUseHold">"Yes"</constant>
         <constant name="vvtCLAlterFuelTiming">"No"</constant>
         <constant name="unused6-6">"MAP"</constant>

@@ -98,16 +98,16 @@ void initialiseAuxPWM()
 
     if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
     {
-      vvtPID.SetOutputLimits(0, percentage(80, vvt_pwm_max_count)); //80% is a completely arbitrary amount for the max duty cycle, but seems inline with most VVT documentation
+      vvtPID.SetOutputLimits(percentage(configPage10.vvtCLminDuty, vvt_pwm_max_count), percentage(configPage10.vvtCLmaxDuty, vvt_pwm_max_count));
       vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
-      vvtPID.SetSampleTime(30);
+      vvtPID.SetSampleTime(33); //30Hz is 33,33ms
       vvtPID.SetMode(AUTOMATIC); //Turn PID on
     }
 
     currentStatus.vvtDuty = 0;
     vvt_pwm_value = 0;
+    ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
   }
-  ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
 
   currentStatus.boostDuty = 0;
   boostCounter = 0;
@@ -199,18 +199,15 @@ void vvtControl()
 {
   if( (configPage6.vvtEnabled == 1) && (currentStatus.RPM > 0) )
   {
-    currentStatus.vvtDuty = 0;
+    //currentStatus.vvtDuty = 0;
+    //Calculate the current cam angle
+    if( configPage4.TrigPattern == 9 ) { getCamAngle_Miata9905(); }
+
     if( (configPage6.vvtMode == VVT_MODE_OPEN_LOOP) || (configPage6.vvtMode == VVT_MODE_ONOFF) )
     {
       //Lookup VVT duty based on either MAP or TPS
-      if(configPage6.vvtLoadSource == VVT_LOAD_TPS)
-      {
-        currentStatus.vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
-      }
-      else
-      {
-        currentStatus.vvtDuty = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM);
-      }
+      if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM); }
+      else { currentStatus.vvtDuty = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
 
       //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
       if( (configPage6.VVTasOnOff == true) && (currentStatus.vvtDuty < 100) ) { currentStatus.vvtDuty = 0; }
@@ -221,18 +218,9 @@ void vvtControl()
     } //Open loop
     else if( (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP) )
     {
-      //Calculate the current cam angle
-      getCamAngle_Miata9905();
-
       //Lookup VVT duty based on either MAP or TPS
-      if(configPage6.vvtLoadSource == VVT_LOAD_TPS)
-      {
-        currentStatus.vvtTargetAngle = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
-      }
-      else
-      {
-        currentStatus.vvtTargetAngle = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM);
-      }
+      if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvtTargetAngle = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM); }
+      else { currentStatus.vvtTargetAngle = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
 
       if( (vvtCounter & 31) == 1) { vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD); } //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
 
@@ -245,24 +233,20 @@ void vvtControl()
       }
       else
       {
-        //If not already at target angle, calculate new value from PID
-
         //This is dumb, but need to convert the current angle into a long pointer
         vvt_pid_target_angle = currentStatus.vvtTargetAngle;
 
-        if(currentStatus.vvtTargetAngle > 0)
+        if(currentStatus.vvtTargetAngle >= 0)
         {
+          //If not already at target angle, calculate new value from PID
           bool PID_compute = vvtPID.Compute(false);
           //vvtPID.Compute2(currentStatus.vvtTargetAngle, currentStatus.vvtAngle, false);
           //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
           //if (currentStatus.vvtAngle > currentStatus.vvtTargetAngle) { vvt_pwm_target_value = 0; }
           if(PID_compute == true) { currentStatus.vvtDuty = (vvt_pwm_value * 100) / vvt_pwm_max_count; }
-          
+
         }
-        else
-        {
-          currentStatus.vvtDuty = 0;
-        }
+        else { currentStatus.vvtDuty = 0; }
       }
       
       if(currentStatus.vvtDuty > 0) { ENABLE_VVT_TIMER(); }
@@ -275,13 +259,15 @@ void vvtControl()
     if(currentStatus.vvtDuty == 0)
     {
       //Make sure solenoid is off (0% duty)
-      VVT_PIN_LOW();
+      if (configPage6.vvtPWMdir == 0) { *vvt_pin_port &= ~(vvt_pin_mask); } //Normal direction
+      else { *vvt_pin_port |= (vvt_pin_mask); } //Reversed direction
       DISABLE_VVT_TIMER();
     }
     else if (currentStatus.vvtDuty >= 100)
     {
       //Make sure solenoid is on (100% duty)
-      VVT_PIN_HIGH();
+      if (configPage6.vvtPWMdir == 0) { *vvt_pin_port |= (vvt_pin_mask); } //Normal direction
+      else { *vvt_pin_port &= ~(vvt_pin_mask); } //Reversed direction
       DISABLE_VVT_TIMER();
     }
  
@@ -390,13 +376,15 @@ void boostDisable()
 {
   if (vvt_pwm_state == true)
   {
-    VVT_PIN_LOW();  // Switch pin to low
+    if (configPage6.vvtPWMdir == 0) { *vvt_pin_port &= ~(vvt_pin_mask); } //Normal direction
+    else { *vvt_pin_port |= (vvt_pin_mask); } //Reversed direction
     VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt_pwm_cur_value);
     vvt_pwm_state = false;
   }
   else
   {
-    VVT_PIN_HIGH();  // Switch pin high
+    if (configPage6.vvtPWMdir == 0) { *vvt_pin_port |= (vvt_pin_mask); } //Normal direction
+    else { *vvt_pin_port &= ~(vvt_pin_mask); } //Reversed direction
     VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt_pwm_value;
     vvt_pwm_cur_value = vvt_pwm_value;
     vvt_pwm_state = true;

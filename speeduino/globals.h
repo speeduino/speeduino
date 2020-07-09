@@ -837,7 +837,7 @@ struct config6 {
   byte egoCount; //The number of ignition cylces per step
   byte vvtMode : 2; //Valid VVT modes are 'on/off', 'open loop' and 'closed loop'
   byte vvtLoadSource : 2; //Load source for VVT (TPS or MAP)
-  byte vvtCLDir : 1; //VVT direction (advance or retard)
+  byte vvtPWMdir : 1; //VVT direction (normal or reverse)
   byte vvtCLUseHold : 1; //Whether or not to use a hold duty cycle (Most cases are Yes)
   byte vvtCLAlterFuelTiming : 1;
   byte boostCutEnabled : 1;
@@ -1102,8 +1102,8 @@ struct config10 {
   byte vvtCLKP; //Byte 127
   byte vvtCLKI; //Byte 128
   byte vvtCLKD; //Byte 129
-  uint16_t vvtCLMinAng; //Bytes 130-131
-  uint16_t vvtCLMaxAng; //Bytes 132-133
+  int16_t vvtCLMinAng; //Bytes 130-131
+  int16_t vvtCLMaxAng; //Bytes 132-133
 
   byte crankingEnrichTaper; //Byte 134
 
@@ -1122,8 +1122,10 @@ struct config10 {
 
   byte oilPressureProtRPM[4];
   byte oilPressureProtMins[4];
+  byte vvtCLminDuty;
+  byte vvtCLmaxDuty;
 
-  byte unused11_135_191[43]; //Bytes 135-191
+  byte unused11_151_191[41]; //Bytes 151-191
 
 #if defined(CORE_AVR)
   };

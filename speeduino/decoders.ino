@@ -13,7 +13,8 @@ Each decoder must have the following 4 functions (Where xxxx is the decoder name
 * triggerPri_xxxx - Called each time the primary (No. 1) crank/cam signal is triggered (Called as an interrupt, so variables must be declared volatile)
 * triggerSec_xxxx - Called each time the secondary (No. 2) crank/cam signal is triggered (Called as an interrupt, so variables must be declared volatile)
 * getRPM_xxxx - Returns the current RPM, as calculated by the decoder
-* getCrankAngle_xxxx - Returns the current crank angle, as calculated b the decoder
+* getCrankAngle_xxxx - Returns the current crank angle, as calculated by the decoder
+* getCamAngle_xxxx - Returns the current CAM angle, as calculated by the decoder
 
 And each decoder must utlise at least the following variables:
 toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
@@ -500,6 +501,18 @@ void triggerSec_missingTooth()
       secondaryToothCount++;
     }
     toothLastSecToothTime = curTime2;
+
+    //Record the VVT Angle
+    if( (configPage4.trigPatternSec != SEC_TRIGGER_4_1) || (secondaryToothCount == 1) )
+    {
+      int16_t curAngle;
+      curAngle = getCrankAngle();
+      while(curAngle > 360) { curAngle -= 360; }
+      curAngle -= configPage4.triggerAngle; //Value at TDC
+      if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCLMinAng; }
+
+      currentStatus.vvtAngle = curAngle;
+    }
   } //Trigger filter
 }
 
