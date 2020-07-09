@@ -418,14 +418,14 @@ void command()
       {
         Serial.print(x);
         Serial.print(", ");
-        Serial.println(cltCalibrationTable[x]);
+        //Serial.println(cltCalibrationTable[x]);
       }
       Serial.println(F("Inlet temp"));
       for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
       {
         Serial.print(x);
         Serial.print(", ");
-        Serial.println(iatCalibrationTable[x]);
+        //Serial.println(iatCalibrationTable[x]);
       }
       Serial.println(F("O2"));
       for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
@@ -629,8 +629,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[82] = highByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
 
   fullStatus[83] = currentStatus.status3;
-
-  fullStatus[84] = currentStatus.nChannels; //THIS IS CURRENTLY UNUSED!
+  fullStatus[84] = currentStatus.engineProtectStatus;
   fullStatus[85] = lowByte(currentStatus.fuelLoad);
   fullStatus[86] = highByte(currentStatus.fuelLoad);
   fullStatus[87] = lowByte(currentStatus.ignLoad);
@@ -1659,7 +1658,7 @@ void receiveCalibration(byte tableID)
   {
     case 0:
       //coolant table
-      pnt_TargetTable = (byte *)&cltCalibrationTable;
+      //pnt_TargetTable = (byte *)&cltCalibrationTable;
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
       DIVISION_FACTOR = 10;
       BYTES_PER_VALUE = 2;
@@ -1667,7 +1666,7 @@ void receiveCalibration(byte tableID)
       break;
     case 1:
       //Inlet air temp table
-      pnt_TargetTable = (byte *)&iatCalibrationTable;
+      //pnt_TargetTable = (byte *)&iatCalibrationTable;
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
       DIVISION_FACTOR = 10;
       BYTES_PER_VALUE = 2;

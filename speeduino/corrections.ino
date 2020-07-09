@@ -39,6 +39,7 @@ void initialiseCorrections()
   currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
   AFRnextCycle = 0;
   currentStatus.knockActive = false;
+  currentStatus.battery10 = 125; //Set battery voltage to sensible value for dwell correction for "flying start" (else ignition gets suprious pulses after boot)  
 }
 
 /*
@@ -791,8 +792,8 @@ int8_t correctionKnock(int8_t advance)
   //First check is to do the window calculations (ASsuming knock is enabled)
   if( configPage10.knock_mode != KNOCK_MODE_OFF )
   {
-    knockWindowMin = table2D_getValue(&knockWindowStartTable, currentStatus.RPM);
-    knockWindowMax = knockWindowMin + table2D_getValue(&knockWindowDurationTable, currentStatus.RPM);
+    knockWindowMin = table2D_getValue(&knockWindowStartTable, currentStatus.RPMdiv100);
+    knockWindowMax = knockWindowMin + table2D_getValue(&knockWindowDurationTable, currentStatus.RPMdiv100);
   }
 
 

@@ -667,10 +667,10 @@ void loadCalibration()
   for(int x=0; x<CALIBRATION_TABLE_SIZE; x++) //Each calibration table is 512 bytes long
   {
     int y = EEPROM_CALIBRATION_CLT + x;
-    cltCalibrationTable[x] = EEPROM.read(y);
+    //cltCalibrationTable[x] = EEPROM.read(y);
 
     y = EEPROM_CALIBRATION_IAT + x;
-    iatCalibrationTable[x] = EEPROM.read(y);
+    //iatCalibrationTable[x] = EEPROM.read(y);
 
     y = EEPROM_CALIBRATION_O2 + x;
     o2CalibrationTable[x] = EEPROM.read(y);
@@ -688,10 +688,10 @@ void writeCalibration()
   for(int x=0; x<CALIBRATION_TABLE_SIZE; x++) //Each calibration table is 512 bytes long
   {
     int y = EEPROM_CALIBRATION_CLT + x;
-    if(EEPROM.read(y) != cltCalibrationTable[x]) { EEPROM.write(y, cltCalibrationTable[x]); }
+    //if(EEPROM.read(y) != cltCalibrationTable[x]) { EEPROM.write(y, cltCalibrationTable[x]); }
 
     y = EEPROM_CALIBRATION_IAT + x;
-    if(EEPROM.read(y) != iatCalibrationTable[x]) { EEPROM.write(y, iatCalibrationTable[x]); }
+    //if(EEPROM.read(y) != iatCalibrationTable[x]) { EEPROM.write(y, iatCalibrationTable[x]); }
 
     y = EEPROM_CALIBRATION_O2 + x;
     if(EEPROM.read(y) != o2CalibrationTable[x]) { EEPROM.write(y, o2CalibrationTable[x]); }

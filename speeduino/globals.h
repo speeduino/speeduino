@@ -44,9 +44,13 @@
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(STM32)
   #define CORE_STM32
-  //These should be updated to 8 later, but there's bits missing currently
-  #define INJ_CHANNELS 4
-  #define IGN_CHANNELS 5
+  #if defined(STM32F4) //F4 can do 8x8
+   #define INJ_CHANNELS 8
+   #define IGN_CHANNELS 8
+  #else
+   #define INJ_CHANNELS 4
+   #define IGN_CHANNELS 5
+  #endif
 
 //Select one for EEPROM, default are emulated and is very slow
 //#define SRAM_AS_EEPROM /*Use RTC registers, requires a 3V battery connected to Vbat pin */
@@ -227,6 +231,11 @@
 #define NITROUS_STAGE2      2
 #define NITROUS_BOTH        3
 
+#define PROTECT_CUT_OFF     0
+#define PROTECT_CUT_IGN     1
+#define PROTECT_CUT_FUEL    2
+#define PROTECT_CUT_BOTH    3
+
 #define AE_MODE_TPS         0
 #define AE_MODE_MAP         1
 
@@ -269,6 +278,29 @@
 
 #define BATTV_COR_MODE_WHOLE 0
 #define BATTV_COR_MODE_OPENTIME 1
+
+#define INJ1_CMD_BIT      0
+#define INJ2_CMD_BIT      1
+#define INJ3_CMD_BIT      2
+#define INJ4_CMD_BIT      3
+#define INJ5_CMD_BIT      4
+#define INJ6_CMD_BIT      5
+#define INJ7_CMD_BIT      6
+#define INJ8_CMD_BIT      7
+
+#define IGN1_CMD_BIT      0
+#define IGN2_CMD_BIT      1
+#define IGN3_CMD_BIT      2
+#define IGN4_CMD_BIT      3
+#define IGN5_CMD_BIT      4
+#define IGN6_CMD_BIT      5
+#define IGN7_CMD_BIT      6
+#define IGN8_CMD_BIT      7
+
+#define ENGINE_PROTECT_BIT_RPM  0
+#define ENGINE_PROTECT_BIT_MAP  1
+#define ENGINE_PROTECT_BIT_OIL  2
+#define ENGINE_PROTECT_BIT_AFR  3
 
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
@@ -322,6 +354,7 @@ extern struct table2D flexBoostTable; //6 bin flex fuel correction table for boo
 extern struct table2D fuelTempTable;  //6 bin fuel temperature correction table for fuel adjustments (2D)
 extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
+extern struct table2D oilPressureProtectTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -423,6 +456,7 @@ extern int CRANK_ANGLE_MAX;
 extern int CRANK_ANGLE_MAX_IGN;
 extern int CRANK_ANGLE_MAX_INJ; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 extern volatile uint32_t runSecsX10; /**< Counter of seconds since cranking commenced (similar to runSecs) but in increments of 0.1 seconds */
+extern volatile uint32_t seclx10; /**< Counter of seconds since powered commenced (similar to secl) but in increments of 0.1 seconds */
 extern volatile byte HWTest_INJ; /**< Each bit in this variable represents one of the injector channels and it's HW test status */
 extern volatile byte HWTest_INJ_50pc; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
 extern volatile byte HWTest_IGN; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
@@ -446,6 +480,7 @@ extern volatile byte LOOP_TIMER;
 struct statuses {
   volatile bool hasSync;
   uint16_t RPM;
+  byte RPMdiv100;
   long longRPM;
   int mapADC;
   int baroADC;
@@ -547,6 +582,7 @@ struct statuses {
   byte gear; /**< Current gear (Calculated from vss) */
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure; /**< Oil pressure in PSI */
+  byte engineProtectStatus;
 };
 
 /**
@@ -691,7 +727,8 @@ struct config2 {
   uint16_t vssRatio5;
   uint16_t vssRatio6;
 
-  byte unused2_95[10];
+  byte unused2_95[9];
+  byte primingDelay;
 
 #if defined(CORE_AVR)
   };
@@ -779,7 +816,9 @@ struct config4 {
   byte idleAdvBins[6];
   byte idleAdvValues[6];
 
-  byte unused4_120[8];
+  byte engineProtectMaxRPM;
+
+  byte unused4_120[7];
 
 #if defined(CORE_AVR)
   };
@@ -795,7 +834,7 @@ struct config6 {
   byte egoType : 2;
   byte boostEnabled : 1;
   byte vvtEnabled : 1;
-  byte boostCutType : 2;
+  byte engineProtectType : 2;
 
   byte egoKP;
   byte egoKI;
@@ -807,7 +846,7 @@ struct config6 {
   byte vvtCLDir : 1; //VVT direction (advance or retard)
   byte vvtCLUseHold : 1; //Whether or not to use a hold duty cycle (Most cases are Yes)
   byte vvtCLAlterFuelTiming : 1;
-  byte unused6_6 : 1;
+  byte boostCutEnabled : 1;
   byte egoLimit; //Maximum amount the closed loop will vary the fueling
   byte ego_min; //AFR must be above this for closed loop to function
   byte ego_max; //AFR must be below this for closed loop to function
@@ -1076,7 +1115,8 @@ struct config10 {
 
   byte fuelPressureEnable : 1;
   byte oilPressureEnable : 1;
-  byte unused10_135 : 6;
+  byte oilPressureProtEnbl : 1;
+  byte unused10_135 : 5;
 
   byte fuelPressurePin : 4;
   byte oilPressurePin : 4;
@@ -1086,10 +1126,13 @@ struct config10 {
   int8_t oilPressureMin;
   byte oilPressureMax;
 
+  byte oilPressureProtRPM[4];
+  byte oilPressureProtMins[4];
+
   byte fuelTempBins[6];
   byte fuelTempValues[6];
 
-  byte unused11_153_191[39]; //Bytes 153-191
+  byte unused11_162_191[31]; //Bytes 162-191
 
 #if defined(CORE_AVR)
   };
@@ -1184,9 +1227,17 @@ extern struct config4 configPage4;
 extern struct config6 configPage6;
 extern struct config9 configPage9;
 extern struct config10 configPage10;
-extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
-extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
+//extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
+//extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
 extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
+
+extern uint16_t cltCalibration_bins[32];
+extern uint16_t cltCalibration_values[32];
+extern uint16_t iatCalibration_bins[32];
+extern uint16_t iatCalibration_values[32];
+extern struct table2D cltCalibrationTable_new; /**< A 32 bin array containing the coolant temperature sensor calibration values */
+extern struct table2D iatCalibrationTable_new; /**< A 32 bin array containing the inlet air temperature sensor calibration values */
+extern struct table2D o2CalibrationTable_new; /**< A 32 bin array containing the O2 sensor calibration values */
 
 static_assert(sizeof(struct config2) == 128, "configPage2 size is not 128");
 static_assert(sizeof(struct config4) == 128, "configPage4 size is not 128");
