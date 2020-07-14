@@ -56,7 +56,7 @@ void initialiseAll()
     //STM32 can not currently enabled
     #endif
 
-    #if defined(CORE_TEENSY)
+    #if defined(CORE_TEENSY35)
     configPage9.intcan_available = 1;   // device has internal canbus
     //Teensy uses the Flexcan_T4 library to use the internal canbus
     //enable local can interface
@@ -1099,8 +1099,6 @@ void initialiseAll()
           ign4EndFunction = endCoil4Charge;
         }
         break;
-
-
 
     default:
         //Wasted spark (Shouldn't ever happen anyway)
