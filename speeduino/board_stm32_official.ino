@@ -52,12 +52,16 @@
     * Auxilliaries
     */
     //2uS resolution Min 8Hz, Max 5KHz
+
     boost_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
     vvt_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle
+    fan_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle
 
     //Need to be initialised last due to instant interrupt
+    Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
+    Timer1.attachInterrupt(1, fanInterrupt);
     Timer1.attachInterrupt(2, boostInterrupt);
     Timer1.attachInterrupt(3, vvtInterrupt);
 
@@ -82,7 +86,6 @@
     Timer3.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer3.setMode(3, TIMER_OUTPUT_COMPARE);
     Timer3.setMode(4, TIMER_OUTPUT_COMPARE);
-    Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
 
     //Attach interrupt functions
     //Injection
@@ -175,6 +178,7 @@
   #endif
   void idleInterrupt(HardwareTimer*){idleInterrupt();}
   void vvtInterrupt(HardwareTimer*){vvtInterrupt();}
+  void fanInterrupt(HardwareTimer*){fanInterrupt();}
   void ignitionSchedule1Interrupt(HardwareTimer*){ignitionSchedule1Interrupt();}
   void ignitionSchedule2Interrupt(HardwareTimer*){ignitionSchedule2Interrupt();}
   void ignitionSchedule3Interrupt(HardwareTimer*){ignitionSchedule3Interrupt();}

@@ -17,6 +17,7 @@
   #define EEPROM_LIB_H <EEPROM.h>
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
+  #define PWM_FAN_AVAILABLE
 
 /*
 ***********************************************************************************************************
@@ -108,10 +109,16 @@
   #define ENABLE_VVT_TIMER()    TMR3_CSCTRL0 |= TMR_CSCTRL_TCF2EN
   #define DISABLE_VVT_TIMER()   TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF2EN
 
+  #define ENABLE_FAN_TIMER()    TMR3_CSCTRL1 |= TMR_CSCTRL_TCF2EN
+  #define DISABLE_FAN_TIMER()   TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF2EN
+
   #define BOOST_TIMER_COMPARE   TMR3_COMP10
   #define BOOST_TIMER_COUNTER   TMR3_CNTR0
   #define VVT_TIMER_COMPARE     TMR3_COMP20
   #define VVT_TIMER_COUNTER     TMR3_CNTR0
+
+  #define FAN_TIMER_COMPARE     TMR3_COMP22
+  #define FAN_TIMER_COUNTER     TMR3_CNTR1
 
   static inline void boostInterrupt();
   static inline void vvtInterrupt();

@@ -21,6 +21,7 @@
   #endif
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
+  #define PWM_FAN_AVAILABLE
 
 /*
 ***********************************************************************************************************
@@ -111,14 +112,21 @@
 
   #define ENABLE_VVT_TIMER()    FTM1_C1SC |= FTM_CSC_CHIE
   #define DISABLE_VVT_TIMER()   FTM1_C1SC &= ~FTM_CSC_CHIE
+  
+  #define ENABLE_FAN_TIMER()    FTM2_C1SC |= FTM_CSC_CHIE
+  #define DISABLE_FAN_TIMER()   FTM2_C1SC &= ~FTM_CSC_CHIE
 
   #define BOOST_TIMER_COMPARE   FTM1_C0V
   #define BOOST_TIMER_COUNTER   FTM1_CNT
   #define VVT_TIMER_COMPARE     FTM1_C1V
   #define VVT_TIMER_COUNTER     FTM1_CNT
 
+  #define FAN_TIMER_COMPARE     FTM2_C1V
+  #define FAN_TIMER_COUNTER     FTM2_CNT
+
   static inline void boostInterrupt();
   static inline void vvtInterrupt();
+  static inline void fanInterrupt();
 
 /*
 ***********************************************************************************************************

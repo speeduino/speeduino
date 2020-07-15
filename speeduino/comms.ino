@@ -651,6 +651,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[103] = currentStatus.gear;
   fullStatus[104] = currentStatus.fuelPressure;
   fullStatus[105] = currentStatus.oilPressure;
+  fullStatus[106] = currentStatus.fanDuty;
 
   for(byte x=0; x<packetLength; x++)
   {

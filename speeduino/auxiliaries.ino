@@ -26,11 +26,22 @@ void initialiseFan()
 
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
+#if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
+  DISABLE_FAN_TIMER();
+  if ( configPage6.fanEnable == 2 ) // PWM Fan control
+  {
+    #if defined(CORE_TEENSY)
+     fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+    #endif
+    currentStatus.fanDuty = 0;
+    fan_pwm_value = 0;
+  }
+#endif
 }
 
 void fanControl()
 {
-  if( configPage6.fanEnable == 1 )
+  if( configPage6.fanEnable == 1 ) //on/off Fan control
   {
     int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
     int offTemp = onTemp - configPage6.fanHyster;
@@ -60,6 +71,52 @@ void fanControl()
       currentStatus.fanOn = false;
     }
   }
+#if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA currently
+  else if ( configPage6.fanEnable == 2 ) // PWM Fan control
+  {
+    bool fanPermit = false;
+    if ( configPage2.fanWhenOff == true) { fanPermit = true; }
+    else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
+    if (fanPermit == true)
+      {
+      if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
+      {
+        currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
+        currentStatus.fanOn = false;
+        DISABLE_FAN_TIMER();
+      }
+      else
+      {
+        currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
+        if (currentStatus.fanDuty > 0)
+        {
+          fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
+          currentStatus.fanOn = true; // update fan on status. Is this even used anywhere??
+          ENABLE_FAN_TIMER();
+        }
+      }
+    }
+    else if (!fanPermit)
+    {
+      currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
+      currentStatus.fanOn = false;
+      DISABLE_FAN_TIMER();
+    }
+
+  if(currentStatus.fanDuty == 0)
+    {
+      //Make sure fan has 0% duty)
+      digitalWrite(pinFan, fanLOW);     // Switch pin to low
+      DISABLE_FAN_TIMER();
+    }
+    else if (currentStatus.fanDuty >= 100)
+    {
+      //Make sure fan has 100% duty
+      digitalWrite(pinFan, fanHIGH);     // Switch pin to high
+      DISABLE_FAN_TIMER();
+    }
+  }
+#endif
 }
 
 void initialiseAuxPWM()
@@ -403,6 +460,26 @@ void boostDisable()
   }
 }
 
+#if defined(PWM_FAN_AVAILABLE)
+//The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
+  static inline void fanInterrupt() //Most ARM chips can simply call a function
+{
+  if (fan_pwm_state == true)
+  {
+    digitalWrite(pinFan, fanLOW);     // Switch pin to low
+    FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
+    fan_pwm_state = false;
+  }
+  else
+  {
+    digitalWrite(pinFan, fanHIGH);    // Switch pin high
+    FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
+    fan_pwm_cur_value = fan_pwm_value;
+    fan_pwm_state = true;
+  }
+}
+#endif
+
 #if defined(CORE_TEENSY35)
 void ftm1_isr(void)
 {
@@ -410,9 +487,11 @@ void ftm1_isr(void)
   //Use separate variables for each test to ensure conversion to bool
   bool interrupt1 = (FTM1_C0SC & FTM_CSC_CHF);
   bool interrupt2 = (FTM1_C1SC & FTM_CSC_CHF);
+  bool interrupt3 = (FTM2_C1SC & FTM_CSC_CHF);
 
   if(interrupt1) { FTM1_C0SC &= ~FTM_CSC_CHF; boostInterrupt(); }
   else if(interrupt2) { FTM1_C1SC &= ~FTM_CSC_CHF; vvtInterrupt(); }
+  else if(interrupt3) { FTM2_C1SC &= ~FTM_CSC_CHF; fanInterrupt(); }
 
 }
 #elif defined(CORE_TEENSY40)
