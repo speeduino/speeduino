@@ -2049,8 +2049,9 @@ void setPinMapping(byte boardID)
       #endif
       break;
     
-   #if defined(ARDUINO_BLACK_F407VE)
+ 
     case 60:
+        #if defined(ARDUINO_BLACK_F407VE)
         //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
         //https://github.com/Tjeerdie/SPECTRE/tree/master/SPECTRE_V0.5
