@@ -367,7 +367,7 @@ void doUpdates()
     //202006
 
     //MAJOR update to move the coolant, IAT and O2 calibrations to 2D tables
-    int y;
+   /* int y;
     for(int x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
     {
       y = EEPROM_CALIBRATION_CLT_OLD + (x * 16);
@@ -378,7 +378,7 @@ void doUpdates()
       iatCalibration_values[x] = EEPROM.read(y);
       iatCalibration_bins[x] = (x * 16);
     }
-
+*/
     //Oil and fuel pressure inputs were introduced. Disable them both by default
     configPage10.oilPressureProtEnbl = false;
     configPage10.oilPressureEnable = false;

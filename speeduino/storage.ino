@@ -663,19 +663,28 @@ This is separate from the config load as the calibrations do not exist as pages 
 */
 void loadCalibration()
 {
-
-  for(int x=0; x<CALIBRATION_TABLE_SIZE; x++) //Each calibration table is 512 bytes long
+  int x;
+  int y;
+  //O2 calibration table
+  for(x=0; x<512; x++) //O2 calibration table is 512 bytes long
   {
-    int y = EEPROM_CALIBRATION_CLT + x;
-    //cltCalibrationTable[x] = EEPROM.read(y);
-
-    y = EEPROM_CALIBRATION_IAT + x;
-    //iatCalibrationTable[x] = EEPROM.read(y);
-
     y = EEPROM_CALIBRATION_O2 + x;
-    o2CalibrationTable[x] = EEPROM.read(y);
+    o2CalibrationTable[x]=EEPROM.read(y);  
   }
-
+  //IAT calibration table
+  for(x=0; x<iatCalibrationTable.xSize; x++)
+  {
+    y = EEPROM_CALIBRATION_IAT + x;
+    ((uint8_t*)iatCalibrationTable.values)[x]=EEPROM.read(y);
+    iatCalibration_bins[x] = (x * 16);
+  }
+  //CLT calibration table
+  for(x=0; x<cltCalibrationTable.xSize; x++)
+  {
+    y = EEPROM_CALIBRATION_CLT + x;
+    ((uint8_t*)cltCalibrationTable.values)[x]=EEPROM.read(y);
+    cltCalibration_bins[x] = (x * 16);
+  }
 }
 
 /*
@@ -684,19 +693,28 @@ and saves them to the EEPROM.
 */
 void writeCalibration()
 {
-
-  for(int x=0; x<CALIBRATION_TABLE_SIZE; x++) //Each calibration table is 512 bytes long
+  int x;
+  int y;
+  //O2 calibration table
+  for(x=0; x<512; x++) //O2 calibration table is 512 bytes long
   {
-    int y = EEPROM_CALIBRATION_CLT + x;
-    //if(EEPROM.read(y) != cltCalibrationTable[x]) { EEPROM.write(y, cltCalibrationTable[x]); }
-
-    y = EEPROM_CALIBRATION_IAT + x;
-    //if(EEPROM.read(y) != iatCalibrationTable[x]) { EEPROM.write(y, iatCalibrationTable[x]); }
-
     y = EEPROM_CALIBRATION_O2 + x;
     if(EEPROM.read(y) != o2CalibrationTable[x]) { EEPROM.write(y, o2CalibrationTable[x]); }
   }
-
+  //IAT calibration table
+  for(x=0; x<iatCalibrationTable.xSize; x++)
+  {
+    y = EEPROM_CALIBRATION_IAT + x;
+    if(EEPROM.read(y) != ((uint8_t*)iatCalibrationTable.values)[x]) { 
+      EEPROM.write(y, ((uint8_t*)iatCalibrationTable.values)[x]); }
+  }
+  //CLT calibration table
+  for(x=0; x<cltCalibrationTable.xSize; x++)
+  {
+    y = EEPROM_CALIBRATION_CLT + x;
+    if(EEPROM.read(y) != ((uint8_t*)cltCalibrationTable.values)[x]) { 
+      EEPROM.write(y, ((uint8_t*)cltCalibrationTable.values)[x]); }
+  }
 }
 
 /*

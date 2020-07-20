@@ -412,7 +412,7 @@ void readCLT(bool useFilter)
   else { currentStatus.cltADC = tempReading; }
   
   //currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
-  currentStatus.coolant = table2D_getValue(&cltCalibrationTable_new, currentStatus.cltADC) - CALIBRATION_TEMPERATURE_OFFSET;
+  currentStatus.coolant = table2D_getValue(&cltCalibrationTable, currentStatus.cltADC) - CALIBRATION_TEMPERATURE_OFFSET;
 }
 
 void readIAT()
@@ -426,7 +426,7 @@ void readIAT()
   #endif
   currentStatus.iatADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_IAT, currentStatus.iatADC);
   //currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
-  currentStatus.IAT = table2D_getValue(&iatCalibrationTable_new, currentStatus.iatADC) - CALIBRATION_TEMPERATURE_OFFSET;
+  currentStatus.IAT = table2D_getValue(&iatCalibrationTable, currentStatus.iatADC) - CALIBRATION_TEMPERATURE_OFFSET;
 }
 
 void readBaro()

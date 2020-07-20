@@ -536,8 +536,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[3] = currentStatus.syncLossCounter;
   fullStatus[4] = lowByte(currentStatus.MAP); //2 bytes for MAP
   fullStatus[5] = highByte(currentStatus.MAP);
-  fullStatus[6] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
-  fullStatus[7] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
+  fullStatus[6] = (currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
+  fullStatus[7] = (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
   fullStatus[8] = currentStatus.batCorrection; //Battery voltage correction (%)
   fullStatus[9] = currentStatus.battery10; //battery voltage
   fullStatus[10] = currentStatus.O2; //O2
@@ -1649,112 +1649,84 @@ byte getPageValue(byte page, uint16_t valueAddress)
  */
 void receiveCalibration(byte tableID)
 {
-  byte* pnt_TargetTable; //Pointer that will be used to point to the required target table
-  int OFFSET, DIVISION_FACTOR, BYTES_PER_VALUE, EEPROM_START;
+  byte tempBuffer0;
+  byte tempBuffer1;
+  int16_t tempvalue;
+  int x;
+  int counter = 0;
+  int n=0;
+  int stepSize;
 
   switch (tableID)
   {
     case 0:
       //coolant table
-      //pnt_TargetTable = (byte *)&cltCalibrationTable;
-      OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
-      DIVISION_FACTOR = 10;
-      BYTES_PER_VALUE = 2;
-      EEPROM_START = EEPROM_CALIBRATION_CLT;
+      //      BYTES_PER_VALUE = 2; DIVISION_FACTOR = 10;
+      //EEPROM_START = EEPROM_CALIBRATION_CLT;
+
+      stepSize=1024/cltCalibrationTable.xSize;            
+      for (x = 0; x < 1024; x++)
+      {
+        while ( Serial.available() < 2 ) {}  //blocking wait for serial
+        tempBuffer0 = Serial.read();
+        tempBuffer1 = Serial.read();  //High byte
+        if(n==0){
+          tempvalue=(tempBuffer1 << 8 | tempBuffer0);                 //Read 2 bytes, convert to int
+          tempvalue=(tempvalue / 10) + CALIBRATION_TEMPERATURE_OFFSET;//These values come through * 10 from Tuner Studio
+          ((uint8_t*)cltCalibrationTable.values)[counter] = tempvalue;
+          ((uint16_t*)cltCalibrationTable.axisX)[counter]=x/2;      //axis range is 9bit
+          counter++;
+          if(counter>cltCalibrationTable.xSize) break;
+        }
+        n++;
+        if(n>=stepSize) n=0;
+      }
       break;
     case 1:
       //Inlet air temp table
-      //pnt_TargetTable = (byte *)&iatCalibrationTable;
-      OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
-      DIVISION_FACTOR = 10;
-      BYTES_PER_VALUE = 2;
-      EEPROM_START = EEPROM_CALIBRATION_IAT;
+      //BYTES_PER_VALUE = 2;DIVISION_FACTOR = 10; 
+      //EEPROM_START = EEPROM_CALIBRATION_IAT;
+      stepSize=1024/iatCalibrationTable.xSize;  //only save values over this step          
+      for (x = 0; x < 1024; x++)
+      {
+        while ( Serial.available() < 2 ) {}  //blocking wait for serial
+        tempBuffer0 = Serial.read();
+        tempBuffer1 = Serial.read();  //High byte
+        if(n==0){
+          tempvalue=(tempBuffer1 << 8 | tempBuffer0);                  //Read 2 bytes, convert to int
+          tempvalue=(tempvalue / 10) + CALIBRATION_TEMPERATURE_OFFSET; //These values come through * 10 from Tuner Studio
+          ((uint8_t*)iatCalibrationTable.values)[counter] = tempvalue;
+          ((uint16_t*)iatCalibrationTable.axisX)[counter]= x/2;   //axis range is 9bit
+          counter++;
+          if(counter>=iatCalibrationTable.xSize) break;
+        }
+        n++;
+        if(n>=stepSize) n=0;
+      }      
       break;
     case 2:
       //O2 table
-      pnt_TargetTable = (byte *)&o2CalibrationTable;
-      OFFSET = 0;
-      DIVISION_FACTOR = 1;
-      BYTES_PER_VALUE = 1;
-      EEPROM_START = EEPROM_CALIBRATION_O2;
+              //OFFSET = 0; DIVISION_FACTOR = 1; BYTES_PER_VALUE = 1; EEPROM_START = EEPROM_CALIBRATION_O2;
+      stepSize=2;  //only save values with this step
+      //1024 value pairs are sent. We have to receive them all, but only use every second one (We only store 512 calibratino table entries to save on EEPROM space)           
+      for (x = 0; x < 1024; x++)
+      {
+        while ( Serial.available() < 1 ) {}  //blocking wait for serial
+        //UNlike what is listed in the protocol documentation, the O2 sensor values are sent as bytes rather than ints
+        tempBuffer0 = Serial.read();
+        if(n==0){
+          o2CalibrationTable[counter] =tempBuffer0;
+          counter++;
+          if(counter>=512) break;
+        }
+        n++;
+        if(n>=stepSize) n=0;
+      } 
       break;
-
-    default:
-      OFFSET = 0;
-      pnt_TargetTable = (byte *)&o2CalibrationTable;
-      DIVISION_FACTOR = 1;
-      BYTES_PER_VALUE = 1;
-      EEPROM_START = EEPROM_CALIBRATION_O2;
+    default:    
+      return;
       break; //Should never get here, but if we do, just fail back to main loop
   }
-
-  //1024 value pairs are sent. We have to receive them all, but only use every second one (We only store 512 calibratino table entries to save on EEPROM space)
-  //The values are sent as 2 byte ints, but we convert them to single bytes. Any values over 255 are capped at 255.
-  int tempValue;
-  byte tempBuffer[2];
-  bool every2nd = true;
-  int x;
-  int counter = 0;
-  bool useLEDIndicator = false;
-  if (pinIsOutput(LED_BUILTIN) == false)
-  {
-    pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, LOW);
-    useLEDIndicator = true;
-  }
-
-  for (x = 0; x < 1024; x++)
-  {
-    //UNlike what is listed in the protocol documentation, the O2 sensor values are sent as bytes rather than ints
-    if (BYTES_PER_VALUE == 1)
-    {
-      while ( Serial.available() < 1 ) {}
-      tempValue = Serial.read();
-    }
-    else
-    {
-      while ( Serial.available() < 2 ) {}
-      tempBuffer[0] = Serial.read();
-      tempBuffer[1] = Serial.read();
-
-      tempValue = div(int(word(tempBuffer[1], tempBuffer[0])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
-      tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
-    }
-    tempValue = tempValue + OFFSET;
-
-    if (every2nd) //Only use every 2nd value
-    {
-      if (tempValue > 255) {
-        tempValue = 255;  // Cap the maximum value to prevent overflow when converting to byte
-      }
-      if (tempValue < 0) {
-        tempValue = 0;
-      }
-
-      pnt_TargetTable[(x / 2)] = (byte)tempValue;
-
-      //From TS3.x onwards, the EEPROM must be written here as TS restarts immediately after the process completes which is before the EEPROM write completes
-      int y = EEPROM_START + (x / 2);
-      //EEPROM.update(y, (byte)tempValue);
-      storeCalibrationValue(y, (byte)tempValue);
-
-      every2nd = false;
-      if(useLEDIndicator == true)
-      {
-        #if defined(CORE_STM32)
-          digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-        #else
-          analogWrite(LED_BUILTIN, (counter % 50) );
-        #endif
-      }
-      counter++;
-    }
-    else {
-      every2nd = true;
-    }
-
-  }
-
 }
 
 /*

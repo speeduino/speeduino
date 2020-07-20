@@ -229,8 +229,8 @@ struct config10 configPage10;
 byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
 
 uint16_t cltCalibration_bins[32];
-uint16_t cltCalibration_values[32];
-struct table2D cltCalibrationTable_new;
+uint8_t cltCalibration_values[32];
+struct table2D cltCalibrationTable;
 uint16_t iatCalibration_bins[32];
-uint16_t iatCalibration_values[32];
-struct table2D iatCalibrationTable_new;
+uint8_t iatCalibration_values[32];
+struct table2D iatCalibrationTable;
