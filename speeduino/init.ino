@@ -56,7 +56,7 @@ void initialiseAll()
     //STM32 can not currently enabled
     #endif
 
-    #if defined(CORE_TEENSY)
+    #if defined(CORE_TEENSY35)
     configPage9.intcan_available = 1;   // device has internal canbus
     //Teensy uses the Flexcan_T4 library to use the internal canbus
     //enable local can interface
@@ -598,7 +598,7 @@ void initialiseAll()
         channel3IgnDegrees = 144;
         channel4IgnDegrees = 216;
         channel5IgnDegrees = 288;
-        maxIgnOutputs = 4; //Only 4 actual outputs, so that's all that can be cut
+        maxIgnOutputs = 5; //Only 4 actual outputs, so that's all that can be cut
 
         if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
         {
@@ -1100,8 +1100,6 @@ void initialiseAll()
         }
         break;
 
-
-
     default:
         //Wasted spark (Shouldn't ever happen anyway)
         ign1StartFunction = beginCoil1Charge;
@@ -1127,29 +1125,8 @@ void initialiseAll()
     else { fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
 
     interrupts();
-    //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
     readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
     readTPS(false); // Need to read tps to detect flood clear state
-    unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-    if((primingValue > 0) && (currentStatus.TPS < configPage4.floodClear))
-    {
-      if(channel1InjEnabled == true) { setFuelSchedule1(100, (primingValue * 100 * 5)); } //to achieve long enough priming pulses, the values in tunerstudio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
-      if(channel2InjEnabled == true) { setFuelSchedule2(100, (primingValue * 100 * 5)); }
-      if(channel3InjEnabled == true) { setFuelSchedule3(100, (primingValue * 100 * 5)); }
-      if(channel4InjEnabled == true) { setFuelSchedule4(100, (primingValue * 100 * 5)); }
-      #if INJ_CHANNELS >= 5
-      if(channel5InjEnabled == true) { setFuelSchedule5(100, (primingValue * 100 * 5)); }
-      #endif
-      #if INJ_CHANNELS >= 6
-      if(channel6InjEnabled == true) { setFuelSchedule6(100, (primingValue * 100 * 5)); }
-      #endif
-      #if INJ_CHANNELS >= 7
-      if(channel7InjEnabled == true) { setFuelSchedule7(100, (primingValue * 100 * 5)); }
-      #endif
-      #if INJ_CHANNELS >= 8
-      if(channel8InjEnabled == true) { setFuelSchedule8(100, (primingValue * 100 * 5)); }
-      #endif
-    }
 
     initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
@@ -1188,6 +1165,39 @@ void setPinMapping(byte boardID)
       pinTachOut = 49; //Tacho output pin
       pinFlex = 19; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 43; //Reset control output
+    #endif
+    //New FRAM chips reads 0
+    #if defined(CORE_STM32)
+      //https://github.com/stm32duino/Arduino_Core_STM32/blob/master/variants/Generic_F411Cx/variant.h#L28
+      //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
+      //pins PB12, PB13, PB14 and PB15 are used to SPI FLASH
+      pinInjector1 = PB7; //Output pin injector 1 is on
+      pinInjector2 = PB6; //Output pin injector 2 is on
+      pinInjector3 = PB5; //Output pin injector 3 is on
+      pinInjector4 = PB4; //Output pin injector 4 is on
+      pinCoil1 = PB9; //Pin for coil 1
+      pinCoil2 = PB8; //Pin for coil 2
+      pinCoil3 = PB3; //Pin for coil 3
+      pinCoil4 = PA15; //Pin for coil 4
+      pinTPS = A2;//TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A8; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinBaro = pinMAP;
+      pinIdle1 = PA5; //Single wire idle control
+      pinBoost = PA6; //Boost control
+      //pinVVT_1 = 4; //Default VVT output
+      //pinStepperDir = PC15; //Direction pin  for DRV8825 driver
+      //pinStepperStep = PC14; //Step pin for DRV8825 driver
+      //pinStepperEnable = PC13; //Enable pin for DRV8825
+      pinFuelPump = PB10; //Fuel pump output
+      pinTachOut = PC13; //Tacho output pin
+      //external interrupt enabled pins
+      //pinFlex = PB2; // Flex sensor (Must be external interrupt enabled)
+      pinTrigger = PB1; //The CAS pin
+      pinTrigger2 = PB10; //The Cam Sensor pin
     #endif
       break;
     case 1:
@@ -1338,8 +1348,8 @@ void setPinMapping(byte boardID)
         // = PA3;
         // = PA4;
         /* = PA5; */ //ADC12
-        pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
-        /* = PA7; */ //ADC12 LED_BUILTIN_2
+        /* = PA6; */ //ADC12 LED_BUILTIN_1
+        pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
         pinCoil3 = PA8;
         /* = PA9 */ //TXD1
         /* = PA10 */ //RXD1
@@ -1366,7 +1376,7 @@ void setPinMapping(byte boardID)
         pinCoil4 = PB10; //TXD3
         pinIdle1 = PB11; //RXD3
         pinIdle2 = PB12; //
-        /* pinBoost = PB12; */ //
+        pinBoost = PB12; //
         /* = PB13; */ //SPI2_SCK
         /* = PB14; */ //SPI2_MISO
         /* = PB15; */ //SPI2_MOSI
@@ -1378,10 +1388,9 @@ void setPinMapping(byte boardID)
         pinTPS = PC1; //ADC123
         pinIAT = PC2; //ADC123
         pinCLT = PC3; //ADC123
-        pinO2 = PC4; //ADC12
-        /* = PC5; */ //ADC12
-        /*pinVVT_1 = PC6; */ //
-        pinBat = PC6; //
+        pinO2 = PC4;  //ADC12
+        pinBat = PC5; //ADC12
+        pinVVT_1 = PC6; //
         pinDisplayReset = PC7; //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
@@ -1435,9 +1444,9 @@ void setPinMapping(byte boardID)
         /* = PE15; */ //
 
       #elif defined(CORE_STM32)
-        //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
-        //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
+        //https://github.com/stm32duino/Arduino_Core_STM32/blob/master/variants/Generic_F411Cx/variant.h#L28
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
+        //pins PB12, PB13, PB14 and PB15 are used to SPI FLASH
         pinInjector1 = PB7; //Output pin injector 1 is on
         pinInjector2 = PB6; //Output pin injector 2 is on
         pinInjector3 = PB5; //Output pin injector 3 is on
@@ -1462,9 +1471,9 @@ void setPinMapping(byte boardID)
         pinFuelPump = PB10; //Fuel pump output
         pinTachOut = PC13; //Tacho output pin
         //external interrupt enabled pins
-        pinFlex = PB1; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = PB0; //The CAS pin
-        pinTrigger2 = PB2; //The Cam Sensor pin
+        pinFlex = PB2; // Flex sensor (Must be external interrupt enabled)
+        pinTrigger = PB1; //The CAS pin
+        pinTrigger2 = PB10; //The Cam Sensor pin
       #endif
       break;
 
@@ -2130,9 +2139,8 @@ void setPinMapping(byte boardID)
         pinIAT = PC2; //ADC123
         pinCLT = PC3; //ADC123
         pinO2 = PC4; //ADC12
-        /* = PC5; */ //ADC12
+        pinBat = PC5;  //ADC12
         /*pinVVT_1 = PC6; */ //
-        pinBat = PC6; //
         pinDisplayReset = PC7; //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
@@ -2278,9 +2286,8 @@ void setPinMapping(byte boardID)
         pinIAT = PC2; //ADC123
         pinCLT = PC3; //ADC123
         pinO2 = PC4; //ADC12
-        /* = PC5; */ //ADC12
+        pinBat = PC5; //ADC12
         /*pinVVT_1 = PC6; */ //
-        pinBat = PC6; //
         pinDisplayReset = PC7; //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
@@ -2917,22 +2924,28 @@ void initialiseTriggers()
 
     case 17:
       //36-2-1
-      triggerSetup_ThirtySixMinus21();
-      triggerHandler = triggerPri_ThirtySixMinus21;
-      triggerSecondaryHandler = triggerSec_ThirtySixMinus21;
+      //NOT YET WRITTEN
+      break;
+
+    case 18:
+      //DSM 420a
+      triggerSetup_420a();
+      triggerHandler = triggerPri_420a;
+      triggerSecondaryHandler = triggerSec_420a;
       decoderHasSecondary = true;
-      getRPM = getRPM_ThirtySixMinus21;
-      getCrankAngle = getCrankAngle_ThirtySixMinus21;
-      triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus21;
+      getRPM = getRPM_420a;
+      getCrankAngle = getCrankAngle_420a;
+      triggerSetEndTeeth = triggerSetEndTeeth_420a;
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
-      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
-      else { secondaryTriggerEdge = FALLING; }
+      secondaryTriggerEdge = FALLING; //Always falling edge
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
+
+    
 
     default:
       triggerHandler = triggerPri_missingTooth;

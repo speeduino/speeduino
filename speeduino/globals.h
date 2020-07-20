@@ -36,17 +36,21 @@
     #define BOARD_H "board_teensy35.h"
     #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
   #elif defined(__IMXRT1062__)
-    #define CORE_TEENSY40
-    #define BOARD_H "board_teensy40.h"
+    #define CORE_TEENSY41
+    #define BOARD_H "board_teensy41.h"
   #endif
   #define INJ_CHANNELS 8
   #define IGN_CHANNELS 8
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(STM32)
   #define CORE_STM32
-  //These should be updated to 8 later, but there's bits missing currently
-  #define INJ_CHANNELS 4
-  #define IGN_CHANNELS 5
+  #if defined(STM32F4) //F4 can do 8x8
+   #define INJ_CHANNELS 8
+   #define IGN_CHANNELS 8
+  #else
+   #define INJ_CHANNELS 4
+   #define IGN_CHANNELS 5
+  #endif
 
 //Select one for EEPROM, default are emulated and is very slow
 //#define SRAM_AS_EEPROM /*Use RTC registers, requires a 3V battery connected to Vbat pin */
@@ -448,6 +452,7 @@ extern int CRANK_ANGLE_MAX;
 extern int CRANK_ANGLE_MAX_IGN;
 extern int CRANK_ANGLE_MAX_INJ; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 extern volatile uint32_t runSecsX10; /**< Counter of seconds since cranking commenced (similar to runSecs) but in increments of 0.1 seconds */
+extern volatile uint32_t seclx10; /**< Counter of seconds since powered commenced (similar to secl) but in increments of 0.1 seconds */
 extern volatile byte HWTest_INJ; /**< Each bit in this variable represents one of the injector channels and it's HW test status */
 extern volatile byte HWTest_INJ_50pc; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
 extern volatile byte HWTest_IGN; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
@@ -716,7 +721,8 @@ struct config2 {
   uint16_t vssRatio5;
   uint16_t vssRatio6;
 
-  byte unused2_95[10];
+  byte unused2_95[9];
+  byte primingDelay;
 
 #if defined(CORE_AVR)
   };
