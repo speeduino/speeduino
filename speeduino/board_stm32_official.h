@@ -24,26 +24,54 @@
 #define COUNTER_TYPE uint16_t
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #define TIMER_RESOLUTION 4
+
 #if defined(SRAM_AS_EEPROM)
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
+    #include EEPROM_LIB_H
+    BackupSramAsEEPROM EEPROM;
+
+#elif defined(USE_SPI_EEPROM)
+    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    #include EEPROM_LIB_H
+
+    //windbond W25Q16 SPI flash EEPROM emulation
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{
+      255UL,        //This the number of flash sectors used for EEPROM emulation can be any number from 1 to many. 
+      4096UL,       //Flash sector size: This is determined by the physical device. This is the smallest block that can be erased at one time 
+      31,           //EEPROM bytes per sector: (Flash sector size/EEPROM bytes per sector+1) -> Must be integer number and aligned with page size of flash used. 
+      0x00100000UL  //Flash address to start Emulation from, can be zero or any other place in flash. make sure EEPROM_FLASH_BASEADRESS+FLASH_SIZE_USED is not over end of flash
+      };
+
+    Flash_SPI_Config SPIconfig{
+      USE_SPI_EEPROM
+    };
+
+    SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
+
 #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
     #define EEPROM_LIB_H <Fram.h>
+    #include EEPROM_LIB_H
+    #if defined(ARDUINO_BLACK_F407VE)
+      FramClass EEPROM(PB5, PB4, PB3, PB0); /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
+    #else
+      FramClass EEPROM(PB15, PB14, PB13, PB12); //Blue/Black Pills
+    #endif
 #else
-    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  #include EEPROM_LIB_H
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{
+      4UL,          //This the number of flash sectors used for EEPROM emulation can be any number from 1 to many. 
+      131072UL,     //Flash sector size: This is determined by the physical device. This is the smallest block that can be erased at one time 
+      2047UL,       //EEPROM bytes per sector: (Flash sector size/EEPROM bytes per sector+1) -> Must be integer number and aligned with page size of flash used. 
+      0x08080000UL  //Flash address to start Emulation from can, be zero or any other place in flash. make sure EEPROM_FLASH_BASEADRESS+FLASH_SIZE_USED is not over end of flash
+      };
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 #endif
 
 #ifndef LED_BUILTIN
   #define LED_BUILTIN PA7
 #endif
 
-#if defined(FRAM_AS_EEPROM)
-  #include <Fram.h>
-  #if defined(ARDUINO_BLACK_F407VE)
-  FramClass EEPROM(PB5, PB4, PB3, PB0); /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
-  #else
-  FramClass EEPROM(PB15, PB14, PB13, PB12); //Blue/Black Pills
-  #endif
-#endif
 
 #define USE_SERIAL3
 void initBoard();

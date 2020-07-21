@@ -1,11 +1,7 @@
 //Backup sram stores data in the battery backuped sram portion. 
 //The backup battery is available on the ebay stm32F407VET6 black boards.  
-#if defined(CORE_STM32_OFFICIAL) && defined(SRAM_AS_EEPROM)
+#if defined(ARDUINO_ARCH_STM32)
 
-//UGLY HACK TO PREVENT EEPROM LIBRARY BEING IMPORTED FIRST!!
-//Use with black_F407VE board 
-#ifndef EEPROM_h
-#define EEPROM_h
 
 #include <stdint.h>
 #include "stm32f407xx.h"
@@ -25,5 +21,4 @@ class BackupSramAsEEPROM {
 
 extern BackupSramAsEEPROM EEPROM;
 
-#endif
 #endif

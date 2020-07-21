@@ -2,6 +2,7 @@
  * Copyright (C) 2020 by Tjeerd Hoogendijk
  * Created by Tjeerd Hoogendijk - 21/09/2019
  * Updated by Tjeerd Hoogendijk - 19/04/2020
+ * Updated by Tjeerd Hoogendijk - 21/07/2020 no new version number
  *
  * This file is part of the Speeduino project. This library started out for
  * Winbond SPI flash memory modules. As of version 2.0 it also works with internal
@@ -24,20 +25,8 @@
  * along with the Speeduino SPIAsEEPROM Library.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
-
-#if !defined(FRAM_AS_EEPROM) && !defined(SRAM_AS_EEPROM)
-#if defined(USE_SPI_EEPROM) | defined(STM32F407xx) | defined(STM32F103xB)
-
 #include "SPIAsEEPROM.h"
 
-static EEPROM_Emulation_Config EmulatedEEPROMMconfig{
-    FLASH_SECTORS_USED,
-    FLASH_SECTOR_SIZE,
-    EEPROM_BYTES_PER_SECTOR,
-    EEPROM_FLASH_BASEADRESS
-};
-
-// EmulatedEEPROMMconfig.Flash_Sectors_Used = FLASH_SECTORS_USED;
 
 FLASH_EEPROM_BaseClass::FLASH_EEPROM_BaseClass(EEPROM_Emulation_Config config)
 {
@@ -254,12 +243,12 @@ int8_t FLASH_EEPROM_BaseClass::readFlashBytes(uint32_t address , byte* buffer, u
 int8_t FLASH_EEPROM_BaseClass::writeFlashBytes(uint32_t address, byte* buffer, uint32_t length){return -1;}
 int8_t FLASH_EEPROM_BaseClass::eraseFlashSector(uint32_t address, uint32_t length){return -1;}
 
-#endif
 
-#if defined(USE_SPI_EEPROM)
-SPI_EEPROM_Class::SPI_EEPROM_Class(EEPROM_Emulation_Config config):FLASH_EEPROM_BaseClass(config)
+#if defined(ARDUINO_ARCH_STM32)
+
+SPI_EEPROM_Class::SPI_EEPROM_Class(EEPROM_Emulation_Config EmulationConfig, Flash_SPI_Config SPIConfig):FLASH_EEPROM_BaseClass(EmulationConfig)
 {
-
+  _configSPI = SPIConfig;
 }
 
 byte SPI_EEPROM_Class::read(uint16_t addressEEPROM){
@@ -268,9 +257,9 @@ byte SPI_EEPROM_Class::read(uint16_t addressEEPROM){
       //22.5Mhz is highest it could get with this. But should be ~45Mhz :-(. 
       SPISettings settings(22500000, MSBFIRST, SPI_MODE0);
       SPI.beginTransaction(settings);
-      begin(SPI, USE_SPI_EEPROM);
+      begin(SPI, _configSPI.pinChipSelect);
     }
-    
+
     return FLASH_EEPROM_BaseClass::read(addressEEPROM);
 }
 
@@ -300,9 +289,10 @@ int8_t SPI_EEPROM_Class::eraseFlashSector(uint32_t address, uint32_t length){
   return 0;
 }
 
+#endif
 
 //THIS IS NOT WORKING! FOR STM32F103 YOU CAN ONLY WRITE IN JUST ERASED HALFWORDS(UINT16_T). THE PHILISOPHY IS FLAWWED THERE.
-// #elif defined(STM32F103xB)
+//#if defined(STM32F103xB)
 
 // InternalSTM32F1_EEPROM_Class::InternalSTM32F1_EEPROM_Class(EEPROM_Emulation_Config config):FLASH_EEPROM_BaseClass(config)
 // {
@@ -358,8 +348,9 @@ int8_t SPI_EEPROM_Class::eraseFlashSector(uint32_t address, uint32_t length){
 //   HAL_FLASH_Lock();
 //   return EraseSucceed;
 // }
+//#endif
 
-#elif defined(STM32F407xx)
+#if defined(STM32F4)
 
 InternalSTM32F4_EEPROM_Class::InternalSTM32F4_EEPROM_Class(EEPROM_Emulation_Config config) : FLASH_EEPROM_BaseClass(config)
 {
@@ -433,14 +424,6 @@ int8_t InternalSTM32F4_EEPROM_Class::eraseFlashSector(uint32_t address, uint32_t
   HAL_FLASH_Lock();
   return EraseSucceed;
 }
-#endif
-
-#if defined(USE_SPI_EEPROM)
-  SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-#elif defined(STM32F407xx) & !defined(SRAM_AS_EEPROM)
-  InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-#endif
-
 #endif
 
 
