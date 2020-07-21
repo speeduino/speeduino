@@ -25,6 +25,7 @@ int8_t correctionsIgn(int8_t advance);
 int8_t correctionFixedTiming(int8_t);
 int8_t correctionCrankingFixedTiming(int8_t);
 int8_t correctionFlexTiming(int8_t);
+int8_t correctionWMITiming(int8_t);
 int8_t correctionIATretard(int8_t);
 int8_t correctionCLTadvance(int8_t);
 int8_t correctionIdleAdvance(int8_t);

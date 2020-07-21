@@ -69,6 +69,10 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 | 1479  |6    | X and Y Bins4                       |
 | 1500  |192  | CANBUS config and data (Table 10_)  |
 | 1692  |192  | Table 11 - General settings         |
+| 2385  |2    | X and Y sizes for wmi table         |
+| 2387  |64   | WMI Map (8x8)                       |
+| 2451  |8    | WMI Table RPM bins                  |
+| 2459  |8    | WMI Table TPS bins                  |
 |                                                   |
 | 2514  |44   | Table CRC32 values. Last table first|
 | 2558  |1    | Last recorded Baro value            |
@@ -149,9 +153,15 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG11_XBINS 2352
 #define EEPROM_CONFIG11_YBINS 2369
 #define EEPROM_CONFIG11_END   2385
+#define EEPROM_CONFIG12_XSIZE 2385
+#define EEPROM_CONFIG12_YSIZE 2386
+#define EEPROM_CONFIG12_MAP   2387
+#define EEPROM_CONFIG12_XBINS 2451
+#define EEPROM_CONFIG12_YBINS 2459
+#define EEPROM_CONFIG12_END   2467
 
 //Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
-#define EEPROM_PAGE_CRC32     2514 //Size of this is 4 * <number of pages> (CRC32 = 32 bits)
+#define EEPROM_PAGE_CRC32     2510 //Size of this is 4 * <number of pages> (CRC32 = 32 bits)
 #define EEPROM_LAST_BARO      2558
 #define EEPROM_CALIBRATION_O2 2559
 #define EEPROM_CALIBRATION_IAT_OLD  3071

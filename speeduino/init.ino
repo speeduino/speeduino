@@ -31,6 +31,7 @@ void initialiseAll()
     table3D_setSize(&stagingTable, 8);
     table3D_setSize(&boostTable, 8);
     table3D_setSize(&vvtTable, 8);
+    table3D_setSize(&wmiTable, 8);
     table3D_setSize(&trim1Table, 6);
     table3D_setSize(&trim2Table, 6);
     table3D_setSize(&trim3Table, 6);
@@ -187,6 +188,12 @@ void initialiseAll()
     oilPressureProtectTable.xSize = 4;
     oilPressureProtectTable.values = configPage10.oilPressureProtMins;
     oilPressureProtectTable.axisX = configPage10.oilPressureProtRPM;
+
+    wmiAdvTable.valueSize = SIZE_BYTE;
+    wmiAdvTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    wmiAdvTable.xSize = 6;
+    wmiAdvTable.values = configPage10.wmiAdvAdj;
+    wmiAdvTable.axisX = configPage10.wmiAdvBins;
 
     cltCalibrationTable_new.valueSize = SIZE_INT;
     cltCalibrationTable_new.axisSize = SIZE_INT;
@@ -1320,6 +1327,9 @@ void setPinMapping(byte boardID)
       pinResetControl = 43; //Reset control output
       pinBaro = A5;
       pinVSS = 20;
+      pinWMIEmpty = 46;
+      pinWMIIndicator = 44;
+      pinWMIEnabled = 42;
 
       #if defined(CORE_TEENSY35)
         pinInjector6 = 51;
@@ -2357,6 +2367,10 @@ void setPinMapping(byte boardID)
   if ( (configPage2.vssPin != 0) && (configPage2.vssPin < BOARD_NR_GPIO_PINS) ) { pinVSS = pinTranslate(configPage2.vssPin); }
   if ( (configPage10.fuelPressurePin != 0) && (configPage10.fuelPressurePin < BOARD_NR_GPIO_PINS) ) { pinFuelPressure = configPage10.fuelPressurePin + A0; }
   if ( (configPage10.oilPressurePin != 0) && (configPage10.oilPressurePin < BOARD_NR_GPIO_PINS) ) { pinOilPressure = configPage10.oilPressurePin + A0; }
+  
+  if ( (configPage10.wmiEmptyPin != 0) && (configPage10.wmiEmptyPin < BOARD_NR_GPIO_PINS) ) { pinWMIEmpty = pinTranslate(configPage10.wmiEmptyPin); }
+  if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_NR_GPIO_PINS) ) { pinWMIIndicator = pinTranslate(configPage10.wmiIndicatorPin); }
+  if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_NR_GPIO_PINS) ) { pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
 
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
@@ -2525,7 +2539,20 @@ void setPinMapping(byte boardID)
   {
     pinMode(pinOilPressure, INPUT);
   }
-  
+  if(configPage10.wmiEnabled > 0)
+  {
+    pinMode(pinWMIEnabled, OUTPUT);
+    if(configPage10.wmiIndicatorEnabled > 0)
+    {
+      pinMode(pinWMIIndicator, OUTPUT);
+      if (configPage10.wmiIndicatorPolarity > 0) digitalWrite(pinWMIIndicator, HIGH); 
+    }
+    if(configPage10.wmiEmptyEnabled > 0)
+    {
+      if (configPage10.wmiEmptyPolarity == 0) { pinMode(pinWMIEmpty, INPUT_PULLUP); } //Normal setting
+      else { pinMode(pinWMIEmpty, INPUT); } //inverted setting
+    }
+  }  
 
   //These must come after the above pinMode statements
   triggerPri_pin_port = portInputRegister(digitalPinToPort(pinTrigger));
