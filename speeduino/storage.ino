@@ -24,6 +24,7 @@ void writeAllConfig()
   if (eepromWritesPending == false) { writeConfig(canbusPage); }
   if (eepromWritesPending == false) { writeConfig(warmupPage); }
   if (eepromWritesPending == false) { writeConfig(fuelMap2Page); }
+  if (eepromWritesPending == false) { writeConfig(wmiMapPage); }
 }
 
 
@@ -420,6 +421,40 @@ void writeConfig(byte tableNum)
       break;
       //That concludes the writing of the 2nd fuel table
 
+    case wmiMapPage:
+      /*---------------------------------------------------
+      | WMI tables (See storage.h for data layout) - Page 12
+      | 8x8 table itself + the 8 values along each of the axis
+      -----------------------------------------------------*/
+      if(EEPROM.read(EEPROM_CONFIG12_XSIZE) != wmiTable.xSize) { EEPROM.write(EEPROM_CONFIG12_XSIZE,wmiTable.xSize); writeCounter++; } //Write the wmi Table RPM dimension size
+      if(EEPROM.read(EEPROM_CONFIG12_YSIZE) != wmiTable.ySize) { EEPROM.write(EEPROM_CONFIG12_YSIZE,wmiTable.ySize); writeCounter++; } //Write the wmi Table MAP dimension size
+
+      for(int x=EEPROM_CONFIG12_MAP; x<EEPROM_CONFIG12_XBINS; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; }
+        offset = x - EEPROM_CONFIG12_MAP;
+        if(EEPROM.read(x) != (wmiTable.values[7-(offset/8)][offset%8]) ) { EEPROM.write(x, wmiTable.values[7-(offset/8)][offset%8]); writeCounter++; }  //Write the 8x8 map
+      }
+      //RPM bins
+      for(int x=EEPROM_CONFIG12_XBINS; x<EEPROM_CONFIG12_YBINS; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; }
+        offset = x - EEPROM_CONFIG12_XBINS;
+        if(EEPROM.read(x) != byte(wmiTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(wmiTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+      }
+      //MAP bins
+      for(int x=EEPROM_CONFIG12_YBINS; x<EEPROM_CONFIG12_END; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; }
+        offset = x - EEPROM_CONFIG12_YBINS;
+        if(EEPROM.read(x) != byte(wmiTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)) { EEPROM.write(x, byte(wmiTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; }
+      }
+
+      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
+      else { eepromWritesPending = false; }
+
+      break;
+
     default:
       break;
   }
@@ -653,6 +688,28 @@ void loadConfig()
   {
     offset = x - EEPROM_CONFIG11_YBINS;
     fuelTable2.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER;
+  }
+
+   //*********************************************************************************************************************************************************************************
+  // WMI table load
+  for(int x=EEPROM_CONFIG12_MAP; x<EEPROM_CONFIG12_XBINS; x++)
+  {
+    offset = x - EEPROM_CONFIG12_MAP;
+    wmiTable.values[7-(offset/8)][offset%8] = EEPROM.read(x); //Read the 8x8 map
+  }
+
+  //RPM bins
+  for(int x=EEPROM_CONFIG12_XBINS; x<EEPROM_CONFIG12_YBINS; x++)
+  {
+    offset = x - EEPROM_CONFIG12_XBINS;
+    wmiTable.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
+  }
+
+  //TPS/MAP bins
+  for(int x=EEPROM_CONFIG12_YBINS; x<EEPROM_CONFIG12_END; x++)
+  {
+    offset = x - EEPROM_CONFIG12_YBINS;
+    wmiTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER; //TABLE_LOAD_MULTIPLIER is NOT used for boost as it is TPS based (0-100)
   }
 
 }

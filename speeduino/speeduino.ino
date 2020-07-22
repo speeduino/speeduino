@@ -240,6 +240,8 @@ void loop()
       boostControl();
       //VVT may eventually need to be synced with the cam readings (ie run once per cam rev) but for now run at 30Hz
       vvtControl();
+      //Water methanol injection
+      wmiControl();
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
@@ -321,6 +323,21 @@ void loop()
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
       readBaro(); //Infrequent baro readings are not an issue.
+
+      if (configPage10.wmiEnabled > 0 && configPage10.wmiIndicatorEnabled > 0)
+      {
+        // water tank empty
+        if (currentStatus.wmiEmpty > 0)
+        {
+          // flash with 1sec inverval
+          digitalWrite(pinWMIIndicator, !digitalRead(pinWMIIndicator));
+        }
+        else
+        {
+          digitalWrite(pinWMIIndicator, configPage10.wmiIndicatorPolarity ? HIGH : LOW);
+        } 
+      }
+
     } //1Hz timer
 
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) )  { idleControl(); } //Run idlecontrol every loop for stepper idle.

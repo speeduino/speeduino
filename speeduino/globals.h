@@ -211,6 +211,11 @@
 #define BOOST_MODE_SIMPLE   0
 #define BOOST_MODE_FULL     1
 
+#define WMI_MODE_SIMPLE       0
+#define WMI_MODE_PROPORTIONAL 1
+#define WMI_MODE_OPENLOOP     2
+#define WMI_MODE_CLOSEDLOOP   3
+
 #define HARD_CUT_FULL       0
 #define HARD_CUT_ROLLING    1
 
@@ -322,7 +327,7 @@
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing.
-#define NUM_PAGES     12
+#define NUM_PAGES     13
 extern const uint16_t npage_size[NUM_PAGES]; /**< This array stores the size (in bytes) of each configuration page */
 #define MAP_PAGE_SIZE 288
 
@@ -333,6 +338,7 @@ extern struct table3D afrTable; //16x16 afr target map
 extern struct table3D stagingTable; //8x8 fuel staging table
 extern struct table3D boostTable; //8x8 boost map
 extern struct table3D vvtTable; //8x8 vvt map
+extern struct table3D wmiTable; //8x8 wmi map
 extern struct table3D trim1Table; //6x6 Fuel trim 1 map
 extern struct table3D trim2Table; //6x6 Fuel trim 2 map
 extern struct table3D trim3Table; //6x6 Fuel trim 3 map
@@ -360,6 +366,7 @@ extern struct table2D flexBoostTable; //6 bin flex fuel correction table for boo
 extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
+extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -583,6 +590,8 @@ struct statuses {
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure; /**< Oil pressure in PSI */
   byte engineProtectStatus;
+  byte wmiPW;
+  bool wmiEmpty;
 };
 
 /**
@@ -1129,7 +1138,33 @@ struct config10 {
   byte oilPressureProtRPM[4];
   byte oilPressureProtMins[4];
 
-  byte unused11_135_191[43]; //Bytes 135-191
+  byte wmiEnabled : 1; // Byte 149
+  byte wmiMode : 6;
+  
+  byte wmiAdvEnabled : 1;
+
+  byte wmiTPS; // Byte 150
+  byte wmiRPM; // Byte 151
+  byte wmiMAP; // Byte 152
+  byte wmiMAP2; // Byte 153
+  byte wmiIAT; // Byte 154
+  int8_t wmiOffset; // Byte 155
+
+  byte wmiIndicatorEnabled : 1; // 156
+  byte wmiIndicatorPin : 6;
+  byte wmiIndicatorPolarity : 1;
+
+  byte wmiEmptyEnabled : 1; // 157
+  byte wmiEmptyPin : 6;
+  byte wmiEmptyPolarity : 1;
+
+  byte wmiEnabledPin; // 158
+
+  byte wmiAdvBins[6]; //Bytes 159-164
+  byte wmiAdvAdj[6];  //Additional advance (in degrees)
+                      //Bytes 165-170
+
+  byte unused11_171_191[21]; //Bytes 171-191
 
 #if defined(CORE_AVR)
   };
@@ -1203,6 +1238,9 @@ extern byte pinBaro; //Pin that an external barometric pressure sensor is attach
 extern byte pinResetControl; // Output pin used control resetting the Arduino
 extern byte pinFuelPressure;
 extern byte pinOilPressure;
+extern byte pinWMIEmpty; // Water tank empty sensor
+extern byte pinWMIIndicator; // No water indicator bulb
+extern byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   extern byte pinMC33810_1_CS;
