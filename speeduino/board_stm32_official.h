@@ -25,6 +25,32 @@
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #define TIMER_RESOLUTION 4
 
+
+#define USE_SERIAL3
+void initBoard();
+uint16_t freeRam();
+extern "C" char* sbrk(int incr);
+
+#if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
+ || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
+  #ifndef PB11 //Hack for F4 BlackPills
+    #define PB11 PB10
+  #endif
+  //Hack to alow compile on small STM boards
+  #ifndef A10
+    #define A10  PA0
+    #define A11  PA1
+    #define A12  PA2
+    #define A13  PA3
+    #define A14  PA4
+    #define A15  PA5
+  #endif
+#endif
+
+/*
+***********************************************************************************************************
+* EEPROM emulation
+*/
 #if defined(SRAM_AS_EEPROM)
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
     #include EEPROM_LIB_H
@@ -56,7 +82,27 @@
     #else
       FramClass EEPROM(PB15, PB14, PB13, PB12); //Blue/Black Pills
     #endif
-#else
+
+#elif defined(STM32F7xx)
+  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  #include EEPROM_LIB_H
+  #if defined(DUAL_BANK)
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{
+      4UL,          //This the number of flash sectors used for EEPROM emulation can be any number from 1 to many. 
+      131072UL,     //Flash sector size: This is determined by the physical device. This is the smallest block that can be erased at one time 
+      2047UL,       //EEPROM bytes per sector: (Flash sector size/EEPROM bytes per sector+1) -> Must be integer number and aligned with page size of flash used. 
+      0x08120000UL  //Flash address to start Emulation from can, be zero or any other place in flash. make sure EEPROM_FLASH_BASEADRESS+FLASH_SIZE_USED is not over end of flash
+      };
+  #else
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{
+      2UL,          //This the number of flash sectors used for EEPROM emulation can be any number from 1 to many. 
+      262144UL,     //Flash sector size: This is determined by the physical device. This is the smallest block that can be erased at one time 
+      4095UL,       //EEPROM bytes per sector: (Flash sector size/EEPROM bytes per sector+1) -> Must be integer number and aligned with page size of flash used. 
+      0x08180000UL  //Flash address to start Emulation from can, be zero or any other place in flash. make sure EEPROM_FLASH_BASEADRESS+FLASH_SIZE_USED is not over end of flash
+      };
+  #endif
+    InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+#else //default case, internal flash as EEPROM for STM32F4
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   #include EEPROM_LIB_H
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{
@@ -70,28 +116,6 @@
 
 #ifndef LED_BUILTIN
   #define LED_BUILTIN PA7
-#endif
-
-
-#define USE_SERIAL3
-void initBoard();
-uint16_t freeRam();
-extern "C" char* sbrk(int incr);
-
-#if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
- || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
-  #ifndef PB11 //Hack for F4 BlackPills
-    #define PB11 PB10
-  #endif
-  //Hack to alow compile on small STM boards
-  #ifndef A10
-    #define A10  PA0
-    #define A11  PA1
-    #define A12  PA2
-    #define A13  PA3
-    #define A14  PA4
-    #define A15  PA5
-  #endif
 #endif
 
 /*

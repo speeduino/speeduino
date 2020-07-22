@@ -411,4 +411,46 @@ class InternalSTM32F4_EEPROM_Class : public FLASH_EEPROM_BaseClass
 //      */
 //     int8_t eraseFlashSector(uint32_t, uint32_t);
 // };
+
+class InternalSTM32F7_EEPROM_Class : public FLASH_EEPROM_BaseClass
+{
+  public:
+    InternalSTM32F7_EEPROM_Class(EEPROM_Emulation_Config);
+
+    /**
+     * Read an eeprom cell
+     * @param address
+     * @return value
+     */
+    byte read(uint16_t);
+
+
+    /**
+     * Read bytes from the flash storage
+     * @param address
+     * @param buffer
+     * @param length
+     * @return succes 
+     */
+    int8_t readFlashBytes(uint32_t , byte*, uint32_t);
+
+    /**
+     * Write bytes to the flash storage
+     * @param address
+     * @param buffer
+     * @param length
+     * @return succes 
+     */
+    int8_t writeFlashBytes(uint32_t, byte*, uint32_t);
+
+    /**
+     * Erase a flash sector. Adress determines the flash sector to erase. 
+     * length is specified in number of bytes. if number of bytes > sector size, more than one sector is erased
+     * @param address
+     * @param length
+     * @return succes 
+     */
+    int8_t eraseFlashSector(uint32_t, uint32_t);
+};
+
 #endif
