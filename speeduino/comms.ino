@@ -249,7 +249,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202306-dev-wmi"));
+      Serial.print(F("speeduino 202006-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
