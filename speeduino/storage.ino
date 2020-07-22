@@ -679,6 +679,34 @@ void loadCalibration()
 }
 
 /*
+Reads the calibration information from EEPROM.
+This is separate from the config load as the calibrations do not exist as pages within the ini file for Tuner Studio
+*/
+void loadCalibration_new()
+{
+
+  for(int x=0; x<32; x++) //Each calibration table is 32 bytes long
+  {
+    int y = EEPROM_CALIBRATION_CLT + x;
+    cltCalibration_bins[x] = EEPROM.read(y);
+    y += 32; 
+    cltCalibration_values[x] = EEPROM.read(y);
+
+    y = EEPROM_CALIBRATION_IAT + x;
+    iatCalibration_bins[x] = EEPROM.read(y);
+    y += 32; 
+    iatCalibration_values[x] = EEPROM.read(y);
+
+    /*
+    o2Calibration_bins[x] = EEPROM.read(y);
+    y += 32; 
+    o2Calibration_values[x] = EEPROM.read(y);
+    */
+  }
+
+}
+
+/*
 This takes the values in the 3 calibration tables (Coolant, Inlet temp and O2)
 and saves them to the EEPROM.
 */
@@ -695,6 +723,34 @@ void writeCalibration()
 
     y = EEPROM_CALIBRATION_O2 + x;
     if(EEPROM.read(y) != o2CalibrationTable[x]) { EEPROM.write(y, o2CalibrationTable[x]); }
+  }
+
+}
+
+/*
+This takes the values in the 3 calibration tables (Coolant, Inlet temp and O2)
+and saves them to the EEPROM.
+*/
+void writeCalibration_new()
+{
+
+  for(int x=0; x<32; x++) //Each calibration table is 512 bytes long
+  {
+    int y = EEPROM_CALIBRATION_CLT + x;
+    EEPROM.update(y, cltCalibration_bins[x]);
+    y += 32; 
+    EEPROM.update(y, cltCalibration_values[x]);
+
+    y = EEPROM_CALIBRATION_IAT + x;
+    EEPROM.update(y, iatCalibration_bins[x]);
+    y += 32; 
+    EEPROM.update(y, iatCalibration_values[x]);
+
+    /*
+    EEPROM.update(y, o2Calibration_bins[x]);
+    y += 32; 
+    EEPROM.update(y, o2Calibration_values[x]);
+    */
   }
 
 }
