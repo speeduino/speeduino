@@ -47,6 +47,10 @@ extern "C" char* sbrk(int incr);
   #endif
 #endif
 
+#ifndef LED_BUILTIN
+  #define LED_BUILTIN PA7
+#endif
+
 /*
 ***********************************************************************************************************
 * EEPROM emulation
@@ -59,19 +63,11 @@ extern "C" char* sbrk(int incr);
 #elif defined(USE_SPI_EEPROM)
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
     #include EEPROM_LIB_H
-
+    SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+ 
     //windbond W25Q16 SPI flash EEPROM emulation
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{
-      255UL,        //This the number of flash sectors used for EEPROM emulation can be any number from 1 to many. 
-      4096UL,       //Flash sector size: This is determined by the physical device. This is the smallest block that can be erased at one time 
-      31,           //EEPROM bytes per sector: (Flash sector size/EEPROM bytes per sector+1) -> Must be integer number and aligned with page size of flash used. 
-      0x00100000UL  //Flash address to start Emulation from, can be zero or any other place in flash. make sure EEPROM_FLASH_BASEADRESS+FLASH_SIZE_USED is not over end of flash
-      };
-
-    Flash_SPI_Config SPIconfig{
-      USE_SPI_EEPROM
-    };
-
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
+    Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
     SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
 
 #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
@@ -87,36 +83,18 @@ extern "C" char* sbrk(int incr);
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   #include EEPROM_LIB_H
   #if defined(DUAL_BANK)
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{
-      4UL,          //This the number of flash sectors used for EEPROM emulation can be any number from 1 to many. 
-      131072UL,     //Flash sector size: This is determined by the physical device. This is the smallest block that can be erased at one time 
-      2047UL,       //EEPROM bytes per sector: (Flash sector size/EEPROM bytes per sector+1) -> Must be integer number and aligned with page size of flash used. 
-      0x08120000UL  //Flash address to start Emulation from can, be zero or any other place in flash. make sure EEPROM_FLASH_BASEADRESS+FLASH_SIZE_USED is not over end of flash
-      };
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08120000UL};
   #else
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{
-      2UL,          //This the number of flash sectors used for EEPROM emulation can be any number from 1 to many. 
-      262144UL,     //Flash sector size: This is determined by the physical device. This is the smallest block that can be erased at one time 
-      4095UL,       //EEPROM bytes per sector: (Flash sector size/EEPROM bytes per sector+1) -> Must be integer number and aligned with page size of flash used. 
-      0x08180000UL  //Flash address to start Emulation from can, be zero or any other place in flash. make sure EEPROM_FLASH_BASEADRESS+FLASH_SIZE_USED is not over end of flash
-      };
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 262144UL, 4095UL, 0x08180000UL};
   #endif
     InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 #else //default case, internal flash as EEPROM for STM32F4
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   #include EEPROM_LIB_H
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{
-      4UL,          //This the number of flash sectors used for EEPROM emulation can be any number from 1 to many. 
-      131072UL,     //Flash sector size: This is determined by the physical device. This is the smallest block that can be erased at one time 
-      2047UL,       //EEPROM bytes per sector: (Flash sector size/EEPROM bytes per sector+1) -> Must be integer number and aligned with page size of flash used. 
-      0x08080000UL  //Flash address to start Emulation from can, be zero or any other place in flash. make sure EEPROM_FLASH_BASEADRESS+FLASH_SIZE_USED is not over end of flash
-      };
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08080000UL};
     InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 #endif
 
-#ifndef LED_BUILTIN
-  #define LED_BUILTIN PA7
-#endif
 
 /*
 ***********************************************************************************************************

@@ -129,14 +129,15 @@
 #define BITS_PER_BYTE 8 
 
 typedef struct {
-  uint32_t Flash_Sectors_Used;
-  uint32_t Flash_Sector_Size;
-  uint32_t EEPROM_Bytes_Per_Sector;
-  uint32_t EEPROM_Flash_BaseAddress;
+  uint32_t Flash_Sectors_Used;        //This the number of flash sectors used for EEPROM emulation can be any number from 1 to many. 
+  uint32_t Flash_Sector_Size;         //Flash sector size: This is determined by the physical device. This is the smallest block that can be erased at one time 
+  uint32_t EEPROM_Bytes_Per_Sector;   //EEPROM bytes per sector: (Flash sector size/EEPROM bytes per sector+1) -> Must be integer number and aligned with page size of flash used. 
+  uint32_t EEPROM_Flash_BaseAddress;  //Flash address to start Emulation from, can be zero or any other place in flash. make sure EEPROM_FLASH_BASEADRESS+FLASH_SIZE_USED is not over end of flash
 } EEPROM_Emulation_Config;
 
 typedef struct {
   uint16_t pinChipSelect;
+  SPIClass SPIport;
 } Flash_SPI_Config;
 
 //Base class for flash read and write. SPI and internal flash inherrit from this class. 

@@ -253,11 +253,10 @@ SPI_EEPROM_Class::SPI_EEPROM_Class(EEPROM_Emulation_Config EmulationConfig, Flas
 
 byte SPI_EEPROM_Class::read(uint16_t addressEEPROM){
     //Check if emulated EEPROM is available if not yet start it first.
-    if(!_EmulatedEEPROMAvailable){
-      //22.5Mhz is highest it could get with this. But should be ~45Mhz :-(. 
-      SPISettings settings(22500000, MSBFIRST, SPI_MODE0);
-      SPI.beginTransaction(settings);
-      begin(SPI, _configSPI.pinChipSelect);
+    if(!_EmulatedEEPROMAvailable){ 
+      SPISettings settings(22500000, MSBFIRST, SPI_MODE0); //22.5Mhz is highest it could get with this. But should be ~45Mhz :-(. 
+      _configSPI.SPIport.beginTransaction(settings);
+      begin(_configSPI.SPIport, _configSPI.pinChipSelect);
     }
 
     return FLASH_EEPROM_BaseClass::read(addressEEPROM);
