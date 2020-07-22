@@ -128,7 +128,6 @@ void loop()
             } 
           }
       #endif
-      
       #if  defined(CORE_STM32)
           else if (configPage9.enable_intcan == 1) // can module enabled
           {
@@ -198,7 +197,7 @@ void loop()
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
       readTPS(); //TPS reading to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
-      #if  defined(CORE_TEENSY)       
+      #if  defined(CORE_TEENSY35)       
           if (configPage9.enable_intcan == 1) // use internal can module
           {
            // this is just to test the interface is sending
@@ -253,6 +252,7 @@ void loop()
       readBat();
       nitrousControl();
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
+      
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
       currentStatus.fuelPressure = getFuelPressure();

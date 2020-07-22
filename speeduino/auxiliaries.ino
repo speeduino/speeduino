@@ -75,6 +75,10 @@ void initialiseAuxPWM()
   n2o_arming_pin_port = portInputRegister(digitalPinToPort(configPage10.n2o_arming_pin));
   n2o_arming_pin_mask = digitalPinToBitMask(configPage10.n2o_arming_pin);
 
+  //This is a safety check that will be true if the board is uninitialised. This prevents hangs on a new board that could otherwise try to write to an invalid pin port/mask (Without this a new Teensy 4.x hangs on startup)
+  //The n2o_minTPS variable is capped at 100 by TS, so 255 indicates a new board.
+  if(configPage10.n2o_minTPS == 255) { configPage10.n2o_enable = 0; }
+
   if(configPage10.n2o_enable > 0)
   {
     //The pin modes are only set if the if n2o is enabled to prevent them conflicting with other outputs. 
