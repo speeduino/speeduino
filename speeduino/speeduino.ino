@@ -183,7 +183,8 @@ void loop()
       //This should only be run if the high speed logger are off because it will change the trigger interrupts back to defaults rather than the logger versions
       if( (currentStatus.toothLogEnabled == false) && (currentStatus.compositeLogEnabled == false) ) { initialiseTriggers(); }
 
-      VVT_PIN_LOW();
+      VVT1_PIN_LOW();
+      VVT2_PIN_LOW();
       DISABLE_VVT_TIMER();
       boostDisable();
       if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
@@ -242,6 +243,9 @@ void loop()
       vvtControl();
       //Water methanol injection
       wmiControl();
+      //FOR TEST PURPOSES ONLY!!!
+      if(vvt2_pwm_value < vvt_pwm_max_count) vvt2_pwm_value++;
+      else vvt2_pwm_value = 1;
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {

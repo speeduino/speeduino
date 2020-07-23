@@ -511,7 +511,7 @@ void triggerSec_missingTooth()
       curAngle -= configPage4.triggerAngle; //Value at TDC
       if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCLMinAng; }
 
-      currentStatus.vvtAngle = curAngle;
+      currentStatus.vvt1Angle = curAngle;
     }
   } //Trigger filter
 }
@@ -2218,9 +2218,9 @@ int getCamAngle_Miata9905()
 {
   //lastVVTtime is the time between tooth #1 (10* BTDC) and the single cam tooth. 
   //All cam angles in in BTDC, so the actual advance angle is 370 - fastTimeToAngle(lastVVTtime) - <the angle of the cam at 0 advance>
-  currentStatus.vvtAngle = 370 - fastTimeToAngle(lastVVTtime) - configPage10.vvtCLMinAng;
+  currentStatus.vvt1Angle = 370 - fastTimeToAngle(lastVVTtime) - configPage10.vvtCLMinAng;
 
-  return currentStatus.vvtAngle;
+  return currentStatus.vvt1Angle;
 }
 
 void triggerSetEndTeeth_Miata9905()

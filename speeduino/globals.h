@@ -579,10 +579,10 @@ struct statuses {
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
-  //int8_t vvtAngle;
-  long vvtAngle;
-  byte vvtTargetAngle;
-  byte vvtDuty;
+  //int8_t vvt1Angle;
+  long vvt1Angle;
+  byte vvt1TargetAngle;
+  byte vvt1Duty;
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss; /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
@@ -592,6 +592,9 @@ struct statuses {
   byte engineProtectStatus;
   byte wmiPW;
   bool wmiEmpty;
+  long vvt2Angle;
+  byte vvt2TargetAngle;
+  byte vvt2Duty;
 };
 
 /**

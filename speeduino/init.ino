@@ -1417,13 +1417,11 @@ void setPinMapping(byte boardID)
         /* = PD0; */ //CANRX
         /* = PD1; */ //CANTX
         /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        /* = PD3; */ //
-        /* = PD4; */ //
+        pinVVT_2 = PD3; //
         pinFlex = PD4;
         /* = PD5;*/ //TXD2
         /* = PD6; */ //RXD2
         pinCoil1 = PD7; //
-        /* = PD7; */ //
         /* = PD8; */ //
         pinCoil5 = PD9;//
         /* = PD10; */ //
@@ -2371,6 +2369,8 @@ void setPinMapping(byte boardID)
   if ( (configPage10.wmiEmptyPin != 0) && (configPage10.wmiEmptyPin < BOARD_NR_GPIO_PINS) ) { pinWMIEmpty = pinTranslate(configPage10.wmiEmptyPin); }
   if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_NR_GPIO_PINS) ) { pinWMIIndicator = pinTranslate(configPage10.wmiIndicatorPin); }
   if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_NR_GPIO_PINS) ) { pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
+  if ( (configPage6.vvtPin != 0) && (configPage6.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_2 = pinTranslate(configPage6.vvtPin); }
+  if (pinVVT_2 == 0) { pinVVT_2 = pinVVT_1; }
 
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
@@ -2401,6 +2401,7 @@ void setPinMapping(byte boardID)
   pinMode(pinStepperEnable, OUTPUT);
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
+  pinMode(pinVVT_2, OUTPUT);
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
@@ -2478,7 +2479,7 @@ void setPinMapping(byte boardID)
 
   //And for inputs
   #if defined(CORE_STM32)
-    #ifndef ARDUINO_ARCH_STM32 //libmaple core aka STM32DUINO
+    #ifdef INPUT_ANALOG
       pinMode(pinMAP, INPUT_ANALOG);
       pinMode(pinO2, INPUT_ANALOG);
       pinMode(pinO2_2, INPUT_ANALOG);
