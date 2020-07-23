@@ -75,6 +75,10 @@ void initialiseAuxPWM()
   n2o_arming_pin_port = portInputRegister(digitalPinToPort(configPage10.n2o_arming_pin));
   n2o_arming_pin_mask = digitalPinToBitMask(configPage10.n2o_arming_pin);
 
+  //This is a safety check that will be true if the board is uninitialised. This prevents hangs on a new board that could otherwise try to write to an invalid pin port/mask (Without this a new Teensy 4.x hangs on startup)
+  //The n2o_minTPS variable is capped at 100 by TS, so 255 indicates a new board.
+  if(configPage10.n2o_minTPS == 255) { configPage10.n2o_enable = 0; }
+
   if(configPage10.n2o_enable > 0)
   {
     //The pin modes are only set if the if n2o is enabled to prevent them conflicting with other outputs. 
@@ -108,6 +112,19 @@ void initialiseAuxPWM()
     vvt_pwm_value = 0;
     ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
   }
+  if(configPage6.vvtEnabled == 0 && configPage10.wmiEnabled >= 1)
+  {
+    // config wmi pwm output to use vvt output
+    #if defined(CORE_AVR)
+      vvt_pwm_max_count = 1000000L / (16 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+    #elif defined(CORE_TEENSY)
+      vvt_pwm_max_count = 1000000L / (32 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+    #endif
+    currentStatus.wmiEmpty = 0;
+    currentStatus.wmiPW = 0;
+    vvt_pwm_value = 0;
+  }
+  ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
 
   currentStatus.boostDuty = 0;
   boostCounter = 0;
@@ -333,6 +350,72 @@ void nitrousControl()
     {
       N2O_STAGE1_PIN_LOW();
       N2O_STAGE2_PIN_LOW();
+    }
+  }
+}
+
+// Water methanol injection control
+void wmiControl()
+{
+  int wmiPW = 0;
+  
+  // wmi can only work when vvt is disabled 
+  if(configPage6.vvtEnabled == 0 && configPage10.wmiEnabled >= 1)
+  {
+    currentStatus.wmiEmpty = WMI_TANK_IS_EMPTY();
+    if(currentStatus.wmiEmpty == 0)
+    {
+      if(currentStatus.TPS >= configPage10.wmiTPS && currentStatus.RPMdiv100 >= configPage10.wmiRPM && currentStatus.MAP/2 >= configPage10.wmiMAP && currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET >= configPage10.wmiIAT)
+      {
+        switch(configPage10.wmiMode)
+        {
+        case WMI_MODE_SIMPLE:
+          // Simple mode - Output is turned on when preset boost level is reached
+          wmiPW = 100;
+          break;
+        case WMI_MODE_PROPORTIONAL:
+          // Proportional Mode - Output PWM is proportionally controlled between two MAP values - MAP Value 1 = PWM:0% / MAP Value 2 = PWM:100%
+          wmiPW = map(currentStatus.MAP/2, configPage10.wmiMAP, configPage10.wmiMAP2, 0, 100);
+          break;
+        case WMI_MODE_OPENLOOP:
+          //  Mapped open loop - Output PWM follows 2D map value (RPM vs MAP) Cell value contains desired PWM% [range 0-100%]
+          wmiPW = get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM);
+          break;
+        case WMI_MODE_CLOSEDLOOP:
+          // Mapped closed loop - Output PWM follows injector duty cycle with 2D correction map applied (RPM vs MAP). Cell value contains correction value% [nom 100%] 
+          wmiPW = max(0, ((int)currentStatus.PW1 + configPage10.wmiOffset)) * get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM) / 100;
+          break;
+        default:
+          // Wrong mode
+          wmiPW = 0;
+          break;
+        }
+      }
+    }
+
+    currentStatus.wmiPW = wmiPW;
+    vvt_pwm_value = wmiPW;
+
+    if(wmiPW == 0)
+    {
+      // Make sure water pump is off
+      VVT_PIN_LOW();
+      DISABLE_VVT_TIMER();
+      digitalWrite(pinWMIEnabled, LOW);
+    }
+    else
+    {
+      digitalWrite(pinWMIEnabled, HIGH);
+      if (wmiPW >= 100)
+      {
+        // Make sure water pump is on (100% duty)
+        VVT_PIN_HIGH();
+        DISABLE_VVT_TIMER();
+      }
+      else
+      {
+        ENABLE_VVT_TIMER();
+      }
     }
   }
 }
