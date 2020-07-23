@@ -865,7 +865,7 @@ struct config6 {
   byte ego_sdelay; //Time in seconds after engine starts that closed loop becomes available
   byte egoRPM; //RPM must be above this for closed loop to function
   byte egoTPSMax; //TPS must be below this for closed loop to function
-  byte vvtPin : 6;
+  byte vvt1Pin : 6;
   byte useExtBaro : 1;
   byte boostMode : 1; //Simple of full boost control
   byte boostPin : 6;
@@ -1168,8 +1168,11 @@ struct config10 {
                       //Bytes 165-170
   byte vvtCLminDuty;
   byte vvtCLmaxDuty;
+  byte vvt2Pin : 6;
+  byte unused11_174_1 : 1;
+  byte unused11_174_2 : 1;
 
-  byte unused11_174_191[19]; //Bytes 174-191
+  byte unused11_175_191[18]; //Bytes 175-191
 
 #if defined(CORE_AVR)
   };
