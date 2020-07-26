@@ -579,10 +579,10 @@ struct statuses {
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
-  //int8_t vvtAngle;
-  long vvtAngle;
-  byte vvtTargetAngle;
-  byte vvtDuty;
+  //int8_t vvt1Angle;
+  long vvt1Angle;
+  byte vvt1TargetAngle;
+  byte vvt1Duty;
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss; /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
@@ -592,6 +592,9 @@ struct statuses {
   byte engineProtectStatus;
   byte wmiPW;
   bool wmiEmpty;
+  long vvt2Angle;
+  byte vvt2TargetAngle;
+  byte vvt2Duty;
 };
 
 /**
@@ -852,7 +855,7 @@ struct config6 {
   byte egoCount; //The number of ignition cylces per step
   byte vvtMode : 2; //Valid VVT modes are 'on/off', 'open loop' and 'closed loop'
   byte vvtLoadSource : 2; //Load source for VVT (TPS or MAP)
-  byte vvtCLDir : 1; //VVT direction (advance or retard)
+  byte vvtPWMdir : 1; //VVT direction (normal or reverse)
   byte vvtCLUseHold : 1; //Whether or not to use a hold duty cycle (Most cases are Yes)
   byte vvtCLAlterFuelTiming : 1;
   byte boostCutEnabled : 1;
@@ -862,7 +865,7 @@ struct config6 {
   byte ego_sdelay; //Time in seconds after engine starts that closed loop becomes available
   byte egoRPM; //RPM must be above this for closed loop to function
   byte egoTPSMax; //TPS must be below this for closed loop to function
-  byte vvtPin : 6;
+  byte vvt1Pin : 6;
   byte useExtBaro : 1;
   byte boostMode : 1; //Simple of full boost control
   byte boostPin : 6;
@@ -1117,8 +1120,8 @@ struct config10 {
   byte vvtCLKP; //Byte 127
   byte vvtCLKI; //Byte 128
   byte vvtCLKD; //Byte 129
-  uint16_t vvtCLMinAng; //Bytes 130-131
-  uint16_t vvtCLMaxAng; //Bytes 132-133
+  int16_t vvtCLMinAng; //Bytes 130-131
+  int16_t vvtCLMaxAng; //Bytes 132-133
 
   byte crankingEnrichTaper; //Byte 134
 
@@ -1163,8 +1166,13 @@ struct config10 {
   byte wmiAdvBins[6]; //Bytes 159-164
   byte wmiAdvAdj[6];  //Additional advance (in degrees)
                       //Bytes 165-170
+  byte vvtCLminDuty;
+  byte vvtCLmaxDuty;
+  byte vvt2Pin : 6;
+  byte unused11_174_1 : 1;
+  byte unused11_174_2 : 1;
 
-  byte unused11_171_191[21]; //Bytes 171-191
+  byte unused11_175_191[18]; //Bytes 175-191
 
 #if defined(CORE_AVR)
   };

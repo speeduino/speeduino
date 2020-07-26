@@ -1267,6 +1267,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 53; //2 wire idle control
       pinBoost = 7; //Boost control
       pinVVT_1 = 6; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinFuelPump = 4; //Fuel pump output
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
@@ -1317,6 +1318,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 6; //2 wire idle control
       pinBoost = 7; //Boost control
       pinVVT_1 = 4; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
@@ -1417,13 +1419,11 @@ void setPinMapping(byte boardID)
         /* = PD0; */ //CANRX
         /* = PD1; */ //CANTX
         /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        /* = PD3; */ //
-        /* = PD4; */ //
+        pinVVT_2 = PD3; //
         pinFlex = PD4;
         /* = PD5;*/ //TXD2
         /* = PD6; */ //RXD2
         pinCoil1 = PD7; //
-        /* = PD7; */ //
         /* = PD8; */ //
         pinCoil5 = PD9;//
         /* = PD10; */ //
@@ -1512,6 +1512,7 @@ void setPinMapping(byte boardID)
       pinIdle1 = 5; //Single wire idle control
       pinBoost = 4;
       pinVVT_1 = 11; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
       pinFuelPump = 40; //Fuel pump output
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
@@ -1780,6 +1781,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 6; //ICV pin3
       pinBoost = 7; //Boost control
       pinVVT_1 = 4; //VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinFuelPump = 45; //Fuel pump output  (Goes to ULN2003)
       pinStepperDir = 16; //Stepper valve isn't used with these
       pinStepperStep = 17; //Stepper valve isn't used with these
@@ -1818,6 +1820,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 47; //2 wire idle control - NOT USED
       pinBoost = 7; //Boost control
       pinVVT_1 = 6; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinFuelPump = 4; //Fuel pump output
       pinStepperDir = 25; //Direction pin for DRV8825 driver
       pinStepperStep = 24; //Step pin for DRV8825 driver
@@ -1863,6 +1866,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 10; //2 wire idle control
       pinFuelPump = 23; //Fuel pump output
       pinVVT_1 = 11; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinStepperDir = 32; //Direction pin  for DRV8825 driver
       pinStepperStep = 31; //Step pin for DRV8825 driver
       pinStepperEnable = 30; //Enable pin for DRV8825 driver
@@ -1908,6 +1912,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 43; //2 wire idle control
       pinFuelPump = 41; //Fuel pump output
       pinVVT_1 = 44; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinStepperDir = 32; //Direction pin  for DRV8825 driver
       pinStepperStep = 31; //Step pin for DRV8825 driver
       pinStepperEnable = 30; //Enable pin for DRV8825 driver
@@ -2192,6 +2197,7 @@ void setPinMapping(byte boardID)
         pinIdle2 = PA2; //2 wire idle control
         pinBoost = PA1; //Boost control
         pinVVT_1 = PA0; //Default VVT output
+        pinVVT_2 = PA2; //Default VVT2 output
         pinStepperDir = PC15; //Direction pin  for DRV8825 driver
         pinStepperStep = PC14; //Step pin for DRV8825 driver
         pinStepperEnable = PC13; //Enable pin for DRV8825
@@ -2360,7 +2366,7 @@ void setPinMapping(byte boardID)
   if ( (configPage4.fuelPumpPin != 0) && (configPage4.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = pinTranslate(configPage4.fuelPumpPin); }
   if ( (configPage6.fanPin != 0) && (configPage6.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = pinTranslate(configPage6.fanPin); }
   if ( (configPage6.boostPin != 0) && (configPage6.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = pinTranslate(configPage6.boostPin); }
-  if ( (configPage6.vvtPin != 0) && (configPage6.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage6.vvtPin); }
+  if ( (configPage6.vvt1Pin != 0) && (configPage6.vvt1Pin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage6.vvt1Pin); }
   if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage6.baroPin + A0; }
   if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_NR_GPIO_PINS) ) { pinEMAP = configPage10.EMAPPin + A0; }
   if ( (configPage10.fuel2InputPin != 0) && (configPage10.fuel2InputPin < BOARD_NR_GPIO_PINS) ) { pinFuel2Input = pinTranslate(configPage10.fuel2InputPin); }
@@ -2371,6 +2377,7 @@ void setPinMapping(byte boardID)
   if ( (configPage10.wmiEmptyPin != 0) && (configPage10.wmiEmptyPin < BOARD_NR_GPIO_PINS) ) { pinWMIEmpty = pinTranslate(configPage10.wmiEmptyPin); }
   if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_NR_GPIO_PINS) ) { pinWMIIndicator = pinTranslate(configPage10.wmiIndicatorPin); }
   if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_NR_GPIO_PINS) ) { pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
+  if ( (configPage10.vvt2Pin != 0) && (configPage10.vvt2Pin < BOARD_NR_GPIO_PINS) ) { pinVVT_2 = pinTranslate(configPage10.vvt2Pin); }
 
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
@@ -2401,6 +2408,7 @@ void setPinMapping(byte boardID)
   pinMode(pinStepperEnable, OUTPUT);
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
+  pinMode(pinVVT_2, OUTPUT);
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
@@ -2478,7 +2486,7 @@ void setPinMapping(byte boardID)
 
   //And for inputs
   #if defined(CORE_STM32)
-    #ifndef ARDUINO_ARCH_STM32 //libmaple core aka STM32DUINO
+    #ifdef INPUT_ANALOG
       pinMode(pinMAP, INPUT_ANALOG);
       pinMode(pinO2, INPUT_ANALOG);
       pinMode(pinO2_2, INPUT_ANALOG);
