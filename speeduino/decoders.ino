@@ -503,7 +503,7 @@ void triggerSec_missingTooth()
     toothLastSecToothTime = curTime2;
 
     //Record the VVT Angle
-    if( (configPage4.trigPatternSec != SEC_TRIGGER_4_1) || (secondaryToothCount == 1) )
+    if( (revolutionOne == 1) )
     {
       int16_t curAngle;
       curAngle = getCrankAngle();
