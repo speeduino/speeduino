@@ -31,11 +31,20 @@ void initialiseAll()
     table3D_setSize(&stagingTable, 8);
     table3D_setSize(&boostTable, 8);
     table3D_setSize(&vvtTable, 8);
+    table3D_setSize(&wmiTable, 8);
     table3D_setSize(&trim1Table, 6);
     table3D_setSize(&trim2Table, 6);
     table3D_setSize(&trim3Table, 6);
     table3D_setSize(&trim4Table, 6);
-        
+
+    #if defined(CORE_STM32)
+    configPage9.intcan_available = 1;   // device has internal canbus
+    //STM32 can not currently enabled
+    #endif
+    #if defined(CORE_TEENSY35)
+    configPage9.intcan_available = 1;   // device has internal canbus
+    #endif
+    
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
 
@@ -49,22 +58,6 @@ void initialiseAll()
     Serial.begin(115200);
     #if defined(CANSerial_AVAILABLE)
       if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
-    #endif
-
-    #if defined(CORE_STM32)
-    configPage9.intcan_available = 1;   // device has internal canbus
-    //STM32 can not currently enabled
-    #endif
-
-    #if defined(CORE_TEENSY35)
-    configPage9.intcan_available = 1;   // device has internal canbus
-    //Teensy uses the Flexcan_T4 library to use the internal canbus
-    //enable local can interface
-    //setup can interface to 500k
-
-      Can0.begin();
-      Can0.setBaudRate(500000);
-      Can0.enableFIFO();
     #endif
 
     //Repoint the 2D table structs to the config pages that were just loaded
@@ -193,6 +186,12 @@ void initialiseAll()
     fanPWMTable.xSize = 4;
     fanPWMTable.values = configPage2.PWMFanDuty;
     fanPWMTable.axisX = configPage6.fanPWMBins;
+
+    wmiAdvTable.valueSize = SIZE_BYTE;
+    wmiAdvTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    wmiAdvTable.xSize = 6;
+    wmiAdvTable.values = configPage10.wmiAdvAdj;
+    wmiAdvTable.axisX = configPage10.wmiAdvBins;
 
     cltCalibrationTable_new.valueSize = SIZE_INT;
     cltCalibrationTable_new.axisSize = SIZE_INT;
@@ -1266,6 +1265,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 53; //2 wire idle control
       pinBoost = 7; //Boost control
       pinVVT_1 = 6; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinFuelPump = 4; //Fuel pump output
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
@@ -1316,6 +1316,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 6; //2 wire idle control
       pinBoost = 7; //Boost control
       pinVVT_1 = 4; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
@@ -1326,6 +1327,9 @@ void setPinMapping(byte boardID)
       pinResetControl = 43; //Reset control output
       pinBaro = A5;
       pinVSS = 20;
+      pinWMIEmpty = 46;
+      pinWMIIndicator = 44;
+      pinWMIEnabled = 42;
 
       #if defined(CORE_TEENSY35)
         pinInjector6 = 51;
@@ -1413,13 +1417,11 @@ void setPinMapping(byte boardID)
         /* = PD0; */ //CANRX
         /* = PD1; */ //CANTX
         /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        /* = PD3; */ //
-        /* = PD4; */ //
+        pinVVT_2 = PD3; //
         pinFlex = PD4;
         /* = PD5;*/ //TXD2
         /* = PD6; */ //RXD2
         pinCoil1 = PD7; //
-        /* = PD7; */ //
         /* = PD8; */ //
         pinCoil5 = PD9;//
         /* = PD10; */ //
@@ -1508,6 +1510,7 @@ void setPinMapping(byte boardID)
       pinIdle1 = 5; //Single wire idle control
       pinBoost = 4;
       pinVVT_1 = 11; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
       pinFuelPump = 40; //Fuel pump output
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
@@ -1776,6 +1779,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 6; //ICV pin3
       pinBoost = 7; //Boost control
       pinVVT_1 = 4; //VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinFuelPump = 45; //Fuel pump output  (Goes to ULN2003)
       pinStepperDir = 16; //Stepper valve isn't used with these
       pinStepperStep = 17; //Stepper valve isn't used with these
@@ -1814,6 +1818,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 47; //2 wire idle control - NOT USED
       pinBoost = 7; //Boost control
       pinVVT_1 = 6; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinFuelPump = 4; //Fuel pump output
       pinStepperDir = 25; //Direction pin for DRV8825 driver
       pinStepperStep = 24; //Step pin for DRV8825 driver
@@ -1859,6 +1864,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 10; //2 wire idle control
       pinFuelPump = 23; //Fuel pump output
       pinVVT_1 = 11; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinStepperDir = 32; //Direction pin  for DRV8825 driver
       pinStepperStep = 31; //Step pin for DRV8825 driver
       pinStepperEnable = 30; //Enable pin for DRV8825 driver
@@ -1904,6 +1910,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 43; //2 wire idle control
       pinFuelPump = 41; //Fuel pump output
       pinVVT_1 = 44; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinStepperDir = 32; //Direction pin  for DRV8825 driver
       pinStepperStep = 31; //Step pin for DRV8825 driver
       pinStepperEnable = 30; //Enable pin for DRV8825 driver
@@ -1992,18 +1999,13 @@ void setPinMapping(byte boardID)
     #endif
 
     case 55:
-      #if defined(CORE_TEENSY35)
+      #if defined(CORE_TEENSY)
       //Pin mappings for the DropBear
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinFlex = A16; // Flex sensor
-      pinTPS = A22; //TPS input pin
       pinMAP = A1; //MAP sensor pin
       pinBaro = A0; //Baro sensor pin
-      pinIAT = A19; //IAT sensor pin
-      pinCLT = A20; //CLS sensor pin
-      pinO2 = A21; //O2 Sensor pin
-      pinO2_2 = A18; //Spare 2
       pinBat = A14; //Battery reference voltage pin
       pinSpareTemp1 = A17; //spare Analog input 1
       pinLaunch = A15; //Can be overwritten below
@@ -2023,7 +2025,24 @@ void setPinMapping(byte boardID)
       pinFan = 25; //Pin for the fan output
       pinResetControl = 46; //Reset control output PLACEHOLDER value for now
 
-      #ifdef USE_MC33810
+      #if defined(CORE_TEENSY35)
+        pinTPS = A22; //TPS input pin
+        pinIAT = A19; //IAT sensor pin
+        pinCLT = A20; //CLS sensor pin
+        pinO2 = A21; //O2 Sensor pin
+        pinO2_2 = A18; //Spare 2
+      #endif
+
+      #if defined(CORE_TEENSY41)
+        pinTPS = A17; //TPS input pin
+        pinIAT = A14; //IAT sensor pin
+        pinCLT = A15; //CLS sensor pin
+        pinO2 = A16; //O2 Sensor pin
+        pinBat = A3; //Battery reference voltage pin. Needs Alpha4+
+        pinLaunch = 34; //Can be overwritten below
+      #endif
+
+      #if defined(USE_MC33810)
         pinMC33810_1_CS = 10;
         pinMC33810_2_CS = 9;
 
@@ -2188,6 +2207,7 @@ void setPinMapping(byte boardID)
         pinIdle2 = PA2; //2 wire idle control
         pinBoost = PA1; //Boost control
         pinVVT_1 = PA0; //Default VVT output
+        pinVVT_2 = PA2; //Default VVT2 output
         pinStepperDir = PC15; //Direction pin  for DRV8825 driver
         pinStepperStep = PC14; //Step pin for DRV8825 driver
         pinStepperEnable = PC13; //Enable pin for DRV8825
@@ -2356,13 +2376,18 @@ void setPinMapping(byte boardID)
   if ( (configPage4.fuelPumpPin != 0) && (configPage4.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = pinTranslate(configPage4.fuelPumpPin); }
   if ( (configPage2.fanPin != 0) && (configPage2.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = pinTranslate(configPage2.fanPin); }
   if ( (configPage6.boostPin != 0) && (configPage6.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = pinTranslate(configPage6.boostPin); }
-  if ( (configPage6.vvtPin != 0) && (configPage6.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage6.vvtPin); }
+  if ( (configPage6.vvt1Pin != 0) && (configPage6.vvt1Pin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage6.vvt1Pin); }
   if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage6.baroPin + A0; }
   if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_NR_GPIO_PINS) ) { pinEMAP = configPage10.EMAPPin + A0; }
   if ( (configPage10.fuel2InputPin != 0) && (configPage10.fuel2InputPin < BOARD_NR_GPIO_PINS) ) { pinFuel2Input = pinTranslate(configPage10.fuel2InputPin); }
   if ( (configPage2.vssPin != 0) && (configPage2.vssPin < BOARD_NR_GPIO_PINS) ) { pinVSS = pinTranslate(configPage2.vssPin); }
   if ( (configPage10.fuelPressurePin != 0) && (configPage10.fuelPressurePin < BOARD_NR_GPIO_PINS) ) { pinFuelPressure = configPage10.fuelPressurePin + A0; }
   if ( (configPage10.oilPressurePin != 0) && (configPage10.oilPressurePin < BOARD_NR_GPIO_PINS) ) { pinOilPressure = configPage10.oilPressurePin + A0; }
+  
+  if ( (configPage10.wmiEmptyPin != 0) && (configPage10.wmiEmptyPin < BOARD_NR_GPIO_PINS) ) { pinWMIEmpty = pinTranslate(configPage10.wmiEmptyPin); }
+  if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_NR_GPIO_PINS) ) { pinWMIIndicator = pinTranslate(configPage10.wmiIndicatorPin); }
+  if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_NR_GPIO_PINS) ) { pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
+  if ( (configPage10.vvt2Pin != 0) && (configPage10.vvt2Pin < BOARD_NR_GPIO_PINS) ) { pinVVT_2 = pinTranslate(configPage10.vvt2Pin); }
 
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
@@ -2393,6 +2418,7 @@ void setPinMapping(byte boardID)
   pinMode(pinStepperEnable, OUTPUT);
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
+  pinMode(pinVVT_2, OUTPUT);
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
@@ -2470,7 +2496,7 @@ void setPinMapping(byte boardID)
 
   //And for inputs
   #if defined(CORE_STM32)
-    #ifndef ARDUINO_ARCH_STM32 //libmaple core aka STM32DUINO
+    #ifdef INPUT_ANALOG
       pinMode(pinMAP, INPUT_ANALOG);
       pinMode(pinO2, INPUT_ANALOG);
       pinMode(pinO2_2, INPUT_ANALOG);
@@ -2531,7 +2557,20 @@ void setPinMapping(byte boardID)
   {
     pinMode(pinOilPressure, INPUT);
   }
-  
+  if(configPage10.wmiEnabled > 0)
+  {
+    pinMode(pinWMIEnabled, OUTPUT);
+    if(configPage10.wmiIndicatorEnabled > 0)
+    {
+      pinMode(pinWMIIndicator, OUTPUT);
+      if (configPage10.wmiIndicatorPolarity > 0) digitalWrite(pinWMIIndicator, HIGH); 
+    }
+    if(configPage10.wmiEmptyEnabled > 0)
+    {
+      if (configPage10.wmiEmptyPolarity == 0) { pinMode(pinWMIEmpty, INPUT_PULLUP); } //Normal setting
+      else { pinMode(pinWMIEmpty, INPUT); } //inverted setting
+    }
+  }  
 
   //These must come after the above pinMode statements
   triggerPri_pin_port = portInputRegister(digitalPinToPort(pinTrigger));

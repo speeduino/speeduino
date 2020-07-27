@@ -76,13 +76,21 @@ byte rollingCutCounter = 0; /**< how many times (revolutions) the ignition has b
 uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 
 uint16_t staged_req_fuel_mult_pri = 0;
-uint16_t staged_req_fuel_mult_sec = 0;
-
+uint16_t staged_req_fuel_mult_sec = 0;   
 #ifndef UNIT_TEST // Scope guard for unit testing
 void setup()
 {
   initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
   initialiseAll();
+    #if defined(CORE_TEENSY35)
+    //Teensy uses the Flexcan_T4 library to use the internal canbus
+    //enable local can interface
+    //setup can interface to 500k
+    
+    Can0.begin();
+    Can0.setBaudRate(500000);
+    Can0.enableFIFO();
+    #endif 
 }
 
 void loop()
@@ -128,7 +136,6 @@ void loop()
             } 
           }
       #endif
-      
       #if  defined(CORE_STM32)
           else if (configPage9.enable_intcan == 1) // can module enabled
           {
@@ -184,7 +191,8 @@ void loop()
       //This should only be run if the high speed logger are off because it will change the trigger interrupts back to defaults rather than the logger versions
       if( (currentStatus.toothLogEnabled == false) && (currentStatus.compositeLogEnabled == false) ) { initialiseTriggers(); }
 
-      VVT_PIN_LOW();
+      VVT1_PIN_LOW();
+      VVT2_PIN_LOW();
       DISABLE_VVT_TIMER();
       boostDisable();
       if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
@@ -198,11 +206,11 @@ void loop()
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
       readTPS(); //TPS reading to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
-      #if  defined(CORE_TEENSY)       
+      #if  defined(CORE_TEENSY35)       
           if (configPage9.enable_intcan == 1) // use internal can module
           {
            // this is just to test the interface is sending
-           sendCancommand(3,(configPage9.realtime_base_address+ 0x100),currentStatus.TPS,0,0x200);
+           //sendCancommand(3,((configPage9.realtime_base_address & 0x3FF)+ 0x100),currentStatus.TPS,0,0x200);
           }
       #endif     
 
@@ -241,6 +249,11 @@ void loop()
       boostControl();
       //VVT may eventually need to be synced with the cam readings (ie run once per cam rev) but for now run at 30Hz
       vvtControl();
+      //Water methanol injection
+      wmiControl();
+      //FOR TEST PURPOSES ONLY!!!
+      if(vvt2_pwm_value < vvt_pwm_max_count) vvt2_pwm_value++;
+      else vvt2_pwm_value = 1;
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
@@ -253,6 +266,7 @@ void loop()
       readBat();
       nitrousControl();
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
+      
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
       currentStatus.fuelPressure = getFuelPressure();
@@ -321,6 +335,21 @@ void loop()
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
       readBaro(); //Infrequent baro readings are not an issue.
+
+      if ( (configPage10.wmiEnabled > 0) && (configPage10.wmiIndicatorEnabled > 0) )
+      {
+        // water tank empty
+        if (currentStatus.wmiEmpty > 0)
+        {
+          // flash with 1sec inverval
+          digitalWrite(pinWMIIndicator, !digitalRead(pinWMIIndicator));
+        }
+        else
+        {
+          digitalWrite(pinWMIIndicator, configPage10.wmiIndicatorPolarity ? HIGH : LOW);
+        } 
+      }
+
     } //1Hz timer
 
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) )  { idleControl(); } //Run idlecontrol every loop for stepper idle.
