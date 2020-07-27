@@ -1996,18 +1996,13 @@ void setPinMapping(byte boardID)
     #endif
 
     case 55:
-      #if defined(CORE_TEENSY35)
+      #if defined(CORE_TEENSY)
       //Pin mappings for the DropBear
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinFlex = A16; // Flex sensor
-      pinTPS = A22; //TPS input pin
       pinMAP = A1; //MAP sensor pin
       pinBaro = A0; //Baro sensor pin
-      pinIAT = A19; //IAT sensor pin
-      pinCLT = A20; //CLS sensor pin
-      pinO2 = A21; //O2 Sensor pin
-      pinO2_2 = A18; //Spare 2
       pinBat = A14; //Battery reference voltage pin
       pinSpareTemp1 = A17; //spare Analog input 1
       pinLaunch = A15; //Can be overwritten below
@@ -2027,7 +2022,24 @@ void setPinMapping(byte boardID)
       pinFan = 25; //Pin for the fan output
       pinResetControl = 46; //Reset control output PLACEHOLDER value for now
 
-      #ifdef USE_MC33810
+      #if defined(CORE_TEENSY35)
+        pinTPS = A22; //TPS input pin
+        pinIAT = A19; //IAT sensor pin
+        pinCLT = A20; //CLS sensor pin
+        pinO2 = A21; //O2 Sensor pin
+        pinO2_2 = A18; //Spare 2
+      #endif
+
+      #if defined(CORE_TEENSY41)
+        pinTPS = A17; //TPS input pin
+        pinIAT = A14; //IAT sensor pin
+        pinCLT = A15; //CLS sensor pin
+        pinO2 = A16; //O2 Sensor pin
+        pinBat = A3; //Battery reference voltage pin. Needs Alpha4+
+        pinLaunch = 34; //Can be overwritten below
+      #endif
+
+      #if defined(USE_MC33810)
         pinMC33810_1_CS = 10;
         pinMC33810_2_CS = 9;
 

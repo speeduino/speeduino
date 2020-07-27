@@ -324,7 +324,7 @@ void loop()
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
       readBaro(); //Infrequent baro readings are not an issue.
 
-      if (configPage10.wmiEnabled > 0 && configPage10.wmiIndicatorEnabled > 0)
+      if ( (configPage10.wmiEnabled > 0) && (configPage10.wmiIndicatorEnabled > 0) )
       {
         // water tank empty
         if (currentStatus.wmiEmpty > 0)
