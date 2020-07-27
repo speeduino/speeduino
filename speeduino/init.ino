@@ -36,7 +36,15 @@ void initialiseAll()
     table3D_setSize(&trim2Table, 6);
     table3D_setSize(&trim3Table, 6);
     table3D_setSize(&trim4Table, 6);
-        
+
+    #if defined(CORE_STM32)
+    configPage9.intcan_available = 1;   // device has internal canbus
+    //STM32 can not currently enabled
+    #endif
+    #if defined(CORE_TEENSY35)
+    configPage9.intcan_available = 1;   // device has internal canbus
+    #endif
+    
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
 
@@ -50,22 +58,6 @@ void initialiseAll()
     Serial.begin(115200);
     #if defined(CANSerial_AVAILABLE)
       if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
-    #endif
-
-    #if defined(CORE_STM32)
-    configPage9.intcan_available = 1;   // device has internal canbus
-    //STM32 can not currently enabled
-    #endif
-
-    #if defined(CORE_TEENSY35)
-    configPage9.intcan_available = 1;   // device has internal canbus
-    //Teensy uses the Flexcan_T4 library to use the internal canbus
-    //enable local can interface
-    //setup can interface to 500k
-
-      Can0.begin();
-      Can0.setBaudRate(500000);
-      Can0.enableFIFO();
     #endif
 
     //Repoint the 2D table structs to the config pages that were just loaded
