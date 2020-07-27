@@ -13,7 +13,8 @@ Each decoder must have the following 4 functions (Where xxxx is the decoder name
 * triggerPri_xxxx - Called each time the primary (No. 1) crank/cam signal is triggered (Called as an interrupt, so variables must be declared volatile)
 * triggerSec_xxxx - Called each time the secondary (No. 2) crank/cam signal is triggered (Called as an interrupt, so variables must be declared volatile)
 * getRPM_xxxx - Returns the current RPM, as calculated by the decoder
-* getCrankAngle_xxxx - Returns the current crank angle, as calculated b the decoder
+* getCrankAngle_xxxx - Returns the current crank angle, as calculated by the decoder
+* getCamAngle_xxxx - Returns the current CAM angle, as calculated by the decoder
 
 And each decoder must utlise at least the following variables:
 toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
@@ -500,6 +501,18 @@ void triggerSec_missingTooth()
       secondaryToothCount++;
     }
     toothLastSecToothTime = curTime2;
+
+    //Record the VVT Angle
+    if( (revolutionOne == 1) )
+    {
+      int16_t curAngle;
+      curAngle = getCrankAngle();
+      while(curAngle > 360) { curAngle -= 360; }
+      curAngle -= configPage4.triggerAngle; //Value at TDC
+      if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCLMinAng; }
+
+      currentStatus.vvt1Angle = curAngle;
+    }
   } //Trigger filter
 }
 
@@ -2205,9 +2218,9 @@ int getCamAngle_Miata9905()
 {
   //lastVVTtime is the time between tooth #1 (10* BTDC) and the single cam tooth. 
   //All cam angles in in BTDC, so the actual advance angle is 370 - fastTimeToAngle(lastVVTtime) - <the angle of the cam at 0 advance>
-  currentStatus.vvtAngle = 370 - fastTimeToAngle(lastVVTtime) - configPage10.vvtCLMinAng;
+  currentStatus.vvt1Angle = 370 - fastTimeToAngle(lastVVTtime) - configPage10.vvtCLMinAng;
 
-  return currentStatus.vvtAngle;
+  return currentStatus.vvt1Angle;
 }
 
 void triggerSetEndTeeth_Miata9905()
