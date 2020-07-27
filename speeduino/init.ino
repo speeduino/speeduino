@@ -1989,9 +1989,9 @@ void setPinMapping(byte boardID)
     case 53:
       //Pin mappings for the Juice Box (ignition only board)
       pinInjector1 = 2; //Output pin injector 1 is on - NOT USED
-      pinInjector2 = 10; //Output pin injector 2 is on - NOT USED
+      pinInjector2 = 56; //Output pin injector 2 is on - NOT USED
       pinInjector3 = 6; //Output pin injector 3 is on - NOT USED
-      pinInjector4 = 9; //Output pin injector 4 is on - NOT USED
+      pinInjector4 = 50; //Output pin injector 4 is on - NOT USED
       pinCoil1 = 29; //Pin for coil 1
       pinCoil2 = 30; //Pin for coil 2
       pinCoil3 = 31; //Pin for coil 3
@@ -2016,7 +2016,7 @@ void setPinMapping(byte boardID)
       pinFan = 25; //Pin for the fan output
       pinSpareHOut1 = 26; // high current output spare1
       pinSpareHOut2 = 27; // high current output spare2
-      pinSpareLOut1 = 9; //low current output spare1 - NOT USED
+      pinSpareLOut1 = 55; //low current output spare1 - NOT USED
       break;
     #endif
 
