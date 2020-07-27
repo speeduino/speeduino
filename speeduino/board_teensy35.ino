@@ -370,10 +370,10 @@ void ftm2_isr(void)
   //FTM2 only has 2 compare channels
   //Use separate variables for each test to ensure conversion to bool
   bool interrupt1 = (FTM2_C0SC & FTM_CSC_CHF);
-  bool interrupt2 = (FTM2_C1SC & FTM_CSC_CHF); //Not currently used
+  bool interrupt2 = (FTM2_C1SC & FTM_CSC_CHF); //For PWM Fan
 
   if(interrupt1) { FTM2_C0SC &= ~FTM_CSC_CHF; idleInterrupt(); }
-  else if(interrupt2) { FTM2_C1SC &= ~FTM_CSC_CHF; } //Add a callback function here if this is ever used
+  else if(interrupt2) { FTM2_C1SC &= ~FTM_CSC_CHF; fanInterrupt(); } //For PWM Fan
 }
 
 uint16_t freeRam()
