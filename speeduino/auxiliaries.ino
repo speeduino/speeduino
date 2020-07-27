@@ -484,19 +484,3 @@ void boostDisable()
     vvt_pwm_state = true;
   }
 }
-
-#if defined(CORE_TEENSY35)
-void ftm1_isr(void)
-{
-  //FTM1 only has 2 compare channels
-  //Use separate variables for each test to ensure conversion to bool
-  bool interrupt1 = (FTM1_C0SC & FTM_CSC_CHF);
-  bool interrupt2 = (FTM1_C1SC & FTM_CSC_CHF);
-
-  if(interrupt1) { FTM1_C0SC &= ~FTM_CSC_CHF; boostInterrupt(); }
-  else if(interrupt2) { FTM1_C1SC &= ~FTM_CSC_CHF; vvtInterrupt(); }
-
-}
-#elif defined(CORE_TEENSY40)
-//DO STUFF HERE
-#endif
