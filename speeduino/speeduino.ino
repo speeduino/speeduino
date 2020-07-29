@@ -253,8 +253,8 @@ void loop()
       //Water methanol injection
       wmiControl();
       //FOR TEST PURPOSES ONLY!!!
-      if(vvt2_pwm_value < vvt_pwm_max_count) vvt2_pwm_value++;
-      else vvt2_pwm_value = 1;
+      if(vvt2_pwm_value < vvt_pwm_max_count) { vvt2_pwm_value++; }
+      else { vvt2_pwm_value = 1; }
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
@@ -575,11 +575,6 @@ void loop()
       currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPM / 100);
       unsigned int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
 
-      //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See www.extraefi.co.uk/sequential_fuel.html for more detail
-      //if(configPage2.inj1Ang > PWdivTimerPerDegree) { injector1StartAngle = configPage2.inj1Ang - ( PWdivTimerPerDegree ); }
-      //else { injector1StartAngle = configPage2.inj1Ang + CRANK_ANGLE_MAX_INJ - PWdivTimerPerDegree; } //Just incase 
-      //while(injector1StartAngle > CRANK_ANGLE_MAX_INJ) { injector1StartAngle -= CRANK_ANGLE_MAX_INJ; }
-
       injector1StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees);
 
       //Repeat the above for each cylinder
@@ -798,18 +793,6 @@ void loop()
               rollingCutLastRev = currentStatus.startRevolutions;
               //curRollingCut = 0;
             }
-            /*
-            else
-            {
-              if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //
-              if (rollingCutLastRev != currentStatus.startRevolutions)
-              {
-                rollingCutLastRev = currentStatus.startRevolutions;
-                rollingCutCounter++;
-              }
-              ignitionOn = false; //Finally the ignition is fully cut completely
-            }
-            */
           } //Hard/Rolling cut check
         } //RPM Check
         else { currentStatus.engineProtectStatus = 0; } //Force all engine protection flags to be off as we're below the minimum RPM
@@ -1373,18 +1356,6 @@ byte getAdvance()
 
   return tempAdvance;
 }
-
-/*
-uint16_t calculateInjector2StartAngle(unsigned int PWdivTimerPerDegree)
-{
-  uint16_t tempInjector2StartAngle = (currentStatus.injAngle + channel2InjDegrees); //This makes the start angle equal to the end angle
-  if(tempInjector2StartAngle < PWdivTimerPerDegree) { tempInjector2StartAngle += CRANK_ANGLE_MAX_INJ; }
-  tempInjector2StartAngle -= PWdivTimerPerDegree; //Subtract the number of degrees the PW will take to get the start angle
-  if(tempInjector2StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { tempInjector2StartAngle -= CRANK_ANGLE_MAX_INJ; }
-
-  return tempInjector2StartAngle;
-}
-*/
 
 uint16_t calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_t injChannelDegrees)
 {

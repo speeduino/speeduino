@@ -2558,7 +2558,7 @@ void setPinMapping(byte boardID)
     if(configPage10.wmiIndicatorEnabled > 0)
     {
       pinMode(pinWMIIndicator, OUTPUT);
-      if (configPage10.wmiIndicatorPolarity > 0) digitalWrite(pinWMIIndicator, HIGH); 
+      if (configPage10.wmiIndicatorPolarity > 0) { digitalWrite(pinWMIIndicator, HIGH); }
     }
     if(configPage10.wmiEmptyEnabled > 0)
     {

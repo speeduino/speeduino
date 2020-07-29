@@ -347,7 +347,7 @@ void ftm3_isr(void)
 //Boost and VVT handler
 void ftm1_isr(void)
 {
-  //FTM1 only has 2 compare channels
+  //FTM1 only has 2 compare channels (Is this correct?)
   //Use separate variables for each test to ensure conversion to bool
   bool interrupt1 = (FTM1_C0SC & FTM_CSC_CHF);
   bool interrupt2 = (FTM1_C1SC & FTM_CSC_CHF);

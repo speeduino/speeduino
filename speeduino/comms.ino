@@ -1135,6 +1135,7 @@ void sendPage()
       break;
 
     case wmiMapPage:
+    {
       //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
       byte response[80]; //Bit hacky, but send 1 map at a time (Each map is 8x8, so 64 + 8 + 8)
 
@@ -1144,6 +1145,7 @@ void sendPage()
       for (int y = 72; y < 80; y++) { response[y] = byte(wmiTable.axisY[7 - (y - 72)] / TABLE_LOAD_MULTIPLIER); }
       Serial.write((byte *)&response, 80);
       break;
+    }
 
     default:
     #ifndef SMALL_FLASH_MODE
