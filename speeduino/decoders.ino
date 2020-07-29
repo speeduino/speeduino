@@ -389,6 +389,7 @@ void triggerPri_missingTooth()
             { 
                 //This occurs when we're at tooth #1, but haven't seen all the other teeth. This indicates a signal issue so we flag lost sync so this will attempt to resync on the next revolution.
                 currentStatus.hasSync = false;
+                BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //No sync at all, so also clear HalfSync bit.
                 currentStatus.syncLossCounter++;
             }
             //This is to handle a special case on startup where sync can be obtained and the system immediately thinks the revs have jumped:
@@ -414,10 +415,12 @@ void triggerPri_missingTooth()
                   if( (secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) )
                   {
                     currentStatus.hasSync = true;
+                    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
                     if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE) { secondaryToothCount = 0; } //Reset the secondary tooth counter to prevent it overflowing
                   }
+                  else if(currentStatus.hasSync != true) { BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If there is primary trigger but no secondary we only have half sync.
                 }
-                else { currentStatus.hasSync = true; } //If nothing is using sequential, we have sync
+                else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
 
                 triggerFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
                 toothLastMinusOneToothTime = toothLastToothTime;

@@ -325,6 +325,7 @@ void initialiseAll()
     //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly.
     currentStatus.RPM = 0;
     currentStatus.hasSync = false;
+    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
     currentStatus.runSecs = 0;
     currentStatus.secl = 0;
     currentStatus.startRevolutions = 0;
@@ -1745,7 +1746,7 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
-   case 31:
+    case 31:
       //Pin mappings for the BMW PnP PCBs by pazi88. This is an AVR only module. At least for now
       pinInjector1 = 8; //Output pin injector 1
       pinInjector2 = 9; //Output pin injector 2
