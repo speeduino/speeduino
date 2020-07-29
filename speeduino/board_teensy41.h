@@ -1,5 +1,5 @@
-#ifndef TEENSY40_H
-#define TEENSY40_H
+#ifndef TEENSY41_H
+#define TEENSY41_H
 #if defined(CORE_TEENSY)&& defined(__IMXRT1062__)
 
 /*

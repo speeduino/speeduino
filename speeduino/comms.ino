@@ -87,37 +87,27 @@ void command()
       break;
 
     case 'E': // receive command button commands
+      cmdPending = true;
 
-      if(cmdPending == true)
+      if(Serial.available() >= 2)
       {
-        //
+        byte cmdGroup = Serial.read();
+        byte cmdValue = Serial.read();
+        uint16_t cmdCombined = word(cmdGroup, cmdValue);
 
-      }
-      else
-      {
-        cmdPending = true;
-
-        if(Serial.available() >= 2)
+        if ( ((cmdCombined >= TS_CMD_INJ1_ON) && (cmdCombined <= TS_CMD_IGN8_50PC)) || (cmdCombined == TS_CMD_TEST_ENBL) || (cmdCombined == TS_CMD_TEST_DSBL) )
         {
-          byte cmdGroup = Serial.read();
-          byte cmdValue = Serial.read();
-          uint16_t cmdCombined = word(cmdGroup, cmdValue);
-
-          if ( (cmdCombined >= TS_CMD_INJ1_ON) && (cmdCombined <=TS_CMD_IGN8_50PC) )
-          {
-            //Hardware test buttons
-            if (currentStatus.RPM == 0) { TS_CommandButtonsHandler(cmdCombined); }
-            cmdPending = false;
-          }
-          else if( (cmdCombined >= TS_CMD_VSS_60KMH) && (cmdCombined <= TS_CMD_VSS_RATIO6) )
-          {
-            //VSS Calibration commands
-            TS_CommandButtonsHandler(cmdCombined);
-            cmdPending = false;
-          }
+          //Hardware test buttons
+          if (currentStatus.RPM == 0) { TS_CommandButtonsHandler(cmdCombined); }
+          cmdPending = false;
+        }
+        else if( (cmdCombined >= TS_CMD_VSS_60KMH) && (cmdCombined <= TS_CMD_VSS_RATIO6) )
+        {
+          //VSS Calibration commands
+          TS_CommandButtonsHandler(cmdCombined);
+          cmdPending = false;
         }
       }
-
       break;
 
     case 'F': // send serial protocol version
@@ -259,7 +249,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202003-dev"));
+      Serial.print(F("speeduino 202006-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -289,7 +279,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2020.03-dev"));
+      Serial.print(F("Speeduino 2020.06-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -428,14 +418,14 @@ void command()
       {
         Serial.print(x);
         Serial.print(", ");
-        Serial.println(cltCalibrationTable[x]);
+        //Serial.println(cltCalibrationTable[x]);
       }
       Serial.println(F("Inlet temp"));
       for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
       {
         Serial.print(x);
         Serial.print(", ");
-        Serial.println(iatCalibrationTable[x]);
+        //Serial.println(iatCalibrationTable[x]);
       }
       Serial.println(F("O2"));
       for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
@@ -639,8 +629,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[82] = highByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
 
   fullStatus[83] = currentStatus.status3;
-
-  fullStatus[84] = currentStatus.nChannels; //THIS IS CURRENTLY UNUSED!
+  fullStatus[84] = currentStatus.engineProtectStatus;
   fullStatus[85] = lowByte(currentStatus.fuelLoad);
   fullStatus[86] = highByte(currentStatus.fuelLoad);
   fullStatus[87] = lowByte(currentStatus.ignLoad);
@@ -649,21 +638,35 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[90] = highByte(currentStatus.dwell);
   fullStatus[91] = currentStatus.CLIdleTarget;
   fullStatus[92] = currentStatus.mapDOT;
-  fullStatus[93] = (int8_t)currentStatus.vvtAngle;
-  fullStatus[94] = currentStatus.vvtTargetAngle;
-  fullStatus[95] = currentStatus.vvtDuty;
+  fullStatus[93] = (int8_t)currentStatus.vvt1Angle;
+  fullStatus[94] = currentStatus.vvt1TargetAngle;
+  fullStatus[95] = currentStatus.vvt1Duty;
   fullStatus[96] = lowByte(currentStatus.flexBoostCorrection);
   fullStatus[97] = highByte(currentStatus.flexBoostCorrection);
   fullStatus[98] = currentStatus.baroCorrection;
   fullStatus[99] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
   fullStatus[100] = currentStatus.ASEValue; //Current ASE (%)
-  fullStatus[101] = currentStatus.vss;
+  fullStatus[101] = lowByte(currentStatus.vss);
+  fullStatus[102] = highByte(currentStatus.vss);
+  fullStatus[103] = currentStatus.gear;
+  fullStatus[104] = currentStatus.fuelPressure;
+  fullStatus[105] = currentStatus.oilPressure;
+  fullStatus[106] = currentStatus.wmiPW;
+  fullStatus[107] = currentStatus.wmiEmpty;
+  fullStatus[108] = (int8_t)currentStatus.vvt2Angle;
+  fullStatus[109] = currentStatus.vvt2TargetAngle;
+  fullStatus[110] = currentStatus.vvt2Duty;
 
   for(byte x=0; x<packetLength; x++)
   {
     if (portNum == 0) { Serial.write(fullStatus[offset+x]); }
-    else if (portNum == 3){ CANSerial.write(fullStatus[offset+x]); }
+    #if defined(CANSerial_AVAILABLE)
+      else if (portNum == 3){ CANSerial.write(fullStatus[offset+x]); }
+    #endif
   }
+
+  // Reset any flags that are being used to trigger page refreshes
+  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
 
 }
 
@@ -1012,6 +1015,21 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       fuelTable2.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
+    case wmiMapPage:
+      if (valueOffset < 64) //New value is part of the wmi map
+      {
+        wmiTable.values[7 - (valueOffset / 8)][valueOffset % 8] = newValue;
+      }
+      else if (valueOffset < 72) //New value is on the X (RPM) axis of the wmi table
+      {
+        wmiTable.axisX[(valueOffset - 64)] = int(newValue) * TABLE_RPM_MULTIPLIER;
+      }
+      else if (valueOffset < 80) //New value is on the Y (MAP) axis of the boost table
+      {
+        wmiTable.axisY[(7 - (valueOffset - 72))] = int(newValue) * TABLE_LOAD_MULTIPLIER;
+      }
+      break;
+
     default:
       break;
   }
@@ -1114,6 +1132,17 @@ void sendPage()
 
     case fuelMap2Page:
       currentTable = fuelTable2;
+      break;
+
+    case wmiMapPage:
+      //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
+      byte response[80]; //Bit hacky, but send 1 map at a time (Each map is 8x8, so 64 + 8 + 8)
+
+      //Boost table
+      for (int x = 0; x < 64; x++) { response[x] = wmiTable.values[7 - (x / 8)][x % 8]; }
+      for (int x = 64; x < 72; x++) { response[x] = byte(wmiTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
+      for (int y = 72; y < 80; y++) { response[y] = byte(wmiTable.axisY[7 - (y - 72)] / TABLE_LOAD_MULTIPLIER); }
+      Serial.write((byte *)&response, 80);
       break;
 
     default:
@@ -1632,7 +1661,15 @@ byte getPageValue(byte page, uint16_t valueAddress)
         else if(valueAddress < 272) { returnValue =  byte(fuelTable2.axisX[(valueAddress - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
         else if (valueAddress < 288) { returnValue = byte(fuelTable2.axisY[15 - (valueAddress - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
         break;
-
+        
+    case wmiMapPage:
+          if(valueAddress < 80)
+          {
+            if(valueAddress < 64) { returnValue = wmiTable.values[7 - (valueAddress / 8)][valueAddress % 8]; }
+            else if(valueAddress < 72) { returnValue = byte(wmiTable.axisX[(valueAddress - 64)] / TABLE_RPM_MULTIPLIER); }
+            else if(valueAddress < 80) { returnValue = byte(wmiTable.axisY[7 - (valueAddress - 72)] / TABLE_LOAD_MULTIPLIER); }
+          }
+        break;
     default:
     #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
@@ -1658,7 +1695,7 @@ void receiveCalibration(byte tableID)
   {
     case 0:
       //coolant table
-      pnt_TargetTable = (byte *)&cltCalibrationTable;
+      //pnt_TargetTable = (byte *)&cltCalibrationTable;
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
       DIVISION_FACTOR = 10;
       BYTES_PER_VALUE = 2;
@@ -1666,7 +1703,7 @@ void receiveCalibration(byte tableID)
       break;
     case 1:
       //Inlet air temp table
-      pnt_TargetTable = (byte *)&iatCalibrationTable;
+      //pnt_TargetTable = (byte *)&iatCalibrationTable;
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
       DIVISION_FACTOR = 10;
       BYTES_PER_VALUE = 2;
