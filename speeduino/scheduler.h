@@ -25,10 +25,52 @@ See page 136 of the processors datasheet: www.atmel.com/Images/doc2549.pdf
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
+#include "globals.h"
+
 #define USE_IGN_REFRESH
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
 
+extern void (*inj1StartFunction)();
+extern void (*inj1EndFunction)();
+extern void (*inj2StartFunction)();
+extern void (*inj2EndFunction)();
+extern void (*inj3StartFunction)();
+extern void (*inj3EndFunction)();
+extern void (*inj4StartFunction)();
+extern void (*inj4EndFunction)();
+extern void (*inj5StartFunction)();
+extern void (*inj5EndFunction)();
+extern void (*inj6StartFunction)();
+extern void (*inj6EndFunction)();
+extern void (*inj7StartFunction)();
+extern void (*inj7EndFunction)();
+extern void (*inj8StartFunction)();
+extern void (*inj8EndFunction)();
+
+/** @name IgnitionCallbacks
+ * These are the function pointers that get called to begin and end the ignition coil charging. They are required for the various spark output modes
+*/
+///@{
+extern void (*ign1StartFunction)();
+extern void (*ign1EndFunction)();
+extern void (*ign2StartFunction)();
+extern void (*ign2EndFunction)();
+extern void (*ign3StartFunction)();
+extern void (*ign3EndFunction)();
+extern void (*ign4StartFunction)();
+extern void (*ign4EndFunction)();
+extern void (*ign5StartFunction)();
+extern void (*ign5EndFunction)();
+extern void (*ign6StartFunction)();
+extern void (*ign6EndFunction)();
+extern void (*ign7StartFunction)();
+extern void (*ign7EndFunction)();
+extern void (*ign8StartFunction)();
+extern void (*ign8EndFunction)();
+///@}
+
 void initialiseSchedulers();
+void beginInjectorPriming();
 void setFuelSchedule1(unsigned long timeout, unsigned long duration);
 void setFuelSchedule2(unsigned long timeout, unsigned long duration);
 void setFuelSchedule3(unsigned long timeout, unsigned long duration);
@@ -47,7 +89,7 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
 void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 
-static inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
+inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 
 //The ARM cores use seprate functions for their ISRs
 #if defined(CORE_STM32_OFFICIAL) || defined(CORE_STM32_GENERIC) || defined(CORE_TEENSY)
@@ -128,23 +170,23 @@ struct FuelSchedule {
 //Schedule *timer3Bqueue[4];
 //Schedule *timer3Cqueue[4];
 
-FuelSchedule fuelSchedule1;
-FuelSchedule fuelSchedule2;
-FuelSchedule fuelSchedule3;
-FuelSchedule fuelSchedule4;
-FuelSchedule fuelSchedule5;
-FuelSchedule fuelSchedule6;
-FuelSchedule fuelSchedule7;
-FuelSchedule fuelSchedule8;
+extern FuelSchedule fuelSchedule1;
+extern FuelSchedule fuelSchedule2;
+extern FuelSchedule fuelSchedule3;
+extern FuelSchedule fuelSchedule4;
+extern FuelSchedule fuelSchedule5;
+extern FuelSchedule fuelSchedule6;
+extern FuelSchedule fuelSchedule7;
+extern FuelSchedule fuelSchedule8;
 
-Schedule ignitionSchedule1;
-Schedule ignitionSchedule2;
-Schedule ignitionSchedule3;
-Schedule ignitionSchedule4;
-Schedule ignitionSchedule5;
-Schedule ignitionSchedule6;
-Schedule ignitionSchedule7;
-Schedule ignitionSchedule8;
+extern Schedule ignitionSchedule1;
+extern Schedule ignitionSchedule2;
+extern Schedule ignitionSchedule3;
+extern Schedule ignitionSchedule4;
+extern Schedule ignitionSchedule5;
+extern Schedule ignitionSchedule6;
+extern Schedule ignitionSchedule7;
+extern Schedule ignitionSchedule8;
 
 //IgnitionSchedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 

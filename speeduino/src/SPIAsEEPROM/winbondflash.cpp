@@ -5,9 +5,6 @@
 	latest version available on http://code.google.com/p/winbondflash
 */
 
-#include <Arduino.h>
-#include <SPI.h>
-#include <errno.h>
 #include "winbondflash.h"
 
 //COMMANDS
@@ -349,16 +346,10 @@ void winbondFlashClass::eraseResume()
 
 bool winbondFlashSPI::begin(partNumber _partno,SPIClass &_spi,uint8_t _nss)
 {
-  //spi = _spi;
   nss = _nss;
-
- // pinMode(MISO,INPUT_PULLUP);
-  SPI.begin();
-  SPI.setBitOrder(MSBFIRST);
-  SPI.setClockDivider(SPI_CLOCK_DIV2);
-  SPI.setDataMode(SPI_MODE0);
+  spi_port = &_spi;
   deselect();
- // Serial.println("SPI OK");
+  //Serial.println("SPI OK");
 
   return winbondFlashClass::begin(_partno);
 }
@@ -366,7 +357,7 @@ bool winbondFlashSPI::begin(partNumber _partno,SPIClass &_spi,uint8_t _nss)
 void winbondFlashSPI::end()
 {
   winbondFlashClass::end();
-  SPI.end();
+  // spi_port->end();
 }
 
 

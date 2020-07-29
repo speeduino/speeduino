@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    13
+  #define CURRENT_DATA_VERSION    14
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -101,7 +101,7 @@ void doUpdates()
     //Convert whatever flex fuel settings are there into the new tables
 
     configPage10.flexBoostBins[0] = 0;
-    configPage10.flexBoostAdj[0]  = (int8_t)configPage2.unused2_1;
+    configPage10.flexBoostAdj[0]  = (int8_t)configPage2.aeColdPct;
 
     configPage10.flexFuelBins[0] = 0;
     configPage10.flexFuelAdj[0]  = configPage2.idleUpPin;
@@ -116,7 +116,7 @@ void doUpdates()
       configPage10.flexFuelBins[x] = pct;
       configPage10.flexAdvBins[x] = pct;
 
-      int16_t boostAdder = (((configPage2.unused2_2 - (int8_t)configPage2.unused2_1) * pct) / 100) + (int8_t)configPage2.unused2_1;
+      int16_t boostAdder = (((configPage2.aeColdTaperMin - (int8_t)configPage2.aeColdPct) * pct) / 100) + (int8_t)configPage2.aeColdPct;
       configPage10.flexBoostAdj[x] = boostAdder;
 
       uint8_t fuelAdder = (((configPage2.idleUpAdder - configPage2.idleUpPin) * pct) / 100) + configPage2.idleUpPin;
@@ -169,10 +169,10 @@ void doUpdates()
   {
     //May 2019 version adds the use of a 2D table for the priming pulse rather than a single value.
     //This sets all the values in the 2D table to be the same as the previous single value
-    configPage2.primePulse[0] = configPage2.unused2_39 / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
-    configPage2.primePulse[1] = configPage2.unused2_39 / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
-    configPage2.primePulse[2] = configPage2.unused2_39 / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
-    configPage2.primePulse[3] = configPage2.unused2_39 / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
+    configPage2.primePulse[0] = configPage2.aeColdTaperMax / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
+    configPage2.primePulse[1] = configPage2.aeColdTaperMax / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
+    configPage2.primePulse[2] = configPage2.aeColdTaperMax / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
+    configPage2.primePulse[3] = configPage2.aeColdTaperMax / 5; //New priming pulse values are in the range 0-127.5 rather than 0-25.5 so they must be divided by 5
     //Set some sane default temperatures for this table
     configPage2.primeBins[0] = 0;
     configPage2.primeBins[1] = 40;
@@ -181,10 +181,10 @@ void doUpdates()
 
     //Also added is coolant based ASE for both duration and amount
     //All the adder amounts are set to what the single value was previously
-    configPage2.asePct[0] = configPage2.unused2_2;
-    configPage2.asePct[1] = configPage2.unused2_2;
-    configPage2.asePct[2] = configPage2.unused2_2;
-    configPage2.asePct[3] = configPage2.unused2_2;
+    configPage2.asePct[0] = configPage2.aeColdTaperMin;
+    configPage2.asePct[1] = configPage2.aeColdTaperMin;
+    configPage2.asePct[2] = configPage2.aeColdTaperMin;
+    configPage2.asePct[3] = configPage2.aeColdTaperMin;
     //ASE duration is set to 10s for all coolant values
     configPage2.aseCount[0] = 10;
     configPage2.aseCount[1] = 10;
@@ -299,6 +299,106 @@ void doUpdates()
     EEPROM.write(EEPROM_DATA_VERSION, 13);
   }
 
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 13)
+  {
+    //202005
+    //Cranking enrichment range 0..1275% instead of older 0.255, so need to divide old values by 5
+    configPage10.crankingEnrichValues[0] = configPage10.crankingEnrichValues[0] / 5;
+    configPage10.crankingEnrichValues[1] = configPage10.crankingEnrichValues[1] / 5;
+    configPage10.crankingEnrichValues[2] = configPage10.crankingEnrichValues[2] / 5;
+    configPage10.crankingEnrichValues[3] = configPage10.crankingEnrichValues[3] / 5;
+
+    //Added the injector timing curve
+    configPage2.injAng[0] = 355;
+    configPage2.injAng[1] = 355;
+    configPage2.injAng[2] = 355;
+    configPage2.injAng[3] = 355;
+    //The RPMs are divided by 100
+    configPage2.injAngRPM[0] = 5;
+    configPage2.injAngRPM[1] = 25;
+    configPage2.injAngRPM[2] = 45;
+    configPage2.injAngRPM[3] = 65;
+
+    //Introdced a DFCO delay option. Default it to 0
+    configPage2.dfcoDelay = 0;
+    //Introdced a minimum temperature for DFCO. Default it to 40C
+    configPage2.dfcoMinCLT = 80; //CALIBRATION_TEMPERATURE_OFFSET is 40
+
+    //Update flexfuel ignition config values for 40 degrees offset
+    for (int i=0; i<6; i++)
+    {
+      configPage10.flexAdvAdj[i] += 40;
+    }
+    
+    //AE cold modifier added. Default to sane values
+    configPage2.aeColdPct = 100;
+    configPage2.aeColdTaperMin = 40;
+    configPage2.aeColdTaperMax = 100;
+
+    //New PID resolution, old resolution was 100% for each increase, 100% now is stored as 32
+    if(configPage6.idleKP >= 8) { configPage6.idleKP = 255; }
+    else { configPage6.idleKP = configPage6.idleKP<<5; }
+    if(configPage6.idleKI >= 8) { configPage6.idleKI = 255; }
+    else { configPage6.idleKI = configPage6.idleKI<<5; }
+    if(configPage6.idleKD >= 8) { configPage6.idleKD = 255; }
+    else { configPage6.idleKD = configPage6.idleKD<<5; }
+    if(configPage10.vvtCLKP >= 8) { configPage10.vvtCLKP = 255; }
+    else { configPage10.vvtCLKP = configPage10.vvtCLKP<<5; }
+    if(configPage10.vvtCLKI >= 8) { configPage10.vvtCLKI = 255; }
+    else { configPage10.vvtCLKI = configPage10.vvtCLKI<<5; }
+    if(configPage10.vvtCLKD >= 8) { configPage10.vvtCLKD = 255; }
+    else { configPage10.vvtCLKD = configPage10.vvtCLKD<<5; }
+
+    //Cranking enrichment to run taper added. Default it to 0,1 secs
+    configPage10.crankingEnrichTaper = 1;
+    
+    //ASE to run taper added. Default it to 0,1 secs
+    configPage2.aseTaperTime = 1;
+
+    //wmi
+    configPage10.wmiEnabled = 0;
+    configPage10.wmiMode = 0;
+    configPage10.wmiOffset = 0;
+    configPage10.wmiIndicatorEnabled = 0;
+    configPage10.wmiEmptyEnabled = 0;
+    configPage10.wmiAdvEnabled = 0;
+    for(int i=0; i<6; i++)
+    {
+      configPage10.wmiAdvBins[i] = i*100/2;
+      configPage10.wmiAdvAdj[i] = OFFSET_IGNITION;
+    }
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 14);
+
+    // there is now optioon for fixed and relative timing retard for soft limit. This sets the soft limiter to the old fixed timing mode.
+    configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 14)
+  {
+    //202006
+
+    //MAJOR update to move the coolant, IAT and O2 calibrations to 2D tables
+    int y;
+    for(int x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
+    {
+      y = EEPROM_CALIBRATION_CLT_OLD + (x * 16);
+      cltCalibration_values[x] = EEPROM.read(y);
+      cltCalibration_bins[x] = (x * 16);
+
+      y = EEPROM_CALIBRATION_IAT_OLD + (x * 16);
+      iatCalibration_values[x] = EEPROM.read(y);
+      iatCalibration_bins[x] = (x * 16);
+    }
+
+    //Oil and fuel pressure inputs were introduced. Disable them both by default
+    configPage10.oilPressureProtEnbl = false;
+    configPage10.oilPressureEnable = false;
+    configPage10.fuelPressureEnable = false;
+
+  }
+  
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
   {

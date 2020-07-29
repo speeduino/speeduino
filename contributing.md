@@ -6,26 +6,26 @@ If you haven't already, jump onto our Slack team as that is where most of the de
 
 Here are some important resources:
 
-  * [Coding style guide](http://speeduino.com/wiki/index.php/Style_code)
+  * [Coding style guide](https://wiki.speeduino.com/dev/Style_code)
   * [Project forum](https://speeduino.com/forum)
   * [Slack team](https://speeduino.com/forum/app.php/page/slack)
 
 ## Testing
 
-All contributions should be in a working, compilable state. If your change does not compile cleanly it will be rejected immediately. 
+All contributions should be in a working, compilable state. If your change does not compile cleanly it will be rejected immediately.
 
 ## Submitting changes
 
-Please send a [GitHub Pull Request to Speeduino](https://github.com/noisymime/speeduino/pull/new/master) with a clear list of what you've done (read more about [pull requests](http://help.github.com/pull-requests/)). 
+Please send a [GitHub Pull Request to Speeduino](https://github.com/noisymime/speeduino/pull/new/master) with a clear list of what you've done (read more about [pull requests](http://help.github.com/pull-requests/)).
 
 Please try to make each pull request atomic, that is, there should be a single defined intent or feature for the pull request. If you are adding multiple features or fixing different bugs, please split these up and submit multiple pull requests.
 
 Always write a clear log message for your commits. One-line messages are fine for small changes, but bigger changes should look like this:
 
     $ git commit -m "A brief summary of the commit
-    > 
+    >
     > A paragraph describing what changed and its impact."
-    
+
 ## Contributor Licensing
 
 Note that all contributions to the project are made under the Github Contributor Lincensing Agreement: https://cla.github.com/agreement
@@ -33,4 +33,4 @@ This ensures that all contributions made to the project are licensed in the same
 
 ## Coding conventions
 
-The coding style guide can be found on the project wiki: http://speeduino.com/wiki/index.php/Style_code
+The coding style guide can be found on the project wiki: https://wiki.speeduino.com/dev/Style_code

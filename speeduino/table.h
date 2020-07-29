@@ -34,25 +34,9 @@ struct table2D {
 };
 
 //void table2D_setSize(struct table2D targetTable, byte newSize);
-// void table2D_setSize(struct table2D*, byte);
+void table2D_setSize(struct table2D*, byte);
 int16_t table2D_getAxisValue(struct table2D*, byte);
 int16_t table2D_getRawValue(struct table2D*, byte);
-
-// Declare a container for the internal storage of table3D
-#define DECLARE_TABLE3D(name, size)\
-struct {\
-  byte values[size*size];\
-  byte* rows[size];\
-  int16_t axisX[size];\
-  int16_t axisY[size];\
-} _##name;\
-struct table3D name = { .xSize=size, .ySize=size, .values=_##name.rows, .axisX=_##name.axisX, .axisY=_##name.axisY ,0,0,0,0,0,0,0,0 };
-
-// Link the table to its container
-#define INIT_TABLE3D(name) do {\
-  for(int _i = 0; _i < name.ySize; _i++) { name.values[_i] = &_##name.values[_i*name.xSize]; }\
-  name.cacheIsValid = false;\
-} while(0)
 
 struct table3D {
 
@@ -76,7 +60,7 @@ struct table3D {
 };
 
 //void table3D_setSize(struct table3D *targetTable, byte);
-// void table3D_setSize(struct table3D *targetTable, byte);
+void table3D_setSize(struct table3D *targetTable, byte);
 
 /*
 3D Tables have an origin (0,0) in the top left hand corner. Vertical axis is expressed first.
