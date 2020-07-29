@@ -3,7 +3,7 @@
 const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
-const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288}; /**< This array stores the size (in bytes) of each configuration page */
+const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288,192}; /**< This array stores the size (in bytes) of each configuration page */
 
 struct table3D fuelTable; //16x16 fuel map
 struct table3D fuelTable2; //16x16 fuel map
@@ -12,6 +12,7 @@ struct table3D afrTable; //16x16 afr target map
 struct table3D stagingTable; //8x8 fuel staging table
 struct table3D boostTable; //8x8 boost map
 struct table3D vvtTable; //8x8 vvt map
+struct table3D wmiTable; //8x8 wmi map
 struct table3D trim1Table; //6x6 Fuel trim 1 map
 struct table3D trim2Table; //6x6 Fuel trim 2 map
 struct table3D trim3Table; //6x6 Fuel trim 3 map
@@ -38,6 +39,8 @@ struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing adv
 struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
 struct table2D knockWindowStartTable;
 struct table2D knockWindowDurationTable;
+struct table2D oilPressureProtectTable;
+struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 volatile PORT_TYPE *inj1_pin_port;
@@ -127,6 +130,7 @@ int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360;
 int CRANK_ANGLE_MAX_INJ = 360; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 volatile uint32_t runSecsX10;
+volatile uint32_t seclx10;
 volatile byte HWTest_INJ = 0; /**< Each bit in this variable represents one of the injector channels and it's HW test status */
 volatile byte HWTest_INJ_50pc = 0; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
 volatile byte HWTest_IGN = 0; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
@@ -204,6 +208,11 @@ byte pinFlex; //Pin with the flex sensor attached
 byte pinVSS;
 byte pinBaro; //Pin that an al barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
+byte pinFuelPressure;
+byte pinOilPressure;
+byte pinWMIEmpty; // Water tank empty sensor
+byte pinWMIIndicator; // No water indicator bulb
+byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   byte pinMC33810_1_CS;
@@ -220,6 +229,13 @@ struct config6 configPage6;
 struct config9 configPage9;
 struct config10 configPage10;
 
-byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
-byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
+//byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
+//byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
 byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
+
+uint16_t cltCalibration_bins[32];
+uint16_t cltCalibration_values[32];
+struct table2D cltCalibrationTable_new;
+uint16_t iatCalibration_bins[32];
+uint16_t iatCalibration_values[32];
+struct table2D iatCalibrationTable_new;

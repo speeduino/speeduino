@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://github.com/noisymime/speeduino/blob/master/LICENSE)
 [![Build Status](https://img.shields.io/travis/noisymime/speeduino.svg)](https://travis-ci.org/noisymime/speeduino/)
 [![Open Bounties](https://img.shields.io/bountysource/team/speeduino/activity.svg)](https://www.bountysource.com/teams/speeduino)
-[![GitHub commits](https://img.shields.io/github/commits-since/noisymime/speeduino/202002.svg)](https://github.com/noisymime/speeduino/compare/202002...master)
+[![GitHub commits](https://img.shields.io/github/commits-since/noisymime/speeduino/202005.svg)](https://github.com/noisymime/speeduino/compare/202005...master)
 ![MISRA](https://img.shields.io/azure-devops/tests/speeduino/Speeduino/1?label=MISRA&passed_label=warnings&failed_label=violations)
 [![Chat on Slack](https://img.shields.io/badge/slack-speeduino-CC2B5E.svg?style=flat&logo=slack)](https://speeduino.com/home/community/slack)
 
