@@ -484,7 +484,7 @@ void boostDisable()
       vvt2_pwm_state = true;
     }
 
-    if( (vvt1_pwm_state == true) && (vvt1_pwm_value <= vvt2_pwm_value) )
+    if( (vvt1_pwm_state == true) && ((vvt1_pwm_value <= vvt2_pwm_value) || (vvt2_pwm_state == false)) )
     {
       VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt1_pwm_value;
       vvt1_pwm_cur_value = vvt1_pwm_value;
