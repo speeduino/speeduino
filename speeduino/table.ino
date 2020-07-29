@@ -10,6 +10,7 @@ Note that this may clear some of the existing values of the table
 */
 #include "table.h"
 #include "globals.h"
+#include "heap_alloc.h"
 
 /*
 void table2D_setSize(struct table2D* targetTable, byte newSize)
@@ -41,11 +42,11 @@ void table3D_setSize(struct table3D *targetTable, byte newSize)
 {
   if(initialisationComplete == false)
   {
-    targetTable->values = (byte **)malloc(newSize * sizeof(byte*));
-    for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)malloc(newSize * sizeof(byte)); }
+    targetTable->values = (byte **)heap_alloc(newSize * sizeof(byte*));
+    for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)heap_alloc(newSize * sizeof(byte)); }
 
-    targetTable->axisX = (int16_t *)malloc(newSize * sizeof(int16_t));
-    targetTable->axisY = (int16_t *)malloc(newSize * sizeof(int16_t));
+    targetTable->axisX = (int16_t *)heap_alloc(newSize * sizeof(int16_t));
+    targetTable->axisY = (int16_t *)heap_alloc(newSize * sizeof(int16_t));
     targetTable->xSize = newSize;
     targetTable->ySize = newSize;
     targetTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
