@@ -198,7 +198,6 @@ void initialiseAll()
     iatCalibrationTable.xSize = 32;
     iatCalibrationTable.values = iatCalibration_values;
     iatCalibrationTable.axisX = iatCalibration_bins;
-=======
 
 
     //Setup the calibration tables
