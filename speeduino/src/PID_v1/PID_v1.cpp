@@ -294,6 +294,41 @@ bool integerPID::Compute(bool pOnE)
    else return false;
 }
 
+bool integerPID::ComputeVVT(uint32_t Sample)
+{
+   if(!inAuto) return false;
+   /*Compute all the working error variables*/
+   long pTerm, iTerm, dTerm;
+   long input = *myInput;
+   long error = *mySetpoint - input;
+   long dInput = error - lastError;
+   long dTime = lastTime - Sample;
+
+   pTerm = kp * error;
+
+   if (ki != 0)
+   {
+      outputSum += (ki * error) * dTime; //integral += error × dt
+      if(outputSum > outMax*100) { outputSum = outMax*100; }
+      else if(outputSum < -outMax*100) { outputSum = -outMax*100; }
+   }
+
+   dTerm = dInput * kd * dTime;
+
+   /*Compute PID Output*/
+   long output = (pTerm + outputSum + dTerm) >> 5;
+
+   if(output > outMax) output = outMax;
+   else if(output < outMin) output = outMin;
+   *myOutput = output;
+
+   /*Remember some variables for next time*/
+   lastError = error;
+   lastTime = dTime;
+
+   return true;
+}
+
 bool integerPID::Compute2(int target, int input, bool pOnE)
 {
    if(!inAuto) return false;
@@ -363,7 +398,7 @@ bool integerPID::Compute2(int target, int input, bool pOnE)
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/
-void integerPID::SetTunings(byte Kp, byte Ki, byte Kd)
+void integerPID::SetTunings(byte Kp, byte Ki, byte Kd, byte realTime)
 {
    if ( dispKp == Kp && dispKi == Ki && dispKd == Kd ) return; //Only do anything if one of the values has changed
    dispKp = Kp; dispKi = Ki; dispKd = Kd;
@@ -374,13 +409,22 @@ void integerPID::SetTunings(byte Kp, byte Ki, byte Kd)
    ki = Ki * SampleTimeInSec;
    kd = Kd / SampleTimeInSec;
    */
-  long InverseSampleTimeInSec = 1000 / SampleTime;
-  //New resolution, 2 shifts to improve ki here | kp 1.563% | ki 1.563% | kd 0.195%
-  kp = (uint16_t)Kp<<2;
-  ki = (long)(Ki<<2) / InverseSampleTimeInSec;
-  kd = (long)(Kd<<2) * InverseSampleTimeInSec;
+   if(realTime == 0)
+   {
+      long InverseSampleTimeInSec = 1000 / SampleTime;
+      //New resolution, 5 shifts to improve ki here | kp 3.125% | ki 3.125% | kd 0.781%
+      kp = (uint16_t)Kp<<5;
+      ki = (long)(Ki<<5) / InverseSampleTimeInSec;
+      kd = (long)(Kd<<5) * InverseSampleTimeInSec;
+   }
+   else
+   {
+      kp = Kp;
+      ki = Ki;
+      kd = Kd;
+   }
 
-  if(controllerDirection == REVERSE)
+   if(controllerDirection == REVERSE)
    {
       kp = (0 - kp);
       ki = (0 - ki);

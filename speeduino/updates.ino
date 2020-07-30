@@ -355,6 +355,19 @@ void doUpdates()
     //ASE to run taper added. Default it to 0,1 secs
     configPage2.aseTaperTime = 1;
 
+    //wmi
+    configPage10.wmiEnabled = 0;
+    configPage10.wmiMode = 0;
+    configPage10.wmiOffset = 0;
+    configPage10.wmiIndicatorEnabled = 0;
+    configPage10.wmiEmptyEnabled = 0;
+    configPage10.wmiAdvEnabled = 0;
+    for(int i=0; i<6; i++)
+    {
+      configPage10.wmiAdvBins[i] = i*100/2;
+      configPage10.wmiAdvAdj[i] = OFFSET_IGNITION;
+    }
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 14);
 

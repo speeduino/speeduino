@@ -51,7 +51,7 @@ volatile bool idle_pwm_state;
 unsigned int idle_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int idle_pwm_cur_value;
 long idle_pid_target_value;
-long idle_pwm_target_value;
+unsigned long idle_pwm_target_value;
 long idle_cl_target_rpm;
 byte idleCounter; //Used for tracking the number of calls to the idle control function
 
