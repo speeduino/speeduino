@@ -25,4 +25,3 @@ speeduino/board_samd21*
 reference/doxygen
 speeduino.ino.cpp
 test/output_export.cpp
-platformio.ini
