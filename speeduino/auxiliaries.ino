@@ -12,7 +12,7 @@ A full copy of the license may be found in the projects root directory
 //Old PID method. Retained incase the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
 integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage10.boostSens, &configPage10.boostIntv, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
-integerPID vvtPID(&currentStatus.vvtAngle, &vvt_pwm_value, &vvt_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPID vvtPID(&currentStatus.vvt1Angle, &vvt1_pwm_value, &vvt_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 /*
 Fan control
@@ -66,14 +66,20 @@ void initialiseAuxPWM()
 {
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
   boost_pin_mask = digitalPinToBitMask(pinBoost);
-  vvt_pin_port = portOutputRegister(digitalPinToPort(pinVVT_1));
-  vvt_pin_mask = digitalPinToBitMask(pinVVT_1);
+  vvt1_pin_port = portOutputRegister(digitalPinToPort(pinVVT_1));
+  vvt1_pin_mask = digitalPinToBitMask(pinVVT_1);
+  vvt2_pin_port = portOutputRegister(digitalPinToPort(pinVVT_2));
+  vvt2_pin_mask = digitalPinToBitMask(pinVVT_2);
   n2o_stage1_pin_port = portOutputRegister(digitalPinToPort(configPage10.n2o_stage1_pin));
   n2o_stage1_pin_mask = digitalPinToBitMask(configPage10.n2o_stage1_pin);
   n2o_stage2_pin_port = portOutputRegister(digitalPinToPort(configPage10.n2o_stage2_pin));
   n2o_stage2_pin_mask = digitalPinToBitMask(configPage10.n2o_stage2_pin);
   n2o_arming_pin_port = portInputRegister(digitalPinToPort(configPage10.n2o_arming_pin));
   n2o_arming_pin_mask = digitalPinToBitMask(configPage10.n2o_arming_pin);
+
+  //This is a safety check that will be true if the board is uninitialised. This prevents hangs on a new board that could otherwise try to write to an invalid pin port/mask (Without this a new Teensy 4.x hangs on startup)
+  //The n2o_minTPS variable is capped at 100 by TS, so 255 indicates a new board.
+  if(configPage10.n2o_minTPS == 255) { configPage10.n2o_enable = 0; }
 
   if(configPage10.n2o_enable > 0)
   {
@@ -88,7 +94,8 @@ void initialiseAuxPWM()
 
   if( configPage6.vvtEnabled > 0)
   {
-    currentStatus.vvtAngle = 0;
+    currentStatus.vvt1Angle = 0;
+    currentStatus.vvt2Angle = 0;
 
     #if defined(CORE_AVR)
       vvt_pwm_max_count = 1000000L / (16 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
@@ -98,20 +105,36 @@ void initialiseAuxPWM()
 
     if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
     {
-      vvtPID.SetOutputLimits(0, percentage(80, vvt_pwm_max_count)); //80% is a completely arbitrary amount for the max duty cycle, but seems inline with most VVT documentation
+      vvtPID.SetOutputLimits(percentage(configPage10.vvtCLminDuty, vvt_pwm_max_count), percentage(configPage10.vvtCLmaxDuty, vvt_pwm_max_count));
       vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
-      vvtPID.SetSampleTime(30);
+      vvtPID.SetSampleTime(33); //30Hz is 33,33ms
       vvtPID.SetMode(AUTOMATIC); //Turn PID on
     }
 
-    currentStatus.vvtDuty = 0;
-    vvt_pwm_value = 0;
+    currentStatus.vvt1Duty = 0;
+    vvt1_pwm_value = 0;
+    currentStatus.vvt2Duty = 0;
+    vvt2_pwm_value = 0;
+    ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
   }
-  ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
+  if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1) )
+  {
+    // config wmi pwm output to use vvt output
+    #if defined(CORE_AVR)
+      vvt_pwm_max_count = 1000000L / (16 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+    #elif defined(CORE_TEENSY)
+      vvt_pwm_max_count = 1000000L / (32 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+    #endif
+    currentStatus.wmiEmpty = 0;
+    currentStatus.wmiPW = 0;
+    vvt1_pwm_value = 0;
+    ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
+  }
 
   currentStatus.boostDuty = 0;
   boostCounter = 0;
-  currentStatus.vvtDuty = 0;
+  currentStatus.vvt1Duty = 0;
+  currentStatus.vvt2Duty = 0;
   vvtCounter = 0;
 
   currentStatus.nitrous_status = NITROUS_OFF;
@@ -199,89 +222,74 @@ void vvtControl()
 {
   if( (configPage6.vvtEnabled == 1) && (currentStatus.RPM > 0) )
   {
-    currentStatus.vvtDuty = 0;
+    //currentStatus.vvt1Duty = 0;
+    //Calculate the current cam angle
+    if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1Angle = getCamAngle_Miata9905(); }
+
     if( (configPage6.vvtMode == VVT_MODE_OPEN_LOOP) || (configPage6.vvtMode == VVT_MODE_ONOFF) )
     {
       //Lookup VVT duty based on either MAP or TPS
-      if(configPage6.vvtLoadSource == VVT_LOAD_TPS)
-      {
-        currentStatus.vvtDuty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
-      }
-      else
-      {
-        currentStatus.vvtDuty = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM);
-      }
+      if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM); }
+      else { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
 
       //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
-      if( (configPage6.VVTasOnOff == true) && (currentStatus.vvtDuty < 100) ) { currentStatus.vvtDuty = 0; }
+      if( (configPage6.VVTasOnOff == true) && (currentStatus.vvt1Duty < 100) ) { currentStatus.vvt1Duty = 0; }
 
-      vvt_pwm_value = percentage(currentStatus.vvtDuty, vvt_pwm_max_count);
-      if(currentStatus.vvtDuty > 0) { ENABLE_VVT_TIMER(); }
+      vvt1_pwm_value = percentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
+      if(currentStatus.vvt1Duty > 0) { ENABLE_VVT_TIMER(); }
 
     } //Open loop
     else if( (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP) )
     {
-      //Calculate the current cam angle
-      getCamAngle_Miata9905();
-
       //Lookup VVT duty based on either MAP or TPS
-      if(configPage6.vvtLoadSource == VVT_LOAD_TPS)
-      {
-        currentStatus.vvtTargetAngle = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM);
-      }
-      else
-      {
-        currentStatus.vvtTargetAngle = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM);
-      }
+      if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM); }
+      else { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
 
       if( (vvtCounter & 31) == 1) { vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD); } //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
 
       //Check that we're not already at the angle we want to be
-      if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvtTargetAngle == currentStatus.vvtAngle) )
+      if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt1TargetAngle == currentStatus.vvt1Angle) )
       {
-        currentStatus.vvtDuty = configPage10.vvtCLholdDuty;
-        vvt_pwm_value = percentage(currentStatus.vvtDuty, vvt_pwm_max_count);
+        currentStatus.vvt1Duty = configPage10.vvtCLholdDuty;
+        vvt1_pwm_value = percentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
         vvtPID.Initialize();
       }
       else
       {
-        //If not already at target angle, calculate new value from PID
-
         //This is dumb, but need to convert the current angle into a long pointer
-        vvt_pid_target_angle = currentStatus.vvtTargetAngle;
+        vvt_pid_target_angle = currentStatus.vvt1TargetAngle;
 
-        if(currentStatus.vvtTargetAngle > 0)
-        {
-          bool PID_compute = vvtPID.Compute(false);
-          //vvtPID.Compute2(currentStatus.vvtTargetAngle, currentStatus.vvtAngle, false);
-          //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
-          //if (currentStatus.vvtAngle > currentStatus.vvtTargetAngle) { vvt_pwm_target_value = 0; }
-          if(PID_compute == true) { currentStatus.vvtDuty = (vvt_pwm_value * 100) / vvt_pwm_max_count; }
-          
-        }
-        else
-        {
-          currentStatus.vvtDuty = 0;
-        }
+        //If not already at target angle, calculate new value from PID
+        bool PID_compute = vvtPID.Compute(false);
+        //vvtPID.Compute2(currentStatus.vvt1TargetAngle, currentStatus.vvt1Angle, false);
+        //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
+        //if (currentStatus.vvt1Angle > currentStatus.vvt1TargetAngle) { vvt_pwm_target_value = 0; }
+        if(PID_compute == true) { currentStatus.vvt1Duty = (vvt1_pwm_value * 100) / vvt_pwm_max_count; }
       }
       
-      if(currentStatus.vvtDuty > 0) { ENABLE_VVT_TIMER(); }
+      if( (currentStatus.vvt1Duty > 0) || (currentStatus.vvt2Duty > 0) ) { ENABLE_VVT_TIMER(); }
       
-      //currentStatus.vvtDuty = 0;
+      //currentStatus.vvt1Duty = 0;
       vvtCounter++;
     }
 
     //Set the PWM state based on the above lookups
-    if(currentStatus.vvtDuty == 0)
+    if( (currentStatus.vvt1Duty == 0) && (currentStatus.vvt2Duty == 0) )
     {
       //Make sure solenoid is off (0% duty)
-      VVT_PIN_LOW();
+      if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Normal direction
+      else { *vvt1_pin_port |= (vvt1_pin_mask); } //Reversed direction
+      if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
+      else { *vvt2_pin_port |= (vvt2_pin_mask); } //Reversed direction
       DISABLE_VVT_TIMER();
     }
-    else if (currentStatus.vvtDuty >= 100)
+    else if( (currentStatus.vvt1Duty >= 100) && (currentStatus.vvt2Duty >= 100) )
     {
       //Make sure solenoid is on (100% duty)
-      VVT_PIN_HIGH();
+      if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port |= (vvt1_pin_mask); } //Normal direction
+      else { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Reversed direction
+      if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port |= (vvt2_pin_mask); } //Normal direction
+      else { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Reversed direction
       DISABLE_VVT_TIMER();
     }
  
@@ -290,8 +298,10 @@ void vvtControl()
   { 
     // Disable timer channel
     DISABLE_VVT_TIMER(); 
-    currentStatus.vvtDuty = 0;
-    vvt_pwm_value = 0;
+    currentStatus.vvt1Duty = 0;
+    vvt1_pwm_value = 0;
+    currentStatus.vvt2Duty = 0;
+    vvt2_pwm_value = 0;
   } 
 }
 
@@ -351,6 +361,72 @@ void nitrousControl()
   }
 }
 
+// Water methanol injection control
+void wmiControl()
+{
+  int wmiPW = 0;
+  
+  // wmi can only work when vvt is disabled 
+  if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1) )
+  {
+    currentStatus.wmiEmpty = WMI_TANK_IS_EMPTY();
+    if(currentStatus.wmiEmpty == 0)
+    {
+      if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPMdiv100 >= configPage10.wmiRPM) && ( (currentStatus.MAP / 2) >= configPage10.wmiMAP) && ( (currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) >= configPage10.wmiIAT) )
+      {
+        switch(configPage10.wmiMode)
+        {
+        case WMI_MODE_SIMPLE:
+          // Simple mode - Output is turned on when preset boost level is reached
+          wmiPW = 100;
+          break;
+        case WMI_MODE_PROPORTIONAL:
+          // Proportional Mode - Output PWM is proportionally controlled between two MAP values - MAP Value 1 = PWM:0% / MAP Value 2 = PWM:100%
+          wmiPW = map(currentStatus.MAP/2, configPage10.wmiMAP, configPage10.wmiMAP2, 0, 100);
+          break;
+        case WMI_MODE_OPENLOOP:
+          //  Mapped open loop - Output PWM follows 2D map value (RPM vs MAP) Cell value contains desired PWM% [range 0-100%]
+          wmiPW = get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM);
+          break;
+        case WMI_MODE_CLOSEDLOOP:
+          // Mapped closed loop - Output PWM follows injector duty cycle with 2D correction map applied (RPM vs MAP). Cell value contains correction value% [nom 100%] 
+          wmiPW = max(0, ((int)currentStatus.PW1 + configPage10.wmiOffset)) * get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM) / 100;
+          break;
+        default:
+          // Wrong mode
+          wmiPW = 0;
+          break;
+        }
+      }
+    }
+
+    currentStatus.wmiPW = wmiPW;
+    vvt1_pwm_value = wmiPW;
+
+    if(wmiPW == 0)
+    {
+      // Make sure water pump is off
+      VVT1_PIN_LOW();
+      DISABLE_VVT_TIMER();
+      digitalWrite(pinWMIEnabled, LOW);
+    }
+    else
+    {
+      digitalWrite(pinWMIEnabled, HIGH);
+      if (wmiPW >= 100)
+      {
+        // Make sure water pump is on (100% duty)
+        VVT1_PIN_HIGH();
+        DISABLE_VVT_TIMER();
+      }
+      else
+      {
+        ENABLE_VVT_TIMER();
+      }
+    }
+  }
+}
+
 void boostDisable()
 {
   boostPID.Initialize(); //This resets the ITerm value to prevent rubber banding
@@ -388,33 +464,96 @@ void boostDisable()
   static inline void vvtInterrupt() //Most ARM chips can simply call a function
 #endif
 {
-  if (vvt_pwm_state == true)
+  if ( ((vvt1_pwm_state == false) || (vvt1_max_pwm == true)) && ((vvt2_pwm_state == false) || (vvt2_max_pwm == true)) )
   {
-    VVT_PIN_LOW();  // Switch pin to low
-    VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt_pwm_cur_value);
-    vvt_pwm_state = false;
+    if( (vvt1_pwm_value > 0) && (vvt1_max_pwm == false) ) //Don't toggle if at 0%
+    {
+      if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port |= (vvt1_pin_mask); } //Normal direction
+      else { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Reversed direction
+      vvt1_pwm_state = true;
+    }
+    if( (vvt2_pwm_value > 0) && (vvt2_max_pwm == false) ) //Don't toggle if at 0%
+    {
+      if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port |= (vvt2_pin_mask); } //Normal direction
+      else { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Reversed direction
+      vvt2_pwm_state = true;
+    }
+
+    if( (vvt1_pwm_state == true) && ((vvt1_pwm_value <= vvt2_pwm_value) || (vvt2_pwm_state == false)) )
+    {
+      VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt1_pwm_value;
+      vvt1_pwm_cur_value = vvt1_pwm_value;
+      vvt2_pwm_cur_value = vvt2_pwm_value;
+      if (vvt1_pwm_value == vvt2_pwm_value) { nextVVT = 2; } //Next event is for both PWM
+      else { nextVVT = 0; } //Next event is for PWM0
+    }
+    else if( vvt2_pwm_state == true )
+    {
+      VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt2_pwm_value;
+      vvt1_pwm_cur_value = vvt1_pwm_value;
+      vvt2_pwm_cur_value = vvt2_pwm_value;
+      nextVVT = 1; //Next event is for PWM1
+    }
+    else { VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt_pwm_max_count; } //Shouldn't ever get here
   }
   else
   {
-    VVT_PIN_HIGH();  // Switch pin high
-    VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt_pwm_value;
-    vvt_pwm_cur_value = vvt_pwm_value;
-    vvt_pwm_state = true;
+    if(nextVVT == 0)
+    {
+      if(vvt1_pwm_value < vvt_pwm_max_count) //Don't toggle if at 100%
+      {
+        if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Normal direction
+        else { *vvt1_pin_port |= (vvt1_pin_mask); } //Reversed direction
+        vvt1_pwm_state = false;
+        vvt1_max_pwm = false;
+      }
+      else { vvt1_max_pwm = true; }
+      nextVVT = 1; //Next event is for PWM1
+      if(vvt2_pwm_state == true){ VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt2_pwm_cur_value - vvt1_pwm_cur_value); }
+      else
+      { 
+        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value);
+        nextVVT = 2; //Next event is for both PWM
+      }
+    }
+    else if (nextVVT == 1)
+    {
+      if(vvt2_pwm_value < vvt_pwm_max_count) //Don't toggle if at 100%
+      {
+        if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
+        else { *vvt2_pin_port |= (vvt2_pin_mask); } //Reversed direction
+        vvt2_pwm_state = false;
+        vvt2_max_pwm = false;
+      }
+      else { vvt2_max_pwm = true; }
+      nextVVT = 0; //Next event is for PWM0
+      if(vvt1_pwm_state == true) { VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt1_pwm_cur_value - vvt2_pwm_cur_value); }
+      else
+      { 
+        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value);
+        nextVVT = 2; //Next event is for both PWM
+      }
+    }
+    else
+    {
+      if(vvt1_pwm_value < vvt_pwm_max_count) //Don't toggle if at 100%
+      {
+        if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Normal direction
+        else { *vvt1_pin_port |= (vvt1_pin_mask); } //Reversed direction
+        vvt1_pwm_state = false;
+        vvt1_max_pwm = false;
+        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value);
+      }
+      else { vvt1_max_pwm = true; }
+      if(vvt2_pwm_value < vvt_pwm_max_count) //Don't toggle if at 100%
+      {
+        if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
+        else { *vvt2_pin_port |= (vvt2_pin_mask); } //Reversed direction
+        vvt2_pwm_state = false;
+        vvt2_max_pwm = false;
+        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value);
+      }
+      else { vvt2_max_pwm = true; }
+    }
   }
 }
-
-#if defined(CORE_TEENSY35)
-void ftm1_isr(void)
-{
-  //FTM1 only has 2 compare channels
-  //Use separate variables for each test to ensure conversion to bool
-  bool interrupt1 = (FTM1_C0SC & FTM_CSC_CHF);
-  bool interrupt2 = (FTM1_C1SC & FTM_CSC_CHF);
-
-  if(interrupt1) { FTM1_C0SC &= ~FTM_CSC_CHF; boostInterrupt(); }
-  else if(interrupt2) { FTM1_C1SC &= ~FTM_CSC_CHF; vvtInterrupt(); }
-
-}
-#elif defined(CORE_TEENSY40)
-//DO STUFF HERE
-#endif

@@ -173,6 +173,19 @@ uint32_t calculateCRC32(byte pageNo)
       CRC32_val = ~CRC32_val;
       break;
 
+    case wmiMapPage:
+      //Confirmed working
+      raw_value = getPageValue(wmiMapPage, 0);
+      CRC32_val = CRC32.crc32(&raw_value, 1, false);
+      for(uint16_t x=1; x< npage_size[wmiMapPage]; x++)
+      {
+        raw_value = getPageValue(wmiMapPage, x);
+        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
+      }
+      //Do a manual reflection of the CRC32 value
+      CRC32_val = ~CRC32_val;
+      break;
+
     default:
       CRC32_val = 0;
       break;

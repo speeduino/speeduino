@@ -169,7 +169,7 @@
 #define BIT_STATUS3_NITROUS       1
 #define BIT_STATUS3_FUEL2_ACTIVE  2
 #define BIT_STATUS3_VSS_REFRESH   3
-#define BIT_STATUS3_UNUSED4       4
+#define BIT_STATUS3_HALFSYNC      4 //shows if there is only sync from primary trigger, but not from secondary.
 #define BIT_STATUS3_NSQUIRTS1     5
 #define BIT_STATUS3_NSQUIRTS2     6
 #define BIT_STATUS3_NSQUIRTS3     7
@@ -210,6 +210,11 @@
 
 #define BOOST_MODE_SIMPLE   0
 #define BOOST_MODE_FULL     1
+
+#define WMI_MODE_SIMPLE       0
+#define WMI_MODE_PROPORTIONAL 1
+#define WMI_MODE_OPENLOOP     2
+#define WMI_MODE_CLOSEDLOOP   3
 
 #define HARD_CUT_FULL       0
 #define HARD_CUT_ROLLING    1
@@ -310,13 +315,19 @@
 
 #define SERIAL_BUFFER_THRESHOLD 32 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
 
-#define FUEL_PUMP_ON() *pump_pin_port |= (pump_pin_mask)
-#define FUEL_PUMP_OFF() *pump_pin_port &= ~(pump_pin_mask)
+#ifndef CORE_TEENSY41
+  #define FUEL_PUMP_ON() *pump_pin_port |= (pump_pin_mask)
+  #define FUEL_PUMP_OFF() *pump_pin_port &= ~(pump_pin_mask)
+#else
+  //Special compatibility case for TEENSY 41 (for now)
+  #define FUEL_PUMP_ON() digitalWrite(pinFuelPump, HIGH);
+  #define FUEL_PUMP_OFF() digitalWrite(pinFuelPump, LOW);
+#endif
 
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing.
-#define NUM_PAGES     12
+#define NUM_PAGES     13
 extern const uint16_t npage_size[NUM_PAGES]; /**< This array stores the size (in bytes) of each configuration page */
 #define MAP_PAGE_SIZE 288
 
@@ -327,6 +338,7 @@ extern struct table3D afrTable; //16x16 afr target map
 extern struct table3D stagingTable; //8x8 fuel staging table
 extern struct table3D boostTable; //8x8 boost map
 extern struct table3D vvtTable; //8x8 vvt map
+extern struct table3D wmiTable; //8x8 wmi map
 extern struct table3D trim1Table; //6x6 Fuel trim 1 map
 extern struct table3D trim2Table; //6x6 Fuel trim 2 map
 extern struct table3D trim3Table; //6x6 Fuel trim 3 map
@@ -354,6 +366,7 @@ extern struct table2D flexBoostTable; //6 bin flex fuel correction table for boo
 extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
+extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -566,10 +579,10 @@ struct statuses {
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
-  //int8_t vvtAngle;
-  long vvtAngle;
-  byte vvtTargetAngle;
-  byte vvtDuty;
+  //int8_t vvt1Angle;
+  long vvt1Angle;
+  byte vvt1TargetAngle;
+  byte vvt1Duty;
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss; /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
@@ -577,6 +590,11 @@ struct statuses {
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure; /**< Oil pressure in PSI */
   byte engineProtectStatus;
+  byte wmiPW;
+  bool wmiEmpty;
+  long vvt2Angle;
+  byte vvt2TargetAngle;
+  byte vvt2Duty;
 };
 
 /**
@@ -837,7 +855,7 @@ struct config6 {
   byte egoCount; //The number of ignition cylces per step
   byte vvtMode : 2; //Valid VVT modes are 'on/off', 'open loop' and 'closed loop'
   byte vvtLoadSource : 2; //Load source for VVT (TPS or MAP)
-  byte vvtCLDir : 1; //VVT direction (advance or retard)
+  byte vvtPWMdir : 1; //VVT direction (normal or reverse)
   byte vvtCLUseHold : 1; //Whether or not to use a hold duty cycle (Most cases are Yes)
   byte vvtCLAlterFuelTiming : 1;
   byte boostCutEnabled : 1;
@@ -847,7 +865,7 @@ struct config6 {
   byte ego_sdelay; //Time in seconds after engine starts that closed loop becomes available
   byte egoRPM; //RPM must be above this for closed loop to function
   byte egoTPSMax; //TPS must be below this for closed loop to function
-  byte vvtPin : 6;
+  byte vvt1Pin : 6;
   byte useExtBaro : 1;
   byte boostMode : 1; //Simple of full boost control
   byte boostPin : 6;
@@ -1102,8 +1120,8 @@ struct config10 {
   byte vvtCLKP; //Byte 127
   byte vvtCLKI; //Byte 128
   byte vvtCLKD; //Byte 129
-  uint16_t vvtCLMinAng; //Bytes 130-131
-  uint16_t vvtCLMaxAng; //Bytes 132-133
+  int16_t vvtCLMinAng; //Bytes 130-131
+  int16_t vvtCLMaxAng; //Bytes 132-133
 
   byte crankingEnrichTaper; //Byte 134
 
@@ -1123,7 +1141,38 @@ struct config10 {
   byte oilPressureProtRPM[4];
   byte oilPressureProtMins[4];
 
-  byte unused11_135_191[43]; //Bytes 135-191
+  byte wmiEnabled : 1; // Byte 149
+  byte wmiMode : 6;
+  
+  byte wmiAdvEnabled : 1;
+
+  byte wmiTPS; // Byte 150
+  byte wmiRPM; // Byte 151
+  byte wmiMAP; // Byte 152
+  byte wmiMAP2; // Byte 153
+  byte wmiIAT; // Byte 154
+  int8_t wmiOffset; // Byte 155
+
+  byte wmiIndicatorEnabled : 1; // 156
+  byte wmiIndicatorPin : 6;
+  byte wmiIndicatorPolarity : 1;
+
+  byte wmiEmptyEnabled : 1; // 157
+  byte wmiEmptyPin : 6;
+  byte wmiEmptyPolarity : 1;
+
+  byte wmiEnabledPin; // 158
+
+  byte wmiAdvBins[6]; //Bytes 159-164
+  byte wmiAdvAdj[6];  //Additional advance (in degrees)
+                      //Bytes 165-170
+  byte vvtCLminDuty;
+  byte vvtCLmaxDuty;
+  byte vvt2Pin : 6;
+  byte unused11_174_1 : 1;
+  byte unused11_174_2 : 1;
+
+  byte unused11_175_191[18]; //Bytes 175-191
 
 #if defined(CORE_AVR)
   };
@@ -1197,6 +1246,9 @@ extern byte pinBaro; //Pin that an external barometric pressure sensor is attach
 extern byte pinResetControl; // Output pin used control resetting the Arduino
 extern byte pinFuelPressure;
 extern byte pinOilPressure;
+extern byte pinWMIEmpty; // Water tank empty sensor
+extern byte pinWMIIndicator; // No water indicator bulb
+extern byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   extern byte pinMC33810_1_CS;
