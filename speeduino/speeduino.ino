@@ -109,7 +109,11 @@ void loop()
           //This is a special case just for the tooth and composite loggers
           if (currentCommand == 'T') { command(); }
         }
-        
+        //Check for any in progress serial transmits that were waiting for the tx buffer to free
+        if (serialInProgress == true) 
+        { 
+          if(Serial.availableForWrite() > 32) { sendValues(inProgressOffset, inProgressLength, 0x30, 0); }
+        }
       }
       #if defined(CANSerial_AVAILABLE)
         //if can or secondary serial interface is enabled then check for requests.

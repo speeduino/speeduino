@@ -33,6 +33,9 @@ uint16_t chunkComplete = 0; /**< The number of bytes in a chunk write that have 
 uint16_t chunkSize = 0; /**< The complete size of the requested chunk write */
 int valueOffset; /**< THe memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
 byte tsCanId = 0;     // current tscanid requested
+byte inProgressOffset;
+byte inProgressLength;
+bool serialInProgress = false;
 
 const char pageTitles[] PROGMEM //This is being stored in the avr flash instead of SRAM which there is not very much of
   {

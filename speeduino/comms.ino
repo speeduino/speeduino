@@ -268,7 +268,7 @@ void command()
           offset = word(Serial.read(), tmp);
           tmp = Serial.read();
           length = word(Serial.read(), tmp);
-          sendValues(offset, length,cmd, 0);
+          sendValues(offset, length, cmd, 0);
         }
         else
         {
@@ -663,8 +663,19 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
     #if defined(CANSerial_AVAILABLE)
       else if (portNum == 3){ CANSerial.write(fullStatus[offset+x]); }
     #endif
-  }
 
+    //Check whether the tx buffer still has space
+    if(Serial.availableForWrite() < 1) 
+    { 
+      //tx buffer is full. Store the current state so it can be resumed later
+      inProgressOffset = offset + x + 1;
+      inProgressLength = packetLength - x - 1;
+      serialInProgress = true;
+      return;
+    }
+    
+  }
+  serialInProgress = false;
   // Reset any flags that are being used to trigger page refreshes
   BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
 
