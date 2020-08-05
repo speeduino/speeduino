@@ -396,7 +396,8 @@ void doUpdates()
     configPage10.oilPressureProtEnbl = false;
     configPage10.oilPressureEnable = false;
     configPage10.fuelPressureEnable = false;
-
+    configPage10.cltPressureEnable = false;
+    configPage10.cltPressureProtEnbl = false;
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)

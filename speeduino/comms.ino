@@ -656,6 +656,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[108] = (int8_t)currentStatus.vvt2Angle;
   fullStatus[109] = currentStatus.vvt2TargetAngle;
   fullStatus[110] = currentStatus.vvt2Duty;
+  fullStatus[111] = currentStatus.cltPressure;
 
   for(byte x=0; x<packetLength; x++)
   {

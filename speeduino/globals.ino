@@ -41,6 +41,7 @@ struct table2D knockWindowStartTable;
 struct table2D knockWindowDurationTable;
 struct table2D oilPressureProtectTable;
 struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
+struct table2D cltPressureProtectTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 volatile PORT_TYPE *inj1_pin_port;
@@ -213,6 +214,7 @@ byte pinOilPressure;
 byte pinWMIEmpty; // Water tank empty sensor
 byte pinWMIIndicator; // No water indicator bulb
 byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
+byte pinCltPressure;
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   byte pinMC33810_1_CS;
