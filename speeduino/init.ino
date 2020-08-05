@@ -1742,7 +1742,8 @@ void setPinMapping(byte boardID)
       pinSpareLOut3 = 49;
       pinSpareLOut4 = 51;
       pinSpareLOut5 = 53;
-      pinFan = 47; //Pin for the fan output
+      pinFan = 47; //Pin for the fan output      
+      pinMode(pinTrigger3, INPUT);  //do it here because this is currently the only board using trigger3
     #endif
       break;
 
@@ -1759,7 +1760,7 @@ void setPinMapping(byte boardID)
       pinCoil3 = 52; //Pin for coil 3
       pinCoil4 = 48; //Pin for coil 4
       pinCoil5 = 36; //Pin for coil 5
-	  pinCoil6 = 34; //Pin for coil 6
+	    pinCoil6 = 34; //Pin for coil 6
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTPS = A2;//TPS input pin
@@ -2514,7 +2515,7 @@ void setPinMapping(byte boardID)
   #endif
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
-  pinMode(pinTrigger3, INPUT);
+//  pinMode(pinTrigger3, INPUT);   //pinTrigger3 is currently initialized only for dazv6 shield, so would result in affecting undefined pin for others
 
   //Each of the below are only set when their relevant function is enabled. This can help prevent pin conflicts that users aren't aware of with unused functions
   if(configPage2.flexEnabled > 0)
@@ -2627,7 +2628,7 @@ void initialiseTriggers()
 
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
-  pinMode(pinTrigger3, INPUT);
+  // pinMode(pinTrigger3, INPUT); //pinTrigger3 is currently initialized only for dazv6 shield, so would result in affecting undefined pin for others
   //digitalWrite(pinTrigger, HIGH);
   detachInterrupt(triggerInterrupt);
   detachInterrupt(triggerInterrupt2);
