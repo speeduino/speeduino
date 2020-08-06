@@ -97,22 +97,25 @@ void loop()
 {
       mainLoopCount++;
       LOOP_TIMER = TIMER_mask;
+
+      //SERIAL Comms
+      //Initially check that the last send values request is not still outstanding
+      if (serialInProgress == true) 
+      { 
+        if(Serial.availableForWrite() > 32) { sendValues(inProgressOffset, inProgressLength, 0x30, 0); }
+      }
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
-      // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
+      // 1) Check every 15Hz for data
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
-      //if ( (BIT_CHECK(TIMER_mask, BIT_TIMER_15HZ)) || (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
-      if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+      //Check for any in progress serial transmits that were waiting for the tx buffer to free
+      if ( (BIT_CHECK(TIMER_mask, BIT_TIMER_15HZ)) || (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+      //if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       {
         if (Serial.available() > 0) { command(); }
         else if(cmdPending == true)
         {
           //This is a special case just for the tooth and composite loggers
           if (currentCommand == 'T') { command(); }
-        }
-        //Check for any in progress serial transmits that were waiting for the tx buffer to free
-        if (serialInProgress == true) 
-        { 
-          if(Serial.availableForWrite() > 32) { sendValues(inProgressOffset, inProgressLength, 0x30, 0); }
         }
       }
       #if defined(CANSerial_AVAILABLE)
