@@ -1043,7 +1043,7 @@ struct config10 {
   uint16_t stagedInjSizeSec; //Bytes 30-31
   byte lnchCtrlTPS; //Byte 32
 
-  uint8_t flexBoostBins[6]; //Byets 33-38
+  uint8_t flexBoostBins[6]; //Bytes 33-38
   int16_t flexBoostAdj[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed). Bytes 39-50
   uint8_t flexFuelBins[6]; //Bytes 51-56
   uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%). Bytes 57-62
@@ -1128,8 +1128,9 @@ struct config10 {
 
   byte crankingEnrichTaper; //Byte 134
 
-  byte fuelPressureEnable : 1;
-  byte oilPressureEnable : 1;
+  //Byte 135
+  byte fuelPressureEnable : 1;  
+  byte oilPressureEnable : 1; 
   byte oilPressureProtEnbl : 1;
   byte cltPressureEnable : 1;
   byte cltPressureProtEnbl : 1;
