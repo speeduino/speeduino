@@ -648,9 +648,6 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[100] = currentStatus.ASEValue; //Current ASE (%)
   fullStatus[101] = lowByte(currentStatus.vss);
   fullStatus[102] = highByte(currentStatus.vss);
-
-  fullStatus[101] = lowByte(currentStatus.cltADC);
-  fullStatus[102] = highByte(currentStatus.cltADC);
   fullStatus[103] = currentStatus.gear;
   fullStatus[104] = currentStatus.fuelPressure;
   fullStatus[105] = currentStatus.oilPressure;

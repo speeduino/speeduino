@@ -118,6 +118,8 @@ void initialiseADC()
   if(configPage4.ADCFILTER_MAP > 240) { configPage4.ADCFILTER_MAP = 20;  writeConfig(ignSetPage); }
   if(configPage4.ADCFILTER_BARO > 240) { configPage4.ADCFILTER_BARO = 64; writeConfig(ignSetPage); }
 
+  vssCount = 0;
+  vssTotalTime = 0;
 }
 
 static inline void validateMAP()
@@ -405,14 +407,15 @@ void readCLT(bool useFilter)
     tempReading = fastMap1023toX(AnChannel[pinCLT-A0], 511); //Get the current raw CLT value
   #else
     tempReading = analogRead(pinCLT);
-    tempReading = fastMap1023toX(analogRead(pinCLT), 511); //Get the current raw CLT value
+    tempReading = analogRead(pinCLT);
+    //tempReading = fastMap1023toX(analogRead(pinCLT), 511); //Get the current raw CLT value
   #endif
   //The use of the filter can be overridden if required. This is used on startup so there can be an immediately accurate coolant value for priming
   if(useFilter == true) { currentStatus.cltADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC); }
   else { currentStatus.cltADC = tempReading; }
   
-  //currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
-  currentStatus.coolant = table2D_getValue(&cltCalibrationTable_new, currentStatus.cltADC) - CALIBRATION_TEMPERATURE_OFFSET;
+  //currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; 
+  currentStatus.coolant = table2D_getValue(&cltCalibrationTable_new, currentStatus.cltADC) - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 }
 
 void readIAT()
@@ -422,7 +425,8 @@ void readIAT()
     tempReading = fastMap1023toX(AnChannel[pinIAT-A0], 511); //Get the current raw IAT value
   #else
     tempReading = analogRead(pinIAT);
-    tempReading = fastMap1023toX(analogRead(pinIAT), 511); //Get the current raw IAT value
+    tempReading = analogRead(pinIAT);
+    //tempReading = fastMap1023toX(analogRead(pinIAT), 511); //Get the current raw IAT value
   #endif
   currentStatus.iatADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_IAT, currentStatus.iatADC);
   //currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
@@ -540,18 +544,22 @@ uint16_t getSpeed()
   }
   else if(configPage2.vssMode > 1)
   {
-    if( (temp_vssLastPulseTime > 0) && (temp_vssLastMinusOnePulseTime > 0) ) //Check we've had at least 2 pulses
+    if( vssCount == VSS_SAMPLES ) //We only change the reading if we've reached the required number of samples
     {
       if(temp_vssLastPulseTime < temp_vssLastMinusOnePulseTime) { tempSpeed = currentStatus.vss; } //Check for overflow of micros()
       else if ( (micros() - temp_vssLastPulseTime) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop (1s timeout)
       else
       {
-        pulseTime = temp_vssLastPulseTime - temp_vssLastMinusOnePulseTime;
+        pulseTime = vssTotalTime / VSS_SAMPLES;
         tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
         tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
         if(tempSpeed > 1000) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
       }
+
+      vssCount = 0;
+      vssTotalTime = 0;
     }
+    else { tempSpeed = currentStatus.vss; }
   }
   return tempSpeed;
 }
@@ -579,10 +587,10 @@ byte getGear()
 
 byte getFuelPressure()
 {
-  int16_t tempFuelPressure = 0;
+  uint16_t tempFuelPressure = 0;
   uint16_t tempReading;
 
-  if(configPage10.fuelPressureEnable)
+  if(configPage10.fuelPressureEnable > 0)
   {
     //Perform ADC read
     tempReading = analogRead(pinFuelPressure);
@@ -591,7 +599,6 @@ byte getFuelPressure()
     tempFuelPressure = fastMap10Bit(tempReading, configPage10.fuelPressureMin, configPage10.fuelPressureMax);
     tempFuelPressure = ADC_FILTER(tempFuelPressure, 150, currentStatus.fuelPressure); //Apply speed smoothing factor
     //Sanity checks
-    if(tempFuelPressure < 0) { tempFuelPressure = 0; }
     if(tempFuelPressure > configPage10.fuelPressureMax) { tempFuelPressure = configPage10.fuelPressureMax; }
   }
 
@@ -600,10 +607,10 @@ byte getFuelPressure()
 
 byte getOilPressure()
 {
-  int16_t tempOilPressure = 0;
+  uint16_t tempOilPressure = 0;
   uint16_t tempReading;
 
-  if(configPage10.oilPressureEnable)
+  if(configPage10.oilPressureEnable > 0)
   {
     //Perform ADC read
     tempReading = analogRead(pinOilPressure);
@@ -612,8 +619,7 @@ byte getOilPressure()
 
     tempOilPressure = fastMap10Bit(tempReading, configPage10.oilPressureMin, configPage10.oilPressureMax);
     tempOilPressure = ADC_FILTER(tempOilPressure, 150, currentStatus.oilPressure); //Apply speed smoothing factor
-    //Sanity checks
-    if(tempOilPressure < 0) { tempOilPressure = 0; }
+    //Sanity check
     if(tempOilPressure > configPage10.oilPressureMax) { tempOilPressure = configPage10.oilPressureMax; }
   }
 
@@ -656,6 +662,13 @@ void vssPulse()
   //TODO: Add basic filtering here
   vssLastMinusOnePulseTime = vssLastPulseTime;
   vssLastPulseTime = micros();
+
+  if(vssCount < VSS_SAMPLES)
+  {
+    vssTotalTime += (vssLastPulseTime - vssLastMinusOnePulseTime);
+    vssCount++;
+  }
+  
 }
 
 uint16_t readAuxanalog(uint8_t analogPin)
