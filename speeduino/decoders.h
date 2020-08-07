@@ -162,7 +162,6 @@ extern void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth functio
 
 extern volatile unsigned long curGap;  //currently cross used variable
 extern volatile unsigned long curGap2; //cross used by loggerSecondaryISR()!
-extern volatile unsigned long targetGap;
 extern volatile unsigned long compositeLastToothTime;
 
 extern unsigned long MAX_STALL_TIME; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.

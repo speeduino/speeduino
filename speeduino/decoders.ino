@@ -36,7 +36,6 @@ void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of ea
 
 volatile unsigned long curGap;   //cross used by loggerPrimaryISR()!
 volatile unsigned long curGap2;  //cross used by loggerSecondaryISR()!
-volatile unsigned long targetGap;
 volatile unsigned long compositeLastToothTime;
 
 unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
@@ -360,6 +359,8 @@ void triggerSetup_missingTooth()
 void triggerPri_missingTooth()
 {
   unsigned long curTime;
+  unsigned long targetGap;
+
    curTime = micros();
    curGap = curTime - toothLastToothTime;
    if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
@@ -1009,6 +1010,7 @@ void triggerPri_GM7X()
 {
     unsigned long curTime;
     static unsigned long lastGap;  //this will be preserved between calls
+    unsigned long targetGap;
 
     curTime = micros();
     curGap = curTime - toothLastToothTime;
@@ -1939,7 +1941,7 @@ void triggerPri_HondaD17()
 {
   unsigned long curTime;
   static unsigned long lastGap;  //this will be preserved between calls
-
+  unsigned long targetGap;
 
    curTime = micros();
    curGap = curTime - toothLastToothTime;
@@ -2366,6 +2368,7 @@ void triggerSec_MazdaAU()
 {
   unsigned long curTime2;
   static unsigned long lastGap;  //this will be preserved between calls
+  unsigned long targetGap;
 
   curTime2 = micros();  
   curGap2 = curTime2 - toothLastSecToothTime;
@@ -3198,6 +3201,7 @@ void triggerPri_Harley()
 {
   unsigned long curTime;
   static unsigned long lastGap;  //this will be preserved between calls
+  unsigned long targetGap;
   
   curTime = micros();
   curGap = curTime - toothLastToothTime;
@@ -3343,6 +3347,7 @@ void triggerSetup_ThirtySixMinus222()
 void triggerPri_ThirtySixMinus222()
 {
   unsigned long curTime;
+  static unsigned long targetGap;
 
    curTime = micros();
    curGap = curTime - toothLastToothTime;
@@ -3487,6 +3492,8 @@ void triggerSetup_ThirtySixMinus21()
 void triggerPri_ThirtySixMinus21()
 {
   unsigned long curTime;
+  unsigned long targetGap;
+
 
    curTime = micros();
    curGap = curTime - toothLastToothTime;
