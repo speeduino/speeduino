@@ -34,9 +34,8 @@ uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the rele
 int (*getCrankAngle)(); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of each decoder
 
-volatile unsigned long curGap;   //cross used by loggerPrimaryISR()
-volatile unsigned long curGap2;
-volatile unsigned long lastGap;
+volatile unsigned long curGap;   //cross used by loggerPrimaryISR()!
+volatile unsigned long curGap2;  //cross used by loggerSecondaryISR()!
 volatile unsigned long targetGap;
 volatile unsigned long compositeLastToothTime;
 
@@ -1009,8 +1008,8 @@ void triggerSetup_GM7X()
 void triggerPri_GM7X()
 {
     unsigned long curTime;
+    static unsigned long lastGap;  //this will be preserved between calls
 
-    lastGap = curGap;
     curTime = micros();
     curGap = curTime - toothLastToothTime;
     toothCurrentCount++; //Increment the tooth counter
@@ -1042,7 +1041,7 @@ void triggerPri_GM7X()
         }
       }
     }
-
+    lastGap = curGap;
     //New ignition mode!
     if(configPage2.perToothIgn == true)
     {
@@ -1939,8 +1938,9 @@ void triggerSetup_HondaD17()
 void triggerPri_HondaD17()
 {
   unsigned long curTime;
+  static unsigned long lastGap;  //this will be preserved between calls
 
-   lastGap = curGap;
+
    curTime = micros();
    curGap = curTime - toothLastToothTime;
    toothCurrentCount++; //Increment the tooth counter
@@ -1977,7 +1977,7 @@ void triggerPri_HondaD17()
        toothLastToothTime = curTime;
      }
    }
-
+   lastGap = curGap;
 }
 void triggerSec_HondaD17() { return; } //The 4+1 signal on the cam is yet to be supported
 uint16_t getRPM_HondaD17()
@@ -2173,7 +2173,6 @@ void triggerSec_Miata9905()
   if ( curGap2 >= triggerSecFilterTime )
   {
     toothLastSecToothTime = curTime2;
-    lastGap = curGap2;
     secondaryToothCount++;
 
     //TODO Add some secondary filtering here
@@ -2366,9 +2365,9 @@ void triggerPri_MazdaAU()
 void triggerSec_MazdaAU()
 {
   unsigned long curTime2;
+  static unsigned long lastGap;  //this will be preserved between calls
 
-  curTime2 = micros();
-  lastGap = curGap2;
+  curTime2 = micros();  
   curGap2 = curTime2 - toothLastSecToothTime;
   //if ( curGap2 < triggerSecFilterTime ) { return; }
   toothLastSecToothTime = curTime2;
@@ -2394,6 +2393,7 @@ void triggerSec_MazdaAU()
     }
     secondaryToothCount++;
   }
+  lastGap = curGap2;
 }
 
 
@@ -3197,8 +3197,8 @@ void triggerSetup_Harley()
 void triggerPri_Harley()
 {
   unsigned long curTime;
-
-  lastGap = curGap;
+  static unsigned long lastGap;  //this will be preserved between calls
+  
   curTime = micros();
   curGap = curTime - toothLastToothTime;
   setFilter(curGap); // Filtering adjusted according to setting
@@ -3235,6 +3235,7 @@ void triggerPri_Harley()
       toothCurrentCount = 0;
     } //Primary trigger high
   } //Trigger filter
+  lastGap = curGap;
 }
 
 

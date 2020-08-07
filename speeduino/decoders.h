@@ -161,8 +161,7 @@ extern int (*getCrankAngle)(); //Pointer to the getCrank Angle function (Gets po
 extern void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of each decoder
 
 extern volatile unsigned long curGap;  //currently cross used variable
-extern volatile unsigned long curGap2;
-extern volatile unsigned long lastGap;
+extern volatile unsigned long curGap2; //cross used by loggerSecondaryISR()!
 extern volatile unsigned long targetGap;
 extern volatile unsigned long compositeLastToothTime;
 
