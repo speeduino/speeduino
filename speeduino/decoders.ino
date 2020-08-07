@@ -36,7 +36,7 @@ void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of ea
 
 volatile unsigned long curGap;   //cross used by loggerPrimaryISR()!
 volatile unsigned long curGap2;  //cross used by loggerSecondaryISR()!
-volatile unsigned long compositeLastToothTime;
+volatile unsigned long compositeLastToothTime; //cross-used by function in comms.ino
 
 unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
 volatile uint16_t toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
@@ -93,6 +93,8 @@ int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently si
 */
 static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
 {
+  static long compositeLastToothTime;
+  
   if(BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) { return; }
   //High speed tooth logging history
   if( (currentStatus.toothLogEnabled == true) || (currentStatus.compositeLogEnabled == true) ) 
