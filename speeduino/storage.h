@@ -8,6 +8,8 @@ void writeConfig(byte);
 void loadConfig();
 void loadCalibration();
 void writeCalibration();
+void loadCalibration_new();
+void writeCalibration_new();
 
 //These are utility functions that prevent other files from having to use EEPROM.h directly
 byte readLastBaro();
@@ -168,7 +170,7 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CALIBRATION_CLT_OLD  3583
 
 //New values using 2D tables
-#define EEPROM_CALIBRATION_IAT  3839 //3967-128
+#define EEPROM_CALIBRATION_IAT  3848 //3967-128
 #define EEPROM_CALIBRATION_CLT  3976 //4095-128
 
 
