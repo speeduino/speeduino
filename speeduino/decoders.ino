@@ -34,7 +34,6 @@ uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the rele
 int (*getCrankAngle)(); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of each decoder
 
-volatile unsigned long curTime;
 volatile unsigned long curGap;
 volatile unsigned long curTime2;
 volatile unsigned long curGap2;
@@ -362,6 +361,7 @@ void triggerSetup_missingTooth()
 
 void triggerPri_missingTooth()
 {
+  unsigned long curTime;
    curTime = micros();
    curGap = curTime - toothLastToothTime;
    if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
@@ -664,6 +664,8 @@ void triggerSetup_DualWheel()
 
 void triggerPri_DualWheel()
 {
+    unsigned long curTime;
+
     curTime = micros();
     curGap = curTime - toothLastToothTime;
     if ( curGap >= triggerFilterTime )
@@ -865,6 +867,8 @@ void triggerSetup_BasicDistributor()
 
 void triggerPri_BasicDistributor()
 {
+  unsigned long curTime;
+
   curTime = micros();
   curGap = curTime - toothLastToothTime;
   if ( (curGap >= triggerFilterTime) )
@@ -1001,6 +1005,8 @@ void triggerSetup_GM7X()
 
 void triggerPri_GM7X()
 {
+    unsigned long curTime;
+
     lastGap = curGap;
     curTime = micros();
     curGap = curTime - toothLastToothTime;
@@ -1184,6 +1190,8 @@ void triggerSetup_4G63()
 
 void triggerPri_4G63()
 {
+  unsigned long curTime;
+
   curTime = micros();
   curGap = curTime - toothLastToothTime;
   if ( (curGap >= triggerFilterTime) || (currentStatus.startRevolutions == 0) )
@@ -1600,6 +1608,8 @@ void triggerSetup_24X()
 
 void triggerPri_24X()
 {
+  unsigned long curTime;
+
   if(toothCurrentCount == 25) { currentStatus.hasSync = false; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
   else
   {
@@ -1710,6 +1720,8 @@ void triggerSetup_Jeep2000()
 
 void triggerPri_Jeep2000()
 {
+  unsigned long curTime;
+
   if(toothCurrentCount == 13) { currentStatus.hasSync = false; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
   else
   {
@@ -1804,6 +1816,8 @@ void triggerSetup_Audi135()
 
 void triggerPri_Audi135()
 {
+  unsigned long curTime;
+
    curTime = micros();
    curGap = curTime - toothSystemLastToothTime;
    if ( (curGap > triggerFilterTime) || (currentStatus.startRevolutions == 0) )
@@ -1918,6 +1932,8 @@ void triggerSetup_HondaD17()
 
 void triggerPri_HondaD17()
 {
+  unsigned long curTime;
+
    lastGap = curGap;
    curTime = micros();
    curGap = curTime - toothLastToothTime;
@@ -2047,6 +2063,8 @@ void triggerSetup_Miata9905()
 
 void triggerPri_Miata9905()
 {
+  unsigned long curTime;
+
   curTime = micros();
   curGap = curTime - toothLastToothTime;
   if ( (curGap >= triggerFilterTime) || (currentStatus.startRevolutions == 0) )
@@ -2300,6 +2318,8 @@ void triggerSetup_MazdaAU()
 
 void triggerPri_MazdaAU()
 {
+  unsigned long curTime;
+
   curTime = micros();
   curGap = curTime - toothLastToothTime;
   if ( curGap >= triggerFilterTime )
@@ -2517,6 +2537,8 @@ void triggerSetup_Nissan360()
 
 void triggerPri_Nissan360()
 {
+  unsigned long curTime;
+
    curTime = micros();
    curGap = curTime - toothLastToothTime;
    //if ( curGap < triggerFilterTime ) { return; }
@@ -2760,6 +2782,8 @@ void triggerSetup_Subaru67()
 
 void triggerPri_Subaru67()
 {
+  unsigned long curTime;
+
    curTime = micros();
    //curGap = curTime - toothLastToothTime;
    //if ( curGap < triggerFilterTime ) { return; }
@@ -3010,6 +3034,8 @@ void triggerSetup_Daihatsu()
 
 void triggerPri_Daihatsu()
 {
+  unsigned long curTime;
+
   curTime = micros();
   curGap = curTime - toothLastToothTime;
 
@@ -3156,6 +3182,8 @@ void triggerSetup_Harley()
 
 void triggerPri_Harley()
 {
+  unsigned long curTime;
+
   lastGap = curGap;
   curTime = micros();
   curGap = curTime - toothLastToothTime;
@@ -3299,6 +3327,8 @@ void triggerSetup_ThirtySixMinus222()
 
 void triggerPri_ThirtySixMinus222()
 {
+  unsigned long curTime;
+
    curTime = micros();
    curGap = curTime - toothLastToothTime;
    if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
@@ -3441,6 +3471,8 @@ void triggerSetup_ThirtySixMinus21()
 
 void triggerPri_ThirtySixMinus21()
 {
+  unsigned long curTime;
+
    curTime = micros();
    curGap = curTime - toothLastToothTime;
    if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
@@ -3587,6 +3619,8 @@ void triggerSetup_420a()
 
 void triggerPri_420a()
 {
+  unsigned long curTime;
+
   curTime = micros();
   curGap = curTime - toothLastToothTime;
   if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
