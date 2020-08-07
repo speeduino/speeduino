@@ -34,8 +34,7 @@ uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the rele
 int (*getCrankAngle)(); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of each decoder
 
-volatile unsigned long curGap;
-volatile unsigned long curTime2;
+volatile unsigned long curGap;   //cross used by loggerPrimaryISR()
 volatile unsigned long curGap2;
 volatile unsigned long lastGap;
 volatile unsigned long targetGap;
@@ -472,6 +471,8 @@ void triggerPri_missingTooth()
 
 void triggerSec_missingTooth()
 {
+  unsigned long curTime2;
+
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
 
@@ -706,6 +707,8 @@ void triggerPri_DualWheel()
 
 void triggerSec_DualWheel()
 {
+  unsigned long curTime2;
+
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
   if ( curGap2 >= triggerSecFilterTime )
@@ -1380,6 +1383,8 @@ void triggerPri_4G63()
 }
 void triggerSec_4G63()
 {
+  unsigned long curTime2;
+
   //byte crankState = READ_PRI_TRIGGER();
   //First filter is a duration based one to ensure the pulse was of sufficient length (time)
   //if(READ_SEC_TRIGGER()) { secondaryLastToothTime1 = micros(); return; }
@@ -1857,6 +1862,7 @@ void triggerPri_Audi135()
 void triggerSec_Audi135()
 {
   /*
+  unsigned long curTime2;
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
   if ( curGap2 < triggerSecFilterTime ) { return; }
@@ -2154,6 +2160,8 @@ void triggerPri_Miata9905()
 
 void triggerSec_Miata9905()
 {
+  unsigned long curTime2;
+
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
 
@@ -2357,6 +2365,8 @@ void triggerPri_MazdaAU()
 
 void triggerSec_MazdaAU()
 {
+  unsigned long curTime2;
+
   curTime2 = micros();
   lastGap = curGap2;
   curGap2 = curTime2 - toothLastSecToothTime;
@@ -2582,6 +2592,8 @@ void triggerPri_Nissan360()
 
 void triggerSec_Nissan360()
 {
+  unsigned long curTime2;
+
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
   //if ( curGap2 < triggerSecFilterTime ) { return; }
@@ -2882,8 +2894,10 @@ void triggerPri_Subaru67()
 
 void triggerSec_Subaru67()
 {
+  unsigned long curTime2;
+
   if( (toothSystemCount == 0) || (toothSystemCount == 3) )
-  {
+  {    
     curTime2 = micros();
     curGap2 = curTime2 - toothLastSecToothTime;
     
