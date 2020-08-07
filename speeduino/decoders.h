@@ -187,8 +187,7 @@ extern volatile unsigned long secondaryLastToothTime1; //The time (micros()) tha
 extern volatile uint16_t triggerActualTeeth;
 extern volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 extern volatile unsigned long triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
-extern volatile bool validTrigger; //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
-extern unsigned int triggerSecFilterTime_duration; // The shortest valid time (in uS) pulse DURATION
+extern volatile bool validTrigger; //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters), cross used by loggerPrimaryISR() and decoders
 extern volatile uint16_t triggerToothAngle; //The number of crank degrees that elapse per tooth
 extern volatile bool triggerToothAngleIsCorrect; //Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.
 extern bool secondDerivEnabled; //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine

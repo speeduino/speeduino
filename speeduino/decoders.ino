@@ -60,8 +60,7 @@ volatile unsigned long secondaryLastToothTime1 = 0; //The time (micros()) that t
 volatile uint16_t triggerActualTeeth;
 volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 volatile unsigned long triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
-volatile bool validTrigger; //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
-unsigned int triggerSecFilterTime_duration; // The shortest valid time (in uS) pulse DURATION
+volatile bool validTrigger; //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters), cross used by logger
 volatile uint16_t triggerToothAngle; //The number of crank degrees that elapse per tooth
 volatile bool triggerToothAngleIsCorrect = false; //Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.
 bool secondDerivEnabled = false; //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
@@ -1190,7 +1189,6 @@ void triggerSetup_4G63()
 
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
-  triggerSecFilterTime_duration = 4000;
   secondaryLastToothTime = 0;
 }
 
@@ -1394,8 +1392,6 @@ void triggerSec_4G63()
   if(currentStatus.hasSync == true)
   {
   //1166 is the time taken to cross 70 degrees at 10k rpm
-  //if ( (micros() - secondaryLastToothTime1) < triggerSecFilterTime_duration ) { return; }
-  //triggerSecFilterTime_duration = (micros() - secondaryLastToothTime1) >> 1;
   }
 
 
@@ -1442,12 +1438,10 @@ void triggerSec_4G63()
       }
     }
 
-    //if ( (micros() - secondaryLastToothTime1) < triggerSecFilterTime_duration && configPage2.useResync )
     if ( (currentStatus.RPM < currentStatus.crankRPM) || (configPage4.useResync == 1) )
     {
       if( (currentStatus.hasSync == true) && (configPage2.nCylinders == 4) )
       {
-        triggerSecFilterTime_duration = (micros() - secondaryLastToothTime1) >> 1;
         if(READ_PRI_TRIGGER() == true)
         {
           //Whilst we're cranking and have sync, we need to watch for noise pulses.
