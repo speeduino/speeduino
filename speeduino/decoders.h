@@ -195,7 +195,6 @@ extern bool decoderIsLowRes; //Is set true, certain extra calculations are perfo
 extern bool decoderHasSecondary; //Whether or not the pattern uses a secondary input
 extern bool decoderHasFixedCrankingTiming; //Whether or not the decoder supports fixed cranking timing
 extern byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
-extern unsigned long elapsedTime;
 extern unsigned long lastCrankAngleCalc;
 extern int16_t lastToothCalcAdvance; //Invalid value here forces calculation of this on first main loop
 extern unsigned long lastVVTtime; //The time between the vvt reference pulse and the last crank pulse
