@@ -45,10 +45,7 @@ volatile unsigned long toothSystemLastToothTime = 0; //As below, but used for de
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
 volatile unsigned long toothLastSecToothTime = 0; //The time (micros()) that the last tooth was registered on the secondary input
 volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
-#ifndef SMALL_FLASH_MODE
-volatile unsigned long toothLastMinusOneSecToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered on secondary input
-volatile unsigned long targetGap2;
-#endif
+
 volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
 volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
 volatile bool revolutionOne = 0; // For sequential operation, this tracks whether the current revolution is 1 or 2 (not 1)
@@ -471,6 +468,8 @@ void triggerPri_missingTooth()
 void triggerSec_missingTooth()
 {
   unsigned long curTime2;
+  static unsigned long toothLastMinusOneSecToothTime;
+  unsigned long targetGap2;
 
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
@@ -3517,7 +3516,7 @@ void triggerPri_ThirtySixMinus21()
 {
   unsigned long curTime;
   unsigned long targetGap;
-
+  unsigned long targetGap2;
 
    curTime = micros();
    curGap = curTime - toothLastToothTime;
