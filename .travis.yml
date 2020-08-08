@@ -68,6 +68,8 @@ script:
       # Upload ini and hex files to speeduino.com server
       curl -v https://speeduino.com:2078 || true
       curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
+      curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/DropBearT/firmware.hex" "https://speeduino.com:2078/dropbear/master.hex"
+      curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy35/firmware.hex" "https://speeduino.com:2078/teensy35/master.hex"
       curl --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
     fi
 #Build the doxygen documentation and commit to its repo (Only on master)
