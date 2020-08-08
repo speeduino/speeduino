@@ -414,18 +414,18 @@ void command()
     case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed. This function takes 1.5kb of program space! :S
     #ifndef SMALL_FLASH_MODE
       Serial.println(F("Coolant"));
-      for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
+      for (int x = 0; x < 32; x++)
       {
-        Serial.print(x);
+        Serial.print(cltCalibration_bins[x]);
         Serial.print(", ");
-        //Serial.println(cltCalibrationTable[x]);
+        Serial.println(cltCalibration_values[x]);
       }
       Serial.println(F("Inlet temp"));
-      for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
+      for (int x = 0; x < 32; x++)
       {
-        Serial.print(x);
+        Serial.print(iatCalibration_bins[x]);
         Serial.print(", ");
-        //Serial.println(iatCalibrationTable[x]);
+        Serial.println(iatCalibration_values[x]);
       }
       Serial.println(F("O2"));
       for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
@@ -1700,7 +1700,7 @@ byte getPageValue(byte page, uint16_t valueAddress)
  * 
  * @param tableID Which calibration table to process. 0 = Coolant Sensor. 1 = IAT Sensor. 2 = O2 Sensor.
  */
-void receiveCalibration(byte tableID)
+void receiveCalibration_old(byte tableID)
 {
   byte* pnt_TargetTable; //Pointer that will be used to point to the required target table
   int OFFSET, DIVISION_FACTOR, BYTES_PER_VALUE, EEPROM_START;
@@ -1808,6 +1808,81 @@ void receiveCalibration(byte tableID)
 
   }
 
+}
+
+void receiveCalibration(byte tableID)
+{
+  uint16_t* pnt_TargetTable_values; //Pointer that will be used to point to the required target table values
+  uint16_t* pnt_TargetTable_bins;   //Pointer that will be used to point to the required target table bins
+  int OFFSET, DIVISION_FACTOR, BYTES_PER_VALUE;
+
+  switch (tableID)
+  {
+    case 0:
+      //coolant table
+      pnt_TargetTable_values = (uint16_t *)&cltCalibration_values;
+      pnt_TargetTable_bins = (uint16_t *)&cltCalibration_bins;
+      OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
+      DIVISION_FACTOR = 10;
+      BYTES_PER_VALUE = 2;
+      break;
+    case 1:
+      //Inlet air temp table
+      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
+      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
+      OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
+      DIVISION_FACTOR = 10;
+      BYTES_PER_VALUE = 2;
+      break;
+    case 2:
+      //O2 table
+      //pnt_TargetTable = (byte *)&o2CalibrationTable;
+      //pnt_TargetTable_values = (uint16_t *)&o2Calibration_values;
+      //pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins;
+      OFFSET = 0;
+      DIVISION_FACTOR = 1;
+      BYTES_PER_VALUE = 1;
+      break;
+
+    default:
+      OFFSET = 0;
+      //pnt_TargetTable = (byte *)&o2CalibrationTable;
+      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
+      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
+      DIVISION_FACTOR = 1;
+      BYTES_PER_VALUE = 1;
+      break; //Should never get here, but if we do, just fail back to main loop
+  }
+
+  int tempValue;
+  byte tempBuffer[2];
+
+  for (byte x = 0; x < 32; x++)
+  {
+    if (BYTES_PER_VALUE == 1)
+    {
+      while ( Serial.available() < 1 ) {}
+      tempValue = Serial.read();
+    }
+    else
+    {
+      while ( Serial.available() < 2 ) {}
+      tempBuffer[0] = Serial.read();
+      tempBuffer[1] = Serial.read();
+
+      tempValue = div(int(word(tempBuffer[1], tempBuffer[0])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
+      tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
+    }
+    
+    //Apply the temp offset and check that it results in all values being positive
+    tempValue = tempValue + OFFSET;
+    if (tempValue < 0) { tempValue = 0; }
+
+    //pnt_TargetTable[x] = tempValue;
+    pnt_TargetTable_values[x] = tempValue;
+    pnt_TargetTable_bins[x] = (x * 32);
+  }
+  writeCalibration();
 }
 
 /*
