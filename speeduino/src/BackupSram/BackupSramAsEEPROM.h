@@ -1,5 +1,7 @@
 //Backup sram stores data in the battery backuped sram portion. 
 //The backup battery is available on the ebay stm32F407VET6 black boards.  
+#ifndef BACKUPSRAMASEEPROM_H
+#define BACKUPSRAMASEEPROM_H
 #if defined(ARDUINO_ARCH_STM32)
 
 
@@ -21,4 +23,5 @@ class BackupSramAsEEPROM {
 
 extern BackupSramAsEEPROM EEPROM;
 
+#endif
 #endif
