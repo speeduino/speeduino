@@ -19,6 +19,18 @@ class BackupSramAsEEPROM {
     uint8_t read(uint16_t address);  
     int8_t write(uint16_t address, uint8_t val);
     int8_t update(uint16_t address, uint8_t val);
+    template< typename T > T &get( int idx, T &t ){
+        uint16_t e = idx;
+        uint8_t *ptr = (uint8_t*) &t;
+        for( int count = sizeof(T) ; count ; --count, ++e )  *ptr++ = read(e);
+        return t;
+    }
+    template< typename T > const T &put( int idx, const T &t ){        
+        const uint8_t *ptr = (const uint8_t*) &t;
+        uint16_t e = idx;
+        for( int count = sizeof(T) ; count ; --count, ++e )  write(e, *ptr++);
+        return t;
+    }    
 };
 
 extern BackupSramAsEEPROM EEPROM;

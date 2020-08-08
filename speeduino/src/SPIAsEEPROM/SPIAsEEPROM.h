@@ -177,6 +177,31 @@ class FLASH_EEPROM_BaseClass
     int8_t update(uint16_t, uint8_t);
 
     /**
+     * Read AnyTypeOfData from eeprom 
+     * @param address
+     * @return AnyTypeOfData
+     */
+    template< typename T > T &get( int idx, T &t ){
+        uint16_t e = idx;
+        uint8_t *ptr = (uint8_t*) &t;
+        for( int count = sizeof(T) ; count ; --count, ++e )  *ptr++ = read(e);
+        return t;
+    }
+
+    /**
+     * Write AnyTypeOfData to eeprom
+     * @param address 
+     * @param AnyTypeOfData 
+     * @return number of bytes written to flash 
+     */
+    template< typename T > const T &put( int idx, const T &t ){        
+        const uint8_t *ptr = (const uint8_t*) &t;
+        uint16_t e = idx;
+        for( int count = sizeof(T) ; count ; --count, ++e )  write(e, *ptr++);
+        return t;
+    }
+
+    /**
      * Clear emulated eeprom sector
      * @return sectorsCleared 
      */
