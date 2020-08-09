@@ -547,7 +547,6 @@ uint16_t getSpeed()
     if( vssCount == VSS_SAMPLES ) //We only change the reading if we've reached the required number of samples
     {
       if(temp_vssLastPulseTime < temp_vssLastMinusOnePulseTime) { tempSpeed = currentStatus.vss; } //Check for overflow of micros()
-      else if ( (micros() - temp_vssLastPulseTime) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop (1s timeout)
       else
       {
         pulseTime = vssTotalTime / VSS_SAMPLES;
@@ -559,7 +558,12 @@ uint16_t getSpeed()
       vssCount = 0;
       vssTotalTime = 0;
     }
-    else { tempSpeed = currentStatus.vss; }
+    else
+    {
+      //Either not enough samples taken yet or speed has dropped to 0
+      if ( (micros() - temp_vssLastPulseTime) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop (1s timeout)
+      else { tempSpeed = currentStatus.vss; } 
+    }
   }
   return tempSpeed;
 }
