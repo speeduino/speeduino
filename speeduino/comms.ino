@@ -416,21 +416,21 @@ void command()
       Serial.println(F("Coolant"));
       for (int x = 0; x < 32; x++)
       {
-        Serial.print(cltCalibration_bins[x]);
+        Serial.print(calibration_bins_10bit[x]);
         Serial.print(", ");
         Serial.println(cltCalibration_values[x]);
       }
       Serial.println(F("Inlet temp"));
       for (int x = 0; x < 32; x++)
       {
-        Serial.print(iatCalibration_bins[x]);
+        Serial.print(calibration_bins_10bit[x]);
         Serial.print(", ");
         Serial.println(iatCalibration_values[x]);
       }
       Serial.println(F("O2"));
       for (int x = 0; x < 32; x++)
       {
-        Serial.print(o2Calibration_bins[x]);
+        Serial.print(calibration_bins_10bit[x]);
         Serial.print(", ");
         Serial.println(o2Calibration_values[x]);
       }
@@ -1701,74 +1701,58 @@ byte getPageValue(byte page, uint16_t valueAddress)
  */
 void receiveCalibration(byte tableID)
 {
-  void* pnt_TargetTable_values; //Pointer that will be used to point to the required target table values
-  uint16_t* pnt_TargetTable_bins;   //Pointer that will be used to point to the required target table bins
-  int OFFSET, DIVISION_FACTOR, BYTES_PER_VALUE;
+  byte tempBuffer[2];
+  int16_t tempvalue;
+  int x;
 
   switch (tableID)
   {
-    case 0:
-      //coolant table
-      pnt_TargetTable_values = (uint16_t *)&cltCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&cltCalibration_bins;
-      OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
-      DIVISION_FACTOR = 10;
-      BYTES_PER_VALUE = 2;
+    case 0: //coolant table      
+      for (x = 0; x < 32; x++)
+      {
+        while ( Serial.available() < 2 ) {}  //blocking wait for serial
+        tempBuffer[0] = Serial.read();
+        tempBuffer[1] = Serial.read();  //High byte
+          tempvalue=(tempBuffer[1] << 8 | tempBuffer[0]); //Read 2 bytes, convert to int
+          tempvalue=(tempvalue / 10);//These values come through * 10 from Tuner Studio
+          tempvalue = ((tempvalue - 32) * 5) / 9; //Convert from F to C
+          tempvalue += CALIBRATION_TEMPERATURE_OFFSET;
+          cltCalibration_values[x] = tempvalue;
+          calibration_bins_10bit[x]=x*32;      //axis range is 10bit
+      }
       break;
-    case 1:
-      //Inlet air temp table
-      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
-      OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
-      DIVISION_FACTOR = 10;
-      BYTES_PER_VALUE = 2;
+    case 1: //Inlet air temp table
+      for (x = 0; x < 32; x++)
+      {
+        while ( Serial.available() < 2 ) {}  //blocking wait for serial
+        tempBuffer[0] = Serial.read();
+        tempBuffer[1] = Serial.read();  //High byte
+          tempvalue=(tempBuffer[1] << 8 | tempBuffer[0]); //Read 2 bytes, convert to int
+          tempvalue=(tempvalue / 10) ;//These values come through * 10 from Tuner Studio
+          tempvalue = ((tempvalue - 32) * 5) / 9; //Convert from F to C
+          tempvalue += CALIBRATION_TEMPERATURE_OFFSET;
+          iatCalibration_values[x] = tempvalue;
+          calibration_bins_10bit[x]=x*32;      //axis range is 10bit
+      }  
       break;
-    case 2:
-      //O2 table
-      //pnt_TargetTable = (byte *)&o2CalibrationTable;
-      pnt_TargetTable_values = (uint8_t *)&o2Calibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins;
-      OFFSET = 0;
-      DIVISION_FACTOR = 1;
-      BYTES_PER_VALUE = 1;
+    case 2://O2 table       
+      for (x = 0; x < 32; x++)
+      {
+        while ( Serial.available() < 1 ) {}  //blocking wait for serial
+        tempBuffer[0] = Serial.read();// O2 sensor values are sent as bytes
+        o2Calibration_values[x] =tempBuffer[0];
+        calibration_bins_10bit[x]=x*32;
+      } 
+      
       break;
-
-    default:
-      OFFSET = 0;
-      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
-      DIVISION_FACTOR = 10;
-      BYTES_PER_VALUE = 2;
-      break; //Should never get here, but if we do, just fail back to main loop
-  }
-
-  int tempValue;
-  byte tempBuffer[2];
-
-  for (byte x = 0; x < 32; x++)
-  {
-    if (BYTES_PER_VALUE == 1)
-    {
-      while ( Serial.available() < 1 ) {}
-      tempValue = Serial.read();
-    }
-    else
-    {
-      while ( Serial.available() < 2 ) {}
-      tempBuffer[0] = Serial.read();
-      tempBuffer[1] = Serial.read();
-
-      tempValue = div(int(word(tempBuffer[1], tempBuffer[0])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
-      tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
-    }
-    
-    //Apply the temp offset and check that it results in all values being positive
-    tempValue = tempValue + OFFSET;
-    if (tempValue < 0) { tempValue = 0; }
-
-    if(tableID == 2) { ((uint8_t*)pnt_TargetTable_values)[x] = (byte)tempValue; } //O2 table stores 8 bit values
-    else { ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; } //Both temp tables have 16-bit values
-    pnt_TargetTable_bins[x] = (x * 32);
+    default: //in case of unknown table just read data but do not use it
+      for (x = 0; x < 32; x++)
+      {
+        while ( Serial.available() < 2 ) {}  //blocking wait for serial
+        tempBuffer[0] = Serial.read();
+        tempBuffer[1] = Serial.read();
+      } 
+      break;
   }
   writeCalibration();
 }

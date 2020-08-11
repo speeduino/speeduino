@@ -166,9 +166,9 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_PAGE_CRC32     3694 //Size of this is 4 * <number of pages> (CRC32 = 32 bits): 3742 - (12 * 4) = 3694
 #define EEPROM_LAST_BARO      3742 // 3743 - 1
 //New values using 2D tables
-#define EEPROM_CALIBRATION_O2   3743 //3839-96 +64
-#define EEPROM_CALIBRATION_IAT  3839 //3967-128
-#define EEPROM_CALIBRATION_CLT  3967 //4095-128
+#define EEPROM_CALIBRATION_O2   3935 //3967-32
+#define EEPROM_CALIBRATION_IAT  3967 //3967-64
+#define EEPROM_CALIBRATION_CLT  4031 //4095-64
 //These were the values used previously when all calibration tables were 512 long. They need to be retained for the update process (202005 -> 202008) can work. 
 #define EEPROM_CALIBRATION_O2_OLD   2559
 #define EEPROM_CALIBRATION_IAT_OLD  3071

@@ -724,20 +724,15 @@ void loadCalibration()
   for(int x=0; x<32; x++) //Each calibration table is 32 bytes long
   {
     int y = EEPROM_CALIBRATION_CLT + (x * 2);
-    EEPROM.get(y, cltCalibration_bins[x]);
-    y += 64; 
     EEPROM.get(y, cltCalibration_values[x]);
 
     y = EEPROM_CALIBRATION_IAT + (x * 2);
-    EEPROM.get(y, iatCalibration_bins[x]);
-    y += 64; 
     EEPROM.get(y, iatCalibration_values[x]);
 
-    y = EEPROM_CALIBRATION_O2 + (x * 2);
-    EEPROM.get(y, o2Calibration_bins[x]);
-    y = EEPROM_CALIBRATION_O2 + 64 + x;
+    y = EEPROM_CALIBRATION_O2 + (x);
     o2Calibration_values[x] = EEPROM.read(y); //Byte values
 
+    calibration_bins_10bit[x]=x*32;  //bins for all previous tables
   }
 
 }
@@ -749,22 +744,16 @@ and saves them to the EEPROM.
 void writeCalibration()
 {
 
-  for(int x=0; x<32; x++) //Each calibration table is 32 bytes long
+  for(int x=0; x<32; x++) //Each calibration table is 32 values long
   {
     int y = EEPROM_CALIBRATION_CLT + (x * 2);
-    EEPROM.put(y, cltCalibration_bins[x]);
-    y += 64; 
-    EEPROM.put(y, cltCalibration_values[x]);
+    EEPROM.put(y, cltCalibration_values[x]);     //uint16
 
     y = EEPROM_CALIBRATION_IAT + (x * 2);
-    EEPROM.put(y, iatCalibration_bins[x]);
-    y += 64; 
-    EEPROM.put(y, iatCalibration_values[x]);
+    EEPROM.put(y, iatCalibration_values[x]);    //uint16
 
-    y = EEPROM_CALIBRATION_O2 + (x * 2);
-    EEPROM.put(y, o2Calibration_bins[x]);
-    y = EEPROM_CALIBRATION_O2 + 64 + x; 
-    EEPROM.update(y, o2Calibration_values[x]);
+    y = EEPROM_CALIBRATION_O2 + x; 
+    EEPROM.update(y, o2Calibration_values[x]);  //byte values
   }
 
 }

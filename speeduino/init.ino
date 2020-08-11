@@ -191,19 +191,19 @@ void initialiseAll()
     cltCalibrationTable.axisSize = SIZE_INT;
     cltCalibrationTable.xSize = 32;
     cltCalibrationTable.values = cltCalibration_values;
-    cltCalibrationTable.axisX = cltCalibration_bins;
+    cltCalibrationTable.axisX = calibration_bins_10bit;
 
     iatCalibrationTable.valueSize = SIZE_INT;
     iatCalibrationTable.axisSize = SIZE_INT;
     iatCalibrationTable.xSize = 32;
     iatCalibrationTable.values = iatCalibration_values;
-    iatCalibrationTable.axisX = iatCalibration_bins;
+    iatCalibrationTable.axisX = calibration_bins_10bit;
 
     o2CalibrationTable.valueSize = SIZE_BYTE;
     o2CalibrationTable.axisSize = SIZE_INT;
     o2CalibrationTable.xSize = 32;
     o2CalibrationTable.values = o2Calibration_values;
-    o2CalibrationTable.axisX = o2Calibration_bins;
+    o2CalibrationTable.axisX = calibration_bins_10bit;
 
     //Setup the calibration tables
     loadCalibration();

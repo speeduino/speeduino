@@ -378,15 +378,12 @@ void doUpdates()
     {
       y = EEPROM_CALIBRATION_CLT_OLD + (x * 16);
       cltCalibration_values[x] = EEPROM.read(y);
-      cltCalibration_bins[x] = (x * 32);
 
       y = EEPROM_CALIBRATION_IAT_OLD + (x * 16);
       iatCalibration_values[x] = EEPROM.read(y);
-      iatCalibration_bins[x] = (x * 32);
 
       y = EEPROM_CALIBRATION_O2_OLD + (x * 16);
       o2Calibration_values[x] = EEPROM.read(y);
-      o2Calibration_bins[x] = (x * 32);
     }
     writeCalibration();
 

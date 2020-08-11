@@ -1274,11 +1274,12 @@ extern struct config10 configPage10;
 //extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
 //extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
 
-extern uint16_t cltCalibration_bins[32];
+extern uint16_t calibration_bins_10bit[32];  //just holds evenly spaced values from 0-2^10
+//extern uint16_t cltCalibration_bins[32];
 extern uint16_t cltCalibration_values[32];
-extern uint16_t iatCalibration_bins[32];
+//extern uint16_t iatCalibration_bins[32];
 extern uint16_t iatCalibration_values[32];
-extern uint16_t o2Calibration_bins[32];
+//extern uint16_t o2Calibration_bins[32];
 extern uint8_t  o2Calibration_values[32]; // Note 8-bit values
 extern struct table2D cltCalibrationTable; /**< A 32 bin array containing the coolant temperature sensor calibration values */
 extern struct table2D iatCalibrationTable; /**< A 32 bin array containing the inlet air temperature sensor calibration values */

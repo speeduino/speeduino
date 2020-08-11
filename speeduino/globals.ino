@@ -233,12 +233,13 @@ struct config10 configPage10;
 //byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
 //byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
 
-uint16_t cltCalibration_bins[32];
+uint16_t calibration_bins_10bit[32];  //used for CLT, IAT, O2 calibration table bins
+//uint16_t cltCalibration_bins[32];
 uint16_t cltCalibration_values[32];
 struct table2D cltCalibrationTable;
-uint16_t iatCalibration_bins[32];
+//uint16_t iatCalibration_bins[32];
 uint16_t iatCalibration_values[32];
 struct table2D iatCalibrationTable;
-uint16_t o2Calibration_bins[32];
+//uint16_t o2Calibration_bins[32];
 uint8_t o2Calibration_values[32];
 struct table2D o2CalibrationTable;
