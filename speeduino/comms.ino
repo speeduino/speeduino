@@ -308,7 +308,7 @@ void command()
 
       break;
 
-    case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
+    case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>.
       byte tableID;
       //byte canID;
 
@@ -428,11 +428,11 @@ void command()
         Serial.println(iatCalibration_values[x]);
       }
       Serial.println(F("O2"));
-      for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
+      for (int x = 0; x < 32; x++)
       {
-        Serial.print(x);
+        Serial.print(o2Calibration_bins[x]);
         Serial.print(", ");
-        Serial.println(o2CalibrationTable[x]);
+        Serial.println(o2Calibration_values[x]);
       }
       Serial.println(F("WUE"));
       for (int x = 0; x < 10; x++)
@@ -1699,119 +1699,9 @@ byte getPageValue(byte page, uint16_t valueAddress)
  * 
  * @param tableID Which calibration table to process. 0 = Coolant Sensor. 1 = IAT Sensor. 2 = O2 Sensor.
  */
-void receiveCalibration_old(byte tableID)
-{
-  byte* pnt_TargetTable; //Pointer that will be used to point to the required target table
-  int OFFSET, DIVISION_FACTOR, BYTES_PER_VALUE, EEPROM_START;
-
-  switch (tableID)
-  {
-    case 0:
-      //coolant table
-      //pnt_TargetTable = (byte *)&cltCalibrationTable;
-      OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
-      DIVISION_FACTOR = 10;
-      BYTES_PER_VALUE = 2;
-      EEPROM_START = EEPROM_CALIBRATION_CLT;
-      break;
-    case 1:
-      //Inlet air temp table
-      //pnt_TargetTable = (byte *)&iatCalibrationTable;
-      OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
-      DIVISION_FACTOR = 10;
-      BYTES_PER_VALUE = 2;
-      EEPROM_START = EEPROM_CALIBRATION_IAT;
-      break;
-    case 2:
-      //O2 table
-      pnt_TargetTable = (byte *)&o2CalibrationTable;
-      OFFSET = 0;
-      DIVISION_FACTOR = 1;
-      BYTES_PER_VALUE = 1;
-      EEPROM_START = EEPROM_CALIBRATION_O2;
-      break;
-
-    default:
-      OFFSET = 0;
-      pnt_TargetTable = (byte *)&o2CalibrationTable;
-      DIVISION_FACTOR = 1;
-      BYTES_PER_VALUE = 1;
-      EEPROM_START = EEPROM_CALIBRATION_O2;
-      break; //Should never get here, but if we do, just fail back to main loop
-  }
-
-  //1024 value pairs are sent. We have to receive them all, but only use every second one (We only store 512 calibratino table entries to save on EEPROM space)
-  //The values are sent as 2 byte ints, but we convert them to single bytes. Any values over 255 are capped at 255.
-  int tempValue;
-  byte tempBuffer[2];
-  bool every2nd = true;
-  int x;
-  int counter = 0;
-  bool useLEDIndicator = false;
-  if (pinIsOutput(LED_BUILTIN) == false)
-  {
-    pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, LOW);
-    useLEDIndicator = true;
-  }
-
-  for (x = 0; x < 1024; x++)
-  {
-    //UNlike what is listed in the protocol documentation, the O2 sensor values are sent as bytes rather than ints
-    if (BYTES_PER_VALUE == 1)
-    {
-      while ( Serial.available() < 1 ) {}
-      tempValue = Serial.read();
-    }
-    else
-    {
-      while ( Serial.available() < 2 ) {}
-      tempBuffer[0] = Serial.read();
-      tempBuffer[1] = Serial.read();
-
-      tempValue = div(int(word(tempBuffer[1], tempBuffer[0])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
-      tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
-    }
-    tempValue = tempValue + OFFSET;
-
-    if (every2nd) //Only use every 2nd value
-    {
-      if (tempValue > 255) {
-        tempValue = 255;  // Cap the maximum value to prevent overflow when converting to byte
-      }
-      if (tempValue < 0) {
-        tempValue = 0;
-      }
-
-      pnt_TargetTable[(x / 2)] = (byte)tempValue;
-
-      //From TS3.x onwards, the EEPROM must be written here as TS restarts immediately after the process completes which is before the EEPROM write completes
-      int y = EEPROM_START + (x / 2);
-      //EEPROM.update(y, (byte)tempValue);
-      storeCalibrationValue(y, (byte)tempValue);
-
-      every2nd = false;
-      if(useLEDIndicator == true)
-      {
-        #if defined(CORE_STM32)
-          digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-        #else
-          analogWrite(LED_BUILTIN, (counter % 50) );
-        #endif
-      }
-      counter++;
-    }
-    else {
-      every2nd = true;
-    }
-
-  }
-
-}
-
 void receiveCalibration(byte tableID)
 {
-  uint16_t* pnt_TargetTable_values; //Pointer that will be used to point to the required target table values
+  void* pnt_TargetTable_values; //Pointer that will be used to point to the required target table values
   uint16_t* pnt_TargetTable_bins;   //Pointer that will be used to point to the required target table bins
   int OFFSET, DIVISION_FACTOR, BYTES_PER_VALUE;
 
@@ -1836,8 +1726,8 @@ void receiveCalibration(byte tableID)
     case 2:
       //O2 table
       //pnt_TargetTable = (byte *)&o2CalibrationTable;
-      //pnt_TargetTable_values = (uint16_t *)&o2Calibration_values;
-      //pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins;
+      pnt_TargetTable_values = (uint8_t *)&o2Calibration_values;
+      pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins;
       OFFSET = 0;
       DIVISION_FACTOR = 1;
       BYTES_PER_VALUE = 1;
@@ -1845,11 +1735,10 @@ void receiveCalibration(byte tableID)
 
     default:
       OFFSET = 0;
-      //pnt_TargetTable = (byte *)&o2CalibrationTable;
       pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
       pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
-      DIVISION_FACTOR = 1;
-      BYTES_PER_VALUE = 1;
+      DIVISION_FACTOR = 10;
+      BYTES_PER_VALUE = 2;
       break; //Should never get here, but if we do, just fail back to main loop
   }
 
@@ -1877,8 +1766,8 @@ void receiveCalibration(byte tableID)
     tempValue = tempValue + OFFSET;
     if (tempValue < 0) { tempValue = 0; }
 
-    //pnt_TargetTable[x] = tempValue;
-    pnt_TargetTable_values[x] = tempValue;
+    if(tableID == 2) { ((uint8_t*)pnt_TargetTable_values)[x] = (byte)tempValue; } //O2 table stores 8 bit values
+    else { ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; } //Both temp tables have 16-bit values
     pnt_TargetTable_bins[x] = (x * 32);
   }
   writeCalibration();
