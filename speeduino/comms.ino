@@ -1745,14 +1745,26 @@ void receiveCalibration(byte tableID)
   int tempValue;
   byte tempBuffer[2];
 
-  for (byte x = 0; x < 32; x++)
+  if(tableID == 2)
   {
-    if (BYTES_PER_VALUE == 1)
+    //O2 calibration. Comes through as 1024 8-bit values of which we use every 32nd
+    for (int x = 0; x < 1024; x++)
     {
       while ( Serial.available() < 1 ) {}
       tempValue = Serial.read();
+
+      if( (x % 32) == 0)
+      {
+        ((uint8_t*)pnt_TargetTable_values)[(x/32)] = (byte)tempValue; //O2 table stores 8 bit values
+        pnt_TargetTable_bins[(x/32)] = (x);
+      }
+      
     }
-    else
+  }
+  else
+  {
+    //Temperature calibrations are sent as 32 16-bit values
+    for (byte x = 0; x < 32; x++)
     {
       while ( Serial.available() < 2 ) {}
       tempBuffer[0] = Serial.read();
@@ -1760,16 +1772,17 @@ void receiveCalibration(byte tableID)
 
       tempValue = div(int(word(tempBuffer[1], tempBuffer[0])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
       tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
-    }
-    
-    //Apply the temp offset and check that it results in all values being positive
-    tempValue = tempValue + OFFSET;
-    if (tempValue < 0) { tempValue = 0; }
+      
+      //Apply the temp offset and check that it results in all values being positive
+      tempValue = tempValue + OFFSET;
+      if (tempValue < 0) { tempValue = 0; }
 
-    if(tableID == 2) { ((uint8_t*)pnt_TargetTable_values)[x] = (byte)tempValue; } //O2 table stores 8 bit values
-    else { ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; } //Both temp tables have 16-bit values
-    pnt_TargetTable_bins[x] = (x * 32);
+      
+      ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
+      pnt_TargetTable_bins[x] = (x * 32);
+    }
   }
+
   writeCalibration();
 }
 
