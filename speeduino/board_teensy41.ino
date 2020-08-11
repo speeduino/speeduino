@@ -1,5 +1,5 @@
 #if defined(CORE_TEENSY) && defined(__IMXRT1062__)
-#include "board_teensy40.h"
+#include "board_teensy41.h"
 #include "globals.h"
 #include "auxiliaries.h"
 #include "idle.h"
