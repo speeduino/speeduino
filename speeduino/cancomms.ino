@@ -376,11 +376,10 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
   #endif
 }
 
+#ifdef CORE_TEENSY35
 // This routine builds the realtime data into packets that the obd requesting device can understand. This is only used by teensy and stm32 with onboard canbus
-void obd_response(uint8_t thePIDmode, uint8_t therequestedPIDlow, uint8_t therequestedPIDhigh)
-{
-
-#if defined(CORE_TEENSY)  
+void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPIDhigh)
+{ 
 //only build the PID if the mcu has onboard/attached can 
 
   uint16_t obdcalcA;    //used in obd calcs
@@ -394,10 +393,10 @@ void obd_response(uint8_t thePIDmode, uint8_t therequestedPIDlow, uint8_t thereq
 
   outMsg.len = 8;
   
-if (thePIDmode == 0x01)
+if (PIDmode == 0x01)
   {
      //currentStatus.canin[13] = therequestedPIDlow; 
-   switch (therequestedPIDlow)
+   switch (requestedPIDlow)
          {
           case 0:       //PID-0x00 PIDs supported 01-20  
             outMsg.buf[0] =  0x06;    // sending 6 bytes
@@ -694,26 +693,25 @@ if (thePIDmode == 0x01)
         break;
      }
     } 
-  else if (thePIDmode == 0x22)
+  else if (PIDmode == 0x22)
     {
      // these are custom PID  not listed in the SAE std .
-     if (therequestedPIDhigh == 0x77)
+     if (requestedPIDhigh == 0x77)
        {
-        if ((therequestedPIDlow >= 0x01) && (therequestedPIDlow <= 0x10))
+        if ((requestedPIDlow >= 0x01) && (requestedPIDlow <= 0x10))
              {   
                  // PID 0x01 (1 dec) to 0x10 (16 dec)
                  // Aux data / can data IN Channel 1 - 16  
                  outMsg.buf[0] =  0x06;                                               // sending 8 bytes
                  outMsg.buf[1] =  0x62;                                               // Same as query, except that 40h is added to the mode value. So:62h = custom mode
-                 outMsg.buf[2] =  therequestedPIDlow;                                 // PID code
+                 outMsg.buf[2] =  requestedPIDlow;                                 // PID code
                  outMsg.buf[3] =  0x77;                                               // PID code
-                 outMsg.buf[4] =  lowByte(currentStatus.canin[therequestedPIDlow]);   // A
-                 outMsg.buf[5] =  highByte(currentStatus.canin[therequestedPIDlow]);  // B
+                 outMsg.buf[4] =  lowByte(currentStatus.canin[requestedPIDlow]);   // A
+                 outMsg.buf[5] =  highByte(currentStatus.canin[requestedPIDlow]);  // B
                  outMsg.buf[6] =  0x00;                                               // C
                  outMsg.buf[7] =  0x00;                                               // D
             }
        }     
     }
-
-#endif
 }
+#endif

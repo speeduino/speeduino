@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    14
+  #define CURRENT_DATA_VERSION    15
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -309,10 +309,11 @@ void doUpdates()
     configPage10.crankingEnrichValues[3] = configPage10.crankingEnrichValues[3] / 5;
 
     //Added the injector timing curve
-    configPage2.injAng[0] = 355;
-    configPage2.injAng[1] = 355;
-    configPage2.injAng[2] = 355;
-    configPage2.injAng[3] = 355;
+    //Set all the values to be the same as the first one. 
+    configPage2.injAng[0] = configPage2.injAng[0]; //Obviously not needed, but here for completeness
+    configPage2.injAng[1] = configPage2.injAng[0];
+    configPage2.injAng[2] = configPage2.injAng[0];
+    configPage2.injAng[3] = configPage2.injAng[0];
     //The RPMs are divided by 100
     configPage2.injAngRPM[0] = 5;
     configPage2.injAngRPM[1] = 25;
@@ -355,6 +356,45 @@ void doUpdates()
     //ASE to run taper added. Default it to 0,1 secs
     configPage2.aseTaperTime = 1;
 
+    // there is now optioon for fixed and relative timing retard for soft limit. This sets the soft limiter to the old fixed timing mode.
+    configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
+
+    //VSS was added for testing, disable it by default
+    configPage2.vssMode = 0;
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 14);
+
+    //
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 14)
+  {
+    //202008
+
+    //MAJOR update to move the coolant, IAT and O2 calibrations to 2D tables
+    int y;
+    for(int x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
+    {
+      y = EEPROM_CALIBRATION_CLT_OLD + (x * 16);
+      cltCalibration_values[x] = EEPROM.read(y);
+      cltCalibration_bins[x] = (x * 32);
+
+      y = EEPROM_CALIBRATION_IAT_OLD + (x * 16);
+      iatCalibration_values[x] = EEPROM.read(y);
+      iatCalibration_bins[x] = (x * 32);
+
+      y = EEPROM_CALIBRATION_O2_OLD + (x * 16);
+      o2Calibration_values[x] = EEPROM.read(y);
+      o2Calibration_bins[x] = (x * 32);
+    }
+    writeCalibration();
+
+    //Oil and fuel pressure inputs were introduced. Disable them both by default
+    configPage10.oilPressureProtEnbl = false;
+    configPage10.oilPressureEnable = false;
+    configPage10.fuelPressureEnable = false;
+
     //wmi
     configPage10.wmiEnabled = 0;
     configPage10.wmiMode = 0;
@@ -369,33 +409,7 @@ void doUpdates()
     }
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 14);
-
-    // there is now optioon for fixed and relative timing retard for soft limit. This sets the soft limiter to the old fixed timing mode.
-    configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
-  }
-
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 14)
-  {
-    //202006
-
-    //MAJOR update to move the coolant, IAT and O2 calibrations to 2D tables
-    int y;
-    for(int x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
-    {
-      y = EEPROM_CALIBRATION_CLT_OLD + (x * 16);
-      cltCalibration_values[x] = EEPROM.read(y);
-      cltCalibration_bins[x] = (x * 16);
-
-      y = EEPROM_CALIBRATION_IAT_OLD + (x * 16);
-      iatCalibration_values[x] = EEPROM.read(y);
-      iatCalibration_bins[x] = (x * 16);
-    }
-
-    //Oil and fuel pressure inputs were introduced. Disable them both by default
-    configPage10.oilPressureProtEnbl = false;
-    configPage10.oilPressureEnable = false;
-    configPage10.fuelPressureEnable = false;
+    EEPROM.write(EEPROM_DATA_VERSION, 15);
 
   }
   

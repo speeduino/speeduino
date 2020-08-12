@@ -187,17 +187,23 @@ void initialiseAll()
     wmiAdvTable.values = configPage10.wmiAdvAdj;
     wmiAdvTable.axisX = configPage10.wmiAdvBins;
 
-    cltCalibrationTable_new.valueSize = SIZE_INT;
-    cltCalibrationTable_new.axisSize = SIZE_INT;
-    cltCalibrationTable_new.xSize = 32;
-    cltCalibrationTable_new.values = cltCalibration_values;
-    cltCalibrationTable_new.axisX = cltCalibration_bins;
+    cltCalibrationTable.valueSize = SIZE_INT;
+    cltCalibrationTable.axisSize = SIZE_INT;
+    cltCalibrationTable.xSize = 32;
+    cltCalibrationTable.values = cltCalibration_values;
+    cltCalibrationTable.axisX = cltCalibration_bins;
 
-    iatCalibrationTable_new.valueSize = SIZE_INT;
-    iatCalibrationTable_new.axisSize = SIZE_INT;
-    iatCalibrationTable_new.xSize = 32;
-    iatCalibrationTable_new.values = iatCalibration_values;
-    iatCalibrationTable_new.axisX = iatCalibration_bins;
+    iatCalibrationTable.valueSize = SIZE_INT;
+    iatCalibrationTable.axisSize = SIZE_INT;
+    iatCalibrationTable.xSize = 32;
+    iatCalibrationTable.values = iatCalibration_values;
+    iatCalibrationTable.axisX = iatCalibration_bins;
+
+    o2CalibrationTable.valueSize = SIZE_BYTE;
+    o2CalibrationTable.axisSize = SIZE_INT;
+    o2CalibrationTable.xSize = 32;
+    o2CalibrationTable.values = o2Calibration_values;
+    o2CalibrationTable.axisX = o2Calibration_bins;
 
     //Setup the calibration tables
     loadCalibration();
@@ -255,6 +261,7 @@ void initialiseAll()
     initialiseAuxPWM();
     initialiseCorrections();
     initialiseADC();
+    initialiseProgrammableIO();
 
     //Lookup the current MAP reading for barometric pressure
     instanteneousMAPReading();
