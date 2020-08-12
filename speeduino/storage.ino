@@ -460,12 +460,12 @@ void writeConfig(byte tableNum)
       /*---------------------------------------------------
       | Config page 13 (See storage.h for data layout)
       -----------------------------------------------------*/
-      pnt_configPage = (byte *)&configPage12; //Create a pointer to Page 12 in memory
+      pnt_configPage = (byte *)&configPage13; //Create a pointer to Page 12 in memory
       //As there are no 3d tables in this page, all bytes can simply be read in
-      for(int x=EEPROM_CONFIG12_START; x<EEPROM_CONFIG12_END; x++)
+      for(int x=EEPROM_CONFIG13_START; x<EEPROM_CONFIG13_END; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG12_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG12_START))); writeCounter++; }
+        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG13_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG13_START))); writeCounter++; }
       }
       if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
       else { eepromWritesPending = false; }
@@ -730,7 +730,7 @@ void loadConfig()
   
   //*********************************************************************************************************************************************************************************
   //CONFIG PAGE (13)
-  pnt_configPage = (byte *)&configPage12; //Create a pointer to Page 12 in memory
+  pnt_configPage = (byte *)&configPage13; //Create a pointer to Page 13 in memory
   //All bytes can simply be pulled straight from the configTable
   for(int x=EEPROM_CONFIG13_START; x<EEPROM_CONFIG13_END; x++)
   {

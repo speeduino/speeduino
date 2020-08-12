@@ -499,37 +499,6 @@ void command()
 
 void updateFullStatus()
 {
-  
-
-}
-/*
-This function returns the current values of a fixed group of variables
-*/
-//void sendValues(int packetlength, byte portNum)
-void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
-{
-  byte fullStatus[LOG_ENTRY_SIZE];
-  
-  if (portNum == 3)
-  {
-    //CAN serial
-    #if defined(USE_SERIAL3)
-      if (cmd == 30)
-      {
-        CANSerial.write("r");         //confirm cmd type
-        CANSerial.write(cmd);
-      }
-      else if (cmd == 31) { CANSerial.write("A"); }        //confirm cmd type
-    #endif
-  }
-  else
-  {
-    if(requestCount == 0) { currentStatus.secl = 0; }
-    requestCount++;
-  }
-
-  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
-  
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   fullStatus[1] = currentStatus.status1; //status1 Bitfield
   fullStatus[2] = currentStatus.engine; //Engine Status Bitfield
@@ -657,6 +626,34 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[109] = currentStatus.vvt2TargetAngle;
   fullStatus[110] = currentStatus.vvt2Duty;
   fullStatus[111] = currentStatus.outputsStatus;
+}
+/*
+This function returns the current values of a fixed group of variables
+*/
+//void sendValues(int packetlength, byte portNum)
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
+{  
+  if (portNum == 3)
+  {
+    //CAN serial
+    #if defined(USE_SERIAL3)
+      if (cmd == 30)
+      {
+        CANSerial.write("r");         //confirm cmd type
+        CANSerial.write(cmd);
+      }
+      else if (cmd == 31) { CANSerial.write("A"); }        //confirm cmd type
+    #endif
+  }
+  else
+  {
+    if(requestCount == 0) { currentStatus.secl = 0; }
+    requestCount++;
+  }
+
+  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  
+  updateFullStatus();
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -1043,7 +1040,7 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       break;
       
     case progOutsPage:
-      pnt_configPage = &configPage12;
+      pnt_configPage = &configPage13;
       //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
       if (valueOffset < npage_size[currentPage])
       {
@@ -1169,7 +1166,7 @@ void sendPage()
     }
       
     case progOutsPage:
-      pnt_configPage = &configPage12; //Create a pointer to Page 12 in memory
+      pnt_configPage = &configPage13; //Create a pointer to Page 13 in memory
       break;
 
     default:
@@ -1707,7 +1704,7 @@ byte getPageValue(byte page, uint16_t valueAddress)
         break;
 
     case progOutsPage:
-        pnt_configPage = &configPage12; //Create a pointer to Page 12 in memory
+        pnt_configPage = &configPage13; //Create a pointer to Page 13 in memory
         returnValue = *((byte *)pnt_configPage + valueAddress);
         break;
       

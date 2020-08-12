@@ -328,7 +328,7 @@
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing.
-#define NUM_PAGES     13
+#define NUM_PAGES     14
 extern const uint16_t npage_size[NUM_PAGES]; /**< This array stores the size (in bytes) of each configuration page */
 #define MAP_PAGE_SIZE 288
 
@@ -1191,10 +1191,10 @@ struct cmpOperation{
 };
 
 /*
-Page 12 - Programmable outputs conditions.
+Page 13 - Programmable outputs conditions.
 128 bytes long
 */
-struct config12 {
+struct config13 {
   uint8_t outputInverted;
   uint8_t unused12_1;
   uint8_t outputPin[8];
@@ -1206,9 +1206,9 @@ struct config12 {
   //89bytes
   struct cmpOperation operation[8];
 
-  uint8_t candID[8]; //Actual CAN ID need 16bits, this is a placeholder
+  uint16_t candID[8]; //Actual CAN ID need 16bits, this is a placeholder
 
-  byte unused12_98_99[2];
+  byte unused12_106_127[22];
 
 #if defined(CORE_AVR)
   };
@@ -1306,7 +1306,7 @@ extern struct config4 configPage4;
 extern struct config6 configPage6;
 extern struct config9 configPage9;
 extern struct config10 configPage10;
-extern struct config12 configPage12;
+extern struct config13 configPage13;
 //extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
 //extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
 //extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
@@ -1326,5 +1326,5 @@ static_assert(sizeof(struct config4) == 128, "configPage4 size is not 128");
 static_assert(sizeof(struct config6) == 128, "configPage6 size is not 128");
 static_assert(sizeof(struct config9) == 192, "configPage9 size is not 192");
 static_assert(sizeof(struct config10) == 192, "configPage10 size is not 192");
-static_assert(sizeof(struct config12) == 100, "configPage12 size is not 100");
+static_assert(sizeof(struct config13) == 128, "configPage13 size is not 128");
 #endif // GLOBALS_H

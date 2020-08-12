@@ -188,8 +188,8 @@ uint32_t calculateCRC32(byte pageNo)
       
     case progOutsPage:
       //Confirmed working
-      pnt_configPage = &configPage12; //Create a pointer to Page 10 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage12) );
+      pnt_configPage = &configPage13; //Create a pointer to Page 10 in memory
+      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage13) );
       break;
 
     default:
@@ -203,69 +203,69 @@ uint32_t calculateCRC32(byte pageNo)
 //*********************************************************************************************************************************************************************************
 void initialiseProgrammableIO()
 {
-  for (uint8_t y = 0; y < sizeof(configPage12.outputPin); y++)
+  for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
   {
-    if (outputPin[y] < BOARD_NR_GPIO_PINS) { outputPin[y] = configPage12.outputPin[y]; }
+    if (outputPin[y] < BOARD_NR_GPIO_PINS) { outputPin[y] = configPage13.outputPin[y]; }
     if ( (outputPin[y] > 0) && (outputPin[y] < BOARD_NR_GPIO_PINS) )
     {
       pinMode(outputPin[y], OUTPUT);
-      digitalWrite(outputPin[y], (configPage12.outputInverted & (1U << y)));
+      digitalWrite(outputPin[y], (configPage13.outputInverted & (1U << y)));
     }
   }
 }
 
 void checkProgrammableIO()
 {
-  int16_t data, data2, data3;
+  int16_t data, data2;
   bool firstCheck, secondCheck;
 
-  for (uint8_t y = 0; y < sizeof(configPage12.outputPin); y++)
+  for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
   {
     firstCheck = false;
     secondCheck = false;
     if ( outputPin[y] > 0 ) //if outputPin == 0 it is disabled
     {
-      data = ProgrammableIOGetData(configPage12.firstDataIn[y]);
-      data2 = configPage12.firstTarget[y];
+      data = ProgrammableIOGetData(configPage13.firstDataIn[y]);
+      data2 = configPage13.firstTarget[y];
 
-      if ( (configPage12.operation[y].firstCompType == COMPARATOR_EQUAL) && (data == data2) ) { firstCheck = true; }
-      else if ( (configPage12.operation[y].firstCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { firstCheck = true; }
-      else if ( (configPage12.operation[y].firstCompType == COMPARATOR_GREATER) && (data > data2) ) { firstCheck = true; }
-      else if ( (configPage12.operation[y].firstCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { firstCheck = true; }
-      else if ( (configPage12.operation[y].firstCompType == COMPARATOR_LESS) && (data < data2) ) { firstCheck = true; }
-      else if ( (configPage12.operation[y].firstCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { firstCheck = true; }
+      if ( (configPage13.operation[y].firstCompType == COMPARATOR_EQUAL) && (data == data2) ) { firstCheck = true; }
+      else if ( (configPage13.operation[y].firstCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { firstCheck = true; }
+      else if ( (configPage13.operation[y].firstCompType == COMPARATOR_GREATER) && (data > data2) ) { firstCheck = true; }
+      else if ( (configPage13.operation[y].firstCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { firstCheck = true; }
+      else if ( (configPage13.operation[y].firstCompType == COMPARATOR_LESS) && (data < data2) ) { firstCheck = true; }
+      else if ( (configPage13.operation[y].firstCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { firstCheck = true; }
 
-      if (configPage12.operation[y].bitwise != BITWISE_DISABLED)
+      if (configPage13.operation[y].bitwise != BITWISE_DISABLED)
       {
-        if ( configPage12.secondDataIn[y] < LOG_ENTRY_SIZE ) //Failsafe check
+        if ( configPage13.secondDataIn[y] < LOG_ENTRY_SIZE ) //Failsafe check
         {
-          data = ProgrammableIOGetData(configPage12.secondDataIn[y]);
-          data2 = configPage12.secondTarget[y];
+          data = ProgrammableIOGetData(configPage13.secondDataIn[y]);
+          data2 = configPage13.secondTarget[y];
           
-          if ( (configPage12.operation[y].secondCompType == COMPARATOR_EQUAL) && (data == data2) ) { secondCheck = true; }
-          else if ( (configPage12.operation[y].secondCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { secondCheck = true; }
-          else if ( (configPage12.operation[y].secondCompType == COMPARATOR_GREATER) && (data > data2) ) { secondCheck = true; }
-          else if ( (configPage12.operation[y].secondCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { secondCheck = true; }
-          else if ( (configPage12.operation[y].secondCompType == COMPARATOR_LESS) && (data < data2) ) { secondCheck = true; }
-          else if ( (configPage12.operation[y].secondCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { secondCheck = true; }
+          if ( (configPage13.operation[y].secondCompType == COMPARATOR_EQUAL) && (data == data2) ) { secondCheck = true; }
+          else if ( (configPage13.operation[y].secondCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { secondCheck = true; }
+          else if ( (configPage13.operation[y].secondCompType == COMPARATOR_GREATER) && (data > data2) ) { secondCheck = true; }
+          else if ( (configPage13.operation[y].secondCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { secondCheck = true; }
+          else if ( (configPage13.operation[y].secondCompType == COMPARATOR_LESS) && (data < data2) ) { secondCheck = true; }
+          else if ( (configPage13.operation[y].secondCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { secondCheck = true; }
 
-          if (configPage12.operation[y].bitwise == BITWISE_AND) { firstCheck &= secondCheck; }
-          if (configPage12.operation[y].bitwise == BITWISE_OR) { firstCheck |= secondCheck; }
-          if (configPage12.operation[y].bitwise == BITWISE_XOR) { firstCheck ^= secondCheck; }
+          if (configPage13.operation[y].bitwise == BITWISE_AND) { firstCheck &= secondCheck; }
+          if (configPage13.operation[y].bitwise == BITWISE_OR) { firstCheck |= secondCheck; }
+          if (configPage13.operation[y].bitwise == BITWISE_XOR) { firstCheck ^= secondCheck; }
         }
       }
 
-      if ( (firstCheck == true) && (configPage12.outputDelay[y] != 0) && (configPage12.outputDelay[y] < 255) )
+      if ( (firstCheck == true) && (configPage13.outputDelay[y] != 0) && (configPage13.outputDelay[y] < 255) )
       {
-        if ( (ioDelay[y] >= configPage12.outputDelay[y]) )
+        if ( (ioDelay[y] >= configPage13.outputDelay[y]) )
         {
-          if (outputPin[y] <= 128) { digitalWrite(outputPin[y], (configPage12.outputInverted & (1U << y)) ^ firstCheck); }
+          if (outputPin[y] <= 128) { digitalWrite(outputPin[y], (configPage13.outputInverted & (1U << y)) ^ firstCheck); }
         }
         else { ioDelay[y]++; }
       }
       else
       {
-        if ( outputPin[y] <= 128 ) { digitalWrite(outputPin[y], (configPage12.outputInverted & (1U << y)) ^ firstCheck); }
+        if ( outputPin[y] <= 128 ) { digitalWrite(outputPin[y], (configPage13.outputInverted & (1U << y)) ^ firstCheck); }
         if ( firstCheck == false ) { ioDelay[y] = 0; }
       }
       if ( firstCheck == true ) { BIT_SET(currentStatus.outputsStatus, y); }

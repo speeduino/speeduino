@@ -51,7 +51,7 @@ const char pageTitles[] PROGMEM //This is being stored in the avr flash instead 
    "\nVVT Map\0"//102-No need to put a trailing null because it's the last string and the compliler does it for you.
    "\nPg 10 Config\0"
    "\n2nd Fuel Map\0"
-   "\nWMI Map"
+   "\nWMI Map\0"
    "\nPrgm IO"
   };
 
