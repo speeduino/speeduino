@@ -51,7 +51,7 @@ void initialiseADC()
      BIT_CLEAR(ADCSRA,ADPS0);
   #endif
 #elif defined(ARDUINO_ARCH_STM32) //STM32GENERIC core and ST STM32duino core, change analog read to 12 bit
-  analogReadResolution(12); //use 12bits for analog reading on STM32 boards
+  analogReadResolution(10); //use 10bits for analog reading on STM32 boards
 #endif
   MAPcurRev = 0;
   MAPcount = 0;
@@ -414,8 +414,7 @@ void readCLT(bool useFilter)
   if(useFilter == true) { currentStatus.cltADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC); }
   else { currentStatus.cltADC = tempReading; }
   
-  //currentStatus.coolant = cltCalibrationTable[currentStatus.cltADC] - CALIBRATION_TEMPERATURE_OFFSET; 
-  currentStatus.coolant = table2D_getValue(&cltCalibrationTable_new, currentStatus.cltADC) - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
+  currentStatus.coolant = table2D_getValue(&cltCalibrationTable, currentStatus.cltADC) - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 }
 
 void readIAT()
@@ -429,8 +428,7 @@ void readIAT()
     //tempReading = fastMap1023toX(analogRead(pinIAT), 511); //Get the current raw IAT value
   #endif
   currentStatus.iatADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_IAT, currentStatus.iatADC);
-  //currentStatus.IAT = iatCalibrationTable[currentStatus.iatADC] - CALIBRATION_TEMPERATURE_OFFSET;
-  currentStatus.IAT = table2D_getValue(&iatCalibrationTable_new, currentStatus.iatADC) - CALIBRATION_TEMPERATURE_OFFSET;
+  currentStatus.IAT = table2D_getValue(&iatCalibrationTable, currentStatus.iatADC) - CALIBRATION_TEMPERATURE_OFFSET;
 }
 
 void readBaro()
@@ -462,10 +460,12 @@ void readO2()
       tempReading = fastMap1023toX(AnChannel[pinO2-A0], 511); //Get the current O2 value.
     #else
       tempReading = analogRead(pinO2);
-      tempReading = fastMap1023toX(analogRead(pinO2), 511); //Get the current O2 value.
+      tempReading = analogRead(pinO2);
+      //tempReading = fastMap1023toX(analogRead(pinO2), 511); //Get the current O2 value.
     #endif
     currentStatus.O2ADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_O2, currentStatus.O2ADC);
-    currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
+    //currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
+    currentStatus.O2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2ADC);
   }
   else
   {
@@ -484,10 +484,11 @@ void readO2_2()
     tempReading = fastMap1023toX(AnChannel[pinO2_2-A0], 511); //Get the current O2 value.
   #else
     tempReading = analogRead(pinO2_2);
-    tempReading = fastMap1023toX(analogRead(pinO2_2), 511); //Get the current O2 value.
+    tempReading = analogRead(pinO2_2);
+    //tempReading = fastMap1023toX(analogRead(pinO2_2), 511); //Get the current O2 value.
   #endif
   currentStatus.O2_2ADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_O2, currentStatus.O2_2ADC);
-  currentStatus.O2_2 = o2CalibrationTable[currentStatus.O2_2ADC];
+  currentStatus.O2_2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2_2ADC);
 }
 
 void readBat()
@@ -547,7 +548,6 @@ uint16_t getSpeed()
     if( vssCount == VSS_SAMPLES ) //We only change the reading if we've reached the required number of samples
     {
       if(temp_vssLastPulseTime < temp_vssLastMinusOnePulseTime) { tempSpeed = currentStatus.vss; } //Check for overflow of micros()
-      else if ( (micros() - temp_vssLastPulseTime) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop (1s timeout)
       else
       {
         pulseTime = vssTotalTime / VSS_SAMPLES;
@@ -559,7 +559,12 @@ uint16_t getSpeed()
       vssCount = 0;
       vssTotalTime = 0;
     }
-    else { tempSpeed = currentStatus.vss; }
+    else
+    {
+      //Either not enough samples taken yet or speed has dropped to 0
+      if ( (micros() - temp_vssLastPulseTime) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop (1s timeout)
+      else { tempSpeed = currentStatus.vss; } 
+    }
   }
   return tempSpeed;
 }

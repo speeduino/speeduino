@@ -22,7 +22,7 @@
 #define KNOCK_MODE_ANALOG   2
 
 #define VSS_GEAR_HYSTERESIS 10
-#define VSS_SAMPLES         8 //Must be a power of 2 and smaller than 255
+#define VSS_SAMPLES         4 //Must be a power of 2 and smaller than 255
 
 /*
 #if defined(CORE_AVR)

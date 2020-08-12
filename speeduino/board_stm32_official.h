@@ -24,26 +24,7 @@
 #define COUNTER_TYPE uint16_t
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #define TIMER_RESOLUTION 4
-#if defined(SRAM_AS_EEPROM)
-    #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
-#elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
-    #define EEPROM_LIB_H <Fram.h>
-#else
-    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-#endif
 
-#ifndef LED_BUILTIN
-  #define LED_BUILTIN PA7
-#endif
-
-#if defined(FRAM_AS_EEPROM)
-  #include <Fram.h>
-  #if defined(ARDUINO_BLACK_F407VE)
-  FramClass EEPROM(PB5, PB4, PB3, PB0); /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
-  #else
-  FramClass EEPROM(PB15, PB14, PB13, PB12); //Blue/Black Pills
-  #endif
-#endif
 
 #define USE_SERIAL3
 void initBoard();
@@ -65,6 +46,55 @@ extern "C" char* sbrk(int incr);
     #define A15  PA5
   #endif
 #endif
+
+#ifndef LED_BUILTIN
+  #define LED_BUILTIN PA7
+#endif
+
+/*
+***********************************************************************************************************
+* EEPROM emulation
+*/
+#if defined(SRAM_AS_EEPROM)
+    #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
+    #include EEPROM_LIB_H
+    BackupSramAsEEPROM EEPROM;
+
+#elif defined(USE_SPI_EEPROM)
+    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    #include EEPROM_LIB_H
+    SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+ 
+    //windbond W25Q16 SPI flash EEPROM emulation
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
+    Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
+    SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
+
+#elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
+    #define EEPROM_LIB_H <Fram.h>
+    #include EEPROM_LIB_H
+    #if defined(ARDUINO_BLACK_F407VE)
+      FramClass EEPROM(PB5, PB4, PB3, PB0); /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
+    #else
+      FramClass EEPROM(PB15, PB14, PB13, PB12); //Blue/Black Pills
+    #endif
+
+#elif defined(STM32F7xx)
+  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  #include EEPROM_LIB_H
+  #if defined(DUAL_BANK)
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08120000UL};
+  #else
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 262144UL, 4095UL, 0x08180000UL};
+  #endif
+    InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+#else //default case, internal flash as EEPROM for STM32F4
+  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  #include EEPROM_LIB_H
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08080000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+#endif
+
 
 /*
 ***********************************************************************************************************

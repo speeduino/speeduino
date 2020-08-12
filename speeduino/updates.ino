@@ -309,10 +309,11 @@ void doUpdates()
     configPage10.crankingEnrichValues[3] = configPage10.crankingEnrichValues[3] / 5;
 
     //Added the injector timing curve
-    configPage2.injAng[0] = 355;
-    configPage2.injAng[1] = 355;
-    configPage2.injAng[2] = 355;
-    configPage2.injAng[3] = 355;
+    //Set all the values to be the same as the first one. 
+    configPage2.injAng[0] = configPage2.injAng[0]; //Obviously not needed, but here for completeness
+    configPage2.injAng[1] = configPage2.injAng[0];
+    configPage2.injAng[2] = configPage2.injAng[0];
+    configPage2.injAng[3] = configPage2.injAng[0];
     //The RPMs are divided by 100
     configPage2.injAngRPM[0] = 5;
     configPage2.injAngRPM[1] = 25;
@@ -369,7 +370,7 @@ void doUpdates()
 
   if(EEPROM.read(EEPROM_DATA_VERSION) == 14)
   {
-    //202006
+    //202008
 
     //MAJOR update to move the coolant, IAT and O2 calibrations to 2D tables
     int y;
@@ -382,6 +383,10 @@ void doUpdates()
       y = EEPROM_CALIBRATION_IAT_OLD + (x * 16);
       iatCalibration_values[x] = EEPROM.read(y);
       iatCalibration_bins[x] = (x * 32);
+
+      y = EEPROM_CALIBRATION_O2_OLD + (x * 16);
+      o2Calibration_values[x] = EEPROM.read(y);
+      o2Calibration_bins[x] = (x * 32);
     }
     writeCalibration();
 

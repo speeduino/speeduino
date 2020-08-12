@@ -25,6 +25,7 @@ void writeAllConfig()
   if (eepromWritesPending == false) { writeConfig(warmupPage); }
   if (eepromWritesPending == false) { writeConfig(fuelMap2Page); }
   if (eepromWritesPending == false) { writeConfig(wmiMapPage); }
+  if (eepromWritesPending == false) { writeConfig(progOutsPage); }
 }
 
 
@@ -454,6 +455,21 @@ void writeConfig(byte tableNum)
       else { eepromWritesPending = false; }
 
       break;
+      
+  case progOutsPage:
+      /*---------------------------------------------------
+      | Config page 13 (See storage.h for data layout)
+      -----------------------------------------------------*/
+      pnt_configPage = (byte *)&configPage13; //Create a pointer to Page 12 in memory
+      //As there are no 3d tables in this page, all bytes can simply be read in
+      for(int x=EEPROM_CONFIG13_START; x<EEPROM_CONFIG13_END; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
+        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG13_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG13_START))); writeCounter++; }
+      }
+      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
+      else { eepromWritesPending = false; }
+      break;
 
     default:
       break;
@@ -690,7 +706,7 @@ void loadConfig()
     fuelTable2.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER;
   }
 
-   //*********************************************************************************************************************************************************************************
+  //*********************************************************************************************************************************************************************************
   // WMI table load
   for(int x=EEPROM_CONFIG12_MAP; x<EEPROM_CONFIG12_XBINS; x++)
   {
@@ -711,26 +727,14 @@ void loadConfig()
     offset = x - EEPROM_CONFIG12_YBINS;
     wmiTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER; //TABLE_LOAD_MULTIPLIER is NOT used for boost as it is TPS based (0-100)
   }
-
-}
-
-/*
-Reads the calibration information from EEPROM.
-This is separate from the config load as the calibrations do not exist as pages within the ini file for Tuner Studio
-*/
-void loadCalibration_old()
-{
-
-  for(int x=0; x<CALIBRATION_TABLE_SIZE; x++) //Each calibration table is 512 bytes long
+  
+  //*********************************************************************************************************************************************************************************
+  //CONFIG PAGE (13)
+  pnt_configPage = (byte *)&configPage13; //Create a pointer to Page 13 in memory
+  //All bytes can simply be pulled straight from the configTable
+  for(int x=EEPROM_CONFIG13_START; x<EEPROM_CONFIG13_END; x++)
   {
-    int y = EEPROM_CALIBRATION_CLT + x;
-    //cltCalibrationTable[x] = EEPROM.read(y);
-
-    y = EEPROM_CALIBRATION_IAT + x;
-    //iatCalibrationTable[x] = EEPROM.read(y);
-
-    y = EEPROM_CALIBRATION_O2 + x;
-    o2CalibrationTable[x] = EEPROM.read(y);
+    *(pnt_configPage + byte(x - EEPROM_CONFIG13_START)) = EEPROM.read(x);
   }
 
 }
@@ -754,32 +758,11 @@ void loadCalibration()
     y += 64; 
     EEPROM.get(y, iatCalibration_values[x]);
 
-    /*
-    o2Calibration_bins[x] = EEPROM.read(y);
-    y += 32; 
-    o2Calibration_values[x] = EEPROM.read(y);
-    */
-  }
+    y = EEPROM_CALIBRATION_O2 + (x * 2);
+    EEPROM.get(y, o2Calibration_bins[x]);
+    y = EEPROM_CALIBRATION_O2 + 64 + x;
+    o2Calibration_values[x] = EEPROM.read(y); //Byte values
 
-}
-
-/*
-This takes the values in the 3 calibration tables (Coolant, Inlet temp and O2)
-and saves them to the EEPROM.
-*/
-void writeCalibration_old()
-{
-
-  for(int x=0; x<CALIBRATION_TABLE_SIZE; x++) //Each calibration table is 512 bytes long
-  {
-    int y = EEPROM_CALIBRATION_CLT + x;
-    //if(EEPROM.read(y) != cltCalibrationTable[x]) { EEPROM.write(y, cltCalibrationTable[x]); }
-
-    y = EEPROM_CALIBRATION_IAT + x;
-    //if(EEPROM.read(y) != iatCalibrationTable[x]) { EEPROM.write(y, iatCalibrationTable[x]); }
-
-    y = EEPROM_CALIBRATION_O2 + x;
-    if(EEPROM.read(y) != o2CalibrationTable[x]) { EEPROM.write(y, o2CalibrationTable[x]); }
   }
 
 }
@@ -791,7 +774,7 @@ and saves them to the EEPROM.
 void writeCalibration()
 {
 
-  for(int x=0; x<32; x++) //Each calibration table is 512 bytes long
+  for(int x=0; x<32; x++) //Each calibration table is 32 bytes long
   {
     int y = EEPROM_CALIBRATION_CLT + (x * 2);
     EEPROM.put(y, cltCalibration_bins[x]);
@@ -803,11 +786,10 @@ void writeCalibration()
     y += 64; 
     EEPROM.put(y, iatCalibration_values[x]);
 
-    /*
-    EEPROM.update(y, o2Calibration_bins[x]);
-    y += 32; 
+    y = EEPROM_CALIBRATION_O2 + (x * 2);
+    EEPROM.put(y, o2Calibration_bins[x]);
+    y = EEPROM_CALIBRATION_O2 + 64 + x; 
     EEPROM.update(y, o2Calibration_values[x]);
-    */
   }
 
 }

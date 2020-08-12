@@ -145,8 +145,8 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG8_MAP4   1653
 #define EEPROM_CONFIG8_XBINS4 1689
 #define EEPROM_CONFIG8_YBINS4 1695
-#define EEPROM_CONFIG9_START 1710
-#define EEPROM_CONFIG9_END   1902
+#define EEPROM_CONFIG9_START  1710
+#define EEPROM_CONFIG9_END    1902
 #define EEPROM_CONFIG10_START 1902
 #define EEPROM_CONFIG10_END   2094
 #define EEPROM_CONFIG11_XSIZE 2094
@@ -161,17 +161,19 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG12_XBINS 2451
 #define EEPROM_CONFIG12_YBINS 2459
 #define EEPROM_CONFIG12_END   2467
+#define EEPROM_CONFIG13_START 2468
+#define EEPROM_CONFIG13_END   2596
 
 //Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
-#define EEPROM_PAGE_CRC32     2510 //Size of this is 4 * <number of pages> (CRC32 = 32 bits)
-#define EEPROM_LAST_BARO      2558
-#define EEPROM_CALIBRATION_O2 2559
+#define EEPROM_PAGE_CRC32     3690 //Size of this is 4 * <number of pages> (CRC32 = 32 bits): 3742 - (13 * 4) = 3690
+#define EEPROM_LAST_BARO      3742 // 3743 - 1
+//New values using 2D tables
+#define EEPROM_CALIBRATION_O2   3743 //3839-96 +64
+#define EEPROM_CALIBRATION_IAT  3839 //3967-128
+#define EEPROM_CALIBRATION_CLT  3967 //4095-128
+//These were the values used previously when all calibration tables were 512 long. They need to be retained for the update process (202005 -> 202008) can work. 
+#define EEPROM_CALIBRATION_O2_OLD   2559
 #define EEPROM_CALIBRATION_IAT_OLD  3071
 #define EEPROM_CALIBRATION_CLT_OLD  3583
-
-//New values using 2D tables
-#define EEPROM_CALIBRATION_IAT  3848 //3967-128
-#define EEPROM_CALIBRATION_CLT  3976 //4095-128
-
 
 #endif // STORAGE_H

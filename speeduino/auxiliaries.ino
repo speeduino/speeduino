@@ -500,7 +500,7 @@ void boostDisable()
   {
     if(nextVVT == 0)
     {
-      if(vvt1_pwm_value < vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Normal direction
         else { *vvt1_pin_port |= (vvt1_pin_mask); } //Reversed direction
@@ -518,7 +518,7 @@ void boostDisable()
     }
     else if (nextVVT == 1)
     {
-      if(vvt2_pwm_value < vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
         else { *vvt2_pin_port |= (vvt2_pin_mask); } //Reversed direction
@@ -536,7 +536,7 @@ void boostDisable()
     }
     else
     {
-      if(vvt1_pwm_value < vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Normal direction
         else { *vvt1_pin_port |= (vvt1_pin_mask); } //Reversed direction
@@ -545,7 +545,7 @@ void boostDisable()
         VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value);
       }
       else { vvt1_max_pwm = true; }
-      if(vvt2_pwm_value < vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
         else { *vvt2_pin_port |= (vvt2_pin_mask); } //Reversed direction
