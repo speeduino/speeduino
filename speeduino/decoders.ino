@@ -275,7 +275,7 @@ Only if both these conditions are met will the schedule be updated with the late
 If it's the correct tooth, but the schedule is not yet started, calculate and an end compare value (This situation occurs when both the start and end of the ignition pulse happen after the end tooth, but before the next tooth)
 */
 #define MIN_CYCLES_FOR_ENDCOMPARE 6
-static inline void checkPerToothTiming(uint16_t crankAngle, uint16_t currentTooth)
+static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth)
 {
   if ( (fixedCrankingOverride == 0) && (currentStatus.RPM > 0) )
   {
