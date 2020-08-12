@@ -1703,7 +1703,7 @@ void receiveCalibration(byte tableID)
 {
   void* pnt_TargetTable_values; //Pointer that will be used to point to the required target table values
   uint16_t* pnt_TargetTable_bins;   //Pointer that will be used to point to the required target table bins
-  int OFFSET, DIVISION_FACTOR, BYTES_PER_VALUE;
+  int OFFSET, DIVISION_FACTOR;
 
   switch (tableID)
   {
@@ -1713,7 +1713,6 @@ void receiveCalibration(byte tableID)
       pnt_TargetTable_bins = (uint16_t *)&cltCalibration_bins;
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
       DIVISION_FACTOR = 10;
-      BYTES_PER_VALUE = 2;
       break;
     case 1:
       //Inlet air temp table
@@ -1721,7 +1720,6 @@ void receiveCalibration(byte tableID)
       pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
       DIVISION_FACTOR = 10;
-      BYTES_PER_VALUE = 2;
       break;
     case 2:
       //O2 table
@@ -1730,7 +1728,6 @@ void receiveCalibration(byte tableID)
       pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins;
       OFFSET = 0;
       DIVISION_FACTOR = 1;
-      BYTES_PER_VALUE = 1;
       break;
 
     default:
@@ -1738,7 +1735,6 @@ void receiveCalibration(byte tableID)
       pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
       pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
       DIVISION_FACTOR = 10;
-      BYTES_PER_VALUE = 2;
       break; //Should never get here, but if we do, just fail back to main loop
   }
 

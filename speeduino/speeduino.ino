@@ -260,8 +260,8 @@ void loop()
       //Water methanol injection
       wmiControl();
       //FOR TEST PURPOSES ONLY!!!
-      if(vvt2_pwm_value < vvt_pwm_max_count) { vvt2_pwm_value++; }
-      else { vvt2_pwm_value = 1; }
+      //if(vvt2_pwm_value < vvt_pwm_max_count) { vvt2_pwm_value++; }
+      //else { vvt2_pwm_value = 1; }
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
