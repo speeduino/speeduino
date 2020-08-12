@@ -250,6 +250,12 @@ void loop()
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
 
     }
+    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ)) //10 hertz
+    {
+      BIT_CLEAR(TIMER_mask, BIT_TIMER_10HZ);
+      updateFullStatus();
+      checkProgrammableIO();
+    }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
