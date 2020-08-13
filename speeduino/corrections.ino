@@ -540,7 +540,7 @@ byte correctionAFRClosedLoop()
 
     //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
     //Note that this should only run after the sensor warmup delay when using Include AFR option, but on Incorporate AFR option it needs to be done at all times
-    if( (currentStatus.runSecs > configPage6.ego_sdelay) || (configPage2.incorporateAFR == true) ) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
+    if( (currentStatus.runSecs > configPage6.ego_sdelay) || (configPage6.incorporateAFR == true) ) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
 
     AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
     
