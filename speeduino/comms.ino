@@ -1767,7 +1767,7 @@ void receiveCalibration(byte tableID)
       break; //Should never get here, but if we do, just fail back to main loop
   }
 
-  int tempValue;
+  int16_t tempValue;
   byte tempBuffer[2];
 
   if(tableID == 2)
@@ -1795,7 +1795,8 @@ void receiveCalibration(byte tableID)
       tempBuffer[0] = Serial.read();
       tempBuffer[1] = Serial.read();
 
-      tempValue = div(int(word(tempBuffer[1], tempBuffer[0])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
+      tempValue = (int16_t)(word(tempBuffer[1], tempBuffer[0])); //Combine the 2 bytes into a single, signed 16-bit value
+      tempValue = div(tempValue, DIVISION_FACTOR).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
       tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
       
       //Apply the temp offset and check that it results in all values being positive
