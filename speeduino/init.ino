@@ -193,17 +193,23 @@ void initialiseAll()
     wmiAdvTable.values = configPage10.wmiAdvAdj;
     wmiAdvTable.axisX = configPage10.wmiAdvBins;
 
-    cltCalibrationTable_new.valueSize = SIZE_INT;
-    cltCalibrationTable_new.axisSize = SIZE_INT;
-    cltCalibrationTable_new.xSize = 32;
-    cltCalibrationTable_new.values = cltCalibration_values;
-    cltCalibrationTable_new.axisX = cltCalibration_bins;
+    cltCalibrationTable.valueSize = SIZE_INT;
+    cltCalibrationTable.axisSize = SIZE_INT;
+    cltCalibrationTable.xSize = 32;
+    cltCalibrationTable.values = cltCalibration_values;
+    cltCalibrationTable.axisX = cltCalibration_bins;
 
-    iatCalibrationTable_new.valueSize = SIZE_INT;
-    iatCalibrationTable_new.axisSize = SIZE_INT;
-    iatCalibrationTable_new.xSize = 32;
-    iatCalibrationTable_new.values = iatCalibration_values;
-    iatCalibrationTable_new.axisX = iatCalibration_bins;
+    iatCalibrationTable.valueSize = SIZE_INT;
+    iatCalibrationTable.axisSize = SIZE_INT;
+    iatCalibrationTable.xSize = 32;
+    iatCalibrationTable.values = iatCalibration_values;
+    iatCalibrationTable.axisX = iatCalibration_bins;
+
+    o2CalibrationTable.valueSize = SIZE_BYTE;
+    o2CalibrationTable.axisSize = SIZE_INT;
+    o2CalibrationTable.xSize = 32;
+    o2CalibrationTable.values = o2Calibration_values;
+    o2CalibrationTable.axisX = o2Calibration_bins;
 
     //Setup the calibration tables
     loadCalibration();
@@ -261,6 +267,7 @@ void initialiseAll()
     initialiseAuxPWM();
     initialiseCorrections();
     initialiseADC();
+    initialiseProgrammableIO();
 
     //Lookup the current MAP reading for barometric pressure
     instanteneousMAPReading();
@@ -331,6 +338,7 @@ void initialiseAll()
     //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly.
     currentStatus.RPM = 0;
     currentStatus.hasSync = false;
+    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
     currentStatus.runSecs = 0;
     currentStatus.secl = 0;
     currentStatus.startRevolutions = 0;
@@ -1751,7 +1759,7 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
-   case 31:
+    case 31:
       //Pin mappings for the BMW PnP PCBs by pazi88. This is an AVR only module. At least for now
       pinInjector1 = 8; //Output pin injector 1
       pinInjector2 = 9; //Output pin injector 2
@@ -2074,90 +2082,91 @@ void setPinMapping(byte boardID)
       #endif
       break;
     
-   #if defined(ARDUINO_BLACK_F407VE)
+ 
     case 60:
-       //Pin definitions for experimental board Tjeerd 
+        #if defined(ARDUINO_BLACK_F407VE)
+        //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
-
+        //https://github.com/Tjeerdie/SPECTRE/tree/master/SPECTRE_V0.5
+        
         //******************************************
         //******** PORTA CONNECTIONS *************** 
         //******************************************
-        /* = PA0 */ //Wakeup ADC123
-        // = PA1;
-        // = PA2;
-        // = PA3;
-        // = PA4;
-        /* = PA5; */ //ADC12
-        pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
-        /* = PA7; */ //ADC12 LED_BUILTIN_2
+        // = PA0; //Wakeup ADC123
+        // = PA1; //ADC123
+        // = PA2; //ADC123
+        // = PA3; //ADC123
+        // = PA4; //ADC12
+        // = PA5; //ADC12
+        // = PA6; //ADC12 LED_BUILTIN_1
+        // = PA7; //ADC12 LED_BUILTIN_2
         pinCoil3 = PA8;
-        /* = PA9 */ //TXD1
-        /* = PA10 */ //RXD1
-        /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
-        /* = PA12 */ //(DO NOT USE FOR SPEEDUINO) USB 
-        /* = PA13 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-        /* = PA14 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-        /* = PA15 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+        // = PA9;  //TXD1=Bluetooth module
+        // = PA10; //RXD1=Bluetooth module
+        // = PA11; //(DO NOT USE FOR SPEEDUINO) USB
+        // = PA12; //(DO NOT USE FOR SPEEDUINO) USB 
+        // = PA13;  //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+        // = PA14;  //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+        // = PA15;  //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
 
         //******************************************
         //******** PORTB CONNECTIONS *************** 
         //******************************************
-        /* = PB0; */ //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
+        // = PB0;  //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
         pinBaro = PB1; //ADC12
-        /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1 
-        /* = PB3; */ //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
-        /* = PB4; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
-        /* = PB5; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
-        /* = PB6; */ //NRF_CE
-        /* = PB7; */ //NRF_CS
-        /* = PB8; */ //NRF_IRQ
+        // = PB2;  //(DO NOT USE FOR SPEEDUINO) BOOT1 
+        // = PB3;  //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
+        // = PB4;  //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
+        // = PB5;  //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
+        // = PB6;  //NRF_CE
+        // = PB7;  //NRF_CS
+        // = PB8;  //NRF_IRQ
         pinCoil2 = PB9; //
-        /* = PB9; */ //
-        pinCoil4 = PB10; //TXD3
-        pinIdle1 = PB11; //RXD3
-        pinIdle2 = PB12; //
-        /* pinBoost = PB12; */ //
-        /* = PB13; */ //SPI2_SCK
-        /* = PB14; */ //SPI2_MISO
-        /* = PB15; */ //SPI2_MOSI
+        // = PB9;  //
+        // = PB10; //TXD3
+        // = PB11; //RXD3
+        // = PB12; //
+        // = PB13;  //SPI2_SCK
+        // = PB14;  //SPI2_MISO
+        // = PB15;  //SPI2_MOSI
 
         //******************************************
         //******** PORTC CONNECTIONS *************** 
         //******************************************
-        pinMAP = PC0; //ADC123 
+        pinIAT = PC0; //ADC123 
         pinTPS = PC1; //ADC123
-        pinIAT = PC2; //ADC123
+        pinMAP = PC2; //ADC123 
         pinCLT = PC3; //ADC123
         pinO2 = PC4; //ADC12
         pinBat = PC5;  //ADC12
-        /*pinVVT_1 = PC6; */ //
-        pinDisplayReset = PC7; //
-        /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
-        /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
-        /* = PC10; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
-        /* = PC11; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
-        /* = PC12; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
+        pinBoost = PC6; //
+        pinIdle1 = PC7; //
+        // = PC8;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
+        // = PC9;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
+        // = PC10;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
+        // = PC11;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
+        // = PC12;  //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
         pinTachOut = PC13; //
-        /* = PC14; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
-        /* = PC15; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
+        // = PC14;  //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
+        // = PC15;  //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
 
         //******************************************
         //******** PORTD CONNECTIONS *************** 
         //******************************************
-        /* = PD0; */ //CANRX
-        /* = PD1; */ //CANTX
-        /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        /* = PD3; */ //
-        /* = PD4; */ //
+        // = PD0;  //CANRX
+        // = PD1;  //CANTX
+        // = PD2;  //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
+        pinIdle2 = PD3; //
+        // = PD4;  //
         pinFlex = PD4;
-        /* = PD5;*/ //TXD2
-        /* = PD6; */ //RXD2
+        // = PD5; //TXD2
+        // = PD6;  //RXD2
         pinCoil1 = PD7; //
-        /* = PD7; */ //
-        /* = PD8; */ //
+        // = PD7;  //
+        // = PD8;  //
         pinCoil5 = PD9;//
-        /* = PD10; */ //
-        /* = PD11; */ //
+        pinCoil4 = PD10;//
+        // = PD11;  //
         pinInjector1 = PD12; //
         pinInjector2 = PD13; //
         pinInjector3 = PD14; //
@@ -2169,19 +2178,19 @@ void setPinMapping(byte boardID)
         pinTrigger = PE0; //
         pinTrigger2 = PE1; //
         pinStepperEnable = PE2; //
-        /* = PE3; */ //ONBOARD KEY1
-        /* = PE4; */ //ONBOARD KEY2
+        pinFuelPump = PE3; //ONBOARD KEY1
+        // = PE4;  //ONBOARD KEY2
         pinStepperStep = PE5; //
         pinFan = PE6; //
         pinStepperDir = PE7; //
-        /* = PE8; */ //
-        /* = PE9; */ //
-        /* = PE10; */ //
-        pinInjector5 = PE11; //
-        pinInjector6 = PE12; //
-        /* = PE13; */ //
-        /* = PE14; */ //
-        /* = PE15; */ //
+        // = PE8;  //
+        pinInjector5 = PE9; //
+        // = PE10;  //
+        pinInjector6 = PE11; //
+        // = PE12; //
+        pinInjector8 = PE13; //
+        pinInjector7 = PE14; //
+        // = PE15;  //
        
      #elif defined(CORE_STM32)
         //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
@@ -2563,7 +2572,7 @@ void setPinMapping(byte boardID)
     if(configPage10.wmiIndicatorEnabled > 0)
     {
       pinMode(pinWMIIndicator, OUTPUT);
-      if (configPage10.wmiIndicatorPolarity > 0) digitalWrite(pinWMIIndicator, HIGH); 
+      if (configPage10.wmiIndicatorPolarity > 0) { digitalWrite(pinWMIIndicator, HIGH); }
     }
     if(configPage10.wmiEmptyEnabled > 0)
     {

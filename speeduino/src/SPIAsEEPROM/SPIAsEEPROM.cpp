@@ -2,6 +2,7 @@
  * Copyright (C) 2020 by Tjeerd Hoogendijk
  * Created by Tjeerd Hoogendijk - 21/09/2019
  * Updated by Tjeerd Hoogendijk - 19/04/2020
+ * Updated by Tjeerd Hoogendijk - 21/07/2020 no new version number
  *
  * This file is part of the Speeduino project. This library started out for
  * Winbond SPI flash memory modules. As of version 2.0 it also works with internal
@@ -24,20 +25,8 @@
  * along with the Speeduino SPIAsEEPROM Library.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
-
-#if !defined(FRAM_AS_EEPROM) && !defined(SRAM_AS_EEPROM)
-#if defined(USE_SPI_EEPROM) | defined(STM32F407xx) | defined(STM32F103xB)
-
 #include "SPIAsEEPROM.h"
 
-static EEPROM_Emulation_Config EmulatedEEPROMMconfig{
-    FLASH_SECTORS_USED,
-    FLASH_SECTOR_SIZE,
-    EEPROM_BYTES_PER_SECTOR,
-    EEPROM_FLASH_BASEADRESS
-};
-
-// EmulatedEEPROMMconfig.Flash_Sectors_Used = FLASH_SECTORS_USED;
 
 FLASH_EEPROM_BaseClass::FLASH_EEPROM_BaseClass(EEPROM_Emulation_Config config)
 {
@@ -254,23 +243,22 @@ int8_t FLASH_EEPROM_BaseClass::readFlashBytes(uint32_t address , byte* buffer, u
 int8_t FLASH_EEPROM_BaseClass::writeFlashBytes(uint32_t address, byte* buffer, uint32_t length){return -1;}
 int8_t FLASH_EEPROM_BaseClass::eraseFlashSector(uint32_t address, uint32_t length){return -1;}
 
-#endif
 
-#if defined(USE_SPI_EEPROM)
-SPI_EEPROM_Class::SPI_EEPROM_Class(EEPROM_Emulation_Config config):FLASH_EEPROM_BaseClass(config)
+#if defined(ARDUINO_ARCH_STM32)
+
+SPI_EEPROM_Class::SPI_EEPROM_Class(EEPROM_Emulation_Config EmulationConfig, Flash_SPI_Config SPIConfig):FLASH_EEPROM_BaseClass(EmulationConfig)
 {
-
+  _configSPI = SPIConfig;
 }
 
 byte SPI_EEPROM_Class::read(uint16_t addressEEPROM){
     //Check if emulated EEPROM is available if not yet start it first.
-    if(!_EmulatedEEPROMAvailable){
-      //22.5Mhz is highest it could get with this. But should be ~45Mhz :-(. 
-      SPISettings settings(22500000, MSBFIRST, SPI_MODE0);
-      SPI.beginTransaction(settings);
-      begin(SPI, USE_SPI_EEPROM);
+    if(!_EmulatedEEPROMAvailable){ 
+      SPISettings settings(22500000, MSBFIRST, SPI_MODE0); //22.5Mhz is highest it could get with this. But should be ~45Mhz :-(. 
+      _configSPI.SPIport.beginTransaction(settings);
+      begin(_configSPI.SPIport, _configSPI.pinChipSelect);
     }
-    
+
     return FLASH_EEPROM_BaseClass::read(addressEEPROM);
 }
 
@@ -300,9 +288,10 @@ int8_t SPI_EEPROM_Class::eraseFlashSector(uint32_t address, uint32_t length){
   return 0;
 }
 
+#endif
 
 //THIS IS NOT WORKING! FOR STM32F103 YOU CAN ONLY WRITE IN JUST ERASED HALFWORDS(UINT16_T). THE PHILISOPHY IS FLAWWED THERE.
-// #elif defined(STM32F103xB)
+//#if defined(STM32F103xB)
 
 // InternalSTM32F1_EEPROM_Class::InternalSTM32F1_EEPROM_Class(EEPROM_Emulation_Config config):FLASH_EEPROM_BaseClass(config)
 // {
@@ -358,8 +347,26 @@ int8_t SPI_EEPROM_Class::eraseFlashSector(uint32_t address, uint32_t length){
 //   HAL_FLASH_Lock();
 //   return EraseSucceed;
 // }
+//#endif
 
-#elif defined(STM32F407xx)
+#if defined(STM32F4)
+
+//Look in the datasheet for more information about flash sectors and sizes
+//This is the correct sector allocation for the STM32F407 all types
+#define ADDR_FLASH_SECTOR_0     ((uint32_t)0x08000000) /* Base address of Sector 0, 16 Kbytes */
+#define ADDR_FLASH_SECTOR_1     ((uint32_t)0x08004000) /* Base address of Sector 1, 16 Kbytes */
+#define ADDR_FLASH_SECTOR_2     ((uint32_t)0x08008000) /* Base address of Sector 2, 16 Kbytes */
+#define ADDR_FLASH_SECTOR_3     ((uint32_t)0x0800C000) /* Base address of Sector 3, 16 Kbytes */
+#define ADDR_FLASH_SECTOR_4     ((uint32_t)0x08010000) /* Base address of Sector 4, 64 Kbytes */
+#define ADDR_FLASH_SECTOR_5     ((uint32_t)0x08020000) /* Base address of Sector 5, 128 Kbytes */
+#define ADDR_FLASH_SECTOR_6     ((uint32_t)0x08040000) /* Base address of Sector 6, 128 Kbytes */
+#define ADDR_FLASH_SECTOR_7     ((uint32_t)0x08060000) /* Base address of Sector 7, 128 Kbytes */
+#define ADDR_FLASH_SECTOR_8     ((uint32_t)0x08080000) /* Base address of Sector 8, 128 Kbytes */
+#define ADDR_FLASH_SECTOR_9     ((uint32_t)0x080A0000) /* Base address of Sector 9, 128 Kbytes */
+#define ADDR_FLASH_SECTOR_10    ((uint32_t)0x080C0000) /* Base address of Sector 10, 128 Kbytes */
+#define ADDR_FLASH_SECTOR_11    ((uint32_t)0x080E0000) /* Base address of Sector 11, 128 Kbytes */
+#define FLASH_END_ADDRESS       ((uint32_t)0x08100000) /* END address of Sector 11, 128 Kbytes */
+
 
 InternalSTM32F4_EEPROM_Class::InternalSTM32F4_EEPROM_Class(EEPROM_Emulation_Config config) : FLASH_EEPROM_BaseClass(config)
 {
@@ -410,18 +417,19 @@ int8_t InternalSTM32F4_EEPROM_Class::eraseFlashSector(uint32_t address, uint32_t
 
   //Look in the datasheet for more information about flash sectors and sizes
   //This is the correct sector allocation for the STM32F407 all types
-  if ((realAddress>=0x08000000UL)&(realAddress<=0x08003FFFUL)){_Sector = 0;}
-  if ((realAddress>=0x08004000UL)&(realAddress<=0x08007FFFUL)){_Sector = 1;}
-  if ((realAddress>=0x08008000UL)&(realAddress<=0x0800BFFFUL)){_Sector = 2;}
-  if ((realAddress>=0x0800C000UL)&(realAddress<=0x0800FFFFUL)){_Sector = 3;}
-  if ((realAddress>=0x08010000UL)&(realAddress<=0x0801FFFFUL)){_Sector = 4;}
-  if ((realAddress>=0x08020000UL)&(realAddress<=0x0803FFFFUL)){_Sector = 5;}
-  if ((realAddress>=0x08040000UL)&(realAddress<=0x0805FFFFUL)){_Sector = 6;}
-  if ((realAddress>=0x08050000UL)&(realAddress<=0x0807FFFFUL)){_Sector = 7;}
-  if ((realAddress>=0x08080000UL)&(realAddress<=0x0809FFFFUL)){_Sector = 8;}
-  if ((realAddress>=0x080A0000UL)&(realAddress<=0x080BFFFFUL)){_Sector = 9;}
-  if ((realAddress>=0x080C0000UL)&(realAddress<=0x080DFFFFUL)){_Sector = 10;}
-  if ((realAddress>=0x080E0000UL)&(realAddress<=0x080FFFFFUL)){_Sector = 11;}
+  if((realAddress < ADDR_FLASH_SECTOR_1) && (realAddress >= ADDR_FLASH_SECTOR_0)){_Sector = 0;}
+  if((realAddress < ADDR_FLASH_SECTOR_2) && (realAddress >= ADDR_FLASH_SECTOR_1)){_Sector = 1;}
+  if((realAddress < ADDR_FLASH_SECTOR_3) && (realAddress >= ADDR_FLASH_SECTOR_2)){_Sector = 2;}
+  if((realAddress < ADDR_FLASH_SECTOR_4) && (realAddress >= ADDR_FLASH_SECTOR_3)){_Sector = 3;}
+  if((realAddress < ADDR_FLASH_SECTOR_5) && (realAddress >= ADDR_FLASH_SECTOR_4)){_Sector = 4;}
+  if((realAddress < ADDR_FLASH_SECTOR_6) && (realAddress >= ADDR_FLASH_SECTOR_5)){_Sector = 5;}
+  if((realAddress < ADDR_FLASH_SECTOR_7) && (realAddress >= ADDR_FLASH_SECTOR_6)){_Sector = 6;}
+  if((realAddress < ADDR_FLASH_SECTOR_8) && (realAddress >= ADDR_FLASH_SECTOR_7)){_Sector = 7;}
+  if((realAddress < ADDR_FLASH_SECTOR_9) && (realAddress >= ADDR_FLASH_SECTOR_8)){_Sector = 8;}
+  if((realAddress < ADDR_FLASH_SECTOR_10) && (realAddress >= ADDR_FLASH_SECTOR_9)){_Sector = 9;}
+  if((realAddress < ADDR_FLASH_SECTOR_11) && (realAddress >= ADDR_FLASH_SECTOR_10)){_Sector = 10;}
+  if((realAddress < FLASH_END_ADDRESS) && (realAddress >= ADDR_FLASH_SECTOR_11)){_Sector = 11;}
+
 
   EraseInitStruct.TypeErase = FLASH_TYPEERASE_SECTORS;
   EraseInitStruct.VoltageRange = FLASH_VOLTAGE_RANGE_3;
@@ -435,12 +443,141 @@ int8_t InternalSTM32F4_EEPROM_Class::eraseFlashSector(uint32_t address, uint32_t
 }
 #endif
 
-#if defined(USE_SPI_EEPROM)
-  SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-#elif defined(STM32F407xx) & !defined(SRAM_AS_EEPROM)
-  InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+
+#if defined(STM32F7xx)
+  #if defined(DUAL_BANK)
+    #define ADDR_FLASH_SECTOR_0     ((uint32_t)0x08000000) /* Base address of Sector 0, 16 Kbytes */
+    #define ADDR_FLASH_SECTOR_1     ((uint32_t)0x08004000) /* Base address of Sector 1, 16 Kbytes */
+    #define ADDR_FLASH_SECTOR_2     ((uint32_t)0x08008000) /* Base address of Sector 2, 16 Kbytes */
+    #define ADDR_FLASH_SECTOR_3     ((uint32_t)0x0800C000) /* Base address of Sector 3, 16 Kbytes */
+    #define ADDR_FLASH_SECTOR_4     ((uint32_t)0x08010000) /* Base address of Sector 4, 64 Kbytes */
+    #define ADDR_FLASH_SECTOR_5     ((uint32_t)0x08020000) /* Base address of Sector 5, 128 Kbytes */
+    #define ADDR_FLASH_SECTOR_6     ((uint32_t)0x08040000) /* Base address of Sector 6, 128 Kbytes */
+    #define ADDR_FLASH_SECTOR_7     ((uint32_t)0x08060000) /* Base address of Sector 7, 128 Kbytes */
+    #define ADDR_FLASH_SECTOR_8     ((uint32_t)0x08080000) /* Base address of Sector 8, 128 Kbytes */
+    #define ADDR_FLASH_SECTOR_9     ((uint32_t)0x080A0000) /* Base address of Sector 9, 128 Kbytes */
+    #define ADDR_FLASH_SECTOR_10    ((uint32_t)0x080C0000) /* Base address of Sector 10, 128 Kbytes */
+    #define ADDR_FLASH_SECTOR_11    ((uint32_t)0x080E0000) /* Base address of Sector 11, 128 Kbytes */
+    #define ADDR_FLASH_SECTOR_12    ((uint32_t)0x08100000) /* Base address of Sector 12, 16 Kbytes */
+    #define ADDR_FLASH_SECTOR_13    ((uint32_t)0x08104000) /* Base address of Sector 13, 16 Kbytes */
+    #define ADDR_FLASH_SECTOR_14    ((uint32_t)0x08108000) /* Base address of Sector 14, 16 Kbytes */
+    #define ADDR_FLASH_SECTOR_15    ((uint32_t)0x0810C000) /* Base address of Sector 15, 16 Kbytes */
+    #define ADDR_FLASH_SECTOR_16    ((uint32_t)0x08110000) /* Base address of Sector 16, 64 Kbytes */
+    #define ADDR_FLASH_SECTOR_17    ((uint32_t)0x08120000) /* Base address of Sector 17, 128 Kbytes */
+    #define ADDR_FLASH_SECTOR_18    ((uint32_t)0x08140000) /* Base address of Sector 18, 128 Kbytes */
+    #define ADDR_FLASH_SECTOR_19    ((uint32_t)0x08160000) /* Base address of Sector 19, 128 Kbytes */
+    #define ADDR_FLASH_SECTOR_20    ((uint32_t)0x08180000) /* Base address of Sector 20, 128 Kbytes */
+    #define ADDR_FLASH_SECTOR_21    ((uint32_t)0x081A0000) /* Base address of Sector 21, 128 Kbytes */
+    #define ADDR_FLASH_SECTOR_22    ((uint32_t)0x081C0000) /* Base address of Sector 22, 128 Kbytes */
+    #define ADDR_FLASH_SECTOR_23    ((uint32_t)0x081E0000) /* Base address of Sector 23, 128 Kbytes */
+  #else
+    #define ADDR_FLASH_SECTOR_0     ((uint32_t)0x08000000) /* Base address of Sector 0, 32 Kbytes */
+    #define ADDR_FLASH_SECTOR_1     ((uint32_t)0x08008000) /* Base address of Sector 1, 32 Kbytes */
+    #define ADDR_FLASH_SECTOR_2     ((uint32_t)0x08010000) /* Base address of Sector 2, 32 Kbytes */
+    #define ADDR_FLASH_SECTOR_3     ((uint32_t)0x08018000) /* Base address of Sector 3, 32 Kbytes */
+    #define ADDR_FLASH_SECTOR_4     ((uint32_t)0x08020000) /* Base address of Sector 4, 128 Kbytes */
+    #define ADDR_FLASH_SECTOR_5     ((uint32_t)0x08040000) /* Base address of Sector 5, 256 Kbytes */
+    #define ADDR_FLASH_SECTOR_6     ((uint32_t)0x08080000) /* Base address of Sector 6, 256 Kbytes */
+    #define ADDR_FLASH_SECTOR_7     ((uint32_t)0x080C0000) /* Base address of Sector 7, 256 Kbytes */
+    #define ADDR_FLASH_SECTOR_8     ((uint32_t)0x08100000) /* Base address of Sector 8, 256 Kbytes */
+    #define ADDR_FLASH_SECTOR_9     ((uint32_t)0x08140000) /* Base address of Sector 9, 256 Kbytes */
+    #define ADDR_FLASH_SECTOR_10    ((uint32_t)0x08180000) /* Base address of Sector 10, 256 Kbytes */
+    #define ADDR_FLASH_SECTOR_11    ((uint32_t)0x081C0000) /* Base address of Sector 11, 256 Kbytes */
+  #endif /* DUAL_BANK */
+
+InternalSTM32F7_EEPROM_Class::InternalSTM32F7_EEPROM_Class(EEPROM_Emulation_Config config) : FLASH_EEPROM_BaseClass(config)
+{
+
+}
+
+byte InternalSTM32F7_EEPROM_Class::read(uint16_t addressEEPROM){  
+  if(!_EmulatedEEPROMAvailable){
+      FLASH_EEPROM_BaseClass::initialize(true);
+  }
+  return FLASH_EEPROM_BaseClass::read(addressEEPROM);
+}
+
+int8_t InternalSTM32F7_EEPROM_Class::readFlashBytes(uint32_t address, byte *buf, uint32_t length){
+  memcpy(buf, (uint8_t *)(_config.EEPROM_Flash_BaseAddress + address), length);
+  return 0;
+}
+
+int8_t InternalSTM32F7_EEPROM_Class::writeFlashBytes(uint32_t flashAddress, byte *buf, uint32_t length){
+ {
+  uint32_t translatedAddress = flashAddress+_config.EEPROM_Flash_BaseAddress;
+  uint32_t data = 0;
+  uint32_t offset = 0;
+  uint32_t countaddress = translatedAddress; 
+  HAL_FLASH_Unlock();
+  while (countaddress < translatedAddress + length) {
+      memcpy(&data, buf + offset, sizeof(uint32_t));
+      if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, countaddress, data) == HAL_OK) {
+        countaddress += 4;
+        offset += 4;
+      } else {
+        countaddress = translatedAddress + length + 1;
+      }
+    }
+  }
+  HAL_FLASH_Lock();
+  return 0;
+}
+
+int8_t InternalSTM32F7_EEPROM_Class::eraseFlashSector(uint32_t address, uint32_t length){
+  FLASH_EraseInitTypeDef EraseInitStruct;
+  // uint32_t offset = 0;
+  uint32_t realAddress = _config.EEPROM_Flash_BaseAddress+address;
+  // uint32_t address_end = FLASH_BASE_ADDRESS + E2END;
+  bool EraseSucceed=false;
+  uint32_t SectorError = 0;
+  uint32_t _Sector = 11;
+
+//Look in the datasheet for more information about flash sectors and sizes
+//This is the correct sector allocation for the STM32F407 all types
+
+if((realAddress < ADDR_FLASH_SECTOR_1) && (realAddress >= ADDR_FLASH_SECTOR_0)){_Sector = 0;}
+if((realAddress < ADDR_FLASH_SECTOR_2) && (realAddress >= ADDR_FLASH_SECTOR_1)){_Sector = 1;}
+if((realAddress < ADDR_FLASH_SECTOR_3) && (realAddress >= ADDR_FLASH_SECTOR_2)){_Sector = 2;}
+if((realAddress < ADDR_FLASH_SECTOR_4) && (realAddress >= ADDR_FLASH_SECTOR_3)){_Sector = 3;}
+if((realAddress < ADDR_FLASH_SECTOR_5) && (realAddress >= ADDR_FLASH_SECTOR_4)){_Sector = 4;}
+if((realAddress < ADDR_FLASH_SECTOR_6) && (realAddress >= ADDR_FLASH_SECTOR_5)){_Sector = 5;}
+if((realAddress < ADDR_FLASH_SECTOR_7) && (realAddress >= ADDR_FLASH_SECTOR_6)){_Sector = 6;}
+if((realAddress < ADDR_FLASH_SECTOR_8) && (realAddress >= ADDR_FLASH_SECTOR_7)){_Sector = 7;}
+if((realAddress < ADDR_FLASH_SECTOR_9) && (realAddress >= ADDR_FLASH_SECTOR_8)){_Sector = 8;}
+if((realAddress < ADDR_FLASH_SECTOR_10) && (realAddress >= ADDR_FLASH_SECTOR_9)){_Sector = 9;}
+if((realAddress < ADDR_FLASH_SECTOR_11) && (realAddress >= ADDR_FLASH_SECTOR_10)){_Sector = 10;}
+else /* (Address < FLASH_END_ADDR) && (Address >= ADDR_FLASH_SECTOR_11) */
+  {
+    {_Sector = 11;}
+  }
+#if defined(DUAL_BANK)
+if((realAddress < ADDR_FLASH_SECTOR_13) && (realAddress >= ADDR_FLASH_SECTOR_12)){_Sector = 12;}
+if((realAddress < ADDR_FLASH_SECTOR_14) && (realAddress >= ADDR_FLASH_SECTOR_13)){_Sector = 13;}
+if((realAddress < ADDR_FLASH_SECTOR_15) && (realAddress >= ADDR_FLASH_SECTOR_14)){_Sector = 14;}
+if((realAddress < ADDR_FLASH_SECTOR_16) && (realAddress >= ADDR_FLASH_SECTOR_15)){_Sector = 15;}
+if((realAddress < ADDR_FLASH_SECTOR_17) && (realAddress >= ADDR_FLASH_SECTOR_16)){_Sector = 16;}
+if((realAddress < ADDR_FLASH_SECTOR_18) && (realAddress >= ADDR_FLASH_SECTOR_17)){_Sector = 17;}
+if((realAddress < ADDR_FLASH_SECTOR_19) && (realAddress >= ADDR_FLASH_SECTOR_18)){_Sector = 18;}
+if((realAddress < ADDR_FLASH_SECTOR_20) && (realAddress >= ADDR_FLASH_SECTOR_19)){_Sector = 19;}
+if((realAddress < ADDR_FLASH_SECTOR_21) && (realAddress >= ADDR_FLASH_SECTOR_20)){_Sector = 20;}
+if((realAddress < ADDR_FLASH_SECTOR_22) && (realAddress >= ADDR_FLASH_SECTOR_21)){_Sector = 21;}
+if((realAddress < ADDR_FLASH_SECTOR_23) && (realAddress >= ADDR_FLASH_SECTOR_22)){_Sector = 22;}
+
+else /* (Address < FLASH_END_ADDR) && (Address >= ADDR_FLASH_SECTOR_23) */
+  {
+    {_Sector = 23;}
+  }  
+
+#endif /* DUAL_BANK */ 
+
+
+  EraseInitStruct.TypeErase = FLASH_TYPEERASE_SECTORS;
+  EraseInitStruct.VoltageRange = FLASH_VOLTAGE_RANGE_3;
+  EraseInitStruct.Sector = _Sector;
+  EraseInitStruct.NbSectors = 1;
+  HAL_FLASH_Unlock();
+  if (HAL_FLASHEx_Erase(&EraseInitStruct, &SectorError) == HAL_OK){EraseSucceed=true;}
+  HAL_FLASH_Lock();
+  return EraseSucceed;
+}
 #endif
-
-#endif
-
-

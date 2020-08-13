@@ -185,6 +185,12 @@ uint32_t calculateCRC32(byte pageNo)
       //Do a manual reflection of the CRC32 value
       CRC32_val = ~CRC32_val;
       break;
+      
+    case progOutsPage:
+      //Confirmed working
+      pnt_configPage = &configPage13; //Create a pointer to Page 10 in memory
+      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage13) );
+      break;
 
     default:
       CRC32_val = 0;
@@ -192,4 +198,96 @@ uint32_t calculateCRC32(byte pageNo)
   }
   
   return CRC32_val;
+}
+
+//*********************************************************************************************************************************************************************************
+void initialiseProgrammableIO()
+{
+  for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
+  {
+    if (outputPin[y] < BOARD_NR_GPIO_PINS) { outputPin[y] = configPage13.outputPin[y]; }
+    if ( (outputPin[y] > 0) && (outputPin[y] < BOARD_NR_GPIO_PINS) )
+    {
+      pinMode(outputPin[y], OUTPUT);
+      digitalWrite(outputPin[y], (configPage13.outputInverted & (1U << y)));
+    }
+  }
+}
+
+void checkProgrammableIO()
+{
+  int16_t data, data2;
+  bool firstCheck, secondCheck;
+
+  for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
+  {
+    firstCheck = false;
+    secondCheck = false;
+    if ( outputPin[y] > 0 ) //if outputPin == 0 it is disabled
+    {
+      data = ProgrammableIOGetData(configPage13.firstDataIn[y]);
+      data2 = configPage13.firstTarget[y];
+
+      if ( (configPage13.operation[y].firstCompType == COMPARATOR_EQUAL) && (data == data2) ) { firstCheck = true; }
+      else if ( (configPage13.operation[y].firstCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { firstCheck = true; }
+      else if ( (configPage13.operation[y].firstCompType == COMPARATOR_GREATER) && (data > data2) ) { firstCheck = true; }
+      else if ( (configPage13.operation[y].firstCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { firstCheck = true; }
+      else if ( (configPage13.operation[y].firstCompType == COMPARATOR_LESS) && (data < data2) ) { firstCheck = true; }
+      else if ( (configPage13.operation[y].firstCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { firstCheck = true; }
+
+      if (configPage13.operation[y].bitwise != BITWISE_DISABLED)
+      {
+        if ( configPage13.secondDataIn[y] < LOG_ENTRY_SIZE ) //Failsafe check
+        {
+          data = ProgrammableIOGetData(configPage13.secondDataIn[y]);
+          data2 = configPage13.secondTarget[y];
+          
+          if ( (configPage13.operation[y].secondCompType == COMPARATOR_EQUAL) && (data == data2) ) { secondCheck = true; }
+          else if ( (configPage13.operation[y].secondCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { secondCheck = true; }
+          else if ( (configPage13.operation[y].secondCompType == COMPARATOR_GREATER) && (data > data2) ) { secondCheck = true; }
+          else if ( (configPage13.operation[y].secondCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { secondCheck = true; }
+          else if ( (configPage13.operation[y].secondCompType == COMPARATOR_LESS) && (data < data2) ) { secondCheck = true; }
+          else if ( (configPage13.operation[y].secondCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { secondCheck = true; }
+
+          if (configPage13.operation[y].bitwise == BITWISE_AND) { firstCheck &= secondCheck; }
+          if (configPage13.operation[y].bitwise == BITWISE_OR) { firstCheck |= secondCheck; }
+          if (configPage13.operation[y].bitwise == BITWISE_XOR) { firstCheck ^= secondCheck; }
+        }
+      }
+
+      if ( (firstCheck == true) && (configPage13.outputDelay[y] != 0) && (configPage13.outputDelay[y] < 255) )
+      {
+        if ( (ioDelay[y] >= configPage13.outputDelay[y]) )
+        {
+          if (outputPin[y] <= 128) { digitalWrite(outputPin[y], (configPage13.outputInverted & (1U << y)) ^ firstCheck); }
+        }
+        else { ioDelay[y]++; }
+      }
+      else
+      {
+        if ( outputPin[y] <= 128 ) { digitalWrite(outputPin[y], (configPage13.outputInverted & (1U << y)) ^ firstCheck); }
+        if ( firstCheck == false ) { ioDelay[y] = 0; }
+      }
+      if ( firstCheck == true ) { BIT_SET(currentStatus.outputsStatus, y); }
+      else { BIT_CLEAR(currentStatus.outputsStatus, y); }
+    }
+    else { BIT_CLEAR(currentStatus.outputsStatus, y); }
+  }
+}
+
+int16_t ProgrammableIOGetData(uint16_t index)
+{
+  int16_t result;
+  uint8_t x;
+  if ( index < LOG_ENTRY_SIZE )
+  {
+    for(x = 0; x<sizeof(fsIntIndex); x++)
+    {
+      if (fsIntIndex[x] == index) { break; }
+    }
+    if (x >= sizeof(fsIntIndex)) { result = fullStatus[index]; }
+    else { result = word(fullStatus[index+1], fullStatus[index]); }
+  }
+  else { result = -1; } //Index is bigger than fullStatus array
+  return result;
 }
