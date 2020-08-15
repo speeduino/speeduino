@@ -245,6 +245,9 @@
 #define AE_MODE_TPS         0
 #define AE_MODE_MAP         1
 
+#define AE_MODE_MULTIPLIER  0
+#define AE_MODE_ADDER       1
+
 #define KNOCK_MODE_OFF      0
 #define KNOCK_MODE_DIGITAL  1
 #define KNOCK_MODE_ANALOG   2
@@ -619,7 +622,8 @@ struct config2 {
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
   byte battVCorMode : 1;
   byte SoftLimitMode : 1;
-  byte unused1_3c : 2;
+  byte unused1_3c : 1;
+  byte aeApplyMode : 1;
   byte multiplyMAP : 2; //0 = off | 1 = baro | 2 = 100
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
