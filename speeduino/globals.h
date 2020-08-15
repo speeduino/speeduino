@@ -277,6 +277,10 @@
 #define VVT_LOAD_MAP      0
 #define VVT_LOAD_TPS      1
 
+#define MULTIPLY_MAP_MODE_OFF   0
+#define MULTIPLY_MAP_MODE_BARO  1
+#define MULTIPLY_MAP_MODE_100   2
+
 #define FOUR_STROKE         0
 #define TWO_STROKE          1
 
@@ -616,8 +620,7 @@ struct config2 {
   byte battVCorMode : 1;
   byte SoftLimitMode : 1;
   byte unused1_3c : 2;
-  byte fixedMultiplyMAP : 1; //0 multiplyMAP = baro | 1 multiplyMAP = 100
-  byte unused1_3d : 1;
+  byte multiplyMAP : 2; //0 = off | 1 = baro | 2 = 100
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
@@ -643,7 +646,7 @@ struct config2 {
   byte reqFuel;       //24
   byte divider;
   byte injTiming : 1;
-  byte multiplyMAP : 1;
+  byte multiplyMAP_old : 1;
   byte includeAFR : 1;
   byte hardCutType : 1;
   byte ignAlgorithm : 3;

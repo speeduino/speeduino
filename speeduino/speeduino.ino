@@ -1251,11 +1251,11 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   if (corrections > 1023) { bitShift = 5; }
   
   iVE = ((unsigned int)VE << 7) / 100;
-  if ( configPage2.multiplyMAP == true ) {
-    if ( configPage2.fixedMultiplyMAP == true) { iMAP = ((unsigned int)MAP << 7) / 100; }
-    //Include multiply MAP (vs baro) if enabled
-    else { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; }
-  }
+
+  //Check whether either of the mutiply MAP modes is turned on
+  if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
+  else if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; }
+  
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
   }
@@ -1266,9 +1266,8 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
 
 
   unsigned long intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
-  if ( configPage2.multiplyMAP == true ) {
-    intermediate = (intermediate * (unsigned long)iMAP) >> 7;
-  }
+  if ( configPage2.multiplyMAP > 0 ) { intermediate = (intermediate * (unsigned long)iMAP) >> 7; }
+  
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
     intermediate = (intermediate * (unsigned long)iAFR) >> 7;  
