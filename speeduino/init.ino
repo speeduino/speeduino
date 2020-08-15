@@ -31,11 +31,20 @@ void initialiseAll()
     table3D_setSize(&stagingTable, 8);
     table3D_setSize(&boostTable, 8);
     table3D_setSize(&vvtTable, 8);
+    table3D_setSize(&wmiTable, 8);
     table3D_setSize(&trim1Table, 6);
     table3D_setSize(&trim2Table, 6);
     table3D_setSize(&trim3Table, 6);
     table3D_setSize(&trim4Table, 6);
-        
+
+    #if defined(CORE_STM32)
+    configPage9.intcan_available = 1;   // device has internal canbus
+    //STM32 can not currently enabled
+    #endif
+    #if defined(CORE_TEENSY35)
+    configPage9.intcan_available = 1;   // device has internal canbus
+    #endif
+    
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
 
@@ -49,22 +58,6 @@ void initialiseAll()
     Serial.begin(115200);
     #if defined(CANSerial_AVAILABLE)
       if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
-    #endif
-
-    #if defined(CORE_STM32)
-    configPage9.intcan_available = 1;   // device has internal canbus
-    //STM32 can not currently enabled
-    #endif
-
-    #if defined(CORE_TEENSY)
-    configPage9.intcan_available = 1;   // device has internal canbus
-    //Teensy uses the Flexcan_T4 library to use the internal canbus
-    //enable local can interface
-    //setup can interface to 500k
-
-      Can0.begin();
-      Can0.setBaudRate(500000);
-      Can0.enableFIFO();
     #endif
 
     //Repoint the 2D table structs to the config pages that were just loaded
@@ -182,6 +175,36 @@ void initialiseAll()
     knockWindowDurationTable.values = configPage10.knock_window_dur;
     knockWindowDurationTable.axisX = configPage10.knock_window_rpms;
 
+    oilPressureProtectTable.valueSize = SIZE_BYTE;
+    oilPressureProtectTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    oilPressureProtectTable.xSize = 4;
+    oilPressureProtectTable.values = configPage10.oilPressureProtMins;
+    oilPressureProtectTable.axisX = configPage10.oilPressureProtRPM;
+
+    wmiAdvTable.valueSize = SIZE_BYTE;
+    wmiAdvTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    wmiAdvTable.xSize = 6;
+    wmiAdvTable.values = configPage10.wmiAdvAdj;
+    wmiAdvTable.axisX = configPage10.wmiAdvBins;
+
+    cltCalibrationTable.valueSize = SIZE_INT;
+    cltCalibrationTable.axisSize = SIZE_INT;
+    cltCalibrationTable.xSize = 32;
+    cltCalibrationTable.values = cltCalibration_values;
+    cltCalibrationTable.axisX = cltCalibration_bins;
+
+    iatCalibrationTable.valueSize = SIZE_INT;
+    iatCalibrationTable.axisSize = SIZE_INT;
+    iatCalibrationTable.xSize = 32;
+    iatCalibrationTable.values = iatCalibration_values;
+    iatCalibrationTable.axisX = iatCalibration_bins;
+
+    o2CalibrationTable.valueSize = SIZE_BYTE;
+    o2CalibrationTable.axisSize = SIZE_INT;
+    o2CalibrationTable.xSize = 32;
+    o2CalibrationTable.values = o2Calibration_values;
+    o2CalibrationTable.axisX = o2Calibration_bins;
+
     //Setup the calibration tables
     loadCalibration();
 
@@ -238,6 +261,7 @@ void initialiseAll()
     initialiseAuxPWM();
     initialiseCorrections();
     initialiseADC();
+    initialiseProgrammableIO();
 
     //Lookup the current MAP reading for barometric pressure
     instanteneousMAPReading();
@@ -308,6 +332,7 @@ void initialiseAll()
     //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update acordingly.
     currentStatus.RPM = 0;
     currentStatus.hasSync = false;
+    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
     currentStatus.runSecs = 0;
     currentStatus.secl = 0;
     currentStatus.startRevolutions = 0;
@@ -316,6 +341,7 @@ void initialiseAll()
     currentStatus.launchingHard = false;
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
     currentStatus.fuelPumpOn = false;
+    currentStatus.engineProtectStatus = 0;
     triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
     dwellLimit_uS = (1000 * configPage4.dwellLimit);
     currentStatus.nChannels = ((uint8_t)INJ_CHANNELS << 4) + IGN_CHANNELS; //First 4 bits store the number of injection channels, 2nd 4 store the number of ignition channels
@@ -325,7 +351,7 @@ void initialiseAll()
     timer5_overflow_count = 0;
     toothHistoryIndex = 0;
     toothHistorySerialIndex = 0;
-
+    
     noInterrupts();
     initialiseTriggers();
 
@@ -579,7 +605,7 @@ void initialiseAll()
         channel3IgnDegrees = 144;
         channel4IgnDegrees = 216;
         channel5IgnDegrees = 288;
-        maxIgnOutputs = 4; //Only 4 actual outputs, so that's all that can be cut
+        maxIgnOutputs = 5; //Only 4 actual outputs, so that's all that can be cut
 
         if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
         {
@@ -1081,8 +1107,6 @@ void initialiseAll()
         }
         break;
 
-
-
     default:
         //Wasted spark (Shouldn't ever happen anyway)
         ign1StartFunction = beginCoil1Charge;
@@ -1108,29 +1132,8 @@ void initialiseAll()
     else { fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
 
     interrupts();
-    //Perform the priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
     readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
     readTPS(false); // Need to read tps to detect flood clear state
-    unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-    if((primingValue > 0) && (currentStatus.TPS < configPage4.floodClear))
-    {
-      if(channel1InjEnabled == true) { setFuelSchedule1(100, (primingValue * 100 * 5)); } //to achieve long enough priming pulses, the values in tunerstudio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
-      if(channel2InjEnabled == true) { setFuelSchedule2(100, (primingValue * 100 * 5)); }
-      if(channel3InjEnabled == true) { setFuelSchedule3(100, (primingValue * 100 * 5)); }
-      if(channel4InjEnabled == true) { setFuelSchedule4(100, (primingValue * 100 * 5)); }
-      #if INJ_CHANNELS >= 5
-      if(channel5InjEnabled == true) { setFuelSchedule5(100, (primingValue * 100 * 5)); }
-      #endif
-      #if INJ_CHANNELS >= 6
-      if(channel6InjEnabled == true) { setFuelSchedule6(100, (primingValue * 100 * 5)); }
-      #endif
-      #if INJ_CHANNELS >= 7
-      if(channel7InjEnabled == true) { setFuelSchedule7(100, (primingValue * 100 * 5)); }
-      #endif
-      #if INJ_CHANNELS >= 8
-      if(channel8InjEnabled == true) { setFuelSchedule8(100, (primingValue * 100 * 5)); }
-      #endif
-    }
 
     initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
@@ -1169,6 +1172,39 @@ void setPinMapping(byte boardID)
       pinTachOut = 49; //Tacho output pin
       pinFlex = 19; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 43; //Reset control output
+    #endif
+    //New FRAM chips reads 0
+    #if defined(CORE_STM32)
+      //https://github.com/stm32duino/Arduino_Core_STM32/blob/master/variants/Generic_F411Cx/variant.h#L28
+      //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
+      //pins PB12, PB13, PB14 and PB15 are used to SPI FLASH
+      pinInjector1 = PB7; //Output pin injector 1 is on
+      pinInjector2 = PB6; //Output pin injector 2 is on
+      pinInjector3 = PB5; //Output pin injector 3 is on
+      pinInjector4 = PB4; //Output pin injector 4 is on
+      pinCoil1 = PB9; //Pin for coil 1
+      pinCoil2 = PB8; //Pin for coil 2
+      pinCoil3 = PB3; //Pin for coil 3
+      pinCoil4 = PA15; //Pin for coil 4
+      pinTPS = A2;//TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A8; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinBaro = pinMAP;
+      pinIdle1 = PA5; //Single wire idle control
+      pinBoost = PA6; //Boost control
+      //pinVVT_1 = 4; //Default VVT output
+      //pinStepperDir = PC15; //Direction pin  for DRV8825 driver
+      //pinStepperStep = PC14; //Step pin for DRV8825 driver
+      //pinStepperEnable = PC13; //Enable pin for DRV8825
+      pinFuelPump = PB10; //Fuel pump output
+      pinTachOut = PC13; //Tacho output pin
+      //external interrupt enabled pins
+      //pinFlex = PB2; // Flex sensor (Must be external interrupt enabled)
+      pinTrigger = PB1; //The CAS pin
+      pinTrigger2 = PB10; //The Cam Sensor pin
     #endif
       break;
     case 1:
@@ -1231,6 +1267,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 53; //2 wire idle control
       pinBoost = 7; //Boost control
       pinVVT_1 = 6; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinFuelPump = 4; //Fuel pump output
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
@@ -1281,6 +1318,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 6; //2 wire idle control
       pinBoost = 7; //Boost control
       pinVVT_1 = 4; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
@@ -1291,6 +1329,9 @@ void setPinMapping(byte boardID)
       pinResetControl = 43; //Reset control output
       pinBaro = A5;
       pinVSS = 20;
+      pinWMIEmpty = 46;
+      pinWMIIndicator = 44;
+      pinWMIEnabled = 42;
 
       #if defined(CORE_TEENSY35)
         pinInjector6 = 51;
@@ -1319,8 +1360,8 @@ void setPinMapping(byte boardID)
         // = PA3;
         // = PA4;
         /* = PA5; */ //ADC12
-        pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
-        /* = PA7; */ //ADC12 LED_BUILTIN_2
+        /* = PA6; */ //ADC12 LED_BUILTIN_1
+        pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
         pinCoil3 = PA8;
         /* = PA9 */ //TXD1
         /* = PA10 */ //RXD1
@@ -1347,7 +1388,7 @@ void setPinMapping(byte boardID)
         pinCoil4 = PB10; //TXD3
         pinIdle1 = PB11; //RXD3
         pinIdle2 = PB12; //
-        /* pinBoost = PB12; */ //
+        pinBoost = PB12; //
         /* = PB13; */ //SPI2_SCK
         /* = PB14; */ //SPI2_MISO
         /* = PB15; */ //SPI2_MOSI
@@ -1359,10 +1400,9 @@ void setPinMapping(byte boardID)
         pinTPS = PC1; //ADC123
         pinIAT = PC2; //ADC123
         pinCLT = PC3; //ADC123
-        pinO2 = PC4; //ADC12
-        /* = PC5; */ //ADC12
-        /*pinVVT_1 = PC6; */ //
-        pinBat = PC6; //
+        pinO2 = PC4;  //ADC12
+        pinBat = PC5; //ADC12
+        pinVVT_1 = PC6; //
         pinDisplayReset = PC7; //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
@@ -1379,13 +1419,11 @@ void setPinMapping(byte boardID)
         /* = PD0; */ //CANRX
         /* = PD1; */ //CANTX
         /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        /* = PD3; */ //
-        /* = PD4; */ //
+        pinVVT_2 = PD3; //
         pinFlex = PD4;
         /* = PD5;*/ //TXD2
         /* = PD6; */ //RXD2
         pinCoil1 = PD7; //
-        /* = PD7; */ //
         /* = PD8; */ //
         pinCoil5 = PD9;//
         /* = PD10; */ //
@@ -1416,9 +1454,9 @@ void setPinMapping(byte boardID)
         /* = PE15; */ //
 
       #elif defined(CORE_STM32)
-        //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
-        //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
+        //https://github.com/stm32duino/Arduino_Core_STM32/blob/master/variants/Generic_F411Cx/variant.h#L28
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
+        //pins PB12, PB13, PB14 and PB15 are used to SPI FLASH
         pinInjector1 = PB7; //Output pin injector 1 is on
         pinInjector2 = PB6; //Output pin injector 2 is on
         pinInjector3 = PB5; //Output pin injector 3 is on
@@ -1443,9 +1481,9 @@ void setPinMapping(byte boardID)
         pinFuelPump = PB10; //Fuel pump output
         pinTachOut = PC13; //Tacho output pin
         //external interrupt enabled pins
-        pinFlex = PB1; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = PB0; //The CAS pin
-        pinTrigger2 = PB2; //The Cam Sensor pin
+        pinFlex = PB2; // Flex sensor (Must be external interrupt enabled)
+        pinTrigger = PB1; //The CAS pin
+        pinTrigger2 = PB10; //The Cam Sensor pin
       #endif
       break;
 
@@ -1474,6 +1512,7 @@ void setPinMapping(byte boardID)
       pinIdle1 = 5; //Single wire idle control
       pinBoost = 4;
       pinVVT_1 = 11; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
       pinFuelPump = 40; //Fuel pump output
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
@@ -1714,7 +1753,7 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
-   case 31:
+    case 31:
       //Pin mappings for the BMW PnP PCBs by pazi88. This is an AVR only module. At least for now
       pinInjector1 = 8; //Output pin injector 1
       pinInjector2 = 9; //Output pin injector 2
@@ -1742,6 +1781,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 6; //ICV pin3
       pinBoost = 7; //Boost control
       pinVVT_1 = 4; //VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinFuelPump = 45; //Fuel pump output  (Goes to ULN2003)
       pinStepperDir = 16; //Stepper valve isn't used with these
       pinStepperStep = 17; //Stepper valve isn't used with these
@@ -1780,6 +1820,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 47; //2 wire idle control - NOT USED
       pinBoost = 7; //Boost control
       pinVVT_1 = 6; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinFuelPump = 4; //Fuel pump output
       pinStepperDir = 25; //Direction pin for DRV8825 driver
       pinStepperStep = 24; //Step pin for DRV8825 driver
@@ -1825,6 +1866,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 10; //2 wire idle control
       pinFuelPump = 23; //Fuel pump output
       pinVVT_1 = 11; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinStepperDir = 32; //Direction pin  for DRV8825 driver
       pinStepperStep = 31; //Step pin for DRV8825 driver
       pinStepperEnable = 30; //Enable pin for DRV8825 driver
@@ -1870,6 +1912,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 43; //2 wire idle control
       pinFuelPump = 41; //Fuel pump output
       pinVVT_1 = 44; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
       pinStepperDir = 32; //Direction pin  for DRV8825 driver
       pinStepperStep = 31; //Step pin for DRV8825 driver
       pinStepperEnable = 30; //Enable pin for DRV8825 driver
@@ -1958,18 +2001,13 @@ void setPinMapping(byte boardID)
     #endif
 
     case 55:
-      #if defined(CORE_TEENSY35)
+      #if defined(CORE_TEENSY)
       //Pin mappings for the DropBear
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinFlex = A16; // Flex sensor
-      pinTPS = A22; //TPS input pin
       pinMAP = A1; //MAP sensor pin
       pinBaro = A0; //Baro sensor pin
-      pinIAT = A19; //IAT sensor pin
-      pinCLT = A20; //CLS sensor pin
-      pinO2 = A21; //O2 Sensor pin
-      pinO2_2 = A18; //Spare 2
       pinBat = A14; //Battery reference voltage pin
       pinSpareTemp1 = A17; //spare Analog input 1
       pinLaunch = A15; //Can be overwritten below
@@ -1989,7 +2027,24 @@ void setPinMapping(byte boardID)
       pinFan = 25; //Pin for the fan output
       pinResetControl = 46; //Reset control output PLACEHOLDER value for now
 
-      #ifdef USE_MC33810
+      #if defined(CORE_TEENSY35)
+        pinTPS = A22; //TPS input pin
+        pinIAT = A19; //IAT sensor pin
+        pinCLT = A20; //CLS sensor pin
+        pinO2 = A21; //O2 Sensor pin
+        pinO2_2 = A18; //Spare 2
+      #endif
+
+      #if defined(CORE_TEENSY41)
+        pinTPS = A17; //TPS input pin
+        pinIAT = A14; //IAT sensor pin
+        pinCLT = A15; //CLS sensor pin
+        pinO2 = A16; //O2 Sensor pin
+        pinBat = A3; //Battery reference voltage pin. Needs Alpha4+
+        pinLaunch = 34; //Can be overwritten below
+      #endif
+
+      #if defined(USE_MC33810)
         pinMC33810_1_CS = 10;
         pinMC33810_2_CS = 9;
 
@@ -2021,91 +2076,91 @@ void setPinMapping(byte boardID)
       #endif
       break;
     
-   #if defined(ARDUINO_BLACK_F407VE)
+ 
     case 60:
-       //Pin definitions for experimental board Tjeerd 
+        #if defined(ARDUINO_BLACK_F407VE)
+        //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
-
+        //https://github.com/Tjeerdie/SPECTRE/tree/master/SPECTRE_V0.5
+        
         //******************************************
         //******** PORTA CONNECTIONS *************** 
         //******************************************
-        /* = PA0 */ //Wakeup ADC123
-        // = PA1;
-        // = PA2;
-        // = PA3;
-        // = PA4;
-        /* = PA5; */ //ADC12
-        pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
-        /* = PA7; */ //ADC12 LED_BUILTIN_2
+        // = PA0; //Wakeup ADC123
+        // = PA1; //ADC123
+        // = PA2; //ADC123
+        // = PA3; //ADC123
+        // = PA4; //ADC12
+        // = PA5; //ADC12
+        // = PA6; //ADC12 LED_BUILTIN_1
+        // = PA7; //ADC12 LED_BUILTIN_2
         pinCoil3 = PA8;
-        /* = PA9 */ //TXD1
-        /* = PA10 */ //RXD1
-        /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
-        /* = PA12 */ //(DO NOT USE FOR SPEEDUINO) USB 
-        /* = PA13 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-        /* = PA14 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-        /* = PA15 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+        // = PA9;  //TXD1=Bluetooth module
+        // = PA10; //RXD1=Bluetooth module
+        // = PA11; //(DO NOT USE FOR SPEEDUINO) USB
+        // = PA12; //(DO NOT USE FOR SPEEDUINO) USB 
+        // = PA13;  //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+        // = PA14;  //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+        // = PA15;  //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
 
         //******************************************
         //******** PORTB CONNECTIONS *************** 
         //******************************************
-        /* = PB0; */ //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
+        // = PB0;  //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
         pinBaro = PB1; //ADC12
-        /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1 
-        /* = PB3; */ //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
-        /* = PB4; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
-        /* = PB5; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
-        /* = PB6; */ //NRF_CE
-        /* = PB7; */ //NRF_CS
-        /* = PB8; */ //NRF_IRQ
+        // = PB2;  //(DO NOT USE FOR SPEEDUINO) BOOT1 
+        // = PB3;  //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
+        // = PB4;  //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
+        // = PB5;  //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
+        // = PB6;  //NRF_CE
+        // = PB7;  //NRF_CS
+        // = PB8;  //NRF_IRQ
         pinCoil2 = PB9; //
-        /* = PB9; */ //
-        pinCoil4 = PB10; //TXD3
-        pinIdle1 = PB11; //RXD3
-        pinIdle2 = PB12; //
-        /* pinBoost = PB12; */ //
-        /* = PB13; */ //SPI2_SCK
-        /* = PB14; */ //SPI2_MISO
-        /* = PB15; */ //SPI2_MOSI
+        // = PB9;  //
+        // = PB10; //TXD3
+        // = PB11; //RXD3
+        // = PB12; //
+        // = PB13;  //SPI2_SCK
+        // = PB14;  //SPI2_MISO
+        // = PB15;  //SPI2_MOSI
 
         //******************************************
         //******** PORTC CONNECTIONS *************** 
         //******************************************
-        pinMAP = PC0; //ADC123 
+        pinIAT = PC0; //ADC123 
         pinTPS = PC1; //ADC123
-        pinIAT = PC2; //ADC123
+        pinMAP = PC2; //ADC123 
         pinCLT = PC3; //ADC123
         pinO2 = PC4; //ADC12
-        /* = PC5; */ //ADC12
-        /*pinVVT_1 = PC6; */ //
-        pinBat = PC6; //
-        pinDisplayReset = PC7; //
-        /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
-        /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
-        /* = PC10; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
-        /* = PC11; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
-        /* = PC12; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
+        pinBat = PC5;  //ADC12
+        pinBoost = PC6; //
+        pinIdle1 = PC7; //
+        // = PC8;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
+        // = PC9;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
+        // = PC10;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
+        // = PC11;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
+        // = PC12;  //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
         pinTachOut = PC13; //
-        /* = PC14; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
-        /* = PC15; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
+        // = PC14;  //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
+        // = PC15;  //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
 
         //******************************************
         //******** PORTD CONNECTIONS *************** 
         //******************************************
-        /* = PD0; */ //CANRX
-        /* = PD1; */ //CANTX
-        /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        /* = PD3; */ //
-        /* = PD4; */ //
+        // = PD0;  //CANRX
+        // = PD1;  //CANTX
+        // = PD2;  //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
+        pinIdle2 = PD3; //
+        // = PD4;  //
         pinFlex = PD4;
-        /* = PD5;*/ //TXD2
-        /* = PD6; */ //RXD2
+        // = PD5; //TXD2
+        // = PD6;  //RXD2
         pinCoil1 = PD7; //
-        /* = PD7; */ //
-        /* = PD8; */ //
+        // = PD7;  //
+        // = PD8;  //
         pinCoil5 = PD9;//
-        /* = PD10; */ //
-        /* = PD11; */ //
+        pinCoil4 = PD10;//
+        // = PD11;  //
         pinInjector1 = PD12; //
         pinInjector2 = PD13; //
         pinInjector3 = PD14; //
@@ -2117,19 +2172,19 @@ void setPinMapping(byte boardID)
         pinTrigger = PE0; //
         pinTrigger2 = PE1; //
         pinStepperEnable = PE2; //
-        /* = PE3; */ //ONBOARD KEY1
-        /* = PE4; */ //ONBOARD KEY2
+        pinFuelPump = PE3; //ONBOARD KEY1
+        // = PE4;  //ONBOARD KEY2
         pinStepperStep = PE5; //
         pinFan = PE6; //
         pinStepperDir = PE7; //
-        /* = PE8; */ //
-        /* = PE9; */ //
-        /* = PE10; */ //
-        pinInjector5 = PE11; //
-        pinInjector6 = PE12; //
-        /* = PE13; */ //
-        /* = PE14; */ //
-        /* = PE15; */ //
+        // = PE8;  //
+        pinInjector5 = PE9; //
+        // = PE10;  //
+        pinInjector6 = PE11; //
+        // = PE12; //
+        pinInjector8 = PE13; //
+        pinInjector7 = PE14; //
+        // = PE15;  //
        
      #elif defined(CORE_STM32)
         //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
@@ -2155,6 +2210,7 @@ void setPinMapping(byte boardID)
         pinIdle2 = PA2; //2 wire idle control
         pinBoost = PA1; //Boost control
         pinVVT_1 = PA0; //Default VVT output
+        pinVVT_2 = PA2; //Default VVT2 output
         pinStepperDir = PC15; //Direction pin  for DRV8825 driver
         pinStepperStep = PC14; //Step pin for DRV8825 driver
         pinStepperEnable = PC13; //Enable pin for DRV8825
@@ -2224,9 +2280,8 @@ void setPinMapping(byte boardID)
         pinIAT = PC2; //ADC123
         pinCLT = PC3; //ADC123
         pinO2 = PC4; //ADC12
-        /* = PC5; */ //ADC12
+        pinBat = PC5; //ADC12
         /*pinVVT_1 = PC6; */ //
-        pinBat = PC6; //
         pinDisplayReset = PC7; //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
@@ -2324,11 +2379,18 @@ void setPinMapping(byte boardID)
   if ( (configPage4.fuelPumpPin != 0) && (configPage4.fuelPumpPin < BOARD_NR_GPIO_PINS) ) { pinFuelPump = pinTranslate(configPage4.fuelPumpPin); }
   if ( (configPage6.fanPin != 0) && (configPage6.fanPin < BOARD_NR_GPIO_PINS) ) { pinFan = pinTranslate(configPage6.fanPin); }
   if ( (configPage6.boostPin != 0) && (configPage6.boostPin < BOARD_NR_GPIO_PINS) ) { pinBoost = pinTranslate(configPage6.boostPin); }
-  if ( (configPage6.vvtPin != 0) && (configPage6.vvtPin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage6.vvtPin); }
+  if ( (configPage6.vvt1Pin != 0) && (configPage6.vvt1Pin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage6.vvt1Pin); }
   if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage6.baroPin + A0; }
   if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_NR_GPIO_PINS) ) { pinEMAP = configPage10.EMAPPin + A0; }
   if ( (configPage10.fuel2InputPin != 0) && (configPage10.fuel2InputPin < BOARD_NR_GPIO_PINS) ) { pinFuel2Input = pinTranslate(configPage10.fuel2InputPin); }
   if ( (configPage2.vssPin != 0) && (configPage2.vssPin < BOARD_NR_GPIO_PINS) ) { pinVSS = pinTranslate(configPage2.vssPin); }
+  if ( (configPage10.fuelPressurePin != 0) && (configPage10.fuelPressurePin < BOARD_NR_GPIO_PINS) ) { pinFuelPressure = configPage10.fuelPressurePin + A0; }
+  if ( (configPage10.oilPressurePin != 0) && (configPage10.oilPressurePin < BOARD_NR_GPIO_PINS) ) { pinOilPressure = configPage10.oilPressurePin + A0; }
+  
+  if ( (configPage10.wmiEmptyPin != 0) && (configPage10.wmiEmptyPin < BOARD_NR_GPIO_PINS) ) { pinWMIEmpty = pinTranslate(configPage10.wmiEmptyPin); }
+  if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_NR_GPIO_PINS) ) { pinWMIIndicator = pinTranslate(configPage10.wmiIndicatorPin); }
+  if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_NR_GPIO_PINS) ) { pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
+  if ( (configPage10.vvt2Pin != 0) && (configPage10.vvt2Pin < BOARD_NR_GPIO_PINS) ) { pinVVT_2 = pinTranslate(configPage10.vvt2Pin); }
 
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
@@ -2359,6 +2421,7 @@ void setPinMapping(byte boardID)
   pinMode(pinStepperEnable, OUTPUT);
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
+  pinMode(pinVVT_2, OUTPUT);
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
@@ -2436,7 +2499,7 @@ void setPinMapping(byte boardID)
 
   //And for inputs
   #if defined(CORE_STM32)
-    #ifndef ARDUINO_ARCH_STM32 //libmaple core aka STM32DUINO
+    #ifdef INPUT_ANALOG
       pinMode(pinMAP, INPUT_ANALOG);
       pinMode(pinO2, INPUT_ANALOG);
       pinMode(pinO2_2, INPUT_ANALOG);
@@ -2489,7 +2552,28 @@ void setPinMapping(byte boardID)
     if (configPage10.fuel2InputPullup == true) { pinMode(pinFuel2Input, INPUT_PULLUP); } //With pullup
     else { pinMode(pinFuel2Input, INPUT); } //Normal input
   }
-  
+  if(configPage10.fuelPressureEnable > 0)
+  {
+    pinMode(pinFuelPressure, INPUT);
+  }
+  if(configPage10.oilPressureEnable > 0)
+  {
+    pinMode(pinOilPressure, INPUT);
+  }
+  if(configPage10.wmiEnabled > 0)
+  {
+    pinMode(pinWMIEnabled, OUTPUT);
+    if(configPage10.wmiIndicatorEnabled > 0)
+    {
+      pinMode(pinWMIIndicator, OUTPUT);
+      if (configPage10.wmiIndicatorPolarity > 0) { digitalWrite(pinWMIIndicator, HIGH); }
+    }
+    if(configPage10.wmiEmptyEnabled > 0)
+    {
+      if (configPage10.wmiEmptyPolarity == 0) { pinMode(pinWMIEmpty, INPUT_PULLUP); } //Normal setting
+      else { pinMode(pinWMIEmpty, INPUT); } //inverted setting
+    }
+  }  
 
   //These must come after the above pinMode statements
   triggerPri_pin_port = portInputRegister(digitalPinToPort(pinTrigger));
@@ -2853,22 +2937,28 @@ void initialiseTriggers()
 
     case 17:
       //36-2-1
-      triggerSetup_ThirtySixMinus21();
-      triggerHandler = triggerPri_ThirtySixMinus21;
-      triggerSecondaryHandler = triggerSec_ThirtySixMinus21;
+      //NOT YET WRITTEN
+      break;
+
+    case 18:
+      //DSM 420a
+      triggerSetup_420a();
+      triggerHandler = triggerPri_420a;
+      triggerSecondaryHandler = triggerSec_420a;
       decoderHasSecondary = true;
-      getRPM = getRPM_ThirtySixMinus21;
-      getCrankAngle = getCrankAngle_ThirtySixMinus21;
-      triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus21;
+      getRPM = getRPM_420a;
+      getCrankAngle = getCrankAngle_420a;
+      triggerSetEndTeeth = triggerSetEndTeeth_420a;
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
-      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
-      else { secondaryTriggerEdge = FALLING; }
+      secondaryTriggerEdge = FALLING; //Always falling edge
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
+
+    
 
     default:
       triggerHandler = triggerPri_missingTooth;

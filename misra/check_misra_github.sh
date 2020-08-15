@@ -2,8 +2,14 @@
 
 cppcheck_path=cppcheck_github/
 cppcheck_bin="${cppcheck_path}cppcheck"
-#cppcheck_bin="cppcheck"
 cppcheck_misra="${cppcheck_path}addons/misra.py"
+
+#Uncomment below to use the Brew installation of cppcheck on Mac
+#cppcheck_path_brew=/usr/local/Cellar/cppcheck/2.1/share/cppcheck/
+#cppcheck_misra="${cppcheck_path_brew}addons/misra.py"
+#cppcheck_bin=/usr/local/Cellar/cppcheck/2.1/bin/cppcheck
+
+
 
 if [ -f ./results.txt ]; then
 	rm results.txt
