@@ -615,7 +615,9 @@ struct config2 {
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
   byte battVCorMode : 1;
   byte SoftLimitMode : 1;
-  byte unused1_3c : 4;
+  byte unused1_3c : 2;
+  byte fixedMultiplyMAP : 1; //0 multiplyMAP = baro | 1 multiplyMAP = 100
+  byte unused1_3d : 1;
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
