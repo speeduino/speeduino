@@ -22,7 +22,7 @@ void initBoard()
     */
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
     {
-        idle_pwm_max_count = 1000000L / (2 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
+        idle_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
     } 
 
     //This must happen at the end of the idle init
@@ -52,8 +52,8 @@ void initBoard()
     * Auxilliaries
     */
     //2uS resolution Min 8Hz, Max 5KHz
-    boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
-    vvt_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
+    boost_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+    vvt_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
 
     //Need to be initialised last due to instant interrupt
     Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
@@ -68,17 +68,17 @@ void initBoard()
     #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB)
         //(CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
         //Timer2 to 4 is on APB1, Timer1 on APB2.   www.st.com/resource/en/datasheet/stm32f103cb.pdf sheet 12
-        Timer1.setPrescaleFactor(((Timer1.getBaseFrequency()/1000000) * 2)-1); //2us resolution
-        Timer2.setPrescaleFactor(((Timer2.getBaseFrequency()/1000000) * 2)-1); //2us resolution
-        Timer3.setPrescaleFactor(((Timer3.getBaseFrequency()/1000000) * 2)-1); //2us resolution
+        Timer1.setPrescaleFactor(((Timer1.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1); //2us resolution
+        Timer2.setPrescaleFactor(((Timer2.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1); //2us resolution
+        Timer3.setPrescaleFactor(((Timer3.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1); //2us resolution
     #else
         //(CYCLES_PER_MICROSECOND == 168, APB2 at 84MHz, APB1 at 42MHz).
         //Timer2 to 14 is on APB1, Timers 1, 8, 9 and 10 on APB2.   www.st.com/resource/en/datasheet/stm32f407vg.pdf sheet 120
-        Timer1.setPrescaleFactor(((Timer1.getBaseFrequency()/1000000) * 2)-1); //2us resolution
-        Timer2.setPrescaleFactor(((Timer2.getBaseFrequency()/1000000) * 2)-1);  //2us resolution
-        Timer3.setPrescaleFactor(((Timer3.getBaseFrequency()/1000000) * 2)-1);  //2us resolution
-        Timer4.setPrescaleFactor(((Timer4.getBaseFrequency()/1000000) * 2)-1);  //2us resolution
-        Timer5.setPrescaleFactor(((Timer5.getBaseFrequency()/1000000) * 2)-1);  //2us resolution
+        Timer1.setPrescaleFactor(((Timer1.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1); //2us resolution
+        Timer2.setPrescaleFactor(((Timer2.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1);  //2us resolution
+        Timer3.setPrescaleFactor(((Timer3.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1);  //2us resolution
+        Timer4.setPrescaleFactor(((Timer4.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1);  //2us resolution
+        Timer5.setPrescaleFactor(((Timer5.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1);  //2us resolution
     #endif
     Timer2.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer2.setMode(2, TIMER_OUTPUT_COMPARE);

@@ -29,7 +29,7 @@ unsigned long knockStartTime;
 byte lastKnockCount;
 int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
-byte aseTsnStart;
+uint16_t aseTaperStart;
 uint16_t dfcoStart;
 
 void initialiseCorrections()
@@ -39,6 +39,7 @@ void initialiseCorrections()
   currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
   AFRnextCycle = 0;
   currentStatus.knockActive = false;
+  currentStatus.battery10 = 125; //Set battery voltage to sensible value for dwell correction for "flying start" (else ignition gets suprious pulses after boot)  
 }
 
 /*
@@ -102,7 +103,7 @@ uint16_t correctionsFuel()
   if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
 
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
-  if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
+  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
   sumCorrections = sumCorrections / powint(100,activeCorrections);
 
@@ -134,7 +135,7 @@ static inline byte correctionsFuel_new()
   currentStatus.launchCorrection = correctionLaunch(); numCorrections++;
 
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
-  if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
+  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
   sumCorrections = currentStatus.wueCorrection \
                   + correctionASEvalue \
@@ -221,14 +222,14 @@ byte correctionASE()
     {
       BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
       ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-      aseTsnStart = runSecsX10;
+      aseTaperStart = runSecsX10;
     }
     else
     {
-      if (( (runSecsX10 - aseTsnStart) < configPage2.aseTsnDelay ) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) //Cranking check needs to be here also, so cranking and afterstart enrichments won't run simultaneously
+      if ( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && ((runSecsX10 - aseTaperStart) < configPage2.aseTaperTime) ) //Cranking check needs to be here also, so cranking and afterstart enrichments won't run simultaneously
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-        ASEValue = 100 + map((runSecsX10 - aseTsnStart), 0, configPage2.aseTsnDelay,\
+        ASEValue = 100 + map((runSecsX10 - aseTaperStart), 0, configPage2.aseTaperTime,\
           table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
       }
       else
@@ -484,7 +485,7 @@ bool correctionDFCO()
   bool DFCOValue = false;
   if ( configPage2.dfcoEnabled == 1 )
   {
-    if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) 
+    if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) 
     {
       DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); 
       if ( DFCOValue == false) { dfcoStart = 0; }
@@ -496,6 +497,7 @@ bool correctionDFCO()
         if ( dfcoStart == 0 ) { dfcoStart = runSecsX10; }
         if( (runSecsX10 - dfcoStart) > configPage2.dfcoDelay ) { DFCOValue = true; }
       }
+      else { dfcoStart = 0; } //Prevent future activation right away if previous time wasn't activated
     } // DFCO active check
   } // DFCO enabled check
   return DFCOValue;
@@ -537,8 +539,8 @@ byte correctionAFRClosedLoop()
     currentStatus.afrTarget = currentStatus.O2; //Catch all incase the below doesn't run. This prevents the Include AFR option from doing crazy things if the AFR target conditions aren't met. This value is changed again below if all conditions are met.
 
     //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
-    //Note that this should only run after the sensor warmup delay necause it is used within the Include AFR option
-    if(currentStatus.runSecs > configPage6.ego_sdelay) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
+    //Note that this should only run after the sensor warmup delay when using Include AFR option, but on Incorporate AFR option it needs to be done at all times
+    if( (currentStatus.runSecs > configPage6.ego_sdelay) || (configPage2.incorporateAFR == true) ) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
 
     AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
     
@@ -605,6 +607,7 @@ int8_t correctionsIgn(int8_t base_advance)
 {
   int8_t advance;
   advance = correctionFlexTiming(base_advance);
+  advance = correctionWMITiming(advance);
   advance = correctionIATretard(advance);
   advance = correctionCLTadvance(advance);
   advance = correctionIdleAdvance(advance);
@@ -645,6 +648,18 @@ int8_t correctionFlexTiming(int8_t advance)
     ignFlexValue = (int8_t) advance + currentStatus.flexIgnCorrection;
   }
   return (int8_t) ignFlexValue;
+}
+
+int8_t correctionWMITiming(int8_t advance)
+{
+  if( configPage10.wmiEnabled >= 1 && configPage10.wmiAdvEnabled == 1 && currentStatus.wmiEmpty == 0 ) //Check for wmi being enabled
+  {
+    if(currentStatus.TPS >= configPage10.wmiTPS && currentStatus.RPM >= configPage10.wmiRPM && currentStatus.MAP/2 >= configPage10.wmiMAP && currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET >= configPage10.wmiIAT)
+    {
+      return (int16_t) advance + table2D_getValue(&wmiAdvTable, currentStatus.MAP/2) - OFFSET_IGNITION; //Negative values are achieved with offset
+    }
+  }
+  return advance;
 }
 
 int8_t correctionIATretard(int8_t advance)
@@ -772,8 +787,8 @@ int8_t correctionKnock(int8_t advance)
   //First check is to do the window calculations (ASsuming knock is enabled)
   if( configPage10.knock_mode != KNOCK_MODE_OFF )
   {
-    knockWindowMin = table2D_getValue(&knockWindowStartTable, currentStatus.RPM);
-    knockWindowMax = knockWindowMin + table2D_getValue(&knockWindowDurationTable, currentStatus.RPM);
+    knockWindowMin = table2D_getValue(&knockWindowStartTable, currentStatus.RPMdiv100);
+    knockWindowMax = knockWindowMin + table2D_getValue(&knockWindowDurationTable, currentStatus.RPMdiv100);
   }
 
 

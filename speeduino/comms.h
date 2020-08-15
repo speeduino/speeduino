@@ -21,6 +21,8 @@
 #define canbusPage   9//Config Page 9
 #define warmupPage   10 //Config Page 10
 #define fuelMap2Page 11
+#define wmiMapPage   12
+#define progOutsPage 13
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
@@ -32,6 +34,9 @@ uint16_t chunkComplete = 0; /**< The number of bytes in a chunk write that have 
 uint16_t chunkSize = 0; /**< The complete size of the requested chunk write */
 int valueOffset; /**< THe memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
 byte tsCanId = 0;     // current tscanid requested
+byte inProgressOffset;
+byte inProgressLength;
+bool serialInProgress = false;
 
 const char pageTitles[] PROGMEM //This is being stored in the avr flash instead of SRAM which there is not very much of
   {
@@ -45,7 +50,9 @@ const char pageTitles[] PROGMEM //This is being stored in the avr flash instead 
    "\nBoost Map\0" //93
    "\nVVT Map\0"//102-No need to put a trailing null because it's the last string and the compliler does it for you.
    "\nPg 10 Config\0"
-   "\n2nd Fuel Map"
+   "\n2nd Fuel Map\0"
+   "\nWMI Map\0"
+   "\nPrgm IO"
   };
 
 void command();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
@@ -61,5 +68,6 @@ void testComm();
 void commandButtons(int16_t);
 void sendCompositeLog();
 byte getPageValue(byte, uint16_t);
+void updateFullStatus();
 
 #endif // COMMS_H

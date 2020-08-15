@@ -20,29 +20,11 @@
 */
 #define PORT_TYPE uint32_t
 #define PINMASK_TYPE uint32_t
-#define COMPARE_TYPE uint32_t
-#define COUNTER_TYPE uint32_t
+#define COMPARE_TYPE uint16_t
+#define COUNTER_TYPE uint16_t
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
-#if defined(SRAM_AS_EEPROM)
-    #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
-#elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
-    #define EEPROM_LIB_H <Fram.h>
-#else
-    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-#endif
+#define TIMER_RESOLUTION 4
 
-#ifndef LED_BUILTIN
-  #define LED_BUILTIN PA7
-#endif
-
-#if defined(FRAM_AS_EEPROM)
-  #include <Fram.h>
-  #if defined(ARDUINO_BLACK_F407VE)
-  FramClass EEPROM(PB5, PB4, PB3, PB0); /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
-  #else
-  FramClass EEPROM(PB15, PB12, PB13, PB12); //Blue/Black Pills
-  #endif
-#endif
 
 #define USE_SERIAL3
 void initBoard();
@@ -64,6 +46,55 @@ extern "C" char* sbrk(int incr);
     #define A15  PA5
   #endif
 #endif
+
+#ifndef LED_BUILTIN
+  #define LED_BUILTIN PA7
+#endif
+
+/*
+***********************************************************************************************************
+* EEPROM emulation
+*/
+#if defined(SRAM_AS_EEPROM)
+    #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
+    #include EEPROM_LIB_H
+    BackupSramAsEEPROM EEPROM;
+
+#elif defined(USE_SPI_EEPROM)
+    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    #include EEPROM_LIB_H
+    SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+ 
+    //windbond W25Q16 SPI flash EEPROM emulation
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
+    Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
+    SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
+
+#elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
+    #define EEPROM_LIB_H <Fram.h>
+    #include EEPROM_LIB_H
+    #if defined(ARDUINO_BLACK_F407VE)
+      FramClass EEPROM(PB5, PB4, PB3, PB0); /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
+    #else
+      FramClass EEPROM(PB15, PB14, PB13, PB12); //Blue/Black Pills
+    #endif
+
+#elif defined(STM32F7xx)
+  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  #include EEPROM_LIB_H
+  #if defined(DUAL_BANK)
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08120000UL};
+  #else
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 262144UL, 4095UL, 0x08180000UL};
+  #endif
+    InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+#else //default case, internal flash as EEPROM for STM32F4
+  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  #include EEPROM_LIB_H
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08080000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+#endif
+
 
 /*
 ***********************************************************************************************************
@@ -113,46 +144,46 @@ extern "C" char* sbrk(int incr);
 #define IGN8_COMPARE (TIM4)->CCR4
 
   
-#define FUEL1_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC1E
-#define FUEL2_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC2E
-#define FUEL3_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC3E
-#define FUEL4_TIMER_ENABLE() (TIM3)->CCER |= TIM_CCER_CC4E
+#define FUEL1_TIMER_ENABLE() (TIM3)->SR = ~TIM_FLAG_CC1; (TIM3)->DIER |= TIM_DIER_CC1IE
+#define FUEL2_TIMER_ENABLE() (TIM3)->SR = ~TIM_FLAG_CC2; (TIM3)->DIER |= TIM_DIER_CC2IE
+#define FUEL3_TIMER_ENABLE() (TIM3)->SR = ~TIM_FLAG_CC3; (TIM3)->DIER |= TIM_DIER_CC3IE
+#define FUEL4_TIMER_ENABLE() (TIM3)->SR = ~TIM_FLAG_CC4; (TIM3)->DIER |= TIM_DIER_CC4IE
 
-#define FUEL1_TIMER_DISABLE() (TIM3)->CCER &= ~TIM_CCER_CC1E
-#define FUEL2_TIMER_DISABLE() (TIM3)->CCER &= ~TIM_CCER_CC2E
-#define FUEL3_TIMER_DISABLE() (TIM3)->CCER &= ~TIM_CCER_CC3E
-#define FUEL4_TIMER_DISABLE() (TIM3)->CCER &= ~TIM_CCER_CC4E
+#define FUEL1_TIMER_DISABLE() (TIM3)->DIER &= ~TIM_DIER_CC1IE
+#define FUEL2_TIMER_DISABLE() (TIM3)->DIER &= ~TIM_DIER_CC2IE
+#define FUEL3_TIMER_DISABLE() (TIM3)->DIER &= ~TIM_DIER_CC3IE
+#define FUEL4_TIMER_DISABLE() (TIM3)->DIER &= ~TIM_DIER_CC4IE
 
-#define IGN1_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC1E
-#define IGN2_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC2E
-#define IGN3_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC3E
-#define IGN4_TIMER_ENABLE() (TIM2)->CCER |= TIM_CCER_CC4E
+#define IGN1_TIMER_ENABLE() (TIM2)->SR = ~TIM_FLAG_CC1; (TIM2)->DIER |= TIM_DIER_CC1IE
+#define IGN2_TIMER_ENABLE() (TIM2)->SR = ~TIM_FLAG_CC2; (TIM2)->DIER |= TIM_DIER_CC2IE
+#define IGN3_TIMER_ENABLE() (TIM2)->SR = ~TIM_FLAG_CC3; (TIM2)->DIER |= TIM_DIER_CC3IE
+#define IGN4_TIMER_ENABLE() (TIM2)->SR = ~TIM_FLAG_CC4; (TIM2)->DIER |= TIM_DIER_CC4IE
 
-#define IGN1_TIMER_DISABLE() (TIM2)->CCER &= ~TIM_CCER_CC1E
-#define IGN2_TIMER_DISABLE() (TIM2)->CCER &= ~TIM_CCER_CC2E
-#define IGN3_TIMER_DISABLE() (TIM2)->CCER &= ~TIM_CCER_CC3E
-#define IGN4_TIMER_DISABLE() (TIM2)->CCER &= ~TIM_CCER_CC4E
+#define IGN1_TIMER_DISABLE() (TIM2)->DIER &= ~TIM_DIER_CC1IE
+#define IGN2_TIMER_DISABLE() (TIM2)->DIER &= ~TIM_DIER_CC2IE
+#define IGN3_TIMER_DISABLE() (TIM2)->DIER &= ~TIM_DIER_CC3IE
+#define IGN4_TIMER_DISABLE() (TIM2)->DIER &= ~TIM_DIER_CC4IE
 
 
-#define FUEL5_TIMER_ENABLE() (TIM5)->CCER |= TIM_CCER_CC1E
-#define FUEL6_TIMER_ENABLE() (TIM5)->CCER |= TIM_CCER_CC2E
-#define FUEL7_TIMER_ENABLE() (TIM5)->CCER |= TIM_CCER_CC3E
-#define FUEL8_TIMER_ENABLE() (TIM5)->CCER |= TIM_CCER_CC4E
+#define FUEL5_TIMER_ENABLE() (TIM5)->SR = ~TIM_FLAG_CC1; (TIM5)->DIER |= TIM_DIER_CC1IE
+#define FUEL6_TIMER_ENABLE() (TIM5)->SR = ~TIM_FLAG_CC2; (TIM5)->DIER |= TIM_DIER_CC2IE
+#define FUEL7_TIMER_ENABLE() (TIM5)->SR = ~TIM_FLAG_CC3; (TIM5)->DIER |= TIM_DIER_CC3IE
+#define FUEL8_TIMER_ENABLE() (TIM5)->SR = ~TIM_FLAG_CC4; (TIM5)->DIER |= TIM_DIER_CC4IE
 
-#define FUEL5_TIMER_DISABLE() (TIM5)->CCER &= ~TIM_CCER_CC1E
-#define FUEL6_TIMER_DISABLE() (TIM5)->CCER &= ~TIM_CCER_CC2E
-#define FUEL7_TIMER_DISABLE() (TIM5)->CCER &= ~TIM_CCER_CC3E
-#define FUEL8_TIMER_DISABLE() (TIM5)->CCER &= ~TIM_CCER_CC4E
+#define FUEL5_TIMER_DISABLE() (TIM5)->DIER &= ~TIM_DIER_CC1IE
+#define FUEL6_TIMER_DISABLE() (TIM5)->DIER &= ~TIM_DIER_CC2IE
+#define FUEL7_TIMER_DISABLE() (TIM5)->DIER &= ~TIM_DIER_CC3IE
+#define FUEL8_TIMER_DISABLE() (TIM5)->DIER &= ~TIM_DIER_CC4IE
 
-#define IGN5_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC1E
-#define IGN6_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC2E
-#define IGN7_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC3E
-#define IGN8_TIMER_ENABLE() (TIM4)->CCER |= TIM_CCER_CC4E
+#define IGN5_TIMER_ENABLE() (TIM4)->SR = ~TIM_FLAG_CC1; (TIM4)->DIER |= TIM_DIER_CC1IE
+#define IGN6_TIMER_ENABLE() (TIM4)->SR = ~TIM_FLAG_CC2; (TIM4)->DIER |= TIM_DIER_CC2IE
+#define IGN7_TIMER_ENABLE() (TIM4)->SR = ~TIM_FLAG_CC3; (TIM4)->DIER |= TIM_DIER_CC3IE
+#define IGN8_TIMER_ENABLE() (TIM4)->SR = ~TIM_FLAG_CC4; (TIM4)->DIER |= TIM_DIER_CC4IE
 
-#define IGN5_TIMER_DISABLE() (TIM4)->CCER &= ~TIM_CCER_CC1E
-#define IGN6_TIMER_DISABLE() (TIM4)->CCER &= ~TIM_CCER_CC2E
-#define IGN7_TIMER_DISABLE() (TIM4)->CCER &= ~TIM_CCER_CC3E
-#define IGN8_TIMER_DISABLE() (TIM4)->CCER &= ~TIM_CCER_CC4E
+#define IGN5_TIMER_DISABLE() (TIM4)->DIER &= ~TIM_DIER_CC1IE
+#define IGN6_TIMER_DISABLE() (TIM4)->DIER &= ~TIM_DIER_CC2IE
+#define IGN7_TIMER_DISABLE() (TIM4)->DIER &= ~TIM_DIER_CC3IE
+#define IGN8_TIMER_DISABLE() (TIM4)->DIER &= ~TIM_DIER_CC4IE
 
   
 
@@ -161,11 +192,11 @@ extern "C" char* sbrk(int incr);
 ***********************************************************************************************************
 * Auxilliaries
 */
-#define ENABLE_BOOST_TIMER()  (TIM1)->CCER |= TIM_CCER_CC2E
-#define DISABLE_BOOST_TIMER() (TIM1)->CCER &= ~TIM_CCER_CC2E
+#define ENABLE_BOOST_TIMER()  (TIM1)->SR = ~TIM_FLAG_CC2; (TIM1)->DIER |= TIM_DIER_CC2IE
+#define DISABLE_BOOST_TIMER() (TIM1)->DIER &= ~TIM_DIER_CC2IE
 
-#define ENABLE_VVT_TIMER()    (TIM1)->CCER |= TIM_CCER_CC3E
-#define DISABLE_VVT_TIMER()   (TIM1)->CCER &= ~TIM_CCER_CC3E
+#define ENABLE_VVT_TIMER()    (TIM1)->SR = ~TIM_FLAG_CC3; (TIM1)->DIER |= TIM_DIER_CC3IE
+#define DISABLE_VVT_TIMER()   (TIM1)->DIER &= ~TIM_DIER_CC3IE
 
 #define BOOST_TIMER_COMPARE   (TIM1)->CCR2
 #define BOOST_TIMER_COUNTER   (TIM1)->CNT
@@ -179,8 +210,8 @@ extern "C" char* sbrk(int incr);
 #define IDLE_COUNTER   (TIM1)->CNT
 #define IDLE_COMPARE   (TIM1)->CCR4
 
-#define IDLE_TIMER_ENABLE()  (TIM1)->CCER |= TIM_CCER_CC4E
-#define IDLE_TIMER_DISABLE() (TIM1)->CCER &= ~TIM_CCER_CC4E
+#define IDLE_TIMER_ENABLE()  (TIM1)->SR = ~TIM_FLAG_CC4; (TIM1)->DIER |= TIM_DIER_CC4IE
+#define IDLE_TIMER_DISABLE() (TIM1)->DIER &= ~TIM_DIER_CC4IE
 
 /*
 ***********************************************************************************************************
