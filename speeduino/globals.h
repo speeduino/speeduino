@@ -1191,7 +1191,7 @@ struct config10 {
   byte vvt2Pin : 6;
   byte unused11_174_1 : 1;
   byte unused11_174_2 : 1;
-  
+
   byte fuelTempBins[6];
   byte fuelTempValues[6];
 

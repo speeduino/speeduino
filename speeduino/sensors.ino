@@ -640,12 +640,12 @@ void flexPulse()
 {
   if(READ_FLEX() == true)
   {
-    flexPW = (micros() - flexFallingEdge); //Calculate the pulse width
+    flexPulseWidth = (micros() - flexStartTime); //Calculate the pulse width
     ++flexCounter;
   }
   else
   {
-    flexFallingEdge = micros(); //Start pulse width measurement.
+    flexStartTime = micros(); //Start pulse width measurement.
   }
 }
 

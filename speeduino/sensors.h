@@ -31,8 +31,8 @@
 */
 
 volatile byte flexCounter = 0;
-volatile unsigned long flexFallingEdge;
-volatile unsigned long flexPW;
+volatile unsigned long flexStartTime;
+volatile unsigned long flexPulseWidth;
 
 #if defined(CORE_AVR)
   #define READ_FLEX() ((*flex_pin_port & flex_pin_mask) ? true : false)
