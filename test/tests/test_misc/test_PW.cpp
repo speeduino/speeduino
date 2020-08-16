@@ -33,8 +33,9 @@ void test_PW_No_Multiply()
 {
   test_PW_setCommon();
 
-  configPage2.multiplyMAP = false;
-  configPage2.includeAFR = false;
+  configPage2.multiplyMAP = 0;
+  configPage2.includeAFR = 0;
+  configPage2.incorporateAFR = 0;
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2557, result);
@@ -44,9 +45,10 @@ void test_PW_MAP_Multiply()
 {
   test_PW_setCommon();
 
-  configPage2.multiplyMAP = true;
+  configPage2.multiplyMAP = 1;
   currentStatus.baro = 100;
-  configPage2.includeAFR = false;
+  configPage2.includeAFR = 0;
+  configPage2.incorporateAFR = 0;
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2449, result);
@@ -56,9 +58,10 @@ void test_PW_AFR_Multiply()
 {
   test_PW_setCommon();
 
-  configPage2.multiplyMAP = false;
+  configPage2.multiplyMAP = 0;
   currentStatus.baro = 100;
-  configPage2.includeAFR = true;
+  configPage2.includeAFR = 1;
+  configPage2.incorporateAFR = 0;
   configPage6.egoType = 2; //Set O2 sensor type to wideband
   currentStatus.runSecs = 20; configPage6.ego_sdelay = 10; //Ensure that the run time is longer than the O2 warmup time
   currentStatus.O2 = 150;
@@ -82,8 +85,9 @@ void test_PW_Large_Correction()
   test_PW_setCommon();
   corrections = 600;
 
-  configPage2.multiplyMAP = false;
-  configPage2.includeAFR = false;
+  configPage2.multiplyMAP = 0;
+  configPage2.includeAFR = 0;
+  configPage2.incorporateAFR = 0;
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 9268, result);
@@ -95,8 +99,9 @@ void test_PW_Very_Large_Correction()
   test_PW_setCommon();
   corrections = 1500;
 
-  configPage2.multiplyMAP = false;
-  configPage2.includeAFR = false;
+  configPage2.multiplyMAP = 0;
+  configPage2.includeAFR = 0;
+  configPage2.incorporateAFR = 0;
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR+30, 21670, result); //Additional allowed error here 

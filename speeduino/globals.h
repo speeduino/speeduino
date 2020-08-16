@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include "table.h"
 #include <assert.h>
+#include "logger.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define BOARD_DIGITAL_GPIO_PINS 54
@@ -36,8 +37,8 @@
     #define BOARD_H "board_teensy35.h"
     #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
   #elif defined(__IMXRT1062__)
-    #define CORE_TEENSY40
-    #define BOARD_H "board_teensy40.h"
+    #define CORE_TEENSY41
+    #define BOARD_H "board_teensy41.h"
   #endif
   #define INJ_CHANNELS 8
   #define IGN_CHANNELS 8
@@ -52,9 +53,9 @@
    #define IGN_CHANNELS 5
   #endif
 
-//Select one for EEPROM, default are emulated and is very slow
-//#define SRAM_AS_EEPROM /*Use RTC registers, requires a 3V battery connected to Vbat pin */
-//#define SPIFLASH_AS_EEPROM /*Use M25Qxx SPI flash */
+//Select one for EEPROM,the default is EEPROM emulation on internal flash.
+//#define SRAM_AS_EEPROM /*Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin */
+#define USE_SPI_EEPROM PB0 /*Use M25Qxx SPI flash */
 //#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
 
   #ifndef word
@@ -169,7 +170,7 @@
 #define BIT_STATUS3_NITROUS       1
 #define BIT_STATUS3_FUEL2_ACTIVE  2
 #define BIT_STATUS3_VSS_REFRESH   3
-#define BIT_STATUS3_UNUSED4       4
+#define BIT_STATUS3_HALFSYNC      4 //shows if there is only sync from primary trigger, but not from secondary.
 #define BIT_STATUS3_NSQUIRTS1     5
 #define BIT_STATUS3_NSQUIRTS2     6
 #define BIT_STATUS3_NSQUIRTS3     7
@@ -211,6 +212,11 @@
 #define BOOST_MODE_SIMPLE   0
 #define BOOST_MODE_FULL     1
 
+#define WMI_MODE_SIMPLE       0
+#define WMI_MODE_PROPORTIONAL 1
+#define WMI_MODE_OPENLOOP     2
+#define WMI_MODE_CLOSEDLOOP   3
+
 #define HARD_CUT_FULL       0
 #define HARD_CUT_ROLLING    1
 
@@ -238,6 +244,9 @@
 
 #define AE_MODE_TPS         0
 #define AE_MODE_MAP         1
+
+#define AE_MODE_MULTIPLIER  0
+#define AE_MODE_ADDER       1
 
 #define KNOCK_MODE_OFF      0
 #define KNOCK_MODE_DIGITAL  1
@@ -270,6 +279,10 @@
 #define VVT_MODE_CLOSED_LOOP 2
 #define VVT_LOAD_MAP      0
 #define VVT_LOAD_TPS      1
+
+#define MULTIPLY_MAP_MODE_OFF   0
+#define MULTIPLY_MAP_MODE_BARO  1
+#define MULTIPLY_MAP_MODE_100   2
 
 #define FOUR_STROKE         0
 #define TWO_STROKE          1
@@ -310,13 +323,19 @@
 
 #define SERIAL_BUFFER_THRESHOLD 32 // When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
 
-#define FUEL_PUMP_ON() *pump_pin_port |= (pump_pin_mask)
-#define FUEL_PUMP_OFF() *pump_pin_port &= ~(pump_pin_mask)
+#ifndef CORE_TEENSY41
+  #define FUEL_PUMP_ON() *pump_pin_port |= (pump_pin_mask)
+  #define FUEL_PUMP_OFF() *pump_pin_port &= ~(pump_pin_mask)
+#else
+  //Special compatibility case for TEENSY 41 (for now)
+  #define FUEL_PUMP_ON() digitalWrite(pinFuelPump, HIGH);
+  #define FUEL_PUMP_OFF() digitalWrite(pinFuelPump, LOW);
+#endif
 
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing.
-#define NUM_PAGES     12
+#define NUM_PAGES     14
 extern const uint16_t npage_size[NUM_PAGES]; /**< This array stores the size (in bytes) of each configuration page */
 #define MAP_PAGE_SIZE 288
 
@@ -327,6 +346,7 @@ extern struct table3D afrTable; //16x16 afr target map
 extern struct table3D stagingTable; //8x8 fuel staging table
 extern struct table3D boostTable; //8x8 boost map
 extern struct table3D vvtTable; //8x8 vvt map
+extern struct table3D wmiTable; //8x8 wmi map
 extern struct table3D trim1Table; //6x6 Fuel trim 1 map
 extern struct table3D trim2Table; //6x6 Fuel trim 2 map
 extern struct table3D trim3Table; //6x6 Fuel trim 3 map
@@ -355,6 +375,7 @@ extern struct table2D fuelTempTable;  //6 bin fuel temperature correction table 
 extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
+extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -433,6 +454,8 @@ extern int ignition7StartAngle;
 extern int ignition8StartAngle;
 
 //These are variables used across multiple files
+extern byte fullStatus[LOG_ENTRY_SIZE];
+extern byte fsIntIndex[31];
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern volatile uint16_t mainLoopCount;
@@ -572,10 +595,10 @@ struct statuses {
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
-  //int8_t vvtAngle;
-  long vvtAngle;
-  byte vvtTargetAngle;
-  byte vvtDuty;
+  //int8_t vvt1Angle;
+  long vvt1Angle;
+  byte vvt1TargetAngle;
+  byte vvt1Duty;
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss; /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
@@ -583,6 +606,12 @@ struct statuses {
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure; /**< Oil pressure in PSI */
   byte engineProtectStatus;
+  byte wmiPW;
+  bool wmiEmpty;
+  long vvt2Angle;
+  byte vvt2TargetAngle;
+  byte vvt2Duty;
+  byte outputsStatus;
 };
 
 /**
@@ -599,7 +628,9 @@ struct config2 {
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
   byte battVCorMode : 1;
   byte SoftLimitMode : 1;
-  byte unused1_3c : 4;
+  byte unused1_3c : 1;
+  byte aeApplyMode : 1;
+  byte multiplyMAP : 2; //0 = off | 1 = baro | 2 = 100
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
   byte pinMapping; // The board / ping mapping to be used
@@ -625,7 +656,7 @@ struct config2 {
   byte reqFuel;       //24
   byte divider;
   byte injTiming : 1;
-  byte multiplyMAP : 1;
+  byte multiplyMAP_old : 1;
   byte includeAFR : 1;
   byte hardCutType : 1;
   byte ignAlgorithm : 3;
@@ -690,7 +721,8 @@ struct config2 {
 
   byte fanWhenOff : 1;      // Only run fan when engine is running
   byte fanWhenCranking : 1;      //**< Setting whether the fan output will stay on when the engine is cranking */ 
-  byte fanUnused : 6;
+  byte fanUnused : 5;
+  byte incorporateAFR : 1;  //Incorporate AFR
   byte asePct[4];  //Afterstart enrichment (%)
   byte aseCount[4]; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte aseBins[4]; //Afterstart enrichment temp axis
@@ -843,7 +875,7 @@ struct config6 {
   byte egoCount; //The number of ignition cylces per step
   byte vvtMode : 2; //Valid VVT modes are 'on/off', 'open loop' and 'closed loop'
   byte vvtLoadSource : 2; //Load source for VVT (TPS or MAP)
-  byte vvtCLDir : 1; //VVT direction (advance or retard)
+  byte vvtPWMdir : 1; //VVT direction (normal or reverse)
   byte vvtCLUseHold : 1; //Whether or not to use a hold duty cycle (Most cases are Yes)
   byte vvtCLAlterFuelTiming : 1;
   byte boostCutEnabled : 1;
@@ -853,7 +885,7 @@ struct config6 {
   byte ego_sdelay; //Time in seconds after engine starts that closed loop becomes available
   byte egoRPM; //RPM must be above this for closed loop to function
   byte egoTPSMax; //TPS must be below this for closed loop to function
-  byte vvtPin : 6;
+  byte vvt1Pin : 6;
   byte useExtBaro : 1;
   byte boostMode : 1; //Simple of full boost control
   byte boostPin : 6;
@@ -1108,8 +1140,8 @@ struct config10 {
   byte vvtCLKP; //Byte 127
   byte vvtCLKI; //Byte 128
   byte vvtCLKD; //Byte 129
-  uint16_t vvtCLMinAng; //Bytes 130-131
-  uint16_t vvtCLMaxAng; //Bytes 132-133
+  int16_t vvtCLMinAng; //Bytes 130-131
+  int16_t vvtCLMaxAng; //Bytes 132-133
 
   byte crankingEnrichTaper; //Byte 134
 
@@ -1129,10 +1161,73 @@ struct config10 {
   byte oilPressureProtRPM[4];
   byte oilPressureProtMins[4];
 
+  byte wmiEnabled : 1; // Byte 149
+  byte wmiMode : 6;
+  
+  byte wmiAdvEnabled : 1;
+
+  byte wmiTPS; // Byte 150
+  byte wmiRPM; // Byte 151
+  byte wmiMAP; // Byte 152
+  byte wmiMAP2; // Byte 153
+  byte wmiIAT; // Byte 154
+  int8_t wmiOffset; // Byte 155
+
+  byte wmiIndicatorEnabled : 1; // 156
+  byte wmiIndicatorPin : 6;
+  byte wmiIndicatorPolarity : 1;
+
+  byte wmiEmptyEnabled : 1; // 157
+  byte wmiEmptyPin : 6;
+  byte wmiEmptyPolarity : 1;
+
+  byte wmiEnabledPin; // 158
+
+  byte wmiAdvBins[6]; //Bytes 159-164
+  byte wmiAdvAdj[6];  //Additional advance (in degrees)
+                      //Bytes 165-170
+  byte vvtCLminDuty;
+  byte vvtCLmaxDuty;
+  byte vvt2Pin : 6;
+  byte unused11_174_1 : 1;
+  byte unused11_174_2 : 1;
+  
   byte fuelTempBins[6];
   byte fuelTempValues[6];
 
-  byte unused11_162_191[31]; //Bytes 162-191
+  byte unused11_187_191[6]; //Bytes 187-191
+
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+#endif
+
+struct cmpOperation{
+  uint8_t firstCompType : 3;
+  uint8_t secondCompType : 3;
+  uint8_t bitwise : 2;
+};
+
+/*
+Page 13 - Programmable outputs conditions.
+128 bytes long
+*/
+struct config13 {
+  uint8_t outputInverted;
+  uint8_t unused12_1;
+  uint8_t outputPin[8];
+  uint8_t outputDelay[8]; //0.1S
+  uint16_t firstDataIn[8];
+  uint16_t secondDataIn[8];
+  int16_t firstTarget[8];
+  int16_t secondTarget[8];
+  //89bytes
+  struct cmpOperation operation[8];
+
+  uint16_t candID[8]; //Actual CAN ID need 16bits, this is a placeholder
+
+  byte unused12_106_127[22];
 
 #if defined(CORE_AVR)
   };
@@ -1206,6 +1301,9 @@ extern byte pinBaro; //Pin that an external barometric pressure sensor is attach
 extern byte pinResetControl; // Output pin used control resetting the Arduino
 extern byte pinFuelPressure;
 extern byte pinOilPressure;
+extern byte pinWMIEmpty; // Water tank empty sensor
+extern byte pinWMIIndicator; // No water indicator bulb
+extern byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   extern byte pinMC33810_1_CS;
@@ -1227,22 +1325,25 @@ extern struct config4 configPage4;
 extern struct config6 configPage6;
 extern struct config9 configPage9;
 extern struct config10 configPage10;
+extern struct config13 configPage13;
 //extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
 //extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
-extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
+//extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
 
 extern uint16_t cltCalibration_bins[32];
 extern uint16_t cltCalibration_values[32];
 extern uint16_t iatCalibration_bins[32];
 extern uint16_t iatCalibration_values[32];
-extern struct table2D cltCalibrationTable_new; /**< A 32 bin array containing the coolant temperature sensor calibration values */
-extern struct table2D iatCalibrationTable_new; /**< A 32 bin array containing the inlet air temperature sensor calibration values */
-extern struct table2D o2CalibrationTable_new; /**< A 32 bin array containing the O2 sensor calibration values */
+extern uint16_t o2Calibration_bins[32];
+extern uint8_t  o2Calibration_values[32]; // Note 8-bit values
+extern struct table2D cltCalibrationTable; /**< A 32 bin array containing the coolant temperature sensor calibration values */
+extern struct table2D iatCalibrationTable; /**< A 32 bin array containing the inlet air temperature sensor calibration values */
+extern struct table2D o2CalibrationTable; /**< A 32 bin array containing the O2 sensor calibration values */
 
 static_assert(sizeof(struct config2) == 128, "configPage2 size is not 128");
 static_assert(sizeof(struct config4) == 128, "configPage4 size is not 128");
 static_assert(sizeof(struct config6) == 128, "configPage6 size is not 128");
 static_assert(sizeof(struct config9) == 192, "configPage9 size is not 192");
 static_assert(sizeof(struct config10) == 192, "configPage10 size is not 192");
-
+static_assert(sizeof(struct config13) == 128, "configPage13 size is not 128");
 #endif // GLOBALS_H

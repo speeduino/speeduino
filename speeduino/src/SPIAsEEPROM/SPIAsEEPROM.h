@@ -2,6 +2,7 @@
  * Copyright (C) 2020 by Tjeerd Hoogendijk
  * Created by Tjeerd Hoogendijk - 21/09/2019
  * Updated by Tjeerd Hoogendijk - 19/04/2020
+ * Updated by Tjeerd Hoogendijk - 21/07/2020 no new version number
  *
  * This file is part of the Speeduino project. This library started out for
  * Winbond SPI flash memory modules. As of version 2.0 it also works with internal
@@ -110,29 +111,14 @@
 #include "winbondflash.h"
 #include <SPI.h>
 
-#if defined(USE_SPI_EEPROM)
-  //windbond W25Q16 SPI flash EEPROM emulation
-  #define FLASH_SECTORS_USED          255UL  //This can be any number from 1 to many. 
-  #define FLASH_SECTOR_SIZE           4096UL //Flash sector size this is determined by the physical device. This is the smallest block that can be erased at one time 
-  #define EEPROM_BYTES_PER_SECTOR     31 //(FLASH_SECTOR_SIZE/EEPROM_BYTES_PER_SECTOR+1) Must be integer number and aligned with page size of flash used. For windbond align with 256bytes. 
-  #define EEPROM_FLASH_BASEADRESS     0x00100000UL //address to start from can be zero or any other place in flash. make sure EEPROM_FLASH_BASEADRESS+FLASH_SIZE_USED is not over end of flash
-
-#elif defined(STM32F407xx) 
-  #include "stm32_def.h"
-  //Internal flash STM32F407 EEPROM emulation
-  #define FLASH_SECTORS_USED          4UL  //This can be any number from 1 to many. 
-  #define FLASH_SECTOR_SIZE           131072UL //Flash sector size this is determined by the physical device. This is the smallest block that can be erased at one time 
-  #define EEPROM_BYTES_PER_SECTOR     2047UL //(FLASH_SECTOR_SIZE/EEPROM_BYTES_PER_SECTOR+1) Must be integer number and aligned with page size of flash used. 
-  #define EEPROM_FLASH_BASEADRESS     0x08080000UL //address to start from can be zero or any other place in flash. make sure EEPROM_FLASH_BASEADRESS+FLASH_SIZE_USED is not over end of flash
-
-#elif defined(STM32F103xB) 
-  #include "stm32_def.h"
-  //Internal flash STM32F407 EEPROM emulation
-  #define FLASH_SECTORS_USED          9UL  //This can be any number from 1 to many. 
-  #define FLASH_SECTOR_SIZE           1024UL //Flash sector size this is determined by the physical device. This is the smallest block that can be erased at one time 
-  #define EEPROM_BYTES_PER_SECTOR     127UL //(FLASH_SECTOR_SIZE/EEPROM_BYTES_PER_SECTOR+1) Must be integer number and aligned with page size of flash used. 
-  #define EEPROM_FLASH_BASEADRESS     0x801D400UL //address to start from can be zero or any other place in flash. make sure EEPROM_FLASH_BASEADRESS+FLASH_SIZE_USED is not over end of flash
-#endif
+// #elif defined(STM32F103xB) 
+//   #include "stm32_def.h"
+//   //Internal flash STM32F407 EEPROM emulation
+//   #define FLASH_SECTORS_USED          9UL  //This can be any number from 1 to many. 
+//   #define FLASH_SECTOR_SIZE           1024UL //Flash sector size this is determined by the physical device. This is the smallest block that can be erased at one time 
+//   #define EEPROM_BYTES_PER_SECTOR     127UL //(FLASH_SECTOR_SIZE/EEPROM_BYTES_PER_SECTOR+1) Must be integer number and aligned with page size of flash used. 
+//   #define EEPROM_FLASH_BASEADRESS     0x801D400UL //address to start from can be zero or any other place in flash. make sure EEPROM_FLASH_BASEADRESS+FLASH_SIZE_USED is not over end of flash
+// #endif
 
 #define MAGICNUMBER1                0xC0
 #define MAGICNUMBER2                0xFF
@@ -143,12 +129,16 @@
 #define BITS_PER_BYTE 8 
 
 typedef struct {
-  uint32_t Flash_Sectors_Used;
-  uint32_t Flash_Sector_Size;
-  uint32_t EEPROM_Bytes_Per_Sector;
-  uint32_t EEPROM_Flash_BaseAddress;
+  uint32_t Flash_Sectors_Used;        //This the number of flash sectors used for EEPROM emulation can be any number from 1 to many. 
+  uint32_t Flash_Sector_Size;         //Flash sector size: This is determined by the physical device. This is the smallest block that can be erased at one time 
+  uint32_t EEPROM_Bytes_Per_Sector;   //EEPROM bytes per sector: (Flash sector size/EEPROM bytes per sector+1) -> Must be integer number and aligned with page size of flash used. 
+  uint32_t EEPROM_Flash_BaseAddress;  //Flash address to start Emulation from, can be zero or any other place in flash. make sure EEPROM_FLASH_BASEADRESS+FLASH_SIZE_USED is not over end of flash
 } EEPROM_Emulation_Config;
 
+typedef struct {
+  uint16_t pinChipSelect;
+  SPIClass SPIport;
+} Flash_SPI_Config;
 
 //Base class for flash read and write. SPI and internal flash inherrit from this class. 
 class FLASH_EEPROM_BaseClass 
@@ -185,6 +175,31 @@ class FLASH_EEPROM_BaseClass
      * @return number of bytes written to flash 
      */
     int8_t update(uint16_t, uint8_t);
+
+    /**
+     * Read AnyTypeOfData from eeprom 
+     * @param address
+     * @return AnyTypeOfData
+     */
+    template< typename T > T &get( int idx, T &t ){
+        uint16_t e = idx;
+        uint8_t *ptr = (uint8_t*) &t;
+        for( int count = sizeof(T) ; count ; --count, ++e )  *ptr++ = read(e);
+        return t;
+    }
+
+    /**
+     * Write AnyTypeOfData to eeprom
+     * @param address 
+     * @param AnyTypeOfData 
+     * @return number of bytes written to flash 
+     */
+    template< typename T > const T &put( int idx, const T &t ){        
+        const uint8_t *ptr = (const uint8_t*) &t;
+        uint16_t e = idx;
+        for( int count = sizeof(T) ; count ; --count, ++e )  write(e, *ptr++);
+        return t;
+    }
 
     /**
      * Clear emulated eeprom sector
@@ -282,12 +297,12 @@ class SPI_EEPROM_Class : public FLASH_EEPROM_BaseClass
 {
 
   public:
-    SPI_EEPROM_Class(EEPROM_Emulation_Config);
+    SPI_EEPROM_Class(EEPROM_Emulation_Config, Flash_SPI_Config);
 
     /**
      * begin emulated EEPROM in flash
      * @param Chip_select_pin
-     * @param SPI_Instance
+     * @param SPI_object
      * @return succes 
      */
     int8_t begin(SPIClass&, uint8_t);
@@ -330,6 +345,9 @@ class SPI_EEPROM_Class : public FLASH_EEPROM_BaseClass
 
     //winbond flash class instance for interacting with the spi flash chip
     winbondFlashSPI winbondSPIFlash;
+
+    //SPI configuration struct. Now only the CS pins is used, future extension can be the use SPI object or MOSI/MISO/SCK pins
+    Flash_SPI_Config _configSPI;
 };
 
 //Internal flash class for flash EEPROM emulation. Inherrit most from the base class. 
@@ -420,10 +438,45 @@ class InternalSTM32F4_EEPROM_Class : public FLASH_EEPROM_BaseClass
 //     int8_t eraseFlashSector(uint32_t, uint32_t);
 // };
 
-#if defined(USE_SPI_EEPROM)
-  extern SPI_EEPROM_Class EEPROM;
-#elif defined(STM32F407xx) && !defined(SRAM_AS_EEPROM)
-  extern InternalSTM32F4_EEPROM_Class EEPROM;
-#endif
+class InternalSTM32F7_EEPROM_Class : public FLASH_EEPROM_BaseClass
+{
+  public:
+    InternalSTM32F7_EEPROM_Class(EEPROM_Emulation_Config);
+
+    /**
+     * Read an eeprom cell
+     * @param address
+     * @return value
+     */
+    byte read(uint16_t);
+
+
+    /**
+     * Read bytes from the flash storage
+     * @param address
+     * @param buffer
+     * @param length
+     * @return succes 
+     */
+    int8_t readFlashBytes(uint32_t , byte*, uint32_t);
+
+    /**
+     * Write bytes to the flash storage
+     * @param address
+     * @param buffer
+     * @param length
+     * @return succes 
+     */
+    int8_t writeFlashBytes(uint32_t, byte*, uint32_t);
+
+    /**
+     * Erase a flash sector. Adress determines the flash sector to erase. 
+     * length is specified in number of bytes. if number of bytes > sector size, more than one sector is erased
+     * @param address
+     * @param length
+     * @return succes 
+     */
+    int8_t eraseFlashSector(uint32_t, uint32_t);
+};
 
 #endif

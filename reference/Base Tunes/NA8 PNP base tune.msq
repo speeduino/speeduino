@@ -700,7 +700,7 @@
         <constant digits="0" name="egoCount">16.0</constant>
         <constant name="vvtMode">"On/Off"</constant>
         <constant name="vvtLoadSource">"MAP"</constant>
-        <constant name="vvtCLDir">"Advance"</constant>
+        <constant name="vvtPWMdir">"Advance"</constant>
         <constant name="vvtCLUseHold">"Yes"</constant>
         <constant name="vvtCLAlterFuelTiming">"No"</constant>
         <constant name="unused6-6">"MAP"</constant>
@@ -710,7 +710,7 @@
         <constant digits="0" name="ego_sdelay" units="sec">15.0</constant>
         <constant digits="0" name="egoRPM" units="rpm">1200.0</constant>
         <constant digits="0" name="egoTPSMax" units="%">70.0</constant>
-        <constant name="vvtPin">"26"</constant>
+        <constant name="vvt1Pin">"26"</constant>
         <constant name="useExtBaro">"No"</constant>
         <constant name="boostMode">"Simple"</constant>
         <constant name="boostPin">"20"</constant>
