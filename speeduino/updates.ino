@@ -408,6 +408,11 @@ void doUpdates()
       configPage10.wmiAdvAdj[i] = OFFSET_IGNITION;
     }
 
+    //New multiply MAP option added. Set new option to be the same as old
+    configPage2.multiplyMAP = configPage2.multiplyMAP_old;
+    //New AE option added to allow for PW added in addition to existing PW multiply
+    configPage2.aeApplyMode = 0; //Set the AE mode to Multiply
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 15);
 

@@ -275,7 +275,7 @@ Only if both these conditions are met will the schedule be updated with the late
 If it's the correct tooth, but the schedule is not yet started, calculate and an end compare value (This situation occurs when both the start and end of the ignition pulse happen after the end tooth, but before the next tooth)
 */
 #define MIN_CYCLES_FOR_ENDCOMPARE 6
-static inline void checkPerToothTiming(uint16_t crankAngle, uint16_t currentTooth)
+static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth)
 {
   if ( (fixedCrankingOverride == 0) && (currentStatus.RPM > 0) )
   {
@@ -460,6 +460,7 @@ void triggerPri_missingTooth()
       if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
       {
         int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
+        crankAngle = ignitionLimits(crankAngle);
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
         {
           crankAngle += 360;
@@ -908,7 +909,7 @@ void triggerPri_BasicDistributor()
 
     if(configPage2.perToothIgn == true)
     {
-      uint16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
+      int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
       crankAngle = ignitionLimits((crankAngle));
       if(toothCurrentCount > (triggerActualTeeth/2) ) { checkPerToothTiming(crankAngle, (toothCurrentCount - (triggerActualTeeth/2))); }
       else { checkPerToothTiming(crankAngle, toothCurrentCount); }
@@ -1040,7 +1041,7 @@ void triggerPri_GM7X()
       if(toothCurrentCount != 3) //Never do the check on the extra tooth. It's not needed anyway
       {
         //configPage4.triggerAngle must currently be below 48 and above -81
-        uint16_t crankAngle;
+        int16_t crankAngle;
         if( toothCurrentCount < 3 )
         {
           crankAngle = ((toothCurrentCount - 1) * triggerToothAngle) + 42 + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
@@ -1333,7 +1334,7 @@ void triggerPri_4G63()
       {
         if( (configPage2.nCylinders == 4) && (currentStatus.advance > 0) )
         {
-          uint16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
+          int16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
 
           //Handle non-sequential tooth counts 
           if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-configPage2.nCylinders) ); }
@@ -2110,7 +2111,7 @@ void triggerPri_Miata9905()
       {
         if (currentStatus.advance > 0)
         {
-          uint16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
+          int16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
 
           //Handle non-sequential tooth counts 
           if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-configPage2.nCylinders) ); }
@@ -3367,7 +3368,8 @@ void triggerPri_ThirtySixMinus222()
      //EXPERIMENTAL!
      if(configPage2.perToothIgn == true)
      {
-       uint16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
+       int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
+       crankAngle = ignitionLimits(crankAngle);
        checkPerToothTiming(crankAngle, toothCurrentCount);
      }
 
@@ -3501,7 +3503,8 @@ void triggerPri_ThirtySixMinus21()
      //EXPERIMENTAL!
      if(configPage2.perToothIgn == true)
      {
-       uint16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
+       int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
+       crankAngle = ignitionLimits(crankAngle);
        checkPerToothTiming(crankAngle, toothCurrentCount);
      }
 
@@ -3617,7 +3620,8 @@ void triggerPri_420a()
     //EXPERIMENTAL!
     if(configPage2.perToothIgn == true)
     {
-      uint16_t crankAngle = ( toothAngles[(toothCurrentCount-1)] ) + configPage4.triggerAngle;
+      int16_t crankAngle = ( toothAngles[(toothCurrentCount-1)] ) + configPage4.triggerAngle;
+      crankAngle = ignitionLimits(crankAngle);
       checkPerToothTiming(crankAngle, toothCurrentCount);
     }
   }
