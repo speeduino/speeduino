@@ -623,7 +623,7 @@ struct config2 {
   byte battVCorMode : 1;
   byte SoftLimitMode : 1;
   byte unused1_3c : 1;
-  byte aeApplyMode : 1;
+  byte aeApplyMode : 1; //0 = Multiply | 1 = Add
   byte multiplyMAP : 2; //0 = off | 1 = baro | 2 = 100
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment

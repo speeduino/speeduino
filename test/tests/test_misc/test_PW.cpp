@@ -9,6 +9,7 @@ void testPW(void)
 {
   RUN_TEST(test_PW_No_Multiply);
   RUN_TEST(test_PW_MAP_Multiply);
+  RUN_TEST(test_PW_MAP_Multiply_Compatibility);
   RUN_TEST(test_PW_AFR_Multiply);
   RUN_TEST(test_PW_Large_Correction);
   RUN_TEST(test_PW_Very_Large_Correction);
@@ -36,6 +37,7 @@ void test_PW_No_Multiply()
   configPage2.multiplyMAP = 0;
   configPage2.includeAFR = 0;
   configPage2.incorporateAFR = 0;
+  configPage2.aeApplyMode = 0;
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2557, result);
@@ -46,9 +48,24 @@ void test_PW_MAP_Multiply()
   test_PW_setCommon();
 
   configPage2.multiplyMAP = 1;
-  currentStatus.baro = 100;
+  currentStatus.baro = 103;
   configPage2.includeAFR = 0;
   configPage2.incorporateAFR = 0;
+  configPage2.aeApplyMode = 0;
+
+  uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
+  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2400, result);
+}
+
+void test_PW_MAP_Multiply_Compatibility()
+{
+  test_PW_setCommon();
+
+  configPage2.multiplyMAP = 2; //Divide MAP reading by 100 rather than by Baro reading
+  currentStatus.baro = 103;
+  configPage2.includeAFR = 0;
+  configPage2.incorporateAFR = 0;
+  configPage2.aeApplyMode = 0;
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2449, result);
@@ -62,6 +79,7 @@ void test_PW_AFR_Multiply()
   currentStatus.baro = 100;
   configPage2.includeAFR = 1;
   configPage2.incorporateAFR = 0;
+  configPage2.aeApplyMode = 0;
   configPage6.egoType = 2; //Set O2 sensor type to wideband
   currentStatus.runSecs = 20; configPage6.ego_sdelay = 10; //Ensure that the run time is longer than the O2 warmup time
   currentStatus.O2 = 150;
@@ -88,6 +106,7 @@ void test_PW_Large_Correction()
   configPage2.multiplyMAP = 0;
   configPage2.includeAFR = 0;
   configPage2.incorporateAFR = 0;
+  configPage2.aeApplyMode = 0;
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 9268, result);
@@ -102,6 +121,7 @@ void test_PW_Very_Large_Correction()
   configPage2.multiplyMAP = 0;
   configPage2.includeAFR = 0;
   configPage2.incorporateAFR = 0;
+  configPage2.aeApplyMode = 0;
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR+30, 21670, result); //Additional allowed error here 
