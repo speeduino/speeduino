@@ -314,6 +314,7 @@
 #define ENGINE_PROTECT_BIT_MAP  1
 #define ENGINE_PROTECT_BIT_OIL  2
 #define ENGINE_PROTECT_BIT_AFR  3
+#define ENGINE_PROTECT_BIT_CLT_PRESSURE  4
 
 //Table sizes
 #define CALIBRATION_TABLE_SIZE 512
@@ -375,6 +376,7 @@ extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
+extern struct table2D cltPressureProtectTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -606,6 +608,8 @@ struct statuses {
   byte vvt2TargetAngle;
   byte vvt2Duty;
   byte outputsStatus;
+  byte cltPressure;  /**< Coolant pressure in PSI */
+
 };
 
 /**
@@ -1054,7 +1058,7 @@ struct config10 {
   uint16_t stagedInjSizeSec; //Bytes 30-31
   byte lnchCtrlTPS; //Byte 32
 
-  uint8_t flexBoostBins[6]; //Byets 33-38
+  uint8_t flexBoostBins[6]; //Bytes 33-38
   int16_t flexBoostAdj[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed). Bytes 39-50
   uint8_t flexFuelBins[6]; //Bytes 51-56
   uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%). Bytes 57-62
@@ -1139,10 +1143,13 @@ struct config10 {
 
   byte crankingEnrichTaper; //Byte 134
 
-  byte fuelPressureEnable : 1;
-  byte oilPressureEnable : 1;
+  //Byte 135
+  byte fuelPressureEnable : 1;  
+  byte oilPressureEnable : 1; 
   byte oilPressureProtEnbl : 1;
-  byte unused10_135 : 5;
+  byte cltPressureEnable : 1;
+  byte cltPressureProtEnbl : 1;
+  byte unused10_135 : 3;
 
   byte fuelPressurePin : 4;
   byte oilPressurePin : 4;
@@ -1186,7 +1193,15 @@ struct config10 {
   byte unused11_174_1 : 1;
   byte unused11_174_2 : 1;
 
-  byte unused11_175_191[18]; //Bytes 175-191
+  byte cltPressurePin : 4;
+  byte unused11_174 : 4;
+  int8_t cltPressureMin;
+  byte cltPressureMax;
+  byte cltPressureProtRPM[4];
+  byte cltPressureProtMax[4];
+  
+
+  byte unused11_185_191[7]; //Bytes 186-191
 
 #if defined(CORE_AVR)
   };
@@ -1295,6 +1310,7 @@ extern byte pinOilPressure;
 extern byte pinWMIEmpty; // Water tank empty sensor
 extern byte pinWMIIndicator; // No water indicator bulb
 extern byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
+extern byte pinCltPressure;
 #ifdef USE_MC33810
   //If the MC33810 IC\s are in use, these are the chip select pins
   extern byte pinMC33810_1_CS;

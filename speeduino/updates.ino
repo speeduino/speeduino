@@ -394,6 +394,9 @@ void doUpdates()
     configPage10.oilPressureProtEnbl = false;
     configPage10.oilPressureEnable = false;
     configPage10.fuelPressureEnable = false;
+    
+    configPage10.cltPressureEnable = false;
+    configPage10.cltPressureProtEnbl = false;
 
     //wmi
     configPage10.wmiEnabled = 0;
@@ -415,6 +418,7 @@ void doUpdates()
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 15);
+
 
   }
   

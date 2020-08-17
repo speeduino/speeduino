@@ -631,6 +631,28 @@ byte getOilPressure()
 
   return (byte)tempOilPressure;
 }
+byte getCltPressure()
+{
+  int16_t tempCltPressure = 0;
+  uint16_t tempReading;
+
+  if(configPage10.cltPressureEnable)
+  {
+    //Perform ADC read
+    tempReading = analogRead(pinCltPressure);
+    tempReading = analogRead(pinCltPressure);
+
+
+    tempCltPressure = fastMap10Bit(tempReading, configPage10.cltPressureMin, configPage10.cltPressureMax);
+    tempCltPressure = ADC_FILTER(tempCltPressure, 150, currentStatus.cltPressure); //Apply speed smoothing factor
+    //Sanity checks
+    if(tempCltPressure < 0) { tempCltPressure = 0; }
+    if(tempCltPressure > configPage10.cltPressureMax) { tempCltPressure = configPage10.cltPressureMax; }
+  }
+
+
+  return (byte)tempCltPressure;
+}
 
 /*
  * The interrupt function for reading the flex sensor frequency

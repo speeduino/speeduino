@@ -181,6 +181,12 @@ void initialiseAll()
     oilPressureProtectTable.values = configPage10.oilPressureProtMins;
     oilPressureProtectTable.axisX = configPage10.oilPressureProtRPM;
 
+    cltPressureProtectTable.valueSize = SIZE_BYTE;
+    cltPressureProtectTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    cltPressureProtectTable.xSize = 4;
+    cltPressureProtectTable.values = configPage10.cltPressureProtMax;
+    cltPressureProtectTable.axisX = configPage10.cltPressureProtRPM;
+
     wmiAdvTable.valueSize = SIZE_BYTE;
     wmiAdvTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     wmiAdvTable.xSize = 6;
@@ -2386,7 +2392,8 @@ void setPinMapping(byte boardID)
   if ( (configPage2.vssPin != 0) && (configPage2.vssPin < BOARD_NR_GPIO_PINS) ) { pinVSS = pinTranslate(configPage2.vssPin); }
   if ( (configPage10.fuelPressurePin != 0) && (configPage10.fuelPressurePin < BOARD_NR_GPIO_PINS) ) { pinFuelPressure = configPage10.fuelPressurePin + A0; }
   if ( (configPage10.oilPressurePin != 0) && (configPage10.oilPressurePin < BOARD_NR_GPIO_PINS) ) { pinOilPressure = configPage10.oilPressurePin + A0; }
-  
+  if ( (configPage10.cltPressurePin != 0) && (configPage10.cltPressurePin < BOARD_NR_GPIO_PINS) ) { pinCltPressure = configPage10.cltPressurePin + A0; }
+
   if ( (configPage10.wmiEmptyPin != 0) && (configPage10.wmiEmptyPin < BOARD_NR_GPIO_PINS) ) { pinWMIEmpty = pinTranslate(configPage10.wmiEmptyPin); }
   if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_NR_GPIO_PINS) ) { pinWMIIndicator = pinTranslate(configPage10.wmiIndicatorPin); }
   if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_NR_GPIO_PINS) ) { pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
@@ -2559,6 +2566,10 @@ void setPinMapping(byte boardID)
   if(configPage10.oilPressureEnable > 0)
   {
     pinMode(pinOilPressure, INPUT);
+  }
+  if(configPage10.cltPressureEnable > 0)
+  {
+    pinMode(pinCltPressure, INPUT);
   }
   if(configPage10.wmiEnabled > 0)
   {

@@ -132,4 +132,5 @@ void createLog(uint8_t *logBuffer)
     logBuffer[108] = (int8_t)currentStatus.vvt2Angle;
     logBuffer[109] = currentStatus.vvt2TargetAngle;
     logBuffer[110] = currentStatus.vvt2Duty;
+    logBuffer[111] = currentStatus.cltPressure;
 }

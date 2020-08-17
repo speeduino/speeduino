@@ -285,6 +285,7 @@ void loop()
       currentStatus.gear = getGear();
       currentStatus.fuelPressure = getFuelPressure();
       currentStatus.oilPressure = getOilPressure();
+      currentStatus.cltPressure = getCltPressure();
 
       if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 

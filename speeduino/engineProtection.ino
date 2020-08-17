@@ -5,7 +5,7 @@
 byte checkEngineProtect()
 {
   byte protectActive = 0;
-  if(checkRevLimit() || checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit())
+  if(checkRevLimit() || checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() || checkCltPressureLimit() )
   {
     if(currentStatus.RPM > (configPage4.engineProtectMaxRPM*100U)) { protectActive = 1; }
   }
@@ -86,6 +86,24 @@ byte checkOilPressureLimit()
   }
 
   return oilProtectActive;
+}
+
+byte checkCltPressureLimit()
+{
+  byte cltProtectActive = 0;
+  BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_CLT_PRESSURE); //Will be set true below if required
+
+  if( (configPage10.cltPressureProtEnbl == true) && (configPage10.cltPressureEnable == true) )
+  {
+    byte cltLimit = table2D_getValue(&cltPressureProtectTable, currentStatus.RPMdiv100);
+    if(currentStatus.cltPressure > cltLimit)
+    {
+      BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_CLT_PRESSURE);
+      cltProtectActive = 1;
+    }
+  }
+
+  return cltProtectActive;
 }
 
 byte checkAFRLimit()

@@ -626,6 +626,9 @@ void updateFullStatus()
   fullStatus[109] = currentStatus.vvt2TargetAngle;
   fullStatus[110] = currentStatus.vvt2Duty;
   fullStatus[111] = currentStatus.outputsStatus;
+  fullStatus[112] = currentStatus.cltPressure;
+
+
 }
 /*
 This function returns the current values of a fixed group of variables
@@ -654,6 +657,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
   
   updateFullStatus();
+
 
   for(byte x=0; x<packetLength; x++)
   {
