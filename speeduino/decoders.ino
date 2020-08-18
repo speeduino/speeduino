@@ -385,6 +385,11 @@ void triggerPri_missingTooth()
           {
             //Missing tooth detected
             isMissingTooth = true;
+            if (configPage4.trigPatternSec == SEC_TRIGGER_POLL)
+            {
+              if (configPage4.PollLevelPolarity == digitalRead(pinTrigger2)) { revolutionOne = 1; }
+              else { revolutionOne = 0; }
+            }
             if( (toothCurrentCount < triggerActualTeeth) && (currentStatus.hasSync == true) ) 
             { 
                 //This occurs when we're at tooth #1, but haven't seen all the other teeth. This indicates a signal issue so we flag lost sync so this will attempt to resync on the next revolution.
@@ -404,7 +409,8 @@ void triggerPri_missingTooth()
                 else { currentStatus.startRevolutions = 0; }
                 
                 toothCurrentCount = 1;
-                revolutionOne = !revolutionOne; //Flip sequential revolution tracker
+                if (configPage4.trigPatternSec != SEC_TRIGGER_POLL)
+                {revolutionOne = !revolutionOne;} //Flip sequential revolution tracker
                 toothOneMinusOneTime = toothOneTime;
                 toothOneTime = curTime;
 
@@ -412,7 +418,7 @@ void triggerPri_missingTooth()
                 if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) )
                 {
                   //If either fuel or ignition is sequential, only declare sync if the cam tooth has been seen OR if the missing wheel is on the cam
-                  if( (secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) )
+                  if( (secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) || (configPage4.trigPatternSec == SEC_TRIGGER_POLL) )
                   {
                     currentStatus.hasSync = true;
                     BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
@@ -496,7 +502,7 @@ void triggerSec_missingTooth()
         secondaryToothCount++;
       }
     }
-    else
+    else if ( configPage4.trigPatternSec == SEC_TRIGGER_SINGLE )
     {
       //Standard single tooth cam trigger
       revolutionOne = 1; //Sequential revolution reset
