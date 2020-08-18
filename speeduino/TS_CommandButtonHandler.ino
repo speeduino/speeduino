@@ -18,11 +18,9 @@
  * @brief 
  * 
  * @param buttonCommand The command number of the button that was clicked. See TS_CommendButtonHandler.h for a list of button IDs
- * @return uint16_t If the button command remains incomplete (IE When it must wait for a certain action to complete) the return value is eqaul to the button ID. Otherwise this function returns 0
  */
-uint16_t TS_CommandButtonsHandler(int buttonCommand)
+void TS_CommandButtonsHandler(int buttonCommand)
 {
-  uint16_t returnValue = 0;
   switch (buttonCommand)
   {
     case TS_CMD_TEST_DSBL: // cmd is stop
@@ -351,6 +349,4 @@ uint16_t TS_CommandButtonsHandler(int buttonCommand)
     default:
       break;
   }
-
-  return returnValue;
 }
