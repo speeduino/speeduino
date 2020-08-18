@@ -76,7 +76,7 @@ void initialiseADC()
       if( pinIsUsed(pinNumber) )
       {
         //Do nothing here as the pin is already in use.
-        //Need some method of reporting this back to the user
+        BIT_SET(currentStatus.engineProtectStatus, PROTECT_IO_ERROR); //Tell user that there is problem by lighting up the I/O error indicator
       }
       else
       {
@@ -94,7 +94,7 @@ void initialiseADC()
        if( pinIsUsed(pinNumber) )
        {
          //Do nothing here as the pin is already in use.
-         //Need some method of reporting this back to the user
+        BIT_SET(currentStatus.engineProtectStatus, PROTECT_IO_ERROR); //Tell user that there is problem by lighting up the I/O error indicator
        }
        else
        {
@@ -592,7 +592,7 @@ byte getGear()
 
 byte getFuelPressure()
 {
-  uint16_t tempFuelPressure = 0;
+  int16_t tempFuelPressure = 0;
   uint16_t tempReading;
 
   if(configPage10.fuelPressureEnable > 0)
@@ -605,6 +605,7 @@ byte getFuelPressure()
     tempFuelPressure = ADC_FILTER(tempFuelPressure, 150, currentStatus.fuelPressure); //Apply speed smoothing factor
     //Sanity checks
     if(tempFuelPressure > configPage10.fuelPressureMax) { tempFuelPressure = configPage10.fuelPressureMax; }
+    if(tempFuelPressure < 0 ) { tempFuelPressure = 0; } //prevent negative values, which will cause problems later when the values aren't signed.
   }
 
   return (byte)tempFuelPressure;
@@ -612,7 +613,7 @@ byte getFuelPressure()
 
 byte getOilPressure()
 {
-  uint16_t tempOilPressure = 0;
+  int16_t tempOilPressure = 0;
   uint16_t tempReading;
 
   if(configPage10.oilPressureEnable > 0)
@@ -626,6 +627,7 @@ byte getOilPressure()
     tempOilPressure = ADC_FILTER(tempOilPressure, 150, currentStatus.oilPressure); //Apply speed smoothing factor
     //Sanity check
     if(tempOilPressure > configPage10.oilPressureMax) { tempOilPressure = configPage10.oilPressureMax; }
+    if(tempOilPressure < 0 ) { tempOilPressure = 0; } //prevent negative values, which will cause problems later when the values aren't signed.
   }
 
 
@@ -633,12 +635,20 @@ byte getOilPressure()
 }
 
 /*
- * The interrupt function for reading the flex sensor frequency
- * This value is incremented with every pulse and reset back to 0 once per second
+ * The interrupt function for reading the flex sensor frequency and pulse width
+ * flexCounter value is incremented with every pulse and reset back to 0 once per second
  */
 void flexPulse()
 {
-  ++flexCounter;
+  if(READ_FLEX() == true)
+  {
+    flexPulseWidth = (micros() - flexStartTime); //Calculate the pulse width
+    ++flexCounter;
+  }
+  else
+  {
+    flexStartTime = micros(); //Start pulse width measurement.
+  }
 }
 
 /*
