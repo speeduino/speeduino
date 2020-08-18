@@ -6,7 +6,7 @@ These are some utility functions and variables used through the main code
 
 #include <Arduino.h>
 
-#define CONCATS(s1, s2) (s1" " s2) //needed for some reason. not defined correctly because of utils.h file of speeduino (same name as one in arduino core)
+//#define CONCATS(s1, s2) (s1" " s2) //needed for some reason. not defined correctly because of utils.h file of speeduino (same name as one in arduino core)
 
 #define COMPARATOR_EQUAL 0
 #define COMPARATOR_NOT_EQUAL 1

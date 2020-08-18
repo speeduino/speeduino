@@ -6,7 +6,7 @@
 
 #include "TS_CommandButtonHandler.h"
 #include "globals.h"
-#include "utils.h"
+#include "speeduinoUtils.h"
 #include "scheduledIO.h"
 #include "sensors.h"
 #include "storage.h"

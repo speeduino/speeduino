@@ -19,7 +19,7 @@ sendcancommand is called when a command is to be sent either to serial3
 #include "cancomms.h"
 #include "maths.h"
 #include "errors.h"
-#include "utils.h"
+#include "speeduinoUtils.h"
 
 void secondserial_Command()
 {
