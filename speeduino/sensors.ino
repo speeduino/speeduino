@@ -76,7 +76,7 @@ void initialiseADC()
       if( pinIsUsed(pinNumber) )
       {
         //Do nothing here as the pin is already in use.
-        //Need some method of reporting this back to the user
+        BIT_SET(currentStatus.engineProtectStatus, PROTECT_IO_ERROR); //Tell user that there is problem by lighting up the I/O error indicator
       }
       else
       {
@@ -94,7 +94,7 @@ void initialiseADC()
        if( pinIsUsed(pinNumber) )
        {
          //Do nothing here as the pin is already in use.
-         //Need some method of reporting this back to the user
+        BIT_SET(currentStatus.engineProtectStatus, PROTECT_IO_ERROR); //Tell user that there is problem by lighting up the I/O error indicator
        }
        else
        {
