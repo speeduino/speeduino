@@ -37,6 +37,7 @@ struct table2D rotarySplitTable; //8 bin ignition split curve for rotary leading
 struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
 struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
 struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
+struct table2D fuelTempTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
 struct table2D knockWindowStartTable;
 struct table2D knockWindowDurationTable;
 struct table2D oilPressureProtectTable;
@@ -81,6 +82,9 @@ volatile PORT_TYPE *tach_pin_port;
 volatile PINMASK_TYPE tach_pin_mask;
 volatile PORT_TYPE *pump_pin_port;
 volatile PINMASK_TYPE pump_pin_mask;
+
+volatile PORT_TYPE *flex_pin_port;
+volatile PINMASK_TYPE flex_pin_mask;
 
 volatile PORT_TYPE *triggerPri_pin_port;
 volatile PINMASK_TYPE triggerPri_pin_mask;
