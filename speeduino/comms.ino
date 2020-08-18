@@ -626,6 +626,8 @@ void updateFullStatus()
   fullStatus[109] = currentStatus.vvt2TargetAngle;
   fullStatus[110] = currentStatus.vvt2Duty;
   fullStatus[111] = currentStatus.outputsStatus;
+  fullStatus[112] = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); //Fuel temperature from flex sensor
+  fullStatus[113] = currentStatus.fuelTempCorrection; //Fuel temperature Correction (%)
 }
 /*
 This function returns the current values of a fixed group of variables
@@ -1890,4 +1892,3 @@ void testComm()
   Serial.write(1);
   return;
 }
-

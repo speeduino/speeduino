@@ -31,6 +31,15 @@
 */
 
 volatile byte flexCounter = 0;
+volatile unsigned long flexStartTime;
+volatile unsigned long flexPulseWidth;
+
+#if defined(CORE_AVR)
+  #define READ_FLEX() ((*flex_pin_port & flex_pin_mask) ? true : false)
+#else
+  #define READ_FLEX() digitalRead(pinFlex)
+#endif
+
 volatile byte knockCounter = 0;
 volatile uint16_t knockAngle;
 

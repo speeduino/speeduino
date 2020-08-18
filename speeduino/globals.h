@@ -371,6 +371,7 @@ extern struct table2D rotarySplitTable; //8 bin ignition split curve for rotary 
 extern struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
 extern struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
 extern struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
+extern struct table2D fuelTempTable;  //6 bin fuel temperature correction table for fuel adjustments (2D)
 extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
@@ -415,6 +416,9 @@ extern volatile PORT_TYPE *tach_pin_port;
 extern volatile PINMASK_TYPE tach_pin_mask;
 extern volatile PORT_TYPE *pump_pin_port;
 extern volatile PINMASK_TYPE pump_pin_mask;
+
+extern volatile PORT_TYPE *flex_pin_port;
+extern volatile PINMASK_TYPE flex_pin_mask;
 
 extern volatile PORT_TYPE *triggerPri_pin_port;
 extern volatile PINMASK_TYPE triggerPri_pin_mask;
@@ -537,6 +541,7 @@ struct statuses {
   byte baroCorrection; /**< The amount of correction being applied for the current baro reading */
   byte launchCorrection; /**< The amount of correction being applied if launch control is active */
   byte flexCorrection; /**< Amount of correction being applied to compensate for ethanol content */
+  byte fuelTempCorrection; /**< Amount of correction being applied to compensate for fuel temperature */
   int8_t flexIgnCorrection; /**< Amount of additional advance being applied based on flex. Note the type as this allows for negative values */
   byte afrTarget;
   byte idleDuty; /**< The current idle duty cycle amount if PWM idle is selected and active */
@@ -545,6 +550,7 @@ struct statuses {
   bool CTPSActive; /**< Whether the externally controlled closed throttle position sensor is currently active */
   bool fanOn; /**< Whether or not the fan is turned on */
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
+  volatile int8_t fuelTemp;
   unsigned long AEEndTime; /**< The target end time used whenever AE is turned on */
   volatile byte status1;
   volatile byte spark;
@@ -1186,7 +1192,10 @@ struct config10 {
   byte unused11_174_1 : 1;
   byte unused11_174_2 : 1;
 
-  byte unused11_175_191[18]; //Bytes 175-191
+  byte fuelTempBins[6];
+  byte fuelTempValues[6];
+
+  byte unused11_187_191[6]; //Bytes 187-191
 
 #if defined(CORE_AVR)
   };
