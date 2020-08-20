@@ -1219,8 +1219,9 @@ struct config13 {
   uint8_t unused12_1;
   uint8_t outputPin[8];
   uint8_t outputDelay[8]; //0.1S
-  uint16_t firstDataIn[8];
-  uint16_t secondDataIn[8];
+  uint8_t firstDataIn[8];
+  uint8_t secondDataIn[8];
+  uint8_t unused_13[16];
   int16_t firstTarget[8];
   int16_t secondTarget[8];
   //89bytes
