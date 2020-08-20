@@ -35,6 +35,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "storage.h"
 #include "crankMaths.h"
 #include "init.h"
+#include "utils.h"
 #include "engineProtection.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 

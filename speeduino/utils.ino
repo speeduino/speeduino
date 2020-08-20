@@ -205,11 +205,10 @@ void initialiseProgrammableIO()
 {
   for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
   {
-    if (outputPin[y] < BOARD_NR_GPIO_PINS) { outputPin[y] = configPage13.outputPin[y]; }
-    if ( (outputPin[y] > 0) && (outputPin[y] < BOARD_NR_GPIO_PINS) )
+    if ( (configPage13.outputPin[y] > 0) && (configPage13.outputPin[y] < BOARD_NR_GPIO_PINS) )
     {
-      pinMode(outputPin[y], OUTPUT);
-      digitalWrite(outputPin[y], (configPage13.outputInverted & (1U << y)));
+      pinMode(configPage13.outputPin[y], OUTPUT);
+      digitalWrite(configPage13.outputPin[y], (configPage13.outputInverted & (1U << y)));
     }
   }
 }
@@ -223,8 +222,9 @@ void checkProgrammableIO()
   {
     firstCheck = false;
     secondCheck = false;
-    if ( outputPin[y] > 0 ) //if outputPin == 0 it is disabled
-    {
+    if ( configPage13.outputPin[y] > 0 ) //if outputPin == 0 it is disabled
+    { 
+      //byte theIndex = configPage13.firstDataIn[y];
       data = ProgrammableIOGetData(configPage13.firstDataIn[y]);
       data2 = configPage13.firstTarget[y];
 
@@ -254,18 +254,19 @@ void checkProgrammableIO()
           if (configPage13.operation[y].bitwise == BITWISE_XOR) { firstCheck ^= secondCheck; }
         }
       }
+      
 
       if ( (firstCheck == true) && (configPage13.outputDelay[y] != 0) && (configPage13.outputDelay[y] < 255) )
       {
         if ( (ioDelay[y] >= configPage13.outputDelay[y]) )
         {
-          if (outputPin[y] <= 128) { digitalWrite(outputPin[y], (configPage13.outputInverted & (1U << y)) ^ firstCheck); }
+          if (configPage13.outputPin[y] <= 128) { digitalWrite(configPage13.outputPin[y], (configPage13.outputInverted & (1U << y)) ^ firstCheck); }
         }
         else { ioDelay[y]++; }
       }
       else
       {
-        if ( outputPin[y] <= 128 ) { digitalWrite(outputPin[y], (configPage13.outputInverted & (1U << y)) ^ firstCheck); }
+        if ( configPage13.outputPin[y] <= 128 ) { digitalWrite(configPage13.outputPin[y], (configPage13.outputInverted & (1U << y)) ^ firstCheck); }
         if ( firstCheck == false ) { ioDelay[y] = 0; }
       }
       if ( firstCheck == true ) { BIT_SET(currentStatus.outputsStatus, y); }
@@ -287,6 +288,9 @@ int16_t ProgrammableIOGetData(uint16_t index)
     }
     if (x >= sizeof(fsIntIndex)) { result = fullStatus[index]; }
     else { result = word(fullStatus[index+1], fullStatus[index]); }
+
+    //Special cases for temperatures
+    if( (index == 6) || (index == 7) ) { result -= CALIBRATION_TEMPERATURE_OFFSET; }
   }
   else { result = -1; } //Index is bigger than fullStatus array
   return result;
