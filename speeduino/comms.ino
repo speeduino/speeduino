@@ -248,7 +248,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202008"));
+      Serial.print(F("speeduino 202009-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -278,7 +278,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2020.08"));
+      Serial.print(F("Speeduino 2020.09-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -1873,15 +1873,10 @@ void sendCompositeLog(byte startOffset)
 
         inProgressCompositeTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
         
-        //Serial.write(highByte(runTime));
-        //Serial.write(lowByte(runTime));
         Serial.write(inProgressCompositeTime >> 24);
         Serial.write(inProgressCompositeTime >> 16);
         Serial.write(inProgressCompositeTime >> 8);
         Serial.write(inProgressCompositeTime);
-
-        //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
-        //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
 
         Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
 
