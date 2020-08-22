@@ -75,7 +75,7 @@ byte checkOilPressureLimit()
   byte oilProtectActive = 0;
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL); //Will be set true below if required
 
-  if(configPage10.oilPressureProtEnbl == true)
+  if( (configPage10.oilPressureProtEnbl == true) && (configPage10.oilPressureEnable == true) )
   {
     byte oilLimit = table2D_getValue(&oilPressureProtectTable, currentStatus.RPMdiv100);
     if(currentStatus.oilPressure < oilLimit)

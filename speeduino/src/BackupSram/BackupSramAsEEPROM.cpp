@@ -1,5 +1,5 @@
 //#if defined(ARDUINO_BLACK_F407VE) 
-#if defined(CORE_STM32_OFFICIAL) && defined(SRAM_AS_EEPROM)
+#if defined(ARDUINO_ARCH_STM32)
 #include "BackupSramAsEEPROM.h"
 
     BackupSramAsEEPROM::BackupSramAsEEPROM(){
@@ -77,6 +77,8 @@
         return 0;
     }
 
-BackupSramAsEEPROM EEPROM;
+
+
 
 #endif
+

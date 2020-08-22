@@ -114,10 +114,25 @@ void createLog(uint8_t *logBuffer)
     logBuffer[90] = highByte(currentStatus.dwell);
     logBuffer[91] = currentStatus.CLIdleTarget;
     logBuffer[92] = currentStatus.mapDOT;
-    logBuffer[93] = (int8_t)currentStatus.vvtAngle;
-    logBuffer[94] = currentStatus.vvtTargetAngle;
-    logBuffer[95] = currentStatus.vvtDuty;
+    logBuffer[93] = (int8_t)currentStatus.vvt1Angle;
+    logBuffer[94] = currentStatus.vvt1TargetAngle;
+    logBuffer[95] = currentStatus.vvt1Duty;
     logBuffer[96] = lowByte(currentStatus.flexBoostCorrection);
     logBuffer[97] = highByte(currentStatus.flexBoostCorrection);
     logBuffer[98] = currentStatus.baroCorrection;
+    logBuffer[99] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
+    logBuffer[100] = currentStatus.ASEValue; //Current ASE (%)
+    logBuffer[101] = lowByte(currentStatus.vss);
+    logBuffer[102] = highByte(currentStatus.vss);
+    logBuffer[103] = currentStatus.gear;
+    logBuffer[104] = currentStatus.fuelPressure;
+    logBuffer[105] = currentStatus.oilPressure;
+    logBuffer[106] = currentStatus.wmiPW;
+    logBuffer[107] = currentStatus.wmiEmpty;
+    logBuffer[108] = (int8_t)currentStatus.vvt2Angle;
+    logBuffer[109] = currentStatus.vvt2TargetAngle;
+    logBuffer[110] = currentStatus.vvt2Duty;
+    logBuffer[111] = currentStatus.advance1;
+    logBuffer[112] = currentStatus.advance2;
+
 }

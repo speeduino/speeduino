@@ -88,7 +88,7 @@ class integerPID
   #define MANUAL	0
   #define DIRECT  0
   #define REVERSE  1
-  #define PID_SHIFTS  7 //Increased resolution
+  #define PID_SHIFTS  10 //Increased resolution
 
   //commonly used functions **************************************************************************
     integerPID(long*, long*, long*,        // * constructor.  links the PID to the Input, Output, and
@@ -102,7 +102,8 @@ class integerPID
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
     bool Compute2(int, int, bool);
-
+    bool ComputeVVT(uint32_t);
+    
     void SetOutputLimits(long, long); //clamps the output to a specific range. 0-255 by default, but
 										  //it's likely the user will want to change this depending on
 										  //the application
@@ -111,7 +112,7 @@ class integerPID
 
   //available but not commonly used functions ********************************************************
     void SetTunings(byte, byte,       // * While most users will set the tunings once in the
-                    byte);         	  //   constructor, this function gives the user the option
+                    byte, byte=0);       	  //   constructor, this function gives the user the option
                                           //   of changing tunings during runtime for Adaptive control
 	void SetControllerDirection(byte);	  // * Sets the Direction, or "Action" of the controller. DIRECT
 										  //   means the output will increase when error is positive. REVERSE

@@ -123,6 +123,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
     if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) { runSecsX10++; }
     else { runSecsX10 = 0; }
+
+    if ( (seclx10 == configPage2.primingDelay) && (currentStatus.RPM == 0) ) { beginInjectorPriming(); }
+    seclx10++;
   }
 
   //Loop executed every 250ms loop (1ms x 250 = 250ms)
@@ -224,6 +227,10 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //Off by 1 error check
       if (currentStatus.ethanolPct == 1) { currentStatus.ethanolPct = 0; }
 
+      //Continental flex sensor fuel temperature can be read with following formula: (Temperature = (41.25 * pulse width(ms)) - 81.25). 1000μs = -40C and 5000μs = 125C
+      if(flexPulseWidth > 5000) { flexPulseWidth = 5000; }
+      else if(flexPulseWidth < 1000) { flexPulseWidth = 1000; }
+      currentStatus.fuelTemp = (((4224 * (long)flexPulseWidth) >> 10) - 8125) / 100;
     }
 
     //**************************************************************************************************************************************************

@@ -147,6 +147,13 @@ uint16_t getRPM_ThirtySixMinus21();
 int getCrankAngle_ThirtySixMinus21();
 void triggerSetEndTeeth_ThirtySixMinus21();
 
+void triggerSetup_420a();
+void triggerPri_420a();
+void triggerSec_420a();
+uint16_t getRPM_420a();
+int getCrankAngle_420a();
+void triggerSetEndTeeth_420a();
+
 void triggerPri_Webber();
 void triggerSec_Webber();
 
