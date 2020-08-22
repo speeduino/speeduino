@@ -191,6 +191,19 @@ uint32_t calculateCRC32(byte pageNo)
       pnt_configPage = &configPage13; //Create a pointer to Page 10 in memory
       CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage13) );
       break;
+    
+    case ignMap2Page:
+      //Confirmed working
+      raw_value = getPageValue(ignMap2Page, 0);
+      CRC32_val = CRC32.crc32(&raw_value, 1, false);
+      for(uint16_t x=1; x< npage_size[ignMap2Page]; x++)
+      {
+        raw_value = getPageValue(ignMap2Page, x);
+        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
+      }
+      //Do a manual reflection of the CRC32 value
+      CRC32_val = ~CRC32_val;
+      break;
 
     default:
       CRC32_val = 0;
