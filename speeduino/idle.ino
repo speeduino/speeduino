@@ -257,7 +257,7 @@ void idleControl()
         currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         currentStatus.idleLoad = currentStatus.idleDuty;
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
-        idle_pid_target_value = idle_pwm_target_value<<2; //Resolution increased
+        idle_pid_target_value = idle_pwm_target_value << 2; //Resolution increased
         idlePID.Initialize(); //Update output to smooth transition
       }
       else
@@ -335,7 +335,8 @@ void idleControl()
           }
           doStep();
         }
-        currentStatus.idleLoad = idleStepper.curIdleStep / 2; //Current step count (Divided by 2 for byte)
+        if( ((uint16_t)configPage9.iacMaxSteps * 3) > 255 ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
+        else { currentStatus.idleLoad = idleStepper.curIdleStep; }
       }
       //Set or clear the idle active flag
       if(idleStepper.targetIdleStep != idleStepper.curIdleStep) { BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); }
@@ -359,7 +360,7 @@ void idleControl()
           }
           
           doStep();
-          idle_pid_target_value = idleStepper.targetIdleStep<<2; //Resolution increased
+          idle_pid_target_value = idleStepper.targetIdleStep << 2; //Resolution increased
           idlePID.Initialize(); //Update output to smooth transition
         }
         else 
@@ -375,7 +376,7 @@ void idleControl()
           currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
           idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //All temps are offset by 40 degrees
           PID_computed = idlePID.Compute(true);
-          idleStepper.targetIdleStep = idle_pid_target_value>>2; //Increase resolution
+          idleStepper.targetIdleStep = idle_pid_target_value >> 2; //Increase resolution
           if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
 
           //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
@@ -387,7 +388,8 @@ void idleControl()
           doStep();
           idleCounter++;
         }
-        currentStatus.idleLoad = idleStepper.curIdleStep / 2; //Current step count (Divided by 2 for byte)
+        if( ( (uint16_t)configPage9.iacMaxSteps * 3) > 255 ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
+        else { currentStatus.idleLoad = idleStepper.curIdleStep; }
       }
       //Set or clear the idle active flag
       if(idleStepper.targetIdleStep != idleStepper.curIdleStep) { BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); }

@@ -224,7 +224,7 @@ void vvtControl()
   {
     //currentStatus.vvt1Duty = 0;
     //Calculate the current cam angle
-    if( configPage4.TrigPattern == 9 ) { getCamAngle_Miata9905(); }
+    if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1Angle = getCamAngle_Miata9905(); }
 
     if( (configPage6.vvtMode == VVT_MODE_OPEN_LOOP) || (configPage6.vvtMode == VVT_MODE_ONOFF) )
     {
@@ -259,17 +259,12 @@ void vvtControl()
         //This is dumb, but need to convert the current angle into a long pointer
         vvt_pid_target_angle = currentStatus.vvt1TargetAngle;
 
-        if(currentStatus.vvt1TargetAngle >= 0)
-        {
-          //If not already at target angle, calculate new value from PID
-          bool PID_compute = vvtPID.Compute(false);
-          //vvtPID.Compute2(currentStatus.vvt1TargetAngle, currentStatus.vvt1Angle, false);
-          //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
-          //if (currentStatus.vvt1Angle > currentStatus.vvt1TargetAngle) { vvt_pwm_target_value = 0; }
-          if(PID_compute == true) { currentStatus.vvt1Duty = (vvt1_pwm_value * 100) / vvt_pwm_max_count; }
-
-        }
-        else { currentStatus.vvt1Duty = 0; }
+        //If not already at target angle, calculate new value from PID
+        bool PID_compute = vvtPID.Compute(false);
+        //vvtPID.Compute2(currentStatus.vvt1TargetAngle, currentStatus.vvt1Angle, false);
+        //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
+        //if (currentStatus.vvt1Angle > currentStatus.vvt1TargetAngle) { vvt_pwm_target_value = 0; }
+        if(PID_compute == true) { currentStatus.vvt1Duty = (vvt1_pwm_value * 100) / vvt_pwm_max_count; }
       }
       
       if( (currentStatus.vvt1Duty > 0) || (currentStatus.vvt2Duty > 0) ) { ENABLE_VVT_TIMER(); }
@@ -372,12 +367,12 @@ void wmiControl()
   int wmiPW = 0;
   
   // wmi can only work when vvt is disabled 
-  if(configPage6.vvtEnabled == 0 && configPage10.wmiEnabled >= 1)
+  if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1) )
   {
     currentStatus.wmiEmpty = WMI_TANK_IS_EMPTY();
     if(currentStatus.wmiEmpty == 0)
     {
-      if(currentStatus.TPS >= configPage10.wmiTPS && currentStatus.RPMdiv100 >= configPage10.wmiRPM && currentStatus.MAP/2 >= configPage10.wmiMAP && currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET >= configPage10.wmiIAT)
+      if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPMdiv100 >= configPage10.wmiRPM) && ( (currentStatus.MAP / 2) >= configPage10.wmiMAP) && ( (currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) >= configPage10.wmiIAT) )
       {
         switch(configPage10.wmiMode)
         {
@@ -484,7 +479,7 @@ void boostDisable()
       vvt2_pwm_state = true;
     }
 
-    if( (vvt1_pwm_state == true) && (vvt1_pwm_value <= vvt2_pwm_value) )
+    if( (vvt1_pwm_state == true) && ((vvt1_pwm_value <= vvt2_pwm_value) || (vvt2_pwm_state == false)) )
     {
       VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt1_pwm_value;
       vvt1_pwm_cur_value = vvt1_pwm_value;
@@ -505,7 +500,7 @@ void boostDisable()
   {
     if(nextVVT == 0)
     {
-      if(vvt1_pwm_value < vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Normal direction
         else { *vvt1_pin_port |= (vvt1_pin_mask); } //Reversed direction
@@ -523,7 +518,7 @@ void boostDisable()
     }
     else if (nextVVT == 1)
     {
-      if(vvt2_pwm_value < vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
         else { *vvt2_pin_port |= (vvt2_pin_mask); } //Reversed direction
@@ -541,7 +536,7 @@ void boostDisable()
     }
     else
     {
-      if(vvt1_pwm_value < vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Normal direction
         else { *vvt1_pin_port |= (vvt1_pin_mask); } //Reversed direction
@@ -550,7 +545,7 @@ void boostDisable()
         VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value);
       }
       else { vvt1_max_pwm = true; }
-      if(vvt2_pwm_value < vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
         else { *vvt2_pin_port |= (vvt2_pin_mask); } //Reversed direction

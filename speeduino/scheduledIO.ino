@@ -3,25 +3,8 @@
 #include "globals.h"
 #include "timers.h"
 
-#ifndef USE_MC33810
-  inline void openInjector1() { *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1); }
-  inline void closeInjector1() { *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1); }
-  inline void openInjector2() { *inj2_pin_port |= (inj2_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ2); }
-  inline void closeInjector2() { *inj2_pin_port &= ~(inj2_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ2); }
-  inline void openInjector3() { *inj3_pin_port |= (inj3_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ3); }
-  inline void closeInjector3() { *inj3_pin_port &= ~(inj3_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ3); }
-  inline void openInjector4() { *inj4_pin_port |= (inj4_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ4); }
-  inline void closeInjector4() { *inj4_pin_port &= ~(inj4_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ4); }
-  inline void openInjector5() { *inj5_pin_port |= (inj5_pin_mask); }
-  inline void closeInjector5() { *inj5_pin_port &= ~(inj5_pin_mask); }
-  inline void openInjector6() { *inj6_pin_port |= (inj6_pin_mask); }
-  inline void closeInjector6() { *inj6_pin_port &= ~(inj6_pin_mask); }
-  inline void openInjector7() { *inj7_pin_port |= (inj7_pin_mask); }
-  inline void closeInjector7() { *inj7_pin_port &= ~(inj7_pin_mask); }
-  inline void openInjector8() { *inj8_pin_port |= (inj8_pin_mask); }
-  inline void closeInjector8() { *inj8_pin_port &= ~(inj8_pin_mask); }
-#else
-#include "acc_mc33810.h"
+#ifdef USE_MC33810
+  #include "acc_mc33810.h"
   inline void openInjector1() { openInjector1_MC33810(); }
   inline void closeInjector1() { closeInjector1_MC33810(); }
   inline void openInjector2() { openInjector2_MC33810(); }
@@ -38,6 +21,23 @@
   inline void closeInjector7() { closeInjector7_MC33810(); }
   inline void openInjector8() { openInjector8_MC33810(); }
   inline void closeInjector8() { closeInjector8_MC33810(); }
+#else
+  inline void openInjector1() { *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1); }
+  inline void closeInjector1() { *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1); }
+  inline void openInjector2() { *inj2_pin_port |= (inj2_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ2); }
+  inline void closeInjector2() { *inj2_pin_port &= ~(inj2_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ2); }
+  inline void openInjector3() { *inj3_pin_port |= (inj3_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ3); }
+  inline void closeInjector3() { *inj3_pin_port &= ~(inj3_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ3); }
+  inline void openInjector4() { *inj4_pin_port |= (inj4_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ4); }
+  inline void closeInjector4() { *inj4_pin_port &= ~(inj4_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ4); }
+  inline void openInjector5() { *inj5_pin_port |= (inj5_pin_mask); }
+  inline void closeInjector5() { *inj5_pin_port &= ~(inj5_pin_mask); }
+  inline void openInjector6() { *inj6_pin_port |= (inj6_pin_mask); }
+  inline void closeInjector6() { *inj6_pin_port &= ~(inj6_pin_mask); }
+  inline void openInjector7() { *inj7_pin_port |= (inj7_pin_mask); }
+  inline void closeInjector7() { *inj7_pin_port &= ~(inj7_pin_mask); }
+  inline void openInjector8() { *inj8_pin_port |= (inj8_pin_mask); }
+  inline void closeInjector8() { *inj8_pin_port &= ~(inj8_pin_mask); }
 #endif
 
 // These are for Semi-Sequential and 5 Cylinder injection

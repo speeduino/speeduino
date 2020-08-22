@@ -35,6 +35,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "storage.h"
 #include "crankMaths.h"
 #include "init.h"
+#include "utilities.h"
 #include "engineProtection.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
@@ -97,11 +98,29 @@ void loop()
 {
       mainLoopCount++;
       LOOP_TIMER = TIMER_mask;
+
+      //SERIAL Comms
+      //Initially check that the last send values request is not still outstanding
+      if (serialInProgress == true) 
+      { 
+        if(Serial.availableForWrite() > 32) { sendValues(inProgressOffset, inProgressLength, 0x30, 0); }
+      }
+      //Perform the same check for the tooth and composite logs
+      if( toothLogSendInProgress == true)
+      {
+        if(Serial.availableForWrite() > 32) { sendToothLog(inProgressOffset); }
+      }
+      if( compositeLogSendInProgress == true)
+      {
+        if(Serial.availableForWrite() > 32) { sendCompositeLog(inProgressOffset); }
+      }
+
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
-      // 1) Every 64 loops (64 Is more than fast enough for TunerStudio). This function is equivalent to ((loopCount % 64) == 1) but is considerably faster due to not using the mod or division operations
+      // 1) Check every 15Hz for data
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
-      //if ( (BIT_CHECK(TIMER_mask, BIT_TIMER_15HZ)) || (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
-      if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+      //Check for any in progress serial transmits that were waiting for the tx buffer to free
+      if ( (BIT_CHECK(TIMER_mask, BIT_TIMER_15HZ)) || (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+      //if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       {
         if (Serial.available() > 0) { command(); }
         else if(cmdPending == true)
@@ -109,7 +128,6 @@ void loop()
           //This is a special case just for the tooth and composite loggers
           if (currentCommand == 'T') { command(); }
         }
-        
       }
       #if defined(CANSerial_AVAILABLE)
         //if can or secondary serial interface is enabled then check for requests.
@@ -243,6 +261,12 @@ void loop()
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
 
     }
+    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ)) //10 hertz
+    {
+      BIT_CLEAR(TIMER_mask, BIT_TIMER_10HZ);
+      updateFullStatus();
+      checkProgrammableIO();
+    }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
@@ -253,8 +277,8 @@ void loop()
       //Water methanol injection
       wmiControl();
       //FOR TEST PURPOSES ONLY!!!
-      if(vvt2_pwm_value < vvt_pwm_max_count) vvt2_pwm_value++;
-      else vvt2_pwm_value = 1;
+      //if(vvt2_pwm_value < vvt_pwm_max_count) { vvt2_pwm_value++; }
+      //else { vvt2_pwm_value = 1; }
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
@@ -575,11 +599,6 @@ void loop()
       currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPM / 100);
       unsigned int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
 
-      //This is a little primitive, but is based on the idea that all fuel needs to be delivered before the inlet valve opens. See www.extraefi.co.uk/sequential_fuel.html for more detail
-      //if(configPage2.inj1Ang > PWdivTimerPerDegree) { injector1StartAngle = configPage2.inj1Ang - ( PWdivTimerPerDegree ); }
-      //else { injector1StartAngle = configPage2.inj1Ang + CRANK_ANGLE_MAX_INJ - PWdivTimerPerDegree; } //Just incase 
-      //while(injector1StartAngle > CRANK_ANGLE_MAX_INJ) { injector1StartAngle -= CRANK_ANGLE_MAX_INJ; }
-
       injector1StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees);
 
       //Repeat the above for each cylinder
@@ -798,18 +817,6 @@ void loop()
               rollingCutLastRev = currentStatus.startRevolutions;
               //curRollingCut = 0;
             }
-            /*
-            else
-            {
-              if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //
-              if (rollingCutLastRev != currentStatus.startRevolutions)
-              {
-                rollingCutLastRev = currentStatus.startRevolutions;
-                rollingCutCounter++;
-              }
-              ignitionOn = false; //Finally the ignition is fully cut completely
-            }
-            */
           } //Hard/Rolling cut check
         } //RPM Check
         else { currentStatus.engineProtectStatus = 0; } //Force all engine protection flags to be off as we're below the minimum RPM
@@ -1255,28 +1262,41 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   if (corrections > 1023) { bitShift = 5; }
   
   iVE = ((unsigned int)VE << 7) / 100;
-  if ( configPage2.multiplyMAP == true ) {
-    iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
-  }
+
+  //Check whether either of the mutiply MAP modes is turned on
+  if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
+  else if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; }
+  
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+  }
+  if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
+    iAFR = ((unsigned int)configPage2.stoich << 7) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
   }
   iCorrections = (corrections << bitShift) / 100;
 
 
   unsigned long intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
-  if ( configPage2.multiplyMAP == true ) {
-    intermediate = (intermediate * (unsigned long)iMAP) >> 7;
-  }
+  if ( configPage2.multiplyMAP > 0 ) { intermediate = (intermediate * (unsigned long)iMAP) >> 7; }
+  
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
     intermediate = (intermediate * (unsigned long)iAFR) >> 7;  
   }
+  if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
+    intermediate = (intermediate * (unsigned long)iAFR) >> 7;
+  }
+  
   intermediate = (intermediate * (unsigned long)iCorrections) >> bitShift;
   if (intermediate != 0)
   {
     //If intermeditate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
     intermediate += injOpen; //Add the injector opening time
+    //AE Adds % of req_fuel
+    if ( configPage2.aeApplyMode == AE_MODE_ADDER )
+    {
+      intermediate += ( ((unsigned long)REQ_FUEL) * (currentStatus.AEamount - 100) ) / 100;
+    }
     if ( intermediate > 65535)
     {
       intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
@@ -1373,18 +1393,6 @@ byte getAdvance()
 
   return tempAdvance;
 }
-
-/*
-uint16_t calculateInjector2StartAngle(unsigned int PWdivTimerPerDegree)
-{
-  uint16_t tempInjector2StartAngle = (currentStatus.injAngle + channel2InjDegrees); //This makes the start angle equal to the end angle
-  if(tempInjector2StartAngle < PWdivTimerPerDegree) { tempInjector2StartAngle += CRANK_ANGLE_MAX_INJ; }
-  tempInjector2StartAngle -= PWdivTimerPerDegree; //Subtract the number of degrees the PW will take to get the start angle
-  if(tempInjector2StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { tempInjector2StartAngle -= CRANK_ANGLE_MAX_INJ; }
-
-  return tempInjector2StartAngle;
-}
-*/
 
 uint16_t calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_t injChannelDegrees)
 {

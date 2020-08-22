@@ -3,7 +3,7 @@
 const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
-const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288,192}; /**< This array stores the size (in bytes) of each configuration page */
+const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288,192,128}; /**< This array stores the size (in bytes) of each configuration page */
 
 struct table3D fuelTable; //16x16 fuel map
 struct table3D fuelTable2; //16x16 fuel map
@@ -37,6 +37,7 @@ struct table2D rotarySplitTable; //8 bin ignition split curve for rotary leading
 struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
 struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
 struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
+struct table2D fuelTempTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
 struct table2D knockWindowStartTable;
 struct table2D knockWindowDurationTable;
 struct table2D oilPressureProtectTable;
@@ -82,6 +83,9 @@ volatile PINMASK_TYPE tach_pin_mask;
 volatile PORT_TYPE *pump_pin_port;
 volatile PINMASK_TYPE pump_pin_mask;
 
+volatile PORT_TYPE *flex_pin_port;
+volatile PINMASK_TYPE flex_pin_mask;
+
 volatile PORT_TYPE *triggerPri_pin_port;
 volatile PINMASK_TYPE triggerPri_pin_mask;
 volatile PORT_TYPE *triggerSec_pin_port;
@@ -107,6 +111,8 @@ int ignition7EndAngle = 0;
 int ignition8EndAngle = 0;
 
 //These are variables used across multiple files
+byte fullStatus[LOG_ENTRY_SIZE];
+byte fsIntIndex[31] = {4, 14, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 96, 101};
 bool initialisationComplete = false; //Tracks whether the setup() function has run completely
 byte fpPrimeTime = 0; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 volatile uint16_t mainLoopCount;
@@ -228,14 +234,18 @@ struct config4 configPage4;
 struct config6 configPage6;
 struct config9 configPage9;
 struct config10 configPage10;
+struct config13 configPage13;
 
 //byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
 //byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
-byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
+//byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
 
 uint16_t cltCalibration_bins[32];
 uint16_t cltCalibration_values[32];
-struct table2D cltCalibrationTable_new;
+struct table2D cltCalibrationTable;
 uint16_t iatCalibration_bins[32];
 uint16_t iatCalibration_values[32];
-struct table2D iatCalibrationTable_new;
+struct table2D iatCalibrationTable;
+uint16_t o2Calibration_bins[32];
+uint8_t o2Calibration_values[32];
+struct table2D o2CalibrationTable;

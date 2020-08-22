@@ -128,7 +128,7 @@ void initBoard()
         * 110 Divide by 64
         * 111 Divide by 128
         */
-        FTM2_SC |= FTM_SC_PS(0b0); //No prescaler
+        FTM1_SC |= FTM_SC_PS(0b0); //No prescaler
 
         //Setup the channels (See Pg 1014 of K64 DS).
         FTM1_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
@@ -347,7 +347,7 @@ void ftm3_isr(void)
 //Boost and VVT handler
 void ftm1_isr(void)
 {
-  //FTM1 only has 2 compare channels
+  //FTM1 only has 2 compare channels (Is this correct?)
   //Use separate variables for each test to ensure conversion to bool
   bool interrupt1 = (FTM1_C0SC & FTM_CSC_CHF);
   bool interrupt2 = (FTM1_C1SC & FTM_CSC_CHF);
