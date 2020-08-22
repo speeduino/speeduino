@@ -8,7 +8,7 @@ A full copy of the license may be found in the projects root directory
 #include "cancomms.h"
 #include "storage.h"
 #include "maths.h"
-#include "utils.h"
+#include "utilities.h"
 #include "decoders.h"
 #include "TS_CommandButtonHandler.h"
 #include "errors.h"
@@ -248,7 +248,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202006-dev"));
+      Serial.print(F("speeduino 202009-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -278,7 +278,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2020.06-dev"));
+      Serial.print(F("Speeduino 2020.09-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -297,8 +297,8 @@ void command()
         Serial.read(); // First byte of the page identifier can be ignored. It's always 0
         Serial.read(); // First byte of the page identifier can be ignored. It's always 0
 
-        if(currentStatus.toothLogEnabled == true) { sendToothLog(); } //Sends tooth log values as ints
-        else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(); }
+        if(currentStatus.toothLogEnabled == true) { sendToothLog(0); } //Sends tooth log values as ints
+        else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(0); }
 
         cmdPending = false;
       }
@@ -445,7 +445,7 @@ void command()
       break;
 
     case 'z': //Send 256 tooth log entries to a terminal emulator
-      sendToothLog(); //Sends tooth log values as chars
+      sendToothLog(0); //Sends tooth log values as chars
       break;
 
     case '`': //Custom 16u2 firmware is making its presence known
@@ -626,8 +626,10 @@ void updateFullStatus()
   fullStatus[109] = currentStatus.vvt2TargetAngle;
   fullStatus[110] = currentStatus.vvt2Duty;
   fullStatus[111] = currentStatus.outputsStatus;
-  fullStatus[112] = currentStatus.advance1; //advance 1 (%)
-  fullStatus[113] = currentStatus.advance2; //advance 2 (%)
+  fullStatus[112] = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); //Fuel temperature from flex sensor
+  fullStatus[113] = currentStatus.fuelTempCorrection; //Fuel temperature Correction (%)
+  fullStatus[114] = currentStatus.advance1; //advance 1 (%)
+  fullStatus[115] = currentStatus.advance2; //advance 2 (%)
 }
 /*
 This function returns the current values of a fixed group of variables
@@ -1860,13 +1862,21 @@ Send 256 tooth log entries
  * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
  * if useChar is false, the values are sent as a 2 byte integer which is readable by TunerStudios tooth logger
 */
-void sendToothLog()
+void sendToothLog(byte startOffset)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
-      for (int x = 0; x < TOOTH_LOG_SIZE; x++)
+      for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
       {
+        //Check whether the tx buffer still has space
+        if(Serial.availableForWrite() < 4) 
+        { 
+          //tx buffer is full. Store the current state so it can be resumed later
+          inProgressOffset = x;
+          toothLogSendInProgress = true;
+          return;
+        }
         //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
         //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
         Serial.write(toothHistory[toothHistorySerialIndex] >> 24);
@@ -1879,6 +1889,7 @@ void sendToothLog()
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       cmdPending = false;
+      toothLogSendInProgress = false;
   }
   else 
   { 
@@ -1891,24 +1902,28 @@ void sendToothLog()
   } 
 }
 
-void sendCompositeLog()
+void sendCompositeLog(byte startOffset)
 {
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
-      uint32_t runTime = 0;
-      for (int x = 0; x < TOOTH_LOG_SIZE; x++)
+      if(startOffset == 0) { inProgressCompositeTime = 0; }
+      for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
       {
-        runTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
-        
-        //Serial.write(highByte(runTime));
-        //Serial.write(lowByte(runTime));
-        Serial.write(runTime >> 24);
-        Serial.write(runTime >> 16);
-        Serial.write(runTime >> 8);
-        Serial.write(runTime);
+        //Check whether the tx buffer still has space
+        if(Serial.availableForWrite() < 4) 
+        { 
+          //tx buffer is full. Store the current state so it can be resumed later
+          inProgressOffset = x;
+          compositeLogSendInProgress = true;
+          return;
+        }
 
-        //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
-        //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
+        inProgressCompositeTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
+        
+        Serial.write(inProgressCompositeTime >> 24);
+        Serial.write(inProgressCompositeTime >> 16);
+        Serial.write(inProgressCompositeTime >> 8);
+        Serial.write(inProgressCompositeTime);
 
         Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
 
@@ -1920,6 +1935,8 @@ void sendCompositeLog()
       toothHistorySerialIndex = 0;
       compositeLastToothTime = 0;
       cmdPending = false;
+      compositeLogSendInProgress = false;
+      inProgressCompositeTime = 0;
   }
   else 
   { 
@@ -1937,4 +1954,3 @@ void testComm()
   Serial.write(1);
   return;
 }
-

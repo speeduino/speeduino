@@ -35,6 +35,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "storage.h"
 #include "crankMaths.h"
 #include "init.h"
+#include "utilities.h"
 #include "engineProtection.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
@@ -104,6 +105,16 @@ void loop()
       { 
         if(Serial.availableForWrite() > 32) { sendValues(inProgressOffset, inProgressLength, 0x30, 0); }
       }
+      //Perform the same check for the tooth and composite logs
+      if( toothLogSendInProgress == true)
+      {
+        if(Serial.availableForWrite() > 32) { sendToothLog(inProgressOffset); }
+      }
+      if( compositeLogSendInProgress == true)
+      {
+        if(Serial.availableForWrite() > 32) { sendCompositeLog(inProgressOffset); }
+      }
+
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
       // 1) Check every 15Hz for data
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent

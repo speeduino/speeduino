@@ -241,6 +241,7 @@
 #define PROTECT_CUT_IGN     1
 #define PROTECT_CUT_FUEL    2
 #define PROTECT_CUT_BOTH    3
+#define PROTECT_IO_ERROR    7
 
 #define AE_MODE_TPS         0
 #define AE_MODE_MAP         1
@@ -372,6 +373,7 @@ extern struct table2D rotarySplitTable; //8 bin ignition split curve for rotary 
 extern struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
 extern struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
 extern struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
+extern struct table2D fuelTempTable;  //6 bin fuel temperature correction table for fuel adjustments (2D)
 extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
@@ -416,6 +418,9 @@ extern volatile PORT_TYPE *tach_pin_port;
 extern volatile PINMASK_TYPE tach_pin_mask;
 extern volatile PORT_TYPE *pump_pin_port;
 extern volatile PINMASK_TYPE pump_pin_mask;
+
+extern volatile PORT_TYPE *flex_pin_port;
+extern volatile PINMASK_TYPE flex_pin_mask;
 
 extern volatile PORT_TYPE *triggerPri_pin_port;
 extern volatile PINMASK_TYPE triggerPri_pin_mask;
@@ -492,8 +497,8 @@ extern volatile byte LOOP_TIMER;
 #define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) || ((pin) == pinInjector5) || ((pin) == pinInjector6) || ((pin) == pinInjector7) || ((pin) == pinInjector8) )
 #define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) || ((pin) == pinCoil5) || ((pin) == pinCoil6) || ((pin) == pinCoil7) || ((pin) == pinCoil8) )
 #define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
-#define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) )
 #define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) )
+#define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) || pinIsOutput((pin)) )
 
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
@@ -540,6 +545,7 @@ struct statuses {
   byte baroCorrection; /**< The amount of correction being applied for the current baro reading */
   byte launchCorrection; /**< The amount of correction being applied if launch control is active */
   byte flexCorrection; /**< Amount of correction being applied to compensate for ethanol content */
+  byte fuelTempCorrection; /**< Amount of correction being applied to compensate for fuel temperature */
   int8_t flexIgnCorrection; /**< Amount of additional advance being applied based on flex. Note the type as this allows for negative values */
   byte afrTarget;
   byte idleDuty; /**< The current idle duty cycle amount if PWM idle is selected and active */
@@ -548,6 +554,7 @@ struct statuses {
   bool CTPSActive; /**< Whether the externally controlled closed throttle position sensor is currently active */
   bool fanOn; /**< Whether or not the fan is turned on */
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
+  volatile int8_t fuelTemp;
   unsigned long AEEndTime; /**< The target end time used whenever AE is turned on */
   volatile byte status1;
   volatile byte spark;
@@ -626,7 +633,7 @@ struct config2 {
   byte battVCorMode : 1;
   byte SoftLimitMode : 1;
   byte unused1_3c : 1;
-  byte aeApplyMode : 1;
+  byte aeApplyMode : 1; //0 = Multiply | 1 = Add
   byte multiplyMAP : 2; //0 = off | 1 = baro | 2 = 100
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
   byte crankingPct; //Cranking enrichment
@@ -1189,7 +1196,10 @@ struct config10 {
   byte unused11_174_1 : 1;
   byte unused11_174_2 : 1;
 
-  byte unused11_175_191[18]; //Bytes 175-191
+  byte fuelTempBins[6];
+  byte fuelTempValues[6];
+
+  byte unused11_187_191[6]; //Bytes 187-191
 
 #if defined(CORE_AVR)
   };
@@ -1212,8 +1222,9 @@ struct config13 {
   uint8_t unused12_1;
   uint8_t outputPin[8];
   uint8_t outputDelay[8]; //0.1S
-  uint16_t firstDataIn[8];
-  uint16_t secondDataIn[8];
+  uint8_t firstDataIn[8];
+  uint8_t secondDataIn[8];
+  uint8_t unused_13[16];
   int16_t firstTarget[8];
   int16_t secondTarget[8];
   //89bytes

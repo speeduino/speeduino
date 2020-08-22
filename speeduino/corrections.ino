@@ -102,6 +102,10 @@ uint16_t correctionsFuel()
   if (currentStatus.flexCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.flexCorrection); activeCorrections++; }
   if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
+  currentStatus.fuelTempCorrection = correctionFuelTemp();
+  if (currentStatus.fuelTempCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.fuelTempCorrection); activeCorrections++; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+
   currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
 
@@ -519,6 +523,20 @@ byte correctionFlex()
     flexValue = table2D_getValue(&flexFuelTable, currentStatus.ethanolPct);
   }
   return flexValue;
+}
+
+/*
+ * Fuel temperature adjustment to vary fuel based on fuel temperature reading
+*/
+byte correctionFuelTemp()
+{
+  byte fuelTempValue = 100;
+
+  if (configPage2.flexEnabled == 1)
+  {
+    fuelTempValue = table2D_getValue(&fuelTempTable, currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET);
+  }
+  return fuelTempValue;
 }
 
 /*
