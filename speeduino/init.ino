@@ -5,7 +5,7 @@
 #include "speeduino.h"
 #include "timers.h"
 #include "cancomms.h"
-#include "utils.h"
+#include "utilities.h"
 #include "scheduledIO.h"
 #include "scheduler.h"
 #include "auxiliaries.h"

@@ -37,6 +37,8 @@ byte tsCanId = 0;     // current tscanid requested
 byte inProgressOffset;
 byte inProgressLength;
 bool serialInProgress = false;
+bool toothLogSendInProgress = false;
+bool compositeLogSendInProgress = false;
 
 const char pageTitles[] PROGMEM //This is being stored in the avr flash instead of SRAM which there is not very much of
   {
@@ -63,10 +65,10 @@ void saveConfig();
 void sendPage();
 void sendPageASCII();
 void receiveCalibration(byte);
-void sendToothLog();
+void sendToothLog(uint8_t);
 void testComm();
 void commandButtons(int16_t);
-void sendCompositeLog();
+void sendCompositeLog(uint8_t);
 byte getPageValue(byte, uint16_t);
 void updateFullStatus();
 

@@ -6,7 +6,7 @@
 
 #include <avr/pgmspace.h>
 #include "globals.h"
-#include "utils.h"
+#include "utilities.h"
 #include "decoders.h"
 #include "comms.h"
 #include "src/FastCRC/FastCRC.h"
