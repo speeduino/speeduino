@@ -408,6 +408,16 @@ void doUpdates()
       configPage10.wmiAdvAdj[i] = OFFSET_IGNITION;
     }
 
+    //Programmable outputs added. Set all to disabled
+    configPage13.outputPin[0] = 0;
+    configPage13.outputPin[1] = 0;
+    configPage13.outputPin[2] = 0;
+    configPage13.outputPin[3] = 0;
+    configPage13.outputPin[4] = 0;
+    configPage13.outputPin[5] = 0;
+    configPage13.outputPin[6] = 0;
+    configPage13.outputPin[7] = 0;
+
     //New multiply MAP option added. Set new option to be the same as old
     configPage2.multiplyMAP = configPage2.multiplyMAP_old;
     //New AE option added to allow for PW added in addition to existing PW multiply
