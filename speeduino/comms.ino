@@ -1859,7 +1859,7 @@ void sendCompositeLog(byte startOffset)
 {
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
-      uint32_t runTime = 0;
+      if(startOffset == 0) { inProgressCompositeTime = 0; }
       for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
       {
         //Check whether the tx buffer still has space
@@ -1871,14 +1871,14 @@ void sendCompositeLog(byte startOffset)
           return;
         }
 
-        runTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
+        inProgressCompositeTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
         
         //Serial.write(highByte(runTime));
         //Serial.write(lowByte(runTime));
-        Serial.write(runTime >> 24);
-        Serial.write(runTime >> 16);
-        Serial.write(runTime >> 8);
-        Serial.write(runTime);
+        Serial.write(inProgressCompositeTime >> 24);
+        Serial.write(inProgressCompositeTime >> 16);
+        Serial.write(inProgressCompositeTime >> 8);
+        Serial.write(inProgressCompositeTime);
 
         //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
         //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
@@ -1894,6 +1894,7 @@ void sendCompositeLog(byte startOffset)
       compositeLastToothTime = 0;
       cmdPending = false;
       compositeLogSendInProgress = false;
+      inProgressCompositeTime = 0;
   }
   else 
   { 

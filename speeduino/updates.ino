@@ -425,7 +425,6 @@ void doUpdates()
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 15);
-
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)

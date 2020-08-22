@@ -36,6 +36,7 @@ int valueOffset; /**< THe memory offset within a given page for a value to be re
 byte tsCanId = 0;     // current tscanid requested
 byte inProgressOffset;
 byte inProgressLength;
+uint32_t inProgressCompositeTime;
 bool serialInProgress = false;
 bool toothLogSendInProgress = false;
 bool compositeLogSendInProgress = false;
