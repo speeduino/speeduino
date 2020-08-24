@@ -175,6 +175,8 @@
 #define BIT_STATUS3_NSQUIRTS2     6
 #define BIT_STATUS3_NSQUIRTS3     7
 
+#define BIT_STATUS4_SPARK2_ACTIVE 0
+
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
@@ -263,6 +265,17 @@
 #define FUEL2_CONDITION_MAP 1
 #define FUEL2_CONDITION_TPS 2
 #define FUEL2_CONDITION_ETH 3
+
+#define SPARK2_MODE_OFF      0
+#define SPARK2_MODE_MULTIPLY 1
+#define SPARK2_MODE_ADD      2
+#define SPARK2_MODE_CONDITIONAL_SWITCH   3
+#define SPARK2_MODE_INPUT_SWITCH 4
+
+#define SPARK2_CONDITION_RPM 0
+#define SPARK2_CONDITION_MAP 1
+#define SPARK2_CONDITION_TPS 2
+#define SPARK2_CONDITION_ETH 3
 
 #define RESET_CONTROL_DISABLED             0
 #define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
@@ -586,6 +599,7 @@ struct statuses {
   uint8_t current_caninchannel = 0; /**< Current CAN channel, defaults to 0 */
   uint16_t crankRPM = 400; /**< The actual cranking RPM limit. This is derived from the value in the config page, but saves us multiplying it everytime it's used (Config page value is stored divided by 10) */
   volatile byte status3;
+  volatile byte status4;
   int16_t flexBoostCorrection; /**< Amount of boost added based on flex */
   byte nitrous_status;
   byte nSquirts;
@@ -593,6 +607,7 @@ struct statuses {
   int16_t fuelLoad;
   int16_t fuelLoad2;
   int16_t ignLoad;
+  int16_t ignLoad2;
   bool fuelPumpOn; /**< Indicator showing the current status of the fuel pump */
   byte syncLossCounter;
   byte knockRetard;
@@ -1199,7 +1214,20 @@ struct config10 {
   byte fuelTempBins[6];
   byte fuelTempValues[6];
 
-  byte unused11_187_191[6]; //Bytes 187-191
+  //Byte 186
+  byte spark2Algorithm : 3;
+  byte spark2Mode : 3;
+  byte spark2SwitchVariable : 2;
+
+  //Bytes 187-188
+  uint16_t spark2SwitchValue;
+
+  //Byte 189
+  byte spark2InputPin : 6;
+  byte spark2InputPolarity : 1;
+  byte spark2InputPullup : 1;
+
+  byte unused11_190_191[2]; //Bytes 190-191
 
 #if defined(CORE_AVR)
   };
@@ -1276,6 +1304,7 @@ extern byte pinIdle2; //2 wire idle control (Not currently used)
 extern byte pinIdleUp; //Input for triggering Idle Up
 extern byte pinCTPS; //Input for triggering closed throttle state
 extern byte pinFuel2Input; //Input for switching to the 2nd fuel table
+extern byte pinSpark2Input; //Input for switching to the 2nd spark table
 extern byte pinSpareTemp1; // Future use only
 extern byte pinSpareTemp2; // Future use only
 extern byte pinSpareOut1; //Generic output

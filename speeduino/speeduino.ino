@@ -378,14 +378,10 @@ void loop()
     } //1Hz timer
 
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) )  { idleControl(); } //Run idlecontrol every loop for stepper idle.
-
     
-    //VE and advance calculation were moved outside the sync/RPM check so that the fuel and ignition load value will be accurately shown when RPM=0
+    //VE calculation was moved outside the sync/RPM check so that the fuel load value will be accurately shown when RPM=0
     currentStatus.VE1 = getVE1();
     currentStatus.VE = currentStatus.VE1; //Set the final VE value to be VE 1 as a default. This may be changed in the section below
-
-    currentStatus.advance1 = getAdvance1();
-    currentStatus.advance = currentStatus.advance1; //Set the final advance value to be advance 1 as a default. This may be changed in the section below
 
     //If the secondary fuel table is in use, also get the VE value from there
     BIT_CLEAR(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Clear the bit indicating that the 2nd fuel table is in use. 
@@ -398,12 +394,6 @@ void loop()
         uint16_t combinedVE = ((uint16_t)currentStatus.VE1 * (uint16_t)currentStatus.VE2) / 100;
         if(combinedVE <= 255) { currentStatus.VE = combinedVE; }
         else { currentStatus.VE = 255; }
-
-        currentStatus.advance2 = getAdvance2();
-        //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
-        uint16_t combinedadvance = ((uint16_t)currentStatus.advance1 * (uint16_t)currentStatus.advance2) / 100;
-        if(combinedadvance <= 255) { currentStatus.advance = combinedadvance; }
-        else { currentStatus.advance = 255; }
       }
       else if(configPage10.fuel2Mode == FUEL2_MODE_ADD)
       {
@@ -412,12 +402,6 @@ void loop()
         uint16_t combinedVE = (uint16_t)currentStatus.VE1 + (uint16_t)currentStatus.VE2;
         if(combinedVE <= 255) { currentStatus.VE = combinedVE; }
         else { currentStatus.VE = 255; }
-
-        currentStatus.advance2 = getAdvance2();
-        //Spark tables are added together, but a check is made to make sure this won't overflow the 8-bit VE value
-        uint16_t combinedadvance = (uint16_t)currentStatus.advance1 + (uint16_t)currentStatus.advance2;
-        if(combinedadvance <= 255) { currentStatus.advance = combinedadvance; }
-        else { currentStatus.advance = 255; }
       }
       else if(configPage10.fuel2Mode == FUEL2_MODE_CONDITIONAL_SWITCH )
       {
@@ -428,8 +412,6 @@ void loop()
             BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
             currentStatus.VE2 = getVE2();
             currentStatus.VE = currentStatus.VE2;
-            currentStatus.advance2 = getAdvance2();
-            currentStatus.advance = currentStatus.advance2;
           }
         }
         else if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_MAP)
@@ -439,8 +421,6 @@ void loop()
             BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
             currentStatus.VE2 = getVE2();
             currentStatus.VE = currentStatus.VE2;
-            currentStatus.advance2 = getAdvance2();
-            currentStatus.advance = currentStatus.advance2;
           }
         }
         else if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_TPS)
@@ -450,8 +430,6 @@ void loop()
             BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
             currentStatus.VE2 = getVE2();
             currentStatus.VE = currentStatus.VE2;
-            currentStatus.advance2 = getAdvance2();
-            currentStatus.advance = currentStatus.advance2;
           }
         }
         else if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_ETH)
@@ -461,8 +439,6 @@ void loop()
             BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
             currentStatus.VE2 = getVE2();
             currentStatus.VE = currentStatus.VE2;
-            currentStatus.advance2 = getAdvance2();
-            currentStatus.advance = currentStatus.advance2;
           }
         }
       }
@@ -473,6 +449,77 @@ void loop()
           BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
           currentStatus.VE2 = getVE2();
           currentStatus.VE = currentStatus.VE2;
+        }
+      }
+    }
+
+    currentStatus.advance1 = getAdvance1();
+    currentStatus.advance = currentStatus.advance1; //Set the final advance value to be advance 1 as a default. This may be changed in the section below
+
+    //If the secondary spark table is in use, also get the advance value from there
+    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use. 
+    if(configPage10.spark2Mode > 0)
+    { 
+      if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY)
+      {
+        currentStatus.advance2 = getAdvance2();
+        //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
+        uint16_t combinedadvance = ((uint16_t)currentStatus.advance1 * (uint16_t)currentStatus.advance2) / 100;
+        if(combinedadvance <= 255) { currentStatus.advance = combinedadvance; }
+        else { currentStatus.advance = 255; }
+      }
+      else if(configPage10.spark2Mode == SPARK2_MODE_ADD)
+      {
+        currentStatus.advance2 = getAdvance2();
+        //Spark tables are added together, but a check is made to make sure this won't overflow the 8-bit VE value
+        uint16_t combinedadvance = (uint16_t)currentStatus.advance1 + (uint16_t)currentStatus.advance2;
+        if(combinedadvance <= 255) { currentStatus.advance = combinedadvance; }
+        else { currentStatus.advance = 255; }
+      }
+      else if(configPage10.spark2Mode == SPARK2_MODE_CONDITIONAL_SWITCH )
+      {
+        if(configPage10.spark2SwitchVariable == SPARK2_CONDITION_RPM)
+        {
+          if(currentStatus.RPM > configPage10.spark2SwitchValue)
+          {
+            BIT_SET(currentStatus.status4, BIT_STATUS4_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
+            currentStatus.advance2 = getAdvance2();
+            currentStatus.advance = currentStatus.advance2;
+          }
+        }
+        else if(configPage10.spark2SwitchVariable == SPARK2_CONDITION_MAP)
+        {
+          if(currentStatus.MAP > configPage10.spark2SwitchValue)
+          {
+            BIT_SET(currentStatus.status4, BIT_STATUS4_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
+            currentStatus.advance2 = getAdvance2();
+            currentStatus.advance = currentStatus.advance2;
+          }
+        }
+        else if(configPage10.spark2SwitchVariable == SPARK2_CONDITION_TPS)
+        {
+          if(currentStatus.TPS > configPage10.spark2SwitchValue)
+          {
+            BIT_SET(currentStatus.status4, BIT_STATUS4_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
+            currentStatus.advance2 = getAdvance2();
+            currentStatus.advance = currentStatus.advance2;
+          }
+        }
+        else if(configPage10.spark2SwitchVariable == SPARK2_CONDITION_ETH)
+        {
+          if(currentStatus.ethanolPct > configPage10.spark2SwitchValue)
+          {
+            BIT_SET(currentStatus.status4, BIT_STATUS4_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
+            currentStatus.advance2 = getAdvance2();
+            currentStatus.advance = currentStatus.advance2;
+          }
+        }
+      }
+      else if(configPage10.spark2Mode == SPARK2_MODE_INPUT_SWITCH)
+      {
+        if(digitalRead(pinSpark2Input) == configPage10.spark2InputPolarity)
+        {
+          BIT_SET(currentStatus.status4, BIT_STATUS4_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
           currentStatus.advance2 = getAdvance2();
           currentStatus.advance = currentStatus.advance2;
         }
@@ -1425,23 +1472,23 @@ byte getAdvance1()
 byte getAdvance2()
 {
   byte tempAdvance = 0;
-  if (configPage2.ignAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
+  if (configPage10.spark2Algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
   {
     //Speed Density
-    currentStatus.ignLoad = currentStatus.MAP;
+    currentStatus.ignLoad2 = currentStatus.MAP;
   }
-  else if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS)
+  else if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
-    currentStatus.ignLoad = currentStatus.TPS;
+    currentStatus.ignLoad2 = currentStatus.TPS;
 
   }
-  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
+  else if (configPage10.spark2Algorithm == LOAD_SOURCE_IMAPEMAP)
   {
     //IMAP / EMAP
-    currentStatus.ignLoad = (currentStatus.MAP * 100) / currentStatus.EMAP;
+    currentStatus.ignLoad2 = (currentStatus.MAP * 100) / currentStatus.EMAP;
   }
-  tempAdvance = get3DTableValue(&ignitionTable2, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
+  tempAdvance = get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
   tempAdvance = correctionsIgn(tempAdvance);
 
   return tempAdvance;

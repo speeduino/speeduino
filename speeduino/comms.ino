@@ -630,6 +630,7 @@ void updateFullStatus()
   fullStatus[113] = currentStatus.fuelTempCorrection; //Fuel temperature Correction (%)
   fullStatus[114] = currentStatus.advance1; //advance 1 (%)
   fullStatus[115] = currentStatus.advance2; //advance 2 (%)
+  fullStatus[116] = currentStatus.status4;
 }
 /*
 This function returns the current values of a fixed group of variables
@@ -686,7 +687,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 void sendValuesLegacy()
 {
   uint16_t temp;
-  int bytestosend = 116;
+  int bytestosend = 117;
 
   bytestosend -= Serial.write(currentStatus.secl>>8);
   bytestosend -= Serial.write(currentStatus.secl);

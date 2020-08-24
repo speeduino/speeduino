@@ -134,5 +134,6 @@ void createLog(uint8_t *logBuffer)
     logBuffer[110] = currentStatus.vvt2Duty;
     logBuffer[111] = currentStatus.advance1;
     logBuffer[112] = currentStatus.advance2;
+    logBuffer[113] = currentStatus.status4;
 
 }

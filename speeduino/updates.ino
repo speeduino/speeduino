@@ -429,6 +429,10 @@ void doUpdates()
 
   if(EEPROM.read(EEPROM_DATA_VERSION) == 15)
   {
+    //Secondary spark table was added for swtiching. Make sure it's all turned off initially
+    configPage10.spark2Mode = 0;
+    configPage10.spark2SwitchVariable = 0; //Set switch variable to RPM
+    configPage10.spark2SwitchValue = 7000; //7000 RPM switch point is safe
 
     writeAllConfig();
     //EEPROM.write(EEPROM_DATA_VERSION, 16);
