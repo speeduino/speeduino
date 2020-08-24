@@ -686,7 +686,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 void sendValuesLegacy()
 {
   uint16_t temp;
-  int bytestosend = 114;
+  int bytestosend = 116;
 
   bytestosend -= Serial.write(currentStatus.secl>>8);
   bytestosend -= Serial.write(currentStatus.secl);
