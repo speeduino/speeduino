@@ -1199,20 +1199,7 @@ struct config10 {
   byte fuelTempBins[6];
   byte fuelTempValues[6];
 
-  //Byte 122
-  byte spark2Algorithm : 3;
-  byte spark2Mode : 3;
-  byte spark2SwitchVariable : 2;
-
-  //Bytes 123-124
-  uint16_t spark2SwitchValue;
-
-  //Byte 125
-  byte spark2InputPin : 6;
-  byte spark2InputPolarity : 1;
-  byte spark2InputPullup : 1;
-
-  byte unused11_187_191[2]; //Bytes 187-191
+  byte unused11_187_191[6]; //Bytes 187-191
 
 #if defined(CORE_AVR)
   };
