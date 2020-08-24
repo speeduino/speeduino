@@ -3732,3 +3732,110 @@ void triggerSetEndTeeth_420a()
 
   lastToothCalcAdvance = currentStatus.advance;
 }
+
+/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Name: Weber-Marelli
+Desc: 2 wheels, 4 teeth 90deg apart on crank and 2 90deg apart on cam.
+Note: It use DualWheel decoders, There can be no missing teeth on the primary wheel
+*/
+void triggerPri_Webber()
+{
+  curTime = micros();
+  curGap = curTime - toothLastToothTime;
+  if ( curGap >= triggerFilterTime )
+  {
+    toothCurrentCount++; //Increment the tooth counter
+    if (checkSyncToothCount > 0) { checkSyncToothCount++; }
+    if ( triggerSecFilterTime <= curGap ) { triggerSecFilterTime = curGap + (curGap>>1); } //150% crank tooth
+    validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+    toothLastMinusOneToothTime = toothLastToothTime;
+    toothLastToothTime = curTime;
+
+    if ( currentStatus.hasSync == true )
+    {
+      if ( (toothCurrentCount == 1) || (toothCurrentCount > configPage4.triggerTeeth) )
+      {
+        toothCurrentCount = 1;
+        revolutionOne = !revolutionOne; //Flip sequential revolution tracker
+        toothOneMinusOneTime = toothOneTime;
+        toothOneTime = curTime;
+        currentStatus.startRevolutions++; //Counter
+      }
+
+      setFilter(curGap); //Recalc the new filter value
+    }
+    else
+    {
+      if ( (secondaryToothCount == 1) && (checkSyncToothCount == 4) )
+      {
+        toothCurrentCount = 2;
+        currentStatus.hasSync = true;
+        revolutionOne = 0; //Sequential revolution reset
+      }
+    }
+
+    //NEW IGNITION MODE
+    if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
+    {
+      int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
+      if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
+      {
+        crankAngle += 360;
+        checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + toothCurrentCount)); 
+      }
+      else{ checkPerToothTiming(crankAngle, toothCurrentCount); }
+    }
+  } //Trigger filter
+}
+
+void triggerSec_Webber()
+{
+  curTime2 = micros();
+  curGap2 = curTime2 - toothLastSecToothTime;
+
+  if ( curGap2 >= triggerSecFilterTime )
+  {
+    toothLastSecToothTime = curTime2;
+
+    if ( (secondaryToothCount == 2) && (checkSyncToothCount == 3) )
+    {
+      if(currentStatus.hasSync == false)
+      {
+        toothLastToothTime = micros();
+        toothLastMinusOneToothTime = micros() - 1500000; //Fixes RPM at 10rpm until a full revolution has taken place
+        toothCurrentCount = configPage4.triggerTeeth-1;
+
+        currentStatus.hasSync = true;
+      }
+      else
+      {
+        if ( (toothCurrentCount != (configPage4.triggerTeeth-1)) && (currentStatus.startRevolutions > 2)) { currentStatus.syncLossCounter++; } //Indicates likely sync loss.
+        if (configPage4.useResync == 1) { toothCurrentCount = configPage4.triggerTeeth-1; }
+      }
+      revolutionOne = 1; //Sequential revolution reset
+      triggerSecFilterTime = curGap << 2; //4 crank teeth
+      secondaryToothCount = 1; //Next tooth should be first
+    } //Running, on first CAM pulse restart crank teet count, on second the counter should be 3
+    else if ( (currentStatus.hasSync == false) && (toothCurrentCount >= 3) && (secondaryToothCount == 0) )
+    {
+      toothLastToothTime = micros();
+      toothLastMinusOneToothTime = micros() - 1500000; //Fixes RPM at 10rpm until a full revolution has taken place
+      toothCurrentCount = 1;
+      revolutionOne = 1; //Sequential revolution reset
+
+      currentStatus.hasSync = true;
+    } //First start, between gaps on CAM pulses have 2 teeth, sync on first CAM pulse if seen 3 teeth or more
+    else
+    {
+      triggerSecFilterTime = curGap + (curGap>>1); //150% crank tooth
+      secondaryToothCount++;
+      checkSyncToothCount = 1; //Tooth 1 considered as already been seen
+    } //First time might fall here, second CAM tooth will
+  }
+  else
+  {
+    triggerSecFilterTime = curGap + (curGap>>1); //Noise region, using 150% of crank tooth
+    checkSyncToothCount = 1; //Reset tooth counter
+  } //Trigger filter
+}
