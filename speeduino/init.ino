@@ -27,6 +27,7 @@ void initialiseAll()
     table3D_setSize(&fuelTable, 16);
     table3D_setSize(&fuelTable2, 16);
     table3D_setSize(&ignitionTable, 16);
+    table3D_setSize(&ignitionTable2, 16);
     table3D_setSize(&afrTable, 16);
     table3D_setSize(&stagingTable, 8);
     table3D_setSize(&boostTable, 8);
@@ -2966,7 +2967,25 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    
+    case 19:
+      //Weber-Marelli
+      triggerSetup_DualWheel();
+      triggerHandler = triggerPri_Webber;
+      triggerSecondaryHandler = triggerSec_Webber;
+      decoderHasSecondary = true;
+      getRPM = getRPM_DualWheel;
+      getCrankAngle = getCrankAngle_DualWheel;
+      triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
 
     default:
       triggerHandler = triggerPri_missingTooth;

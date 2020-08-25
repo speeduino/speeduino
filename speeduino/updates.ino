@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    15
+  #define CURRENT_DATA_VERSION    16
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -425,6 +425,13 @@ void doUpdates()
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 15);
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 15)
+  {
+
+    writeAllConfig();
+    //EEPROM.write(EEPROM_DATA_VERSION, 16);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)

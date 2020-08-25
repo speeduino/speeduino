@@ -337,13 +337,14 @@
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing.
-#define NUM_PAGES     14
+#define NUM_PAGES     15
 extern const uint16_t npage_size[NUM_PAGES]; /**< This array stores the size (in bytes) of each configuration page */
 #define MAP_PAGE_SIZE 288
 
 extern struct table3D fuelTable; //16x16 fuel map
 extern struct table3D fuelTable2; //16x16 fuel map
 extern struct table3D ignitionTable; //16x16 ignition map
+extern struct table3D ignitionTable2; //16x16 ignition map
 extern struct table3D afrTable; //16x16 afr target map
 extern struct table3D stagingTable; //8x8 fuel staging table
 extern struct table3D boostTable; //8x8 boost map
@@ -533,7 +534,9 @@ struct statuses {
   int dwell;
   byte dwellCorrection; /**< The amount of correction being applied to the dwell time. */
   byte battery10; /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
-  int8_t advance; /**< Signed 8 bit as advance can now go negative (ATDC) */
+  int8_t advance; /**< The current advance value being used in the spark calculation. Can be the same as advance1 or advance2, or a calculated value of both */
+  int8_t advance1; /**< The advance value from ignition table 1 */
+  int8_t advance2; /**< The advance value from ignition table 2 */
   uint16_t corrections; /**< The total current corrections % amount */
   uint16_t AEamount; /**< The amount of accleration enrichment currently being applied. 100=No change. Varies above 255 */
   byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
@@ -1198,7 +1201,20 @@ struct config10 {
   byte fuelTempBins[6];
   byte fuelTempValues[6];
 
-  byte unused11_187_191[6]; //Bytes 187-191
+  //Byte 122
+  byte spark2Algorithm : 3;
+  byte spark2Mode : 3;
+  byte spark2SwitchVariable : 2;
+
+  //Bytes 123-124
+  uint16_t spark2SwitchValue;
+
+  //Byte 125
+  byte spark2InputPin : 6;
+  byte spark2InputPolarity : 1;
+  byte spark2InputPullup : 1;
+
+  byte unused11_187_191[2]; //Bytes 187-191
 
 #if defined(CORE_AVR)
   };

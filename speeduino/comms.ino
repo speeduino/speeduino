@@ -207,7 +207,7 @@ void command()
         }
         
         // Detecting if the current page is a table/map
-        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) ) { isMap = true; }
+        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) || (currentPage == ignMap2Page) ) { isMap = true; }
         else { isMap = false; }
         cmdPending = false;
       }
@@ -248,7 +248,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202008"));
+      Serial.print(F("speeduino 202009-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -278,7 +278,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2020.08"));
+      Serial.print(F("Speeduino 2020.09-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -628,6 +628,8 @@ void updateFullStatus()
   fullStatus[111] = currentStatus.outputsStatus;
   fullStatus[112] = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); //Fuel temperature from flex sensor
   fullStatus[113] = currentStatus.fuelTempCorrection; //Fuel temperature Correction (%)
+  fullStatus[114] = currentStatus.advance1; //advance 1 (%)
+  fullStatus[115] = currentStatus.advance2; //advance 2 (%)
 }
 /*
 This function returns the current values of a fixed group of variables
@@ -684,7 +686,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 void sendValuesLegacy()
 {
   uint16_t temp;
-  int bytestosend = 112;
+  int bytestosend = 114;
 
   bytestosend -= Serial.write(currentStatus.secl>>8);
   bytestosend -= Serial.write(currentStatus.secl);
@@ -791,6 +793,13 @@ void sendValuesLegacy()
   bytestosend -= Serial.write(99); // fuelcor
   bytestosend -= Serial.write(99); // fuelcor
   bytestosend -= Serial.write(99); // portStatus
+
+  temp = currentStatus.advance1 * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
+  temp = currentStatus.advance2 * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
 
   for(int i = 0; i < bytestosend; i++)
   {
@@ -1052,6 +1061,29 @@ void receiveValue(uint16_t valueOffset, byte newValue)
 
     default:
       break;
+    
+    case ignMap2Page: //Ignition settings page (Page 2)
+      if (valueOffset < 256) //New value is part of the ignition map
+      {
+        ignitionTable2.values[15 - (valueOffset / 16)][valueOffset % 16] = newValue;
+      }
+      else
+      {
+        //Check whether this is on the X (RPM) or Y (MAP/TPS) axis
+        if (valueOffset < 272)
+        {
+          //X Axis
+          ignitionTable2.axisX[(valueOffset - 256)] = (int)(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiple it back by 100 to make it correct
+        }
+        else if(valueOffset < 288)
+        {
+          //Y Axis
+          tempOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order
+          ignitionTable2.axisY[tempOffset] = (int)(newValue) * TABLE_LOAD_MULTIPLIER;
+        }
+      }
+      ignitionTable2.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      break;
   }
   //if(Serial.available() > 16) { command(); }
 }
@@ -1169,6 +1201,10 @@ void sendPage()
       
     case progOutsPage:
       pnt_configPage = &configPage13; //Create a pointer to Page 13 in memory
+      break;
+    
+    case ignMap2Page:
+      currentTable = ignitionTable2;
       break;
 
     default:
@@ -1465,6 +1501,11 @@ void sendPageASCII()
       #endif
       sendComplete = true;
       break;
+    
+    case ignMap2Page:
+      currentTitleIndex = 149;// the index to the first char of the third string in pageTitles
+      currentTable = ignitionTable2;
+      break;
 
     default:
     #ifndef SMALL_FLASH_MODE
@@ -1709,6 +1750,12 @@ byte getPageValue(byte page, uint16_t valueAddress)
         pnt_configPage = &configPage13; //Create a pointer to Page 13 in memory
         returnValue = *((byte *)pnt_configPage + valueAddress);
         break;
+
+    case ignMap2Page:
+        if( valueAddress < 256) { returnValue = ignitionTable2.values[15 - (valueAddress / 16)][valueAddress % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
+        else if(valueAddress < 272) { returnValue =  byte(ignitionTable2.axisX[(valueAddress - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
+        else if (valueAddress < 288) { returnValue = byte(ignitionTable2.axisY[15 - (valueAddress - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
+        break;
       
     default:
     #ifndef SMALL_FLASH_MODE
@@ -1873,15 +1920,10 @@ void sendCompositeLog(byte startOffset)
 
         inProgressCompositeTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
         
-        //Serial.write(highByte(runTime));
-        //Serial.write(lowByte(runTime));
         Serial.write(inProgressCompositeTime >> 24);
         Serial.write(inProgressCompositeTime >> 16);
         Serial.write(inProgressCompositeTime >> 8);
         Serial.write(inProgressCompositeTime);
-
-        //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
-        //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
 
         Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
 

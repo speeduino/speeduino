@@ -26,6 +26,7 @@ void writeAllConfig()
   if (eepromWritesPending == false) { writeConfig(fuelMap2Page); }
   if (eepromWritesPending == false) { writeConfig(wmiMapPage); }
   if (eepromWritesPending == false) { writeConfig(progOutsPage); }
+  if (eepromWritesPending == false) { writeConfig(ignMap2Page); }
 }
 
 
@@ -470,6 +471,44 @@ void writeConfig(byte tableNum)
       if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
       else { eepromWritesPending = false; }
       break;
+    
+    case ignMap2Page:
+      /*---------------------------------------------------
+      | Ignition table (See storage.h for data layout) - Page 1
+      | 16x16 table itself + the 16 values along each of the axis
+      -----------------------------------------------------*/
+      //Begin writing the Ignition table, basically the same thing as above
+      if(EEPROM.read(EEPROM_CONFIG14_XSIZE) != ignitionTable2.xSize) { EEPROM.write(EEPROM_CONFIG14_XSIZE,ignitionTable2.xSize); writeCounter++; } //Write the ignition Table RPM dimension size
+      if(EEPROM.read(EEPROM_CONFIG14_YSIZE) != ignitionTable2.ySize) { EEPROM.write(EEPROM_CONFIG14_YSIZE,ignitionTable2.ySize); writeCounter++; } //Write the ignition Table MAP/TPS dimension size
+
+      for(int x=EEPROM_CONFIG14_MAP; x<EEPROM_CONFIG14_XBINS; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
+        offset = x - EEPROM_CONFIG14_MAP;
+        newVal = ignitionTable2.values[15-(offset/16)][offset%16];
+        if(EEPROM.read(x) != newVal) { EEPROM.write(x, newVal); writeCounter++; }  //Write the 16x16 map with translation
+      }
+      //RPM bins
+      for(int x=EEPROM_CONFIG14_XBINS; x<EEPROM_CONFIG14_YBINS; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
+        offset = x - EEPROM_CONFIG14_XBINS;
+        newVal = ignitionTable2.axisX[offset]/TABLE_RPM_MULTIPLIER;
+        if(EEPROM.read(x) != newVal) { EEPROM.write(x, newVal); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+      }
+      //TPS/MAP bins
+      for(int x=EEPROM_CONFIG14_YBINS; x<EEPROM_CONFIG14_END; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
+        offset = x - EEPROM_CONFIG14_YBINS;
+        newVal = ignitionTable2.axisY[offset]/TABLE_LOAD_MULTIPLIER;
+        if(EEPROM.read(x) != newVal) { EEPROM.write(x, newVal); writeCounter++; } //Table load is divided by 2 (Allows for MAP up to 511)
+      }
+
+      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
+      else { eepromWritesPending = false; }
+
+      break;
 
     default:
       break;
@@ -736,6 +775,31 @@ void loadConfig()
   {
     *(pnt_configPage + byte(x - EEPROM_CONFIG13_START)) = EEPROM.read(x);
   }
+
+  //*********************************************************************************************************************************************************************************
+  //SECOND IGNITION CONFIG PAGE (14)
+
+  //Begin writing the Ignition table, basically the same thing as above
+  for(int x=EEPROM_CONFIG14_MAP; x<EEPROM_CONFIG14_XBINS; x++)
+  {
+    offset = x - EEPROM_CONFIG14_MAP;
+    ignitionTable2.values[15-(offset/16)][offset%16] = EEPROM.read(x); //Read the 8x8 map
+  }
+  //RPM bins
+  for(int x=EEPROM_CONFIG14_XBINS; x<EEPROM_CONFIG14_YBINS; x++)
+  {
+    offset = x - EEPROM_CONFIG14_XBINS;
+    ignitionTable2.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
+  }
+  //TPS/MAP bins
+  for(int x=EEPROM_CONFIG14_YBINS; x<EEPROM_CONFIG14_END; x++)
+  {
+    offset = x - EEPROM_CONFIG14_YBINS;
+    ignitionTable2.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER; //Table load is divided by 2 (Allows for MAP up to 511)
+  }
+
+  //*********************************************************************************************************************************************************************************
+
 
 }
 
