@@ -415,7 +415,7 @@ void triggerPri_missingTooth()
                 toothCurrentCount = 1;
                 if (configPage4.trigPatternSec == SEC_TRIGGER_POLL) // at tooth one check if the cam sensor is high or low in poll level mode
                 {
-                  if (configPage4.PollLevelPolarity == digitalRead(pinTrigger2)) { revolutionOne = 1; }
+                  if (configPage4.PollLevelPolarity == READ_SEC_TRIGGER()) { revolutionOne = 1; }
                   else { revolutionOne = 0; }
                 }
                 else {revolutionOne = !revolutionOne;} //Flip sequential revolution tracker if poll level is not used
