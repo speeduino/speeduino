@@ -394,11 +394,6 @@ void triggerPri_missingTooth()
           {
             //Missing tooth detected
             isMissingTooth = true;
-            if (configPage4.trigPatternSec == SEC_TRIGGER_POLL)
-            {
-              if (configPage4.PollLevelPolarity == digitalRead(pinTrigger2)) { revolutionOne = 1; }
-              else { revolutionOne = 0; }
-            }
             if( (toothCurrentCount < triggerActualTeeth) && (currentStatus.hasSync == true) ) 
             { 
                 //This occurs when we're at tooth #1, but haven't seen all the other teeth. This indicates a signal issue so we flag lost sync so this will attempt to resync on the next revolution.
@@ -418,8 +413,12 @@ void triggerPri_missingTooth()
                 else { currentStatus.startRevolutions = 0; }
                 
                 toothCurrentCount = 1;
-                if (configPage4.trigPatternSec != SEC_TRIGGER_POLL)
-                {revolutionOne = !revolutionOne;} //Flip sequential revolution tracker
+                if (configPage4.trigPatternSec == SEC_TRIGGER_POLL) // at tooth one check if the cam sensor is high or low in poll level mode
+                {
+                  if (configPage4.PollLevelPolarity == digitalRead(pinTrigger2)) { revolutionOne = 1; }
+                  else { revolutionOne = 0; }
+                }
+                else {revolutionOne = !revolutionOne;} //Flip sequential revolution tracker if poll level is not used
                 toothOneMinusOneTime = toothOneTime;
                 toothOneTime = curTime;
 
