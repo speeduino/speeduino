@@ -132,7 +132,10 @@ void createLog(uint8_t *logBuffer)
     logBuffer[108] = (int8_t)currentStatus.vvt2Angle;
     logBuffer[109] = currentStatus.vvt2TargetAngle;
     logBuffer[110] = currentStatus.vvt2Duty;
-    logBuffer[111] = currentStatus.advance1;
-    logBuffer[112] = currentStatus.advance2;
+    logBuffer[111] = currentStatus.outputsStatus;
+    logBuffer[112] = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET);
+    logBuffer[113] = currentStatus.fuelTempCorrection; 
+    logBuffer[114] = currentStatus.advance1;
+    logBuffer[115] = currentStatus.advance2;
 
 }
