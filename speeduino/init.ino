@@ -1319,10 +1319,11 @@ void setPinMapping(byte boardID)
       pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
-      pinDisplayReset = 48; // OLED reset pin
+      //pinDisplayReset = 48; // OLED reset pin
       pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
       pinIdle1 = 5; //Single wire idle control
-      pinIdle2 = 6; //2 wire idle control
+      //pinIdle2 = 6; //2 wire idle control
+      pinACrelay = 6;   //output for ACrelay - Sanders
       pinBoost = 7; //Boost control
       pinVVT_1 = 4; //Default VVT output
       pinVVT_2 = 48; //Default VVT2 output
@@ -1333,7 +1334,8 @@ void setPinMapping(byte boardID)
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       pinLaunch = 51; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
-      pinResetControl = 43; //Reset control output
+      //pinResetControl = 43; //Reset control output
+      pinCondFan = 43;  //output for 2nd cooling fan
       pinBaro = A5;
       pinVSS = 20;
       pinWMIEmpty = 46;
