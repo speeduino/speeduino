@@ -10,8 +10,13 @@
 ![MISRA](https://img.shields.io/azure-devops/tests/speeduino/Speeduino/1?label=MISRA&passed_label=warnings&failed_label=violations)
 [![Chat on Slack](https://img.shields.io/badge/slack-speeduino-CC2B5E.svg?style=flat&logo=slack)](https://speeduino.com/home/community/slack)
 
-##### A low cost, DIY friendly Engine Management System (ECU) based on the Arduino framework
+##### Speeduino with small changes made specifically for my 1995 Miata.
 </div>
+
+## Whats Differant
+condensor fan is controlled by the speeduino
+A/C clutch is controlled by speeduino
+
 
 
 ## Speeduino
