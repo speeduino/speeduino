@@ -216,6 +216,8 @@ void idleControl()
       {
         //Currently cranking. Use the cranking table
         currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        digitalWrite(pinCondFan, LOW);  // Sanders  make sure AC is off if cranking
+        digitalWrite(pinACrelay, LOW);
       }
       else
       {
@@ -233,8 +235,29 @@ void idleControl()
           currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         }
       }
-
+//Sanders
+      if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; 
+      if (idleCounter < 20) {
+            idleCounter ++;
+           }
+           if (idleCounter == 12){
+           digitalWrite(pinACrelay, HIGH);
+           }
+           if (idleCounter == 19){
+           digitalWrite(pinCondFan, HIGH);           
+           }
+        }
+       
+        else if (currentStatus.idleUpActive == false)
+        {          
+          if (idleCounter != 0){
+            digitalWrite(pinCondFan, LOW);
+            digitalWrite(pinACrelay, LOW);
+            idleCounter = 0;
+          }     
+        } 
       if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
+ // Sanders - Add Idle Up amount if active
       if( currentStatus.idleDuty > 100 ) { currentStatus.idleDuty = 100; } //Safety Check
       if( currentStatus.idleDuty == 0 ) 
       { 
