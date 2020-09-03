@@ -103,24 +103,23 @@ void loop()
       //Initially check that the last send values request is not still outstanding
       if (serialInProgress == true) 
       { 
-        if(Serial.availableForWrite() > 32) { sendValues(inProgressOffset, inProgressLength, 0x30, 0); }
+        if(Serial.availableForWrite() > 16) { sendValues(inProgressOffset, inProgressLength, 0x30, 0); }
       }
       //Perform the same check for the tooth and composite logs
       if( toothLogSendInProgress == true)
       {
-        if(Serial.availableForWrite() > 32) { sendToothLog(inProgressOffset); }
+        if(Serial.availableForWrite() > 16) { sendToothLog(inProgressOffset); }
       }
       if( compositeLogSendInProgress == true)
       {
-        if(Serial.availableForWrite() > 32) { sendCompositeLog(inProgressOffset); }
+        if(Serial.availableForWrite() > 16) { sendCompositeLog(inProgressOffset); }
       }
 
       //Check for any requets from serial. Serial operations are checked under 2 scenarios:
       // 1) Check every 15Hz for data
       // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
       //Check for any in progress serial transmits that were waiting for the tx buffer to free
-      if ( (BIT_CHECK(TIMER_mask, BIT_TIMER_15HZ)) || (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
-      //if ( ((mainLoopCount & 31) == 1) or (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+      if ( (BIT_CHECK(TIMER_mask, BIT_TIMER_30HZ)) || (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
       {
         if (Serial.available() > 0) { command(); }
         else if(cmdPending == true)
