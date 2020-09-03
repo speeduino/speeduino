@@ -216,7 +216,7 @@ void idleControl()
       {
         //Currently cranking. Use the cranking table
         currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
-        digitalWrite(pinCondFan, LOW);  // Sanders  make sure AC is off if cranking
+        digitalWrite(pinFan2, LOW);  // Sanders  make sure AC is off if cranking
         digitalWrite(pinACrelay, LOW);
       }
       else
@@ -244,20 +244,20 @@ void idleControl()
            digitalWrite(pinACrelay, HIGH);
            }
            if (idleCounter == 19){
-           digitalWrite(pinCondFan, HIGH);           
+           digitalWrite(pinFan2, HIGH);           
            }
         }
        
         else if (currentStatus.idleUpActive == false)
         {          
           if (idleCounter != 0){
-            digitalWrite(pinCondFan, LOW);
+            digitalWrite(pinFan2, LOW);
             digitalWrite(pinACrelay, LOW);
             idleCounter = 0;
           }     
         } 
-      if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
- // Sanders - Add Idle Up amount if active
+      
+
       if( currentStatus.idleDuty > 100 ) { currentStatus.idleDuty = 100; } //Safety Check
       if( currentStatus.idleDuty == 0 ) 
       { 
@@ -286,6 +286,32 @@ void idleControl()
       else
       {
         currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        
+        //added this line to increase idle speed when AC is on
+        if(currentStatus.idleUpActive == true) 
+        { 
+          currentStatus.CLIdleTarget += 100; 
+           if (idleCounter < 20) {
+            idleCounter ++;
+           }
+           //if (idleCounter == 12){
+           if ((idleCounter & 5) == 1){
+           digitalWrite(pinACrelay, HIGH);
+           }
+           if ((idleCounter & 10) == 1){
+           digitalWrite(pinFan2, HIGH);           
+           }
+        }
+
+         else if (currentStatus.idleUpActive == false)
+        {          
+          //if (idleCounter != 0){
+            digitalWrite(pinFan2, LOW);
+            digitalWrite(pinACrelay, LOW);
+            //idleCounter = 0;
+          //}     
+        } 
+        
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
         if( (idleCounter & 31) == 1) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
 
