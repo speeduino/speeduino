@@ -762,8 +762,8 @@ struct config2 {
   uint16_t vssRatio4;
   uint16_t vssRatio5;
   uint16_t vssRatio6;
-
-  byte unused2_95[9];
+  byte idleAdvVss;
+  byte unused2_95[8];
   byte primingDelay;
 
 #if defined(CORE_AVR)
