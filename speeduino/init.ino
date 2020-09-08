@@ -42,7 +42,7 @@ void initialiseAll()
     //STM32 can not currently enabled
     #endif
     #if defined(CORE_TEENSY35)
-    // Sanders configPage9.intcan_available = 1;   // device has internal canbus
+    configPage9.intcan_available = 1;   // device has internal canbus
     #endif
     
     loadConfig();
@@ -1302,8 +1302,8 @@ void setPinMapping(byte boardID)
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
-      pinInjector4 = 11;
-      pinInjector5 = 12; //Output pin injector 5 is on      
+      pinInjector4 = 11; //Output pin injector 4 is on
+      pinInjector5 = 12; //Output pin injector 5 is on
       pinInjector6 = 50; //CAUTION: Uses the same as Coil 4 below. 
       pinCoil1 = 40; //Pin for coil 1
       pinCoil2 = 38; //Pin for coil 2
@@ -1318,11 +1318,10 @@ void setPinMapping(byte boardID)
       pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
-//Sanders(commented out)      pinDisplayReset = 48; // OLED reset pin
+      pinDisplayReset = 48; // OLED reset pin
       pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
       pinIdle1 = 5; //Single wire idle control
-//Sanders      pinIdle2 = 6; //2 wire idle control
-      pinACrelay = 6;  //Sanders
+      pinIdle2 = 6; //2 wire idle control
       pinBoost = 7; //Boost control
       pinVVT_1 = 4; //Default VVT output
       pinVVT_2 = 48; //Default VVT2 output
@@ -1331,10 +1330,9 @@ void setPinMapping(byte boardID)
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinStepperEnable = 24; //Enable pin for DRV8825
       pinFan = 47; //Pin for the fan output (Goes to ULN2803)
-      pinFan2 = 43;  // Sanders
       pinLaunch = 51; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
-      //pinResetControl = 43; //Reset control output - Sanders     
+      pinResetControl = 43; //Reset control output
       pinBaro = A5;
       pinVSS = 20;
       pinWMIEmpty = 46;
@@ -2424,15 +2422,12 @@ void setPinMapping(byte boardID)
   pinMode(pinFuelPump, OUTPUT);
   pinMode(pinIgnBypass, OUTPUT);
   pinMode(pinFan, OUTPUT);
-  pinMode(pinFan2, OUTPUT); // Sanders
   pinMode(pinStepperDir, OUTPUT);
   pinMode(pinStepperStep, OUTPUT);
   pinMode(pinStepperEnable, OUTPUT);
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
   pinMode(pinVVT_2, OUTPUT);
-  pinMode(pinACrelay, OUTPUT);
-  
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
