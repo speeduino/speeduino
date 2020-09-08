@@ -205,7 +205,6 @@ byte pinBoost;
 byte pinVVT_1;		// vvt output 1
 byte pinVVT_2;		// vvt output 2
 byte pinFan;       // Cooling fan output
-byte pinFan2;       //Sanders
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
 byte pinStepperEnable; //Turning the DRV8825 driver on/off
@@ -215,8 +214,6 @@ byte pinFlex; //Pin with the flex sensor attached
 byte pinVSS;
 byte pinBaro; //Pin that an al barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
-byte pinACrelay; //Sanders
-byte pinCondFan; //Sanders
 byte pinFuelPressure;
 byte pinOilPressure;
 byte pinWMIEmpty; // Water tank empty sensor
