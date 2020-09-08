@@ -19,16 +19,9 @@ Fan control
 */
 void initialiseFan()
 {
-  if( configPage6.fanInv == 1 ) 
-    { 
-      fanHIGH = LOW; fanLOW = HIGH;
-    }
-  else 
-    { 
-      fanHIGH = HIGH; fanLOW = LOW;     
-    }
+  if( configPage6.fanInv == 1 ) { fanHIGH = LOW; fanLOW = HIGH; }
+  else { fanHIGH = HIGH; fanLOW = LOW; }
   digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
-  digitalWrite(pinFan2, fanLOW);  //Sanders
   currentStatus.fanOn = false;
 
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
@@ -40,12 +33,8 @@ void fanControl()
   if( configPage6.fanEnable == 1 )
   {
     int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
-    int onTemp2 = onTemp + 10;  //2nd fan will come on at this higher temp - Sanders
     int offTemp = onTemp - configPage6.fanHyster;
-    int offTemp2 = onTemp + 2; //2nd fan turns off if 2 degrees below setpoint - Sanders
-    
     bool fanPermit = false;
-
 
     if ( configPage2.fanWhenOff == true) { fanPermit = true; }
     else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
@@ -57,12 +46,10 @@ void fanControl()
       {
         //If the user has elected to disable the fan during cranking, make sure it's off 
         FAN_OFF();
-        FAN2_OFF();
       }
       else 
       {
-        FAN_ON();
-        if (currentStatus.coolant >= onTemp2) {FAN2_ON();}  //Sanders
+        FAN_ON(); 
       }
       currentStatus.fanOn = true;
     }
@@ -72,17 +59,8 @@ void fanControl()
       FAN_OFF();
       currentStatus.fanOn = false;
     }
-    if  ( (currentStatus.coolant <= offTemp2) && (currentStatus.idleUpActive == false) )
-      {
-        FAN2_OFF();
-      }
-    }
   }
-
-
-//Sanders
-void FAN2_ON()  {digitalWrite(pinFan2, fanHIGH);}
-void FAN2_OFF()  {digitalWrite(pinFan2, fanLOW);}
+}
 
 void initialiseAuxPWM()
 {
