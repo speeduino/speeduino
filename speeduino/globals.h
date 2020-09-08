@@ -1292,7 +1292,6 @@ extern byte pinBoost;
 extern byte pinVVT_1;		// vvt output 1
 extern byte pinVVT_2;		// vvt output 2
 extern byte pinFan;       // Cooling fan output
-extern byte pinFan2;       // Cooling fan output - Sanders
 extern byte pinStepperDir; //Direction pin for the stepper motor driver
 extern byte pinStepperStep; //Step pin for the stepper motor driver
 extern byte pinStepperEnable; //Turning the DRV8825 driver on/off
