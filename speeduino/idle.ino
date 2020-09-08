@@ -99,75 +99,6 @@ void initialiseIdle()
       break;
 
     
-								   
-							  
-										 
-										
-													 
-											   
-
-								   
-											   
-											  
-															
-														  
-													  
-													  
-
-							 
-								  
-									   
-									  
-	   
-														
-													   
-	   
-		  
-	   
-													   
-														
-	   
-
-			
-
-							   
-									 
-									
-											   
-											  
-														  
-													 
-
-								   
-											   
-											  
-															
-														  
-													  
-													  
-
-							 
-					  
-								  
-									   
-
-									  
-	   
-														
-													   
-	   
-		  
-	   
-													   
-														
-	   
-
-								 
-																																 
-																					 
-											   
-			
-
     default:
       //Well this just shouldn't happen
       break;
@@ -256,7 +187,6 @@ void idleControl()
         } 
       
 
-																																  
       if( currentStatus.idleDuty > 100 ) { currentStatus.idleDuty = 100; } //Safety Check
       if( currentStatus.idleDuty == 0 ) 
       { 
@@ -268,7 +198,6 @@ void idleControl()
       idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
       currentStatus.idleLoad = currentStatus.idleDuty;
       idleOn = true;      
-	  
       break;
 
     
@@ -291,8 +220,7 @@ void idleControl()
         
         //added this line to increase idle speed when AC is on        
         if(currentStatus.idleUpActive == true)
-         { 
-          currentStatus.CLIdleTarget += 100;   //add 100 RPM to target
+         {           
           if ( acDelayCounter <= 20 )
            {
              if ( acDelayCounter == 12) {digitalWrite(pinACrelay, HIGH);}
@@ -330,8 +258,6 @@ void idleControl()
           }
           BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
           currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);          
-																																	  
-
         }
         idleCounter++;
         lastIdleUpValue = currentStatus.idleUpActive;  //used to see when button changes states
@@ -340,276 +266,26 @@ void idleControl()
 
       default:
         //shouldn't happen
-																																														  
-	   
-									   
-															   
-		 
-													  
-																																																											
-																																		  
-
-																											
-																		  
-		   
-																	 
-		   
-
-				   
-		 
-			
-		 
-							
-																																									   
-																	  
-																			  
-		   
-														 
-			 
-															   
-																						 
-																												   
-																											 
-			 
-				
-			 
-								
-																																																										  
-			 
-																																			
-															
-															
-
-																											  
-																			
-			 
-																	   
-			 
-		   
-				   
-		 
-																																								 
-																  
-	   
-										 
-																												 
-															  
-			
-
-																		  
-																													   
-																																														  
-	   
-															   
-		 
-													  
-																																																											
-																																		  
-
-																											
-																		  
-		   
-																	 
-		   
-		  
-				   
-																						 
-																	
-		 
-			 
-		 
-									  
-		   
-																																
-																						   
-															
-															
-		   
-
-																																												
-																											  
-											   
-																						
-																																		  
-
-																											
-																		  
-		   
-																	 
-		   
-
-				   
-						
-		 
-																																								  
-																  
-	   
-										 
-																												 
-															  
-			
-
-			
-												
         break;
   }
 }
 
    
-																					  
-		
-															
-																				  
-  
-								   
- 
-																				
-																								
-   
-																											
-															 
-									   
-											  
-										 
-						 
-				  
-					
-   
-				 
- 
-
-  
-																																		   
-		
-												 
-											 
-  
-									 
- 
-						  
-						 
-  
-																						 
-   
-											  
-	 
-								 
-	 
-		 
-	 
-								 
-	 
-
-																
-			  
-											   
-	   
-																		
-															  
-												  
-		
-																		 
-							   
-		 
-																																			 
-		 
-			
-		 
-											 
-		 
-		  
-						  
-	   
-		  
-	   
-																								  
-										 
-																   
-	   
-	 
-		
-	 
-																								  
-						
-	 
-   
-					
- 
-
-  
-			   
-  
-						   
- 
-																																																		
-   
-																			   
-															
-	 
-															  
-																
-								
-	 
-		
-															 
-	 
-																
-																
-								
-	 
-
-															 
-									   
-											  
-										 
-				  
-   
- 
 
 //This function simply turns off the idle PWM and sets the pin low
 static inline void disableIdle()
 {
-  if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
-  {
-    IDLE_TIMER_DISABLE();
+      IDLE_TIMER_DISABLE();
     digitalWrite(pinIdle1, LOW);
-  }
   
-   
-														   
-																	 
-	 
-																				  
-																					   
-								  
-		  
-																																																										  
-																																		 
-
-																										  
-																		
-		 
-																   
-		 
-	 
-   
+  
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off
   currentStatus.idleLoad = 0;
 }
 
 //Any common functions associated with starting the Idle
 //Typically this is enabling the PWM interrupt
-static inline void enableIdle()
-{
-  if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
-  {
-    IDLE_TIMER_ENABLE();
-  }
-  else if ( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
-  {
-
-  }
-}
+static inline void enableIdle() { IDLE_TIMER_ENABLE(); }
 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER1_COMPC_vect)
