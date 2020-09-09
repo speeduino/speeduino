@@ -631,6 +631,7 @@ void updateFullStatus()
   fullStatus[114] = currentStatus.advance1; //advance 1 (%)
   fullStatus[115] = currentStatus.advance2; //advance 2 (%)
   fullStatus[116] = dataRate;
+  fullStatus[117] = currentStatus.O2ADCmap; 
 }
 /*
 This function returns the current values of a fixed group of variables

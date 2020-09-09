@@ -466,11 +466,13 @@ void readO2()
     currentStatus.O2ADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_O2, currentStatus.O2ADC);
     //currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
     currentStatus.O2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2ADC);
+    currentStatus.O2ADCmap = fastMap1023toX(currentStatus.O2ADC, 255);    
   }
   else
   {
     currentStatus.O2ADC = 0;
     currentStatus.O2 = 0;
+    currentStatus.O2ADCmap = 0;
   }
   
 }

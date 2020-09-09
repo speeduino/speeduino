@@ -523,6 +523,7 @@ struct statuses {
   byte VE2; /**< The VE value from fuel table 2, if in use (and required conditions are met) */
   byte O2;
   byte O2_2;
+  byte O2ADCmap;/**< 0-255 byte representation of the AFR sensor. Downsampled from the original 10-bit reading, but before any calibration is applied */
   int coolant;
   int cltADC;
   int IAT;
