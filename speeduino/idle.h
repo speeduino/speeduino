@@ -48,6 +48,11 @@ volatile PORT_TYPE *idle2_pin_port;
 volatile PINMASK_TYPE idle2_pin_mask;
 
 volatile bool idle_pwm_state;
+#if not defined(PWM_FAN_AVAILABLE)
+volatile char nextIdleFan;
+volatile bool idle_max_pwm;
+volatile bool fan_max_pwm;
+#endif
 unsigned int idle_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int idle_pwm_cur_value;
 long idle_pid_target_value;

@@ -475,6 +475,12 @@ extern volatile byte HWTest_INJ_50pc; /**< Each bit in this variable represents 
 extern volatile byte HWTest_IGN; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 extern volatile byte HWTest_IGN_50pc; /**< Each bit in this variable represents one of the ignition channels and it's 50% HW test status */
 
+//For PWM fan
+extern volatile bool fan_pwm_state;
+extern unsigned int fan_pwm_max_count; //Used for variable PWM frequency
+extern volatile unsigned int fan_pwm_cur_value;
+extern long fan_pwm_value;
+
 //This needs to be here because using the config page directly can prevent burning the setting
 extern byte resetControl;
 

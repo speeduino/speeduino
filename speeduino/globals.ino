@@ -139,6 +139,10 @@ volatile byte HWTest_INJ_50pc = 0; /**< Each bit in this variable represents one
 volatile byte HWTest_IGN = 0; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 volatile byte HWTest_IGN_50pc = 0; 
 
+volatile bool fan_pwm_state;
+unsigned int fan_pwm_max_count; //Used for variable PWM frequency
+volatile unsigned int fan_pwm_cur_value;
+long fan_pwm_value;
 
 //This needs to be here because using the config page directly can prevent burning the setting
 byte resetControl = RESET_CONTROL_DISABLED;
