@@ -1773,7 +1773,7 @@ void setPinMapping(byte boardID)
       pinCoil3 = 52; //Pin for coil 3
       pinCoil4 = 48; //Pin for coil 4
       pinCoil5 = 36; //Pin for coil 5
-	  pinCoil6 = 34; //Pin for coil 6
+	    pinCoil6 = 34; //Pin for coil 6
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTPS = A2;//TPS input pin
@@ -1798,7 +1798,51 @@ void setPinMapping(byte boardID)
       pinFlex = 2; // Flex sensor
       pinResetControl = 43; //Reset control output
       break;
-
+      
+ #if defined(CORE_TEENSY35)
+    case 32:  //SCG_ECU V1.0 8x8 layout
+      pinInjector1 = 9; //Output pin injector 1
+      pinInjector2 = 8; //Output pin injector 2
+      pinInjector3 = 5; //Output pin injector 3
+      pinInjector4 = 2; //Output pin injector 4
+      pinInjector5 = 12; //Output pin injector 5
+      pinInjector6 = 27; //Output pin injector 6
+      pinInjector7 = 24; //Output pin injector 7
+      pinInjector8 = 25; //Output pin injector 8
+      pinCoil1 = 29; //Pin for coil 1
+      pinCoil2 = 30; //Pin for coil 2
+      pinCoil3 = 31; //Pin for coil 3
+      pinCoil4 = 32; //Pin for coil 4
+      pinCoil5 = 28; //Pin for coil 5
+      pinCoil6 = 14; //Pin for coil 6
+      pinCoil7 = 39; //Pin for coil 7
+      pinCoil8 = 22; //Pin for coil 8
+      pinTrigger = 23; //The CAS pin
+      pinTrigger2 = 36; //The Cam Sensor pin
+      pinTPS = 16;//TPS input pin
+      pinMAP = 17; //MAP sensor pin
+      pinIAT = A11; //IAT sensor pin
+      pinCLT = A10; //CLS sensor pin
+      pinO2 = A21;
+      pinO2_2 = A22; //O2 Sensor pin
+      pinBat = 15; //Battery reference voltage pin
+      pinSpareHOut1 = 6;
+      pinSpareHOut2 = 7;
+      pinSpareLOut1 = 20;
+      pinTachOut = 21; //Tacho output pin  
+      pinIdle1 = 10; //ICV pin1
+      pinBoost = 11; //Boost control
+      pinVVT_1 = 48; //VVT output
+      pinVVT_2 = 47; //Default VVT2 output
+      pinFuelPump = 38; //Fuel pump output
+      pinStepperDir = 13; 
+      pinStepperStep = 35;
+      pinFan = 37; //Pin for the fan output 
+      pinLaunch = 26; //Launch control pin (Tied to clutch pin) 
+      pinFlex = 49; // Flex sensor
+      //pinResetControl = 43; //Reset control output
+      break;
+#endif
     case 40:
       //Pin mappings as per the NO2C shield
       pinInjector1 = 8; //Output pin injector 1 is on
