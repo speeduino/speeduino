@@ -8,7 +8,7 @@ A full copy of the license may be found in the projects root directory
 #include "cancomms.h"
 #include "storage.h"
 #include "maths.h"
-#include "utils.h"
+#include "utilities.h"
 #include "decoders.h"
 #include "TS_CommandButtonHandler.h"
 #include "errors.h"
@@ -207,7 +207,7 @@ void command()
         }
         
         // Detecting if the current page is a table/map
-        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) ) { isMap = true; }
+        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) || (currentPage == ignMap2Page) ) { isMap = true; }
         else { isMap = false; }
         cmdPending = false;
       }
@@ -248,7 +248,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202006-dev"));
+      Serial.print(F("speeduino 202009-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -278,7 +278,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2020.06-dev"));
+      Serial.print(F("Speeduino 2020.09-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -297,8 +297,8 @@ void command()
         Serial.read(); // First byte of the page identifier can be ignored. It's always 0
         Serial.read(); // First byte of the page identifier can be ignored. It's always 0
 
-        if(currentStatus.toothLogEnabled == true) { sendToothLog(); } //Sends tooth log values as ints
-        else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(); }
+        if(currentStatus.toothLogEnabled == true) { sendToothLog(0); } //Sends tooth log values as ints
+        else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(0); }
 
         cmdPending = false;
       }
@@ -445,7 +445,7 @@ void command()
       break;
 
     case 'z': //Send 256 tooth log entries to a terminal emulator
-      sendToothLog(); //Sends tooth log values as chars
+      sendToothLog(0); //Sends tooth log values as chars
       break;
 
     case '`': //Custom 16u2 firmware is making its presence known
@@ -620,13 +620,18 @@ void updateFullStatus()
   fullStatus[103] = currentStatus.gear;
   fullStatus[104] = currentStatus.fuelPressure;
   fullStatus[105] = currentStatus.oilPressure;
-  fullStatus[106] = currentStatus.fanDuty;
-  fullStatus[107] = currentStatus.wmiPW;
-  fullStatus[108] = currentStatus.wmiEmpty;
-  fullStatus[109] = (int8_t)currentStatus.vvt2Angle;
-  fullStatus[110] = currentStatus.vvt2TargetAngle;
-  fullStatus[111] = currentStatus.vvt2Duty;;
-  fullStatus[112] = currentStatus.outputsStatus;
+  fullStatus[106] = currentStatus.wmiPW;
+  fullStatus[107] = currentStatus.wmiEmpty;
+  fullStatus[108] = (int8_t)currentStatus.vvt2Angle;
+  fullStatus[109] = currentStatus.vvt2TargetAngle;
+  fullStatus[110] = currentStatus.vvt2Duty;
+  fullStatus[111] = currentStatus.outputsStatus;
+  fullStatus[112] = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); //Fuel temperature from flex sensor
+  fullStatus[113] = currentStatus.fuelTempCorrection; //Fuel temperature Correction (%)
+  fullStatus[114] = currentStatus.advance1; //advance 1 (%)
+  fullStatus[115] = currentStatus.advance2; //advance 2 (%)
+  fullStatus[116] = dataRate;
+  fullStatus[117] = currentStatus.fanDuty;
 }
 /*
 This function returns the current values of a fixed group of variables
@@ -655,6 +660,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
   
   updateFullStatus();
+  
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -675,6 +681,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
     
   }
   serialInProgress = false;
+  dataRateCounter++; //Increment the data rate counter (Used for determining the current TS live data rate)
   // Reset any flags that are being used to trigger page refreshes
   BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
 
@@ -683,7 +690,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 void sendValuesLegacy()
 {
   uint16_t temp;
-  int bytestosend = 112;
+  int bytestosend = 114;
 
   bytestosend -= Serial.write(currentStatus.secl>>8);
   bytestosend -= Serial.write(currentStatus.secl);
@@ -790,6 +797,13 @@ void sendValuesLegacy()
   bytestosend -= Serial.write(99); // fuelcor
   bytestosend -= Serial.write(99); // fuelcor
   bytestosend -= Serial.write(99); // portStatus
+
+  temp = currentStatus.advance1 * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
+  temp = currentStatus.advance2 * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
 
   for(int i = 0; i < bytestosend; i++)
   {
@@ -1051,6 +1065,29 @@ void receiveValue(uint16_t valueOffset, byte newValue)
 
     default:
       break;
+    
+    case ignMap2Page: //Ignition settings page (Page 2)
+      if (valueOffset < 256) //New value is part of the ignition map
+      {
+        ignitionTable2.values[15 - (valueOffset / 16)][valueOffset % 16] = newValue;
+      }
+      else
+      {
+        //Check whether this is on the X (RPM) or Y (MAP/TPS) axis
+        if (valueOffset < 272)
+        {
+          //X Axis
+          ignitionTable2.axisX[(valueOffset - 256)] = (int)(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiple it back by 100 to make it correct
+        }
+        else if(valueOffset < 288)
+        {
+          //Y Axis
+          tempOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order
+          ignitionTable2.axisY[tempOffset] = (int)(newValue) * TABLE_LOAD_MULTIPLIER;
+        }
+      }
+      ignitionTable2.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      break;
   }
   //if(Serial.available() > 16) { command(); }
 }
@@ -1168,6 +1205,10 @@ void sendPage()
       
     case progOutsPage:
       pnt_configPage = &configPage13; //Create a pointer to Page 13 in memory
+      break;
+    
+    case ignMap2Page:
+      currentTable = ignitionTable2;
       break;
 
     default:
@@ -1464,6 +1505,11 @@ void sendPageASCII()
       #endif
       sendComplete = true;
       break;
+    
+    case ignMap2Page:
+      currentTitleIndex = 149;// the index to the first char of the third string in pageTitles
+      currentTable = ignitionTable2;
+      break;
 
     default:
     #ifndef SMALL_FLASH_MODE
@@ -1708,6 +1754,12 @@ byte getPageValue(byte page, uint16_t valueAddress)
         pnt_configPage = &configPage13; //Create a pointer to Page 13 in memory
         returnValue = *((byte *)pnt_configPage + valueAddress);
         break;
+
+    case ignMap2Page:
+        if( valueAddress < 256) { returnValue = ignitionTable2.values[15 - (valueAddress / 16)][valueAddress % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
+        else if(valueAddress < 272) { returnValue =  byte(ignitionTable2.axisX[(valueAddress - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
+        else if (valueAddress < 288) { returnValue = byte(ignitionTable2.axisY[15 - (valueAddress - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
+        break;
       
     default:
     #ifndef SMALL_FLASH_MODE
@@ -1814,13 +1866,21 @@ Send 256 tooth log entries
  * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
  * if useChar is false, the values are sent as a 2 byte integer which is readable by TunerStudios tooth logger
 */
-void sendToothLog()
+void sendToothLog(byte startOffset)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
-      for (int x = 0; x < TOOTH_LOG_SIZE; x++)
+      for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
       {
+        //Check whether the tx buffer still has space
+        if(Serial.availableForWrite() < 4) 
+        { 
+          //tx buffer is full. Store the current state so it can be resumed later
+          inProgressOffset = x;
+          toothLogSendInProgress = true;
+          return;
+        }
         //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
         //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
         Serial.write(toothHistory[toothHistorySerialIndex] >> 24);
@@ -1833,6 +1893,7 @@ void sendToothLog()
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       cmdPending = false;
+      toothLogSendInProgress = false;
   }
   else 
   { 
@@ -1845,24 +1906,28 @@ void sendToothLog()
   } 
 }
 
-void sendCompositeLog()
+void sendCompositeLog(byte startOffset)
 {
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
-      uint32_t runTime = 0;
-      for (int x = 0; x < TOOTH_LOG_SIZE; x++)
+      if(startOffset == 0) { inProgressCompositeTime = 0; }
+      for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
       {
-        runTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
-        
-        //Serial.write(highByte(runTime));
-        //Serial.write(lowByte(runTime));
-        Serial.write(runTime >> 24);
-        Serial.write(runTime >> 16);
-        Serial.write(runTime >> 8);
-        Serial.write(runTime);
+        //Check whether the tx buffer still has space
+        if(Serial.availableForWrite() < 4) 
+        { 
+          //tx buffer is full. Store the current state so it can be resumed later
+          inProgressOffset = x;
+          compositeLogSendInProgress = true;
+          return;
+        }
 
-        //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
-        //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
+        inProgressCompositeTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
+        
+        Serial.write(inProgressCompositeTime >> 24);
+        Serial.write(inProgressCompositeTime >> 16);
+        Serial.write(inProgressCompositeTime >> 8);
+        Serial.write(inProgressCompositeTime);
 
         Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
 
@@ -1874,6 +1939,8 @@ void sendCompositeLog()
       toothHistorySerialIndex = 0;
       compositeLastToothTime = 0;
       cmdPending = false;
+      compositeLogSendInProgress = false;
+      inProgressCompositeTime = 0;
   }
   else 
   { 
@@ -1891,4 +1958,3 @@ void testComm()
   Serial.write(1);
   return;
 }
-

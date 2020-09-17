@@ -6,7 +6,7 @@
 
 #include <avr/pgmspace.h>
 #include "globals.h"
-#include "utils.h"
+#include "utilities.h"
 #include "decoders.h"
 #include "comms.h"
 #include "src/FastCRC/FastCRC.h"
@@ -191,6 +191,19 @@ uint32_t calculateCRC32(byte pageNo)
       pnt_configPage = &configPage13; //Create a pointer to Page 10 in memory
       CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage13) );
       break;
+    
+    case ignMap2Page:
+      //Confirmed working
+      raw_value = getPageValue(ignMap2Page, 0);
+      CRC32_val = CRC32.crc32(&raw_value, 1, false);
+      for(uint16_t x=1; x< npage_size[ignMap2Page]; x++)
+      {
+        raw_value = getPageValue(ignMap2Page, x);
+        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
+      }
+      //Do a manual reflection of the CRC32 value
+      CRC32_val = ~CRC32_val;
+      break;
 
     default:
       CRC32_val = 0;
@@ -205,11 +218,10 @@ void initialiseProgrammableIO()
 {
   for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
   {
-    if (outputPin[y] < BOARD_NR_GPIO_PINS) { outputPin[y] = configPage13.outputPin[y]; }
-    if ( (outputPin[y] > 0) && (outputPin[y] < BOARD_NR_GPIO_PINS) )
+    if ( (configPage13.outputPin[y] > 0) && (configPage13.outputPin[y] < BOARD_NR_GPIO_PINS) )
     {
-      pinMode(outputPin[y], OUTPUT);
-      digitalWrite(outputPin[y], (configPage13.outputInverted & (1U << y)));
+      pinMode(configPage13.outputPin[y], OUTPUT);
+      digitalWrite(configPage13.outputPin[y], (configPage13.outputInverted & (1U << y)));
     }
   }
 }
@@ -223,8 +235,9 @@ void checkProgrammableIO()
   {
     firstCheck = false;
     secondCheck = false;
-    if ( outputPin[y] > 0 ) //if outputPin == 0 it is disabled
-    {
+    if ( configPage13.outputPin[y] > 0 ) //if outputPin == 0 it is disabled
+    { 
+      //byte theIndex = configPage13.firstDataIn[y];
       data = ProgrammableIOGetData(configPage13.firstDataIn[y]);
       data2 = configPage13.firstTarget[y];
 
@@ -254,18 +267,19 @@ void checkProgrammableIO()
           if (configPage13.operation[y].bitwise == BITWISE_XOR) { firstCheck ^= secondCheck; }
         }
       }
+      
 
       if ( (firstCheck == true) && (configPage13.outputDelay[y] != 0) && (configPage13.outputDelay[y] < 255) )
       {
         if ( (ioDelay[y] >= configPage13.outputDelay[y]) )
         {
-          if (outputPin[y] <= 128) { digitalWrite(outputPin[y], (configPage13.outputInverted & (1U << y)) ^ firstCheck); }
+          if (configPage13.outputPin[y] <= 128) { digitalWrite(configPage13.outputPin[y], (configPage13.outputInverted & (1U << y)) ^ firstCheck); }
         }
         else { ioDelay[y]++; }
       }
       else
       {
-        if ( outputPin[y] <= 128 ) { digitalWrite(outputPin[y], (configPage13.outputInverted & (1U << y)) ^ firstCheck); }
+        if ( configPage13.outputPin[y] <= 128 ) { digitalWrite(configPage13.outputPin[y], (configPage13.outputInverted & (1U << y)) ^ firstCheck); }
         if ( firstCheck == false ) { ioDelay[y] = 0; }
       }
       if ( firstCheck == true ) { BIT_SET(currentStatus.outputsStatus, y); }
@@ -287,6 +301,9 @@ int16_t ProgrammableIOGetData(uint16_t index)
     }
     if (x >= sizeof(fsIntIndex)) { result = fullStatus[index]; }
     else { result = word(fullStatus[index+1], fullStatus[index]); }
+
+    //Special cases for temperatures
+    if( (index == 6) || (index == 7) ) { result -= CALIBRATION_TEMPERATURE_OFFSET; }
   }
   else { result = -1; } //Index is bigger than fullStatus array
   return result;

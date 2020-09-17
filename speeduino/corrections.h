@@ -15,6 +15,7 @@ uint16_t correctionAccel(); //Acceleration Enrichment
 byte correctionFloodClear(); //Check for flood clear on cranking
 byte correctionAFRClosedLoop(); //Closed loop AFR adjustment
 byte correctionFlex(); //Flex fuel adjustment
+byte correctionFuelTemp(); //Fuel temp correction
 byte correctionBatVoltage(); //Battery voltage correction
 byte correctionIATDensity(); //Inlet temp density correction
 byte correctionBaro(); //Barometric pressure correction

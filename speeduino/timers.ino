@@ -18,6 +18,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "speeduino.h"
 #include "scheduler.h"
 #include "auxiliaries.h"
+#include "comms.h"
 
 #if defined(CORE_AVR)
   #include <avr/wdt.h>
@@ -227,6 +228,10 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //Off by 1 error check
       if (currentStatus.ethanolPct == 1) { currentStatus.ethanolPct = 0; }
 
+      //Continental flex sensor fuel temperature can be read with following formula: (Temperature = (41.25 * pulse width(ms)) - 81.25). 1000μs = -40C and 5000μs = 125C
+      if(flexPulseWidth > 5000) { flexPulseWidth = 5000; }
+      else if(flexPulseWidth < 1000) { flexPulseWidth = 1000; }
+      currentStatus.fuelTemp = (((4224 * (long)flexPulseWidth) >> 10) - 8125) / 100;
     }
 
     //**************************************************************************************************************************************************
@@ -255,6 +260,10 @@ void oneMSInterval() //Most ARM chips can simply call a function
       if(BIT_CHECK(HWTest_IGN_50pc, IGN7_CMD_BIT)) { coil7Toggle(); }
       if(BIT_CHECK(HWTest_IGN_50pc, IGN8_CMD_BIT)) { coil8Toggle(); }
     }
+
+    //Reset the live data rate counter
+    dataRate = dataRateCounter;
+    dataRateCounter = 0;
 
   }
 #if defined(CORE_AVR) //AVR chips use the ISR for this

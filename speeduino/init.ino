@@ -5,7 +5,7 @@
 #include "speeduino.h"
 #include "timers.h"
 #include "cancomms.h"
-#include "utils.h"
+#include "utilities.h"
 #include "scheduledIO.h"
 #include "scheduler.h"
 #include "auxiliaries.h"
@@ -27,6 +27,7 @@ void initialiseAll()
     table3D_setSize(&fuelTable, 16);
     table3D_setSize(&fuelTable2, 16);
     table3D_setSize(&ignitionTable, 16);
+    table3D_setSize(&ignitionTable2, 16);
     table3D_setSize(&afrTable, 16);
     table3D_setSize(&stagingTable, 8);
     table3D_setSize(&boostTable, 8);
@@ -163,6 +164,11 @@ void initialiseAll()
     flexBoostTable.xSize = 6;
     flexBoostTable.values = configPage10.flexBoostAdj;
     flexBoostTable.axisX = configPage10.flexBoostBins;
+    fuelTempTable.valueSize = SIZE_BYTE;
+    fuelTempTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    fuelTempTable.xSize = 6;
+    fuelTempTable.values = configPage10.fuelTempValues;
+    fuelTempTable.axisX = configPage10.fuelTempBins;
 
     knockWindowStartTable.valueSize = SIZE_BYTE;
     knockWindowStartTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
@@ -266,6 +272,7 @@ void initialiseAll()
     initialiseFan();
     initialiseAuxPWM();
     initialiseCorrections();
+    BIT_CLEAR(currentStatus.engineProtectStatus, PROTECT_IO_ERROR); //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
     initialiseADC();
     initialiseProgrammableIO();
 
@@ -300,10 +307,10 @@ void initialiseAll()
     }
     }
 
-    //Check whether the flex sensor is enabled and if so, attach an interupt for it
+    //Check whether the flex sensor is enabled and if so, attach an interrupt for it
     if(configPage2.flexEnabled > 0)
     {
-      attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, RISING);
+      attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, CHANGE);
       currentStatus.ethanolPct = 0;
     }
     //Same as above, but for the VSS input
@@ -2586,6 +2593,8 @@ void setPinMapping(byte boardID)
   triggerPri_pin_mask = digitalPinToBitMask(pinTrigger);
   triggerSec_pin_port = portInputRegister(digitalPinToPort(pinTrigger2));
   triggerSec_pin_mask = digitalPinToBitMask(pinTrigger2);
+  flex_pin_port = portInputRegister(digitalPinToPort(pinFlex));
+  flex_pin_mask = digitalPinToBitMask(pinFlex);
 
 }
 
@@ -2964,7 +2973,25 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    
+    case 19:
+      //Weber-Marelli
+      triggerSetup_DualWheel();
+      triggerHandler = triggerPri_Webber;
+      triggerSecondaryHandler = triggerSec_Webber;
+      decoderHasSecondary = true;
+      getRPM = getRPM_DualWheel;
+      getCrankAngle = getCrankAngle_DualWheel;
+      triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
 
     default:
       triggerHandler = triggerPri_missingTooth;

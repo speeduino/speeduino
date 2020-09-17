@@ -23,6 +23,7 @@
 #define fuelMap2Page 11
 #define wmiMapPage   12
 #define progOutsPage 13
+#define ignMap2Page  14
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
@@ -36,7 +37,12 @@ int valueOffset; /**< THe memory offset within a given page for a value to be re
 byte tsCanId = 0;     // current tscanid requested
 byte inProgressOffset;
 byte inProgressLength;
+uint32_t inProgressCompositeTime;
 bool serialInProgress = false;
+bool toothLogSendInProgress = false;
+bool compositeLogSendInProgress = false;
+volatile byte dataRate = 0; //The number of live data sends completed per second
+volatile byte dataRateCounter = 0; //A counter for tracking the current number of live data writes that have been sent since the last second
 
 const char pageTitles[] PROGMEM //This is being stored in the avr flash instead of SRAM which there is not very much of
   {
@@ -49,10 +55,11 @@ const char pageTitles[] PROGMEM //This is being stored in the avr flash instead 
    "\nPg 4 Config\0" //82
    "\nBoost Map\0" //93
    "\nVVT Map\0"//102-No need to put a trailing null because it's the last string and the compliler does it for you.
-   "\nPg 10 Config\0"
-   "\n2nd Fuel Map\0"
-   "\nWMI Map\0"
-   "\nPrgm IO"
+   "\nPg 10 Config\0"//116
+   "\n2nd Fuel Map\0"//130
+   "\nWMI Map\0"//139
+   "\nPrgm IO\0"//148
+   "\n2nd Ignition Map"
   };
 
 void command();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
@@ -63,10 +70,10 @@ void saveConfig();
 void sendPage();
 void sendPageASCII();
 void receiveCalibration(byte);
-void sendToothLog();
+void sendToothLog(uint8_t);
 void testComm();
 void commandButtons(int16_t);
-void sendCompositeLog();
+void sendCompositeLog(uint8_t);
 byte getPageValue(byte, uint16_t);
 void updateFullStatus();
 

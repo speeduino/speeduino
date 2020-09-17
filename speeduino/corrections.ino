@@ -65,8 +65,11 @@ uint16_t correctionsFuel()
   if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; } // Need to check this to ensure that sumCorrections doesn't overflow. Can occur when the number of corrections is greater than 3 (Which is 100^4) as 100^5 can overflow
 
   currentStatus.AEamount = correctionAccel();
+  if (configPage2.aeApplyMode == AE_MODE_MULTIPLIER)
+  {
   if (currentStatus.AEamount != 100) { sumCorrections = (sumCorrections * currentStatus.AEamount); activeCorrections++; }
   if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  }
 
   result = correctionFloodClear();
   if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
@@ -97,6 +100,10 @@ uint16_t correctionsFuel()
 
   currentStatus.flexCorrection = correctionFlex();
   if (currentStatus.flexCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.flexCorrection); activeCorrections++; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+
+  currentStatus.fuelTempCorrection = correctionFuelTemp();
+  if (currentStatus.fuelTempCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.fuelTempCorrection); activeCorrections++; }
   if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
   currentStatus.launchCorrection = correctionLaunch();
@@ -516,6 +523,20 @@ byte correctionFlex()
     flexValue = table2D_getValue(&flexFuelTable, currentStatus.ethanolPct);
   }
   return flexValue;
+}
+
+/*
+ * Fuel temperature adjustment to vary fuel based on fuel temperature reading
+*/
+byte correctionFuelTemp()
+{
+  byte fuelTempValue = 100;
+
+  if (configPage2.flexEnabled == 1)
+  {
+    fuelTempValue = table2D_getValue(&fuelTempTable, currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET);
+  }
+  return fuelTempValue;
 }
 
 /*
