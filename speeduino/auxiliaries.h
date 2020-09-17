@@ -31,9 +31,6 @@ void wmiControl();
 #define N2O_STAGE2_PIN_HIGH() *n2o_stage2_pin_port |= (n2o_stage2_pin_mask)
 #define READ_N2O_ARM_PIN()    ((*n2o_arming_pin_port & n2o_arming_pin_mask) ? true : false)
 
-#define FAN_ON()         ((configPage6.fanInv) ? FAN_PIN_LOW() : FAN_PIN_HIGH())
-#define FAN_OFF()        ((configPage6.fanInv) ? FAN_PIN_HIGH() : FAN_PIN_LOW())
-
 #define WMI_TANK_IS_EMPTY() ((configPage10.wmiEmptyEnabled) ? ((configPage10.wmiEmptyPolarity) ? !digitalRead(pinWMIEmpty) : digitalRead(pinWMIEmpty)) : 0)
 
 volatile PORT_TYPE *boost_pin_port;
@@ -58,8 +55,6 @@ long boost_pwm_target_value;
 long boost_cl_target_boost;
 byte boostCounter;
 byte vvtCounter;
-byte fanHIGH = HIGH;             // Used to invert the cooling fan output
-byte fanLOW = LOW;               // Used to invert the cooling fan output
 
 volatile bool vvt1_pwm_state;
 volatile bool vvt2_pwm_state;

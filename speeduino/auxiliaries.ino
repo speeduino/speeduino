@@ -19,13 +19,15 @@ Fan control
 */
 void initialiseFan()
 {
-  if( configPage6.fanInv == 1 ) { fanHIGH = LOW; fanLOW = HIGH; }
-  else { fanHIGH = HIGH; fanLOW = LOW; }
-  digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
-  currentStatus.fanOn = false;
-
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
+
+  if (configPage6.fanInv == 0)  //Initialise program with the fan in the off state, normal direction
+  { *fan_pin_port &= ~(fan_pin_mask); }  // Switch pin to low
+  else  //Reversed direction
+  { *fan_pin_port |= (fan_pin_mask); }  // Switch pin high
+  currentStatus.fanOn = false;
+
 #if defined(PWM_FAN_AVAILABLE)//own timer for PWM fan not available on Arduino MEGA
   DISABLE_FAN_TIMER();
 #endif
@@ -57,18 +59,18 @@ void fanControl()
       if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
       {
         //If the user has elected to disable the fan during cranking, make sure it's off 
-        FAN_OFF();
+        currentStatus.fanDuty = 0;
       }
       else 
       {
-        FAN_ON(); 
+        currentStatus.fanDuty = 100;
       }
       currentStatus.fanOn = true;
     }
     else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
       //Fan needs to be turned off. 
-      FAN_OFF();
+      currentStatus.fanDuty = 0;
       currentStatus.fanOn = false;
     }
   }
@@ -94,8 +96,10 @@ void fanControl()
         {
           fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
           currentStatus.fanOn = true; // update fan on status. Is this even used anywhere??
-          #if defined(PWM_FAN_AVAILABLE)//own timer for PWM fan not available on Arduino MEGA
+          #if defined(PWM_FAN_AVAILABLE)// own timer for PWM fan not available on Arduino MEGA
           ENABLE_FAN_TIMER();
+          #else
+          IDLE_TIMER_ENABLE(); // idle timer used for fan with mega
           #endif
         }
       }
@@ -108,23 +112,30 @@ void fanControl()
       DISABLE_FAN_TIMER();
       #endif
     }
+  }
 
   if(currentStatus.fanDuty == 0)
-    {
-      //Make sure fan has 0% duty)
-      digitalWrite(pinFan, fanLOW);     // Switch pin to low
-      #if defined(PWM_FAN_AVAILABLE)//own timer for PWM fan not available on Arduino MEGA
-      DISABLE_FAN_TIMER();
-      #endif
-    }
-    else if (currentStatus.fanDuty >= 100)
-    {
-      //Make sure fan has 100% duty
-      digitalWrite(pinFan, fanHIGH);     // Switch pin to high
-      #if defined(PWM_FAN_AVAILABLE)//own timer for PWM fan not available on Arduino MEGA
-      DISABLE_FAN_TIMER();
-      #endif
-    }
+  {
+    //Make sure fan has 0% duty)
+    if (configPage6.fanInv == 0)  //Normal direction
+    { *fan_pin_port &= ~(fan_pin_mask); }  // Switch pin to low
+    else  //Reversed direction
+    { *fan_pin_port |= (fan_pin_mask); }  // Switch pin high
+    currentStatus.fanOn = false;
+    #if defined(PWM_FAN_AVAILABLE)//own timer for PWM fan not available on Arduino MEGA
+    DISABLE_FAN_TIMER();
+    #endif
+  }
+  else if (currentStatus.fanDuty >= 100)
+  {
+    //Make sure fan has 100% duty
+    if (configPage6.fanInv == 0)  //Normal direction
+    { *fan_pin_port |= (fan_pin_mask); }  // Switch pin high
+    else  //Reversed direction
+    { *fan_pin_port &= ~(fan_pin_mask); }  // Switch pin to low
+    #if defined(PWM_FAN_AVAILABLE)//own timer for PWM fan not available on Arduino MEGA
+    DISABLE_FAN_TIMER();
+    #endif
   }
 }
 
@@ -630,13 +641,19 @@ void boostDisable()
 {
   if (fan_pwm_state == true)
   {
-    digitalWrite(pinFan, fanLOW);     // Switch pin to low
+    if (configPage6.fanInv == 0)  //Normal direction
+    { *fan_pin_port &= ~(fan_pin_mask); }  // Switch pin to low
+    else  //Reversed direction
+    { *fan_pin_port |= (fan_pin_mask); }  // Switch pin high
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
     fan_pwm_state = false;
   }
   else
   {
-    digitalWrite(pinFan, fanHIGH);    // Switch pin high
+    if (configPage6.fanInv == 0)  //Normal direction
+    { *fan_pin_port |= (fan_pin_mask); }  // Switch pin high
+    else  //Reversed direction
+    { *fan_pin_port &= ~(fan_pin_mask); }  // Switch pin to low
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
     fan_pwm_cur_value = fan_pwm_value;
     fan_pwm_state = true;

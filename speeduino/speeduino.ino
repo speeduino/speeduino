@@ -503,7 +503,13 @@ void loop()
           if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); }
 
           //Check whether the user has selected to disable to the fan during cranking
-          if(configPage2.fanWhenCranking == 0) { FAN_OFF(); }
+          if(configPage2.fanWhenCranking == 0)
+          {
+            if (configPage6.fanInv == 0)  //Normal direction
+            { *fan_pin_port &= ~(fan_pin_mask); }  // Switch pin to low
+            else  //Reversed direction
+            { *fan_pin_port |= (fan_pin_mask); }  // Switch pin high
+          }
         }
       //END SETTING STATUSES
       //-----------------------------------------------------------------------------------------------------
