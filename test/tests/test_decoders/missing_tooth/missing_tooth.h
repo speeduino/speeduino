@@ -1,1 +1,1 @@
-void testMissingTooth();
+void test_missingTooth();
