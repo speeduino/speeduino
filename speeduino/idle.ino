@@ -605,7 +605,6 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
 {
   if ( ((idle_pwm_state == false) || (idle_max_pwm == true)) && ((fan_pwm_state == false) || (fan_max_pwm == true)) )
   {
-    if (configPage6.iacPWMdir == 0)
     if( (idle_pwm_target_value > 0) && (idle_max_pwm == false) ) //Don't toggle if at 0%
     {
       if (configPage6.iacPWMdir == 0)
@@ -629,7 +628,7 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
       fan_pwm_state = true;
     }
 
-    if( (idle_pwm_state == true) && (idle_pwm_target_value <= fan_pwm_value) )
+    if( (idle_pwm_state == true) && (idle_pwm_target_value <= fan_pwm_value) || (fan_pwm_state == false))  )
     {
       IDLE_COMPARE = IDLE_COUNTER + idle_pwm_target_value;
       idle_pwm_cur_value = idle_pwm_target_value;
@@ -650,19 +649,19 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
   {
       if(nextIdleFan == 0)
     {
-      if(idle_pwm_target_value < idle_pwm_max_count) //Don't toggle if at 100%
+      if(idle_pwm_target_value < (long)idle_pwm_max_count) //Don't toggle if at 100%
       {
         if (configPage6.iacPWMdir == 0)
         //Normal direction
         { 
-          *idle_pin_port |= ~(idle_pin_mask);
-          if(configPage6.iacChannels == 1) { *idle2_pin_port &= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+          *idle_pin_port &= ~(idle_pin_mask);
+          if(configPage6.iacChannels == 1) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
         }
         else
         //Reversed direction
         {
-          *idle_pin_port &= (idle_pin_mask);
-          if(configPage6.iacChannels == 1) { *idle2_pin_port |= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+          *idle_pin_port |= (idle_pin_mask);
+          if(configPage6.iacChannels == 1) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
        }
         idle_pwm_state = false;
         idle_max_pwm = false;
@@ -678,7 +677,7 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
     }
     else if (nextIdleFan == 1)
     {
-      if(fan_pwm_value < idle_pwm_max_count) //Don't toggle if at 100%
+      if(fan_pwm_value < (long)idle_pwm_max_count) //Don't toggle if at 100%
       {
         if (configPage6.fanInv == 0) { *fan_pin_port &= ~(fan_pin_mask); } //Normal direction
         else { *fan_pin_port |= (fan_pin_mask); } //Reversed direction
@@ -696,26 +695,26 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
     }
     else
     {
-      if(idle_pwm_target_value < idle_pwm_max_count) //Don't toggle if at 100%
+      if(idle_pwm_target_value < (long)idle_pwm_max_count) //Don't toggle if at 100%
       {
         if (configPage6.iacPWMdir == 0)
         //Normal direction
         { 
-          *idle_pin_port |= ~(idle_pin_mask);
-          if(configPage6.iacChannels == 1) { *idle2_pin_port &= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+          *idle_pin_port &= ~(idle_pin_mask);
+          if(configPage6.iacChannels == 1) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
         }
         else
         //Reversed direction
         {
-          *idle_pin_port &= (idle_pin_mask);
-          if(configPage6.iacChannels == 1) { *idle2_pin_port |= (~idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+          *idle_pin_port |= (idle_pin_mask);
+          if(configPage6.iacChannels == 1) { *idle2_pin_port &= (~idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
         }
         idle_pwm_state = false;
         idle_max_pwm = false;
         IDLE_COMPARE = IDLE_COUNTER + (idle_pwm_max_count - idle_pwm_cur_value);
       }
       else { idle_max_pwm = true; }
-      if(fan_pwm_value < idle_pwm_max_count) //Don't toggle if at 100%
+      if(fan_pwm_value < (long)idle_pwm_max_count) //Don't toggle if at 100%
       {
         if (configPage6.fanInv == 0) { *fan_pin_port &= ~(fan_pin_mask); } //Normal direction
         else { *fan_pin_port |= (fan_pin_mask); } //Reversed direction
