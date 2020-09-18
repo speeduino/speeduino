@@ -333,6 +333,9 @@
   #define FUEL_PUMP_OFF() digitalWrite(pinFuelPump, LOW);
 #endif
 
+#define FAN_PIN_LOW()    *fan_pin_port &= ~(fan_pin_mask)
+#define FAN_PIN_HIGH()   *fan_pin_port |= (fan_pin_mask)
+
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing.
@@ -427,6 +430,10 @@ extern volatile PORT_TYPE *triggerPri_pin_port;
 extern volatile PINMASK_TYPE triggerPri_pin_mask;
 extern volatile PORT_TYPE *triggerSec_pin_port;
 extern volatile PINMASK_TYPE triggerSec_pin_mask;
+
+//These need to be here as they are used in both auxilaries.ino and idle.ino
+extern volatile PORT_TYPE *fan_pin_port;
+extern volatile PINMASK_TYPE fan_pin_mask;
 
 //These need to be here as they are used in both speeduino.ino and scheduler.ino
 extern bool channel1InjEnabled;

@@ -23,8 +23,6 @@ void wmiControl();
 #define VVT1_PIN_HIGH()   *vvt1_pin_port |= (vvt1_pin_mask)
 #define VVT2_PIN_LOW()    *vvt2_pin_port &= ~(vvt2_pin_mask)
 #define VVT2_PIN_HIGH()   *vvt2_pin_port |= (vvt2_pin_mask)
-#define FAN_PIN_LOW()    *fan_pin_port &= ~(fan_pin_mask)
-#define FAN_PIN_HIGH()   *fan_pin_port |= (fan_pin_mask)
 #define N2O_STAGE1_PIN_LOW()  *n2o_stage1_pin_port &= ~(n2o_stage1_pin_mask)
 #define N2O_STAGE1_PIN_HIGH() *n2o_stage1_pin_port |= (n2o_stage1_pin_mask)
 #define N2O_STAGE2_PIN_LOW()  *n2o_stage2_pin_port &= ~(n2o_stage2_pin_mask)
@@ -39,8 +37,6 @@ volatile PORT_TYPE *vvt1_pin_port;
 volatile PINMASK_TYPE vvt1_pin_mask;
 volatile PORT_TYPE *vvt2_pin_port;
 volatile PINMASK_TYPE vvt2_pin_mask;
-volatile PORT_TYPE *fan_pin_port;
-volatile PINMASK_TYPE fan_pin_mask;
 volatile PORT_TYPE *n2o_stage1_pin_port;
 volatile PINMASK_TYPE n2o_stage1_pin_mask;
 volatile PORT_TYPE *n2o_stage2_pin_port;

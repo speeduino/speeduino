@@ -628,7 +628,7 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
       fan_pwm_state = true;
     }
 
-    if( (idle_pwm_state == true) && (idle_pwm_target_value <= fan_pwm_value) || (fan_pwm_state == false))  )
+    if( (idle_pwm_state == true) && ((idle_pwm_target_value <= fan_pwm_value) || (fan_pwm_state == false))  )
     {
       IDLE_COMPARE = IDLE_COUNTER + idle_pwm_target_value;
       idle_pwm_cur_value = idle_pwm_target_value;
