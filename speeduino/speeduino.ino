@@ -83,15 +83,6 @@ void setup()
 {
   initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
   initialiseAll();
-    #if defined(CORE_TEENSY35)
-    //Teensy uses the Flexcan_T4 library to use the internal canbus
-    //enable local can interface
-    //setup can interface to 500k
-    
-    Can0.begin();
-    Can0.setBaudRate(500000);
-    Can0.enableFIFO();
-    #endif 
 }
 
 void loop()
