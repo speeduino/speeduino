@@ -16,7 +16,11 @@ void initSD()
     }   
     else { SD_status = SD_STATUS_ERROR_NO_CARD; }
 
-
+    //Write a header row
+    if(SD_status == SD_STATUS_READY)
+    {
+        logFile.println("Field 1,Field 2,Test");
+    }
     
 }
 
@@ -25,9 +29,15 @@ void endSD()
 
 }
 
-void writeSDLog()
+void writeSDLogEntry()
 {
-    uint8_t logEntry[LOG_ENTRY_SIZE];
+    //uint8_t logEntry[LOG_ENTRY_SIZE];
+
+    if(SD_status == SD_STATUS_READY)
+    {
+      //createSDLog(&logEntry);
+
+    }
     
 }
 
