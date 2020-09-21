@@ -28,8 +28,10 @@ void initialiseFan()
   { *fan_pin_port |= (fan_pin_mask); }  // Switch pin high
   currentStatus.fanOn = false;
 
-#if defined(PWM_FAN_AVAILABLE)//own timer for PWM fan not available on Arduino MEGA
-  DISABLE_FAN_TIMER();
+#if defined(PWM_FAN_AVAILABLE)
+  DISABLE_FAN_TIMER(); //disable FAN timer if available
+#else
+  fan_pwm_max_count = idle_pwm_max_count; //if there is no dedicated FAN timer, the idle timer is used. So _pwm_max_count comes from idle timer.
 #endif
   if ( configPage6.fanEnable == 2 ) // PWM Fan control
   {
@@ -92,9 +94,9 @@ void fanControl()
       else
       {
         currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
+        fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
         if (currentStatus.fanDuty > 0)
         {
-          fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
           currentStatus.fanOn = true; // update fan on status. Is this even used anywhere??
           #if defined(PWM_FAN_AVAILABLE)// own timer for PWM fan not available on Arduino MEGA
           ENABLE_FAN_TIMER();

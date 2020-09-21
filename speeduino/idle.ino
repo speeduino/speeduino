@@ -649,7 +649,7 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
   {
       if(nextIdleFan == 0)
     {
-      if(idle_pwm_target_value < (long)idle_pwm_max_count) //Don't toggle if at 100%
+      if(idle_pwm_target_value > 99 ) //Don't toggle if at 100%
       {
         if (configPage6.iacPWMdir == 0)
         //Normal direction
@@ -677,7 +677,7 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
     }
     else if (nextIdleFan == 1)
     {
-      if(fan_pwm_value < (long)idle_pwm_max_count) //Don't toggle if at 100%
+      if(fan_pwm_value > 99 ) //Don't toggle if at 100%
       {
         if (configPage6.fanInv == 0) { *fan_pin_port &= ~(fan_pin_mask); } //Normal direction
         else { *fan_pin_port |= (fan_pin_mask); } //Reversed direction
@@ -695,7 +695,7 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
     }
     else
     {
-      if(idle_pwm_target_value < (long)idle_pwm_max_count) //Don't toggle if at 100%
+      if(idle_pwm_target_value > 99 ) //Don't toggle if at 100%
       {
         if (configPage6.iacPWMdir == 0)
         //Normal direction
@@ -714,7 +714,7 @@ static inline void idleInterrupt() //Most ARM chips can simply call a function
         IDLE_COMPARE = IDLE_COUNTER + (idle_pwm_max_count - idle_pwm_cur_value);
       }
       else { idle_max_pwm = true; }
-      if(fan_pwm_value < (long)idle_pwm_max_count) //Don't toggle if at 100%
+      if(fan_pwm_value > 99 ) //Don't toggle if at 100%
       {
         if (configPage6.fanInv == 0) { *fan_pin_port &= ~(fan_pin_mask); } //Normal direction
         else { *fan_pin_port |= (fan_pin_mask); } //Reversed direction
