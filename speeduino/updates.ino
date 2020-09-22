@@ -429,7 +429,7 @@ void doUpdates()
 
   if(EEPROM.read(EEPROM_DATA_VERSION) == 15)
   {
-
+    configPage6.iacPWMrun = false; // just in case. This should be false anyways, but sill.
     writeAllConfig();
     //EEPROM.write(EEPROM_DATA_VERSION, 16);
   }
