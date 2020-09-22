@@ -137,6 +137,11 @@ void fanControl()
     { *fan_pin_port &= ~(fan_pin_mask); }  // Switch pin to low
     #if defined(PWM_FAN_AVAILABLE)//own timer for PWM fan not available on Arduino MEGA
     DISABLE_FAN_TIMER();
+    #else
+  }
+  else
+  {
+    fan_max_pwm = false;
     #endif
   }
 }
