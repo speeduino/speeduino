@@ -43,7 +43,16 @@ void initialiseAll()
     //STM32 can not currently enabled
     #endif
     #if defined(CORE_TEENSY35)
-    configPage9.intcan_available = 1;   // device has internal canbus
+      configPage9.intcan_available = 1;   // device has internal canbus
+      //Teensy uses the Flexcan_T4 library to use the internal canbus
+      //enable local can interface
+      //setup can interface to 500k
+
+      //Can0.setTX(3);
+      //Can0.setRX(4);    
+      Can0.begin();
+      Can0.setBaudRate(500000);
+      Can0.enableFIFO();
     #endif
     
     loadConfig();

@@ -18,6 +18,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "speeduino.h"
 #include "scheduler.h"
 #include "auxiliaries.h"
+#include "comms.h"
 
 #if defined(CORE_AVR)
   #include <avr/wdt.h>
@@ -259,6 +260,10 @@ void oneMSInterval() //Most ARM chips can simply call a function
       if(BIT_CHECK(HWTest_IGN_50pc, IGN7_CMD_BIT)) { coil7Toggle(); }
       if(BIT_CHECK(HWTest_IGN_50pc, IGN8_CMD_BIT)) { coil8Toggle(); }
     }
+
+    //Reset the live data rate counter
+    dataRate = dataRateCounter;
+    dataRateCounter = 0;
 
   }
 #if defined(CORE_AVR) //AVR chips use the ISR for this
