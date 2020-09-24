@@ -242,7 +242,7 @@ void idleControl()
       idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
       currentStatus.idleLoad = currentStatus.idleDuty;
       idleOn = true;
-      
+      if ( currentStatus.idleDuty < 100){idle_max_pwm = false;}
       break;
 
     case IAC_ALGORITHM_PWM_CL:    //Case 3 is PWM closed loop
@@ -279,6 +279,7 @@ void idleControl()
         }
         idleCounter++;
       }  
+      if ( currentStatus.idleDuty < 100){idle_max_pwm = false;}
       break;
 
     case IAC_ALGORITHM_STEP_OL:    //Case 4 is open loop stepper control
