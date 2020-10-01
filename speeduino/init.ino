@@ -1791,7 +1791,7 @@ void setPinMapping(byte boardID)
       pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
-      pinBaro = A5 //Baro sensor pin
+      pinBaro = A5; //Baro sensor pin
       pinDisplayReset = 41; // OLED reset pin
       pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
       pinIdle1 = 5; //ICV pin1
