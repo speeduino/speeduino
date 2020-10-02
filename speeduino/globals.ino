@@ -3,7 +3,7 @@
 const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
-const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288,192,128,288}; /**< This array stores the size (in bytes) of each configuration page */
+const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288,192,128,288,80}; /**< This array stores the size (in bytes) of each configuration page */
 
 struct table3D fuelTable; //16x16 fuel map
 struct table3D fuelTable2; //16x16 fuel map
@@ -13,6 +13,7 @@ struct table3D afrTable; //16x16 afr target map
 struct table3D stagingTable; //8x8 fuel staging table
 struct table3D boostTable; //8x8 boost map
 struct table3D vvtTable; //8x8 vvt map
+struct table3D vvt2Table; //8x8 vvt2 map
 struct table3D wmiTable; //8x8 wmi map
 struct table3D trim1Table; //6x6 Fuel trim 1 map
 struct table3D trim2Table; //6x6 Fuel trim 2 map

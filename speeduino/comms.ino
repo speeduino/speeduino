@@ -207,7 +207,7 @@ void command()
         }
         
         // Detecting if the current page is a table/map
-        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) || (currentPage == ignMap2Page) ) { isMap = true; }
+        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) || (currentPage == ignMap2Page) || (currentPage == vvt2Page) ) { isMap = true; }
         else { isMap = false; }
         cmdPending = false;
       }
@@ -1062,8 +1062,6 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       }
       break;
 
-    default:
-      break;
     
     case ignMap2Page: //Ignition settings page (Page 2)
       if (valueOffset < 256) //New value is part of the ignition map
@@ -1086,6 +1084,25 @@ void receiveValue(uint16_t valueOffset, byte newValue)
         }
       }
       ignitionTable2.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      break;
+
+    case vvt2Page: //VVT2 map (8x8)
+      if (valueOffset < 64) //New value is part of the vvt2 map
+      {
+        vvt2Table.values[7 - (valueOffset / 8)][valueOffset % 8] = newValue;
+      }
+      else if (valueOffset < 72) //New value is on the X (RPM) axis of the vvt2 table
+      {
+        vvt2Table.axisX[(valueOffset - 64)] = int(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+      }
+      else if (valueOffset < 80) //New value is on the Y (TPS) axis of the vvt2 table
+      {
+        vvt2Table.axisY[(7 - (valueOffset - 72))] = int(newValue); //TABLE_LOAD_MULTIPLIER is NOT used for boost as it is TPS based (0-100)
+      }
+      vvt2Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      break;
+
+    default:
       break;
   }
   //if(Serial.available() > 16) { command(); }
@@ -1208,6 +1225,10 @@ void sendPage()
     
     case ignMap2Page:
       currentTable = ignitionTable2;
+      break;
+
+    case vvt2Page:
+      currentTable = vvt2Table;
       break;
 
     default:
@@ -1510,6 +1531,11 @@ void sendPageASCII()
       currentTable = ignitionTable2;
       break;
 
+    case vvt2Page:
+      currentTitleIndex = 158;// the index to the first char of the third string in pageTitles
+      currentTable = vvt2Table;
+      break;
+
     default:
     #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
@@ -1759,7 +1785,15 @@ byte getPageValue(byte page, uint16_t valueAddress)
         else if(valueAddress < 272) { returnValue =  byte(ignitionTable2.axisX[(valueAddress - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
         else if (valueAddress < 288) { returnValue = byte(ignitionTable2.axisY[15 - (valueAddress - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
         break;
-      
+
+    case vvt2Page:
+        {
+          //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
+          if(valueAddress < 64) { returnValue = vvt2Table.values[7 - (valueAddress / 8)][valueAddress % 8]; }
+          else if(valueAddress < 72) { returnValue = byte(vvt2Table.axisX[(valueAddress - 64)] / TABLE_RPM_MULTIPLIER); }
+          else if(valueAddress < 80) { returnValue = byte(vvt2Table.axisY[7 - (valueAddress - 72)]); }
+        }
+        break;
     default:
     #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));

@@ -27,6 +27,7 @@ void writeAllConfig()
   if (eepromWritesPending == false) { writeConfig(wmiMapPage); }
   if (eepromWritesPending == false) { writeConfig(progOutsPage); }
   if (eepromWritesPending == false) { writeConfig(ignMap2Page); }
+  if (eepromWritesPending == false) { writeConfig(vvt2Page); }
 }
 
 
@@ -510,6 +511,45 @@ void writeConfig(byte tableNum)
 
       break;
 
+    case vvt2Page:
+      /*---------------------------------------------------
+      | vvt2 table - Page 15
+      | 8x8 table itself + the 8 values along each of the axis
+      -----------------------------------------------------*/
+      //Begin writing the table
+      if(EEPROM.read(EEPROM_CONFIG15_XSIZE) != vvt2Table.xSize) { EEPROM.write(EEPROM_CONFIG15_XSIZE,vvt2Table.xSize); writeCounter++; } //Write the vvt2 Table RPM dimension size
+      if(EEPROM.read(EEPROM_CONFIG15_YSIZE) != vvt2Table.ySize) { EEPROM.write(EEPROM_CONFIG15_YSIZE,vvt2Table.ySize); writeCounter++; } //Write the vvt2 Table MAP/TPS dimension size
+
+      for(int x=EEPROM_CONFIG15_MAP; x<EEPROM_CONFIG15_XBINS; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
+        offset = x - EEPROM_CONFIG15_MAP;
+        newVal = vvt2Table.values[7-(offset/8)][offset%8];
+        if(EEPROM.read(x) != newVal) { EEPROM.write(x, newVal); writeCounter++; }  //Write the 8x8 map with translation
+      }
+
+      //RPM bins
+      for(int x=EEPROM_CONFIG15_XBINS; x<EEPROM_CONFIG15_YBINS; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
+        offset = x - EEPROM_CONFIG15_XBINS;
+        newVal = vvt2Table.axisX[offset]/TABLE_RPM_MULTIPLIER;
+        if(EEPROM.read(x) != newVal) { EEPROM.write(x, newVal); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+      }
+      //TPS/MAP bins
+      for(int x=EEPROM_CONFIG15_YBINS; x<EEPROM_CONFIG15_END; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
+        offset = x - EEPROM_CONFIG15_YBINS;
+        newVal = vvt2Table.axisY[offset];
+        if(EEPROM.read(x) != newVal) { EEPROM.write(x, newVal); writeCounter++; }  //TABLE_LOAD_MULTIPLIER is NOT used for VVT as it is TPS based (0-100)
+      }
+
+      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
+      else { eepromWritesPending = false; }
+
+      break;
+
     default:
       break;
   }
@@ -783,7 +823,7 @@ void loadConfig()
   for(int x=EEPROM_CONFIG14_MAP; x<EEPROM_CONFIG14_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG14_MAP;
-    ignitionTable2.values[15-(offset/16)][offset%16] = EEPROM.read(x); //Read the 8x8 map
+    ignitionTable2.values[15-(offset/16)][offset%16] = EEPROM.read(x); //Read the 16x16 map
   }
   //RPM bins
   for(int x=EEPROM_CONFIG14_XBINS; x<EEPROM_CONFIG14_YBINS; x++)
@@ -799,8 +839,28 @@ void loadConfig()
   }
 
   //*********************************************************************************************************************************************************************************
+//SECOND VVT CONFIG PAGE (15)
 
+  //Begin writing the Ignition table, basically the same thing as above
+  for(int x=EEPROM_CONFIG15_MAP; x<EEPROM_CONFIG15_XBINS; x++)
+  {
+    offset = x - EEPROM_CONFIG15_MAP;
+    vvt2Table.values[7-(offset/8)][offset%8] = EEPROM.read(x); //Read the 8x8 map
+  }
+  //RPM bins
+  for(int x=EEPROM_CONFIG15_XBINS; x<EEPROM_CONFIG15_YBINS; x++)
+  {
+    offset = x - EEPROM_CONFIG15_XBINS;
+    vvt2Table.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
+  }
+  //TPS/MAP bins
+  for(int x=EEPROM_CONFIG15_YBINS; x<EEPROM_CONFIG15_END; x++)
+  {
+    offset = x - EEPROM_CONFIG15_YBINS;
+    vvt2Table.axisY[offset] = EEPROM.read(x); //TABLE_LOAD_MULTIPLIER is NOT used for VVT as it is TPS based (0-100)
+  }
 
+  //*********************************************************************************************************************************************************************************
 }
 
 /*

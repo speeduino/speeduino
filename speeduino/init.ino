@@ -32,6 +32,7 @@ void initialiseAll()
     table3D_setSize(&stagingTable, 8);
     table3D_setSize(&boostTable, 8);
     table3D_setSize(&vvtTable, 8);
+    table3D_setSize(&vvt2Table, 8);
     table3D_setSize(&wmiTable, 8);
     table3D_setSize(&trim1Table, 6);
     table3D_setSize(&trim2Table, 6);

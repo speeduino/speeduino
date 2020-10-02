@@ -336,7 +336,7 @@
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing.
-#define NUM_PAGES     15
+#define NUM_PAGES     16
 extern const uint16_t npage_size[NUM_PAGES]; /**< This array stores the size (in bytes) of each configuration page */
 #define MAP_PAGE_SIZE 288
 
@@ -348,6 +348,7 @@ extern struct table3D afrTable; //16x16 afr target map
 extern struct table3D stagingTable; //8x8 fuel staging table
 extern struct table3D boostTable; //8x8 boost map
 extern struct table3D vvtTable; //8x8 vvt map
+extern struct table3D vvt2Table; //8x8 vvt2 map
 extern struct table3D wmiTable; //8x8 wmi map
 extern struct table3D trim1Table; //6x6 Fuel trim 1 map
 extern struct table3D trim2Table; //6x6 Fuel trim 2 map
