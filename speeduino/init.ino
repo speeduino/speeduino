@@ -1911,6 +1911,7 @@ void setPinMapping(byte boardID)
       pinCoil5 = 26; //Placeholder  for coil 5
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
+      pinTrigger3 = 21;// The Cam sensor 2 pin
       pinFlex = 20; // Flex sensor
       pinTPS = A3; //TPS input pin
       pinMAP = A2; //MAP sensor pin
@@ -2605,6 +2606,7 @@ void initialiseTriggers()
 {
   byte triggerInterrupt = 0; // By default, use the first interrupt
   byte triggerInterrupt2 = 1;
+  byte triggerInterrupt3 = 2;
 
   #if defined(CORE_AVR)
     switch (pinTrigger) {
@@ -2650,15 +2652,39 @@ void initialiseTriggers()
     triggerInterrupt2 = pinTrigger2;
   #endif
 
+  #if defined(CORE_AVR)
+    switch (pinTrigger3) {
+      //Arduino Mega 2560 mapping
+      case 2:
+        triggerInterrupt3 = 0; break;
+      case 3:
+        triggerInterrupt3 = 1; break;
+      case 18:
+        triggerInterrupt3 = 5; break;
+      case 19:
+        triggerInterrupt3 = 4; break;
+      case 20:
+        triggerInterrupt3 = 3; break;
+      case 21:
+        triggerInterrupt3 = 2; break;
+      default:
+        triggerInterrupt3 = 0; break; //This should NEVER happen
+    }
+  #else
+    triggerInterrupt3 = pinTrigger3;
+  #endif
+
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
   //digitalWrite(pinTrigger, HIGH);
   detachInterrupt(triggerInterrupt);
   detachInterrupt(triggerInterrupt2);
+  detachInterrupt(triggerInterrupt3);
   //The default values for edges
   primaryTriggerEdge = 0; //This should ALWAYS be changed below
   secondaryTriggerEdge = 0; //This is optional and may not be changed below, depending on the decoder in use
+  tertiaryTriggerEdge = 0; //This is even more optional and may not be changed below, depending on the decoder in use
 
   //Set the trigger function based on the decoder in the config
   switch (configPage4.TrigPattern)
@@ -2668,6 +2694,7 @@ void initialiseTriggers()
       triggerSetup_missingTooth();
       triggerHandler = triggerPri_missingTooth;
       triggerSecondaryHandler = triggerSec_missingTooth;
+      triggerTertiaryHandler = triggerThird_missingTooth;
       decoderHasSecondary = true;
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
@@ -2677,9 +2704,12 @@ void initialiseTriggers()
       else { primaryTriggerEdge = FALLING; }
       if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
       else { secondaryTriggerEdge = FALLING; }
+      if(configPage10.TrigEdgeThrd == 0) { tertiaryTriggerEdge = RISING; }
+      else { tertiaryTriggerEdge = FALLING; }
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      if(configPage10.vvt2Enabled > 0) { attachInterrupt(triggerInterrupt3, triggerTertiaryHandler, tertiaryTriggerEdge); } // we only need this for vvt2, so not really needed if it's not used
 
       /*
       if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, triggerHandler, RISING); }

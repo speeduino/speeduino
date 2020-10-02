@@ -477,6 +477,7 @@ extern unsigned long previousLoopTime; /**< The time (in uS) that the previous m
 extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
 extern byte primaryTriggerEdge;
 extern byte secondaryTriggerEdge;
+extern byte tertiaryTriggerEdge;
 extern int CRANK_ANGLE_MAX;
 extern int CRANK_ANGLE_MAX_IGN;
 extern int CRANK_ANGLE_MAX_INJ; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
@@ -1193,8 +1194,8 @@ struct config10 {
   byte vvtCLminDuty;
   byte vvtCLmaxDuty;
   byte vvt2Pin : 6;
-  byte unused11_174_1 : 1;
-  byte unused11_174_2 : 1;
+  byte vvt2Enabled : 1;
+  byte TrigEdgeThrd : 1;
 
   byte fuelTempBins[6];
   byte fuelTempValues[6];
@@ -1212,7 +1213,7 @@ struct config10 {
   byte spark2InputPolarity : 1;
   byte spark2InputPullup : 1;
 
-  byte unused11_187_191[2]; //Bytes 187-191
+  int16_t vvt2CLMinAng;
 
 #if defined(CORE_AVR)
   };
@@ -1271,7 +1272,7 @@ extern byte pinCoil7; //Pin for coil 7
 extern byte pinCoil8; //Pin for coil 8
 extern byte pinTrigger; //The CAS pin
 extern byte pinTrigger2; //The Cam Sensor pin
-extern byte pinTrigger3;	//the 2nd cam sensor pin
+extern byte pinTrigger3; //the 2nd cam sensor pin
 extern byte pinTPS;//TPS input pin
 extern byte pinMAP; //MAP sensor pin
 extern byte pinEMAP; //EMAP sensor pin

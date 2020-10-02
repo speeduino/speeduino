@@ -133,6 +133,7 @@ unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop
 volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
 byte primaryTriggerEdge;
 byte secondaryTriggerEdge;
+byte tertiaryTriggerEdge;
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360;
 int CRANK_ANGLE_MAX_INJ = 360; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
@@ -169,7 +170,7 @@ byte pinCoil7; //Pin for coil 7
 byte pinCoil8; //Pin for coil 8
 byte pinTrigger; //The CAS pin
 byte pinTrigger2; //The Cam Sensor pin
-byte pinTrigger3;	//the 2nd cam sensor pin
+byte pinTrigger3; //the 2nd cam sensor pin
 byte pinTPS;//TPS input pin
 byte pinMAP; //MAP sensor pin
 byte pinEMAP; //EMAP sensor pin
