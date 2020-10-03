@@ -278,7 +278,7 @@ void vvtControl()
       else
       {
         //This is dumb, but need to convert the current angle into a long pointer
-        vvt2_pid_target_angle = currentStatus.vvt1TargetAngle;
+        vvt_pid_target_angle = currentStatus.vvt1TargetAngle;
 
         //If not already at target angle, calculate new value from PID
         bool PID_compute = vvtPID.Compute(false);
@@ -305,7 +305,7 @@ void vvtControl()
         else
         {
           //This is dumb, but need to convert the current angle into a long pointer
-          vvt_pid_target_angle = currentStatus.vvt2TargetAngle;
+          vvt2_pid_target_angle = currentStatus.vvt2TargetAngle;
           //If not already at target angle, calculate new value from PID
           bool PID_compute = vvt2PID.Compute(false);
           if(PID_compute == true) { currentStatus.vvt2Duty = (vvt2_pwm_value * 100) / vvt_pwm_max_count; }
@@ -336,6 +336,9 @@ void vvtControl()
       else { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Reversed direction
       DISABLE_VVT_TIMER();
     }
+
+  if (currentStatus.vvt1Duty < 100){vvt1_max_pwm = false;} // the max_pwm bit needs to be reseted back to false to prevent output duty from being stuck to 100%
+  if (currentStatus.vvt2Duty < 100){vvt2_max_pwm = false;}
  
   }
   else 
