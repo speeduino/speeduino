@@ -323,7 +323,7 @@ void vvtControl()
       //Make sure solenoid is off (0% duty)
       if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Normal direction
       else { *vvt1_pin_port |= (vvt1_pin_mask); } //Reversed direction
-      if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
+      if (configPage4.vvt2PWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
       else { *vvt2_pin_port |= (vvt2_pin_mask); } //Reversed direction
       DISABLE_VVT_TIMER();
     }
@@ -332,7 +332,7 @@ void vvtControl()
       //Make sure solenoid is on (100% duty)
       if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port |= (vvt1_pin_mask); } //Normal direction
       else { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Reversed direction
-      if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port |= (vvt2_pin_mask); } //Normal direction
+      if (configPage4.vvt2PWMdir == 0) { *vvt2_pin_port |= (vvt2_pin_mask); } //Normal direction
       else { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Reversed direction
       DISABLE_VVT_TIMER();
     }
@@ -567,7 +567,7 @@ void boostDisable()
     {
       if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
-        if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
+        if (configPage4.vvt2PWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
         else { *vvt2_pin_port |= (vvt2_pin_mask); } //Reversed direction
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;
@@ -594,7 +594,7 @@ void boostDisable()
       else { vvt1_max_pwm = true; }
       if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
-        if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
+        if (configPage4.vvt2PWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
         else { *vvt2_pin_port |= (vvt2_pin_mask); } //Reversed direction
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;

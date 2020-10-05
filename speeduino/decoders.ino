@@ -547,7 +547,7 @@ void triggerThird_missingTooth()
     curAngle = getCrankAngle();
     while(curAngle > 360) { curAngle -= 360; }
     curAngle -= configPage4.triggerAngle; //Value at TDC
-    if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvt2CLMinAng; }
+    if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CLMinAng; }
     currentStatus.vvt2Angle = curAngle;
   } //Trigger filter
 }

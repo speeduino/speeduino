@@ -856,7 +856,11 @@ struct config4 {
 
   byte engineProtectMaxRPM;
 
-  byte unused4_120[7];
+  int16_t vvt2CLMinAng;
+  byte vvt2PWMdir : 1;
+  byte unusedBits4 : 7;
+
+  byte unused4_124[4];
 
 #if defined(CORE_AVR)
   };
@@ -1201,20 +1205,20 @@ struct config10 {
   byte fuelTempBins[6];
   byte fuelTempValues[6];
 
-  //Byte 122
+  //Byte 181
   byte spark2Algorithm : 3;
   byte spark2Mode : 3;
   byte spark2SwitchVariable : 2;
 
-  //Bytes 123-124
+  //Bytes 182
   uint16_t spark2SwitchValue;
 
-  //Byte 125
+  //Byte 184
   byte spark2InputPin : 6;
   byte spark2InputPolarity : 1;
   byte spark2InputPullup : 1;
 
-  int16_t vvt2CLMinAng;
+  byte unused11_187_191[2]; //Bytes 187-191
 
 #if defined(CORE_AVR)
   };

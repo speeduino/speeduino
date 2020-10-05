@@ -1175,6 +1175,7 @@ void setPinMapping(byte boardID)
       pinCoil5 = 14; //Pin for coil 5
       pinTrigger = 2; //The CAS pin
       pinTrigger2 = 3; //The CAS pin
+      pinTrigger3 = 20; //The Cam sensor 2 pin
       pinTPS = A0; //TPS input pin
       pinMAP = A1; //MAP sensor pin
       pinIAT = A2; //IAT sensor pin
@@ -1239,6 +1240,7 @@ void setPinMapping(byte boardID)
       pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 20; //The CAS pin
       pinTrigger2 = 21; //The Cam Sensor pin
+      pinTrigger3 = 3; //The Cam sensor 2 pin
       pinTPS = A2; //TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
@@ -1272,6 +1274,7 @@ void setPinMapping(byte boardID)
       pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
+      pinTrigger3 = 3; //The Cam sensor 2 pin
       pinTPS = A2;//TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
@@ -1323,6 +1326,7 @@ void setPinMapping(byte boardID)
       pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
+      pinTrigger3 = 3; //The Cam sensor 2 pin
       pinTPS = A2;//TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
@@ -1518,6 +1522,7 @@ void setPinMapping(byte boardID)
       pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
+      pinTrigger3 = 2; //The Cam sensor 2 pin
       pinTPS = A2;//TPS input pin
       pinMAP = A5; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
@@ -1744,7 +1749,6 @@ void setPinMapping(byte boardID)
       pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
-      pinTrigger3 = 17; // cam sensor 2 pin
       pinTPS = A2;//TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
@@ -1786,6 +1790,7 @@ void setPinMapping(byte boardID)
 	  pinCoil6 = 34; //Pin for coil 6
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
+      pinTrigger3 = 3; //The Cam sensor 2 pin
       pinTPS = A2;//TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
@@ -1823,6 +1828,7 @@ void setPinMapping(byte boardID)
       pinCoil5 = 46; //Placeholder only - NOT USED
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
+      pinTrigger3 = 21; //The Cam sensor 2 pin
       pinTPS = A3; //TPS input pin
       pinMAP = A0; //MAP sensor pin
       pinIAT = A5; //IAT sensor pin
@@ -1866,6 +1872,7 @@ void setPinMapping(byte boardID)
       pinCoil5 = 44; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
+      pinTrigger3 = 3; //The Cam sensor 2 pin
       pinFlex = 20; // Flex sensor
       pinTPS = A3; //TPS input pin
       pinMAP = A0; //MAP sensor pin
