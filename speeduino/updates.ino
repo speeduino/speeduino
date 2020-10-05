@@ -430,6 +430,11 @@ void doUpdates()
   if(EEPROM.read(EEPROM_DATA_VERSION) == 15)
   {
 
+    //VVT2 added, so default values and disable it
+    configPage10.vvt2Enabled = 0;
+    configPage4.vvt2PWMdir = 0;
+    configPage10.TrigEdgeThrd = 0;
+
     writeAllConfig();
     //EEPROM.write(EEPROM_DATA_VERSION, 16);
   }
