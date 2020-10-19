@@ -91,7 +91,7 @@ void loop()
       LOOP_TIMER = TIMER_mask;
 
       //SERIAL Comms
-      //Initially check that the last send values request is not still outstanding
+      //Initially check that the last serial send values request is not still outstanding
       if (serialInProgress == true) 
       { 
         if(Serial.availableForWrite() > 16) { sendValues(inProgressOffset, inProgressLength, 0x30, 0); }
@@ -106,19 +106,15 @@ void loop()
         if(Serial.availableForWrite() > 16) { sendCompositeLog(inProgressOffset); }
       }
 
-      //Check for any requets from serial. Serial operations are checked under 2 scenarios:
-      // 1) Check every 15Hz for data
-      // 2) If the amount of data in the serial buffer is greater than a set threhold (See globals.h). This is to avoid serial buffer overflow when large amounts of data is being sent
-      //Check for any in progress serial transmits that were waiting for the tx buffer to free
-      if ( (BIT_CHECK(TIMER_mask, BIT_TIMER_30HZ)) || (Serial.available() > SERIAL_BUFFER_THRESHOLD) )
+      //Check for any new requets from serial.
+      if (Serial.available() > 0) { command(); }
+      else if(cmdPending == true)
       {
-        if (Serial.available() > 0) { command(); }
-        else if(cmdPending == true)
-        {
-          //This is a special case just for the tooth and composite loggers
-          if (currentCommand == 'T') { command(); }
-        }
+        //This is a special case just for the tooth and composite loggers
+        if (currentCommand == 'T') { command(); }
       }
+
+      //Check for any CAN comms requiring action 
       #if defined(CANSerial_AVAILABLE)
         //if can or secondary serial interface is enabled then check for requests.
         if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
