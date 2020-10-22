@@ -187,6 +187,7 @@ byte pinIdle2; //2 wire idle control (Not currently used)
 byte pinIdleUp; //Input for triggering Idle Up
 byte pinCTPS; //Input for triggering closed throttle state
 byte pinFuel2Input; //Input for switching to the 2nd fuel table
+byte pinSpark2Input; //Input for switching to the 2nd ignition table
 byte pinSpareTemp1; // Future use only
 byte pinSpareTemp2; // Future use only
 byte pinSpareOut1; //Generic output
