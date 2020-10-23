@@ -469,7 +469,7 @@ extern int ignition8StartAngle;
 
 //These are variables used across multiple files
 extern byte fullStatus[LOG_ENTRY_SIZE];
-extern byte fsIntIndex[31];
+extern byte fsIntIndex[33];
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern volatile uint16_t mainLoopCount;
