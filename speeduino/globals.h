@@ -153,7 +153,7 @@
 
 #define BIT_SPARK2_FLATSH         0  //Flat shift hard cut
 #define BIT_SPARK2_FLATSS         1  //Flat shift soft cut
-#define BIT_SPARK2_UNUSED3        2
+#define BIT_SPARK2_SPARK2_ACTIVE  2
 #define BIT_SPARK2_UNUSED4        3
 #define BIT_SPARK2_UNUSED5        4
 #define BIT_SPARK2_UNUSED6        5
@@ -259,10 +259,21 @@
 #define FUEL2_MODE_CONDITIONAL_SWITCH   3
 #define FUEL2_MODE_INPUT_SWITCH 4
 
+#define SPARK2_MODE_OFF      0
+#define SPARK2_MODE_MULTIPLY 1
+#define SPARK2_MODE_ADD      2
+#define SPARK2_MODE_CONDITIONAL_SWITCH   3
+#define SPARK2_MODE_INPUT_SWITCH 4
+
 #define FUEL2_CONDITION_RPM 0
 #define FUEL2_CONDITION_MAP 1
 #define FUEL2_CONDITION_TPS 2
 #define FUEL2_CONDITION_ETH 3
+
+#define SPARK2_CONDITION_RPM 0
+#define SPARK2_CONDITION_MAP 1
+#define SPARK2_CONDITION_TPS 2
+#define SPARK2_CONDITION_ETH 3
 
 #define RESET_CONTROL_DISABLED             0
 #define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
@@ -1295,6 +1306,7 @@ extern byte pinIdle2; //2 wire idle control (Not currently used)
 extern byte pinIdleUp; //Input for triggering Idle Up
 extern byte pinCTPS; //Input for triggering closed throttle state
 extern byte pinFuel2Input; //Input for switching to the 2nd fuel table
+extern byte pinSpark2Input; //Input for switching to the 2nd ignition table
 extern byte pinSpareTemp1; // Future use only
 extern byte pinSpareTemp2; // Future use only
 extern byte pinSpareOut1; //Generic output

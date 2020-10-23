@@ -632,7 +632,6 @@ void updateFullStatus()
   fullStatus[115] = currentStatus.fuelTempCorrection; //Fuel temperature Correction (%)
   fullStatus[116] = currentStatus.advance1; //advance 1 (%)
   fullStatus[117] = currentStatus.advance2; //advance 2 (%)
-  fullStatus[118] = dataRate;
 }
 /*
 This function returns the current values of a fixed group of variables
@@ -682,7 +681,6 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
     
   }
   serialInProgress = false;
-  dataRateCounter++; //Increment the data rate counter (Used for determining the current TS live data rate)
   // Reset any flags that are being used to trigger page refreshes
   BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
 
