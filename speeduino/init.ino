@@ -224,11 +224,11 @@ void initialiseAll()
     loadCalibration();
 
     //Set the pin mappings
-    if(configPage2.pinMapping == 255)
+    if((configPage2.pinMapping == 255) || (configPage2.pinMapping == 0))
     {
-    //First time running on this board
-    setPinMapping(3); //Force board to v0.4
-    configPage2.flexEnabled = false; //Have to disable flex. If this isn't done and the wrong flex pin is interrupt attached below, system can hang.
+      //First time running on this board
+      setPinMapping(4); //Force board to v0.4
+      configPage2.flexEnabled = false; //Have to disable flex. If this isn't done and the wrong flex pin is interrupt attached below, system can hang.
     }
     else { setPinMapping(configPage2.pinMapping); }
 
@@ -1159,7 +1159,7 @@ void setPinMapping(byte boardID)
 {
   switch (boardID)
   {
-    case 0:
+    case 1:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the v0.1 shield
       pinInjector1 = 8; //Output pin injector 1 is on
@@ -1223,7 +1223,7 @@ void setPinMapping(byte boardID)
       pinTrigger2 = PB10; //The Cam Sensor pin
     #endif
       break;
-    case 1:
+    case 2:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the v0.2 shield
       pinInjector1 = 8; //Output pin injector 1 is on
@@ -1256,7 +1256,7 @@ void setPinMapping(byte boardID)
       pinResetControl = 43; //Reset control output
       break;
     #endif
-    case 2:
+    case 3:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the v0.3 shield
       pinInjector1 = 8; //Output pin injector 1 is on
@@ -1307,7 +1307,7 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
-    case 3:
+    case 4:
       //Pin mappings as per the v0.4 shield
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on

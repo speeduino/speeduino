@@ -423,6 +423,9 @@ void doUpdates()
     //New AE option added to allow for PW added in addition to existing PW multiply
     configPage2.aeApplyMode = 0; //Set the AE mode to Multiply
 
+    //Update low pinMapping tosupport FRAM as it starts as 0
+    if(configPage2.pinMapping < 6) { configPage2.pinMapping++; }
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 15);
   }
