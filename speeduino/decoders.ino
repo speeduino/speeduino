@@ -3945,7 +3945,8 @@ void triggerPri_RoverMEMS()
       return;
     }
     currentStatus.hasSync = true;
-    toothCurrentCount = 1; // this is where we will say we are at the start of a rev
+    toothCurrentCount = 1; // this is where we will say we are at the start of a rev // TODO: fix this to the actual tooth number
+    revolutionOne = !revolutionOne; // toggle rpm/cycle counter
     toothOneMinusOneTime = toothOneTime;
     toothOneTime = curTime;
     currentStatus.startRevolutions++; // and say we have done a rev
@@ -3972,7 +3973,8 @@ void triggerPri_RoverMEMS()
     else
     {
       currentStatus.hasSync = true;
-      toothCurrentCount = 1; // this is where we will say we are at the start of a rev, it's the 3rd tooth after a gap
+      toothCurrentCount = 1; // this is where we will say we are at the start of a rev // TODO: fix this to the actual tooth number
+      revolutionOne = !revolutionOne; // toggle rpm/cycle counter
       toothOneMinusOneTime = toothOneTime;
       toothOneTime = curTime;
       currentStatus.startRevolutions++; // and say we have done a rev
@@ -3992,7 +3994,8 @@ void triggerPri_RoverMEMS()
       return;
     }
     currentStatus.hasSync = true;
-    toothCurrentCount = 1; // this is where we will say we are at the start of a rev
+    toothCurrentCount = 1; // this is where we will say we are at the start of a rev // TODO: fix this to the actual tooth number
+    revolutionOne = !revolutionOne; // toggle rpm/cycle counter
     toothOneMinusOneTime = toothOneTime;
     toothOneTime = curTime;
     currentStatus.startRevolutions++; // and say we have done a rev
