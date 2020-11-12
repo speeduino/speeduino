@@ -3879,6 +3879,7 @@ void triggerSetup_RoverMEMS()
   toothOneMinusOneTime = 0;
   checkSyncToothCount = 64; // make sure we have definitely seen all teeth
   MAX_STALL_TIME = (3333UL * triggerToothAngle * 2 ); // Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  secondaryToothCount = 0;
 }
 
 void syncLoss_RoverMEMS()
@@ -3889,6 +3890,7 @@ void syncLoss_RoverMEMS()
   toothCurrentCount = 0;
   roverMemsTeethSeen = 0b0000000000000000;
   roverMemsFlywheelType = -1;
+  secondaryToothCount = 0;
   interrupts();
 }
 
