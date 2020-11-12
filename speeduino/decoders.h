@@ -157,6 +157,13 @@ void triggerSetEndTeeth_420a();
 void triggerPri_Webber();
 void triggerSec_Webber();
 
+void triggerSetup_RoverMEMS();
+void triggerPri_RoverMEMS();
+void triggerSec_RoverMEMS();
+uint16_t getRPM_RoverMEMS();
+int getCrankAngle_RoverMEMS();
+void triggerSetEndTeeth_RoverMEMS();
+
 extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 extern void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
 extern uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
@@ -208,6 +215,9 @@ extern unsigned long elapsedTime;
 extern unsigned long lastCrankAngleCalc;
 extern int16_t lastToothCalcAdvance; //Invalid value here forces calculation of this on first main loop
 extern unsigned long lastVVTtime; //The time between the vvt reference pulse and the last crank pulse
+
+extern volatile word roverMemsTeethSeen; // used for flywheel gap pattern matching
+extern volatile int roverMemsFlywheelType;
 
 extern uint16_t ignition1EndTooth;
 extern uint16_t ignition2EndTooth;
