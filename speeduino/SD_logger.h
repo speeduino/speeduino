@@ -25,7 +25,7 @@ File logFile;
 uint8_t SD_status = SD_STATUS_OFF;
 
 void initSD();
-void writeSDLog();
+void writeSDLogEntry();
 void endSD();
 
 #endif //SD_LOGGING
