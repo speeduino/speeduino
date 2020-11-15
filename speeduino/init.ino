@@ -2350,6 +2350,9 @@ void setPinMapping(byte boardID)
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
 
+  //Currently there's no default pin for Idle Up Output
+  pinIdleUpOutput = pinTranslate(configPage2.idleUpOutputPin);
+
   //Currently there's no default pin for closed throttle position sensor
   pinCTPS = pinTranslate(configPage2.CTPSPin);
 
@@ -2368,6 +2371,7 @@ void setPinMapping(byte boardID)
   pinMode(pinTachOut, OUTPUT);
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
+  pinMode(pinIdleUpOutput, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
   pinMode(pinIgnBypass, OUTPUT);
   pinMode(pinFan, OUTPUT);

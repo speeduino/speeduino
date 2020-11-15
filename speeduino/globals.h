@@ -620,6 +620,7 @@ struct statuses {
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss; /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
+  bool idleUpOutputActive; /**< Whether the idle up output is currently active */
   byte gear; /**< Current gear (Calculated from vss) */
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure; /**< Oil pressure in PSI */
@@ -777,8 +778,14 @@ struct config2 {
   uint16_t vssRatio5;
   uint16_t vssRatio6;
 
-  byte unused2_95[9];
+  byte idleUpOutputEnabled : 1;
+  byte idleUpOutputInv : 1;
+  byte idleUpOutputPin  : 6;
+
+  byte tachoSweepMaxRPM;
   byte primingDelay;
+  
+  byte unused2_95[7];
 
 #if defined(CORE_AVR)
   };
@@ -1303,6 +1310,7 @@ extern byte pinFuelPump; //Fuel pump on/off
 extern byte pinIdle1; //Single wire idle control
 extern byte pinIdle2; //2 wire idle control (Not currently used)
 extern byte pinIdleUp; //Input for triggering Idle Up
+extern byte pinIdleUpOutput; //Output that follows (normal or inverted) the idle up pin
 extern byte pinCTPS; //Input for triggering closed throttle state
 extern byte pinFuel2Input; //Input for switching to the 2nd fuel table
 extern byte pinSpark2Input; //Input for switching to the 2nd ignition table
