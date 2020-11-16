@@ -561,6 +561,7 @@ void initialiseAll()
             //Rotary uses the ign 3 and 4 schedules for the trailing spark. They are offset from the ign 1 and 2 channels respectively and so use the same degrees as them
             channel3IgnDegrees = 0;
             channel4IgnDegrees = 180;
+            maxIgnOutputs = 4;
           }
         }
         else
