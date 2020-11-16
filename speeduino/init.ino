@@ -231,6 +231,7 @@ void initialiseAll()
     }
     else { setPinMapping(configPage2.pinMapping); }
 
+    //Note: This must come after the call to setPinMapping() or else pins 29 and 30 will become unusable as outputs. Workaround for: https://github.com/tonton81/FlexCAN_T4/issues/14
     #if defined(CORE_TEENSY35)
       Can0.setRX(DEF);
       Can0.setTX(DEF);
