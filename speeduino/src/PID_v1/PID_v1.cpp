@@ -291,7 +291,7 @@ bool integerPID::Compute(bool pOnE)
          return true;
       }
    }
-   else return false;
+   return false;
 }
 
 bool integerPID::ComputeVVT(uint32_t Sample)

@@ -288,7 +288,7 @@ void can_Command()
  //int currentcanCommand = inMsg.id;
  #if defined(CORE_TEENSY)
       // currentStatus.canin[12] = (inMsg.id);
- if (inMsg.id == (configPage9.obd_address + 0x100)  || (inMsg.id == 0x7DF))      
+ if ( (inMsg.id == uint16_t(configPage9.obd_address + 0x100))  || (inMsg.id == 0x7DF))      
   {
     // The address is the speeduino specific ecu canbus address 
     // or the 0x7df(2015 dec) broadcast address
@@ -307,7 +307,7 @@ void can_Command()
         Can0.write(outMsg);       // send the 8 bytes of obd data
       }
   }
- if (inMsg.id == (configPage9.obd_address + 0x100))      
+ if (inMsg.id == uint16_t(configPage9.obd_address + 0x100))      
   {
     // The address is only the speeduino specific ecu canbus address    
     if (inMsg.buf[1] == 0x09)

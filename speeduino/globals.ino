@@ -224,11 +224,8 @@ byte pinOilPressure;
 byte pinWMIEmpty; // Water tank empty sensor
 byte pinWMIIndicator; // No water indicator bulb
 byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
-#ifdef USE_MC33810
-  //If the MC33810 IC\s are in use, these are the chip select pins
-  byte pinMC33810_1_CS;
-  byte pinMC33810_2_CS;
-#endif
+byte pinMC33810_1_CS;
+byte pinMC33810_2_CS;
 #ifdef USE_SPI_EEPROM
   byte pinSPIFlash_CS;
 #endif
