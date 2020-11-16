@@ -2,43 +2,44 @@
 #include "scheduler.h"
 #include "globals.h"
 #include "timers.h"
+#include "acc_mc33810.h"
 
-#ifdef USE_MC33810
-  #include "acc_mc33810.h"
-  inline void openInjector1() { openInjector1_MC33810(); }
-  inline void closeInjector1() { closeInjector1_MC33810(); }
-  inline void openInjector2() { openInjector2_MC33810(); }
-  inline void closeInjector2() { closeInjector2_MC33810(); }
-  inline void openInjector3() { openInjector3_MC33810(); }
-  inline void closeInjector3() { closeInjector3_MC33810(); }
-  inline void openInjector4() { openInjector4_MC33810(); }
-  inline void closeInjector4() { closeInjector4_MC33810(); }
-  inline void openInjector5() { openInjector5_MC33810(); }
-  inline void closeInjector5() { closeInjector5_MC33810(); }
-  inline void openInjector6() { openInjector6_MC33810(); }
-  inline void closeInjector6() { closeInjector6_MC33810(); }
-  inline void openInjector7() { openInjector7_MC33810(); }
-  inline void closeInjector7() { closeInjector7_MC33810(); }
-  inline void openInjector8() { openInjector8_MC33810(); }
-  inline void closeInjector8() { closeInjector8_MC33810(); }
-#else
-  inline void openInjector1() { *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1); }
-  inline void closeInjector1() { *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1); }
-  inline void openInjector2() { *inj2_pin_port |= (inj2_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ2); }
-  inline void closeInjector2() { *inj2_pin_port &= ~(inj2_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ2); }
-  inline void openInjector3() { *inj3_pin_port |= (inj3_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ3); }
-  inline void closeInjector3() { *inj3_pin_port &= ~(inj3_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ3); }
-  inline void openInjector4() { *inj4_pin_port |= (inj4_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ4); }
-  inline void closeInjector4() { *inj4_pin_port &= ~(inj4_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ4); }
-  inline void openInjector5() { *inj5_pin_port |= (inj5_pin_mask); }
-  inline void closeInjector5() { *inj5_pin_port &= ~(inj5_pin_mask); }
-  inline void openInjector6() { *inj6_pin_port |= (inj6_pin_mask); }
-  inline void closeInjector6() { *inj6_pin_port &= ~(inj6_pin_mask); }
-  inline void openInjector7() { *inj7_pin_port |= (inj7_pin_mask); }
-  inline void closeInjector7() { *inj7_pin_port &= ~(inj7_pin_mask); }
-  inline void openInjector8() { *inj8_pin_port |= (inj8_pin_mask); }
-  inline void closeInjector8() { *inj8_pin_port &= ~(inj8_pin_mask); }
-#endif
+
+//Macros are used to define how each injector control system functions. These are then called by the master openInjectx() function.
+//The DIRECT macros (ie individual pins) are defined below. Others should be defined in their relevant acc_x.h file
+#define openInjector1_DIRECT() { *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1); }
+#define closeInjector1_DIRECT() { *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1); }
+#define openInjector2_DIRECT() { *inj2_pin_port |= (inj2_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ2); }
+#define closeInjector2_DIRECT() { *inj2_pin_port &= ~(inj2_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ2); }
+#define openInjector3_DIRECT() { *inj3_pin_port |= (inj3_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ3); }
+#define closeInjector3_DIRECT() { *inj3_pin_port &= ~(inj3_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ3); }
+#define openInjector4_DIRECT() { *inj4_pin_port |= (inj4_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ4); }
+#define closeInjector4_DIRECT() { *inj4_pin_port &= ~(inj4_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ4); }
+#define openInjector5_DIRECT() { *inj5_pin_port |= (inj5_pin_mask); }
+#define closeInjector5_DIRECT() { *inj5_pin_port &= ~(inj5_pin_mask); }
+#define openInjector6_DIRECT() { *inj6_pin_port |= (inj6_pin_mask); }
+#define closeInjector6_DIRECT() { *inj6_pin_port &= ~(inj6_pin_mask); }
+#define openInjector7_DIRECT() { *inj7_pin_port |= (inj7_pin_mask); }
+#define closeInjector7_DIRECT() { *inj7_pin_port &= ~(inj7_pin_mask); }
+#define openInjector8_DIRECT() { *inj8_pin_port |= (inj8_pin_mask); }
+#define closeInjector8_DIRECT() { *inj8_pin_port &= ~(inj8_pin_mask); }
+
+inline void openInjector1()   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector1_DIRECT(); }   else { openInjector1_MC33810(); } }
+inline void closeInjector1()  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector1_DIRECT(); }  else { closeInjector1_MC33810(); } }
+inline void openInjector2()   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector2_DIRECT(); }   else { openInjector2_MC33810(); } }
+inline void closeInjector2()  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector2_DIRECT(); }  else { closeInjector2_MC33810(); } }
+inline void openInjector3()   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector3_DIRECT(); }   else { openInjector3_MC33810(); } }
+inline void closeInjector3()  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector3_DIRECT(); }  else { closeInjector3_MC33810(); } }
+inline void openInjector4()   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector4_DIRECT(); }   else { openInjector4_MC33810(); } }
+inline void closeInjector4()  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector4_DIRECT(); }  else { closeInjector4_MC33810(); } }
+inline void openInjector5()   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector5_DIRECT(); }   else { openInjector5_MC33810(); } }
+inline void closeInjector5()  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector5_DIRECT(); }  else { closeInjector5_MC33810(); } }
+inline void openInjector6()   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector6_DIRECT(); }   else { openInjector6_MC33810(); } }
+inline void closeInjector6()  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector6_DIRECT(); }  else { closeInjector6_MC33810(); } }
+inline void openInjector7()   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector7_DIRECT(); }   else { openInjector7_MC33810(); } }
+inline void closeInjector7()  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector7_DIRECT(); }  else { closeInjector7_MC33810(); } }
+inline void openInjector8()   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector8_DIRECT(); }   else { openInjector8_MC33810(); } }
+inline void closeInjector8()  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector8_DIRECT(); }  else { closeInjector8_MC33810(); } }
 
 // These are for Semi-Sequential and 5 Cylinder injection
 void openInjector1and4() { openInjector1(); openInjector4(); }

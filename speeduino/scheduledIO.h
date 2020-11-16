@@ -1,6 +1,11 @@
 #ifndef SCHEDULEDIO_H
 #define SCHEDULEDIO_H
 
+
+extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
+extern void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
+
+
 inline void openInjector1();
 inline void closeInjector1();
 

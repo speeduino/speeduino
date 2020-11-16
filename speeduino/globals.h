@@ -646,7 +646,7 @@ struct config2 {
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
   byte battVCorMode : 1;
   byte SoftLimitMode : 1;
-  byte unused1_3c : 1;
+  byte useTachoSweep : 1;
   byte aeApplyMode : 1; //0 = Multiply | 1 = Add
   byte multiplyMAP : 2; //0 = off | 1 = baro | 2 = 100
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
@@ -777,7 +777,9 @@ struct config2 {
   uint16_t vssRatio5;
   uint16_t vssRatio6;
 
-  byte unused2_95[9];
+  byte tachoSweepMaxRPM;
+  
+  byte unused2_95[8];
   byte primingDelay;
 
 #if defined(CORE_AVR)

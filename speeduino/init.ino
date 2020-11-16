@@ -14,6 +14,7 @@
 #include "corrections.h"
 #include "idle.h"
 #include "table.h"
+#include "acc_mc33810.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 #include EEPROM_LIB_H 
 
@@ -1161,7 +1162,7 @@ void setPinMapping(byte boardID)
   switch (boardID)
   {
     //Note: Case 0 (Speeduino v0.1) was removed in Nov 2020 to handle default case for blank FRAM modules
-    
+
     case 1:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the v0.2 shield
@@ -1958,6 +1959,9 @@ void setPinMapping(byte boardID)
     case 55:
       #if defined(CORE_TEENSY)
       //Pin mappings for the DropBear
+      injectorOutputControl = OUTPUT_CONTROL_MC33810;
+      ignitionOutputControl = OUTPUT_CONTROL_MC33810;
+
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinFlex = A16; // Flex sensor
@@ -1999,29 +2003,27 @@ void setPinMapping(byte boardID)
         pinLaunch = 34; //Can be overwritten below
       #endif
 
-      #if defined(USE_MC33810)
         pinMC33810_1_CS = 10;
         pinMC33810_2_CS = 9;
 
-        //Pin alignment to the MC33810 outputs
-        MC33810_BIT_INJ1 = 3;
-        MC33810_BIT_INJ2 = 1;
-        MC33810_BIT_INJ3 = 0;
-        MC33810_BIT_INJ4 = 2;
-        MC33810_BIT_IGN1 = 4;
-        MC33810_BIT_IGN2 = 5;
-        MC33810_BIT_IGN3 = 6;
-        MC33810_BIT_IGN4 = 7;
+      //Pin alignment to the MC33810 outputs
+      MC33810_BIT_INJ1 = 3;
+      MC33810_BIT_INJ2 = 1;
+      MC33810_BIT_INJ3 = 0;
+      MC33810_BIT_INJ4 = 2;
+      MC33810_BIT_IGN1 = 4;
+      MC33810_BIT_IGN2 = 5;
+      MC33810_BIT_IGN3 = 6;
+      MC33810_BIT_IGN4 = 7;
 
-        MC33810_BIT_INJ5 = 3;
-        MC33810_BIT_INJ6 = 1;
-        MC33810_BIT_INJ7 = 0;
-        MC33810_BIT_INJ8 = 2;
-        MC33810_BIT_IGN5 = 4;
-        MC33810_BIT_IGN6 = 5;
-        MC33810_BIT_IGN7 = 6;
-        MC33810_BIT_IGN8 = 7;
-      #endif
+      MC33810_BIT_INJ5 = 3;
+      MC33810_BIT_INJ6 = 1;
+      MC33810_BIT_INJ7 = 0;
+      MC33810_BIT_INJ8 = 2;
+      MC33810_BIT_IGN5 = 4;
+      MC33810_BIT_IGN6 = 5;
+      MC33810_BIT_IGN7 = 6;
+      MC33810_BIT_IGN8 = 7;
 
       //CS pin number is now set in a compile flag. 
       // #ifdef USE_SPI_EEPROM
@@ -2325,6 +2327,7 @@ void setPinMapping(byte boardID)
       #endif  
       break;
   }
+  
 
   //Setup any devices that are using selectable pins
 
