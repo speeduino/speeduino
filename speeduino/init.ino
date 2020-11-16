@@ -43,18 +43,6 @@ void initialiseAll()
     configPage9.intcan_available = 1;   // device has internal canbus
     //STM32 can not currently enabled
     #endif
-    #if defined(CORE_TEENSY35)
-      configPage9.intcan_available = 1;   // device has internal canbus
-      //Teensy uses the Flexcan_T4 library to use the internal canbus
-      //enable local can interface
-      //setup can interface to 500k
-
-      //Can0.setTX(3);
-      //Can0.setRX(4);    
-      Can0.begin();
-      Can0.setBaudRate(500000);
-      Can0.enableFIFO();
-    #endif
     
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
@@ -224,6 +212,16 @@ void initialiseAll()
     //Setup the calibration tables
     loadCalibration();
 
+    #if defined(CORE_TEENSY35)
+      configPage9.intcan_available = 1;   // device has internal canbus
+      //Teensy uses the Flexcan_T4 library to use the internal canbus
+      //enable local can interface
+      //setup can interface to 500k   
+      Can0.begin();
+      Can0.setBaudRate(500000);
+      Can0.enableFIFO();
+    #endif
+
     //Set the pin mappings
     if((configPage2.pinMapping == 255) || (configPage2.pinMapping == 0)) //255 = EEPROM value in a blank AVR; 0 = EEPROM value in new FRAM
     {
@@ -232,6 +230,11 @@ void initialiseAll()
     configPage2.flexEnabled = false; //Have to disable flex. If this isn't done and the wrong flex pin is interrupt attached below, system can hang.
     }
     else { setPinMapping(configPage2.pinMapping); }
+
+    #if defined(CORE_TEENSY35)
+      Can0.setRX(DEF);
+      Can0.setTX(DEF);
+    #endif
 
     //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
     if(configPage4.IgInv == 1) { coilHIGH = LOW; coilLOW = HIGH; }
