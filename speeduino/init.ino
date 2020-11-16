@@ -1025,11 +1025,9 @@ void initialiseAll()
           ign2EndFunction = endCoil2and6Charge;
           ign3StartFunction = beginCoil3and7Charge;
           ign3EndFunction = endCoil3and7Charge;
-          ign3StartFunction = beginCoil4and8Charge;
-          ign3EndFunction = endCoil4and8Charge;
+          ign4StartFunction = beginCoil4and8Charge;
+          ign4EndFunction = endCoil4and8Charge;
 
-          ign4StartFunction = nullCallback;
-          ign4EndFunction = nullCallback;
           ign5StartFunction = nullCallback;
           ign5EndFunction = nullCallback;
           ign6StartFunction = nullCallback;
