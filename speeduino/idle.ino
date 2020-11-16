@@ -172,20 +172,49 @@ void initialiseIdle()
       //Well this just shouldn't happen
       break;
   }
+
+  initialiseIdleUpOutput();
+
   idleInitComplete = configPage6.iacAlgorithm; //Sets which idle method was initialised
   currentStatus.idleLoad = 0;
 }
 
+void initialiseIdleUpOutput()
+{
+  if (configPage2.idleUpOutputInv == 1) { idleUpOutputHIGH = LOW; idleUpOutputLOW = HIGH; }
+  else { idleUpOutputHIGH = HIGH; idleUpOutputLOW = LOW; }
+
+  digitalWrite(pinIdleUpOutput, idleUpOutputLOW); //Initiallise program with the idle up output in the off state
+  currentStatus.idleUpOutputActive = false;
+
+  idleUpOutput_pin_port = portOutputRegister(digitalPinToPort(pinIdleUpOutput));
+  idleUpOutput_pin_mask = digitalPinToBitMask(pinIdleUpOutput);
+}
+
 void idleControl()
 {
-  if(idleInitComplete != configPage6.iacAlgorithm) { initialiseIdle(); }
-  if(currentStatus.RPM > 0) { enableIdle(); }
+  if (idleInitComplete != configPage6.iacAlgorithm) { initialiseIdle(); }
+  if (currentStatus.RPM > 0) { enableIdle(); }
 
   //Check whether the idleUp is active
-  if(configPage2.idleUpEnabled == true)
+  if (configPage2.idleUpEnabled == true)
   {
-    if(configPage2.idleUpPolarity == 0) { currentStatus.idleUpActive = !digitalRead(pinIdleUp); } //Normal mode (ground switched)
+    if (configPage2.idleUpPolarity == 0) { currentStatus.idleUpActive = !digitalRead(pinIdleUp); } //Normal mode (ground switched)
     else { currentStatus.idleUpActive = digitalRead(pinIdleUp); } //Inverted mode (5v activates idleUp)
+
+    if (configPage2.idleUpOutputEnabled  == true)
+    {
+      if (currentStatus.idleUpActive == true)
+      {
+        digitalWrite(pinIdleUpOutput, idleUpOutputHIGH);
+        currentStatus.idleUpOutputActive = true;
+      }
+      else
+      {
+        digitalWrite(pinIdleUpOutput, idleUpOutputLOW);
+        currentStatus.idleUpOutputActive = false;
+      }      
+    }
   }
   else { currentStatus.idleUpActive = false; }
 
