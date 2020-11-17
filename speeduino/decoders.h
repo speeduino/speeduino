@@ -157,6 +157,13 @@ void triggerSetEndTeeth_420a();
 void triggerPri_Webber();
 void triggerSec_Webber();
 
+void triggerSetup_RoverMEMS();
+void triggerPri_RoverMEMS();
+void triggerSec_RoverMEMS();
+uint16_t getRPM_RoverMEMS();
+int getCrankAngle_RoverMEMS();
+void triggerSetEndTeeth_RoverMEMS();
+
 extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 extern void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
 extern uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)

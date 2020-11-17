@@ -2949,6 +2949,23 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
+    case 20:
+      //Rover MEMs - covers multiple flywheel trigger combinations.
+      triggerSetup_RoverMEMS();
+      triggerHandler = triggerPri_RoverMEMS;
+      triggerSecondaryHandler = triggerSec_RoverMEMS;
+      decoderHasSecondary = true;
+      getRPM = getRPM_RoverMEMS;
+      getCrankAngle = getCrankAngle_missingTooth;
+      triggerSetEndTeeth = triggerSetEndTeeth_RoverMEMS;
+
+      primaryTriggerEdge = FALLING; 
+      secondaryTriggerEdge = CHANGE;       
+      
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+    
 
     default:
       triggerHandler = triggerPri_missingTooth;

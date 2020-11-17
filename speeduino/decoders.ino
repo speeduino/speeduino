@@ -41,6 +41,7 @@ volatile unsigned long curGap2;
 volatile unsigned long lastGap;
 volatile unsigned long targetGap;
 volatile unsigned long compositeLastToothTime;
+volatile long roverMEMSTeethSeen = 0; // used for flywheel gap pattern matching
 
 unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
 volatile uint16_t toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
@@ -3839,3 +3840,355 @@ void triggerSec_Webber()
     checkSyncToothCount = 1; //Reset tooth counter
   } //Trigger filter
 }
+
+/*****************************************************************
+ * Rover MEMS decoder
+ * Covers multiple trigger wheels used interchanbably over the range of MEMS units
+ * Specifically covers teeth patterns on the primary trigger (crank)
+ * 3 gap 14 gap 2 gap 13 gap
+ * 11 gap 5 gap 12 gap 4 gap 
+ * 2 gap 14 gap 3 gap 13 gap 
+ * 17 gap 17 gap 
+ *
+ * CAM trigger will be based on half moon - so one tooth rotating at half engine speed. It will not cover the sintered quaderant cam with different teeth patterns per quaderant.
+ * CAM will trigger on change so you know within 1 rotation the engine phase.
+ * Currently missing
+ *  triggerSetEndTeeth - primary version may work
+ *  full sequential sync error reporting (half sync)
+ *  some code optomisation (some code deliberately in two places to aid readability)
+ */
+
+void triggerSetup_RoverMEMS()
+{
+  for(toothOneTime = 0; toothOneTime < 10; toothOneTime++)   // repurpose variable temporarily to help clear ToothAngles.
+    toothAngles[toothOneTime] = 0; // Repurpose ToothAngles to store data needed for this implementation.
+
+  // toothAngles array repurposed to hold data to help ROVER MEMS detection and running
+  // Parts of array hold values, array elements
+  #define DEFINED_TEETH_TO_SKIP_PATTERN 0 // have we identified teeth to skip for calculating RPM?
+  #define SKIP_TOOTH1 1
+  #define SKIP_TOOTH2 2
+  #define SKIP_TOOTH3 3
+  #define SKIP_TOOTH4 4
+
+                             
+  triggerFilterTime = (1000000 / (MAX_RPM / 60 * 36)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+  triggerSecFilterTime = (1000000 / (MAX_RPM / 60)); // only 1 tooth on the wheel not 36
+
+  triggerToothAngle = 10; //The number of degrees that passes from tooth to tooth 360 / 36 theortical teeth
+  triggerActualTeeth = 32; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
+  secondDerivEnabled = false;
+  decoderIsSequential = true;
+  toothLastMinusOneToothTime = 0;
+  toothCurrentCount = 0; // current tooth
+  secondaryToothCount = 0; 
+  toothOneTime = 0;
+  toothOneMinusOneTime = 0;
+  revolutionOne=0;
+
+  MAX_STALL_TIME = (3333UL * triggerToothAngle * 2); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+}
+
+void triggerPri_RoverMEMS()
+{
+  curTime = micros();
+  curGap = curTime - toothLastToothTime;      
+  bool isMissingTooth = false;
+
+
+  if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+  {
+    validTrigger = true; 
+        
+    if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) ) // have we seen more than 1 tooth so we start processing
+    {
+      //Begin the missing tooth detection
+      targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
+      currentStatus.hasSync = true;  
+      if ( curGap > targetGap) // we've found a gap
+      {
+        roverMEMSTeethSeen = roverMEMSTeethSeen << 2; // add the space for the gap and the tooth we've just seen so shift 2 bits
+        roverMEMSTeethSeen++; // add the tooth seen to the variable
+        toothCurrentCount++; // Increment the tooth counter on the wheel (used to spot a revolution)
+        toothSystemCount++;  toothSystemCount++; // Increment the number of teeth seen (tooth & missing tooth hence doing it twice)
+        isMissingTooth = true; 
+        triggerToothAngleIsCorrect = false; //The tooth angle is double at this point
+        triggerFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
+      }
+      else
+      {
+        //Regular (non-missing) tooth so update things
+        roverMEMSTeethSeen = roverMEMSTeethSeen << 1; // make a space, shift the bits 1 place to the left
+        roverMEMSTeethSeen++; // add the tooth seen
+        toothCurrentCount++; //Increment the tooth counter on the wheel (used to spot a revolution)
+        toothSystemCount++;  //// Increment the number of teeth seen
+        triggerToothAngleIsCorrect = true;
+        setFilter(curGap);
+      }
+
+      if( toothSystemCount >= 32) // reduce checks to minimise cpu load when looking for key point to identify where we are on the wheel
+      {
+        if(roverMEMSTeethSeen == 0b11111110111011111111111111011011) // Binary pattern for trigger pattern 3-14-2-13- 
+        {
+          triggerToothAngleIsCorrect = true;
+          toothCurrentCount = 28; 
+          toothSystemCount = 0; // reset so we don't look for sync again this rotation
+          
+          //if Sequential fuel or ignition is in use, further checks are needed before determining sync
+          if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) )
+          {
+            //If either fuel or ignition is sequential, only declare sync if the cam tooth has been seen OR if the missing wheel is on the cam
+            if( (secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) )
+            {
+              currentStatus.hasSync = true;
+              BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
+              if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE) { secondaryToothCount = 0; } //Reset the secondary tooth counter to prevent it overflowing
+            }
+            else if(currentStatus.hasSync != true) { BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If there is primary trigger but no secondary we only have half sync.
+          }
+          else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
+
+          if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 0)
+          {
+            //teeth to skip when calculating RPM as they've just had a gap
+            toothAngles[SKIP_TOOTH1] = 8;
+            toothAngles[SKIP_TOOTH2] = 11;
+            toothAngles[SKIP_TOOTH3] = 25;
+            toothAngles[SKIP_TOOTH4] = 27;
+            toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] = 4;
+          }
+        }else if (roverMEMSTeethSeen == 0b11011011111111111111011101111111) // Binary pattern for trigger pattern 2-14-3-13- 
+        {
+          triggerToothAngleIsCorrect = true;
+          toothCurrentCount = 28; 
+          toothSystemCount = 0; // reset so we don't look for sync again this rotation
+          //if Sequential fuel or ignition is in use, further checks are needed before determining sync
+          if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) )
+          {
+            //If either fuel or ignition is sequential, only declare sync if the cam tooth has been seen OR if the missing wheel is on the cam
+            if( (secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) )
+            {
+              currentStatus.hasSync = true;
+              BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
+              if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE) { secondaryToothCount = 0; } //Reset the secondary tooth counter to prevent it overflowing
+            }
+            else if(currentStatus.hasSync != true) { BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If there is primary trigger but no secondary we only have half sync.
+          }
+          else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
+
+          if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 0)
+          {
+            //teeth to skip when calculating RPM as they've just had a gap
+            toothAngles[SKIP_TOOTH1] = 8;
+            toothAngles[SKIP_TOOTH2] = 11;
+            toothAngles[SKIP_TOOTH3] = 25;
+            toothAngles[SKIP_TOOTH4] = 28;
+            toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] = 3;
+          }
+        }else if(roverMEMSTeethSeen == 0b11111111111011111011111111111101) // Binary pattern for trigger pattern 11-5-12-4- 
+        {
+          triggerToothAngleIsCorrect = true; 
+          toothCurrentCount = 29; 
+          toothSystemCount = 0; // reset so we don't look for sync again this rotation
+          //if Sequential fuel or ignition is in use, further checks are needed before determining sync
+          if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) )
+          {
+            //If either fuel or ignition is sequential, only declare sync if the cam tooth has been seen OR if the missing wheel is on the cam
+            if( (secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) )
+            {
+              currentStatus.hasSync = true;
+              BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
+              if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE) { secondaryToothCount = 0; } //Reset the secondary tooth counter to prevent it overflowing
+            }
+            else if(currentStatus.hasSync != true) { BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If there is primary trigger but no secondary we only have half sync.
+          }
+          else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
+          
+          if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 0)
+          {
+            //teeth to skip when calculating RPM as they've just had a gap
+            toothAngles[SKIP_TOOTH1] = 1;
+            toothAngles[SKIP_TOOTH2] = 12;
+            toothAngles[SKIP_TOOTH3] = 17;
+            toothAngles[SKIP_TOOTH4] = 29;
+            toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] = 2;
+          }
+        }else if(roverMEMSTeethSeen == 0b01111111111111111101111111111111) // Binary pattern for trigger pattern 17-17-
+        {
+          triggerToothAngleIsCorrect = true; 
+          toothCurrentCount = 28; 
+          toothSystemCount = 0; // reset so we don't look for sync again this rotation
+          //if Sequential fuel or ignition is in use, further checks are needed before determining sync
+          if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) )
+          {
+            //If either fuel or ignition is sequential, only declare sync if the cam tooth has been seen OR if the missing wheel is on the cam
+            if( (secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) )
+            {
+              currentStatus.hasSync = true;
+              BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
+              if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE) { secondaryToothCount = 0; } //Reset the secondary tooth counter to prevent it overflowing
+            }
+            else if(currentStatus.hasSync != true) { BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If there is primary trigger but no secondary we only have half sync.
+          }
+          else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
+
+          if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 0)
+          {
+            //teeth to skip when calculating RPM as they've just had a gap
+            toothAngles[SKIP_TOOTH1] = 1;
+            toothAngles[SKIP_TOOTH2] = 18;
+            toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] = 1;
+          }
+        }
+        else // no patterns match after 32 teeth, we've lost sync
+        {
+            currentStatus.hasSync = false;
+            if(secondaryToothCount > 0)
+              BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC);
+            else
+              BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
+            currentStatus.syncLossCounter++;       
+        }
+      }
+      else if (toothCurrentCount == triggerActualTeeth) // count teeth on the wheel after taking into account missing teeth. Therefore we've done a full 360 degrees
+      {
+        if(currentStatus.hasSync == true)
+        { currentStatus.startRevolutions++; }
+        else 
+        { currentStatus.startRevolutions = 0; }
+
+        toothCurrentCount = 0;
+        toothSystemCount = 0;
+        revolutionOne = !revolutionOne; //Flip sequential revolution tracker
+        toothOneMinusOneTime = toothOneTime;
+        toothOneTime = curTime;
+      }
+    }
+
+    toothLastMinusOneToothTime = toothLastToothTime;
+    toothLastToothTime = curTime;
+
+    //NEW IGNITION MODE
+    if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
+    {
+      int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
+      crankAngle = ignitionLimits(crankAngle);
+      if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true))
+      {
+        crankAngle += 360;
+        checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + toothCurrentCount)); 
+      }
+      else{ checkPerToothTiming(crankAngle, toothCurrentCount); }
+    }     
+  }
+}
+
+void triggerSec_RoverMEMS()
+{
+  curTime2 = micros();
+  curGap2 = curTime2 - toothLastSecToothTime;
+
+  //Safety check for initial startup
+  if( (toothLastSecToothTime == 0) )
+  { 
+    curGap2 = 0; 
+    toothLastSecToothTime = curTime2;
+  }
+
+  if ( curGap2 >= triggerSecFilterTime )
+  {
+    //Standard single tooth cam trigger
+    triggerSecFilterTime = curGap2 >> 1; //Next secondary filter is half the current gap
+    toothLastSecToothTime = curTime2;
+    secondaryToothCount++; // number of times the CAM has fired ( fires on change signal so twice per 720degrees, once per 360)
+
+    //Record the VVT Angle
+    if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) )
+    {
+      int16_t curAngle;
+      curAngle = getCrankAngle();
+      while(curAngle > 360) { curAngle -= 360; }
+      curAngle -= configPage4.triggerAngle; //Value at TDC
+      if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCLMinAng; }
+
+      currentStatus.vvt1Angle = curAngle;
+    }
+  } //Trigger filter
+
+}
+
+uint16_t getRPM_RoverMEMS()
+{
+  uint16_t tempRPM = 0;
+
+  if( currentStatus.RPM < currentStatus.crankRPM)
+  {
+    if( (triggerToothAngleIsCorrect == true) &&
+        (toothCurrentCount != toothAngles[SKIP_TOOTH1]) && 
+        (toothCurrentCount != toothAngles[SKIP_TOOTH2]) && 
+        (toothCurrentCount != toothAngles[SKIP_TOOTH3]) && 
+        (toothCurrentCount != toothAngles[SKIP_TOOTH4]) )
+    { tempRPM = crankingGetRPM(36); }
+    else 
+    { tempRPM = currentStatus.RPM; } //Can't do per tooth RPM as the missing tooth messes the calculation
+  }
+  else
+  { tempRPM = stdGetRPM(360); }
+  return tempRPM;
+}
+
+
+void triggerSetEndTeeth_RoverMEMS()
+{
+// this all needs validating - missing tooth code may be better to use (although should be able to do calcs in advance and hard code here to improve performance
+
+  if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
+  {
+    if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 1) // 17-17- 
+    {
+      ignition1EndTooth = 36;
+    }
+    else if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 2) // 11-5-12-4-
+    {
+      ignition1EndTooth = 36;  
+    }
+    else if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 3) // 2-14-3-13-
+    {
+      ignition1EndTooth = 36;    
+    }
+    else if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 4) // 3-14-2-13- 
+    {
+       ignition1EndTooth = 36;   
+    }
+  }
+  else
+  {
+    if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 1) // 17-17- 
+    {
+      if(currentStatus.advance < 10) 
+      { ignition1EndTooth = 36; ignition2EndTooth = 18; }
+      else if(currentStatus.advance < 20) 
+      { ignition1EndTooth = 35; ignition2EndTooth = 17; }
+      else if(currentStatus.advance < 30) 
+      { ignition1EndTooth = 34; ignition2EndTooth = 16; }
+      else 
+      { ignition1EndTooth = 31; ignition2EndTooth = 15; }
+    }
+    else if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 2) // 11-5-12-4-
+    {
+      ignition1EndTooth = 36;  
+    }
+    else if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 3) // 2-14-3-13-
+    {
+      ignition1EndTooth = 36;    
+    }
+    else if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 4) // 3-14-2-13- 
+    {
+       ignition1EndTooth = 36;   
+    }
+  }
+    
+  
+  lastToothCalcAdvance = currentStatus.advance;
+}
+
