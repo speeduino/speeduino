@@ -3902,6 +3902,8 @@ void triggerPri_RoverMEMS()
         
     if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) ) // have we seen more than 1 tooth so we start processing
     {
+digitalWrite(pinFan,LOW);
+      
       //Begin the missing tooth detection
       targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
       currentStatus.hasSync = true;  
@@ -3927,7 +3929,7 @@ void triggerPri_RoverMEMS()
       }
 
       if( toothSystemCount >= 32) // reduce checks to minimise cpu load when looking for key point to identify where we are on the wheel
-      {
+      {                          //1234567 890 12345678901234 56 789012
         if(roverMEMSTeethSeen == 0b11111110111011111111111111011011) // Binary pattern for trigger pattern 3-14-2-13- 
         {
           triggerToothAngleIsCorrect = true;
@@ -3956,7 +3958,7 @@ void triggerPri_RoverMEMS()
             toothAngles[SKIP_TOOTH3] = 25;
             toothAngles[SKIP_TOOTH4] = 27;
             toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] = 4;
-          }
+          }                             //12 34 56789012345678 901 23456789012
         }else if (roverMEMSTeethSeen == 0b11011011111111111111011101111111) // Binary pattern for trigger pattern 2-14-3-13- 
         {
           triggerToothAngleIsCorrect = true;
@@ -3984,7 +3986,7 @@ void triggerPri_RoverMEMS()
             toothAngles[SKIP_TOOTH3] = 25;
             toothAngles[SKIP_TOOTH4] = 28;
             toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] = 3;
-          }
+          }                            //12345678901 23456 789012345678 9012
         }else if(roverMEMSTeethSeen == 0b11111111111011111011111111111101) // Binary pattern for trigger pattern 11-5-12-4- 
         {
           triggerToothAngleIsCorrect = true; 
@@ -4012,11 +4014,11 @@ void triggerPri_RoverMEMS()
             toothAngles[SKIP_TOOTH3] = 17;
             toothAngles[SKIP_TOOTH4] = 29;
             toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] = 2;
-          }
+          }                             //12345678901234567 890123456789012
         }else if(roverMEMSTeethSeen == 0b01111111111111111101111111111111) // Binary pattern for trigger pattern 17-17-
         {
           triggerToothAngleIsCorrect = true; 
-          toothCurrentCount = 28; 
+          toothCurrentCount = 30; 
           toothSystemCount = 0; // reset so we don't look for sync again this rotation
           //if Sequential fuel or ignition is in use, further checks are needed before determining sync
           if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) )
@@ -4057,6 +4059,8 @@ void triggerPri_RoverMEMS()
         else 
         { currentStatus.startRevolutions = 0; }
 
+digitalWrite(pinFan,HIGH);
+
         toothCurrentCount = 0;
         toothSystemCount = 0;
         revolutionOne = !revolutionOne; //Flip sequential revolution tracker
@@ -4081,6 +4085,37 @@ void triggerPri_RoverMEMS()
       else{ checkPerToothTiming(crankAngle, toothCurrentCount); }
     }     
   }
+}
+
+int getCrankAngle_RoverMEMS()
+{
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    bool tempRevolutionOne;
+    //Grab some variables that are used in the trigger code and assign them to temp variables.
+    noInterrupts();
+    tempToothCurrentCount = toothSystemCount;
+    tempRevolutionOne = revolutionOne;
+    tempToothLastToothTime = toothLastToothTime;
+    interrupts();
+
+    // int crankAngle = ((tempToothCurrentCount - 1) * triggerToothAngle) + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    int crankAngle = ((tempToothCurrentCount) * triggerToothAngle) + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+
+    
+    //Sequential check (simply sets whether we're on the first or 2nd revoltuion of the cycle)
+    if ( (tempRevolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) ) { crankAngle += 360; }
+
+    lastCrankAngleCalc = micros();
+    elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
+    crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_REV);
+
+    if (crankAngle >= 720) { crankAngle -= 720; }
+    else if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+    if (crankAngle < 0) { crankAngle += CRANK_ANGLE_MAX; }
+
+    return crankAngle;
 }
 
 void triggerSec_RoverMEMS()
@@ -4140,55 +4175,58 @@ uint16_t getRPM_RoverMEMS()
 
 void triggerSetEndTeeth_RoverMEMS()
 {
-// this all needs validating - missing tooth code may be better to use (although should be able to do calcs in advance and hard code here to improve performance
+// Rover firing order 1342
+// ignition events vs firing order 
+// ignition 1 - Cylinder 1 approaching TDC
+// ignition 2 - Cylinder 3 approaching TDC
+// ignition 3 - Cylinder 4 approaching TDC
+// ignition 4 - Cylinder 2 approaching TDC
+// VR sensor is 55 degrees btdc so need to adjust tooth angle by 55 degrees or 6 teeth
 
   if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
   {
-    if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 1) // 17-17- 
+    if (toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 2) // 11 gap 5 gap 12 gap 4 gap 
     {
-      ignition1EndTooth = 36;
+      ignition1EndTooth = 64; // count excludes gaps so actual physical teeth present so (72 teeth - (4 gaps * 2 revolutions) - 1 as we want tooth before
+      ignition2EndTooth = 16; // 
+      ignition3EndTooth = 32; //
+      ignition4EndTooth = 48; //
     }
-    else if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 2) // 11-5-12-4-
+    else if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 1) // 17 gap 17 gap
     {
-      ignition1EndTooth = 36;  
+      ignition1EndTooth = 68; // 
+      ignition2EndTooth = 17; // 
+      ignition3EndTooth = 34; //
+      ignition4EndTooth = 51; //   
     }
-    else if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 3) // 2-14-3-13-
+    else  
     {
-      ignition1EndTooth = 36;    
-    }
-    else if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 4) // 3-14-2-13- 
-    {
-       ignition1EndTooth = 36;   
+      // covers modes 3 and 4 with two gaps within 180 degrees
+      ignition1EndTooth = 63; // 
+      ignition2EndTooth = 15; // 
+      ignition3EndTooth = 31; //
+      ignition4EndTooth = 47; // 
     }
   }
   else
   {
-    if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 1) // 17-17- 
+    if (toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 2) // 11 gap 5 gap 12 gap 4 gap 
     {
-      if(currentStatus.advance < 10) 
-      { ignition1EndTooth = 36; ignition2EndTooth = 18; }
-      else if(currentStatus.advance < 20) 
-      { ignition1EndTooth = 35; ignition2EndTooth = 17; }
-      else if(currentStatus.advance < 30) 
-      { ignition1EndTooth = 34; ignition2EndTooth = 16; }
-      else 
-      { ignition1EndTooth = 31; ignition2EndTooth = 15; }
+      ignition1EndTooth = 32; //
+      ignition2EndTooth = 16; // 
     }
-    else if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 2) // 11-5-12-4-
+    else if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 1) // 17 gap 17 gap
     {
-      ignition1EndTooth = 36;  
+      ignition1EndTooth = 34; // 
+      ignition2EndTooth = 17; // 
     }
-    else if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 3) // 2-14-3-13-
+    else  
     {
-      ignition1EndTooth = 36;    
-    }
-    else if(toothAngles[DEFINED_TEETH_TO_SKIP_PATTERN] == 4) // 3-14-2-13- 
-    {
-       ignition1EndTooth = 36;   
-    }
+      // covers modes 3 and 4 with two gaps within 180 degrees
+      ignition1EndTooth = 31; // 
+      ignition2EndTooth = 15; // 
+    }  
   }
-    
   
   lastToothCalcAdvance = currentStatus.advance;
 }
-
