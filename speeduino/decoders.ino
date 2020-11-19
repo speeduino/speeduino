@@ -3810,7 +3810,7 @@ void triggerSec_Webber()
       }
       else
       {
-        if ( (toothCurrentCount != (configPage4.triggerTeeth-1)) && (currentStatus.startRevolutions > 2)) { currentStatus.syncLossCounter++; } //Indicates likely sync loss.
+        if ( (toothCurrentCount != (configPage4.triggerTeeth-1U)) && (currentStatus.startRevolutions > 2U)) { currentStatus.syncLossCounter++; } //Indicates likely sync loss.
         if (configPage4.useResync == 1) { toothCurrentCount = configPage4.triggerTeeth-1; }
       }
       revolutionOne = 1; //Sequential revolution reset
