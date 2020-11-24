@@ -79,6 +79,9 @@ unsigned long lastCrankAngleCalc;
 int16_t lastToothCalcAdvance = 99; //Invalid value here forces calculation of this on first main loop
 unsigned long lastVVTtime; //The time between the vvt reference pulse and the last crank pulse
 
+volatile word roverMemsTeethSeen = 0b0000000000000000; // used for flywheel gap pattern matching
+volatile int roverMemsFlywheelType = -1;
+
 uint16_t ignition1EndTooth = 0;
 uint16_t ignition2EndTooth = 0;
 uint16_t ignition3EndTooth = 0;
@@ -3838,4 +3841,196 @@ void triggerSec_Webber()
     triggerSecFilterTime = curGap + (curGap>>1); //Noise region, using 150% of crank tooth
     checkSyncToothCount = 1; //Reset tooth counter
   } //Trigger filter
+}
+
+
+/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Name: Rover MEMS
+Desc:
+Note:
+Mixture of trigger wheels for Rover cars
+One type is 36-1-1 (missing teeth at 0 and 180 degrees BTDC)
+Others are 36-1-1-1-1 (4 individually mising teeth at various locations)
+
+No cam support yet.
+
+The MPI Minis are the same flywheel as JDM Minis but also have a cam sensor to allow two separate injectors - one for cylinders 1+2, one for 3+4
+space between teeth = 5 degrees
+20 degrees from one tooth to the next across a gap
+I think the flywheel spins clockwise while looking at the trigger pattern - sensor points at back of flywheel
+
+tooth counts
+
+SPI Mini     - gaps at 0 180          - teeth count 17-17
+JDM/MPI MINI - gaps at 30 60 210 250  - teeth count 13-2-14-3
+MEMS 1.9?    - gaps at 0 120 180 310  - teeth count 11-5-12-4
+MEMS 3?      - gaps at 80 110 260 300 - teeth count 13-2-14-3 - crank sensor at 55 BTDC) (same as 2nd)
+*/
+
+void triggerSetup_RoverMEMS()
+{
+  triggerFilterTime = US_IN_MINUTE / (MAX_RPM * 36); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+  triggerToothAngle = 10; // The number of degrees that passes from tooth to tooth. Teeth approx 5 degrees wide each, normal gaps between 5 degrees, missing tooth ends up being 20 degrees of space
+  secondDerivEnabled = false;
+  decoderIsSequential = false;
+  toothLastMinusOneToothTime = 0;
+  toothCurrentCount = 0;
+  toothOneTime = 0;
+  toothOneMinusOneTime = 0;
+  checkSyncToothCount = 64; // make sure we have definitely seen all teeth
+  MAX_STALL_TIME = (3333UL * triggerToothAngle * 2 ); // Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  secondaryToothCount = 0;
+}
+
+void syncLoss_RoverMEMS()
+{
+  noInterrupts();
+  currentStatus.hasSync = false;
+  currentStatus.syncLossCounter++;
+  toothCurrentCount = 0;
+  roverMemsTeethSeen = 0b0000000000000000;
+  roverMemsFlywheelType = -1;
+  secondaryToothCount = 0;
+  interrupts();
+}
+
+void triggerPri_RoverMEMS()
+{
+  curTime = micros();
+  curGap = curTime - toothLastToothTime;
+
+  // Pulses should never be less than triggerFilterTime, so if they are it means a false trigger.
+  // this would break situations where the crank accelerates but the filter aggressiveness gives 25-75% leeway
+  if (currentStatus.hasSync == true && curGap < triggerFilterTime )
+  {
+    syncLoss_RoverMEMS();
+    return;
+  }
+
+  validTrigger = true;
+  toothCurrentCount++; //Increment the tooth counter
+  addToothLogEntry(curGap, 0);
+
+  // Begin the missing tooth detection
+  // If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that,
+  // we make the assertion that we must be at the first tooth after a gap
+
+  targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1; // Multiply by 1.5 (Checks for a gap 2x greater than the last one)
+
+  if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { curGap = 0; } // ?? first tooth seen?
+
+  if (curGap > targetGap) // WAS a gap between the last tooth and this one
+  {
+      toothCurrentCount++; // add an extra "tooth" counter for the gap
+      triggerToothAngleIsCorrect = false; // angle is wrong because we just saw a gap
+
+      roverMemsTeethSeen = roverMemsTeethSeen << 1; // add the gap
+  }
+  else // normal tooth is found (immediately after another)
+  {
+      triggerToothAngleIsCorrect = true; // angle should be right becase we saw 2 teeth in a row
+      setFilter(curGap); // Filter can only be recalc'd for the regular teeth, not ones with gaps between
+  }
+  roverMemsTeethSeen = roverMemsTeethSeen << 1; // add the tooth we saw
+  roverMemsTeethSeen += 1;
+
+  // Rover Mini JDM/MPI/MEMS3 above
+  if (roverMemsTeethSeen == 0b1111111111101101) // 2 teeth in a gap
+  {
+    if (roverMemsFlywheelType == -1) // initially setting the flywheel type
+    {
+      roverMemsFlywheelType = 2;
+    }
+    else if (roverMemsFlywheelType != 2) // trying to swap flywheel types, something is wrong
+    {
+      syncLoss_RoverMEMS();
+      return;
+    }
+    currentStatus.hasSync = true;
+    toothCurrentCount = 1; // this is where we will say we are at the start of a rev // TODO: fix this to the actual tooth number
+    revolutionOne = !revolutionOne; // toggle rpm/cycle counter
+    toothOneMinusOneTime = toothOneTime;
+    toothOneTime = curTime;
+    currentStatus.startRevolutions++; // and say we have done a rev
+  }
+
+  // 36-1-1 wheel on SPI Minis, some SPI rovers
+  // else
+  else if (roverMemsTeethSeen == 0b1111111011111111)
+  {
+    if (roverMemsFlywheelType == -1)  // initially setting the flywheel type
+    {
+      roverMemsFlywheelType = 1;
+    }
+    else if (roverMemsFlywheelType != 1)// trying to swap flywheel types, something is wrong
+    {
+      syncLoss_RoverMEMS();
+      return;
+    }
+
+    if (currentStatus.hasSync == true && toothCurrentCount < 30) // already synced, make sure we aren't doubling the RPM by using both marks as TDC
+    {
+      // do nothing, we are at the second gap/180 degrees from when we started
+    }
+    else
+    {
+      currentStatus.hasSync = true;
+      toothCurrentCount = 1; // this is where we will say we are at the start of a rev // TODO: fix this to the actual tooth number
+      revolutionOne = !revolutionOne; // toggle rpm/cycle counter
+      toothOneMinusOneTime = toothOneTime;
+      toothOneTime = curTime;
+      currentStatus.startRevolutions++; // and say we have done a rev
+    }
+  }
+
+  // MEMS 1.9? above
+  else if (roverMemsTeethSeen == 0b1111111110111101) // 4 teeth in a gap
+  {
+    if (roverMemsFlywheelType == -1)  // initially setting the flywheel type
+    {
+      roverMemsFlywheelType = 3;
+    }
+    else if (roverMemsFlywheelType != 3)// trying to swap flywheel types, something is wrong
+    {
+      syncLoss_RoverMEMS();
+      return;
+    }
+    currentStatus.hasSync = true;
+    toothCurrentCount = 1; // this is where we will say we are at the start of a rev // TODO: fix this to the actual tooth number
+    revolutionOne = !revolutionOne; // toggle rpm/cycle counter
+    toothOneMinusOneTime = toothOneTime;
+    toothOneTime = curTime;
+    currentStatus.startRevolutions++; // and say we have done a rev
+  }
+
+
+  toothLastMinusOneToothTime = toothLastToothTime;
+  toothLastToothTime = curTime; // register us having seen a tooth at this time
+
+  //EXPERIMENTAL! new ignition mode
+  if(configPage2.perToothIgn == true)
+  {
+    uint16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
+    checkPerToothTiming(crankAngle, toothCurrentCount);
+  }
+}
+
+void triggerSec_RoverMEMS()
+{
+  // NOT USED - no cam support
+}
+
+uint16_t getRPM_RoverMEMS()
+{
+  // NOT USED - Uses getRPM_missingTooth
+}
+
+int getCrankAngle_RoverMEMS()
+{
+  // NOT USED - uses getCrankAngle_missingTooth
+}
+
+void triggerSetEndTeeth_RoverMEMS()
+{
+  // NOT USED - uses triggerSetEndTeeth_missingTooth
 }
