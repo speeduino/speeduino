@@ -2954,16 +2954,12 @@ void initialiseTriggers()
       triggerSetup_RoverMEMS();
       decoderHasSecondary = true;
       triggerHandler = triggerPri_RoverMEMS;
-      
-      triggerSecondaryHandler = triggerSec_missingTooth; 
-  
-      getCrankAngle = getCrankAngle_missingTooth;   
-      getRPM = getRPM_RoverMEMS;
-
+//      getRPM = getRPM_RoverMEMS;
       triggerSetEndTeeth = triggerSetEndTeeth_RoverMEMS;
-//      triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;      
-
-
+            
+      triggerSecondaryHandler = triggerSec_missingTooth; 
+      getRPM = getRPM_missingTooth;
+      getCrankAngle = getCrankAngle_missingTooth;   
 
       primaryTriggerEdge = FALLING; 
       secondaryTriggerEdge = FALLING; 
