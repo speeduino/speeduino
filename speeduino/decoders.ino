@@ -4228,24 +4228,39 @@ void triggerSetEndTeeth_RoverMEMS()
   if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
   {
     // check the calculated trigger tooth exists, if it doesn't use the previous tooth
-    // nb the toothAngles is the tooth after the gap, hence the '-1'
+    // nb the toothAngles[x] holds the tooth after the gap, hence the '-1' to see if it matches a gap
+    #ifdef MJR_DEBUG 
+    Serial3.print(toothAngles[1]);Serial3.print(" "); Serial3.print(toothAngles[2]);Serial3.print(" "); Serial3.print(toothAngles[3]);Serial3.print(" "); Serial3.println(toothAngles[4]); 
+    Serial3.print(tempIgnitionEndTooth[1]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[2]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[3]); Serial3.print("   "); Serial3.println(tempIgnitionEndTooth[4]); 
+    #endif    
     for(tempCount=1;tempCount <5;tempCount++)
     {
-      if(tempIgnitionEndTooth[tempCount] == (toothAngles[1] -1) || tempIgnitionEndTooth[tempCount] == (toothAngles[2] -1) ||
-         tempIgnitionEndTooth[tempCount] == (toothAngles[3] -1) || tempIgnitionEndTooth[tempCount] == (toothAngles[4] -1) ||
-         tempIgnitionEndTooth[tempCount] == (36 + toothAngles[1] -1) || tempIgnitionEndTooth[tempCount] == (36 + toothAngles[2] -1) ||
-         tempIgnitionEndTooth[tempCount] == (36 + toothAngles[3] -1) || tempIgnitionEndTooth[tempCount] == (36 + toothAngles[4] -1)  )
+      if(tempIgnitionEndTooth[tempCount] == (toothAngles[1]) || tempIgnitionEndTooth[tempCount] == (toothAngles[2]) ||
+         tempIgnitionEndTooth[tempCount] == (toothAngles[3]) || tempIgnitionEndTooth[tempCount] == (toothAngles[4]) ||
+         tempIgnitionEndTooth[tempCount] == (configPage4.triggerTeeth + toothAngles[1]) || tempIgnitionEndTooth[tempCount] == (configPage4.triggerTeeth + toothAngles[2]) ||
+         tempIgnitionEndTooth[tempCount] == (configPage4.triggerTeeth + toothAngles[3]) || tempIgnitionEndTooth[tempCount] == (configPage4.triggerTeeth + toothAngles[4])  )
       { tempIgnitionEndTooth[tempCount]--; }
     }
-
+    #ifdef MJR_DEBUG
+    Serial3.print(tempIgnitionEndTooth[1]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[2]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[3]); Serial3.print("   "); Serial3.println(tempIgnitionEndTooth[4]); 
+    Serial3.println();
+    #endif
   }
   else
   {
+    #ifdef MJR_DEBUG
+    Serial3.print(toothAngles[1]);Serial3.print(" "); Serial3.print(toothAngles[2]);Serial3.print(" "); Serial3.print(toothAngles[3]);Serial3.print(" "); Serial3.println(toothAngles[4]); 
+    Serial3.print(tempIgnitionEndTooth[1]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[2]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[3]); Serial3.print("   "); Serial3.println(tempIgnitionEndTooth[4]); 
+    #endif
     for(tempCount=1;tempCount<5;tempCount++)
     {
-      if(tempIgnitionEndTooth[tempCount]== (toothAngles[1] -1) || tempIgnitionEndTooth[tempCount]== (toothAngles[2] -1) )
+      if(tempIgnitionEndTooth[tempCount]== (toothAngles[1]) || tempIgnitionEndTooth[tempCount]== (toothAngles[2]) )
       { tempIgnitionEndTooth[tempCount]--; }  
     }
+    #ifdef MJR_DEBUG
+    Serial3.print(tempIgnitionEndTooth[1]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[2]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[3]); Serial3.print("   "); Serial3.println(tempIgnitionEndTooth[4]); 
+    Serial3.println();
+    #endif
   }
   
   ignition1EndTooth = tempIgnitionEndTooth[1];  
