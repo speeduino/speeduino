@@ -276,6 +276,12 @@ void ignitionSchedule8Interrupt(HardwareTimer*);
 */
 #if defined(ARDUINO_BLACK_F407VE)
 //HardwareSerial CANSerial(PD6, PD5);
+#include <src/STM32_CAN/STM32_CAN.h>
+//This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
+STM32_CAN Can0;
+
+static CAN_message_t outMsg;
+static CAN_message_t inMsg;
 #endif
 
 #endif //CORE_STM32

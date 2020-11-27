@@ -212,7 +212,7 @@ void initialiseAll()
     //Setup the calibration tables
     loadCalibration();
 
-    #if defined(CORE_TEENSY35)
+    #if defined(CORE_TEENSY35) || defined(ARDUINO_ARCH_STM32)
       configPage9.intcan_available = 1;   // device has internal canbus
       //Teensy uses the Flexcan_T4 library to use the internal canbus
       //enable local can interface
@@ -220,6 +220,10 @@ void initialiseAll()
       Can0.begin();
       Can0.setBaudRate(500000);
       Can0.enableFIFO();
+      //for STM32 the default can1 pins are PD0 & PD1.
+      //ALT pins are PB8 & PB9 and ALT2 pins are PA11 and PA12:
+      //Can0.setRX(ALT);
+      //Can0.setTX(ALT);
     #endif
 
     //Set the pin mappings
