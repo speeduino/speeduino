@@ -3879,9 +3879,7 @@ void triggerSetup_RoverMEMS()
   #define SKIP_TOOTH2 2
   #define SKIP_TOOTH3 3
   #define SKIP_TOOTH4 4
-  #define TEETH_TO_CHECK_SYNC 28
-
-  toothAngles[TEETH_TO_CHECK_SYNC] = 27; // lowest number of teeth on trigger wheel till we get sync                            
+                          
   triggerFilterTime = (1000000 / (MAX_RPM / 60 * 36)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   triggerSecFilterTime = (1000000 / (MAX_RPM / 60)); // only 1 tooth on the wheel not 36
 
@@ -3929,9 +3927,14 @@ digitalWrite(pinVVT_1,LOW);
         roverMEMSTeethSeen++; // add the tooth seen to the variable
         toothCurrentCount++; // Increment the tooth counter on the wheel (used to spot a revolution)
         toothSystemCount++;  toothSystemCount++; // Increment the number of teeth seen (tooth & missing tooth hence doing it twice)
-        isMissingTooth = true; 
-        triggerToothAngleIsCorrect = false; //The tooth angle is double at this point
-        triggerFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
+
+        // hack to fix the missing tooth gap messing up timing.
+        isMissingTooth = false; 
+        triggerToothAngleIsCorrect = true;
+        toothCurrentCount++;
+        lastGap = toothLastMinusOneToothTime - toothLastToothTime;
+        toothLastMinusOneToothTime = toothLastMinusOneToothTime + lastGap;
+        toothLastToothTime = toothLastToothTime + lastGap;
       }
       else //Regular (non-missing) tooth so update things
       {    
@@ -3960,7 +3963,7 @@ digitalWrite(pinVVT_1,LOW);
             toothAngles[SKIP_TOOTH4] = 27;
             toothAngles[ID_TOOTH_PATTERN] = 4;
             configPage4.triggerMissingTeeth = 4; // this should be read in from the config file, but people could adjust it.
-            triggerActualTeeth = 32;
+            triggerActualTeeth = 36; // should be 32 if not hacking toothcounter 
           }  
           triggerRoverMEMSCommon();
                           
@@ -3976,7 +3979,7 @@ digitalWrite(pinVVT_1,LOW);
             toothAngles[SKIP_TOOTH4] = 27;
             toothAngles[ID_TOOTH_PATTERN] = 3;
             configPage4.triggerMissingTeeth = 4; // this should be read in from the config file, but people could adjust it.
-            triggerActualTeeth = 32;
+            triggerActualTeeth = 36; // should be 32 if not hacking toothcounter 
           } 
           triggerRoverMEMSCommon();                           
         }                             //12345678901234567890123456789012
@@ -3995,7 +3998,7 @@ digitalWrite(pinVVT_1,LOW);
             toothAngles[SKIP_TOOTH4] = 29;
             toothAngles[ID_TOOTH_PATTERN] = 2;
             configPage4.triggerMissingTeeth = 4; // this should be read in from the config file, but people could adjust it.
-            triggerActualTeeth = 32;
+            triggerActualTeeth = 36; // should be 32 if not hacking toothcounter 
           }  
           triggerRoverMEMSCommon();  
         }                             //12345678901234567890123456789012
@@ -4012,11 +4015,11 @@ digitalWrite(pinVVT_1,LOW);
             toothAngles[SKIP_TOOTH2] = 18;
             toothAngles[ID_TOOTH_PATTERN] = 1;
             configPage4.triggerMissingTeeth = 2; // this should be read in from the config file, but people could adjust it.            
-            triggerActualTeeth = 34;
+            triggerActualTeeth = 36; // should be 34 if not hacking toothcounter 
           }
           triggerRoverMEMSCommon(); 
         }
-        else if(toothSystemCount > triggerActualTeeth+2) // no patterns match after (36-4 or 36-2) teeth, we've lost sync
+        else if(toothSystemCount > triggerActualTeeth+2) // no patterns match after (36+4 or 36+2) teeth, we've lost sync
         {
           currentStatus.hasSync = false;
           if(secondaryToothCount > 0)
@@ -4030,22 +4033,19 @@ digitalWrite(pinVVT_1,LOW);
         }
       }
     }
-
+    
     toothLastMinusOneToothTime = toothLastToothTime;
     toothLastToothTime = curTime;
 
     //NEW IGNITION MODE
     if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
     {  
-//      int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
-      int16_t crankAngle = ( (toothSystemCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
+      int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
       crankAngle = ignitionLimits(crankAngle);
       if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true))
-//      { crankAngle += 360; checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + toothCurrentCount)); }
-      { crankAngle += 360; checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + toothSystemCount)); }
+      { crankAngle += 360; checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + toothCurrentCount)); }
       else
-//      { checkPerToothTiming(crankAngle, toothCurrentCount); }
-      { checkPerToothTiming(crankAngle, toothSystemCount); }
+      { checkPerToothTiming(crankAngle, toothCurrentCount); }
     }     
   }
 }
@@ -4111,7 +4111,6 @@ int getCrankAngle_RoverMEMS()
     interrupts();
 
     int crankAngle = ((tempToothCurrentCount - 1) * triggerToothAngle) + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-
     
     //Sequential check (simply sets whether we're on the first or 2nd revoltuion of the cycle)
     if ( (tempRevolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) ) { crankAngle += 360; }
@@ -4185,7 +4184,9 @@ uint16_t getRPM_RoverMEMS()
 
 void triggerSetEndTeeth_RoverMEMS()
 {
-  int tempTriggerAngle;
+  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
+  int16_t tempIgnitionEndTooth[5]; // cheating with the array - location 1 is spark 1, location 0 not used.
+  
 // Rover firing order 1342
 // ignition events vs firing order 
 // ignition 1 - Cylinder 1 approaching TDC
@@ -4197,9 +4198,6 @@ void triggerSetEndTeeth_RoverMEMS()
 
   byte toothAdder = 0;
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
-
-  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
-  int16_t tempIgnitionEndTooth[5]; // cheating with the array - location 1 is spark 1, location 0 not used.
 
   tempIgnitionEndTooth[1] = ( (ignition1EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
   if(tempIgnitionEndTooth[1] > (configPage4.triggerTeeth + toothAdder)) { tempIgnitionEndTooth[1] -= (configPage4.triggerTeeth + toothAdder); }
@@ -4229,10 +4227,7 @@ void triggerSetEndTeeth_RoverMEMS()
   {
     // check the calculated trigger tooth exists, if it doesn't use the previous tooth
     // nb the toothAngles[x] holds the tooth after the gap, hence the '-1' to see if it matches a gap
-    #ifdef MJR_DEBUG 
-    Serial3.print(toothAngles[1]);Serial3.print(" "); Serial3.print(toothAngles[2]);Serial3.print(" "); Serial3.print(toothAngles[3]);Serial3.print(" "); Serial3.println(toothAngles[4]); 
-    Serial3.print(tempIgnitionEndTooth[1]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[2]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[3]); Serial3.print("   "); Serial3.println(tempIgnitionEndTooth[4]); 
-    #endif    
+ 
     for(tempCount=1;tempCount <5;tempCount++)
     {
       if(tempIgnitionEndTooth[tempCount] == (toothAngles[1]) || tempIgnitionEndTooth[tempCount] == (toothAngles[2]) ||
@@ -4241,26 +4236,14 @@ void triggerSetEndTeeth_RoverMEMS()
          tempIgnitionEndTooth[tempCount] == (configPage4.triggerTeeth + toothAngles[3]) || tempIgnitionEndTooth[tempCount] == (configPage4.triggerTeeth + toothAngles[4])  )
       { tempIgnitionEndTooth[tempCount]--; }
     }
-    #ifdef MJR_DEBUG
-    Serial3.print(tempIgnitionEndTooth[1]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[2]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[3]); Serial3.print("   "); Serial3.println(tempIgnitionEndTooth[4]); 
-    Serial3.println();
-    #endif
   }
   else
   {
-    #ifdef MJR_DEBUG
-    Serial3.print(toothAngles[1]);Serial3.print(" "); Serial3.print(toothAngles[2]);Serial3.print(" "); Serial3.print(toothAngles[3]);Serial3.print(" "); Serial3.println(toothAngles[4]); 
-    Serial3.print(tempIgnitionEndTooth[1]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[2]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[3]); Serial3.print("   "); Serial3.println(tempIgnitionEndTooth[4]); 
-    #endif
     for(tempCount=1;tempCount<5;tempCount++)
     {
       if(tempIgnitionEndTooth[tempCount]== (toothAngles[1]) || tempIgnitionEndTooth[tempCount]== (toothAngles[2]) )
       { tempIgnitionEndTooth[tempCount]--; }  
     }
-    #ifdef MJR_DEBUG
-    Serial3.print(tempIgnitionEndTooth[1]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[2]); Serial3.print("   "); Serial3.print(tempIgnitionEndTooth[3]); Serial3.print("   "); Serial3.println(tempIgnitionEndTooth[4]); 
-    Serial3.println();
-    #endif
   }
   
   ignition1EndTooth = tempIgnitionEndTooth[1];  

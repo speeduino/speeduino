@@ -115,6 +115,15 @@ void doCrankSpeedCalcs()
             else if(toothCurrentCount == 2) { angle1 = 2*triggerToothAngle; angle2 = triggerToothAngle; }
             else { angle1 = triggerToothAngle; angle2 = triggerToothAngle; }
           }
+/*          else if(configPage4.TrigPattern == 20)
+          {
+            //Special case for Rover MEMS decoder with multiple missing teeth at different places
+            if(toothCurrentCount == toothAngles[SKIP_TOOTH1] || toothCurrentCount == toothAngles[SKIP_TOOTH2] || toothCurrentCount == toothAngles[SKIP_TOOTH3] || toothCurrentCount == toothAngles[SKIP_TOOTH4]) 
+            { angle1 = 2*triggerToothAngle; angle2 = triggerToothAngle; }
+            else 
+            { angle1 = triggerToothAngle; angle2 = triggerToothAngle; }
+          }
+*/          
           else { angle1 = triggerToothAngle; angle2 = triggerToothAngle; }
 
           uint32_t toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
