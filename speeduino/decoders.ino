@@ -282,17 +282,8 @@ static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth
   {
     if ( (currentTooth == ignition1EndTooth) )
     {
-      if( (ignitionSchedule1.Status == RUNNING) ) 
-      { 
-        IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition1EndAngle - crankAngle) ) ) ); 
-
-      }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) 
-      { 
-        ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition1EndAngle - crankAngle) ) ) ); 
-        ignitionSchedule1.endScheduleSetByDecoder = true; 
-      }
-
+      if( (ignitionSchedule1.Status == RUNNING) ) { IGN1_COMPARE = IGN1_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition1EndAngle - crankAngle) ) ) ); }
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition1EndAngle - crankAngle) ) ) ); ignitionSchedule1.endScheduleSetByDecoder = true; }
     }
     else if ( (currentTooth == ignition2EndTooth) )
     {
@@ -3885,8 +3876,8 @@ void triggerSetup_RoverMEMS()
 
   configPage4.triggerTeeth = 36;
   triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth 360 / 36 theortical teeth
-  triggerActualTeeth = 34; //The number of physical teeth on the wheel. Need to fix now so we can identify the wheel on the first rotation and not risk a  type 1 wheel not being spotted
-  secondDerivEnabled = false;
+  triggerActualTeeth = 36; //The number of physical teeth on the wheel. Need to fix now so we can identify the wheel on the first rotation and not risk a  type 1 wheel not being spotted
+  secondDerivEnabled = false; 
   decoderIsSequential = true;
   toothLastMinusOneToothTime = 0;
   toothCurrentCount = 0; // current tooth
@@ -3906,18 +3897,16 @@ void triggerPri_RoverMEMS()
   curGap = curTime - toothLastToothTime;      
   bool isMissingTooth = false;
 
+#ifdef MJR_DEBUG
+digitalWrite(pinVVT_1,HIGH);
+#endif
 
   if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
   {
     validTrigger = true; 
         
     if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) ) // have we seen more than 1 tooth so we start processing
-    {
-#ifdef MJR_DEBUG
-digitalWrite(pinBoost,LOW);
-digitalWrite(pinVVT_1,LOW);
-#endif
-      
+    {   
       //Begin the missing tooth detection
       targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
       currentStatus.hasSync = true;  
@@ -3933,8 +3922,9 @@ digitalWrite(pinVVT_1,LOW);
         triggerToothAngleIsCorrect = true;
         toothCurrentCount++;
         lastGap = toothLastMinusOneToothTime - toothLastToothTime;
-        toothLastMinusOneToothTime = toothLastMinusOneToothTime + lastGap;
+        toothLastMinusOneToothTime = toothLastToothTime;
         toothLastToothTime = toothLastToothTime + lastGap;
+   
       }
       else //Regular (non-missing) tooth so update things
       {    
@@ -3949,9 +3939,7 @@ digitalWrite(pinVVT_1,LOW);
       // reduce checks to minimise cpu load when looking for key point to identify where we are on the wheel
       if( toothCurrentCount >= triggerActualTeeth+1)
       {                          
-        #ifdef MJR_DEBUG
-        digitalWrite(pinVVT_1,HIGH);
-        #endif                        //12345678901234567890123456789012
+                       //12345678901234567890123456789012
         if(     roverMEMSTeethSeen == 0b11011101111111111111101101111111) // Binary pattern for trigger pattern 3-14-2-13- (#4)
         {
           if(toothAngles[ID_TOOTH_PATTERN] != 4)
@@ -4019,7 +4007,7 @@ digitalWrite(pinVVT_1,LOW);
           }
           triggerRoverMEMSCommon(); 
         }
-        else if(toothSystemCount > triggerActualTeeth+2) // no patterns match after (36+4 or 36+2) teeth, we've lost sync
+        else if(toothSystemCount > triggerActualTeeth+1) // no patterns match after a rotation when we only need 32 teeth to match, we've lost sync
         {
           currentStatus.hasSync = false;
           if(secondaryToothCount > 0)
@@ -4027,9 +4015,6 @@ digitalWrite(pinVVT_1,LOW);
           else
             BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
           currentStatus.syncLossCounter++;              
-          #ifdef MJR_DEBUG
-          digitalWrite(pinBoost,HIGH); // nitro pin
-          #endif
         }
       }
     }
@@ -4048,6 +4033,10 @@ digitalWrite(pinVVT_1,LOW);
       { checkPerToothTiming(crankAngle, toothCurrentCount); }
     }     
   }
+
+  #ifdef MJR_DEBUG
+digitalWrite(pinVVT_1,LOW);
+#endif
 }
 
 void triggerRoverMEMSCommon(void)
@@ -4056,7 +4045,7 @@ void triggerRoverMEMSCommon(void)
  * Need to update to cover type 1 trigger pattern (34 teeth)
  */
 
-  if(toothCurrentCount != 37)
+  if(toothCurrentCount != triggerActualTeeth+1)
   { triggerToothAngleIsCorrect = false; }
   else
   { triggerToothAngleIsCorrect = true; }
@@ -4167,7 +4156,7 @@ uint16_t getRPM_RoverMEMS()
 
   if( currentStatus.RPM < currentStatus.crankRPM)
   {
-    if( (triggerToothAngleIsCorrect == true) &&
+    if( (triggerToothAngleIsCorrect == true) && 
         (toothCurrentCount != toothAngles[SKIP_TOOTH1]) && 
         (toothCurrentCount != toothAngles[SKIP_TOOTH2]) && 
         (toothCurrentCount != toothAngles[SKIP_TOOTH3]) && 
@@ -4195,7 +4184,10 @@ void triggerSetEndTeeth_RoverMEMS()
 // ignition 4 - Cylinder 2 approaching TDC
 // VR sensor is 55 degrees btdc so need to adjust tooth angle by 55 degrees 
 // need to ensure any teeth calculated are a gap as the code doesn't know about missing teeth on the wheel - remove 1 tooth from any gaps.
-
+#ifdef MJR_DEBUG
+digitalWrite(pinBoost,HIGH);
+#endif
+  
   byte toothAdder = 0;
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
 
@@ -4252,4 +4244,7 @@ void triggerSetEndTeeth_RoverMEMS()
   ignition4EndTooth = tempIgnitionEndTooth[4];
 
   lastToothCalcAdvance = currentStatus.advance;
+  #ifdef MJR_DEBUG
+  digitalWrite(pinBoost,LOW);
+  #endif
 }
