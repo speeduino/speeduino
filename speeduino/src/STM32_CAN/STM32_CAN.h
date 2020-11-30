@@ -50,23 +50,29 @@ typedef const struct
 
 typedef enum CAN_PINS {DEF, ALT, ALT2,} CAN_PINS;
 
+typedef enum CAN_CHANNEL {_CAN1, _CAN2,} CAN_CHANNEL;
+
 #if defined(ARDUINO_BLACK_F407VE) || defined(ARDUINO_BLACK_F407VG) \
-   || defined(ARDUINO_BLACK_F407ZE) || defined(ARDUINO_BLACK_F407ZG)
+ || defined(ARDUINO_BLACK_F407ZE) || defined(ARDUINO_BLACK_F407ZG)
 CAN_bit_timing_config_t can_configs[6] = {{2, 12, 56}, {2, 12, 28}, {2, 13, 21}, {2, 11, 12}, {2, 11, 6}, {1, 5, 6}};
 #elif defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB)
 CAN_bit_timing_config_t can_configs[6] = {{2, 13, 45}, {2, 15, 20}, {2, 13, 18}, {2, 13, 9}, {2, 15, 4}, {2, 15, 2}};
+#elif defined(ARDUINO_NUCLEO_F446RE)
+CAN_bit_timing_config_t can_configs[6] = {{2, 12, 60}, {2, 12, 30}, {2, 12, 24}, {2, 12, 12}, {2, 12, 6}, {1, 7, 5}};
 #endif
 //TODO: add bit timings for F401 and F411. The bit timings are clock frequency dependent
 //also if support for other STM32 models is added, the bit timings need to be calculated for those too.
 
 class STM32_CAN {
+  const CAN_CHANNEL _channel;
+
   private: 
     void CANSetGpio(GPIO_TypeDef * addr, uint8_t index, uint8_t speed = 3);
     void CANSetFilter(uint8_t index, uint8_t scale, uint8_t mode, uint8_t fifo, uint32_t bank1, uint32_t bank2);
     uint8_t CANMsgAvail();
-   
+
   public:
-    STM32_CAN();
+    STM32_CAN(const CAN_CHANNEL channel) : _channel (channel) { };
     void begin();
     void setBaudRate(uint32_t baud);
     int write(CAN_message_t &CAN_tx_msg);
@@ -75,8 +81,6 @@ class STM32_CAN {
     void setTX(CAN_PINS pin = DEF);
     void setRX(CAN_PINS pin = DEF);
 };
-
-extern STM32_CAN Can0;
 
 #endif
 #endif

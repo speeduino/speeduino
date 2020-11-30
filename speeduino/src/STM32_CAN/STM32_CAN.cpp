@@ -1,23 +1,16 @@
 #include "STM32_CAN.h"
 
-STM32_CAN::STM32_CAN(){
-  RCC->APB1ENR |= 0x2000000UL;           // Enable CAN1 clock 
-  // RCC->APB1ENR |= 0x4000000UL;           // Enable CAN2 clock
-  //TODO: add way to use CAN2 too.
-}
-
 uint8_t STM32_CAN::CANMsgAvail()
 {
-  int channel = 1;
-  if (channel == 1) {
+  if (_channel == _CAN1) {
     // Check for pending FIFO 0 messages
     return CAN1->RF0R & 0x3UL;
-  } // end CAN1
+  }
 
-  if (channel == 2) {
+  if (_channel == _CAN2) {
     // Check for pending FIFO 0 messages
     return CAN2->RF0R & 0x3UL;
-  } // end CAN2
+  }
 }
 
 void STM32_CAN::CANSetGpio(GPIO_TypeDef * addr, uint8_t index, uint8_t speed )
@@ -89,10 +82,11 @@ void STM32_CAN::CANSetFilter(uint8_t index, uint8_t scale, uint8_t mode, uint8_t
 
 void STM32_CAN::begin()
 {
-  int channel = 1;
-  if (channel == 1)
+  if (_channel == _CAN1)
   {
     // CAN1
+    RCC->APB1ENR |= 0x2000000UL;           // Enable CAN1 clock 
+
     RCC->AHB1ENR |= 0x8;                 // Enable GPIOD clock 
     CANSetGpio(GPIOD, 0);                // Set PD0
     CANSetGpio(GPIOD, 1);                // Set PD1
@@ -103,9 +97,11 @@ void STM32_CAN::begin()
     //CAN1->MCR = 0x51UL;                  // Hardware initialization(No automatic retransmission)
     CAN1->MCR = 0x41UL;                    // Hardware initialization(With automatic retransmission)
   }
-  else if (channel == 2)
+  else if (_channel == _CAN2)
   {
     // CAN2
+    RCC->APB1ENR |= 0x4000000UL;           // Enable CAN2 clock
+
     RCC->AHB1ENR |= 0x2;                 // Enable GPIOB clock 
     CANSetGpio(GPIOB, 12);               // Set PB12
     CANSetGpio(GPIOB, 13);               // Set PB13
@@ -122,7 +118,6 @@ int STM32_CAN::write(CAN_message_t &CAN_tx_msg)
 {
   volatile int count = 0;
   uint32_t out = 0;
-  int channel = 1; //temporary botch to use only CAN1. Eventually this needs to come from somewhere.
 
   if (CAN_tx_msg.flags.extended == true) { // Extended frame format
       out = ((CAN_tx_msg.id & CAN_EXT_ID_MASK) << 3U) | STM32_CAN_TIR_IDE;
@@ -135,7 +130,7 @@ int STM32_CAN::write(CAN_message_t &CAN_tx_msg)
       out |= STM32_CAN_TIR_RTR;
   }
 
-  if (channel == 1)
+  if (_channel == _CAN1)
   {
     CAN1->sTxMailBox[0].TDTR &= ~(0xF);
     CAN1->sTxMailBox[0].TDTR |= CAN_tx_msg.len & 0xFUL;
@@ -162,7 +157,7 @@ int STM32_CAN::write(CAN_message_t &CAN_tx_msg)
       return 1; // transmit ok
     }
   }
-  if (channel == 2)
+  if (_channel == _CAN2)
   {
     CAN2->sTxMailBox[0].TDTR &= ~(0xF);
     CAN2->sTxMailBox[0].TDTR |= CAN_tx_msg.len & 0xFUL;
@@ -193,9 +188,8 @@ int STM32_CAN::write(CAN_message_t &CAN_tx_msg)
 
 int STM32_CAN::read(CAN_message_t &CAN_rx_msg)
 {
-  int channel = 1; //temporary botch to use only CAN1. Eventually this needs to come from somewhere.
   if (CANMsgAvail()) {
-    if(channel == 1) {
+    if(_channel == _CAN1) {
       uint32_t id = CAN1->sFIFOMailBox[0].RIR;
       if ((id & STM32_CAN_RIR_IDE) == 0) { // Standard frame format
           CAN_rx_msg.flags.extended = false;
@@ -229,7 +223,7 @@ int STM32_CAN::read(CAN_message_t &CAN_rx_msg)
       CAN1->RF0R |= 0x20UL;
     } // end CAN1
 
-    if(channel == 2) {
+    if(_channel == _CAN2) {
       uint32_t id = CAN2->sFIFOMailBox[0].RIR;
       if ((id & STM32_CAN_RIR_IDE) == 0) { // Standard frame format
           CAN_rx_msg.flags.extended = false;
@@ -271,8 +265,6 @@ int STM32_CAN::read(CAN_message_t &CAN_rx_msg)
 
 void STM32_CAN::setBaudRate(uint32_t baud)
 {
-  int channel = 1; //temporary botch to use only CAN1. Eventually this needs to come from somewhere.
-
   //there must be better way to do this, but for now it's what it is.
   int bitrate;
   switch(baud)
@@ -300,7 +292,7 @@ void STM32_CAN::setBaudRate(uint32_t baud)
         break;
     }
   // Set bit rates 
-  if (channel == 1)
+  if (_channel == _CAN1)
   {
     CAN1->BTR &= ~(((0x03) << 24) | ((0x07) << 20) | ((0x0F) << 16) | (0x1FF)); 
     CAN1->BTR |=  (((can_configs[bitrate].TS2-1) & 0x07) << 20) | (((can_configs[bitrate].TS1-1) & 0x0F) << 16) | ((can_configs[bitrate].BRP-1) & 0x1FF);
@@ -349,11 +341,11 @@ void STM32_CAN::setBaudRate(uint32_t baud)
       //Serial.println("CAN1 initialize fail!!");
     }
   }
-  else if (channel == 2)
+  else if (_channel == _CAN2)
   {
     CAN2->BTR &= ~(((0x03) << 24) | ((0x07) << 20) | ((0x0F) << 16) | (0x1FF)); 
     CAN2->BTR |=  (((can_configs[bitrate].TS2-1) & 0x07) << 20) | (((can_configs[bitrate].TS1-1) & 0x0F) << 16) | ((can_configs[bitrate].BRP-1) & 0x1FF); 
-	// Configure Filters to default values
+    // Configure Filters to default values
     CAN2->FMR  |=   0x1UL;                 // Set to filter initialization mode
     CAN2->FMR  &= 0xFFFFC0FF;              // Clear CAN2 start bank
 
@@ -408,45 +400,70 @@ void STM32_CAN::enableFIFO(bool status)
 
 void STM32_CAN::setTX(CAN_PINS pin)
 {
-  //PD1 as default. PA12 is for USB so that can't be used if native USB connection is in use.
-  if (pin == DEF) {
-    // CAN1
-    RCC->AHB1ENR |= 0x8;                 // Enable GPIOD clock 
-    CANSetGpio(GPIOD, 1);                // Set PD1
+  if (_channel == _CAN1)  // CAN1
+  {
+    //PD1 as default. PA12 is for USB so that can't be used if native USB connection is in use.
+    if (pin == DEF) {
+      RCC->AHB1ENR |= 0x8;                 // Enable GPIOD clock 
+      CANSetGpio(GPIOD, 1);                // Set PD1
+    }
+    //PB9 is alternative TX pin. 
+    if (pin == ALT) {
+      RCC->AHB1ENR |= 0x2;                 // Enable GPIOB clock 
+      CANSetGpio(GPIOB, 9);                // Set PB9
+    }
+    //PA12 is second alternative TX pin, but it can't be used if native USB connection is in use.
+    if (pin == ALT2) {
+      RCC->AHB1ENR |= 0x1;                 // Enable GPIOA clock 
+      CANSetGpio(GPIOA, 12);               // Set PA12
+    }
   }
-  //PB9 is alternative TX pin. 
-  if (pin == ALT) {
-    // CAN1
-    RCC->AHB1ENR |= 0x2;                 // Enable GPIOB clock 
-    CANSetGpio(GPIOB, 9);                // Set PB9
+  else if (_channel == _CAN2)  // CAN2
+  {
+    //PB6 as default
+    if (pin == DEF) {
+      RCC->AHB1ENR |= 0x2;                 // Enable GPIOB clock
+      CANSetGpio(GPIOB, 6);                // Set PB6
+    }
+    //PB13 is alternative TX pin. 
+    if (pin == ALT) {
+      RCC->AHB1ENR |= 0x2;                 // Enable GPIOB clock 
+      CANSetGpio(GPIOB, 13);               // Set PB13
+    }
   }
-  //PA12 is second alternative TX pin, but it can't be used if native USB connection is in use.
-  if (pin == ALT2) {
-    // CAN1
-    RCC->AHB1ENR |= 0x1;                 // Enable GPIOA clock 
-    CANSetGpio(GPIOA, 12);               // Set PA12
-  }
-
 }
 
 void STM32_CAN::setRX(CAN_PINS pin)
 {
-  //PD0 as default. PA11 is for USB so that can't be used if native USB connection is in use.
-  if (pin == DEF) {
-    // CAN1
-    RCC->AHB1ENR |= 0x8;                 // Enable GPIOD clock 
-    CANSetGpio(GPIOD, 0);                // Set PD0
+  if (_channel == _CAN1)  // CAN1
+  {
+    //PD0 as default. PA11 is for USB so that can't be used if native USB connection is in use.
+    if (pin == DEF) {
+      RCC->AHB1ENR |= 0x8;                 // Enable GPIOD clock 
+      CANSetGpio(GPIOD, 0);                // Set PD0
+    }
+    //PB8 is alternative RX pin. 
+    if (pin == ALT) {
+      RCC->AHB1ENR |= 0x2;                 // Enable GPIOB clock 
+      CANSetGpio(GPIOB, 8);                // Set PB8
+    }
+    //PA11 is second alternative RX pin, but it can't be used if native USB connection is in use.
+    if (pin == ALT2) {
+      RCC->AHB1ENR |= 0x1;                 // Enable GPIOA clock 
+      CANSetGpio(GPIOA, 11);               // Set PA11
+    }
   }
-  //PB8 is alternative RX pin. 
-  if (pin == ALT) {
-    // CAN1
-    RCC->AHB1ENR |= 0x2;                 // Enable GPIOB clock 
-    CANSetGpio(GPIOB, 8);                // Set PB8
-  }
-  //PA11 is second alternative RX pin, but it can't be used if native USB connection is in use.
-  if (pin == ALT2) {
-    // CAN1
-    RCC->AHB1ENR |= 0x1;                 // Enable GPIOA clock 
-    CANSetGpio(GPIOA, 11);               // Set PA11
+  else if (_channel == _CAN2)  // CAN2
+  {
+    //PB5 as default.
+    if (pin == DEF) {
+      RCC->AHB1ENR |= 0x2;                 // Enable GPIOB clock
+      CANSetGpio(GPIOB, 5);                // Set PB5
+    }
+    //PB12 is alternative RX pin. 
+    if (pin == ALT) {
+      RCC->AHB1ENR |= 0x2;                 // Enable GPIOB clock 
+      CANSetGpio(GPIOB, 12);               // Set PB12
+    }
   }
 }
