@@ -376,7 +376,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
   #endif
 }
 
-#if defined(CORE_TEENSY) || defined(ARDUINO_ARCH_STM32)
+#if defined(CORE_TEENSY35) || defined(ARDUINO_ARCH_STM32)
 // This routine builds the realtime data into packets that the obd requesting device can understand. This is only used by teensy and stm32 with onboard canbus
 void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPIDhigh)
 { 
