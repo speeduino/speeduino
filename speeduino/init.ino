@@ -212,7 +212,7 @@ void initialiseAll()
     //Setup the calibration tables
     loadCalibration();
 
-    #if defined(CORE_TEENSY35)
+    #if defined(CORE_TEENSY35) || defined(ARDUINO_ARCH_STM32)
       configPage9.intcan_available = 1;   // device has internal canbus
       //Teensy uses the Flexcan_T4 library to use the internal canbus
       //enable local can interface

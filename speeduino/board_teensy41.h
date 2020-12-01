@@ -17,6 +17,7 @@
   #define EEPROM_LIB_H <EEPROM.h>
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
+  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB
 
 /*
 ***********************************************************************************************************
