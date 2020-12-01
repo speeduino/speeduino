@@ -237,9 +237,7 @@ void initialiseAll()
       Can0.setTX(DEF);
     #endif
 
-    //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
-    if(configPage4.IgInv == 1) { coilHIGH = LOW; coilLOW = HIGH; }
-    else { coilHIGH = HIGH; coilLOW = LOW; }
+    //End all coil charges to ensure no stray sparks on startup
     endCoil1Charge();
     endCoil2Charge();
     endCoil3Charge();
@@ -567,6 +565,8 @@ void initialiseAll()
             channel3IgnDegrees = 0;
             channel4IgnDegrees = 180;
             maxIgnOutputs = 4;
+
+            configPage4.IgInv = GOING_LOW; //Force Going Low ignition mode (Going high is never used for rotary)
           }
         }
         else
@@ -1161,6 +1161,10 @@ void initialiseAll()
 
 void setPinMapping(byte boardID)
 {
+  //Force set defaults. Will be overwritten below if needed.
+  injectorOutputControl = OUTPUT_CONTROL_DIRECT;
+  ignitionOutputControl = OUTPUT_CONTROL_DIRECT;
+
   switch (boardID)
   {
     //Note: Case 0 (Speeduino v0.1) was removed in Nov 2020 to handle default case for blank FRAM modules
@@ -2391,7 +2395,8 @@ void setPinMapping(byte boardID)
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
 
-  #ifndef USE_MC33810
+  if(ignitionOutputControl == OUTPUT_CONTROL_DIRECT)
+  {
     pinMode(pinCoil1, OUTPUT);
     pinMode(pinCoil2, OUTPUT);
     pinMode(pinCoil3, OUTPUT);
@@ -2400,6 +2405,27 @@ void setPinMapping(byte boardID)
     pinMode(pinCoil6, OUTPUT);
     pinMode(pinCoil7, OUTPUT);
     pinMode(pinCoil8, OUTPUT);
+
+    ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
+    ign1_pin_mask = digitalPinToBitMask(pinCoil1);
+    ign2_pin_port = portOutputRegister(digitalPinToPort(pinCoil2));
+    ign2_pin_mask = digitalPinToBitMask(pinCoil2);
+    ign3_pin_port = portOutputRegister(digitalPinToPort(pinCoil3));
+    ign3_pin_mask = digitalPinToBitMask(pinCoil3);
+    ign4_pin_port = portOutputRegister(digitalPinToPort(pinCoil4));
+    ign4_pin_mask = digitalPinToBitMask(pinCoil4);
+    ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
+    ign5_pin_mask = digitalPinToBitMask(pinCoil5);
+    ign6_pin_port = portOutputRegister(digitalPinToPort(pinCoil6));
+    ign6_pin_mask = digitalPinToBitMask(pinCoil6);
+    ign7_pin_port = portOutputRegister(digitalPinToPort(pinCoil7));
+    ign7_pin_mask = digitalPinToBitMask(pinCoil7);
+    ign8_pin_port = portOutputRegister(digitalPinToPort(pinCoil8));
+    ign8_pin_mask = digitalPinToBitMask(pinCoil8);
+  } 
+
+  if(injectorOutputControl == OUTPUT_CONTROL_DIRECT)
+  {
     pinMode(pinInjector1, OUTPUT);
     pinMode(pinInjector2, OUTPUT);
     pinMode(pinInjector3, OUTPUT);
@@ -2425,31 +2451,17 @@ void setPinMapping(byte boardID)
     inj7_pin_mask = digitalPinToBitMask(pinInjector7);
     inj8_pin_port = portOutputRegister(digitalPinToPort(pinInjector8));
     inj8_pin_mask = digitalPinToBitMask(pinInjector8);
+  }
 
-    ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
-    ign1_pin_mask = digitalPinToBitMask(pinCoil1);
-    ign2_pin_port = portOutputRegister(digitalPinToPort(pinCoil2));
-    ign2_pin_mask = digitalPinToBitMask(pinCoil2);
-    ign3_pin_port = portOutputRegister(digitalPinToPort(pinCoil3));
-    ign3_pin_mask = digitalPinToBitMask(pinCoil3);
-    ign4_pin_port = portOutputRegister(digitalPinToPort(pinCoil4));
-    ign4_pin_mask = digitalPinToBitMask(pinCoil4);
-    ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
-    ign5_pin_mask = digitalPinToBitMask(pinCoil5);
-    ign6_pin_port = portOutputRegister(digitalPinToPort(pinCoil6));
-    ign6_pin_mask = digitalPinToBitMask(pinCoil6);
-    ign7_pin_port = portOutputRegister(digitalPinToPort(pinCoil7));
-    ign7_pin_mask = digitalPinToBitMask(pinCoil7);
-    ign8_pin_port = portOutputRegister(digitalPinToPort(pinCoil8));
-    ign8_pin_mask = digitalPinToBitMask(pinCoil8);
-  #else
+  if( (ignitionOutputControl == OUTPUT_CONTROL_MC33810) || (injectorOutputControl == OUTPUT_CONTROL_MC33810) )
+  {
     mc33810_1_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_1_CS));
     mc33810_1_pin_mask = digitalPinToBitMask(pinMC33810_1_CS);
     mc33810_2_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_2_CS));
     mc33810_2_pin_mask = digitalPinToBitMask(pinMC33810_2_CS);
 
     initMC33810();
-  #endif
+  }
 
 //CS pin number is now set in a compile flag. 
 // #ifdef USE_SPI_EEPROM
