@@ -278,9 +278,15 @@ void ignitionSchedule8Interrupt(HardwareTimer*);
 //HardwareSerial CANSerial(PD6, PD5);
 #include <src/STM32_CAN/STM32_CAN.h>
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
-STM32_CAN Can0 (_CAN1);
-//Second CAN interface is also available if needed or it can be used also as primary CAN interface.
-//STM32_CAN Can1 (_CAN2);
+STM32_CAN Can0 (_CAN1,DEF);
+/*
+Second CAN interface is also available if needed or it can be used also as primary CAN interface.
+for STM32F4 the default CAN1 pins are PD0 & PD1. Alternative (ALT) pins are PB8 & PB9 and ALT2 pins are PA11 and PA12:
+for STM32F4 the default CAN2 pins are PB5 & PB6. Alternative (ALT) pins are PB12 & PB13.
+for STM32F1 the default CAN1 pins are PA11 & PA12. Alternative (ALT) pins are PB8 & PB9.
+Example of using CAN2 as secondary CAN bus with alternative pins:
+STM32_CAN Can1 (_CAN2,ALT);
+*/
 
 static CAN_message_t outMsg;
 static CAN_message_t inMsg;

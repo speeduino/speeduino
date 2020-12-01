@@ -220,10 +220,6 @@ void initialiseAll()
       Can0.begin();
       Can0.setBaudRate(500000);
       Can0.enableFIFO();
-      //for STM32 the default can1 pins are PD0 & PD1.
-      //ALT pins are PB8 & PB9 and ALT2 pins are PA11 and PA12:
-      //Can0.setRX(ALT);
-      //Can0.setTX(ALT);
     #endif
 
     //Set the pin mappings
