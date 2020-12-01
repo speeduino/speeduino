@@ -302,6 +302,9 @@
 #define FOUR_STROKE         0
 #define TWO_STROKE          1
 
+#define GOING_LOW         0
+#define GOING_HIGH        1
+
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
 #define BATTV_COR_MODE_WHOLE 0
