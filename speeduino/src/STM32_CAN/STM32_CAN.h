@@ -77,7 +77,7 @@ class STM32_CAN {
     void CANSetGpio(GPIO_TypeDef * addr, uint8_t index, uint8_t speed = 3);
     void CANSetFilter(uint8_t index, uint8_t scale, uint8_t mode, uint8_t fifo, uint32_t bank1, uint32_t bank2);
     uint8_t CANMsgAvail();
-	void SetTXRX();
+    void SetTXRX();
 
   public:
     STM32_CAN(const CAN_CHANNEL channel, CAN_PINS pins) : _channel (channel), _pins (pins) { };

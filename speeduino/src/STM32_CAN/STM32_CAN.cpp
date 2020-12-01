@@ -1,3 +1,4 @@
+#if defined(ARDUINO_ARCH_STM32)
 #include "STM32_CAN.h"
 
 uint8_t STM32_CAN::CANMsgAvail()
@@ -16,7 +17,7 @@ uint8_t STM32_CAN::CANMsgAvail()
 
 void STM32_CAN::CANSetGpio(GPIO_TypeDef * addr, uint8_t index, uint8_t speed )
 {
-	#if defined(STM32F4xx)
+    #if defined(STM32F4xx)
     uint8_t _index2 = index * 2;
     uint8_t _index4 = index * 4;
     uint8_t ofs = 0;
@@ -51,7 +52,7 @@ void STM32_CAN::CANSetGpio(GPIO_TypeDef * addr, uint8_t index, uint8_t speed )
 
     mask = 0x3 << _index2;
     addr->PUPDR   &= ~mask;           // Reset port pull-up/pull-down
-	#endif
+    #endif
 }
 
 void STM32_CAN::CANSetFilter(uint8_t index, uint8_t scale, uint8_t mode, uint8_t fifo, uint32_t bank1, uint32_t bank2) {
@@ -111,7 +112,7 @@ void STM32_CAN::begin()
   else if (_channel == _CAN2)
   {
     // CAN2
-	CAN2->MCR |= 0x1UL;                    // Require CAN2 to Initialization mode
+    CAN2->MCR |= 0x1UL;                    // Require CAN2 to Initialization mode
     while (!(CAN2->MSR & 0x1UL));          // Wait for Initialization mode
 
     //CAN2->MCR = 0x51UL;                  // Hardware initialization(No automatic retransmission)
@@ -264,7 +265,7 @@ int STM32_CAN::read(CAN_message_t &CAN_rx_msg)
 
       CAN2->RF0R |= 0x20UL;
     } // END CAN2
-	#endif
+    #endif
     return 1; // message read
   }
   else {
@@ -425,19 +426,19 @@ void STM32_CAN::SetTXRX()
     if (_pins == DEF) {
       RCC->AHB1ENR |= 0x8;                 // Enable GPIOD clock 
       CANSetGpio(GPIOD, 1);                // Set PD1
-	  CANSetGpio(GPIOD, 0);                // Set PD0
+      CANSetGpio(GPIOD, 0);                // Set PD0
     }
     //PB8/PB9 are alternative pins. 
     if (_pins == ALT) {
       RCC->AHB1ENR |= 0x2;                 // Enable GPIOB clock 
       CANSetGpio(GPIOB, 9);                // Set PB9
-	  CANSetGpio(GPIOB, 8);                // Set PB8
+      CANSetGpio(GPIOB, 8);                // Set PB8
     }
     //PA11/PA12 are second alternative pins, but it can't be used if native USB connection is in use.
     if (_pins == ALT2) {
       RCC->AHB1ENR |= 0x1;                 // Enable GPIOA clock 
       CANSetGpio(GPIOA, 12);               // Set PA12
-	  CANSetGpio(GPIOA, 11);               // Set PA11
+      CANSetGpio(GPIOA, 11);               // Set PA11
     }
     #elif defined(STM32F1xx)
     //PA11/PA12 as default, because those are only ones available on all F1 models.
@@ -489,14 +490,15 @@ void STM32_CAN::SetTXRX()
     if (_pins == DEF) {
       RCC->AHB1ENR |= 0x2;                 // Enable GPIOB clock
       CANSetGpio(GPIOB, 6);                // Set PB6
-	  CANSetGpio(GPIOB, 5);                // Set PB5
+      CANSetGpio(GPIOB, 5);                // Set PB5
     }
     //PB12/PB13 are alternative pins. 
     if (_pins == ALT) {
       RCC->AHB1ENR |= 0x2;                 // Enable GPIOB clock 
       CANSetGpio(GPIOB, 13);               // Set PB13
-	  CANSetGpio(GPIOB, 12);               // Set PB12
+      CANSetGpio(GPIOB, 12);               // Set PB12
     }
   }
   #endif
 }
+#endif
