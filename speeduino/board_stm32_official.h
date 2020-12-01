@@ -33,6 +33,8 @@ extern "C" char* sbrk(int incr);
 
 #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
  || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
+  #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PC14) || ((pin) == PC15) )
+
   #ifndef PB11 //Hack for F4 BlackPills
     #define PB11 PB10
   #endif
@@ -44,6 +46,12 @@ extern "C" char* sbrk(int incr);
     #define A13  PA3
     #define A14  PA4
     #define A15  PA5
+  #endif
+#else
+  #ifdef USE_SPI_EEPROM
+    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PB3) || ((pin) == PB4) || ((pin) == PB5) || ((pin) == USE_SPI_EEPROM) ) //Forbiden pins like USB
+  #else
+    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PB3) || ((pin) == PB4) || ((pin) == PB5) || ((pin) == PB0) ) //Forbiden pins like USB
   #endif
 #endif
 
