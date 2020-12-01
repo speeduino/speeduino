@@ -15,6 +15,7 @@
   void initBoard();
   uint16_t freeRam();
 
+  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB
 
 /*
 ***********************************************************************************************************

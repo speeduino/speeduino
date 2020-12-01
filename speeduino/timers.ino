@@ -18,6 +18,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "speeduino.h"
 #include "scheduler.h"
 #include "auxiliaries.h"
+#include "comms.h"
 
 #if defined(CORE_AVR)
   #include <avr/wdt.h>

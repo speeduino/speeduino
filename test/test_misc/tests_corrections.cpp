@@ -172,8 +172,8 @@ void test_corrections_dfco_off_delay()
   //The steup function below simulates a 2 second delay
   setup_DFCO_on();
 
-  //Set the threshold to be 3 seconds, above the simulated delay of 2s
-  configPage2.dfcoDelay = 300;
+  //Set the threshold to be 2.5 seconds, above the simulated delay of 2s
+  configPage2.dfcoDelay = 250;
 
   TEST_ASSERT_FALSE(correctionDFCO()); //Make sure DFCO does not come on
 }
