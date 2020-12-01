@@ -787,8 +787,11 @@ struct config2 {
 
   byte tachoSweepMaxRPM;
   byte primingDelay;
-  
-  byte unused2_95[7];
+
+  byte iacTPSlimit;
+  byte iacRPMlimitHysteresis;
+
+  byte unused2_95[5];
 
 #if defined(CORE_AVR)
   };
