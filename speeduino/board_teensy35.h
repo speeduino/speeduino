@@ -8,6 +8,8 @@
 */
   void initBoard();
   uint16_t freeRam();
+  void DoSystemReset();
+  void JumpToBootloader();
   #define PORT_TYPE uint8_t //Size of the port variables
   #define PINMASK_TYPE uint8_t
   #define COMPARE_TYPE uint16_t
