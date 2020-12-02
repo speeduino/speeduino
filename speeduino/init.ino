@@ -14,6 +14,7 @@
 #include "corrections.h"
 #include "idle.h"
 #include "table.h"
+#include "acc_mc33810.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 #include EEPROM_LIB_H 
 
@@ -41,18 +42,6 @@ void initialiseAll()
     #if defined(CORE_STM32)
     configPage9.intcan_available = 1;   // device has internal canbus
     //STM32 can not currently enabled
-    #endif
-    #if defined(CORE_TEENSY35)
-      configPage9.intcan_available = 1;   // device has internal canbus
-      //Teensy uses the Flexcan_T4 library to use the internal canbus
-      //enable local can interface
-      //setup can interface to 500k
-
-      //Can0.setTX(3);
-      //Can0.setRX(4);    
-      Can0.begin();
-      Can0.setBaudRate(500000);
-      Can0.enableFIFO();
     #endif
     
     loadConfig();
@@ -223,18 +212,32 @@ void initialiseAll()
     //Setup the calibration tables
     loadCalibration();
 
+    #if defined(CORE_TEENSY35) || defined(ARDUINO_ARCH_STM32)
+      configPage9.intcan_available = 1;   // device has internal canbus
+      //Teensy uses the Flexcan_T4 library to use the internal canbus
+      //enable local can interface
+      //setup can interface to 500k   
+      Can0.begin();
+      Can0.setBaudRate(500000);
+      Can0.enableFIFO();
+    #endif
+
     //Set the pin mappings
-    if(configPage2.pinMapping == 255)
+    if((configPage2.pinMapping == 255) || (configPage2.pinMapping == 0)) //255 = EEPROM value in a blank AVR; 0 = EEPROM value in new FRAM
     {
-    //First time running on this board
-    setPinMapping(3); //Force board to v0.4
-    configPage2.flexEnabled = false; //Have to disable flex. If this isn't done and the wrong flex pin is interrupt attached below, system can hang.
+      //First time running on this board
+      resetConfigPages(); 
+      setPinMapping(3); //Force board to v0.4
     }
     else { setPinMapping(configPage2.pinMapping); }
 
-    //Need to check early on whether the coil charging is inverted. If this is not set straight away it can cause an unwanted spark at bootup
-    if(configPage4.IgInv == 1) { coilHIGH = LOW; coilLOW = HIGH; }
-    else { coilHIGH = HIGH; coilLOW = LOW; }
+    //Note: This must come after the call to setPinMapping() or else pins 29 and 30 will become unusable as outputs. Workaround for: https://github.com/tonton81/FlexCAN_T4/issues/14
+    #if defined(CORE_TEENSY35)
+      Can0.setRX(DEF);
+      Can0.setTX(DEF);
+    #endif
+
+    //End all coil charges to ensure no stray sparks on startup
     endCoil1Charge();
     endCoil2Charge();
     endCoil3Charge();
@@ -566,6 +569,9 @@ void initialiseAll()
             //Rotary uses the ign 3 and 4 schedules for the trailing spark. They are offset from the ign 1 and 2 channels respectively and so use the same degrees as them
             channel3IgnDegrees = 0;
             channel4IgnDegrees = 180;
+            maxIgnOutputs = 4;
+
+            configPage4.IgInv = GOING_LOW; //Force Going Low ignition mode (Going high is never used for rotary)
           }
         }
         else
@@ -1028,11 +1034,9 @@ void initialiseAll()
           ign2EndFunction = endCoil2and6Charge;
           ign3StartFunction = beginCoil3and7Charge;
           ign3EndFunction = endCoil3and7Charge;
-          ign3StartFunction = beginCoil4and8Charge;
-          ign3EndFunction = endCoil4and8Charge;
+          ign4StartFunction = beginCoil4and8Charge;
+          ign4EndFunction = endCoil4and8Charge;
 
-          ign4StartFunction = nullCallback;
-          ign4EndFunction = nullCallback;
           ign5StartFunction = nullCallback;
           ign5EndFunction = nullCallback;
           ign6StartFunction = nullCallback;
@@ -1162,72 +1166,14 @@ void initialiseAll()
 
 void setPinMapping(byte boardID)
 {
+  //Force set defaults. Will be overwritten below if needed.
+  injectorOutputControl = OUTPUT_CONTROL_DIRECT;
+  ignitionOutputControl = OUTPUT_CONTROL_DIRECT;
+
   switch (boardID)
   {
-    case 0:
-    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
-      //Pin mappings as per the v0.1 shield
-      pinInjector1 = 8; //Output pin injector 1 is on
-      pinInjector2 = 9; //Output pin injector 2 is on
-      pinInjector3 = 11; //Output pin injector 3 is on
-      pinInjector4 = 10; //Output pin injector 4 is on
-      pinInjector5 = 12; //Output pin injector 5 is on
-      pinCoil1 = 6; //Pin for coil 1
-      pinCoil2 = 7; //Pin for coil 2
-      pinCoil3 = 12; //Pin for coil 3
-      pinCoil4 = 13; //Pin for coil 4
-      pinCoil5 = 14; //Pin for coil 5
-      pinTrigger = 2; //The CAS pin
-      pinTrigger2 = 3; //The CAS pin
-      pinTPS = A0; //TPS input pin
-      pinMAP = A1; //MAP sensor pin
-      pinIAT = A2; //IAT sensor pin
-      pinCLT = A3; //CLS sensor pin
-      pinO2 = A4; //O2 Sensor pin
-      pinIdle1 = 46; //Single wire idle control
-      pinIdle2 = 47; //2 wire idle control
-      pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinStepperStep = 17; //Step pin for DRV8825 driver
-      pinFan = 47; //Pin for the fan output
-      pinFuelPump = 4; //Fuel pump output
-      pinTachOut = 49; //Tacho output pin
-      pinFlex = 19; // Flex sensor (Must be external interrupt enabled)
-      pinResetControl = 43; //Reset control output
-    #endif
-    //New FRAM chips reads 0
-    #if defined(CORE_STM32)
-      //https://github.com/stm32duino/Arduino_Core_STM32/blob/master/variants/Generic_F411Cx/variant.h#L28
-      //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
-      //pins PB12, PB13, PB14 and PB15 are used to SPI FLASH
-      pinInjector1 = PB7; //Output pin injector 1 is on
-      pinInjector2 = PB6; //Output pin injector 2 is on
-      pinInjector3 = PB5; //Output pin injector 3 is on
-      pinInjector4 = PB4; //Output pin injector 4 is on
-      pinCoil1 = PB9; //Pin for coil 1
-      pinCoil2 = PB8; //Pin for coil 2
-      pinCoil3 = PB3; //Pin for coil 3
-      pinCoil4 = PA15; //Pin for coil 4
-      pinTPS = A2;//TPS input pin
-      pinMAP = A3; //MAP sensor pin
-      pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLS sensor pin
-      pinO2 = A8; //O2 Sensor pin
-      pinBat = A4; //Battery reference voltage pin
-      pinBaro = pinMAP;
-      pinIdle1 = PA5; //Single wire idle control
-      pinBoost = PA6; //Boost control
-      //pinVVT_1 = 4; //Default VVT output
-      //pinStepperDir = PC15; //Direction pin  for DRV8825 driver
-      //pinStepperStep = PC14; //Step pin for DRV8825 driver
-      //pinStepperEnable = PC13; //Enable pin for DRV8825
-      pinFuelPump = PB10; //Fuel pump output
-      pinTachOut = PC13; //Tacho output pin
-      //external interrupt enabled pins
-      //pinFlex = PB2; // Flex sensor (Must be external interrupt enabled)
-      pinTrigger = PB1; //The CAS pin
-      pinTrigger2 = PB10; //The Cam Sensor pin
-    #endif
-      break;
+    //Note: Case 0 (Speeduino v0.1) was removed in Nov 2020 to handle default case for blank FRAM modules
+
     case 1:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the v0.2 shield
@@ -1787,7 +1733,7 @@ void setPinMapping(byte boardID)
       pinCoil3 = 52; //Pin for coil 3
       pinCoil4 = 48; //Pin for coil 4
       pinCoil5 = 36; //Pin for coil 5
-	  pinCoil6 = 34; //Pin for coil 6
+      pinCoil6 = 34; //Pin for coil 6
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTPS = A2;//TPS input pin
@@ -1796,13 +1742,14 @@ void setPinMapping(byte boardID)
       pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
-      pinDisplayReset = 48; // OLED reset pin
+      pinBaro = A5; //Baro sensor pin
+      pinDisplayReset = 41; // OLED reset pin
       pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
       pinIdle1 = 5; //ICV pin1
       pinIdle2 = 6; //ICV pin3
       pinBoost = 7; //Boost control
-      pinVVT_1 = 4; //VVT output
-      pinVVT_2 = 48; //Default VVT2 output
+      pinVVT_1 = 4; //VVT1 output (intake vanos)
+      pinVVT_2 = 26; //VVT2 output (exhaust vanos)
       pinFuelPump = 45; //Fuel pump output  (Goes to ULN2003)
       pinStepperDir = 16; //Stepper valve isn't used with these
       pinStepperStep = 17; //Stepper valve isn't used with these
@@ -1811,6 +1758,7 @@ void setPinMapping(byte boardID)
       pinLaunch = 51; //Launch control pin
       pinFlex = 2; // Flex sensor
       pinResetControl = 43; //Reset control output
+      pinVSS = 3; //VSS input pin
       break;
 
     case 40:
@@ -2024,6 +1972,9 @@ void setPinMapping(byte boardID)
     case 55:
       #if defined(CORE_TEENSY)
       //Pin mappings for the DropBear
+      injectorOutputControl = OUTPUT_CONTROL_MC33810;
+      ignitionOutputControl = OUTPUT_CONTROL_MC33810;
+
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinFlex = A16; // Flex sensor
@@ -2065,29 +2016,27 @@ void setPinMapping(byte boardID)
         pinLaunch = 34; //Can be overwritten below
       #endif
 
-      #if defined(USE_MC33810)
         pinMC33810_1_CS = 10;
         pinMC33810_2_CS = 9;
 
-        //Pin alignment to the MC33810 outputs
-        MC33810_BIT_INJ1 = 3;
-        MC33810_BIT_INJ2 = 1;
-        MC33810_BIT_INJ3 = 0;
-        MC33810_BIT_INJ4 = 2;
-        MC33810_BIT_IGN1 = 4;
-        MC33810_BIT_IGN2 = 5;
-        MC33810_BIT_IGN3 = 6;
-        MC33810_BIT_IGN4 = 7;
+      //Pin alignment to the MC33810 outputs
+      MC33810_BIT_INJ1 = 3;
+      MC33810_BIT_INJ2 = 1;
+      MC33810_BIT_INJ3 = 0;
+      MC33810_BIT_INJ4 = 2;
+      MC33810_BIT_IGN1 = 4;
+      MC33810_BIT_IGN2 = 5;
+      MC33810_BIT_IGN3 = 6;
+      MC33810_BIT_IGN4 = 7;
 
-        MC33810_BIT_INJ5 = 3;
-        MC33810_BIT_INJ6 = 1;
-        MC33810_BIT_INJ7 = 0;
-        MC33810_BIT_INJ8 = 2;
-        MC33810_BIT_IGN5 = 4;
-        MC33810_BIT_IGN6 = 5;
-        MC33810_BIT_IGN7 = 6;
-        MC33810_BIT_IGN8 = 7;
-      #endif
+      MC33810_BIT_INJ5 = 3;
+      MC33810_BIT_INJ6 = 1;
+      MC33810_BIT_INJ7 = 0;
+      MC33810_BIT_INJ8 = 2;
+      MC33810_BIT_IGN5 = 4;
+      MC33810_BIT_IGN6 = 5;
+      MC33810_BIT_IGN7 = 6;
+      MC33810_BIT_IGN8 = 7;
 
       //CS pin number is now set in a compile flag. 
       // #ifdef USE_SPI_EEPROM
@@ -2391,6 +2340,7 @@ void setPinMapping(byte boardID)
       #endif  
       break;
   }
+  
 
   //Setup any devices that are using selectable pins
 
@@ -2404,6 +2354,7 @@ void setPinMapping(byte boardID)
   if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage6.baroPin + A0; }
   if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_NR_GPIO_PINS) ) { pinEMAP = configPage10.EMAPPin + A0; }
   if ( (configPage10.fuel2InputPin != 0) && (configPage10.fuel2InputPin < BOARD_NR_GPIO_PINS) ) { pinFuel2Input = pinTranslate(configPage10.fuel2InputPin); }
+  if ( (configPage10.spark2InputPin != 0) && (configPage10.spark2InputPin < BOARD_NR_GPIO_PINS) ) { pinSpark2Input = pinTranslate(configPage10.spark2InputPin); }
   if ( (configPage2.vssPin != 0) && (configPage2.vssPin < BOARD_NR_GPIO_PINS) ) { pinVSS = pinTranslate(configPage2.vssPin); }
   if ( (configPage10.fuelPressurePin != 0) && (configPage10.fuelPressurePin < BOARD_NR_GPIO_PINS) ) { pinFuelPressure = configPage10.fuelPressurePin + A0; }
   if ( (configPage10.oilPressurePin != 0) && (configPage10.oilPressurePin < BOARD_NR_GPIO_PINS) ) { pinOilPressure = configPage10.oilPressurePin + A0; }
@@ -2415,6 +2366,9 @@ void setPinMapping(byte boardID)
 
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
+
+  //Currently there's no default pin for Idle Up Output
+  pinIdleUpOutput = pinTranslate(configPage2.idleUpOutputPin);
 
   //Currently there's no default pin for closed throttle position sensor
   pinCTPS = pinTranslate(configPage2.CTPSPin);
@@ -2434,6 +2388,7 @@ void setPinMapping(byte boardID)
   pinMode(pinTachOut, OUTPUT);
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
+  pinMode(pinIdleUpOutput, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
   pinMode(pinIgnBypass, OUTPUT);
   pinMode(pinFan, OUTPUT);
@@ -2447,40 +2402,24 @@ void setPinMapping(byte boardID)
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
 
-  #ifndef USE_MC33810
+  if(ignitionOutputControl == OUTPUT_CONTROL_DIRECT)
+  {
     pinMode(pinCoil1, OUTPUT);
     pinMode(pinCoil2, OUTPUT);
     pinMode(pinCoil3, OUTPUT);
     pinMode(pinCoil4, OUTPUT);
+    #if (IGN_CHANNELS >= 5)
     pinMode(pinCoil5, OUTPUT);
+    #endif
+    #if (IGN_CHANNELS >= 6)
     pinMode(pinCoil6, OUTPUT);
+    #endif
+    #if (IGN_CHANNELS >= 7)
     pinMode(pinCoil7, OUTPUT);
+    #endif
+    #if (IGN_CHANNELS >= 8)
     pinMode(pinCoil8, OUTPUT);
-    pinMode(pinInjector1, OUTPUT);
-    pinMode(pinInjector2, OUTPUT);
-    pinMode(pinInjector3, OUTPUT);
-    pinMode(pinInjector4, OUTPUT);
-    pinMode(pinInjector5, OUTPUT);
-    pinMode(pinInjector6, OUTPUT);
-    pinMode(pinInjector7, OUTPUT);
-    pinMode(pinInjector8, OUTPUT);
-
-    inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
-    inj1_pin_mask = digitalPinToBitMask(pinInjector1);
-    inj2_pin_port = portOutputRegister(digitalPinToPort(pinInjector2));
-    inj2_pin_mask = digitalPinToBitMask(pinInjector2);
-    inj3_pin_port = portOutputRegister(digitalPinToPort(pinInjector3));
-    inj3_pin_mask = digitalPinToBitMask(pinInjector3);
-    inj4_pin_port = portOutputRegister(digitalPinToPort(pinInjector4));
-    inj4_pin_mask = digitalPinToBitMask(pinInjector4);
-    inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
-    inj5_pin_mask = digitalPinToBitMask(pinInjector5);
-    inj6_pin_port = portOutputRegister(digitalPinToPort(pinInjector6));
-    inj6_pin_mask = digitalPinToBitMask(pinInjector6);
-    inj7_pin_port = portOutputRegister(digitalPinToPort(pinInjector7));
-    inj7_pin_mask = digitalPinToBitMask(pinInjector7);
-    inj8_pin_port = portOutputRegister(digitalPinToPort(pinInjector8));
-    inj8_pin_mask = digitalPinToBitMask(pinInjector8);
+    #endif
 
     ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
     ign1_pin_mask = digitalPinToBitMask(pinCoil1);
@@ -2498,14 +2437,54 @@ void setPinMapping(byte boardID)
     ign7_pin_mask = digitalPinToBitMask(pinCoil7);
     ign8_pin_port = portOutputRegister(digitalPinToPort(pinCoil8));
     ign8_pin_mask = digitalPinToBitMask(pinCoil8);
-  #else
+  } 
+
+  if(injectorOutputControl == OUTPUT_CONTROL_DIRECT)
+  {
+    pinMode(pinInjector1, OUTPUT);
+    pinMode(pinInjector2, OUTPUT);
+    pinMode(pinInjector3, OUTPUT);
+    pinMode(pinInjector4, OUTPUT);
+    #if (INJ_CHANNELS >= 5)
+    pinMode(pinInjector5, OUTPUT);
+    #endif
+    #if (INJ_CHANNELS >= 6)
+    pinMode(pinInjector6, OUTPUT);
+    #endif
+    #if (INJ_CHANNELS >= 7)
+    pinMode(pinInjector7, OUTPUT);
+    #endif
+    #if (INJ_CHANNELS >= 8)
+    pinMode(pinInjector8, OUTPUT);
+    #endif
+
+    inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
+    inj1_pin_mask = digitalPinToBitMask(pinInjector1);
+    inj2_pin_port = portOutputRegister(digitalPinToPort(pinInjector2));
+    inj2_pin_mask = digitalPinToBitMask(pinInjector2);
+    inj3_pin_port = portOutputRegister(digitalPinToPort(pinInjector3));
+    inj3_pin_mask = digitalPinToBitMask(pinInjector3);
+    inj4_pin_port = portOutputRegister(digitalPinToPort(pinInjector4));
+    inj4_pin_mask = digitalPinToBitMask(pinInjector4);
+    inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
+    inj5_pin_mask = digitalPinToBitMask(pinInjector5);
+    inj6_pin_port = portOutputRegister(digitalPinToPort(pinInjector6));
+    inj6_pin_mask = digitalPinToBitMask(pinInjector6);
+    inj7_pin_port = portOutputRegister(digitalPinToPort(pinInjector7));
+    inj7_pin_mask = digitalPinToBitMask(pinInjector7);
+    inj8_pin_port = portOutputRegister(digitalPinToPort(pinInjector8));
+    inj8_pin_mask = digitalPinToBitMask(pinInjector8);
+  }
+
+  if( (ignitionOutputControl == OUTPUT_CONTROL_MC33810) || (injectorOutputControl == OUTPUT_CONTROL_MC33810) )
+  {
     mc33810_1_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_1_CS));
     mc33810_1_pin_mask = digitalPinToBitMask(pinMC33810_1_CS);
     mc33810_2_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_2_CS));
     mc33810_2_pin_mask = digitalPinToBitMask(pinMC33810_2_CS);
 
     initMC33810();
-  #endif
+  }
 
 //CS pin number is now set in a compile flag. 
 // #ifdef USE_SPI_EEPROM
@@ -2572,6 +2551,11 @@ void setPinMapping(byte boardID)
   {
     if (configPage10.fuel2InputPullup == true) { pinMode(pinFuel2Input, INPUT_PULLUP); } //With pullup
     else { pinMode(pinFuel2Input, INPUT); } //Normal input
+  }
+  if(configPage10.spark2Mode == SPARK2_MODE_INPUT_SWITCH)
+  {
+    if (configPage10.spark2InputPullup == true) { pinMode(pinSpark2Input, INPUT_PULLUP); } //With pullup
+    else { pinMode(pinSpark2Input, INPUT); } //Normal input
   }
   if(configPage10.fuelPressureEnable > 0)
   {

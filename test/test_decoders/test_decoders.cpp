@@ -1,23 +1,9 @@
+
 #include <Arduino.h>
 #include <unity.h>
 
-#include "test_misc/tests_corrections.h"
-#include "test_misc/tests_init.h"
-#include "test_misc/tests_tables.h"
-#include "test_misc/tests_PW.h"
-#include "test_schedules/test_schedules.h"
-#include "test_decoders/test_decoders.h"
-
-
-void doTests()
-{
-    testInitialisation();
-    testCorrections();
-    testPW();
-    //testSchedules(); //This is currently causing issues
-    testDecoders();
-    testTables();
-}
+#include "missing_tooth/missing_tooth.h"
+#include "dual_wheel/dual_wheel.h"
 
 void setup()
 {
@@ -29,7 +15,8 @@ void setup()
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 
-    doTests();
+    testMissingTooth();
+    testDualWheel();
 
     UNITY_END(); // stop unit testing
 }

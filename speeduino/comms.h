@@ -41,8 +41,6 @@ uint32_t inProgressCompositeTime;
 bool serialInProgress = false;
 bool toothLogSendInProgress = false;
 bool compositeLogSendInProgress = false;
-volatile byte dataRate = 0; //The number of live data sends completed per second
-volatile byte dataRateCounter = 0; //A counter for tracking the current number of live data writes that have been sent since the last second
 
 const char pageTitles[] PROGMEM //This is being stored in the avr flash instead of SRAM which there is not very much of
   {

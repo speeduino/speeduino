@@ -516,6 +516,16 @@ void writeConfig(byte tableNum)
 
 }
 
+void resetConfigPages()
+{
+  memset(&configPage2, 0, sizeof(config2));
+  memset(&configPage4, 0, sizeof(config4));
+  memset(&configPage6, 0, sizeof(config6));
+  memset(&configPage9, 0, sizeof(config9));
+  memset(&configPage10, 0, sizeof(config10));
+  memset(&configPage13, 0, sizeof(config13));
+}
+
 void loadConfig()
 {
   
