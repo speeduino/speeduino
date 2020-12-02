@@ -25,8 +25,8 @@
   #endif
   void initBoard();
   uint16_t freeRam();
-  void DoSystemReset();
-  void JumpToBootloader();
+  void doSystemReset();
+  void jumpToBootloader();
 
   #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) ) //Forbiden pins like USB
 

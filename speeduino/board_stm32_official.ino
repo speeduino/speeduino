@@ -150,13 +150,13 @@
       return &top - reinterpret_cast<char*>(sbrk(0));
   }
 
-  void DoSystemReset( void )
+  void doSystemReset( void )
   {
     __disable_irq();
     NVIC_SystemReset();
   }
 
-  void JumpToBootloader( void ) // https://github.com/3devo/Arduino_Core_STM32/blob/jumpSysBL/libraries/SrcWrapper/src/stm32/bootloader.c
+  void jumpToBootloader( void ) // https://github.com/3devo/Arduino_Core_STM32/blob/jumpSysBL/libraries/SrcWrapper/src/stm32/bootloader.c
   { // https://github.com/markusgritsch/SilF4ware/blob/master/SilF4ware/drv_reset.c
     HAL_RCC_DeInit();
     HAL_DeInit();

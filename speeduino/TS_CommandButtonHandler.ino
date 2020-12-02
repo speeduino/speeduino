@@ -348,11 +348,12 @@ void TS_CommandButtonsHandler(int buttonCommand)
 
     //STM32 Commands
     case TS_CMD_STM32_REBOOT: //
-      DoSystemReset();
+      doSystemReset();
       break;
 
     case TS_CMD_STM32_BOOTLOADER: //
-      JumpToBootloader();
+      jumpToBootloader();
+      break;
 
     default:
       break;
