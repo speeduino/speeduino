@@ -1674,6 +1674,53 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
+    case 25:
+    //Pin mappings Mad32 STM32 board
+    #if defined(ARDUINO_BLACK_F407VE)
+      pinInjector1 = PB15; //Output pin injector 1 is on
+      pinInjector2 = PB14; //Output pin injector 2 is on
+      pinInjector3 = PB12; //Output pin injector 3 is on
+      pinInjector4 = PB13; //Output pin injector 4 is on
+      pinInjector5 = PA8;  //Output pin injector 5 is on
+      pinInjector6 = PE7;  //Output pin injector 6 is on
+      pinCoil1 = PE2; //Pin for coil 1
+      pinCoil2 = PE3; //Pin for coil 2
+      pinCoil3 = PC13;//Pin for coil 3
+      pinCoil4 = PE6; //Pin for coil 4
+      pinCoil5 = PE5; //Pin for coil 5
+      pinCoil6 = PE4; //Pin for coil 6
+      pinTrigger = PD4; //The CAS pin
+      pinTrigger2 = PD3; //The Cam Sensor pin
+      pinTrigger3 = PC1; //The Cam sensor 2 pin
+      pinTPS = PA2;//TPS input pin
+      pinMAP = PA3; //MAP sensor pin
+      pinIAT = PA0; //IAT sensor pin
+      pinCLT = PA1; //CLS sensor pin
+      pinO2 = PB0; //O2 Sensor pin
+      pinBat = PA4; //Battery reference voltage pin
+      pinTachOut = PE8; //Tacho output pin
+      pinIdle1 = PD10; //Single wire idle control
+      pinIdle2 = PD9; //2 wire idle control
+      pinBoost = PD11; //Boost control
+      pinVVT_1 = PD8; //Default VVT output
+      pinVVT_2 = PD13; //Default VVT2 output
+      pinFuelPump = PE11; //Fuel pump output
+      pinFan = PE9; //Pin for the fan output
+      pinLaunch = PB8; //Can be overwritten below
+      pinFlex = PD7; // Flex sensor
+      pinResetControl = PC2; //Reset control output
+      pinBaro = PA5;
+      pinVSS = PB7;
+      pinWMIEmpty = PC0;
+      pinWMIIndicator = PC7;
+      pinWMIEnabled = PC6;
+      //pinStepperDir = ; //Direction pin  for DRV8825 driver
+      //pinStepperStep = ; //Step pin for DRV8825 driver
+      //pinStepperEnable = ; //Enable pin for DRV8825
+      //pinDisplayReset = 48; // OLED reset pin
+    #endif
+      break;
+
     case 30:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the dazv6 shield
@@ -1841,6 +1888,51 @@ void setPinMapping(byte boardID)
       pinSpareLOut4 = 29; //low current output spare4
       pinFan = 24; //Pin for the fan output
       pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+    #endif
+      break;
+
+    case 42:
+    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+      pinInjector1 = 8; //Output pin injector 1 is on
+      pinInjector2 = 7; //Output pin injector 2 is on
+      pinInjector3 = 6; //Output pin injector 3 is on
+      pinInjector4 = 5; //Output pin injector 4 is on
+      pinInjector5 = 45; //Output pin injector 5 is on PLACEHOLDER value for now
+      pinCoil1 = 35; //Pin for coil 1
+      pinCoil2 = 36; //Pin for coil 2
+      pinCoil3 = 33; //Pin for coil 3
+      pinCoil4 = 34; //Pin for coil 4
+      pinCoil5 = 44; //Pin for coil 5 PLACEHOLDER value for now
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinFlex = 20; // Flex sensor
+      pinTPS = A3; //TPS input pin
+      pinMAP = A2; //MAP sensor pin
+      pinBaro = A7; //Baro sensor pin
+      pinIAT = A5; //IAT sensor pin
+      pinCLT = A4; //CLS sensor pin
+      pinO2 = A6; //O2 Sensor pin
+      pinO2_2 = A9; //O2 sensor pin (second sensor)
+      pinBat = A7; //Battery reference voltage pin
+      pinSpareTemp1 = A8; //spare Analog input 1
+      pinLaunch = 37; //Can be overwritten below
+      pinDisplayReset = 48; // OLED reset pin PLACEHOLDER value for now
+      pinTachOut = 29; //Tacho output pin
+      pinIdle1 = 9; //Single wire idle control
+      pinIdle2 = 10; //2 wire idle control
+      pinFuelPump = 28; //Fuel pump output
+      pinVVT_1 = 12; //Default VVT output
+      pinStepperDir = 32; //Direction pin  for DRV8825 driver
+      pinStepperStep = 31; //Step pin for DRV8825 driver
+      pinStepperEnable = 30; //Enable pin for DRV8825 driver
+      pinBoost = 11; //Boost control
+      pinSpareLOut1 = 26; //low current output spare1
+      pinSpareLOut2 = 24; //low current output spare2
+      pinSpareLOut3 = 23; //low current output spare3
+      pinSpareLOut4 = 22; //low current output spare4
+      pinFan = 27; //Pin for the fan output
+      pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+      pinVSS = 21;
     #endif
       break;
 
