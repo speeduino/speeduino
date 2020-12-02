@@ -300,7 +300,7 @@ bool integerPID::ComputeVVT(uint32_t Sample)
 {
    if(!inAuto) return false;
    /*Compute all the working error variables*/
-   long pTerm, iTerm, dTerm;
+   long pTerm, dTerm;
    long input = *myInput;
    long error = *mySetpoint - input;
    long dInput = error - lastError;
