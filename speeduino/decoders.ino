@@ -3896,10 +3896,17 @@ void triggerPri_RoverMEMS()
   curTime = micros();
   curGap = curTime - toothLastToothTime;      
   bool isMissingTooth = false;
-
+/*
 #ifdef MJR_DEBUG
-digitalWrite(pinVVT_1,HIGH);
+ digitalWrite(pinVVT_1,HIGH);
+ digitalWrite(pinBoost,HIGH);
 #endif
+#ifdef MJR_DEBUG
+ digitalWrite(pinVVT_1,LOW);
+ digitalWrite(pinBoost,LOW);
+#endif
+*/
+
 
   if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
   {
@@ -3921,10 +3928,10 @@ digitalWrite(pinVVT_1,HIGH);
         isMissingTooth = false; 
         triggerToothAngleIsCorrect = true;
         toothCurrentCount++;
-        lastGap = toothLastMinusOneToothTime - toothLastToothTime;
+        lastGap = toothLastToothTime - toothLastMinusOneToothTime;
         toothLastMinusOneToothTime = toothLastToothTime;
         toothLastToothTime = toothLastToothTime + lastGap;
-   
+        setFilter(lastGap);
       }
       else //Regular (non-missing) tooth so update things
       {    
@@ -3937,34 +3944,32 @@ digitalWrite(pinVVT_1,HIGH);
       }
 
       // reduce checks to minimise cpu load when looking for key point to identify where we are on the wheel
-      if( toothCurrentCount >= triggerActualTeeth+1)
-      {                          
-                       //12345678901234567890123456789012
+     if( toothCurrentCount >= triggerActualTeeth+1)
+      {                               //12345678901234567890123456789012                                
         if(     roverMEMSTeethSeen == 0b11011101111111111111101101111111) // Binary pattern for trigger pattern 3-14-2-13- (#4)
         {
           if(toothAngles[ID_TOOTH_PATTERN] != 4)
           {
-            //teeth to skip when calculating RPM as they've just had a gap
+            //teeth to skip when figuring out ignition events as they don't really exist (code fakes them)
             toothAngles[SKIP_TOOTH1] = 8;
-            toothAngles[SKIP_TOOTH2] = 11;
-            toothAngles[SKIP_TOOTH3] = 25;
-            toothAngles[SKIP_TOOTH4] = 27;
+            toothAngles[SKIP_TOOTH2] = 12;
+            toothAngles[SKIP_TOOTH3] = 27;
+            toothAngles[SKIP_TOOTH4] = 30;
             toothAngles[ID_TOOTH_PATTERN] = 4;
             configPage4.triggerMissingTeeth = 4; // this should be read in from the config file, but people could adjust it.
             triggerActualTeeth = 36; // should be 32 if not hacking toothcounter 
           }  
           triggerRoverMEMSCommon();
-                          
-        }                              //123456789012345678901234567890123456
+        }                             //123456789012345678901234567890123456
         else if(roverMEMSTeethSeen == 0b11011011111111111111011101111111) // Binary pattern for trigger pattern 2-14-3-13- (#3)
         {
           if(toothAngles[ID_TOOTH_PATTERN] != 3)
           {
-            //teeth to skip when calculating RPM as they've just had a gap
+            //teeth to skip when figuring out ignition events as they don't really exist (code fakes them)
             toothAngles[SKIP_TOOTH1] = 8;
-            toothAngles[SKIP_TOOTH2] = 10;
-            toothAngles[SKIP_TOOTH3] = 24;
-            toothAngles[SKIP_TOOTH4] = 27;
+            toothAngles[SKIP_TOOTH2] = 11;
+            toothAngles[SKIP_TOOTH3] = 26;
+            toothAngles[SKIP_TOOTH4] = 30;
             toothAngles[ID_TOOTH_PATTERN] = 3;
             configPage4.triggerMissingTeeth = 4; // this should be read in from the config file, but people could adjust it.
             triggerActualTeeth = 36; // should be 32 if not hacking toothcounter 
@@ -3973,34 +3978,28 @@ digitalWrite(pinVVT_1,HIGH);
         }                             //12345678901234567890123456789012
         else if(roverMEMSTeethSeen == 0b11111101111101111111111110111101) // Binary pattern for trigger pattern 11-5-12-4- (#2)
         {
-        /* 
-         *  THIS CODE NEEDS WORK - TRIGGER PATTERN ISNT AT ROTATION POINT
-         */  
-        
           if(toothAngles[ID_TOOTH_PATTERN] != 2)
           {
-            //teeth to skip when calculating RPM as they've just had a gap
-            toothAngles[SKIP_TOOTH1] = 1;
+            //teeth to skip when figuring out ignition events as they don't really exist (code fakes them)
+            toothAngles[SKIP_TOOTH1] = 36;
             toothAngles[SKIP_TOOTH2] = 12;
-            toothAngles[SKIP_TOOTH3] = 17;
-            toothAngles[SKIP_TOOTH4] = 29;
+            toothAngles[SKIP_TOOTH3] = 18;
+            toothAngles[SKIP_TOOTH4] = 31;
             toothAngles[ID_TOOTH_PATTERN] = 2;
             configPage4.triggerMissingTeeth = 4; // this should be read in from the config file, but people could adjust it.
             triggerActualTeeth = 36; // should be 32 if not hacking toothcounter 
           }  
-          triggerRoverMEMSCommon();  
+          triggerRoverMEMSCommon();     
         }                             //12345678901234567890123456789012
-        else if(roverMEMSTeethSeen == 0b11111111111011111111111111111101) // Binary pattern for trigger pattern 17-17- (#1)
+        else if(roverMEMSTeethSeen == 0b11111111111101111111111111111101) // Binary pattern for trigger pattern 17-17- (#1)
         {
-        /* 
-         *  THIS CODE NEEDS WORK - TRIGGER PATTERN ISNT AT ROTATION POINT
-         */
-        
           if(toothAngles[ID_TOOTH_PATTERN] != 1)
           {
-            //teeth to skip when calculating RPM as they've just had a gap
-            toothAngles[SKIP_TOOTH1] = 1;
+            //teeth to skip when figuring out ignition events as they don't really exist (code fakes them)
+            toothAngles[SKIP_TOOTH1] = 36;
             toothAngles[SKIP_TOOTH2] = 18;
+            toothAngles[SKIP_TOOTH3] = 36;
+            toothAngles[SKIP_TOOTH4] = 18;
             toothAngles[ID_TOOTH_PATTERN] = 1;
             configPage4.triggerMissingTeeth = 2; // this should be read in from the config file, but people could adjust it.            
             triggerActualTeeth = 36; // should be 34 if not hacking toothcounter 
@@ -4033,10 +4032,6 @@ digitalWrite(pinVVT_1,HIGH);
       { checkPerToothTiming(crankAngle, toothCurrentCount); }
     }     
   }
-
-  #ifdef MJR_DEBUG
-digitalWrite(pinVVT_1,LOW);
-#endif
 }
 
 void triggerRoverMEMSCommon(void)
@@ -4156,11 +4151,7 @@ uint16_t getRPM_RoverMEMS()
 
   if( currentStatus.RPM < currentStatus.crankRPM)
   {
-    if( (triggerToothAngleIsCorrect == true) && 
-        (toothCurrentCount != toothAngles[SKIP_TOOTH1]) && 
-        (toothCurrentCount != toothAngles[SKIP_TOOTH2]) && 
-        (toothCurrentCount != toothAngles[SKIP_TOOTH3]) && 
-        (toothCurrentCount != toothAngles[SKIP_TOOTH4]) )
+    if(triggerToothAngleIsCorrect == true)
     { tempRPM = crankingGetRPM(36); }
     else 
     { tempRPM = currentStatus.RPM; } //Can't do per tooth RPM as the missing tooth messes the calculation
@@ -4184,9 +4175,6 @@ void triggerSetEndTeeth_RoverMEMS()
 // ignition 4 - Cylinder 2 approaching TDC
 // VR sensor is 55 degrees btdc so need to adjust tooth angle by 55 degrees 
 // need to ensure any teeth calculated are a gap as the code doesn't know about missing teeth on the wheel - remove 1 tooth from any gaps.
-#ifdef MJR_DEBUG
-digitalWrite(pinBoost,HIGH);
-#endif
   
   byte toothAdder = 0;
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
@@ -4244,7 +4232,4 @@ digitalWrite(pinBoost,HIGH);
   ignition4EndTooth = tempIgnitionEndTooth[4];
 
   lastToothCalcAdvance = currentStatus.advance;
-  #ifdef MJR_DEBUG
-  digitalWrite(pinBoost,LOW);
-  #endif
 }
