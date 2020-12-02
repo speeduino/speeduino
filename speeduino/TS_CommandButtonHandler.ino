@@ -346,6 +346,15 @@ void TS_CommandButtonsHandler(int buttonCommand)
       }
       break;
 
+    //STM32 Commands
+    case TS_CMD_STM32_REBOOT: //
+      doSystemReset();
+      break;
+
+    case TS_CMD_STM32_BOOTLOADER: //
+      jumpToBootloader();
+      break;
+
     default:
       break;
   }
