@@ -225,9 +225,9 @@ void initialiseAll()
     //Set the pin mappings
     if((configPage2.pinMapping == 255) || (configPage2.pinMapping == 0)) //255 = EEPROM value in a blank AVR; 0 = EEPROM value in new FRAM
     {
-    //First time running on this board
-    setPinMapping(3); //Force board to v0.4
-    configPage2.flexEnabled = false; //Have to disable flex. If this isn't done and the wrong flex pin is interrupt attached below, system can hang.
+      //First time running on this board
+      resetConfigPages(); 
+      setPinMapping(3); //Force board to v0.4
     }
     else { setPinMapping(configPage2.pinMapping); }
 
@@ -2403,10 +2403,18 @@ void setPinMapping(byte boardID)
     pinMode(pinCoil2, OUTPUT);
     pinMode(pinCoil3, OUTPUT);
     pinMode(pinCoil4, OUTPUT);
+    #if (IGN_CHANNELS >= 5)
     pinMode(pinCoil5, OUTPUT);
+    #endif
+    #if (IGN_CHANNELS >= 6)
     pinMode(pinCoil6, OUTPUT);
+    #endif
+    #if (IGN_CHANNELS >= 7)
     pinMode(pinCoil7, OUTPUT);
+    #endif
+    #if (IGN_CHANNELS >= 8)
     pinMode(pinCoil8, OUTPUT);
+    #endif
 
     ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
     ign1_pin_mask = digitalPinToBitMask(pinCoil1);
@@ -2432,10 +2440,18 @@ void setPinMapping(byte boardID)
     pinMode(pinInjector2, OUTPUT);
     pinMode(pinInjector3, OUTPUT);
     pinMode(pinInjector4, OUTPUT);
+    #if (INJ_CHANNELS >= 5)
     pinMode(pinInjector5, OUTPUT);
+    #endif
+    #if (INJ_CHANNELS >= 6)
     pinMode(pinInjector6, OUTPUT);
+    #endif
+    #if (INJ_CHANNELS >= 7)
     pinMode(pinInjector7, OUTPUT);
+    #endif
+    #if (INJ_CHANNELS >= 8)
     pinMode(pinInjector8, OUTPUT);
+    #endif
 
     inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
     inj1_pin_mask = digitalPinToBitMask(pinInjector1);

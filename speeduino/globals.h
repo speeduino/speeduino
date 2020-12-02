@@ -45,7 +45,7 @@
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(STM32)
   #define CORE_STM32
-  #if defined(STM32F4) //F4 can do 8x8
+  #if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 not
    #define INJ_CHANNELS 8
    #define IGN_CHANNELS 8
   #else
@@ -55,7 +55,7 @@
 
 //Select one for EEPROM,the default is EEPROM emulation on internal flash.
 //#define SRAM_AS_EEPROM /*Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin */
-#define USE_SPI_EEPROM PB0 /*Use M25Qxx SPI flash */
+//#define USE_SPI_EEPROM PB0 /*Use M25Qxx SPI flash */
 //#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
 
   #ifndef word
