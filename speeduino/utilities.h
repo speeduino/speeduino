@@ -22,6 +22,7 @@ These are some utility functions and variables used through the main code
 #define BITWISE_XOR 3
 
 uint16_t ioDelay[sizeof(configPage13.outputPin)];
+uint8_t pinIsValid = 0;
 //uint8_t outputPin[sizeof(configPage13.outputPin)];
 
 void setResetControlPinState();
