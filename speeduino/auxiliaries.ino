@@ -281,6 +281,10 @@ void vvtControl()
       else { *vvt1_pin_port |= (vvt1_pin_mask); } //Reversed direction
       if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
       else { *vvt2_pin_port |= (vvt2_pin_mask); } //Reversed direction
+      vvt1_pwm_state = false;
+      vvt1_max_pwm = false;
+      vvt2_pwm_state = false;
+      vvt2_max_pwm = false;
       DISABLE_VVT_TIMER();
     }
     else if( (currentStatus.vvt1Duty >= 100) && (currentStatus.vvt2Duty >= 100) )
@@ -290,6 +294,10 @@ void vvtControl()
       else { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Reversed direction
       if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port |= (vvt2_pin_mask); } //Normal direction
       else { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Reversed direction
+      vvt1_pwm_state = true;
+      vvt1_max_pwm = true;
+      vvt2_pwm_state = true;
+      vvt2_max_pwm = true;
       DISABLE_VVT_TIMER();
     }
  
@@ -302,6 +310,10 @@ void vvtControl()
     vvt1_pwm_value = 0;
     currentStatus.vvt2Duty = 0;
     vvt2_pwm_value = 0;
+    vvt1_pwm_state = false;
+    vvt1_max_pwm = false;
+    vvt2_pwm_state = false;
+    vvt2_max_pwm = false;
   } 
 }
 

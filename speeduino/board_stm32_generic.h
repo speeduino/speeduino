@@ -26,6 +26,8 @@
   void initBoard();
   uint16_t freeRam();
 
+  #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) ) //Forbiden pins like USB
+
   #ifndef Serial
     #define Serial Serial1
   #endif
