@@ -1,6 +1,8 @@
 #ifndef SCHEDULEDIO_H
 #define SCHEDULEDIO_H
 
+#include <Arduino.h>
+
 inline void openInjector1();
 inline void closeInjector1();
 
@@ -48,15 +50,14 @@ void closeInjector3and7();
 void openInjector4and8();
 void closeInjector4and8();
 
-//If coil inverse is on, set the output low, else set it high
-//#define beginCoil1Charge() { configPage4.IgInv == 1 ? coil1Low(); : coil1High(); } tachoOutputFlag = READY;
-//#define beginCoil2Charge() { configPage4.IgInv == 1 ? coil2Low(); : coil2High(); } tachoOutputFlag = READY;
-//#define beginCoil3Charge() { configPage4.IgInv == 1 ? coil3Low(); : coil3High(); } tachoOutputFlag = READY;
-//#define beginCoil4Charge() { configPage4.IgInv == 1 ? coil4Low(); : coil4High(); } tachoOutputFlag = READY;
-//#define beginCoil5Charge() { configPage4.IgInv == 1 ? coil5Low(); : coil5High(); } tachoOutputFlag = READY;
-//#define beginCoil6Charge() { configPage4.IgInv == 1 ? coil6Low(); : coil6High(); } tachoOutputFlag = READY;
-//#define beginCoil7Charge() { configPage4.IgInv == 1 ? coil7Low(); : coil7High(); } tachoOutputFlag = READY;
-//#define beginCoil8Charge() { configPage4.IgInv == 1 ? coil8Low(); : coil8High(); } tachoOutputFlag = READY;
+void injector1Toggle();
+void injector2Toggle();
+void injector3Toggle();
+void injector4Toggle();
+void injector5Toggle();
+void injector6Toggle();
+void injector7Toggle();
+void injector8Toggle();
 
 inline void beginCoil1Charge();
 inline void endCoil1Charge();
@@ -110,12 +111,15 @@ void beginCoil3and7Charge();
 void endCoil3and7Charge();
 void beginCoil4and8Charge();
 void endCoil4and8Charge();
-/*
-#define beginCoil1and3Charge() beginCoil1Charge(); beginCoil3Charge()
-#define endCoil1and3Charge()
-#define beginCoil2and4Charge() beginCoil2Charge(); beginCoil4Charge()
-#define endCoil2and4Charge();
-*/
+
+void coil1Toggle();
+void coil2Toggle();
+void coil3Toggle();
+void coil4Toggle();
+void coil5Toggle();
+void coil6Toggle();
+void coil7Toggle();
+void coil8Toggle();
 
 /*
 #ifndef USE_MC33810
@@ -167,82 +171,95 @@ void endCoil4and8Charge();
 #define closeInjector3and5() closeInjector3(); closeInjector5()
 */
 
-#ifndef USE_MC33810
-#define coil1Low() (*ign1_pin_port &= ~(ign1_pin_mask))
-#define coil1High() (*ign1_pin_port |= (ign1_pin_mask))
-#define coil2Low() (*ign2_pin_port &= ~(ign2_pin_mask))
-#define coil2High() (*ign2_pin_port |= (ign2_pin_mask))
-#define coil3Low() (*ign3_pin_port &= ~(ign3_pin_mask))
-#define coil3High() (*ign3_pin_port |= (ign3_pin_mask))
-#define coil4Low() (*ign4_pin_port &= ~(ign4_pin_mask))
-#define coil4High() (*ign4_pin_port |= (ign4_pin_mask))
-#define coil5Low() (*ign5_pin_port &= ~(ign5_pin_mask))
-#define coil5High() (*ign5_pin_port |= (ign5_pin_mask))
-#define coil6Low() (*ign6_pin_port &= ~(ign6_pin_mask))
-#define coil6High() (*ign6_pin_port |= (ign6_pin_mask))
-#define coil7Low() (*ign7_pin_port &= ~(ign7_pin_mask))
-#define coil7High() (*ign7_pin_port |= (ign7_pin_mask))
-#define coil8Low() (*ign8_pin_port &= ~(ign8_pin_mask))
-#define coil8High() (*ign8_pin_port |= (ign8_pin_mask))
+//Macros are used to define how each injector control system functions. These are then called by the master openInjectx() function.
+//The DIRECT macros (ie individual pins) are defined below. Others should be defined in their relevant acc_x.h file
+#define openInjector1_DIRECT()  { *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1); }
+#define closeInjector1_DIRECT() { *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1); }
+#define openInjector2_DIRECT()  { *inj2_pin_port |= (inj2_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ2); }
+#define closeInjector2_DIRECT() { *inj2_pin_port &= ~(inj2_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ2); }
+#define openInjector3_DIRECT()  { *inj3_pin_port |= (inj3_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ3); }
+#define closeInjector3_DIRECT() { *inj3_pin_port &= ~(inj3_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ3); }
+#define openInjector4_DIRECT()  { *inj4_pin_port |= (inj4_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ4); }
+#define closeInjector4_DIRECT() { *inj4_pin_port &= ~(inj4_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ4); }
+#define openInjector5_DIRECT()  { *inj5_pin_port |= (inj5_pin_mask); }
+#define closeInjector5_DIRECT() { *inj5_pin_port &= ~(inj5_pin_mask); }
+#define openInjector6_DIRECT()  { *inj6_pin_port |= (inj6_pin_mask); }
+#define closeInjector6_DIRECT() { *inj6_pin_port &= ~(inj6_pin_mask); }
+#define openInjector7_DIRECT()  { *inj7_pin_port |= (inj7_pin_mask); }
+#define closeInjector7_DIRECT() { *inj7_pin_port &= ~(inj7_pin_mask); }
+#define openInjector8_DIRECT()  { *inj8_pin_port |= (inj8_pin_mask); }
+#define closeInjector8_DIRECT() { *inj8_pin_port &= ~(inj8_pin_mask); }
 
-#define coil1Toggle() (*ign1_pin_port ^= ign1_pin_mask )
-#define coil2Toggle() (*ign2_pin_port ^= ign2_pin_mask )
-#define coil3Toggle() (*ign3_pin_port ^= ign3_pin_mask )
-#define coil4Toggle() (*ign4_pin_port ^= ign4_pin_mask )
-#define coil5Toggle() (*ign5_pin_port ^= ign5_pin_mask )
-#define coil6Toggle() (*ign6_pin_port ^= ign6_pin_mask )
-#define coil7Toggle() (*ign7_pin_port ^= ign7_pin_mask )
-#define coil8Toggle() (*ign8_pin_port ^= ign8_pin_mask )
+#define coil1Low_DIRECT()       (*ign1_pin_port &= ~(ign1_pin_mask))
+#define coil1High_DIRECT()      (*ign1_pin_port |= (ign1_pin_mask))
+#define coil2Low_DIRECT()       (*ign2_pin_port &= ~(ign2_pin_mask))
+#define coil2High_DIRECT()      (*ign2_pin_port |= (ign2_pin_mask))
+#define coil3Low_DIRECT()       (*ign3_pin_port &= ~(ign3_pin_mask))
+#define coil3High_DIRECT()      (*ign3_pin_port |= (ign3_pin_mask))
+#define coil4Low_DIRECT()       (*ign4_pin_port &= ~(ign4_pin_mask))
+#define coil4High_DIRECT()      (*ign4_pin_port |= (ign4_pin_mask))
+#define coil5Low_DIRECT()       (*ign5_pin_port &= ~(ign5_pin_mask))
+#define coil5High_DIRECT()      (*ign5_pin_port |= (ign5_pin_mask))
+#define coil6Low_DIRECT()       (*ign6_pin_port &= ~(ign6_pin_mask))
+#define coil6High_DIRECT()      (*ign6_pin_port |= (ign6_pin_mask))
+#define coil7Low_DIRECT()       (*ign7_pin_port &= ~(ign7_pin_mask))
+#define coil7High_DIRECT()      (*ign7_pin_port |= (ign7_pin_mask))
+#define coil8Low_DIRECT()       (*ign8_pin_port &= ~(ign8_pin_mask))
+#define coil8High_DIRECT()      (*ign8_pin_port |= (ign8_pin_mask))
 
-#define injector1Toggle() (*inj1_pin_port ^= inj1_pin_mask )
-#define injector2Toggle() (*inj2_pin_port ^= inj2_pin_mask )
-#define injector3Toggle() (*inj3_pin_port ^= inj3_pin_mask )
-#define injector4Toggle() (*inj4_pin_port ^= inj4_pin_mask )
-#define injector5Toggle() (*inj5_pin_port ^= inj5_pin_mask )
-#define injector6Toggle() (*inj6_pin_port ^= inj6_pin_mask )
-#define injector7Toggle() (*inj7_pin_port ^= inj7_pin_mask )
-#define injector8Toggle() (*inj8_pin_port ^= inj8_pin_mask )
+//Set the value of the coil pins to the coilHIGH or coilLOW state
+#define coil1Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil1Low_DIRECT() : coil1High_DIRECT())
+#define coil1StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil1High_DIRECT() : coil1Low_DIRECT())
+#define coil2Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil2Low_DIRECT() : coil2High_DIRECT())
+#define coil2StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil2High_DIRECT() : coil2Low_DIRECT())
+#define coil3Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil3Low_DIRECT() : coil3High_DIRECT())
+#define coil3StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil3High_DIRECT() : coil3Low_DIRECT())
+#define coil4Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil4Low_DIRECT() : coil4High_DIRECT())
+#define coil4StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil4High_DIRECT() : coil4Low_DIRECT())
+#define coil5Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil5Low_DIRECT() : coil5High_DIRECT())
+#define coil5StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil5High_DIRECT() : coil5Low_DIRECT())
+#define coil6Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil6Low_DIRECT() : coil6High_DIRECT())
+#define coil6StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil6High_DIRECT() : coil6Low_DIRECT())
+#define coil7Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil7Low_DIRECT() : coil7High_DIRECT())
+#define coil7StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil7High_DIRECT() : coil7Low_DIRECT())
+#define coil8Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil8Low_DIRECT() : coil8High_DIRECT())
+#define coil8StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil8High_DIRECT() : coil8Low_DIRECT())
 
-#else
-#define coil1Low() coil1Low_MC33810()
-#define coil1High() coil1High_MC33810()
-#define coil2Low() coil2Low_MC33810()
-#define coil2High() coil2High_MC33810()
-#define coil3Low() coil3Low_MC33810()
-#define coil3High()coil3High_MC33810()
-#define coil4Low() coil4Low_MC33810()
-#define coil4High() coil4High_MC33810()
-#define coil5Low() coil5Low_MC33810()
-#define coil5High() coil5High_MC33810()
-#define coil6Low() coil6Low_MC33810()
-#define coil6High() coil6High_MC33810()
-#define coil7Low() coil7Low_MC33810()
-#define coil7High() coil7High_MC33810()
-#define coil8Low() coil8Low_MC33810()
-#define coil8High() coil8High_MC33810()
+#define coil1Charging_MC33810()      coil1High_MC33810()
+#define coil1StopCharging_MC33810()  coil1Low_MC33810()
+#define coil2Charging_MC33810()      coil2High_MC33810()
+#define coil2StopCharging_MC33810()  coil2Low_MC33810()
+#define coil3Charging_MC33810()      coil3High_MC33810()
+#define coil3StopCharging_MC33810()  coil3Low_MC33810()
+#define coil4Charging_MC33810()      coil4High_MC33810()
+#define coil4StopCharging_MC33810()  coil4Low_MC33810()
+#define coil5Charging_MC33810()      coil5High_MC33810()
+#define coil5StopCharging_MC33810()  coil5Low_MC33810()
+#define coil6Charging_MC33810()      coil6High_MC33810()
+#define coil6StopCharging_MC33810()  coil6Low_MC33810()
+#define coil7Charging_MC33810()      coil7High_MC33810()
+#define coil7StopCharging_MC33810()  coil7Low_MC33810()
+#define coil8Charging_MC33810()      coil8High_MC33810()
+#define coil8StopCharging_MC33810()  coil8Low_MC33810()
 
-#define coil1Toggle() coil1Toggle_MC33810()
-#define coil2Toggle() coil2Toggle_MC33810()
-#define coil3Toggle() coil3Toggle_MC33810()
-#define coil4Toggle() coil4Toggle_MC33810()
-#define coil5Toggle() coil5Toggle_MC33810()
-#define coil6Toggle() coil6Toggle_MC33810()
-#define coil7Toggle() coil7Toggle_MC33810()
-#define coil8Toggle() coil8Toggle_MC33810()
+#define coil1Toggle_DIRECT() (*ign1_pin_port ^= ign1_pin_mask )
+#define coil2Toggle_DIRECT() (*ign2_pin_port ^= ign2_pin_mask )
+#define coil3Toggle_DIRECT() (*ign3_pin_port ^= ign3_pin_mask )
+#define coil4Toggle_DIRECT() (*ign4_pin_port ^= ign4_pin_mask )
+#define coil5Toggle_DIRECT() (*ign5_pin_port ^= ign5_pin_mask )
+#define coil6Toggle_DIRECT() (*ign6_pin_port ^= ign6_pin_mask )
+#define coil7Toggle_DIRECT() (*ign7_pin_port ^= ign7_pin_mask )
+#define coil8Toggle_DIRECT() (*ign8_pin_port ^= ign8_pin_mask )
 
-#define injector1Toggle() injector1Toggle_MC33810()
-#define injector2Toggle() injector2Toggle_MC33810()
-#define injector3Toggle() injector3Toggle_MC33810()
-#define injector4Toggle() injector4Toggle_MC33810()
-#define injector5Toggle() injector5Toggle_MC33810()
-#define injector6Toggle() injector6Toggle_MC33810()
-#define injector7Toggle() injector7Toggle_MC33810()
-#define injector8Toggle() injector8Toggle_MC33810()
-#endif
+#define injector1Toggle_DIRECT() (*inj1_pin_port ^= inj1_pin_mask )
+#define injector2Toggle_DIRECT() (*inj2_pin_port ^= inj2_pin_mask )
+#define injector3Toggle_DIRECT() (*inj3_pin_port ^= inj3_pin_mask )
+#define injector4Toggle_DIRECT() (*inj4_pin_port ^= inj4_pin_mask )
+#define injector5Toggle_DIRECT() (*inj5_pin_port ^= inj5_pin_mask )
+#define injector6Toggle_DIRECT() (*inj6_pin_port ^= inj6_pin_mask )
+#define injector7Toggle_DIRECT() (*inj7_pin_port ^= inj7_pin_mask )
+#define injector8Toggle_DIRECT() (*inj8_pin_port ^= inj8_pin_mask )
 
 void nullCallback();
-
-static byte coilHIGH = HIGH;
-static byte coilLOW = LOW;
 
 #endif

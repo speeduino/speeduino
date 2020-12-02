@@ -33,6 +33,8 @@ extern "C" char* sbrk(int incr);
 
 #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
  || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
+  #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PC14) || ((pin) == PC15) )
+
   #ifndef PB11 //Hack for F4 BlackPills
     #define PB11 PB10
   #endif
@@ -44,6 +46,12 @@ extern "C" char* sbrk(int incr);
     #define A13  PA3
     #define A14  PA4
     #define A15  PA5
+  #endif
+#else
+  #ifdef USE_SPI_EEPROM
+    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PB3) || ((pin) == PB4) || ((pin) == PB5) || ((pin) == USE_SPI_EEPROM) ) //Forbiden pins like USB
+  #else
+    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PB3) || ((pin) == PB4) || ((pin) == PB5) || ((pin) == PB0) ) //Forbiden pins like USB
   #endif
 #endif
 
@@ -88,6 +96,13 @@ extern "C" char* sbrk(int incr);
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 262144UL, 4095UL, 0x08180000UL};
   #endif
     InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+
+#elif defined(STM32F401xC)
+  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  #include EEPROM_LIB_H
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 131072UL, 4095UL, 0x08040000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+
 #else //default case, internal flash as EEPROM for STM32F4
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   #include EEPROM_LIB_H
@@ -276,6 +291,20 @@ void ignitionSchedule8Interrupt(HardwareTimer*);
 */
 #if defined(ARDUINO_BLACK_F407VE)
 //HardwareSerial CANSerial(PD6, PD5);
+#include <src/STM32_CAN/STM32_CAN.h>
+//This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
+STM32_CAN Can0 (_CAN1,DEF);
+/*
+Second CAN interface is also available if needed or it can be used also as primary CAN interface.
+for STM32F4 the default CAN1 pins are PD0 & PD1. Alternative (ALT) pins are PB8 & PB9 and ALT2 pins are PA11 and PA12:
+for STM32F4 the default CAN2 pins are PB5 & PB6. Alternative (ALT) pins are PB12 & PB13.
+for STM32F1 the default CAN1 pins are PA11 & PA12. Alternative (ALT) pins are PB8 & PB9.
+Example of using CAN2 as secondary CAN bus with alternative pins:
+STM32_CAN Can1 (_CAN2,ALT);
+*/
+
+static CAN_message_t outMsg;
+static CAN_message_t inMsg;
 #endif
 
 #endif //CORE_STM32

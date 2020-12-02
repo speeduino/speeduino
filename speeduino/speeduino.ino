@@ -126,7 +126,7 @@ void loop()
           }
         }
       #endif
-      #if defined(CORE_TEENSY35)
+      #if defined(CORE_TEENSY35) || defined(ARDUINO_ARCH_STM32)
           //currentStatus.canin[12] = configPage9.enable_intcan;
           if (configPage9.enable_intcan == 1) // use internal can module
           {
@@ -138,13 +138,7 @@ void loop()
               //Can0.read(inMsg);
               //currentStatus.canin[12] = inMsg.buf[5];
               //currentStatus.canin[13] = inMsg.id;
-            } 
-          }
-      #endif
-      #if  defined(CORE_STM32)
-          else if (configPage9.enable_intcan == 1) // can module enabled
-          {
-            //check local can module
+            }
           }
       #endif
           
@@ -222,8 +216,11 @@ void loop()
 
       //Check for launching/flat shift (clutch) can be done around here too
       previousClutchTrigger = clutchTrigger;
-      if(configPage6.launchHiLo > 0) { clutchTrigger = digitalRead(pinLaunch); }
-      else { clutchTrigger = !digitalRead(pinLaunch); }
+      //Only check for pinLaunch if any function using it is enabled. Else pins might break starting a board
+      if(configPage6.flatSEnable || configPage6.launchEnabled){
+        if(configPage6.launchHiLo > 0) { clutchTrigger = digitalRead(pinLaunch); }
+        else { clutchTrigger = !digitalRead(pinLaunch); }
+      }
 
       if(previousClutchTrigger != clutchTrigger) { currentStatus.clutchEngagedRPM = currentStatus.RPM; }
 

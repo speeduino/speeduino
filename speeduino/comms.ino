@@ -631,6 +631,9 @@ void updateFullStatus()
   fullStatus[114] = currentStatus.advance1; //advance 1 (%)
   fullStatus[115] = currentStatus.advance2; //advance 2 (%)
   fullStatus[116] = 0; //Currently unused
+
+  //Each new inclusion here need to be added on speeduino.ini@L78, only list first byte of an integer and second byte as "INVALID"
+  //Every integer added here should have it's lowByte index added to fsIntIndex array on globals.ino@L116
 }
 /*
 This function returns the current values of a fixed group of variables
