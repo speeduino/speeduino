@@ -436,7 +436,7 @@ void doUpdates()
     configPage10.TrigEdgeThrd = 0;
 
     writeAllConfig();
-    //EEPROM.write(EEPROM_DATA_VERSION, 16);
+    EEPROM.write(EEPROM_DATA_VERSION, 16);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)

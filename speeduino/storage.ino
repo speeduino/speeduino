@@ -514,35 +514,47 @@ void writeConfig(byte tableNum)
     case vvt2Page:
       /*---------------------------------------------------
       | vvt2 table - Page 15
-      | 8x8 table itself + the 8 values along each of the axis
+      | 8x8 vvt2 table itself + the 8 values along each of the axis
+      | 8x8 unused table + the 8 values along each of the axis
       -----------------------------------------------------*/
       //Begin writing the table
       if(EEPROM.read(EEPROM_CONFIG15_XSIZE) != vvt2Table.xSize) { EEPROM.write(EEPROM_CONFIG15_XSIZE,vvt2Table.xSize); writeCounter++; } //Write the vvt2 Table RPM dimension size
       if(EEPROM.read(EEPROM_CONFIG15_YSIZE) != vvt2Table.ySize) { EEPROM.write(EEPROM_CONFIG15_YSIZE,vvt2Table.ySize); writeCounter++; } //Write the vvt2 Table MAP/TPS dimension size
+      if(EEPROM.read(EEPROM_CONFIG15_XSIZE2) != UnusedTable.xSize) { EEPROM.write(EEPROM_CONFIG15_XSIZE2,UnusedTable.xSize); writeCounter++; } //Write the vvt2 Table RPM dimension size
+      if(EEPROM.read(EEPROM_CONFIG15_YSIZE2) != UnusedTable.ySize) { EEPROM.write(EEPROM_CONFIG15_YSIZE2,UnusedTable.ySize); writeCounter++; } //Write the vvt2 Table MAP/TPS dimension size
 
+      y = EEPROM_CONFIG15_MAP2; //We do the 2 maps together in the same loop
       for(int x=EEPROM_CONFIG15_MAP; x<EEPROM_CONFIG15_XBINS; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
         offset = x - EEPROM_CONFIG15_MAP;
-        newVal = vvt2Table.values[7-(offset/8)][offset%8];
-        if(EEPROM.read(x) != newVal) { EEPROM.write(x, newVal); writeCounter++; }  //Write the 8x8 map with translation
+        if(EEPROM.read(x) != (vvt2Table.values[7-(offset/8)][offset%8]) ) { EEPROM.write(x, vvt2Table.values[7-(offset/8)][offset%8]); writeCounter++; }  //Write the 8x8 map
+        offset = y - EEPROM_CONFIG15_MAP2;
+        if(EEPROM.read(y) != (UnusedTable.values[7-(offset/8)][offset%8]) ) { EEPROM.write(y, UnusedTable.values[7-(offset/8)][offset%8]); writeCounter++; }  //Write the 8x8 map
+        y++;
       }
 
       //RPM bins
+      y = EEPROM_CONFIG15_XBINS2;
       for(int x=EEPROM_CONFIG15_XBINS; x<EEPROM_CONFIG15_YBINS; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
         offset = x - EEPROM_CONFIG15_XBINS;
-        newVal = vvt2Table.axisX[offset]/TABLE_RPM_MULTIPLIER;
-        if(EEPROM.read(x) != newVal) { EEPROM.write(x, newVal); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+        if(EEPROM.read(x) != byte(vvt2Table.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(vvt2Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+        offset = y - EEPROM_CONFIG15_XBINS2;
+        if(EEPROM.read(y) != byte(UnusedTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(y, byte(UnusedTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+        y++;
       }
       //TPS/MAP bins
-      for(int x=EEPROM_CONFIG15_YBINS; x<EEPROM_CONFIG15_END; x++)
+      y=EEPROM_CONFIG15_YBINS2;
+      for(int x=EEPROM_CONFIG15_YBINS; x<EEPROM_CONFIG15_XSIZE2; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
         offset = x - EEPROM_CONFIG15_YBINS;
-        newVal = vvt2Table.axisY[offset];
-        if(EEPROM.read(x) != newVal) { EEPROM.write(x, newVal); writeCounter++; }  //TABLE_LOAD_MULTIPLIER is NOT used for VVT as it is TPS based (0-100)
+        if(EEPROM.read(x) != vvt2Table.axisY[offset]) { EEPROM.write(x, vvt2Table.axisY[offset]); writeCounter++; } //TABLE_LOAD_MULTIPLIER is NOT used for VVT as it is TPS based (0-100)
+        offset = y - EEPROM_CONFIG15_YBINS2;
+        if(EEPROM.read(y) != UnusedTable.axisY[offset]) { EEPROM.write(y, UnusedTable.axisY[offset]); writeCounter++; } //TABLE_LOAD_MULTIPLIER is NOT used
+        y++;
       }
 
       if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
@@ -850,24 +862,37 @@ void loadConfig()
 
   //*********************************************************************************************************************************************************************************
 //SECOND VVT CONFIG PAGE (15)
-
-  //Begin writing the Ignition table, basically the same thing as above
-  for(int x=EEPROM_CONFIG15_MAP; x<EEPROM_CONFIG15_XBINS; x++)
+  // VVT2 and unused table load
+  y = EEPROM_CONFIG15_MAP2;
+  for(int x=EEPROM_CONFIG15_MAP2; x<EEPROM_CONFIG15_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG15_MAP;
     vvt2Table.values[7-(offset/8)][offset%8] = EEPROM.read(x); //Read the 8x8 map
+    offset = y - EEPROM_CONFIG15_MAP2;
+    UnusedTable.values[7-(offset/8)][offset%8] = EEPROM.read(y); //Read the 8x8 map
+    y++;
   }
+
   //RPM bins
+  y = EEPROM_CONFIG15_XBINS2;
   for(int x=EEPROM_CONFIG15_XBINS; x<EEPROM_CONFIG15_YBINS; x++)
   {
     offset = x - EEPROM_CONFIG15_XBINS;
     vvt2Table.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
+    offset = y - EEPROM_CONFIG15_XBINS2;
+    UnusedTable.axisX[offset] = (EEPROM.read(y) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
+    y++;
   }
+
   //TPS/MAP bins
-  for(int x=EEPROM_CONFIG15_YBINS; x<EEPROM_CONFIG15_END; x++)
+  y = EEPROM_CONFIG15_YBINS2;
+  for(int x=EEPROM_CONFIG15_YBINS; x<EEPROM_CONFIG15_XSIZE2; x++)
   {
     offset = x - EEPROM_CONFIG15_YBINS;
-    vvt2Table.axisY[offset] = EEPROM.read(x); //TABLE_LOAD_MULTIPLIER is NOT used for VVT as it is TPS based (0-100)
+    vvt2Table.axisY[offset] = EEPROM.read(x); //TABLE_LOAD_MULTIPLIER is NOT used for vvt as it is TPS based (0-100)
+    offset = y - EEPROM_CONFIG15_YBINS2;
+    UnusedTable.axisY[offset] = EEPROM.read(y); //TABLE_LOAD_MULTIPLIER is NOT used
+    y++;
   }
 
   //*********************************************************************************************************************************************************************************

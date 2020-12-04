@@ -1102,7 +1102,25 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       {
         vvt2Table.axisY[(7 - (valueOffset - 72))] = int(newValue); //TABLE_LOAD_MULTIPLIER is NOT used for boost as it is TPS based (0-100)
       }
+      //End of vvt2 table
+      else if (valueOffset < 144) //New value is part of the unused map
+      {
+        tempOffset = valueOffset - 80;
+        UnusedTable.values[7 - (tempOffset / 8)][tempOffset % 8] = newValue;
+      }
+      else if (valueOffset < 152) //New value is on the X (RPM) axis of the unused table
+      {
+        tempOffset = valueOffset - 144;
+        UnusedTable.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+      }
+      else if (valueOffset < 160) //New value is on the Y (Load) axis of the unused table
+      {
+        tempOffset = valueOffset - 152;
+        UnusedTable.axisY[(7 - tempOffset)] = int(newValue); //TABLE_LOAD_MULTIPLIER is NOT used
+      }
+      //End of unused table
       vvt2Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      UnusedTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
     default:
