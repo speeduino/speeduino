@@ -430,6 +430,11 @@ void doUpdates()
   if(EEPROM.read(EEPROM_DATA_VERSION) == 15)
   {
 
+    //Fix for wrong placed page 13
+    for(int x=EEPROM_CONFIG13_START; x<=EEPROM_CONFIG14_END; x++)
+    {
+      EEPROM.update(x, EEPROM.read(x-110));
+    }
     writeAllConfig();
     //EEPROM.write(EEPROM_DATA_VERSION, 16);
   }
@@ -438,6 +443,17 @@ void doUpdates()
   if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
   {
     configPage9.true_address = 0x200;
+    
+    //Programmable outputs added. Set all to disabled
+    configPage13.outputPin[0] = 0;
+    configPage13.outputPin[1] = 0;
+    configPage13.outputPin[2] = 0;
+    configPage13.outputPin[3] = 0;
+    configPage13.outputPin[4] = 0;
+    configPage13.outputPin[5] = 0;
+    configPage13.outputPin[6] = 0;
+    configPage13.outputPin[7] = 0;
+
     EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION);
   }
 
