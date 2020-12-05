@@ -433,7 +433,7 @@ void doUpdates()
     //Fix for wrong placed page 13
     for(int x=EEPROM_CONFIG14_END; x>=EEPROM_CONFIG13_START; x--)
     {
-      EEPROM.update(x, EEPROM.read(x-110));
+      EEPROM.update(x, EEPROM.read(x-112));
     }
     writeAllConfig();
     //EEPROM.write(EEPROM_DATA_VERSION, 16);
