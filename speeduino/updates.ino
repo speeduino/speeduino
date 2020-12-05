@@ -431,7 +431,7 @@ void doUpdates()
   {
 
     //Fix for wrong placed page 13
-    for(int x=EEPROM_CONFIG13_START; x<=EEPROM_CONFIG14_END; x++)
+    for(int x=EEPROM_CONFIG14_END; x>=EEPROM_CONFIG13_START; x--)
     {
       EEPROM.update(x, EEPROM.read(x-110));
     }
