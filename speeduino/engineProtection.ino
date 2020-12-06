@@ -5,7 +5,7 @@
 byte checkEngineProtect()
 {
   byte protectActive = 0;
-  if(checkRevLimit() || checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit())
+  if(checkRevLimit() || checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() || checkCoolantTempLimit())
   {
     if(currentStatus.RPM > (configPage4.engineProtectMaxRPM*100U)) { protectActive = 1; }
   }
@@ -86,6 +86,25 @@ byte checkOilPressureLimit()
   }
 
   return oilProtectActive;
+}
+
+
+byte checkCoolantTempLimit()
+{
+  byte coolantProtectActive = 0;
+  BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT); //Will be set true below if required
+
+  if( (configPage10.coolantProtEnbl == true))
+  {
+    int8_t coolantLimit = (int16_t)(table2D_getValue(&coolantProtectTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
+    if(currentStatus.RPMdiv100 > coolantLimit)
+    {
+      BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
+      coolantProtectActive = 1;
+    }
+  }
+
+  return coolantProtectActive;
 }
 
 byte checkAFRLimit()
