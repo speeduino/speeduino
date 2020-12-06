@@ -1,4 +1,4 @@
-#if defined(ARDUINO_ARCH_STM32)
+#if defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)
 #include "STM32_CAN.h"
 
 uint8_t STM32_CAN::CANMsgAvail()

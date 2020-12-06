@@ -1,5 +1,5 @@
-#if defined(CORE_STM32_OFFICIAL)
 #include "board_stm32_official.h"
+#if defined(STM32_CORE_VERSION_MAJOR)
 #include "globals.h"
 #include "auxiliaries.h"
 #include "idle.h"
@@ -158,6 +158,7 @@
 
   void jumpToBootloader( void ) // https://github.com/3devo/Arduino_Core_STM32/blob/jumpSysBL/libraries/SrcWrapper/src/stm32/bootloader.c
   { // https://github.com/markusgritsch/SilF4ware/blob/master/SilF4ware/drv_reset.c
+    #if !defined(STM32F103xB)
     HAL_RCC_DeInit();
     HAL_DeInit();
     SysTick->VAL = SysTick->LOAD = SysTick->CTRL = 0;
@@ -182,6 +183,7 @@
       : : [DFU_addr] "l" (DFU_addr) : "r0"
     );
     __builtin_unreachable();
+    #endif
   }
 
   /*

@@ -126,7 +126,7 @@ void loop()
           }
         }
       #endif
-      #if defined(CORE_TEENSY35) || defined(ARDUINO_ARCH_STM32)
+      #if defined (NATIVE_CAN_AVAILABLE)
           //currentStatus.canin[12] = configPage9.enable_intcan;
           if (configPage9.enable_intcan == 1) // use internal can module
           {
