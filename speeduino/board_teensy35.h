@@ -149,5 +149,6 @@
 #endif
   static CAN_message_t outMsg;
   static CAN_message_t inMsg;
+  #define NATIVE_CAN_AVAILABLE
 #endif //CORE_TEENSY
 #endif //TEENSY35_H

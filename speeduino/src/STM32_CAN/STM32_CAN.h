@@ -9,7 +9,7 @@ https://github.com/nopnop2002/Arduino-STM32-CAN
 #ifndef STM32_CAN_H
 #define STM32_CAN_H
 
-#if defined(ARDUINO_ARCH_STM32)
+#if defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)
 #include <Arduino.h>
 
 #define STM32_CAN_TIR_TXRQ              (1U << 0U)  // Bit 0: Transmit Mailbox Request

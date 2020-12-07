@@ -212,7 +212,7 @@ void initialiseAll()
     //Setup the calibration tables
     loadCalibration();
 
-    #if defined(CORE_TEENSY35) || defined(ARDUINO_ARCH_STM32)
+    #if defined (NATIVE_CAN_AVAILABLE)
       configPage9.intcan_available = 1;   // device has internal canbus
       //Teensy uses the Flexcan_T4 library to use the internal canbus
       //enable local can interface
@@ -1309,7 +1309,7 @@ void setPinMapping(byte boardID)
         pinCoil4 = 29;
         pinCoil3 = 30;
         pinO2 = A22;
-      #elif defined(ARDUINO_BLACK_F407VE)
+      #elif defined(STM32F407xx)
      //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 
@@ -2043,7 +2043,7 @@ void setPinMapping(byte boardID)
     
  
     case 60:
-        #if defined(ARDUINO_BLACK_F407VE)
+        #if defined(STM32F407xx)
         //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
         //https://github.com/Tjeerdie/SPECTRE/tree/master/SPECTRE_V0.5
@@ -2191,7 +2191,7 @@ void setPinMapping(byte boardID)
     #endif
       break;
     default:
-      #if defined(ARDUINO_BLACK_F407VE)
+      #if defined(STM32F407xx)
       //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 

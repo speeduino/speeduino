@@ -70,7 +70,7 @@
     #ifndef LED_BUILTIN
       #define LED_BUILTIN PB1 //Maple Mini
     #endif
-  #elif defined(ARDUINO_BLACK_F407VE)
+  #elif defined(STM32F407xx)
     #define BOARD_DIGITAL_GPIO_PINS 74
     #define BOARD_NR_GPIO_PINS 74
   #endif

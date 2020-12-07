@@ -1,7 +1,7 @@
 #ifndef STM32OFFICIAL_H
 #define STM32OFFICIAL_H
-#if defined(CORE_STM32_OFFICIAL)
 #include <Arduino.h>
+#if defined(STM32_CORE_VERSION_MAJOR)
 #include <HardwareTimer.h>
 #include <HardwareSerial.h>
 
@@ -27,6 +27,12 @@
 
 
 #define USE_SERIAL3
+
+//When building for Black board Serial1 is instanciated,building generic STM32F4x7 has serial2 and serial 1 must be done here
+#if SERIAL_UART_INSTANCE==2
+HardwareSerial Serial1(PA10, PA9);
+#endif
+
 void initBoard();
 uint16_t freeRam();
 void doSystemReset();
@@ -83,7 +89,7 @@ extern "C" char* sbrk(int incr);
 #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
     #define EEPROM_LIB_H <Fram.h>
     #include EEPROM_LIB_H
-    #if defined(ARDUINO_BLACK_F407VE)
+    #if defined(STM32F407xx)
       FramClass EEPROM(PB5, PB4, PB3, PB0); /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
     #else
       FramClass EEPROM(PB15, PB14, PB13, PB12); //Blue/Black Pills
@@ -291,7 +297,8 @@ void ignitionSchedule8Interrupt(HardwareTimer*);
 ***********************************************************************************************************
 * CAN / Second serial
 */
-#if defined(ARDUINO_BLACK_F407VE)
+#if defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)
+#define NATIVE_CAN_AVAILABLE
 //HardwareSerial CANSerial(PD6, PD5);
 #include <src/STM32_CAN/STM32_CAN.h>
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
