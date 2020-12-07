@@ -69,5 +69,7 @@ uint16_t freeRam()
     return (uint16_t)stackTop - heapTop;
 }
 
+void doSystemReset() { return; }
+void jumpToBootloader() { return; }
 
 #endif
