@@ -273,14 +273,16 @@ void vvtControl()
       vvtCounter++;
     }
 
+    //SET VVT2 to be the same as VVT1 - THIS WILL NEED TO BE REMOVED IN THE FUTURE WHEN VVT2 IS SUPPORTED!!!
+    currentStatus.vvt2Duty = currentStatus.vvt1Duty;
+    vvt2_pwm_value = vvt1_pwm_value ;
+
     //Set the PWM state based on the above lookups
     if( (currentStatus.vvt1Duty == 0) && (currentStatus.vvt2Duty == 0) )
     {
       //Make sure solenoid is off (0% duty)
-      if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Normal direction
-      else { *vvt1_pin_port |= (vvt1_pin_mask); } //Reversed direction
-      if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
-      else { *vvt2_pin_port |= (vvt2_pin_mask); } //Reversed direction
+      VVT1_PIN_OFF();
+      VVT2_PIN_OFF();
       vvt1_pwm_state = false;
       vvt1_max_pwm = false;
       vvt2_pwm_state = false;
@@ -290,15 +292,20 @@ void vvtControl()
     else if( (currentStatus.vvt1Duty >= 100) && (currentStatus.vvt2Duty >= 100) )
     {
       //Make sure solenoid is on (100% duty)
-      if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port |= (vvt1_pin_mask); } //Normal direction
-      else { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Reversed direction
-      if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port |= (vvt2_pin_mask); } //Normal direction
-      else { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Reversed direction
+      VVT1_PIN_ON();
+      VVT2_PIN_ON();
       vvt1_pwm_state = true;
       vvt1_max_pwm = true;
       vvt2_pwm_state = true;
       vvt2_max_pwm = true;
       DISABLE_VVT_TIMER();
+    }
+    else
+    {
+      //Duty cycle is between 0 and 100. Make sure the timer is enabled
+      ENABLE_VVT_TIMER();
+      if(currentStatus.vvt1Duty < 100) { vvt1_max_pwm = false; }
+      if(currentStatus.vvt2Duty < 100) { vvt2_max_pwm = false; }
     }
  
   }
@@ -480,14 +487,12 @@ void boostDisable()
   {
     if( (vvt1_pwm_value > 0) && (vvt1_max_pwm == false) ) //Don't toggle if at 0%
     {
-      if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port |= (vvt1_pin_mask); } //Normal direction
-      else { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Reversed direction
+      VVT1_PIN_ON();
       vvt1_pwm_state = true;
     }
     if( (vvt2_pwm_value > 0) && (vvt2_max_pwm == false) ) //Don't toggle if at 0%
     {
-      if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port |= (vvt2_pin_mask); } //Normal direction
-      else { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Reversed direction
+      VVT2_PIN_ON();
       vvt2_pwm_state = true;
     }
 
@@ -514,8 +519,7 @@ void boostDisable()
     {
       if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
-        if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Normal direction
-        else { *vvt1_pin_port |= (vvt1_pin_mask); } //Reversed direction
+        VVT1_PIN_OFF();
         vvt1_pwm_state = false;
         vvt1_max_pwm = false;
       }
@@ -532,8 +536,7 @@ void boostDisable()
     {
       if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
-        if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
-        else { *vvt2_pin_port |= (vvt2_pin_mask); } //Reversed direction
+        VVT2_PIN_OFF();
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;
       }
@@ -550,8 +553,7 @@ void boostDisable()
     {
       if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
-        if (configPage6.vvtPWMdir == 0) { *vvt1_pin_port &= ~(vvt1_pin_mask); } //Normal direction
-        else { *vvt1_pin_port |= (vvt1_pin_mask); } //Reversed direction
+        VVT1_PIN_OFF();
         vvt1_pwm_state = false;
         vvt1_max_pwm = false;
         VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value);
@@ -559,8 +561,7 @@ void boostDisable()
       else { vvt1_max_pwm = true; }
       if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
-        if (configPage6.vvtPWMdir == 0) { *vvt2_pin_port &= ~(vvt2_pin_mask); } //Normal direction
-        else { *vvt2_pin_port |= (vvt2_pin_mask); } //Reversed direction
+        VVT1_PIN_OFF();
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;
         VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value);
