@@ -429,9 +429,12 @@ void doUpdates()
 
   if(EEPROM.read(EEPROM_DATA_VERSION) == 15)
   {
+    //202012
+    configPage10.spark2Mode = 0; //Disable 2nd spark table
+    
 
     writeAllConfig();
-    //EEPROM.write(EEPROM_DATA_VERSION, 16);
+    EEPROM.write(EEPROM_DATA_VERSION, 16);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)
