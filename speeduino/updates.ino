@@ -423,6 +423,11 @@ void doUpdates()
     //New AE option added to allow for PW added in addition to existing PW multiply
     configPage2.aeApplyMode = 0; //Set the AE mode to Multiply
 
+    //Injector priming delay added
+    configPage2.primingDelay = 0;
+    //ASE taper time added
+    configPage2.aseTaperTime = 10; //1 second taper
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 15);
   }
