@@ -1222,17 +1222,17 @@ struct config10 {
   byte unused11_174_2 : 1;
 
   byte fuelTempBins[6];
-  byte fuelTempValues[6];
+  byte fuelTempValues[6]; //180
 
-  //Byte 122
+  //Byte 186
   byte spark2Algorithm : 3;
   byte spark2Mode : 3;
   byte spark2SwitchVariable : 2;
 
-  //Bytes 123-124
+  //Bytes 187-188
   uint16_t spark2SwitchValue;
 
-  //Byte 125
+  //Byte 189
   byte spark2InputPin : 6;
   byte spark2InputPolarity : 1;
   byte spark2InputPullup : 1;
