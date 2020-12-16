@@ -3884,6 +3884,16 @@ void triggerSetup_renault4411()
   triggerSetup_universal();
 }
 
+void triggerSetup_roverMiniJdm()
+{
+  configPage4.triggerTeeth = 36;
+  // gaps at 30 60 210 250  - teeth count 13-2-14-3, from TDC: 2,2,14,3,11
+  char roverMiniJdm[36] = {1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1};
+  for (int i=0; i<36; i++) { universalExpectedPattern[i] = roverMiniJdm[i]; }
+  triggerSetup_universal();
+}
+
+
 void syncLoss_universal()
 {
   noInterrupts();

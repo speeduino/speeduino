@@ -3019,6 +3019,17 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
+    case 23: //Universal - JDM/MPI MINI
+      triggerSetup_roverMiniJdm();
+      triggerHandler = triggerPri_universal;
+      decoderHasSecondary = false;
+      getRPM = getRPM_missingTooth;
+      getCrankAngle = getCrankAngle_missingTooth;
+      triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
+      primaryTriggerEdge = FALLING; // force this
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      break;
+
     default:
       triggerHandler = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;
