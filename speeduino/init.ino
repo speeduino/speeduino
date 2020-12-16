@@ -15,12 +15,12 @@
 #include "idle.h"
 #include "table.h"
 #include "acc_mc33810.h"
-#include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
-#include EEPROM_LIB_H 
+#include BOARD_H //Note that this is not a real file, it is defined in globals.h.
+#include EEPROM_LIB_H
 
 
 void initialiseAll()
-{   
+{
     fpPrimed = false;
 
     pinMode(LED_BUILTIN, OUTPUT);
@@ -43,14 +43,14 @@ void initialiseAll()
     configPage9.intcan_available = 1;   // device has internal canbus
     //STM32 can not currently enabled
     #endif
-    
+
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
 
     //Always start with a clean slate on the bootloader capabilities level
     //This should be 0 until we hear otherwise from the 16u2
     configPage4.bootloaderCaps = 0;
-    
+
     initBoard(); //This calls the current individual boards init function. See the board_xxx.ino files for these.
     initialiseTimers();
 
@@ -216,7 +216,7 @@ void initialiseAll()
       configPage9.intcan_available = 1;   // device has internal canbus
       //Teensy uses the Flexcan_T4 library to use the internal canbus
       //enable local can interface
-      //setup can interface to 500k   
+      //setup can interface to 500k
       Can0.begin();
       Can0.setBaudRate(500000);
       Can0.enableFIFO();
@@ -226,7 +226,7 @@ void initialiseAll()
     if((configPage2.pinMapping == 255) || (configPage2.pinMapping == 0)) //255 = EEPROM value in a blank AVR; 0 = EEPROM value in new FRAM
     {
       //First time running on this board
-      resetConfigPages(); 
+      resetConfigPages();
       setPinMapping(3); //Force board to v0.4
     }
     else { setPinMapping(configPage2.pinMapping); }
@@ -370,7 +370,7 @@ void initialiseAll()
     timer5_overflow_count = 0;
     toothHistoryIndex = 0;
     toothHistorySerialIndex = 0;
-    
+
     noInterrupts();
     initialiseTriggers();
 
@@ -387,10 +387,10 @@ void initialiseAll()
     mainLoopCount = 0;
 
     currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manaully overriden below for sequential setups (Due to TS req_fuel calc limitations)
-    if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc. 
+    if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave incase tune is manually altered etc.
 
     //Calculate the number of degrees between cylinders
-    //Swet some default values. These will be updated below if required. 
+    //Swet some default values. These will be updated below if required.
     CRANK_ANGLE_MAX = 720;
     CRANK_ANGLE_MAX_IGN = 360;
     CRANK_ANGLE_MAX_INJ = 360;
@@ -421,7 +421,7 @@ void initialiseAll()
         channel1InjDegrees = 0;
         maxIgnOutputs = 1;
 
-        //Sequential ignition works identically on a 1 cylinder whether it's odd or even fire. 
+        //Sequential ignition works identically on a 1 cylinder whether it's odd or even fire.
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
 
         if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
@@ -448,7 +448,7 @@ void initialiseAll()
         if (configPage2.engineType == EVEN_FIRE ) { channel2IgnDegrees = 180; }
         else { channel2IgnDegrees = configPage2.oddfire2; }
 
-        //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder). 
+        //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder).
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
 
         if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
@@ -460,11 +460,11 @@ void initialiseAll()
         //The below are true regardless of whether this is running sequential or not
         if (configPage2.engineType == EVEN_FIRE ) { channel2InjDegrees = 180; }
         else { channel2InjDegrees = configPage2.oddfire2; }
-        if (!configPage2.injTiming) 
-        { 
+        if (!configPage2.injTiming)
+        {
           //For simultaneous, all squirts happen at the same time
           channel1InjDegrees = 0;
-          channel2InjDegrees = 0; 
+          channel2InjDegrees = 0;
         }
 
         channel1InjEnabled = true;
@@ -487,7 +487,7 @@ void initialiseAll()
         maxIgnOutputs = 3;
         if (configPage2.engineType == EVEN_FIRE )
         {
-        //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines. 
+        //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines.
         if( ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE) ) && (configPage2.strokes == FOUR_STROKE) )
         {
           channel2IgnDegrees = 240;
@@ -521,13 +521,13 @@ void initialiseAll()
             channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
           }
 
-          if (!configPage2.injTiming) 
-          { 
+          if (!configPage2.injTiming)
+          {
             //For simultaneous, all squirts happen at the same time
             channel1InjDegrees = 0;
             channel2InjDegrees = 0;
-            channel3InjDegrees = 0; 
-          } 
+            channel3InjDegrees = 0;
+          }
         }
         else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
@@ -582,11 +582,11 @@ void initialiseAll()
         {
           channel2InjDegrees = 180;
 
-          if (!configPage2.injTiming) 
-          { 
+          if (!configPage2.injTiming)
+          {
             //For simultaneous, all squirts happen at the same time
             channel1InjDegrees = 0;
-            channel2InjDegrees = 0; 
+            channel2InjDegrees = 0;
           }
           else if (currentStatus.nSquirts > 2)
           {
@@ -642,14 +642,14 @@ void initialiseAll()
         //For alternating injection, the squirt occurs at different times for each channel
         if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
         {
-          if (!configPage2.injTiming) 
-          { 
+          if (!configPage2.injTiming)
+          {
             //For simultaneous, all squirts happen at the same time
             channel1InjDegrees = 0;
             channel2InjDegrees = 0;
             channel3InjDegrees = 0;
             channel4InjDegrees = 0;
-            channel5InjDegrees = 0; 
+            channel5InjDegrees = 0;
           }
           else
           {
@@ -836,7 +836,7 @@ void initialiseAll()
     else if (CRANK_ANGLE_MAX_IGN > CRANK_ANGLE_MAX_INJ) { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_IGN; }
     else { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_INJ; }
     currentStatus.status3 = currentStatus.nSquirts << BIT_STATUS3_NSQUIRTS1; //Top 3 bits of the status3 variable are the number of squirts. This must be done after the above section due to nSquirts being forced to 1 for sequential
-    
+
     //Special case:
     //3 or 5 squirts per cycle MUST be tracked over 720 degrees. This is because the angles for them (Eg 720/3=240) are not evenly divisible into 360
     //This is ONLY the case on 4 stroke systems
@@ -844,7 +844,7 @@ void initialiseAll()
     {
       if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX = 720; }
     }
-    
+
     switch(configPage2.injLayout)
     {
     case INJ_PAIRED:
@@ -1260,7 +1260,7 @@ void setPinMapping(byte boardID)
       pinInjector3 = 10; //Output pin injector 3 is on
       pinInjector4 = 11; //Output pin injector 4 is on
       pinInjector5 = 12; //Output pin injector 5 is on
-      pinInjector6 = 50; //CAUTION: Uses the same as Coil 4 below. 
+      pinInjector6 = 50; //CAUTION: Uses the same as Coil 4 below.
       pinCoil1 = 40; //Pin for coil 1
       pinCoil2 = 38; //Pin for coil 2
       pinCoil3 = 52; //Pin for coil 3
@@ -1310,11 +1310,11 @@ void setPinMapping(byte boardID)
         pinCoil3 = 30;
         pinO2 = A22;
       #elif defined(STM32F407xx)
-     //Pin definitions for experimental board Tjeerd 
+     //Pin definitions for experimental board Tjeerd
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 
         //******************************************
-        //******** PORTA CONNECTIONS *************** 
+        //******** PORTA CONNECTIONS ***************
         //******************************************
         /* = PA0 */ //Wakeup ADC123
         // = PA1;
@@ -1328,17 +1328,17 @@ void setPinMapping(byte boardID)
         /* = PA9 */ //TXD1
         /* = PA10 */ //RXD1
         /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
-        /* = PA12 */ //(DO NOT USE FOR SPEEDUINO) USB 
+        /* = PA12 */ //(DO NOT USE FOR SPEEDUINO) USB
         /* = PA13 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
         /* = PA14 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
         /* = PA15 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
 
         //******************************************
-        //******** PORTB CONNECTIONS *************** 
+        //******** PORTB CONNECTIONS ***************
         //******************************************
         /* = PB0; */ //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
         pinBaro = PB1; //ADC12
-        /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1 
+        /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1
         /* = PB3; */ //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
         /* = PB4; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
         /* = PB5; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
@@ -1356,9 +1356,9 @@ void setPinMapping(byte boardID)
         /* = PB15; */ //SPI2_MOSI
 
         //******************************************
-        //******** PORTC CONNECTIONS *************** 
+        //******** PORTC CONNECTIONS ***************
         //******************************************
-        pinMAP = PC0; //ADC123 
+        pinMAP = PC0; //ADC123
         pinTPS = PC1; //ADC123
         pinIAT = PC2; //ADC123
         pinCLT = PC3; //ADC123
@@ -1376,7 +1376,7 @@ void setPinMapping(byte boardID)
         /* = PC15; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
 
         //******************************************
-        //******** PORTD CONNECTIONS *************** 
+        //******** PORTD CONNECTIONS ***************
         //******************************************
         /* = PD0; */ //CANRX
         /* = PD1; */ //CANTX
@@ -1396,7 +1396,7 @@ void setPinMapping(byte boardID)
         pinInjector4 = PD15; //
 
         //******************************************
-        //******** PORTE CONNECTIONS *************** 
+        //******** PORTE CONNECTIONS ***************
         //******************************************
         pinTrigger = PE0; //
         pinTrigger2 = PE1; //
@@ -1906,7 +1906,7 @@ void setPinMapping(byte boardID)
       pinCoil3 = 31; //Pin for coil 3 - ONLY WITH DB2
       pinCoil4 = 32; //Pin for coil 4 - ONLY WITH DB2
       //Placeholder only - NOT USED:
-      //pinCoil5 = 46; 
+      //pinCoil5 = 46;
       pinTrigger = 23; //The CAS pin
       pinTrigger2 = 36; //The Cam Sensor pin
       pinTPS = 16; //TPS input pin
@@ -2033,23 +2033,23 @@ void setPinMapping(byte boardID)
       MC33810_BIT_IGN7 = 6;
       MC33810_BIT_IGN8 = 7;
 
-      //CS pin number is now set in a compile flag. 
+      //CS pin number is now set in a compile flag.
       // #ifdef USE_SPI_EEPROM
       //   pinSPIFlash_CS = 6;
       // #endif
 
       #endif
       break;
-    
- 
+
+
     case 60:
         #if defined(STM32F407xx)
-        //Pin definitions for experimental board Tjeerd 
+        //Pin definitions for experimental board Tjeerd
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
         //https://github.com/Tjeerdie/SPECTRE/tree/master/SPECTRE_V0.5
-        
+
         //******************************************
-        //******** PORTA CONNECTIONS *************** 
+        //******** PORTA CONNECTIONS ***************
         //******************************************
         // = PA0; //Wakeup ADC123
         // = PA1; //ADC123
@@ -2063,17 +2063,17 @@ void setPinMapping(byte boardID)
         // = PA9;  //TXD1=Bluetooth module
         // = PA10; //RXD1=Bluetooth module
         // = PA11; //(DO NOT USE FOR SPEEDUINO) USB
-        // = PA12; //(DO NOT USE FOR SPEEDUINO) USB 
+        // = PA12; //(DO NOT USE FOR SPEEDUINO) USB
         // = PA13;  //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
         // = PA14;  //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
         // = PA15;  //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
 
         //******************************************
-        //******** PORTB CONNECTIONS *************** 
+        //******** PORTB CONNECTIONS ***************
         //******************************************
         // = PB0;  //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
         pinBaro = PB1; //ADC12
-        // = PB2;  //(DO NOT USE FOR SPEEDUINO) BOOT1 
+        // = PB2;  //(DO NOT USE FOR SPEEDUINO) BOOT1
         // = PB3;  //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
         // = PB4;  //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
         // = PB5;  //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
@@ -2090,11 +2090,11 @@ void setPinMapping(byte boardID)
         // = PB15;  //SPI2_MOSI
 
         //******************************************
-        //******** PORTC CONNECTIONS *************** 
+        //******** PORTC CONNECTIONS ***************
         //******************************************
-        pinIAT = PC0; //ADC123 
+        pinIAT = PC0; //ADC123
         pinTPS = PC1; //ADC123
-        pinMAP = PC2; //ADC123 
+        pinMAP = PC2; //ADC123
         pinCLT = PC3; //ADC123
         pinO2 = PC4; //ADC12
         pinBat = PC5;  //ADC12
@@ -2110,7 +2110,7 @@ void setPinMapping(byte boardID)
         // = PC15;  //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
 
         //******************************************
-        //******** PORTD CONNECTIONS *************** 
+        //******** PORTD CONNECTIONS ***************
         //******************************************
         // = PD0;  //CANRX
         // = PD1;  //CANTX
@@ -2132,7 +2132,7 @@ void setPinMapping(byte boardID)
         pinInjector4 = PD15; //
 
         //******************************************
-        //******** PORTE CONNECTIONS *************** 
+        //******** PORTE CONNECTIONS ***************
         //******************************************
         pinTrigger = PE0; //
         pinTrigger2 = PE1; //
@@ -2150,7 +2150,7 @@ void setPinMapping(byte boardID)
         pinInjector8 = PE13; //
         pinInjector7 = PE14; //
         // = PE15;  //
-       
+
      #elif defined(CORE_STM32)
         //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
         //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
@@ -2187,16 +2187,16 @@ void setPinMapping(byte boardID)
         pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
         pinTrigger = PA10; //The CAS pin
         pinTrigger2 = PA13; //The Cam Sensor pin
-      
+
     #endif
       break;
     default:
       #if defined(STM32F407xx)
-      //Pin definitions for experimental board Tjeerd 
+      //Pin definitions for experimental board Tjeerd
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 
         //******************************************
-        //******** PORTA CONNECTIONS *************** 
+        //******** PORTA CONNECTIONS ***************
         //******************************************
         /* = PA0 */ //Wakeup ADC123
         // = PA1;
@@ -2210,17 +2210,17 @@ void setPinMapping(byte boardID)
         /* = PA9 */ //TXD1
         /* = PA10 */ //RXD1
         /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
-        /* = PA12 */ //(DO NOT USE FOR SPEEDUINO) USB 
+        /* = PA12 */ //(DO NOT USE FOR SPEEDUINO) USB
         /* = PA13 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
         /* = PA14 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
         /* = PA15 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
 
         //******************************************
-        //******** PORTB CONNECTIONS *************** 
+        //******** PORTB CONNECTIONS ***************
         //******************************************
         /* = PB0; */ //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
         pinBaro = PB1; //ADC12
-        /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1 
+        /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1
         /* = PB3; */ //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
         /* = PB4; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
         /* = PB5; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
@@ -2238,9 +2238,9 @@ void setPinMapping(byte boardID)
         /* = PB15; */ //SPI2_MOSI
 
         //******************************************
-        //******** PORTC CONNECTIONS *************** 
+        //******** PORTC CONNECTIONS ***************
         //******************************************
-        pinMAP = PC0; //ADC123 
+        pinMAP = PC0; //ADC123
         pinTPS = PC1; //ADC123
         pinIAT = PC2; //ADC123
         pinCLT = PC3; //ADC123
@@ -2258,7 +2258,7 @@ void setPinMapping(byte boardID)
         /* = PC15; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
 
         //******************************************
-        //******** PORTD CONNECTIONS *************** 
+        //******** PORTD CONNECTIONS ***************
         //******************************************
         /* = PD0; */ //CANRX
         /* = PD1; */ //CANTX
@@ -2280,7 +2280,7 @@ void setPinMapping(byte boardID)
         pinInjector4 = PD15; //
 
         //******************************************
-        //******** PORTE CONNECTIONS *************** 
+        //******** PORTE CONNECTIONS ***************
         //******************************************
         pinTrigger = PE0; //
         pinTrigger2 = PE1; //
@@ -2332,10 +2332,10 @@ void setPinMapping(byte boardID)
         pinIdle1 = 6;
         pinResetControl = 43; //Reset control output
         #endif
-      #endif  
+      #endif
       break;
   }
-  
+
 
   //Setup any devices that are using selectable pins
 
@@ -2353,7 +2353,7 @@ void setPinMapping(byte boardID)
   if ( (configPage2.vssPin != 0) && (configPage2.vssPin < BOARD_NR_GPIO_PINS) ) { pinVSS = pinTranslate(configPage2.vssPin); }
   if ( (configPage10.fuelPressurePin != 0) && (configPage10.fuelPressurePin < BOARD_NR_GPIO_PINS) ) { pinFuelPressure = configPage10.fuelPressurePin + A0; }
   if ( (configPage10.oilPressurePin != 0) && (configPage10.oilPressurePin < BOARD_NR_GPIO_PINS) ) { pinOilPressure = configPage10.oilPressurePin + A0; }
-  
+
   if ( (configPage10.wmiEmptyPin != 0) && (configPage10.wmiEmptyPin < BOARD_NR_GPIO_PINS) ) { pinWMIEmpty = pinTranslate(configPage10.wmiEmptyPin); }
   if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_NR_GPIO_PINS) ) { pinWMIIndicator = pinTranslate(configPage10.wmiIndicatorPin); }
   if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_NR_GPIO_PINS) ) { pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
@@ -2432,7 +2432,7 @@ void setPinMapping(byte boardID)
     ign7_pin_mask = digitalPinToBitMask(pinCoil7);
     ign8_pin_port = portOutputRegister(digitalPinToPort(pinCoil8));
     ign8_pin_mask = digitalPinToBitMask(pinCoil8);
-  } 
+  }
 
   if(injectorOutputControl == OUTPUT_CONTROL_DIRECT)
   {
@@ -2481,7 +2481,7 @@ void setPinMapping(byte boardID)
     initMC33810();
   }
 
-//CS pin number is now set in a compile flag. 
+//CS pin number is now set in a compile flag.
 // #ifdef USE_SPI_EEPROM
 //   //We need to send the flash CS (SS) pin if we're using SPI flash. It cannot read from globals.
 //   EEPROM.begin(USE_SPI_EEPROM);
@@ -2573,7 +2573,7 @@ void setPinMapping(byte boardID)
       if (configPage10.wmiEmptyPolarity == 0) { pinMode(pinWMIEmpty, INPUT_PULLUP); } //Normal setting
       else { pinMode(pinWMIEmpty, INPUT); } //inverted setting
     }
-  }  
+  }
 
   //These must come after the above pinMode statements
   triggerPri_pin_port = portInputRegister(digitalPinToPort(pinTrigger));
@@ -2979,6 +2979,24 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
+    case 20:
+      //Universal
+      triggerSetup_universal();
+      triggerHandler = triggerPri_universal;
+      triggerSecondaryHandler = triggerSec_missingTooth;
+      decoderHasSecondary = false;
+      getRPM = getRPM_missingTooth;
+      getCrankAngle = getCrankAngle_missingTooth;
+      triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      // attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
 
     default:
       triggerHandler = triggerPri_missingTooth;
