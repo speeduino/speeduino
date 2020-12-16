@@ -157,6 +157,16 @@ void triggerSetEndTeeth_420a();
 void triggerPri_Webber();
 void triggerSec_Webber();
 
+void triggerSetup_universal();
+void triggerSetup_universal(int);
+void syncLoss_universal();
+void appendTooth_universal(byte);
+void checkPattern_universal();
+void triggerPri_universal();
+
+void triggerSetup_rover3611();
+void triggerSetup_renault4411();
+
 extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 extern void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
 extern uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)

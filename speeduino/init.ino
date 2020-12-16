@@ -2979,8 +2979,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    case 20:
-      //Universal
+    case 20: //Universal - this one probably needs removing, it won't do anything
       triggerSetup_universal();
       triggerHandler = triggerPri_universal;
       decoderHasSecondary = false;
@@ -2991,6 +2990,32 @@ void initialiseTriggers()
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
 
+      // override and force renault 44-1-1 to falling edge
+      if (configPage4.TrigPattern == 22) { primaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      break;
+
+    case 21: //Universal - Rover 36-1-1
+      triggerSetup_rover3611();
+      triggerHandler = triggerPri_universal;
+      decoderHasSecondary = false;
+      getRPM = getRPM_missingTooth;
+      getCrankAngle = getCrankAngle_missingTooth;
+      triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      break;
+
+    case 22: //Universal - Renault 44-1-1
+      triggerSetup_renault4411();
+      triggerHandler = triggerPri_universal;
+      decoderHasSecondary = false;
+      getRPM = getRPM_missingTooth;
+      getCrankAngle = getCrankAngle_missingTooth;
+      triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
+      primaryTriggerEdge = FALLING; // force this
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 

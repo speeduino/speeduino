@@ -90,16 +90,8 @@ uint16_t ignition8EndTooth = 0;
 
 int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 
-// TODO:
-// can tunerstudio convert to some format for us?
-// TODO: byte array using all 8 bits per byte - more complicated but would be smaller
-// just using lots of memory for now as a test
-// Rover 36-1-1 as an example:
-// byte expectedPattern[64] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-
-// Renault 44 with 2 gaps and 2 double teeth, using falling edge!
-byte expectedPattern[64] = {1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-byte universalTeethSeen[64] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+volatile char universalTeethSeen[64] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+volatile char universalExpectedPattern[64] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 /*
 *
@@ -3876,6 +3868,22 @@ void triggerSetup_universal()
   secondaryToothCount = 0;
 }
 
+void triggerSetup_rover3611()
+{
+  configPage4.triggerTeeth = 36;
+  char rover6311[36] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0};
+  for (int i=0; i<36; i++) { universalExpectedPattern[i] = rover6311[i]; }
+  triggerSetup_universal();
+}
+
+void triggerSetup_renault4411()
+{
+  configPage4.triggerTeeth = 44;
+  char renault4411[44] = {1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1};
+  for (int i=0; i<44; i++) { universalExpectedPattern[i] = renault4411[i]; }
+  triggerSetup_universal();
+}
+
 void syncLoss_universal()
 {
   noInterrupts();
@@ -3910,7 +3918,7 @@ void checkPattern_universal()
   // compare what we saw with the expected pattern
   for (int i=0; i<configPage4.triggerTeeth; i++)
   {
-    if (universalTeethSeen[i] != expectedPattern[i]) { return; }
+    if (universalTeethSeen[i] != universalExpectedPattern[i]) { return; }
   }
 
   // must be exactly matching the pattern if we get this far
@@ -3989,22 +3997,22 @@ void triggerPri_universal()
   }
 }
 
-void triggerSec_universal()
-{
-  // NOT USED - no cam support
-}
-
-uint16_t getRPM_universal()
-{
-  // NOT USED - Uses getRPM_missingTooth
-}
-
-int getCrankAngle_universal()
-{
-  // NOT USED - uses getCrankAngle_missingTooth
-}
-
-void triggerSetEndTeeth_universal()
-{
-  // NOT USED - uses triggerSetEndTeeth_missingTooth
-}
+// void triggerSec_universal()
+// {
+//   // NOT USED - no cam support
+// }
+//
+// uint16_t getRPM_universal()
+// {
+//   // NOT USED - Uses getRPM_missingTooth
+// }
+//
+// int getCrankAngle_universal()
+// {
+//   // NOT USED - uses getCrankAngle_missingTooth
+// }
+//
+// void triggerSetEndTeeth_universal()
+// {
+//   // NOT USED - uses triggerSetEndTeeth_missingTooth
+// }
