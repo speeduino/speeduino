@@ -95,7 +95,7 @@ int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently si
 // TODO: byte array using all 8 bits per byte - more complicated but would be smaller
 // just using lots of memory for now as a test
 // Rover 36-1-1 as an example:
-byte expectedPattern[64] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0};
+byte expectedPattern[64] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 byte universalTeethSeen[64] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 /*
@@ -3868,7 +3868,7 @@ void triggerSetup_universal()
   toothCurrentCount = 0;
   toothOneTime = 0;
   toothOneMinusOneTime = 0;
-  checkSyncToothCount = 64; // make sure we have definitely seen all teeth
+  checkSyncToothCount = configPage4.triggerTeeth; // make sure we have definitely seen all teeth
   MAX_STALL_TIME = (3333UL * triggerToothAngle * 2 ); // Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   secondaryToothCount = 0;
 }
@@ -3895,7 +3895,7 @@ void appendTooth_universal(byte value)
   {
     universalTeethSeen[i] = universalTeethSeen[i+1];
   }
-  // "append" the value
+  // "append" the value to the end
   universalTeethSeen[configPage4.triggerTeeth-1] = value;
 }
 
@@ -3926,11 +3926,11 @@ void triggerPri_universal()
 
   // Pulses should never be less than triggerFilterTime, so if they are it means a false trigger.
   // this would break situations where the crank accelerates but the filter aggressiveness gives 25-75% leeway
-  if (currentStatus.hasSync == true && curGap < triggerFilterTime )
-  {
-    syncLoss_universal();
-    return;
-  }
+  // if (currentStatus.hasSync == true && curGap < triggerFilterTime )
+  // {
+  //   syncLoss_universal();
+  //   return;
+  // }
 
   validTrigger = true;
   addToothLogEntry(curGap, 0);
@@ -3939,7 +3939,7 @@ void triggerPri_universal()
   // If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that,
   // we make the assertion that we must be at the first tooth after a gap
 
-  targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1; // Multiply by 1.5 (Checks for a gap 2x greater than the last one)
+  targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1; // Multiply by 1.5 (Checks for a gap 2x greater (more than 1.5x greater) than the last one)
 
   if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { curGap = 0; } // ?? first tooth seen?
 
