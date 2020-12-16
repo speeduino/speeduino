@@ -95,7 +95,10 @@ int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently si
 // TODO: byte array using all 8 bits per byte - more complicated but would be smaller
 // just using lots of memory for now as a test
 // Rover 36-1-1 as an example:
-byte expectedPattern[64] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+// byte expectedPattern[64] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
+// Renault 44 with 2 gaps and 2 double teeth, using falling edge!
+byte expectedPattern[64] = {1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 byte universalTeethSeen[64] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 /*
@@ -3949,29 +3952,37 @@ void triggerPri_universal()
   if (curGap > targetGap) // WAS a gap between the last tooth and this one
   {
       toothCurrentCount++; // add a "tooth" counter for the gap
-      triggerToothAngleIsCorrect = false; // angle is wrong because we just saw a gap
+      // triggerToothAngleIsCorrect = false; // angle is wrong because we just saw a gap - this is now fixed below
 
       appendTooth_universal(0); // add the gap we saw to our "seen" teeth
       checkPattern_universal(); // check if the teeth we've seen match the pattern we are expecting
 
       // TODO: think about the problems it might cause where someone enters a trigger pattern ending in 0,
       // we might match the pattern here in the gap, set tooth to 1, then we have to do the next bit of code and skip to tooth 2 immediately
-      // maybe it's fine, maybe not?
+      // maybe it's fine, maybe not? does the scheduling ever depend on trigger when a gap happens? etc?
+
+      // repair things when there was a gap
+      // toothLastMinusOneToothTime difference need to be halved for it to make sense
+      // essentially pretending we saw a tooth where the gap was, so that next time we
+      // otherwise we are pointing right across a gap and giving double the size/time
+      unsigned long halfTime = (curTime - toothLastToothTime) / 2;
+      toothLastMinusOneToothTime = toothLastToothTime + halfTime;
+      toothLastToothTime = curTime; // register us having seen a tooth at this time
 
   }
   else // normal tooth is found (immediately after another)
   {
       triggerToothAngleIsCorrect = true; // angle should be right becase we saw 2 teeth in a row
       setFilter(curGap); // Filter can only be recalc'd for the regular teeth, not ones with gaps between
+
+      toothLastMinusOneToothTime = toothLastToothTime;
+      toothLastToothTime = curTime; // register us having seen a tooth at this time
   }
 
   toothCurrentCount++; //Increment the tooth counter
   appendTooth_universal(1); // add the tooth we saw to our "seen teeth"
   checkPattern_universal(); // check if the teeth we've seen match the pattern we are expecting
 
-
-  toothLastMinusOneToothTime = toothLastToothTime;
-  toothLastToothTime = curTime; // register us having seen a tooth at this time
 
   //EXPERIMENTAL! new ignition mode
   if(configPage2.perToothIgn == true)

@@ -2983,7 +2983,7 @@ void initialiseTriggers()
       //Universal
       triggerSetup_universal();
       triggerHandler = triggerPri_universal;
-      triggerSecondaryHandler = triggerSec_missingTooth;
+      // triggerSecondaryHandler = triggerSec_missingTooth;
       decoderHasSecondary = false;
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
@@ -2991,8 +2991,8 @@ void initialiseTriggers()
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
-      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
-      else { secondaryTriggerEdge = FALLING; }
+      // if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      // else { secondaryTriggerEdge = FALLING; }
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       // attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
