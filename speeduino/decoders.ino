@@ -3929,11 +3929,11 @@ void triggerPri_universal()
 
   // Pulses should never be less than triggerFilterTime, so if they are it means a false trigger.
   // this would break situations where the crank accelerates but the filter aggressiveness gives 25-75% leeway
-  // if (currentStatus.hasSync == true && curGap < triggerFilterTime )
-  // {
-  //   syncLoss_universal();
-  //   return;
-  // }
+  if (currentStatus.hasSync == true && curGap < triggerFilterTime )
+  {
+    syncLoss_universal();
+    return;
+  }
 
   validTrigger = true;
   addToothLogEntry(curGap, 0);
@@ -3946,13 +3946,10 @@ void triggerPri_universal()
 
   if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { curGap = 0; } // ?? first tooth seen?
 
-
-
-
   if (curGap > targetGap) // WAS a gap between the last tooth and this one
   {
       toothCurrentCount++; // add a "tooth" counter for the gap
-      // triggerToothAngleIsCorrect = false; // angle is wrong because we just saw a gap - this is now fixed below
+      // triggerToothAngleIsCorrect = false; // angle is wrong because we just saw a gap - is this fixed by the below time measurement repair?
 
       appendTooth_universal(0); // add the gap we saw to our "seen" teeth
       checkPattern_universal(); // check if the teeth we've seen match the pattern we are expecting
