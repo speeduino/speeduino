@@ -2348,11 +2348,13 @@ void setPinMapping(byte boardID)
   if ( (configPage6.vvt1Pin != 0) && (configPage6.vvt1Pin < BOARD_NR_GPIO_PINS) ) { pinVVT_1 = pinTranslate(configPage6.vvt1Pin); }
   if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_NR_GPIO_PINS) ) { pinBaro = configPage6.baroPin + A0; }
   if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_NR_GPIO_PINS) ) { pinEMAP = configPage10.EMAPPin + A0; }
+  if ( (configPage9.oilTemperaturePin != 0) && (configPage9.oilTemperaturePin < BOARD_NR_GPIO_PINS) ) { pinOilTemperature = pinTranslate(configPage9.oilTemperaturePin); }
   if ( (configPage10.fuel2InputPin != 0) && (configPage10.fuel2InputPin < BOARD_NR_GPIO_PINS) ) { pinFuel2Input = pinTranslate(configPage10.fuel2InputPin); }
   if ( (configPage10.spark2InputPin != 0) && (configPage10.spark2InputPin < BOARD_NR_GPIO_PINS) ) { pinSpark2Input = pinTranslate(configPage10.spark2InputPin); }
   if ( (configPage2.vssPin != 0) && (configPage2.vssPin < BOARD_NR_GPIO_PINS) ) { pinVSS = pinTranslate(configPage2.vssPin); }
   if ( (configPage10.fuelPressurePin != 0) && (configPage10.fuelPressurePin < BOARD_NR_GPIO_PINS) ) { pinFuelPressure = configPage10.fuelPressurePin + A0; }
-  if ( (configPage10.oilPressurePin != 0) && (configPage10.oilPressurePin < BOARD_NR_GPIO_PINS) ) { pinOilPressure = configPage10.oilPressurePin + A0; }
+  //if ( (configPage10.oilPressurePin != 0) && (configPage10.oilPressurePin < BOARD_NR_GPIO_PINS) ) { pinOilPressure = configPage10.oilPressurePin + A0; }
+  if ( (configPage10.oilPressurePin != 0) && (configPage10.oilPressurePin < BOARD_NR_GPIO_PINS) ) { pinOilPressure = pinTranslate(configPage10.oilPressurePin); }
   
   if ( (configPage10.wmiEmptyPin != 0) && (configPage10.wmiEmptyPin < BOARD_NR_GPIO_PINS) ) { pinWMIEmpty = pinTranslate(configPage10.wmiEmptyPin); }
   if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_NR_GPIO_PINS) ) { pinWMIIndicator = pinTranslate(configPage10.wmiIndicatorPin); }

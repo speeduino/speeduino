@@ -617,7 +617,7 @@ byte getOilTemperature()
   int16_t tempOilTemperature = 0;
   //uint16_t tempReading;
 
-  if(configPage9.oilTemperatureEnable > 0 && (configPage9.oilTemperaturePin != 51 || configPage9.oilTemperaturePin != 52))
+  if(configPage9.oilTemperatureEnable > 0 && (pinOilTemperature != 51 || pinOilTemperature != 52))
   {
     tempOilTemperature = oilSensorData.temperature + 40; // Adding 40 to handle negative values
   }
@@ -743,11 +743,11 @@ uint16_t readAuxdigital(uint8_t digitalPin)
   } 
   else 
   {
-    oilSensorPulse.gotSync = 0;
+    //oilSensorPulse.gotSync = 0;
   }
   
   // Last event was LOW and we have got a rising edge
-  if(oilSensorPulse.lastLevel == 0 && digitalRead(configPage10.oilPressurePin) ) 
+  if(oilSensorPulse.lastLevel == 0 && digitalRead(pinOilTemperature) ) 
   {
       digitalToggle(LED_BUILTIN);
       oilSensorPulse.offTime = oilSensorPulse.curEvent - oilSensorPulse.lastEvent;

@@ -1185,7 +1185,7 @@ struct config10 {
   byte unused10_135 : 5;
 
   byte fuelPressurePin : 4;
-  byte oilPressurePin : 4;
+  byte unused10_136 : 4;
 
   int8_t fuelPressureMin;
   byte fuelPressureMax;
@@ -1243,7 +1243,9 @@ struct config10 {
   byte spark2InputPolarity : 1;
   byte spark2InputPullup : 1;
 
-  byte unused11_187_191[2]; //Bytes 187-191
+  byte oilPressurePin;
+
+  byte unused10_191; //Bytes 187-191
 
 #if defined(CORE_AVR)
   };
@@ -1354,6 +1356,7 @@ extern byte pinBaro; //Pin that an external barometric pressure sensor is attach
 extern byte pinResetControl; // Output pin used control resetting the Arduino
 extern byte pinFuelPressure;
 extern byte pinOilPressure;
+extern byte pinOilTemperature;
 extern byte pinWMIEmpty; // Water tank empty sensor
 extern byte pinWMIIndicator; // No water indicator bulb
 extern byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 

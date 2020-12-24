@@ -83,21 +83,21 @@ void initBoard()
     */
     if (configPage10.oilPressureEnable == 1 && configPage9.oilTemperatureEnable == 1)
     {
-      if (configPage9.oilTemperaturePin == configPage10.oilPressurePin)
+      if (configPage9.oilTemperaturePin == pinOilPressure)
       {
-          pinMode(configPage10.oilPressurePin, INPUT);
-          attachInterrupt(digitalPinToInterrupt(configPage10.oilPressurePin), oilSensorInterrupt, CHANGE);
+          pinMode(pinOilPressure, INPUT);
+          attachInterrupt(digitalPinToInterrupt(pinOilPressure), oilSensorInterrupt, CHANGE);
       } 
       else
       {
-        if (configPage10.oilPressureEnable == 1 && (configPage10.oilPressurePin == 51 || configPage10.oilPressurePin == 52)) 
+        if (configPage10.oilPressureEnable == 1 && (pinOilPressure == 51 || pinOilPressure == 52)) 
         {
-          pinMode(configPage10.oilPressurePin, INPUT);
-          attachInterrupt(digitalPinToInterrupt(configPage10.oilPressurePin), oilSensorInterrupt, CHANGE);
+          pinMode(pinOilPressure, INPUT);
+          attachInterrupt(digitalPinToInterrupt(pinOilPressure), oilSensorInterrupt, CHANGE);
         }
         if (configPage9.oilTemperatureEnable == 1) {
-          pinMode(configPage9.oilTemperaturePin, INPUT);
-          attachInterrupt(digitalPinToInterrupt(configPage9.oilTemperaturePin), oilSensorInterrupt, CHANGE);
+          pinMode(pinOilTemperature, INPUT);
+          attachInterrupt(digitalPinToInterrupt(pinOilTemperature), oilSensorInterrupt, CHANGE);
         }
       }
       
