@@ -24,6 +24,8 @@
 #define VSS_GEAR_HYSTERESIS 10
 #define VSS_SAMPLES         4 //Must be a power of 2 and smaller than 255
 
+#define OILSENSOR_REFRESHRATE 10 // Oil sensor refresh rate, number of samples taken per second
+
 /*
 #if defined(CORE_AVR)
   #define ANALOG_ISR
@@ -157,4 +159,26 @@ ISR(ADC_vect)
 }
 #endif
 
+#if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
+  static inline void oilSensorInterrupt();
+  
+  struct oilSensorPulse {
+    uint8_t index = 0; // Index of the pulse we are on, frame is composed by three pulses
+    unsigned long lastSample; // Time in uS from last sample, useful to obey refresh rate
+    unsigned long onTime; // Time duration of the HIGH level 
+    unsigned long offTime; // Time duration of the LOW level
+    unsigned long totalTime; // Time duration of the whole symbol
+    unsigned long curEvent; // micros() time of current ISR call
+    unsigned long lastEvent; // micros() time of last ISR call
+    uint8_t value;
+    byte lastLevel; // last level
+    byte gotSync; // Have we synced to the pulse sequence ?
+  } oilSensorPulse;
+
+  struct oilSensorData {
+    double temperature; // Celsius temperature representation of the relative (error corrected) pulse according to the datasheet
+    double pressure; // Pressure representation of the relative (error corrected) pulse according to the datasheet
+    double status; // Diagnostic pulse, containing its (error corrected) value
+  } oilSensorData;
+#endif
 #endif // SENSORS_H
