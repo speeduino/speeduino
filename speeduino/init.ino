@@ -3015,7 +3015,9 @@ void initialiseTriggers()
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
       triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
-      primaryTriggerEdge = FALLING; // force this
+      // primaryTriggerEdge = FALLING; // ideally force this, but not doing for now so possible to debug a backwards wired VR sensor
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
