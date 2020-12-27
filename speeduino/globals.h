@@ -1026,7 +1026,9 @@ struct config9 {
 
   byte iacMaxSteps; // Step limit beyond which the stepper won't be driven. Should always be less than homing steps. Stored div 3 as per home steps.
 
-  byte unused10_155;
+  byte oilSensorOPStPin : 6;
+
+  byte unused10_155 : 2;
   byte unused10_156;
   byte unused10_157;
   byte unused10_158;
@@ -1180,12 +1182,12 @@ struct config10 {
   byte crankingEnrichTaper; //Byte 134
 
   byte fuelPressureEnable : 1;
-  byte oilPressureEnable : 1;
+  byte oilPressureEnable : 2;
   byte oilPressureProtEnbl : 1;
-  byte unused10_135 : 5;
+  byte unused10_136 : 4;
 
   byte fuelPressurePin : 4;
-  byte unused10_136 : 4;
+  byte oilPressurePin : 4;
 
   int8_t fuelPressureMin;
   byte fuelPressureMax;
@@ -1243,9 +1245,7 @@ struct config10 {
   byte spark2InputPolarity : 1;
   byte spark2InputPullup : 1;
 
-  byte oilPressurePin;
-
-  byte unused10_191; //Bytes 187-191
+  byte unused10_190_191[2];
 
 #if defined(CORE_AVR)
   };
@@ -1356,7 +1356,7 @@ extern byte pinBaro; //Pin that an external barometric pressure sensor is attach
 extern byte pinResetControl; // Output pin used control resetting the Arduino
 extern byte pinFuelPressure;
 extern byte pinOilPressure;
-extern byte pinOilTemperature;
+extern byte pinOilSensorOPSt;
 extern byte pinWMIEmpty; // Water tank empty sensor
 extern byte pinWMIIndicator; // No water indicator bulb
 extern byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 

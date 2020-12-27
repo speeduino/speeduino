@@ -276,6 +276,12 @@ void loop()
       nitrousControl();
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
       
+      if (configPage10.oilPressureEnable == 2) { // Hella OPS+T Sensor is enabled
+        currentStatus.oilTemperature = getOilTemperature(); // Get oil temp previous reading
+        readOPSt(); // Activate the sensor PPM reading interrupt
+        //The sensor provider pressure too, but pressure reading could be coming from analog inputs, s nothing to do here about it
+    } 
+
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
       currentStatus.fuelPressure = getFuelPressure();
@@ -344,7 +350,7 @@ void loop()
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
       readBaro(); //Infrequent baro readings are not an issue.
-
+      
       if ( (configPage10.wmiEnabled > 0) && (configPage10.wmiIndicatorEnabled > 0) )
       {
         // water tank empty

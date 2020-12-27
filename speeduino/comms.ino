@@ -636,7 +636,7 @@ void updateFullStatus()
   fullStatus[113] = currentStatus.fuelTempCorrection; //Fuel temperature Correction (%)
   fullStatus[114] = currentStatus.advance1; //advance 1 (%)
   fullStatus[115] = currentStatus.advance2; //advance 2 (%)
-  fullStatus[116] = 0; //Currently unused
+  fullStatus[116] = currentStatus.oilTemperature; // Hella OPS+T Oil Temperature
 
   //Each new inclusion here need to be added on speeduino.ini@L78, only list first byte of an integer and second byte as "INVALID"
   //Every integer added here should have it's lowByte index added to fsIntIndex array on globals.ino@L116

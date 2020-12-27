@@ -79,29 +79,8 @@ void initBoard()
     /*
     ***********************************************************************************************************
     * Auxilliaries
-    * HELLA OPS+T Sensor
     */
-    if (configPage10.oilPressureEnable == 1 && configPage9.oilTemperatureEnable == 1)
-    {
-      if (configPage9.oilTemperaturePin == pinOilPressure)
-      {
-          pinMode(pinOilPressure, INPUT);
-          attachInterrupt(digitalPinToInterrupt(pinOilPressure), oilSensorInterrupt, CHANGE);
-      } 
-      else
-      {
-        if (configPage10.oilPressureEnable == 1 && (pinOilPressure == 51 || pinOilPressure == 52)) 
-        {
-          pinMode(pinOilPressure, INPUT);
-          attachInterrupt(digitalPinToInterrupt(pinOilPressure), oilSensorInterrupt, CHANGE);
-        }
-        if (configPage9.oilTemperatureEnable == 1) {
-          pinMode(pinOilTemperature, INPUT);
-          attachInterrupt(digitalPinToInterrupt(pinOilTemperature), oilSensorInterrupt, CHANGE);
-        }
-      }
-      
-    }
+
     /*
     ***********************************************************************************************************
     * BOOST and VVT

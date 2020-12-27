@@ -611,30 +611,27 @@ byte getFuelPressure()
   return (byte)tempFuelPressure;
 }
 
-#if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
 byte getOilTemperature()
 {
   int16_t tempOilTemperature = 0;
-  //uint16_t tempReading;
 
-  if(configPage9.oilTemperatureEnable > 0 && (pinOilTemperature != 51 || pinOilTemperature != 52))
+  if( configPage10.oilPressureEnable == 2 ) // Enabling OPS+T sensor will also enable temperature readings from it
   {
-    tempOilTemperature = oilSensorData.temperature + 40; // Adding 40 to handle negative values
+    tempOilTemperature = oilSensorOPStData.temperature + 40; // Adding 40 to handle negative values
   }
   //Sanity check
-  if(tempOilTemperature > configPage9.oilTemperatureMax) { tempOilTemperature = configPage9.oilTemperatureMax; }
+  // TODO if(tempOilTemperature > configPage9.oilTemperatureMax) { tempOilTemperature = configPage9.oilTemperatureMax; }
   if(tempOilTemperature < 0 ) { tempOilTemperature = 0; } //prevent negative values, which will cause problems later when the values aren't signed.
 
   return (byte)tempOilTemperature;
 }
-#endif
 
 byte getOilPressure()
 {
   int16_t tempOilPressure = 0;
   uint16_t tempReading;
 
-  if(configPage10.oilPressureEnable > 0 && (configPage10.oilPressurePin != 51 || configPage10.oilPressurePin != 52))
+  if(configPage10.oilPressureEnable == 1)
   {
     //Perform ADC read
     tempReading = analogRead(pinOilPressure);
@@ -644,12 +641,10 @@ byte getOilPressure()
     tempOilPressure = fastMap10Bit(tempReading, configPage10.oilPressureMin, configPage10.oilPressureMax);
     tempOilPressure = ADC_FILTER(tempOilPressure, 150, currentStatus.oilPressure); //Apply speed smoothing factor
   } 
-#if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
-  else if (configPage10.oilPressureEnable > 0)
+  else if (configPage10.oilPressureEnable == 2)
   {
-    tempOilPressure = oilSensorData.pressure*14.5037;
+    tempOilPressure = oilSensorOPStData.pressure*14.5037;
   }
-#endif
   //Sanity check
   if(tempOilPressure > configPage10.oilPressureMax) { tempOilPressure = configPage10.oilPressureMax; }
   if(tempOilPressure < 0 ) { tempOilPressure = 0; } //prevent negative values, which will cause problems later when the values aren't signed.
@@ -731,53 +726,52 @@ uint16_t readAuxdigital(uint8_t digitalPin)
   return tempReading;
 } 
 
-// ISR to decode PPM data from HELLA oil temperature and pressure sensor
-#if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
-  static inline void oilSensorInterrupt() //Most ARM chips can simply call a function
-{
-  oilSensorPulse.curEvent = micros();
+/*
+ * Called by the 4 hz hardware timer, enables OPS+T interrupt
+ * when timer clicks, ISR will detach itself when it has got readings
+*/
+void readOPSt () {
+  attachInterrupt(digitalPinToInterrupt(pinOilSensorOPSt), oilSensorOPStISR, CHANGE);       
+}
 
-  if (oilSensorPulse.gotSync && oilSensorPulse.lastSample - oilSensorPulse.curEvent <= 1000000/OILSENSOR_REFRESHRATE) // Return if it's not time to run
+// ISR to decode PPM data from HELLA oil temperature and pressure sensor
+  static inline void oilSensorOPStISR() //Most ARM chips can simply call a function
+{
+  oilSensorOPStPulse.curEvent = micros();
+
+  if(oilSensorOPStPulse.lastLevel == 0 && digitalRead(pinOilSensorOPSt) ) // Last event was LOW and we have got a rising edge
   {
-    return;
+      oilSensorOPStPulse.offTime = oilSensorOPStPulse.curEvent - oilSensorOPStPulse.lastEvent;
+      oilSensorOPStPulse.totalTime = oilSensorOPStPulse.offTime + oilSensorOPStPulse.onTime;
+      oilSensorOPStPulse.lastLevel = 1;
+      oilSensorOPStPulse.lastEvent = oilSensorOPStPulse.curEvent;
+      if (oilSensorOPStPulse.totalTime <= 1024 && oilSensorOPStPulse.index == 0) 
+      {
+        oilSensorOPStPulse.index++;
+        oilSensorOPStPulse.gotSync = 1; 
+        oilSensorOPStData.status = (1024.0/oilSensorOPStPulse.totalTime)*oilSensorOPStPulse.onTime;
+      } 
+      else if (oilSensorOPStPulse.index == 1 && oilSensorOPStPulse.gotSync == 1) 
+      {
+        oilSensorOPStData.temperature = ((4096.0/oilSensorOPStPulse.totalTime)*oilSensorOPStPulse.onTime-128)/19.2-40;
+        oilSensorOPStPulse.index++;
+      } 
+      else if (oilSensorOPStPulse.index == 2 && oilSensorOPStPulse.gotSync == 1) 
+      {
+        oilSensorOPStData.pressure = (((4096.0/oilSensorOPStPulse.totalTime)*oilSensorOPStPulse.onTime)-128)/384.0+0.5;
+        oilSensorOPStPulse.index = 0;
+        detachInterrupt(digitalPinToInterrupt(pinOilSensorOPSt));       
+      } 
+      else 
+      {
+        oilSensorOPStPulse.index = 0;
+        oilSensorOPStPulse.gotSync = 0;
+      }
   } 
-  else 
-  {
-    //oilSensorPulse.gotSync = 0;
-  }
-  
-  // Last event was LOW and we have got a rising edge
-  if(oilSensorPulse.lastLevel == 0 && digitalRead(pinOilTemperature) ) 
-  {
-      digitalToggle(LED_BUILTIN);
-      oilSensorPulse.offTime = oilSensorPulse.curEvent - oilSensorPulse.lastEvent;
-      oilSensorPulse.totalTime = oilSensorPulse.offTime + oilSensorPulse.onTime;
-      oilSensorPulse.lastLevel = 1;
-      oilSensorPulse.lastEvent = oilSensorPulse.curEvent;
-      if (oilSensorPulse.totalTime <= 1024 && oilSensorPulse.index == 0) 
-      {
-        oilSensorPulse.index++;
-        oilSensorPulse.gotSync = 1; 
-        oilSensorData.status = (1024.0/oilSensorPulse.totalTime)*oilSensorPulse.onTime;
-      } 
-      else if (oilSensorPulse.index == 1) 
-      {
-        oilSensorData.temperature = ((4096.0/oilSensorPulse.totalTime)*oilSensorPulse.onTime-128)/19.2-40;
-        oilSensorPulse.index++;
-      } 
-      else if (oilSensorPulse.index == 2) 
-      {
-        oilSensorData.pressure = (((4096.0/oilSensorPulse.totalTime)*oilSensorPulse.onTime)-128)/384.0+0.5;
-        oilSensorPulse.index = 0;
-        oilSensorPulse.lastSample = micros();
-      } 
-  } 
-  else if(oilSensorPulse.lastLevel == 1 && !digitalRead(configPage10.oilPressurePin) ) // Last event was HIGH and we have got a falling edge 
+  else if(oilSensorOPStPulse.lastLevel == 1 && !digitalRead(pinOilSensorOPSt) ) // Last event was HIGH and we have got a falling edge 
   { 
-      oilSensorPulse.onTime = oilSensorPulse.curEvent - oilSensorPulse.lastEvent;
-      oilSensorPulse.lastLevel = 0;
-      oilSensorPulse.lastEvent = oilSensorPulse.curEvent;
+      oilSensorOPStPulse.onTime = oilSensorOPStPulse.curEvent - oilSensorOPStPulse.lastEvent;
+      oilSensorOPStPulse.lastLevel = 0;
+      oilSensorOPStPulse.lastEvent = oilSensorOPStPulse.curEvent;
   }
 }  
-
-#endif
