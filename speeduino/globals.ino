@@ -92,6 +92,9 @@ volatile PINMASK_TYPE triggerPri_pin_mask;
 volatile PORT_TYPE *triggerSec_pin_port;
 volatile PINMASK_TYPE triggerSec_pin_mask;
 
+volatile PORT_TYPE *oilSensorOPSt_pin_port;
+volatile PINMASK_TYPE oilSensorOPSt_pin_mask;
+
 //These need to be here as they are used in both speeduino.ino and scheduler.ino
 bool channel1InjEnabled = true;
 bool channel2InjEnabled = false;

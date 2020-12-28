@@ -617,7 +617,7 @@ byte getOilTemperature()
 
   if( configPage10.oilPressureEnable == 2 ) // Enabling OPS+T sensor will also enable temperature readings from it
   {
-    tempOilTemperature = oilSensorOPStData.temperature + 40; // Adding 40 to handle negative values
+    tempOilTemperature = oilSensorOPStData.temperature; 
   }
   //Sanity check
   // TODO if(tempOilTemperature > configPage9.oilTemperatureMax) { tempOilTemperature = configPage9.oilTemperatureMax; }
@@ -643,7 +643,7 @@ byte getOilPressure()
   } 
   else if (configPage10.oilPressureEnable == 2)
   {
-    tempOilPressure = oilSensorOPStData.pressure*14.5037;
+    tempOilPressure = oilSensorOPStData.pressure;
   }
   //Sanity check
   if(tempOilPressure > configPage10.oilPressureMax) { tempOilPressure = configPage10.oilPressureMax; }
@@ -739,7 +739,7 @@ void readOPSt () {
 {
   oilSensorOPStPulse.curEvent = micros();
 
-  if(oilSensorOPStPulse.lastLevel == 0 && digitalRead(pinOilSensorOPSt) ) // Last event was LOW and we have got a rising edge
+  if(oilSensorOPStPulse.lastLevel == 0 && READ_OPST_TRIGGER()) // Last event was LOW and we have got a rising edge
   {
       oilSensorOPStPulse.offTime = oilSensorOPStPulse.curEvent - oilSensorOPStPulse.lastEvent;
       oilSensorOPStPulse.totalTime = oilSensorOPStPulse.offTime + oilSensorOPStPulse.onTime;
@@ -753,12 +753,12 @@ void readOPSt () {
       } 
       else if (oilSensorOPStPulse.index == 1 && oilSensorOPStPulse.gotSync == 1) 
       {
-        oilSensorOPStData.temperature = ((4096.0/oilSensorOPStPulse.totalTime)*oilSensorOPStPulse.onTime-128)/19.2-40;
+        oilSensorOPStData.temperature = ((4096.0/oilSensorOPStPulse.totalTime)*oilSensorOPStPulse.onTime-128)/19.2;
         oilSensorOPStPulse.index++;
       } 
       else if (oilSensorOPStPulse.index == 2 && oilSensorOPStPulse.gotSync == 1) 
       {
-        oilSensorOPStData.pressure = (((4096.0/oilSensorOPStPulse.totalTime)*oilSensorOPStPulse.onTime)-128)/384.0+0.5;
+        oilSensorOPStData.pressure = ((((4096.0/oilSensorOPStPulse.totalTime)*oilSensorOPStPulse.onTime)-128)/26.475+7.25); 
         oilSensorOPStPulse.index = 0;
         detachInterrupt(digitalPinToInterrupt(pinOilSensorOPSt));       
       } 
@@ -768,7 +768,7 @@ void readOPSt () {
         oilSensorOPStPulse.gotSync = 0;
       }
   } 
-  else if(oilSensorOPStPulse.lastLevel == 1 && !digitalRead(pinOilSensorOPSt) ) // Last event was HIGH and we have got a falling edge 
+  else if(oilSensorOPStPulse.lastLevel == 1 && !READ_OPST_TRIGGER()) // Last event was HIGH and we have got a falling edge 
   { 
       oilSensorOPStPulse.onTime = oilSensorOPStPulse.curEvent - oilSensorOPStPulse.lastEvent;
       oilSensorOPStPulse.lastLevel = 0;
