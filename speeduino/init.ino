@@ -2586,6 +2586,8 @@ void setPinMapping(byte boardID)
   triggerSec_pin_mask = digitalPinToBitMask(pinTrigger2);
   flex_pin_port = portInputRegister(digitalPinToPort(pinFlex));
   flex_pin_mask = digitalPinToBitMask(pinFlex);
+  oilSensorOPSt_pin_port = portInputRegister(digitalPinToPort(pinOilSensorOPSt));
+  oilSensorOPSt_pin_mask = digitalPinToBitMask(pinOilSensorOPSt);
 
 }
 

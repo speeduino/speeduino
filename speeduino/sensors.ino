@@ -749,16 +749,16 @@ void readOPSt () {
       {
         oilSensorOPStPulse.index++;
         oilSensorOPStPulse.gotSync = 1; 
-        oilSensorOPStData.status = (1024.0/oilSensorOPStPulse.totalTime)*oilSensorOPStPulse.onTime;
+        oilSensorOPStData.status = ((1024UL*oilSensorOPStPulse.onTime)/oilSensorOPStPulse.totalTime)/4; // 640uS max, making it fit uint8
       } 
       else if (oilSensorOPStPulse.index == 1 && oilSensorOPStPulse.gotSync == 1) 
       {
-        oilSensorOPStData.temperature = ((4096.0/oilSensorOPStPulse.totalTime)*oilSensorOPStPulse.onTime-128)/19.2;
+        oilSensorOPStData.temperature = fastMap((4096UL*oilSensorOPStPulse.onTime)/oilSensorOPStPulse.totalTime, 128, 3968, 0, 200);
         oilSensorOPStPulse.index++;
       } 
       else if (oilSensorOPStPulse.index == 2 && oilSensorOPStPulse.gotSync == 1) 
       {
-        oilSensorOPStData.pressure = ((((4096.0/oilSensorOPStPulse.totalTime)*oilSensorOPStPulse.onTime)-128)/26.475+7.25); 
+        oilSensorOPStData.pressure = fastMap((4096UL*oilSensorOPStPulse.onTime)/oilSensorOPStPulse.totalTime, 128, 3968, 7, 152);
         oilSensorOPStPulse.index = 0;
         detachInterrupt(digitalPinToInterrupt(pinOilSensorOPSt));       
       } 
