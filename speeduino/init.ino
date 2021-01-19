@@ -212,7 +212,7 @@ void initialiseAll()
     //Setup the calibration tables
     loadCalibration();
 
-    #if defined(CORE_TEENSY35) || defined(ARDUINO_ARCH_STM32)
+    #if defined (NATIVE_CAN_AVAILABLE)
       configPage9.intcan_available = 1;   // device has internal canbus
       //Teensy uses the Flexcan_T4 library to use the internal canbus
       //enable local can interface
@@ -225,9 +225,9 @@ void initialiseAll()
     //Set the pin mappings
     if((configPage2.pinMapping == 255) || (configPage2.pinMapping == 0)) //255 = EEPROM value in a blank AVR; 0 = EEPROM value in new FRAM
     {
-    //First time running on this board
-    setPinMapping(3); //Force board to v0.4
-    configPage2.flexEnabled = false; //Have to disable flex. If this isn't done and the wrong flex pin is interrupt attached below, system can hang.
+      //First time running on this board
+      resetConfigPages(); 
+      setPinMapping(3); //Force board to v0.4
     }
     else { setPinMapping(configPage2.pinMapping); }
 
@@ -1309,7 +1309,7 @@ void setPinMapping(byte boardID)
         pinCoil4 = 29;
         pinCoil3 = 30;
         pinO2 = A22;
-      #elif defined(ARDUINO_BLACK_F407VE)
+      #elif defined(STM32F407xx)
      //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 
@@ -1728,7 +1728,7 @@ void setPinMapping(byte boardID)
       pinCoil3 = 52; //Pin for coil 3
       pinCoil4 = 48; //Pin for coil 4
       pinCoil5 = 36; //Pin for coil 5
-	  pinCoil6 = 34; //Pin for coil 6
+      pinCoil6 = 34; //Pin for coil 6
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTPS = A2;//TPS input pin
@@ -1737,13 +1737,14 @@ void setPinMapping(byte boardID)
       pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
-      pinDisplayReset = 48; // OLED reset pin
+      pinBaro = A5; //Baro sensor pin
+      pinDisplayReset = 41; // OLED reset pin
       pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
       pinIdle1 = 5; //ICV pin1
       pinIdle2 = 6; //ICV pin3
       pinBoost = 7; //Boost control
-      pinVVT_1 = 4; //VVT output
-      pinVVT_2 = 48; //Default VVT2 output
+      pinVVT_1 = 4; //VVT1 output (intake vanos)
+      pinVVT_2 = 26; //VVT2 output (exhaust vanos)
       pinFuelPump = 45; //Fuel pump output  (Goes to ULN2003)
       pinStepperDir = 16; //Stepper valve isn't used with these
       pinStepperStep = 17; //Stepper valve isn't used with these
@@ -1752,6 +1753,7 @@ void setPinMapping(byte boardID)
       pinLaunch = 51; //Launch control pin
       pinFlex = 2; // Flex sensor
       pinResetControl = 43; //Reset control output
+      pinVSS = 3; //VSS input pin
       break;
 
     case 40:
@@ -2041,7 +2043,7 @@ void setPinMapping(byte boardID)
     
  
     case 60:
-        #if defined(ARDUINO_BLACK_F407VE)
+        #if defined(STM32F407xx)
         //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
         //https://github.com/Tjeerdie/SPECTRE/tree/master/SPECTRE_V0.5
@@ -2189,7 +2191,7 @@ void setPinMapping(byte boardID)
     #endif
       break;
     default:
-      #if defined(ARDUINO_BLACK_F407VE)
+      #if defined(STM32F407xx)
       //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
 
@@ -2401,10 +2403,18 @@ void setPinMapping(byte boardID)
     pinMode(pinCoil2, OUTPUT);
     pinMode(pinCoil3, OUTPUT);
     pinMode(pinCoil4, OUTPUT);
+    #if (IGN_CHANNELS >= 5)
     pinMode(pinCoil5, OUTPUT);
+    #endif
+    #if (IGN_CHANNELS >= 6)
     pinMode(pinCoil6, OUTPUT);
+    #endif
+    #if (IGN_CHANNELS >= 7)
     pinMode(pinCoil7, OUTPUT);
+    #endif
+    #if (IGN_CHANNELS >= 8)
     pinMode(pinCoil8, OUTPUT);
+    #endif
 
     ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
     ign1_pin_mask = digitalPinToBitMask(pinCoil1);
@@ -2430,10 +2440,18 @@ void setPinMapping(byte boardID)
     pinMode(pinInjector2, OUTPUT);
     pinMode(pinInjector3, OUTPUT);
     pinMode(pinInjector4, OUTPUT);
+    #if (INJ_CHANNELS >= 5)
     pinMode(pinInjector5, OUTPUT);
+    #endif
+    #if (INJ_CHANNELS >= 6)
     pinMode(pinInjector6, OUTPUT);
+    #endif
+    #if (INJ_CHANNELS >= 7)
     pinMode(pinInjector7, OUTPUT);
+    #endif
+    #if (INJ_CHANNELS >= 8)
     pinMode(pinInjector8, OUTPUT);
+    #endif
 
     inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
     inj1_pin_mask = digitalPinToBitMask(pinInjector1);

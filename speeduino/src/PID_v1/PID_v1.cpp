@@ -235,7 +235,7 @@ integerPID::integerPID(long* Input, long* Output, long* Setpoint,
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool integerPID::Compute(bool pOnE)
+bool integerPID::Compute(bool pOnE, long FeedForwardTerm)
 {
    if(!inAuto) return false;
    unsigned long now = millis();
@@ -250,12 +250,13 @@ bool integerPID::Compute(bool pOnE)
          long dInput = (input - lastInput);
          long outMinResized = outMin<<PID_SHIFTS;
          long outMaxResized = outMax<<PID_SHIFTS;
+         FeedForwardTerm <<= PID_SHIFTS;
 
          if (ki != 0)
          {
             outputSum += (ki * error); //integral += error × dt
-            if(outputSum > outMaxResized) { outputSum = outMaxResized; }
-            else if(outputSum < outMinResized) { outputSum = outMinResized; }
+            if(outputSum > outMaxResized-FeedForwardTerm) { outputSum = outMaxResized-FeedForwardTerm; }
+            else if(outputSum < outMinResized-FeedForwardTerm) { outputSum = outMinResized-FeedForwardTerm; }
          }
 
          /*Compute PID Output*/
@@ -266,6 +267,7 @@ bool integerPID::Compute(bool pOnE)
             output = (kp * error);
             if (ki != 0) { output += outputSum; }
             if (kd != 0) { output -= (kd * dInput)>>2; }
+            output += FeedForwardTerm;
             output >>= PID_SHIFTS;
          }
          else
@@ -276,9 +278,9 @@ bool integerPID::Compute(bool pOnE)
 
             output = outputSum;
             if (kd != 0) { output -= (kd * dInput)>>2; }
+            output += FeedForwardTerm;
             output >>= PID_SHIFTS;
          }
-         
 
          if(output > outMax) output = outMax;
          else if(output < outMin) output = outMin;
@@ -298,7 +300,7 @@ bool integerPID::ComputeVVT(uint32_t Sample)
 {
    if(!inAuto) return false;
    /*Compute all the working error variables*/
-   long pTerm, iTerm, dTerm;
+   long pTerm, dTerm;
    long input = *myInput;
    long error = *mySetpoint - input;
    long dInput = error - lastError;
@@ -522,7 +524,7 @@ void integerPID::SetControllerDirection(byte Direction)
  ******************************************************************************/
 int integerPID::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
 int integerPID::GetDirection(){ return controllerDirection;}
-
+void integerPID::ResetIntegeral() { outputSum=0;}
 //************************************************************************************************************************
 #define limitMultiplier 100 //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
 

@@ -108,6 +108,8 @@ uint16_t freeRam()
     return (uint16_t) &v - currentVal; //cppcheck-suppress misra-c2012-11.4
 }
 
+void doSystemReset() { return; }
+void jumpToBootloader() { return; }
 #if defined(TIMER5_MICROS)
 //This is used by the fast version of micros(). We just need to increment the timer overflow counter
 ISR(TIMER5_OVF_vect)

@@ -1,18 +1,20 @@
-#if defined(ARDUINO_ARCH_STM32)
+#if defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)
 #include "STM32_CAN.h"
 
 uint8_t STM32_CAN::CANMsgAvail()
 {
+  uint8_t msgAvail = CAN1->RF0R & 0x3UL; //Default value
   if (_channel == _CAN1) {
     // Check for pending FIFO 0 messages
-    return CAN1->RF0R & 0x3UL;
+    msgAvail = CAN1->RF0R & 0x3UL;
   }
   #if defined(CAN2)
   if (_channel == _CAN2) {
     // Check for pending FIFO 0 messages
-    return CAN2->RF0R & 0x3UL;
+    msgAvail = CAN2->RF0R & 0x3UL;
   }
   #endif
+  return msgAvail;
 }
 
 void STM32_CAN::CANSetGpio(GPIO_TypeDef * addr, uint8_t index, uint8_t speed )
@@ -193,6 +195,8 @@ int STM32_CAN::write(CAN_message_t &CAN_tx_msg)
     }
   }
   #endif
+
+  return -1; //Transmit failed
 }
 
 int STM32_CAN::read(CAN_message_t &CAN_rx_msg)
@@ -276,7 +280,7 @@ int STM32_CAN::read(CAN_message_t &CAN_rx_msg)
 void STM32_CAN::setBaudRate(uint32_t baud)
 {
   //there must be better way to do this, but for now it's what it is.
-  int bitrate;
+  int bitrate = 0; //Default to slowest baud rate
   switch(baud)
     {
       case 50000:

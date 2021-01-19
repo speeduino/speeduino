@@ -106,6 +106,12 @@ void command()
           TS_CommandButtonsHandler(cmdCombined);
           cmdPending = false;
         }
+        else if( (cmdCombined >= TS_CMD_STM32_REBOOT) && (cmdCombined <= TS_CMD_STM32_BOOTLOADER) )
+        {
+          //STM32 DFU mode button
+          TS_CommandButtonsHandler(cmdCombined);
+          cmdPending = false;
+        }
       }
       break;
 
@@ -248,7 +254,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202009-dev"));
+      Serial.print(F("speeduino 202101-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -278,7 +284,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2020.09-dev"));
+      Serial.print(F("Speeduino 2021.01-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -631,6 +637,9 @@ void updateFullStatus()
   fullStatus[114] = currentStatus.advance1; //advance 1 (%)
   fullStatus[115] = currentStatus.advance2; //advance 2 (%)
   fullStatus[116] = 0; //Currently unused
+
+  //Each new inclusion here need to be added on speeduino.ini@L78, only list first byte of an integer and second byte as "INVALID"
+  //Every integer added here should have it's lowByte index added to fsIntIndex array on globals.ino@L116
 }
 /*
 This function returns the current values of a fixed group of variables

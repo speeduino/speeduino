@@ -45,7 +45,7 @@
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(STM32)
   #define CORE_STM32
-  #if defined(STM32F4) //F4 can do 8x8
+  #if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 not
    #define INJ_CHANNELS 8
    #define IGN_CHANNELS 8
   #else
@@ -55,7 +55,7 @@
 
 //Select one for EEPROM,the default is EEPROM emulation on internal flash.
 //#define SRAM_AS_EEPROM /*Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin */
-#define USE_SPI_EEPROM PB0 /*Use M25Qxx SPI flash */
+//#define USE_SPI_EEPROM PB0 /*Use M25Qxx SPI flash */
 //#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
 
   #ifndef word
@@ -70,14 +70,12 @@
     #ifndef LED_BUILTIN
       #define LED_BUILTIN PB1 //Maple Mini
     #endif
-  #elif defined(ARDUINO_BLACK_F407VE)
+  #elif defined(STM32F407xx)
     #define BOARD_DIGITAL_GPIO_PINS 74
     #define BOARD_NR_GPIO_PINS 74
   #endif
 
   #if defined(STM32_CORE_VERSION)
-    //Need to identify the official core better
-    #define CORE_STM32_OFFICIAL
     #define BOARD_H "board_stm32_official.h"
   #else
     #define CORE_STM32_GENERIC
@@ -515,7 +513,7 @@ extern volatile byte LOOP_TIMER;
 #define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) || ((pin) == pinCoil5) || ((pin) == pinCoil6) || ((pin) == pinCoil7) || ((pin) == pinCoil8) )
 #define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
 #define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) )
-#define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) || pinIsOutput((pin)) )
+#define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) || pinIsOutput((pin)) || pinIsReserved((pin)) )
 
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
@@ -787,8 +785,11 @@ struct config2 {
 
   byte tachoSweepMaxRPM;
   byte primingDelay;
-  
-  byte unused2_95[7];
+
+  byte iacTPSlimit;
+  byte iacRPMlimitHysteresis;
+
+  byte unused2_95[5];
 
 #if defined(CORE_AVR)
   };
@@ -1221,17 +1222,17 @@ struct config10 {
   byte unused11_174_2 : 1;
 
   byte fuelTempBins[6];
-  byte fuelTempValues[6];
+  byte fuelTempValues[6]; //180
 
-  //Byte 122
+  //Byte 186
   byte spark2Algorithm : 3;
   byte spark2Mode : 3;
   byte spark2SwitchVariable : 2;
 
-  //Bytes 123-124
+  //Bytes 187-188
   uint16_t spark2SwitchValue;
 
-  //Byte 125
+  //Byte 189
   byte spark2InputPin : 6;
   byte spark2InputPolarity : 1;
   byte spark2InputPullup : 1;

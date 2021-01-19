@@ -220,8 +220,12 @@ void initialiseProgrammableIO()
   {
     if ( (configPage13.outputPin[y] > 0) && (configPage13.outputPin[y] < BOARD_NR_GPIO_PINS) )
     {
-      pinMode(configPage13.outputPin[y], OUTPUT);
-      digitalWrite(configPage13.outputPin[y], (configPage13.outputInverted & (1U << y)));
+      if ( !pinIsUsed(configPage13.outputPin[y]) )
+      {
+        pinMode(configPage13.outputPin[y], OUTPUT);
+        digitalWrite(configPage13.outputPin[y], (configPage13.outputInverted & (1U << y)));
+        BIT_SET(pinIsValid, y);
+      }
     }
   }
 }
@@ -235,7 +239,7 @@ void checkProgrammableIO()
   {
     firstCheck = false;
     secondCheck = false;
-    if ( configPage13.outputPin[y] > 0 ) //if outputPin == 0 it is disabled
+    if ( BIT_CHECK(pinIsValid, y) ) //if outputPin == 0 it is disabled
     { 
       //byte theIndex = configPage13.firstDataIn[y];
       data = ProgrammableIOGetData(configPage13.firstDataIn[y]);
