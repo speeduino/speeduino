@@ -8,8 +8,10 @@ can_comms was originally contributed by Darren Siepka
 /*
 secondserial_command is called when a command is received from the secondary serial port
 It parses the command and calls the relevant function.
+
 can_command is called when a command is recieved by the onboard/attached canbus module
 It parses the command and calls the relevant function.
+
 sendcancommand is called when a command is to be sent either to serial3 
 ,to the external Can interface, or to the onboard/attached can interface
 */

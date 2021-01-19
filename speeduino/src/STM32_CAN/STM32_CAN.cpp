@@ -88,6 +88,7 @@ void STM32_CAN::CANSetFilter(uint8_t index, uint8_t scale, uint8_t mode, uint8_t
 
 void STM32_CAN::begin()
 {
+  volatile int timeout = 0;
   if (_channel == _CAN1)
   {
     // CAN1
@@ -104,30 +105,28 @@ void STM32_CAN::begin()
 
   if (_channel == _CAN1)
   {
-	CAN1->MCR |= 0x1UL;                    // Require CAN1 to Initialization mode 
-    while (!(CAN1->MSR & 0x1UL));          // Wait for Initialization mode
+    CAN1->MCR |= 0x1UL;                                    // Require CAN1 to Initialization mode 
+    while ((!(CAN1->MSR & 0x1UL)) && timeout++ < 100000);  // Wait for Initialization mode
 
-    //CAN1->MCR = 0x51UL;                  // Hardware initialization(No automatic retransmission)
-    CAN1->MCR = 0x41UL;                    // Hardware initialization(With automatic retransmission)
+    CAN1->MCR = 0x51UL;                    // Hardware initialization(No automatic retransmission)
+    //CAN1->MCR = 0x41UL;                  // Hardware initialization(With automatic retransmission, not used because causes timer issues on speeduino)
   }
   #if defined(CAN2)
   else if (_channel == _CAN2)
   {
     // CAN2
-    CAN2->MCR |= 0x1UL;                    // Require CAN2 to Initialization mode
-    while (!(CAN2->MSR & 0x1UL));          // Wait for Initialization mode
+    CAN2->MCR |= 0x1UL;                                    // Require CAN2 to Initialization mode
+    while ((!(CAN2->MSR & 0x1UL)) && timeout++ < 100000);  // Wait for Initialization mode
 
-    //CAN2->MCR = 0x51UL;                  // Hardware initialization(No automatic retransmission)
-    CAN2->MCR = 0x41UL;                    // Hardware initialization(With automatic retransmission)
+    CAN2->MCR = 0x51UL;                    // Hardware initialization(No automatic retransmission)
+    //CAN2->MCR = 0x41UL;                  // Hardware initialization(With automatic retransmission, not used because causes timer issues on speeduino)
   }
   #endif
 }
 
 int STM32_CAN::write(CAN_message_t &CAN_tx_msg)
 {
-  volatile int count = 0;
   uint32_t out = 0;
-
   if (CAN_tx_msg.flags.extended == true) { // Extended frame format
       out = ((CAN_tx_msg.id & CAN_EXT_ID_MASK) << 3U) | STM32_CAN_TIR_IDE;
   }
@@ -141,62 +140,54 @@ int STM32_CAN::write(CAN_message_t &CAN_tx_msg)
 
   if (_channel == _CAN1)
   {
-    CAN1->sTxMailBox[0].TDTR &= ~(0xF);
-    CAN1->sTxMailBox[0].TDTR |= CAN_tx_msg.len & 0xFUL;
-    CAN1->sTxMailBox[0].TDLR  = (((uint32_t) CAN_tx_msg.buf[3] << 24) |
-                                 ((uint32_t) CAN_tx_msg.buf[2] << 16) |
-                                 ((uint32_t) CAN_tx_msg.buf[1] <<  8) |
-                                 ((uint32_t) CAN_tx_msg.buf[0]      ));
-    CAN1->sTxMailBox[0].TDHR  = (((uint32_t) CAN_tx_msg.buf[7] << 24) |
-                                 ((uint32_t) CAN_tx_msg.buf[6] << 16) |
-                                 ((uint32_t) CAN_tx_msg.buf[5] <<  8) |
-                                 ((uint32_t) CAN_tx_msg.buf[4]      ));
-
-    // Send Go
-    CAN1->sTxMailBox[0].TIR = out | STM32_CAN_TIR_TXRQ;
-
-    // Wait until the mailbox is empty
-    while(CAN1->sTxMailBox[0].TIR & 0x1UL && count++ < 1000000);
-
+    // Check if the mailbox is empty
     if (CAN1->sTxMailBox[0].TIR & 0x1UL) {
       //Serial.println("transmit Fail");
-      return -1; // transmit failed
+      return -1; // transmit of the previous message has failed
     }
-    else {
-      return 1; // transmit ok
+    else { // mailbox is empty, so it's ok to send new message
+      CAN1->sTxMailBox[0].TDTR &= ~(0xF);
+      CAN1->sTxMailBox[0].TDTR |= CAN_tx_msg.len & 0xFUL;
+      CAN1->sTxMailBox[0].TDLR  = (((uint32_t) CAN_tx_msg.buf[3] << 24) |
+                                   ((uint32_t) CAN_tx_msg.buf[2] << 16) |
+                                   ((uint32_t) CAN_tx_msg.buf[1] <<  8) |
+                                   ((uint32_t) CAN_tx_msg.buf[0]      ));
+      CAN1->sTxMailBox[0].TDHR  = (((uint32_t) CAN_tx_msg.buf[7] << 24) |
+                                   ((uint32_t) CAN_tx_msg.buf[6] << 16) |
+                                   ((uint32_t) CAN_tx_msg.buf[5] <<  8) |
+                                   ((uint32_t) CAN_tx_msg.buf[4]      ));
+
+      // Send Go
+      CAN1->sTxMailBox[0].TIR = out | STM32_CAN_TIR_TXRQ;
+    return 1; // transmit done
     }
   }
   #if defined(CAN2)
   if (_channel == _CAN2)
   {
-    CAN2->sTxMailBox[0].TDTR &= ~(0xF);
-    CAN2->sTxMailBox[0].TDTR |= CAN_tx_msg.len & 0xFUL;
-    CAN2->sTxMailBox[0].TDLR  = (((uint32_t) CAN_tx_msg.buf[3] << 24) |
-                                 ((uint32_t) CAN_tx_msg.buf[2] << 16) |
-                                 ((uint32_t) CAN_tx_msg.buf[1] <<  8) |
-                                 ((uint32_t) CAN_tx_msg.buf[0]      ));
-    CAN2->sTxMailBox[0].TDHR  = (((uint32_t) CAN_tx_msg.buf[7] << 24) |
-                                 ((uint32_t) CAN_tx_msg.buf[6] << 16) |
-                                 ((uint32_t) CAN_tx_msg.buf[5] <<  8) |
-                                 ((uint32_t) CAN_tx_msg.buf[4]      ));
-
-    // Send Go
-    CAN2->sTxMailBox[0].TIR = out | STM32_CAN_TIR_TXRQ;
-
-    // Wait until the mailbox is empty
-    while(CAN2->sTxMailBox[0].TIR & 0x1UL && count++ < 1000000);
-
+    // Check if the mailbox is empty
     if (CAN2->sTxMailBox[0].TIR & 0x1UL) {
       //Serial.println("transmit Fail");
-      return -1; // transmit failed
+      return -1; // transmit of the previous message has failed
     }
-    else {
-      return 1; // transmit ok
+    else { // mailbox is empty, so it's ok to send new message
+      CAN2->sTxMailBox[0].TDTR &= ~(0xF);
+      CAN2->sTxMailBox[0].TDTR |= CAN_tx_msg.len & 0xFUL;
+      CAN2->sTxMailBox[0].TDLR  = (((uint32_t) CAN_tx_msg.buf[3] << 24) |
+                                   ((uint32_t) CAN_tx_msg.buf[2] << 16) |
+                                   ((uint32_t) CAN_tx_msg.buf[1] <<  8) |
+                                   ((uint32_t) CAN_tx_msg.buf[0]      ));
+      CAN2->sTxMailBox[0].TDHR  = (((uint32_t) CAN_tx_msg.buf[7] << 24) |
+                                   ((uint32_t) CAN_tx_msg.buf[6] << 16) |
+                                   ((uint32_t) CAN_tx_msg.buf[5] <<  8) |
+                                   ((uint32_t) CAN_tx_msg.buf[4]      ));
+
+      // Send Go
+      CAN2->sTxMailBox[0].TIR = out | STM32_CAN_TIR_TXRQ;
+      return 1; // transmit done
     }
   }
   #endif
-
-  return -1; //Transmit failed
 }
 
 int STM32_CAN::read(CAN_message_t &CAN_rx_msg)
@@ -367,51 +358,13 @@ void STM32_CAN::setBaudRate(uint32_t baud)
   if (_channel == _CAN1)
   {
     CAN1->FMR   &= ~(0x1UL);               // Deactivate initialization mode
-
-    uint16_t TimeoutMilliseconds = 1000;
-    bool can1 = false;
     CAN1->MCR   &= ~(0x1UL);               // Require CAN1 to normal mode 
-
-    // Wait for normal mode
-    // If the connection is not correct, it will not return to normal mode.
-    for (uint16_t wait_ack = 0; wait_ack < TimeoutMilliseconds; wait_ack++) {
-      if ((CAN1->MSR & 0x1UL) == 0) {
-        can1 = true;
-        break;
-      }
-      delayMicroseconds(1000);
-    }
-    if (can1) {
-      //Serial.println("CAN1 initialize ok");
-    } else {
-      //Serial.println("CAN1 initialize fail!!");
-    }
   }
   #if defined(CAN2)
   else if (_channel == _CAN2)
   {
     CAN2->FMR   &= ~(0x1UL);               // Deactivate initialization mode
-
-    uint16_t TimeoutMilliseconds = 1000;
-    bool can2 = false;
     CAN2->MCR   &= ~(0x1UL);               // Require CAN2 to normal mode  
-
-    // Wait for normal mode
-    // If the connection is not correct, it will not return to normal mode.
-    for (uint16_t wait_ack = 0; wait_ack < TimeoutMilliseconds; wait_ack++) {
-      if ((CAN2->MSR & 0x1UL) == 0) {
-        can2 = true;
-        break;
-      }
-      delayMicroseconds(1000);
-    }
-    //Serial.print("can2=");
-    //Serial.println(can2);
-    if (can2) {
-      //Serial.println("CAN2 initialize ok");
-    } else {
-      //Serial.println("CAN2 initialize fail!!");
-    }
   }
   #endif
 }
