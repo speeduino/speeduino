@@ -158,4 +158,38 @@ uint16_t freeRam()
     return &top - reinterpret_cast<char*>(sbrk(0));
 }
 
+void doSystemReset( void )
+{
+    __disable_irq();
+    NVIC_SystemReset();
+}
+
+void jumpToBootloader( void ) // https://github.com/3devo/Arduino_Core_STM32/blob/jumpSysBL/libraries/SrcWrapper/src/stm32/bootloader.c
+{ // https://github.com/markusgritsch/SilF4ware/blob/master/SilF4ware/drv_reset.c
+    HAL_RCC_DeInit();
+    HAL_DeInit();
+    SysTick->VAL = SysTick->LOAD = SysTick->CTRL = 0;
+    SYSCFG->MEMRMP = 0x01;
+
+    #if defined(STM32F7xx) || defined(STM32H7xx)
+    const uint32_t DFU_addr = 0x1FF00000; // From AN2606
+    #else
+    const uint32_t DFU_addr = 0x1FFF0000; // Default for STM32F10xxx and STM32F40xxx/STM32F41xxx from AN2606
+    #endif
+    // This is assembly to prevent modifying the stack pointer after
+    // loading it, and to ensure a jump (not call) to the bootloader.
+    // Not sure if the barriers are really needed, they were taken from
+    // https://github.com/GrumpyOldPizza/arduino-STM32L4/blob/ac659033eadd50cfe001ba1590a1362b2d87bb76/system/STM32L4xx/Source/boot_stm32l4xx.c#L159-L165
+    asm volatile (
+        "ldr r0, [%[DFU_addr], #0]   \n\t"  // get address of stack pointer
+        "msr msp, r0            \n\t"  // set stack pointer
+        "ldr r0, [%[DFU_addr], #4]   \n\t"  // get address of reset handler
+        "dsb                    \n\t"  // data sync barrier
+        "isb                    \n\t"  // instruction sync barrier
+        "bx r0                  \n\t"  // branch to bootloader
+        : : [DFU_addr] "l" (DFU_addr) : "r0"
+    );
+    __builtin_unreachable();
+}
+
 #endif

@@ -423,15 +423,30 @@ void doUpdates()
     //New AE option added to allow for PW added in addition to existing PW multiply
     configPage2.aeApplyMode = 0; //Set the AE mode to Multiply
 
+    //Injector priming delay added
+    configPage2.primingDelay = 0;
+    //ASE taper time added
+    configPage2.aseTaperTime = 10; //1 second taper
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 15);
   }
 
   if(EEPROM.read(EEPROM_DATA_VERSION) == 15)
   {
-    configPage6.iacPWMrun = false; // just in case. This should be false anyways, but sill.
+    //202012
+    configPage10.spark2Mode = 0; //Disable 2nd spark table
+    
     writeAllConfig();
-    //EEPROM.write(EEPROM_DATA_VERSION, 16);
+    EEPROM.write(EEPROM_DATA_VERSION, 16);
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 16)
+  {
+    configPage6.iacPWMrun = false; // just in case. This should be false anyways, but sill.
+
+    writeAllConfig();
+    //EEPROM.write(EEPROM_DATA_VERSION, 17);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)

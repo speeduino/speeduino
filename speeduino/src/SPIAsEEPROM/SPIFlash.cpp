@@ -37,7 +37,7 @@ SPIFlash::SPIFlash(uint8_t cs) {
   pinMode(csPin, OUTPUT);
   CHIP_DESELECT
 }
-#elif defined (ARDUINO_ARCH_SAMD) || defined (ARCH_STM32)
+#elif defined (ARDUINO_ARCH_SAMD) || defined (ARDUINO_ARCH_STM32)
 SPIFlash::SPIFlash(uint8_t cs, SPIClass *spiinterface) {
   _spi = spiinterface;  //Sets SPI interface - if no user selection is made, this defaults to SPI
   csPin = cs;

@@ -8,6 +8,8 @@
 */
   void initBoard();
   uint16_t freeRam();
+  void doSystemReset();
+  void jumpToBootloader();
   #define PORT_TYPE uint32_t //Size of the port variables
   #define PINMASK_TYPE uint32_t
   #define COMPARE_TYPE uint32_t
@@ -148,13 +150,14 @@
 ***********************************************************************************************************
 * CAN / Second serial
 */
-   #define USE_SERIAL3
+  #define USE_SERIAL3
   #include <FlexCAN_T4.h>
   FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
   FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1;
   FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can2;
   static CAN_message_t outMsg;
   static CAN_message_t inMsg;
+  //#define NATIVE_CAN_AVAILABLE //Disable for now as it causes lockup 
   
 #endif //CORE_TEENSY
 #endif //TEENSY41_H
