@@ -286,7 +286,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 void can_Command()
 {
  //int currentcanCommand = inMsg.id;
- #if defined(CORE_TEENSY) || defined(ARDUINO_ARCH_STM32)
+ #if defined (NATIVE_CAN_AVAILABLE)
       // currentStatus.canin[12] = (inMsg.id);
  if ( (inMsg.id == uint16_t(configPage9.obd_address + 0x100))  || (inMsg.id == 0x7DF))      
   {
@@ -355,7 +355,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
         //send to truecan send routine
         //canaddress == speeduino canid, candata1 == canin channel dest, paramgroup == can address  to request from
         //This section is to be moved to the correct can output routine later
-        #if defined(CORE_TEENSY) || defined(ARDUINO_ARCH_STM32)  //Scope guarding this for now, but this needs a bit of a rethink for how it can be handled better across multiple archs
+        #if defined(CORE_TEENSY) || defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)  //Scope guarding this for now, but this needs a bit of a rethink for how it can be handled better across multiple archs
         outMsg.id = (canaddress);
         outMsg.len = 8;
         outMsg.buf[0] = 0x0B ;  //11;   
@@ -376,7 +376,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
   #endif
 }
 
-#if defined(CORE_TEENSY35) || defined(ARDUINO_ARCH_STM32)
+#if defined(NATIVE_CAN_AVAILABLE)
 // This routine builds the realtime data into packets that the obd requesting device can understand. This is only used by teensy and stm32 with onboard canbus
 void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPIDhigh)
 { 

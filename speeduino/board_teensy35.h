@@ -8,6 +8,8 @@
 */
   void initBoard();
   uint16_t freeRam();
+  void doSystemReset();
+  void jumpToBootloader();
   #define PORT_TYPE uint8_t //Size of the port variables
   #define PINMASK_TYPE uint8_t
   #define COMPARE_TYPE uint16_t
@@ -147,5 +149,6 @@
 #endif
   static CAN_message_t outMsg;
   static CAN_message_t inMsg;
+  #define NATIVE_CAN_AVAILABLE
 #endif //CORE_TEENSY
 #endif //TEENSY35_H

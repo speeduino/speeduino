@@ -106,6 +106,12 @@ void command()
           TS_CommandButtonsHandler(cmdCombined);
           cmdPending = false;
         }
+        else if( (cmdCombined >= TS_CMD_STM32_REBOOT) && (cmdCombined <= TS_CMD_STM32_BOOTLOADER) )
+        {
+          //STM32 DFU mode button
+          TS_CommandButtonsHandler(cmdCombined);
+          cmdPending = false;
+        }
       }
       break;
 
@@ -248,7 +254,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202009-dev"));
+      Serial.print(F("speeduino 202101-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -278,7 +284,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2020.09-dev"));
+      Serial.print(F("Speeduino 2021.01-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 

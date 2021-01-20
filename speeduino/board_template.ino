@@ -34,4 +34,7 @@ uint16_t freeRam()
 
 }
 
+void doSystemReset() { return; }
+void jumpToBootloader() { return; }
+
 #endif
