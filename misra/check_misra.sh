@@ -8,11 +8,15 @@ cppcheck_path=""                    # -c, --cppcheck
 
 # Parse command line
 while [ $# -gt 0 ] ; do
-  case $1 in
+  case "$1" in
     -s | --source) source_folder="$2" ;;
     -e | --exts) file_exts="$2" ;;
     -o | --out) out_folder="$2" ;;
     -c | --cppcheck) cppcheck_path="$2" ;;
+    -*) 
+      echo "Unknown option: " $1
+      exit 1
+      ;;
   esac
   shift
 done
