@@ -1,22 +1,48 @@
-if [ -f ./results.txt ]; then
-	rm results.txt
+#!/bin/bash
+
+# Initialize variables with defaults
+source_folder="speeduino/speeduino" # -s, --source
+file_exts="ino"                     # -e, --exts
+out_folder="."                      # -o, --out
+cppcheck_path=""                    # -c, --cppcheck
+
+# Parse command line
+while [ $# -gt 0 ] ; do
+  case $1 in
+    -s | --source) source_folder="$2" ;;
+    -e | --exts) file_exts="$2" ;;
+    -o | --out) out_folder="$2" ;;
+    -c | --cppcheck) cppcheck_path="$2" ;;
+  esac
+  shift
+done
+
+cppcheck_bin="${cppcheck_path}/cppcheck"
+cppcheck_misra="${cppcheck_path}/addons/misra.py"
+script_folder="$(dirname $(readlink -f $0))"
+
+if [ -f "$out_folder"/results.txt ]; then
+	rm "$out_folder"/results.txt
 fi
 
-for i in speeduino/speeduino/*.ino; do
+shopt -s nullglob nocaseglob
+for i in "$source_folder"/*.{"$file_exts",}; do
   #cppcheck --xml --include=${i%.*}.h --include=speeduino/speeduino/globals.h $i > /dev/null
   #cppcheck --force --dump --suppress=syntaxError:speeduino/speeduino/src/PID_v1/PID_v1.h --include=${i%.*}.h --include=speeduino/speeduino/globals.h -DCORE_AVR=1 -USTM32F4 $i > /dev/null
-  cppcheck --dump --suppress=syntaxError:speeduino/speeduino/src/PID_v1/PID_v1.h --include=${i%.*}.h -DCORE_AVR=1 -D__AVR_ATmega2560__ $i > /dev/null
+  "$cppcheck_bin" --dump --suppress=syntaxError:"$source_folder"/src/PID_v1/PID_v1.h -DCORE_AVR=1 -D__AVR_ATmega2560__ $i > /dev/null
 done
-mv speeduino/speeduino/*.dump ./
-rm ./utils.*.dump
+shopt -u nullglob nocaseglob
 
-python cppcheck/addons/misra.py --rule-texts=speeduino/misra/misra_2012_text.txt *.dump 2> results.txt
-rm *.dump
+mv "$source_folder"/*.dump "$out_folder"/
+#rm ./utils.*.dump
 
-cat results.txt
-# wc -l results.txt
+python "$cppcheck_misra" --rule-texts="$script_folder"/misra_2012_text.txt "$out_folder"/*.dump 2> "$out_folder"/results.txt
+#rm "$out_folder"/*.dump
 
-errors=`wc -l < results.txt | tr -d ' '`
+cat "$out_folder"/results.txt
+# wc -l "$out_folder"/results.txt
+
+errors=`wc -l < "$out_folder"/results.txt | tr -d ' '`
 echo $errors MISRA violations
 
 if [ $errors -gt 0 ]; then
