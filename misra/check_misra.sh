@@ -6,20 +6,23 @@ file_exts="ino"                     # -e, --exts
 out_folder="."                      # -o, --out
 cppcheck_path=""                    # -c, --cppcheck
 
-# Parse command line
-while [ $# -gt 0 ] ; do
-  case "$1" in
-    -s | --source) source_folder="$2" ;;
-    -e | --exts) file_exts="$2" ;;
-    -o | --out) out_folder="$2" ;;
-    -c | --cppcheck) cppcheck_path="$2" ;;
-    -*) 
-      echo "Unknown option: " $1
-      exit 1
-      ;;
-  esac
-  shift
-done
+function parse_command_line() {
+   while [ $# -gt 0 ] ; do
+    case "$1" in
+      -s | --source) source_folder="$2" ;;
+      -e | --exts) file_exts="$2" ;;
+      -o | --out) out_folder="$2" ;;
+      -c | --cppcheck) cppcheck_path="$2" ;;
+      -*) 
+        echo "Unknown option: " $1
+        exit 1
+        ;;
+    esac
+    shift
+  done
+}
+
+parse_command_line "$@"
 
 cppcheck_bin="${cppcheck_path}/cppcheck"
 cppcheck_misra="${cppcheck_path}/addons/misra.py"
