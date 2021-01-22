@@ -13,7 +13,7 @@ A full copy of the license may be found in the projects root directory
 #include "TS_CommandButtonHandler.h"
 #include "errors.h"
 #include "src/FastCRC/FastCRC.h"
-#include "rtc.h"
+#include "rtc_common.h"
 
 /*
   Processes the data on the serial buffer.

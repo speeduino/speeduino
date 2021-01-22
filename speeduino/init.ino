@@ -19,7 +19,7 @@
 #include EEPROM_LIB_H
 #ifdef SD_LOGGING
   #include "SD_logger.h"
-  #include "rtc.h"
+  #include "rtc_common.h"
 #endif
 
 

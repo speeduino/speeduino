@@ -1,4 +1,4 @@
-#include "rtc.h"
+#include "rtc_common.h"
 #include "globals.h"
 #include RTC_LIB_H //Defined in each boards .h file
 
