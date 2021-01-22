@@ -268,6 +268,29 @@ byte correctionASE()
 uint16_t correctionAccel()
 {
   int16_t accelValue = 100;
+  int16_t MAP_change = 0;
+  int8_t TPS_change = 0;
+
+  if(configPage2.aeMode == AE_MODE_MAP)
+  {
+    //Get the MAP rate change
+    MAP_change = (currentStatus.MAP - MAPlast);
+    MAP_rateOfChange = ldiv(1000000, (MAP_time - MAPlast_time)).quot * MAP_change; //This is the % per second that the TPS has moved
+    //MAP_rateOfChange = 15 * MAP_change; //This is the kpa per second that the MAP has moved
+    if(MAP_rateOfChange >= 0) { currentStatus.mapDOT = MAP_rateOfChange / 10; } //The MAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
+    else { currentStatus.mapDOT = 0; } //Prevent overflow as mapDOT is signed
+  }
+  else if(configPage2.aeMode == AE_MODE_TPS)
+  {
+    //Get the TPS rate change
+    TPS_change = (currentStatus.TPS - TPSlast);
+    //TPS_rateOfChange = ldiv(1000000, (TPS_time - TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
+    TPS_rateOfChange = TPS_READ_FREQUENCY * TPS_change; //This is the % per second that the TPS has moved
+    if(TPS_rateOfChange >= 0) { currentStatus.tpsDOT = TPS_rateOfChange / 10; } //The TAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
+    else { currentStatus.tpsDOT = 0; } //Prevent overflow as tpsDOT is signed
+  }
+  
+
   //First, check whether the accel. enrichment is already running
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
   {
@@ -285,16 +308,22 @@ uint16_t correctionAccel()
     }
     else
     {
-      //Enrichment still needs to keep running. Simply return the total TAE amount
+      //Enrichment still needs to keep running. 
+      //Simply return the total TAE amount
       accelValue = currentStatus.AEamount;
+
+      //Need to check whether the accel amount has increased from when AE was turned on
+      //If the accel amount HAS increased, we clear the current enrich phase and a new one will be started below
+      if( (configPage2.aeMode == AE_MODE_MAP) && (currentStatus.mapDOT > activateMAPDOT) ) { BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); }
+      else if( (configPage2.aeMode == AE_MODE_TPS) && (currentStatus.tpsDOT > activateTPSDOT) ) { BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); }
     }
   }
-  else
+
+  //else
+  if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) ) //Need to check this again as it may have been changed in the above section
   {
     if(configPage2.aeMode == AE_MODE_MAP)
     {
-      int16_t MAP_change = (currentStatus.MAP - MAPlast);
-
       if (MAP_change <= 2)
       {
         accelValue = 100;
@@ -303,12 +332,10 @@ uint16_t correctionAccel()
       else
       {
         //If MAE isn't currently turned on, need to check whether it needs to be turned on
-        int rateOfChange = ldiv(1000000, (MAP_time - MAPlast_time)).quot * MAP_change; //This is the % per second that the TPS has moved
-        currentStatus.mapDOT = rateOfChange / 10; //The MAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
-
-        if (rateOfChange > configPage2.maeThresh)
+        if (MAP_rateOfChange > configPage2.maeThresh)
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
+          activateMAPDOT = currentStatus.mapDOT;
           currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
           accelValue = table2D_getValue(&maeTable, currentStatus.mapDOT);
 
@@ -354,7 +381,6 @@ uint16_t correctionAccel()
     else if(configPage2.aeMode == AE_MODE_TPS)
     {
     
-      int8_t TPS_change = (currentStatus.TPS - TPSlast);
       //Check for deceleration (Deceleration adjustment not yet supported)
       //Also check for only very small movement (Movement less than or equal to 2% is ignored). This not only means we can skip the lookup, but helps reduce false triggering around 0-2% throttle openings
       if (TPS_change <= 2)
@@ -365,12 +391,10 @@ uint16_t correctionAccel()
       else
       {
         //If TAE isn't currently turned on, need to check whether it needs to be turned on
-        int rateOfChange = ldiv(1000000, (TPS_time - TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
-        currentStatus.tpsDOT = rateOfChange / 10; //The TAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
-
-        if (rateOfChange > configPage2.taeThresh)
+        if (TPS_rateOfChange > configPage2.taeThresh)
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
+          activateTPSDOT = currentStatus.tpsDOT;
           currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
           accelValue = table2D_getValue(&taeTable, currentStatus.tpsDOT);
 
