@@ -5,7 +5,7 @@ script_folder="$(dirname $(readlink -f $0))"
 # Initialize variables with defaults
 source_folder="$script_folder/../speeduino" # -s, --source
 file_exts="ino"                             # -e, --exts
-out_folder="."                              # -o, --out
+out_folder="$script_folder/.results"        # -o, --out
 cppcheck_path=""                            # -c, --cppcheck
 
 function parse_command_line() {
