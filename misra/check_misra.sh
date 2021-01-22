@@ -1,10 +1,12 @@
 #!/bin/bash
 
+script_folder="$(dirname $(readlink -f $0))"
+
 # Initialize variables with defaults
-source_folder="speeduino/speeduino" # -s, --source
-file_exts="ino"                     # -e, --exts
-out_folder="."                      # -o, --out
-cppcheck_path=""                    # -c, --cppcheck
+source_folder="$script_folder/../speeduino" # -s, --source
+file_exts="ino"                             # -e, --exts
+out_folder="."                              # -o, --out
+cppcheck_path=""                            # -c, --cppcheck
 
 function parse_command_line() {
    while [ $# -gt 0 ] ; do
@@ -26,7 +28,8 @@ parse_command_line "$@"
 
 cppcheck_bin="${cppcheck_path}/cppcheck"
 cppcheck_misra="${cppcheck_path}/addons/misra.py"
-script_folder="$(dirname $(readlink -f $0))"
+
+mkdir -p "$out_folder"
 
 if [ -f "$out_folder"/results.txt ]; then
 	rm "$out_folder"/results.txt
