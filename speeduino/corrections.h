@@ -22,6 +22,7 @@ byte correctionBaro(); //Barometric pressure correction
 byte correctionLaunch(); //Launch control correction
 bool correctionDFCO(); //Decelleration fuel cutoff
 
+
 int8_t correctionsIgn(int8_t advance);
 int8_t correctionFixedTiming(int8_t);
 int8_t correctionCrankingFixedTiming(int8_t);
@@ -37,6 +38,11 @@ int8_t correctionSoftFlatShift(int8_t);
 int8_t correctionKnock(int8_t);
 
 uint16_t correctionsDwell(uint16_t dwell);
+
+int MAP_rateOfChange;
+int TPS_rateOfChange;
+byte activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
+byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated. 
 
 extern uint16_t AFRnextCycle;
 extern unsigned long knockStartTime;

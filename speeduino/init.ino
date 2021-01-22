@@ -16,7 +16,11 @@
 #include "table.h"
 #include "acc_mc33810.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
-#include EEPROM_LIB_H 
+#include EEPROM_LIB_H
+#ifdef SD_LOGGING
+  #include "SD_logger.h"
+  #include "rtc.h"
+#endif
 
 
 void initialiseAll()
@@ -53,6 +57,10 @@ void initialiseAll()
     
     initBoard(); //This calls the current individual boards init function. See the board_xxx.ino files for these.
     initialiseTimers();
+  #ifdef SD_LOGGING
+    initSD();
+    initRTC();
+  #endif
 
     Serial.begin(115200);
     #if defined(CANSerial_AVAILABLE)

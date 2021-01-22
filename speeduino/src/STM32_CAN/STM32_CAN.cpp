@@ -127,7 +127,6 @@ void STM32_CAN::begin()
 void STM32_CAN::writeTxMailbox(uint8_t mb_num, CAN_message_t &CAN_tx_msg)
 {
   uint32_t out = 0;
-
   if (CAN_tx_msg.flags.extended == true) { // Extended frame format
       out = ((CAN_tx_msg.id & CAN_EXT_ID_MASK) << 3U) | STM32_CAN_TIR_IDE;
   }
