@@ -32,10 +32,8 @@ cpp_result_file="$out_folder/cpp_results.txt"
 result_file="$out_folder/results.txt"
 
 mkdir -p "$out_folder"
-
-if [ -f "$cpp_result_file" ]; then
-	rm "$cpp_result_file"
-fi
+rm -f "$cpp_result_file"
+rm -f "$result_file"
 
 shopt -s nullglob nocaseglob
 for i in "$source_folder"/*.{"$file_exts",}; do
