@@ -28,34 +28,36 @@ parse_command_line "$@"
 
 cppcheck_bin="${cppcheck_path}/cppcheck"
 cppcheck_misra="${cppcheck_path}/addons/misra.py"
+cpp_result_file="$out_folder/cpp_results.txt"
+result_file="$out_folder/results.txt"
 
 mkdir -p "$out_folder"
 
-if [ -f "$out_folder"/results.txt ]; then
-	rm "$out_folder"/results.txt
+if [ -f "$cpp_result_file" ]; then
+	rm "$cpp_result_file"
 fi
 
 shopt -s nullglob nocaseglob
 for i in "$source_folder"/*.{"$file_exts",}; do
-  #cppcheck --xml --include=${i%.*}.h --include=speeduino/speeduino/globals.h $i > /dev/null
-  #cppcheck --force --dump --suppress=syntaxError:speeduino/speeduino/src/PID_v1/PID_v1.h --include=${i%.*}.h --include=speeduino/speeduino/globals.h -DCORE_AVR=1 -USTM32F4 $i > /dev/null
-  "$cppcheck_bin" --dump --suppress=syntaxError:"$source_folder"/src/PID_v1/PID_v1.h -DCORE_AVR=1 -D__AVR_ATmega2560__ $i > /dev/null
+  "$cppcheck_bin" --addon="$script_folder/misra.json" --suppress=syntaxError:"$source_folder"/src/PID_v1/PID_v1.h -DCORE_AVR=1 -D__AVR_ATmega2560__ $i 2>> "$cpp_result_file"
 done
 shopt -u nullglob nocaseglob
 
-mv "$source_folder"/*.dump "$out_folder"/
-#rm ./utils.*.dump
+# Process cppcheck results file: 
+# It's grouped into chunks of 3 lines: fold those into one line
+sed '$!N;$!N;s/\n/~/g' < "$cpp_result_file" |\
+ # Remove duplicate lines
+ sort | uniq > "$out_folder/tmp.txt"
+# Number of lines == unique errors
+error_count=`wc -l < "$out_folder/tmp.txt"`
+# Unfold the line groups for readability
+tr '~' '\n' < "$out_folder/tmp.txt" > "$result_file"
+rm -f "$out_folder/tmp.txt"
 
-python "$cppcheck_misra" --rule-texts="$script_folder"/misra_2012_text.txt "$out_folder"/*.dump 2> "$out_folder"/results.txt
-#rm "$out_folder"/*.dump
+cat "$result_file"
+echo $error_count MISRA violations
 
-cat "$out_folder"/results.txt
-# wc -l "$out_folder"/results.txt
-
-errors=`wc -l < "$out_folder"/results.txt | tr -d ' '`
-echo $errors MISRA violations
-
-if [ $errors -gt 0 ]; then
+if [ $error_count -gt 0 ]; then
 	exit 1
 else
 	exit 0
