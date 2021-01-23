@@ -24,6 +24,30 @@ function parse_command_line() {
   done
 }
 
+function run_cppcheck() {
+  shopt -s nullglob nocaseglob
+  for i in "$source_folder"/*.{"$file_exts",}; do
+    "$cppcheck_bin" --addon="$script_folder/misra.json" --suppress=syntaxError:"$source_folder"/src/PID_v1/PID_v1.h -DCORE_AVR=1 -D__AVR_ATmega2560__ $i 2>> "$cpp_result_file"
+  done
+  shopt -u nullglob nocaseglob
+}
+
+function process_cpp_results() {
+  local intermediate_file="$out_folder/tmp.txt"
+
+  # It's grouped into chunks of 3 lines: fold those into one line
+  sed '$!N;$!N;s/\n/~/g' < "$cpp_result_file" |\
+    # Remove duplicate lines
+    sort | uniq > "$intermediate_file"
+  # Number of lines == unique errors
+  local __error_count=`wc -l < "$intermediate_file"`
+  # Unfold the line groups for readability
+  tr '~' '\n' < "$intermediate_file" > "$result_file"
+  rm -f "$intermediate_file"
+
+  echo "$__error_count"
+}
+
 parse_command_line "$@"
 
 cppcheck_bin="${cppcheck_path}/cppcheck"
@@ -35,22 +59,8 @@ mkdir -p "$out_folder"
 rm -f "$cpp_result_file"
 rm -f "$result_file"
 
-shopt -s nullglob nocaseglob
-for i in "$source_folder"/*.{"$file_exts",}; do
-  "$cppcheck_bin" --addon="$script_folder/misra.json" --suppress=syntaxError:"$source_folder"/src/PID_v1/PID_v1.h -DCORE_AVR=1 -D__AVR_ATmega2560__ $i 2>> "$cpp_result_file"
-done
-shopt -u nullglob nocaseglob
-
-# Process cppcheck results file: 
-# It's grouped into chunks of 3 lines: fold those into one line
-sed '$!N;$!N;s/\n/~/g' < "$cpp_result_file" |\
- # Remove duplicate lines
- sort | uniq > "$out_folder/tmp.txt"
-# Number of lines == unique errors
-error_count=`wc -l < "$out_folder/tmp.txt"`
-# Unfold the line groups for readability
-tr '~' '\n' < "$out_folder/tmp.txt" > "$result_file"
-rm -f "$out_folder/tmp.txt"
+run_cppcheck
+error_count="$(process_cpp_results)"
 
 cat "$result_file"
 echo $error_count MISRA violations
