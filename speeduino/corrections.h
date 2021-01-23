@@ -39,10 +39,10 @@ int8_t correctionKnock(int8_t);
 
 uint16_t correctionsDwell(uint16_t dwell);
 
-int MAP_rateOfChange;
-int TPS_rateOfChange;
-byte activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
-byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated. 
+extern int MAP_rateOfChange;
+extern int TPS_rateOfChange;
+extern byte activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
+extern byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated. 
 
 extern uint16_t AFRnextCycle;
 extern unsigned long knockStartTime;
