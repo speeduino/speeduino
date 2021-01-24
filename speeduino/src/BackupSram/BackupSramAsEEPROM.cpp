@@ -1,5 +1,4 @@
-//#if defined(ARDUINO_BLACK_F407VE) 
-#if defined(ARDUINO_ARCH_STM32)
+#if defined(STM32F407xx)
 #include "BackupSramAsEEPROM.h"
 
     BackupSramAsEEPROM::BackupSramAsEEPROM(){

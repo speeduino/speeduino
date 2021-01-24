@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    15
+  #define CURRENT_DATA_VERSION    16
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -408,14 +408,38 @@ void doUpdates()
       configPage10.wmiAdvAdj[i] = OFFSET_IGNITION;
     }
 
+    //Programmable outputs added. Set all to disabled
+    configPage13.outputPin[0] = 0;
+    configPage13.outputPin[1] = 0;
+    configPage13.outputPin[2] = 0;
+    configPage13.outputPin[3] = 0;
+    configPage13.outputPin[4] = 0;
+    configPage13.outputPin[5] = 0;
+    configPage13.outputPin[6] = 0;
+    configPage13.outputPin[7] = 0;
+
     //New multiply MAP option added. Set new option to be the same as old
     configPage2.multiplyMAP = configPage2.multiplyMAP_old;
     //New AE option added to allow for PW added in addition to existing PW multiply
     configPage2.aeApplyMode = 0; //Set the AE mode to Multiply
 
+    //Injector priming delay added
+    configPage2.primingDelay = 0;
+    //ASE taper time added
+    configPage2.aseTaperTime = 10; //1 second taper
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 15);
+  }
 
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 15)
+  {
+    //202012
+    configPage10.spark2Mode = 0; //Disable 2nd spark table
+    
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 16);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)

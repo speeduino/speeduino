@@ -378,33 +378,27 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
       //Initial check incase the values were hit straight on
 
       unsigned long p = (long)X - xMinValue;
-      if (xMaxValue == xMinValue) { p = (p << 8); }  //This only occurs if the requested X value was equal to one of the X axis bins
-      else { p = ( (p << 8) / (xMaxValue - xMinValue) ); } //This is the standard case
+      if (xMaxValue == xMinValue) { p = (p << TABLE_SHIFT_FACTOR); }  //This only occurs if the requested X value was equal to one of the X axis bins
+      else { p = ( (p << TABLE_SHIFT_FACTOR) / (xMaxValue - xMinValue) ); } //This is the standard case
 
       unsigned long q;
       if (yMaxValue == yMinValue)
       {
         q = (long)Y - yMinValue;
-        q = (q << 8);
+        q = (q << TABLE_SHIFT_FACTOR);
       }
       //Standard case
       else
       {
         q = long(Y) - yMaxValue;
-        q = 256 - ( (q << 8) / (yMinValue - yMaxValue) );
+        q = TABLE_SHIFT_POWER - ( (q << TABLE_SHIFT_FACTOR) / (yMinValue - yMaxValue) );
       }
 
-/*
-      long q;
-      if (yMaxValue == yMinValue) { q = ((long)(Y - yMinValue) << 8); }
-      else { q = 256 - (((long)(Y - yMaxValue) << 8) / (yMinValue - yMaxValue)); }
-      */
-
-      int m = ((256-p) * (256-q)) >> 8;
-      int n = (p * (256-q)) >> 8;
-      int o = ((256-p) * q) >> 8;
-      int r = (p * q) >> 8;
-      tableResult = ( (A * m) + (B * n) + (C * o) + (D * r) ) >> 8;
+      uint32_t m = ((TABLE_SHIFT_POWER-p) * (TABLE_SHIFT_POWER-q)) >> TABLE_SHIFT_FACTOR;
+      uint32_t n = (p * (TABLE_SHIFT_POWER-q)) >> TABLE_SHIFT_FACTOR;
+      uint32_t o = ((TABLE_SHIFT_POWER-p) * q) >> TABLE_SHIFT_FACTOR;
+      uint32_t r = (p * q) >> TABLE_SHIFT_FACTOR;
+      tableResult = ( (A * m) + (B * n) + (C * o) + (D * r) ) >> TABLE_SHIFT_FACTOR;
     }
 
     //Update the tables cache data

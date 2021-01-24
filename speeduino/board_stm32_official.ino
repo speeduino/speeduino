@@ -1,10 +1,12 @@
-#if defined(CORE_STM32_OFFICIAL)
 #include "board_stm32_official.h"
+#if defined(STM32_CORE_VERSION_MAJOR)
 #include "globals.h"
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
 #include "HardwareTimer.h"
+
+STM32RTC& rtc = STM32RTC::getInstance();
 
   void initBoard()
   {
@@ -16,11 +18,20 @@
       #define FLASH_LENGTH 8192
     #endif
     delay(10);
+
+    /*
+     ***********************************************************************************************************
+     * Real Time clock for datalogging/time stamping
+     */
+     
+     rtc.setClockSource(STM32RTC::LSE_CLOCK); //Initialize external clock for RTC. That is the only clock running of VBAT
+     rtc.begin(); // initialize RTC 24H format
+
     /*
     ***********************************************************************************************************
     * Idle
     */
-    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
+    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL))
     {
         idle_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
     } 
@@ -150,7 +161,43 @@
       return &top - reinterpret_cast<char*>(sbrk(0));
   }
 
-    /*
+  void doSystemReset( void )
+  {
+    __disable_irq();
+    NVIC_SystemReset();
+  }
+
+  void jumpToBootloader( void ) // https://github.com/3devo/Arduino_Core_STM32/blob/jumpSysBL/libraries/SrcWrapper/src/stm32/bootloader.c
+  { // https://github.com/markusgritsch/SilF4ware/blob/master/SilF4ware/drv_reset.c
+    #if !defined(STM32F103xB)
+    HAL_RCC_DeInit();
+    HAL_DeInit();
+    SysTick->VAL = SysTick->LOAD = SysTick->CTRL = 0;
+    SYSCFG->MEMRMP = 0x01;
+
+    #if defined(STM32F7xx) || defined(STM32H7xx)
+    const uint32_t DFU_addr = 0x1FF00000; // From AN2606
+    #else
+    const uint32_t DFU_addr = 0x1FFF0000; // Default for STM32F10xxx and STM32F40xxx/STM32F41xxx from AN2606
+    #endif
+    // This is assembly to prevent modifying the stack pointer after
+    // loading it, and to ensure a jump (not call) to the bootloader.
+    // Not sure if the barriers are really needed, they were taken from
+    // https://github.com/GrumpyOldPizza/arduino-STM32L4/blob/ac659033eadd50cfe001ba1590a1362b2d87bb76/system/STM32L4xx/Source/boot_stm32l4xx.c#L159-L165
+    asm volatile (
+      "ldr r0, [%[DFU_addr], #0]   \n\t"  // get address of stack pointer
+      "msr msp, r0            \n\t"  // set stack pointer
+      "ldr r0, [%[DFU_addr], #4]   \n\t"  // get address of reset handler
+      "dsb                    \n\t"  // data sync barrier
+      "isb                    \n\t"  // instruction sync barrier
+      "bx r0                  \n\t"  // branch to bootloader
+      : : [DFU_addr] "l" (DFU_addr) : "r0"
+    );
+    __builtin_unreachable();
+    #endif
+  }
+
+  /*
   ***********************************************************************************************************
   * Interrupt callback functions
   */

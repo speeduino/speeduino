@@ -8,6 +8,8 @@
 */
   void initBoard();
   uint16_t freeRam();
+  void doSystemReset();
+  void jumpToBootloader();
   #define PORT_TYPE uint8_t //Size of the port variables
   #define PINMASK_TYPE uint8_t
   #define COMPARE_TYPE uint16_t
@@ -19,8 +21,11 @@
   #else
     #define EEPROM_LIB_H <EEPROM.h>
   #endif
+  #define RTC_ENABLED
+  #define RTC_LIB_H "TimeLib.h"
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
+  #define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 1) || ((pin) == 3) || ((pin) == 4) ) //Forbiden pins like USB
 
 /*
 ***********************************************************************************************************
@@ -146,5 +151,6 @@
 #endif
   static CAN_message_t outMsg;
   static CAN_message_t inMsg;
+  #define NATIVE_CAN_AVAILABLE
 #endif //CORE_TEENSY
 #endif //TEENSY35_H
