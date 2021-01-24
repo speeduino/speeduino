@@ -46,8 +46,8 @@ function process_cpp_results() {
   sed '$!N;$!N;s/\n/~/g' < "$cpp_result_file" |\
     # Remove duplicate lines
     sort | uniq > "$intermediate_file"
-  # Number of lines == unique errors
-  local __error_count=`wc -l < "$intermediate_file"`
+  # Count error lines
+  local __error_count=`grep ": error:" < "$intermediate_file" | wc -l`
   # Unfold the line groups for readability
   tr '~' '\n' < "$intermediate_file" > "$result_file"
   rm -f "$intermediate_file"
