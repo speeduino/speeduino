@@ -27,7 +27,14 @@ function parse_command_line() {
 function run_cppcheck() {
   shopt -s nullglob nocaseglob
   for i in "$source_folder"/*.{"$file_exts",}; do
-    "$cppcheck_bin" --addon="$script_folder/misra.json" --suppress=syntaxError:"$source_folder"/src/PID_v1/PID_v1.h -DCORE_AVR=1 -D__AVR_ATmega2560__ $i 2>> "$cpp_result_file"
+    "$cppcheck_bin" \
+        --inline-suppr \
+        --language=c++ \
+        --addon="$script_folder/misra.json" \
+        --suppressions-list="$script_folder/suppressions.txt" \
+        -DCORE_AVR=1 \
+        -D__AVR_ATmega2560__ \
+        $i 2>> "$cpp_result_file"
   done
   shopt -u nullglob nocaseglob
 }
