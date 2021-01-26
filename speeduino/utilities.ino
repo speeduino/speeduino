@@ -19,7 +19,7 @@ FastCRC32 CRC32;
 byte pinTranslate(byte rawPin)
 {
   byte outputPin = rawPin;
-  if(rawPin > BOARD_DIGITAL_GPIO_PINS) { outputPin = A8 + (outputPin - BOARD_DIGITAL_GPIO_PINS - 1); }
+  if(rawPin > BOARD_MAX_DIGITAL_PINS) { outputPin = A8 + (outputPin - BOARD_MAX_DIGITAL_PINS - 1); }
 
   return outputPin;
 }
@@ -218,7 +218,7 @@ void initialiseProgrammableIO()
 {
   for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
   {
-    if ( (configPage13.outputPin[y] > 0) && (configPage13.outputPin[y] < BOARD_NR_GPIO_PINS) )
+    if ( (configPage13.outputPin[y] > 0) && (configPage13.outputPin[y] < BOARD_MAX_DIGITAL_PINS) )
     {
       if ( !pinIsUsed(configPage13.outputPin[y]) )
       {

@@ -6,8 +6,8 @@
 #include "logger.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
-  #define BOARD_DIGITAL_GPIO_PINS 54
-  #define BOARD_NR_GPIO_PINS 62
+  #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
+  #define BOARD_MAX_IO_PINS 70 //digital pins + analog channels + 1
 #ifndef LED_BUILTIN
   #define LED_BUILTIN 13
 #endif
@@ -62,17 +62,20 @@
     #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
   #endif
   
+  
   #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
    || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
     //STM32 Pill boards
-    #define BOARD_DIGITAL_GPIO_PINS 34
-    #define BOARD_NR_GPIO_PINS 34
+    #ifndef NUM_DIGITAL_PINS
+      #define NUM_DIGITAL_PINS 35
+    #endif
     #ifndef LED_BUILTIN
       #define LED_BUILTIN PB1 //Maple Mini
     #endif
   #elif defined(STM32F407xx)
-    #define BOARD_DIGITAL_GPIO_PINS 74
-    #define BOARD_NR_GPIO_PINS 74
+    #ifndef NUM_DIGITAL_PINS
+      #define NUM_DIGITAL_PINS 75
+    #endif
   #endif
 
   #if defined(STM32_CORE_VERSION)
@@ -87,6 +90,8 @@
     #define SMALL_FLASH_MODE
   #endif
 
+  #define BOARD_MAX_DIGITAL_PINS NUM_DIGITAL_PINS
+  #define BOARD_MAX_IO_PINS NUM_DIGITAL_PINS
   #if __GNUC__ < 7 //Already included on GCC 7
   extern "C" char* sbrk(int incr); //Used to freeRam
   #endif
