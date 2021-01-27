@@ -4,6 +4,7 @@
 #if defined(STM32_CORE_VERSION_MAJOR)
 #include <HardwareTimer.h>
 #include <HardwareSerial.h>
+#include "STM32RTC.h"
 
 #if defined(STM32F1)
 #include "stm32f1xx_ll_tim.h"
@@ -25,13 +26,15 @@
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #define TIMER_RESOLUTION 4
 
-
+#define RTC_ENABLED
 #define USE_SERIAL3
 
 //When building for Black board Serial1 is instanciated,building generic STM32F4x7 has serial2 and serial 1 must be done here
 #if SERIAL_UART_INSTANCE==2
 HardwareSerial Serial1(PA10, PA9);
 #endif
+
+extern STM32RTC& rtc;
 
 void initBoard();
 uint16_t freeRam();
@@ -118,6 +121,7 @@ extern "C" char* sbrk(int incr);
     InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 #endif
 
+#define RTC_LIB_H "STM32RTC.h"
 
 /*
 ***********************************************************************************************************

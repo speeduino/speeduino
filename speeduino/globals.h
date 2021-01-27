@@ -632,6 +632,7 @@ struct statuses {
   byte vvt2TargetAngle;
   byte vvt2Duty;
   byte outputsStatus;
+  byte TS_SD_Status; //TunerStudios SD card status
 };
 
 /**
@@ -741,7 +742,8 @@ struct config2 {
 
   byte fanWhenOff : 1;      // Only run fan when engine is running
   byte fanWhenCranking : 1;      //**< Setting whether the fan output will stay on when the engine is cranking */ 
-  byte fanUnused : 5;
+  byte fanUnused : 3;
+  byte rtc_mode : 2;
   byte incorporateAFR : 1;  //Incorporate AFR
   byte asePct[4];  //Afterstart enrichment (%)
   byte aseCount[4]; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
@@ -789,7 +791,9 @@ struct config2 {
   byte iacTPSlimit;
   byte iacRPMlimitHysteresis;
 
-  byte unused2_95[5];
+  int8_t rtc_trim;
+
+  byte unused2_95[4];
 
 #if defined(CORE_AVR)
   };
