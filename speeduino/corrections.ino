@@ -147,21 +147,20 @@ This is the only function that should be called from anywhere outside the file
 static inline byte correctionsFuel_new()
 {
   uint32_t sumCorrections = 100;
-  byte numCorrections = 0;
 
   //The values returned by each of the correction functions are multipled together and then divided back to give a single 0-255 value.
-  currentStatus.wueCorrection = correctionWUE(); numCorrections++;
-  uint16_t correctionASEvalue = correctionASE(); numCorrections++;
-  uint16_t correctionCrankingValue = correctionCranking(); numCorrections++;
-  currentStatus.AEamount = correctionAccel(); numCorrections++;
-  uint8_t correctionFloodClearValue = correctionFloodClear(); numCorrections++;
-  currentStatus.egoCorrection = correctionAFRClosedLoop(); numCorrections++;
+  currentStatus.wueCorrection = correctionWUE();
+  uint16_t correctionASEvalue = correctionASE();
+  uint16_t correctionCrankingValue = correctionCranking();
+  currentStatus.AEamount = correctionAccel();
+  uint8_t correctionFloodClearValue = correctionFloodClear();
+  currentStatus.egoCorrection = correctionAFRClosedLoop();
 
-  currentStatus.batCorrection = correctionBatVoltage(); numCorrections++;
-  currentStatus.iatCorrection = correctionIATDensity(); numCorrections++;
-  currentStatus.baroCorrection = correctionBaro(); numCorrections++; 
-  currentStatus.flexCorrection = correctionFlex(); numCorrections++;
-  currentStatus.launchCorrection = correctionLaunch(); numCorrections++;
+  currentStatus.batCorrection = correctionBatVoltage();
+  currentStatus.iatCorrection = correctionIATDensity();
+  currentStatus.baroCorrection = correctionBaro();
+  currentStatus.flexCorrection = correctionFlex();
+  currentStatus.launchCorrection = correctionLaunch();
 
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
   if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
