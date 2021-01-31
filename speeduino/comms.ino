@@ -1569,13 +1569,10 @@ void sendPageASCII()
   {
     case veMapPage:
       Serial.println((const __FlashStringHelper *)&pageTitles[0]);
-      Serial.println();
       serial_print_3dtable_with_xbins(fuelTable);
       break;
 
     case veSetPage:
-      // To Display Values from Config Page 1
-      // When casting to the __FlashStringHelper type Serial.println uses the same subroutine as when using the F macro
       Serial.println((const __FlashStringHelper *)&pageTitles[27]);//27 is the index to the first char in the second sting in pageTitles
       // The following loop displays in human readable form of all byte values in config page 1 up to but not including the first array.
       serial_println_range((byte *)&configPage2, configPage2.wueValues);
@@ -1593,12 +1590,10 @@ void sendPageASCII()
 
     case ignMapPage:
       Serial.println((const __FlashStringHelper *)&pageTitles[42]);
-      Serial.println();
       serial_print_3dtable_with_xbins(ignitionTable);
       break;
 
     case ignSetPage:
-      //To Display Values from Config Page 2
       Serial.println((const __FlashStringHelper *)&pageTitles[56]);
       Serial.println(configPage4.triggerAngle);// configPsge2.triggerAngle is an int so just display it without complication
       // Following loop displays byte values after that first int up to but not including the first array in config page 2
@@ -1613,13 +1608,10 @@ void sendPageASCII()
 
     case afrMapPage:
       Serial.println((const __FlashStringHelper *)&pageTitles[71]);
-      Serial.println();
       serial_print_3dtable_with_xbins(afrTable);
       break;
 
     case afrSetPage:
-      //currentTitleIndex = 91;
-      //To Display Values from Config Page 3
       Serial.println((const __FlashStringHelper *)&pageTitles[91]);//special typecasting to enable suroutine that the F macro uses
       serial_println_range((byte *)&configPage6, configPage6.voltageCorrectionBins);
       serial_print_space_delimited_array(configPage6.voltageCorrectionBins);
@@ -1630,7 +1622,6 @@ void sendPageASCII()
       serial_println_range(_end_range_byte_address(configPage6.airDenRates), (byte *)&configPage6 + npage_size[afrSetPage]);
 
       //Old configPage4 STARTED HERE!
-      //currentTitleIndex = 106;
       Serial.println((const __FlashStringHelper *)&pageTitles[106]);// F macro hack
       serial_print_space_delimited_array(configPage6.iacCLValues);
       serial_print_space_delimited_array(configPage6.iacOLStepVal);
@@ -1645,10 +1636,8 @@ void sendPageASCII()
 
     case boostvvtPage:
       Serial.println((const __FlashStringHelper *)&pageTitles[121]);
-      Serial.println();
       serial_print_3dtable_with_xbins(boostTable);
       Serial.println((const __FlashStringHelper *)&pageTitles[132]);
-      Serial.println();
       serial_print_3dtable_with_xbins(vvtTable);
       break;
 
@@ -1657,21 +1646,17 @@ void sendPageASCII()
       break;
 
     case canbusPage:
-      //currentTitleIndex = 141;
-      //To Display Values from Config Page 10
       Serial.println((const __FlashStringHelper *)&pageTitles[103]);//special typecasting to enable suroutine that the F macro uses
       serial_println_range((byte *)&configPage9, (byte *)&configPage9 + npage_size[canbusPage]);
       break;
 
     case fuelMap2Page:
       Serial.println((const __FlashStringHelper *)&pageTitles[117]);
-      Serial.println();
       serial_print_3dtable_with_xbins(fuelTable2);
       break;
    
     case ignMap2Page:
       Serial.println((const __FlashStringHelper *)&pageTitles[149]);
-      Serial.println();
       serial_print_3dtable_with_xbins(ignitionTable2);
       break;
 
