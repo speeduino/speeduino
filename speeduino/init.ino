@@ -2013,6 +2013,13 @@ void setPinMapping(byte boardID)
       injectorOutputControl = OUTPUT_CONTROL_MC33810;
       ignitionOutputControl = OUTPUT_CONTROL_MC33810;
 
+      //The injector pins below are not used directly as the control is via SPI through the MC33810s, however the pin numbers are set to be the SPI pins (SCLK, MOSI, MISO and CS) so that nothing else will set them as inputs
+      pinInjector1 = 13; //SCLK
+      pinInjector2 = 11; //MOSI
+      pinInjector3 = 12; //MISO
+      pinInjector4 = 10; //CS for MC33810 1
+      pinInjector5 = 9; //CS for MC33810 2
+
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinFlex = A16; // Flex sensor
