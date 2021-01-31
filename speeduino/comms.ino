@@ -1515,6 +1515,37 @@ static void serial_print_space_delimited(const byte *first, const byte *last)
 }
 #define serial_print_space_delimited_array(array) serial_print_space_delimited(array, _end_range_address(array))
 
+static void serial_print_axis_padding(byte axisValue)
+{
+  if (axisValue < 100)
+  {
+    Serial.print(F(" "));
+    if (axisValue < 10)
+    {
+      Serial.print(F(" "));
+    }
+  }
+}
+
+static void serial_print_3dtable_axis_value(byte axisValue)
+{
+    serial_print_axis_padding(axisValue);
+    Serial.print(axisValue);
+    Serial.print(F(" "));
+}
+
+static void serial_print_3dtable(const table3D &currentTable)
+{
+  for (int y = 0; y < currentTable.ySize; y++)
+  {
+    serial_print_3dtable_axis_value(byte(currentTable.axisY[y]));
+    for (int i = 0; i < currentTable.xSize; i++)
+    {
+      serial_print_3dtable_axis_value(currentTable.values[y][i]);
+    }
+    Serial.println();
+  }
+}
 
 /**
  * @brief Similar to sendPage(), however data is sent in human readable format
@@ -1613,36 +1644,7 @@ void sendPageASCII()
       break;
 
     case seqFuelPage:
-      currentTable = trim1Table;
-      for (int y = 0; y < currentTable.ySize; y++)
-      {
-        byte axisY = byte(currentTable.axisY[y]);
-        if (axisY < 100)
-        {
-          Serial.write(" ");
-          if (axisY < 10)
-          {
-            Serial.write(" ");
-          }
-        }
-        Serial.print(axisY);// Vertical Bins
-        Serial.write(" ");
-        for (int i = 0; i < currentTable.xSize; i++)
-        {
-          byte value = currentTable.values[y][i];
-          if (value < 100)
-          {
-            Serial.write(" ");
-            if (value < 10)
-            {
-              Serial.write(" ");
-            }
-          }
-          Serial.print(value);
-          Serial.write(" ");
-        }
-        Serial.println("");
-      }
+      serial_print_3dtable(trim1Table);
       sendComplete = true;
       break;
 
@@ -1696,53 +1698,13 @@ void sendPageASCII()
     {
       //This is a do while loop that kicks in for the boostvvtPage
       do {
-        const char spaceChar = ' ';
-
         Serial.println((const __FlashStringHelper *)&pageTitles[currentTitleIndex]);// F macro hack
         Serial.println();
-        for (int y = 0; y < currentTable.ySize; y++)
-        {
-          byte axisY = byte(currentTable.axisY[y]);
-          if (axisY < 100)
-          {
-            Serial.write(spaceChar);
-            if (axisY < 10)
-            {
-              Serial.write(spaceChar);
-            }
-          }
-          Serial.print(axisY);// Vertical Bins
-          Serial.write(spaceChar);
-          for (int i = 0; i < currentTable.xSize; i++)
-          {
-            byte value = currentTable.values[y][i];
-            if (value < 100)
-            {
-              Serial.write(spaceChar);
-              if (value < 10)
-              {
-                Serial.write(spaceChar);
-              }
-            }
-            Serial.print(value);
-            Serial.write(spaceChar);
-          }
-          Serial.println();
-        }
+        serial_print_3dtable(currentTable);
         Serial.print(F("    "));
         for (int x = 0; x < currentTable.xSize; x++)// Horizontal bins
         {
-          byte axisX = byte(currentTable.axisX[x] / 100);
-          if (axisX < 100)
-          {
-            Serial.write(spaceChar);
-            if (axisX < 10)
-            {
-              Serial.write(spaceChar);
-            }
-          }
-          Serial.print(axisX);
-          Serial.write(spaceChar);
+          serial_print_3dtable_axis_value(byte(currentTable.axisX[x] / 100));
         }
         Serial.println();
         if(currentTitleIndex == 121) //Check to see if on boostTable
