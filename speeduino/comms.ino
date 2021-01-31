@@ -1663,32 +1663,20 @@ void sendPageASCII()
       serial_println_range((byte *)&configPage9, (byte *)&configPage9 + npage_size[canbusPage]);
       break;
 
-    case warmupPage:
-      //NOT WRITTEN YET
-      #ifndef SMALL_FLASH_MODE
-        Serial.println(F("\nPage has not been implemented yet"));
-      #endif
-      break;
-
     case fuelMap2Page:
       Serial.println((const __FlashStringHelper *)&pageTitles[117]);
       Serial.println();
       serial_print_3dtable_with_xbins(fuelTable2);
       break;
-
-    case progOutsPage:
-      //NOT WRITTEN YET
-      #ifndef SMALL_FLASH_MODE
-        Serial.println(F("\nPage has not been implemented yet"));
-      #endif
-      break;
-    
+   
     case ignMap2Page:
       Serial.println((const __FlashStringHelper *)&pageTitles[149]);
       Serial.println();
       serial_print_3dtable_with_xbins(ignitionTable2);
       break;
 
+    case warmupPage:
+    case progOutsPage:
     default:
     #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
