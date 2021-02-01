@@ -14,8 +14,8 @@
   #define PINMASK_TYPE uint8_t
   #define COMPARE_TYPE uint16_t
   #define COUNTER_TYPE uint16_t
-  #define BOARD_DIGITAL_GPIO_PINS 34
-  #define BOARD_NR_GPIO_PINS 34
+  #define BOARD_MAX_DIGITAL_PINS 34
+  #define BOARD_MAX_IO_PINS 34 //digital pins + analog channels + 1
   #ifdef USE_SPI_EEPROM
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   #else
