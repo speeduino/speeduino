@@ -108,7 +108,7 @@ void loop()
       }
 
       //Check for any new requets from serial.
-      if (Serial.available() > 0) { command(); }
+      if ( (Serial.available()) > 0 && (eepromWritesPending == false)) { command(); }
       else if(cmdPending == true)
       {
         //This is a special case just for the tooth and composite loggers
@@ -268,6 +268,8 @@ void loop()
       #if TPS_READ_FREQUENCY == 30
         readTPS();
       #endif
+
+      if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
@@ -285,8 +287,6 @@ void loop()
       currentStatus.gear = getGear();
       currentStatus.fuelPressure = getFuelPressure();
       currentStatus.oilPressure = getOilPressure();
-
-      if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
       if(auxIsEnabled == true)
       {

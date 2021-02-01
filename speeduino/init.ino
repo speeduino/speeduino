@@ -1972,11 +1972,53 @@ void setPinMapping(byte boardID)
       break;
     #endif
 
+    #if defined(CORE_TEENSY35)
+    case 53:
+      //Pin mappings for the Juice Box (ignition only board)
+      pinInjector1 = 2; //Output pin injector 1 is on - NOT USED
+      pinInjector2 = 56; //Output pin injector 2 is on - NOT USED
+      pinInjector3 = 6; //Output pin injector 3 is on - NOT USED
+      pinInjector4 = 50; //Output pin injector 4 is on - NOT USED
+      pinCoil1 = 29; //Pin for coil 1
+      pinCoil2 = 30; //Pin for coil 2
+      pinCoil3 = 31; //Pin for coil 3
+      pinCoil4 = 32; //Pin for coil 4
+      pinTrigger = 37; //The CAS pin
+      pinTrigger2 = 38; //The Cam Sensor pin - NOT USED
+      pinTPS = A2; //TPS input pin
+      pinMAP = A7; //MAP sensor pin
+      pinIAT = A1; //IAT sensor pin
+      pinCLT = A5; //CLT sensor pin
+      pinO2 = A0; //O2 sensor pin
+      pinO2_2 = A21; //O2 sensor pin (second sensor) - NOT USED
+      pinBat = A6; //Battery reference voltage pin
+      pinTachOut = 28; //Tacho output pin
+      pinIdle1 = 5; //Single wire idle control - NOT USED
+      pinBoost = 11; //Boost control - NOT USED
+      pinFuelPump = 24; //Fuel pump output
+      pinStepperDir = 3; //Direction pin for DRV8825 driver - NOT USED
+      pinStepperStep = 4; //Step pin for DRV8825 driver - NOT USED
+      pinStepperEnable = 6; //Enable pin for DRV8825 driver - NOT USED
+      pinLaunch = 26; //Can be overwritten below
+      pinFan = 25; //Pin for the fan output
+      pinSpareHOut1 = 26; // high current output spare1
+      pinSpareHOut2 = 27; // high current output spare2
+      pinSpareLOut1 = 55; //low current output spare1 - NOT USED
+      break;
+    #endif
+
     case 55:
       #if defined(CORE_TEENSY)
       //Pin mappings for the DropBear
       injectorOutputControl = OUTPUT_CONTROL_MC33810;
       ignitionOutputControl = OUTPUT_CONTROL_MC33810;
+
+      //The injector pins below are not used directly as the control is via SPI through the MC33810s, however the pin numbers are set to be the SPI pins (SCLK, MOSI, MISO and CS) so that nothing else will set them as inputs
+      pinInjector1 = 13; //SCLK
+      pinInjector2 = 11; //MOSI
+      pinInjector3 = 12; //MISO
+      pinInjector4 = 10; //CS for MC33810 1
+      pinInjector5 = 9; //CS for MC33810 2
 
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin

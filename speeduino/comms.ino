@@ -504,7 +504,7 @@ void command()
 
       break;
 
-    case 'w':
+    case 'M':
       cmdPending = true;
 
       if(chunkPending == false)
@@ -529,85 +529,9 @@ void command()
           length2 = Serial.read();
           chunkSize = word(length2, length1);
 
-          if(currentPage == SD_READWRITE_PAGE)
-          { 
-            cmdPending = false;
-
-            //Reserved for the SD card settings. Appears to be hardcoded into TS. Flush the final byte in the buffer as its not used for now
-            Serial.read(); 
-            if((valueOffset == SD_WRITE_DO_OFFSET) && (chunkSize == SD_WRITE_DO_LENGTH))
-            {
-              /*
-              SD DO command. Single byte of data where the commands are:
-              0 Reset
-              1 Reset
-              2 Stop logging
-              3 Start logging
-              4 Load status variable
-              5 Init SD card
-              */
-             Serial.read();
-            }
-            else if((valueOffset == SD_WRITE_SEC_OFFSET) && (chunkSize == SD_WRITE_SEC_LENGTH))
-            {
-              //SD write sector command
-            }
-            else if((valueOffset == SD_ERASEFILE_OFFSET) && (chunkSize == SD_ERASEFILE_LENGTH))
-            {
-              //Erase file command
-              //First 4 bytes are the log number in ASCII
-              char log1 = Serial.read();
-              char log2 = Serial.read();
-              char log3 = Serial.read();
-              char log4 = Serial.read();
-
-              //Next 2 bytes are the directory block no
-              Serial.read();
-              Serial.read();
-            }
-            else if((valueOffset == SD_SPD_TEST_OFFSET) && (chunkSize == SD_SPD_TEST_LENGTH))
-            {
-              //Perform a speed test on the SD card
-              //First 4 bytes are the sector number to write to
-              Serial.read();
-              Serial.read();
-              Serial.read();
-              Serial.read();
-
-              //Last 4 bytes are the number of sectors to test
-              Serial.read();
-              Serial.read();
-              Serial.read();
-              Serial.read();
-            }
-          }
-          else if(currentPage == SD_RTC_PAGE)
-          {
-            cmdPending = false;
-            //Used for setting RTC settings
-            if((valueOffset == SD_RTC_WRITE_OFFSET) && (chunkSize == SD_RTC_WRITE_LENGTH))
-            {
-              //Set the RTC date/time
-              //Need to ensure there are 9 more bytes with the new values
-              while(Serial.available() < 9) {} //Terrible hack, but RTC values should not be set with the engine running anyway
-              byte second = Serial.read();
-              byte minute = Serial.read();
-              byte hour = Serial.read();
-              byte dow = Serial.read();
-              byte day = Serial.read();
-              byte month = Serial.read();
-              uint16_t year = Serial.read();
-              year = word(Serial.read(), year);
-              Serial.read(); //Final byte is unused (Always has value 0x5a)
-              rtc_setTime(second, minute, hour, day, month, year);
-            }
-          }
-          else
-          {
-            //Regular page data
-            chunkPending = true;
-            chunkComplete = 0;
-          }
+          //Regular page data
+          chunkPending = true;
+          chunkComplete = 0;
         }
       }
       //This CANNOT be an else of the above if statement as chunkPending gets set to true above
@@ -620,6 +544,101 @@ void command()
         }
         if(chunkComplete >= chunkSize) { cmdPending = false; chunkPending = false; }
       }
+      break;
+
+    case 'w':
+      if(Serial.available() >= 7)
+        {
+          byte offset1, offset2, length1, length2;
+
+          Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+          currentPage = Serial.read();
+          //currentPage = 1;
+          offset1 = Serial.read();
+          offset2 = Serial.read();
+          valueOffset = word(offset2, offset1);
+          length1 = Serial.read();
+          length2 = Serial.read();
+          chunkSize = word(length2, length1);
+
+          //Regular page data
+          chunkPending = true;
+          chunkComplete = 0;
+        }
+
+      if(currentPage == SD_READWRITE_PAGE)
+        { 
+          cmdPending = false;
+
+          //Reserved for the SD card settings. Appears to be hardcoded into TS. Flush the final byte in the buffer as its not used for now
+          Serial.read(); 
+          if((valueOffset == SD_WRITE_DO_OFFSET) && (chunkSize == SD_WRITE_DO_LENGTH))
+          {
+            /*
+            SD DO command. Single byte of data where the commands are:
+            0 Reset
+            1 Reset
+            2 Stop logging
+            3 Start logging
+            4 Load status variable
+            5 Init SD card
+            */
+            Serial.read();
+          }
+          else if((valueOffset == SD_WRITE_SEC_OFFSET) && (chunkSize == SD_WRITE_SEC_LENGTH))
+          {
+            //SD write sector command
+          }
+          else if((valueOffset == SD_ERASEFILE_OFFSET) && (chunkSize == SD_ERASEFILE_LENGTH))
+          {
+            //Erase file command
+            //First 4 bytes are the log number in ASCII
+            char log1 = Serial.read();
+            char log2 = Serial.read();
+            char log3 = Serial.read();
+            char log4 = Serial.read();
+
+            //Next 2 bytes are the directory block no
+            Serial.read();
+            Serial.read();
+          }
+          else if((valueOffset == SD_SPD_TEST_OFFSET) && (chunkSize == SD_SPD_TEST_LENGTH))
+          {
+            //Perform a speed test on the SD card
+            //First 4 bytes are the sector number to write to
+            Serial.read();
+            Serial.read();
+            Serial.read();
+            Serial.read();
+
+            //Last 4 bytes are the number of sectors to test
+            Serial.read();
+            Serial.read();
+            Serial.read();
+            Serial.read();
+          }
+        }
+        else if(currentPage == SD_RTC_PAGE)
+        {
+          cmdPending = false;
+          //Used for setting RTC settings
+          if((valueOffset == SD_RTC_WRITE_OFFSET) && (chunkSize == SD_RTC_WRITE_LENGTH))
+          {
+            //Set the RTC date/time
+            //Need to ensure there are 9 more bytes with the new values
+            while(Serial.available() < 9) {} //Terrible hack, but RTC values should not be set with the engine running anyway
+            byte second = Serial.read();
+            byte minute = Serial.read();
+            byte hour = Serial.read();
+            byte dow = Serial.read();
+            byte day = Serial.read();
+            byte month = Serial.read();
+            uint16_t year = Serial.read();
+            year = word(Serial.read(), year);
+            Serial.read(); //Final byte is unused (Always has value 0x5a)
+            rtc_setTime(second, minute, hour, day, month, year);
+          }
+        }
       break;
 
     case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed. This function takes 1.5kb of program space! :S
@@ -2068,6 +2087,7 @@ void receiveCalibration(byte tableID)
       
       ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
       pnt_TargetTable_bins[x] = (x * 32U);
+      writeCalibration();
     }
   }
 
