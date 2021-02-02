@@ -58,8 +58,8 @@ volatile PORT_TYPE *n2o_arming_pin_port;
 volatile PINMASK_TYPE n2o_arming_pin_mask;
 
 volatile bool boost_pwm_state;
-unsigned int boost_pwm_max_count; //Used for variable PWM frequency
-volatile unsigned int boost_pwm_cur_value;
+uint16_t boost_pwm_max_count; //Used for variable PWM frequency
+volatile uint16_t boost_pwm_cur_value;
 long boost_pwm_target_value;
 long boost_cl_target_boost;
 uint8_t boostCounter;
@@ -73,9 +73,9 @@ volatile bool vvt2_pwm_state;
 volatile bool vvt1_max_pwm;
 volatile bool vvt2_max_pwm;
 volatile char nextVVT;
-unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
-volatile unsigned int vvt1_pwm_cur_value;
-volatile unsigned int vvt2_pwm_cur_value;
+uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
+volatile uint16_t vvt1_pwm_cur_value;
+volatile uint16_t vvt2_pwm_cur_value;
 long vvt1_pwm_value;
 long vvt2_pwm_value;
 long vvt_pid_target_angle;

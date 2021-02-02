@@ -47,7 +47,7 @@ volatile uint16_t knockAngle;
 
 unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
 unsigned long EMAPrunningValue; //As above but for EMAP
-unsigned int MAPcount; //Number of samples taken in the current MAP cycle
+uint16_t MAPcount; //Number of samples taken in the current MAP cycle
 uint32_t MAPcurRev; //Tracks which revolution we're sampling on
 bool auxIsEnabled;
 uint8_t TPSlast; /**< The previous TPS reading */
@@ -95,14 +95,14 @@ void readBat();
 void readBaro();
 
 #if defined(ANALOG_ISR)
-volatile int AnChannel[15];
+volatile int16_t AnChannel[15];
 
 //Analog ISR interrupt routine
 /*
 ISR(ADC_vect)
 {
   uint8_t nChannel;
-  int result = ADCL | (ADCH << 8);
+  int16_t result = ADCL | (ADCH << 8);
 
   //ADCSRA = 0x6E; - ADC disabled by clearing bit 7(ADEN)
   //BIT_CLEAR(ADCSRA, ADIE);
@@ -133,7 +133,7 @@ ISR(ADC_vect)
 ISR(ADC_vect)
 {
   uint8_t nChannel = ADMUX & 0x07;
-  int result = ADCL | (ADCH << 8);
+  int16_t result = ADCL | (ADCH << 8);
 
   BIT_CLEAR(ADCSRA, ADEN); //Disable ADC for Changing Channel (see chapter 26.5 of datasheet)
 

@@ -1,10 +1,10 @@
 #ifndef MATH_H
 #define MATH_H
 
-int fastMap1023toX(int, int);
+int16_t fastMap1023toX(int16_t, int16_t);
 unsigned long percentage(uint8_t, unsigned long);
-inline long powint(int, unsigned int);
-int divs100(long);
+inline long powint(int16_t, uint16_t);
+int16_t divs100(long);
 unsigned long divu100(unsigned long);
 
 #define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d)/2)/(d)) : (((n) + (d)/2)/(d)))

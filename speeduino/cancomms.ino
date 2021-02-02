@@ -142,7 +142,7 @@ void secondserial_Command()
       
     case 'Q': // send code version
        //for (unsigned int revn = 0; revn < sizeof( TSfirmwareVersion) - 1; revn++)
-       for (unsigned int revn = 0; revn < 10 - 1; revn++)
+       for (uint16_t revn = 0; revn < 10 - 1; revn++)
        {
          CANSerial.write( TSfirmwareVersion[revn]);
        }
@@ -285,7 +285,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, uint8_t cmd, uint8_t 
 
 void can_Command()
 {
- //int currentcanCommand = inMsg.id;
+ //int16_t currentcanCommand = inMsg.id;
  #if defined (NATIVE_CAN_AVAILABLE)
       // currentStatus.canin[12] = (inMsg.id);
  if ( (inMsg.id == uint16_t(configPage9.obd_address + 0x100))  || (inMsg.id == 0x7DF))      

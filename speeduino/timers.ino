@@ -156,7 +156,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     BIT_SET(TIMER_mask, BIT_TIMER_1HZ);
 
     dwellLimit_uS = (1000 * configPage4.dwellLimit); //Update uS value incase setting has changed
-    currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10);
+    currentStatus.crankRPM = ((uint16_t)configPage4.crankRPM * 10);
 
     //**************************************************************************************************************************************************
     //This updates the runSecs variable

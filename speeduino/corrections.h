@@ -39,8 +39,8 @@ int8_t correctionKnock(int8_t);
 
 uint16_t correctionsDwell(uint16_t dwell);
 
-extern int MAP_rateOfChange;
-extern int TPS_rateOfChange;
+extern int16_t MAP_rateOfChange;
+extern int16_t TPS_rateOfChange;
 extern uint8_t activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
 extern uint8_t activateTPSDOT; //The tpsDOT value seen when the MAE was activated. 
 

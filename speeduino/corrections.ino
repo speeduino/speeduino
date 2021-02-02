@@ -24,8 +24,8 @@ Flood clear mode etc.
 long PID_O2, PID_output, PID_AFRTarget;
 PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
-int MAP_rateOfChange;
-int TPS_rateOfChange;
+int16_t MAP_rateOfChange;
+int16_t TPS_rateOfChange;
 uint8_t activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
 uint8_t activateTPSDOT; //The tpsDOT value seen when the MAE was activated.
 
@@ -360,10 +360,10 @@ uint16_t correctionAccel()
           }
 
           //Apply AE cold coolant modifier, if CLT is less than taper end temperature
-          if ( currentStatus.coolant < (int)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) )
+          if ( currentStatus.coolant < (int16_t)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) )
           {
             //If CLT is less than taper min temp, apply full modifier on top of accelValue
-            if ( currentStatus.coolant <= (int)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
+            if ( currentStatus.coolant <= (int16_t)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
             {
               uint16_t accelValue_uint = (uint16_t) accelValue * configPage2.aeColdPct / 100;
               accelValue = (int16_t) accelValue_uint;
@@ -372,7 +372,7 @@ uint16_t correctionAccel()
             else
             {
               int16_t taperRange = (int16_t) configPage2.aeColdTaperMax - configPage2.aeColdTaperMin;
-              int16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
+              int16_t taperPercent = (int16_t)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
               int16_t coldPct = (int16_t) 100+ percentage((100-taperPercent), configPage2.aeColdPct-100);
               uint16_t accelValue_uint = (uint16_t) accelValue * coldPct / 100; //Potential overflow (if AE is large) without using uint16_t
               accelValue = (int16_t) accelValue_uint;
@@ -419,10 +419,10 @@ uint16_t correctionAccel()
           }
 
           //Apply AE cold coolant modifier, if CLT is less than taper end temperature
-          if ( currentStatus.coolant < (int)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) )
+          if ( currentStatus.coolant < (int16_t)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) )
           {
             //If CLT is less than taper min temp, apply full modifier on top of accelValue
-            if ( currentStatus.coolant <= (int)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
+            if ( currentStatus.coolant <= (int16_t)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
             {
               uint16_t accelValue_uint = (uint16_t) accelValue * configPage2.aeColdPct / 100;
               accelValue = (int16_t) accelValue_uint;
@@ -431,7 +431,7 @@ uint16_t correctionAccel()
             else
             {
               int16_t taperRange = (int16_t) configPage2.aeColdTaperMax - configPage2.aeColdTaperMin;
-              int16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
+              int16_t taperPercent = (int16_t)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
               int16_t coldPct = (int16_t) 100+ percentage((100-taperPercent), configPage2.aeColdPct-100);
               uint16_t accelValue_uint = (uint16_t) accelValue * coldPct / 100; //Potential overflow (if AE is large) without using uint16_t
               accelValue = (int16_t) accelValue_uint;
@@ -528,7 +528,7 @@ bool correctionDFCO()
     }
     else 
     {
-      if ( ( currentStatus.coolant >= (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET) ) && ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) )
+      if ( ( currentStatus.coolant >= (int16_t)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET) ) && ( currentStatus.RPM > (uint16_t)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) )
       {
         if ( dfcoStart == 0 ) { dfcoStart = runSecsX10; }
         if( (runSecsX10 - dfcoStart) > configPage2.dfcoDelay ) { DFCOValue = true; }
@@ -603,7 +603,7 @@ uint8_t correctionAFRClosedLoop()
       AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
         
       //Check all other requirements for closed loop adjustments
-      if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) )
+      if( (currentStatus.coolant > (int16_t)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (uint16_t)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) )
       {
 
         //Check which algorithm is used, simple or PID
@@ -750,13 +750,13 @@ int8_t correctionIdleAdvance(int8_t advance)
     // Limit idle rpm delta between -500rpm - 500rpm
     if(idleRPMdelta > 100) { idleRPMdelta = 100; }
     if(idleRPMdelta < 0) { idleRPMdelta = 0; }
-    if( (configPage2.idleAdvAlgorithm == 0) && ((currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100)) && (currentStatus.TPS < configPage2.idleAdvTPS))) // TPS based idle state
+    if( (configPage2.idleAdvAlgorithm == 0) && ((currentStatus.RPM < (uint16_t)(configPage2.idleAdvRPM * 100)) && (currentStatus.TPS < configPage2.idleAdvTPS))) // TPS based idle state
     {
       int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
       if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
       else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = advanceIdleAdjust; }
     }
-    else if( (configPage2.idleAdvAlgorithm == 1) && (currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100) && (currentStatus.CTPSActive == 1) )) // closed throttle position sensor (CTPS) based idle state
+    else if( (configPage2.idleAdvAlgorithm == 1) && (currentStatus.RPM < (uint16_t)(configPage2.idleAdvRPM * 100) && (currentStatus.CTPSActive == 1) )) // closed throttle position sensor (CTPS) based idle state
     {
       int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
       if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
@@ -770,7 +770,7 @@ int8_t correctionSoftRevLimit(int8_t advance)
 {
   uint8_t ignSoftRevValue = advance;
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
-  if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) //Softcut RPM limit
+  if (currentStatus.RPM > ((uint16_t)(configPage4.SoftRevLim) * 100) ) //Softcut RPM limit
   {
     BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
     if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
@@ -805,7 +805,7 @@ int8_t correctionSoftLaunch(int8_t advance)
 {
   uint8_t ignSoftLaunchValue = advance;
   //SoftCut rev limit for 2-step launch control.
-  if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchSoftLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) )
+  if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((uint16_t)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((uint16_t)(configPage6.lnchSoftLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) )
   {
     currentStatus.launchingSoft = true;
     BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH);
@@ -824,7 +824,7 @@ int8_t correctionSoftFlatShift(int8_t advance)
 {
   uint8_t ignSoftFlatValue = advance;
 
-  if(configPage6.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage6.flatSSoftWin) ) )
+  if(configPage6.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((uint16_t)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage6.flatSSoftWin) ) )
   {
     BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
     ignSoftFlatValue = configPage6.flatSRetard;

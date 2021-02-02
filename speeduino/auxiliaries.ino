@@ -32,8 +32,8 @@ void fanControl()
 {
   if( configPage6.fanEnable == 1 )
   {
-    int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
-    int offTemp = onTemp - configPage6.fanHyster;
+    int16_t onTemp = (int16_t)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
+    int16_t offTemp = onTemp - configPage6.fanHyster;
     bool fanPermit = false;
 
     if ( configPage2.fanWhenOff == true) { fanPermit = true; }
@@ -383,7 +383,7 @@ void nitrousControl()
 // Water methanol injection control
 void wmiControl()
 {
-  int wmiPW = 0;
+  int16_t wmiPW = 0;
   
   // wmi can only work when vvt is disabled 
   if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1) )
@@ -409,7 +409,7 @@ void wmiControl()
           break;
         case WMI_MODE_CLOSEDLOOP:
           // Mapped closed loop - Output PWM follows injector duty cycle with 2D correction map applied (RPM vs MAP). Cell value contains correction value% [nom 100%] 
-          wmiPW = max(0, ((int)currentStatus.PW1 + configPage10.wmiOffset)) * get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM) / 100;
+          wmiPW = max(0, ((int16_t)currentStatus.PW1 + configPage10.wmiOffset)) * get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM) / 100;
           break;
         default:
           // Wrong mode

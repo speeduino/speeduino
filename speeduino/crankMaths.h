@@ -26,6 +26,6 @@ volatile unsigned long degreesPeruSx32768;
 
 //These are only part of the experimental 2nd deriv calcs
 uint8_t deltaToothCount = 0; //The last tooth that was used with the deltaV calc
-int rpmDelta;
+int16_t rpmDelta;
 
 #endif

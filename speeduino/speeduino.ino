@@ -40,31 +40,31 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "secondaryTables.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
-int ignition1StartAngle = 0;
-int ignition2StartAngle = 0;
-int ignition3StartAngle = 0;
-int ignition4StartAngle = 0;
-int ignition5StartAngle = 0;
-int ignition6StartAngle = 0;
-int ignition7StartAngle = 0;
-int ignition8StartAngle = 0;
+int16_t ignition1StartAngle = 0;
+int16_t ignition2StartAngle = 0;
+int16_t ignition3StartAngle = 0;
+int16_t ignition4StartAngle = 0;
+int16_t ignition5StartAngle = 0;
+int16_t ignition6StartAngle = 0;
+int16_t ignition7StartAngle = 0;
+int16_t ignition8StartAngle = 0;
 
-int channel1IgnDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
-int channel2IgnDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-int channel3IgnDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
-int channel4IgnDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
-int channel5IgnDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
-int channel6IgnDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
-int channel7IgnDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
-int channel8IgnDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
-int channel1InjDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
-int channel2InjDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-int channel3InjDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
-int channel4InjDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
-int channel5InjDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
-int channel6InjDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
-int channel7InjDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
-int channel8InjDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
+int16_t channel1IgnDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
+int16_t channel2IgnDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+int16_t channel3IgnDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
+int16_t channel4IgnDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
+int16_t channel5IgnDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
+int16_t channel6IgnDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
+int16_t channel7IgnDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
+int16_t channel8IgnDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
+int16_t channel1InjDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
+int16_t channel2InjDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+int16_t channel3InjDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
+int16_t channel4InjDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
+int16_t channel5InjDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
+int16_t channel6InjDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
+int16_t channel7InjDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
+int16_t channel8InjDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
 
 uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 uint16_t inj_opentime_uS = 0;
@@ -226,7 +226,7 @@ void loop()
 
       if(previousClutchTrigger != clutchTrigger) { currentStatus.clutchEngagedRPM = currentStatus.RPM; }
 
-      if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchHardLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
+      if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((uint16_t)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((uint16_t)(configPage6.lnchHardLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
       { 
         //HardCut rev limit for 2-step launch control.
         currentStatus.launchingHard = true; 
@@ -239,7 +239,7 @@ void loop()
         BIT_CLEAR(currentStatus.spark, BIT_SPARK_HLAUNCH); 
 
         //If launch is not active, check whether flat shift should be active
-        if(configPage6.flatSEnable && clutchTrigger && (currentStatus.RPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > currentStatus.clutchEngagedRPM) ) { currentStatus.flatShiftingHard = true; }
+        if(configPage6.flatSEnable && clutchTrigger && (currentStatus.RPM > ((uint16_t)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > currentStatus.clutchEngagedRPM) ) { currentStatus.flatShiftingHard = true; }
         else { currentStatus.flatShiftingHard = false; }
       }
 
@@ -431,7 +431,7 @@ void loop()
         currentStatus.PW1 = currentStatus.PW1 + (configPage10.n2o_stage2_adderMax + percentage(adderPercent, (configPage10.n2o_stage2_adderMin - configPage10.n2o_stage2_adderMax))) * 100; //Calculate the above percentage of the calculated ms value.
       }
 
-      int injector1StartAngle = 0;
+      int16_t injector1StartAngle = 0;
       uint16_t injector2StartAngle = 0;
       uint16_t injector3StartAngle = 0;
       uint16_t injector4StartAngle = 0;
@@ -450,8 +450,8 @@ void loop()
       #endif
       //These are used for comparisons on channels above 1 where the starting angle (for injectors or ignition) can be less than a single loop time
       //(Don't ask why this is needed, it's just there)
-      int tempCrankAngle;
-      int tempStartAngle;
+      int16_t tempCrankAngle;
+      int16_t tempStartAngle;
 
       doCrankSpeedCalcs(); //In crankMaths.ino
 
@@ -520,7 +520,7 @@ void loop()
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
       currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPM / 100);
-      unsigned int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
+      uint16_t PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
 
       injector1StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees);
 
@@ -656,7 +656,7 @@ void loop()
       else { currentStatus.dwell =  (configPage4.dwellRun * 100); }
       currentStatus.dwell = correctionsDwell(currentStatus.dwell);
 
-      int dwellAngle = timeToAngle(currentStatus.dwell, CRANKMATH_METHOD_INTERVAL_REV); //Convert the dwell time to dwell angle based on the current engine speed
+      int16_t dwellAngle = timeToAngle(currentStatus.dwell, CRANKMATH_METHOD_INTERVAL_REV); //Convert the dwell time to dwell angle based on the current engine speed
 
       calculateIgnitionAngles(dwellAngle);
 
@@ -672,7 +672,7 @@ void loop()
       //This may potentially be called a number of times as we get closer and closer to the opening time
 
       //Determine the current crank angle
-      int crankAngle = getCrankAngle();
+      int16_t crankAngle = getCrankAngle();
       while(crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle = crankAngle - CRANK_ANGLE_MAX_INJ; } //Continue reducing the crank angle by the max injection amount until it's below the required limit. This will usually only run (at most) once, but in cases where there is sequential ignition and more than 2 squirts per cycle, it may run up to 4 times. 
 
       // if(Serial && false)
@@ -1173,7 +1173,7 @@ void loop()
  * @param injOpen Injector opening time. The time the injector take to open minus the time it takes to close (Both in uS)
  * @return uint16_t The injector pulse width in uS
  */
-uint16_t PW(int REQ_FUEL, uint8_t VE, long MAP, uint16_t corrections, int injOpen)
+uint16_t PW(int REQ_FUEL, uint8_t VE, long MAP, uint16_t corrections, int16_t injOpen)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
@@ -1189,17 +1189,17 @@ uint16_t PW(int REQ_FUEL, uint8_t VE, long MAP, uint16_t corrections, int injOpe
   if (corrections > 511 ) { bitShift = 6; }
   if (corrections > 1023) { bitShift = 5; }
   
-  iVE = ((unsigned int)VE << 7) / 100;
+  iVE = ((uint16_t)VE << 7) / 100;
 
   //Check whether either of the mutiply MAP modes is turned on
-  if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
-  else if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; }
+  if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((uint16_t)MAP << 7) / 100; }
+  else if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { iMAP = ((uint16_t)MAP << 7) / currentStatus.baro; }
   
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
-    iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+    iAFR = ((uint16_t)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
   }
   if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
-    iAFR = ((unsigned int)configPage2.stoich << 7) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
+    iAFR = ((uint16_t)configPage2.stoich << 7) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
   }
   iCorrections = (corrections << bitShift) / 100;
 
@@ -1230,7 +1230,7 @@ uint16_t PW(int REQ_FUEL, uint8_t VE, long MAP, uint16_t corrections, int injOpe
       intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
     }
   }
-  return (unsigned int)(intermediate);
+  return (uint16_t)(intermediate);
 }
 
 /**
@@ -1302,7 +1302,7 @@ uint16_t calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_t injCh
   return tempInjectorStartAngle;
 }
 
-void calculateIgnitionAngle1(int dwellAngle)
+void calculateIgnitionAngle1(int16_t dwellAngle)
 {
   ignition1EndAngle = CRANK_ANGLE_MAX_IGN - currentStatus.advance;
   if(ignition1EndAngle > CRANK_ANGLE_MAX_IGN) {ignition1EndAngle -= CRANK_ANGLE_MAX_IGN;}
@@ -1310,7 +1310,7 @@ void calculateIgnitionAngle1(int dwellAngle)
   if(ignition1StartAngle < 0) {ignition1StartAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
-void calculateIgnitionAngle2(int dwellAngle)
+void calculateIgnitionAngle2(int16_t dwellAngle)
 {
   ignition2EndAngle = channel2IgnDegrees - currentStatus.advance;
   if(ignition2EndAngle > CRANK_ANGLE_MAX_IGN) {ignition2EndAngle -= CRANK_ANGLE_MAX_IGN;}
@@ -1318,7 +1318,7 @@ void calculateIgnitionAngle2(int dwellAngle)
   if(ignition2StartAngle < 0) {ignition2StartAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
-void calculateIgnitionAngle3(int dwellAngle)
+void calculateIgnitionAngle3(int16_t dwellAngle)
 {
   ignition3EndAngle = channel3IgnDegrees - currentStatus.advance;
   if(ignition3EndAngle > CRANK_ANGLE_MAX_IGN) {ignition3EndAngle -= CRANK_ANGLE_MAX_IGN;}
@@ -1327,7 +1327,7 @@ void calculateIgnitionAngle3(int dwellAngle)
 }
 
 // ignition 3 for rotary
-void calculateIgnitionAngle3(int dwellAngle, int rotarySplitDegrees)
+void calculateIgnitionAngle3(int16_t dwellAngle, int16_t rotarySplitDegrees)
 {
   ignition3EndAngle = ignition1EndAngle + rotarySplitDegrees;
   ignition3StartAngle = ignition3EndAngle - dwellAngle;
@@ -1335,7 +1335,7 @@ void calculateIgnitionAngle3(int dwellAngle, int rotarySplitDegrees)
   if(ignition3StartAngle < 0) {ignition3StartAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
-void calculateIgnitionAngle4(int dwellAngle)
+void calculateIgnitionAngle4(int16_t dwellAngle)
 {
   ignition4EndAngle = channel4IgnDegrees - currentStatus.advance;
   if(ignition4EndAngle > CRANK_ANGLE_MAX_IGN) {ignition4EndAngle -= CRANK_ANGLE_MAX_IGN;}
@@ -1344,7 +1344,7 @@ void calculateIgnitionAngle4(int dwellAngle)
 }
 
 // ignition 4 for rotary
-void calculateIgnitionAngle4(int dwellAngle, int rotarySplitDegrees)
+void calculateIgnitionAngle4(int16_t dwellAngle, int16_t rotarySplitDegrees)
 {
   ignition4EndAngle = ignition2EndAngle + rotarySplitDegrees;
   ignition4StartAngle = ignition4EndAngle - dwellAngle;
@@ -1352,7 +1352,7 @@ void calculateIgnitionAngle4(int dwellAngle, int rotarySplitDegrees)
   if(ignition4StartAngle < 0) {ignition4StartAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
-void calculateIgnitionAngle5(int dwellAngle)
+void calculateIgnitionAngle5(int16_t dwellAngle)
 {
   ignition5EndAngle = channel5IgnDegrees - currentStatus.advance;
   if(ignition5EndAngle > CRANK_ANGLE_MAX_IGN) {ignition5EndAngle -= CRANK_ANGLE_MAX_IGN;}
@@ -1360,7 +1360,7 @@ void calculateIgnitionAngle5(int dwellAngle)
   if(ignition5StartAngle < 0) {ignition5StartAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
-void calculateIgnitionAngle6(int dwellAngle)
+void calculateIgnitionAngle6(int16_t dwellAngle)
 {
   ignition6EndAngle = channel6IgnDegrees - currentStatus.advance;
   if(ignition6EndAngle > CRANK_ANGLE_MAX_IGN) {ignition6EndAngle -= CRANK_ANGLE_MAX_IGN;}
@@ -1368,7 +1368,7 @@ void calculateIgnitionAngle6(int dwellAngle)
   if(ignition6StartAngle < 0) {ignition6StartAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
-void calculateIgnitionAngle7(int dwellAngle)
+void calculateIgnitionAngle7(int16_t dwellAngle)
 {
   ignition7EndAngle = channel7IgnDegrees - currentStatus.advance;
   if(ignition7EndAngle > CRANK_ANGLE_MAX_IGN) {ignition7EndAngle -= CRANK_ANGLE_MAX_IGN;}
@@ -1376,7 +1376,7 @@ void calculateIgnitionAngle7(int dwellAngle)
   if(ignition7StartAngle < 0) {ignition7StartAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
-void calculateIgnitionAngle8(int dwellAngle)
+void calculateIgnitionAngle8(int16_t dwellAngle)
 {
   ignition8EndAngle = channel8IgnDegrees - currentStatus.advance;
   if(ignition8EndAngle > CRANK_ANGLE_MAX_IGN) {ignition8EndAngle -= CRANK_ANGLE_MAX_IGN;}
@@ -1384,7 +1384,7 @@ void calculateIgnitionAngle8(int dwellAngle)
   if(ignition8StartAngle < 0) {ignition8StartAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
-void calculateIgnitionAngles(int dwellAngle)
+void calculateIgnitionAngles(int16_t dwellAngle)
 {
   //Calculate start and end angle for each channel
 

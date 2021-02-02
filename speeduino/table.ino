@@ -78,16 +78,16 @@ ie: Given a value on the X axis, it returns a Y value that coresponds to the poi
 This function must take into account whether a table contains 8-bit or 16-bit values.
 Unfortunately this means many of the lines are duplicated depending on this
 */
-int table2D_getValue(struct table2D *fromTable, int X_in)
+int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
 {
   //Orig memory usage = 5414
-  int returnValue = 0;
+  int16_t returnValue = 0;
   bool valueFound = false;
 
-  int X = X_in;
-  int xMinValue, xMaxValue;
-  int xMin = 0;
-  int xMax = fromTable->xSize-1;
+  int16_t X = X_in;
+  int16_t xMinValue, xMaxValue;
+  int16_t xMin = 0;
+  int16_t xMax = fromTable->xSize-1;
 
   //Check whether the X input is the same as last time this ran
   if( (X_in == fromTable->lastInput) && (fromTable->cacheTime == currentStatus.secl) )
@@ -123,7 +123,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
     {
       //If we're not in the same bin, loop through to find where we are
       xMaxValue = table2D_getAxisValue(fromTable, fromTable->xSize-1); // init xMaxValue in preparation for loop.
-      for (int x = fromTable->xSize-1; x > 0; x--)
+      for (int16_t x = fromTable->xSize-1; x > 0; x--)
       {
         xMinValue = table2D_getAxisValue(fromTable, x-1); // fetch next Min
 
@@ -159,7 +159,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
 
     //Float version
     /*
-    int yVal = (m / n) * (abs(yMax - yMin));
+    int16_t yVal = (m / n) * (abs(yMax - yMin));
     */
 
     //Non-Float version
@@ -187,7 +187,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
  */
 int16_t table2D_getAxisValue(struct table2D *fromTable, uint8_t X_in)
 {
-  int returnValue = 0;
+  int16_t returnValue = 0;
 
   if(fromTable->axisSize == SIZE_INT) { returnValue = ((int16_t*)fromTable->axisX)[X_in]; }
   else if(fromTable->axisSize == SIZE_BYTE) { returnValue = ((uint8_t*)fromTable->axisX)[X_in]; }
@@ -204,7 +204,7 @@ int16_t table2D_getAxisValue(struct table2D *fromTable, uint8_t X_in)
  */
 int16_t table2D_getRawValue(struct table2D *fromTable, uint8_t X_index)
 {
-  int returnValue = 0;
+  int16_t returnValue = 0;
 
   if(fromTable->valueSize == SIZE_INT) { returnValue = ((int16_t*)fromTable->values)[X_index]; }
   else if(fromTable->valueSize == SIZE_BYTE) { returnValue = ((uint8_t*)fromTable->values)[X_index]; }
@@ -215,17 +215,17 @@ int16_t table2D_getRawValue(struct table2D *fromTable, uint8_t X_index)
 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: www.megamanual.com/v22manual/ve_tuner.pdf
-int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
+int16_t get3DTableValue(struct table3D *fromTable, int16_t Y_in, int16_t X_in)
   {
-    int X = X_in;
-    int Y = Y_in;
+    int16_t X = X_in;
+    int16_t Y = Y_in;
 
-    int tableResult = 0;
+    int16_t tableResult = 0;
     //Loop through the X axis bins for the min/max pair
     //Note: For the X axis specifically, rather than looping from tableAxisX[0] up to tableAxisX[max], we start at tableAxisX[Max] and go down.
     //      This is because the important tables (fuel and injection) will have the highest RPM at the top of the X axis, so starting there will mean the best case occurs when the RPM is highest (And hence the CPU is needed most)
-    int xMinValue = fromTable->axisX[0];
-    int xMaxValue = fromTable->axisX[fromTable->xSize-1];
+    int16_t xMinValue = fromTable->axisX[0];
+    int16_t xMaxValue = fromTable->axisX[fromTable->xSize-1];
     uint8_t xMin = 0;
     uint8_t xMax = 0;
 
@@ -300,8 +300,8 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
     }
 
     //Loop through the Y axis bins for the min/max pair
-    int yMaxValue = fromTable->axisY[0];
-    int yMinValue = fromTable->axisY[fromTable->ySize-1];
+    int16_t yMaxValue = fromTable->axisY[0];
+    int16_t yMinValue = fromTable->axisY[fromTable->ySize-1];
     uint8_t yMin = 0;
     uint8_t yMax = 0;
 
@@ -381,10 +381,10 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
               C          D
 
     */
-    int A = fromTable->values[yMin][xMin];
-    int B = fromTable->values[yMin][xMax];
-    int C = fromTable->values[yMax][xMin];
-    int D = fromTable->values[yMax][xMax];
+    int16_t A = fromTable->values[yMin][xMin];
+    int16_t B = fromTable->values[yMin][xMax];
+    int16_t C = fromTable->values[yMax][xMin];
+    int16_t D = fromTable->values[yMax][xMax];
 
     //Check that all values aren't just the same (This regularly happens with things like the fuel trim maps)
     if( (A == B) && (A == C) && (A == D) ) { tableResult = A; }

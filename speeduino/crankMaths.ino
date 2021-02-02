@@ -100,7 +100,7 @@ void doCrankSpeedCalcs()
         //if (deltaToothCount != toothCurrentCount)
         {
           deltaToothCount = toothCurrentCount;
-          int angle1, angle2; //These represent the crank angles that are travelled for the last 2 pulses
+          int16_t angle1, angle2; //These represent the crank angles that are travelled for the last 2 pulses
           if(configPage4.TrigPattern == 4)
           {
             //Special case for 70/110 pattern on 4g63

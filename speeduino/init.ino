@@ -366,7 +366,7 @@ void initialiseAll()
     currentStatus.syncLossCounter = 0;
     currentStatus.flatShiftingHard = false;
     currentStatus.launchingHard = false;
-    currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
+    currentStatus.crankRPM = ((uint16_t)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
     currentStatus.fuelPumpOn = false;
     currentStatus.engineProtectStatus = 0;
     triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder

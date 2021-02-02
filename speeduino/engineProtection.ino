@@ -19,7 +19,7 @@ uint8_t checkRevLimit()
   uint8_t revLimiterActive = 0;
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
 
-  if (currentStatus.RPM > ((unsigned int)(configPage4.HardRevLim) * 100) )
+  if (currentStatus.RPM > ((uint16_t)(configPage4.HardRevLim) * 100) )
   { 
     BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); //Legacy and likely to be removed at some point
     BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);

@@ -155,7 +155,7 @@ static inline void instanteneousMAPReading()
   MAPlast_time = MAP_time;
   MAP_time = micros();
 
-  unsigned int tempReading;
+  uint16_t tempReading;
   //Instantaneous MAP readings
   #if defined(ANALOG_ISR_MAP)
     tempReading = AnChannel[pinMAP-A0];
@@ -178,7 +178,7 @@ static inline void instanteneousMAPReading()
 
 static inline void readMAP()
 {
-  unsigned int tempReading;
+  uint16_t tempReading;
   //MAP Sampling system
   switch(configPage2.mapSample)
   {
@@ -402,7 +402,7 @@ void readTPS(bool useFilter)
 
 void readCLT(bool useFilter)
 {
-  unsigned int tempReading;
+  uint16_t tempReading;
   #if defined(ANALOG_ISR)
     tempReading = fastMap1023toX(AnChannel[pinCLT-A0], 511); //Get the current raw CLT value
   #else
@@ -419,7 +419,7 @@ void readCLT(bool useFilter)
 
 void readIAT()
 {
-  unsigned int tempReading;
+  uint16_t tempReading;
   #if defined(ANALOG_ISR)
     tempReading = fastMap1023toX(AnChannel[pinIAT-A0], 511); //Get the current raw IAT value
   #else
@@ -435,7 +435,7 @@ void readBaro()
 {
   if ( configPage6.useExtBaro != 0 )
   {
-    int tempReading;
+    int16_t tempReading;
     // readings
     #if defined(ANALOG_ISR_MAP)
       tempReading = AnChannel[pinBaro-A0];
@@ -455,7 +455,7 @@ void readO2()
   //An O2 read is only performed if an O2 sensor type is selected. This is to prevent potentially dangerous use of the O2 readings prior to proper setup/calibration
   if(configPage6.egoType > 0)
   {
-    unsigned int tempReading;
+    uint16_t tempReading;
     #if defined(ANALOG_ISR)
       tempReading = fastMap1023toX(AnChannel[pinO2-A0], 511); //Get the current O2 value.
     #else
@@ -479,7 +479,7 @@ void readO2_2()
 {
   //Second O2 currently disabled as its not being used
   //Get the current O2 value.
-  unsigned int tempReading;
+  uint16_t tempReading;
   #if defined(ANALOG_ISR)
     tempReading = fastMap1023toX(AnChannel[pinO2_2-A0], 511); //Get the current O2 value.
   #else
@@ -493,7 +493,7 @@ void readO2_2()
 
 void readBat()
 {
-  int tempReading;
+  int16_t tempReading;
   #if defined(ANALOG_ISR)
     tempReading = fastMap1023toX(AnChannel[pinBat-A0], 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
   #else
@@ -689,7 +689,7 @@ void vssPulse()
 uint16_t readAuxanalog(uint8_t analogPin)
 {
   //read the Aux analog value for pin set by analogPin 
-  unsigned int tempReading;
+  uint16_t tempReading;
   #if defined(ANALOG_ISR)
     tempReading = fastMap1023toX(AnChannel[analogPin-A0], 1023); //Get the current raw Auxanalog value
   #else
@@ -703,7 +703,7 @@ uint16_t readAuxanalog(uint8_t analogPin)
 uint16_t readAuxdigital(uint8_t digitalPin)
 {
   //read the Aux digital value for pin set by digitalPin 
-  unsigned int tempReading;
+  uint16_t tempReading;
   tempReading = digitalRead(digitalPin); 
   return tempReading;
 } 

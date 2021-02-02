@@ -2,12 +2,12 @@
 #include "globals.h"
 
 //Replace the standard arduino map() function to use the div function instead
-int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
+int16_t fastMap(unsigned long x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max)
 {
   unsigned long a = (x - (unsigned long)in_min);
-  int b = (out_max - out_min);
-  int c = (in_max - in_min);
-  int d = (ldiv( (a * (long)b) , (long)c ).quot);
+  int16_t b = (out_max - out_min);
+  int16_t c = (in_max - in_min);
+  int16_t d = (ldiv( (a * (long)b) , (long)c ).quot);
   return d + out_min;
   //return ldiv( ((x - in_min) * (out_max - out_min)) , (in_max - in_min) ).quot + out_min;
   //return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -19,7 +19,7 @@ Ref: www.hackersdelight.org/divcMore.pdf
 */
 
 //Unsigned divide by 10
-unsigned int divu10(unsigned int n)
+uint16_t divu10(uint16_t n)
 {
   unsigned long q, r;
   q = (n >> 1) + (n >> 2);
@@ -32,7 +32,7 @@ unsigned int divu10(unsigned int n)
 }
 
 //Signed divide by 100
-int divs100(long n)
+int16_t divs100(long n)
 {
   return (n / 100); // Amazingly, gcc is producing a better /divide by 100 function than this
   /*
@@ -71,10 +71,10 @@ unsigned long percentage(uint8_t x, unsigned long y)
 /*
  * Calculates integer power values. Same as pow() but with ints
  */
-inline long powint(int factor, unsigned int exponent)
+inline long powint(int16_t factor, uint16_t exponent)
 {
    long product = 1;
-   unsigned int counter = exponent;
+   uint16_t counter = exponent;
    while ( (counter--) > 0) { product *= factor; }
    return product;
 }

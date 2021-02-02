@@ -102,14 +102,14 @@ bool channel6InjEnabled = false;
 bool channel7InjEnabled = false;
 bool channel8InjEnabled = false;
 
-int ignition1EndAngle = 0;
-int ignition2EndAngle = 0;
-int ignition3EndAngle = 0;
-int ignition4EndAngle = 0;
-int ignition5EndAngle = 0;
-int ignition6EndAngle = 0;
-int ignition7EndAngle = 0;
-int ignition8EndAngle = 0;
+int16_t ignition1EndAngle = 0;
+int16_t ignition2EndAngle = 0;
+int16_t ignition3EndAngle = 0;
+int16_t ignition4EndAngle = 0;
+int16_t ignition5EndAngle = 0;
+int16_t ignition6EndAngle = 0;
+int16_t ignition7EndAngle = 0;
+int16_t ignition8EndAngle = 0;
 
 //These are variables used across multiple files
 const uint8_t PROGMEM fsIntIndex[31] = {4, 14, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 96, 101}; //int indexes in fullStatus array
@@ -125,16 +125,16 @@ bool previousClutchTrigger;
 volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
 volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
-volatile unsigned int toothHistoryIndex = 0;
+volatile uint16_t toothHistoryIndex = 0;
 volatile uint8_t toothHistorySerialIndex = 0;
 unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
 volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
 uint8_t primaryTriggerEdge;
 uint8_t secondaryTriggerEdge;
-int CRANK_ANGLE_MAX = 720;
-int CRANK_ANGLE_MAX_IGN = 360;
-int CRANK_ANGLE_MAX_INJ = 360; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+int16_t CRANK_ANGLE_MAX = 720;
+int16_t CRANK_ANGLE_MAX_IGN = 360;
+int16_t CRANK_ANGLE_MAX_INJ = 360; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 volatile uint32_t runSecsX10;
 volatile uint32_t seclx10;
 volatile uint8_t HWTest_INJ = 0; /**< Each bit in this variable represents one of the injector channels and it's HW test status */

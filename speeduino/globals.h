@@ -93,7 +93,7 @@
   #define BOARD_MAX_DIGITAL_PINS NUM_DIGITAL_PINS
   #define BOARD_MAX_IO_PINS NUM_DIGITAL_PINS
   #if __GNUC__ < 7 //Already included on GCC 7
-  extern "C" char* sbrk(int incr); //Used to freeRam
+  extern "C" char* sbrk(int16_t incr); //Used to freeRam
   #endif
   #ifndef digitalPinToInterrupt
   inline uint32_t  digitalPinToInterrupt(uint32_t Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
@@ -457,23 +457,23 @@ extern bool channel6InjEnabled;
 extern bool channel7InjEnabled;
 extern bool channel8InjEnabled;
 
-extern int ignition1EndAngle;
-extern int ignition2EndAngle;
-extern int ignition3EndAngle;
-extern int ignition4EndAngle;
-extern int ignition5EndAngle;
-extern int ignition6EndAngle;
-extern int ignition7EndAngle;
-extern int ignition8EndAngle;
+extern int16_t ignition1EndAngle;
+extern int16_t ignition2EndAngle;
+extern int16_t ignition3EndAngle;
+extern int16_t ignition4EndAngle;
+extern int16_t ignition5EndAngle;
+extern int16_t ignition6EndAngle;
+extern int16_t ignition7EndAngle;
+extern int16_t ignition8EndAngle;
 
-extern int ignition1StartAngle;
-extern int ignition2StartAngle;
-extern int ignition3StartAngle;
-extern int ignition4StartAngle;
-extern int ignition5StartAngle;
-extern int ignition6StartAngle;
-extern int ignition7StartAngle;
-extern int ignition8StartAngle;
+extern int16_t ignition1StartAngle;
+extern int16_t ignition2StartAngle;
+extern int16_t ignition3StartAngle;
+extern int16_t ignition4StartAngle;
+extern int16_t ignition5StartAngle;
+extern int16_t ignition6StartAngle;
+extern int16_t ignition7StartAngle;
+extern int16_t ignition8StartAngle;
 
 //These are variables used across multiple files
 extern const uint8_t PROGMEM fsIntIndex[31];
@@ -489,16 +489,16 @@ extern bool previousClutchTrigger;
 extern volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
 extern volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 extern volatile bool fpPrimed; //Tracks whether or not the fuel pump priming has been completed yet
-extern volatile unsigned int toothHistoryIndex;
+extern volatile uint16_t toothHistoryIndex;
 extern volatile uint8_t toothHistorySerialIndex;
 extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 extern unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
 extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
 extern uint8_t primaryTriggerEdge;
 extern uint8_t secondaryTriggerEdge;
-extern int CRANK_ANGLE_MAX;
-extern int CRANK_ANGLE_MAX_IGN;
-extern int CRANK_ANGLE_MAX_INJ; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+extern int16_t CRANK_ANGLE_MAX;
+extern int16_t CRANK_ANGLE_MAX_IGN;
+extern int16_t CRANK_ANGLE_MAX_INJ; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 extern volatile uint32_t runSecsX10; /**< Counter of seconds since cranking commenced (similar to runSecs) but in increments of 0.1 seconds */
 extern volatile uint32_t seclx10; /**< Counter of seconds since powered commenced (similar to secl) but in increments of 0.1 seconds */
 extern volatile uint8_t HWTest_INJ; /**< Each bit in this variable represents one of the injector channels and it's HW test status */
@@ -526,8 +526,8 @@ struct statuses {
   uint16_t RPM;
   uint8_t RPMdiv100;
   long longRPM;
-  int mapADC;
-  int baroADC;
+  int16_t mapADC;
+  int16_t baroADC;
   long MAP; //Has to be a long for PID calcs (Boost control)
   int16_t EMAP;
   int16_t EMAPADC;
@@ -536,20 +536,20 @@ struct statuses {
   uint8_t tpsADC; /**< 0-255 byte representation of the TPS. Downsampled from the original 10-bit reading, but before any calibration is applied */
   uint8_t tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Value is divided by 10 to be stored in a byte */
   uint8_t mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
-  volatile int rpmDOT;
+  volatile int16_t rpmDOT;
   uint8_t VE; /**< The current VE value being used in the fuel calculation. Can be the same as VE1 or VE2, or a calculated value of both */
   uint8_t VE1; /**< The VE value from fuel table 1 */
   uint8_t VE2; /**< The VE value from fuel table 2, if in use (and required conditions are met) */
   uint8_t O2;
   uint8_t O2_2;
-  int coolant;
-  int cltADC;
-  int IAT;
-  int iatADC;
-  int batADC;
-  int O2ADC;
-  int O2_2ADC;
-  int dwell;
+  int16_t coolant;
+  int16_t cltADC;
+  int16_t IAT;
+  int16_t iatADC;
+  int16_t batADC;
+  int16_t O2ADC;
+  int16_t O2_2ADC;
+  int16_t dwell;
   uint8_t dwellCorrection; /**< The amount of correction being applied to the dwell time. */
   uint8_t battery10; /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
   int8_t advance; /**< The current advance value being used in the spark calculation. Can be the same as advance1 or advance2, or a calculated value of both */
@@ -579,21 +579,21 @@ struct statuses {
   volatile uint8_t spark;
   volatile uint8_t spark2;
   uint8_t engine;
-  unsigned int PW1; //In uS
-  unsigned int PW2; //In uS
-  unsigned int PW3; //In uS
-  unsigned int PW4; //In uS
-  unsigned int PW5; //In uS
-  unsigned int PW6; //In uS
-  unsigned int PW7; //In uS
-  unsigned int PW8; //In uS
+  uint16_t PW1; //In uS
+  uint16_t PW2; //In uS
+  uint16_t PW3; //In uS
+  uint16_t PW4; //In uS
+  uint16_t PW5; //In uS
+  uint16_t PW6; //In uS
+  uint16_t PW7; //In uS
+  uint16_t PW8; //In uS
   volatile uint8_t runSecs; /**< Counter of seconds since cranking commenced (Maxes out at 255 to prevent overflow) */
   volatile uint8_t secl; /**< Counter incrementing once per second. Will overflow after 255 and begin again. This is used by TunerStudio to maintain comms sync */
   volatile uint32_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
   bool launchingSoft; /**< Indicator showing whether soft launch control adjustments are active */
   bool launchingHard; /**< Indicator showing whether hard launch control adjustments are active */
   uint16_t freeRAM;
-  unsigned int clutchEngagedRPM; /**< The RPM at which the clutch was last depressed. Used for distinguishing between launch control and flat shift */ 
+  uint16_t clutchEngagedRPM; /**< The RPM at which the clutch was last depressed. Used for distinguishing between launch control and flat shift */ 
   bool flatShiftingHard;
   volatile uint32_t startRevolutions; /**< A counter for how many revolutions have been completed since sync was achieved. */
   uint16_t boostTarget;

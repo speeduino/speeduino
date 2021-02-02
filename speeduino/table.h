@@ -110,7 +110,7 @@ Eg: 2x2 table
 (1,0) = 1
 
 */
-int get3DTableValue(struct table3D *fromTable, int, int);
-int table2D_getValue(struct table2D *fromTable, int);
+int16_t get3DTableValue(struct table3D *fromTable, int16_t, int16_t);
+int16_t table2D_getValue(struct table2D *fromTable, int16_t);
 
 #endif // TABLE_H
