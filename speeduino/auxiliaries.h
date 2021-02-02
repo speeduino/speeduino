@@ -62,11 +62,11 @@ unsigned int boost_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int boost_pwm_cur_value;
 long boost_pwm_target_value;
 long boost_cl_target_boost;
-byte boostCounter;
-byte vvtCounter;
+uint8_t boostCounter;
+uint8_t vvtCounter;
 
-byte fanHIGH = HIGH;             // Used to invert the cooling fan output
-byte fanLOW = LOW;               // Used to invert the cooling fan output
+uint8_t fanHIGH = HIGH;             // Used to invert the cooling fan output
+uint8_t fanLOW = LOW;               // Used to invert the cooling fan output
 
 volatile bool vvt1_pwm_state;
 volatile bool vvt2_pwm_state;

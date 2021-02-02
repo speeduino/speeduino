@@ -72,9 +72,9 @@ uint16_t inj_opentime_uS = 0;
 bool ignitionOn = false; /**< The current state of the ignition system (on or off) */
 bool fuelOn = false; /**< The current state of the fuel system (on or off) */
 
-byte maxIgnOutputs = 1; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
-byte curRollingCut = 0; /**< Rolling rev limiter, current ignition channel being cut */
-byte rollingCutCounter = 0; /**< how many times (revolutions) the ignition has been cut in a row */
+uint8_t maxIgnOutputs = 1; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
+uint8_t curRollingCut = 0; /**< Rolling rev limiter, current ignition channel being cut */
+uint8_t rollingCutCounter = 0; /**< how many times (revolutions) the ignition has been cut in a row */
 uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 
 uint16_t staged_req_fuel_mult_pri = 0;
@@ -292,7 +292,7 @@ void loop()
       {
         //TODO dazq to clean this right up :)
         //check through the Aux input channels if enabed for Can or local use
-        for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
+        for (uint8_t AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
         {
           currentStatus.current_caninchannel = AuxinChan;          
           
@@ -475,7 +475,7 @@ void loop()
         {
           uint32_t tempPW3 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
 
-          byte stagingSplit = get3DTableValue(&stagingTable, currentStatus.MAP, currentStatus.RPM);
+          uint8_t stagingSplit = get3DTableValue(&stagingTable, currentStatus.MAP, currentStatus.RPM);
           currentStatus.PW1 = ((100 - stagingSplit) * tempPW1) / 100;
           currentStatus.PW1 += inj_opentime_uS; 
 
@@ -572,10 +572,10 @@ void loop()
 
             if(configPage6.fuelTrimEnabled > 0)
             {
-              unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-              unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-              unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-              unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw1percent = 100 + (uint8_t)get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw2percent = 100 + (uint8_t)get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw3percent = 100 + (uint8_t)get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw4percent = 100 + (uint8_t)get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
 
               if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
               if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
@@ -1173,7 +1173,7 @@ void loop()
  * @param injOpen Injector opening time. The time the injector take to open minus the time it takes to close (Both in uS)
  * @return uint16_t The injector pulse width in uS
  */
-uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
+uint16_t PW(int REQ_FUEL, uint8_t VE, long MAP, uint16_t corrections, int injOpen)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
@@ -1185,7 +1185,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
 
   //If corrections are huge, use less bitshift to avoid overflow. Sacrifices a bit more accuracy (basically only during very cold temp cranking)
-  byte bitShift = 7;
+  uint8_t bitShift = 7;
   if (corrections > 511 ) { bitShift = 6; }
   if (corrections > 1023) { bitShift = 5; }
   
@@ -1238,9 +1238,9 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
  * 
  * @return byte The current VE value
  */
-byte getVE1()
+uint8_t getVE1()
 {
-  byte tempVE = 100;
+  uint8_t tempVE = 100;
   if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
   {
     //Speed Density
@@ -1267,9 +1267,9 @@ byte getVE1()
  * 
  * @return byte The current target advance value in degrees
  */
-byte getAdvance1()
+uint8_t getAdvance1()
 {
-  byte tempAdvance = 0;
+  uint8_t tempAdvance = 0;
   if (configPage2.ignAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
   {
     //Speed Density
@@ -1419,7 +1419,7 @@ void calculateIgnitionAngles(int dwellAngle)
       }
       else if(configPage4.sparkMode == IGN_MODE_ROTARY)
       {
-        byte splitDegrees = 0;
+        uint8_t splitDegrees = 0;
         if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.MAP/2); }
         else { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.TPS/2); }
 

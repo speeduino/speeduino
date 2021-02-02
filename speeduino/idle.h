@@ -25,8 +25,8 @@ struct StepperIdle
   int targetIdleStep; //What the targetted step is
   volatile StepperStatus stepperStatus;
   volatile unsigned long stepStartTime; //The time the curren
-  byte lessAirDirection;
-  byte moreAirDirection;
+  uint8_t lessAirDirection;
+  uint8_t moreAirDirection;
 };
 
 struct table2D iacClosedLoopTable;
@@ -38,7 +38,7 @@ struct table2D iacCrankDutyTable;
 
 struct StepperIdle idleStepper;
 bool idleOn; //Simply tracks whether idle was on last time around
-byte idleInitComplete = 99; //TRacks which idle method was initialised. 99 is a method that will never exist
+uint8_t idleInitComplete = 99; //TRacks which idle method was initialised. 99 is a method that will never exist
 unsigned int iacStepTime_uS;
 unsigned int iacCoolTime_uS;
 unsigned int completedHomeSteps;
@@ -57,17 +57,17 @@ long idle_pid_target_value;
 long FeedForwardTerm;
 unsigned long idle_pwm_target_value;
 long idle_cl_target_rpm;
-byte idleCounter; //Used for tracking the number of calls to the idle control function
+uint8_t idleCounter; //Used for tracking the number of calls to the idle control function
 
-byte idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output 
-byte idleUpOutputLOW = LOW;   // Used to invert the idle Up Output 
+uint8_t idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output 
+uint8_t idleUpOutputLOW = LOW;   // Used to invert the idle Up Output 
 
 void initialiseIdle();
 void initialiseIdleUpOutput();
 static inline void disableIdle();
 static inline void enableIdle();
-static inline byte isStepperHomed();
-static inline byte checkForStepping();
+static inline uint8_t isStepperHomed();
+static inline uint8_t checkForStepping();
 static inline void doStep();
 static inline void idleInterrupt();
 

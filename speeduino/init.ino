@@ -1167,7 +1167,7 @@ void initialiseAll()
     digitalWrite(LED_BUILTIN, HIGH);
 }
 
-void setPinMapping(byte boardID)
+void setPinMapping(uint8_t boardID)
 {
   //Force set defaults. Will be overwritten below if needed.
   injectorOutputControl = OUTPUT_CONTROL_DIRECT;
@@ -2637,8 +2637,8 @@ void setPinMapping(byte boardID)
 
 void initialiseTriggers()
 {
-  byte triggerInterrupt = 0; // By default, use the first interrupt
-  byte triggerInterrupt2 = 1;
+  uint8_t triggerInterrupt = 0; // By default, use the first interrupt
+  uint8_t triggerInterrupt2 = 1;
 
   #if defined(CORE_AVR)
     switch (pinTrigger) {

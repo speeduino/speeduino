@@ -157,9 +157,9 @@ void calculateSecondarySpark()
  * This performs largely the same operations as getVE() however the lookup is of the secondary fuel table and uses the secondary load source
  * @return byte 
  */
-byte getVE2()
+uint8_t getVE2()
 {
-  byte tempVE = 100;
+  uint8_t tempVE = 100;
   if( configPage10.fuel2Algorithm == LOAD_SOURCE_MAP)
   {
     //Speed Density
@@ -186,9 +186,9 @@ byte getVE2()
  * 
  * @return byte The current target advance value in degrees
  */
-byte getAdvance2()
+uint8_t getAdvance2()
 {
-  byte tempAdvance = 0;
+  uint8_t tempAdvance = 0;
   if (configPage2.ignAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
   {
     //Speed Density

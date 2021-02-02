@@ -16,7 +16,7 @@ void loggerPrimaryISR();
 void loggerSecondaryISR();
 static inline uint16_t stdGetRPM(uint16_t);
 static inline void setFilter(unsigned long);
-static inline int crankingGetRPM(byte);
+static inline int crankingGetRPM(uint8_t);
 //static inline void doPerToothTiming(uint16_t);
 
 //All of the below are the 6 required functions for each decoder / pattern
@@ -173,7 +173,7 @@ extern volatile unsigned long compositeLastToothTime;
 
 extern unsigned long MAX_STALL_TIME; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
 extern volatile uint16_t toothCurrentCount; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
-extern volatile byte toothSystemCount; //Used for decoders such as Audi 135 where not every tooth is used for calculating crank angle. This variable stores the actual number of teeth, not the number being used to calculate crank angle
+extern volatile uint8_t toothSystemCount; //Used for decoders such as Audi 135 where not every tooth is used for calculating crank angle. This variable stores the actual number of teeth, not the number being used to calculate crank angle
 extern volatile unsigned long toothSystemLastToothTime; //As below, but used for decoders where not every tooth count is used for calculation
 extern volatile unsigned long toothLastToothTime; //The time (micros()) that the last tooth was registered
 extern volatile unsigned long toothLastSecToothTime; //The time (micros()) that the last tooth was registered on the secondary input
@@ -203,7 +203,7 @@ extern bool decoderIsSequential; //Whether or not the decoder supports sequentia
 extern bool decoderIsLowRes; //Is set true, certain extra calculations are performed for better timing accuracy
 extern bool decoderHasSecondary; //Whether or not the pattern uses a secondary input
 extern bool decoderHasFixedCrankingTiming; //Whether or not the decoder supports fixed cranking timing
-extern byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
+extern uint8_t checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
 extern unsigned long elapsedTime;
 extern unsigned long lastCrankAngleCalc;
 extern int16_t lastToothCalcAdvance; //Invalid value here forces calculation of this on first main loop

@@ -9,7 +9,7 @@ uint8_t rtc_getDay();
 uint8_t rtc_getDOW();
 uint8_t rtc_getMonth();
 uint16_t rtc_getYear();
-void rtc_setTime(byte, byte, byte, byte, byte, uint16_t);
+void rtc_setTime(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint16_t);
 
 
 

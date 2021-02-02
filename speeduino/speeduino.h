@@ -13,9 +13,9 @@
 #define SPEEDUINO_H
 //#include "globals.h"
 
-uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen);
-byte getVE1();
-byte getAdvance1();
+uint16_t PW(int REQ_FUEL, uint8_t VE, long MAP, uint16_t corrections, int injOpen);
+uint8_t getVE1();
+uint8_t getAdvance1();
 
 uint16_t calculateInjectorStartAngle(uint16_t, int16_t);
 void calculateIgnitionAngle1(int);
@@ -36,9 +36,9 @@ extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set wit
 extern bool ignitionOn; /**< The current state of the ignition system (on or off) */
 extern bool fuelOn; /**< The current state of the fuel system (on or off) */
 
-extern byte maxIgnOutputs; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
-extern byte curRollingCut; /**< Rolling rev limiter, current ignition channel being cut */
-extern byte rollingCutCounter; /**< how many times (revolutions) the ignition has been cut in a row */
+extern uint8_t maxIgnOutputs; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
+extern uint8_t curRollingCut; /**< Rolling rev limiter, current ignition channel being cut */
+extern uint8_t rollingCutCounter; /**< how many times (revolutions) the ignition has been cut in a row */
 extern uint32_t rollingCutLastRev; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 
 extern int channel1IgnDegrees; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */

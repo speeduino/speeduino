@@ -48,9 +48,9 @@ The valueSize variable should be set to either 8 or 16 to indicate this BEFORE t
 */
 struct table2D {
   //Used 5414 RAM with original version
-  byte valueSize;
-  byte axisSize;
-  byte xSize;
+  uint8_t valueSize;
+  uint8_t axisSize;
+  uint8_t xSize;
 
   void *values;
   void *axisX;
@@ -65,37 +65,37 @@ struct table2D {
   //Store the last input and output for caching
   int16_t lastInput;
   int16_t lastOutput;
-  byte cacheTime; //Tracks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
+  uint8_t cacheTime; //Tracks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
 };
 
-//void table2D_setSize(struct table2D targetTable, byte newSize);
-void table2D_setSize(struct table2D*, byte);
-int16_t table2D_getAxisValue(struct table2D*, byte);
-int16_t table2D_getRawValue(struct table2D*, byte);
+//void table2D_setSize(struct table2D targetTable, uint8_t newSize);
+void table2D_setSize(struct table2D*, uint8_t);
+int16_t table2D_getAxisValue(struct table2D*, uint8_t);
+int16_t table2D_getRawValue(struct table2D*, uint8_t);
 
 struct table3D {
 
   //All tables must be the same size for simplicity
 
-  byte xSize;
-  byte ySize;
+  uint8_t xSize;
+  uint8_t ySize;
 
-  byte **values;
+  uint8_t **values;
   int16_t *axisX;
   int16_t *axisY;
 
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
-  byte lastXMax, lastXMin;
-  byte lastYMax, lastYMin;
+  uint8_t lastXMax, lastXMin;
+  uint8_t lastYMax, lastYMin;
 
   //Store the last input and output values, again for caching purposes
   int16_t lastXInput, lastYInput;
-  byte lastOutput; //This will need changing if we ever have 16-bit table values
+  uint8_t lastOutput; //This will need changing if we ever have 16-bit table values
   bool cacheIsValid; ///< This tracks whether the tables cache should be used. Ordinarily this is true, but is set to false whenever TunerStudio sends a new value for the table
 };
 
-//void table3D_setSize(struct table3D *targetTable, byte);
-void table3D_setSize(struct table3D *targetTable, byte);
+//void table3D_setSize(struct table3D *targetTable, uint8_t);
+void table3D_setSize(struct table3D *targetTable, uint8_t);
 
 /*
 3D Tables have an origin (0,0) in the top left hand corner. Vertical axis is expressed first.

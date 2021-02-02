@@ -50,18 +50,18 @@
 #define SD_RTC_READ_LENGTH  0x0800
 
 
-byte currentPage = 1;//Not the same as the speeduino config page numbers
+uint8_t currentPage = 1;//Not the same as the speeduino config page numbers
 bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
 unsigned long requestCount = 0; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
-byte currentCommand; /**< The serial command that is currently being processed. This is only useful when cmdPending=True */
+uint8_t currentCommand; /**< The serial command that is currently being processed. This is only useful when cmdPending=True */
 bool cmdPending = false; /**< Whether or not a serial request has only been partially received. This occurs when a command character has been received in the serial buffer, but not all of its arguments have yet been received. If true, the active command will be stored in the currentCommand variable */
 bool chunkPending = false; /**< Whether or not the current chucnk write is complete or not */
 uint16_t chunkComplete = 0; /**< The number of bytes in a chunk write that have been written so far */
 uint16_t chunkSize = 0; /**< The complete size of the requested chunk write */
 int valueOffset; /**< THe memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
-byte tsCanId = 0;     // current tscanid requested
-byte inProgressOffset;
-byte inProgressLength;
+uint8_t tsCanId = 0;     // current tscanid requested
+uint8_t inProgressOffset;
+uint8_t inProgressLength;
 uint32_t inProgressCompositeTime;
 bool serialInProgress = false;
 bool toothLogSendInProgress = false;
@@ -86,18 +86,18 @@ const char pageTitles[] PROGMEM //This is being stored in the avr flash instead 
   };
 
 void command();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
-void sendValues(uint16_t, uint16_t,byte, byte);
+void sendValues(uint16_t, uint16_t,uint8_t, uint8_t);
 void sendValuesLegacy();
-void receiveValue(uint16_t, byte);
+void receiveValue(uint16_t, uint8_t);
 void saveConfig();
 void sendPage();
 void sendPageASCII();
-void receiveCalibration(byte);
+void receiveCalibration(uint8_t);
 void sendToothLog(uint8_t);
 void testComm();
 void commandButtons(int16_t);
 void sendCompositeLog(uint8_t);
-byte getPageValue(byte, uint16_t);
-byte getStatusEntry(uint16_t);
+uint8_t getPageValue(uint8_t, uint16_t);
+uint8_t getStatusEntry(uint16_t);
 
 #endif // COMMS_H

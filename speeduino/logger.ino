@@ -11,8 +11,8 @@ void createLog(uint8_t *logBuffer)
     logBuffer[3] = currentStatus.syncLossCounter;
     logBuffer[4] = lowByte(currentStatus.MAP); //2 bytes for MAP
     logBuffer[5] = highByte(currentStatus.MAP);
-    logBuffer[6] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
-    logBuffer[7] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
+    logBuffer[6] = (uint8_t)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
+    logBuffer[7] = (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
     logBuffer[8] = currentStatus.batCorrection; //Battery voltage correction (%)
     logBuffer[9] = currentStatus.battery10; //battery voltage
     logBuffer[10] = currentStatus.O2; //O2
@@ -21,7 +21,7 @@ void createLog(uint8_t *logBuffer)
     logBuffer[13] = currentStatus.wueCorrection; //Warmup enrichment (%)
     logBuffer[14] = lowByte(currentStatus.RPM); //rpm HB
     logBuffer[15] = highByte(currentStatus.RPM); //rpm LB
-    logBuffer[16] = (byte)(currentStatus.AEamount >> 1); //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
+    logBuffer[16] = (uint8_t)(currentStatus.AEamount >> 1); //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
     logBuffer[17] = currentStatus.corrections; //Total GammaE (%)
     logBuffer[18] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
     logBuffer[19] = currentStatus.VE1; //VE 1 (%)
@@ -37,11 +37,11 @@ void createLog(uint8_t *logBuffer)
 
     //The following can be used to show the amount of free memory
     currentStatus.freeRAM = freeRam();
-    logBuffer[27] = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
+    logBuffer[27] = lowByte(currentStatus.freeRAM); //(uint8_t)((currentStatus.loopsPerSecond >> 8) & 0xFF);
     logBuffer[28] = highByte(currentStatus.freeRAM);
 
-    logBuffer[29] = (byte)(currentStatus.boostTarget >> 1); //Divide boost target by 2 to fit in a byte
-    logBuffer[30] = (byte)(currentStatus.boostDuty / 100);
+    logBuffer[29] = (uint8_t)(currentStatus.boostTarget >> 1); //Divide boost target by 2 to fit in a byte
+    logBuffer[30] = (uint8_t)(currentStatus.boostDuty / 100);
     logBuffer[31] = currentStatus.spark; //Spark related bitfield
 
     //rpmDOT must be sent as a signed integer

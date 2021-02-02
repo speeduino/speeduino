@@ -15,8 +15,8 @@
 #define ignitionLimits(angle) ( (((int16_t)(angle)) >= CRANK_ANGLE_MAX_IGN) ? ((angle) - CRANK_ANGLE_MAX_IGN) : ( ((int16_t)(angle) < 0) ? ((angle) + CRANK_ANGLE_MAX_IGN) : (angle)) )
 
 
-unsigned long angleToTime(int16_t, byte);
-uint16_t timeToAngle(unsigned long, byte);
+unsigned long angleToTime(int16_t, uint8_t);
+uint16_t timeToAngle(unsigned long, uint8_t);
 void doCrankSpeedCalcs();
 
 volatile uint16_t timePerDegree;
@@ -25,7 +25,7 @@ volatile uint16_t degreesPeruSx2048;
 volatile unsigned long degreesPeruSx32768;
 
 //These are only part of the experimental 2nd deriv calcs
-byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
+uint8_t deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 
 #endif

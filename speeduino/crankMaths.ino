@@ -15,7 +15,7 @@
 * 3) Closed loop error correction (Alpha-beta filter) 
 * 4) 2nd derivative prediction (Speed + acceleration)
 */
-unsigned long angleToTime(int16_t angle, byte method)
+unsigned long angleToTime(int16_t angle, uint8_t method)
 {
     unsigned long returnTime = 0;
 
@@ -49,7 +49,7 @@ unsigned long angleToTime(int16_t angle, byte method)
 * 3) Closed loop error correction (Alpha-beta filter) 
 * 4) 2nd derivative prediction (Speed + acceleration)
 */
-uint16_t timeToAngle(unsigned long time, byte method)
+uint16_t timeToAngle(unsigned long time, uint8_t method)
 {
     uint16_t returnAngle = 0;
 

@@ -62,7 +62,7 @@ unsigned long divu100(unsigned long n)
 
 //Return x percent of y
 //This is a relatively fast approximation of a percentage value.
-unsigned long percentage(byte x, unsigned long y)
+unsigned long percentage(uint8_t x, unsigned long y)
 {
   return (y * x) / 100; //For some reason this is faster
   //return divu100(y * x);

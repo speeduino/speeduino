@@ -12,7 +12,7 @@ Note that this may clear some of the existing values of the table
 #include "globals.h"
 
 /*
-void table2D_setSize(struct table2D* targetTable, byte newSize)
+void table2D_setSize(struct table2D* targetTable, uint8_t newSize)
 {
   //Table resize is ONLY permitted during system initialisation.
   //if(initialisationComplete == false)
@@ -22,8 +22,8 @@ void table2D_setSize(struct table2D* targetTable, byte newSize)
     {
       //The following lines have MISRA suppressions as realloc is otherwise forbidden. These calls have been verified as unable to be executed from anywhere but controlled areas. 
       //cppcheck-suppress misra-21.3
-      targetTable->values = (byte *)realloc(targetTable->values, newSize * sizeof(byte)); //cppcheck-suppress misra_21.3
-      targetTable->axisX = (byte *)realloc(targetTable->axisX, newSize * sizeof(byte));
+      targetTable->values = (uint8_t *)realloc(targetTable->values, newSize * sizeof(uint8_t)); //cppcheck-suppress misra_21.3
+      targetTable->axisX = (uint8_t *)realloc(targetTable->axisX, newSize * sizeof(uint8_t));
       targetTable->xSize = newSize;
     }
     else
@@ -48,16 +48,16 @@ void* heap_alloc(uint16_t size)
  }
 
 
-void table3D_setSize(struct table3D *targetTable, byte newSize)
+void table3D_setSize(struct table3D *targetTable, uint8_t newSize)
 {
   if(initialisationComplete == false)
   {
     /*
-    targetTable->values = (byte **)malloc(newSize * sizeof(byte*));
-    for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)malloc(newSize * sizeof(byte)); }
+    targetTable->values = (uint8_t **)malloc(newSize * sizeof(uint8_t *));
+    for(uint8_t i = 0; i < newSize; i++) { targetTable->values[i] = (uint8_t *)malloc(newSize * sizeof(uint8_t)); }
     */
-    targetTable->values = (byte **)heap_alloc(newSize * sizeof(byte*));
-    for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)heap_alloc(newSize * sizeof(byte)); }
+    targetTable->values = (uint8_t **)heap_alloc(newSize * sizeof(uint8_t *));
+    for(uint8_t i = 0; i < newSize; i++) { targetTable->values[i] = (uint8_t *)heap_alloc(newSize * sizeof(uint8_t)); }
 
     /*
     targetTable->axisX = (int16_t *)malloc(newSize * sizeof(int16_t));
@@ -185,7 +185,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
  * @param X_in 
  * @return int16_t 
  */
-int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in)
+int16_t table2D_getAxisValue(struct table2D *fromTable, uint8_t X_in)
 {
   int returnValue = 0;
 
@@ -202,7 +202,7 @@ int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in)
  * @param X_in 
  * @return int16_t 
  */
-int16_t table2D_getRawValue(struct table2D *fromTable, byte X_index)
+int16_t table2D_getRawValue(struct table2D *fromTable, uint8_t X_index)
 {
   int returnValue = 0;
 
@@ -226,8 +226,8 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
     //      This is because the important tables (fuel and injection) will have the highest RPM at the top of the X axis, so starting there will mean the best case occurs when the RPM is highest (And hence the CPU is needed most)
     int xMinValue = fromTable->axisX[0];
     int xMaxValue = fromTable->axisX[fromTable->xSize-1];
-    byte xMin = 0;
-    byte xMax = 0;
+    uint8_t xMin = 0;
+    uint8_t xMax = 0;
 
     //If the requested X value is greater/small than the maximum/minimum bin, reset X to be that value
     if(X > xMaxValue) { X = xMaxValue; }
@@ -302,8 +302,8 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
     //Loop through the Y axis bins for the min/max pair
     int yMaxValue = fromTable->axisY[0];
     int yMinValue = fromTable->axisY[fromTable->ySize-1];
-    byte yMin = 0;
-    byte yMax = 0;
+    uint8_t yMin = 0;
+    uint8_t yMax = 0;
 
     //If the requested Y value is greater/small than the maximum/minimum bin, reset Y to be that value
     if(Y > yMaxValue) { Y = yMaxValue; }

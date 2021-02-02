@@ -298,7 +298,7 @@ void idleControl()
       }
       else
       {
-        currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        currentStatus.CLIdleTarget = (uint8_t)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
         if( (idleCounter & 31) == 1) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
 
@@ -338,7 +338,7 @@ void idleControl()
         //Read the OL table as feedforward term
         FeedForwardTerm = percentage(table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), idle_pwm_max_count<<2); //All temps are offset by 40 degrees
     
-        currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        currentStatus.CLIdleTarget = (uint8_t)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
         if( (idleCounter & 31) == 1) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per 9 seconds
         if((currentStatus.RPM - idle_cl_target_rpm > configPage2.iacRPMlimitHysteresis*10) || (currentStatus.TPS > configPage2.iacTPSlimit)){ //reset integeral to zero when TPS is bigger than set value in TS (opening throttle so not idle anymore). OR when RPM higher than Idle Target + RPM Histeresis (comming back from high rpm with throttle closed) 
@@ -454,7 +454,7 @@ void idleControl()
             iacCoolTime_uS = configPage9.iacCoolTime * 1000;
           }
 
-          currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+          currentStatus.CLIdleTarget = (uint8_t)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
           idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //All temps are offset by 40 degrees
           PID_computed = idlePID.Compute(true);
           idleStepper.targetIdleStep = idle_pid_target_value >> 2; //Increase resolution
@@ -489,7 +489,7 @@ Returns:
 True: If the system has been homed. No other action is taken
 False: If the motor has not yet been homed. Will also perform another homing step.
 */
-static inline byte isStepperHomed()
+static inline uint8_t isStepperHomed()
 {
   bool isHomed = true; //As it's the most common scenario, default value is true
   if( completedHomeSteps < (configPage6.iacStepHome * 3) ) //Home steps are divided by 3 from TS
@@ -512,7 +512,7 @@ Returns:
 True: If a step is underway or motor is 'cooling'
 False: If the motor is ready for another step
 */
-static inline byte checkForStepping()
+static inline uint8_t checkForStepping()
 {
   bool isStepping = false;
   unsigned int timeCheck;

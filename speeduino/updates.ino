@@ -66,7 +66,7 @@ void doUpdates()
     {
       int endMem = EEPROM_CONFIG10_END - x;
       int startMem = endMem - 128; //
-      byte currentVal = EEPROM.read(startMem);
+      uint8_t currentVal = EEPROM.read(startMem);
       EEPROM.update(endMem, currentVal);
     }
     //The remaining data only has to move back 64 bytes
@@ -74,7 +74,7 @@ void doUpdates()
     {
       int endMem = EEPROM_CONFIG10_END - 1152 - x;
       int startMem = endMem - 64; //
-      byte currentVal = EEPROM.read(startMem);
+      uint8_t currentVal = EEPROM.read(startMem);
       EEPROM.update(endMem, currentVal);
     }
 
@@ -89,7 +89,7 @@ void doUpdates()
     {
       int endMem = EEPROM_CONFIG10_END - x;
       int startMem = endMem - 82; //
-      byte currentVal = EEPROM.read(startMem);
+      uint8_t currentVal = EEPROM.read(startMem);
       EEPROM.update(endMem, currentVal);
     }
 
@@ -147,7 +147,7 @@ void doUpdates()
   {
     //October 2018 set default values for all the aux in variables (These were introduced in Aug, but no defaults were set then)
     //All aux channels set to Off
-    for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
+    for (uint8_t AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
     {
       configPage9.caninput_sel[AuxinChan] = 0;
     }

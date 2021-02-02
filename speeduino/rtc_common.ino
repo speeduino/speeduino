@@ -99,7 +99,7 @@ uint16_t rtc_getYear()
   return tempYear;
 }
 
-void rtc_setTime(byte second, byte minute, byte hour, byte day, byte month, uint16_t year)
+void rtc_setTime(uint8_t second, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint16_t year)
 {
 #ifdef RTC_ENABLED
   #if defined(CORE_TEENSY)

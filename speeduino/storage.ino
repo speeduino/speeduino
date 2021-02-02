@@ -34,7 +34,7 @@ void writeAllConfig()
 Takes the current configuration (config pages and maps)
 and writes them to EEPROM as per the layout defined in storage.h
 */
-void writeConfig(byte tableNum)
+void writeConfig(uint8_t tableNum)
 {
   /*
   We only ever write to the EEPROM where the new value is different from the currently stored byte
@@ -44,9 +44,9 @@ void writeConfig(byte tableNum)
   int offset;
   int i, z, y;
   int writeCounter = 0;
-  byte newVal; //Used for tempoerarily storing the new intended value
+  uint8_t newVal; //Used for tempoerarily storing the new intended value
   //Create a pointer to the config page
-  byte* pnt_configPage;
+  uint8_t* pnt_configPage;
 
   switch(tableNum)
   {
@@ -69,7 +69,7 @@ void writeConfig(byte tableNum)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
         offset = x - EEPROM_CONFIG1_XBINS;
-        if( EEPROM.read(x) != (byte(fuelTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) ) { EEPROM.write(x, byte(fuelTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+        if( EEPROM.read(x) != (uint8_t(fuelTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) ) { EEPROM.write(x, uint8_t(fuelTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte 
       }
       //TPS/MAP bins
       for(int x=EEPROM_CONFIG1_YBINS; x<EEPROM_CONFIG2_START; x++)
@@ -88,11 +88,11 @@ void writeConfig(byte tableNum)
       | Config page 2 (See storage.h for data layout)
       | 64 byte long config table
       -----------------------------------------------------*/
-      pnt_configPage = (byte *)&configPage2; //Create a pointer to Page 2 in memory
+      pnt_configPage = (uint8_t*)&configPage2; //Create a pointer to Page 2 in memory
       for(int x=EEPROM_CONFIG2_START; x<EEPROM_CONFIG2_END; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG2_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG2_START))); writeCounter++; }
+        if(EEPROM.read(x) != *(pnt_configPage + uint8_t(x - EEPROM_CONFIG2_START))) { EEPROM.write(x, *(pnt_configPage + uint8_t(x - EEPROM_CONFIG2_START))); writeCounter++; }
       }
 
       if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
@@ -143,11 +143,11 @@ void writeConfig(byte tableNum)
       | Config page 2 (See storage.h for data layout)
       | 64 byte long config table
       -----------------------------------------------------*/
-      pnt_configPage = (byte *)&configPage4; //Create a pointer to Page 2 in memory
+      pnt_configPage = (uint8_t*)&configPage4; //Create a pointer to Page 2 in memory
       for(int x=EEPROM_CONFIG4_START; x<EEPROM_CONFIG4_END; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG4_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG4_START))); writeCounter++; }
+        if(EEPROM.read(x) != *(pnt_configPage + uint8_t(x - EEPROM_CONFIG4_START))) { EEPROM.write(x, *(pnt_configPage + uint8_t(x - EEPROM_CONFIG4_START))); writeCounter++; }
       }
 
       if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
@@ -175,7 +175,7 @@ void writeConfig(byte tableNum)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
         offset = x - EEPROM_CONFIG5_XBINS;
-        if(EEPROM.read(x) != byte(afrTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(afrTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+        if(EEPROM.read(x) != uint8_t(afrTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, uint8_t(afrTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
       }
       //TPS/MAP bins
       for(int x=EEPROM_CONFIG5_YBINS; x<EEPROM_CONFIG6_START; x++)
@@ -195,11 +195,11 @@ void writeConfig(byte tableNum)
       | Config page 3 (See storage.h for data layout)
       | 64 byte long config table
       -----------------------------------------------------*/
-      pnt_configPage = (byte *)&configPage6; //Create a pointer to Page 3 in memory
+      pnt_configPage = (uint8_t*)&configPage6; //Create a pointer to Page 3 in memory
       for(int x=EEPROM_CONFIG6_START; x<EEPROM_CONFIG6_END; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG6_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG6_START))); writeCounter++; }
+        if(EEPROM.read(x) != *(pnt_configPage + uint8_t(x - EEPROM_CONFIG6_START))) { EEPROM.write(x, *(pnt_configPage + uint8_t(x - EEPROM_CONFIG6_START))); writeCounter++; }
       }
 
       if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
@@ -241,11 +241,11 @@ void writeConfig(byte tableNum)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
         offset = x - EEPROM_CONFIG7_XBINS1;
-        if(EEPROM.read(x) != byte(boostTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(boostTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+        if(EEPROM.read(x) != uint8_t(boostTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, uint8_t(boostTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
         offset = y - EEPROM_CONFIG7_XBINS2;
-        if(EEPROM.read(y) != byte(vvtTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(y, byte(vvtTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+        if(EEPROM.read(y) != uint8_t(vvtTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(y, uint8_t(vvtTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
         offset = z - EEPROM_CONFIG7_XBINS3;
-        if(EEPROM.read(z) != byte(stagingTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(z, byte(stagingTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+        if(EEPROM.read(z) != uint8_t(stagingTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(z, uint8_t(stagingTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
         y++;
         z++;
       }
@@ -260,7 +260,7 @@ void writeConfig(byte tableNum)
         offset = y - EEPROM_CONFIG7_YBINS2;
         if(EEPROM.read(y) != vvtTable.axisY[offset]) { EEPROM.write(y, vvtTable.axisY[offset]); writeCounter++; } //TABLE_LOAD_MULTIPLIER is NOT used for VVT as it is TPS based (0-100)
         offset = z - EEPROM_CONFIG7_YBINS3;
-        if(EEPROM.read(z) != byte(stagingTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)) { EEPROM.write(z, byte(stagingTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+        if(EEPROM.read(z) != uint8_t(stagingTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)) { EEPROM.write(z, uint8_t(stagingTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
         y++;
         z++;
       }
@@ -320,13 +320,13 @@ void writeConfig(byte tableNum)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { eepromWritesPending = true; break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
         offset = x - EEPROM_CONFIG8_XBINS1;
-        EEPROM.update(x, byte(trim1Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); //RPM bins are divided by 100 and converted to a byte
+        EEPROM.update(x, uint8_t(trim1Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); //RPM bins are divided by 100 and converted to a byte
         offset = y - EEPROM_CONFIG8_XBINS2;
-        EEPROM.update(y, byte(trim2Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); //RPM bins are divided by 100 and converted to a byte
+        EEPROM.update(y, uint8_t(trim2Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); //RPM bins are divided by 100 and converted to a byte
         offset = z - EEPROM_CONFIG8_XBINS3;
-        EEPROM.update(z, byte(trim3Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); //RPM bins are divided by 100 and converted to a byte
+        EEPROM.update(z, uint8_t(trim3Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); //RPM bins are divided by 100 and converted to a byte
         offset = i - EEPROM_CONFIG8_XBINS4;
-        EEPROM.update(i, byte(trim4Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); //RPM bins are divided by 100 and converted to a byte
+        EEPROM.update(i, uint8_t(trim4Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); //RPM bins are divided by 100 and converted to a byte
         y++;
         z++;
         i++;
@@ -360,11 +360,11 @@ void writeConfig(byte tableNum)
       | Config page 10 (See storage.h for data layout)
       | 192 byte long config table
       -----------------------------------------------------*/
-      pnt_configPage = (byte *)&configPage9; //Create a pointer to Page 10 in memory
+      pnt_configPage = (uint8_t*)&configPage9; //Create a pointer to Page 10 in memory
       for(int x=EEPROM_CONFIG9_START; x<EEPROM_CONFIG9_END; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG9_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG9_START))); writeCounter++; }
+        if(EEPROM.read(x) != *(pnt_configPage + uint8_t(x - EEPROM_CONFIG9_START))) { EEPROM.write(x, *(pnt_configPage + uint8_t(x - EEPROM_CONFIG9_START))); writeCounter++; }
       }
 
       if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
@@ -377,12 +377,12 @@ void writeConfig(byte tableNum)
       | Config page 11 (See storage.h for data layout)
       | 192 byte long config table
       -----------------------------------------------------*/
-      pnt_configPage = (byte *)&configPage10; //Create a pointer to Page 11 in memory
+      pnt_configPage = (uint8_t*)&configPage10; //Create a pointer to Page 11 in memory
       //As there are no 3d tables in this page, all 192 bytes can simply be read in
       for(int x=EEPROM_CONFIG10_START; x<EEPROM_CONFIG10_END; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG10_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG10_START))); writeCounter++; }
+        if(EEPROM.read(x) != *(pnt_configPage + uint8_t(x - EEPROM_CONFIG10_START))) { EEPROM.write(x, *(pnt_configPage + uint8_t(x - EEPROM_CONFIG10_START))); writeCounter++; }
       }
 
       if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
@@ -409,7 +409,7 @@ void writeConfig(byte tableNum)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
         offset = x - EEPROM_CONFIG11_XBINS;
-        if( EEPROM.read(x) != (byte(fuelTable2.axisX[offset]/TABLE_RPM_MULTIPLIER)) ) { EEPROM.write(x, byte(fuelTable2.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+        if( EEPROM.read(x) != (uint8_t(fuelTable2.axisX[offset]/TABLE_RPM_MULTIPLIER)) ) { EEPROM.write(x, uint8_t(fuelTable2.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
       }
       //TPS/MAP bins
       for(int x=EEPROM_CONFIG11_YBINS; x<EEPROM_CONFIG11_END; x++)
@@ -442,14 +442,14 @@ void writeConfig(byte tableNum)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; }
         offset = x - EEPROM_CONFIG12_XBINS;
-        if(EEPROM.read(x) != byte(wmiTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(wmiTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+        if(EEPROM.read(x) != uint8_t(wmiTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, uint8_t(wmiTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
       }
       //MAP bins
       for(int x=EEPROM_CONFIG12_YBINS; x<EEPROM_CONFIG12_END; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; }
         offset = x - EEPROM_CONFIG12_YBINS;
-        if(EEPROM.read(x) != byte(wmiTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)) { EEPROM.write(x, byte(wmiTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; }
+        if(EEPROM.read(x) != uint8_t(wmiTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)) { EEPROM.write(x, uint8_t(wmiTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; }
       }
 
       if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
@@ -461,12 +461,12 @@ void writeConfig(byte tableNum)
       /*---------------------------------------------------
       | Config page 13 (See storage.h for data layout)
       -----------------------------------------------------*/
-      pnt_configPage = (byte *)&configPage13; //Create a pointer to Page 12 in memory
+      pnt_configPage = (uint8_t*)&configPage13; //Create a pointer to Page 12 in memory
       //As there are no 3d tables in this page, all bytes can simply be read in
       for(int x=EEPROM_CONFIG13_START; x<EEPROM_CONFIG13_END; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG13_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG13_START))); writeCounter++; }
+        if(EEPROM.read(x) != *(pnt_configPage + uint8_t(x - EEPROM_CONFIG13_START))) { EEPROM.write(x, *(pnt_configPage + uint8_t(x - EEPROM_CONFIG13_START))); writeCounter++; }
       }
       if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
       else { eepromWritesPending = false; }
@@ -531,7 +531,7 @@ void loadConfig()
   
   int offset;
   //Create a pointer to the config page
-  byte* pnt_configPage;
+  uint8_t* pnt_configPage;
 
   //Fuel table (See storage.h for data layout)
   for(uint16_t x=EEPROM_CONFIG1_MAP; x<EEPROM_CONFIG1_XBINS; x++)
@@ -551,10 +551,10 @@ void loadConfig()
     offset = x - EEPROM_CONFIG1_YBINS;
     fuelTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER;
   }
-  pnt_configPage = (byte *)&configPage2; //Create a pointer to Page 1 in memory
+  pnt_configPage = (uint8_t*)&configPage2; //Create a pointer to Page 1 in memory
   for(int x=EEPROM_CONFIG2_START; x<EEPROM_CONFIG2_END; x++)
   {
-    *(pnt_configPage + byte(x - EEPROM_CONFIG2_START)) = EEPROM.read(x);
+    *(pnt_configPage + uint8_t(x - EEPROM_CONFIG2_START)) = EEPROM.read(x);
   }
   //That concludes the reading of the VE table
   
@@ -580,10 +580,10 @@ void loadConfig()
     ignitionTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER; //Table load is divided by 2 (Allows for MAP up to 511)
   }
 
-  pnt_configPage = (byte *)&configPage4; //Create a pointer to Page 4 in memory
+  pnt_configPage = (uint8_t*)&configPage4; //Create a pointer to Page 4 in memory
   for(int x=EEPROM_CONFIG4_START; x<EEPROM_CONFIG4_END; x++)
   {
-    *(pnt_configPage + byte(x - EEPROM_CONFIG4_START)) = EEPROM.read(x);
+    *(pnt_configPage + uint8_t(x - EEPROM_CONFIG4_START)) = EEPROM.read(x);
   }
 
   //*********************************************************************************************************************************************************************************
@@ -608,10 +608,10 @@ void loadConfig()
     afrTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER; //Table load is divided by 2 (Allows for MAP up to 511)
   }
 
-  pnt_configPage = (byte *)&configPage6; //Create a pointer to Page 6 in memory
+  pnt_configPage = (uint8_t*)&configPage6; //Create a pointer to Page 6 in memory
   for(int x=EEPROM_CONFIG6_START; x<EEPROM_CONFIG6_END; x++)
   {
-    *(pnt_configPage + byte(x - EEPROM_CONFIG6_START)) = EEPROM.read(x);
+    *(pnt_configPage + uint8_t(x - EEPROM_CONFIG6_START)) = EEPROM.read(x);
   }
 
   //*********************************************************************************************************************************************************************************
@@ -719,20 +719,20 @@ void loadConfig()
   }
   //*********************************************************************************************************************************************************************************
   //canbus control page load
-    pnt_configPage = (byte *)&configPage9; //Create a pointer to Page 10 in memory
+    pnt_configPage = (uint8_t*)&configPage9; //Create a pointer to Page 10 in memory
   for(int x=EEPROM_CONFIG9_START; x<EEPROM_CONFIG9_END; x++)
   {
-    *(pnt_configPage + byte(x - EEPROM_CONFIG9_START)) = EEPROM.read(x);
+    *(pnt_configPage + uint8_t(x - EEPROM_CONFIG9_START)) = EEPROM.read(x);
   }
 
   //*********************************************************************************************************************************************************************************
 
   //CONFIG PAGE (10)
-  pnt_configPage = (byte *)&configPage10; //Create a pointer to Page 11 in memory
+  pnt_configPage = (uint8_t*)&configPage10; //Create a pointer to Page 11 in memory
   //All 192 bytes can simply be pulled straight from the configTable
   for(int x=EEPROM_CONFIG10_START; x<EEPROM_CONFIG10_END; x++)
   {
-    *(pnt_configPage + byte(x - EEPROM_CONFIG10_START)) = EEPROM.read(x);
+    *(pnt_configPage + uint8_t(x - EEPROM_CONFIG10_START)) = EEPROM.read(x);
   }
 
   //*********************************************************************************************************************************************************************************
@@ -779,11 +779,11 @@ void loadConfig()
   
   //*********************************************************************************************************************************************************************************
   //CONFIG PAGE (13)
-  pnt_configPage = (byte *)&configPage13; //Create a pointer to Page 13 in memory
+  pnt_configPage = (uint8_t*)&configPage13; //Create a pointer to Page 13 in memory
   //All bytes can simply be pulled straight from the configTable
   for(int x=EEPROM_CONFIG13_START; x<EEPROM_CONFIG13_END; x++)
   {
-    *(pnt_configPage + byte(x - EEPROM_CONFIG13_START)) = EEPROM.read(x);
+    *(pnt_configPage + uint8_t(x - EEPROM_CONFIG13_START)) = EEPROM.read(x);
   }
 
   //*********************************************************************************************************************************************************************************
@@ -872,16 +872,16 @@ void writeCalibration()
 Takes a page number and CRC32 value then stores it in the relevant place in EEPROM
 Note: Each pages requires 4 bytes for its CRC32. These are stored in reverse page order (ie the last page is store first in EEPROM)
 */
-void storePageCRC32(byte pageNo, uint32_t crc32_val)
+void storePageCRC32(uint8_t pageNo, uint32_t crc32_val)
 {
   uint16_t address; //Start address for the relevant page
   address = EEPROM_PAGE_CRC32 + ((NUM_PAGES - pageNo) * 4);
 
   //One = Most significant -> Four = Least significant byte
-  byte four = (crc32_val & 0xFF);
-  byte three = ((crc32_val >> 8) & 0xFF);
-  byte two = ((crc32_val >> 16) & 0xFF);
-  byte one = ((crc32_val >> 24) & 0xFF);
+  uint8_t four = (crc32_val & 0xFF);
+  uint8_t three = ((crc32_val >> 8) & 0xFF);
+  uint8_t two = ((crc32_val >> 16) & 0xFF);
+  uint8_t one = ((crc32_val >> 24) & 0xFF);
 
   //Write the 4 bytes into the eeprom memory.
   EEPROM.update(address, four);
@@ -893,7 +893,7 @@ void storePageCRC32(byte pageNo, uint32_t crc32_val)
 /*
 Retrieves and returns the 4 byte CRC32 for a given page from EEPROM
 */
-uint32_t readPageCRC32(byte pageNo)
+uint32_t readPageCRC32(uint8_t pageNo)
 {
   uint16_t address; //Start address for the relevant page
   address = EEPROM_PAGE_CRC32 + ((NUM_PAGES - pageNo) * 4);
@@ -910,8 +910,8 @@ uint32_t readPageCRC32(byte pageNo)
 
 // Utility functions.
 // By having these in this file, it prevents other files from calling EEPROM functions directly. This is useful due to differences in the EEPROM libraries on different devces
-byte readLastBaro() { return EEPROM.read(EEPROM_LAST_BARO); }
-void storeLastBaro(byte newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
-void storeCalibrationValue(uint16_t location, byte value) { EEPROM.update(location, value); } //This is essentially just an abstraction for EEPROM.update()
-byte readEEPROMVersion() { return EEPROM.read(EEPROM_DATA_VERSION); }
-void storeEEPROMVersion(byte newVersion) { EEPROM.update(EEPROM_DATA_VERSION, newVersion); }
+uint8_t readLastBaro() { return EEPROM.read(EEPROM_LAST_BARO); }
+void storeLastBaro(uint8_t newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
+void storeCalibrationValue(uint16_t location, uint8_t value) { EEPROM.update(location, value); } //This is essentially just an abstraction for EEPROM.update()
+uint8_t readEEPROMVersion() { return EEPROM.read(EEPROM_DATA_VERSION); }
+void storeEEPROMVersion(uint8_t newVersion) { EEPROM.update(EEPROM_DATA_VERSION, newVersion); }

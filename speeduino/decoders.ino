@@ -44,7 +44,7 @@ volatile unsigned long compositeLastToothTime;
 
 unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
 volatile uint16_t toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
-volatile byte toothSystemCount = 0; //Used for decoders such as Audi 135 where not every tooth is used for calculating crank angle. This variable stores the actual number of teeth, not the number being used to calculate crank angle
+volatile uint8_t toothSystemCount = 0; //Used for decoders such as Audi 135 where not every tooth is used for calculating crank angle. This variable stores the actual number of teeth, not the number being used to calculate crank angle
 volatile unsigned long toothSystemLastToothTime = 0; //As below, but used for decoders where not every tooth count is used for calculation
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
 volatile unsigned long toothLastSecToothTime = 0; //The time (micros()) that the last tooth was registered on the secondary input
@@ -73,7 +73,7 @@ bool decoderIsSequential; //Whether or not the decoder supports sequential opera
 bool decoderIsLowRes = false; //Is set true, certain extra calculations are performed for better timing accuracy
 bool decoderHasSecondary = false; //Whether or not the pattern uses a secondary input
 bool decoderHasFixedCrankingTiming = false; //Whether or not the decoder supports fixed cranking timing
-byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
+uint8_t checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
 unsigned long elapsedTime;
 unsigned long lastCrankAngleCalc;
 int16_t lastToothCalcAdvance = 99; //Invalid value here forces calculation of this on first main loop
@@ -250,7 +250,7 @@ This gives much more volatile reading, but is quite useful during cranking, part
 It can only be used on patterns where the teeth are evently spaced
 It takes an argument of the full (COMPLETE) number of teeth per revolution. For a missing tooth wheel, this is the number if the tooth had NOT been missing (Eg 36-1 = 36)
 */
-static inline int crankingGetRPM(byte totalTeeth)
+static inline int crankingGetRPM(uint8_t totalTeeth)
 {
   uint16_t tempRPM = 0;
   if( (currentStatus.startRevolutions >= configPage4.StgCycles) && (currentStatus.hasSync == true) )
@@ -575,7 +575,7 @@ int getCrankAngle_missingTooth()
 
 void triggerSetEndTeeth_missingTooth()
 {
-  byte toothAdder = 0;
+  uint8_t toothAdder = 0;
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
 
   //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
@@ -780,7 +780,7 @@ int getCrankAngle_DualWheel()
 void triggerSetEndTeeth_DualWheel()
 {
   //The toothAdder variable is used for when a setup is running sequentially, but the primary wheel is running at crank speed. This way the count of teeth will go up to 2* the number of primary teeth to allow for a sequential count. 
-  byte toothAdder = 0;
+  uint8_t toothAdder = 0;
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
 
   int16_t tempIgnition1EndTooth;
@@ -1373,7 +1373,7 @@ void triggerPri_4G63()
 }
 void triggerSec_4G63()
 {
-  //byte crankState = READ_PRI_TRIGGER();
+  //uint8_t crankState = READ_PRI_TRIGGER();
   //First filter is a duration based one to ensure the pulse was of sufficient length (time)
   //if(READ_SEC_TRIGGER()) { secondaryLastToothTime1 = micros(); return; }
   if(currentStatus.hasSync == true)
@@ -2570,7 +2570,7 @@ void triggerSec_Nissan360()
 
 
   //Calculate number of primary teeth that this window has been active for
-  byte trigEdge;
+  uint8_t trigEdge;
   if(configPage4.TrigEdgeSec == 0) { trigEdge = LOW; }
   else { trigEdge = HIGH; }
 
@@ -2578,7 +2578,7 @@ void triggerSec_Nissan360()
   else
   {
     //If we reach here, we are at the end of a secondary window
-    byte secondaryDuration = toothCurrentCount - secondaryToothCount; //How many primary teeth have passed during the duration of this secondary window
+    uint8_t secondaryDuration = toothCurrentCount - secondaryToothCount; //How many primary teeth have passed during the duration of this secondary window
 
     if(currentStatus.hasSync == false)
     {
@@ -2713,7 +2713,7 @@ int getCrankAngle_Nissan360()
 void triggerSetEndTeeth_Nissan360()
 {
   //This uses 4 prior teeth, just to ensure there is sufficient time to set the schedule etc
-  byte offset_teeth = 4;
+  uint8_t offset_teeth = 4;
   if((ignition1EndAngle - offset_teeth) > configPage4.triggerAngle) { ignition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / 2 ) - offset_teeth; }
   else { ignition1EndTooth = ( (ignition1EndAngle + 720 - configPage4.triggerAngle) / 2 ) - offset_teeth; }
   if((ignition2EndAngle - offset_teeth) > configPage4.triggerAngle) { ignition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / 2 ) - offset_teeth; }

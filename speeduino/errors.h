@@ -42,15 +42,15 @@
  */
 struct packedError
 {
-  byte errorNum : 2;
-  byte errorID  : 6;
+  uint8_t errorNum : 2;
+  uint8_t errorID  : 6;
 };
 
-byte getNextError();
-byte setError(byte);
+uint8_t getNextError();
+uint8_t setError(uint8_t);
 
-byte errorCount = 0;
-byte errorCodes[4];
+uint8_t errorCount = 0;
+uint8_t errorCodes[4];
 
 
 #endif

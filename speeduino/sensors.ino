@@ -59,7 +59,7 @@ void initialiseADC()
 
   //The following checks the aux inputs and initialises pins if required
   auxIsEnabled = false;
-  for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
+  for (uint8_t AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
   {
     currentStatus.current_caninchannel = AuxinChan;                   
     if (((configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 4)
@@ -72,7 +72,7 @@ void initialiseADC()
             || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  
             || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)))  
     {  //if current input channel is enabled as analog local pin check caninput_selxb(bits 2:3) with &12 and caninput_selxa(bits 0:1) with &3
-      byte pinNumber = (configPage9.Auxinpina[currentStatus.current_caninchannel]&127);
+      uint8_t pinNumber = (configPage9.Auxinpina[currentStatus.current_caninchannel]&127);
       if( pinIsUsed(pinNumber) )
       {
         //Do nothing here as the pin is already in use.
@@ -90,7 +90,7 @@ void initialiseADC()
             || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)
             || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)))
     {  //if current input channel is enabled as digital local pin check caninput_selxb(bits 2:3) wih &12 and caninput_selxa(bits 0:1) with &3
-       byte pinNumber = (configPage9.Auxinpinb[currentStatus.current_caninchannel]&127);
+       uint8_t pinNumber = (configPage9.Auxinpinb[currentStatus.current_caninchannel]&127);
        if( pinIsUsed(pinNumber) )
        {
          //Do nothing here as the pin is already in use.
@@ -357,16 +357,16 @@ void readTPS(bool useFilter)
   TPSlast = currentStatus.TPS;
   TPSlast_time = TPS_time;
   #if defined(ANALOG_ISR)
-    byte tempTPS = fastMap1023toX(AnChannel[pinTPS-A0], 255); //Get the current raw TPS ADC value and map it into a byte
+    uint8_t tempTPS = fastMap1023toX(AnChannel[pinTPS-A0], 255); //Get the current raw TPS ADC value and map it into a byte
   #else
     analogRead(pinTPS);
-    byte tempTPS = fastMap1023toX(analogRead(pinTPS), 255); //Get the current raw TPS ADC value and map it into a byte
+    uint8_t tempTPS = fastMap1023toX(analogRead(pinTPS), 255); //Get the current raw TPS ADC value and map it into a byte
   #endif
   //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
   if(useFilter == true) { currentStatus.tpsADC = ADC_FILTER(tempTPS, configPage4.ADCFILTER_TPS, currentStatus.tpsADC); }
   else { currentStatus.tpsADC = tempTPS; }
   //currentStatus.tpsADC = ADC_FILTER(tempTPS, 128, currentStatus.tpsADC);
-  byte tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
+  uint8_t tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
 
   if(configPage2.tpsMax > configPage2.tpsMin)
   {
@@ -569,9 +569,9 @@ uint16_t getSpeed()
   return tempSpeed;
 }
 
-byte getGear()
+uint8_t getGear()
 {
-  byte tempGear = 0; //Unknown gear
+  uint8_t tempGear = 0; //Unknown gear
   if(currentStatus.vss > 0)
   {
     //If the speed is non-zero, default to the last calculated gear
@@ -590,7 +590,7 @@ byte getGear()
   return tempGear;
 }
 
-byte getFuelPressure()
+uint8_t getFuelPressure()
 {
   int16_t tempFuelPressure = 0;
   uint16_t tempReading;
@@ -608,10 +608,10 @@ byte getFuelPressure()
     if(tempFuelPressure < 0 ) { tempFuelPressure = 0; } //prevent negative values, which will cause problems later when the values aren't signed.
   }
 
-  return (byte)tempFuelPressure;
+  return (uint8_t)tempFuelPressure;
 }
 
-byte getOilPressure()
+uint8_t getOilPressure()
 {
   int16_t tempOilPressure = 0;
   uint16_t tempReading;
@@ -631,7 +631,7 @@ byte getOilPressure()
   }
 
 
-  return (byte)tempOilPressure;
+  return (uint8_t)tempOilPressure;
 }
 
 /*

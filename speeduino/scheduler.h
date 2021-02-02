@@ -140,7 +140,7 @@ enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The 3 statuses that a sch
 struct Schedule {
   volatile unsigned long duration;
   volatile ScheduleStatus Status;
-  volatile byte schedulesSet; //A counter of how many times the schedule has been set
+  volatile uint8_t schedulesSet; //A counter of how many times the schedule has been set
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
   volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
@@ -157,7 +157,7 @@ struct Schedule {
 struct FuelSchedule {
   volatile unsigned long duration;
   volatile ScheduleStatus Status;
-  volatile byte schedulesSet; //A counter of how many times the schedule has been set
+  volatile uint8_t schedulesSet; //A counter of how many times the schedule has been set
   volatile COMPARE_TYPE startCompare; //The counter value of the timer when this will start
   volatile COMPARE_TYPE endCompare;
 

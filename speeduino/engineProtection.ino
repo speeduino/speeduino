@@ -2,9 +2,9 @@
 #include "globals.h"
 #include "engineProtection.h"
 
-byte checkEngineProtect()
+uint8_t checkEngineProtect()
 {
-  byte protectActive = 0;
+  uint8_t protectActive = 0;
   if(checkRevLimit() || checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit())
   {
     if(currentStatus.RPM > (configPage4.engineProtectMaxRPM*100U)) { protectActive = 1; }
@@ -13,10 +13,10 @@ byte checkEngineProtect()
   return protectActive;
 }
 
-byte checkRevLimit()
+uint8_t checkRevLimit()
 {
   //Hardcut RPM limit
-  byte revLimiterActive = 0;
+  uint8_t revLimiterActive = 0;
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
 
   if (currentStatus.RPM > ((unsigned int)(configPage4.HardRevLim) * 100) )
@@ -30,9 +30,9 @@ byte checkRevLimit()
   return revLimiterActive;
 }
 
-byte checkBoostLimit()
+uint8_t checkBoostLimit()
 {
-  byte boostLimitActive = 0;
+  uint8_t boostLimitActive = 0;
   //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
   if( (configPage6.boostCutEnabled > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2)) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
   {
@@ -70,14 +70,14 @@ byte checkBoostLimit()
   return boostLimitActive;
 }
 
-byte checkOilPressureLimit()
+uint8_t checkOilPressureLimit()
 {
-  byte oilProtectActive = 0;
+  uint8_t oilProtectActive = 0;
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL); //Will be set true below if required
 
   if( (configPage10.oilPressureProtEnbl == true) && (configPage10.oilPressureEnable == true) )
   {
-    byte oilLimit = table2D_getValue(&oilPressureProtectTable, currentStatus.RPMdiv100);
+    uint8_t oilLimit = table2D_getValue(&oilPressureProtectTable, currentStatus.RPMdiv100);
     if(currentStatus.oilPressure < oilLimit)
     {
       BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL);
@@ -88,9 +88,9 @@ byte checkOilPressureLimit()
   return oilProtectActive;
 }
 
-byte checkAFRLimit()
+uint8_t checkAFRLimit()
 {
-  byte checkAFRLimitActive = 0;
+  uint8_t checkAFRLimitActive = 0;
 
   return checkAFRLimitActive;
 }

@@ -3,6 +3,6 @@
 
 void initialiseAll();
 void initialiseTriggers();
-void setPinMapping(byte);
+void setPinMapping(uint8_t);
 
 #endif

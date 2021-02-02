@@ -32,7 +32,7 @@
 #endif
 */
 
-volatile byte flexCounter = 0;
+volatile uint8_t flexCounter = 0;
 volatile unsigned long flexStartTime;
 volatile unsigned long flexPulseWidth;
 
@@ -42,7 +42,7 @@ volatile unsigned long flexPulseWidth;
   #define READ_FLEX() digitalRead(pinFlex)
 #endif
 
-volatile byte knockCounter = 0;
+volatile uint8_t knockCounter = 0;
 volatile uint16_t knockAngle;
 
 unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
@@ -50,22 +50,22 @@ unsigned long EMAPrunningValue; //As above but for EMAP
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
 uint32_t MAPcurRev; //Tracks which revolution we're sampling on
 bool auxIsEnabled;
-byte TPSlast; /**< The previous TPS reading */
+uint8_t TPSlast; /**< The previous TPS reading */
 unsigned long TPS_time; //The time the TPS sample was taken
 unsigned long TPSlast_time; //The time the previous TPS sample was taken
-byte MAPlast; /**< The previous MAP reading */
+uint8_t MAPlast; /**< The previous MAP reading */
 unsigned long MAP_time; //The time the MAP sample was taken
 unsigned long MAPlast_time; //The time the previous MAP sample was taken
 volatile unsigned long vssLastPulseTime; /**< The time of the last VSS pulse of the VSS */
 volatile unsigned long vssLastMinusOnePulseTime; /**< The time of the last VSS_NUM_SAMPLES pulses of the VSS are stored in this array */
 volatile unsigned long vssTotalTime; /**< Cumulative count of the last VSS_SAMPLES number of pulses */
-volatile byte vssCount;
+volatile uint8_t vssCount;
 
 
 //These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
-byte mapErrorCount = 0;
-byte iatErrorCount = 0;
-byte cltErrorCount = 0;
+uint8_t mapErrorCount = 0;
+uint8_t iatErrorCount = 0;
+uint8_t cltErrorCount = 0;
 
 /**
  * @brief Simple low pass IIR filter macro for the analog inputs
@@ -83,9 +83,9 @@ void readO2_2();
 void flexPulse();
 void vssPulse();
 uint16_t getSpeed();
-byte getGear();
-byte getFuelPressure();
-byte getOilPressure();
+uint8_t getGear();
+uint8_t getFuelPressure();
+uint8_t getOilPressure();
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
 void readCLT(bool=true); //Allows the option to override the use of the filter
@@ -101,7 +101,7 @@ volatile int AnChannel[15];
 /*
 ISR(ADC_vect)
 {
-  byte nChannel;
+  uint8_t nChannel;
   int result = ADCL | (ADCH << 8);
 
   //ADCSRA = 0x6E; - ADC disabled by clearing bit 7(ADEN)
@@ -132,7 +132,7 @@ ISR(ADC_vect)
 */
 ISR(ADC_vect)
 {
-  byte nChannel = ADMUX & 0x07;
+  uint8_t nChannel = ADMUX & 0x07;
   int result = ADCL | (ADCH << 8);
 
   BIT_CLEAR(ADCSRA, ADEN); //Disable ADC for Changing Channel (see chapter 26.5 of datasheet)
