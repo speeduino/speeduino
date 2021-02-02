@@ -299,12 +299,14 @@ int16_t ProgrammableIOGetData(uint16_t index)
   uint8_t x;
   if ( index < LOG_ENTRY_SIZE )
   {
+    
     for(x = 0; x<sizeof(fsIntIndex); x++)
     {
       if (fsIntIndex[x] == index) { break; }
     }
-    if (x >= sizeof(fsIntIndex)) { result = fullStatus[index]; }
-    else { result = word(fullStatus[index+1], fullStatus[index]); }
+    if (x >= sizeof(fsIntIndex)) { result = getStatusEntry(index); }
+    else { result = word(getStatusEntry(index+1), getStatusEntry(index)); }
+    
 
     //Special cases for temperatures
     if( (index == 6) || (index == 7) ) { result -= CALIBRATION_TEMPERATURE_OFFSET; }

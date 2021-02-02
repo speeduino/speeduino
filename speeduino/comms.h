@@ -98,6 +98,6 @@ void testComm();
 void commandButtons(int16_t);
 void sendCompositeLog(uint8_t);
 byte getPageValue(byte, uint16_t);
-void updateFullStatus();
+byte getStatusEntry(uint16_t);
 
 #endif // COMMS_H
