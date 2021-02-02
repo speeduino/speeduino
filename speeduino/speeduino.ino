@@ -250,7 +250,7 @@ void loop()
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ)) //10 hertz
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_10HZ);
-      updateFullStatus();
+      //updateFullStatus();
       checkProgrammableIO();
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
