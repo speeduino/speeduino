@@ -52,7 +52,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
   loop250ms++;
   loopSec++;
 
-  unsigned long targetOverdwellTime;
+  uint32_t targetOverdwellTime;
 
   //Overdwell check
   targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
@@ -156,7 +156,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     BIT_SET(TIMER_mask, BIT_TIMER_1HZ);
 
     dwellLimit_uS = (1000 * configPage4.dwellLimit); //Update uS value incase setting has changed
-    currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10);
+    currentStatus.crankRPM = ((uint16_t)configPage4.crankRPM * 10);
 
     //**************************************************************************************************************************************************
     //This updates the runSecs variable
@@ -231,7 +231,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //Continental flex sensor fuel temperature can be read with following formula: (Temperature = (41.25 * pulse width(ms)) - 81.25). 1000μs = -40C and 5000μs = 125C
       if(flexPulseWidth > 5000) { flexPulseWidth = 5000; }
       else if(flexPulseWidth < 1000) { flexPulseWidth = 1000; }
-      currentStatus.fuelTemp = (((4224 * (long)flexPulseWidth) >> 10) - 8125) / 100;
+      currentStatus.fuelTemp = (((4224 * (int32_t)flexPulseWidth) >> 10) - 8125) / 100;
     }
 
     //**************************************************************************************************************************************************

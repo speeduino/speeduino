@@ -11,7 +11,7 @@ A full copy of the license may be found in the projects root directory
 #include "globals.h"
 #include "errors.h"
 
-byte setError(byte errorID)
+uint8_t setError(uint8_t errorID)
 {
   if(errorCount < MAX_ERRORS)
   {
@@ -22,9 +22,9 @@ byte setError(byte errorID)
   return errorCount;
 }
 
-void clearError(byte errorID)
+void clearError(uint8_t errorID)
 {
-  byte clearedError = 255;
+  uint8_t clearedError = 255;
 
   if (errorID == errorCodes[0]) { clearedError = 0; }
   else if(errorID == errorCodes[1]) { clearedError = 1; }
@@ -35,7 +35,7 @@ void clearError(byte errorID)
   {
     errorCodes[clearedError] = ERR_NONE;
     //Clear the required error and move any from above it 'down' in the error array
-    for (byte x=clearedError; x < (errorCount-1); x++)
+    for (uint8_t x=clearedError; x < (errorCount-1); x++)
     {
       errorCodes[x] = errorCodes[x+1];
       errorCodes[x+1] = ERR_NONE;
@@ -46,10 +46,10 @@ void clearError(byte errorID)
   }
 }
 
-byte getNextError()
+uint8_t getNextError()
 {
   packedError currentError;
-  byte currentErrorNum = 0;
+  uint8_t currentErrorNum = 0;
 
   if(errorCount > 0)
   {
@@ -66,5 +66,5 @@ byte getNextError()
   }
 
 
-  return *(byte*)&currentError; //Ugly, but this forces the cast of the currentError struct to a byte.
+  return *(uint8_t*)&currentError; //Ugly, but this forces the cast of the currentError struct to a byte.
 }

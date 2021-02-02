@@ -26,8 +26,8 @@ uint8_t pinIsValid = 0;
 //uint8_t outputPin[sizeof(configPage13.outputPin)];
 
 void setResetControlPinState();
-byte pinTranslate(byte);
-uint32_t calculateCRC32(byte);
+uint8_t pinTranslate(uint8_t);
+uint32_t calculateCRC32(uint8_t);
 void initialiseProgrammableIO();
 void checkProgrammableIO();
 int16_t ProgrammableIOGetData(uint16_t index);

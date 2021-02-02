@@ -2,7 +2,7 @@
 
 const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 
-const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
+const uint8_t data_structure_version = 2; //This identifies the data structure when reading / writing.
 const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288,192,128,288}; /**< This array stores the size (in bytes) of each configuration page */
 
 struct table3D fuelTable; //16x16 fuel map
@@ -102,131 +102,131 @@ bool channel6InjEnabled = false;
 bool channel7InjEnabled = false;
 bool channel8InjEnabled = false;
 
-int ignition1EndAngle = 0;
-int ignition2EndAngle = 0;
-int ignition3EndAngle = 0;
-int ignition4EndAngle = 0;
-int ignition5EndAngle = 0;
-int ignition6EndAngle = 0;
-int ignition7EndAngle = 0;
-int ignition8EndAngle = 0;
+int16_t ignition1EndAngle = 0;
+int16_t ignition2EndAngle = 0;
+int16_t ignition3EndAngle = 0;
+int16_t ignition4EndAngle = 0;
+int16_t ignition5EndAngle = 0;
+int16_t ignition6EndAngle = 0;
+int16_t ignition7EndAngle = 0;
+int16_t ignition8EndAngle = 0;
 
 //These are variables used across multiple files
-const byte PROGMEM fsIntIndex[31] = {4, 14, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 96, 101}; //int indexes in fullStatus array
+const uint8_t PROGMEM fsIntIndex[31] = {4, 14, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 96, 101}; //int indexes in fullStatus array
 bool initialisationComplete = false; //Tracks whether the setup() function has run completely
-byte fpPrimeTime = 0; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
+uint8_t fpPrimeTime = 0; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 volatile uint16_t mainLoopCount;
-unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
-volatile unsigned long ms_counter = 0; //A counter that increments once per ms
+uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+volatile uint32_t timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
+volatile uint32_t ms_counter = 0; //A counter that increments once per ms
 uint16_t fixedCrankingOverride = 0;
 bool clutchTrigger;
 bool previousClutchTrigger;
 volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
 volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
-volatile unsigned int toothHistoryIndex = 0;
-volatile byte toothHistorySerialIndex = 0;
-unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
-unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
+volatile uint16_t toothHistoryIndex = 0;
+volatile uint8_t toothHistorySerialIndex = 0;
+uint32_t currentLoopTime; /**< The time (in uS) that the current mainloop started */
+uint32_t previousLoopTime; /**< The time (in uS) that the previous mainloop started */
 volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
-byte primaryTriggerEdge;
-byte secondaryTriggerEdge;
-int CRANK_ANGLE_MAX = 720;
-int CRANK_ANGLE_MAX_IGN = 360;
-int CRANK_ANGLE_MAX_INJ = 360; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+uint8_t primaryTriggerEdge;
+uint8_t secondaryTriggerEdge;
+int16_t CRANK_ANGLE_MAX = 720;
+int16_t CRANK_ANGLE_MAX_IGN = 360;
+int16_t CRANK_ANGLE_MAX_INJ = 360; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 volatile uint32_t runSecsX10;
 volatile uint32_t seclx10;
-volatile byte HWTest_INJ = 0; /**< Each bit in this variable represents one of the injector channels and it's HW test status */
-volatile byte HWTest_INJ_50pc = 0; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
-volatile byte HWTest_IGN = 0; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
-volatile byte HWTest_IGN_50pc = 0; 
+volatile uint8_t HWTest_INJ = 0; /**< Each bit in this variable represents one of the injector channels and it's HW test status */
+volatile uint8_t HWTest_INJ_50pc = 0; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
+volatile uint8_t HWTest_IGN = 0; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
+volatile uint8_t HWTest_IGN_50pc = 0; 
 
 
 //This needs to be here because using the config page directly can prevent burning the setting
-byte resetControl = RESET_CONTROL_DISABLED;
+uint8_t resetControl = RESET_CONTROL_DISABLED;
 
-volatile byte TIMER_mask;
-volatile byte LOOP_TIMER;
+volatile uint8_t TIMER_mask;
+volatile uint8_t LOOP_TIMER;
 
 
-byte pinInjector1; //Output pin injector 1
-byte pinInjector2; //Output pin injector 2
-byte pinInjector3; //Output pin injector 3
-byte pinInjector4; //Output pin injector 4
-byte pinInjector5; //Output pin injector 5
-byte pinInjector6; //Output pin injector 6
-byte pinInjector7; //Output pin injector 7
-byte pinInjector8; //Output pin injector 8
-byte injectorOutputControl = OUTPUT_CONTROL_DIRECT; //Specifies whether the injectors are controlled directly (Via an IO pin) or using something like the MC33810. 0=Direct
-byte pinCoil1; //Pin for coil 1
-byte pinCoil2; //Pin for coil 2
-byte pinCoil3; //Pin for coil 3
-byte pinCoil4; //Pin for coil 4
-byte pinCoil5; //Pin for coil 5
-byte pinCoil6; //Pin for coil 6
-byte pinCoil7; //Pin for coil 7
-byte pinCoil8; //Pin for coil 8
-byte ignitionOutputControl = OUTPUT_CONTROL_DIRECT; //Specifies whether the coils are controlled directly (Via an IO pin) or using something like the MC33810. 0=Direct
-byte pinTrigger; //The CAS pin
-byte pinTrigger2; //The Cam Sensor pin
-byte pinTrigger3;	//the 2nd cam sensor pin
-byte pinTPS;//TPS input pin
-byte pinMAP; //MAP sensor pin
-byte pinEMAP; //EMAP sensor pin
-byte pinMAP2; //2nd MAP sensor (Currently unused)
-byte pinIAT; //IAT sensor pin
-byte pinCLT; //CLS sensor pin
-byte pinO2; //O2 Sensor pin
-byte pinO2_2; //second O2 pin
-byte pinBat; //Battery voltage pin
-byte pinDisplayReset; // OLED reset pin
-byte pinTachOut; //Tacho output
-byte pinFuelPump; //Fuel pump on/off
-byte pinIdle1; //Single wire idle control
-byte pinIdle2; //2 wire idle control (Not currently used)
-byte pinIdleUp; //Input for triggering Idle Up
-byte pinIdleUpOutput; //Output that follows (normal or inverted) the idle up pin
-byte pinCTPS; //Input for triggering closed throttle state
-byte pinFuel2Input; //Input for switching to the 2nd fuel table
-byte pinSpark2Input; //Input for switching to the 2nd ignition table
-byte pinSpareTemp1; // Future use only
-byte pinSpareTemp2; // Future use only
-byte pinSpareOut1; //Generic output
-byte pinSpareOut2; //Generic output
-byte pinSpareOut3; //Generic output
-byte pinSpareOut4; //Generic output
-byte pinSpareOut5; //Generic output
-byte pinSpareOut6; //Generic output
-byte pinSpareHOut1; //spare high current output
-byte pinSpareHOut2; // spare high current output
-byte pinSpareLOut1; // spare low current output
-byte pinSpareLOut2; // spare low current output
-byte pinSpareLOut3;
-byte pinSpareLOut4;
-byte pinSpareLOut5;
-byte pinBoost;
-byte pinVVT_1;		// vvt output 1
-byte pinVVT_2;		// vvt output 2
-byte pinFan;       // Cooling fan output
-byte pinStepperDir; //Direction pin for the stepper motor driver
-byte pinStepperStep; //Step pin for the stepper motor driver
-byte pinStepperEnable; //Turning the DRV8825 driver on/off
-byte pinLaunch;
-byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
-byte pinFlex; //Pin with the flex sensor attached
-byte pinVSS;
-byte pinBaro; //Pin that an al barometric pressure sensor is attached to (If used)
-byte pinResetControl; // Output pin used control resetting the Arduino
-byte pinFuelPressure;
-byte pinOilPressure;
-byte pinWMIEmpty; // Water tank empty sensor
-byte pinWMIIndicator; // No water indicator bulb
-byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
-byte pinMC33810_1_CS;
-byte pinMC33810_2_CS;
+uint8_t pinInjector1; //Output pin injector 1
+uint8_t pinInjector2; //Output pin injector 2
+uint8_t pinInjector3; //Output pin injector 3
+uint8_t pinInjector4; //Output pin injector 4
+uint8_t pinInjector5; //Output pin injector 5
+uint8_t pinInjector6; //Output pin injector 6
+uint8_t pinInjector7; //Output pin injector 7
+uint8_t pinInjector8; //Output pin injector 8
+uint8_t injectorOutputControl = OUTPUT_CONTROL_DIRECT; //Specifies whether the injectors are controlled directly (Via an IO pin) or using something like the MC33810. 0=Direct
+uint8_t pinCoil1; //Pin for coil 1
+uint8_t pinCoil2; //Pin for coil 2
+uint8_t pinCoil3; //Pin for coil 3
+uint8_t pinCoil4; //Pin for coil 4
+uint8_t pinCoil5; //Pin for coil 5
+uint8_t pinCoil6; //Pin for coil 6
+uint8_t pinCoil7; //Pin for coil 7
+uint8_t pinCoil8; //Pin for coil 8
+uint8_t ignitionOutputControl = OUTPUT_CONTROL_DIRECT; //Specifies whether the coils are controlled directly (Via an IO pin) or using something like the MC33810. 0=Direct
+uint8_t pinTrigger; //The CAS pin
+uint8_t pinTrigger2; //The Cam Sensor pin
+uint8_t pinTrigger3;	//the 2nd cam sensor pin
+uint8_t pinTPS;//TPS input pin
+uint8_t pinMAP; //MAP sensor pin
+uint8_t pinEMAP; //EMAP sensor pin
+uint8_t pinMAP2; //2nd MAP sensor (Currently unused)
+uint8_t pinIAT; //IAT sensor pin
+uint8_t pinCLT; //CLS sensor pin
+uint8_t pinO2; //O2 Sensor pin
+uint8_t pinO2_2; //second O2 pin
+uint8_t pinBat; //Battery voltage pin
+uint8_t pinDisplayReset; // OLED reset pin
+uint8_t pinTachOut; //Tacho output
+uint8_t pinFuelPump; //Fuel pump on/off
+uint8_t pinIdle1; //Single wire idle control
+uint8_t pinIdle2; //2 wire idle control (Not currently used)
+uint8_t pinIdleUp; //Input for triggering Idle Up
+uint8_t pinIdleUpOutput; //Output that follows (normal or inverted) the idle up pin
+uint8_t pinCTPS; //Input for triggering closed throttle state
+uint8_t pinFuel2Input; //Input for switching to the 2nd fuel table
+uint8_t pinSpark2Input; //Input for switching to the 2nd ignition table
+uint8_t pinSpareTemp1; // Future use only
+uint8_t pinSpareTemp2; // Future use only
+uint8_t pinSpareOut1; //Generic output
+uint8_t pinSpareOut2; //Generic output
+uint8_t pinSpareOut3; //Generic output
+uint8_t pinSpareOut4; //Generic output
+uint8_t pinSpareOut5; //Generic output
+uint8_t pinSpareOut6; //Generic output
+uint8_t pinSpareHOut1; //spare high current output
+uint8_t pinSpareHOut2; // spare high current output
+uint8_t pinSpareLOut1; // spare low current output
+uint8_t pinSpareLOut2; // spare low current output
+uint8_t pinSpareLOut3;
+uint8_t pinSpareLOut4;
+uint8_t pinSpareLOut5;
+uint8_t pinBoost;
+uint8_t pinVVT_1;		// vvt output 1
+uint8_t pinVVT_2;		// vvt output 2
+uint8_t pinFan;       // Cooling fan output
+uint8_t pinStepperDir; //Direction pin for the stepper motor driver
+uint8_t pinStepperStep; //Step pin for the stepper motor driver
+uint8_t pinStepperEnable; //Turning the DRV8825 driver on/off
+uint8_t pinLaunch;
+uint8_t pinIgnBypass; //The pin used for an ignition bypass (Optional)
+uint8_t pinFlex; //Pin with the flex sensor attached
+uint8_t pinVSS;
+uint8_t pinBaro; //Pin that an al barometric pressure sensor is attached to (If used)
+uint8_t pinResetControl; // Output pin used control resetting the Arduino
+uint8_t pinFuelPressure;
+uint8_t pinOilPressure;
+uint8_t pinWMIEmpty; // Water tank empty sensor
+uint8_t pinWMIIndicator; // No water indicator bulb
+uint8_t pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
+uint8_t pinMC33810_1_CS;
+uint8_t pinMC33810_2_CS;
 #ifdef USE_SPI_EEPROM
-  byte pinSPIFlash_CS;
+  uint8_t pinSPIFlash_CS;
 #endif
 
 struct statuses currentStatus; /**< The master global status struct. Contains all values that are updated frequently and used across modules */
@@ -237,9 +237,9 @@ struct config9 configPage9;
 struct config10 configPage10;
 struct config13 configPage13;
 
-//byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
-//byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
-//byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
+//uint8_t cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
+//uint8_t iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
+//uint8_t o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
 
 uint16_t cltCalibration_bins[32];
 uint16_t cltCalibration_values[32];

@@ -32,8 +32,8 @@ void fanControl()
 {
   if( configPage6.fanEnable == 1 )
   {
-    int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
-    int offTemp = onTemp - configPage6.fanHyster;
+    int16_t onTemp = (int16_t)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
+    int16_t offTemp = onTemp - configPage6.fanHyster;
     bool fanPermit = false;
 
     if ( configPage2.fanWhenOff == true) { fanPermit = true; }
@@ -155,7 +155,7 @@ void boostControl()
       if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
       else
       {
-        boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
+        boost_pwm_target_value = ((uint32_t)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
         ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
       }
     }
@@ -191,7 +191,7 @@ void boostControl()
           {
             if(PIDcomputed == true)
             {
-              boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
+              boost_pwm_target_value = ((uint32_t)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
               ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
             }
           }
@@ -383,7 +383,7 @@ void nitrousControl()
 // Water methanol injection control
 void wmiControl()
 {
-  int wmiPW = 0;
+  int16_t wmiPW = 0;
   
   // wmi can only work when vvt is disabled 
   if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1) )
@@ -409,7 +409,7 @@ void wmiControl()
           break;
         case WMI_MODE_CLOSEDLOOP:
           // Mapped closed loop - Output PWM follows injector duty cycle with 2D correction map applied (RPM vs MAP). Cell value contains correction value% [nom 100%] 
-          wmiPW = max(0, ((int)currentStatus.PW1 + configPage10.wmiOffset)) * get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM) / 100;
+          wmiPW = max(0, ((int16_t)currentStatus.PW1 + configPage10.wmiOffset)) * get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM) / 100;
           break;
         default:
           // Wrong mode
@@ -517,7 +517,7 @@ void boostDisable()
   {
     if(nextVVT == 0)
     {
-      if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt1_pwm_value < (int32_t)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         VVT1_PIN_OFF();
         vvt1_pwm_state = false;
@@ -534,7 +534,7 @@ void boostDisable()
     }
     else if (nextVVT == 1)
     {
-      if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt2_pwm_value < (int32_t)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         VVT2_PIN_OFF();
         vvt2_pwm_state = false;
@@ -551,7 +551,7 @@ void boostDisable()
     }
     else
     {
-      if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt1_pwm_value < (int32_t)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         VVT1_PIN_OFF();
         vvt1_pwm_state = false;
@@ -559,7 +559,7 @@ void boostDisable()
         VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value);
       }
       else { vvt1_max_pwm = true; }
-      if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt2_pwm_value < (int32_t)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         VVT1_PIN_OFF();
         vvt2_pwm_state = false;

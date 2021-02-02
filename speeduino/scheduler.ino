@@ -121,7 +121,7 @@ endCallback: This function is called once the duration time has been reached
 */
 
 //Experimental new generic function. This is NOT yet ready and functional
-void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, unsigned long duration)
+void setFuelSchedule(struct Schedule *targetSchedule, uint32_t timeout, uint32_t duration)
 {
   if(targetSchedule->Status != RUNNING) //Check that we're not already part way through a schedule
   {
@@ -156,8 +156,8 @@ void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, uns
 }
 
 
-//void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-void setFuelSchedule1(unsigned long timeout, unsigned long duration) //Uses timer 3 compare A
+//void setFuelSchedule1(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)())
+void setFuelSchedule1(uint32_t timeout, uint32_t duration) //Uses timer 3 compare A
 {
   //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
   //if(timeout < MAX_TIMER_PERIOD)
@@ -200,7 +200,7 @@ void setFuelSchedule1(unsigned long timeout, unsigned long duration) //Uses time
   } //Timeout less than threshold
 }
 
-void setFuelSchedule2(unsigned long timeout, unsigned long duration) //Uses timer 3 compare B
+void setFuelSchedule2(uint32_t timeout, uint32_t duration) //Uses timer 3 compare B
 {
   //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
   if(timeout < MAX_TIMER_PERIOD)
@@ -237,8 +237,8 @@ void setFuelSchedule2(unsigned long timeout, unsigned long duration) //Uses time
     }
   }
 }
-//void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-void setFuelSchedule3(unsigned long timeout, unsigned long duration) //Uses timer 3 compare C
+//void setFuelSchedule3(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)())
+void setFuelSchedule3(uint32_t timeout, uint32_t duration) //Uses timer 3 compare C
 {
   //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
   if(timeout < MAX_TIMER_PERIOD)
@@ -275,8 +275,8 @@ void setFuelSchedule3(unsigned long timeout, unsigned long duration) //Uses time
     }
   }
 }
-//void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses timer 4 compare B
+//void setFuelSchedule4(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)())
+void setFuelSchedule4(uint32_t timeout, uint32_t duration) //Uses timer 4 compare B
 {
   //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
   if(timeout < MAX_TIMER_PERIOD)
@@ -315,7 +315,7 @@ void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses time
 }
 
 #if INJ_CHANNELS >= 5
-void setFuelSchedule5(unsigned long timeout, unsigned long duration) //Uses timer 4 compare C
+void setFuelSchedule5(uint32_t timeout, uint32_t duration) //Uses timer 4 compare C
 {
   //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
   if(timeout < MAX_TIMER_PERIOD)
@@ -352,7 +352,7 @@ void setFuelSchedule5(unsigned long timeout, unsigned long duration) //Uses time
 #endif
 
 #if INJ_CHANNELS >= 6
-void setFuelSchedule6(unsigned long timeout, unsigned long duration) //Uses timer 4 compare A
+void setFuelSchedule6(uint32_t timeout, uint32_t duration) //Uses timer 4 compare A
 {
   //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
   if(timeout < MAX_TIMER_PERIOD)
@@ -389,7 +389,7 @@ void setFuelSchedule6(unsigned long timeout, unsigned long duration) //Uses time
 #endif
 
 #if INJ_CHANNELS >= 7
-void setFuelSchedule7(unsigned long timeout, unsigned long duration) //Uses timer 5 compare C
+void setFuelSchedule7(uint32_t timeout, uint32_t duration) //Uses timer 5 compare C
 {
   //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
   if(timeout < MAX_TIMER_PERIOD)
@@ -426,7 +426,7 @@ void setFuelSchedule7(unsigned long timeout, unsigned long duration) //Uses time
 #endif
 
 #if INJ_CHANNELS >= 8
-void setFuelSchedule8(unsigned long timeout, unsigned long duration) //Uses timer 5 compare B
+void setFuelSchedule8(uint32_t timeout, uint32_t duration) //Uses timer 5 compare B
 {
   //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
   if(timeout < MAX_TIMER_PERIOD)
@@ -463,7 +463,7 @@ void setFuelSchedule8(unsigned long timeout, unsigned long duration) //Uses time
 #endif
 
 //Ignition schedulers use Timer 5
-void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule1(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)())
 {
   if(ignitionSchedule1.Status != RUNNING) //Check that we're not already part way through a schedule
   {
@@ -500,7 +500,7 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
   }
 }
 
-inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
+inline void refreshIgnitionSchedule1(uint32_t timeToEnd)
 {
   if( (ignitionSchedule1.Status == RUNNING) && (timeToEnd < ignitionSchedule1.duration) )
   //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
@@ -513,7 +513,7 @@ inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
   }
 }
 
-void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule2(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)())
 {
   if(ignitionSchedule2.Status != RUNNING) //Check that we're not already part way through a schedule
   {
@@ -547,7 +547,7 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     }
   }
 }
-void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule3(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)())
 {
   if(ignitionSchedule3.Status != RUNNING) //Check that we're not already part way through a schedule
   {
@@ -582,7 +582,7 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
     }
   }
 }
-void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule4(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)())
 {
   if(ignitionSchedule4.Status != RUNNING) //Check that we're not already part way through a schedule
   {
@@ -617,7 +617,7 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     }
   }
 }
-void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule5(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)())
 {
   if(ignitionSchedule5.Status != RUNNING) //Check that we're not already part way through a schedule
   {
@@ -652,7 +652,7 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     }
   }
 }
-void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule6(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)())
 {
   if(ignitionSchedule6.Status != RUNNING) //Check that we're not already part way through a schedule
   {
@@ -687,7 +687,7 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
     }
   }
 }
-void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule7(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)())
 {
   if(ignitionSchedule7.Status != RUNNING) //Check that we're not already part way through a schedule
   {
@@ -722,7 +722,7 @@ void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsign
     }
   }
 }
-void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule8(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)())
 {
   if(ignitionSchedule8.Status != RUNNING) //Check that we're not already part way through a schedule
   {
@@ -761,7 +761,7 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
 extern void beginInjectorPriming()
 {
   //Perform the injector priming pulses. Set these to run at an arbitrary time in the future (100us). The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
-  unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  uint32_t primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
   if( (primingValue > 0) && (currentStatus.TPS < configPage4.floodClear) )
   {
     primingValue = primingValue * 100 * 5; //to acheive long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.

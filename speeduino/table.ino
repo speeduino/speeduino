@@ -12,7 +12,7 @@ Note that this may clear some of the existing values of the table
 #include "globals.h"
 
 /*
-void table2D_setSize(struct table2D* targetTable, byte newSize)
+void table2D_setSize(struct table2D* targetTable, uint8_t newSize)
 {
   //Table resize is ONLY permitted during system initialisation.
   //if(initialisationComplete == false)
@@ -22,8 +22,8 @@ void table2D_setSize(struct table2D* targetTable, byte newSize)
     {
       //The following lines have MISRA suppressions as realloc is otherwise forbidden. These calls have been verified as unable to be executed from anywhere but controlled areas. 
       //cppcheck-suppress misra-21.3
-      targetTable->values = (byte *)realloc(targetTable->values, newSize * sizeof(byte)); //cppcheck-suppress misra_21.3
-      targetTable->axisX = (byte *)realloc(targetTable->axisX, newSize * sizeof(byte));
+      targetTable->values = (uint8_t *)realloc(targetTable->values, newSize * sizeof(uint8_t)); //cppcheck-suppress misra_21.3
+      targetTable->axisX = (uint8_t *)realloc(targetTable->axisX, newSize * sizeof(uint8_t));
       targetTable->xSize = newSize;
     }
     else
@@ -48,16 +48,16 @@ void* heap_alloc(uint16_t size)
  }
 
 
-void table3D_setSize(struct table3D *targetTable, byte newSize)
+void table3D_setSize(struct table3D *targetTable, uint8_t newSize)
 {
   if(initialisationComplete == false)
   {
     /*
-    targetTable->values = (byte **)malloc(newSize * sizeof(byte*));
-    for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)malloc(newSize * sizeof(byte)); }
+    targetTable->values = (uint8_t **)malloc(newSize * sizeof(uint8_t *));
+    for(uint8_t i = 0; i < newSize; i++) { targetTable->values[i] = (uint8_t *)malloc(newSize * sizeof(uint8_t)); }
     */
-    targetTable->values = (byte **)heap_alloc(newSize * sizeof(byte*));
-    for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)heap_alloc(newSize * sizeof(byte)); }
+    targetTable->values = (uint8_t **)heap_alloc(newSize * sizeof(uint8_t *));
+    for(uint8_t i = 0; i < newSize; i++) { targetTable->values[i] = (uint8_t *)heap_alloc(newSize * sizeof(uint8_t)); }
 
     /*
     targetTable->axisX = (int16_t *)malloc(newSize * sizeof(int16_t));
@@ -78,16 +78,16 @@ ie: Given a value on the X axis, it returns a Y value that coresponds to the poi
 This function must take into account whether a table contains 8-bit or 16-bit values.
 Unfortunately this means many of the lines are duplicated depending on this
 */
-int table2D_getValue(struct table2D *fromTable, int X_in)
+int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
 {
   //Orig memory usage = 5414
-  int returnValue = 0;
+  int16_t returnValue = 0;
   bool valueFound = false;
 
-  int X = X_in;
-  int xMinValue, xMaxValue;
-  int xMin = 0;
-  int xMax = fromTable->xSize-1;
+  int16_t X = X_in;
+  int16_t xMinValue, xMaxValue;
+  int16_t xMin = 0;
+  int16_t xMax = fromTable->xSize-1;
 
   //Check whether the X input is the same as last time this ran
   if( (X_in == fromTable->lastInput) && (fromTable->cacheTime == currentStatus.secl) )
@@ -123,7 +123,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
     {
       //If we're not in the same bin, loop through to find where we are
       xMaxValue = table2D_getAxisValue(fromTable, fromTable->xSize-1); // init xMaxValue in preparation for loop.
-      for (int x = fromTable->xSize-1; x > 0; x--)
+      for (int16_t x = fromTable->xSize-1; x > 0; x--)
       {
         xMinValue = table2D_getAxisValue(fromTable, x-1); // fetch next Min
 
@@ -159,11 +159,11 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
 
     //Float version
     /*
-    int yVal = (m / n) * (abs(yMax - yMin));
+    int16_t yVal = (m / n) * (abs(yMax - yMin));
     */
 
     //Non-Float version
-    int16_t yVal = ((long)(m << 6) / n) * (abs(yMax - yMin));
+    int16_t yVal = ((int32_t)(m << 6) / n) * (abs(yMax - yMin));
     yVal = (yVal >> 6);
 
     if (yMax > yMin) { yVal = yMin + yVal; }
@@ -185,9 +185,9 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
  * @param X_in 
  * @return int16_t 
  */
-int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in)
+int16_t table2D_getAxisValue(struct table2D *fromTable, uint8_t X_in)
 {
-  int returnValue = 0;
+  int16_t returnValue = 0;
 
   if(fromTable->axisSize == SIZE_INT) { returnValue = ((int16_t*)fromTable->axisX)[X_in]; }
   else if(fromTable->axisSize == SIZE_BYTE) { returnValue = ((uint8_t*)fromTable->axisX)[X_in]; }
@@ -202,9 +202,9 @@ int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in)
  * @param X_in 
  * @return int16_t 
  */
-int16_t table2D_getRawValue(struct table2D *fromTable, byte X_index)
+int16_t table2D_getRawValue(struct table2D *fromTable, uint8_t X_index)
 {
-  int returnValue = 0;
+  int16_t returnValue = 0;
 
   if(fromTable->valueSize == SIZE_INT) { returnValue = ((int16_t*)fromTable->values)[X_index]; }
   else if(fromTable->valueSize == SIZE_BYTE) { returnValue = ((uint8_t*)fromTable->values)[X_index]; }
@@ -215,19 +215,19 @@ int16_t table2D_getRawValue(struct table2D *fromTable, byte X_index)
 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: www.megamanual.com/v22manual/ve_tuner.pdf
-int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
+int16_t get3DTableValue(struct table3D *fromTable, int16_t Y_in, int16_t X_in)
   {
-    int X = X_in;
-    int Y = Y_in;
+    int16_t X = X_in;
+    int16_t Y = Y_in;
 
-    int tableResult = 0;
+    int16_t tableResult = 0;
     //Loop through the X axis bins for the min/max pair
     //Note: For the X axis specifically, rather than looping from tableAxisX[0] up to tableAxisX[max], we start at tableAxisX[Max] and go down.
     //      This is because the important tables (fuel and injection) will have the highest RPM at the top of the X axis, so starting there will mean the best case occurs when the RPM is highest (And hence the CPU is needed most)
-    int xMinValue = fromTable->axisX[0];
-    int xMaxValue = fromTable->axisX[fromTable->xSize-1];
-    byte xMin = 0;
-    byte xMax = 0;
+    int16_t xMinValue = fromTable->axisX[0];
+    int16_t xMaxValue = fromTable->axisX[fromTable->xSize-1];
+    uint8_t xMin = 0;
+    uint8_t xMax = 0;
 
     //If the requested X value is greater/small than the maximum/minimum bin, reset X to be that value
     if(X > xMaxValue) { X = xMaxValue; }
@@ -300,10 +300,10 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
     }
 
     //Loop through the Y axis bins for the min/max pair
-    int yMaxValue = fromTable->axisY[0];
-    int yMinValue = fromTable->axisY[fromTable->ySize-1];
-    byte yMin = 0;
-    byte yMax = 0;
+    int16_t yMaxValue = fromTable->axisY[0];
+    int16_t yMinValue = fromTable->axisY[fromTable->ySize-1];
+    uint8_t yMin = 0;
+    uint8_t yMax = 0;
 
     //If the requested Y value is greater/small than the maximum/minimum bin, reset Y to be that value
     if(Y > yMaxValue) { Y = yMaxValue; }
@@ -381,10 +381,10 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
               C          D
 
     */
-    int A = fromTable->values[yMin][xMin];
-    int B = fromTable->values[yMin][xMax];
-    int C = fromTable->values[yMax][xMin];
-    int D = fromTable->values[yMax][xMax];
+    int16_t A = fromTable->values[yMin][xMin];
+    int16_t B = fromTable->values[yMin][xMax];
+    int16_t C = fromTable->values[yMax][xMin];
+    int16_t D = fromTable->values[yMax][xMax];
 
     //Check that all values aren't just the same (This regularly happens with things like the fuel trim maps)
     if( (A == B) && (A == C) && (A == D) ) { tableResult = A; }
@@ -396,20 +396,20 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
 
       //Initial check incase the values were hit straight on
 
-      unsigned long p = (long)X - xMinValue;
+      uint32_t p = (int32_t)X - xMinValue;
       if (xMaxValue == xMinValue) { p = (p << TABLE_SHIFT_FACTOR); }  //This only occurs if the requested X value was equal to one of the X axis bins
       else { p = ( (p << TABLE_SHIFT_FACTOR) / (xMaxValue - xMinValue) ); } //This is the standard case
 
-      unsigned long q;
+      uint32_t q;
       if (yMaxValue == yMinValue)
       {
-        q = (long)Y - yMinValue;
+        q = (int32_t)Y - yMinValue;
         q = (q << TABLE_SHIFT_FACTOR);
       }
       //Standard case
       else
       {
-        q = long(Y) - yMaxValue;
+        q = int32_t(Y) - yMaxValue;
         q = TABLE_SHIFT_POWER - ( (q << TABLE_SHIFT_FACTOR) / (yMinValue - yMaxValue) );
       }
 

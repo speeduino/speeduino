@@ -4,7 +4,7 @@
 #include "globals.h"
 
 void writeAllConfig();
-void writeConfig(byte);
+void writeConfig(uint8_t);
 void loadConfig();
 void loadCalibration();
 void writeCalibration();
@@ -13,13 +13,13 @@ void writeCalibration_new();
 void resetConfigPages();
 
 //These are utility functions that prevent other files from having to use EEPROM.h directly
-byte readLastBaro();
-void storeLastBaro(byte);
-void storeCalibrationValue(uint16_t, byte);
-byte readEEPROMVersion();
-void storeEEPROMVersion(byte);
-void storePageCRC32(byte, uint32_t);
-uint32_t readPageCRC32(byte);
+uint8_t readLastBaro();
+void storeLastBaro(uint8_t);
+void storeCalibrationValue(uint16_t, uint8_t);
+uint8_t readEEPROMVersion();
+void storeEEPROMVersion(uint8_t);
+void storePageCRC32(uint8_t, uint32_t);
+uint32_t readPageCRC32(uint8_t);
 
 #if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
 #define EEPROM_MAX_WRITE_BLOCK 64 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)

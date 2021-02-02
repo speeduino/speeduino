@@ -366,7 +366,7 @@ void initialiseAll()
     currentStatus.syncLossCounter = 0;
     currentStatus.flatShiftingHard = false;
     currentStatus.launchingHard = false;
-    currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
+    currentStatus.crankRPM = ((uint16_t)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
     currentStatus.fuelPumpOn = false;
     currentStatus.engineProtectStatus = 0;
     triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise. This is simply a default value, the actual values are set in the setup() functinos of each decoder
@@ -1167,7 +1167,7 @@ void initialiseAll()
     digitalWrite(LED_BUILTIN, HIGH);
 }
 
-void setPinMapping(byte boardID)
+void setPinMapping(uint8_t boardID)
 {
   //Force set defaults. Will be overwritten below if needed.
   injectorOutputControl = OUTPUT_CONTROL_DIRECT;
@@ -2637,8 +2637,8 @@ void setPinMapping(byte boardID)
 
 void initialiseTriggers()
 {
-  byte triggerInterrupt = 0; // By default, use the first interrupt
-  byte triggerInterrupt2 = 1;
+  uint8_t triggerInterrupt = 0; // By default, use the first interrupt
+  uint8_t triggerInterrupt2 = 1;
 
   #if defined(CORE_AVR)
     switch (pinTrigger) {

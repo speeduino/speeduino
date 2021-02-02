@@ -16,9 +16,9 @@ FastCRC32 CRC32;
 //This function performs a translation between the pin list that appears in TS and the actual pin numbers
 //For the digital IO, this will simply return the same number as the rawPin value as those are mapped directly.
 //For analog pins, it will translate them into the currect internal pin number
-byte pinTranslate(byte rawPin)
+uint8_t pinTranslate(uint8_t rawPin)
 {
-  byte outputPin = rawPin;
+  uint8_t outputPin = rawPin;
   if(rawPin > BOARD_MAX_DIGITAL_PINS) { outputPin = A8 + (outputPin - BOARD_MAX_DIGITAL_PINS - 1); }
 
   return outputPin;
@@ -54,10 +54,10 @@ void setResetControlPinState()
 /*
 Calculates and returns the CRC32 value of a given page of memory
 */
-uint32_t calculateCRC32(byte pageNo)
+uint32_t calculateCRC32(uint8_t pageNo)
 {
   uint32_t CRC32_val;
-  byte raw_value;
+  uint8_t raw_value;
   void* pnt_configPage;
 
   //This sucks (again) for all the 3D map pages that have to have a translation performed
@@ -80,7 +80,7 @@ uint32_t calculateCRC32(byte pageNo)
     case veSetPage:
       //Confirmed working
       pnt_configPage = &configPage2; //Create a pointer to Page 1 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage2) );
+      CRC32_val = CRC32.crc32((uint8_t *)pnt_configPage, sizeof(configPage2) );
       break;
 
     case ignMapPage:
@@ -99,7 +99,7 @@ uint32_t calculateCRC32(byte pageNo)
     case ignSetPage:
       //Confirmed working
       pnt_configPage = &configPage4; //Create a pointer to Page 4 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage4) );
+      CRC32_val = CRC32.crc32((uint8_t *)pnt_configPage, sizeof(configPage4) );
       break;
 
     case afrMapPage:
@@ -118,7 +118,7 @@ uint32_t calculateCRC32(byte pageNo)
     case afrSetPage:
       //Confirmed working
       pnt_configPage = &configPage6; //Create a pointer to Page 4 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage6) );
+      CRC32_val = CRC32.crc32((uint8_t *)pnt_configPage, sizeof(configPage6) );
       break;
 
     case boostvvtPage:
@@ -150,13 +150,13 @@ uint32_t calculateCRC32(byte pageNo)
     case canbusPage:
       //Confirmed working
       pnt_configPage = &configPage9; //Create a pointer to Page 9 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage9) );
+      CRC32_val = CRC32.crc32((uint8_t *)pnt_configPage, sizeof(configPage9) );
       break;
 
     case warmupPage:
       //Confirmed working
       pnt_configPage = &configPage10; //Create a pointer to Page 10 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage10) );
+      CRC32_val = CRC32.crc32((uint8_t *)pnt_configPage, sizeof(configPage10) );
       break;
 
     case fuelMap2Page:
@@ -189,7 +189,7 @@ uint32_t calculateCRC32(byte pageNo)
     case progOutsPage:
       //Confirmed working
       pnt_configPage = &configPage13; //Create a pointer to Page 10 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage13) );
+      CRC32_val = CRC32.crc32((uint8_t *)pnt_configPage, sizeof(configPage13) );
       break;
     
     case ignMap2Page:
@@ -241,7 +241,7 @@ void checkProgrammableIO()
     secondCheck = false;
     if ( BIT_CHECK(pinIsValid, y) ) //if outputPin == 0 it is disabled
     { 
-      //byte theIndex = configPage13.firstDataIn[y];
+      //uint8_t theIndex = configPage13.firstDataIn[y];
       data = ProgrammableIOGetData(configPage13.firstDataIn[y]);
       data2 = configPage13.firstTarget[y];
 

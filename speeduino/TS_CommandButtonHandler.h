@@ -68,4 +68,4 @@
 #define TS_CMD_VSS_RATIO5 39173
 #define TS_CMD_VSS_RATIO6 39174
 
-void TS_CommandButtonsHandler(int);
+void TS_CommandButtonsHandler(int16_t);

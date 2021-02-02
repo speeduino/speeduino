@@ -1,4 +1,4 @@
 void calculateSecondaryFuel();
 void calculateSecondarySpark();
-byte getVE2();
-byte getAdvance2();
+uint8_t getVE2();
+uint8_t getAdvance2();

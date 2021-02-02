@@ -21,17 +21,17 @@ Flood clear mode etc.
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
 
-long PID_O2, PID_output, PID_AFRTarget;
+int32_t PID_O2, PID_output, PID_AFRTarget;
 PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
-int MAP_rateOfChange;
-int TPS_rateOfChange;
-byte activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
-byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated.
+int16_t MAP_rateOfChange;
+int16_t TPS_rateOfChange;
+uint8_t activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
+uint8_t activateTPSDOT; //The tpsDOT value seen when the MAE was activated.
 
 uint16_t AFRnextCycle;
-unsigned long knockStartTime;
-byte lastKnockCount;
+uint32_t knockStartTime;
+uint8_t lastKnockCount;
 int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
 uint16_t aseTaperStart;
@@ -55,7 +55,7 @@ uint16_t correctionsFuel()
 {
   #define MAX_CORRECTIONS 3 //The maximum number of corrections allowed before the sum is reprocessed
   uint32_t sumCorrections = 100;
-  byte activeCorrections = 0;
+  uint8_t activeCorrections = 0;
   uint16_t result; //temporary variable to store the result of each corrections function
 
   //The values returned by each of the correction functions are multipled together and then divided back to give a single 0-255 value.
@@ -127,10 +127,10 @@ uint16_t correctionsFuel()
 correctionsTotal() calls all the other corrections functions and combines their results.
 This is the only function that should be called from anywhere outside the file
 */
-static inline byte correctionsFuel_new()
+static inline uint8_t correctionsFuel_new()
 {
   uint32_t sumCorrections = 100;
-  byte numCorrections = 0;
+  uint8_t numCorrections = 0;
 
   //The values returned by each of the correction functions are multipled together and then divided back to give a single 0-255 value.
   currentStatus.wueCorrection = correctionWUE(); numCorrections++;
@@ -167,9 +167,9 @@ static inline byte correctionsFuel_new()
 Warm Up Enrichment (WUE)
 Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add
 */
-byte correctionWUE()
+uint8_t correctionWUE()
 {
-  byte WUEValue;
+  uint8_t WUEValue;
   //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
   //if (currentStatus.coolant > (WUETable.axisX[9] - CALIBRATION_TEMPERATURE_OFFSET))
   if (currentStatus.coolant > (table2D_getAxisValue(&WUETable, 9) - CALIBRATION_TEMPERATURE_OFFSET))
@@ -207,7 +207,7 @@ uint16_t correctionCranking()
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
     //Taper start value needs to account for ASE that is now running, so total correction does not increase when taper begins
-    unsigned long taperStart = (unsigned long) crankingValue * 100 / currentStatus.ASEValue;
+    uint32_t taperStart = (uint32_t) crankingValue * 100 / currentStatus.ASEValue;
     crankingValue = (uint16_t) map(runSecsX10, 0, configPage10.crankingEnrichTaper, taperStart, 100); //Taper from start value to 100%
     if (crankingValue < 100) { crankingValue = 100; } //Sanity check
   }
@@ -222,7 +222,7 @@ uint16_t correctionCranking()
  * 
  * @return uint8_t The After Start Enrichment modifier as a %. 100% = No modification. 
  */
-byte correctionASE()
+uint8_t correctionASE()
 {
   int16_t ASEValue;
   //Two checks are requiredL:
@@ -254,7 +254,7 @@ byte correctionASE()
     //Safety checks
     if(ASEValue > 255) { ASEValue = 255; }
     if(ASEValue < 0) { ASEValue = 0; }
-    currentStatus.ASEValue = (byte)ASEValue;
+    currentStatus.ASEValue = (uint8_t)ASEValue;
   }
   return currentStatus.ASEValue;
 }
@@ -341,7 +341,7 @@ uint16_t correctionAccel()
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
           activateMAPDOT = currentStatus.mapDOT;
-          currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
+          currentStatus.AEEndTime = micros_safe() + ((uint32_t)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
           accelValue = table2D_getValue(&maeTable, currentStatus.mapDOT);
 
           //Apply the RPM taper to the above
@@ -360,10 +360,10 @@ uint16_t correctionAccel()
           }
 
           //Apply AE cold coolant modifier, if CLT is less than taper end temperature
-          if ( currentStatus.coolant < (int)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) )
+          if ( currentStatus.coolant < (int16_t)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) )
           {
             //If CLT is less than taper min temp, apply full modifier on top of accelValue
-            if ( currentStatus.coolant <= (int)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
+            if ( currentStatus.coolant <= (int16_t)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
             {
               uint16_t accelValue_uint = (uint16_t) accelValue * configPage2.aeColdPct / 100;
               accelValue = (int16_t) accelValue_uint;
@@ -372,7 +372,7 @@ uint16_t correctionAccel()
             else
             {
               int16_t taperRange = (int16_t) configPage2.aeColdTaperMax - configPage2.aeColdTaperMin;
-              int16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
+              int16_t taperPercent = (int16_t)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
               int16_t coldPct = (int16_t) 100+ percentage((100-taperPercent), configPage2.aeColdPct-100);
               uint16_t accelValue_uint = (uint16_t) accelValue * coldPct / 100; //Potential overflow (if AE is large) without using uint16_t
               accelValue = (int16_t) accelValue_uint;
@@ -400,7 +400,7 @@ uint16_t correctionAccel()
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
           activateTPSDOT = currentStatus.tpsDOT;
-          currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
+          currentStatus.AEEndTime = micros_safe() + ((uint32_t)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
           accelValue = table2D_getValue(&taeTable, currentStatus.tpsDOT);
 
           //Apply the RPM taper to the above
@@ -419,10 +419,10 @@ uint16_t correctionAccel()
           }
 
           //Apply AE cold coolant modifier, if CLT is less than taper end temperature
-          if ( currentStatus.coolant < (int)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) )
+          if ( currentStatus.coolant < (int16_t)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) )
           {
             //If CLT is less than taper min temp, apply full modifier on top of accelValue
-            if ( currentStatus.coolant <= (int)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
+            if ( currentStatus.coolant <= (int16_t)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
             {
               uint16_t accelValue_uint = (uint16_t) accelValue * configPage2.aeColdPct / 100;
               accelValue = (int16_t) accelValue_uint;
@@ -431,7 +431,7 @@ uint16_t correctionAccel()
             else
             {
               int16_t taperRange = (int16_t) configPage2.aeColdTaperMax - configPage2.aeColdTaperMin;
-              int16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
+              int16_t taperPercent = (int16_t)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
               int16_t coldPct = (int16_t) 100+ percentage((100-taperPercent), configPage2.aeColdPct-100);
               uint16_t accelValue_uint = (uint16_t) accelValue * coldPct / 100; //Potential overflow (if AE is large) without using uint16_t
               accelValue = (int16_t) accelValue_uint;
@@ -451,9 +451,9 @@ uint16_t correctionAccel()
 Simple check to see whether we are cranking with the TPS above the flood clear threshold
 This function always returns either 100 or 0
 */
-byte correctionFloodClear()
+uint8_t correctionFloodClear()
 {
-  byte floodValue = 100;
+  uint8_t floodValue = 100;
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
   {
     //Engine is currently cranking, check what the TPS is
@@ -470,9 +470,9 @@ byte correctionFloodClear()
 Battery Voltage correction
 Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add
 */
-byte correctionBatVoltage()
+uint8_t correctionBatVoltage()
 {
-  byte batValue = 100;
+  uint8_t batValue = 100;
   batValue = table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
   return batValue;
 }
@@ -481,9 +481,9 @@ byte correctionBatVoltage()
 Simple temperature based corrections lookup based on the inlet air temperature.
 This corrects for changes in air density from movement of the temperature
 */
-byte correctionIATDensity()
+uint8_t correctionIATDensity()
 {
-  byte IATValue = 100;
+  uint8_t IATValue = 100;
   IATValue = table2D_getValue(&IATDensityCorrectionTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
 
   return IATValue;
@@ -493,9 +493,9 @@ byte correctionIATDensity()
  * @brief 
  * @returns A percentage value indicating the amount the fueling should be changed based on the barometric reading. 100 = No change. 110 = 10% increase. 90 = 10% decrease
  */
-byte correctionBaro()
+uint8_t correctionBaro()
 {
-  byte baroValue = 100;
+  uint8_t baroValue = 100;
   baroValue = table2D_getValue(&baroFuelTable, currentStatus.baro);
 
   return baroValue;
@@ -505,9 +505,9 @@ byte correctionBaro()
 Launch control has a setting to increase the fuel load to assist in bringing up boost
 This simple check applies the extra fuel if we're currently launching
 */
-byte correctionLaunch()
+uint8_t correctionLaunch()
 {
-  byte launchValue = 100;
+  uint8_t launchValue = 100;
   if(currentStatus.launchingHard || currentStatus.launchingSoft) { launchValue = (100 + configPage6.lnchFuelAdd); }
 
   return launchValue;
@@ -528,7 +528,7 @@ bool correctionDFCO()
     }
     else 
     {
-      if ( ( currentStatus.coolant >= (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET) ) && ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) )
+      if ( ( currentStatus.coolant >= (int16_t)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET) ) && ( currentStatus.RPM > (uint16_t)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) )
       {
         if ( dfcoStart == 0 ) { dfcoStart = runSecsX10; }
         if( (runSecsX10 - dfcoStart) > configPage2.dfcoDelay ) { DFCOValue = true; }
@@ -543,9 +543,9 @@ bool correctionDFCO()
  * Flex fuel adjustment to vary fuel based on ethanol content
  * The amount of extra fuel required is a linear relationship based on the % of ethanol.
 */
-byte correctionFlex()
+uint8_t correctionFlex()
 {
-  byte flexValue = 100;
+  uint8_t flexValue = 100;
 
   if (configPage2.flexEnabled == 1)
   {
@@ -557,9 +557,9 @@ byte correctionFlex()
 /*
  * Fuel temperature adjustment to vary fuel based on fuel temperature reading
 */
-byte correctionFuelTemp()
+uint8_t correctionFuelTemp()
 {
-  byte fuelTempValue = 100;
+  uint8_t fuelTempValue = 100;
 
   if (configPage2.flexEnabled == 1)
   {
@@ -581,9 +581,9 @@ This continues until either:
 PID (Best suited to wideband sensors):
 
 */
-byte correctionAFRClosedLoop()
+uint8_t correctionAFRClosedLoop()
 {
-  byte AFRValue = 100;
+  uint8_t AFRValue = 100;
   
   if( (configPage6.egoType > 0) || (configPage2.incorporateAFR == true) ) //afrTarget value lookup must be done if O2 sensor is enabled, and always if incorporateAFR is enabled
   {
@@ -603,7 +603,7 @@ byte correctionAFRClosedLoop()
       AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
         
       //Check all other requirements for closed loop adjustments
-      if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) )
+      if( (currentStatus.coolant > (int16_t)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (uint16_t)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) )
       {
 
         //Check which algorithm is used, simple or PID
@@ -636,10 +636,10 @@ byte correctionAFRClosedLoop()
         {
           //*************************************************************************************************************************************
           //PID algorithm
-          egoPID.SetOutputLimits((long)(-configPage6.egoLimit), (long)(configPage6.egoLimit)); //Set the limits again, just incase the user has changed them since the last loop. Note that these are sent to the PID library as (Eg:) -15 and +15
+          egoPID.SetOutputLimits((int32_t)(-configPage6.egoLimit), (int32_t)(configPage6.egoLimit)); //Set the limits again, just incase the user has changed them since the last loop. Note that these are sent to the PID library as (Eg:) -15 and +15
           egoPID.SetTunings(configPage6.egoKP, configPage6.egoKI, configPage6.egoKD); //Set the PID values again, just incase the user has changed them since the last loop
-          PID_O2 = (long)(currentStatus.O2);
-          PID_AFRTarget = (long)(currentStatus.afrTarget);
+          PID_O2 = (int32_t)(currentStatus.O2);
+          PID_AFRTarget = (int32_t)(currentStatus.afrTarget);
 
           bool PID_compute = egoPID.Compute();
           //currentStatus.egoCorrection = 100 + PID_output;
@@ -687,7 +687,7 @@ int8_t correctionFixedTiming(int8_t advance)
 
 int8_t correctionCrankingFixedTiming(int8_t advance)
 {
-  byte ignCrankFixValue = advance;
+  uint8_t ignCrankFixValue = advance;
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { ignCrankFixValue = configPage4.CrankAng; } //Use the fixed cranking ignition angle
   return ignCrankFixValue;
 }
@@ -718,7 +718,7 @@ int8_t correctionWMITiming(int8_t advance)
 
 int8_t correctionIATretard(int8_t advance)
 {
-  byte ignIATValue = advance;
+  uint8_t ignIATValue = advance;
   //Adjust the advance based on IAT. If the adjustment amount is greater than the current advance, just set advance to 0
   int8_t advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
   int tempAdvance = (advance - advanceIATadjust);
@@ -745,18 +745,18 @@ int8_t correctionIdleAdvance(int8_t advance)
   //Adjust the advance based on idle target rpm.
   if( (configPage2.idleAdvEnabled >= 1) && (currentStatus.runSecs >= configPage2.IdleAdvDelay))
   {
-    currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+    currentStatus.CLIdleTarget = (uint8_t)table2D_getValue(&idleTargetTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
     int idleRPMdelta = (currentStatus.CLIdleTarget - (currentStatus.RPM / 10) ) + 50;
     // Limit idle rpm delta between -500rpm - 500rpm
     if(idleRPMdelta > 100) { idleRPMdelta = 100; }
     if(idleRPMdelta < 0) { idleRPMdelta = 0; }
-    if( (configPage2.idleAdvAlgorithm == 0) && ((currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100)) && (currentStatus.TPS < configPage2.idleAdvTPS))) // TPS based idle state
+    if( (configPage2.idleAdvAlgorithm == 0) && ((currentStatus.RPM < (uint16_t)(configPage2.idleAdvRPM * 100)) && (currentStatus.TPS < configPage2.idleAdvTPS))) // TPS based idle state
     {
       int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
       if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
       else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = advanceIdleAdjust; }
     }
-    else if( (configPage2.idleAdvAlgorithm == 1) && (currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100) && (currentStatus.CTPSActive == 1) )) // closed throttle position sensor (CTPS) based idle state
+    else if( (configPage2.idleAdvAlgorithm == 1) && (currentStatus.RPM < (uint16_t)(configPage2.idleAdvRPM * 100) && (currentStatus.CTPSActive == 1) )) // closed throttle position sensor (CTPS) based idle state
     {
       int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
       if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
@@ -768,9 +768,9 @@ int8_t correctionIdleAdvance(int8_t advance)
 
 int8_t correctionSoftRevLimit(int8_t advance)
 {
-  byte ignSoftRevValue = advance;
+  uint8_t ignSoftRevValue = advance;
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
-  if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) //Softcut RPM limit
+  if (currentStatus.RPM > ((uint16_t)(configPage4.SoftRevLim) * 100) ) //Softcut RPM limit
   {
     BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
     if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
@@ -783,7 +783,7 @@ int8_t correctionSoftRevLimit(int8_t advance)
 
 int8_t correctionNitrous(int8_t advance)
 {
-  byte ignNitrous = advance;
+  uint8_t ignNitrous = advance;
   //Check if nitrous is currently active
   if(configPage10.n2o_enable > 0)
   {
@@ -803,9 +803,9 @@ int8_t correctionNitrous(int8_t advance)
 
 int8_t correctionSoftLaunch(int8_t advance)
 {
-  byte ignSoftLaunchValue = advance;
+  uint8_t ignSoftLaunchValue = advance;
   //SoftCut rev limit for 2-step launch control.
-  if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchSoftLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) )
+  if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((uint16_t)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((uint16_t)(configPage6.lnchSoftLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) )
   {
     currentStatus.launchingSoft = true;
     BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH);
@@ -822,9 +822,9 @@ int8_t correctionSoftLaunch(int8_t advance)
 
 int8_t correctionSoftFlatShift(int8_t advance)
 {
-  byte ignSoftFlatValue = advance;
+  uint8_t ignSoftFlatValue = advance;
 
-  if(configPage6.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage6.flatSSoftWin) ) )
+  if(configPage6.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((uint16_t)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage6.flatSSoftWin) ) )
   {
     BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
     ignSoftFlatValue = configPage6.flatSRetard;
@@ -836,7 +836,7 @@ int8_t correctionSoftFlatShift(int8_t advance)
 
 int8_t correctionKnock(int8_t advance)
 {
-  byte knockRetard = 0;
+  uint8_t knockRetard = 0;
 
   //First check is to do the window calculations (ASsuming knock is enabled)
   if( configPage10.knock_mode != KNOCK_MODE_OFF )

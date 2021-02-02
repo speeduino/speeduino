@@ -21,12 +21,12 @@ enum StepperStatus {SOFF, STEPPING, COOLING}; //The 2 statuses that a stepper ca
 
 struct StepperIdle
 {
-  int curIdleStep; //Tracks the current location of the stepper
-  int targetIdleStep; //What the targetted step is
+  int16_t curIdleStep; //Tracks the current location of the stepper
+  int16_t targetIdleStep; //What the targetted step is
   volatile StepperStatus stepperStatus;
-  volatile unsigned long stepStartTime; //The time the curren
-  byte lessAirDirection;
-  byte moreAirDirection;
+  volatile uint32_t stepStartTime; //The time the curren
+  uint8_t lessAirDirection;
+  uint8_t moreAirDirection;
 };
 
 struct table2D iacClosedLoopTable;
@@ -38,10 +38,10 @@ struct table2D iacCrankDutyTable;
 
 struct StepperIdle idleStepper;
 bool idleOn; //Simply tracks whether idle was on last time around
-byte idleInitComplete = 99; //TRacks which idle method was initialised. 99 is a method that will never exist
-unsigned int iacStepTime_uS;
-unsigned int iacCoolTime_uS;
-unsigned int completedHomeSteps;
+uint8_t idleInitComplete = 99; //TRacks which idle method was initialised. 99 is a method that will never exist
+uint16_t iacStepTime_uS;
+uint16_t iacCoolTime_uS;
+uint16_t completedHomeSteps;
 
 volatile PORT_TYPE *idle_pin_port;
 volatile PINMASK_TYPE idle_pin_mask;
@@ -51,23 +51,23 @@ volatile PORT_TYPE *idleUpOutput_pin_port;
 volatile PINMASK_TYPE idleUpOutput_pin_mask;
 
 volatile bool idle_pwm_state;
-unsigned int idle_pwm_max_count; //Used for variable PWM frequency
-volatile unsigned int idle_pwm_cur_value;
-long idle_pid_target_value;
-long FeedForwardTerm;
-unsigned long idle_pwm_target_value;
-long idle_cl_target_rpm;
-byte idleCounter; //Used for tracking the number of calls to the idle control function
+uint16_t idle_pwm_max_count; //Used for variable PWM frequency
+volatile uint16_t idle_pwm_cur_value;
+int32_t idle_pid_target_value;
+int32_t FeedForwardTerm;
+uint32_t idle_pwm_target_value;
+int32_t idle_cl_target_rpm;
+uint8_t idleCounter; //Used for tracking the number of calls to the idle control function
 
-byte idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output 
-byte idleUpOutputLOW = LOW;   // Used to invert the idle Up Output 
+uint8_t idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output 
+uint8_t idleUpOutputLOW = LOW;   // Used to invert the idle Up Output 
 
 void initialiseIdle();
 void initialiseIdleUpOutput();
 static inline void disableIdle();
 static inline void enableIdle();
-static inline byte isStepperHomed();
-static inline byte checkForStepping();
+static inline uint8_t isStepperHomed();
+static inline uint8_t checkForStepping();
 static inline void doStep();
 static inline void idleInterrupt();
 

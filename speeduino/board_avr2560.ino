@@ -96,14 +96,14 @@ void initBoard()
 uint16_t freeRam()
 {
     extern int __heap_start, *__brkval;
-    int currentVal;
+    int16_t currentVal;
     uint16_t v;
 
-    if(__brkval == 0) { currentVal = (int) &__heap_start; }
-    else { currentVal = (int) __brkval; }
+    if(__brkval == 0) { currentVal = (int16_t) &__heap_start; }
+    else { currentVal = (int16_t) __brkval; }
 
     //Old version:
-    //return (uint16_t) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+    //return (uint16_t) &v - (__brkval == 0 ? (int16_t) &__heap_start : (int16_t) __brkval);
     /* cppcheck-suppress misra-c2012-11.4 ; DEVIATION(D3) */
     return (uint16_t) &v - currentVal; //cppcheck-suppress misra-c2012-11.4
 }
@@ -117,9 +117,9 @@ ISR(TIMER5_OVF_vect)
     ++timer5_overflow_count;
 }
 
-static inline unsigned long micros_safe()
+static inline uint32_t micros_safe()
 {
-  unsigned long newMicros;
+  uint32_t newMicros;
   noInterrupts();
   newMicros = (((timer5_overflow_count << 16) + TCNT5) * 4);
   interrupts();

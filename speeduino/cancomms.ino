@@ -33,7 +33,7 @@ void secondserial_Command()
         break;
 
     case 'G': // this is the reply command sent by the Can interface
-       byte destcaninchannel;
+       uint8_t destcaninchannel;
       if (CANSerial.available() >= 9)
       {
         canCmdPending = false;
@@ -41,7 +41,7 @@ void secondserial_Command()
         destcaninchannel = CANSerial.read();  // the input channel that requested the data value
         if (cancmdfail != 0)
            {                                 // read all 8 bytes of data.
-            for (byte Gx = 0; Gx < 8; Gx++) // first two are the can address the data is from. next two are the can address the data is for.then next 1 or two bytes of data
+            for (uint8_t Gx = 0; Gx < 8; Gx++) // first two are the can address the data is from. next two are the can address the data is for.then next 1 or two bytes of data
               {
                 Gdata[Gx] = CANSerial.read();
               }
@@ -103,7 +103,7 @@ void secondserial_Command()
         break;
 
     case 'r': //New format for the optimised OutputChannels over CAN
-      byte Cmd;
+      uint8_t Cmd;
       if (CANSerial.available() >= 6)
       {
         CANSerial.read(); //Read the $tsCanId
@@ -112,7 +112,7 @@ void secondserial_Command()
         uint16_t offset, length;
         if( (Cmd == 0x30) || ( (Cmd >= 0x40) && (Cmd <0x50) ) ) //Send output channels command 0x30 is 48dec, 0x40(64dec)-0x4F(79dec) are external can request
         {
-          byte tmp;
+          uint8_t tmp;
           tmp = CANSerial.read();
           offset = word(CANSerial.read(), tmp);
           tmp = CANSerial.read();
@@ -142,7 +142,7 @@ void secondserial_Command()
       
     case 'Q': // send code version
        //for (unsigned int revn = 0; revn < sizeof( TSfirmwareVersion) - 1; revn++)
-       for (unsigned int revn = 0; revn < 10 - 1; revn++)
+       for (uint16_t revn = 0; revn < 10 - 1; revn++)
        {
          CANSerial.write( TSfirmwareVersion[revn]);
        }
@@ -157,9 +157,9 @@ void secondserial_Command()
   }
   #endif
 }
-void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portType)
+void sendcanValues(uint16_t offset, uint16_t packetLength, uint8_t cmd, uint8_t portType)
 {
-  byte fullStatus[NEW_CAN_PACKET_SIZE];    // this must be set to the maximum number of data fullstatus must read in
+  uint8_t fullStatus[NEW_CAN_PACKET_SIZE];    // this must be set to the maximum number of data fullstatus must read in
 
     //CAN serial
     #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)|| defined(CORE_STM32) || defined (CORE_TEENSY) //ATmega2561 does not have Serial3
@@ -270,7 +270,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[73] = currentStatus.tpsADC;
   fullStatus[74] = getNextError();
 
-  for(byte x=0; x<packetLength; x++)
+  for(uint8_t x=0; x<packetLength; x++)
   {
     #if defined(CANSerial_AVAILABLE)
       if (portType == 1){ CANSerial.write(fullStatus[offset+x]); }
@@ -285,7 +285,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 
 void can_Command()
 {
- //int currentcanCommand = inMsg.id;
+ //int16_t currentcanCommand = inMsg.id;
  #if defined (NATIVE_CAN_AVAILABLE)
       // currentStatus.canin[12] = (inMsg.id);
  if ( (inMsg.id == uint16_t(configPage9.obd_address + 0x100))  || (inMsg.id == 0x7DF))      

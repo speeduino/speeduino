@@ -15,9 +15,9 @@ void doUpdates()
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
   {
-    for(int x=0; x<16; x++)
+    for(int16_t x=0; x<16; x++)
     {
-      for(int y=0; y<16; y++)
+      for(int16_t y=0; y<16; y++)
       {
         ignitionTable.values[x][y] = ignitionTable.values[x][y] + 40;
       }
@@ -62,19 +62,19 @@ void doUpdates()
   if(EEPROM.read(EEPROM_DATA_VERSION) == 5)
   {
     //Data after page 4 has to move back 128 bytes
-    for(int x=0; x < 1152; x++)
+    for(int16_t x=0; x < 1152; x++)
     {
-      int endMem = EEPROM_CONFIG10_END - x;
-      int startMem = endMem - 128; //
-      byte currentVal = EEPROM.read(startMem);
+      int16_t endMem = EEPROM_CONFIG10_END - x;
+      int16_t startMem = endMem - 128; //
+      uint8_t currentVal = EEPROM.read(startMem);
       EEPROM.update(endMem, currentVal);
     }
     //The remaining data only has to move back 64 bytes
-    for(int x=0; x < 352; x++)
+    for(int16_t x=0; x < 352; x++)
     {
-      int endMem = EEPROM_CONFIG10_END - 1152 - x;
-      int startMem = endMem - 64; //
-      byte currentVal = EEPROM.read(startMem);
+      int16_t endMem = EEPROM_CONFIG10_END - 1152 - x;
+      int16_t startMem = endMem - 64; //
+      uint8_t currentVal = EEPROM.read(startMem);
       EEPROM.update(endMem, currentVal);
     }
 
@@ -85,11 +85,11 @@ void doUpdates()
   if(EEPROM.read(EEPROM_DATA_VERSION) == 6)
   {
     //Data after page 8 has to move back 82 bytes
-    for(int x=0; x < 529; x++)
+    for(int16_t x=0; x < 529; x++)
     {
-      int endMem = EEPROM_CONFIG10_END - x;
-      int startMem = endMem - 82; //
-      byte currentVal = EEPROM.read(startMem);
+      int16_t endMem = EEPROM_CONFIG10_END - x;
+      int16_t startMem = endMem - 82; //
+      uint8_t currentVal = EEPROM.read(startMem);
       EEPROM.update(endMem, currentVal);
     }
 
@@ -147,7 +147,7 @@ void doUpdates()
   {
     //October 2018 set default values for all the aux in variables (These were introduced in Aug, but no defaults were set then)
     //All aux channels set to Off
-    for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
+    for (uint8_t AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
     {
       configPage9.caninput_sel[AuxinChan] = 0;
     }
@@ -326,7 +326,7 @@ void doUpdates()
     configPage2.dfcoMinCLT = 80; //CALIBRATION_TEMPERATURE_OFFSET is 40
 
     //Update flexfuel ignition config values for 40 degrees offset
-    for (int i=0; i<6; i++)
+    for (int16_t i=0; i<6; i++)
     {
       configPage10.flexAdvAdj[i] += 40;
     }
@@ -373,8 +373,8 @@ void doUpdates()
     //202008
 
     //MAJOR update to move the coolant, IAT and O2 calibrations to 2D tables
-    int y;
-    for(int x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
+    int16_t y;
+    for(int16_t x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
     {
       y = EEPROM_CALIBRATION_CLT_OLD + (x * 16);
       cltCalibration_values[x] = EEPROM.read(y);
@@ -402,7 +402,7 @@ void doUpdates()
     configPage10.wmiIndicatorEnabled = 0;
     configPage10.wmiEmptyEnabled = 0;
     configPage10.wmiAdvEnabled = 0;
-    for(int i=0; i<6; i++)
+    for(int16_t i=0; i<6; i++)
     {
       configPage10.wmiAdvBins[i] = i*100/2;
       configPage10.wmiAdvAdj[i] = OFFSET_IGNITION;
@@ -439,7 +439,7 @@ void doUpdates()
     
 
     //Fix for wrong placed page 13
-    for(int x=EEPROM_CONFIG14_END; x>=EEPROM_CONFIG13_START; x--)
+    for(int16_t x=EEPROM_CONFIG14_END; x>=EEPROM_CONFIG13_START; x--)
     {
       EEPROM.update(x, EEPROM.read(x-112));
     }
