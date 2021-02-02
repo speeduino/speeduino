@@ -24,7 +24,7 @@ struct StepperIdle
   int16_t curIdleStep; //Tracks the current location of the stepper
   int16_t targetIdleStep; //What the targetted step is
   volatile StepperStatus stepperStatus;
-  volatile unsigned long stepStartTime; //The time the curren
+  volatile uint32_t stepStartTime; //The time the curren
   uint8_t lessAirDirection;
   uint8_t moreAirDirection;
 };
@@ -53,10 +53,10 @@ volatile PINMASK_TYPE idleUpOutput_pin_mask;
 volatile bool idle_pwm_state;
 uint16_t idle_pwm_max_count; //Used for variable PWM frequency
 volatile uint16_t idle_pwm_cur_value;
-long idle_pid_target_value;
-long FeedForwardTerm;
-unsigned long idle_pwm_target_value;
-long idle_cl_target_rpm;
+int32_t idle_pid_target_value;
+int32_t FeedForwardTerm;
+uint32_t idle_pwm_target_value;
+int32_t idle_cl_target_rpm;
 uint8_t idleCounter; //Used for tracking the number of calls to the idle control function
 
 uint8_t idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output 

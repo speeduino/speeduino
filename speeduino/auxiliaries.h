@@ -60,8 +60,8 @@ volatile PINMASK_TYPE n2o_arming_pin_mask;
 volatile bool boost_pwm_state;
 uint16_t boost_pwm_max_count; //Used for variable PWM frequency
 volatile uint16_t boost_pwm_cur_value;
-long boost_pwm_target_value;
-long boost_cl_target_boost;
+int32_t boost_pwm_target_value;
+int32_t boost_cl_target_boost;
 uint8_t boostCounter;
 uint8_t vvtCounter;
 
@@ -76,10 +76,10 @@ volatile char nextVVT;
 uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
 volatile uint16_t vvt1_pwm_cur_value;
 volatile uint16_t vvt2_pwm_cur_value;
-long vvt1_pwm_value;
-long vvt2_pwm_value;
-long vvt_pid_target_angle;
-//long vvt_pid_current_angle;
+int32_t vvt1_pwm_value;
+int32_t vvt2_pwm_value;
+int32_t vvt_pid_target_angle;
+//int32_t vvt_pid_current_angle;
 static inline void boostInterrupt();
 static inline void vvtInterrupt();
 

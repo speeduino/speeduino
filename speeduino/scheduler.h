@@ -71,25 +71,25 @@ extern void (*ign8EndFunction)();
 
 void initialiseSchedulers();
 void beginInjectorPriming();
-void setFuelSchedule1(unsigned long timeout, unsigned long duration);
-void setFuelSchedule2(unsigned long timeout, unsigned long duration);
-void setFuelSchedule3(unsigned long timeout, unsigned long duration);
-void setFuelSchedule4(unsigned long timeout, unsigned long duration);
-//void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)()); //Schedule 5 remains a special case for now due to the way it's implemented 
-void setFuelSchedule5(unsigned long timeout, unsigned long duration);
-void setFuelSchedule6(unsigned long timeout, unsigned long duration);
-void setFuelSchedule7(unsigned long timeout, unsigned long duration);
-void setFuelSchedule8(unsigned long timeout, unsigned long duration);
-void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setFuelSchedule1(uint32_t timeout, uint32_t duration);
+void setFuelSchedule2(uint32_t timeout, uint32_t duration);
+void setFuelSchedule3(uint32_t timeout, uint32_t duration);
+void setFuelSchedule4(uint32_t timeout, uint32_t duration);
+//void setFuelSchedule5(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)()); //Schedule 5 remains a special case for now due to the way it's implemented 
+void setFuelSchedule5(uint32_t timeout, uint32_t duration);
+void setFuelSchedule6(uint32_t timeout, uint32_t duration);
+void setFuelSchedule7(uint32_t timeout, uint32_t duration);
+void setFuelSchedule8(uint32_t timeout, uint32_t duration);
+void setIgnitionSchedule1(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)());
+void setIgnitionSchedule2(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)());
+void setIgnitionSchedule3(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)());
+void setIgnitionSchedule4(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)());
+void setIgnitionSchedule5(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)());
+void setIgnitionSchedule6(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)());
+void setIgnitionSchedule7(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)());
+void setIgnitionSchedule8(void (*startCallback)(), uint32_t timeout, uint32_t duration, void(*endCallback)());
 
-inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
+inline void refreshIgnitionSchedule1(uint32_t timeToEnd) __attribute__((always_inline));
 
 //The ARM cores use seprate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
@@ -138,12 +138,12 @@ inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((alw
 enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The 3 statuses that a schedule can have
 
 struct Schedule {
-  volatile unsigned long duration;
+  volatile uint32_t duration;
   volatile ScheduleStatus Status;
   volatile uint8_t schedulesSet; //A counter of how many times the schedule has been set
   void (*StartCallback)(); //Start Callback function for schedule
   void (*EndCallback)(); //Start Callback function for schedule
-  volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
+  volatile uint32_t startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
   volatile COMPARE_TYPE startCompare; //The counter value of the timer when this will start
   volatile COMPARE_TYPE endCompare;
 
@@ -155,7 +155,7 @@ struct Schedule {
 
 //Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables. They are removed in this struct to save RAM
 struct FuelSchedule {
-  volatile unsigned long duration;
+  volatile uint32_t duration;
   volatile ScheduleStatus Status;
   volatile uint8_t schedulesSet; //A counter of how many times the schedule has been set
   volatile COMPARE_TYPE startCompare; //The counter value of the timer when this will start

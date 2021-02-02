@@ -155,7 +155,7 @@ void boostControl()
       if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
       else
       {
-        boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
+        boost_pwm_target_value = ((uint32_t)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
         ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
       }
     }
@@ -191,7 +191,7 @@ void boostControl()
           {
             if(PIDcomputed == true)
             {
-              boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
+              boost_pwm_target_value = ((uint32_t)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
               ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
             }
           }
@@ -517,7 +517,7 @@ void boostDisable()
   {
     if(nextVVT == 0)
     {
-      if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt1_pwm_value < (int32_t)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         VVT1_PIN_OFF();
         vvt1_pwm_state = false;
@@ -534,7 +534,7 @@ void boostDisable()
     }
     else if (nextVVT == 1)
     {
-      if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt2_pwm_value < (int32_t)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         VVT2_PIN_OFF();
         vvt2_pwm_state = false;
@@ -551,7 +551,7 @@ void boostDisable()
     }
     else
     {
-      if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt1_pwm_value < (int32_t)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         VVT1_PIN_OFF();
         vvt1_pwm_state = false;
@@ -559,7 +559,7 @@ void boostDisable()
         VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value);
       }
       else { vvt1_max_pwm = true; }
-      if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt2_pwm_value < (int32_t)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         VVT1_PIN_OFF();
         vvt2_pwm_state = false;

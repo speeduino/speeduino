@@ -13,7 +13,7 @@
 #define SPEEDUINO_H
 //#include "globals.h"
 
-uint16_t PW(int16_t REQ_FUEL, uint8_t VE, long MAP, uint16_t corrections, int16_t injOpen);
+uint16_t PW(int16_t REQ_FUEL, uint8_t VE, int32_t MAP, uint16_t corrections, int16_t injOpen);
 uint8_t getVE1();
 uint8_t getAdvance1();
 

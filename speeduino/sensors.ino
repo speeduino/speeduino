@@ -274,7 +274,7 @@ static inline void readMAP()
           //Error check
           if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
           {
-            if( (unsigned long)tempReading < MAPrunningValue ) { MAPrunningValue = (unsigned long)tempReading; } //Check whether the current reading is lower than the running minimum
+            if( (uint32_t)tempReading < MAPrunningValue ) { MAPrunningValue = (uint32_t)tempReading; } //Check whether the current reading is lower than the running minimum
           }
           else { mapErrorCount += 1; }
         }

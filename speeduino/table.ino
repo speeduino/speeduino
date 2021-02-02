@@ -163,7 +163,7 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
     */
 
     //Non-Float version
-    int16_t yVal = ((long)(m << 6) / n) * (abs(yMax - yMin));
+    int16_t yVal = ((int32_t)(m << 6) / n) * (abs(yMax - yMin));
     yVal = (yVal >> 6);
 
     if (yMax > yMin) { yVal = yMin + yVal; }
@@ -396,20 +396,20 @@ int16_t get3DTableValue(struct table3D *fromTable, int16_t Y_in, int16_t X_in)
 
       //Initial check incase the values were hit straight on
 
-      unsigned long p = (long)X - xMinValue;
+      uint32_t p = (int32_t)X - xMinValue;
       if (xMaxValue == xMinValue) { p = (p << TABLE_SHIFT_FACTOR); }  //This only occurs if the requested X value was equal to one of the X axis bins
       else { p = ( (p << TABLE_SHIFT_FACTOR) / (xMaxValue - xMinValue) ); } //This is the standard case
 
-      unsigned long q;
+      uint32_t q;
       if (yMaxValue == yMinValue)
       {
-        q = (long)Y - yMinValue;
+        q = (int32_t)Y - yMinValue;
         q = (q << TABLE_SHIFT_FACTOR);
       }
       //Standard case
       else
       {
-        q = long(Y) - yMaxValue;
+        q = int32_t(Y) - yMaxValue;
         q = TABLE_SHIFT_POWER - ( (q << TABLE_SHIFT_FACTOR) / (yMinValue - yMaxValue) );
       }
 

@@ -116,9 +116,9 @@ const uint8_t PROGMEM fsIntIndex[31] = {4, 14, 25, 27, 32, 41, 43, 45, 47, 49, 5
 bool initialisationComplete = false; //Tracks whether the setup() function has run completely
 uint8_t fpPrimeTime = 0; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 volatile uint16_t mainLoopCount;
-unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
-volatile unsigned long ms_counter = 0; //A counter that increments once per ms
+uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+volatile uint32_t timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
+volatile uint32_t ms_counter = 0; //A counter that increments once per ms
 uint16_t fixedCrankingOverride = 0;
 bool clutchTrigger;
 bool previousClutchTrigger;
@@ -127,8 +127,8 @@ volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
 volatile uint16_t toothHistoryIndex = 0;
 volatile uint8_t toothHistorySerialIndex = 0;
-unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
-unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
+uint32_t currentLoopTime; /**< The time (in uS) that the current mainloop started */
+uint32_t previousLoopTime; /**< The time (in uS) that the previous mainloop started */
 volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
 uint8_t primaryTriggerEdge;
 uint8_t secondaryTriggerEdge;

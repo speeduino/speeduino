@@ -33,8 +33,8 @@
 */
 
 volatile uint8_t flexCounter = 0;
-volatile unsigned long flexStartTime;
-volatile unsigned long flexPulseWidth;
+volatile uint32_t flexStartTime;
+volatile uint32_t flexPulseWidth;
 
 #if defined(CORE_AVR)
   #define READ_FLEX() ((*flex_pin_port & flex_pin_mask) ? true : false)
@@ -45,20 +45,20 @@ volatile unsigned long flexPulseWidth;
 volatile uint8_t knockCounter = 0;
 volatile uint16_t knockAngle;
 
-unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
-unsigned long EMAPrunningValue; //As above but for EMAP
+uint32_t MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
+uint32_t EMAPrunningValue; //As above but for EMAP
 uint16_t MAPcount; //Number of samples taken in the current MAP cycle
 uint32_t MAPcurRev; //Tracks which revolution we're sampling on
 bool auxIsEnabled;
 uint8_t TPSlast; /**< The previous TPS reading */
-unsigned long TPS_time; //The time the TPS sample was taken
-unsigned long TPSlast_time; //The time the previous TPS sample was taken
+uint32_t TPS_time; //The time the TPS sample was taken
+uint32_t TPSlast_time; //The time the previous TPS sample was taken
 uint8_t MAPlast; /**< The previous MAP reading */
-unsigned long MAP_time; //The time the MAP sample was taken
-unsigned long MAPlast_time; //The time the previous MAP sample was taken
-volatile unsigned long vssLastPulseTime; /**< The time of the last VSS pulse of the VSS */
-volatile unsigned long vssLastMinusOnePulseTime; /**< The time of the last VSS_NUM_SAMPLES pulses of the VSS are stored in this array */
-volatile unsigned long vssTotalTime; /**< Cumulative count of the last VSS_SAMPLES number of pulses */
+uint32_t MAP_time; //The time the MAP sample was taken
+uint32_t MAPlast_time; //The time the previous MAP sample was taken
+volatile uint32_t vssLastPulseTime; /**< The time of the last VSS pulse of the VSS */
+volatile uint32_t vssLastMinusOnePulseTime; /**< The time of the last VSS_NUM_SAMPLES pulses of the VSS are stored in this array */
+volatile uint32_t vssTotalTime; /**< Cumulative count of the last VSS_SAMPLES number of pulses */
 volatile uint8_t vssCount;
 
 
@@ -72,7 +72,7 @@ uint8_t cltErrorCount = 0;
  * This is effectively implementing the smooth filter from playground.arduino.cc/Main/Smooth
  * But removes the use of floats and uses 8 bits of fixed precision.
  */
-#define ADC_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
+#define ADC_FILTER(input, alpha, prior) (((int32_t)input * (256 - alpha) + ((int32_t)prior * alpha))) >> 8
 
 static inline void instanteneousMAPReading() __attribute__((always_inline));
 static inline void readMAP() __attribute__((always_inline));

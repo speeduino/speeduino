@@ -2,12 +2,12 @@
 #include "globals.h"
 
 //Replace the standard arduino map() function to use the div function instead
-int16_t fastMap(unsigned long x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max)
+int16_t fastMap(uint32_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max)
 {
-  unsigned long a = (x - (unsigned long)in_min);
+  uint32_t a = (x - (uint32_t)in_min);
   int16_t b = (out_max - out_min);
   int16_t c = (in_max - in_min);
-  int16_t d = (ldiv( (a * (long)b) , (long)c ).quot);
+  int16_t d = (ldiv( (a * (int32_t)b) , (int32_t)c ).quot);
   return d + out_min;
   //return ldiv( ((x - in_min) * (out_max - out_min)) , (in_max - in_min) ).quot + out_min;
   //return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -21,7 +21,7 @@ Ref: www.hackersdelight.org/divcMore.pdf
 //Unsigned divide by 10
 uint16_t divu10(uint16_t n)
 {
-  unsigned long q, r;
+  uint32_t q, r;
   q = (n >> 1) + (n >> 2);
   q = q + (q >> 4);
   q = q + (q >> 8);
@@ -32,11 +32,11 @@ uint16_t divu10(uint16_t n)
 }
 
 //Signed divide by 100
-int16_t divs100(long n)
+int16_t divs100(int32_t n)
 {
   return (n / 100); // Amazingly, gcc is producing a better /divide by 100 function than this
   /*
-  long q, r;
+  int32_t q, r;
   n = n + (n>>31 & 99);
   q = (n >> 1) + (n >> 3) + (n >> 6) - (n >> 10) +
   (n >> 12) + (n >> 13) - (n >> 16);
@@ -48,10 +48,10 @@ int16_t divs100(long n)
 }
 
 //Unsigned divide by 100
-unsigned long divu100(unsigned long n)
+uint32_t divu100(uint32_t n)
 {
   //return (n / 100);
-  unsigned long q, r;
+  uint32_t q, r;
   q = (n >> 1) + (n >> 3) + (n >> 6) - (n >> 10) +
   (n >> 12) + (n >> 13) - (n >> 16);
   q = q + (q >> 20);
@@ -62,7 +62,7 @@ unsigned long divu100(unsigned long n)
 
 //Return x percent of y
 //This is a relatively fast approximation of a percentage value.
-unsigned long percentage(uint8_t x, unsigned long y)
+uint32_t percentage(uint8_t x, uint32_t y)
 {
   return (y * x) / 100; //For some reason this is faster
   //return divu100(y * x);
@@ -71,9 +71,9 @@ unsigned long percentage(uint8_t x, unsigned long y)
 /*
  * Calculates integer power values. Same as pow() but with ints
  */
-inline long powint(int16_t factor, uint16_t exponent)
+inline int32_t powint(int16_t factor, uint16_t exponent)
 {
-   long product = 1;
+   int32_t product = 1;
    uint16_t counter = exponent;
    while ( (counter--) > 0) { product *= factor; }
    return product;

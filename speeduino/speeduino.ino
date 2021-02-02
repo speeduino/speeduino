@@ -147,7 +147,7 @@ void loop()
 
     previousLoopTime = currentLoopTime;
     currentLoopTime = micros_safe();
-    unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
+    uint32_t timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
     {
       currentStatus.longRPM = getRPM(); //Long RPM is included here
@@ -456,7 +456,7 @@ void loop()
       doCrankSpeedCalcs(); //In crankMaths.ino
 
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
-      unsigned long pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+      uint32_t pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
       //Handle multiple squirts per rev
       if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2 / currentStatus.nSquirts; } 
       else { pwLimit = pwLimit / currentStatus.nSquirts; }
@@ -469,11 +469,11 @@ void loop()
       {
         //Scale the 'full' pulsewidth by each of the injector capacities
         currentStatus.PW1 -= inj_opentime_uS; //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
-        uint32_t tempPW1 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100);
+        uint32_t tempPW1 = (((uint32_t)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100);
 
         if(configPage10.stagingMode == STAGING_MODE_TABLE)
         {
-          uint32_t tempPW3 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
+          uint32_t tempPW3 = (((uint32_t)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
 
           uint8_t stagingSplit = get3DTableValue(&stagingTable, currentStatus.MAP, currentStatus.RPM);
           currentStatus.PW1 = ((100 - stagingSplit) * tempPW1) / 100;
@@ -572,10 +572,10 @@ void loop()
 
             if(configPage6.fuelTrimEnabled > 0)
             {
-              unsigned long pw1percent = 100 + (uint8_t)get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-              unsigned long pw2percent = 100 + (uint8_t)get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-              unsigned long pw3percent = 100 + (uint8_t)get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-              unsigned long pw4percent = 100 + (uint8_t)get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+              uint32_t pw1percent = 100 + (uint8_t)get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+              uint32_t pw2percent = 100 + (uint8_t)get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+              uint32_t pw3percent = 100 + (uint8_t)get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+              uint32_t pw4percent = 100 + (uint8_t)get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
 
               if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
               if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
@@ -755,8 +755,8 @@ void loop()
           if (injector1StartAngle > crankAngle)
           {
             setFuelSchedule1(
-                      ((injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW1
+                      ((injector1StartAngle - crankAngle) * (uint32_t)timePerDegree),
+                      (uint32_t)currentStatus.PW1
                       );
           }
         }
@@ -783,8 +783,8 @@ void loop()
           if ( tempStartAngle > tempCrankAngle )
           {
             setFuelSchedule2(
-                      ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW2
+                      ((tempStartAngle - tempCrankAngle) * (uint32_t)timePerDegree),
+                      (uint32_t)currentStatus.PW2
                       );
           }
         }
@@ -801,8 +801,8 @@ void loop()
           if ( tempStartAngle > tempCrankAngle )
           {
             setFuelSchedule3(
-                      ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW3
+                      ((tempStartAngle - tempCrankAngle) * (uint32_t)timePerDegree),
+                      (uint32_t)currentStatus.PW3
                       );
           }
         }
@@ -819,8 +819,8 @@ void loop()
           if ( tempStartAngle > tempCrankAngle )
           {
             setFuelSchedule4(
-                      ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW4
+                      ((tempStartAngle - tempCrankAngle) * (uint32_t)timePerDegree),
+                      (uint32_t)currentStatus.PW4
                       );
           }
         }
@@ -839,14 +839,14 @@ void loop()
             //Note the hacky use of fuel schedule 3 below
             /*
             setFuelSchedule3(openInjector3and5,
-                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW1,
+                      ((uint32_t)(tempStartAngle - tempCrankAngle) * (uint32_t)timePerDegree),
+                      (uint32_t)currentStatus.PW1,
                       closeInjector3and5
                     );*/
             
             setFuelSchedule5(
-                      ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW5
+                      ((tempStartAngle - tempCrankAngle) * (uint32_t)timePerDegree),
+                      (uint32_t)currentStatus.PW5
                       );
           }
         }
@@ -863,8 +863,8 @@ void loop()
           if ( tempStartAngle > tempCrankAngle )
           {
             setFuelSchedule6(
-                      ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW6
+                      ((tempStartAngle - tempCrankAngle) * (uint32_t)timePerDegree),
+                      (uint32_t)currentStatus.PW6
                       );
           }
         }
@@ -881,8 +881,8 @@ void loop()
           if ( tempStartAngle > tempCrankAngle )
           {
             setFuelSchedule7(
-                      ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW7
+                      ((tempStartAngle - tempCrankAngle) * (uint32_t)timePerDegree),
+                      (uint32_t)currentStatus.PW7
                       );
           }
         }
@@ -899,8 +899,8 @@ void loop()
           if ( tempStartAngle > tempCrankAngle )
           {
             setFuelSchedule8(
-                      ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW8
+                      ((tempStartAngle - tempCrankAngle) * (uint32_t)timePerDegree),
+                      (uint32_t)currentStatus.PW8
                       );
           }
         }
@@ -943,9 +943,9 @@ void loop()
         {
           
           setIgnitionSchedule1(ign1StartFunction,
-                    //((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
+                    //((uint32_t)(ignition1StartAngle - crankAngle) * (uint32_t)timePerDegree),
                     angleToTime((ignition1StartAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV),
-                    currentStatus.dwell + fixedCrankingOverride, //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,
+                    currentStatus.dwell + fixedCrankingOverride, //((uint32_t)((uint32_t)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,
                     ign1EndFunction
                     );
         }
@@ -954,7 +954,7 @@ void loop()
 #if defined(USE_IGN_REFRESH)
         if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
         {
-          unsigned long uSToEnd = 0;
+          uint32_t uSToEnd = 0;
 
           crankAngle = getCrankAngle(); //Refresh with the latest crank angle
           if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
@@ -979,10 +979,10 @@ void loop()
             tempStartAngle = ignition2StartAngle - channel2IgnDegrees;
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
-            unsigned long ignition2StartTime = 0;
+            uint32_t ignition2StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule2.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition2StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
-            //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((int32_t)(360 - tempCrankAngle + tempStartAngle) * (int32_t)timePerDegree); }
             else { ignition2StartTime = 0; }
 
             if ( (ignition2StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN2_CMD_BIT)) )
@@ -1004,10 +1004,10 @@ void loop()
             tempStartAngle = ignition3StartAngle - channel3IgnDegrees;
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
-            unsigned long ignition3StartTime = 0;
+            uint32_t ignition3StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule3.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition3StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
-            //else if (tempStartAngle < tempCrankAngle) { ignition3StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition3StartTime = ((int32_t)(360 - tempCrankAngle + tempStartAngle) * (int32_t)timePerDegree); }
             else { ignition3StartTime = 0; }
 
             if ( (ignition3StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN3_CMD_BIT)) )
@@ -1029,10 +1029,10 @@ void loop()
             tempStartAngle = ignition4StartAngle - channel4IgnDegrees;
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
-            unsigned long ignition4StartTime = 0;
+            uint32_t ignition4StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule4.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition4StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
-            //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((int32_t)(360 - tempCrankAngle + tempStartAngle) * (int32_t)timePerDegree); }
             else { ignition4StartTime = 0; }
 
             if ( (ignition4StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN4_CMD_BIT)) )
@@ -1054,10 +1054,10 @@ void loop()
             tempStartAngle = ignition5StartAngle - channel5IgnDegrees;
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
-            unsigned long ignition5StartTime = 0;
+            uint32_t ignition5StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule5.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition5StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
-            //else if (tempStartAngle < tempCrankAngle) { ignition5StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition5StartTime = ((int32_t)(360 - tempCrankAngle + tempStartAngle) * (int32_t)timePerDegree); }
             else { ignition5StartTime = 0; }
 
             if ( (ignition5StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN5_CMD_BIT)) )
@@ -1079,10 +1079,10 @@ void loop()
             tempStartAngle = ignition6StartAngle - channel6IgnDegrees;
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
-            unsigned long ignition6StartTime = 0;
+            uint32_t ignition6StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule6.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition6StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
-            //else if (tempStartAngle < tempCrankAngle) { ignition6StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition6StartTime = ((int32_t)(360 - tempCrankAngle + tempStartAngle) * (int32_t)timePerDegree); }
             else { ignition6StartTime = 0; }
 
             if ( (ignition6StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN6_CMD_BIT)) )
@@ -1104,10 +1104,10 @@ void loop()
             tempStartAngle = ignition7StartAngle - channel7IgnDegrees;
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
-            unsigned long ignition7StartTime = 0;
+            uint32_t ignition7StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule7.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition7StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
-            //else if (tempStartAngle < tempCrankAngle) { ignition7StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition7StartTime = ((int32_t)(360 - tempCrankAngle + tempStartAngle) * (int32_t)timePerDegree); }
             else { ignition7StartTime = 0; }
 
             if ( (ignition7StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN7_CMD_BIT)) )
@@ -1129,10 +1129,10 @@ void loop()
             tempStartAngle = ignition8StartAngle - channel8IgnDegrees;
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
-            unsigned long ignition8StartTime = 0;
+            uint32_t ignition8StartTime = 0;
             if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule8.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition8StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
-            //else if (tempStartAngle < tempCrankAngle) { ignition8StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
+            //else if (tempStartAngle < tempCrankAngle) { ignition8StartTime = ((int32_t)(360 - tempCrankAngle + tempStartAngle) * (int32_t)timePerDegree); }
             else { ignition8StartTime = 0; }
 
             if ( (ignition8StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN8_CMD_BIT)) )
@@ -1173,7 +1173,7 @@ void loop()
  * @param injOpen Injector opening time. The time the injector take to open minus the time it takes to close (Both in uS)
  * @return uint16_t The injector pulse width in uS
  */
-uint16_t PW(int REQ_FUEL, uint8_t VE, long MAP, uint16_t corrections, int16_t injOpen)
+uint16_t PW(int REQ_FUEL, uint8_t VE, int32_t MAP, uint16_t corrections, int16_t injOpen)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
@@ -1204,18 +1204,18 @@ uint16_t PW(int REQ_FUEL, uint8_t VE, long MAP, uint16_t corrections, int16_t in
   iCorrections = (corrections << bitShift) / 100;
 
 
-  unsigned long intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
-  if ( configPage2.multiplyMAP > 0 ) { intermediate = (intermediate * (unsigned long)iMAP) >> 7; }
+  uint32_t intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
+  if ( configPage2.multiplyMAP > 0 ) { intermediate = (intermediate * (uint32_t)iMAP) >> 7; }
   
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
-    intermediate = (intermediate * (unsigned long)iAFR) >> 7;  
+    intermediate = (intermediate * (uint32_t)iAFR) >> 7;  
   }
   if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
-    intermediate = (intermediate * (unsigned long)iAFR) >> 7;
+    intermediate = (intermediate * (uint32_t)iAFR) >> 7;
   }
   
-  intermediate = (intermediate * (unsigned long)iCorrections) >> bitShift;
+  intermediate = (intermediate * (uint32_t)iCorrections) >> bitShift;
   if (intermediate != 0)
   {
     //If intermeditate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
@@ -1223,7 +1223,7 @@ uint16_t PW(int REQ_FUEL, uint8_t VE, long MAP, uint16_t corrections, int16_t in
     //AE Adds % of req_fuel
     if ( configPage2.aeApplyMode == AE_MODE_ADDER )
     {
-      intermediate += ( ((unsigned long)REQ_FUEL) * (currentStatus.AEamount - 100) ) / 100;
+      intermediate += ( ((uint32_t)REQ_FUEL) * (currentStatus.AEamount - 100) ) / 100;
     }
     if ( intermediate > 65535)
     {

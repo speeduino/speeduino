@@ -21,7 +21,7 @@ Flood clear mode etc.
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
 
-long PID_O2, PID_output, PID_AFRTarget;
+int32_t PID_O2, PID_output, PID_AFRTarget;
 PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 int16_t MAP_rateOfChange;
@@ -30,7 +30,7 @@ uint8_t activateMAPDOT; //The mapDOT value seen when the MAE was activated.
 uint8_t activateTPSDOT; //The tpsDOT value seen when the MAE was activated.
 
 uint16_t AFRnextCycle;
-unsigned long knockStartTime;
+uint32_t knockStartTime;
 uint8_t lastKnockCount;
 int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
@@ -207,7 +207,7 @@ uint16_t correctionCranking()
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
     //Taper start value needs to account for ASE that is now running, so total correction does not increase when taper begins
-    unsigned long taperStart = (unsigned long) crankingValue * 100 / currentStatus.ASEValue;
+    uint32_t taperStart = (uint32_t) crankingValue * 100 / currentStatus.ASEValue;
     crankingValue = (uint16_t) map(runSecsX10, 0, configPage10.crankingEnrichTaper, taperStart, 100); //Taper from start value to 100%
     if (crankingValue < 100) { crankingValue = 100; } //Sanity check
   }
@@ -341,7 +341,7 @@ uint16_t correctionAccel()
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
           activateMAPDOT = currentStatus.mapDOT;
-          currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
+          currentStatus.AEEndTime = micros_safe() + ((uint32_t)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
           accelValue = table2D_getValue(&maeTable, currentStatus.mapDOT);
 
           //Apply the RPM taper to the above
@@ -400,7 +400,7 @@ uint16_t correctionAccel()
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
           activateTPSDOT = currentStatus.tpsDOT;
-          currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
+          currentStatus.AEEndTime = micros_safe() + ((uint32_t)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
           accelValue = table2D_getValue(&taeTable, currentStatus.tpsDOT);
 
           //Apply the RPM taper to the above
@@ -636,10 +636,10 @@ uint8_t correctionAFRClosedLoop()
         {
           //*************************************************************************************************************************************
           //PID algorithm
-          egoPID.SetOutputLimits((long)(-configPage6.egoLimit), (long)(configPage6.egoLimit)); //Set the limits again, just incase the user has changed them since the last loop. Note that these are sent to the PID library as (Eg:) -15 and +15
+          egoPID.SetOutputLimits((int32_t)(-configPage6.egoLimit), (int32_t)(configPage6.egoLimit)); //Set the limits again, just incase the user has changed them since the last loop. Note that these are sent to the PID library as (Eg:) -15 and +15
           egoPID.SetTunings(configPage6.egoKP, configPage6.egoKI, configPage6.egoKD); //Set the PID values again, just incase the user has changed them since the last loop
-          PID_O2 = (long)(currentStatus.O2);
-          PID_AFRTarget = (long)(currentStatus.afrTarget);
+          PID_O2 = (int32_t)(currentStatus.O2);
+          PID_AFRTarget = (int32_t)(currentStatus.afrTarget);
 
           bool PID_compute = egoPID.Compute();
           //currentStatus.egoCorrection = 100 + PID_output;

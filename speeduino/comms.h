@@ -52,7 +52,7 @@
 
 uint8_t currentPage = 1;//Not the same as the speeduino config page numbers
 bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
-unsigned long requestCount = 0; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
+uint32_t requestCount = 0; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
 uint8_t currentCommand; /**< The serial command that is currently being processed. This is only useful when cmdPending=True */
 bool cmdPending = false; /**< Whether or not a serial request has only been partially received. This occurs when a command character has been received in the serial buffer, but not all of its arguments have yet been received. If true, the active command will be stored in the currentCommand variable */
 bool chunkPending = false; /**< Whether or not the current chucnk write is complete or not */

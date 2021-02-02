@@ -480,9 +480,9 @@ extern const uint8_t PROGMEM fsIntIndex[31];
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
 extern uint8_t fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern volatile uint16_t mainLoopCount;
-extern unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-extern volatile unsigned long timer5_overflow_count; //Increments every time counter 5 overflows. Used for the fast version of micros()
-extern volatile unsigned long ms_counter; //A counter that increments once per ms
+extern uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+extern volatile uint32_t timer5_overflow_count; //Increments every time counter 5 overflows. Used for the fast version of micros()
+extern volatile uint32_t ms_counter; //A counter that increments once per ms
 extern uint16_t fixedCrankingOverride;
 extern bool clutchTrigger;
 extern bool previousClutchTrigger;
@@ -491,8 +491,8 @@ extern volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 extern volatile bool fpPrimed; //Tracks whether or not the fuel pump priming has been completed yet
 extern volatile uint16_t toothHistoryIndex;
 extern volatile uint8_t toothHistorySerialIndex;
-extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
-extern unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
+extern uint32_t currentLoopTime; /**< The time (in uS) that the current mainloop started */
+extern uint32_t previousLoopTime; /**< The time (in uS) that the previous mainloop started */
 extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
 extern uint8_t primaryTriggerEdge;
 extern uint8_t secondaryTriggerEdge;
@@ -525,10 +525,10 @@ struct statuses {
   volatile bool hasSync;
   uint16_t RPM;
   uint8_t RPMdiv100;
-  long longRPM;
+  int32_t longRPM;
   int16_t mapADC;
   int16_t baroADC;
-  long MAP; //Has to be a long for PID calcs (Boost control)
+  int32_t MAP; //Has to be a long for PID calcs (Boost control)
   int16_t EMAP;
   int16_t EMAPADC;
   uint8_t baro; //Barometric pressure is simply the inital MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
@@ -574,7 +574,7 @@ struct statuses {
   bool fanOn; /**< Whether or not the fan is turned on */
   volatile uint8_t ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
   volatile int8_t fuelTemp;
-  unsigned long AEEndTime; /**< The target end time used whenever AE is turned on */
+  uint32_t AEEndTime; /**< The target end time used whenever AE is turned on */
   volatile uint8_t status1;
   volatile uint8_t spark;
   volatile uint8_t spark2;
@@ -619,7 +619,7 @@ struct statuses {
   bool toothLogEnabled;
   bool compositeLogEnabled;
   //int8_t vvt1Angle;
-  long vvt1Angle;
+  int32_t vvt1Angle;
   uint8_t vvt1TargetAngle;
   uint8_t vvt1Duty;
   uint16_t injAngle;
@@ -632,7 +632,7 @@ struct statuses {
   uint8_t engineProtectStatus;
   uint8_t wmiPW;
   bool wmiEmpty;
-  long vvt2Angle;
+  int32_t vvt2Angle;
   uint8_t vvt2TargetAngle;
   uint8_t vvt2Duty;
   uint8_t outputsStatus;
