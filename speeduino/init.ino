@@ -29,19 +29,6 @@ void initialiseAll()
 
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
-    table3D_setSize(&fuelTable, 16);
-    table3D_setSize(&fuelTable2, 16);
-    table3D_setSize(&ignitionTable, 16);
-    table3D_setSize(&ignitionTable2, 16);
-    table3D_setSize(&afrTable, 16);
-    table3D_setSize(&stagingTable, 8);
-    table3D_setSize(&boostTable, 8);
-    table3D_setSize(&vvtTable, 8);
-    table3D_setSize(&wmiTable, 8);
-    table3D_setSize(&trim1Table, 6);
-    table3D_setSize(&trim2Table, 6);
-    table3D_setSize(&trim3Table, 6);
-    table3D_setSize(&trim4Table, 6);
 
     #if defined(CORE_STM32)
     configPage9.intcan_available = 1;   // device has internal canbus

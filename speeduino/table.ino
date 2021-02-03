@@ -4,72 +4,8 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 
-/*
-Because the size of the table is dynamic, this functino is required to reallocate the array sizes
-Note that this may clear some of the existing values of the table
-*/
 #include "table.h"
 #include "globals.h"
-
-/*
-void table2D_setSize(struct table2D* targetTable, byte newSize)
-{
-  //Table resize is ONLY permitted during system initialisation.
-  //if(initialisationComplete == false)
-  {
-    //2D tables can contain either bytes or ints, depending on the value of the valueSize field
-    if(targetTable->valueSize == SIZE_BYTE)
-    {
-      //The following lines have MISRA suppressions as realloc is otherwise forbidden. These calls have been verified as unable to be executed from anywhere but controlled areas. 
-      //cppcheck-suppress misra-21.3
-      targetTable->values = (byte *)realloc(targetTable->values, newSize * sizeof(byte)); //cppcheck-suppress misra_21.3
-      targetTable->axisX = (byte *)realloc(targetTable->axisX, newSize * sizeof(byte));
-      targetTable->xSize = newSize;
-    }
-    else
-    {
-      targetTable->values16 = (int16_t *)realloc(targetTable->values16, newSize * sizeof(int16_t));
-      targetTable->axisX16 = (int16_t *)realloc(targetTable->axisX16, newSize * sizeof(int16_t));
-      targetTable->xSize = newSize;
-    } //Byte or int
-  } //initialisationComplete
-}
-*/
-
-void* heap_alloc(uint16_t size)
- {
-     uint8_t* value = nullptr;
-     if (size < (TABLE_HEAP_SIZE - _heap_pointer))
-     {
-         value = &_3DTable_heap[_heap_pointer];
-         _heap_pointer += size;
-     }
-     return value;
- }
-
-
-void table3D_setSize(struct table3D *targetTable, byte newSize)
-{
-  if(initialisationComplete == false)
-  {
-    /*
-    targetTable->values = (byte **)malloc(newSize * sizeof(byte*));
-    for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)malloc(newSize * sizeof(byte)); }
-    */
-    targetTable->values = (byte **)heap_alloc(newSize * sizeof(byte*));
-    for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)heap_alloc(newSize * sizeof(byte)); }
-
-    /*
-    targetTable->axisX = (int16_t *)malloc(newSize * sizeof(int16_t));
-    targetTable->axisY = (int16_t *)malloc(newSize * sizeof(int16_t));
-    */
-    targetTable->axisX = (int16_t *)heap_alloc(newSize * sizeof(int16_t));
-    targetTable->axisY = (int16_t *)heap_alloc(newSize * sizeof(int16_t));
-    targetTable->xSize = newSize;
-    targetTable->ySize = newSize;
-    targetTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
-  } //initialisationComplete
-}
 
 /*
 This function pulls a 1D linear interpolated (ie averaged) value from a 2D table

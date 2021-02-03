@@ -11,37 +11,6 @@ This file is used for everything related to maps/tables including their definiti
 #define TABLE_SHIFT_FACTOR  8
 #define TABLE_SHIFT_POWER   (1UL<<TABLE_SHIFT_FACTOR)
 
-//Define the total table memory sizes. Used for adding up the static heap size
-#define TABLE3D_SIZE_16  (16 * 16 + 32 + 32 + 32) //2 bytes for each value on the axis + allocation for array pointers
-#define TABLE3D_SIZE_12  (12 * 12 + 24 + 24 + 24) //2 bytes for each value on the axis + allocation for array pointers
-#define TABLE3D_SIZE_8   (8 * 8 + 16 + 16 + 16) //2 bytes for each value on the axis + allocation for array pointers
-#define TABLE3D_SIZE_6   (6 * 6 + 12 + 12 + 12) //2 bytes for each value on the axis + allocation for array pointers
-#define TABLE3D_SIZE_4   (4 * 4 + 8 + 8 + 8) //2 bytes for each value on the axis + allocation for array pointers
-
-//Define the table sizes
-#define TABLE_FUEL1_SIZE    16;
-#define TABLE_FUEL2_SIZE    16;
-#define TABLE_IGN1_SIZE     16;
-#define TABLE_IGN2_SIZE     16;
-#define TABLE_AFR_SIZE      16;
-#define TABLE_STAGING_SIZE  8;
-#define TABLE_BOOST_SIZE    8;
-#define TABLE_VVT1_SIZE     8;
-#define TABLE_WMI_SIZE      8;
-#define TABLE_TRIM1_SIZE    6;
-#define TABLE_TRIM2_SIZE    6;
-#define TABLE_TRIM3_SIZE    6;
-#define TABLE_TRIM4_SIZE    6;
-
-/*
-*********** WARNING! ***********
-YOU MUST UPDATE THE TABLE COUNTS IN THE LINE BELOW WHENEVER A NEW TABLE IS ADDED!
-*/
-#define TABLE_HEAP_SIZE     (5 * TABLE3D_SIZE_16) + (4 * TABLE3D_SIZE_8) + (4 * TABLE3D_SIZE_6)+1
-
-static uint8_t _3DTable_heap[TABLE_HEAP_SIZE];
-static uint16_t _heap_pointer = 0;
-
 /*
 The 2D table can contain either 8-bit (byte) or 16-bit (int) values
 The valueSize variable should be set to either 8 or 16 to indicate this BEFORE the table is used
@@ -68,8 +37,6 @@ struct table2D {
   byte cacheTime; //Tracks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
 };
 
-//void table2D_setSize(struct table2D targetTable, byte newSize);
-void table2D_setSize(struct table2D*, byte);
 int16_t table2D_getAxisValue(struct table2D*, byte);
 int16_t table2D_getRawValue(struct table2D*, byte);
 
@@ -94,8 +61,24 @@ struct table3D {
   bool cacheIsValid; ///< This tracks whether the tables cache should be used. Ordinarily this is true, but is set to false whenever TunerStudio sends a new value for the table
 };
 
-//void table3D_setSize(struct table3D *targetTable, byte);
-void table3D_setSize(struct table3D *targetTable, byte);
+template <int size>
+struct table3D_impl: public table3D
+{
+private:
+  byte _values[size*size];
+  byte* _columns[size];
+  int16_t _axisX[size];
+  int16_t _axisY[size];
+public:
+  table3D_impl()
+    :table3D{size, size, _columns, _axisX, _axisY, 0, 0, 0, 0, 0, 0, 0, false}
+    {
+      for (int i = 0; i < size; i++)
+      {
+        _columns[i] = &_values[i*size];
+      }
+    }
+};
 
 /*
 3D Tables have an origin (0,0) in the top left hand corner. Vertical axis is expressed first.
