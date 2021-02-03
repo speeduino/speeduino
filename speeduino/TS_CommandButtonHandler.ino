@@ -19,7 +19,7 @@
  * 
  * @param buttonCommand The command number of the button that was clicked. See TS_CommendButtonHandler.h for a list of button IDs
  */
-void TS_CommandButtonsHandler(int buttonCommand)
+void TS_CommandButtonsHandler(uint16_t buttonCommand)
 {
   switch (buttonCommand)
   {
