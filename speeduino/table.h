@@ -27,6 +27,7 @@ This file is used for everything related to maps/tables including their definiti
 #define TABLE_STAGING_SIZE  8;
 #define TABLE_BOOST_SIZE    8;
 #define TABLE_VVT1_SIZE     8;
+#define TABLE_VVT2_SIZE     8;
 #define TABLE_WMI_SIZE      8;
 #define TABLE_TRIM1_SIZE    6;
 #define TABLE_TRIM2_SIZE    6;
@@ -37,7 +38,7 @@ This file is used for everything related to maps/tables including their definiti
 *********** WARNING! ***********
 YOU MUST UPDATE THE TABLE COUNTS IN THE LINE BELOW WHENEVER A NEW TABLE IS ADDED!
 */
-#define TABLE_HEAP_SIZE     (5 * TABLE3D_SIZE_16) + (4 * TABLE3D_SIZE_8) + (4 * TABLE3D_SIZE_6)+1
+#define TABLE_HEAP_SIZE     (5 * TABLE3D_SIZE_16) + (5 * TABLE3D_SIZE_8) + (4 * TABLE3D_SIZE_6)+1
 
 static uint8_t _3DTable_heap[TABLE_HEAP_SIZE];
 static uint16_t _heap_pointer = 0;

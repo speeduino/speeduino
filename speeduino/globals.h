@@ -368,6 +368,7 @@ extern struct table3D afrTable; //16x16 afr target map
 extern struct table3D stagingTable; //8x8 fuel staging table
 extern struct table3D boostTable; //8x8 boost map
 extern struct table3D vvtTable; //8x8 vvt map
+extern struct table3D vvt2Table; //8x8 vvt2 map
 extern struct table3D wmiTable; //8x8 wmi map
 extern struct table3D trim1Table; //6x6 Fuel trim 1 map
 extern struct table3D trim2Table; //6x6 Fuel trim 2 map
@@ -476,7 +477,7 @@ extern int ignition7StartAngle;
 extern int ignition8StartAngle;
 
 //These are variables used across multiple files
-extern const byte PROGMEM fsIntIndex[31];
+extern const byte PROGMEM fsIntIndex[34];
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern volatile uint16_t mainLoopCount;
@@ -496,6 +497,7 @@ extern unsigned long previousLoopTime; /**< The time (in uS) that the previous m
 extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
 extern byte primaryTriggerEdge;
 extern byte secondaryTriggerEdge;
+extern byte tertiaryTriggerEdge;
 extern int CRANK_ANGLE_MAX;
 extern int CRANK_ANGLE_MAX_IGN;
 extern int CRANK_ANGLE_MAX_INJ; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
@@ -887,7 +889,11 @@ struct config4 {
 
   byte engineProtectMaxRPM;
 
-  byte unused4_120[7];
+  int16_t vvt2CLMinAng;
+  byte vvt2PWMdir : 1;
+  byte unusedBits4 : 7;
+
+  byte unused4_124[4];
 
 #if defined(CORE_AVR)
   };
@@ -926,7 +932,7 @@ struct config6 {
   byte useExtBaro : 1;
   byte boostMode : 1; //Simple of full boost control
   byte boostPin : 6;
-  byte VVTasOnOff : 1; //Whether or not to use the VVT table as an on/off map
+  byte unused_bit : 1; //Previously was VVTasOnOff
   byte useEMAP : 1;
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
@@ -1226,8 +1232,8 @@ struct config10 {
   byte vvtCLminDuty;
   byte vvtCLmaxDuty;
   byte vvt2Pin : 6;
-  byte unused11_174_1 : 1;
-  byte unused11_174_2 : 1;
+  byte vvt2Enabled : 1;
+  byte TrigEdgeThrd : 1;
 
   byte fuelTempBins[6];
   byte fuelTempValues[6]; //180

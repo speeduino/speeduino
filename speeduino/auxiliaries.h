@@ -25,10 +25,8 @@ void wmiControl();
 #define VVT2_PIN_HIGH()   *vvt2_pin_port |= (vvt2_pin_mask)
 #define VVT1_PIN_ON()     if (configPage6.vvtPWMdir == 0) { VVT1_PIN_HIGH(); } else { VVT1_PIN_LOW(); } 
 #define VVT1_PIN_OFF()    if (configPage6.vvtPWMdir == 0) { VVT1_PIN_LOW() ; } else { VVT1_PIN_HIGH(); }
-//#define VVT2_PIN_ON()     if (configPage6.vvtPWMdir == 0) { VVT2_PIN_HIGH(); } else { VVT2_PIN_LOW(); } 
-//#define VVT2_PIN_OFF()    if (configPage6.vvtPWMdir == 0) { VVT2_PIN_LOW() ; } else { VVT2_PIN_HIGH(); }
-#define VVT2_PIN_ON()     {} //Disabled as VVT2 not yet complete
-#define VVT2_PIN_OFF()    {} //Disabled as VVT2 not yet complete
+#define VVT2_PIN_ON()     if (configPage4.vvt2PWMdir == 0) { VVT2_PIN_HIGH(); } else { VVT2_PIN_LOW(); } 
+#define VVT2_PIN_OFF()    if (configPage4.vvt2PWMdir == 0) { VVT2_PIN_LOW() ; } else { VVT2_PIN_HIGH(); }
 #define FAN_PIN_LOW()    *fan_pin_port &= ~(fan_pin_mask)
 #define FAN_PIN_HIGH()   *fan_pin_port |= (fan_pin_mask)
 #define N2O_STAGE1_PIN_LOW()  *n2o_stage1_pin_port &= ~(n2o_stage1_pin_mask)
@@ -79,6 +77,7 @@ volatile unsigned int vvt2_pwm_cur_value;
 long vvt1_pwm_value;
 long vvt2_pwm_value;
 long vvt_pid_target_angle;
+long vvt2_pid_target_angle;
 //long vvt_pid_current_angle;
 static inline void boostInterrupt();
 static inline void vvtInterrupt();

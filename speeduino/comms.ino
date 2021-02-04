@@ -856,30 +856,32 @@ byte getStatusEntry(uint16_t byteNum)
     case 90: statusValue = highByte(currentStatus.dwell); break;
     case 91: statusValue = currentStatus.CLIdleTarget; break;
     case 92: statusValue = currentStatus.mapDOT; break;
-    case 93: statusValue = (int8_t)currentStatus.vvt1Angle; break;
-    case 94: statusValue = currentStatus.vvt1TargetAngle; break;
-    case 95: statusValue = currentStatus.vvt1Duty; break;
-    case 96: statusValue = lowByte(currentStatus.flexBoostCorrection); break;
-    case 97: statusValue = highByte(currentStatus.flexBoostCorrection); break;
-    case 98: statusValue = currentStatus.baroCorrection; break;
-    case 99: statusValue = currentStatus.VE; break; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
-    case 100: statusValue = currentStatus.ASEValue; break; //Current ASE (%)
-    case 101: statusValue = lowByte(currentStatus.vss); break;
-    case 102: statusValue = highByte(currentStatus.vss); break;
-    case 103: statusValue = currentStatus.gear; break;
-    case 104: statusValue = currentStatus.fuelPressure; break;
-    case 105: statusValue = currentStatus.oilPressure; break;
-    case 106: statusValue = currentStatus.wmiPW; break;
-    case 107: statusValue = currentStatus.wmiEmpty; break;
-    case 108: statusValue = (int8_t)currentStatus.vvt2Angle; break;
-    case 109: statusValue = currentStatus.vvt2TargetAngle; break;
-    case 110: statusValue = currentStatus.vvt2Duty; break;
-    case 111: statusValue = currentStatus.outputsStatus; break;
-    case 112: statusValue = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); break; //Fuel temperature from flex sensor
-    case 113: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
-    case 114: statusValue = currentStatus.advance1; break; //advance 1 (%)
-    case 115: statusValue = currentStatus.advance2; break; //advance 2 (%)
-    case 116: statusValue = currentStatus.TS_SD_Status; break; //SD card status
+    case 93: statusValue = lowByte((int16_t)currentStatus.vvt1Angle); break; //cam angle needs to be casted as int16, because it can have values from -360 to 360
+    case 94: statusValue = highByte((int16_t)currentStatus.vvt1Angle); break;
+    case 95: statusValue = currentStatus.vvt1TargetAngle; break;
+    case 96: statusValue = currentStatus.vvt1Duty; break;
+    case 97: statusValue = lowByte(currentStatus.flexBoostCorrection); break;
+    case 98: statusValue = highByte(currentStatus.flexBoostCorrection); break;
+    case 99: statusValue = currentStatus.baroCorrection; break;
+    case 100: statusValue = currentStatus.VE; break; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
+    case 101: statusValue = currentStatus.ASEValue; break; //Current ASE (%)
+    case 102: statusValue = lowByte(currentStatus.vss); break;
+    case 103: statusValue = highByte(currentStatus.vss); break;
+    case 104: statusValue = currentStatus.gear; break;
+    case 105: statusValue = currentStatus.fuelPressure; break;
+    case 106: statusValue = currentStatus.oilPressure; break;
+    case 107: statusValue = currentStatus.wmiPW; break;
+    case 108: statusValue = currentStatus.wmiEmpty; break;
+    case 109: statusValue = lowByte((int16_t)currentStatus.vvt2Angle); break; //cam angle needs to be casted as int16, because it can have values from -360 to 360
+    case 110: statusValue = highByte((int16_t)currentStatus.vvt2Angle); break;
+    case 111: statusValue = currentStatus.vvt2TargetAngle; break;
+    case 112: statusValue = currentStatus.vvt2Duty; break;
+    case 113: statusValue = currentStatus.outputsStatus; break;
+    case 114: statusValue = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); break; //Fuel temperature from flex sensor
+    case 115: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
+    case 116: statusValue = currentStatus.advance1; break; //advance 1 (%)
+    case 117: statusValue = currentStatus.advance2; break; //advance 2 (%)
+    case 118: statusValue = currentStatus.TS_SD_Status; break; //SD card status
   }
 
   return statusValue;
@@ -1299,10 +1301,29 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       {
         wmiTable.axisX[(valueOffset - 64)] = int(newValue) * TABLE_RPM_MULTIPLIER;
       }
-      else if (valueOffset < 80) //New value is on the Y (MAP) axis of the boost table
+      else if (valueOffset < 80) //New value is on the Y (MAP) axis of the wmi table
       {
         wmiTable.axisY[(7 - (valueOffset - 72))] = int(newValue) * TABLE_LOAD_MULTIPLIER;
       }
+      //End of wmi table
+      else if (valueOffset < 144) //New value is part of the vvt2 map
+      {
+        tempOffset = valueOffset - 80;
+        vvt2Table.values[7 - (tempOffset / 8)][tempOffset % 8] = newValue;
+      }
+      else if (valueOffset < 152) //New value is on the X (RPM) axis of the vvt2 table
+      {
+        tempOffset = valueOffset - 144;
+        vvt2Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER;
+      }
+      else if (valueOffset < 160) //New value is on the Y (Load) axis of the vvt2 table
+      {
+        tempOffset = valueOffset - 152;
+        vvt2Table.axisY[(7 - tempOffset)] = int(newValue); //TABLE_LOAD_MULTIPLIER is NOT used
+      }
+      //End of vvt2 table
+      wmiTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      vvt2Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
       
     case progOutsPage:
@@ -1314,9 +1335,6 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       }
       break;
 
-    default:
-      break;
-    
     case ignMap2Page: //Ignition settings page (Page 2)
       if (valueOffset < 256) //New value is part of the ignition map
       {
@@ -1338,6 +1356,9 @@ void receiveValue(uint16_t valueOffset, byte newValue)
         }
       }
       ignitionTable2.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      break;
+
+    default:
       break;
   }
   //if(Serial.available() > 16) { command(); }
@@ -1446,10 +1467,15 @@ void sendPage()
       //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
       byte response[80]; //Bit hacky, but send 1 map at a time (Each map is 8x8, so 64 + 8 + 8)
 
-      //Boost table
+      //WMI table
       for (int x = 0; x < 64; x++) { response[x] = wmiTable.values[7 - (x / 8)][x % 8]; }
       for (int x = 64; x < 72; x++) { response[x] = byte(wmiTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
       for (int y = 72; y < 80; y++) { response[y] = byte(wmiTable.axisY[7 - (y - 72)] / TABLE_LOAD_MULTIPLIER); }
+      Serial.write((byte *)&response, 80);
+	  //VVT2 table
+      for (int x = 0; x < 64; x++) { response[x] = vvt2Table.values[7 - (x / 8)][x % 8]; }
+      for (int x = 64; x < 72; x++) { response[x] = byte(vvt2Table.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
+      for (int y = 72; y < 80; y++) { response[y] = byte(vvt2Table.axisY[7 - (y - 72)]); }
       Serial.write((byte *)&response, 80);
       break;
     }
@@ -1998,6 +2024,14 @@ byte getPageValue(byte page, uint16_t valueAddress)
           if(valueAddress < 64) { returnValue = wmiTable.values[7 - (valueAddress / 8)][valueAddress % 8]; }
           else if(valueAddress < 72) { returnValue = byte(wmiTable.axisX[(valueAddress - 64)] / TABLE_RPM_MULTIPLIER); }
           else if(valueAddress < 80) { returnValue = byte(wmiTable.axisY[7 - (valueAddress - 72)] / TABLE_LOAD_MULTIPLIER); }
+        }
+        else if(valueAddress < 160)
+        {
+          tempAddress = valueAddress - 80;
+          //VVT2 table
+          if(tempAddress < 64) { returnValue = vvt2Table.values[7 - (tempAddress / 8)][tempAddress % 8]; }
+          else if(tempAddress < 72) { returnValue = byte(vvt2Table.axisX[(tempAddress - 64)] / TABLE_RPM_MULTIPLIER); }
+          else if(tempAddress < 80) { returnValue = byte(vvt2Table.axisY[7 - (tempAddress - 72)]); }
         }
         break;
 

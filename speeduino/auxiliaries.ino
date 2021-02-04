@@ -13,6 +13,7 @@ A full copy of the license may be found in the projects root directory
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
 integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage10.boostSens, &configPage10.boostIntv, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 integerPID vvtPID(&currentStatus.vvt1Angle, &vvt1_pwm_value, &vvt_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPID vvt2PID(&currentStatus.vvt2Angle, &vvt2_pwm_value, &vvt2_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 /*
 Fan control
@@ -109,6 +110,13 @@ void initialiseAuxPWM()
       vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
       vvtPID.SetSampleTime(33); //30Hz is 33,33ms
       vvtPID.SetMode(AUTOMATIC); //Turn PID on
+      if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
+      {
+        vvt2PID.SetOutputLimits(percentage(configPage10.vvtCLminDuty, vvt_pwm_max_count), percentage(configPage10.vvtCLmaxDuty, vvt_pwm_max_count));
+        vvt2PID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
+        vvt2PID.SetSampleTime(33); //30Hz is 33,33ms
+        vvt2PID.SetMode(AUTOMATIC); //Turn PID on
+      }
     }
 
     currentStatus.vvt1Duty = 0;
@@ -233,10 +241,21 @@ void vvtControl()
       else { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
 
       //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
-      if( (configPage6.VVTasOnOff == true) && (currentStatus.vvt1Duty < 100) ) { currentStatus.vvt1Duty = 0; }
+      if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt1Duty < 100) ) { currentStatus.vvt1Duty = 0; }
 
       vvt1_pwm_value = percentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
-      if(currentStatus.vvt1Duty > 0) { ENABLE_VVT_TIMER(); }
+
+      if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
+      {
+        //Lookup VVT duty based on either MAP or TPS
+        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, currentStatus.TPS, currentStatus.RPM); }
+        else { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
+
+        //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
+        if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt2Duty < 100) ) { currentStatus.vvt2Duty = 0; }
+
+        vvt2_pwm_value = percentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
+      }
 
     } //Open loop
     else if( (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP) )
@@ -266,16 +285,33 @@ void vvtControl()
         //if (currentStatus.vvt1Angle > currentStatus.vvt1TargetAngle) { vvt_pwm_target_value = 0; }
         if(PID_compute == true) { currentStatus.vvt1Duty = (vvt1_pwm_value * 100) / vvt_pwm_max_count; }
       }
-      
-      if( (currentStatus.vvt1Duty > 0) || (currentStatus.vvt2Duty > 0) ) { ENABLE_VVT_TIMER(); }
-      
+
+      if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
+      {
+        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, currentStatus.TPS, currentStatus.RPM); }
+        else { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
+
+        if( (vvtCounter & 31) == 1) { vvt2PID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD); } //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
+
+        //Check that we're not already at the angle we want to be
+        if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt2TargetAngle == currentStatus.vvt2Angle) )
+        {
+          currentStatus.vvt2Duty = configPage10.vvtCLholdDuty;
+          vvt2_pwm_value = percentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
+          vvt2PID.Initialize();
+        }
+        else
+        {
+          //This is dumb, but need to convert the current angle into a long pointer
+          vvt2_pid_target_angle = currentStatus.vvt2TargetAngle;
+          //If not already at target angle, calculate new value from PID
+          bool PID_compute = vvt2PID.Compute(false);
+          if(PID_compute == true) { currentStatus.vvt2Duty = (vvt2_pwm_value * 100) / vvt_pwm_max_count; }
+        }
+      }
       //currentStatus.vvt1Duty = 0;
       vvtCounter++;
     }
-
-    //SET VVT2 to be the same as VVT1 - THIS WILL NEED TO BE REMOVED IN THE FUTURE WHEN VVT2 IS SUPPORTED!!!
-    currentStatus.vvt2Duty = currentStatus.vvt1Duty;
-    vvt2_pwm_value = vvt1_pwm_value ;
 
     //Set the PWM state based on the above lookups
     if( (currentStatus.vvt1Duty == 0) && (currentStatus.vvt2Duty == 0) )

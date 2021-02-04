@@ -23,6 +23,7 @@ static inline int crankingGetRPM(byte);
 void triggerSetup_missingTooth();
 void triggerPri_missingTooth();
 void triggerSec_missingTooth();
+void triggerThird_missingTooth();
 uint16_t getRPM_missingTooth();
 int getCrankAngle_missingTooth();
 extern void triggerSetEndTeeth_missingTooth();
@@ -159,6 +160,8 @@ void triggerSec_Webber();
 
 extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 extern void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
+extern void (*triggerTertiaryHandler)(); //Pointer for the tertiary trigger function (Gets pointed to the relevant decoder)
+
 extern uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
 extern int (*getCrankAngle)(); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 extern void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of each decoder
@@ -167,6 +170,8 @@ extern volatile unsigned long curTime;
 extern volatile unsigned long curGap;
 extern volatile unsigned long curTime2;
 extern volatile unsigned long curGap2;
+extern volatile unsigned long curTime3;
+extern volatile unsigned long curGap3;
 extern volatile unsigned long lastGap;
 extern volatile unsigned long targetGap;
 extern volatile unsigned long compositeLastToothTime;
@@ -177,6 +182,7 @@ extern volatile byte toothSystemCount; //Used for decoders such as Audi 135 wher
 extern volatile unsigned long toothSystemLastToothTime; //As below, but used for decoders where not every tooth count is used for calculation
 extern volatile unsigned long toothLastToothTime; //The time (micros()) that the last tooth was registered
 extern volatile unsigned long toothLastSecToothTime; //The time (micros()) that the last tooth was registered on the secondary input
+extern volatile unsigned long toothLastThirdToothTime; //The time (micros()) that the last tooth was registered on the second cam input
 extern volatile unsigned long toothLastMinusOneToothTime; //The time (micros()) that the tooth before the last tooth was registered
 #ifndef SMALL_FLASH_MODE
 extern volatile unsigned long toothLastMinusOneSecToothTime; //The time (micros()) that the tooth before the last tooth was registered on secondary input

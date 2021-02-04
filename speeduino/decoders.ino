@@ -30,6 +30,7 @@ toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
 
 void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
+void (*triggerTertiaryHandler)(); //Pointer for the tertiary trigger function (Gets pointed to the relevant decoder)
 uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
 int (*getCrankAngle)(); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of each decoder
@@ -38,6 +39,8 @@ volatile unsigned long curTime;
 volatile unsigned long curGap;
 volatile unsigned long curTime2;
 volatile unsigned long curGap2;
+volatile unsigned long curTime3;
+volatile unsigned long curGap3;
 volatile unsigned long lastGap;
 volatile unsigned long targetGap;
 volatile unsigned long compositeLastToothTime;
@@ -48,6 +51,7 @@ volatile byte toothSystemCount = 0; //Used for decoders such as Audi 135 where n
 volatile unsigned long toothSystemLastToothTime = 0; //As below, but used for decoders where not every tooth count is used for calculation
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
 volatile unsigned long toothLastSecToothTime = 0; //The time (micros()) that the last tooth was registered on the secondary input
+volatile unsigned long toothLastThirdToothTime = 0; //The time (micros()) that the last tooth was registered on the second cam input
 volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
 #ifndef SMALL_FLASH_MODE
 volatile unsigned long toothLastMinusOneSecToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered on secondary input
@@ -521,6 +525,30 @@ void triggerSec_missingTooth()
 
       currentStatus.vvt1Angle = curAngle;
     }
+  } //Trigger filter
+}
+
+void triggerThird_missingTooth()
+{
+  curTime3 = micros();
+  curGap3 = curTime3 - toothLastThirdToothTime;
+
+  //Safety check for initial startup
+  if( (toothLastThirdToothTime == 0) )
+  { 
+    curGap3 = 0; 
+    toothLastThirdToothTime = curTime3;
+  }
+
+  if ( curGap3 >= triggerSecFilterTime )
+  {
+    //Record the VVT2 Angle (the only purpose of the third trigger)
+    int16_t curAngle;
+    curAngle = getCrankAngle();
+    while(curAngle > 360) { curAngle -= 360; }
+    curAngle -= configPage4.triggerAngle; //Value at TDC
+    if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CLMinAng; }
+    currentStatus.vvt2Angle = curAngle;
   } //Trigger filter
 }
 
