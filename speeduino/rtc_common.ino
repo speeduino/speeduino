@@ -1,3 +1,4 @@
+#ifdef RTC_ENABLED
 #include "rtc_common.h"
 #include "globals.h"
 #include RTC_LIB_H //Defined in each boards .h file
@@ -110,3 +111,4 @@ void rtc_setTime(byte second, byte minute, byte hour, byte day, byte month, uint
   #endif
 #endif
 }
+#endif

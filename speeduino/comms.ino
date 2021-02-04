@@ -13,7 +13,9 @@ A full copy of the license may be found in the projects root directory
 #include "TS_CommandButtonHandler.h"
 #include "errors.h"
 #include "src/FastCRC/FastCRC.h"
-#include "rtc_common.h"
+#ifdef RTC_ENABLED
+  #include "rtc_common.h"
+#endif
 
 /*
   Processes the data on the serial buffer.
@@ -274,10 +276,12 @@ void command()
         tmp = Serial.read();
         length = word(Serial.read(), tmp);
 
+
         if(cmd == 0x30) //Send output channels command 0x30 is 48dec
         {
           sendValues(offset, length, cmd, 0);
         }
+#ifdef RTC_ENABLED
         else if(cmd == SD_RTC_PAGE) //Request to read SD card RTC
         {
           /*
@@ -404,6 +408,7 @@ void command()
         {
           //Fetch data from file
         }
+#endif
         else
         {
           //No other r/ commands should be called
@@ -560,12 +565,8 @@ void command()
           length1 = Serial.read();
           length2 = Serial.read();
           chunkSize = word(length2, length1);
-
-          //Regular page data
-          chunkPending = true;
-          chunkComplete = 0;
         }
-
+#ifdef RTC_ENABLED
       if(currentPage == SD_READWRITE_PAGE)
         { 
           cmdPending = false;
@@ -593,10 +594,12 @@ void command()
           {
             //Erase file command
             //First 4 bytes are the log number in ASCII
+            /*
             char log1 = Serial.read();
             char log2 = Serial.read();
             char log3 = Serial.read();
             char log4 = Serial.read();
+            */
 
             //Next 2 bytes are the directory block no
             Serial.read();
@@ -630,7 +633,8 @@ void command()
             byte second = Serial.read();
             byte minute = Serial.read();
             byte hour = Serial.read();
-            byte dow = Serial.read();
+            //byte dow = Serial.read();
+            Serial.read(); // This is the day of week value, which is currently unused
             byte day = Serial.read();
             byte month = Serial.read();
             uint16_t year = Serial.read();
@@ -639,6 +643,7 @@ void command()
             rtc_setTime(second, minute, hour, day, month, year);
           }
         }
+#endif
       break;
 
     case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed. This function takes 1.5kb of program space! :S
