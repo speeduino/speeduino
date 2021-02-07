@@ -1566,6 +1566,17 @@ static void serial_print_3dtable(const table3D &currentTable)
   }
 }
 
+static void serial_print_3dtable_with_xbins(const table3D &currentTable)
+{
+  serial_print_3dtable(currentTable);
+  Serial.print(F("    "));
+  for (int x = 0; x < currentTable.xSize; x++)// Horizontal bins
+  {
+    serial_print_3dtable_axis_value(byte(currentTable.axisX[x] / 100));
+  }
+  Serial.println();
+}
+
 /**
  * @brief Similar to sendPage(), however data is sent in human readable format
  * 
@@ -1581,8 +1592,10 @@ void sendPageASCII()
   switch (currentPage)
   {
     case veMapPage:
-      currentTitleIndex = 0;
-      currentTable = fuelTable;
+      Serial.println((const __FlashStringHelper *)&pageTitles[0]);
+      Serial.println();
+      serial_print_3dtable_with_xbins(fuelTable);
+      sendComplete = true;
       break;
 
     case veSetPage:
@@ -1605,8 +1618,10 @@ void sendPageASCII()
       break;
 
     case ignMapPage:
-      currentTitleIndex = 42;// the index to the first char of the third string in pageTitles
-      currentTable = ignitionTable;
+      Serial.println((const __FlashStringHelper *)&pageTitles[42]);
+      Serial.println();
+      serial_print_3dtable_with_xbins(ignitionTable);
+      sendComplete = true;
       break;
 
     case ignSetPage:
@@ -1625,8 +1640,10 @@ void sendPageASCII()
       break;
 
     case afrMapPage:
-      currentTitleIndex = 71;//Array index to next string
-      currentTable = afrTable;
+      Serial.println((const __FlashStringHelper *)&pageTitles[71]);
+      Serial.println();
+      serial_print_3dtable_with_xbins(afrTable);
+      sendComplete = true;    
       break;
 
     case afrSetPage:
@@ -1658,8 +1675,13 @@ void sendPageASCII()
       break;
 
     case boostvvtPage:
-      currentTable = boostTable;
-      currentTitleIndex = 121;
+      Serial.println((const __FlashStringHelper *)&pageTitles[121]);
+      Serial.println();
+      serial_print_3dtable_with_xbins(boostTable);
+      Serial.println((const __FlashStringHelper *)&pageTitles[132]);
+      Serial.println();
+      serial_print_3dtable_with_xbins(vvtTable);
+      sendComplete = true;
       break;
 
     case seqFuelPage:
@@ -1684,8 +1706,10 @@ void sendPageASCII()
       break;
 
     case fuelMap2Page:
-      currentTitleIndex = 117;// the index to the first char of the third string in pageTitles
-      currentTable = fuelTable2;
+      Serial.println((const __FlashStringHelper *)&pageTitles[117]);
+      Serial.println();
+      serial_print_3dtable_with_xbins(fuelTable2);
+      sendComplete = true;    
       break;
 
     case progOutsPage:
@@ -1697,8 +1721,10 @@ void sendPageASCII()
       break;
     
     case ignMap2Page:
-      currentTitleIndex = 149;// the index to the first char of the third string in pageTitles
-      currentTable = ignitionTable2;
+      Serial.println((const __FlashStringHelper *)&pageTitles[149]);
+      Serial.println();
+      serial_print_3dtable_with_xbins(ignitionTable2);
+      sendComplete = true;        
       break;
 
     default:
@@ -1719,13 +1745,7 @@ void sendPageASCII()
       do {
         Serial.println((const __FlashStringHelper *)&pageTitles[currentTitleIndex]);// F macro hack
         Serial.println();
-        serial_print_3dtable(currentTable);
-        Serial.print(F("    "));
-        for (int x = 0; x < currentTable.xSize; x++)// Horizontal bins
-        {
-          serial_print_3dtable_axis_value(byte(currentTable.axisX[x] / 100));
-        }
-        Serial.println();
+        serial_print_3dtable_with_xbins(currentTable);
         if(currentTitleIndex == 121) //Check to see if on boostTable
         {
           currentTitleIndex = 132; //Change over to vvtTable mid display
