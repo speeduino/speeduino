@@ -1584,18 +1584,12 @@ static void serial_print_3dtable_with_xbins(const table3D &currentTable)
  */
 void sendPageASCII()
 {
-  void* pnt_configPage = &configPage2; //Default value is for safety only. Will be changed below if needed.
-  struct table3D currentTable = fuelTable; //Default value is for safety only. Will be changed below if needed.
-  byte currentTitleIndex = 0;// This corresponds to the count up to the first char of a string in pageTitles
-  bool sendComplete = false; //Used to track whether all send operations are complete
-
   switch (currentPage)
   {
     case veMapPage:
       Serial.println((const __FlashStringHelper *)&pageTitles[0]);
       Serial.println();
       serial_print_3dtable_with_xbins(fuelTable);
-      sendComplete = true;
       break;
 
     case veSetPage:
@@ -1614,14 +1608,12 @@ void sendPageASCII()
       Serial.println(configPage2.mapMax);
       // Following loop displays remaining byte values of the page
       serial_println_range(&configPage2.fpPrime, (byte *)&configPage2 + npage_size[veSetPage]);
-      sendComplete = true;
       break;
 
     case ignMapPage:
       Serial.println((const __FlashStringHelper *)&pageTitles[42]);
       Serial.println();
       serial_print_3dtable_with_xbins(ignitionTable);
-      sendComplete = true;
       break;
 
     case ignSetPage:
@@ -1636,14 +1628,12 @@ void sendPageASCII()
       Serial.println(configPage4.dwellLimit);// Little lonely byte stuck between two arrays. No complications just display it.
       serial_print_space_delimited_array(configPage4.dwellCorrectionValues);
       serial_println_range(_end_range_byte_address(configPage4.dwellCorrectionValues), (byte *)&configPage4 + npage_size[ignSetPage]);
-      sendComplete = true;
       break;
 
     case afrMapPage:
       Serial.println((const __FlashStringHelper *)&pageTitles[71]);
       Serial.println();
       serial_print_3dtable_with_xbins(afrTable);
-      sendComplete = true;    
       break;
 
     case afrSetPage:
@@ -1657,7 +1647,6 @@ void sendPageASCII()
       serial_print_space_delimited_array(configPage6.airDenRates);
       // Following loop displays the remaining byte values of the page
       serial_println_range(_end_range_byte_address(configPage6.airDenRates), (byte *)&configPage6 + npage_size[afrSetPage]);
-      sendComplete = true;
 
       //Old configPage4 STARTED HERE!
       //currentTitleIndex = 106;
@@ -1671,7 +1660,6 @@ void sendPageASCII()
       serial_print_space_delimited_array(configPage6.iacCrankBins);
       // Following loop is for remaining byte value of page
       serial_println_range(_end_range_byte_address(configPage6.iacCrankBins), (byte *)&configPage6 + npage_size[afrSetPage]);
-      sendComplete = true;
       break;
 
     case boostvvtPage:
@@ -1681,12 +1669,10 @@ void sendPageASCII()
       Serial.println((const __FlashStringHelper *)&pageTitles[132]);
       Serial.println();
       serial_print_3dtable_with_xbins(vvtTable);
-      sendComplete = true;
       break;
 
     case seqFuelPage:
       serial_print_3dtable(trim1Table);
-      sendComplete = true;
       break;
 
     case canbusPage:
@@ -1694,7 +1680,6 @@ void sendPageASCII()
       //To Display Values from Config Page 10
       Serial.println((const __FlashStringHelper *)&pageTitles[103]);//special typecasting to enable suroutine that the F macro uses
       serial_println_range((byte *)&configPage9, (byte *)&configPage9 + npage_size[canbusPage]);
-      sendComplete = true;
       break;
 
     case warmupPage:
@@ -1702,14 +1687,12 @@ void sendPageASCII()
       #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
       #endif
-      sendComplete = true;
       break;
 
     case fuelMap2Page:
       Serial.println((const __FlashStringHelper *)&pageTitles[117]);
       Serial.println();
       serial_print_3dtable_with_xbins(fuelTable2);
-      sendComplete = true;    
       break;
 
     case progOutsPage:
@@ -1717,66 +1700,20 @@ void sendPageASCII()
       #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
       #endif
-      sendComplete = true;
       break;
     
     case ignMap2Page:
       Serial.println((const __FlashStringHelper *)&pageTitles[149]);
       Serial.println();
       serial_print_3dtable_with_xbins(ignitionTable2);
-      sendComplete = true;        
       break;
 
     default:
     #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
     #endif
-        //Just set default Values to avoid warnings
-        pnt_configPage = &configPage10;
-        currentTable = fuelTable;
-        sendComplete = true;
         break;
   }
-  if(!sendComplete)
-  {
-    if (isMap)
-    {
-      //This is a do while loop that kicks in for the boostvvtPage
-      do {
-        Serial.println((const __FlashStringHelper *)&pageTitles[currentTitleIndex]);// F macro hack
-        Serial.println();
-        serial_print_3dtable_with_xbins(currentTable);
-        if(currentTitleIndex == 121) //Check to see if on boostTable
-        {
-          currentTitleIndex = 132; //Change over to vvtTable mid display
-          currentTable = vvtTable;
-        }
-        else { currentTitleIndex = 0; }
-      } while(currentTitleIndex == 132); //Should never loop unless going to display vvtTable
-    } //is map
-    else
-    {
-      /*if(useChar)
-      {
-       while(pageTitles[currentTitleIndex])
-       {
-        Serial.print(pageTitles[currentTitleIndex]);
-        currentTitleIndex++;
-       }
-       Serial.println();
-       for(byte x=0;x<page_size;x++) Serial.println(*((byte *)pnt_configPage + x));
-      }
-      else
-      {*/
-      //All other bytes can simply be copied from the config table
-      //byte response[npage_size[currentPage]];
-      for (byte x = 0; x < npage_size[currentPage]; x++)
-      {
-        //response[x] = *((byte *)pnt_configPage + x);
-        Serial.write(*((byte *)pnt_configPage + x)); //Each byte is simply the location in memory of the configPage + the offset + the variable number (x)
-      }
-    } //isMap
-  } //sendComplete
 }
 
 /**
