@@ -55,105 +55,11 @@ Calculates and returns the CRC32 value of a given page of memory
 uint32_t calculateCRC32(byte pageNo)
 {
   CRC32 crc32;
-  uint32_t CRC32_val;
-
-  //This sucks (again) for all the 3D map pages that have to have a translation performed
-  switch(pageNo)
+  for(uint16_t x=0; x< npage_size[pageNo]; x++)
   {
-    case veMapPage:
-      for(uint16_t x=0; x< npage_size[veMapPage]; x++)
-      {
-        crc32.update(getPageValue(veMapPage, x));
-      }
-      CRC32_val = crc32.finalize();
-      break;
-
-    case veSetPage:
-      CRC32_val = CRC32::calculate((int8_t *)&configPage2, sizeof(configPage2) );
-      break;
-
-    case ignMapPage:
-      for(uint16_t x=0; x< npage_size[ignMapPage]; x++)
-      {
-        crc32.update(getPageValue(ignMapPage, x));
-      }
-      CRC32_val = crc32.finalize();
-      break;
-
-    case ignSetPage:
-      CRC32_val = CRC32::calculate((int8_t *)&configPage4, sizeof(configPage2) );
-      break;
-
-    case afrMapPage:
-      for(uint16_t x=0; x< npage_size[afrMapPage]; x++)
-      {
-        crc32.update(getPageValue(afrMapPage, x));
-      }
-      CRC32_val = crc32.finalize();
-      break;
-
-    case afrSetPage:
-      CRC32_val = CRC32::calculate((int8_t *)&configPage6, sizeof(configPage2) );
-      break;
-
-    case boostvvtPage:
-      for(uint16_t x=0; x< npage_size[boostvvtPage]; x++)
-      {
-        crc32.update(getPageValue(boostvvtPage, x));
-      }
-      CRC32_val = crc32.finalize(); 
-      break;
-
-    case seqFuelPage:
-      for(uint16_t x=0; x< npage_size[seqFuelPage]; x++)
-      {
-        crc32.update(getPageValue(seqFuelPage, x));
-      }
-      CRC32_val = crc32.finalize();
-      break;
-
-    case canbusPage:
-      CRC32_val = CRC32::calculate((int8_t *)&configPage9, sizeof(configPage9) );
-      break;
-
-    case warmupPage:
-      CRC32_val = CRC32::calculate((int8_t *)&configPage10, sizeof(configPage10) );
-      break;
-
-    case fuelMap2Page:     
-      for(uint16_t x=0; x< npage_size[fuelMap2Page]; x++)
-      {
-        crc32.update(getPageValue(fuelMap2Page, x));
-      }
-      CRC32_val = crc32.finalize();
-      break;
-
-    case wmiMapPage:
-      for(uint16_t x=0; x< npage_size[wmiMapPage]; x++)
-      {
-        crc32.update(getPageValue(wmiMapPage, x));
-      }
-      CRC32_val = crc32.finalize();
-      break;
-      
-    case progOutsPage:
-      CRC32_val = CRC32::calculate((int8_t *)&configPage13, sizeof(configPage13) );
-      break;
-    
-    case ignMap2Page:
-      for(uint16_t x=0; x< npage_size[ignMap2Page]; x++)
-      {
-        crc32.update(getPageValue(ignMap2Page, x));
-      }
-      CRC32_val = crc32.finalize();    
-      break;
-
-    default:
-      CRC32_val = 0;
-      break;
+    crc32.update(getPageValue(pageNo, x));
   }
-  
-  return CRC32_val;
+  return crc32.finalize();
 }
 
 //*********************************************************************************************************************************************************************************
