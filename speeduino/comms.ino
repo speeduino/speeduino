@@ -1587,12 +1587,12 @@ void sendPageASCII()
   switch (currentPage)
   {
     case veMapPage:
-      Serial.println((const __FlashStringHelper *)&pageTitles[0]);
+      Serial.println(F("\nVE Map"));
       serial_print_3dtable_with_xbins(fuelTable);
       break;
 
     case veSetPage:
-      Serial.println((const __FlashStringHelper *)&pageTitles[27]);//27 is the index to the first char in the second sting in pageTitles
+      Serial.println(F("\nPg 2 Cfg"));
       // The following loop displays in human readable form of all byte values in config page 1 up to but not including the first array.
       serial_println_range((byte *)&configPage2, configPage2.wueValues);
       serial_print_space_delimited_array(configPage2.wueValues);
@@ -1608,12 +1608,12 @@ void sendPageASCII()
       break;
 
     case ignMapPage:
-      Serial.println((const __FlashStringHelper *)&pageTitles[42]);
+      Serial.println(F("\nIgnition Map"));
       serial_print_3dtable_with_xbins(ignitionTable);
       break;
 
     case ignSetPage:
-      Serial.println((const __FlashStringHelper *)&pageTitles[56]);
+      Serial.println(F("\nPg 4 Cfg"));
       Serial.println(configPage4.triggerAngle);// configPsge2.triggerAngle is an int so just display it without complication
       // Following loop displays byte values after that first int up to but not including the first array in config page 2
       serial_println_range((byte*)&configPage4.FixAng, configPage4.taeBins);
@@ -1626,22 +1626,18 @@ void sendPageASCII()
       break;
 
     case afrMapPage:
-      Serial.println((const __FlashStringHelper *)&pageTitles[71]);
+      Serial.println(F("\nAFR Map"));
       serial_print_3dtable_with_xbins(afrTable);
       break;
 
     case afrSetPage:
-      Serial.println((const __FlashStringHelper *)&pageTitles[91]);//special typecasting to enable suroutine that the F macro uses
+      Serial.println(F("\nPg 6 Config"));
       serial_println_range((byte *)&configPage6, configPage6.voltageCorrectionBins);
       serial_print_space_delimited_array(configPage6.voltageCorrectionBins);
       serial_print_space_delimited_array(configPage6.injVoltageCorrectionValues);
       serial_print_space_delimited_array(configPage6.airDenBins);
       serial_print_space_delimited_array(configPage6.airDenRates);
-      // Following loop displays the remaining byte values of the page
-      serial_println_range(_end_range_byte_address(configPage6.airDenRates), (byte *)&configPage6 + npage_size[afrSetPage]);
-
-      //Old configPage4 STARTED HERE!
-      Serial.println((const __FlashStringHelper *)&pageTitles[106]);// F macro hack
+      serial_println_range(_end_range_byte_address(configPage6.airDenRates), configPage6.iacCLValues);
       serial_print_space_delimited_array(configPage6.iacCLValues);
       serial_print_space_delimited_array(configPage6.iacOLStepVal);
       serial_print_space_delimited_array(configPage6.iacOLPWMVal);
@@ -1654,28 +1650,29 @@ void sendPageASCII()
       break;
 
     case boostvvtPage:
-      Serial.println((const __FlashStringHelper *)&pageTitles[121]);
+      Serial.println(F("\nBoost Map"));
       serial_print_3dtable_with_xbins(boostTable);
-      Serial.println((const __FlashStringHelper *)&pageTitles[132]);
+      Serial.println(F("\nVVT Map"));
       serial_print_3dtable_with_xbins(vvtTable);
       break;
 
     case seqFuelPage:
+      Serial.println(F("\nTrim 1 Table"));
       serial_print_3dtable(trim1Table);
       break;
 
     case canbusPage:
-      Serial.println((const __FlashStringHelper *)&pageTitles[103]);//special typecasting to enable suroutine that the F macro uses
+      Serial.println(F("\nPage 9 Cfg"));
       serial_println_range((byte *)&configPage9, (byte *)&configPage9 + npage_size[canbusPage]);
       break;
 
     case fuelMap2Page:
-      Serial.println((const __FlashStringHelper *)&pageTitles[117]);
+      Serial.println(F("\n2nd Fuel Map"));
       serial_print_3dtable_with_xbins(fuelTable2);
       break;
    
     case ignMap2Page:
-      Serial.println((const __FlashStringHelper *)&pageTitles[149]);
+      Serial.println(F("\n2nd Ignition Map"));
       serial_print_3dtable_with_xbins(ignitionTable2);
       break;
 
