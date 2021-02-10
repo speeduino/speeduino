@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    16
+  #define CURRENT_DATA_VERSION    17
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -436,15 +436,23 @@ void doUpdates()
   {
     //202012
     configPage10.spark2Mode = 0; //Disable 2nd spark table
-    
 
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 16);
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 16)
+  {
     //Fix for wrong placed page 13
     for(int x=EEPROM_CONFIG14_END; x>=EEPROM_CONFIG13_START; x--)
     {
       EEPROM.update(x, EEPROM.read(x-112));
     }
+
+    configPage2.useDwellMap = 0; //Dwell map added, use old fixed value as default
+
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 16);
+    EEPROM.write(EEPROM_DATA_VERSION, 17);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)
