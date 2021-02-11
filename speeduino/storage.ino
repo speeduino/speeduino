@@ -425,17 +425,26 @@ void writeConfig(byte tableNum)
 
     case wmiMapPage:
       /*---------------------------------------------------
-      | WMI tables (See storage.h for data layout) - Page 12
-      | 8x8 table itself + the 8 values along each of the axis
+      | WMI and Dwell tables (See storage.h for data layout) - Page 12
+      | 8x8 WMI table itself + the 8 values along each of the axis
+      | 4x4 Dwell table itself + the 4 values along each of the axis
       -----------------------------------------------------*/
       if(EEPROM.read(EEPROM_CONFIG12_XSIZE) != wmiTable.xSize) { EEPROM.write(EEPROM_CONFIG12_XSIZE,wmiTable.xSize); writeCounter++; } //Write the wmi Table RPM dimension size
       if(EEPROM.read(EEPROM_CONFIG12_YSIZE) != wmiTable.ySize) { EEPROM.write(EEPROM_CONFIG12_YSIZE,wmiTable.ySize); writeCounter++; } //Write the wmi Table MAP dimension size
+      if(EEPROM.read(EEPROM_CONFIG12_XSIZE3) != dwellTable.xSize) { EEPROM.write(EEPROM_CONFIG12_XSIZE3,dwellTable.xSize); writeCounter++; } //Write the Dwell Table RPM dimension size
+      if(EEPROM.read(EEPROM_CONFIG12_YSIZE3) != dwellTable.ySize) { EEPROM.write(EEPROM_CONFIG12_YSIZE3,dwellTable.ySize); writeCounter++; } //Write the Dwell Table MAP dimension size
 
       for(int x=EEPROM_CONFIG12_MAP; x<EEPROM_CONFIG12_XBINS; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; }
         offset = x - EEPROM_CONFIG12_MAP;
         if(EEPROM.read(x) != (wmiTable.values[7-(offset/8)][offset%8]) ) { EEPROM.write(x, wmiTable.values[7-(offset/8)][offset%8]); writeCounter++; }  //Write the 8x8 map
+      }
+      for(int x=EEPROM_CONFIG12_MAP3; x<EEPROM_CONFIG12_XBINS3; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; }
+        offset = x - EEPROM_CONFIG12_MAP3;
+        if(EEPROM.read(x) != (dwellTable.values[3-(offset/4)][offset%4]) ) { EEPROM.write(x, dwellTable.values[3-(offset/4)][offset%4]); writeCounter++; }  //Write the 4x4 map
       }
       //RPM bins
       for(int x=EEPROM_CONFIG12_XBINS; x<EEPROM_CONFIG12_YBINS; x++)
@@ -444,12 +453,24 @@ void writeConfig(byte tableNum)
         offset = x - EEPROM_CONFIG12_XBINS;
         if(EEPROM.read(x) != byte(wmiTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(wmiTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
       }
+      for(int x=EEPROM_CONFIG12_XBINS3; x<EEPROM_CONFIG12_YBINS3; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; }
+        offset = x - EEPROM_CONFIG12_XBINS3;
+        if(EEPROM.read(x) != byte(dwellTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(dwellTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
+      }
       //MAP bins
-      for(int x=EEPROM_CONFIG12_YBINS; x<EEPROM_CONFIG12_END; x++)
+      for(int x=EEPROM_CONFIG12_YBINS; x<EEPROM_CONFIG12_XSIZE2; x++)
       {
         if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; }
         offset = x - EEPROM_CONFIG12_YBINS;
         if(EEPROM.read(x) != byte(wmiTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)) { EEPROM.write(x, byte(wmiTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; }
+      }
+      for(int x=EEPROM_CONFIG12_YBINS3; x<EEPROM_CONFIG12_END; x++)
+      {
+        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; }
+        offset = x - EEPROM_CONFIG12_YBINS3;
+        if(EEPROM.read(x) != byte(dwellTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)) { EEPROM.write(x, byte(dwellTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; }
       }
 
       if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
@@ -756,12 +777,18 @@ void loadConfig()
   }
 
   //*********************************************************************************************************************************************************************************
-  // WMI table load
+  // WMI and Dwell table load
   for(int x=EEPROM_CONFIG12_MAP; x<EEPROM_CONFIG12_XBINS; x++)
   {
     offset = x - EEPROM_CONFIG12_MAP;
     wmiTable.values[7-(offset/8)][offset%8] = EEPROM.read(x); //Read the 8x8 map
   }
+  for(int x=EEPROM_CONFIG12_MAP3; x<EEPROM_CONFIG12_XBINS3; x++)
+  {
+    offset = x - EEPROM_CONFIG12_MAP3;
+    dwellTable.values[3-(offset/4)][offset%4] = EEPROM.read(x); //Read the 4x4 map
+  }
+
 
   //RPM bins
   for(int x=EEPROM_CONFIG12_XBINS; x<EEPROM_CONFIG12_YBINS; x++)
@@ -769,12 +796,22 @@ void loadConfig()
     offset = x - EEPROM_CONFIG12_XBINS;
     wmiTable.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER); //RPM bins are divided by 100 when stored. Multiply them back now
   }
+  for(int x=EEPROM_CONFIG12_XBINS3; x<EEPROM_CONFIG12_YBINS3; x++)
+  {
+    offset = x - EEPROM_CONFIG12_XBINS3;
+    dwellTable.axisX[offset] = (EEPROM.read(x) * TABLE_RPM_MULTIPLIER);
+  }
 
   //TPS/MAP bins
-  for(int x=EEPROM_CONFIG12_YBINS; x<EEPROM_CONFIG12_END; x++)
+  for(int x=EEPROM_CONFIG12_YBINS; x<EEPROM_CONFIG12_XSIZE2; x++)
   {
     offset = x - EEPROM_CONFIG12_YBINS;
     wmiTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER; //TABLE_LOAD_MULTIPLIER is NOT used for boost as it is TPS based (0-100)
+  }
+  for(int x=EEPROM_CONFIG12_YBINS3; x<EEPROM_CONFIG12_END; x++)
+  {
+    offset = x - EEPROM_CONFIG12_YBINS3;
+    dwellTable.axisY[offset] = EEPROM.read(x) * TABLE_LOAD_MULTIPLIER;
   }
   
   //*********************************************************************************************************************************************************************************

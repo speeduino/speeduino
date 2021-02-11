@@ -32,12 +32,13 @@ This file is used for everything related to maps/tables including their definiti
 #define TABLE_TRIM2_SIZE    6;
 #define TABLE_TRIM3_SIZE    6;
 #define TABLE_TRIM4_SIZE    6;
+#define TABLE_DWELL_SIZE    4;
 
 /*
 *********** WARNING! ***********
 YOU MUST UPDATE THE TABLE COUNTS IN THE LINE BELOW WHENEVER A NEW TABLE IS ADDED!
 */
-#define TABLE_HEAP_SIZE     (5 * TABLE3D_SIZE_16) + (4 * TABLE3D_SIZE_8) + (4 * TABLE3D_SIZE_6)+1
+#define TABLE_HEAP_SIZE     (5 * TABLE3D_SIZE_16) + (4 * TABLE3D_SIZE_8) + (4 * TABLE3D_SIZE_6) + (1 * TABLE3D_SIZE_4)+1
 
 static uint8_t _3DTable_heap[TABLE_HEAP_SIZE];
 static uint16_t _heap_pointer = 0;
