@@ -112,8 +112,7 @@ int ignition7EndAngle = 0;
 int ignition8EndAngle = 0;
 
 //These are variables used across multiple files
-byte fullStatus[LOG_ENTRY_SIZE];
-byte fsIntIndex[31] = {4, 14, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 96, 101}; //int indexes in fullStatus array
+const byte PROGMEM fsIntIndex[31] = {4, 14, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 96, 101}; //int indexes in fullStatus array
 bool initialisationComplete = false; //Tracks whether the setup() function has run completely
 byte fpPrimeTime = 0; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 volatile uint16_t mainLoopCount;

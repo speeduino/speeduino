@@ -118,11 +118,9 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG7_MAP2   1339
 #define EEPROM_CONFIG7_XBINS2 1403
 #define EEPROM_CONFIG7_YBINS2 1411
-
 #define EEPROM_CONFIG7_XSIZE3 1419
 #define EEPROM_CONFIG7_YSIZE3 1420
 #define EEPROM_CONFIG7_MAP3   1421
-
 #define EEPROM_CONFIG7_XBINS3 1485
 #define EEPROM_CONFIG7_YBINS3 1493
 #define EEPROM_CONFIG7_END    1501
@@ -162,14 +160,14 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG12_XBINS 2451
 #define EEPROM_CONFIG12_YBINS 2459
 #define EEPROM_CONFIG12_END   2467
-#define EEPROM_CONFIG13_START 2468
-#define EEPROM_CONFIG13_END   2596
-#define EEPROM_CONFIG14_XSIZE 2596
-#define EEPROM_CONFIG14_YSIZE 2597
-#define EEPROM_CONFIG14_MAP   2598
-#define EEPROM_CONFIG14_XBINS 2854
-#define EEPROM_CONFIG14_YBINS 2870
-#define EEPROM_CONFIG14_END   2886
+#define EEPROM_CONFIG13_START 2580
+#define EEPROM_CONFIG13_END   2708
+#define EEPROM_CONFIG14_XSIZE 2708
+#define EEPROM_CONFIG14_YSIZE 2709
+#define EEPROM_CONFIG14_MAP   2710
+#define EEPROM_CONFIG14_XBINS 2966
+#define EEPROM_CONFIG14_YBINS 2982
+#define EEPROM_CONFIG14_END   2998
 
 
 //Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)

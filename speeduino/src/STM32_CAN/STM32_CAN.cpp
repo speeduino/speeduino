@@ -124,7 +124,7 @@ void STM32_CAN::begin()
   #endif
 }
 
-int STM32_CAN::write(CAN_message_t &CAN_tx_msg)
+void STM32_CAN::writeTxMailbox(uint8_t mb_num, CAN_message_t &CAN_tx_msg)
 {
   uint32_t out = 0;
   if (CAN_tx_msg.flags.extended == true) { // Extended frame format
@@ -140,50 +140,97 @@ int STM32_CAN::write(CAN_message_t &CAN_tx_msg)
 
   if (_channel == _CAN1)
   {
-    // Check if the mailbox is empty
-    if (CAN1->sTxMailBox[0].TIR & 0x1UL) {
-      //Serial.println("transmit Fail");
-      return -1; // transmit of the previous message has failed
-    }
-    else { // mailbox is empty, so it's ok to send new message
-      CAN1->sTxMailBox[0].TDTR &= ~(0xF);
-      CAN1->sTxMailBox[0].TDTR |= CAN_tx_msg.len & 0xFUL;
-      CAN1->sTxMailBox[0].TDLR  = (((uint32_t) CAN_tx_msg.buf[3] << 24) |
-                                   ((uint32_t) CAN_tx_msg.buf[2] << 16) |
-                                   ((uint32_t) CAN_tx_msg.buf[1] <<  8) |
-                                   ((uint32_t) CAN_tx_msg.buf[0]      ));
-      CAN1->sTxMailBox[0].TDHR  = (((uint32_t) CAN_tx_msg.buf[7] << 24) |
-                                   ((uint32_t) CAN_tx_msg.buf[6] << 16) |
-                                   ((uint32_t) CAN_tx_msg.buf[5] <<  8) |
-                                   ((uint32_t) CAN_tx_msg.buf[4]      ));
+    CAN1->sTxMailBox[mb_num].TDTR &= ~(0xF);
+    CAN1->sTxMailBox[mb_num].TDTR |= CAN_tx_msg.len & 0xFUL;
+    CAN1->sTxMailBox[mb_num].TDLR  = (((uint32_t) CAN_tx_msg.buf[3] << 24) |
+                                      ((uint32_t) CAN_tx_msg.buf[2] << 16) |
+                                      ((uint32_t) CAN_tx_msg.buf[1] <<  8) |
+                                      ((uint32_t) CAN_tx_msg.buf[0]      ));
+    CAN1->sTxMailBox[mb_num].TDHR  = (((uint32_t) CAN_tx_msg.buf[7] << 24) |
+                                      ((uint32_t) CAN_tx_msg.buf[6] << 16) |
+                                      ((uint32_t) CAN_tx_msg.buf[5] <<  8) |
+                                      ((uint32_t) CAN_tx_msg.buf[4]      ));
 
-      // Send Go
-      CAN1->sTxMailBox[0].TIR = out | STM32_CAN_TIR_TXRQ;
-    return 1; // transmit done
+    // Send Go
+    CAN1->sTxMailBox[mb_num].TIR = out | STM32_CAN_TIR_TXRQ;
+  }
+  #if defined(CAN2)
+  if (_channel == _CAN2)
+  {
+    CAN2->sTxMailBox[mb_num].TDTR &= ~(0xF);
+    CAN2->sTxMailBox[mb_num].TDTR |= CAN_tx_msg.len & 0xFUL;
+    CAN2->sTxMailBox[mb_num].TDLR  = (((uint32_t) CAN_tx_msg.buf[3] << 24) |
+                                      ((uint32_t) CAN_tx_msg.buf[2] << 16) |
+                                      ((uint32_t) CAN_tx_msg.buf[1] <<  8) |
+                                      ((uint32_t) CAN_tx_msg.buf[0]      ));
+    CAN2->sTxMailBox[mb_num].TDHR  = (((uint32_t) CAN_tx_msg.buf[7] << 24) |
+                                      ((uint32_t) CAN_tx_msg.buf[6] << 16) |
+                                      ((uint32_t) CAN_tx_msg.buf[5] <<  8) |
+                                      ((uint32_t) CAN_tx_msg.buf[4]      ));
+    // Send Go
+    CAN2->sTxMailBox[mb_num].TIR = out | STM32_CAN_TIR_TXRQ;
+  }
+  #endif
+}
+
+int STM32_CAN::write(CAN_message_t &CAN_tx_msg)
+{
+  volatile int mailbox = 0;
+
+  if (_channel == _CAN1)
+  {
+    // Check if one of the three mailboxes is empty
+    while(CAN1->sTxMailBox[mailbox].TIR & 0x1UL &&  mailbox++ < 3);
+
+    if (mailbox >= 3) {
+      //Serial.println("transmit Fail");
+      return -1; // transmit failed, no mailboxes available
+    }
+    else { // empty mailbox found, so it's ok to send new message
+      writeTxMailbox(mailbox, CAN_tx_msg);
+      return 1; // transmit done
     }
   }
   #if defined(CAN2)
   if (_channel == _CAN2)
   {
-    // Check if the mailbox is empty
-    if (CAN2->sTxMailBox[0].TIR & 0x1UL) {
-      //Serial.println("transmit Fail");
-      return -1; // transmit of the previous message has failed
-    }
-    else { // mailbox is empty, so it's ok to send new message
-      CAN2->sTxMailBox[0].TDTR &= ~(0xF);
-      CAN2->sTxMailBox[0].TDTR |= CAN_tx_msg.len & 0xFUL;
-      CAN2->sTxMailBox[0].TDLR  = (((uint32_t) CAN_tx_msg.buf[3] << 24) |
-                                   ((uint32_t) CAN_tx_msg.buf[2] << 16) |
-                                   ((uint32_t) CAN_tx_msg.buf[1] <<  8) |
-                                   ((uint32_t) CAN_tx_msg.buf[0]      ));
-      CAN2->sTxMailBox[0].TDHR  = (((uint32_t) CAN_tx_msg.buf[7] << 24) |
-                                   ((uint32_t) CAN_tx_msg.buf[6] << 16) |
-                                   ((uint32_t) CAN_tx_msg.buf[5] <<  8) |
-                                   ((uint32_t) CAN_tx_msg.buf[4]      ));
+    // Check if one of the three mailboxes is empty
+    while(CAN2->sTxMailBox[mailbox].TIR & 0x1UL &&  mailbox++ < 3);
 
-      // Send Go
-      CAN2->sTxMailBox[0].TIR = out | STM32_CAN_TIR_TXRQ;
+    if (mailbox >= 3) {
+      //Serial.println("transmit Fail");
+      return -1; // transmit failed, no mailboxes available
+    }
+    else { // empty mailbox found, so it's ok to send new message
+      writeTxMailbox(mailbox, CAN_tx_msg);
+      return 1; // transmit done
+    }
+  }
+  #endif
+}
+
+int STM32_CAN::write(CAN_MAILBOX mb_num, CAN_message_t &CAN_tx_msg)
+{
+  if (_channel == _CAN1)
+  {
+    if (CAN1->sTxMailBox[mb_num].TIR & 0x1UL) {
+      //Serial.println("transmit Fail");
+      return -1; // transmit failed, mailbox was not empty
+    }
+    else { // mailbox was empty, so it's ok to send new message
+      writeTxMailbox(mb_num, CAN_tx_msg);
+      return 1; // transmit done
+    }
+  }
+  #if defined(CAN2)
+  if (_channel == _CAN2)
+  {
+    if (CAN2->sTxMailBox[mb_num].TIR & 0x1UL) {
+      //Serial.println("transmit Fail");
+      return -1; // transmit failed, mailbox was not empty
+    }
+    else { // mailbox was empty, so it's ok to send new message
+      writeTxMailbox(mb_num, CAN_tx_msg);
       return 1; // transmit done
     }
   }
