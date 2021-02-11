@@ -528,28 +528,29 @@ void resetConfigPages()
 
 namespace
 {
-  inline int8_t offsetToValueYIndex(const table3D *pTable, uint16_t offset)
+  inline int loadMemoryBlock(byte *pStart, const byte *pEnd, int index)
   {
-    //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). 
-    return pTable->xSize-1 - (offset / pTable->xSize);
-  }
-
-  inline int8_t offsetToValueXIndex(const table3D *pTable, uint16_t offset)
-  {
-    return offset % pTable->xSize;
-  }
-
-  int loadTableValues(table3D *pTable, int index)
-  {
-    for(int offset=0; offset<sq(pTable->xSize); ++offset,++index)
+    while (pStart!=pEnd)
     {
-      pTable->values[offsetToValueYIndex(pTable, offset)][offsetToValueXIndex(pTable, offset)] = EEPROM.read(index);
+      *pStart = EEPROM.read(index);
+      ++pStart;
+      ++index;
+    }
+    return index;
+  }
+
+  inline int loadTableValues(table3D *pTable, int index)
+  {
+    int rowSize = pTable->xSize;
+    for(int y=pTable->xSize-1; y>=0; --y)
+    {
+      index = loadMemoryBlock(pTable->values[y], pTable->values[y]+rowSize, index);
     }
 
     return index; 
   }
 
-  int loadTableAxisX(table3D *pTable, int index, int xAxisMultiplier)
+  inline int loadTableAxisX(table3D *pTable, int index, int xAxisMultiplier)
   {
     for(int offset=0; offset<pTable->xSize; ++offset,++index)
     {
@@ -558,7 +559,7 @@ namespace
     return index;
   }
 
-  int loadTableAxisY(table3D *pTable, int index, int yAxisMultiplier)
+  inline int loadTableAxisY(table3D *pTable, int index, int yAxisMultiplier)
   {
     for(int offset=0; offset<pTable->xSize; ++offset,++index)
     {
@@ -568,24 +569,13 @@ namespace
     return index;
   }
 
-  int loadTable(table3D *pTable, int index, int xAxisMultiplier, int yAxisMultiplier)
+  inline int loadTable(table3D *pTable, int index, int xAxisMultiplier, int yAxisMultiplier)
   {
     return loadTableAxisY(pTable,
                           loadTableAxisX(pTable, 
                                           loadTableValues(pTable, index), 
                                           xAxisMultiplier),
                           yAxisMultiplier);
-  }
-
-  int loadMemoryBlock(byte *pStart, byte *pEnd, int index)
-  {
-    while (pStart!=pEnd)
-    {
-      *pStart = EEPROM.read(index);
-      ++pStart;
-      ++index;
-    }
-    return index;
   }
 }
 
