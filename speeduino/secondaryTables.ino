@@ -86,19 +86,23 @@ void calculateSecondarySpark()
     {
       BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE);
       currentStatus.advance2 = getAdvance2();
+      //make sure we don't have a negative value in the multiplier table (sharing a signed 8 bit table)
+      if(currentStatus.advance2 < 0) { currentStatus.advance2 = 0; }
       //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
-      uint16_t combinedAdvance = ((uint16_t)currentStatus.advance1 * (uint16_t)currentStatus.advance2) / 100;
-      if(combinedAdvance <= 255) { currentStatus.advance = combinedAdvance; }
-      else { currentStatus.advance = 255; }
+      int16_t combinedAdvance = ((int16_t)currentStatus.advance1 * (int16_t)currentStatus.advance2) / 100;
+      //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
+      if(combinedAdvance <= 127) { currentStatus.advance = combinedAdvance; }
+      else { currentStatus.advance = 127; }
     }
     else if(configPage10.spark2Mode == SPARK2_MODE_ADD)
     {
       BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
       currentStatus.advance2 = getAdvance2();
       //Spark tables are added together, but a check is made to make sure this won't overflow the 8-bit VE value
-      uint16_t combinedAdvance = (uint16_t)currentStatus.advance1 + (uint16_t)currentStatus.advance2;
-      if(combinedAdvance <= 255) { currentStatus.advance = combinedAdvance; }
-      else { currentStatus.advance = 255; }
+      int16_t combinedAdvance = (int16_t)currentStatus.advance1 + (int16_t)currentStatus.advance2;
+      //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
+      if(combinedAdvance <= 127) { currentStatus.advance = combinedAdvance; }
+      else { currentStatus.advance = 127; }
     }
     else if(configPage10.spark2Mode == SPARK2_MODE_CONDITIONAL_SWITCH )
     {

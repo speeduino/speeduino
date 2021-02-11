@@ -25,6 +25,31 @@
 #define progOutsPage 13
 #define ignMap2Page  14
 
+//Hardcoded TunerStudio addresses/commands for various SD/RTC commands
+#define SD_READWRITE_PAGE   0x11
+#define SD_RTC_PAGE         0x07
+#define SD_READ_STAT_OFFSET 0x0000
+#define SD_READ_STAT_LENGTH 0x1000
+#define SD_READ_DIR_OFFSET  0x0100
+#define SD_READ_DIR_LENGTH  0x0200
+#define SD_READ_SEC_OFFSET  0x0200
+#define SD_READ_SEC_LENGTH  0x0400
+#define SD_READ_STRM_OFFSET 0x0400
+#define SD_READ_STRM_LENGTH 0x0100
+#define SD_WRITE_DO_OFFSET  0x0000
+#define SD_WRITE_DO_LENGTH  0x0001
+#define SD_WRITE_SEC_OFFSET 0x0300
+#define SD_WRITE_SEC_LENGTH 0x0402
+#define SD_ERASEFILE_OFFSET 0x0600
+#define SD_ERASEFILE_LENGTH 0x0600
+#define SD_SPD_TEST_OFFSET  0x0700
+#define SD_SPD_TEST_LENGTH  0x0400
+#define SD_RTC_WRITE_OFFSET 0x7E02
+#define SD_RTC_WRITE_LENGTH 0x0900
+#define SD_RTC_READ_OFFSET  0x4D02
+#define SD_RTC_READ_LENGTH  0x0800
+
+
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
 unsigned long requestCount = 0; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
@@ -73,6 +98,6 @@ void testComm();
 void commandButtons(int16_t);
 void sendCompositeLog(uint8_t);
 byte getPageValue(byte, uint16_t);
-void updateFullStatus();
+byte getStatusEntry(uint16_t);
 
 #endif // COMMS_H

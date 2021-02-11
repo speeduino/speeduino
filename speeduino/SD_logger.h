@@ -18,8 +18,8 @@
     #define SD_CS_PIN 10 //This is a made up value for now
 #endif
 
-//Sd2Card SD;
-//SdVolume SD_volume;
+Sd2Card SD_card;
+SdVolume SD_volume;
 File logFile;
 
 uint8_t SD_status = SD_STATUS_OFF;
@@ -27,6 +27,7 @@ uint8_t SD_status = SD_STATUS_OFF;
 void initSD();
 void writeSDLogEntry();
 void endSD();
+void setTS_SD_status();
 
 #endif //SD_LOGGING
 #endif //SD_H
