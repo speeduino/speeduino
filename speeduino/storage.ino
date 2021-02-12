@@ -29,6 +29,62 @@ void writeAllConfig()
   if (eepromWritesPending == false) { writeConfig(ignMap2Page); }
 }
 
+namespace {
+
+  /*
+  We only ever write to the EEPROM where the new value is different from the currently stored byte
+  This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
+  */
+  inline int16_t update(EERef eeRef, uint8_t value, int16_t counter)
+  {
+    if (eeRef!=value)
+    {
+      eeRef = value;
+      return counter+1;
+    }
+    return counter;
+  }
+
+  template<class _InIt>
+  inline int16_t write_range_divisor(EEPtr &eePtr, int8_t divisor, _InIt pStart, const _InIt pEnd, int16_t counter)
+  {
+    while (counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
+    {
+      counter = update(*eePtr, (*pStart)/divisor, counter);
+      ++pStart; ++eePtr;
+    }
+    return counter;
+  }
+
+  template<class _InIt>
+  inline int16_t write_range(EEPtr &eePtr, _InIt pStart, const _InIt pEnd, int16_t counter)
+  {
+    return write_range_divisor(eePtr, 1, pStart, pEnd, counter);
+  }
+
+  inline int16_t writeTableValues(const table3D *pTable, EEPtr &eePtr, int16_t counter)
+  {
+    byte **pRow = pTable->values + (pTable->xSize-1);
+    byte **pRowEnd = pTable->values - 1;
+    int rowSize = pTable->xSize;
+    while (counter<=EEPROM_MAX_WRITE_BLOCK && pRow!=pRowEnd)
+    {
+      counter = write_range(eePtr, *pRow, *pRow+rowSize, counter);
+      --pRow;
+    }
+    return counter;
+  }
+
+  inline int16_t writeTable(const table3D *pTable, int16_t xAxisDivisor, int16_t yAxisDivisor, EEPtr &eePtr, int16_t counter)
+  {
+    counter = update(*eePtr, pTable->xSize, counter); ++eePtr;
+    counter = update(*eePtr, pTable->ySize, counter); ++eePtr;
+    counter = writeTableValues(pTable, eePtr, counter);
+    counter = write_range_divisor(eePtr, xAxisDivisor, pTable->axisX, pTable->axisX+pTable->xSize, counter);
+    return write_range_divisor(eePtr, yAxisDivisor, pTable->axisY, pTable->axisY+pTable->ySize, counter);
+  }
+}
+
 
 /*
 Takes the current configuration (config pages and maps)
@@ -40,13 +96,8 @@ void writeConfig(byte tableNum)
   We only ever write to the EEPROM where the new value is different from the currently stored byte
   This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
   */
-
-  int offset;
-  int i, z, y;
   int writeCounter = 0;
-  byte newVal; //Used for tempoerarily storing the new intended value
-  //Create a pointer to the config page
-  byte* pnt_configPage;
+  EEPtr eePtr(0);
 
   switch(tableNum)
   {
@@ -55,31 +106,9 @@ void writeConfig(byte tableNum)
       | Fuel table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      if(EEPROM.read(EEPROM_CONFIG1_XSIZE) != fuelTable.xSize) { EEPROM.write(EEPROM_CONFIG1_XSIZE, fuelTable.xSize); writeCounter++; } //Write the VE Tables RPM dimension size
-      if(EEPROM.read(EEPROM_CONFIG1_YSIZE) != fuelTable.ySize) { EEPROM.write(EEPROM_CONFIG1_YSIZE, fuelTable.ySize); writeCounter++; } //Write the VE Tables MAP/TPS dimension size
-      for(int x=EEPROM_CONFIG1_MAP; x<EEPROM_CONFIG1_XBINS; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG1_MAP;
-        if( EEPROM.read(x) != (fuelTable.values[15-(offset/16)][offset%16]) ) { EEPROM.write(x, fuelTable.values[15-(offset/16)][offset%16]); writeCounter++; }  //Write the 16x16 map
-      }
-
-      //RPM bins
-      for(int x=EEPROM_CONFIG1_XBINS; x<EEPROM_CONFIG1_YBINS; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG1_XBINS;
-        if( EEPROM.read(x) != (byte(fuelTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) ) { EEPROM.write(x, byte(fuelTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-      }
-      //TPS/MAP bins
-      for(int x=EEPROM_CONFIG1_YBINS; x<EEPROM_CONFIG2_START; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG1_YBINS;
-        if( EEPROM.read(x) != (byte(fuelTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)) ) { EEPROM.write(x, byte(fuelTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; } //Table load is divided by 2 (Allows for MAP up to 511)
-      }
-      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
-      else { eepromWritesPending = false; }
+      eePtr = EEPROM_CONFIG1_XSIZE;
+      writeCounter = writeTable(&fuelTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, eePtr, writeCounter);
+      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
       //That concludes the writing of the VE table
 
@@ -88,16 +117,9 @@ void writeConfig(byte tableNum)
       | Config page 2 (See storage.h for data layout)
       | 64 byte long config table
       -----------------------------------------------------*/
-      pnt_configPage = (byte *)&configPage2; //Create a pointer to Page 2 in memory
-      for(int x=EEPROM_CONFIG2_START; x<EEPROM_CONFIG2_END; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG2_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG2_START))); writeCounter++; }
-      }
-
-      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
-      else { eepromWritesPending = false; }
-
+      eePtr = EEPROM_CONFIG2_START;
+      writeCounter = write_range(eePtr, (byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2), writeCounter);
+      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
 
     case ignMapPage:
@@ -106,36 +128,9 @@ void writeConfig(byte tableNum)
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
       //Begin writing the Ignition table, basically the same thing as above
-      if(EEPROM.read(EEPROM_CONFIG3_XSIZE) != ignitionTable.xSize) { EEPROM.write(EEPROM_CONFIG3_XSIZE,ignitionTable.xSize); writeCounter++; } //Write the ignition Table RPM dimension size
-      if(EEPROM.read(EEPROM_CONFIG3_YSIZE) != ignitionTable.ySize) { EEPROM.write(EEPROM_CONFIG3_YSIZE,ignitionTable.ySize); writeCounter++; } //Write the ignition Table MAP/TPS dimension size
-
-      for(int x=EEPROM_CONFIG3_MAP; x<EEPROM_CONFIG3_XBINS; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG3_MAP;
-        newVal = ignitionTable.values[15-(offset/16)][offset%16];
-        if(EEPROM.read(x) != newVal) { EEPROM.write(x, newVal); writeCounter++; }  //Write the 16x16 map with translation
-      }
-      //RPM bins
-      for(int x=EEPROM_CONFIG3_XBINS; x<EEPROM_CONFIG3_YBINS; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG3_XBINS;
-        newVal = ignitionTable.axisX[offset]/TABLE_RPM_MULTIPLIER;
-        if(EEPROM.read(x) != newVal) { EEPROM.write(x, newVal); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-      }
-      //TPS/MAP bins
-      for(int x=EEPROM_CONFIG3_YBINS; x<EEPROM_CONFIG4_START; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG3_YBINS;
-        newVal = ignitionTable.axisY[offset]/TABLE_LOAD_MULTIPLIER;
-        if(EEPROM.read(x) != newVal) { EEPROM.write(x, newVal); writeCounter++; } //Table load is divided by 2 (Allows for MAP up to 511)
-      }
-
-      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
-      else { eepromWritesPending = false; }
-
+      eePtr = EEPROM_CONFIG3_XSIZE;
+      writeCounter = writeTable(&ignitionTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, eePtr, writeCounter);
+      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
 
     case ignSetPage:
@@ -143,16 +138,9 @@ void writeConfig(byte tableNum)
       | Config page 2 (See storage.h for data layout)
       | 64 byte long config table
       -----------------------------------------------------*/
-      pnt_configPage = (byte *)&configPage4; //Create a pointer to Page 2 in memory
-      for(int x=EEPROM_CONFIG4_START; x<EEPROM_CONFIG4_END; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG4_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG4_START))); writeCounter++; }
-      }
-
-      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
-      else { eepromWritesPending = false; }
-
+      eePtr = EEPROM_CONFIG4_START;
+      writeCounter = write_range(eePtr, (byte *)&configPage4, (byte *)&configPage4+sizeof(configPage4), writeCounter);
+      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
 
     case afrMapPage:
@@ -161,33 +149,9 @@ void writeConfig(byte tableNum)
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
       //Begin writing the Ignition table, basically the same thing as above
-      if(EEPROM.read(EEPROM_CONFIG5_XSIZE) != afrTable.xSize) { EEPROM.write(EEPROM_CONFIG5_XSIZE,afrTable.xSize); writeCounter++; } //Write the ignition Table RPM dimension size
-      if(EEPROM.read(EEPROM_CONFIG5_YSIZE) != afrTable.ySize) { EEPROM.write(EEPROM_CONFIG5_YSIZE,afrTable.ySize); writeCounter++; } //Write the ignition Table MAP/TPS dimension size
-
-      for(int x=EEPROM_CONFIG5_MAP; x<EEPROM_CONFIG5_XBINS; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG5_MAP;
-        if(EEPROM.read(x) != (afrTable.values[15-(offset/16)][offset%16]) ) { EEPROM.write(x, afrTable.values[15-(offset/16)][offset%16]); writeCounter++; }  //Write the 16x16 map
-      }
-      //RPM bins
-      for(int x=EEPROM_CONFIG5_XBINS; x<EEPROM_CONFIG5_YBINS; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG5_XBINS;
-        if(EEPROM.read(x) != byte(afrTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(afrTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-      }
-      //TPS/MAP bins
-      for(int x=EEPROM_CONFIG5_YBINS; x<EEPROM_CONFIG6_START; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG5_YBINS;
-        if(EEPROM.read(x) != byte(afrTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)) { EEPROM.write(x, byte(afrTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; } //Table load is divided by 2 (Allows for MAP up to 511)
-      }
-
-      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
-      else { eepromWritesPending = false; }
-
+      eePtr = EEPROM_CONFIG5_XSIZE;
+      writeCounter = writeTable(&afrTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, eePtr, writeCounter);
+      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
 
     case afrSetPage:
@@ -195,16 +159,9 @@ void writeConfig(byte tableNum)
       | Config page 3 (See storage.h for data layout)
       | 64 byte long config table
       -----------------------------------------------------*/
-      pnt_configPage = (byte *)&configPage6; //Create a pointer to Page 3 in memory
-      for(int x=EEPROM_CONFIG6_START; x<EEPROM_CONFIG6_END; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG6_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG6_START))); writeCounter++; }
-      }
-
-      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
-      else { eepromWritesPending = false; }
-
+      eePtr = EEPROM_CONFIG6_START;
+      writeCounter = write_range(eePtr, (byte *)&configPage6, (byte *)&configPage6+sizeof(configPage6), writeCounter);
+      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
 
     case boostvvtPage:
@@ -213,61 +170,13 @@ void writeConfig(byte tableNum)
       | 8x8 table itself + the 8 values along each of the axis
       -----------------------------------------------------*/
       //Begin writing the 2 tables, basically the same thing as above but we're doing these 2 together (2 tables per page instead of 1)
-      if(EEPROM.read(EEPROM_CONFIG7_XSIZE1) != boostTable.xSize) { EEPROM.write(EEPROM_CONFIG7_XSIZE1,boostTable.xSize); writeCounter++; } //Write the boost Table RPM dimension size
-      if(EEPROM.read(EEPROM_CONFIG7_YSIZE1) != boostTable.ySize) { EEPROM.write(EEPROM_CONFIG7_YSIZE1,boostTable.ySize); writeCounter++; } //Write the boost Table MAP/TPS dimension size
-      if(EEPROM.read(EEPROM_CONFIG7_XSIZE2) != vvtTable.xSize) { EEPROM.write(EEPROM_CONFIG7_XSIZE2,vvtTable.xSize); writeCounter++; } //Write the vvt Table RPM dimension size
-      if(EEPROM.read(EEPROM_CONFIG7_YSIZE2) != vvtTable.ySize) { EEPROM.write(EEPROM_CONFIG7_YSIZE2,vvtTable.ySize); writeCounter++; } //Write the vvt Table MAP/TPS dimension size
-      if(EEPROM.read(EEPROM_CONFIG7_XSIZE3) != stagingTable.xSize) { EEPROM.write(EEPROM_CONFIG7_XSIZE3,stagingTable.xSize); writeCounter++; } //Write the staging Table RPM dimension size
-      if(EEPROM.read(EEPROM_CONFIG7_YSIZE3) != stagingTable.ySize) { EEPROM.write(EEPROM_CONFIG7_YSIZE3,stagingTable.ySize); writeCounter++; } //Write the staging Table MAP/TPS dimension size
-
-      y = EEPROM_CONFIG7_MAP2; //We do the 3 maps together in the same loop
-      z = EEPROM_CONFIG7_MAP3;
-      for(int x=EEPROM_CONFIG7_MAP1; x<EEPROM_CONFIG7_XBINS1; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG7_MAP1;
-        if(EEPROM.read(x) != (boostTable.values[7-(offset/8)][offset%8]) ) { EEPROM.write(x, boostTable.values[7-(offset/8)][offset%8]); writeCounter++; }  //Write the 8x8 map
-        offset = y - EEPROM_CONFIG7_MAP2;
-        if(EEPROM.read(y) != (vvtTable.values[7-(offset/8)][offset%8]) ) { EEPROM.write(y, vvtTable.values[7-(offset/8)][offset%8]); writeCounter++; }  //Write the 8x8 map
-        offset = z - EEPROM_CONFIG7_MAP3;
-        if(EEPROM.read(z) != (stagingTable.values[7-(offset/8)][offset%8]) ) { EEPROM.write(z, stagingTable.values[7-(offset/8)][offset%8]); writeCounter++; }  //Write the 8x8 map
-        y++;
-        z++;
-      }
-      //RPM bins
-      y = EEPROM_CONFIG7_XBINS2;
-      z = EEPROM_CONFIG7_XBINS3;
-      for(int x=EEPROM_CONFIG7_XBINS1; x<EEPROM_CONFIG7_YBINS1; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG7_XBINS1;
-        if(EEPROM.read(x) != byte(boostTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(boostTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-        offset = y - EEPROM_CONFIG7_XBINS2;
-        if(EEPROM.read(y) != byte(vvtTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(y, byte(vvtTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-        offset = z - EEPROM_CONFIG7_XBINS3;
-        if(EEPROM.read(z) != byte(stagingTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(z, byte(stagingTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-        y++;
-        z++;
-      }
-      //TPS/MAP bins
-      y=EEPROM_CONFIG7_YBINS2;
-      z=EEPROM_CONFIG7_YBINS3;
-      for(int x=EEPROM_CONFIG7_YBINS1; x<EEPROM_CONFIG7_XSIZE2; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG7_YBINS1;
-        if(EEPROM.read(x) != boostTable.axisY[offset]) { EEPROM.write(x, boostTable.axisY[offset]); writeCounter++; } //TABLE_LOAD_MULTIPLIER is NOT used for boost as it is TPS based (0-100)
-        offset = y - EEPROM_CONFIG7_YBINS2;
-        if(EEPROM.read(y) != vvtTable.axisY[offset]) { EEPROM.write(y, vvtTable.axisY[offset]); writeCounter++; } //TABLE_LOAD_MULTIPLIER is NOT used for VVT as it is TPS based (0-100)
-        offset = z - EEPROM_CONFIG7_YBINS3;
-        if(EEPROM.read(z) != byte(stagingTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)) { EEPROM.write(z, byte(stagingTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-        y++;
-        z++;
-      }
-
-      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
-      else { eepromWritesPending = false; }
-
+      eePtr = EEPROM_CONFIG7_XSIZE1;
+      writeCounter = writeTable(&boostTable, TABLE_RPM_MULTIPLIER, 1, eePtr, writeCounter);
+      eePtr = EEPROM_CONFIG7_XSIZE2;
+      writeCounter = writeTable(&vvtTable, TABLE_RPM_MULTIPLIER, 1, eePtr, writeCounter);
+      eePtr = EEPROM_CONFIG7_XSIZE3;
+      writeCounter = writeTable(&stagingTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, eePtr, writeCounter);
+      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
 
     case seqFuelPage:
@@ -276,83 +185,15 @@ void writeConfig(byte tableNum)
       | 6x6 tables itself + the 6 values along each of the axis
       -----------------------------------------------------*/
       //Begin writing the 2 tables, basically the same thing as above but we're doing these 2 together (2 tables per page instead of 1)
-      if(EEPROM.read(EEPROM_CONFIG8_XSIZE1) != trim1Table.xSize) { EEPROM.write(EEPROM_CONFIG8_XSIZE1,trim1Table.xSize); writeCounter++; } //Write the boost Table RPM dimension size
-      if(EEPROM.read(EEPROM_CONFIG8_YSIZE1) != trim1Table.ySize) { EEPROM.write(EEPROM_CONFIG8_YSIZE1,trim1Table.ySize); writeCounter++; } //Write the boost Table MAP/TPS dimension size
-      if(EEPROM.read(EEPROM_CONFIG8_XSIZE2) != trim2Table.xSize) { EEPROM.write(EEPROM_CONFIG8_XSIZE2,trim2Table.xSize); writeCounter++; } //Write the boost Table RPM dimension size
-      if(EEPROM.read(EEPROM_CONFIG8_YSIZE2) != trim2Table.ySize) { EEPROM.write(EEPROM_CONFIG8_YSIZE2,trim2Table.ySize); writeCounter++; } //Write the boost Table MAP/TPS dimension size
-      if(EEPROM.read(EEPROM_CONFIG8_XSIZE3) != trim3Table.xSize) { EEPROM.write(EEPROM_CONFIG8_XSIZE3,trim3Table.xSize); writeCounter++; } //Write the boost Table RPM dimension size
-      if(EEPROM.read(EEPROM_CONFIG8_YSIZE3) != trim3Table.ySize) { EEPROM.write(EEPROM_CONFIG8_YSIZE3,trim3Table.ySize); writeCounter++; } //Write the boost Table MAP/TPS dimension size
-      if(EEPROM.read(EEPROM_CONFIG8_XSIZE4) != trim4Table.xSize) { EEPROM.write(EEPROM_CONFIG8_XSIZE4,trim4Table.xSize); writeCounter++; } //Write the boost Table RPM dimension size
-      if(EEPROM.read(EEPROM_CONFIG8_YSIZE4) != trim4Table.ySize) { EEPROM.write(EEPROM_CONFIG8_YSIZE4,trim4Table.ySize); writeCounter++; } //Write the boost Table MAP/TPS dimension size
-
-      y = EEPROM_CONFIG8_MAP2; //We do the 4 maps together in the same loop
-      z = EEPROM_CONFIG8_MAP3; //We do the 4 maps together in the same loop
-      i = EEPROM_CONFIG8_MAP4; //We do the 4 maps together in the same loop
-
-      for(int x=EEPROM_CONFIG8_MAP1; x<EEPROM_CONFIG8_XBINS1; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG8_MAP1;
-        newVal = trim1Table.values[5-(offset/6)][offset%6];
-        if (EEPROM.read(x) != newVal ) { EEPROM.write(x, newVal ); writeCounter++; } //Write the 6x6 map
-
-        offset = y - EEPROM_CONFIG8_MAP2;
-        newVal = trim2Table.values[5-(offset/6)][offset%6];
-        if (EEPROM.read(y) != newVal ) { EEPROM.write(y, newVal); writeCounter++; } //Write the 6x6 map
-
-        offset = z - EEPROM_CONFIG8_MAP3;
-        newVal = trim3Table.values[5-(offset/6)][offset%6];
-        if (EEPROM.read(z) != newVal ) { EEPROM.write(z, newVal); writeCounter++; } //Write the 6x6 map
-
-        offset = i - EEPROM_CONFIG8_MAP4;
-        newVal = trim4Table.values[5-(offset/6)][offset%6];
-        if (EEPROM.read(i) != newVal ) { EEPROM.write(i, newVal); writeCounter++; } //Write the 6x6 map
-
-        y++;
-        z++;
-        i++;
-      }
-      //RPM bins
-      y = EEPROM_CONFIG8_XBINS2;
-      z = EEPROM_CONFIG8_XBINS3;
-      i = EEPROM_CONFIG8_XBINS4;
-      for(int x=EEPROM_CONFIG8_XBINS1; x<EEPROM_CONFIG8_YBINS1; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { eepromWritesPending = true; break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG8_XBINS1;
-        if( EEPROM.read(x) != (byte(trim1Table.axisX[offset]/TABLE_RPM_MULTIPLIER)) ) { EEPROM.write(x, byte(trim1Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-        offset = y - EEPROM_CONFIG8_XBINS2;
-        if( EEPROM.read(y) != (byte(trim2Table.axisX[offset]/TABLE_RPM_MULTIPLIER)) ) { EEPROM.write(y, byte(trim2Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-        offset = z - EEPROM_CONFIG8_XBINS3;
-        if( EEPROM.read(z) != (byte(trim3Table.axisX[offset]/TABLE_RPM_MULTIPLIER)) ) { EEPROM.write(z, byte(trim3Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-        offset = i - EEPROM_CONFIG8_XBINS4;
-        if( EEPROM.read(i) != (byte(trim4Table.axisX[offset]/TABLE_RPM_MULTIPLIER)) ) { EEPROM.write(i, byte(trim4Table.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-        y++;
-        z++;
-        i++;
-      }
-      //TPS/MAP bins
-      y=EEPROM_CONFIG8_YBINS2;
-      z=EEPROM_CONFIG8_YBINS3;
-      i=EEPROM_CONFIG8_YBINS4;
-      for(int x=EEPROM_CONFIG8_YBINS1; x<EEPROM_CONFIG8_XSIZE2; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { eepromWritesPending = true; break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG8_YBINS1;
-        if( EEPROM.read(x) != (byte(trim1Table.axisY[offset]/TABLE_LOAD_MULTIPLIER)) ) { EEPROM.write(x, byte(trim1Table.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-        offset = y - EEPROM_CONFIG8_YBINS2;
-        if( EEPROM.read(y) != (byte(trim2Table.axisY[offset]/TABLE_LOAD_MULTIPLIER)) ) { EEPROM.write(y, byte(trim2Table.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-        offset = z - EEPROM_CONFIG8_YBINS3;
-        if( EEPROM.read(z) != (byte(trim3Table.axisY[offset]/TABLE_LOAD_MULTIPLIER)) ) { EEPROM.write(z, byte(trim3Table.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-        offset = i - EEPROM_CONFIG8_YBINS4;
-        if( EEPROM.read(i) != (byte(trim4Table.axisY[offset]/TABLE_LOAD_MULTIPLIER)) ) { EEPROM.write(i, byte(trim4Table.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-        y++;
-        z++;
-        i++;
-      }
-      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
-      else { eepromWritesPending = false; }
-
+      eePtr = EEPROM_CONFIG8_XSIZE1;
+      writeCounter = writeTable(&trim1Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, eePtr, writeCounter);
+      eePtr = EEPROM_CONFIG8_XSIZE2;
+      writeCounter = writeTable(&trim1Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, eePtr, writeCounter);
+      eePtr = EEPROM_CONFIG8_XSIZE3;
+      writeCounter = writeTable(&trim3Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, eePtr, writeCounter);
+      eePtr = EEPROM_CONFIG8_XSIZE4;
+      writeCounter = writeTable(&trim4Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, eePtr, writeCounter);
+      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
 
     case canbusPage:
@@ -360,16 +201,9 @@ void writeConfig(byte tableNum)
       | Config page 10 (See storage.h for data layout)
       | 192 byte long config table
       -----------------------------------------------------*/
-      pnt_configPage = (byte *)&configPage9; //Create a pointer to Page 10 in memory
-      for(int x=EEPROM_CONFIG9_START; x<EEPROM_CONFIG9_END; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG9_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG9_START))); writeCounter++; }
-      }
-
-      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
-      else { eepromWritesPending = false; }
-
+      eePtr = EEPROM_CONFIG9_START;
+      writeCounter = write_range(eePtr, (byte *)&configPage9, (byte *)&configPage9+sizeof(configPage9), writeCounter);
+      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
 
     case warmupPage:
@@ -377,17 +211,9 @@ void writeConfig(byte tableNum)
       | Config page 11 (See storage.h for data layout)
       | 192 byte long config table
       -----------------------------------------------------*/
-      pnt_configPage = (byte *)&configPage10; //Create a pointer to Page 11 in memory
-      //As there are no 3d tables in this page, all 192 bytes can simply be read in
-      for(int x=EEPROM_CONFIG10_START; x<EEPROM_CONFIG10_END; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG10_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG10_START))); writeCounter++; }
-      }
-
-      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
-      else { eepromWritesPending = false; }
-
+      eePtr = EEPROM_CONFIG10_START;
+      writeCounter = write_range(eePtr, (byte *)&configPage10, (byte *)&configPage10+sizeof(configPage10), writeCounter);
+      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
 
     case fuelMap2Page:
@@ -395,31 +221,9 @@ void writeConfig(byte tableNum)
       | Fuel table 2 (See storage.h for data layout)
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      if(EEPROM.read(EEPROM_CONFIG11_XSIZE) != fuelTable2.xSize) { EEPROM.write(EEPROM_CONFIG11_XSIZE, fuelTable2.xSize); writeCounter++; } //Write the 2nd fuel Table RPM dimension size
-      if(EEPROM.read(EEPROM_CONFIG11_YSIZE) != fuelTable2.ySize) { EEPROM.write(EEPROM_CONFIG11_YSIZE, fuelTable2.ySize); writeCounter++; } //Write the 2nd fuel Table MAP dimension size
-      for(int x=EEPROM_CONFIG11_MAP; x<EEPROM_CONFIG11_XBINS; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG11_MAP;
-        if( EEPROM.read(x) != (fuelTable2.values[15-(offset/16)][offset%16]) ) { EEPROM.write(x, fuelTable2.values[15-(offset/16)][offset%16]); writeCounter++; }  //Write the 16x16 map
-      }
-
-      //RPM bins
-      for(int x=EEPROM_CONFIG11_XBINS; x<EEPROM_CONFIG11_YBINS; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG11_XBINS;
-        if( EEPROM.read(x) != (byte(fuelTable2.axisX[offset]/TABLE_RPM_MULTIPLIER)) ) { EEPROM.write(x, byte(fuelTable2.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-      }
-      //TPS/MAP bins
-      for(int x=EEPROM_CONFIG11_YBINS; x<EEPROM_CONFIG11_END; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG11_YBINS;
-        if( EEPROM.read(x) != (byte(fuelTable2.axisY[offset]/TABLE_LOAD_MULTIPLIER)) ) { EEPROM.write(x, byte(fuelTable2.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; } //Table load is divided by 2 (Allows for MAP up to 511)
-      }
-      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
-      else { eepromWritesPending = false; }
+      eePtr = EEPROM_CONFIG11_XSIZE;
+      writeCounter = writeTable(&fuelTable2, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, eePtr, writeCounter);
+      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
       //That concludes the writing of the 2nd fuel table
 
@@ -428,48 +232,18 @@ void writeConfig(byte tableNum)
       | WMI tables (See storage.h for data layout) - Page 12
       | 8x8 table itself + the 8 values along each of the axis
       -----------------------------------------------------*/
-      if(EEPROM.read(EEPROM_CONFIG12_XSIZE) != wmiTable.xSize) { EEPROM.write(EEPROM_CONFIG12_XSIZE,wmiTable.xSize); writeCounter++; } //Write the wmi Table RPM dimension size
-      if(EEPROM.read(EEPROM_CONFIG12_YSIZE) != wmiTable.ySize) { EEPROM.write(EEPROM_CONFIG12_YSIZE,wmiTable.ySize); writeCounter++; } //Write the wmi Table MAP dimension size
-
-      for(int x=EEPROM_CONFIG12_MAP; x<EEPROM_CONFIG12_XBINS; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; }
-        offset = x - EEPROM_CONFIG12_MAP;
-        if(EEPROM.read(x) != (wmiTable.values[7-(offset/8)][offset%8]) ) { EEPROM.write(x, wmiTable.values[7-(offset/8)][offset%8]); writeCounter++; }  //Write the 8x8 map
-      }
-      //RPM bins
-      for(int x=EEPROM_CONFIG12_XBINS; x<EEPROM_CONFIG12_YBINS; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; }
-        offset = x - EEPROM_CONFIG12_XBINS;
-        if(EEPROM.read(x) != byte(wmiTable.axisX[offset]/TABLE_RPM_MULTIPLIER)) { EEPROM.write(x, byte(wmiTable.axisX[offset]/TABLE_RPM_MULTIPLIER)); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-      }
-      //MAP bins
-      for(int x=EEPROM_CONFIG12_YBINS; x<EEPROM_CONFIG12_END; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; }
-        offset = x - EEPROM_CONFIG12_YBINS;
-        if(EEPROM.read(x) != byte(wmiTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)) { EEPROM.write(x, byte(wmiTable.axisY[offset]/TABLE_LOAD_MULTIPLIER)); writeCounter++; }
-      }
-
-      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
-      else { eepromWritesPending = false; }
-
+      eePtr = EEPROM_CONFIG12_XSIZE;
+      writeCounter = writeTable(&wmiTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, eePtr, writeCounter);
+      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
       
   case progOutsPage:
       /*---------------------------------------------------
       | Config page 13 (See storage.h for data layout)
       -----------------------------------------------------*/
-      pnt_configPage = (byte *)&configPage13; //Create a pointer to Page 12 in memory
-      //As there are no 3d tables in this page, all bytes can simply be read in
-      for(int x=EEPROM_CONFIG13_START; x<EEPROM_CONFIG13_END; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        if(EEPROM.read(x) != *(pnt_configPage + byte(x - EEPROM_CONFIG13_START))) { EEPROM.write(x, *(pnt_configPage + byte(x - EEPROM_CONFIG13_START))); writeCounter++; }
-      }
-      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
-      else { eepromWritesPending = false; }
+      eePtr = EEPROM_CONFIG13_START;
+      writeCounter = write_range(eePtr, (byte *)&configPage13, (byte *)&configPage13+sizeof(configPage13), writeCounter);
+      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
     
     case ignMap2Page:
@@ -478,42 +252,14 @@ void writeConfig(byte tableNum)
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
       //Begin writing the Ignition table, basically the same thing as above
-      if(EEPROM.read(EEPROM_CONFIG14_XSIZE) != ignitionTable2.xSize) { EEPROM.write(EEPROM_CONFIG14_XSIZE,ignitionTable2.xSize); writeCounter++; } //Write the ignition Table RPM dimension size
-      if(EEPROM.read(EEPROM_CONFIG14_YSIZE) != ignitionTable2.ySize) { EEPROM.write(EEPROM_CONFIG14_YSIZE,ignitionTable2.ySize); writeCounter++; } //Write the ignition Table MAP/TPS dimension size
-
-      for(int x=EEPROM_CONFIG14_MAP; x<EEPROM_CONFIG14_XBINS; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG14_MAP;
-        newVal = ignitionTable2.values[15-(offset/16)][offset%16];
-        if(EEPROM.read(x) != newVal) { EEPROM.write(x, newVal); writeCounter++; }  //Write the 16x16 map with translation
-      }
-      //RPM bins
-      for(int x=EEPROM_CONFIG14_XBINS; x<EEPROM_CONFIG14_YBINS; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG14_XBINS;
-        newVal = ignitionTable2.axisX[offset]/TABLE_RPM_MULTIPLIER;
-        if(EEPROM.read(x) != newVal) { EEPROM.write(x, newVal); writeCounter++; } //RPM bins are divided by 100 and converted to a byte
-      }
-      //TPS/MAP bins
-      for(int x=EEPROM_CONFIG14_YBINS; x<EEPROM_CONFIG14_END; x++)
-      {
-        if( (writeCounter > EEPROM_MAX_WRITE_BLOCK) ) { break; } //This is a safety check to make sure we don't attempt to write too much to the EEPROM at a time.
-        offset = x - EEPROM_CONFIG14_YBINS;
-        newVal = ignitionTable2.axisY[offset]/TABLE_LOAD_MULTIPLIER;
-        if(EEPROM.read(x) != newVal) { EEPROM.write(x, newVal); writeCounter++; } //Table load is divided by 2 (Allows for MAP up to 511)
-      }
-
-      if(writeCounter > EEPROM_MAX_WRITE_BLOCK) { eepromWritesPending = true; }
-      else { eepromWritesPending = false; }
-
+      eePtr = EEPROM_CONFIG14_XSIZE;
+      writeCounter = writeTable(&ignitionTable2, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, eePtr, writeCounter);
+      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
 
     default:
       break;
   }
-
 }
 
 void resetConfigPages()
