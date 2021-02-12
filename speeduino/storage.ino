@@ -528,52 +528,52 @@ void resetConfigPages()
 
 namespace
 {
-  inline int loadMemoryBlock(byte *pStart, const byte *pEnd, int index)
+  inline EEPtr loadMemoryBlock(byte *pStart, const byte *pEnd, EEPtr eePtr)
   {
     while (pStart!=pEnd)
     {
-      *pStart = EEPROM.read(index);
+      *pStart = *eePtr;
       ++pStart;
-      ++index;
+      ++eePtr;
     }
-    return index;
+    return eePtr;
   }
 
-  inline int loadTableValues(table3D *pTable, int index)
+  inline EEPtr loadTableValues(table3D *pTable, EEPtr eePtr)
   {
     int rowSize = pTable->xSize;
     for(int y=pTable->xSize-1; y>=0; --y)
     {
-      index = loadMemoryBlock(pTable->values[y], pTable->values[y]+rowSize, index);
+      eePtr = loadMemoryBlock(pTable->values[y], pTable->values[y]+rowSize, eePtr);
     }
 
-    return index; 
+    return eePtr; 
   }
 
-  inline int loadTableAxisX(table3D *pTable, int index, int xAxisMultiplier)
+  inline EEPtr loadTableAxisX(table3D *pTable, EEPtr eePtr, int xAxisMultiplier)
   {
-    for(int offset=0; offset<pTable->xSize; ++offset,++index)
+    for(int offset=0; offset<pTable->xSize; ++offset,++eePtr)
     {
-      pTable->axisX[offset] = (EEPROM.read(index) * xAxisMultiplier); //RPM bins are divided by 100 when stored. Multiply them back now
+      pTable->axisX[offset] = (*eePtr * xAxisMultiplier); //RPM bins are divided by 100 when stored. Multiply them back now
     }
-    return index;
+    return eePtr;
   }
 
-  inline int loadTableAxisY(table3D *pTable, int index, int yAxisMultiplier)
+  inline EEPtr loadTableAxisY(table3D *pTable, EEPtr eePtr, int yAxisMultiplier)
   {
-    for(int offset=0; offset<pTable->xSize; ++offset,++index)
+    for(int offset=0; offset<pTable->xSize; ++offset,++eePtr)
     {
-      pTable->axisY[offset] = EEPROM.read(index) * yAxisMultiplier;
+      pTable->axisY[offset] = *eePtr * yAxisMultiplier;
     }
 
-    return index;
+    return eePtr;
   }
 
-  inline int loadTable(table3D *pTable, int index, int xAxisMultiplier, int yAxisMultiplier)
+  inline EEPtr loadTable(table3D *pTable, EEPtr eePtr, int xAxisMultiplier, int yAxisMultiplier)
   {
     return loadTableAxisY(pTable,
                           loadTableAxisX(pTable, 
-                                          loadTableValues(pTable, index), 
+                                          loadTableValues(pTable, eePtr), 
                                           xAxisMultiplier),
                           yAxisMultiplier);
   }
@@ -581,63 +581,63 @@ namespace
 
 void loadConfig()
 {
-  loadTable(&fuelTable, EEPROM_CONFIG1_MAP, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-  loadMemoryBlock((byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2), EEPROM_CONFIG2_START);
+  loadTable(&fuelTable, EEPtr(EEPROM_CONFIG1_MAP), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+  loadMemoryBlock((byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2), EEPtr(EEPROM_CONFIG2_START));
   //That concludes the reading of the VE table
   
   //*********************************************************************************************************************************************************************************
   //IGNITION CONFIG PAGE (2)
 
   //Begin writing the Ignition table, basically the same thing as above
-  loadTable(&ignitionTable, EEPROM_CONFIG3_MAP, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-  loadMemoryBlock((byte *)&configPage4, (byte *)&configPage4+sizeof(configPage4), EEPROM_CONFIG4_START);
+  loadTable(&ignitionTable, EEPtr(EEPROM_CONFIG3_MAP), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+  loadMemoryBlock((byte *)&configPage4, (byte *)&configPage4+sizeof(configPage4), EEPtr(EEPROM_CONFIG4_START));
 
   //*********************************************************************************************************************************************************************************
   //AFR TARGET CONFIG PAGE (3)
 
   //Begin writing the Ignition table, basically the same thing as above
-  loadTable(&afrTable, EEPROM_CONFIG5_MAP, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-  loadMemoryBlock((byte *)&configPage6, (byte *)&configPage6+sizeof(configPage6), EEPROM_CONFIG6_START);
+  loadTable(&afrTable, EEPtr(EEPROM_CONFIG5_MAP), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+  loadMemoryBlock((byte *)&configPage6, (byte *)&configPage6+sizeof(configPage6), EEPtr(EEPROM_CONFIG6_START));
 
   //*********************************************************************************************************************************************************************************
   // Boost and vvt tables load
-  loadTable(&boostTable, EEPROM_CONFIG7_MAP1, TABLE_RPM_MULTIPLIER, 1);
-  loadTable(&vvtTable, EEPROM_CONFIG7_MAP2, TABLE_RPM_MULTIPLIER, 1);
-  loadTable(&stagingTable, EEPROM_CONFIG7_MAP3, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+  loadTable(&boostTable, EEPtr(EEPROM_CONFIG7_MAP1), TABLE_RPM_MULTIPLIER, 1);
+  loadTable(&vvtTable, EEPtr(EEPROM_CONFIG7_MAP2), TABLE_RPM_MULTIPLIER, 1);
+  loadTable(&stagingTable, EEPtr(EEPROM_CONFIG7_MAP3), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
 
   //*********************************************************************************************************************************************************************************
   // Fuel trim tables load
-  loadTable(&trim1Table, EEPROM_CONFIG8_MAP1, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-  loadTable(&trim2Table, EEPROM_CONFIG8_MAP2, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-  loadTable(&trim3Table, EEPROM_CONFIG8_MAP3, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-  loadTable(&trim4Table, EEPROM_CONFIG8_MAP4, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+  loadTable(&trim1Table, EEPtr(EEPROM_CONFIG8_MAP1), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+  loadTable(&trim2Table, EEPtr(EEPROM_CONFIG8_MAP2), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+  loadTable(&trim3Table, EEPtr(EEPROM_CONFIG8_MAP3), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+  loadTable(&trim4Table, EEPtr(EEPROM_CONFIG8_MAP4), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
 
   //*********************************************************************************************************************************************************************************
   //canbus control page load
-  loadMemoryBlock((byte *)&configPage9, (byte *)&configPage9+sizeof(configPage9), EEPROM_CONFIG9_START);
+  loadMemoryBlock((byte *)&configPage9, (byte *)&configPage9+sizeof(configPage9), EEPtr(EEPROM_CONFIG9_START));
 
   //*********************************************************************************************************************************************************************************
 
   //CONFIG PAGE (10)
-  loadMemoryBlock((byte *)&configPage10, (byte *)&configPage10+sizeof(configPage10), EEPROM_CONFIG10_START);
+  loadMemoryBlock((byte *)&configPage10, (byte *)&configPage10+sizeof(configPage10), EEPtr(EEPROM_CONFIG10_START));
 
   //*********************************************************************************************************************************************************************************
   //Fuel table 2 (See storage.h for data layout)
-  loadTable(&fuelTable2, EEPROM_CONFIG11_MAP, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+  loadTable(&fuelTable2, EEPtr(EEPROM_CONFIG11_MAP), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
 
   //*********************************************************************************************************************************************************************************
   // WMI table load
-  loadTable(&wmiTable, EEPROM_CONFIG12_MAP, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+  loadTable(&wmiTable, EEPtr(EEPROM_CONFIG12_MAP), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
     
   //*********************************************************************************************************************************************************************************
   //CONFIG PAGE (13)
-  loadMemoryBlock((byte *)&configPage13, (byte *)&configPage13+sizeof(configPage13), EEPROM_CONFIG13_START);
+  loadMemoryBlock((byte *)&configPage13, (byte *)&configPage13+sizeof(configPage13), EEPtr(EEPROM_CONFIG13_START));
 
   //*********************************************************************************************************************************************************************************
   //SECOND IGNITION CONFIG PAGE (14)
 
   //Begin writing the Ignition table, basically the same thing as above
-  loadTable(&ignitionTable2, EEPROM_CONFIG14_MAP, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+  loadTable(&ignitionTable2, EEPtr(EEPROM_CONFIG14_MAP), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
 
   //*********************************************************************************************************************************************************************************
 }
