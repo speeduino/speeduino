@@ -528,45 +528,49 @@ void resetConfigPages()
 
 namespace
 {
-  inline EEPtr loadMemoryBlock(byte *pStart, const byte *pEnd, EEPtr eePtr)
+  template<class _InIt,
+	class _OutIt> inline
+	_InIt copy_advance_input(_InIt _Source, _OutIt _First, _OutIt _Last)
   {
-    while (pStart!=pEnd)
-    {
-      *pStart = *eePtr;
-      ++pStart;
-      ++eePtr;
-    }
-    return eePtr;
+	  for (; _First != _Last; ++_Source, (void)++_First)
+		{
+		  *_First = *_Source;
+		}
+    return _Source;
+  }
+
+  template<class _InIt,
+	class _OutIt,
+	class _Fn> inline
+	_InIt transform_advance_input(_InIt _Source, _OutIt _First, _OutIt _Last, _Fn _Func)
+	{	// transform [_First, _Last) with _Func
+  	for (; _First != _Last; ++_Source, (void)++_First)
+		{
+		  *_First = _Func(*_Source);
+		}
+    return _Source;
   }
 
   inline EEPtr loadTableValues(table3D *pTable, EEPtr eePtr)
   {
+    byte **pRow = pTable->values + (pTable->xSize-1);
+    byte **pRowEnd = pTable->values - 1;
     int rowSize = pTable->xSize;
-    for(int y=pTable->xSize-1; y>=0; --y)
+    for(; pRow!=pRowEnd; --pRow)
     {
-      eePtr = loadMemoryBlock(pTable->values[y], pTable->values[y]+rowSize, eePtr);
+      eePtr = copy_advance_input(eePtr, *pRow, *pRow+rowSize);
     }
-
     return eePtr; 
   }
 
   inline EEPtr loadTableAxisX(table3D *pTable, EEPtr eePtr, int xAxisMultiplier)
   {
-    for(int offset=0; offset<pTable->xSize; ++offset,++eePtr)
-    {
-      pTable->axisX[offset] = (*eePtr * xAxisMultiplier); //RPM bins are divided by 100 when stored. Multiply them back now
-    }
-    return eePtr;
+    return transform_advance_input(eePtr, pTable->axisX, pTable->axisX+pTable->xSize, [xAxisMultiplier](uint8_t value) { return value * xAxisMultiplier; } );
   }
 
   inline EEPtr loadTableAxisY(table3D *pTable, EEPtr eePtr, int yAxisMultiplier)
   {
-    for(int offset=0; offset<pTable->xSize; ++offset,++eePtr)
-    {
-      pTable->axisY[offset] = *eePtr * yAxisMultiplier;
-    }
-
-    return eePtr;
+    return transform_advance_input(eePtr, pTable->axisY, pTable->axisY+pTable->ySize, [yAxisMultiplier](uint8_t value) { return value * yAxisMultiplier; } );
   }
 
   inline EEPtr loadTable(table3D *pTable, EEPtr eePtr, int xAxisMultiplier, int yAxisMultiplier)
@@ -582,7 +586,7 @@ namespace
 void loadConfig()
 {
   loadTable(&fuelTable, EEPtr(EEPROM_CONFIG1_MAP), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-  loadMemoryBlock((byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2), EEPtr(EEPROM_CONFIG2_START));
+  copy_advance_input(EEPtr(EEPROM_CONFIG2_START), (byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2));
   //That concludes the reading of the VE table
   
   //*********************************************************************************************************************************************************************************
@@ -590,14 +594,14 @@ void loadConfig()
 
   //Begin writing the Ignition table, basically the same thing as above
   loadTable(&ignitionTable, EEPtr(EEPROM_CONFIG3_MAP), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-  loadMemoryBlock((byte *)&configPage4, (byte *)&configPage4+sizeof(configPage4), EEPtr(EEPROM_CONFIG4_START));
+  copy_advance_input(EEPtr(EEPROM_CONFIG4_START), (byte *)&configPage4, (byte *)&configPage4+sizeof(configPage4));
 
   //*********************************************************************************************************************************************************************************
   //AFR TARGET CONFIG PAGE (3)
 
   //Begin writing the Ignition table, basically the same thing as above
   loadTable(&afrTable, EEPtr(EEPROM_CONFIG5_MAP), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-  loadMemoryBlock((byte *)&configPage6, (byte *)&configPage6+sizeof(configPage6), EEPtr(EEPROM_CONFIG6_START));
+  copy_advance_input(EEPtr(EEPROM_CONFIG6_START), (byte *)&configPage6, (byte *)&configPage6+sizeof(configPage6));
 
   //*********************************************************************************************************************************************************************************
   // Boost and vvt tables load
@@ -614,12 +618,12 @@ void loadConfig()
 
   //*********************************************************************************************************************************************************************************
   //canbus control page load
-  loadMemoryBlock((byte *)&configPage9, (byte *)&configPage9+sizeof(configPage9), EEPtr(EEPROM_CONFIG9_START));
+  copy_advance_input(EEPtr(EEPROM_CONFIG9_START), (byte *)&configPage9, (byte *)&configPage9+sizeof(configPage9));
 
   //*********************************************************************************************************************************************************************************
 
   //CONFIG PAGE (10)
-  loadMemoryBlock((byte *)&configPage10, (byte *)&configPage10+sizeof(configPage10), EEPtr(EEPROM_CONFIG10_START));
+  copy_advance_input(EEPtr(EEPROM_CONFIG10_START), (byte *)&configPage10, (byte *)&configPage10+sizeof(configPage10));
 
   //*********************************************************************************************************************************************************************************
   //Fuel table 2 (See storage.h for data layout)
@@ -631,7 +635,7 @@ void loadConfig()
     
   //*********************************************************************************************************************************************************************************
   //CONFIG PAGE (13)
-  loadMemoryBlock((byte *)&configPage13, (byte *)&configPage13+sizeof(configPage13), EEPtr(EEPROM_CONFIG13_START));
+  copy_advance_input(EEPtr(EEPROM_CONFIG13_START), (byte *)&configPage13, (byte *)&configPage13+sizeof(configPage13));
 
   //*********************************************************************************************************************************************************************************
   //SECOND IGNITION CONFIG PAGE (14)
