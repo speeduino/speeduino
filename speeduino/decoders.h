@@ -31,6 +31,7 @@
 #define DECODER_36_2_1            17
 #define DECODER_420A              18
 #define DECODER_WEBER             19
+#define DECODER_ST170             20
 
 static inline void addToothLogEntry(unsigned long, bool);
 void loggerPrimaryISR();
@@ -177,6 +178,13 @@ void triggerSetEndTeeth_420a();
 
 void triggerPri_Webber();
 void triggerSec_Webber();
+
+void triggerSetup_FordST170();
+void triggerSec_FordST170();
+uint16_t getRPM_FordST170();
+int getCrankAngle_FordST170();
+void triggerSetEndTeeth_FordST170();
+
 
 extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 extern void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
