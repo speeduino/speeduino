@@ -3029,6 +3029,25 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
+    case DECODER_ST170:
+      //Ford ST170
+      triggerSetup_FordST170();
+      triggerHandler = triggerPri_missingTooth;
+      triggerSecondaryHandler = triggerSec_FordST170;
+      decoderHasSecondary = true;
+      getRPM = getRPM_FordST170;
+      getCrankAngle = getCrankAngle_FordST170;
+      triggerSetEndTeeth = triggerSetEndTeeth_FordST170;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+
+      break;
 
     default:
       triggerHandler = triggerPri_missingTooth;
