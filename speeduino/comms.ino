@@ -1299,10 +1299,29 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       {
         wmiTable.axisX[(valueOffset - 64)] = int(newValue) * TABLE_RPM_MULTIPLIER;
       }
-      else if (valueOffset < 80) //New value is on the Y (MAP) axis of the boost table
+      else if (valueOffset < 80) //New value is on the Y (MAP) axis of the wmi table
       {
         wmiTable.axisY[(7 - (valueOffset - 72))] = int(newValue) * TABLE_LOAD_MULTIPLIER;
       }
+      //End of wmi table
+      else if (valueOffset < 176) //New value is part of the dwell map
+      {
+        tempOffset = valueOffset - 160;
+        dwellTable.values[3 - (tempOffset / 4)][tempOffset % 4] = newValue;
+      }
+      else if (valueOffset < 180) //New value is on the X (RPM) axis of the dwell table
+      {
+        tempOffset = valueOffset - 176;
+        dwellTable.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER;
+      }
+      else if (valueOffset < 184) //New value is on the Y (Load) axis of the dwell table
+      {
+        tempOffset = valueOffset - 180;
+        dwellTable.axisY[(3 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER;
+      }
+      //End of dwell table
+      wmiTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      dwellTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
       
     case progOutsPage:
@@ -1446,11 +1465,17 @@ void sendPage()
       //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
       byte response[80]; //Bit hacky, but send 1 map at a time (Each map is 8x8, so 64 + 8 + 8)
 
-      //Boost table
+      //WMI table
       for (int x = 0; x < 64; x++) { response[x] = wmiTable.values[7 - (x / 8)][x % 8]; }
       for (int x = 64; x < 72; x++) { response[x] = byte(wmiTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
       for (int y = 72; y < 80; y++) { response[y] = byte(wmiTable.axisY[7 - (y - 72)] / TABLE_LOAD_MULTIPLIER); }
       Serial.write((byte *)&response, 80);
+
+      //Dwell table
+      for (int x = 0; x < 16; x++) { response[x] = dwellTable.values[3 - (x / 4)][x % 4]; }
+      for (int x = 16; x < 20; x++) { response[x] = byte(dwellTable.axisX[(x - 16)] / TABLE_RPM_MULTIPLIER); }
+      for (int y = 20; y < 24; y++) { response[y] = byte(dwellTable.axisY[3 - (y - 20)] / TABLE_LOAD_MULTIPLIER); }
+      Serial.write((byte *)&response, 24);
       break;
     }
       
@@ -1998,6 +2023,14 @@ byte getPageValue(byte page, uint16_t valueAddress)
           if(valueAddress < 64) { returnValue = wmiTable.values[7 - (valueAddress / 8)][valueAddress % 8]; }
           else if(valueAddress < 72) { returnValue = byte(wmiTable.axisX[(valueAddress - 64)] / TABLE_RPM_MULTIPLIER); }
           else if(valueAddress < 80) { returnValue = byte(wmiTable.axisY[7 - (valueAddress - 72)] / TABLE_LOAD_MULTIPLIER); }
+        }
+        else if(valueAddress < 184)
+        {
+          tempAddress = valueAddress - 160;
+          //Dwell table
+          if(tempAddress < 16) { returnValue = dwellTable.values[3 - (tempAddress / 4)][tempAddress % 4]; }
+          else if(tempAddress < 20) { returnValue = byte(dwellTable.axisX[(tempAddress - 16)] / TABLE_RPM_MULTIPLIER); }
+          else if(tempAddress < 24) { returnValue = byte(dwellTable.axisY[3 - (tempAddress - 20)] / TABLE_LOAD_MULTIPLIER); }
         }
         break;
 

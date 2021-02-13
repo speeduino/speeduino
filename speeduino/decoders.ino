@@ -3281,6 +3281,8 @@ void triggerSetEndTeeth_Harley()
 /*
 Name: 36-2-2-2 trigger wheel wheel
 Desc: A crank based trigger with a nominal 36 teeth, but 6 of these removed in 3 groups of 2. 2 of these groups are located concurrently.
+Note: This decoder supports both the H4 version (13-missing-16-missing-1-missing) and the H6 version of 36-2-2-2 (19-missing-10-missing-1-missing)
+The decoder checks which pattern is selected in order to determine the tooth number
 Note: www.thefactoryfiveforum.com/attachment.php?attachmentid=34279&d=1412431418
 */
 void triggerSetup_ThirtySixMinus222()
@@ -3321,7 +3323,9 @@ void triggerPri_ThirtySixMinus222()
          if(toothSystemCount == 1)
          {
            //This occurs when we're at the first tooth after the 2 lots of 2x missing tooth.
-           toothCurrentCount = 19;
+           if(configPage2.nCylinders == 4 ) { toothCurrentCount = 19; } //H4
+           else if(configPage2.nCylinders == 6) { toothCurrentCount = 23; } //H6 - NOT TESTED!
+           
            toothSystemCount = 0;
            currentStatus.hasSync = true;
          }
@@ -3350,9 +3354,15 @@ void triggerPri_ThirtySixMinus222()
        }
        else if(toothSystemCount == 1)
        {
-         //This occurs when a set of missing teeth had been seen, but the next one was NOT missing.
-         toothCurrentCount = 35;
-         currentStatus.hasSync = true;
+          //This occurs when a set of missing teeth had been seen, but the next one was NOT missing.
+          if(configPage2.nCylinders == 4 )
+          { 
+            //H4
+            toothCurrentCount = 35; 
+            currentStatus.hasSync = true;
+          } 
+          //else if(configPage2.nCylinders == 6) { toothCurrentCount = 3; } //H6
+          
        }
 
        //Filter can only be recalc'd for the regular teeth, not the missing one.
@@ -3408,13 +3418,28 @@ int getCrankAngle_ThirtySixMinus222()
 
 void triggerSetEndTeeth_ThirtySixMinus222()
 {
-  if(currentStatus.advance < 10) { ignition1EndTooth = 36; }
-  else if(currentStatus.advance < 20) { ignition1EndTooth = 35; }
-  else if(currentStatus.advance < 30) { ignition1EndTooth = 34; }
-  else { ignition1EndTooth = 31; }
+  if(configPage2.nCylinders == 4 )
+  { 
+    if(currentStatus.advance < 10) { ignition1EndTooth = 36; }
+    else if(currentStatus.advance < 20) { ignition1EndTooth = 35; }
+    else if(currentStatus.advance < 30) { ignition1EndTooth = 34; }
+    else { ignition1EndTooth = 31; }
 
-  if(currentStatus.advance < 30) { ignition2EndTooth = 16; }
-  else { ignition2EndTooth = 13; }
+    if(currentStatus.advance < 30) { ignition2EndTooth = 16; }
+    else { ignition2EndTooth = 13; }
+  }
+  else if(configPage2.nCylinders == 6) 
+  { 
+    //H6
+    if(currentStatus.advance < 10) { ignition1EndTooth = 4; }
+    else if(currentStatus.advance < 20) { ignition1EndTooth = 3; }
+    else if(currentStatus.advance < 30) { ignition1EndTooth = 2; }
+    else { ignition1EndTooth = 35; }
+
+    if(currentStatus.advance < 30) { ignition2EndTooth = 20; }
+    else { ignition2EndTooth = 17; }
+  } 
+  
 
   lastToothCalcAdvance = currentStatus.advance;
 }

@@ -229,11 +229,14 @@ void writeConfig(byte tableNum)
 
     case wmiMapPage:
       /*---------------------------------------------------
-      | WMI tables (See storage.h for data layout) - Page 12
-      | 8x8 table itself + the 8 values along each of the axis
+      | WMI and Dwell tables (See storage.h for data layout) - Page 12
+      | 8x8 WMI table itself + the 8 values along each of the axis
+      | 4x4 Dwell table itself + the 4 values along each of the axis
       -----------------------------------------------------*/
       eePtr = EEPROM_CONFIG12_XSIZE;
       writeCounter = writeTable(&wmiTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, eePtr, writeCounter);
+      eePtr = EEPROM_CONFIG12_XSIZE3;
+      writeCounter = writeTable(&dwellTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, eePtr, writeCounter);
       eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
       
@@ -376,9 +379,10 @@ void loadConfig()
   loadTable(&fuelTable2, EEPtr(EEPROM_CONFIG11_MAP), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
 
   //*********************************************************************************************************************************************************************************
-  // WMI table load
+  // WMI and Dwell table load
   loadTable(&wmiTable, EEPtr(EEPROM_CONFIG12_MAP), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-    
+  loadTable(&dwellTable, EEPtr(EEPROM_CONFIG12_MAP3), TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+
   //*********************************************************************************************************************************************************************************
   //CONFIG PAGE (13)
   copy_advance_input(EEPtr(EEPROM_CONFIG13_START), (byte *)&configPage13, (byte *)&configPage13+sizeof(configPage13));
