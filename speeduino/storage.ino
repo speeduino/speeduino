@@ -45,8 +45,7 @@ namespace {
     return counter;
   }
 
-  template<class _InIt>
-  inline int16_t write_range_divisor(int &index, int8_t divisor, _InIt pStart, const _InIt pEnd, int16_t counter)
+  inline int16_t write_range_divisor(int &index, int8_t divisor, int16_t *pStart, const int16_t *pEnd, int16_t counter)
   {
     while (counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
     {
@@ -56,10 +55,14 @@ namespace {
     return counter;
   }
 
-  template<class _InIt>
-  inline int16_t write_range(int &index, _InIt pStart, const _InIt pEnd, int16_t counter)
+  inline int16_t write_range(int &index, byte *pStart, const byte *pEnd, int16_t counter)
   {
-    return write_range_divisor(index, 1, pStart, pEnd, counter);
+    while (counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
+    {
+      counter = update(index, *pStart, counter);
+      ++pStart; ++index;
+    }
+    return counter;
   }
 
   inline int16_t writeTableValues(const table3D *pTable, int &index, int16_t counter)
@@ -277,23 +280,20 @@ void resetConfigPages()
 
 namespace
 {
-  template<class _OutIt> inline
-	int copy_advance_input(int index, _OutIt _First, _OutIt _Last)
+  inline int load_range(int index, byte *pFirst, byte *pLast)
   {
-	  for (; _First != _Last; ++index, (void)++_First)
+	  for (; pFirst != pLast; ++index, (void)++pFirst)
 		{
-		  *_First = EEPROM.read(index);
+		  *pFirst = EEPROM.read(index);
 		}
     return index;
   }
 
-  template<class _OutIt,
-	class _Fn> inline
-	int transform_advance_input(int index, _OutIt _First, _OutIt _Last, _Fn _Func)
-	{	// transform [_First, _Last) with _Func
-  	for (; _First != _Last; ++index, (void)++_First)
+  inline int load_range_multiplier(int index, int16_t *pFirst, int16_t *pLast, int16_t multiplier)
+	{
+  	for (; pFirst != pLast; ++index, (void)++pFirst)
 		{
-		  *_First = _Func(EEPROM.read(index));
+		  *pFirst = EEPROM.read(index) * multiplier;
 		}
     return index;
   }
@@ -305,19 +305,19 @@ namespace
     int rowSize = pTable->xSize;
     for(; pRow!=pRowEnd; --pRow)
     {
-      index = copy_advance_input(index, *pRow, *pRow+rowSize);
+      index = load_range(index, *pRow, *pRow+rowSize);
     }
     return index; 
   }
 
   inline int loadTableAxisX(table3D *pTable, int index, int xAxisMultiplier)
   {
-    return transform_advance_input(index, pTable->axisX, pTable->axisX+pTable->xSize, [xAxisMultiplier](uint8_t value) { return value * xAxisMultiplier; } );
+    return load_range_multiplier(index, pTable->axisX, pTable->axisX+pTable->xSize, xAxisMultiplier);
   }
 
   inline int loadTableAxisY(table3D *pTable, int index, int yAxisMultiplier)
   {
-    return transform_advance_input(index, pTable->axisY, pTable->axisY+pTable->ySize, [yAxisMultiplier](uint8_t value) { return value * yAxisMultiplier; } );
+    return load_range_multiplier(index, pTable->axisY, pTable->axisY+pTable->ySize, yAxisMultiplier);
   }
 
   inline int loadTable(table3D *pTable, int index, int xAxisMultiplier, int yAxisMultiplier)
@@ -333,7 +333,7 @@ namespace
 void loadConfig()
 {
   loadTable(&fuelTable, EEPROM_CONFIG1_MAP, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-  copy_advance_input(EEPROM_CONFIG2_START, (byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2));
+  load_range(EEPROM_CONFIG2_START, (byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2));
   //That concludes the reading of the VE table
   
   //*********************************************************************************************************************************************************************************
@@ -341,14 +341,14 @@ void loadConfig()
 
   //Begin writing the Ignition table, basically the same thing as above
   loadTable(&ignitionTable, EEPROM_CONFIG3_MAP, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-  copy_advance_input(EEPROM_CONFIG4_START, (byte *)&configPage4, (byte *)&configPage4+sizeof(configPage4));
+  load_range(EEPROM_CONFIG4_START, (byte *)&configPage4, (byte *)&configPage4+sizeof(configPage4));
 
   //*********************************************************************************************************************************************************************************
   //AFR TARGET CONFIG PAGE (3)
 
   //Begin writing the Ignition table, basically the same thing as above
   loadTable(&afrTable, EEPROM_CONFIG5_MAP, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-  copy_advance_input(EEPROM_CONFIG6_START, (byte *)&configPage6, (byte *)&configPage6+sizeof(configPage6));
+  load_range(EEPROM_CONFIG6_START, (byte *)&configPage6, (byte *)&configPage6+sizeof(configPage6));
 
   //*********************************************************************************************************************************************************************************
   // Boost and vvt tables load
@@ -365,12 +365,12 @@ void loadConfig()
 
   //*********************************************************************************************************************************************************************************
   //canbus control page load
-  copy_advance_input(EEPROM_CONFIG9_START, (byte *)&configPage9, (byte *)&configPage9+sizeof(configPage9));
+  load_range(EEPROM_CONFIG9_START, (byte *)&configPage9, (byte *)&configPage9+sizeof(configPage9));
 
   //*********************************************************************************************************************************************************************************
 
   //CONFIG PAGE (10)
-  copy_advance_input(EEPROM_CONFIG10_START, (byte *)&configPage10, (byte *)&configPage10+sizeof(configPage10));
+  load_range(EEPROM_CONFIG10_START, (byte *)&configPage10, (byte *)&configPage10+sizeof(configPage10));
 
   //*********************************************************************************************************************************************************************************
   //Fuel table 2 (See storage.h for data layout)
@@ -383,7 +383,7 @@ void loadConfig()
 
   //*********************************************************************************************************************************************************************************
   //CONFIG PAGE (13)
-  copy_advance_input(EEPROM_CONFIG13_START, (byte *)&configPage13, (byte *)&configPage13+sizeof(configPage13));
+  load_range(EEPROM_CONFIG13_START, (byte *)&configPage13, (byte *)&configPage13+sizeof(configPage13));
 
   //*********************************************************************************************************************************************************************************
   //SECOND IGNITION CONFIG PAGE (14)
