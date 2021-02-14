@@ -652,8 +652,20 @@ void loop()
 
       //Set dwell
       //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage4. This number therefore needs to be multiplied by 100 to get dwell in uS
-      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { currentStatus.dwell =  (configPage4.dwellCrank * 100); }
-      else { currentStatus.dwell =  (configPage4.dwellRun * 100); }
+      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) {
+        currentStatus.dwell =  (configPage4.dwellCrank * 100); //use cranking dwell
+      }
+      else 
+      {
+        if ( configPage2.useDwellMap == true )
+        {
+          currentStatus.dwell = (get3DTableValue(&dwellTable, currentStatus.MAP, currentStatus.RPM) * 100); //use running dwell from map
+        }
+        else
+        {
+          currentStatus.dwell =  (configPage4.dwellRun * 100); //use fixed running dwell
+        }
+      }
       currentStatus.dwell = correctionsDwell(currentStatus.dwell);
 
       int dwellAngle = timeToAngle(currentStatus.dwell, CRANKMATH_METHOD_INTERVAL_REV); //Convert the dwell time to dwell angle based on the current engine speed
