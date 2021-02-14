@@ -108,7 +108,7 @@ void loop()
       }
 
       //Check for any new requets from serial.
-      if ( (Serial.available()) > 0 && (eepromWritesPending == false)) { command(); }
+      if ( (Serial.available()) > 0) { command(); }
       else if(cmdPending == true)
       {
         //This is a special case just for the tooth and composite loggers
