@@ -16,6 +16,7 @@ A full copy of the license may be found in the projects root directory
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
+#include "utilities.h"
 
 /*
   Processes the data on the serial buffer.
@@ -1385,6 +1386,83 @@ void sendPage()
   }
 }
 
+namespace {
+  // Prints each element in the range [first,last)
+  // Could be replaced with a C++ template function. Or std::for_each. 
+  void serial_println_range(const byte *first, const byte *last)
+  {
+    while (first!=last)
+    {
+      Serial.println(*first);
+      ++first;
+    }
+  }
+
+  void serial_println_range(const uint16_t *first, const uint16_t *last)
+  {
+    while (first!=last)
+    {
+      Serial.println(*first);
+      ++first;
+    }
+  }
+
+  void serial_print_space_delimited(const byte *first, const byte *last)
+  {
+    while (first!=last)
+    {
+      Serial.print(*first);// This displays the values horizantially on the screen
+      Serial.print(F(" "));
+      ++first;
+    }
+    Serial.println();
+  }
+  #define serial_print_space_delimited_array(array) serial_print_space_delimited(array, _end_range_address(array))
+
+  void serial_print_axis_padding(byte axisValue)
+  {
+    if (axisValue < 100)
+    {
+      Serial.print(F(" "));
+      if (axisValue < 10)
+      {
+        Serial.print(F(" "));
+      }
+    }
+  }
+
+  void serial_print_3dtable_axis_value(byte axisValue)
+  {
+      serial_print_axis_padding(axisValue);
+      Serial.print(axisValue);
+      Serial.print(F(" "));
+  }
+
+  void serial_print_3dtable(const table3D &currentTable)
+  {
+    for (int y = 0; y < currentTable.ySize; y++)
+    {
+      serial_print_3dtable_axis_value(byte(currentTable.axisY[y]));
+      for (int i = 0; i < currentTable.xSize; i++)
+      {
+        serial_print_3dtable_axis_value(currentTable.values[y][i]);
+      }
+      Serial.println();
+    }
+  }
+
+  void serial_print_3dtable_with_xbins(const table3D &currentTable)
+  {
+    serial_print_3dtable(currentTable);
+    Serial.print(F("    "));
+    for (int x = 0; x < currentTable.xSize; x++)// Horizontal bins
+    {
+      serial_print_3dtable_axis_value(byte(currentTable.axisX[x] / 100));
+    }
+    Serial.println();
+  }
+}
+
 /**
  * @brief Similar to sendPage(), however data is sent in human readable format
  * 
@@ -1392,355 +1470,106 @@ void sendPage()
  */
 void sendPageASCII()
 {
-  void* pnt_configPage = &configPage2; //Default value is for safety only. Will be changed below if needed.
-  struct table3D currentTable = fuelTable; //Default value is for safety only. Will be changed below if needed.
-  byte currentTitleIndex = 0;// This corresponds to the count up to the first char of a string in pageTitles
-  bool sendComplete = false; //Used to track whether all send operations are complete
-
   switch (currentPage)
   {
     case veMapPage:
-      currentTitleIndex = 0;
-      currentTable = fuelTable;
+      Serial.println(F("\nVE Map"));
+      serial_print_3dtable_with_xbins(fuelTable);
       break;
 
     case veSetPage:
-      uint16_t* pnt16_configPage;
-      // To Display Values from Config Page 1
-      // When casting to the __FlashStringHelper type Serial.println uses the same subroutine as when using the F macro
-      Serial.println((const __FlashStringHelper *)&pageTitles[27]);//27 is the index to the first char in the second sting in pageTitles
+      Serial.println(F("\nPg 2 Cfg"));
       // The following loop displays in human readable form of all byte values in config page 1 up to but not including the first array.
-      // incrementing void pointers is cumbersome. Thus we have "pnt_configPage = (byte *)pnt_configPage + 1"
-      for (pnt_configPage = (byte *)&configPage2; pnt_configPage < &configPage2.wueValues[0]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
-      for (byte x = 10; x; x--)// The x between the ';' has the same representation as the "x != 0" test or comparision
-      {
-        Serial.print(configPage2.wueValues[10 - x]);// This displays the values horizantially on the screen
-        Serial.print(F(" "));
-      }
-      Serial.println();
-      for (pnt_configPage = (byte *)&configPage2.wueValues[9] + 1; pnt_configPage < &configPage2.injAng; pnt_configPage = (byte *)pnt_configPage + 1) {
-        Serial.println(*((byte *)pnt_configPage));// This displays all the byte values between the last array up to but not including the first unsigned int on config page 1
-      }
+      serial_println_range((byte *)&configPage2, configPage2.wueValues);
+      serial_print_space_delimited_array(configPage2.wueValues);
+      // This displays all the byte values between the last array up to but not including the first unsigned int on config page 1
+      serial_println_range(_end_range_byte_address(configPage2.wueValues), (byte*)&configPage2.injAng);
       // The following loop displays four unsigned ints
-      for (pnt16_configPage = (uint16_t *)&configPage2.injAng; pnt16_configPage < (uint16_t*)&configPage2.injAng + 9; pnt16_configPage = (uint16_t*)pnt16_configPage + 1)
-      { Serial.println(*((uint16_t *)pnt16_configPage)); }
+      serial_println_range(configPage2.injAng, configPage2.injAng + _countof(configPage2.injAng));
       // Following loop displays byte values between the unsigned ints
-      for (pnt_configPage = (uint16_t *)&configPage2.injAng + 9; pnt_configPage < &configPage2.mapMax; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
+      serial_println_range(_end_range_byte_address(configPage2.injAng), (byte*)&configPage2.mapMax);
       Serial.println(configPage2.mapMax);
       // Following loop displays remaining byte values of the page
-      for (pnt_configPage = (uint16_t *)&configPage2.mapMax + 1; pnt_configPage < (byte *)&configPage2 + npage_size[veSetPage]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
-      sendComplete = true;
+      serial_println_range(&configPage2.fpPrime, (byte *)&configPage2 + npage_size[veSetPage]);
       break;
 
     case ignMapPage:
-      currentTitleIndex = 42;// the index to the first char of the third string in pageTitles
-      currentTable = ignitionTable;
+      Serial.println(F("\nIgnition Map"));
+      serial_print_3dtable_with_xbins(ignitionTable);
       break;
 
     case ignSetPage:
-      //To Display Values from Config Page 2
-      Serial.println((const __FlashStringHelper *)&pageTitles[56]);
+      Serial.println(F("\nPg 4 Cfg"));
       Serial.println(configPage4.triggerAngle);// configPsge2.triggerAngle is an int so just display it without complication
       // Following loop displays byte values after that first int up to but not including the first array in config page 2
-      for (pnt_configPage = (byte *)&configPage4 + 1; pnt_configPage < &configPage4.taeBins[0]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
-      for (byte y = 2; y; y--)// Displaying two equal sized arrays
-      {
-        byte * currentVar;// A placeholder for each array
-        if (y == 2) {
-          currentVar = configPage4.taeBins;
-        }
-        else {
-          currentVar = configPage4.taeValues;
-        }
-
-        for (byte j = 4; j; j--)
-        {
-          Serial.print(currentVar[4 - j]);
-          Serial.print(' ');
-        }
-        Serial.println();
-      }
-      for (byte x = 10; x ; x--)
-      {
-        Serial.print(configPage4.wueBins[10 - x]);//Displaying array horizontally across screen
-        Serial.print(' ');
-      }
-      Serial.println();
+      serial_println_range((byte*)&configPage4.FixAng, configPage4.taeBins);
+      serial_print_space_delimited_array(configPage4.taeBins);
+      serial_print_space_delimited_array(configPage4.taeValues);
+      serial_print_space_delimited_array(configPage4.wueBins);
       Serial.println(configPage4.dwellLimit);// Little lonely byte stuck between two arrays. No complications just display it.
-      for (byte x = 6; x; x--)
-      {
-        Serial.print(configPage4.dwellCorrectionValues[6 - x]);
-        Serial.print(' ');
-      }
-      Serial.println();
-      for (pnt_configPage = (byte *)&configPage4.dwellCorrectionValues[5] + 1; pnt_configPage < (byte *)&configPage4 + npage_size[ignSetPage]; pnt_configPage = (byte *)pnt_configPage + 1)
-      {
-        Serial.println(*((byte *)pnt_configPage));// Displaying remaining byte values of the page
-      }
-      sendComplete = true;
+      serial_print_space_delimited_array(configPage4.dwellCorrectionValues);
+      serial_println_range(_end_range_byte_address(configPage4.dwellCorrectionValues), (byte *)&configPage4 + npage_size[ignSetPage]);
       break;
 
     case afrMapPage:
-      currentTitleIndex = 71;//Array index to next string
-      currentTable = afrTable;
+      Serial.println(F("\nAFR Map"));
+      serial_print_3dtable_with_xbins(afrTable);
       break;
 
     case afrSetPage:
-      //currentTitleIndex = 91;
-      //To Display Values from Config Page 3
-      Serial.println((const __FlashStringHelper *)&pageTitles[91]);//special typecasting to enable suroutine that the F macro uses
-      for (pnt_configPage = (byte *)&configPage6; pnt_configPage < &configPage6.voltageCorrectionBins[0]; pnt_configPage = (byte *)pnt_configPage + 1)
-      {
-        Serial.println(*((byte *)pnt_configPage));// Displaying byte values of config page 3 up to but not including the first array
-      }
-      for (byte y = 2; y; y--)// Displaying two equally sized arrays that are next to each other
-      {
-        byte * currentVar;
-        if (y == 2) { currentVar = configPage6.voltageCorrectionBins; }
-        else { currentVar = configPage6.injVoltageCorrectionValues; }
-
-        for (byte i = 6; i; i--)
-        {
-          Serial.print(currentVar[6 - i]);
-          Serial.print(' ');
-        }
-        Serial.println();
-      }
-      for (byte y = 2; y; y--)// and again
-      {
-        byte* currentVar;
-        if (y == 2) { currentVar = configPage6.airDenBins; }
-        else { currentVar = configPage6.airDenRates; }
-
-        for (byte i = 9; i; i--)
-        {
-          Serial.print(currentVar[9 - i]);
-          Serial.print(' ');
-        }
-        Serial.println();
-      }
-      // Following loop displays the remaining byte values of the page
-      for (pnt_configPage = (byte *)&configPage6.airDenRates[8] + 1; pnt_configPage < (byte *)&configPage6 + npage_size[afrSetPage]; pnt_configPage = (byte *)pnt_configPage + 1)
-      {
-        Serial.println(*((byte *)pnt_configPage));
-      }
-      sendComplete = true;
-
-      //Old configPage4 STARTED HERE!
-      //currentTitleIndex = 106;
-      Serial.println((const __FlashStringHelper *)&pageTitles[106]);// F macro hack
-      for (byte y = 4; y; y--)// Display four equally sized arrays
-      {
-        byte * currentVar;
-        switch (y)
-        {
-          case 1: currentVar = configPage6.iacBins; break;
-          case 2: currentVar = configPage6.iacOLPWMVal; break;
-          case 3: currentVar = configPage6.iacOLStepVal; break;
-          case 4: currentVar = configPage6.iacCLValues; break;
-          default: break;
-        }
-        for (byte i = 10; i; i--)
-        {
-          Serial.print(currentVar[10 - i]);
-          Serial.print(' ');
-        }
-        Serial.println();
-      }
-      for (byte y = 3; y; y--)// Three equally sized arrays
-      {
-        byte * currentVar;
-        switch (y)
-        {
-          case 1: currentVar = configPage6.iacCrankBins; break;
-          case 2: currentVar = configPage6.iacCrankDuty; break;
-          case 3: currentVar = configPage6.iacCrankSteps; break;
-          default: break;
-        }
-        for (byte i = 4; i; i--)
-        {
-          Serial.print(currentVar[4 - i]);
-          Serial.print(' ');
-        }
-        Serial.println();
-      }
+      Serial.println(F("\nPg 6 Config"));
+      serial_println_range((byte *)&configPage6, configPage6.voltageCorrectionBins);
+      serial_print_space_delimited_array(configPage6.voltageCorrectionBins);
+      serial_print_space_delimited_array(configPage6.injVoltageCorrectionValues);
+      serial_print_space_delimited_array(configPage6.airDenBins);
+      serial_print_space_delimited_array(configPage6.airDenRates);
+      serial_println_range(_end_range_byte_address(configPage6.airDenRates), configPage6.iacCLValues);
+      serial_print_space_delimited_array(configPage6.iacCLValues);
+      serial_print_space_delimited_array(configPage6.iacOLStepVal);
+      serial_print_space_delimited_array(configPage6.iacOLPWMVal);
+      serial_print_space_delimited_array(configPage6.iacBins);
+      serial_print_space_delimited_array(configPage6.iacCrankSteps);
+      serial_print_space_delimited_array(configPage6.iacCrankDuty);
+      serial_print_space_delimited_array(configPage6.iacCrankBins);
       // Following loop is for remaining byte value of page
-      for (pnt_configPage = (byte *)&configPage6.iacCrankBins[3] + 1; pnt_configPage < (byte *)&configPage6 + npage_size[afrSetPage]; pnt_configPage = (byte *)pnt_configPage + 1) { Serial.println(*((byte *)pnt_configPage)); }
-      sendComplete = true;
+      serial_println_range(_end_range_byte_address(configPage6.iacCrankBins), (byte *)&configPage6 + npage_size[afrSetPage]);
       break;
 
     case boostvvtPage:
-      currentTable = boostTable;
-      currentTitleIndex = 121;
+      Serial.println(F("\nBoost Map"));
+      serial_print_3dtable_with_xbins(boostTable);
+      Serial.println(F("\nVVT Map"));
+      serial_print_3dtable_with_xbins(vvtTable);
       break;
 
     case seqFuelPage:
-      currentTable = trim1Table;
-      for (int y = 0; y < currentTable.ySize; y++)
-      {
-        byte axisY = byte(currentTable.axisY[y]);
-        if (axisY < 100)
-        {
-          Serial.write(" ");
-          if (axisY < 10)
-          {
-            Serial.write(" ");
-          }
-        }
-        Serial.print(axisY);// Vertical Bins
-        Serial.write(" ");
-        for (int i = 0; i < currentTable.xSize; i++)
-        {
-          byte value = currentTable.values[y][i];
-          if (value < 100)
-          {
-            Serial.write(" ");
-            if (value < 10)
-            {
-              Serial.write(" ");
-            }
-          }
-          Serial.print(value);
-          Serial.write(" ");
-        }
-        Serial.println("");
-      }
-      sendComplete = true;
+      Serial.println(F("\nTrim 1 Table"));
+      serial_print_3dtable(trim1Table);
       break;
 
     case canbusPage:
-      //currentTitleIndex = 141;
-      //To Display Values from Config Page 10
-      Serial.println((const __FlashStringHelper *)&pageTitles[103]);//special typecasting to enable suroutine that the F macro uses
-      for (pnt_configPage = &configPage9; pnt_configPage < ( (byte *)&configPage9 + npage_size[canbusPage]); pnt_configPage = (byte *)pnt_configPage + 1)
-      {
-        Serial.println(*((byte *)pnt_configPage));// Displaying byte values of config page 9 up to but not including the first array
-      }
-      sendComplete = true;
-      break;
-
-    case warmupPage:
-      //NOT WRITTEN YET
-      #ifndef SMALL_FLASH_MODE
-        Serial.println(F("\nPage has not been implemented yet"));
-      #endif
-      sendComplete = true;
+      Serial.println(F("\nPage 9 Cfg"));
+      serial_println_range((byte *)&configPage9, (byte *)&configPage9 + npage_size[canbusPage]);
       break;
 
     case fuelMap2Page:
-      currentTitleIndex = 117;// the index to the first char of the third string in pageTitles
-      currentTable = fuelTable2;
+      Serial.println(F("\n2nd Fuel Map"));
+      serial_print_3dtable_with_xbins(fuelTable2);
       break;
-
-    case progOutsPage:
-      //NOT WRITTEN YET
-      #ifndef SMALL_FLASH_MODE
-        Serial.println(F("\nPage has not been implemented yet"));
-      #endif
-      sendComplete = true;
-      break;
-    
+   
     case ignMap2Page:
-      currentTitleIndex = 149;// the index to the first char of the third string in pageTitles
-      currentTable = ignitionTable2;
+      Serial.println(F("\n2nd Ignition Map"));
+      serial_print_3dtable_with_xbins(ignitionTable2);
       break;
 
+    case warmupPage:
+    case progOutsPage:
     default:
     #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
     #endif
-        //Just set default Values to avoid warnings
-        pnt_configPage = &configPage10;
-        currentTable = fuelTable;
-        sendComplete = true;
         break;
   }
-  if(!sendComplete)
-  {
-    if (isMap)
-    {
-      //This is a do while loop that kicks in for the boostvvtPage
-      do {
-        const char spaceChar = ' ';
-
-        Serial.println((const __FlashStringHelper *)&pageTitles[currentTitleIndex]);// F macro hack
-        Serial.println();
-        for (int y = 0; y < currentTable.ySize; y++)
-        {
-          byte axisY = byte(currentTable.axisY[y]);
-          if (axisY < 100)
-          {
-            Serial.write(spaceChar);
-            if (axisY < 10)
-            {
-              Serial.write(spaceChar);
-            }
-          }
-          Serial.print(axisY);// Vertical Bins
-          Serial.write(spaceChar);
-          for (int i = 0; i < currentTable.xSize; i++)
-          {
-            byte value = currentTable.values[y][i];
-            if (value < 100)
-            {
-              Serial.write(spaceChar);
-              if (value < 10)
-              {
-                Serial.write(spaceChar);
-              }
-            }
-            Serial.print(value);
-            Serial.write(spaceChar);
-          }
-          Serial.println();
-        }
-        Serial.print(F("    "));
-        for (int x = 0; x < currentTable.xSize; x++)// Horizontal bins
-        {
-          byte axisX = byte(currentTable.axisX[x] / 100);
-          if (axisX < 100)
-          {
-            Serial.write(spaceChar);
-            if (axisX < 10)
-            {
-              Serial.write(spaceChar);
-            }
-          }
-          Serial.print(axisX);
-          Serial.write(spaceChar);
-        }
-        Serial.println();
-        if(currentTitleIndex == 121) //Check to see if on boostTable
-        {
-          currentTitleIndex = 132; //Change over to vvtTable mid display
-          currentTable = vvtTable;
-        }
-        else { currentTitleIndex = 0; }
-      } while(currentTitleIndex == 132); //Should never loop unless going to display vvtTable
-    } //is map
-    else
-    {
-      /*if(useChar)
-      {
-       while(pageTitles[currentTitleIndex])
-       {
-        Serial.print(pageTitles[currentTitleIndex]);
-        currentTitleIndex++;
-       }
-       Serial.println();
-       for(byte x=0;x<page_size;x++) Serial.println(*((byte *)pnt_configPage + x));
-      }
-      else
-      {*/
-      //All other bytes can simply be copied from the config table
-      //byte response[npage_size[currentPage]];
-      for (byte x = 0; x < npage_size[currentPage]; x++)
-      {
-        //response[x] = *((byte *)pnt_configPage + x);
-        Serial.write(*((byte *)pnt_configPage + x)); //Each byte is simply the location in memory of the configPage + the offset + the variable number (x)
-      }
-    } //isMap
-  } //sendComplete
 }
 
 /**
