@@ -1284,6 +1284,27 @@ void receiveValue(uint16_t valueOffset, byte newValue)
   }
 }
 
+namespace {
+
+  void sendTable(const table3D *pTable, int8_t xAxisDivisor, int8_t yAxisDivisor)
+  {
+    uint16_t length = sq(pTable->xSize) + pTable->xSize+ pTable->xSize;
+    for (uint16_t offset = 0; offset < length; offset++) 
+    {      
+      Serial.write(getTableValueFromOffset(pTable, offset, xAxisDivisor, yAxisDivisor)); 
+    }
+  }
+
+  void sendPageBytes(byte *pPage, uint16_t len)
+  {
+    for (uint16_t x = 0; x < len; x++)
+    {
+      Serial.write(*(pPage + x)); //Each byte is simply the location in memory of the configPage + the offset + the variable number (x)
+    }
+  }
+
+}
+
 /**
  * @brief Packs the data within the current page (As set with the 'P' command) into a buffer and sends it.
  * 
@@ -1292,178 +1313,76 @@ void receiveValue(uint16_t valueOffset, byte newValue)
  */
 void sendPage()
 {
-  void* pnt_configPage = &configPage2; //Default value is for safety only. Will be changed below if needed.
-  struct table3D currentTable = fuelTable; //Default value is for safety only. Will be changed below if needed.
-  bool sendComplete = false; //Used to track whether all send operations are complete
-
   switch (currentPage)
   {
     case veMapPage:
-      currentTable = fuelTable;
-      break;
-
-    case veSetPage:
-      pnt_configPage = &configPage2; //Create a pointer to Page 1 in memory
+      sendTable(&fuelTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       break;
 
     case ignMapPage:
-      currentTable = ignitionTable;
-      break;
-
-    case ignSetPage:
-      pnt_configPage = &configPage4; //Create a pointer to Page 2 in memory
+      sendTable(&ignitionTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       break;
 
     case afrMapPage:
-      currentTable = afrTable;
-      break;
-
-    case afrSetPage:
-      pnt_configPage = &configPage6; //Create a pointer to Page 3 in memory
+      sendTable(&afrTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       break;
 
     case boostvvtPage:
-    {
-      //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
-      byte response[80]; //Bit hacky, but send 1 map at a time (Each map is 8x8, so 64 + 8 + 8)
-
       //Boost table
-      for (int x = 0; x < 64; x++) { response[x] = boostTable.values[7 - (x / 8)][x % 8]; }
-      for (int x = 64; x < 72; x++) { response[x] = byte(boostTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
-      for (int y = 72; y < 80; y++) { response[y] = byte(boostTable.axisY[7 - (y - 72)]); }
-      Serial.write((byte *)&response, 80);
+      sendTable(&boostTable, TABLE_RPM_MULTIPLIER, 1);
       //VVT table
-      for (int x = 0; x < 64; x++) { response[x] = vvtTable.values[7 - (x / 8)][x % 8]; }
-      for (int x = 64; x < 72; x++) { response[x] = byte(vvtTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
-      for (int y = 72; y < 80; y++) { response[y] = byte(vvtTable.axisY[7 - (y - 72)]); }
-      Serial.write((byte *)&response, 80);
+      sendTable(&vvtTable, TABLE_RPM_MULTIPLIER, 1);
       //Staging table
-      for (int x = 0; x < 64; x++) { response[x] = stagingTable.values[7 - (x / 8)][x % 8]; }
-      for (int x = 64; x < 72; x++) { response[x] = byte(stagingTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
-      for (int y = 72; y < 80; y++) { response[y] = byte(stagingTable.axisY[7 - (y - 72)] / TABLE_LOAD_MULTIPLIER); }
-      Serial.write((byte *)&response, 80);
-      sendComplete = true;
+      sendTable(&vvtTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       break;
-    }
+
     case seqFuelPage:
-    {
-      //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
-      byte response[384]; //Bit hacky, but the size is: (6x6 + 6 + 6) * 8 = 384
-
       //trim1 table
-      for (int x = 0; x < 36; x++) { response[x] = trim1Table.values[5 - (x / 6)][x % 6]; }
-      for (int x = 36; x < 42; x++) { response[x] = byte(trim1Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
-      for (int y = 42; y < 48; y++) { response[y] = byte(trim1Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+      sendTable(&trim1Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       //trim2 table
-      for (int x = 0; x < 36; x++) { response[x + 48] = trim2Table.values[5 - (x / 6)][x % 6]; }
-      for (int x = 36; x < 42; x++) { response[x + 48] = byte(trim2Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
-      for (int y = 42; y < 48; y++) { response[y + 48] = byte(trim2Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+      sendTable(&trim2Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       //trim3 table
-      for (int x = 0; x < 36; x++) { response[x + 96] = trim3Table.values[5 - (x / 6)][x % 6]; }
-      for (int x = 36; x < 42; x++) { response[x + 96] = byte(trim3Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
-      for (int y = 42; y < 48; y++) { response[y + 96] = byte(trim3Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+      sendTable(&trim3Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       //trim4 table
-      for (int x = 0; x < 36; x++) { response[x + 144] = trim4Table.values[5 - (x / 6)][x % 6]; }
-      for (int x = 36; x < 42; x++) { response[x + 144] = byte(trim4Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
-      for (int y = 42; y < 48; y++) { response[y + 144] = byte(trim4Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+      sendTable(&trim4Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       //trim5 table
-      for (int x = 0; x < 36; x++) { response[x + 192] = trim5Table.values[5 - (x / 6)][x % 6]; }
-      for (int x = 36; x < 42; x++) { response[x + 192] = byte(trim5Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
-      for (int y = 42; y < 48; y++) { response[y + 192] = byte(trim5Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+      sendTable(&trim5Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       //trim6 table
-      for (int x = 0; x < 36; x++) { response[x + 240] = trim6Table.values[5 - (x / 6)][x % 6]; }
-      for (int x = 36; x < 42; x++) { response[x + 240] = byte(trim6Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
-      for (int y = 42; y < 48; y++) { response[y + 240] = byte(trim6Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+      sendTable(&trim6Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       //trim7 table
-      for (int x = 0; x < 36; x++) { response[x + 288] = trim7Table.values[5 - (x / 6)][x % 6]; }
-      for (int x = 36; x < 42; x++) { response[x + 288] = byte(trim7Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
-      for (int y = 42; y < 48; y++) { response[y + 288] = byte(trim7Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+      sendTable(&trim7Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       //trim8 table
-      for (int x = 0; x < 36; x++) { response[x + 336] = trim8Table.values[5 - (x / 6)][x % 6]; }
-      for (int x = 36; x < 42; x++) { response[x + 336] = byte(trim8Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
-      for (int y = 42; y < 48; y++) { response[y + 336] = byte(trim8Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
-
-      Serial.write((byte *)&response, sizeof(response));
-      sendComplete = true;
-      break;
-    }
-    case canbusPage:
-      pnt_configPage = &configPage9; //Create a pointer to Page 9 in memory
-      break;
-
-    case warmupPage:
-      pnt_configPage = &configPage10; //Create a pointer to Page 10 in memory
+      sendTable(&trim8Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       break;
 
     case fuelMap2Page:
-      currentTable = fuelTable2;
+      sendTable(&fuelTable2, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       break;
 
     case wmiMapPage:
-    {
-      //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
-      byte response[80]; //Bit hacky, but send 1 map at a time (Each map is 8x8, so 64 + 8 + 8)
-
-      //WMI table
-      for (int x = 0; x < 64; x++) { response[x] = wmiTable.values[7 - (x / 8)][x % 8]; }
-      for (int x = 64; x < 72; x++) { response[x] = byte(wmiTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
-      for (int y = 72; y < 80; y++) { response[y] = byte(wmiTable.axisY[7 - (y - 72)] / TABLE_LOAD_MULTIPLIER); }
-      Serial.write((byte *)&response, 80);
-
-      //Dwell table
-      for (int x = 0; x < 16; x++) { response[x] = dwellTable.values[3 - (x / 4)][x % 4]; }
-      for (int x = 16; x < 20; x++) { response[x] = byte(dwellTable.axisX[(x - 16)] / TABLE_RPM_MULTIPLIER); }
-      for (int y = 20; y < 24; y++) { response[y] = byte(dwellTable.axisY[3 - (y - 20)] / TABLE_LOAD_MULTIPLIER); }
-      Serial.write((byte *)&response, 24);
+      sendTable(&wmiTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&dwellTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       break;
-    }
-      
-    case progOutsPage:
-      pnt_configPage = &configPage13; //Create a pointer to Page 13 in memory
-      break;
-    
+   
     case ignMap2Page:
-      currentTable = ignitionTable2;
+      sendTable(&ignitionTable2, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      break;
+
+    case progOutsPage:
+    case canbusPage:
+    case afrSetPage:
+    case ignSetPage:
+    case veSetPage:
+    case warmupPage:
+      sendPageBytes(getRawPageStart(currentPage), npage_size[currentPage]);
       break;
 
     default:
     #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
     #endif
-        //Just set default Values to avoid warnings
-        pnt_configPage = &configPage10;
-        currentTable = fuelTable;
-        sendComplete = true;
         break;
   }
-  if(!sendComplete)
-  {
-    if (isMap)
-    {
-        //Need to perform a translation of the values[yaxis][xaxis] into the MS expected format
-        //MS format has origin (0,0) in the bottom left corner, we use the top left for efficiency reasons
-        byte response[MAP_PAGE_SIZE];
-
-        for (int x = 0; x < 256; x++) { response[x] = currentTable.values[15 - (x / 16)][x % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
-        //loop();
-        for (int x = 256; x < 272; x++) { response[x] = byte(currentTable.axisX[(x - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
-        //loop();
-        for (int y = 272; y < 288; y++) { response[y] = byte(currentTable.axisY[15 - (y - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
-        //loop();
-        Serial.write((byte *)&response, sizeof(response));
-    } //is map
-    else
-    {
-      for (byte x = 0; x < npage_size[currentPage]; x++)
-      {
-        //response[x] = *((byte *)pnt_configPage + x);
-        Serial.write(*((byte *)pnt_configPage + x)); //Each byte is simply the location in memory of the configPage + the offset + the variable number (x)
-      }
-
-      //Serial.write((byte *)&response, npage_size[currentPage]);
-      // }
-    } //isMap
-  } //sendComplete
 }
 
 /**
