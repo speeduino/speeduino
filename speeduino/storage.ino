@@ -191,7 +191,7 @@ void writeConfig(byte tableNum)
       index = EEPROM_CONFIG8_XSIZE1;
       writeCounter = writeTable(&trim1Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, index, writeCounter);
       index = EEPROM_CONFIG8_XSIZE2;
-      writeCounter = writeTable(&trim1Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, index, writeCounter);
+      writeCounter = writeTable(&trim2Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, index, writeCounter);
       index = EEPROM_CONFIG8_XSIZE3;
       writeCounter = writeTable(&trim3Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, index, writeCounter);
       index = EEPROM_CONFIG8_XSIZE4;
