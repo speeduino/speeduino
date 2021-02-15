@@ -1922,6 +1922,27 @@ void sendPageASCII()
   } //sendComplete
 }
 
+
+static uint8_t getTableValueFromOffset(table3D *pTable, uint16_t offset, int8_t xAxisDivisor, int8_t yAxisDivisor)
+{
+    int8_t size = pTable->xSize;
+    uint16_t area = sq(size);
+    if( offset < area) 
+    { 
+        return (uint8_t)pTable->values[size-1 - (offset / size)][offset % size]; //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
+    }
+    else if(offset < area+size) 
+    { 
+        return (uint8_t)(pTable->axisX[offset - area] / xAxisDivisor); //RPM Bins for VE table (Need to be dvidied by 100)
+    }
+    else if (offset < area+size+size)
+    {
+        return (uint8_t)(pTable->axisY[(size-1) - (offset - (area+size) )] / yAxisDivisor); //MAP or TPS bins for VE table
+    }
+
+    return 0;
+}
+
 /**
  * @brief Retrieves a single value from a memory page, with data aligned as per the ini file
  * 
@@ -1931,198 +1952,122 @@ void sendPageASCII()
  */
 byte getPageValue(byte page, uint16_t valueAddress)
 {
-  void* pnt_configPage = &configPage2; //Default value is for safety only. Will be changed below if needed.
-  uint16_t tempAddress;
-  byte returnValue = 0;
-
   switch (page)
   {
     case veMapPage:
-        if( valueAddress < 256) { returnValue = fuelTable.values[15 - (valueAddress / 16)][valueAddress % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
-        else if(valueAddress < 272) { returnValue =  byte(fuelTable.axisX[(valueAddress - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
-        else if (valueAddress < 288) { returnValue = byte(fuelTable.axisY[15 - (valueAddress - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
+        return getTableValueFromOffset(&fuelTable, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
         break;
 
     case veSetPage:
-        pnt_configPage = &configPage2; //Create a pointer to Page 1 in memory
-        returnValue = *((byte *)pnt_configPage + valueAddress);
+        return *((byte *)&configPage2 + valueAddress);
         break;
 
     case ignMapPage:
-        if( valueAddress < 256) { returnValue = ignitionTable.values[15 - (valueAddress / 16)][valueAddress % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
-        else if(valueAddress < 272) { returnValue =  byte(ignitionTable.axisX[(valueAddress - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
-        else if (valueAddress < 288) { returnValue = byte(ignitionTable.axisY[15 - (valueAddress - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
+        return getTableValueFromOffset(&ignitionTable, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
         break;
 
     case ignSetPage:
-        pnt_configPage = &configPage4; //Create a pointer to Page 2 in memory
-        returnValue = *((byte *)pnt_configPage + valueAddress);
+        return *((byte *)&configPage4 + valueAddress);
         break;
 
     case afrMapPage:
-        if( valueAddress < 256) { returnValue = afrTable.values[15 - (valueAddress / 16)][valueAddress % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
-        else if(valueAddress < 272) { returnValue =  byte(afrTable.axisX[(valueAddress - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
-        else if (valueAddress < 288) { returnValue = byte(afrTable.axisY[15 - (valueAddress - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
+        return getTableValueFromOffset(&afrTable, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
         break;
 
     case afrSetPage:
-        pnt_configPage = &configPage6; //Create a pointer to Page 3 in memory
-        returnValue = *((byte *)pnt_configPage + valueAddress);
+        return *((byte *)&configPage6 + valueAddress);
         break;
 
     case boostvvtPage:
-
+        //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
+        if(valueAddress < 80)
         {
-          //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
-          if(valueAddress < 80)
-          {
-            //Boost table
-            if(valueAddress < 64) { returnValue = boostTable.values[7 - (valueAddress / 8)][valueAddress % 8]; }
-            else if(valueAddress < 72) { returnValue = byte(boostTable.axisX[(valueAddress - 64)] / TABLE_RPM_MULTIPLIER); }
-            else if(valueAddress < 80) { returnValue = byte(boostTable.axisY[7 - (valueAddress - 72)]); }
-          }
-          else if(valueAddress < 160)
-          {
-            tempAddress = valueAddress - 80;
-            //VVT table
-            if(tempAddress < 64) { returnValue = vvtTable.values[7 - (tempAddress / 8)][tempAddress % 8]; }
-            else if(tempAddress < 72) { returnValue = byte(vvtTable.axisX[(tempAddress - 64)] / TABLE_RPM_MULTIPLIER); }
-            else if(tempAddress < 80) { returnValue = byte(vvtTable.axisY[7 - (tempAddress - 72)]); }
-          }
-          else
-          {
-            tempAddress = valueAddress - 160;
-            //Staging table
-            if(tempAddress < 64) { returnValue = stagingTable.values[7 - (tempAddress / 8)][tempAddress % 8]; }
-            else if(tempAddress < 72) { returnValue = byte(stagingTable.axisX[(tempAddress - 64)] / TABLE_RPM_MULTIPLIER); }
-            else if(tempAddress < 80) { returnValue = byte(stagingTable.axisY[7 - (tempAddress - 72)] / TABLE_LOAD_MULTIPLIER); }
-          }
+          return getTableValueFromOffset(&boostTable, valueAddress, TABLE_RPM_MULTIPLIER, 1);
+        }
+        else if(valueAddress < 160)
+        {
+          return getTableValueFromOffset(&vvtTable, valueAddress - 80, TABLE_RPM_MULTIPLIER, 1);
+        }
+        else
+        {
+          return getTableValueFromOffset(&stagingTable, valueAddress - 160, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
         }
         break;
 
     case seqFuelPage:
-
+        //Need to perform a translation of the values[MAP/TPS][RPM] into the TS expected format
+        if(valueAddress < 48)
         {
-          //Need to perform a translation of the values[MAP/TPS][RPM] into the TS expected format
-          if(valueAddress < 48)
-          {
-            //trim1 table
-            if(valueAddress < 36) { returnValue = trim1Table.values[5 - (valueAddress / 6)][valueAddress % 6]; }
-            else if(valueAddress < 42) { returnValue = byte(trim1Table.axisX[(valueAddress - 36)] / TABLE_RPM_MULTIPLIER); }
-            else if(valueAddress < 48) { returnValue = byte(trim1Table.axisY[5 - (valueAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
-          }
-          else if(valueAddress < 96)
-          {
-            tempAddress = valueAddress - 48;
-            //trim2 table
-            if(tempAddress < 36) { returnValue = trim2Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
-            else if(tempAddress < 42) { returnValue = byte(trim2Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
-            else if(tempAddress < 48) { returnValue = byte(trim2Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
-          }
-          else if(valueAddress < 144)
-          {
-            tempAddress = valueAddress - 96;
-            //trim3 table
-            if(tempAddress < 36) { returnValue = trim3Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
-            else if(tempAddress < 42) { returnValue = byte(trim3Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
-            else if(tempAddress < 48) { returnValue = byte(trim3Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
-          }
-          else if(valueAddress < 192)
-          {
-            tempAddress = valueAddress - 144;
-            //trim4 table
-            if(tempAddress < 36) { returnValue = trim4Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
-            else if(tempAddress < 42) { returnValue = byte(trim4Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
-            else if(tempAddress < 48) { returnValue = byte(trim4Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
-          }
-          else if(valueAddress < 240)
-          {
-            tempAddress = valueAddress - 192;
-            //trim5 table
-            if(tempAddress < 36) { returnValue = trim5Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
-            else if(tempAddress < 42) { returnValue = byte(trim5Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
-            else if(tempAddress < 48) { returnValue = byte(trim5Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
-          }
-          else if(valueAddress < 288)
-          {
-            tempAddress = valueAddress - 240;
-            //trim6 table
-            if(tempAddress < 36) { returnValue = trim6Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
-            else if(tempAddress < 42) { returnValue = byte(trim6Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
-            else if(tempAddress < 48) { returnValue = byte(trim6Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
-          }
-          else if(valueAddress < 336)
-          {
-            tempAddress = valueAddress - 288;
-            //trim7 table
-            if(tempAddress < 36) { returnValue = trim7Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
-            else if(tempAddress < 42) { returnValue = byte(trim7Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
-            else if(tempAddress < 48) { returnValue = byte(trim7Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
-          }
-          else if(valueAddress < 385)
-          {
-            tempAddress = valueAddress - 336;
-            //trim8 table
-            if(tempAddress < 36) { returnValue = trim8Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
-            else if(tempAddress < 42) { returnValue = byte(trim8Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
-            else if(tempAddress < 48) { returnValue = byte(trim8Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
-          }
+          return getTableValueFromOffset(&trim1Table, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        }
+        else if(valueAddress < 96)
+        {
+          return getTableValueFromOffset(&trim2Table, valueAddress - 48, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        }
+        else if(valueAddress < 144)
+        {
+          return getTableValueFromOffset(&trim3Table, valueAddress - 96, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        }
+        else if(valueAddress < 192)
+        {
+          return getTableValueFromOffset(&trim4Table, valueAddress - 144, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        }
+        else if(valueAddress < 240)
+        {
+          return getTableValueFromOffset(&trim5Table, valueAddress - 192, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        }
+        else if(valueAddress < 288)
+        {
+          return getTableValueFromOffset(&trim6Table, valueAddress - 240, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        }
+        else if(valueAddress < 336)
+        {
+          return getTableValueFromOffset(&trim7Table, valueAddress - 288, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        }
+        else if(valueAddress < 385)
+        {
+          return getTableValueFromOffset(&trim8Table, valueAddress - 336, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
         }
         break;
 
     case canbusPage:
-        pnt_configPage = &configPage9; //Create a pointer to Page 10 in memory
-        returnValue = *((byte *)pnt_configPage + valueAddress);
+        return *((byte *)&configPage9 + valueAddress);
         break;
 
     case warmupPage:
-        pnt_configPage = &configPage10; //Create a pointer to Page 11 in memory
-        returnValue = *((byte *)pnt_configPage + valueAddress);
+        return *((byte *)&configPage10 + valueAddress);
         break;
 
     case fuelMap2Page:
-        if( valueAddress < 256) { returnValue = fuelTable2.values[15 - (valueAddress / 16)][valueAddress % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
-        else if(valueAddress < 272) { returnValue =  byte(fuelTable2.axisX[(valueAddress - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
-        else if (valueAddress < 288) { returnValue = byte(fuelTable2.axisY[15 - (valueAddress - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
+        return getTableValueFromOffset(&fuelTable2, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
         break;
         
     case wmiMapPage:
         if(valueAddress < 80)
         {
-          if(valueAddress < 64) { returnValue = wmiTable.values[7 - (valueAddress / 8)][valueAddress % 8]; }
-          else if(valueAddress < 72) { returnValue = byte(wmiTable.axisX[(valueAddress - 64)] / TABLE_RPM_MULTIPLIER); }
-          else if(valueAddress < 80) { returnValue = byte(wmiTable.axisY[7 - (valueAddress - 72)] / TABLE_LOAD_MULTIPLIER); }
+          return getTableValueFromOffset(&wmiTable, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
         }
         else if(valueAddress < 184)
         {
-          tempAddress = valueAddress - 160;
-          //Dwell table
-          if(tempAddress < 16) { returnValue = dwellTable.values[3 - (tempAddress / 4)][tempAddress % 4]; }
-          else if(tempAddress < 20) { returnValue = byte(dwellTable.axisX[(tempAddress - 16)] / TABLE_RPM_MULTIPLIER); }
-          else if(tempAddress < 24) { returnValue = byte(dwellTable.axisY[3 - (tempAddress - 20)] / TABLE_LOAD_MULTIPLIER); }
+          return getTableValueFromOffset(&dwellTable, valueAddress - 160, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
         }
         break;
 
     case progOutsPage:
-        pnt_configPage = &configPage13; //Create a pointer to Page 13 in memory
-        returnValue = *((byte *)pnt_configPage + valueAddress);
+        return *((byte *)&configPage13 + valueAddress);
         break;
 
     case ignMap2Page:
-        if( valueAddress < 256) { returnValue = ignitionTable2.values[15 - (valueAddress / 16)][valueAddress % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
-        else if(valueAddress < 272) { returnValue =  byte(ignitionTable2.axisX[(valueAddress - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
-        else if (valueAddress < 288) { returnValue = byte(ignitionTable2.axisY[15 - (valueAddress - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
+        return getTableValueFromOffset(&ignitionTable2, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
         break;
       
     default:
     #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
     #endif
-        //Just set default Values to avoid warnings
-        pnt_configPage = &configPage10;
         break;
   }
-  return returnValue;
+  return 0;
 }
 
 /**
