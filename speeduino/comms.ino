@@ -2125,6 +2125,7 @@ byte getPageValue(byte page, uint16_t valueAddress)
           if(tempAddress < 64) { returnValue = vvt2Table.values[7 - (tempAddress / 8)][tempAddress % 8]; }
           else if(tempAddress < 72) { returnValue = byte(vvt2Table.axisX[(tempAddress - 64)] / TABLE_RPM_MULTIPLIER); }
           else if(tempAddress < 80) { returnValue = byte(vvt2Table.axisY[7 - (tempAddress - 72)]); }
+        }
         else if(valueAddress < 184)
         {
           tempAddress = valueAddress - 160;
