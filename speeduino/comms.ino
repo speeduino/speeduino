@@ -1139,53 +1139,58 @@ namespace {
       default: ; // no-op
     }
     pTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
-  }  
+  }
+
+  byte* getRawPageStart(byte pageNumber)
+  {
+    switch (pageNumber)
+    {
+      case veSetPage: return (byte*)&configPage2;
+      break;
+
+      case ignSetPage: return (byte*)&configPage4;
+      break;
+
+      case afrSetPage: return (byte*)&configPage6;
+      break;
+
+      case canbusPage: return (byte*)&configPage9;
+      break;
+
+      case warmupPage: return (byte*)&configPage10;
+      break;
+
+      case progOutsPage: return (byte*)&configPage13;
+      break;
+    }
+
+    return nullptr;
+  }
+
+  void receiveRawPageValue(byte pageNumber, uint16_t valueOffset, byte newValue)
+  {
+      //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
+      if (valueOffset < npage_size[pageNumber])
+      {
+        *(getRawPageStart(pageNumber) + (byte)valueOffset) = newValue;
+      }
+  }
 }
 
 void receiveValue(uint16_t valueOffset, byte newValue)
 {
-  void* pnt_configPage;//This only stores the address of the value that it's pointing to and not the max size
-  int tempOffset;
-
   switch (currentPage)
   {
     case veMapPage:
       setTableValueFromOffset(&fuelTable, valueOffset, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       break;
 
-    case veSetPage:
-      pnt_configPage = &configPage2; //Setup a pointer to the relevant config page
-      //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if (valueOffset < npage_size[veSetPage])
-      {
-        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
-      }
-      break;
-
     case ignMapPage: //Ignition settings page (Page 2)
       setTableValueFromOffset(&ignitionTable, valueOffset, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       break;
 
-    case ignSetPage:
-      pnt_configPage = &configPage4;
-      //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if (valueOffset < npage_size[ignSetPage])
-      {
-        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
-      }
-      break;
-
     case afrMapPage: //Air/Fuel ratio target settings page
       setTableValueFromOffset(&afrTable, valueOffset, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-      break;
-
-    case afrSetPage:
-      pnt_configPage = &configPage6;
-      //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if (valueOffset < npage_size[afrSetPage])
-      {
-        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
-      }
       break;
 
     case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
@@ -1245,24 +1250,6 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       }
       break;
 
-    case canbusPage:
-      pnt_configPage = &configPage9;
-      //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if (valueOffset < npage_size[currentPage])
-      {
-        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
-      }
-      break;
-
-    case warmupPage:
-      pnt_configPage = &configPage10;
-      //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if (valueOffset < npage_size[currentPage])
-      {
-        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
-      }
-      break;
-
     case fuelMap2Page:
       setTableValueFromOffset(&fuelTable2, valueOffset, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       break;
@@ -1278,24 +1265,23 @@ void receiveValue(uint16_t valueOffset, byte newValue)
         setTableValueFromOffset(&dwellTable, valueOffset - 160, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       }
       break;
-      
-    case progOutsPage:
-      pnt_configPage = &configPage13;
-      //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if (valueOffset < npage_size[currentPage])
-      {
-        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
-      }
-      break;
-
-    default:
-      break;
     
     case ignMap2Page: //Ignition settings page (Page 2)
       setTableValueFromOffset(&ignitionTable2, valueOffset, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
       break;
+      
+    case progOutsPage:
+    case canbusPage:
+    case afrSetPage:
+    case ignSetPage:
+    case veSetPage:
+    case warmupPage:
+      receiveRawPageValue(currentPage, valueOffset, newValue);
+      break;
+
+    default:
+      break;
   }
-  //if(Serial.available() > 16) { command(); }
 }
 
 /**
@@ -1853,24 +1839,12 @@ byte getPageValue(byte page, uint16_t valueAddress)
         return getTableValueFromOffset(&fuelTable, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
         break;
 
-    case veSetPage:
-        return *((byte *)&configPage2 + valueAddress);
-        break;
-
     case ignMapPage:
         return getTableValueFromOffset(&ignitionTable, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
         break;
 
-    case ignSetPage:
-        return *((byte *)&configPage4 + valueAddress);
-        break;
-
     case afrMapPage:
         return getTableValueFromOffset(&afrTable, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-        break;
-
-    case afrSetPage:
-        return *((byte *)&configPage6 + valueAddress);
         break;
 
     case boostvvtPage:
@@ -1925,14 +1899,6 @@ byte getPageValue(byte page, uint16_t valueAddress)
         }
         break;
 
-    case canbusPage:
-        return *((byte *)&configPage9 + valueAddress);
-        break;
-
-    case warmupPage:
-        return *((byte *)&configPage10 + valueAddress);
-        break;
-
     case fuelMap2Page:
         return getTableValueFromOffset(&fuelTable2, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
         break;
@@ -1948,12 +1914,17 @@ byte getPageValue(byte page, uint16_t valueAddress)
         }
         break;
 
-    case progOutsPage:
-        return *((byte *)&configPage13 + valueAddress);
-        break;
-
     case ignMap2Page:
         return getTableValueFromOffset(&ignitionTable2, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        break;
+
+    case progOutsPage:
+    case canbusPage:
+    case afrSetPage:
+    case ignSetPage:
+    case veSetPage:
+    case warmupPage:
+        return *(getRawPageStart(page) + valueAddress);
         break;
       
     default:
