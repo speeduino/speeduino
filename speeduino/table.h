@@ -12,11 +12,11 @@ This file is used for everything related to maps/tables including their definiti
 #define TABLE_SHIFT_POWER   (1UL<<TABLE_SHIFT_FACTOR)
 
 //Define the total table memory sizes. Used for adding up the static heap size
-#define TABLE3D_SIZE_16  (16 * 16 + 32 + 32 + 32) //2 bytes for each value on the axis + allocation for array pointers
-#define TABLE3D_SIZE_12  (12 * 12 + 24 + 24 + 24) //2 bytes for each value on the axis + allocation for array pointers
-#define TABLE3D_SIZE_8   (8 * 8 + 16 + 16 + 16) //2 bytes for each value on the axis + allocation for array pointers
-#define TABLE3D_SIZE_6   (6 * 6 + 12 + 12 + 12) //2 bytes for each value on the axis + allocation for array pointers
-#define TABLE3D_SIZE_4   (4 * 4 + 8 + 8 + 8) //2 bytes for each value on the axis + allocation for array pointers
+#define TABLE3D_SIZE_16  (16 * 16 + 32 + 32 + (16 * sizeof(byte*))) //2 bytes for each value on the axis + allocation for array pointers
+#define TABLE3D_SIZE_12  (12 * 12 + 24 + 24 + (12 * sizeof(byte*))) //2 bytes for each value on the axis + allocation for array pointers
+#define TABLE3D_SIZE_8   (8 * 8 + 16 + 16 + (8 * sizeof(byte*))) //2 bytes for each value on the axis + allocation for array pointers
+#define TABLE3D_SIZE_6   (6 * 6 + 12 + 12 + (6 * sizeof(byte*))) //2 bytes for each value on the axis + allocation for array pointers
+#define TABLE3D_SIZE_4   (4 * 4 + 8 + 8 + (4 * sizeof(byte*))) //2 bytes for each value on the axis + allocation for array pointers
 
 //Define the table sizes
 #define TABLE_FUEL1_SIZE    16;
