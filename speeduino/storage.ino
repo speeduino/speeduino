@@ -196,6 +196,15 @@ void writeConfig(byte tableNum)
       writeCounter = writeTable(&trim3Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, index, writeCounter);
       index = EEPROM_CONFIG8_XSIZE4;
       writeCounter = writeTable(&trim4Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, index, writeCounter);
+      index = EEPROM_CONFIG8_XSIZE5;
+      writeCounter = writeTable(&trim5Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, index, writeCounter);
+      index = EEPROM_CONFIG8_XSIZE6;
+      writeCounter = writeTable(&trim6Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, index, writeCounter);
+      index = EEPROM_CONFIG8_XSIZE7;
+      writeCounter = writeTable(&trim7Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, index, writeCounter);
+      index = EEPROM_CONFIG8_XSIZE8;
+      writeCounter = writeTable(&trim8Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER, index, writeCounter);
+      
       eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
       break;
 
@@ -362,6 +371,10 @@ void loadConfig()
   loadTable(&trim2Table, EEPROM_CONFIG8_MAP2, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
   loadTable(&trim3Table, EEPROM_CONFIG8_MAP3, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
   loadTable(&trim4Table, EEPROM_CONFIG8_MAP4, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+  loadTable(&trim5Table, EEPROM_CONFIG8_MAP5, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+  loadTable(&trim6Table, EEPROM_CONFIG8_MAP6, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+  loadTable(&trim7Table, EEPROM_CONFIG8_MAP7, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+  loadTable(&trim8Table, EEPROM_CONFIG8_MAP8, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
 
   //*********************************************************************************************************************************************************************************
   //canbus control page load

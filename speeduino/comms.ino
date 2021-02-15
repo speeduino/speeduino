@@ -1238,11 +1238,31 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       else if (valueOffset < 180) { tempOffset = valueOffset - 144; trim4Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim4 map
       else if (valueOffset < 186) { tempOffset = valueOffset - 180; trim4Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       else if (valueOffset < 192) { tempOffset = valueOffset - 186; trim4Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
+      //Trim table 5
+      else if (valueOffset < 228) { tempOffset = valueOffset - 192; trim5Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim5 map
+      else if (valueOffset < 234) { tempOffset = valueOffset - 228; trim5Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+      else if (valueOffset < 240) { tempOffset = valueOffset - 234; trim5Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
+      //Trim table 6
+      else if (valueOffset < 276) { tempOffset = valueOffset - 240; trim6Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim6 map
+      else if (valueOffset < 282) { tempOffset = valueOffset - 276; trim6Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+      else if (valueOffset < 288) { tempOffset = valueOffset - 282; trim6Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
+      //Trim table 7
+      else if (valueOffset < 324) { tempOffset = valueOffset - 288; trim7Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim7 map
+      else if (valueOffset < 330) { tempOffset = valueOffset - 324; trim7Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+      else if (valueOffset < 336) { tempOffset = valueOffset - 330; trim7Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
+      //Trim table 8
+      else if (valueOffset < 372) { tempOffset = valueOffset - 336; trim8Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim8 map
+      else if (valueOffset < 378) { tempOffset = valueOffset - 372; trim8Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+      else if (valueOffset < 384) { tempOffset = valueOffset - 378; trim8Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
 
       trim1Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       trim2Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       trim3Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       trim4Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      trim5Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      trim6Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      trim7Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      trim8Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
     case canbusPage:
@@ -1426,7 +1446,7 @@ void sendPage()
     case seqFuelPage:
     {
       //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
-      byte response[192]; //Bit hacky, but the size is: (6x6 + 6 + 6) * 4 = 192
+      byte response[384]; //Bit hacky, but the size is: (6x6 + 6 + 6) * 8 = 384
 
       //trim1 table
       for (int x = 0; x < 36; x++) { response[x] = trim1Table.values[5 - (x / 6)][x % 6]; }
@@ -1444,6 +1464,23 @@ void sendPage()
       for (int x = 0; x < 36; x++) { response[x + 144] = trim4Table.values[5 - (x / 6)][x % 6]; }
       for (int x = 36; x < 42; x++) { response[x + 144] = byte(trim4Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
       for (int y = 42; y < 48; y++) { response[y + 144] = byte(trim4Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+      //trim5 table
+      for (int x = 0; x < 36; x++) { response[x + 192] = trim5Table.values[5 - (x / 6)][x % 6]; }
+      for (int x = 36; x < 42; x++) { response[x + 192] = byte(trim5Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
+      for (int y = 42; y < 48; y++) { response[y + 192] = byte(trim5Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+      //trim6 table
+      for (int x = 0; x < 36; x++) { response[x + 240] = trim6Table.values[5 - (x / 6)][x % 6]; }
+      for (int x = 36; x < 42; x++) { response[x + 240] = byte(trim6Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
+      for (int y = 42; y < 48; y++) { response[y + 240] = byte(trim6Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+      //trim7 table
+      for (int x = 0; x < 36; x++) { response[x + 288] = trim7Table.values[5 - (x / 6)][x % 6]; }
+      for (int x = 36; x < 42; x++) { response[x + 288] = byte(trim7Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
+      for (int y = 42; y < 48; y++) { response[y + 288] = byte(trim7Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+      //trim8 table
+      for (int x = 0; x < 36; x++) { response[x + 336] = trim8Table.values[5 - (x / 6)][x % 6]; }
+      for (int x = 36; x < 42; x++) { response[x + 336] = byte(trim8Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
+      for (int y = 42; y < 48; y++) { response[y + 336] = byte(trim8Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+
       Serial.write((byte *)&response, sizeof(response));
       sendComplete = true;
       break;
@@ -1997,6 +2034,38 @@ byte getPageValue(byte page, uint16_t valueAddress)
             if(tempAddress < 36) { returnValue = trim4Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
             else if(tempAddress < 42) { returnValue = byte(trim4Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
             else if(tempAddress < 48) { returnValue = byte(trim4Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
+          }
+          else if(valueAddress < 240)
+          {
+            tempAddress = valueAddress - 192;
+            //trim5 table
+            if(tempAddress < 36) { returnValue = trim5Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
+            else if(tempAddress < 42) { returnValue = byte(trim5Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
+            else if(tempAddress < 48) { returnValue = byte(trim5Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
+          }
+          else if(valueAddress < 288)
+          {
+            tempAddress = valueAddress - 240;
+            //trim6 table
+            if(tempAddress < 36) { returnValue = trim6Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
+            else if(tempAddress < 42) { returnValue = byte(trim6Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
+            else if(tempAddress < 48) { returnValue = byte(trim6Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
+          }
+          else if(valueAddress < 336)
+          {
+            tempAddress = valueAddress - 288;
+            //trim7 table
+            if(tempAddress < 36) { returnValue = trim7Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
+            else if(tempAddress < 42) { returnValue = byte(trim7Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
+            else if(tempAddress < 48) { returnValue = byte(trim7Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
+          }
+          else if(valueAddress < 385)
+          {
+            tempAddress = valueAddress - 336;
+            //trim8 table
+            if(tempAddress < 36) { returnValue = trim8Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
+            else if(tempAddress < 42) { returnValue = byte(trim8Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
+            else if(tempAddress < 48) { returnValue = byte(trim8Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
           }
         }
         break;

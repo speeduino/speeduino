@@ -178,6 +178,27 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG14_XBINS 2966
 #define EEPROM_CONFIG14_YBINS 2982
 #define EEPROM_CONFIG14_END   2998
+//This is OUT OF ORDER as Table 8 was expanded to add fuel trim 5-8. The EEPROM for them is simply added here so as not to impact existing tunes
+#define EEPROM_CONFIG8_XSIZE5 2999
+#define EEPROM_CONFIG8_YSIZE5 3000
+#define EEPROM_CONFIG8_MAP5   3001
+#define EEPROM_CONFIG8_XBINS5 3037
+#define EEPROM_CONFIG8_YBINS5 3043
+#define EEPROM_CONFIG8_XSIZE6 3049
+#define EEPROM_CONFIG8_YSIZE6 3050
+#define EEPROM_CONFIG8_MAP6   3051
+#define EEPROM_CONFIG8_XBINS6 3087
+#define EEPROM_CONFIG8_YBINS6 3093
+#define EEPROM_CONFIG8_XSIZE7 3099
+#define EEPROM_CONFIG8_YSIZE7 3100
+#define EEPROM_CONFIG8_MAP7   3101
+#define EEPROM_CONFIG8_XBINS7 3137
+#define EEPROM_CONFIG8_YBINS7 3143
+#define EEPROM_CONFIG8_XSIZE8 3149
+#define EEPROM_CONFIG8_YSIZE8 3150
+#define EEPROM_CONFIG8_MAP8   3151
+#define EEPROM_CONFIG8_XBINS8 3187
+#define EEPROM_CONFIG8_YBINS8 3193
 
 
 //Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)

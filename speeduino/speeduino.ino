@@ -616,6 +616,23 @@ void loop()
               injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees);
               injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel5InjDegrees);
               injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel6InjDegrees);
+
+              if(configPage6.fuelTrimEnabled > 0)
+              {
+                unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw5percent = 100 + (byte)get3DTableValue(&trim5Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw6percent = 100 + (byte)get3DTableValue(&trim6Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+
+                if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
+                if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
+                if (pw3percent != 100) { currentStatus.PW3 = (pw3percent * currentStatus.PW3) / 100; }
+                if (pw4percent != 100) { currentStatus.PW4 = (pw4percent * currentStatus.PW4) / 100; }
+                if (pw5percent != 100) { currentStatus.PW5 = (pw5percent * currentStatus.PW5) / 100; }
+                if (pw6percent != 100) { currentStatus.PW6 = (pw6percent * currentStatus.PW6) / 100; }
+              }
             }
           #endif
           break;
@@ -638,6 +655,27 @@ void loop()
               injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel6InjDegrees);
               injector7StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel7InjDegrees);
               injector8StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel8InjDegrees);
+
+              if(configPage6.fuelTrimEnabled > 0)
+              {
+                unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw5percent = 100 + (byte)get3DTableValue(&trim5Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw6percent = 100 + (byte)get3DTableValue(&trim6Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw7percent = 100 + (byte)get3DTableValue(&trim7Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw8percent = 100 + (byte)get3DTableValue(&trim8Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+
+                if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
+                if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
+                if (pw3percent != 100) { currentStatus.PW3 = (pw3percent * currentStatus.PW3) / 100; }
+                if (pw4percent != 100) { currentStatus.PW4 = (pw4percent * currentStatus.PW4) / 100; }
+                if (pw5percent != 100) { currentStatus.PW5 = (pw5percent * currentStatus.PW5) / 100; }
+                if (pw6percent != 100) { currentStatus.PW6 = (pw6percent * currentStatus.PW6) / 100; }
+                if (pw7percent != 100) { currentStatus.PW7 = (pw7percent * currentStatus.PW7) / 100; }
+                if (pw8percent != 100) { currentStatus.PW8 = (pw8percent * currentStatus.PW8) / 100; }
+              }
             }
           #endif
           break;

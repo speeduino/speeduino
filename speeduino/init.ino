@@ -42,6 +42,10 @@ void initialiseAll()
     table3D_setSize(&trim2Table, 6);
     table3D_setSize(&trim3Table, 6);
     table3D_setSize(&trim4Table, 6);
+    table3D_setSize(&trim5Table, 6);
+    table3D_setSize(&trim6Table, 6);
+    table3D_setSize(&trim7Table, 6);
+    table3D_setSize(&trim8Table, 6);
     table3D_setSize(&dwellTable, 4);
 
     #if defined(CORE_STM32)
