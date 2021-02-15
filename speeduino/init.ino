@@ -43,6 +43,11 @@ void initialiseAll()
     table3D_setSize(&trim2Table, 6);
     table3D_setSize(&trim3Table, 6);
     table3D_setSize(&trim4Table, 6);
+    table3D_setSize(&trim5Table, 6);
+    table3D_setSize(&trim6Table, 6);
+    table3D_setSize(&trim7Table, 6);
+    table3D_setSize(&trim8Table, 6);
+    table3D_setSize(&dwellTable, 4);
 
     #if defined(CORE_STM32)
     configPage9.intcan_available = 1;   // device has internal canbus
@@ -2731,7 +2736,7 @@ void initialiseTriggers()
   //Set the trigger function based on the decoder in the config
   switch (configPage4.TrigPattern)
   {
-    case 0:
+    case DECODER_MISSING_TOOTH:
       //Missing tooth decoder
       triggerSetup_missingTooth();
       triggerHandler = triggerPri_missingTooth;
@@ -2761,7 +2766,7 @@ void initialiseTriggers()
       */
       break;
 
-    case 1:
+    case DECODER_BASIC_DISTRIBUTOR:
       // Basic distributor
       triggerSetup_BasicDistributor();
       triggerHandler = triggerPri_BasicDistributor;
@@ -2793,7 +2798,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    case 3:
+    case DECODER_GM7X:
       triggerSetup_GM7X();
       triggerHandler = triggerPri_GM7X;
       getRPM = getRPM_GM7X;
@@ -2809,7 +2814,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
-    case 4:
+    case DECODER_4G63:
       triggerSetup_4G63();
       triggerHandler = triggerPri_4G63;
       triggerSecondaryHandler = triggerSec_4G63;
@@ -2825,7 +2830,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    case 5:
+    case DECODER_24X:
       triggerSetup_24X();
       triggerHandler = triggerPri_24X;
       triggerSecondaryHandler = triggerSec_24X;
@@ -2842,7 +2847,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    case 6:
+    case DECODER_JEEP2000:
       triggerSetup_Jeep2000();
       triggerHandler = triggerPri_Jeep2000;
       triggerSecondaryHandler = triggerSec_Jeep2000;
@@ -2859,7 +2864,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    case 7:
+    case DECODER_AUDI135:
       triggerSetup_Audi135();
       triggerHandler = triggerPri_Audi135;
       triggerSecondaryHandler = triggerSec_Audi135;
@@ -2876,7 +2881,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    case 8:
+    case DECODER_HONDA_D17:
       triggerSetup_HondaD17();
       triggerHandler = triggerPri_HondaD17;
       triggerSecondaryHandler = triggerSec_HondaD17;
@@ -2893,7 +2898,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    case 9:
+    case DECODER_MIATA_9905:
       triggerSetup_Miata9905();
       triggerHandler = triggerPri_Miata9905;
       triggerSecondaryHandler = triggerSec_Miata9905;
@@ -2912,7 +2917,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    case 10:
+    case DECODER_MAZDA_AU:
       triggerSetup_MazdaAU();
       triggerHandler = triggerPri_MazdaAU;
       triggerSecondaryHandler = triggerSec_MazdaAU;
@@ -2929,7 +2934,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    case 11:
+    case DECODER_NON360:
       triggerSetup_non360();
       triggerHandler = triggerPri_DualWheel; //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
       triggerSecondaryHandler = triggerSec_DualWheel; //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
@@ -2946,7 +2951,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    case 12:
+    case DECODER_NISSAN_360:
       triggerSetup_Nissan360();
       triggerHandler = triggerPri_Nissan360;
       triggerSecondaryHandler = triggerSec_Nissan360;
@@ -2963,7 +2968,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    case 13:
+    case DECODER_SUBARU_67:
       triggerSetup_Subaru67();
       triggerHandler = triggerPri_Subaru67;
       triggerSecondaryHandler = triggerSec_Subaru67;
@@ -2980,7 +2985,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    case 14:
+    case DECODER_DAIHATSU_PLUS1:
       triggerSetup_Daihatsu();
       triggerHandler = triggerPri_Daihatsu;
       getRPM = getRPM_Daihatsu;
@@ -2994,7 +2999,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
-    case 15:
+    case DECODER_HARLEY:
       triggerSetup_Harley();
       triggerHandler = triggerPri_Harley;
       //triggerSecondaryHandler = triggerSec_Harley;
@@ -3006,7 +3011,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
-    case 16:
+    case DECODER_36_2_2_2:
       //36-2-2-2
       triggerSetup_ThirtySixMinus222();
       triggerHandler = triggerPri_ThirtySixMinus222;
@@ -3025,12 +3030,11 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    case 17:
+    case DECODER_36_2_1:
       //36-2-1
-      //NOT YET WRITTEN
       break;
 
-    case 18:
+    case DECODER_420A:
       //DSM 420a
       triggerSetup_420a();
       triggerHandler = triggerPri_420a;
@@ -3048,7 +3052,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    case 19:
+    case DECODER_WEBER:
       //Weber-Marelli
       triggerSetup_DualWheel();
       triggerHandler = triggerPri_Webber;
@@ -3067,6 +3071,25 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
+    case DECODER_ST170:
+      //Ford ST170
+      triggerSetup_FordST170();
+      triggerHandler = triggerPri_missingTooth;
+      triggerSecondaryHandler = triggerSec_FordST170;
+      decoderHasSecondary = true;
+      getRPM = getRPM_FordST170;
+      getCrankAngle = getCrankAngle_FordST170;
+      triggerSetEndTeeth = triggerSetEndTeeth_FordST170;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+
+      break;
 
     default:
       triggerHandler = triggerPri_missingTooth;

@@ -440,7 +440,7 @@ void doUpdates()
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 16);
   }
-  
+
   if(EEPROM.read(EEPROM_DATA_VERSION) == 16)
   {
     //Fix for wrong placed page 13
@@ -455,6 +455,8 @@ void doUpdates()
     configPage10.vvt2Enabled = 0;
     configPage4.vvt2PWMdir = 0;
     configPage10.TrigEdgeThrd = 0;
+
+    configPage2.useDwellMap = 0; //Dwell map added, use old fixed value as default
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 17);
