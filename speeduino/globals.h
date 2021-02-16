@@ -961,7 +961,8 @@ struct config6 {
   byte boostKI;
   byte boostKD;
 
-  byte lnchPullRes : 2;
+  byte lnchPullRes : 1;
+  byte iacPWMrun : 1; //Should the PWM idle valve run before engine is cranked over
   byte fuelTrimEnabled : 1;
   byte flatSEnable : 1;
   byte baroPin : 4;

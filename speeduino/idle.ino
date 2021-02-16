@@ -134,7 +134,7 @@ void initialiseIdle()
         idleStepper.lessAirDirection = STEPPER_FORWARD;
         idleStepper.moreAirDirection = STEPPER_BACKWARD;
       }
-
+      configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
       break;
 
     case IAC_ALGORITHM_STEP_CL:
@@ -173,6 +173,7 @@ void initialiseIdle()
       idlePID.SetOutputLimits(0, (configPage9.iacMaxSteps * 3)<<2); //Maximum number of steps; always less than home steps count.
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
+      configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
       break;
 
     default:
@@ -200,8 +201,8 @@ void initialiseIdleUpOutput()
 
 void idleControl()
 {
-  if (idleInitComplete != configPage6.iacAlgorithm) { initialiseIdle(); }
-  if (currentStatus.RPM > 0) { enableIdle(); }
+  if( idleInitComplete != configPage6.iacAlgorithm) { initialiseIdle(); }
+  if( (currentStatus.RPM > 0) || (configPage6.iacPWMrun == true) ) { enableIdle(); }
 
   //Check whether the idleUp is active
   if (configPage2.idleUpEnabled == true)
@@ -253,6 +254,14 @@ void idleControl()
         //Currently cranking. Use the cranking table
         currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
       }
+      else if ( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
+      {
+        if( configPage6.iacPWMrun == true)
+        {
+          //Engine is not running or cranking, but the run before crank flag is set. Use the cranking table
+          currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        }
+      }
       else
       {
         
@@ -295,6 +304,16 @@ void idleControl()
         idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
         idle_pid_target_value = idle_pwm_target_value << 2; //Resolution increased
         idlePID.Initialize(); //Update output to smooth transition
+      }
+      else if ( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
+      {
+        if( configPage6.iacPWMrun == true)
+        {
+          //Engine is not running or cranking, but the run before crank flag is set. Use the cranking table
+          currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+          currentStatus.idleLoad = currentStatus.idleDuty;
+          idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
+        }
       }
       else
       {
