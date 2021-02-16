@@ -17,6 +17,7 @@ A full copy of the license may be found in the projects root directory
   #include "rtc_common.h"
 #endif
 #include "utilities.h"
+#include "pages.h"
 
 /*
   Processes the data on the serial buffer.
@@ -1099,7 +1100,7 @@ namespace {
     return pTable->xSize-1 - (offset - (sq(pTable->xSize) + pTable->xSize));
   }
 
-  int8_t getTableValueFromOffset(const table3D *pTable, uint16_t offset, int8_t xAxisDivisor, int8_t yAxisDivisor)
+  inline int8_t getTableValueFromOffset(const table3D *pTable, uint16_t offset)
   {
     switch (offsetToTableSection(pTable, offset))
     {
@@ -1109,11 +1110,11 @@ namespace {
       
       case axisX:
         //RPM Bins for VE table (Need to be dvidied by 100)
-        return int8_t(pTable->axisX[offsetToAxisXIndex(pTable, offset)] / xAxisDivisor); 
+        return int8_t(pTable->axisX[offsetToAxisXIndex(pTable, offset)] / getTableXAxisFactor(pTable)); 
       
       case axisY:
         //MAP or TPS bins for VE table
-        return int8_t(pTable->axisY[offsetToAxisYIndex(pTable, offset)] / yAxisDivisor); 
+        return int8_t(pTable->axisY[offsetToAxisYIndex(pTable, offset)] / getTableYAxisFactor(pTable)); 
       
       default: ; // no-op
     }
@@ -1121,7 +1122,7 @@ namespace {
     return 0;
   }
 
-  void setTableValueFromOffset(table3D *pTable, uint16_t offset, int8_t value, int8_t xAxisMultiplier, int8_t yAxisMultiplier)
+  inline void setTableValueFromOffset(table3D *pTable, uint16_t offset, int8_t value)
   {
     switch (offsetToTableSection(pTable, offset))
     {
@@ -1130,12 +1131,11 @@ namespace {
         break;
 
       case axisX:
-        //The RPM values sent by megasquirt are divided by 100, need to multiple it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
-        pTable->axisX[offsetToAxisXIndex(pTable, offset)]  = (int)(value) * xAxisMultiplier; 
+        pTable->axisX[offsetToAxisXIndex(pTable, offset)]  = (int)(value) * getTableXAxisFactor(pTable); 
         break;
 
       case axisY:
-        pTable->axisY[offsetToAxisYIndex(pTable, offset)] = (int)(value) * yAxisMultiplier;
+        pTable->axisY[offsetToAxisYIndex(pTable, offset)] = (int)(value) * getTableYAxisFactor(pTable);
         break;      
       default: ; // no-op
     }
@@ -1183,92 +1183,92 @@ void receiveValue(uint16_t valueOffset, byte newValue)
   switch (currentPage)
   {
     case veMapPage:
-      setTableValueFromOffset(&fuelTable, valueOffset, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      setTableValueFromOffset(&fuelTable, valueOffset, newValue);
       break;
 
     case ignMapPage: //Ignition settings page (Page 2)
-      setTableValueFromOffset(&ignitionTable, valueOffset, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      setTableValueFromOffset(&ignitionTable, valueOffset, newValue);
       break;
 
     case afrMapPage: //Air/Fuel ratio target settings page
-      setTableValueFromOffset(&afrTable, valueOffset, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      setTableValueFromOffset(&afrTable, valueOffset, newValue);
       break;
 
     case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
       if (valueOffset < 80) //New value is on the Y (TPS) axis of the boost table
       {
-        setTableValueFromOffset(&boostTable, valueOffset, newValue, TABLE_RPM_MULTIPLIER, 1);
+        setTableValueFromOffset(&boostTable, valueOffset, newValue);
       }
       else if (valueOffset < 160)
       {
-        setTableValueFromOffset(&vvtTable, valueOffset - 80, newValue, TABLE_RPM_MULTIPLIER, 1);
+        setTableValueFromOffset(&vvtTable, valueOffset - 80, newValue);
       }
       else
       {
-        setTableValueFromOffset(&stagingTable, valueOffset - 160, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        setTableValueFromOffset(&stagingTable, valueOffset - 160, newValue);
       }
       break;
 
     case seqFuelPage:
       if (valueOffset < 48) 
       {
-        setTableValueFromOffset(&trim1Table, valueOffset, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        setTableValueFromOffset(&trim1Table, valueOffset, newValue);
       }
       //Trim table 2
       else if (valueOffset < 96) 
       { 
-        setTableValueFromOffset(&trim2Table, valueOffset - 48, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        setTableValueFromOffset(&trim2Table, valueOffset - 48, newValue);
       }
       //Trim table 3
       else if (valueOffset < 144)
       {
-        setTableValueFromOffset(&trim3Table, valueOffset - 96, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        setTableValueFromOffset(&trim3Table, valueOffset - 96, newValue);
       }
       //Trim table 4
       else if (valueOffset < 192)
       {
-        setTableValueFromOffset(&trim4Table, valueOffset - 144, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        setTableValueFromOffset(&trim4Table, valueOffset - 144, newValue);
       }
       //Trim table 5
       else if (valueOffset < 240)
       {
-        setTableValueFromOffset(&trim5Table, valueOffset - 192, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        setTableValueFromOffset(&trim5Table, valueOffset - 192, newValue);
       }
       //Trim table 6
       else if (valueOffset < 288)
       {
-        setTableValueFromOffset(&trim6Table, valueOffset - 240, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        setTableValueFromOffset(&trim6Table, valueOffset - 240, newValue);
       }
       //Trim table 7
       else if (valueOffset < 336)
       {
-        setTableValueFromOffset(&trim7Table, valueOffset - 288, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        setTableValueFromOffset(&trim7Table, valueOffset - 288, newValue);
       }
       //Trim table 8
       else      
       {
-        setTableValueFromOffset(&trim8Table, valueOffset - 336, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        setTableValueFromOffset(&trim8Table, valueOffset - 336, newValue);
       }
       break;
 
     case fuelMap2Page:
-      setTableValueFromOffset(&fuelTable2, valueOffset, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      setTableValueFromOffset(&fuelTable2, valueOffset, newValue);
       break;
 
     case wmiMapPage:
       if (valueOffset < 80) //New value is on the Y (MAP) axis of the wmi table
       {
-        setTableValueFromOffset(&wmiTable, valueOffset, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        setTableValueFromOffset(&wmiTable, valueOffset, newValue);
       }
       //End of wmi table
       else
       {
-        setTableValueFromOffset(&dwellTable, valueOffset - 160, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        setTableValueFromOffset(&dwellTable, valueOffset - 160, newValue);
       }
       break;
     
     case ignMap2Page: //Ignition settings page (Page 2)
-      setTableValueFromOffset(&ignitionTable2, valueOffset, newValue, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      setTableValueFromOffset(&ignitionTable2, valueOffset, newValue);
       break;
       
     case progOutsPage:
@@ -1287,12 +1287,12 @@ void receiveValue(uint16_t valueOffset, byte newValue)
 
 namespace {
 
-  void sendTable(const table3D *pTable, int8_t xAxisDivisor, int8_t yAxisDivisor)
+  void sendTable(const table3D *pTable)
   {
     uint16_t length = sq(pTable->xSize) + pTable->xSize+ pTable->xSize;
     for (uint16_t offset = 0; offset < length; offset++) 
     {      
-      Serial.write(getTableValueFromOffset(pTable, offset, xAxisDivisor, yAxisDivisor)); 
+      Serial.write(getTableValueFromOffset(pTable, offset)); 
     }
   }
 
@@ -1317,56 +1317,56 @@ void sendPage()
   switch (currentPage)
   {
     case veMapPage:
-      sendTable(&fuelTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&fuelTable);
       break;
 
     case ignMapPage:
-      sendTable(&ignitionTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&ignitionTable);
       break;
 
     case afrMapPage:
-      sendTable(&afrTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&afrTable);
       break;
 
     case boostvvtPage:
       //Boost table
-      sendTable(&boostTable, TABLE_RPM_MULTIPLIER, 1);
+      sendTable(&boostTable);
       //VVT table
-      sendTable(&vvtTable, TABLE_RPM_MULTIPLIER, 1);
+      sendTable(&vvtTable);
       //Staging table
-      sendTable(&vvtTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&vvtTable);
       break;
 
     case seqFuelPage:
       //trim1 table
-      sendTable(&trim1Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&trim1Table);
       //trim2 table
-      sendTable(&trim2Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&trim2Table);
       //trim3 table
-      sendTable(&trim3Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&trim3Table);
       //trim4 table
-      sendTable(&trim4Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&trim4Table);
       //trim5 table
-      sendTable(&trim5Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&trim5Table);
       //trim6 table
-      sendTable(&trim6Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&trim6Table);
       //trim7 table
-      sendTable(&trim7Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&trim7Table);
       //trim8 table
-      sendTable(&trim8Table, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&trim8Table);
       break;
 
     case fuelMap2Page:
-      sendTable(&fuelTable2, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&fuelTable2);
       break;
 
     case wmiMapPage:
-      sendTable(&wmiTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
-      sendTable(&dwellTable, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&wmiTable);
+      sendTable(&dwellTable);
       break;
    
     case ignMap2Page:
-      sendTable(&ignitionTable2, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+      sendTable(&ignitionTable2);
       break;
 
     case progOutsPage:
@@ -1584,30 +1584,30 @@ byte getPageValue(byte page, uint16_t valueAddress)
   switch (page)
   {
     case veMapPage:
-        return getTableValueFromOffset(&fuelTable, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        return getTableValueFromOffset(&fuelTable, valueAddress);
         break;
 
     case ignMapPage:
-        return getTableValueFromOffset(&ignitionTable, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        return getTableValueFromOffset(&ignitionTable, valueAddress);
         break;
 
     case afrMapPage:
-        return getTableValueFromOffset(&afrTable, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        return getTableValueFromOffset(&afrTable, valueAddress);
         break;
 
     case boostvvtPage:
         //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
         if(valueAddress < 80)
         {
-          return getTableValueFromOffset(&boostTable, valueAddress, TABLE_RPM_MULTIPLIER, 1);
+          return getTableValueFromOffset(&boostTable, valueAddress);
         }
         else if(valueAddress < 160)
         {
-          return getTableValueFromOffset(&vvtTable, valueAddress - 80, TABLE_RPM_MULTIPLIER, 1);
+          return getTableValueFromOffset(&vvtTable, valueAddress - 80);
         }
         else
         {
-          return getTableValueFromOffset(&stagingTable, valueAddress - 160, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+          return getTableValueFromOffset(&stagingTable, valueAddress - 160);
         }
         break;
 
@@ -1615,55 +1615,55 @@ byte getPageValue(byte page, uint16_t valueAddress)
         //Need to perform a translation of the values[MAP/TPS][RPM] into the TS expected format
         if(valueAddress < 48)
         {
-          return getTableValueFromOffset(&trim1Table, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+          return getTableValueFromOffset(&trim1Table, valueAddress);
         }
         else if(valueAddress < 96)
         {
-          return getTableValueFromOffset(&trim2Table, valueAddress - 48, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+          return getTableValueFromOffset(&trim2Table, valueAddress - 48);
         }
         else if(valueAddress < 144)
         {
-          return getTableValueFromOffset(&trim3Table, valueAddress - 96, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+          return getTableValueFromOffset(&trim3Table, valueAddress - 96);
         }
         else if(valueAddress < 192)
         {
-          return getTableValueFromOffset(&trim4Table, valueAddress - 144, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+          return getTableValueFromOffset(&trim4Table, valueAddress - 144);
         }
         else if(valueAddress < 240)
         {
-          return getTableValueFromOffset(&trim5Table, valueAddress - 192, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+          return getTableValueFromOffset(&trim5Table, valueAddress - 192);
         }
         else if(valueAddress < 288)
         {
-          return getTableValueFromOffset(&trim6Table, valueAddress - 240, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+          return getTableValueFromOffset(&trim6Table, valueAddress - 240);
         }
         else if(valueAddress < 336)
         {
-          return getTableValueFromOffset(&trim7Table, valueAddress - 288, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+          return getTableValueFromOffset(&trim7Table, valueAddress - 288);
         }
         else if(valueAddress < 385)
         {
-          return getTableValueFromOffset(&trim8Table, valueAddress - 336, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+          return getTableValueFromOffset(&trim8Table, valueAddress - 336);
         }
         break;
 
     case fuelMap2Page:
-        return getTableValueFromOffset(&fuelTable2, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        return getTableValueFromOffset(&fuelTable2, valueAddress);
         break;
         
     case wmiMapPage:
         if(valueAddress < 80)
         {
-          return getTableValueFromOffset(&wmiTable, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+          return getTableValueFromOffset(&wmiTable, valueAddress);
         }
         else if(valueAddress < 184)
         {
-          return getTableValueFromOffset(&dwellTable, valueAddress - 160, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+          return getTableValueFromOffset(&dwellTable, valueAddress - 160);
         }
         break;
 
     case ignMap2Page:
-        return getTableValueFromOffset(&ignitionTable2, valueAddress, TABLE_RPM_MULTIPLIER, TABLE_LOAD_MULTIPLIER);
+        return getTableValueFromOffset(&ignitionTable2, valueAddress);
         break;
 
     case progOutsPage:
