@@ -552,20 +552,23 @@ void command()
       break;
 
     case 'w':
-      if(Serial.available() >= 7)
-        {
-          byte offset1, offset2, length1, length2;
+      uint32_t StartTime;
+      StartTime = micros();
+      //wait for 7 RTC bytes or 30 milliseconds timeout
+      while((Serial.available() <= 7) & (micros()-StartTime <= 30000)) {}
+        
+      byte offset1, offset2, length1, length2;
 
-          Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-          currentPage = Serial.read();
-          //currentPage = 1;
-          offset1 = Serial.read();
-          offset2 = Serial.read();
-          valueOffset = word(offset2, offset1);
-          length1 = Serial.read();
-          length2 = Serial.read();
-          chunkSize = word(length2, length1);
-        }
+      Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+      currentPage = Serial.read();
+      //currentPage = 1;
+      offset1 = Serial.read();
+      offset2 = Serial.read();
+      valueOffset = word(offset2, offset1);
+      length1 = Serial.read();
+      length2 = Serial.read();
+      chunkSize = word(length2, length1);
+
 #ifdef RTC_ENABLED
       if(currentPage == SD_READWRITE_PAGE)
         { 
@@ -639,6 +642,8 @@ void command()
             byte month = Serial.read();
             uint16_t year = Serial.read();
             year = word(Serial.read(), year);
+            //Note comms from rtc applet are in big endian, 32 bit processors speeduino are little endian so need byte swap 
+            year = (year<<8) | (year>>8);
             Serial.read(); //Final byte is unused (Always has value 0x5a)
             rtc_setTime(second, minute, hour, day, month, year);
           }
