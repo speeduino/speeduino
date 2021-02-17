@@ -3324,7 +3324,7 @@ void triggerPri_ThirtySixMinus222()
          {
            //This occurs when we're at the first tooth after the 2 lots of 2x missing tooth.
            if(configPage2.nCylinders == 4 ) { toothCurrentCount = 19; } //H4
-           else if(configPage2.nCylinders == 6) { toothCurrentCount = 23; } //H6 - NOT TESTED!
+           else if(configPage2.nCylinders == 6) { toothCurrentCount = 12; } //H6 - NOT TESTED!
            
            toothSystemCount = 0;
            currentStatus.hasSync = true;
@@ -3361,7 +3361,12 @@ void triggerPri_ThirtySixMinus222()
             toothCurrentCount = 35; 
             currentStatus.hasSync = true;
           } 
-          //else if(configPage2.nCylinders == 6) { toothCurrentCount = 3; } //H6
+          else if(configPage2.nCylinders == 6) 
+          { 
+            //H6 - THIS NEEDS TESTING
+            toothCurrentCount = 34; 
+            currentStatus.hasSync = true;
+          } 
           
        }
 
@@ -3396,12 +3401,16 @@ uint16_t getRPM_ThirtySixMinus222()
   uint16_t tempRPM = 0;
   if( currentStatus.RPM < currentStatus.crankRPM)
   {
-    //
-    if( (toothCurrentCount != 19) && (toothCurrentCount != 16) && (toothCurrentCount != 34) && (triggerToothAngleIsCorrect == true) )
+    
+    if( (configPage2.nCylinders == 4) && (toothCurrentCount != 19) && (toothCurrentCount != 16) && (toothCurrentCount != 34) && (triggerToothAngleIsCorrect == true) )
     {
       tempRPM = crankingGetRPM(36);
     }
-    else { tempRPM = currentStatus.RPM; } //Can't do per tooth RPM if we're at tooth #1 as the missing tooth messes the calculation
+    else if( (configPage2.nCylinders == 6) && (toothCurrentCount != 9) && (toothCurrentCount != 12) && (toothCurrentCount != 33) && (triggerToothAngleIsCorrect == true) )
+    {
+      tempRPM = crankingGetRPM(36);
+    }
+    else { tempRPM = currentStatus.RPM; } //Can't do per tooth RPM if we're at and of the missing teeth as it messes the calculation
   }
   else
   {
@@ -3431,13 +3440,20 @@ void triggerSetEndTeeth_ThirtySixMinus222()
   else if(configPage2.nCylinders == 6) 
   { 
     //H6
-    if(currentStatus.advance < 10) { ignition1EndTooth = 4; }
-    else if(currentStatus.advance < 20) { ignition1EndTooth = 3; }
-    else if(currentStatus.advance < 30) { ignition1EndTooth = 2; }
-    else { ignition1EndTooth = 35; }
+    if(currentStatus.advance < 10) { ignition1EndTooth = 36; }
+    else if(currentStatus.advance < 20) { ignition1EndTooth = 35; }
+    else if(currentStatus.advance < 30) { ignition1EndTooth = 34; }
+    else if(currentStatus.advance < 40) { ignition1EndTooth = 33; }
+    else { ignition1EndTooth = 31; }
 
-    if(currentStatus.advance < 30) { ignition2EndTooth = 20; }
-    else { ignition2EndTooth = 17; }
+    if(currentStatus.advance < 20) { ignition2EndTooth = 9; }
+    else { ignition2EndTooth = 6; }
+
+    if(currentStatus.advance < 10) { ignition3EndTooth = 23; }
+    else if(currentStatus.advance < 20) { ignition3EndTooth = 22; }
+    else if(currentStatus.advance < 30) { ignition3EndTooth = 21; }
+    else if(currentStatus.advance < 40) { ignition3EndTooth = 20; }
+    else { ignition3EndTooth = 19; }
   } 
   
 
