@@ -27,6 +27,8 @@
 #define TIMER_RESOLUTION 4
 
 #define RTC_ENABLED
+#define SD_LOGGER_ENABLED
+#define SD_LIB_H "src/STM32SD/STM32SD.h"
 #define USE_SERIAL3
 
 //When building for Black board Serial1 is instanciated,building generic STM32F4x7 has serial2 and serial 1 must be done here
