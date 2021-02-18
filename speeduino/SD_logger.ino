@@ -6,8 +6,9 @@
 #include "rtc_common.h"
 
 //Private functions
-void sd_logger_updateLogdataCSV();
-void sd_logger_updateLogdataBIN();
+void logger_updateLogdataCSV();
+void logger_updateLogdataBIN();
+void logger_addField(const char fieldname[], uint16_t fieldLength, boolean lastValue);
 
 //Private variables
 File sd_logger_logFile;
