@@ -146,8 +146,31 @@ engineProtectStatus;\
 wmiPW;\
 \n";
                                     
-            memcpy(sd_logger_LogBufferCSV, fields, sizeof(fields));
-            sd_logger_bufferIndex += sizeof(fields);
+            memcpy(logger_LogBufferCSV, fields, sizeof(fields));
+            logger_bufferIndex += sizeof(fields);
+
+            // const char *ptr_fields[] = {"hasSync","RPM","MAP", "TPS", "tpsDOT","mapDOT","rpmDOT","VE1", "VE2","O2","O2_2"\
+            //                             ,"coolant","IAT","dwell","battery10","advance","advance1","advance2","corrections",\
+            //                             "AEamount","egoCorrection","wueCorrection","batCorrection","iatCorrection","baroCorrection",\
+            //                             "launchCorrection","flexCorrection","fuelTempCorrection","flexIgnCorrection","afrTarget",\
+            //                             "idleDuty","CLIdleTarget","idleUpActive","CTPSActive","fanOn","ethanolPct","fuelTemp",\
+            //                             "AEEndTime","status1","spark","spark2","engine","PW1","PW2","PW3","PW4","PW5","PW6","PW7"\
+            //                             ,"PW8","runSecs","secl","loopsPerSecond","launchingSoft","launchingHard","freeRAM",\
+            //                             "startRevolutions","boostTarget","testOutputs","testActive","boostDuty","idleLoad",\
+            //                             "status3","flexBoostCorrection","nitrous_status","fuelLoad","fuelLoad2","ignLoad",\
+            //                             "fuelPumpOn","syncLossCounter","knockRetard","knockActive","toothLogEnabled",\
+            //                             "compositeLogEnabled","vvt1Angle","vvt1Angle","vvt1TargetAngle","vvt1Duty",\
+            //                             "injAngle","ASEValue","vss","idleUpOutputActive","gear","fuelPressure","oilPressure"\
+            //                             ,"engineProtectStatus","wmiPW", NULL};
+            // uint16_t i = 0;
+            // while (ptr_fields[i]!=NULL)
+            // {
+            //   Serial1.print(ptr_fields[i]);
+            //   logger_addField(ptr_fields[i], sizeof(ptr_fields[i]), false);
+            //   i++;
+            // }
+            // logger_addField(ptr_fields[i], sizeof(ptr_fields[i]), true);
+            
         }
     }
 }
