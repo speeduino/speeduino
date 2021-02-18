@@ -31,7 +31,6 @@ uint32_t get_fattime (void){
 
 void sd_logger_init()
 { 
-    Serial1.begin(115200);
     currentStatus.TS_SD_Status = SD_STATUS_OFF; 
     //Init the sdcard.
     if (SD.begin(SD_CS_PIN)) 
@@ -39,7 +38,6 @@ void sd_logger_init()
         currentStatus.TS_SD_Status |= SD_STATUS_CARD_READY;
     }   
     else { currentStatus.TS_SD_Status |= SD_STATUS_ERROR_NO_WRITE; }   
-    Serial1.printf("Sd_looger init: %04d\n",currentStatus.TS_SD_Status);
 }
 
 void sd_logger_openLogFile()
@@ -152,7 +150,6 @@ wmiPW;\
             sd_logger_bufferIndex += sizeof(fields);
         }
     }
-Serial1.printf("Sd_logger open file: %04d\n",currentStatus.TS_SD_Status);
 }
 
 //this function needs to be called to close the file. When the board loses power this one is not called and the file is not closed poperly.
