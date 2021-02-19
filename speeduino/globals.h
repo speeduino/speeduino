@@ -1285,7 +1285,30 @@ struct config13 {
 
   uint16_t candID[8]; //Actual CAN ID need 16bits, this is a placeholder
 
-  byte unused12_106_127[22];
+  byte unused12_106_116[10];
+
+  byte onboard_log_csv_separator :2;  //";", ",", "tab", "space"  
+  byte onboard_log_file_style    :2;  // "Disabled", "CSV", "Binary", "INVALID" 
+  byte onboard_log_file_rate     :2;  // "1Hz", "4Hz", "10Hz", "30Hz" 
+  byte onboard_log_filenaming    :2;  // "Overwrite", "Date-time", "Sequential", "INVALID" 
+  byte onboard_log_storage       :2;  // "sd-card", "INVALID", "INVALID", "INVALID" ;In the future maybe an onboard spi flash can be used, or switch between SDIO vs SPI sd card interfaces.
+  byte onboard_log_trigger_boot  :1;  // "Disabled", "On boot"
+  byte onboard_log_trigger_RPM   :1;  // "Disabled", "Enabled"
+  byte onboard_log_trigger_prot  :1;  // "Disabled", "Enabled"
+  byte onboard_log_trigger_Vbat  :1;  // "Disabled", "Enabled"
+  byte onboard_log_trigger_Epin  :2;  // "Disabled", "polling", "toggle" , "INVALID" 
+  byte onboard_log_tr2_thr_on;        //  "RPM",      100.0,  0.0,    0,     10000,  0
+  byte onboard_log_tr2_thr_off;       //  "RPM",      100.0,  0.0,    0,     10000,  0
+  byte onboard_log_tr3_thr_RPM   :1;  // "Disabled", "Enabled"
+  byte onboard_log_tr3_thr_MAP   :1;  // "Disabled", "Enabled"
+  byte onboard_log_tr3_thr_Oil   :1;  // "Disabled", "Enabled"
+  byte onboard_log_tr3_thr_AFR   :1;  // "Disabled", "Enabled"     
+  byte onboard_log_tr4_thr_on;        // "V",        0.1,   0.0,  0.0,  15.90,      2 ; * (  1 byte)    
+  byte onboard_log_tr4_thr_off;       // "V",        0.1,   0.0,  0.0,  14.90,      2 ; * (  1 byte)   
+  byte onboard_log_tr5_thr_on;        // "pin",      0,    0, 0,  1,    255,        0 ;  
+  
+
+  byte unused12_125_127[4];
 
 #if defined(CORE_AVR)
   };
