@@ -90,8 +90,7 @@ struct table3D {
   int16_t *axisY;
 
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
-  byte lastXMax, lastXMin;
-  byte lastYMax, lastYMin;
+  byte lastXMin, lastYMin;
 
   //Store the last input and output values, again for caching purposes
   int16_t lastXInput, lastYInput;
