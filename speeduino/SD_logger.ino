@@ -8,7 +8,7 @@
 //Private functions
 void logger_updateLogdataCSV();
 void logger_updateLogdataBIN();
-void logger_addField(const char fieldname[], uint16_t fieldLength, boolean lastValue);
+void logger_addField(const char fieldname[], uint16_t fieldLength, bool lastValue);
 
 //Private variables
 File sd_logger_logFile;
@@ -22,13 +22,44 @@ uint32_t sd_logger_totalBytesWritten;
 bool sd_logger_fileNeedsFlush;
 
 #ifdef RTC_ENABLED
-//This function is called by the fatfs library to get the current time if a new file is created
+//This function is called by the fatfs library to get the current time if a file is created or modified to update the file time
 uint32_t get_fattime (void){
   uint32_t time;
-  time = (((uint32_t)rtc_getYear()-1980)<< 25) | (((uint32_t)rtc_getMonth())<< 21) | (((uint32_t)rtc_getDay())<< 16) | (((uint32_t)rtc_getHour())<< 11) | (((uint32_t)rtc_getMinute())<< 5) | (((uint32_t)rtc_getSecond())>>1);
+  time = (41<< 25) | (((uint32_t)rtc_getMonth())<< 21) | (((uint32_t)rtc_getDay())<< 16) | (((uint32_t)rtc_getHour())<< 11) | (((uint32_t)rtc_getMinute())<< 5) | (((uint32_t)rtc_getSecond())>>1);
   return time;
 }
 #endif
+
+/**
+  * @brief  Get information if sd card is busy or ready to receive new data.
+  * @retval true if ready else false
+  */
+uint8_t sd_logger_getCardState()
+{
+#ifdef __BSP_SD_H
+    return BSP_SD_GetCardState();
+#elif
+    //need a way to get this info specific for each platform.
+    return true;
+#endif
+}
+
+/**
+  * @brief  Add field names to the first line of the CSV file.
+  * @retval true if ready else false
+  */
+void sd_logger_addCSVFieldName(const char fieldname[], uint16_t fieldLength, bool lastValue)
+{
+    memcpy(&sd_logger_LogBufferCSV[sd_logger_bufferIndex], fieldname, fieldLength);
+    sd_logger_bufferIndex += fieldLength;
+    if(!lastValue){
+      sd_logger_LogBufferCSV[sd_logger_bufferIndex] = ';';
+      sd_logger_bufferIndex += 1;
+    }else{
+      sd_logger_LogBufferCSV[sd_logger_bufferIndex] = '\n';
+      sd_logger_bufferIndex += 1;
+    }
+}
 
 void sd_logger_init()
 { 
@@ -43,146 +74,43 @@ void sd_logger_init()
 
 void sd_logger_openLogFile()
 {
-    //Attempt to create a log file for writing
+    //Attempt to create a log file for writing only if this is not done before
     if(!(currentStatus.TS_SD_Status & SD_STATUS_FS_READY))
     {
-        //very inefficient needs new implentation but works for now
+        //Create file name
         sprintf(sd_logger_fileName, "%04d%02d%02d-%02d%02d%02d.csv", rtc_getYear(), rtc_getMonth(), rtc_getDay(), rtc_getHour(), rtc_getMinute(), rtc_getSecond());
 
+        //open file on sdcard
         sd_logger_logFile = SD.open(sd_logger_fileName, FILE_WRITE);
         if(sd_logger_logFile) { currentStatus.TS_SD_Status |= SD_STATUS_FS_READY; }
         else { currentStatus.TS_SD_Status &= ~SD_STATUS_FS_READY; }
                 
-        //Write a header to the buffer
+        //Write a CSV header to the sd writing buffer if the file is opend succesfully
         if(currentStatus.TS_SD_Status & SD_STATUS_FS_READY)
         {
-            //Now it is all hardcoded needs to be able to set from Tuner Studio.  
-            const char fields[] =  \
-"hasSync;\
-RPM;\
-MAP;\
-TPS;\
-tpsDOT;\
-mapDOT;\
-rpmDOT;\
-VE1;\
-VE2;\
-O2;\
-O2_2;\
-coolant;\
-IAT;\
-dwell;\
-battery10;\
-advance;\
-advance1;\
-advance2;\
-corrections;\
-AEamount;\
-egoCorrection;\
-wueCorrection;\
-batCorrection;\
-iatCorrection;\
-baroCorrection;\
-launchCorrection;\
-flexCorrection;\
-fuelTempCorrection;\
-flexIgnCorrection;\
-afrTarget;\
-idleDuty;\
-CLIdleTarget;\
-idleUpActive;\
-CTPSActive;\
-fanOn;\
-ethanolPct;\
-fuelTemp;\
-AEEndTime;\
-status1;\
-spark;\
-spark2;\
-engine;\
-PW1;\
-PW2;\
-PW3;\
-PW4;\
-PW5;\
-PW6;\
-PW7;\
-PW8;\
-runSecs;\
-secl;\
-loopsPerSecond;\
-launchingSoft;\
-launchingHard;\
-freeRAM;\
-startRevolutions;\
-boostTarget;\
-testOutputs;\
-testActive;\
-boostDuty;\
-idleLoad;\
-status3;\
-flexBoostCorrection;\
-nitrous_status;\
-fuelLoad;\
-fuelLoad2;\
-ignLoad;\
-fuelPumpOn;\
-syncLossCounter;\
-knockRetard;\
-knockActive;\
-toothLogEnabled;\
-compositeLogEnabled;\
-vvt1Angle;\
-vvt1Angle;\
-vvt1TargetAngle;\
-vvt1Duty;\
-injAngle;\
-ASEValue;\
-vss;\
-idleUpOutputActive;\
-gear;\
-fuelPressure;\
-oilPressure;\
-engineProtectStatus;\
-wmiPW;\
-\n";
-                                    
-            memcpy(logger_LogBufferCSV, fields, sizeof(fields));
-            logger_bufferIndex += sizeof(fields);
-
-            // const char *ptr_fields[] = {"hasSync","RPM","MAP", "TPS", "tpsDOT","mapDOT","rpmDOT","VE1", "VE2","O2","O2_2"\
-            //                             ,"coolant","IAT","dwell","battery10","advance","advance1","advance2","corrections",\
-            //                             "AEamount","egoCorrection","wueCorrection","batCorrection","iatCorrection","baroCorrection",\
-            //                             "launchCorrection","flexCorrection","fuelTempCorrection","flexIgnCorrection","afrTarget",\
-            //                             "idleDuty","CLIdleTarget","idleUpActive","CTPSActive","fanOn","ethanolPct","fuelTemp",\
-            //                             "AEEndTime","status1","spark","spark2","engine","PW1","PW2","PW3","PW4","PW5","PW6","PW7"\
-            //                             ,"PW8","runSecs","secl","loopsPerSecond","launchingSoft","launchingHard","freeRAM",\
-            //                             "startRevolutions","boostTarget","testOutputs","testActive","boostDuty","idleLoad",\
-            //                             "status3","flexBoostCorrection","nitrous_status","fuelLoad","fuelLoad2","ignLoad",\
-            //                             "fuelPumpOn","syncLossCounter","knockRetard","knockActive","toothLogEnabled",\
-            //                             "compositeLogEnabled","vvt1Angle","vvt1Angle","vvt1TargetAngle","vvt1Duty",\
-            //                             "injAngle","ASEValue","vss","idleUpOutputActive","gear","fuelPressure","oilPressure"\
-            //                             ,"engineProtectStatus","wmiPW", NULL};
-            // uint16_t i = 0;
-            // while (ptr_fields[i]!=NULL)
-            // {
-            //   Serial1.print(ptr_fields[i]);
-            //   logger_addField(ptr_fields[i], sizeof(ptr_fields[i]), false);
-            //   i++;
-            // }
-            // logger_addField(ptr_fields[i], sizeof(ptr_fields[i]), true);
+            //write all fields to the buffer until NULL character is encoutered.
+            uint16_t i = 0;
+            while (ptr_fields[i]!=NULL)
+            {
+              sd_logger_addCSVFieldName(ptr_fields[i], strlen(ptr_fields[i]), false);
+              i++;
+            }
+            sd_logger_addCSVFieldName(ptr_fields[i], strlen(ptr_fields[i]), true);
             
         }
     }
 }
 
-//this function needs to be called to close the file. When the board loses power this one is not called and the file is not closed poperly.
-//This creates orphan sectors on the card, and also a file of 0 kbyte size. 
+//this function needs to be called to close the file. When the board loses power 
+//this function is not called and the file is not closed poperly.This creates 
+//orphan sectors on the File system.
 void sd_logger_closeLogFile()
 {   
+    //get a time reading for time out purposes
     uint32_t millisstart = millis();
-    while(BSP_SD_GetCardState())
+    while(sd_logger_getCardState())
     {   
+        //if timeout occurs set error bit and exit
         if((millis()-millisstart)>SD_LOGGER_CLOSE_FILE_TOUT)
         {
             currentStatus.TS_SD_Status = SD_STATUS_ERROR_NO_WRITE;
@@ -203,7 +131,6 @@ void sd_logger_closeLogFile()
 void sd_logger_writeLogEntry()
 {
     uint16_t bytes_written = 0;
-    uint32_t microstart = micros();
     currentStatus.TS_SD_Status |= SD_STATUS_LOGGING;
     
     //only run logger if file is acutally open.
@@ -215,21 +142,21 @@ void sd_logger_writeLogEntry()
         //Log data to sd card if there is more data in the buffer than the trigger bytes.
         if ((sd_logger_bufferIndex > SD_LOGGER_WRITE_TRIG)){
 
-            //if buffer is filling up stop logging to prvent buffer overflow.
+            //if buffer is filling up stop logging to prevent buffer overflow.
             if (sd_logger_bufferIndex >= SD_LOGGER_BUFFER_SIZE-128){
                 currentStatus.TS_SD_Status = SD_STATUS_ERROR_NO_WRITE;
 
                 //Try to close the file else all data is lossed. 
                 sd_logger_closeLogFile();
             }
-            Serial1.printf("Sd_logger write entry file: %04d\n",currentStatus.TS_SD_Status & SD_STATUS_FS_READY);
+
             //Only try to write data to the sdcard when the card is ready.
-            if (BSP_SD_GetCardState()==0){
+            if (sd_logger_getCardState()==0){
                 //Only write data to sdcard if no flush is needed at this moment
                 if (!sd_logger_fileNeedsFlush){
                     bytes_written = sd_logger_logFile.write(&sd_logger_LogBufferCSV[0], SD_LOGGER_WRITE_TRIG); 
                     sd_logger_bufferIndex -= bytes_written;
-                    sd_logger_totalBytesWritten += bytes_written;
+                    sd_logger_totalBytesWritten += bytes_written;  
                     memcpy(&sd_logger_LogBufferCSV, &sd_logger_LogBufferCSV[bytes_written], sd_logger_bufferIndex);
                     sd_logger_bufferswritten++;
                 //File flush needed. so this instead.     
@@ -238,7 +165,6 @@ void sd_logger_writeLogEntry()
                     //Flush the file, all size and last modified data is written to the file
                     sd_logger_logFile.flush();
                     sd_logger_fileNeedsFlush = false;
-                    Serial1.printf("file Flush\n");
                 }
             }
             //trigger a file flush on next write of datalogger.
@@ -247,7 +173,6 @@ void sd_logger_writeLogEntry()
                 sd_logger_fileNeedsFlush = true;
                 sd_logger_bufferswritten = 0;
             }           
-
       }
            
     }
@@ -255,15 +180,14 @@ void sd_logger_writeLogEntry()
 }
 void updateCSVField(long value, bool lastValue)
 {
-
-    //Make string out of the integer values in current status
+    //Make string out of the values 
     itoa(value,sd_logger_LogBufferCSVfield,10);
     uint16_t length = strlen(sd_logger_LogBufferCSVfield);
 
     //Copy string from temp buffer to logbuffer 
     memcpy(&sd_logger_LogBufferCSV[sd_logger_bufferIndex], &sd_logger_LogBufferCSVfield, length);
 
-    //increase logbuffer index to newwest position 
+    //increase logbuffer index to new position 
     sd_logger_bufferIndex += length;
 
     //Every field has a seperator, add this to the logbuffer too
@@ -280,8 +204,7 @@ void updateCSVField(long value, bool lastValue)
 
 void sd_logger_updateLogdataCSV()
 {
-    // Looping over a struct is not possible, therefore the current implementation.
-    // Using the fullStatus[] with updateFullStatus() in the future? 
+    // There is no convient way to access al struct memebers, therefore is the current implementation.
     updateCSVField(currentStatus.hasSync, false);
     updateCSVField(currentStatus.RPM, false);
     updateCSVField(currentStatus.MAP, false);
