@@ -112,7 +112,7 @@ void logger_openLogFile()
         if(configPage13.onboard_log_file_style == LOGGER_BINARY)
         {
             //Create file name
-            sprintf(logger_fileName, "%02d%02d%02d-%02d%02d%02d.mlv", rtc_getYear()-2000, rtc_getMonth(), rtc_getDay(), rtc_getHour(), rtc_getMinute(), rtc_getSecond());
+            sprintf(logger_fileName, "%02d%02d%02d-%02d%02d%02d.bin", rtc_getYear()-2000, rtc_getMonth(), rtc_getDay(), rtc_getHour(), rtc_getMinute(), rtc_getSecond());
 
             //open file on sdcard
             logger_logFile = SD.open(logger_fileName, FILE_WRITE);
@@ -338,6 +338,10 @@ void logger_updateLogdataCSV()
 
 void logger_updateLogdataBIN()
 {
- 
+  for(byte x=0; x<116; x++)
+  {
+      logger_LogBufferCSV[logger_bufferIndex] = getStatusEntry(x);
+      logger_bufferIndex ++;
+  }
 }
 #endif

@@ -1,6 +1,7 @@
 #ifndef SD_H
 #define SD_H
 #include "globals.h"
+#include "comms.h" //Neede for binairy logging
 #ifdef SD_LOGGING
 #include SD_LIB_H
 
