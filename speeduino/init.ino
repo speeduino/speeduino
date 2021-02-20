@@ -62,10 +62,12 @@ void initialiseAll()
     
     initBoard(); //This calls the current individual boards init function. See the board_xxx.ino files for these.
     initialiseTimers();
-  #ifdef SD_LOGGING
-    initSD();
-    initRTC();
-  #endif
+
+    #ifdef SD_LOGGING
+      //Init onboard datalogger and open file to start logging on boot when configured.
+      logger_init();
+      if (configPage13.onboard_log_trigger_boot == 1){logger_openLogFile();}
+    #endif  
 
     Serial.begin(115200);
     #if defined(CANSerial_AVAILABLE)

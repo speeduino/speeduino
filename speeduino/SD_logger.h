@@ -1,7 +1,7 @@
 #ifndef SD_H
 #define SD_H
 #include "globals.h"
-#ifdef SD_LOGGER_ENABLED
+#ifdef SD_LOGGING
 #include SD_LIB_H
 
 #define SD_STATUS_OFF               0
@@ -38,10 +38,10 @@ const char *ptr_fields[] = {"hasSync","RPM","MAP", "TPS", "tpsDOT","mapDOT","rpm
                             ,"engineProtectStatus","wmiPW", NULL};
 
 extern "C" {uint32_t get_fattime (void);}
-void sd_logger_init();
-void sd_logger_openLogFile();
-void sd_logger_closeLogFile();
-void sd_logger_writeLogEntry();
+void logger_init();
+void logger_openLogFile();
+void logger_closeLogFile();
+void logger_writeLogEntry();
 
 #endif //SD_LOGGING
 #endif //SD_H

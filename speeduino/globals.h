@@ -353,6 +353,24 @@
   #define FUEL_PUMP_OFF() digitalWrite(pinFuelPump, LOW);
 #endif
 
+#define LOGGER_CSV_SEPARATOR_SEMICOLON  0
+#define LOGGER_CSV_SEPARATOR_COMMA      1
+#define LOGGER_CSV_SEPARATOR_TAP        2
+#define LOGGER_CSV_SEPARATOR_SPACE      3
+
+#define LOGGER_DISABLED                 0
+#define LOGGER_CSV                      1
+#define LOGGER_BINARY                   2
+
+#define LOGGER_RATE_1HZ                 0
+#define LOGGER_RATE_4HZ                 1
+#define LOGGER_RATE_10HZ                2
+#define LOGGER_RATE_30HZ                3
+
+#define LOGGER_FILENAMING_OVERWRITE     0
+#define LOGGER_FILENAMING_DATETIME      1
+#define LOGGER_FILENAMING_SEQENTIAL     2
+
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing.
@@ -1304,7 +1322,7 @@ struct config13 {
   byte onboard_log_tr3_thr_Oil   :1;  // "Disabled", "Enabled"
   byte onboard_log_tr3_thr_AFR   :1;  // "Disabled", "Enabled"     
   byte onboard_log_tr4_thr_on;        // "V",        0.1,   0.0,  0.0,  15.90,      2 ; * (  1 byte)    
-  byte onboard_log_tr4_thr_off;       // "V",        0.1,   0.0,  0.0,  14.90,      2 ; * (  1 byte)   
+  byte onboard_log_tr4_thr_off;       // "V",        0.1,   0.0,  0.0,  15.90,      2 ; * (  1 byte)   
   byte onboard_log_tr5_thr_on;        // "pin",      0,    0, 0,  1,    255,        0 ;  
   
 

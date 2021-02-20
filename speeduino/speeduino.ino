@@ -254,6 +254,11 @@ void loop()
       BIT_CLEAR(TIMER_mask, BIT_TIMER_10HZ);
       //updateFullStatus();
       checkProgrammableIO();
+    #ifdef SD_LOGGING
+      if((configPage13.onboard_log_file_rate!=0) & (configPage13.onboard_log_file_rate==LOGGER_RATE_10HZ)){
+        logger_writeLogEntry();
+      }
+    #endif
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
@@ -270,6 +275,12 @@ void loop()
       #if TPS_READ_FREQUENCY == 30
         readTPS();
       #endif
+
+    #ifdef SD_LOGGING
+      if((configPage13.onboard_log_file_rate!=0) & (configPage13.onboard_log_file_rate==LOGGER_RATE_30HZ)){
+        logger_writeLogEntry();
+      }
+    #endif
 
       if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
     }
@@ -289,6 +300,12 @@ void loop()
       currentStatus.gear = getGear();
       currentStatus.fuelPressure = getFuelPressure();
       currentStatus.oilPressure = getOilPressure();
+
+    #ifdef SD_LOGGING
+      if((configPage13.onboard_log_file_rate!=0) & (configPage13.onboard_log_file_rate==LOGGER_RATE_4HZ)){
+        logger_writeLogEntry();
+      }
+    #endif
 
       if(auxIsEnabled == true)
       {
@@ -365,7 +382,11 @@ void loop()
           digitalWrite(pinWMIIndicator, configPage10.wmiIndicatorPolarity ? HIGH : LOW);
         } 
       }
-
+    #ifdef SD_LOGGING
+      if((configPage13.onboard_log_file_rate!=0) & (configPage13.onboard_log_file_rate==LOGGER_RATE_1HZ)){
+        logger_writeLogEntry();
+      }
+    #endif
     } //1Hz timer
 
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) )  { idleControl(); } //Run idlecontrol every loop for stepper idle.
