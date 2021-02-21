@@ -38,7 +38,7 @@ void loggerPrimaryISR();
 void loggerSecondaryISR();
 static inline uint16_t stdGetRPM(uint16_t);
 static inline void setFilter(unsigned long);
-static inline int crankingGetRPM(byte);
+static inline int crankingGetRPM(byte, uint16_t);
 //static inline void doPerToothTiming(uint16_t);
 
 //All of the below are the 6 required functions for each decoder / pattern
