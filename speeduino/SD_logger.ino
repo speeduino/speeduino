@@ -2,7 +2,11 @@
 #ifdef SD_LOGGING
 #include "SD_logger.h"
 #include "Arduino.h"
-#include "src/STM32SD/bsp_sd.h"
+
+#ifdef STM32F407xx
+    #include "src/STM32SD/bsp_sd.h"
+#endif
+
 #include "rtc_common.h"
 
 //Private functions
@@ -12,10 +16,9 @@ void logger_addField(const char fieldname[], uint16_t fieldLength, bool lastValu
 
 //Private variables
 File logger_logFile;
-uint8_t LogBufferBIN[128]; 
-char logger_LogBufferCSV[SD_LOGGER_BUFFER_SIZE]; 
-char logger_LogBufferCSVfield[32];
-char logger_fileName[32];
+char logger_FileBuffer[SD_LOGGER_BUFFER_SIZE]; 
+char logger_FileBufferfield[32];
+char logger_FileName[32];
 uint16_t logger_bufferIndex;
 uint16_t logger_bufferswritten;
 uint32_t logger_totalBytesWritten;
@@ -39,7 +42,7 @@ uint8_t logger_getCardState()
 {
 #ifdef __BSP_SD_H
     return BSP_SD_GetCardState();
-#elif
+#else
     //need a way to get this info specific for each platform.
     return false;
 #endif
@@ -51,13 +54,13 @@ uint8_t logger_getCardState()
   */
 void logger_addCSVFieldName(const char fieldname[], uint16_t fieldLength, bool lastValue)
 {
-    memcpy(&logger_LogBufferCSV[logger_bufferIndex], fieldname, fieldLength);
+    memcpy(&logger_FileBuffer[logger_bufferIndex], fieldname, fieldLength);
     logger_bufferIndex += fieldLength;
     if(!lastValue){
-      logger_LogBufferCSV[logger_bufferIndex] = CSVseparator;
+      logger_FileBuffer[logger_bufferIndex] = CSVseparator;
       logger_bufferIndex += 1;
     }else{
-      logger_LogBufferCSV[logger_bufferIndex] = '\n';
+      logger_FileBuffer[logger_bufferIndex] = '\n';
       logger_bufferIndex += 1;
     }
 }
@@ -82,10 +85,29 @@ void logger_openLogFile()
         if(configPage13.onboard_log_file_style == LOGGER_CSV)
         {
             //Create file name
-            sprintf(logger_fileName, "%02d%02d%02d-%02d%02d%02d.csv", rtc_getYear()-2000, rtc_getMonth(), rtc_getDay(), rtc_getHour(), rtc_getMinute(), rtc_getSecond());
+            if(configPage13.onboard_log_filenaming==LOGGER_FILENAMING_DATETIME){sprintf(logger_FileName, "%02d%02d%02d-%02d%02d%02d.csv", rtc_getYear()-2000, rtc_getMonth(), rtc_getDay(), rtc_getHour(), rtc_getMinute(), rtc_getSecond());}
+            if(configPage13.onboard_log_filenaming==LOGGER_FILENAMING_OVERWRITE)
+            {
+                sprintf(logger_FileName, "Speeduino-log.csv");
+                if(SD.exists(logger_FileName))
+                {
+                    SD.remove(logger_FileName);
+                } 
+            }
+            if(configPage13.onboard_log_filenaming==LOGGER_FILENAMING_SEQENTIAL)
+            {
+                for (size_t i = 0; i < 999; i++)
+                {
+                    sprintf(logger_FileName, "Speeduino-log%03d.csv", i);
+                    if(!SD.exists(logger_FileName)){
+                        break;
+                    } 
+                }
+                
 
+            }
             //open file on sdcard
-            logger_logFile = SD.open(logger_fileName, FILE_WRITE);
+            logger_logFile = SD.open(logger_FileName, FILE_WRITE);
             if(logger_logFile) { currentStatus.TS_SD_Status |= SD_STATUS_FS_READY; }
             else { currentStatus.TS_SD_Status &= ~SD_STATUS_FS_READY; }
                     
@@ -112,16 +134,32 @@ void logger_openLogFile()
         if(configPage13.onboard_log_file_style == LOGGER_BINARY)
         {
             //Create file name
-            sprintf(logger_fileName, "%02d%02d%02d-%02d%02d%02d.bin", rtc_getYear()-2000, rtc_getMonth(), rtc_getDay(), rtc_getHour(), rtc_getMinute(), rtc_getSecond());
+            if(configPage13.onboard_log_filenaming==LOGGER_FILENAMING_DATETIME){sprintf(logger_FileName, "%02d%02d%02d-%02d%02d%02d.bin", rtc_getYear()-2000, rtc_getMonth(), rtc_getDay(), rtc_getHour(), rtc_getMinute(), rtc_getSecond());}
+            if(configPage13.onboard_log_filenaming==LOGGER_FILENAMING_OVERWRITE)
+            {
+                sprintf(logger_FileName, "Speeduino-log.bin");
+                if(SD.exists(logger_FileName))
+                {
+                    SD.remove(logger_FileName);
+                } 
+            }
+            if(configPage13.onboard_log_filenaming==LOGGER_FILENAMING_SEQENTIAL)
+            {
+                for (size_t i = 0; i < 999; i++)
+                {
+                    sprintf(logger_FileName, "Speeduino-log%03d.bin", i);
+                    if(!SD.exists(logger_FileName)){
+                        break;
+                    } 
+                }
+                
 
+            }
             //open file on sdcard
-            logger_logFile = SD.open(logger_fileName, FILE_WRITE);
+            logger_logFile = SD.open(logger_FileName, FILE_WRITE);
             if(logger_logFile) { currentStatus.TS_SD_Status |= SD_STATUS_FS_READY; }
             else { currentStatus.TS_SD_Status &= ~SD_STATUS_FS_READY; }
-
-
-            //TODO Create megalogviewer file format header                     
-
+                  
         }
     }
 }
@@ -143,7 +181,7 @@ void logger_closeLogFile()
     };
 
     //write buffer to sdcard before closing
-    logger_logFile.write(logger_LogBufferCSV, logger_bufferIndex);  
+    logger_logFile.write(logger_FileBuffer, logger_bufferIndex);  
     logger_bufferIndex = 0;
     if(logger_logFile){
         logger_logFile.close();
@@ -178,7 +216,7 @@ void logger_writeLogEntry()
         if ((logger_bufferIndex > SD_LOGGER_WRITE_TRIG)){
 
             //if buffer is filling up stop logging to prevent buffer overflow.
-            if (logger_bufferIndex >= SD_LOGGER_BUFFER_SIZE-128)
+            if (logger_bufferIndex >= SD_LOGGER_BUFFER_SIZE-SD_LOGGER_WRITE_TRIG)
             {
                 currentStatus.TS_SD_Status = SD_STATUS_ERROR_NO_WRITE;
 
@@ -192,10 +230,10 @@ void logger_writeLogEntry()
                 //Only write data to sdcard if no flush is needed at this moment
                 if (!logger_fileNeedsFlush)
                 {
-                    bytes_written = logger_logFile.write(&logger_LogBufferCSV[0], SD_LOGGER_WRITE_TRIG); 
+                    bytes_written = logger_logFile.write(&logger_FileBuffer[0], SD_LOGGER_WRITE_TRIG); 
                     logger_bufferIndex -= bytes_written;
                     logger_totalBytesWritten += bytes_written;  
-                    memcpy(&logger_LogBufferCSV, &logger_LogBufferCSV[bytes_written], logger_bufferIndex);
+                    memcpy(&logger_FileBuffer, &logger_FileBuffer[bytes_written], logger_bufferIndex);
                     logger_bufferswritten++;
                 //File flush needed. so this instead.     
                 }else
@@ -222,11 +260,11 @@ void logger_writeLogEntry()
 void updateCSVField(long value, bool lastValue)
 {
     //Make string out of the values 
-    itoa(value,logger_LogBufferCSVfield,10);
-    uint16_t length = strlen(logger_LogBufferCSVfield);
+    itoa(value,logger_FileBufferfield,10);
+    uint16_t length = strlen(logger_FileBufferfield);
 
     //Copy string from temp buffer to logbuffer 
-    memcpy(&logger_LogBufferCSV[logger_bufferIndex], &logger_LogBufferCSVfield, length);
+    memcpy(&logger_FileBuffer[logger_bufferIndex], &logger_FileBufferfield, length);
 
     //increase logbuffer index to new position 
     logger_bufferIndex += length;
@@ -234,12 +272,12 @@ void updateCSVField(long value, bool lastValue)
     //end of line charter needs to be added after last value.
     if (lastValue)
     {   
-        logger_LogBufferCSV[logger_bufferIndex] = '\n';
+        logger_FileBuffer[logger_bufferIndex] = '\n';
         logger_bufferIndex += 1;
     }else
     {
         //Every field has a seperator except for the last field, add this to the logbuffer too
-        logger_LogBufferCSV[logger_bufferIndex] = CSVseparator;
+        logger_FileBuffer[logger_bufferIndex] = CSVseparator;
         logger_bufferIndex += 1;
     }
 }
@@ -340,7 +378,7 @@ void logger_updateLogdataBIN()
 {
   for(byte x=0; x<116; x++)
   {
-      logger_LogBufferCSV[logger_bufferIndex] = getStatusEntry(x);
+      logger_FileBuffer[logger_bufferIndex] = getStatusEntry(x);
       logger_bufferIndex ++;
   }
 }

@@ -12,7 +12,7 @@
 #define SD_STATUS_ERROR_NO_WRITE    8
 
 #define SD_LOGGER_BUFFER_SIZE       16384U
-#define SD_LOGGER_WRITE_TRIG        512U    //when to write to sdcard. Minmum is 512 bytes, and always must be integer multiple of 512 bytes for efficiency 
+#define SD_LOGGER_WRITE_TRIG        512U    //Must always must be integer multiple of 512 bytes  (sd card write blocks)
 #define SD_LOGGER_CLOSE_FILE_TOUT   300     //Timeout on closing file of 300 milliseconds 
 #define SD_LOGGER_FLUSH_FILE_TRIG   30      //After how many chuncks of data a flush of the file is executed. 
 
@@ -24,6 +24,7 @@
     #define SD_CS_PIN 10 //This is a made up value for now
 #endif
 
+//List of logger field names. This must be in the same order and length as logger_updateLogdataCSV()
 const char *ptr_fields[] = {"hasSync","RPM","MAP", "TPS", "tpsDOT","mapDOT","rpmDOT","VE1", "VE2","O2","O2_2"\
                             ,"coolant","IAT","dwell","battery10","advance","advance1","advance2","corrections",\
                             "AEamount","egoCorrection","wueCorrection","batCorrection","iatCorrection","baroCorrection",\
