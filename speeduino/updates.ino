@@ -330,7 +330,7 @@ void doUpdates()
     {
       configPage10.flexAdvAdj[i] += 40;
     }
-    
+
     //AE cold modifier added. Default to sane values
     configPage2.aeColdPct = 100;
     configPage2.aeColdTaperMin = 40;
@@ -352,11 +352,11 @@ void doUpdates()
 
     //Cranking enrichment to run taper added. Default it to 0,1 secs
     configPage10.crankingEnrichTaper = 1;
-    
+
     //ASE to run taper added. Default it to 0,1 secs
     configPage2.aseTaperTime = 1;
 
-    // there is now optioon for fixed and relative timing retard for soft limit. This sets the soft limiter to the old fixed timing mode.
+    //There is now option for fixed and relative timing retard for soft limit. This sets the soft limiter to the old fixed timing mode.
     configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
 
     //VSS was added for testing, disable it by default
@@ -462,13 +462,12 @@ void doUpdates()
     writeAllConfig();
     //EEPROM.write(EEPROM_DATA_VERSION, 17);
   }
-  
+
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
   {
-    configPage9.true_address = 0x200;
-    
-    //Programmable outputs added. Set all to disabled
+    //Disable all programmable outputs by default.
+    //fix for first boot lockups for some users on all platforms */
     configPage13.outputPin[0] = 0;
     configPage13.outputPin[1] = 0;
     configPage13.outputPin[2] = 0;
