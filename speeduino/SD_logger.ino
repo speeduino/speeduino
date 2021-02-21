@@ -36,7 +36,7 @@ uint32_t get_fattime (void){
 
 /**
   * @brief  Get information if sd card is busy or ready to receive new data.
-  * @retval true if ready else false
+  * @retval true if sd card is busy else false.
   */
 uint8_t logger_getCardState()
 {
@@ -44,14 +44,20 @@ uint8_t logger_getCardState()
     return BSP_SD_GetCardState();
 #else
     //need a way to get this info specific for each platform.
+    //TODO implement this for teensy
     return false;
 #endif
 }
 
 /**
-  * @brief  Add field names to the first line of the CSV file.
-  * @retval true if ready else false
-  */
+ * @brief  Add csv field names on the first line of the file
+ * @note   This adds the field names to the file buffer only 
+ * * written to the file when add entry is atleasted called once and enough data is in the file buffer
+ * @param  fieldname[]: list of charter arrays as field names ternmined by NULL
+ * @param  fieldLength: Length of the field to add
+ * @param  lastValue: Denotes that its the last field, in that case end of line is added instead of seperator
+ * @retval None
+ */
 void logger_addCSVFieldName(const char fieldname[], uint16_t fieldLength, bool lastValue)
 {
     memcpy(&logger_FileBuffer[logger_bufferIndex], fieldname, fieldLength);
@@ -65,6 +71,11 @@ void logger_addCSVFieldName(const char fieldname[], uint16_t fieldLength, bool l
     }
 }
 
+/**
+ * @brief  Initlilize sdcard sets error if not succesfull 
+ * @note   
+ * @retval None
+ */
 void logger_init()
 { 
     if (configPage13.onboard_log_file_style){
@@ -74,17 +85,24 @@ void logger_init()
         {
             currentStatus.TS_SD_Status |= SD_STATUS_CARD_READY;
         }   
-        else { currentStatus.TS_SD_Status |= SD_STATUS_ERROR_NO_WRITE; }   
+        else { currentStatus.TS_SD_Status = SD_STATUS_ERROR_NO_WRITE; }   
     }
 }
 
+/**
+ * @brief  Opens a log file on the sdcard to start logging to. 
+ * @note   
+ * @retval None
+ */
 void logger_openLogFile()
 {
     //Attempt to create a log file for writing only if there is no file open
     if(!(currentStatus.TS_SD_Status & SD_STATUS_FS_READY)){
+
+        //create csv file name
         if(configPage13.onboard_log_file_style == LOGGER_CSV)
         {
-            //Create file name
+            //Create file name csv or bin
             if(configPage13.onboard_log_filenaming==LOGGER_FILENAMING_DATETIME){sprintf(logger_FileName, "%02d%02d%02d-%02d%02d%02d.csv", rtc_getYear()-2000, rtc_getMonth(), rtc_getDay(), rtc_getHour(), rtc_getMinute(), rtc_getSecond());}
             if(configPage13.onboard_log_filenaming==LOGGER_FILENAMING_OVERWRITE)
             {
@@ -131,6 +149,8 @@ void logger_openLogFile()
                 
             }
         }
+
+        //create binary file name 
         if(configPage13.onboard_log_file_style == LOGGER_BINARY)
         {
             //Create file name
@@ -167,6 +187,11 @@ void logger_openLogFile()
 //this function needs to be called to close the file. When the board loses power 
 //this function is not called and the file is not closed poperly.This creates 
 //orphan sectors on the File system.
+/**
+ * @brief  Closes the log file that is open to stop logging 
+ * @note   TODO call close log file when Vbat drops, and hopefully enough energy is left in capacitors to formally close the file
+ * @retval None
+ */
 void logger_closeLogFile()
 {   
     //get a time reading for time out purposes
@@ -191,6 +216,11 @@ void logger_closeLogFile()
     currentStatus.TS_SD_Status &= ~SD_STATUS_LOGGING;
 }
 
+/**
+ * @brief  Write a log entry this one is called with 1,4,10,30hz depending on settings
+ * @note   
+ * @retval None
+ */
 void logger_writeLogEntry()
 {
     uint16_t bytes_written = 0;
@@ -257,6 +287,14 @@ void logger_writeLogEntry()
     }
 
 }
+
+/**
+ * @brief  Create a CSV style ASCII field for one value, terminated by the desired seperator 
+ * @note   
+ * @param  value: The interger value to log (No floats in speeduino at the moment)
+ * @param  lastValue: Set to true if it is the last value of this log line.
+ * @retval None
+ */
 void updateCSVField(long value, bool lastValue)
 {
     //Make string out of the values 
@@ -282,6 +320,11 @@ void updateCSVField(long value, bool lastValue)
     }
 }
 
+/**
+ * @brief  Adds the CSV fields as one line to the file buffer
+ * @note   
+ * @retval None
+ */
 void logger_updateLogdataCSV()
 {
     // There is no convient way to access al struct memebers, therefore is the current implementation.
@@ -373,7 +416,11 @@ void logger_updateLogdataCSV()
     updateCSVField(currentStatus.engineProtectStatus, false);
     updateCSVField(currentStatus.wmiPW, true);
 }
-
+/**
+ * @brief  Adds the binairy 'A' style data to the file buffer for logging 
+ * @note   
+ * @retval None
+ */
 void logger_updateLogdataBIN()
 {
   for(byte x=0; x<116; x++)
