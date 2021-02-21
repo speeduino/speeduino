@@ -1,3 +1,4 @@
+#ifdef STM32F407xx
 /*------------------------------------------------------------------------*/
 /* Unicode - OEM code bidirectional converter  (C)ChaN, 2015              */
 /* CP950 (Traditional Chinese Big5)                                       */
@@ -6893,4 +6894,5 @@ WCHAR ff_wtoupper (	/* Returns upper converted character */
 
 	return chr;
 }
+#endif
 #endif

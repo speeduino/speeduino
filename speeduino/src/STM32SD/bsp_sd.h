@@ -34,7 +34,7 @@
   *
   ******************************************************************************
   */
-
+#ifdef STM32F407xx
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __BSP_SD_H
 #define __BSP_SD_H
@@ -130,5 +130,5 @@ void    BSP_SD_Transceiver_MspInit(SD_HandleTypeDef *hsd, void *Params);
 #endif
 
 #endif /* __BSP_SD_H */
-
+#endif
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

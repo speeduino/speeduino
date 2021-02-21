@@ -1,3 +1,4 @@
+#ifdef STM32F407xx
 /**
   ******************************************************************************
   * @file    sd_diskio.h 
@@ -59,3 +60,4 @@ extern const Diskio_drvTypeDef  SD_Driver;
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 
+#endif

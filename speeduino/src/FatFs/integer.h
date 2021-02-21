@@ -1,3 +1,4 @@
+#ifdef STM32F407xx
 /*-------------------------------------------*/
 /* Integer type definitions for FatFs module */
 /*-------------------------------------------*/
@@ -35,4 +36,5 @@ typedef unsigned long long QWORD;
 
 #endif
 
+#endif
 #endif

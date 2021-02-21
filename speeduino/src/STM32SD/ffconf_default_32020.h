@@ -1,10 +1,12 @@
+#ifdef STM32F407xx
+
 /*---------------------------------------------------------------------------/
 /  FatFs - FAT file system module configuration file  R0.11 (C)ChaN,  2015
 /----------------------------------------------------------------------------/
 /
 / CAUTION! Do not forget to make clean the project after any changes to
 / the configuration options.
-/
+
 /----------------------------------------------------------------------------*/
 #ifndef _FFCONF
 #define _FFCONF 32020 /* Revision ID */
@@ -240,3 +242,4 @@
 #endif
 
 #endif /* _FFCONFIG */
+#endif

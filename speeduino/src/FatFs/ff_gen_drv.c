@@ -1,3 +1,4 @@
+#ifdef STM32F407xx
 /**
   ******************************************************************************
   * @file    ff_gen_drv.c
@@ -149,4 +150,4 @@ uint8_t FATFS_GetAttachedDriversNbr(void)
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
-
+#endif

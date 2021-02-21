@@ -1,3 +1,4 @@
+#ifdef STM32F407xx
 /**
   ******************************************************************************
   * @file    SdFatFs.h
@@ -107,3 +108,4 @@ class SdFatFs {
     char _SDPath[4]; /* SD disk logical drive path */
 };
 #endif  // sdFatFs_h
+#endif

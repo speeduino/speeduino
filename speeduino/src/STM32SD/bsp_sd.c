@@ -32,7 +32,7 @@
 *
 ******************************************************************************
 */
-
+#ifdef STM32F407xx
 /* Includes ------------------------------------------------------------------*/
 #include "bsp_sd.h"
 #include "interrupt.h"
@@ -749,3 +749,4 @@ void SDIO_IRQHandler(void)
   /* USER CODE END SDMMC2_IRQn 1 */
 }
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+#endif

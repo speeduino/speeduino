@@ -1,3 +1,4 @@
+#ifdef STM32F407xx
 /*------------------------------------------------------------------------*/
 /* Unicode - Local code bidirectional converter  (C)ChaN, 2015            */
 /* (SBCS code pages)                                                      */
@@ -386,3 +387,4 @@ WCHAR ff_wtoupper (	/* Returns upper converted character */
 	return chr;
 }
 
+#endif

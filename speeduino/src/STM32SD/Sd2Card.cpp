@@ -1,3 +1,4 @@
+#ifdef STM32F407xx
 /**
   ******************************************************************************
   * @file    Sd2Card.cpp
@@ -105,4 +106,4 @@ uint8_t Sd2Card::type(void) const
 #endif
   return cardType;
 }
-
+#endif

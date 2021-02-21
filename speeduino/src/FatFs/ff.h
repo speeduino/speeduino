@@ -1,3 +1,4 @@
+#ifdef STM32F407xx
 /*----------------------------------------------------------------------------/
 /  FatFs - Generic FAT file system module  R0.12c                             /
 /-----------------------------------------------------------------------------/
@@ -359,3 +360,4 @@ int ff_del_syncobj (_SYNC_t sobj);				/* Delete a sync object */
 #endif
 
 #endif /* _FATFS */
+#endif

@@ -1,3 +1,4 @@
+#ifdef STM32F407xx
 /*
 
  SD - a slightly more friendly wrapper for sdfatlib
@@ -101,4 +102,5 @@ class SDClass {
 
 extern SDClass SD;
 
+#endif
 #endif

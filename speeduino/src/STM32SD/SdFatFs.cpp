@@ -1,3 +1,4 @@
+#ifdef STM32F407xx
 /**
   ******************************************************************************
   * @file    SdFatFs.cpp
@@ -64,3 +65,4 @@ uint8_t SdFatFs::fatType(void)
       return 0;
   }
 }
+#endif

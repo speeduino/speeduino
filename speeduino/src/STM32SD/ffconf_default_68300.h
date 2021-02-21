@@ -1,3 +1,4 @@
+#ifdef STM32F407xx
 /**
   *
   *  Portions COPYRIGHT 2017 STMicroelectronics
@@ -324,3 +325,4 @@
 #endif
 #endif
 /*--- End of configuration options ---*/
+#endif

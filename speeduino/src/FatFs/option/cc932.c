@@ -1,3 +1,4 @@
+#ifdef STM32F407xx
 /*------------------------------------------------------------------------*/
 /* Unicode - OEM code bidirectional converter  (C)ChaN, 2015              */
 /* CP932 (Japanese Shift-JIS)                                             */
@@ -3865,3 +3866,4 @@ WCHAR ff_wtoupper (	/* Returns upper converted character */
 }
 #endif
 
+#endif

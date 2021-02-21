@@ -2,6 +2,7 @@
  * @file    ffconf.h
  * @brief   Include header file to match Arduino library format
  */
+#ifdef STM32F407xx
 #ifndef _ARDUINO_FFCONF_H
 #define _ARDUINO_FFCONF_H
 
@@ -19,3 +20,4 @@
 #endif
 #endif
 #endif /* _ARDUINO_FFCONF_H */
+#endif

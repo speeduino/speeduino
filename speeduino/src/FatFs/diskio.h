@@ -1,3 +1,4 @@
+#ifdef STM32F407xx
 /*-----------------------------------------------------------------------/
 /  Low level disk interface modlue include file   (C)ChaN, 2014          /
 /-----------------------------------------------------------------------*/
@@ -77,4 +78,5 @@ DWORD get_fattime (void);
 }
 #endif
 
+#endif
 #endif

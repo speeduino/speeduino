@@ -1,3 +1,4 @@
+#ifdef STM32F407xx
 /**
   ******************************************************************************
   * @file    FatFs.h
@@ -43,3 +44,4 @@
 #include "drivers/sd_diskio.h"
 
 #endif /* __FATFS_H__ */
+#endif
