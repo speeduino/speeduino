@@ -1068,53 +1068,78 @@ void sendValuesLegacy()
 namespace {
   typedef enum { Value, axisX, axisY, None } table3D_section_t;
 
-  inline table3D_section_t offsetToTableSection(const table3D *pTable, uint16_t offset)
+  inline table3D_section_t offsetToTableSection(const entity_address::table_t &location)
   {
-    uint8_t size = pTable->xSize;
+    // Precompute for a small performance gain.
+    uint8_t size = location.pTable->xSize;
     uint16_t area = sq(size);
-    return offset < area ? Value :
-            offset <  area+size ? axisX :
-              offset < area+size+size ? axisY :
+    return location.offset < area ? Value :
+            location.offset <  area+size ? axisX :
+              location.offset < area+size+size ? axisY :
                 None;
   }
 
-  inline int8_t offsetToValueYIndex(const table3D *pTable, uint16_t offset)
+#define GET_TABLE_VALUE(size) \
+  case size: return &location.pTable->values[(size-1) - (location.offset / size)][location.offset % size]
+
+  inline byte* offsetToValue(const entity_address::table_t &location)
   {
-    //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). 
-    return pTable->xSize-1 - (offset / pTable->xSize);
+    // You might be tempted to remove the switch: DON'T
+    //
+    // Some processors do not have division hardware. E.g. ATMega2560.
+    //
+    // So in the general case, division is done in software. I.e. the compiler
+    // emits code to perform the division. 
+    //
+    // However, by using compile time constants the compiler can do a ton of
+    // optimization of the division and modulus operations below
+    // (likely converting them to multiply & shift operations).
+    //
+    // So this is a massive performance win (2x to 3x). 
+    switch (location.pTable->xSize)
+    {
+        GET_TABLE_VALUE(16);
+        GET_TABLE_VALUE(15);
+        GET_TABLE_VALUE(14);
+        GET_TABLE_VALUE(13);
+        GET_TABLE_VALUE(12);
+        GET_TABLE_VALUE(11);
+        GET_TABLE_VALUE(10);
+        GET_TABLE_VALUE(9);
+        GET_TABLE_VALUE(8);
+        GET_TABLE_VALUE(7);
+        GET_TABLE_VALUE(6);
+        GET_TABLE_VALUE(5);
+        GET_TABLE_VALUE(4);
+        default: ;
+    }
+    // Default slow path
+    return &location.pTable->values[(location.pTable->xSize-1) - (location.offset/location.pTable->xSize)][location.offset % location.pTable->xSize];
   }
 
-  inline int8_t offsetToValueXIndex(const table3D *pTable, uint16_t offset)
+  inline int8_t offsetToAxisXIndex(const entity_address::table_t &location)
   {
-    return offset % pTable->xSize;
+    return location.offset - sq(location.pTable->xSize);
   }
 
-  inline int8_t offsetToAxisXIndex(const table3D *pTable, uint16_t offset)
-  {
-    return offset - sq(pTable->xSize);
-  }
-
-  inline int8_t offsetToAxisYIndex(const table3D *pTable, uint16_t offset)
+  inline int8_t offsetToAxisYIndex(const entity_address::table_t &location)
   {
     // Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
-    return pTable->xSize-1 - (offset - (sq(pTable->xSize) + pTable->xSize));
+    return (location.pTable->xSize-1) - (location.offset - (sq(location.pTable->xSize) + location.pTable->xSize));
   }
 
-  inline int8_t getTableValueFromOffset(const table3D *pTable, uint16_t offset)
+  inline int8_t getTableValueFromOffset(const entity_address::table_t &location)
   {
-    switch (offsetToTableSection(pTable, offset))
+    switch (offsetToTableSection(location))
     {
       case Value: 
-        //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
-        return (int8_t)pTable->values[offsetToValueYIndex(pTable, offset)][offsetToValueXIndex(pTable, offset)];
+        return *offsetToValue(location);
       
       case axisX:
-        //RPM Bins for VE table (Need to be dvidied by 100)
-        return int8_t(pTable->axisX[offsetToAxisXIndex(pTable, offset)] / getTableXAxisFactor(pTable)); 
+        return int8_t(location.pTable->axisX[offsetToAxisXIndex(location)] / getTableXAxisFactor(location.pTable)); 
       
       case axisY:
-        //MAP or TPS bins for VE table
-        return int8_t(pTable->axisY[offsetToAxisYIndex(pTable, offset)] / getTableYAxisFactor(pTable)); 
+        return int8_t(location.pTable->axisY[offsetToAxisYIndex(location)] / getTableYAxisFactor(location.pTable)); 
       
       default: ; // no-op
     }
@@ -1122,177 +1147,59 @@ namespace {
     return 0;
   }
 
-  inline void setTableValueFromOffset(table3D *pTable, uint16_t offset, int8_t value)
+  inline void setTableValueFromOffset(const entity_address::table_t &location, int8_t value)
   {
-    switch (offsetToTableSection(pTable, offset))
+    switch (offsetToTableSection(location))
     {
       case Value: 
-        pTable->values[offsetToValueYIndex(pTable, offset)][offsetToValueXIndex(pTable, offset)] = value;
+        *offsetToValue(location) = value;
         break;
 
       case axisX:
-        pTable->axisX[offsetToAxisXIndex(pTable, offset)]  = (int)(value) * getTableXAxisFactor(pTable); 
+        location.pTable->axisX[offsetToAxisXIndex(location)]  = (int)(value) * getTableXAxisFactor(location.pTable); 
         break;
 
       case axisY:
-        pTable->axisY[offsetToAxisYIndex(pTable, offset)] = (int)(value) * getTableYAxisFactor(pTable);
+        location.pTable->axisY[offsetToAxisYIndex(location)] = (int)(value) * getTableYAxisFactor(location.pTable);
         break;      
       default: ; // no-op
     }
-    pTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
-  }
-
-  byte* getRawPageStart(byte pageNumber)
-  {
-    switch (pageNumber)
-    {
-      case veSetPage: return (byte*)&configPage2;
-      break;
-
-      case ignSetPage: return (byte*)&configPage4;
-      break;
-
-      case afrSetPage: return (byte*)&configPage6;
-      break;
-
-      case canbusPage: return (byte*)&configPage9;
-      break;
-
-      case warmupPage: return (byte*)&configPage10;
-      break;
-
-      case progOutsPage: return (byte*)&configPage13;
-      break;
-    }
-
-    return nullptr;
-  }
-
-  void receiveRawPageValue(byte pageNumber, uint16_t valueOffset, byte newValue)
-  {
-      //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
-      if (valueOffset < npage_size[pageNumber])
-      {
-        *(getRawPageStart(pageNumber) + (byte)valueOffset) = newValue;
-      }
+    location.pTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
   }
 }
 
 void receiveValue(uint16_t valueOffset, byte newValue)
 {
-  switch (currentPage)
+  entity_address location = map_page_offset_to_memory(currentPage, valueOffset);
+
+  switch (location.type)
   {
-    case veMapPage:
-      setTableValueFromOffset(&fuelTable, valueOffset, newValue);
-      break;
-
-    case ignMapPage: //Ignition settings page (Page 2)
-      setTableValueFromOffset(&ignitionTable, valueOffset, newValue);
-      break;
-
-    case afrMapPage: //Air/Fuel ratio target settings page
-      setTableValueFromOffset(&afrTable, valueOffset, newValue);
-      break;
-
-    case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
-      if (valueOffset < 80) //New value is on the Y (TPS) axis of the boost table
-      {
-        setTableValueFromOffset(&boostTable, valueOffset, newValue);
-      }
-      else if (valueOffset < 160)
-      {
-        setTableValueFromOffset(&vvtTable, valueOffset - 80, newValue);
-      }
-      else
-      {
-        setTableValueFromOffset(&stagingTable, valueOffset - 160, newValue);
-      }
-      break;
-
-    case seqFuelPage:
-      if (valueOffset < 48) 
-      {
-        setTableValueFromOffset(&trim1Table, valueOffset, newValue);
-      }
-      //Trim table 2
-      else if (valueOffset < 96) 
-      { 
-        setTableValueFromOffset(&trim2Table, valueOffset - 48, newValue);
-      }
-      //Trim table 3
-      else if (valueOffset < 144)
-      {
-        setTableValueFromOffset(&trim3Table, valueOffset - 96, newValue);
-      }
-      //Trim table 4
-      else if (valueOffset < 192)
-      {
-        setTableValueFromOffset(&trim4Table, valueOffset - 144, newValue);
-      }
-      //Trim table 5
-      else if (valueOffset < 240)
-      {
-        setTableValueFromOffset(&trim5Table, valueOffset - 192, newValue);
-      }
-      //Trim table 6
-      else if (valueOffset < 288)
-      {
-        setTableValueFromOffset(&trim6Table, valueOffset - 240, newValue);
-      }
-      //Trim table 7
-      else if (valueOffset < 336)
-      {
-        setTableValueFromOffset(&trim7Table, valueOffset - 288, newValue);
-      }
-      //Trim table 8
-      else      
-      {
-        setTableValueFromOffset(&trim8Table, valueOffset - 336, newValue);
-      }
-      break;
-
-    case fuelMap2Page:
-      setTableValueFromOffset(&fuelTable2, valueOffset, newValue);
-      break;
-
-    case wmiMapPage:
-      if (valueOffset < 80) //New value is on the Y (MAP) axis of the wmi table
-      {
-        setTableValueFromOffset(&wmiTable, valueOffset, newValue);
-      }
-      //End of wmi table
-      else
-      {
-        setTableValueFromOffset(&dwellTable, valueOffset - 160, newValue);
-      }
-      break;
-    
-    case ignMap2Page: //Ignition settings page (Page 2)
-      setTableValueFromOffset(&ignitionTable2, valueOffset, newValue);
-      break;
+  case page_subtype_t::Table:
+    setTableValueFromOffset(location.table, newValue);
+    break;
+  
+  case page_subtype_t::Raw:
+    if (valueOffset < npage_size[currentPage])
+    {
+      *((byte*)location.raw.pData + location.raw.offset) = newValue;
+    }
+    break;
       
-    case progOutsPage:
-    case canbusPage:
-    case afrSetPage:
-    case ignSetPage:
-    case veSetPage:
-    case warmupPage:
-      receiveRawPageValue(currentPage, valueOffset, newValue);
-      break;
-
-    default:
-      break;
+  default:
+    break;
   }
 }
 
 namespace {
 
-  void sendTable(const table3D *pTable)
+  void sendTable(table3D *pTable)
   {
+    entity_address::table_t location = { pTable, 0 };
     uint16_t length = sq(pTable->xSize) + pTable->xSize+ pTable->xSize;
     for (uint16_t offset = 0; offset < length; offset++) 
     {      
-      Serial.write(getTableValueFromOffset(pTable, offset)); 
+      location.offset = offset;
+      Serial.write(getTableValueFromOffset(location)); 
     }
   }
 
@@ -1375,12 +1282,16 @@ void sendPage()
     case ignSetPage:
     case veSetPage:
     case warmupPage:
-      sendPageBytes(getRawPageStart(currentPage), npage_size[currentPage]);
+      {
+        entity_address location = map_page_offset_to_memory(currentPage, 0);
+        sendPageBytes((byte*)location.raw.pData, npage_size[currentPage]);
+      }
       break;
 
     default:
     #ifndef SMALL_FLASH_MODE
-        Serial.println(F("\nPage has not been implemented yet"));
+        Serial.print(F("\nsendPage: Page has not been implemented yet"));
+        Serial.println(currentPage);
     #endif
         break;
   }
@@ -1566,7 +1477,7 @@ void sendPageASCII()
     case progOutsPage:
     default:
     #ifndef SMALL_FLASH_MODE
-        Serial.println(F("\nPage has not been implemented yet"));
+        Serial.println(F("\nsendPageASCII: Page has not been implemented yet"));
     #endif
         break;
   }
@@ -1581,105 +1492,20 @@ void sendPageASCII()
  */
 byte getPageValue(byte page, uint16_t valueAddress)
 {
-  switch (page)
+  entity_address location = map_page_offset_to_memory(page, valueAddress);
+
+  switch (location.type)
   {
-    case veMapPage:
-        return getTableValueFromOffset(&fuelTable, valueAddress);
-        break;
-
-    case ignMapPage:
-        return getTableValueFromOffset(&ignitionTable, valueAddress);
-        break;
-
-    case afrMapPage:
-        return getTableValueFromOffset(&afrTable, valueAddress);
-        break;
-
-    case boostvvtPage:
-        //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
-        if(valueAddress < 80)
-        {
-          return getTableValueFromOffset(&boostTable, valueAddress);
-        }
-        else if(valueAddress < 160)
-        {
-          return getTableValueFromOffset(&vvtTable, valueAddress - 80);
-        }
-        else
-        {
-          return getTableValueFromOffset(&stagingTable, valueAddress - 160);
-        }
-        break;
-
-    case seqFuelPage:
-        //Need to perform a translation of the values[MAP/TPS][RPM] into the TS expected format
-        if(valueAddress < 48)
-        {
-          return getTableValueFromOffset(&trim1Table, valueAddress);
-        }
-        else if(valueAddress < 96)
-        {
-          return getTableValueFromOffset(&trim2Table, valueAddress - 48);
-        }
-        else if(valueAddress < 144)
-        {
-          return getTableValueFromOffset(&trim3Table, valueAddress - 96);
-        }
-        else if(valueAddress < 192)
-        {
-          return getTableValueFromOffset(&trim4Table, valueAddress - 144);
-        }
-        else if(valueAddress < 240)
-        {
-          return getTableValueFromOffset(&trim5Table, valueAddress - 192);
-        }
-        else if(valueAddress < 288)
-        {
-          return getTableValueFromOffset(&trim6Table, valueAddress - 240);
-        }
-        else if(valueAddress < 336)
-        {
-          return getTableValueFromOffset(&trim7Table, valueAddress - 288);
-        }
-        else if(valueAddress < 385)
-        {
-          return getTableValueFromOffset(&trim8Table, valueAddress - 336);
-        }
-        break;
-
-    case fuelMap2Page:
-        return getTableValueFromOffset(&fuelTable2, valueAddress);
-        break;
-        
-    case wmiMapPage:
-        if(valueAddress < 80)
-        {
-          return getTableValueFromOffset(&wmiTable, valueAddress);
-        }
-        else if(valueAddress < 184)
-        {
-          return getTableValueFromOffset(&dwellTable, valueAddress - 160);
-        }
-        break;
-
-    case ignMap2Page:
-        return getTableValueFromOffset(&ignitionTable2, valueAddress);
-        break;
-
-    case progOutsPage:
-    case canbusPage:
-    case afrSetPage:
-    case ignSetPage:
-    case veSetPage:
-    case warmupPage:
-        return *(getRawPageStart(page) + valueAddress);
-        break;
+  case page_subtype_t::Table:
+    return getTableValueFromOffset(location.table);
+    break;
+  
+  case page_subtype_t::Raw:
+    return *((byte*)location.raw.pData + location.raw.offset);
+    break;
       
-    default:
-    #ifndef SMALL_FLASH_MODE
-        Serial.println(F("\nPage has not been implemented yet"));
-    #endif
-        break;
+  default:
+      break;
   }
   return 0;
 }
