@@ -1000,8 +1000,7 @@ struct config6 {
 
   byte fanInv : 1;        // Fan output inversion bit
   byte fanEnable : 2;     // Fan enable bit. 0=Off, 1=On/Off
-  byte fanUnused : 4;
-  byte incorporateAFR : 1;  //Incorporate AFR
+  byte fanPin : 6;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency

@@ -22,10 +22,6 @@ void initialiseFan()
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
 
-  if (configPage6.fanInv == 0)  //Initialise program with the fan in the off state, normal direction
-  { *fan_pin_port &= ~(fan_pin_mask); }  // Switch pin to low
-  else  //Reversed direction
-  { *fan_pin_port |= (fan_pin_mask); }  // Switch pin high
   currentStatus.fanOn = false;
 
 #if defined(PWM_FAN_AVAILABLE)
@@ -44,93 +40,85 @@ void initialiseFan()
 
 void fanControl()
 {
-  if( configPage6.fanEnable == 1 ) //on/off Fan control
+  if( configPage6.fanEnable == true ) //Fan control on
   {
-    int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
-    int offTemp = onTemp - configPage6.fanHyster;
-    bool fanPermit = false;
-
-    if ( configPage2.fanWhenOff == true) { fanPermit = true; }
-    else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
-
-    if ( (currentStatus.coolant >= onTemp) && (fanPermit == true) )
+    if( configPage2.usePWMfan == false ) //regular on/off mode
     {
-      //Fan needs to be turned on.
-      if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
+      int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
+      int offTemp = onTemp - configPage6.fanHyster;
+      bool fanPermit = false;
+
+      if ( configPage2.fanWhenOff == true) { fanPermit = true; }
+      else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
+
+      if ( (currentStatus.coolant >= onTemp) && (fanPermit == true) )
       {
-        //If the user has elected to disable the fan during cranking, make sure it's off 
-        currentStatus.fanDuty = 0;
-      }
-      else 
-      {
-        currentStatus.fanDuty = 100;
-      }
-      currentStatus.fanOn = true;
-    }
-    else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
-    {
-      //Fan needs to be turned off. 
-      currentStatus.fanDuty = 0;
-      currentStatus.fanOn = false;
-    }
-  }
-  #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
-  else if ( configPage6.fanEnable == 2 ) // PWM Fan control
-  {
-    bool fanPermit = false;
-    if ( configPage2.fanWhenOff == true) { fanPermit = true; }
-    else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
-    if (fanPermit == true)
-      {
-      if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
-      {
-        currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
-        currentStatus.fanOn = false;
-        
-        DISABLE_FAN_TIMER();
-      }
-      else
-      {
-        currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
-        fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
-        if (currentStatus.fanDuty > 0)
+        //Fan needs to be turned on.
+        if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
         {
-          currentStatus.fanOn = true; // update fan on status. Is this even used anywhere??
-          ENABLE_FAN_TIMER();
+          //If the user has elected to disable the fan during cranking, make sure it's off 
+          FAN_PIN_OFF();
+        }
+        else 
+        {
+          FAN_PIN_ON();
+        }
+        currentStatus.fanOn = true;
+      }
+      else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
+      {
+        //Fan needs to be turned off. 
+        FAN_PIN_OFF();
+        currentStatus.fanOn = false;
+      }
+    }
+  #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
+    else // PWM Fan control
+    {
+      bool fanPermit = false;
+      if ( configPage2.fanWhenOff == true) { fanPermit = true; }
+      else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
+      if (fanPermit == true)
+        {
+        if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
+        {
+          currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
+          currentStatus.fanOn = false;
+          DISABLE_FAN_TIMER();
+        }
+        else
+        {
+          currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
+          fan_pwm_value = percentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
+          if (currentStatus.fanDuty > 0)
+          {
+            currentStatus.fanOn = true; // update fan on status. Is this even used anywhere??
+            ENABLE_FAN_TIMER();
+          }
         }
       }
-    }
-    else if (!fanPermit)
+      else if (!fanPermit)
+      {
+        currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
+        currentStatus.fanOn = false;
+        DISABLE_FAN_TIMER();
+      }
+
+    if(currentStatus.fanDuty == 0)
     {
-      currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
-      currentStatus.fanOn = false;
+    //Make sure fan has 0% duty)
+    FAN_PIN_OFF();
+    currentStatus.fanOn = false;
+    DISABLE_FAN_TIMER();
+    }
+    else if (currentStatus.fanDuty >= 100)
+    {
+      //Make sure fan has 100% duty
+      FAN_PIN_ON();
       DISABLE_FAN_TIMER();
     }
-  }
+    }
   #endif
-
-  if(currentStatus.fanDuty == 0)
-  {
-    //Make sure fan has 0% duty)
-    if (configPage6.fanInv == 0)  //Normal direction
-    { *fan_pin_port &= ~(fan_pin_mask); }  // Switch pin to low
-    else  //Reversed direction
-    { *fan_pin_port |= (fan_pin_mask); }  // Switch pin high
-    currentStatus.fanOn = false;
-    #if defined(PWM_FAN_AVAILABLE)//own timer for PWM fan not available on Arduino MEGA
-    DISABLE_FAN_TIMER();
-    #endif
-  }
-  else if (currentStatus.fanDuty >= 100)
-  {
-    //Make sure fan has 100% duty
-    if (configPage6.fanInv == 0)  //Normal direction
-    { *fan_pin_port |= (fan_pin_mask); }  // Switch pin high
-    else  //Reversed direction
-    { *fan_pin_port &= ~(fan_pin_mask); }  // Switch pin to low
-    #if defined(PWM_FAN_AVAILABLE)//own timer for PWM fan not available on Arduino MEGA
-    DISABLE_FAN_TIMER();
-    #endif
   }
 }
 
@@ -645,23 +633,17 @@ void boostDisable()
 
 #if defined(PWM_FAN_AVAILABLE)
 //The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
-  static inline void fanInterrupt() //Most ARM chips can simply call a function
+  static inline void fanInterrupt()
 {
   if (fan_pwm_state == true)
   {
-    if (configPage6.fanInv == 0)  //Normal direction
-    { *fan_pin_port &= ~(fan_pin_mask); }  // Switch pin to low
-    else  //Reversed direction
-    { *fan_pin_port |= (fan_pin_mask); }  // Switch pin high
+    FAN_PIN_OFF();
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
     fan_pwm_state = false;
   }
   else
   {
-    if (configPage6.fanInv == 0)  //Normal direction
-    { *fan_pin_port |= (fan_pin_mask); }  // Switch pin high
-    else  //Reversed direction
-    { *fan_pin_port &= ~(fan_pin_mask); }  // Switch pin to low
+    FAN_PIN_ON();
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
     fan_pwm_cur_value = fan_pwm_value;
     fan_pwm_state = true;
