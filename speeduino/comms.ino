@@ -495,7 +495,7 @@ void command()
           offset1 = Serial.read();
           offset2 = Serial.read();
           valueOffset = word(offset2, offset1);
-          receiveValue(valueOffset, Serial.read());
+          setPageValue(currentPage, valueOffset, Serial.read());
           cmdPending = false;
         }
       }
@@ -504,7 +504,7 @@ void command()
         if(Serial.available() >= 2)
         {
           valueOffset = Serial.read();
-          receiveValue(valueOffset, Serial.read());
+          setPageValue(currentPage, valueOffset, Serial.read());
           cmdPending = false;
         }
       }
@@ -546,7 +546,7 @@ void command()
       { 
         while( (Serial.available() > 0) && (chunkComplete < chunkSize) )
         {
-          receiveValue( (valueOffset + chunkComplete), Serial.read());
+          setPageValue(currentPage, (valueOffset + chunkComplete), Serial.read());
           chunkComplete++;
         }
         if(chunkComplete >= chunkSize) { cmdPending = false; chunkPending = false; }
@@ -1065,130 +1065,7 @@ void sendValuesLegacy()
   }
 }
 
-namespace {
-  typedef enum { Value, axisX, axisY, None } table3D_section_t;
 
-  inline table3D_section_t offsetToTableSection(const entity_address::table_t &location)
-  {
-    // Precompute for a small performance gain.
-    uint8_t size = location.pTable->xSize;
-    uint16_t area = sq(size);
-    return location.offset < area ? Value :
-            location.offset <  area+size ? axisX :
-              location.offset < area+size+size ? axisY :
-                None;
-  }
-
-#define GET_TABLE_VALUE(size) \
-  case size: return &location.pTable->values[(size-1) - (location.offset / size)][location.offset % size]
-
-  inline byte* offsetToValue(const entity_address::table_t &location)
-  {
-    // You might be tempted to remove the switch: DON'T
-    //
-    // Some processors do not have division hardware. E.g. ATMega2560.
-    //
-    // So in the general case, division is done in software. I.e. the compiler
-    // emits code to perform the division. 
-    //
-    // However, by using compile time constants the compiler can do a ton of
-    // optimization of the division and modulus operations below
-    // (likely converting them to multiply & shift operations).
-    //
-    // So this is a massive performance win (2x to 3x). 
-    switch (location.pTable->xSize)
-    {
-        GET_TABLE_VALUE(16);
-        GET_TABLE_VALUE(15);
-        GET_TABLE_VALUE(14);
-        GET_TABLE_VALUE(13);
-        GET_TABLE_VALUE(12);
-        GET_TABLE_VALUE(11);
-        GET_TABLE_VALUE(10);
-        GET_TABLE_VALUE(9);
-        GET_TABLE_VALUE(8);
-        GET_TABLE_VALUE(7);
-        GET_TABLE_VALUE(6);
-        GET_TABLE_VALUE(5);
-        GET_TABLE_VALUE(4);
-        default: ;
-    }
-    // Default slow path
-    return &location.pTable->values[(location.pTable->xSize-1) - (location.offset/location.pTable->xSize)][location.offset % location.pTable->xSize];
-  }
-
-  inline int8_t offsetToAxisXIndex(const entity_address::table_t &location)
-  {
-    return location.offset - sq(location.pTable->xSize);
-  }
-
-  inline int8_t offsetToAxisYIndex(const entity_address::table_t &location)
-  {
-    // Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
-    return (location.pTable->xSize-1) - (location.offset - (sq(location.pTable->xSize) + location.pTable->xSize));
-  }
-
-  inline int8_t getTableValueFromOffset(const entity_address::table_t &location)
-  {
-    switch (offsetToTableSection(location))
-    {
-      case Value: 
-        return *offsetToValue(location);
-      
-      case axisX:
-        return int8_t(location.pTable->axisX[offsetToAxisXIndex(location)] / getTableXAxisFactor(location.pTable)); 
-      
-      case axisY:
-        return int8_t(location.pTable->axisY[offsetToAxisYIndex(location)] / getTableYAxisFactor(location.pTable)); 
-      
-      default: ; // no-op
-    }
-
-    return 0;
-  }
-
-  inline void setTableValueFromOffset(const entity_address::table_t &location, int8_t value)
-  {
-    switch (offsetToTableSection(location))
-    {
-      case Value: 
-        *offsetToValue(location) = value;
-        break;
-
-      case axisX:
-        location.pTable->axisX[offsetToAxisXIndex(location)]  = (int)(value) * getTableXAxisFactor(location.pTable); 
-        break;
-
-      case axisY:
-        location.pTable->axisY[offsetToAxisYIndex(location)] = (int)(value) * getTableYAxisFactor(location.pTable);
-        break;      
-      default: ; // no-op
-    }
-    location.pTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
-  }
-}
-
-void receiveValue(uint16_t valueOffset, byte newValue)
-{
-  entity_address location = map_page_offset_to_memory(currentPage, valueOffset);
-
-  switch (location.type)
-  {
-  case page_subtype_t::Table:
-    setTableValueFromOffset(location.table, newValue);
-    break;
-  
-  case page_subtype_t::Raw:
-    if (valueOffset < npage_size[currentPage])
-    {
-      *((byte*)location.raw.pData + location.raw.offset) = newValue;
-    }
-    break;
-      
-  default:
-    break;
-  }
-}
 
 /**
  * @brief Packs the data within the current page (As set with the 'P' command) into a buffer and sends it.
@@ -1388,33 +1265,6 @@ void sendPageASCII()
     #endif
         break;
   }
-}
-
-/**
- * @brief Retrieves a single value from a memory page, with data aligned as per the ini file
- * 
- * @param page The page number to retrieve data from
- * @param valueAddress The address in the page that should be returned. This is as per the page definition in the ini
- * @return byte The requested value
- */
-byte getPageValue(byte page, uint16_t valueAddress)
-{
-  entity_address location = map_page_offset_to_memory(page, valueAddress);
-
-  switch (location.type)
-  {
-  case page_subtype_t::Table:
-    return getTableValueFromOffset(location.table);
-    break;
-  
-  case page_subtype_t::Raw:
-    return *((byte*)location.raw.pData + location.raw.offset);
-    break;
-      
-  default:
-      break;
-  }
-  return 0;
 }
 
 /**

@@ -55,7 +55,6 @@ bool compositeLogSendInProgress = false;
 void command();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
 void sendValues(uint16_t, uint16_t,byte, byte);
 void sendValuesLegacy();
-void receiveValue(uint16_t, byte);
 void saveConfig();
 void sendPage();
 void sendPageASCII();
@@ -64,7 +63,6 @@ void sendToothLog(uint8_t);
 void testComm();
 void commandButtons(int16_t);
 void sendCompositeLog(uint8_t);
-byte getPageValue(byte, uint16_t);
 byte getStatusEntry(uint16_t);
 
 #endif // COMMS_H

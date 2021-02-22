@@ -36,28 +36,6 @@ inline int8_t getTableXAxisFactor(const table3D */*pTable*/ )
   return TABLE_RPM_MULTIPLIER;
 }
 
+byte getPageValue(byte pageNum, uint16_t offset);
 
-typedef enum { Raw, Table, None } page_subtype_t;
-
-typedef struct
-{
-  typedef struct table_t {
-    table3D *pTable;
-    uint16_t offset;
-  } table_t;
-  typedef struct raw_t {
-    void *pData;
-    uint16_t offset;
-  } raw_t;
-  union {
-    table_t table;
-    raw_t raw;    
-  };
-  page_subtype_t type;
-} entity_address;
-
-// For some purposes a TS page is treated as a contiguous block of memory.
-// However, in Speeduino it's sometimes made up of multiple distinct and
-// non-contiguous chunks of data. This maps from the page address (number + offset)
-// to the type & position of the corresponding memory block.
-entity_address map_page_offset_to_memory(uint8_t pageNumber, uint16_t offset);
+void setPageValue(byte pageNum, uint16_t offset, byte value);
