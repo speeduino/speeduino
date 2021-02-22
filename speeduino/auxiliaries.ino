@@ -30,9 +30,6 @@ void initialiseFan()
 
 #if defined(PWM_FAN_AVAILABLE)
   DISABLE_FAN_TIMER(); //disable FAN timer if available
-#else
-  fan_pwm_max_count = idle_pwm_max_count; //if there is no dedicated FAN timer, the idle timer is used. So _pwm_max_count comes from idle timer.
-#endif
   if ( configPage6.fanEnable == 2 ) // PWM Fan control
   {
     #if defined(CORE_TEENSY)
@@ -41,6 +38,7 @@ void initialiseFan()
     currentStatus.fanDuty = 0;
     fan_pwm_value = 0;
   }
+#endif
 
 }
 
@@ -76,6 +74,7 @@ void fanControl()
       currentStatus.fanOn = false;
     }
   }
+  #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
   else if ( configPage6.fanEnable == 2 ) // PWM Fan control
   {
     bool fanPermit = false;
@@ -87,9 +86,8 @@ void fanControl()
       {
         currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
         currentStatus.fanOn = false;
-        #if defined(PWM_FAN_AVAILABLE)//own timer for PWM fan not available on Arduino MEGA
+        
         DISABLE_FAN_TIMER();
-        #endif
       }
       else
       {
@@ -98,11 +96,7 @@ void fanControl()
         if (currentStatus.fanDuty > 0)
         {
           currentStatus.fanOn = true; // update fan on status. Is this even used anywhere??
-          #if defined(PWM_FAN_AVAILABLE)// own timer for PWM fan not available on Arduino MEGA
           ENABLE_FAN_TIMER();
-          #else
-          IDLE_TIMER_ENABLE(); // idle timer used for fan with mega
-          #endif
         }
       }
     }
@@ -110,11 +104,10 @@ void fanControl()
     {
       currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
       currentStatus.fanOn = false;
-      #if defined(PWM_FAN_AVAILABLE)//own timer for PWM fan not available on Arduino MEGA
       DISABLE_FAN_TIMER();
-      #endif
     }
   }
+  #endif
 
   if(currentStatus.fanDuty == 0)
   {

@@ -333,9 +333,6 @@
   #define FUEL_PUMP_OFF() digitalWrite(pinFuelPump, LOW);
 #endif
 
-#define FAN_PIN_LOW()    *fan_pin_port &= ~(fan_pin_mask)
-#define FAN_PIN_HIGH()   *fan_pin_port |= (fan_pin_mask)
-
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing.
@@ -431,10 +428,6 @@ extern volatile PINMASK_TYPE triggerPri_pin_mask;
 extern volatile PORT_TYPE *triggerSec_pin_port;
 extern volatile PINMASK_TYPE triggerSec_pin_mask;
 
-//These need to be here as they are used in both auxilaries.ino and idle.ino
-extern volatile PORT_TYPE *fan_pin_port;
-extern volatile PINMASK_TYPE fan_pin_mask;
-
 //These need to be here as they are used in both speeduino.ino and scheduler.ino
 extern bool channel1InjEnabled;
 extern bool channel2InjEnabled;
@@ -494,12 +487,6 @@ extern volatile byte HWTest_INJ; /**< Each bit in this variable represents one o
 extern volatile byte HWTest_INJ_50pc; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
 extern volatile byte HWTest_IGN; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 extern volatile byte HWTest_IGN_50pc; /**< Each bit in this variable represents one of the ignition channels and it's 50% HW test status */
-
-//For PWM fan
-extern volatile bool fan_pwm_state;
-extern unsigned int fan_pwm_max_count; //Used for variable PWM frequency
-extern volatile unsigned int fan_pwm_cur_value;
-extern long fan_pwm_value;
 
 //This needs to be here because using the config page directly can prevent burning the setting
 extern byte resetControl;

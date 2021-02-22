@@ -93,10 +93,6 @@ volatile PINMASK_TYPE triggerPri_pin_mask;
 volatile PORT_TYPE *triggerSec_pin_port;
 volatile PINMASK_TYPE triggerSec_pin_mask;
 
-//These need to be here as they are used in both auxilaries.ino and idle.ino
-volatile PORT_TYPE *fan_pin_port;
-volatile PINMASK_TYPE fan_pin_mask;
-
 //These need to be here as they are used in both speeduino.ino and scheduler.ino
 bool channel1InjEnabled = true;
 bool channel2InjEnabled = false;
@@ -147,11 +143,6 @@ volatile byte HWTest_INJ = 0; /**< Each bit in this variable represents one of t
 volatile byte HWTest_INJ_50pc = 0; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
 volatile byte HWTest_IGN = 0; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 volatile byte HWTest_IGN_50pc = 0; 
-
-volatile bool fan_pwm_state;
-unsigned int fan_pwm_max_count; //Used for variable PWM frequency
-volatile unsigned int fan_pwm_cur_value;
-long fan_pwm_value;
 
 //This needs to be here because using the config page directly can prevent burning the setting
 byte resetControl = RESET_CONTROL_DISABLED;
