@@ -1210,7 +1210,8 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
       ignitionSchedule4.StartCallback();
       ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule4.startTime = micros();
-      IGN4_COMPARE = (uint16_t)(IGN4_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule4.duration)); //Doing this here prevents a potential overflow on restarts
+      if(ignitionSchedule4.endScheduleSetByDecoder == true) { IGN4_COMPARE = (uint16_t)ignitionSchedule4.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
+      else { IGN4_COMPARE = (uint16_t)(IGN4_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule4.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
     }
     else if (ignitionSchedule4.Status == RUNNING)
     {
@@ -1250,7 +1251,8 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
       ignitionSchedule5.StartCallback();
       ignitionSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule5.startTime = micros();
-      IGN5_COMPARE = (uint16_t)(IGN5_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule5.duration)); //Doing this here prevents a potential overflow on restarts
+      if(ignitionSchedule5.endScheduleSetByDecoder == true) { IGN5_COMPARE = (uint16_t)ignitionSchedule5.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
+      else { IGN5_COMPARE = (uint16_t)(IGN5_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule5.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
     }
     else if (ignitionSchedule5.Status == RUNNING)
     {
@@ -1290,7 +1292,8 @@ static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call
       ignitionSchedule6.StartCallback();
       ignitionSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule6.startTime = micros();
-      IGN6_COMPARE = (uint16_t)(IGN6_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule6.duration)); //Doing this here prevents a potential overflow on restarts
+      if(ignitionSchedule6.endScheduleSetByDecoder == true) { IGN6_COMPARE = (uint16_t)ignitionSchedule6.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
+      else { IGN6_COMPARE = (uint16_t)(IGN6_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule6.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
     }
     else if (ignitionSchedule6.Status == RUNNING)
     {
@@ -1330,7 +1333,8 @@ static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call
       ignitionSchedule7.StartCallback();
       ignitionSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule7.startTime = micros();
-      IGN7_COMPARE = (uint16_t)(IGN7_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule7.duration)); //Doing this here prevents a potential overflow on restarts
+      if(ignitionSchedule7.endScheduleSetByDecoder == true) { IGN7_COMPARE = (uint16_t)ignitionSchedule7.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
+      else { IGN7_COMPARE = (uint16_t)(IGN7_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule7.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
     }
     else if (ignitionSchedule7.Status == RUNNING)
     {
@@ -1370,7 +1374,8 @@ static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call
       ignitionSchedule8.StartCallback();
       ignitionSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule8.startTime = micros();
-      IGN8_COMPARE = (uint16_t)(IGN8_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule8.duration)); //Doing this here prevents a potential overflow on restarts
+      if(ignitionSchedule8.endScheduleSetByDecoder == true) { IGN8_COMPARE = (uint16_t)ignitionSchedule8.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
+      else { IGN8_COMPARE = (uint16_t)(IGN8_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule8.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
     }
     else if (ignitionSchedule8.Status == RUNNING)
     {

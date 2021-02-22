@@ -10,6 +10,7 @@ void loadCalibration();
 void writeCalibration();
 void loadCalibration_new();
 void writeCalibration_new();
+void resetConfigPages();
 
 //These are utility functions that prevent other files from having to use EEPROM.h directly
 byte readLastBaro();
@@ -117,11 +118,9 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG7_MAP2   1339
 #define EEPROM_CONFIG7_XBINS2 1403
 #define EEPROM_CONFIG7_YBINS2 1411
-
 #define EEPROM_CONFIG7_XSIZE3 1419
 #define EEPROM_CONFIG7_YSIZE3 1420
 #define EEPROM_CONFIG7_MAP3   1421
-
 #define EEPROM_CONFIG7_XBINS3 1485
 #define EEPROM_CONFIG7_YBINS3 1493
 #define EEPROM_CONFIG7_END    1501
@@ -160,15 +159,46 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG12_MAP   2387
 #define EEPROM_CONFIG12_XBINS 2451
 #define EEPROM_CONFIG12_YBINS 2459
-#define EEPROM_CONFIG12_END   2467
-#define EEPROM_CONFIG13_START 2468
-#define EEPROM_CONFIG13_END   2596
-#define EEPROM_CONFIG14_XSIZE 2596
-#define EEPROM_CONFIG14_YSIZE 2597
-#define EEPROM_CONFIG14_MAP   2598
-#define EEPROM_CONFIG14_XBINS 2854
-#define EEPROM_CONFIG14_YBINS 2870
-#define EEPROM_CONFIG14_END   2886
+#define EEPROM_CONFIG12_XSIZE2 2467
+//#define EEPROM_CONFIG12_YSIZE2 2468
+//#define EEPROM_CONFIG12_MAP2   2469
+//#define EEPROM_CONFIG12_XBINS2 2533
+//#define EEPROM_CONFIG12_YBINS2 2541
+#define EEPROM_CONFIG12_XSIZE3 2549
+#define EEPROM_CONFIG12_YSIZE3 2550
+#define EEPROM_CONFIG12_MAP3   2551
+#define EEPROM_CONFIG12_XBINS3 2567
+#define EEPROM_CONFIG12_YBINS3 2571
+#define EEPROM_CONFIG12_END   2575
+#define EEPROM_CONFIG13_START 2580
+#define EEPROM_CONFIG13_END   2708
+#define EEPROM_CONFIG14_XSIZE 2708
+#define EEPROM_CONFIG14_YSIZE 2709
+#define EEPROM_CONFIG14_MAP   2710
+#define EEPROM_CONFIG14_XBINS 2966
+#define EEPROM_CONFIG14_YBINS 2982
+#define EEPROM_CONFIG14_END   2998
+//This is OUT OF ORDER as Table 8 was expanded to add fuel trim 5-8. The EEPROM for them is simply added here so as not to impact existing tunes
+#define EEPROM_CONFIG8_XSIZE5 2999
+#define EEPROM_CONFIG8_YSIZE5 3000
+#define EEPROM_CONFIG8_MAP5   3001
+#define EEPROM_CONFIG8_XBINS5 3037
+#define EEPROM_CONFIG8_YBINS5 3043
+#define EEPROM_CONFIG8_XSIZE6 3049
+#define EEPROM_CONFIG8_YSIZE6 3050
+#define EEPROM_CONFIG8_MAP6   3051
+#define EEPROM_CONFIG8_XBINS6 3087
+#define EEPROM_CONFIG8_YBINS6 3093
+#define EEPROM_CONFIG8_XSIZE7 3099
+#define EEPROM_CONFIG8_YSIZE7 3100
+#define EEPROM_CONFIG8_MAP7   3101
+#define EEPROM_CONFIG8_XBINS7 3137
+#define EEPROM_CONFIG8_YBINS7 3143
+#define EEPROM_CONFIG8_XSIZE8 3149
+#define EEPROM_CONFIG8_YSIZE8 3150
+#define EEPROM_CONFIG8_MAP8   3151
+#define EEPROM_CONFIG8_XBINS8 3187
+#define EEPROM_CONFIG8_YBINS8 3193
 
 
 //Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)

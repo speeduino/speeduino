@@ -11,12 +11,34 @@
   #define READ_SEC_TRIGGER() digitalRead(pinTrigger2)
 #endif
 
+#define DECODER_MISSING_TOOTH     0
+#define DECODER_BASIC_DISTRIBUTOR 1
+#define DECODER_DUAL_WHEEL        2
+#define DECODER_GM7X              3
+#define DECODER_4G63              4
+#define DECODER_24X               5
+#define DECODER_JEEP2000          6
+#define DECODER_AUDI135           7
+#define DECODER_HONDA_D17         8
+#define DECODER_MIATA_9905        9
+#define DECODER_MAZDA_AU          10
+#define DECODER_NON360            11
+#define DECODER_NISSAN_360        12
+#define DECODER_SUBARU_67         13
+#define DECODER_DAIHATSU_PLUS1    14
+#define DECODER_HARLEY            15
+#define DECODER_36_2_2_2          16
+#define DECODER_36_2_1            17
+#define DECODER_420A              18
+#define DECODER_WEBER             19
+#define DECODER_ST170             20
+
 static inline void addToothLogEntry(unsigned long, bool);
 void loggerPrimaryISR();
 void loggerSecondaryISR();
 static inline uint16_t stdGetRPM(uint16_t);
 static inline void setFilter(unsigned long);
-static inline int crankingGetRPM(byte);
+static inline int crankingGetRPM(byte, uint16_t);
 //static inline void doPerToothTiming(uint16_t);
 
 //All of the below are the 6 required functions for each decoder / pattern
@@ -156,6 +178,13 @@ void triggerSetEndTeeth_420a();
 
 void triggerPri_Webber();
 void triggerSec_Webber();
+
+void triggerSetup_FordST170();
+void triggerSec_FordST170();
+uint16_t getRPM_FordST170();
+int getCrankAngle_FordST170();
+void triggerSetEndTeeth_FordST170();
+
 
 extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 extern void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)

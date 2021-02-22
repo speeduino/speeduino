@@ -3,7 +3,7 @@
 const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
-const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288,192,128,288}; /**< This array stores the size (in bytes) of each configuration page */
+const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,384,192,192,288,192,128,288}; /**< This array stores the size (in bytes) of each configuration page */
 
 struct table3D fuelTable; //16x16 fuel map
 struct table3D fuelTable2; //16x16 fuel map
@@ -18,6 +18,11 @@ struct table3D trim1Table; //6x6 Fuel trim 1 map
 struct table3D trim2Table; //6x6 Fuel trim 2 map
 struct table3D trim3Table; //6x6 Fuel trim 3 map
 struct table3D trim4Table; //6x6 Fuel trim 4 map
+struct table3D trim5Table; //6x6 Fuel trim 5 map
+struct table3D trim6Table; //6x6 Fuel trim 6 map
+struct table3D trim7Table; //6x6 Fuel trim 7 map
+struct table3D trim8Table; //6x6 Fuel trim 8 map
+struct table3D dwellTable; //4x4 Dwell map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D maeTable;
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
@@ -112,8 +117,7 @@ int ignition7EndAngle = 0;
 int ignition8EndAngle = 0;
 
 //These are variables used across multiple files
-byte fullStatus[LOG_ENTRY_SIZE];
-byte fsIntIndex[31] = {4, 14, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 96, 101};
+const byte PROGMEM fsIntIndex[31] = {4, 14, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 96, 101}; //int indexes in fullStatus array
 bool initialisationComplete = false; //Tracks whether the setup() function has run completely
 byte fpPrimeTime = 0; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 volatile uint16_t mainLoopCount;
@@ -159,6 +163,7 @@ byte pinInjector5; //Output pin injector 5
 byte pinInjector6; //Output pin injector 6
 byte pinInjector7; //Output pin injector 7
 byte pinInjector8; //Output pin injector 8
+byte injectorOutputControl = OUTPUT_CONTROL_DIRECT; //Specifies whether the injectors are controlled directly (Via an IO pin) or using something like the MC33810. 0=Direct
 byte pinCoil1; //Pin for coil 1
 byte pinCoil2; //Pin for coil 2
 byte pinCoil3; //Pin for coil 3
@@ -167,6 +172,7 @@ byte pinCoil5; //Pin for coil 5
 byte pinCoil6; //Pin for coil 6
 byte pinCoil7; //Pin for coil 7
 byte pinCoil8; //Pin for coil 8
+byte ignitionOutputControl = OUTPUT_CONTROL_DIRECT; //Specifies whether the coils are controlled directly (Via an IO pin) or using something like the MC33810. 0=Direct
 byte pinTrigger; //The CAS pin
 byte pinTrigger2; //The Cam Sensor pin
 byte pinTrigger3;	//the 2nd cam sensor pin
@@ -185,8 +191,10 @@ byte pinFuelPump; //Fuel pump on/off
 byte pinIdle1; //Single wire idle control
 byte pinIdle2; //2 wire idle control (Not currently used)
 byte pinIdleUp; //Input for triggering Idle Up
+byte pinIdleUpOutput; //Output that follows (normal or inverted) the idle up pin
 byte pinCTPS; //Input for triggering closed throttle state
 byte pinFuel2Input; //Input for switching to the 2nd fuel table
+byte pinSpark2Input; //Input for switching to the 2nd ignition table
 byte pinSpareTemp1; // Future use only
 byte pinSpareTemp2; // Future use only
 byte pinSpareOut1; //Generic output
@@ -220,11 +228,8 @@ byte pinOilPressure;
 byte pinWMIEmpty; // Water tank empty sensor
 byte pinWMIIndicator; // No water indicator bulb
 byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
-#ifdef USE_MC33810
-  //If the MC33810 IC\s are in use, these are the chip select pins
-  byte pinMC33810_1_CS;
-  byte pinMC33810_2_CS;
-#endif
+byte pinMC33810_1_CS;
+byte pinMC33810_2_CS;
 #ifdef USE_SPI_EEPROM
   byte pinSPIFlash_CS;
 #endif

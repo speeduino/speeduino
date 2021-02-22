@@ -18,8 +18,11 @@
   #else
     #define EEPROM_LIB_H <EEPROM.h>
   #endif
+  #define RTC_LIB_H "TimeLib.h"
   void initBoard();
   uint16_t freeRam();
+  void doSystemReset();
+  void jumpToBootloader();
 
   #if defined(TIMER5_MICROS)
     /*#define micros() (((timer5_overflow_count << 16) + TCNT5) * 4) */ //Fast version of micros() that uses the 4uS tick of timer5. See timers.ino for the overflow ISR of timer5
@@ -28,6 +31,7 @@
   #else
     #define micros_safe() micros() //If the timer5 method is not used, the micros_safe() macro is simply an alias for the normal micros()
   #endif
+  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB on other boards
 
   //Mega 2561 MCU does not have a serial3 available. 
   #if not defined(__AVR_ATmega2561__)

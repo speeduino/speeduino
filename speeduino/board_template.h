@@ -8,13 +8,16 @@
 */
   #define PORT_TYPE uint32_t //Size of the port variables (Eg inj1_pin_port). Most systems use a byte, but SAMD21 and possibly others are a 32-bit unsigned int
   #define PINMASK_TYPE uint32_t
-  #define BOARD_NR_GPIO_PINS  52 //Not sure this is correct
-  #define BOARD_DIGITAL_GPIO_PINS 52 //Pretty sure this isn't right
+  #define BOARD_MAX_IO_PINS  52 //digital pins + analog channels + 1
+  #define BOARD_MAX_DIGITAL_PINS 52 //Pretty sure this isn't right
   #define EEPROM_LIB_H <EEPROM.h> //The name of the file that provides the EEPROM class
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   void initBoard();
   uint16_t freeRam();
+  void doSystemReset();
+  void jumpToBootloader();
 
+  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB
 
 /*
 ***********************************************************************************************************

@@ -19,7 +19,7 @@ FastCRC32 CRC32;
 byte pinTranslate(byte rawPin)
 {
   byte outputPin = rawPin;
-  if(rawPin > BOARD_DIGITAL_GPIO_PINS) { outputPin = A8 + (outputPin - BOARD_DIGITAL_GPIO_PINS - 1); }
+  if(rawPin > BOARD_MAX_DIGITAL_PINS) { outputPin = A8 + (outputPin - BOARD_MAX_DIGITAL_PINS - 1); }
 
   return outputPin;
 }
@@ -218,10 +218,14 @@ void initialiseProgrammableIO()
 {
   for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
   {
-    if ( (configPage13.outputPin[y] > 0) && (configPage13.outputPin[y] < BOARD_NR_GPIO_PINS) )
+    if ( (configPage13.outputPin[y] > 0) && (configPage13.outputPin[y] < BOARD_MAX_DIGITAL_PINS) )
     {
-      pinMode(configPage13.outputPin[y], OUTPUT);
-      digitalWrite(configPage13.outputPin[y], (configPage13.outputInverted & (1U << y)));
+      if ( !pinIsUsed(configPage13.outputPin[y]) )
+      {
+        pinMode(configPage13.outputPin[y], OUTPUT);
+        digitalWrite(configPage13.outputPin[y], (configPage13.outputInverted & (1U << y)));
+        BIT_SET(pinIsValid, y);
+      }
     }
   }
 }
@@ -235,7 +239,7 @@ void checkProgrammableIO()
   {
     firstCheck = false;
     secondCheck = false;
-    if ( configPage13.outputPin[y] > 0 ) //if outputPin == 0 it is disabled
+    if ( BIT_CHECK(pinIsValid, y) ) //if outputPin == 0 it is disabled
     { 
       //byte theIndex = configPage13.firstDataIn[y];
       data = ProgrammableIOGetData(configPage13.firstDataIn[y]);
@@ -295,12 +299,14 @@ int16_t ProgrammableIOGetData(uint16_t index)
   uint8_t x;
   if ( index < LOG_ENTRY_SIZE )
   {
+    
     for(x = 0; x<sizeof(fsIntIndex); x++)
     {
       if (fsIntIndex[x] == index) { break; }
     }
-    if (x >= sizeof(fsIntIndex)) { result = fullStatus[index]; }
-    else { result = word(fullStatus[index+1], fullStatus[index]); }
+    if (x >= sizeof(fsIntIndex)) { result = getStatusEntry(index); }
+    else { result = word(getStatusEntry(index+1), getStatusEntry(index)); }
+    
 
     //Special cases for temperatures
     if( (index == 6) || (index == 7) ) { result -= CALIBRATION_TEMPERATURE_OFFSET; }
