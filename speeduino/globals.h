@@ -999,7 +999,7 @@ struct config6 {
   byte iacStepHyster; //Hysteresis temperature (*10). Eg 2.2C = 22
 
   byte fanInv : 1;        // Fan output inversion bit
-  byte fanEnable : 2;     // Fan enable bit. 0=Off, 1=On/Off
+  byte fanEnable : 1;     // Fan enable bit. 0=Off, 1=On/Off
   byte fanPin : 6;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis

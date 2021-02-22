@@ -29,8 +29,6 @@ void wmiControl();
 //#define VVT2_PIN_OFF()    if (configPage6.vvtPWMdir == 0) { VVT2_PIN_LOW() ; } else { VVT2_PIN_HIGH(); }
 #define VVT2_PIN_ON()     {} //Disabled as VVT2 not yet complete
 #define VVT2_PIN_OFF()    {} //Disabled as VVT2 not yet complete
-#define FAN_PIN_ON()    if (configPage6.fanInv == 0) { FAN_PIN_HIGH(); } else { FAN_PIN_LOW(); }
-#define FAN_PIN_OFF()   if (configPage6.fanInv == 0) { FAN_PIN_HIGH(); } else { FAN_PIN_LOW(); }
 #define FAN_PIN_LOW()    *fan_pin_port &= ~(fan_pin_mask)
 #define FAN_PIN_HIGH()   *fan_pin_port |= (fan_pin_mask)
 #define N2O_STAGE1_PIN_LOW()  *n2o_stage1_pin_port &= ~(n2o_stage1_pin_mask)
@@ -38,6 +36,9 @@ void wmiControl();
 #define N2O_STAGE2_PIN_LOW()  *n2o_stage2_pin_port &= ~(n2o_stage2_pin_mask)
 #define N2O_STAGE2_PIN_HIGH() *n2o_stage2_pin_port |= (n2o_stage2_pin_mask)
 #define READ_N2O_ARM_PIN()    ((*n2o_arming_pin_port & n2o_arming_pin_mask) ? true : false)
+
+#define FAN_ON()         ((configPage6.fanInv) ? FAN_PIN_LOW() : FAN_PIN_HIGH())
+#define FAN_OFF()        ((configPage6.fanInv) ? FAN_PIN_HIGH() : FAN_PIN_LOW())
 
 #define WMI_TANK_IS_EMPTY() ((configPage10.wmiEmptyEnabled) ? ((configPage10.wmiEmptyPolarity) ? !digitalRead(pinWMIEmpty) : digitalRead(pinWMIEmpty)) : 0)
 
@@ -47,14 +48,14 @@ volatile PORT_TYPE *vvt1_pin_port;
 volatile PINMASK_TYPE vvt1_pin_mask;
 volatile PORT_TYPE *vvt2_pin_port;
 volatile PINMASK_TYPE vvt2_pin_mask;
+volatile PORT_TYPE *fan_pin_port;
+volatile PINMASK_TYPE fan_pin_mask;
 volatile PORT_TYPE *n2o_stage1_pin_port;
 volatile PINMASK_TYPE n2o_stage1_pin_mask;
 volatile PORT_TYPE *n2o_stage2_pin_port;
 volatile PINMASK_TYPE n2o_stage2_pin_mask;
 volatile PORT_TYPE *n2o_arming_pin_port;
 volatile PINMASK_TYPE n2o_arming_pin_mask;
-volatile PORT_TYPE *fan_pin_port;
-volatile PINMASK_TYPE fan_pin_mask;
 
 volatile bool boost_pwm_state;
 unsigned int boost_pwm_max_count; //Used for variable PWM frequency
