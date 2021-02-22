@@ -201,7 +201,7 @@ void initialiseAll()
     fanPWMTable.valueSize = SIZE_BYTE;
     fanPWMTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     fanPWMTable.xSize = 4;
-    fanPWMTable.values = configPage2.PWMFanDuty;
+    fanPWMTable.values = configPage4.PWMFanDuty;
     fanPWMTable.axisX = configPage6.fanPWMBins;
 
     wmiAdvTable.valueSize = SIZE_BYTE;

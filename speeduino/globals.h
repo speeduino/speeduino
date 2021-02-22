@@ -759,8 +759,7 @@ struct config2 {
   byte fanWhenOff : 1;      // Only run fan when engine is running
   byte fanWhenCranking : 1;      //**< Setting whether the fan output will stay on when the engine is cranking */ 
   byte useDwellMap : 1;  // Setting to change between fixed dwell value and dwell map
-  byte usePWMfan : 1;
-  byte fanUnused : 1;
+  byte fanMode : 2;  // Fan mode. 0=Off, 1=On/Off, 2=PWM
   byte rtc_mode : 2;
   byte incorporateAFR : 1;  //Incorporate AFR
   byte asePct[4];  //Afterstart enrichment (%)
@@ -902,8 +901,9 @@ struct config4 {
   byte idleAdvValues[6];
 
   byte engineProtectMaxRPM;
+  byte PWMFanDuty[4];
 
-  byte unused4_120[7];
+  byte unused4_120[3];
 
 #if defined(CORE_AVR)
   };
@@ -999,7 +999,7 @@ struct config6 {
   byte iacStepHyster; //Hysteresis temperature (*10). Eg 2.2C = 22
 
   byte fanInv : 1;        // Fan output inversion bit
-  byte fanEnable : 1;     // Fan enable bit. 0=Off, 1=On/Off
+  byte fanUnused : 1;
   byte fanPin : 6;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis
