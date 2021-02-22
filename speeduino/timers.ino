@@ -261,10 +261,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
       if(BIT_CHECK(HWTest_IGN_50pc, IGN8_CMD_BIT)) { coil8Toggle(); }
     }
 
-    //Reset the live data rate counter
-    dataRate = dataRateCounter;
-    dataRateCounter = 0;
-
   }
 #if defined(CORE_AVR) //AVR chips use the ISR for this
     //Reset Timer2 to trigger in another ~1ms

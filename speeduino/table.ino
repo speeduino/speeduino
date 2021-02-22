@@ -36,16 +36,35 @@ void table2D_setSize(struct table2D* targetTable, byte newSize)
 }
 */
 
+void* heap_alloc(uint16_t size)
+ {
+     uint8_t* value = nullptr;
+     if (size < (TABLE_HEAP_SIZE - _heap_pointer))
+     {
+         value = &_3DTable_heap[_heap_pointer];
+         _heap_pointer += size;
+     }
+     return value;
+ }
+
 
 void table3D_setSize(struct table3D *targetTable, byte newSize)
 {
   if(initialisationComplete == false)
   {
+    /*
     targetTable->values = (byte **)malloc(newSize * sizeof(byte*));
     for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)malloc(newSize * sizeof(byte)); }
+    */
+    targetTable->values = (byte **)heap_alloc(newSize * sizeof(byte*));
+    for(byte i = 0; i < newSize; i++) { targetTable->values[i] = (byte *)heap_alloc(newSize * sizeof(byte)); }
 
+    /*
     targetTable->axisX = (int16_t *)malloc(newSize * sizeof(int16_t));
     targetTable->axisY = (int16_t *)malloc(newSize * sizeof(int16_t));
+    */
+    targetTable->axisX = (int16_t *)heap_alloc(newSize * sizeof(int16_t));
+    targetTable->axisY = (int16_t *)heap_alloc(newSize * sizeof(int16_t));
     targetTable->xSize = newSize;
     targetTable->ySize = newSize;
     targetTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values

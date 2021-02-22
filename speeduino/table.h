@@ -11,6 +11,42 @@ This file is used for everything related to maps/tables including their definiti
 #define TABLE_SHIFT_FACTOR  8
 #define TABLE_SHIFT_POWER   (1UL<<TABLE_SHIFT_FACTOR)
 
+//Define the total table memory sizes. Used for adding up the static heap size
+#define TABLE3D_SIZE_16  (16 * 16 + 32 + 32 + (16 * sizeof(byte*))) //2 bytes for each value on the axis + allocation for array pointers
+#define TABLE3D_SIZE_12  (12 * 12 + 24 + 24 + (12 * sizeof(byte*))) //2 bytes for each value on the axis + allocation for array pointers
+#define TABLE3D_SIZE_8   (8 * 8 + 16 + 16 + (8 * sizeof(byte*))) //2 bytes for each value on the axis + allocation for array pointers
+#define TABLE3D_SIZE_6   (6 * 6 + 12 + 12 + (6 * sizeof(byte*))) //2 bytes for each value on the axis + allocation for array pointers
+#define TABLE3D_SIZE_4   (4 * 4 + 8 + 8 + (4 * sizeof(byte*))) //2 bytes for each value on the axis + allocation for array pointers
+
+//Define the table sizes
+#define TABLE_FUEL1_SIZE    16;
+#define TABLE_FUEL2_SIZE    16;
+#define TABLE_IGN1_SIZE     16;
+#define TABLE_IGN2_SIZE     16;
+#define TABLE_AFR_SIZE      16;
+#define TABLE_STAGING_SIZE  8;
+#define TABLE_BOOST_SIZE    8;
+#define TABLE_VVT1_SIZE     8;
+#define TABLE_WMI_SIZE      8;
+#define TABLE_TRIM1_SIZE    6;
+#define TABLE_TRIM2_SIZE    6;
+#define TABLE_TRIM3_SIZE    6;
+#define TABLE_TRIM4_SIZE    6;
+#define TABLE_TRIM5_SIZE    6;
+#define TABLE_TRIM6_SIZE    6;
+#define TABLE_TRIM7_SIZE    6;
+#define TABLE_TRIM8_SIZE    6;
+#define TABLE_DWELL_SIZE    4;
+
+/*
+*********** WARNING! ***********
+YOU MUST UPDATE THE TABLE COUNTS IN THE LINE BELOW WHENEVER A NEW TABLE IS ADDED!
+*/
+#define TABLE_HEAP_SIZE     ((5 * TABLE3D_SIZE_16) + (4 * TABLE3D_SIZE_8) + (8 * TABLE3D_SIZE_6) + (1 * TABLE3D_SIZE_4) + 1)
+
+static uint8_t _3DTable_heap[TABLE_HEAP_SIZE];
+static uint16_t _heap_pointer = 0;
+
 /*
 The 2D table can contain either 8-bit (byte) or 16-bit (int) values
 The valueSize variable should be set to either 8 or 16 to indicate this BEFORE the table is used
