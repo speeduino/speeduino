@@ -57,18 +57,18 @@ void fanControl()
         if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
         {
           //If the user has elected to disable the fan during cranking, make sure it's off 
-          FAN_PIN_OFF();
+          FAN_OFF();
         }
         else 
         {
-          FAN_PIN_ON();
+          FAN_ON();
         }
         currentStatus.fanOn = true;
       }
       else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
       {
         //Fan needs to be turned off. 
-        FAN_PIN_OFF();
+        FAN_OFF();
         currentStatus.fanOn = false;
       }
     }
@@ -107,14 +107,14 @@ void fanControl()
     if(currentStatus.fanDuty == 0)
     {
     //Make sure fan has 0% duty)
-    FAN_PIN_OFF();
+    FAN_OFF();
     currentStatus.fanOn = false;
     DISABLE_FAN_TIMER();
     }
     else if (currentStatus.fanDuty >= 100)
     {
       //Make sure fan has 100% duty
-      FAN_PIN_ON();
+      FAN_ON();
       DISABLE_FAN_TIMER();
     }
     }
@@ -637,13 +637,13 @@ void boostDisable()
 {
   if (fan_pwm_state == true)
   {
-    FAN_PIN_OFF();
+    FAN_OFF();
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
     fan_pwm_state = false;
   }
   else
   {
-    FAN_PIN_ON();
+    FAN_ON();
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
     fan_pwm_cur_value = fan_pwm_value;
     fan_pwm_state = true;
