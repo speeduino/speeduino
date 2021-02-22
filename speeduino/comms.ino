@@ -1190,29 +1190,6 @@ void receiveValue(uint16_t valueOffset, byte newValue)
   }
 }
 
-namespace {
-
-  void sendTable(table3D *pTable)
-  {
-    entity_address::table_t location = { pTable, 0 };
-    uint16_t length = sq(pTable->xSize) + pTable->xSize+ pTable->xSize;
-    for (uint16_t offset = 0; offset < length; offset++) 
-    {      
-      location.offset = offset;
-      Serial.write(getTableValueFromOffset(location)); 
-    }
-  }
-
-  void sendPageBytes(byte *pPage, uint16_t len)
-  {
-    for (uint16_t x = 0; x < len; x++)
-    {
-      Serial.write(*(pPage + x)); //Each byte is simply the location in memory of the configPage + the offset + the variable number (x)
-    }
-  }
-
-}
-
 /**
  * @brief Packs the data within the current page (As set with the 'P' command) into a buffer and sends it.
  * 
@@ -1221,79 +1198,9 @@ namespace {
  */
 void sendPage()
 {
-  switch (currentPage)
+  for (uint16_t offset=0; offset<npage_size[currentPage]; ++offset)
   {
-    case veMapPage:
-      sendTable(&fuelTable);
-      break;
-
-    case ignMapPage:
-      sendTable(&ignitionTable);
-      break;
-
-    case afrMapPage:
-      sendTable(&afrTable);
-      break;
-
-    case boostvvtPage:
-      //Boost table
-      sendTable(&boostTable);
-      //VVT table
-      sendTable(&vvtTable);
-      //Staging table
-      sendTable(&vvtTable);
-      break;
-
-    case seqFuelPage:
-      //trim1 table
-      sendTable(&trim1Table);
-      //trim2 table
-      sendTable(&trim2Table);
-      //trim3 table
-      sendTable(&trim3Table);
-      //trim4 table
-      sendTable(&trim4Table);
-      //trim5 table
-      sendTable(&trim5Table);
-      //trim6 table
-      sendTable(&trim6Table);
-      //trim7 table
-      sendTable(&trim7Table);
-      //trim8 table
-      sendTable(&trim8Table);
-      break;
-
-    case fuelMap2Page:
-      sendTable(&fuelTable2);
-      break;
-
-    case wmiMapPage:
-      sendTable(&wmiTable);
-      sendTable(&dwellTable);
-      break;
-   
-    case ignMap2Page:
-      sendTable(&ignitionTable2);
-      break;
-
-    case progOutsPage:
-    case canbusPage:
-    case afrSetPage:
-    case ignSetPage:
-    case veSetPage:
-    case warmupPage:
-      {
-        entity_address location = map_page_offset_to_memory(currentPage, 0);
-        sendPageBytes((byte*)location.raw.pData, npage_size[currentPage]);
-      }
-      break;
-
-    default:
-    #ifndef SMALL_FLASH_MODE
-        Serial.print(F("\nsendPage: Page has not been implemented yet"));
-        Serial.println(currentPage);
-    #endif
-        break;
+    Serial.write(getPageValue(currentPage, offset));
   }
 }
 
