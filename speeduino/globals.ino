@@ -3,7 +3,7 @@
 const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing.
-const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,192,192,192,288,192,128,288}; /**< This array stores the size (in bytes) of each configuration page */
+const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,384,192,192,288,192,128,288}; /**< This array stores the size (in bytes) of each configuration page */
 
 struct table3D fuelTable; //16x16 fuel map
 struct table3D fuelTable2; //16x16 fuel map
@@ -18,6 +18,11 @@ struct table3D trim1Table; //6x6 Fuel trim 1 map
 struct table3D trim2Table; //6x6 Fuel trim 2 map
 struct table3D trim3Table; //6x6 Fuel trim 3 map
 struct table3D trim4Table; //6x6 Fuel trim 4 map
+struct table3D trim5Table; //6x6 Fuel trim 5 map
+struct table3D trim6Table; //6x6 Fuel trim 6 map
+struct table3D trim7Table; //6x6 Fuel trim 7 map
+struct table3D trim8Table; //6x6 Fuel trim 8 map
+struct table3D dwellTable; //4x4 Dwell map
 struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 struct table2D maeTable;
 struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
@@ -112,8 +117,7 @@ int ignition7EndAngle = 0;
 int ignition8EndAngle = 0;
 
 //These are variables used across multiple files
-byte fullStatus[LOG_ENTRY_SIZE];
-byte fsIntIndex[31] = {4, 14, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 96, 101}; //int indexes in fullStatus array
+const byte PROGMEM fsIntIndex[31] = {4, 14, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 96, 101}; //int indexes in fullStatus array
 bool initialisationComplete = false; //Tracks whether the setup() function has run completely
 byte fpPrimeTime = 0; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 volatile uint16_t mainLoopCount;
