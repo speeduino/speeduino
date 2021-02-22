@@ -191,11 +191,14 @@
 
 #define COMPOSITE_LOG_PRI   0
 #define COMPOSITE_LOG_SEC   1
-#define COMPOSITE_LOG_TRIG  2
-#define COMPOSITE_LOG_SYNC  3
+#define COMPOSITE_LOG_TRIG 2
+#define COMPOSITE_LOG_SYNC 3
 
-#define INJ_PAIRED          0
-#define INJ_SEMISEQUENTIAL  1
+#define INJ_TYPE_PORT 0
+#define INJ_TYPE_TBODY 1
+
+#define INJ_PAIRED 0
+#define INJ_SEMISEQUENTIAL 1
 #define INJ_BANKED          2
 #define INJ_SEQUENTIAL      3
 
