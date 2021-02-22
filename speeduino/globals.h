@@ -807,8 +807,9 @@ struct config2 {
   byte iacRPMlimitHysteresis;
 
   int8_t rtc_trim;
+  byte idleAdvVss;
 
-  byte unused2_95[4];
+  byte unused2_95[3];
 
 #if defined(CORE_AVR)
   };
