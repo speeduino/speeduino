@@ -552,22 +552,20 @@ void command()
       break;
 
     case 'w':
-      uint32_t StartTime;
-      StartTime = micros();
-      //wait for 7 RTC bytes or 30 milliseconds timeout
-      while((Serial.available() <= 7) & (micros()-StartTime <= 30000)) {}
-        
-      byte offset1, offset2, length1, length2;
+      if(Serial.available() >= 7)
+        {
+          byte offset1, offset2, length1, length2;
 
-      Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-      currentPage = Serial.read();
-      //currentPage = 1;
-      offset1 = Serial.read();
-      offset2 = Serial.read();
-      valueOffset = word(offset2, offset1);
-      length1 = Serial.read();
-      length2 = Serial.read();
-      chunkSize = word(length2, length1);
+          Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+          currentPage = Serial.read();
+          //currentPage = 1;
+          offset1 = Serial.read();
+          offset2 = Serial.read();
+          valueOffset = word(offset2, offset1);
+          length1 = Serial.read();
+          length2 = Serial.read();
+          chunkSize = word(length2, length1);
+        }
 
 #ifdef RTC_ENABLED
       if(currentPage == SD_READWRITE_PAGE)
