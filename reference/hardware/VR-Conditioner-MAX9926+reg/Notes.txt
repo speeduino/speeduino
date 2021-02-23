@@ -1,5 +1,7 @@
 I hope this helps anyone interested.
 
+This new design (in KiCAD) is more compact and adds mounting holes, optional regulator & header pins.
+
 As at 2020-02-23 I have not made & tested this design but it is barely changed from the manufacrurers data sheets or other designs.
 If you make & test it then please advise.
 
