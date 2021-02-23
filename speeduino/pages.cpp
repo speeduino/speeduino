@@ -1,174 +1,192 @@
 #include "pages.h"
 
-namespace page_to_type
+namespace 
 {
-  typedef enum { Raw, Table, None } page_subtype_t;
+  enum struct page_subtype_t : uint8_t { Raw, Table, None };
 
   typedef struct
   {
-    typedef struct table_t {
-      table3D *pTable;
-      uint16_t offset;
-    } table_t;
-    typedef struct raw_t {
-      void *pData;
-      uint16_t offset;
-    } raw_t;
     union {
-      table_t table;
-      raw_t raw;    
+      void *pData;
+      table3D *pTable;
     };
+    uint16_t offset;
     page_subtype_t type;
   } entity_address;
 
+  #define TABLE_ADDRESS(table, offset) \
+    { { &table }, offset, .type = page_subtype_t::Table }
+
+  #define RAW_ADDRESS(entity, offset) \
+    { { &entity }, offset, .type = page_subtype_t::Raw }
+
+  #define NO_ADDRESS { { nullptr }, 0, .type = page_subtype_t::None }
+    
   // For some purposes a TS page is treated as a contiguous block of memory.
   // However, in Speeduino it's sometimes made up of multiple distinct and
   // non-contiguous chunks of data. This maps from the page address (number + offset)
   // to the type & position of the corresponding memory block.
-  entity_address map_page_offset_to_memory(uint8_t pageNumber, uint16_t offset)
+  inline entity_address map_page_offset_to_memory(uint8_t pageNumber, uint16_t offset)
   {
     switch (pageNumber)
     {
       case veMapPage:
-        return { { &fuelTable, offset }, .type = Table };
+        return TABLE_ADDRESS(fuelTable, offset);
         break;
 
       case ignMapPage: //Ignition settings page (Page 2)
-        return { { &ignitionTable, offset }, .type = Table };
+        return TABLE_ADDRESS(ignitionTable, offset);
         break;
 
       case afrMapPage: //Air/Fuel ratio target settings page
-        return { { &afrTable, offset }, .type = Table };
+        return TABLE_ADDRESS(afrTable, offset);
         break;
 
       case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
         if (offset < 80) //New value is on the Y (TPS) axis of the boost table
         {
-          return { { &boostTable, offset }, .type = Table };
+          return TABLE_ADDRESS(boostTable, offset);
         }
         else if (offset < 160)
         {
-          return { { &vvtTable, offset-80 }, .type = Table };
+          return TABLE_ADDRESS(vvtTable, offset-80);
         }
         else  if (offset < 240)
         {
-          return { { &stagingTable, offset-160 }, .type = Table };
+          return TABLE_ADDRESS(stagingTable, offset-160);
         }
         break;
 
       case seqFuelPage:
         if (offset < 48) 
         {
-          return { { &trim1Table, offset }, .type = Table };
+          return TABLE_ADDRESS(trim1Table, offset);
         }
         //Trim table 2
         else if (offset < 96) 
         { 
-          return { { &trim2Table, offset-48 }, .type = Table };
+          return TABLE_ADDRESS(trim2Table, offset-48);
         }
         //Trim table 3
         else if (offset < 144)
         {
-          return { { &trim3Table, offset-96 }, .type = Table };
+          return TABLE_ADDRESS(trim3Table, offset-96);
         }
         //Trim table 4
         else if (offset < 192)
         {
-          return { { &trim4Table, offset-144 }, .type = Table };
+          return TABLE_ADDRESS(trim4Table, offset-144);
         }
         //Trim table 5
         else if (offset < 240)
         {
-          return { { &trim5Table, offset-192 }, .type = Table };
+          return TABLE_ADDRESS(trim5Table, offset-192);
         }
         //Trim table 6
         else if (offset < 288)
         {
-          return { { &trim6Table, offset-240 }, .type = Table };
+          return TABLE_ADDRESS(trim6Table, offset-240);
         }
         //Trim table 7
         else if (offset < 336)
         {
-          return { { &trim7Table, offset-288 }, .type = Table };
+          return TABLE_ADDRESS(trim7Table, offset-288);
         }
         //Trim table 8
         else if (offset<384)
         {
-          return { { &trim8Table, offset-336 }, .type = Table };
+          return TABLE_ADDRESS(trim8Table, offset-336);
         }
         break;
 
       case fuelMap2Page:
-        return { { &fuelTable2, offset }, .type = Table };
+        return TABLE_ADDRESS(fuelTable2, offset);
         break;
 
       case wmiMapPage:
         if (offset < 80) //New value is on the Y (MAP) axis of the wmi table
         {
-          return { { &wmiTable, offset }, .type = Table };
+          return TABLE_ADDRESS(wmiTable, offset);
+        }
+        else if (offset<160)
+        {
+          return NO_ADDRESS;
         }
         //End of wmi table
-        else if (offset>159 && offset<240)
+        else if (offset<184)
         {
-          return { { &dwellTable, offset-160 }, .type = Table };
+          return TABLE_ADDRESS(dwellTable, offset-160);
         }
         break;
       
-      case ignMap2Page: //Ignition settings page (Page 2)
-        return { { &ignitionTable2, offset }, .type = Table };
+      case ignMap2Page:
+        return TABLE_ADDRESS(ignitionTable2, offset);
         break;
 
       case veSetPage: 
-        return { { (table3D*)&configPage2, offset }, .type = Raw };
+        return RAW_ADDRESS(configPage2, offset);
         break;
 
       case ignSetPage: 
-        return { { (table3D*)&configPage4, offset }, .type = Raw };
+        return RAW_ADDRESS(configPage4, offset);
         break;
 
       case afrSetPage: 
-      return { { (table3D*)&configPage6, offset }, .type = Raw };
+      return RAW_ADDRESS(configPage6, offset);
         break;
 
       case canbusPage:  
-        return { { (table3D*)&configPage9, offset }, .type = Raw };
+        return RAW_ADDRESS(configPage9, offset);
         break;
 
       case warmupPage: 
-        return { { (table3D*)&configPage10, offset }, .type = Raw };
+        return RAW_ADDRESS(configPage10, offset);
         break;
 
       case progOutsPage: 
-        return { { (table3D*)&configPage13, offset }, .type = Raw };
+        return RAW_ADDRESS(configPage13, offset);
         break;      
 
       default:
         break;
     }
     
-    return { { nullptr, 0 }, .type = page_subtype_t::None };
+    return NO_ADDRESS;
   }
 }
 
-namespace table_address
+namespace
 {
-  typedef enum { Value, axisX, axisY, None } table3D_section_t;
+  enum struct table3D_section_t : uint8_t{ Value, axisX, axisY, None } ;
 
-  inline table3D_section_t offsetToTableSection(const page_to_type::entity_address::table_t &location)
+  typedef struct table_address_t {
+    void *pData;
+    table3D_section_t section;
+  } table_address_t;
+
+  template <int8_t _Size>
+  inline table_address_t to_table_address(const entity_address &location)
   {
-    // Precompute for a small performance gain.
-    uint8_t size = location.pTable->xSize;
-    uint16_t area = sq(size);
-    return location.offset < area ? Value :
-            location.offset <  area+size ? axisX :
-              location.offset < area+size+size ? axisY :
-                None;
+    constexpr int16_t area = _Size * _Size;
+
+    if (location.offset < area)
+    {
+      return { location.pTable->values[(_Size-1) - (location.offset / _Size)] + (location.offset % _Size), table3D_section_t::Value };
+    }
+    else if (location.offset <  area+_Size)
+    {
+      return { location.pTable->axisX +(location.offset - area), table3D_section_t::axisX };
+    }
+    else if (location.offset < area+_Size+_Size)
+    {
+      return { location.pTable->axisY + ((_Size-1) - (location.offset - (area + _Size))), table3D_section_t::axisY };
+    }
+    return { nullptr, table3D_section_t::None }; 
   }
 
-#define GET_TABLE_VALUE(size) \
-  case size: return &location.pTable->values[(size-1) - (location.offset / size)][location.offset % size]
+  #define TO_TABLE_ADDRESS(size, location) case size: return to_table_address<size>(location); break;
 
-  inline byte* offsetToValue(const page_to_type::entity_address::table_t &location)
+  inline table_address_t to_table_address(const entity_address &location)
   {
     // You might be tempted to remove the switch: DON'T
     //
@@ -181,73 +199,54 @@ namespace table_address
     // optimization of the division and modulus operations below
     // (likely converting them to multiply & shift operations).
     //
-    // So this is a massive performance win (2x to 3x). 
+    // So this is a massive performance win (2x to 3x).
     switch (location.pTable->xSize)
     {
-        GET_TABLE_VALUE(16);
-        GET_TABLE_VALUE(15);
-        GET_TABLE_VALUE(14);
-        GET_TABLE_VALUE(13);
-        GET_TABLE_VALUE(12);
-        GET_TABLE_VALUE(11);
-        GET_TABLE_VALUE(10);
-        GET_TABLE_VALUE(9);
-        GET_TABLE_VALUE(8);
-        GET_TABLE_VALUE(7);
-        GET_TABLE_VALUE(6);
-        GET_TABLE_VALUE(5);
-        GET_TABLE_VALUE(4);
-        default: ;
+      TO_TABLE_ADDRESS(16, location);
+      TO_TABLE_ADDRESS(8, location);
+      TO_TABLE_ADDRESS(6, location);
+      TO_TABLE_ADDRESS(4, location);
     }
-    // Default slow path
-    return &location.pTable->values[(location.pTable->xSize-1) - (location.offset/location.pTable->xSize)][location.offset % location.pTable->xSize];
+    return { nullptr, table3D_section_t::None }; 
   }
 
-  inline int8_t offsetToAxisXIndex(const page_to_type::entity_address::table_t &location)
+  inline byte getTableValueFromOffset(const entity_address &location)
   {
-    return location.offset - sq(location.pTable->xSize);
-  }
-
-  inline int8_t offsetToAxisYIndex(const page_to_type::entity_address::table_t &location)
-  {
-    // Need to do a translation to flip the order (Due to us using (0,0) in the top left rather than bottom right
-    return (location.pTable->xSize-1) - (location.offset - (sq(location.pTable->xSize) + location.pTable->xSize));
-  }
-
-  inline int8_t getTableValueFromOffset(const page_to_type::entity_address::table_t &location)
-  {
-    switch (offsetToTableSection(location))
+    auto table_address = to_table_address(location);
+    switch (table_address.section)
     {
-      case Value: 
-        return *offsetToValue(location);
+      case table3D_section_t::Value: 
+        return *(byte*)table_address.pData;
+
+      case table3D_section_t::axisX:
+        return byte((*(int16_t*)table_address.pData) / getTableXAxisFactor(location.pTable)); 
       
-      case axisX:
-        return int8_t(location.pTable->axisX[offsetToAxisXIndex(location)] / getTableXAxisFactor(location.pTable)); 
+      case table3D_section_t::axisY:
+        return byte((*(int16_t*)table_address.pData) / getTableYAxisFactor(location.pTable)); 
       
-      case axisY:
-        return int8_t(location.pTable->axisY[offsetToAxisYIndex(location)] / getTableYAxisFactor(location.pTable)); 
-      
-      default: ; // no-op
+      default: return 0; // no-op
     }
 
     return 0;
   }
 
-  inline void setTableValueFromOffset(const page_to_type::entity_address::table_t &location, int8_t value)
+  inline void setTableValueFromOffset(const entity_address &location, int8_t value)
   {
-    switch (offsetToTableSection(location))
+    auto table_address = to_table_address(location);
+    switch (table_address.section)
     {
-      case Value: 
-        *offsetToValue(location) = value;
+      case table3D_section_t::Value: 
+        *(byte*)table_address.pData = value;
         break;
 
-      case axisX:
-        location.pTable->axisX[offsetToAxisXIndex(location)]  = (int)(value) * getTableXAxisFactor(location.pTable); 
+      case table3D_section_t::axisX:
+        *(int16_t*)table_address.pData = (int)(value) * getTableXAxisFactor(location.pTable); 
         break;
-
-      case axisY:
-        location.pTable->axisY[offsetToAxisYIndex(location)] = (int)(value) * getTableYAxisFactor(location.pTable);
-        break;      
+      
+      case table3D_section_t::axisY:
+        *(int16_t*)table_address.pData= (int)(value) * getTableYAxisFactor(location.pTable);
+        break;
+      
       default: ; // no-op
     }
     location.pTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
@@ -264,19 +263,20 @@ namespace table_address
  */
 byte getPageValue(byte page, uint16_t valueAddress)
 {
-  page_to_type::entity_address location = page_to_type::map_page_offset_to_memory(page, valueAddress);
+  entity_address location = map_page_offset_to_memory(page, valueAddress);
 
   switch (location.type)
   {
-  case page_to_type::page_subtype_t::Table:
-    return table_address::getTableValueFromOffset(location.table);
+  case page_subtype_t::Table:
+    return getTableValueFromOffset(location);
     break;
   
-  case page_to_type::page_subtype_t::Raw:
-    return *((byte*)location.raw.pData + location.raw.offset);
+  case page_subtype_t::Raw:
+    return *((byte*)location.pData + location.offset);
     break;
       
   default:
+      return 0;
       break;
   }
   return 0;
@@ -285,18 +285,18 @@ byte getPageValue(byte page, uint16_t valueAddress)
 
 void setPageValue(byte pageNum, uint16_t offset, byte value)
 {
-  page_to_type::entity_address location = page_to_type::map_page_offset_to_memory(pageNum, offset);
+  entity_address location = map_page_offset_to_memory(pageNum, offset);
 
   switch (location.type)
   {
-  case page_to_type::page_subtype_t::Table:
-    table_address::setTableValueFromOffset(location.table, value);
+  case page_subtype_t::Table:
+    setTableValueFromOffset(location, value);
     break;
   
-  case page_to_type::page_subtype_t::Raw:
+  case page_subtype_t::Raw:
     if (offset < npage_size[pageNum])
     {
-      *((byte*)location.raw.pData + location.raw.offset) = value;
+      *((byte*)location.pData + location.offset) = value;
     }
     break;
       
