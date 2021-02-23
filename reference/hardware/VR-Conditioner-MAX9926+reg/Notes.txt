@@ -1,4 +1,4 @@
-I hope this helps anyone interested.
+Hi all, I hope this helps anyone interested.
 
 This new design (in KiCAD) is more compact and adds mounting holes, optional regulator & header pins.
 
