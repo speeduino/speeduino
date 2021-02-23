@@ -26,7 +26,7 @@ void initialiseFan()
 
 #if defined(PWM_FAN_AVAILABLE)
   DISABLE_FAN_TIMER(); //disable FAN timer if available
-  if ( configPage2.fanMode == 2 ) // PWM Fan control
+  if ( configPage2.fanEnable == 2 ) // PWM Fan control
   {
     #if defined(CORE_TEENSY)
      fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
@@ -40,7 +40,7 @@ void initialiseFan()
 
 void fanControl()
 {
-  if( configPage2.fanMode == 1 ) // regular on/off fan control
+  if( configPage2.fanEnable == 1 ) // regular on/off fan control
   {
     int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
     int offTemp = onTemp - configPage6.fanHyster;
@@ -71,7 +71,7 @@ void fanControl()
     }
   }
   #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
-  else if( configPage2.fanMode == 2 )// PWM Fan control
+  else if( configPage2.fanEnable == 2 )// PWM Fan control
   {
     bool fanPermit = false;
     if ( configPage2.fanWhenOff == true) { fanPermit = true; }

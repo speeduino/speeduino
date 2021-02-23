@@ -759,7 +759,7 @@ struct config2 {
   byte fanWhenOff : 1;      // Only run fan when engine is running
   byte fanWhenCranking : 1;      //**< Setting whether the fan output will stay on when the engine is cranking */ 
   byte useDwellMap : 1;  // Setting to change between fixed dwell value and dwell map
-  byte fanMode : 2;  // Fan mode. 0=Off, 1=On/Off, 2=PWM
+  byte fanEnable : 2;  // Fan mode. 0=Off, 1=On/Off, 2=PWM
   byte rtc_mode : 2;
   byte incorporateAFR : 1;  //Incorporate AFR
   byte asePct[4];  //Afterstart enrichment (%)
