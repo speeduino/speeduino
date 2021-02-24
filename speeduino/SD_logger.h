@@ -18,7 +18,7 @@
 
 #ifdef CORE_TEENSY
     #define SD_CS_PIN BUILTIN_SDCARD
-#elif STM32F4
+#elif STM32F407xx
     #define SD_CS_PIN SD_DETECT_NONE
 #else
     #define SD_CS_PIN 10 //This is a made up value for now
