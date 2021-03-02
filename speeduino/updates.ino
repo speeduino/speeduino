@@ -456,6 +456,7 @@ void doUpdates()
     configPage4.vvt2PWMdir = 0;
     configPage10.TrigEdgeThrd = 0;
 
+    configPage6.iacPWMrun = false; // just in case. This should be false anyways, but sill.
     configPage2.useDwellMap = 0; //Dwell map added, use old fixed value as default
 
     writeAllConfig();
