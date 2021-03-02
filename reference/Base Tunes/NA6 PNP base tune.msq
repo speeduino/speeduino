@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <msq xmlns="http://www.msefi.com/:msq">
-    <bibliography author="TunerStudio MS(Beta) 3.1.04.08 - EFI Analytics, Inc." tuneComment="" writeDate="Sat Dec 12 08:00:45 AEDT 2020"/>
-    <versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2020.08" nPages="14" signature="speeduino 202012"/>
+    <bibliography author="TunerStudio MS Dev 3.1.05.00 - EFI Analytics, Inc." tuneComment="" writeDate="Tue Mar 02 21:22:03 AEDT 2021"/>
+    <versionInfo fileFormat="5.0" firmwareInfo="Speeduino+2020.12" nPages="14" signature="speeduino 202103"/>
     <page>
         <pcVariable name="tsCanId">"0"</pcVariable>
         <pcVariable name="tsCanId">"CAN ID 0"</pcVariable>
@@ -283,6 +283,136 @@
          4.0 
          4.0 
       </pcVariable>
+        <pcVariable cols="1" digits="0" name="boardHasRTC" rows="128" units=" ">
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         6.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         8.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         8.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+         0.0 
+      </pcVariable>
         <pcVariable cols="1" digits="0" name="algorithmLimits" rows="8">
          511.0 
          100.0 
@@ -295,6 +425,8 @@
       </pcVariable>
         <pcVariable digits="0" name="fuelLoadMax">255.0</pcVariable>
         <pcVariable digits="0" name="ignLoadMax">255.0</pcVariable>
+        <pcVariable digits="0" name="fuel2LoadMax">255.0</pcVariable>
+        <pcVariable digits="0" name="ign2LoadMax">255.0</pcVariable>
         <pcVariable name="AUXin00Alias">Aux0</pcVariable>
         <pcVariable name="tsSpeedSource">"GPS Speed"</pcVariable>
         <pcVariable digits="0" name="tsPrimaryInjectorSize">0.0</pcVariable>
@@ -404,13 +536,14 @@
         <constant digits="0" name="iacCLminDuty" units="%">40.0</constant>
         <constant digits="0" name="iacCLmaxDuty" units="%">80.0</constant>
         <constant digits="0" name="boostMinDuty" units="%">12.0</constant>
-        <constant digits="0" name="baroMin" units="kpa">16.0</constant>
-        <constant digits="0" name="baroMax" units="kpa">14608.0</constant>
+        <constant digits="0" name="baroMin" units="kpa">10.0</constant>
+        <constant digits="0" name="baroMax" units="kpa">121.0</constant>
         <constant digits="0" name="EMAPMin" units="kpa">-1.0</constant>
         <constant digits="0" name="EMAPMax" units="kpa">65535.0</constant>
         <constant name="fanWhenOff">"Yes"</constant>
         <constant name="fanWhenCranking">"No"</constant>
-        <constant name="unused_fan_bits">"30"</constant>
+        <constant name="useDwellMap">"No"</constant>
+        <constant name="unused_fan_bits">"2"</constant>
         <constant name="incorporateAFR">"No"</constant>
         <constant cols="1" digits="0" name="asePct" rows="4" units="%">
          15.0 
@@ -461,20 +594,22 @@
         <constant digits="0" name="dfcoMinCLT" units="C">50.0</constant>
         <constant name="vssMode">"Off"</constant>
         <constant name="vssPin">"Board Default"</constant>
-        <constant digits="0" name="vssPulsesPerKm" units="pulses">65535.0</constant>
+        <constant digits="0" name="vssPulsesPerKm" units="pulses">0.0</constant>
         <constant digits="0" name="vssSmoothing" units="%">50.0</constant>
-        <constant digits="1" name="vssRatio1" units="km/h per 1000rpm">6553.5</constant>
-        <constant digits="1" name="vssRatio2" units="km/h per 1000rpm">6553.5</constant>
-        <constant digits="1" name="vssRatio3" units="km/h per 1000rpm">6553.5</constant>
-        <constant digits="1" name="vssRatio4" units="km/h per 1000rpm">6553.5</constant>
-        <constant digits="1" name="vssRatio5" units="km/h per 1000rpm">6553.5</constant>
-        <constant digits="1" name="vssRatio6" units="km/h per 1000rpm">6553.5</constant>
-        <constant digits="1" name="primingDelay" units="S">25.5</constant>
+        <constant digits="1" name="vssRatio1" units="km/h per 1000rpm">0.0</constant>
+        <constant digits="1" name="vssRatio2" units="km/h per 1000rpm">0.0</constant>
+        <constant digits="1" name="vssRatio3" units="km/h per 1000rpm">0.0</constant>
+        <constant digits="1" name="vssRatio4" units="km/h per 1000rpm">0.0</constant>
+        <constant digits="1" name="vssRatio5" units="km/h per 1000rpm">0.0</constant>
+        <constant digits="1" name="vssRatio6" units="km/h per 1000rpm">0.0</constant>
+        <constant name="idleUpOutputEnabled">"Off"</constant>
+        <constant name="idleUpOutputInv">"No"</constant>
+        <constant name="idleUpOutputPin">"Board Default"</constant>
+        <constant digits="0" name="tachoSweepMaxRPM" units="RPM">0.0</constant>
+        <constant digits="1" name="primingDelay" units="S">1.0</constant>
         <constant digits="0" name="iacTPSlimit" units="%">255.0</constant>
         <constant digits="0" name="iacRPMlimitHysteresis" units="RPM">2550.0</constant>
-        <constant cols="1" digits="0" name="unused2-95" rows="5" units="%">
-         255.0 
-         255.0 
+        <constant cols="1" digits="0" name="unused2-95" rows="3" units="%">
          255.0 
          255.0 
          255.0 
@@ -597,15 +732,16 @@
         <constant digits="0" name="FixAng" units="Deg">0.0</constant>
         <constant digits="0" name="CrankAng" units="Deg">5.0</constant>
         <constant digits="0" name="TrigAngMul">10.0</constant>
-        <constant name="TrigEdge">"FALLING"</constant>
+        <constant name="TrigEdge">"RISING"</constant>
         <constant name="TrigSpeed">"Crank Speed"</constant>
         <constant name="IgInv">"Going Low"</constant>
         <constant name="TrigPattern">"4G63 / Miata / 3000GT"</constant>
-        <constant name="TrigEdgeSec">"FALLING"</constant>
+        <constant name="TrigEdgeSec">"RISING"</constant>
         <constant name="fuelPumpPin">"Board Default"</constant>
         <constant name="useResync">"Yes"</constant>
         <constant digits="1" name="sparkDur" units="ms">1.0</constant>
         <constant name="trigPatternSec">"Single tooth cam"</constant>
+        <constant name="PollLevelPol">"Low"</constant>
         <constant digits="0" name="bootloaderCaps" units="level">0.0</constant>
         <constant name="resetControl">"Disabled"</constant>
         <constant name="resetControlPin">"9"</constant>
@@ -680,13 +816,13 @@
         <constant name="ignBypassEnable">"Off"</constant>
         <constant name="ignBypassPin">"3"</constant>
         <constant name="ignBypassHiLo">"HIGH"</constant>
-        <constant digits="0" name="ADCFILTER_TPS" units="%">50.0</constant>
-        <constant digits="0" name="ADCFILTER_CLT" units="%">180.0</constant>
-        <constant digits="0" name="ADCFILTER_IAT" units="%">180.0</constant>
-        <constant digits="0" name="ADCFILTER_O2" units="%">100.0</constant>
-        <constant digits="0" name="ADCFILTER_BAT" units="%">128.0</constant>
-        <constant digits="0" name="ADCFILTER_MAP" units="%">20.0</constant>
-        <constant digits="0" name="ADCFILTER_BARO" units="%">64.0</constant>
+        <constant digits="0" name="ADCFILTER_TPS" units="%">0.0</constant>
+        <constant digits="0" name="ADCFILTER_CLT" units="%">0.0</constant>
+        <constant digits="0" name="ADCFILTER_IAT" units="%">0.0</constant>
+        <constant digits="0" name="ADCFILTER_O2" units="%">0.0</constant>
+        <constant digits="0" name="ADCFILTER_BAT" units="%">0.0</constant>
+        <constant digits="0" name="ADCFILTER_MAP" units="%">0.0</constant>
+        <constant digits="0" name="ADCFILTER_BARO" units="%">0.0</constant>
         <constant cols="1" digits="0" name="cltAdvBins" rows="6" units="C">
          -20.0 
          10.0 
@@ -843,7 +979,7 @@
         <constant digits="0" name="egoRPM" units="rpm">1200.0</constant>
         <constant digits="0" name="egoTPSMax" units="%">70.0</constant>
         <constant name="vvt1Pin">"Board Default"</constant>
-        <constant name="useExtBaro">"No"</constant>
+        <constant name="useExtBaro">"Yes"</constant>
         <constant name="boostMode">"Simple"</constant>
         <constant name="boostPin">"20"</constant>
         <constant name="VVTasOnOff">"No"</constant>
@@ -904,9 +1040,10 @@
         <constant digits="0" name="boostKI" units="%">38.0</constant>
         <constant digits="0" name="boostKD" units="%">1.0</constant>
         <constant name="lnchPullRes">"Pullup"</constant>
+        <constant name="iacPWMrun">"No"</constant>
         <constant name="fuelTrimEnabled">"No"</constant>
         <constant name="flatSEnable">"No"</constant>
-        <constant name="baroPin">"A0"</constant>
+        <constant name="baroPin">"A12"</constant>
         <constant digits="0" name="flatSSoftWin" units="rpm">4500.0</constant>
         <constant digits="0" name="flatSRetard" units="deg">30.0</constant>
         <constant digits="0" name="flatSArm" units="rpm">2500.0</constant>
@@ -982,7 +1119,7 @@
         <constant name="iacPWMdir">"Normal"</constant>
         <constant digits="0" name="iacFastTemp" units="C">-40.0</constant>
         <constant digits="0" name="iacStepHome" units="Steps">0.0</constant>
-        <constant digits="0" name="iacStepHyster" units="Steps">256.0</constant>
+        <constant digits="0" name="iacStepHyster" units="Steps">0.0</constant>
         <constant name="fanInv">"No"</constant>
         <constant name="fanEnable">"On/Off"</constant>
         <constant name="fanPin">"Board Default"</constant>
@@ -1088,7 +1225,7 @@
          510.0 
       </constant>
     </page>
-    <page number="7" size="192">
+    <page number="7" size="384">
         <constant cols="6" digits="0" name="fuelTrim1Table" rows="6" units="%">
          -128.0 -128.0 -128.0 -128.0 -128.0 -128.0 
          -128.0 -128.0 -128.0 -128.0 -128.0 -128.0 
@@ -1530,13 +1667,13 @@
          15.0 
          15.0 
       </constant>
-        <constant name="n2o_enable">"2 stage"</constant>
+        <constant name="n2o_enable">"Off"</constant>
         <constant name="n2o_arming_pin">"30"</constant>
         <constant digits="0" name="n2o_minCLT" units="C">60.0</constant>
         <constant digits="0" name="n2o_maxMAP" units="kPa">250.0</constant>
         <constant digits="0" name="n2o_minTPS" units="%TPS">50.0</constant>
         <constant digits="1" name="n2o_maxAFR" units="AFR">17.0</constant>
-        <constant name="n2o_stage1_pin">"31"</constant>
+        <constant name="n2o_stage1_pin">"16"</constant>
         <constant name="n2o_pin_polarity">"LOW"</constant>
         <constant name="n2o_unused">"Yes"</constant>
         <constant digits="0" name="n2o_stage1_minRPM" units="RPM">3000.0</constant>
@@ -1544,7 +1681,7 @@
         <constant digits="1" name="n2o_stage1_adderMin" units="ms">6.0</constant>
         <constant digits="1" name="n2o_stage1_adderMax" units="ms">3.0</constant>
         <constant digits="0" name="n2o_stage1_retard" units="Deg">5.0</constant>
-        <constant name="n2o_stage2_pin">"32"</constant>
+        <constant name="n2o_stage2_pin">"17"</constant>
         <constant name="n2o_stage2_unused">"No"</constant>
         <constant digits="0" name="n2o_stage2_minRPM" units="RPM">6000.0</constant>
         <constant digits="0" name="n2o_stage2_maxRPM" units="RPM">7000.0</constant>
@@ -1685,9 +1822,9 @@
         <constant name="spark2InputPin">"36"</constant>
         <constant name="spark2InputPolarity">"HIGH"</constant>
         <constant name="spark2InputPullup">"No"</constant>
-        <constant cols="1" digits="0" name="unused11_187_191" rows="2" units="RPM">
-         0.0 
-         0.0 
+        <constant cols="1" digits="0" name="unused11_190_191" rows="2" units="RPM">
+         2000.0 
+         500.0 
       </constant>
     </page>
     <page number="10" size="288">
@@ -1777,119 +1914,23 @@
          510.0 
          510.0 
       </constant>
-        <constant cols="1" digits="0" name="UNALLOCATED_TOP_11" rows="112" units="RAW">
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
-         0.0 
+        <constant cols="4" digits="1" name="dwellTable" rows="4" units="ms">
+         3.5 3.5 3.5 3.5 
+         3.5 3.5 3.5 3.5 
+         3.5 3.5 3.5 3.5 
+         3.5 3.5 3.5 3.5 
+      </constant>
+        <constant cols="1" digits="0" name="rpmBinsDwell" rows="4" units="RPM">
+         1000.0 
+         3000.0 
+         4500.0 
+         6000.0 
+      </constant>
+        <constant cols="1" digits="0" name="mapBinsDwell" rows="4" units="kPa">
+         20.0 
+         40.0 
+         60.0 
+         100.0 
       </constant>
     </page>
     <page number="12" size="128">
