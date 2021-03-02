@@ -101,6 +101,9 @@
 #elif defined(__SAMD21G18A__)
   #define BOARD_H "board_samd21.h"
   #define CORE_SAMD21
+#elif defined(__SAMC21J18A__)
+  #define BOARD_H "board_samc21.h"
+  #define CORE_SAMC21
 #else
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif
@@ -498,6 +501,7 @@ extern bool previousClutchTrigger;
 extern volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
 extern volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 extern volatile bool fpPrimed; //Tracks whether or not the fuel pump priming has been completed yet
+extern volatile bool injPrimed; //Tracks whether or not the injector priming has been completed yet
 extern volatile unsigned int toothHistoryIndex;
 extern volatile byte toothHistorySerialIndex;
 extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */

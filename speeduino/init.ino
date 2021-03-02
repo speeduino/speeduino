@@ -26,6 +26,7 @@
 void initialiseAll()
 {   
     fpPrimed = false;
+    injPrimed = false;
 
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
@@ -372,6 +373,7 @@ void initialiseAll()
     BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
     currentStatus.runSecs = 0;
     currentStatus.secl = 0;
+    //currentStatus.seclx10 = 0;
     currentStatus.startRevolutions = 0;
     currentStatus.syncLossCounter = 0;
     currentStatus.flatShiftingHard = false;
