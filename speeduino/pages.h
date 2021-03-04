@@ -39,3 +39,5 @@ inline int8_t getTableXAxisFactor(const table3D */*pTable*/ )
 byte getPageValue(byte pageNum, uint16_t offset);
 
 void setPageValue(byte pageNum, uint16_t offset, byte value);
+
+uint32_t calculateCRC32(byte pageNum);
