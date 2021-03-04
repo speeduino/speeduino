@@ -1,6 +1,8 @@
 #include "pages.h"
 #include "src/FastCRC/FastCRC.h"
 
+const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,384,192,192,288,192,128,288}; /**< This array stores the size (in bytes) of each configuration page */
+
 namespace 
 {
   enum struct page_subtype_t : uint8_t { Raw, Table, None };
@@ -320,7 +322,6 @@ uint32_t calculateCRC32(byte pageNum)
   byte raw_value = getPageValue(pageNum, 0);
   uint32_t CRC32_val = CRC32.crc32(&raw_value, 1, false);
   for(uint16_t x=1; x< npage_size[pageNum]; x++)
-  //for(uint16_t x=1; x< 288; x++)
   {
     raw_value = getPageValue(pageNum, x);
     CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);

@@ -3,6 +3,9 @@
 #include "table.h"
 #include "globals.h"
 
+#define NUM_PAGES     15
+extern const uint16_t npage_size[NUM_PAGES]; /**< This array stores the size (in bytes) of each configuration page */
+
 //These are the page numbers that the Tuner Studio serial protocol uses to transverse the different map and config pages.
 #define veMapPage    2
 #define veSetPage    1 //Note that this and the veMapPage were swapped in Feb 2019 as the 'algorithm' field must be declared in the ini before it's used in the fuel table
