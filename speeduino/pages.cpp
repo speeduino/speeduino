@@ -160,7 +160,10 @@ namespace
   enum struct table3D_section_t : uint8_t{ Value, axisX, axisY, None } ;
 
   typedef struct table_address_t {
-    void *pData;
+    union {
+      byte *pValue;
+      int16_t *pAxis;
+    };
     table3D_section_t section;
   } table_address_t;
 
@@ -175,11 +178,11 @@ namespace
     }
     else if (location.offset <  area+_Size)
     {
-      return { location.pTable->axisX +(location.offset - area), table3D_section_t::axisX };
+      return { (byte*)(location.pTable->axisX +(location.offset - area)), table3D_section_t::axisX };
     }
     else if (location.offset < area+_Size+_Size)
     {
-      return { location.pTable->axisY + ((_Size-1) - (location.offset - (area + _Size))), table3D_section_t::axisY };
+      return { (byte*)(location.pTable->axisY + ((_Size-1) - (location.offset - (area + _Size)))), table3D_section_t::axisY };
     }
     return { nullptr, table3D_section_t::None }; 
   }
@@ -210,19 +213,19 @@ namespace
     return { nullptr, table3D_section_t::None }; 
   }
 
-  inline byte getTableValueFromOffset(const entity_address &location)
+  inline byte get_table_value(const entity_address &location)
   {
     auto table_address = to_table_address(location);
     switch (table_address.section)
     {
       case table3D_section_t::Value: 
-        return *(byte*)table_address.pData;
+        return *table_address.pValue;
 
       case table3D_section_t::axisX:
-        return byte((*(int16_t*)table_address.pData) / getTableXAxisFactor(location.pTable)); 
+        return byte((*table_address.pAxis) / getTableXAxisFactor(location.pTable)); 
       
       case table3D_section_t::axisY:
-        return byte((*(int16_t*)table_address.pData) / getTableYAxisFactor(location.pTable)); 
+        return byte((*table_address.pAxis) / getTableYAxisFactor(location.pTable)); 
       
       default: return 0; // no-op
     }
@@ -230,21 +233,21 @@ namespace
     return 0;
   }
 
-  inline void setTableValueFromOffset(const entity_address &location, int8_t value)
+  inline void set_table_value(const entity_address &location, int8_t value)
   {
     auto table_address = to_table_address(location);
     switch (table_address.section)
     {
       case table3D_section_t::Value: 
-        *(byte*)table_address.pData = value;
+        *table_address.pValue = value;
         break;
 
       case table3D_section_t::axisX:
-        *(int16_t*)table_address.pData = (int)(value) * getTableXAxisFactor(location.pTable); 
+        *table_address.pAxis = (int)(value) * getTableXAxisFactor(location.pTable); 
         break;
       
       case table3D_section_t::axisY:
-        *(int16_t*)table_address.pData= (int)(value) * getTableYAxisFactor(location.pTable);
+        *table_address.pAxis= (int)(value) * getTableYAxisFactor(location.pTable);
         break;
       
       default: ; // no-op
@@ -268,7 +271,7 @@ byte getPageValue(byte page, uint16_t valueAddress)
   switch (location.type)
   {
   case page_subtype_t::Table:
-    return getTableValueFromOffset(location);
+    return get_table_value(location);
     break;
   
   case page_subtype_t::Raw:
@@ -290,7 +293,7 @@ void setPageValue(byte pageNum, uint16_t offset, byte value)
   switch (location.type)
   {
   case page_subtype_t::Table:
-    setTableValueFromOffset(location, value);
+    set_table_value(location, value);
     break;
   
   case page_subtype_t::Raw:
