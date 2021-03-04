@@ -11,6 +11,8 @@ A full copy of the license may be found in the projects root directory
 #include EEPROM_LIB_H //This is defined in the board .h files
 #include "storage.h"
 
+bool eepromWritesPending = false;
+
 void writeAllConfig()
 {
   writeConfig(veSetPage);
