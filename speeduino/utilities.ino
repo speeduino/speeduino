@@ -13,6 +13,10 @@
 
 FastCRC32 CRC32;
 
+uint16_t ioDelay[sizeof(configPage13.outputPin)];
+uint8_t pinIsValid = 0;
+
+
 //This function performs a translation between the pin list that appears in TS and the actual pin numbers
 //For the digital IO, this will simply return the same number as the rawPin value as those are mapped directly.
 //For analog pins, it will translate them into the currect internal pin number

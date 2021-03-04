@@ -77,48 +77,48 @@ extern "C" char* sbrk(int incr);
 #if defined(SRAM_AS_EEPROM)
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
     #include EEPROM_LIB_H
-    BackupSramAsEEPROM EEPROM;
+    extern BackupSramAsEEPROM EEPROM;
 
 #elif defined(USE_SPI_EEPROM)
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
     #include EEPROM_LIB_H
-    SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+    extern SPIClass SPI_for_flash; //SPI1_MOSI, SPI1_MISO, SPI1_SCK
  
     //windbond W25Q16 SPI flash EEPROM emulation
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
-    Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
-    SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
+    extern EEPROM_Emulation_Config EmulatedEEPROMMconfig;
+    extern Flash_SPI_Config SPIconfig;
+    extern SPI_EEPROM_Class EEPROM;
 
 #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
     #define EEPROM_LIB_H <Fram.h>
     #include EEPROM_LIB_H
     #if defined(STM32F407xx)
-      FramClass EEPROM(PB5, PB4, PB3, PB0); /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
+      extern FramClass EEPROM; /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
     #else
-      FramClass EEPROM(PB15, PB14, PB13, PB12); //Blue/Black Pills
+      extern FramClass EEPROM; //Blue/Black Pills
     #endif
 
 #elif defined(STM32F7xx)
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   #include EEPROM_LIB_H
   #if defined(DUAL_BANK)
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08120000UL};
+    extern EEPROM_Emulation_Config EmulatedEEPROMMconfig;
   #else
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 262144UL, 4095UL, 0x08180000UL};
+    extern EEPROM_Emulation_Config EmulatedEEPROMMconfig;
   #endif
-    InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+    extern InternalSTM32F7_EEPROM_Class EEPROM;
 
 #elif defined(STM32F401xC)
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   #include EEPROM_LIB_H
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 131072UL, 4095UL, 0x08040000UL};
-    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+    extern EEPROM_Emulation_Config EmulatedEEPROMMconfig;
+    extern InternalSTM32F4_EEPROM_Class EEPROM;
 
 #else //default case, internal flash as EEPROM for STM32F4
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   #include EEPROM_LIB_H
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08080000UL};
-    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+    extern EEPROM_Emulation_Config EmulatedEEPROMMconfig;
+    extern InternalSTM32F4_EEPROM_Class EEPROM;
 #endif
 
 #define RTC_LIB_H "STM32RTC.h"
@@ -245,16 +245,16 @@ extern "C" char* sbrk(int incr);
 * Timers
 */
 
-HardwareTimer Timer1(TIM1);
-HardwareTimer Timer2(TIM2);
-HardwareTimer Timer3(TIM3);
-HardwareTimer Timer4(TIM4);
+extern HardwareTimer Timer1;
+extern HardwareTimer Timer2;
+extern HardwareTimer Timer3;
+extern HardwareTimer Timer4;
 #if !defined(ARDUINO_BLUEPILL_F103C8) && !defined(ARDUINO_BLUEPILL_F103CB) //F103 just have 4 timers
-HardwareTimer Timer5(TIM5);
+extern HardwareTimer Timer5;
 #if defined(TIM11)
-HardwareTimer Timer11(TIM11);
+extern HardwareTimer Timer11;
 #elif defined(TIM7)
-HardwareTimer Timer11(TIM7);
+extern HardwareTimer Timer11;
 #endif
 #endif
 
@@ -306,7 +306,7 @@ void ignitionSchedule8Interrupt(HardwareTimer*);
 //HardwareSerial CANSerial(PD6, PD5);
 #include <src/STM32_CAN/STM32_CAN.h>
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
-STM32_CAN Can0 (_CAN1,DEF);
+extern STM32_CAN Can0;
 /*
 Second CAN interface is also available if needed or it can be used also as primary CAN interface.
 for STM32F4 the default CAN1 pins are PD0 & PD1. Alternative (ALT) pins are PB8 & PB9 and ALT2 pins are PA11 and PA12:
