@@ -1,14 +1,21 @@
 #include "pages.h"
 #include "src/FastCRC/FastCRC.h"
+#include "utilities.h"
 
 const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,384,192,192,288,192,128,288}; /**< This array stores the size (in bytes) of each configuration page */
 
+// #define DEBUG_PRINT(x) Serial.print(x);
+// #define DEBUG_PRINTLN(x) Serial.println(x);
+#define DEBUG_PRINT(x)
+#define DEBUG_PRINTLN(x)
+
 namespace 
 {
-  enum struct page_subtype_t : uint8_t { Raw, Table, None };
+  enum struct page_subtype_t : uint8_t { Raw, Table, None, End };
 
   typedef struct
   {
+    uint16_t size;
     union {
       void *pData;
       table3D *pTable;
@@ -17,18 +24,24 @@ namespace
     page_subtype_t type;
   } entity_address;
 
-  #define TABLE_ADDRESS(table, offset) \
-    { { &table }, offset, .type = page_subtype_t::Table }
-
-  #define RAW_ADDRESS(entity, offset) \
-    { { &entity }, offset, .type = page_subtype_t::Raw }
-
-  #define NO_ADDRESS { { nullptr }, 0, .type = page_subtype_t::None }
-    
   #define TABLE_VALUE_SIZE(size) (size*size)
   #define TABLE_AXISX_END(size) (TABLE_VALUE_SIZE(size)+size)
   #define TABLE_AXISY_END(size) (TABLE_AXISX_END(size)+size)
   #define TABLE_SIZE(size) TABLE_AXISY_END(size)
+
+  #define END_ADDRESS entity_address { 0, { nullptr }, 0, .type = page_subtype_t::End }
+
+  #define TABLE_ADDRESS(table, offset, size) \
+    (offset<TABLE_SIZE(size) ? \
+      entity_address { TABLE_SIZE(size), { &table }, offset, .type = page_subtype_t::Table } \
+      : END_ADDRESS)
+
+  #define RAW_ADDRESS(entity, offset) \
+    (offset<sizeof(entity) ? \
+      entity_address { sizeof(entity), { &entity }, offset, .type = page_subtype_t::Raw } \
+      : END_ADDRESS)
+
+  #define NO_ADDRESS(size, offset) { size, { nullptr }, offset, .type = page_subtype_t::None }
 
   // For some purposes a TS page is treated as a contiguous block of memory.
   // However, in Speeduino it's sometimes made up of multiple distinct and
@@ -39,96 +52,95 @@ namespace
     switch (pageNumber)
     {
       case veMapPage:
-        return TABLE_ADDRESS(fuelTable, offset);
+        return TABLE_ADDRESS(fuelTable, offset, 16);
         break;
 
       case ignMapPage: //Ignition settings page (Page 2)
-        return TABLE_ADDRESS(ignitionTable, offset);
+        return TABLE_ADDRESS(ignitionTable, offset, 16);
         break;
 
       case afrMapPage: //Air/Fuel ratio target settings page
-        return TABLE_ADDRESS(afrTable, offset);
+        return TABLE_ADDRESS(afrTable, offset, 16);
         break;
 
       case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
         if (offset < 80) //New value is on the Y (TPS) axis of the boost table
         {
-          return TABLE_ADDRESS(boostTable, offset);
+          return TABLE_ADDRESS(boostTable, offset, 8);
         }
         else if (offset < 160)
         {
-          return TABLE_ADDRESS(vvtTable, offset-80);
+          return TABLE_ADDRESS(vvtTable, offset-80, 8);
         }
         else  if (offset < 240)
         {
-          return TABLE_ADDRESS(stagingTable, offset-160);
+          return TABLE_ADDRESS(stagingTable, offset-160, 8);
         }
         break;
 
       case seqFuelPage:
         if (offset < 48) 
         {
-          return TABLE_ADDRESS(trim1Table, offset);
+          return TABLE_ADDRESS(trim1Table, offset, 6);
         }
         //Trim table 2
         else if (offset < 96) 
         { 
-          return TABLE_ADDRESS(trim2Table, offset-48);
+          return TABLE_ADDRESS(trim2Table, offset-48, 6);
         }
         //Trim table 3
         else if (offset < 144)
         {
-          return TABLE_ADDRESS(trim3Table, offset-96);
+          return TABLE_ADDRESS(trim3Table, offset-96, 6);
         }
         //Trim table 4
         else if (offset < 192)
         {
-          return TABLE_ADDRESS(trim4Table, offset-144);
+          return TABLE_ADDRESS(trim4Table, offset-144, 6);
         }
         //Trim table 5
         else if (offset < 240)
         {
-          return TABLE_ADDRESS(trim5Table, offset-192);
+          return TABLE_ADDRESS(trim5Table, offset-192, 6);
         }
         //Trim table 6
         else if (offset < 288)
         {
-          return TABLE_ADDRESS(trim6Table, offset-240);
+          return TABLE_ADDRESS(trim6Table, offset-240, 6);
         }
         //Trim table 7
         else if (offset < 336)
         {
-          return TABLE_ADDRESS(trim7Table, offset-288);
+          return TABLE_ADDRESS(trim7Table, offset-288, 6);
         }
         //Trim table 8
         else if (offset<384)
         {
-          return TABLE_ADDRESS(trim8Table, offset-336);
+          return TABLE_ADDRESS(trim8Table, offset-336, 6);
         }
         break;
 
       case fuelMap2Page:
-        return TABLE_ADDRESS(fuelTable2, offset);
+        return TABLE_ADDRESS(fuelTable2, offset, 16);
         break;
 
       case wmiMapPage:
-        if (offset < 80) //New value is on the Y (MAP) axis of the wmi table
+        if (offset < 80) 
         {
-          return TABLE_ADDRESS(wmiTable, offset);
+          return TABLE_ADDRESS(wmiTable, offset, 8);
         }
         else if (offset<160)
         {
-          return NO_ADDRESS;
+          return NO_ADDRESS(160-80, offset-80);
         }
-        //End of wmi table
         else if (offset<184)
         {
-          return TABLE_ADDRESS(dwellTable, offset-160);
+          return TABLE_ADDRESS(dwellTable, offset-160, 4);
         }
         break;
       
       case ignMap2Page:
-        return TABLE_ADDRESS(ignitionTable2, offset);
+        return TABLE_ADDRESS(ignitionTable2, offset, 16);
         break;
 
       case veSetPage: 
@@ -159,7 +171,7 @@ namespace
         break;
     }
     
-    return NO_ADDRESS;
+    return END_ADDRESS;
   }
 }
 
@@ -241,7 +253,24 @@ namespace
       default: return 0; // no-op
     }
 
-    return 0;
+    return 0U;
+  }
+
+  inline uint8_t get_value(const entity_address &location)
+  {
+    switch (location.type)
+    {
+      case page_subtype_t::Table:
+        return get_table_value(location);
+        break;
+  
+      case page_subtype_t::Raw:
+        return *((byte*)location.pData + location.offset);
+        break;
+
+      default: return 0U;
+    }
+    return 0U;
   }
 
   inline void set_table_value(const entity_address &location, int8_t value)
@@ -277,23 +306,7 @@ namespace
  */
 byte getPageValue(byte page, uint16_t valueAddress)
 {
-  entity_address location = map_page_offset_to_memory(page, valueAddress);
-
-  switch (location.type)
-  {
-  case page_subtype_t::Table:
-    return get_table_value(location);
-    break;
-  
-  case page_subtype_t::Raw:
-    return *((byte*)location.pData + location.offset);
-    break;
-      
-  default:
-      return 0;
-      break;
-  }
-  return 0;
+  return get_value(map_page_offset_to_memory(page, valueAddress));
 }
 
 
@@ -308,10 +321,7 @@ void setPageValue(byte pageNum, uint16_t offset, byte value)
     break;
   
   case page_subtype_t::Raw:
-    if (offset < npage_size[pageNum])
-    {
-      *((byte*)location.pData + location.offset) = value;
-    }
+    *((byte*)location.pData + location.offset) = value;
     break;
       
   default:
@@ -321,20 +331,62 @@ void setPageValue(byte pageNum, uint16_t offset, byte value)
 
 namespace {
   FastCRC32 CRC32;
+
+  inline uint32_t initialize_crc(entity_address &address)
+  {
+    uint8_t startValue = get_value(address);
+    address.offset++;
+    return CRC32.crc32(&startValue, 1, false);
+  }
+
+  inline uint32_t compute_crc_block(entity_address &address)
+  {
+    uint8_t buffer[128];
+    uint8_t *pElement = buffer;  
+    uint8_t *pEnd = buffer + min(_countof(buffer), address.size-address.offset);     
+    while (pElement!=pEnd)
+    {
+      *pElement = get_value(address);
+      ++address.offset;
+      ++pElement;
+    }
+    return CRC32.crc32_upd(buffer, pEnd-buffer, false);
+  }
+
+  inline uint32_t compute_crc(entity_address &address, uint32_t crc)
+  {
+    while (address.offset<address.size)
+    {  
+      crc = compute_crc_block(address);
+    }
+    return crc;
+  }
+
+  inline uint32_t pad_crc(uint16_t padding, uint32_t crc)
+  {
+    uint8_t raw_value = 0u;
+    while (padding>0)
+    {
+      crc = CRC32.crc32_upd(&raw_value, 1, false);
+      --padding;
+    }
+    return crc;
+  }
 }
 /*
 Calculates and returns the CRC32 value of a given page of memory
 */
 uint32_t calculateCRC32(byte pageNum)
 {
-  byte raw_value = getPageValue(pageNum, 0);
-  uint32_t CRC32_val = CRC32.crc32(&raw_value, 1, false);
-  for(uint16_t x=1; x< npage_size[pageNum]; x++)
+  uint16_t totalOffset = 0;
+  entity_address location = map_page_offset_to_memory(pageNum, totalOffset);
+  uint32_t crc = initialize_crc(location);
+
+  while (location.type!=page_subtype_t::End)
   {
-    raw_value = getPageValue(pageNum, x);
-    CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
+    crc = compute_crc(location, crc);
+    totalOffset += location.size;
+    location = map_page_offset_to_memory(pageNum, totalOffset);
   }
-  //Do a manual reflection of the CRC32 value
-  CRC32_val = ~CRC32_val;  
-  return CRC32_val; 
+  return ~pad_crc(npage_size[pageNum] - totalOffset, crc);
 }
