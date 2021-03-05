@@ -11,17 +11,20 @@ const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,384,192,19
 
 namespace 
 {
-  enum struct page_subtype_t : uint8_t { Raw, Table, None, End };
+  enum struct entity_type : uint8_t { Raw, Table, None, End };
 
-  typedef struct
-  {
-    uint16_t size;
+  typedef struct entity_t {
     union {
       void *pData;
       table3D *pTable;
     };
+    uint16_t size;
+    entity_type type;
+  } entity_t;
+  typedef struct
+  {
+    entity_t entity;
     uint16_t offset;
-    page_subtype_t type;
   } entity_address;
 
   #define TABLE_VALUE_SIZE(size) (size*size)
@@ -29,19 +32,19 @@ namespace
   #define TABLE_AXISY_END(size) (TABLE_AXISX_END(size)+size)
   #define TABLE_SIZE(size) TABLE_AXISY_END(size)
 
-  #define END_ADDRESS entity_address { 0, { nullptr }, 0, .type = page_subtype_t::End }
+  #define END_ADDRESS entity_address { { nullptr, 0, entity_type::End },  0 }
 
   #define TABLE_ADDRESS(table, offset, size) \
     (offset<TABLE_SIZE(size) ? \
-      entity_address { TABLE_SIZE(size), { &table }, offset, .type = page_subtype_t::Table } \
+      entity_address { { &table, TABLE_SIZE(size), entity_type::Table }, offset } \
       : END_ADDRESS)
 
   #define RAW_ADDRESS(entity, offset) \
     (offset<sizeof(entity) ? \
-      entity_address { sizeof(entity), { &entity }, offset, .type = page_subtype_t::Raw } \
+      entity_address { { &entity, sizeof(entity), entity_type::Raw }, offset  } \
       : END_ADDRESS)
 
-  #define NO_ADDRESS(size, offset) { size, { nullptr }, offset, .type = page_subtype_t::None }
+  #define NO_ADDRESS(size, offset) { { nullptr, size, entity_type::None }, offset }
 
   // For some purposes a TS page is treated as a contiguous block of memory.
   // However, in Speeduino it's sometimes made up of multiple distinct and
@@ -197,15 +200,15 @@ namespace
   {
     if (location.offset < TABLE_VALUE_SIZE(_Size))
     {
-      return { location.pTable->values[OFFSET_TOVALUE_YINDEX(location.offset, _Size)] + OFFSET_TOVALUE_XINDEX(location.offset, _Size), table3D_section_t::Value };
+      return { location.entity.pTable->values[OFFSET_TOVALUE_YINDEX(location.offset, _Size)] + OFFSET_TOVALUE_XINDEX(location.offset, _Size), table3D_section_t::Value };
     }
     else if (location.offset < TABLE_AXISX_END(_Size))
     {
-      return { (byte*)(location.pTable->axisX + OFFSET_TOAXIS_XINDEX(location.offset, _Size)), table3D_section_t::axisX };
+      return { (byte*)(location.entity.pTable->axisX + OFFSET_TOAXIS_XINDEX(location.offset, _Size)), table3D_section_t::axisX };
     }
     else if (location.offset < TABLE_AXISY_END(_Size))
     {
-      return { (byte*)(location.pTable->axisY + OFFSET_TOAXIS_YINDEX(location.offset, _Size)), table3D_section_t::axisY };
+      return { (byte*)(location.entity.pTable->axisY + OFFSET_TOAXIS_YINDEX(location.offset, _Size)), table3D_section_t::axisY };
     }
     return { nullptr, table3D_section_t::None }; 
   }
@@ -226,7 +229,7 @@ namespace
     // (likely converting them to multiply & shift operations).
     //
     // So this is a massive performance win (2x to 3x).
-    switch (location.pTable->xSize)
+    switch (location.entity.pTable->xSize)
     {
       TO_TABLE_ADDRESS(16, location);
       TO_TABLE_ADDRESS(8, location);
@@ -245,10 +248,10 @@ namespace
         return *table_address.pValue;
 
       case table3D_section_t::axisX:
-        return byte((*table_address.pAxis) / getTableXAxisFactor(location.pTable)); 
+        return byte((*table_address.pAxis) / getTableXAxisFactor(location.entity.pTable)); 
       
       case table3D_section_t::axisY:
-        return byte((*table_address.pAxis) / getTableYAxisFactor(location.pTable)); 
+        return byte((*table_address.pAxis) / getTableYAxisFactor(location.entity.pTable)); 
       
       default: return 0; // no-op
     }
@@ -258,14 +261,14 @@ namespace
 
   inline uint8_t get_value(const entity_address &location)
   {
-    switch (location.type)
+    switch (location.entity.type)
     {
-      case page_subtype_t::Table:
+      case entity_type::Table:
         return get_table_value(location);
         break;
   
-      case page_subtype_t::Raw:
-        return *((byte*)location.pData + location.offset);
+      case entity_type::Raw:
+        return *((byte*)location.entity.pData + location.offset);
         break;
 
       default: return 0U;
@@ -283,16 +286,16 @@ namespace
         break;
 
       case table3D_section_t::axisX:
-        *table_address.pAxis = (int)(value) * getTableXAxisFactor(location.pTable); 
+        *table_address.pAxis = (int)(value) * getTableXAxisFactor(location.entity.pTable); 
         break;
       
       case table3D_section_t::axisY:
-        *table_address.pAxis= (int)(value) * getTableYAxisFactor(location.pTable);
+        *table_address.pAxis= (int)(value) * getTableYAxisFactor(location.entity.pTable);
         break;
       
       default: ; // no-op
     }
-    location.pTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+    location.entity.pTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
   }
 }
 
@@ -314,14 +317,14 @@ void setPageValue(byte pageNum, uint16_t offset, byte value)
 {
   entity_address location = map_page_offset_to_memory(pageNum, offset);
 
-  switch (location.type)
+  switch (location.entity.type)
   {
-  case page_subtype_t::Table:
+  case entity_type::Table:
     set_table_value(location, value);
     break;
   
-  case page_subtype_t::Raw:
-    *((byte*)location.pData + location.offset) = value;
+  case entity_type::Raw:
+    *((byte*)location.entity.pData + location.offset) = value;
     break;
       
   default:
@@ -343,7 +346,7 @@ namespace {
   {
     uint8_t buffer[128];
     uint8_t *pElement = buffer;  
-    uint8_t *pEnd = buffer + min(_countof(buffer), address.size-address.offset);     
+    uint8_t *pEnd = buffer + min(_countof(buffer), address.entity.size-address.offset);     
     while (pElement!=pEnd)
     {
       *pElement = get_value(address);
@@ -355,7 +358,7 @@ namespace {
 
   inline uint32_t compute_crc(entity_address &address, uint32_t crc)
   {
-    while (address.offset<address.size)
+    while (address.offset<address.entity.size)
     {  
       crc = compute_crc_block(address);
     }
@@ -382,10 +385,10 @@ uint32_t calculateCRC32(byte pageNum)
   entity_address location = map_page_offset_to_memory(pageNum, totalOffset);
   uint32_t crc = initialize_crc(location);
 
-  while (location.type!=page_subtype_t::End)
+  while (location.entity.type!=entity_type::End)
   {
     crc = compute_crc(location, crc);
-    totalOffset += location.size;
+    totalOffset += location.entity.size;
     location = map_page_offset_to_memory(pageNum, totalOffset);
   }
   return ~pad_crc(npage_size[pageNum] - totalOffset, crc);
