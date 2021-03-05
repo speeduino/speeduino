@@ -25,6 +25,11 @@ namespace
 
   #define NO_ADDRESS { { nullptr }, 0, .type = page_subtype_t::None }
     
+  #define TABLE_VALUE_SIZE(size) (size*size)
+  #define TABLE_AXISX_END(size) (TABLE_VALUE_SIZE(size)+size)
+  #define TABLE_AXISY_END(size) (TABLE_AXISX_END(size)+size)
+  #define TABLE_SIZE(size) TABLE_AXISY_END(size)
+
   // For some purposes a TS page is treated as a contiguous block of memory.
   // However, in Speeduino it's sometimes made up of multiple distinct and
   // non-contiguous chunks of data. This maps from the page address (number + offset)
@@ -170,22 +175,25 @@ namespace
     table3D_section_t section;
   } table_address_t;
 
+  #define OFFSET_TOVALUE_YINDEX(offset, size) ((size-1) - (offset / size))
+  #define OFFSET_TOVALUE_XINDEX(offset, size) (offset % size)
+  #define OFFSET_TOAXIS_XINDEX(offset, size) (offset - (size*size))
+  #define OFFSET_TOAXIS_YINDEX(offset, size) ((size-1) - (offset - ((size*size) + size)))
+
   template <int8_t _Size>
   inline table_address_t to_table_address(const entity_address &location)
   {
-    constexpr int16_t area = _Size * _Size;
-
-    if (location.offset < area)
+    if (location.offset < TABLE_VALUE_SIZE(_Size))
     {
-      return { location.pTable->values[(_Size-1) - (location.offset / _Size)] + (location.offset % _Size), table3D_section_t::Value };
+      return { location.pTable->values[OFFSET_TOVALUE_YINDEX(location.offset, _Size)] + OFFSET_TOVALUE_XINDEX(location.offset, _Size), table3D_section_t::Value };
     }
-    else if (location.offset <  area+_Size)
+    else if (location.offset < TABLE_AXISX_END(_Size))
     {
-      return { (byte*)(location.pTable->axisX +(location.offset - area)), table3D_section_t::axisX };
+      return { (byte*)(location.pTable->axisX + OFFSET_TOAXIS_XINDEX(location.offset, _Size)), table3D_section_t::axisX };
     }
-    else if (location.offset < area+_Size+_Size)
+    else if (location.offset < TABLE_AXISY_END(_Size))
     {
-      return { (byte*)(location.pTable->axisY + ((_Size-1) - (location.offset - (area + _Size)))), table3D_section_t::axisY };
+      return { (byte*)(location.pTable->axisY + OFFSET_TOAXIS_YINDEX(location.offset, _Size)), table3D_section_t::axisY };
     }
     return { nullptr, table3D_section_t::None }; 
   }
