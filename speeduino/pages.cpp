@@ -342,6 +342,11 @@ namespace {
     return CRC32.crc32(&startValue, 1, false);
   }
 
+  inline uint32_t compute_raw_crc(entity_address &address)
+  {
+    return CRC32.crc32_upd(((uint8_t*)address.entity.pData)+address.offset, address.entity.size-address.offset, false);
+  }
+
   inline uint32_t compute_crc_block(entity_address &address)
   {
     uint8_t buffer[128];
@@ -358,11 +363,18 @@ namespace {
 
   inline uint32_t compute_crc(entity_address &address, uint32_t crc)
   {
-    while (address.offset<address.entity.size)
-    {  
-      crc = compute_crc_block(address);
+    if (address.entity.type==entity_type::Raw)
+    {
+      return compute_raw_crc(address);
     }
-    return crc;
+    else
+    {
+      while (address.offset<address.entity.size)
+      {  
+        crc = compute_crc_block(address);
+      }
+      return crc;
+    }
   }
 
   inline uint32_t pad_crc(uint16_t padding, uint32_t crc)
