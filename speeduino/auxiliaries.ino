@@ -243,7 +243,7 @@ void vvtControl()
       //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
       if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt1Duty < 200) ) { currentStatus.vvt1Duty = 0; }
 
-	  vvt1_pwm_cur_value = halfpercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
+      vvt1_pwm_cur_value = halfpercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
 
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
       {
@@ -276,16 +276,16 @@ void vvtControl()
       else
       {
         //This is dumb, but need to convert the current angle into a long pointer. By adjusting amoung of bit shift, we can adjust how much PID weigths affect.
-		//VVT target angle has accurasy of 0.5 and current angle has accurasy of 1 so that's why different amount of bit shift
+        //VVT target angle has accurasy of 0.5 and current angle has accurasy of 1 so that's why different amount of bit shift
         vvt_pid_target_angle = (unsigned long)currentStatus.vvt1TargetAngle <<  3;
-		vvt_pid_current_angle = (unsigned long)currentStatus.vvt1Angle <<  4;
+        vvt_pid_current_angle = (unsigned long)currentStatus.vvt1Angle <<  4;
 
         //If not already at target angle, calculate new value from PID
         bool PID_compute = vvtPID.Compute(false);
         //vvtPID.Compute2(currentStatus.vvt1TargetAngle, currentStatus.vvt1Angle, false);
         //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
         //if (currentStatus.vvt1Angle > currentStatus.vvt1TargetAngle) { vvt_pwm_target_value = 0; }
-		if(PID_compute == true) { vvt1_pwm_cur_value = halfpercentage(currentStatus.vvt1Duty, vvt_pwm_max_count); }
+        if(PID_compute == true) { vvt1_pwm_cur_value = halfpercentage(currentStatus.vvt1Duty, vvt_pwm_max_count); }
       }
 
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
@@ -305,9 +305,9 @@ void vvtControl()
         else
         {
           //This is dumb, but need to convert the current angle into a long pointer. By adjusting amoung of bit shift, we can adjust how much PID weigths affect.
-		  //VVT target angle has accurasy of 0.5 and current angle has accurasy of 1 so that's why different amount of bit shift
+          //VVT target angle has accurasy of 0.5 and current angle has accurasy of 1 so that's why different amount of bit shift
           vvt2_pid_target_angle = (unsigned long)currentStatus.vvt2TargetAngle << 3;
-		  vvt2_pid_current_angle = (unsigned long)currentStatus.vvt2Angle << 4;
+          vvt2_pid_current_angle = (unsigned long)currentStatus.vvt2Angle << 4;
           //If not already at target angle, calculate new value from PID
           bool PID_compute = vvt2PID.Compute(false);
           if(PID_compute == true) { vvt2_pwm_cur_value = halfpercentage(currentStatus.vvt2Duty, vvt_pwm_max_count); }
