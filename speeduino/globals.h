@@ -634,10 +634,9 @@ struct statuses {
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
-  //int8_t vvt1Angle;
-  long vvt1Angle;
+  int8_t vvt1Angle;
   byte vvt1TargetAngle;
-  byte vvt1Duty;
+  long vvt1Duty; //Has to be a long for PID calcs (CL VVT control)
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss; /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
@@ -648,9 +647,9 @@ struct statuses {
   byte engineProtectStatus;
   byte wmiPW;
   bool wmiEmpty;
-  long vvt2Angle;
+  int8_t vvt2Angle;
   byte vvt2TargetAngle;
-  byte vvt2Duty;
+  long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
   byte outputsStatus;
   byte TS_SD_Status; //TunerStudios SD card status
 };

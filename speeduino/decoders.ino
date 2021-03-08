@@ -529,7 +529,7 @@ void triggerSec_missingTooth()
       curAngle -= configPage4.triggerAngle; //Value at TDC
       if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCLMinAng; }
 
-      currentStatus.vvt1Angle = curAngle;
+      currentStatus.vvt1Angle = int8_t (curAngle); //vvt1Angle is only int8, but +/-127 degrees is enough for VVT control
     }
   } //Trigger filter
 }
@@ -554,7 +554,7 @@ void triggerThird_missingTooth()
     while(curAngle > 360) { curAngle -= 360; }
     curAngle -= configPage4.triggerAngle; //Value at TDC
     if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CLMinAng; }
-    currentStatus.vvt2Angle = curAngle;
+    currentStatus.vvt2Angle = int8_t (curAngle); //vvt1Angle is only int8, but +/-127 degrees is enough for VVT control
   } //Trigger filter
 }
 

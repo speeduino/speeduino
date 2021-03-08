@@ -72,12 +72,12 @@ volatile bool vvt1_max_pwm;
 volatile bool vvt2_max_pwm;
 volatile char nextVVT;
 unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
-volatile unsigned int vvt1_pwm_cur_value;
-volatile unsigned int vvt2_pwm_cur_value;
-long vvt1_pwm_value;
-long vvt2_pwm_value;
+long vvt1_pwm_cur_value;
+long vvt2_pwm_cur_value;
 long vvt_pid_target_angle;
 long vvt2_pid_target_angle;
+long vvt_pid_current_angle;
+long vvt2_pid_current_angle;
 //long vvt_pid_current_angle;
 static inline void boostInterrupt();
 static inline void vvtInterrupt();

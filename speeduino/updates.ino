@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    17
+  #define CURRENT_DATA_VERSION    18
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -451,10 +451,6 @@ void doUpdates()
 
     //Old use as On/Off selection is removed, so change VVT mode to On/Off based on that
     if(configPage6.unused_bit = 1) { configPage6.vvtMode == VVT_MODE_ONOFF; }
-    //VVT2 added, so default values and disable it
-    configPage10.vvt2Enabled = 0;
-    configPage4.vvt2PWMdir = 0;
-    configPage10.TrigEdgeThrd = 0;
 
     configPage6.iacPWMrun = false; // just in case. This should be false anyways, but sill.
     configPage2.useDwellMap = 0; //Dwell map added, use old fixed value as default
@@ -462,6 +458,30 @@ void doUpdates()
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 17);
   }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 17)
+  {
+    //VVT stuff has now 0.5 accurasy, so shift values in vvt table by one.
+    for(int x=0; x<8; x++)
+    {
+      for(int y=0; y<8; y++)
+      {
+        vvtTable.values[x][y] = vvtTable.values[x][y] << 1;
+      }
+    }
+    configPage10.vvtCLholdDuty = configPage10.vvtCLholdDuty << 1;
+    configPage10.vvtCLminDuty = configPage10.vvtCLminDuty << 1;
+    configPage10.vvtCLmaxDuty = configPage10.vvtCLmaxDuty << 1;
+
+    //VVT2 added, so default values and disable it
+    configPage10.vvt2Enabled = 0;
+    configPage4.vvt2PWMdir = 0;
+    configPage10.TrigEdgeThrd = 0;
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 18);
+  }
+
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
   {

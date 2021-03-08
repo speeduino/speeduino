@@ -12,8 +12,8 @@ A full copy of the license may be found in the projects root directory
 //Old PID method. Retained incase the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
 integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage10.boostSens, &configPage10.boostIntv, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
-integerPID vvtPID(&currentStatus.vvt1Angle, &vvt1_pwm_value, &vvt_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
-integerPID vvt2PID(&currentStatus.vvt2Angle, &vvt2_pwm_value, &vvt2_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPID vvtPID(&vvt_pid_current_angle, &currentStatus.vvt1Duty, &vvt_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPID vvt2PID(&vvt2_pid_current_angle, &currentStatus.vvt2Duty, &vvt2_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 /*
 Fan control
@@ -106,13 +106,13 @@ void initialiseAuxPWM()
 
     if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
     {
-      vvtPID.SetOutputLimits(percentage(configPage10.vvtCLminDuty, vvt_pwm_max_count), percentage(configPage10.vvtCLmaxDuty, vvt_pwm_max_count));
+      vvtPID.SetOutputLimits( (configPage10.vvtCLminDuty), (configPage10.vvtCLmaxDuty) );
       vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
       vvtPID.SetSampleTime(33); //30Hz is 33,33ms
       vvtPID.SetMode(AUTOMATIC); //Turn PID on
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
       {
-        vvt2PID.SetOutputLimits(percentage(configPage10.vvtCLminDuty, vvt_pwm_max_count), percentage(configPage10.vvtCLmaxDuty, vvt_pwm_max_count));
+        vvt2PID.SetOutputLimits( (configPage10.vvtCLminDuty), (configPage10.vvtCLmaxDuty) );
         vvt2PID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
         vvt2PID.SetSampleTime(33); //30Hz is 33,33ms
         vvt2PID.SetMode(AUTOMATIC); //Turn PID on
@@ -120,9 +120,9 @@ void initialiseAuxPWM()
     }
 
     currentStatus.vvt1Duty = 0;
-    vvt1_pwm_value = 0;
+    vvt1_pwm_cur_value = 0;
     currentStatus.vvt2Duty = 0;
-    vvt2_pwm_value = 0;
+    vvt2_pwm_cur_value = 0;
     ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
   }
   if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1) )
@@ -135,7 +135,7 @@ void initialiseAuxPWM()
     #endif
     currentStatus.wmiEmpty = 0;
     currentStatus.wmiPW = 0;
-    vvt1_pwm_value = 0;
+    vvt1_pwm_cur_value = 0;
     ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
   }
 
@@ -241,9 +241,9 @@ void vvtControl()
       else { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
 
       //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
-      if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt1Duty < 100) ) { currentStatus.vvt1Duty = 0; }
+      if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt1Duty < 200) ) { currentStatus.vvt1Duty = 0; }
 
-      vvt1_pwm_value = percentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
+	  vvt1_pwm_cur_value = halfpercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
 
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
       {
@@ -252,9 +252,9 @@ void vvtControl()
         else { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
 
         //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
-        if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt2Duty < 100) ) { currentStatus.vvt2Duty = 0; }
+        if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt2Duty < 200) ) { currentStatus.vvt2Duty = 0; }
 
-        vvt2_pwm_value = percentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
+        vvt2_pwm_cur_value = halfpercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
       }
 
     } //Open loop
@@ -267,23 +267,25 @@ void vvtControl()
       if( (vvtCounter & 31) == 1) { vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD); } //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
 
       //Check that we're not already at the angle we want to be
-      if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt1TargetAngle == currentStatus.vvt1Angle) )
+      if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt1TargetAngle == currentStatus.vvt1Angle << 1) )
       {
         currentStatus.vvt1Duty = configPage10.vvtCLholdDuty;
-        vvt1_pwm_value = percentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
+        vvt1_pwm_cur_value = halfpercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
         vvtPID.Initialize();
       }
       else
       {
-        //This is dumb, but need to convert the current angle into a long pointer
-        vvt_pid_target_angle = currentStatus.vvt1TargetAngle;
+        //This is dumb, but need to convert the current angle into a long pointer. By adjusting amoung of bit shift, we can adjust how much PID weigths affect.
+		//VVT target angle has accurasy of 0.5 and current angle has accurasy of 1 so that's why different amount of bit shift
+        vvt_pid_target_angle = (unsigned long)currentStatus.vvt1TargetAngle <<  3;
+		vvt_pid_current_angle = (unsigned long)currentStatus.vvt1Angle <<  4;
 
         //If not already at target angle, calculate new value from PID
         bool PID_compute = vvtPID.Compute(false);
         //vvtPID.Compute2(currentStatus.vvt1TargetAngle, currentStatus.vvt1Angle, false);
         //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
         //if (currentStatus.vvt1Angle > currentStatus.vvt1TargetAngle) { vvt_pwm_target_value = 0; }
-        if(PID_compute == true) { currentStatus.vvt1Duty = (vvt1_pwm_value * 100) / vvt_pwm_max_count; }
+		if(PID_compute == true) { vvt1_pwm_cur_value = halfpercentage(currentStatus.vvt1Duty, vvt_pwm_max_count); }
       }
 
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
@@ -294,19 +296,21 @@ void vvtControl()
         if( (vvtCounter & 31) == 1) { vvt2PID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD); } //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
 
         //Check that we're not already at the angle we want to be
-        if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt2TargetAngle == currentStatus.vvt2Angle) )
+        if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt2TargetAngle == currentStatus.vvt2Angle << 1) )
         {
           currentStatus.vvt2Duty = configPage10.vvtCLholdDuty;
-          vvt2_pwm_value = percentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
+          vvt2_pwm_cur_value = halfpercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
           vvt2PID.Initialize();
         }
         else
         {
-          //This is dumb, but need to convert the current angle into a long pointer
-          vvt2_pid_target_angle = currentStatus.vvt2TargetAngle;
+          //This is dumb, but need to convert the current angle into a long pointer. By adjusting amoung of bit shift, we can adjust how much PID weigths affect.
+		  //VVT target angle has accurasy of 0.5 and current angle has accurasy of 1 so that's why different amount of bit shift
+          vvt2_pid_target_angle = (unsigned long)currentStatus.vvt2TargetAngle << 3;
+		  vvt2_pid_current_angle = (unsigned long)currentStatus.vvt2Angle << 4;
           //If not already at target angle, calculate new value from PID
           bool PID_compute = vvt2PID.Compute(false);
-          if(PID_compute == true) { currentStatus.vvt2Duty = (vvt2_pwm_value * 100) / vvt_pwm_max_count; }
+          if(PID_compute == true) { vvt2_pwm_cur_value = halfpercentage(currentStatus.vvt2Duty, vvt_pwm_max_count); }
         }
       }
       //currentStatus.vvt1Duty = 0;
@@ -325,7 +329,7 @@ void vvtControl()
       vvt2_max_pwm = false;
       DISABLE_VVT_TIMER();
     }
-    else if( (currentStatus.vvt1Duty >= 100) && (currentStatus.vvt2Duty >= 100) )
+    else if( (currentStatus.vvt1Duty >= 200) && (currentStatus.vvt2Duty >= 200) )
     {
       //Make sure solenoid is on (100% duty)
       VVT1_PIN_ON();
@@ -340,8 +344,8 @@ void vvtControl()
     {
       //Duty cycle is between 0 and 100. Make sure the timer is enabled
       ENABLE_VVT_TIMER();
-      if(currentStatus.vvt1Duty < 100) { vvt1_max_pwm = false; }
-      if(currentStatus.vvt2Duty < 100) { vvt2_max_pwm = false; }
+      if(currentStatus.vvt1Duty < 200) { vvt1_max_pwm = false; }
+      if(currentStatus.vvt2Duty < 200) { vvt2_max_pwm = false; }
     }
  
   }
@@ -350,9 +354,9 @@ void vvtControl()
     // Disable timer channel
     DISABLE_VVT_TIMER(); 
     currentStatus.vvt1Duty = 0;
-    vvt1_pwm_value = 0;
+    vvt1_pwm_cur_value = 0;
     currentStatus.vvt2Duty = 0;
-    vvt2_pwm_value = 0;
+    vvt2_pwm_cur_value = 0;
     vvt1_pwm_state = false;
     vvt1_max_pwm = false;
     vvt2_pwm_state = false;
@@ -456,7 +460,7 @@ void wmiControl()
     }
 
     currentStatus.wmiPW = wmiPW;
-    vvt1_pwm_value = wmiPW;
+    vvt1_pwm_cur_value = wmiPW;
 
     if(wmiPW == 0)
     {
@@ -521,30 +525,26 @@ void boostDisable()
 {
   if ( ((vvt1_pwm_state == false) || (vvt1_max_pwm == true)) && ((vvt2_pwm_state == false) || (vvt2_max_pwm == true)) )
   {
-    if( (vvt1_pwm_value > 0) && (vvt1_max_pwm == false) ) //Don't toggle if at 0%
+    if( (vvt1_pwm_cur_value > 0) && (vvt1_max_pwm == false) ) //Don't toggle if at 0%
     {
       VVT1_PIN_ON();
       vvt1_pwm_state = true;
     }
-    if( (vvt2_pwm_value > 0) && (vvt2_max_pwm == false) ) //Don't toggle if at 0%
+    if( (vvt2_pwm_cur_value > 0) && (vvt2_max_pwm == false) ) //Don't toggle if at 0%
     {
       VVT2_PIN_ON();
       vvt2_pwm_state = true;
     }
 
-    if( (vvt1_pwm_state == true) && ((vvt1_pwm_value <= vvt2_pwm_value) || (vvt2_pwm_state == false)) )
+    if( (vvt1_pwm_state == true) && ((vvt1_pwm_cur_value <= vvt2_pwm_cur_value) || (vvt2_pwm_state == false)) )
     {
-      VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt1_pwm_value;
-      vvt1_pwm_cur_value = vvt1_pwm_value;
-      vvt2_pwm_cur_value = vvt2_pwm_value;
-      if (vvt1_pwm_value == vvt2_pwm_value) { nextVVT = 2; } //Next event is for both PWM
+      VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt1_pwm_cur_value;
+      if (vvt1_pwm_cur_value == vvt2_pwm_cur_value) { nextVVT = 2; } //Next event is for both PWM
       else { nextVVT = 0; } //Next event is for PWM0
     }
     else if( vvt2_pwm_state == true )
     {
-      VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt2_pwm_value;
-      vvt1_pwm_cur_value = vvt1_pwm_value;
-      vvt2_pwm_cur_value = vvt2_pwm_value;
+      VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt2_pwm_cur_value;
       nextVVT = 1; //Next event is for PWM1
     }
     else { VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt_pwm_max_count; } //Shouldn't ever get here
@@ -553,7 +553,7 @@ void boostDisable()
   {
     if(nextVVT == 0)
     {
-      if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt1_pwm_cur_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         VVT1_PIN_OFF();
         vvt1_pwm_state = false;
@@ -570,7 +570,7 @@ void boostDisable()
     }
     else if (nextVVT == 1)
     {
-      if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt2_pwm_cur_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         VVT2_PIN_OFF();
         vvt2_pwm_state = false;
@@ -587,7 +587,7 @@ void boostDisable()
     }
     else
     {
-      if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt1_pwm_cur_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         VVT1_PIN_OFF();
         vvt1_pwm_state = false;
@@ -595,7 +595,7 @@ void boostDisable()
         VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value);
       }
       else { vvt1_max_pwm = true; }
-      if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvt2_pwm_cur_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         VVT1_PIN_OFF();
         vvt2_pwm_state = false;
