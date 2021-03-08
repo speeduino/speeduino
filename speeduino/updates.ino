@@ -449,9 +449,6 @@ void doUpdates()
       EEPROM.update(x, EEPROM.read(x-112));
     }
 
-    //Old use as On/Off selection is removed, so change VVT mode to On/Off based on that
-    if(configPage6.unused_bit = 1) { configPage6.vvtMode == VVT_MODE_ONOFF; }
-
     configPage6.iacPWMrun = false; // just in case. This should be false anyways, but sill.
     configPage2.useDwellMap = 0; //Dwell map added, use old fixed value as default
 
@@ -477,6 +474,9 @@ void doUpdates()
     configPage10.vvt2Enabled = 0;
     configPage4.vvt2PWMdir = 0;
     configPage10.TrigEdgeThrd = 0;
+
+    //Old use as On/Off selection is removed, so change VVT mode to On/Off based on that
+    if(configPage6.unused_bit = 1) { configPage6.vvtMode == VVT_MODE_ONOFF; }
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 18);
