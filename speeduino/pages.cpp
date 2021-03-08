@@ -32,17 +32,18 @@ namespace
   #define TABLE_AXISY_END(size) (TABLE_AXISX_END(size)+size)
   #define TABLE_SIZE(size) TABLE_AXISY_END(size)
 
+  #define TABLE16_SIZE TABLE_SIZE(16)
+  #define TABLE8_SIZE TABLE_SIZE(8)
+  #define TABLE6_SIZE TABLE_SIZE(6)
+  #define TABLE4_SIZE TABLE_SIZE(4)
+
   #define END_ADDRESS entity_address { { nullptr, 0, entity_type::End },  0 }
 
   #define TABLE_ADDRESS(table, offset, size) \
-    (offset<TABLE_SIZE(size) ? \
-      entity_address { { &table, TABLE_SIZE(size), entity_type::Table }, offset } \
-      : END_ADDRESS)
+      entity_address { { &table, TABLE_SIZE(size), entity_type::Table }, offset }
 
   #define RAW_ADDRESS(entity, offset) \
-    (offset<sizeof(entity) ? \
-      entity_address { { &entity, sizeof(entity), entity_type::Raw }, offset  } \
-      : END_ADDRESS)
+      entity_address { { &entity, sizeof(entity), entity_type::Raw }, offset  }
 
   #define NO_ADDRESS(size, offset) { { nullptr, size, entity_type::None }, offset }
 
@@ -55,119 +56,152 @@ namespace
     switch (pageNumber)
     {
       case veMapPage:
-        return TABLE_ADDRESS(fuelTable, offset, 16);
+        if (offset < TABLE16_SIZE)
+        {
+          return TABLE_ADDRESS(fuelTable, offset, 16);
+        }
         break;
 
       case ignMapPage: //Ignition settings page (Page 2)
-        return TABLE_ADDRESS(ignitionTable, offset, 16);
+        if (offset < TABLE16_SIZE)
+        {
+          return TABLE_ADDRESS(ignitionTable, offset, 16);
+        }
         break;
 
       case afrMapPage: //Air/Fuel ratio target settings page
-        return TABLE_ADDRESS(afrTable, offset, 16);
+        if (offset < TABLE16_SIZE)
+        {
+          return TABLE_ADDRESS(afrTable, offset, 16);
+        }
         break;
 
       case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
-        if (offset < 80) //New value is on the Y (TPS) axis of the boost table
+        if (offset < TABLE8_SIZE) //New value is on the Y (TPS) axis of the boost table
         {
           return TABLE_ADDRESS(boostTable, offset, 8);
         }
-        else if (offset < 160)
+        if (offset < TABLE8_SIZE*2)
         {
           return TABLE_ADDRESS(vvtTable, offset-80, 8);
         }
-        else  if (offset < 240)
+        else  if (offset < TABLE8_SIZE*3)
         {
           return TABLE_ADDRESS(stagingTable, offset-160, 8);
         }
         break;
 
       case seqFuelPage:
-        if (offset < 48) 
+        if (offset < TABLE6_SIZE) 
         {
           return TABLE_ADDRESS(trim1Table, offset, 6);
         }
         //Trim table 2
-        else if (offset < 96) 
+        if (offset < TABLE6_SIZE*2) 
         { 
           return TABLE_ADDRESS(trim2Table, offset-48, 6);
         }
         //Trim table 3
-        else if (offset < 144)
+        if (offset < TABLE6_SIZE*3)
         {
           return TABLE_ADDRESS(trim3Table, offset-96, 6);
         }
         //Trim table 4
-        else if (offset < 192)
+        if (offset < TABLE6_SIZE*4)
         {
           return TABLE_ADDRESS(trim4Table, offset-144, 6);
         }
         //Trim table 5
-        else if (offset < 240)
+        if (offset < TABLE6_SIZE*5)
         {
           return TABLE_ADDRESS(trim5Table, offset-192, 6);
         }
         //Trim table 6
-        else if (offset < 288)
+        if (offset < TABLE6_SIZE*6)
         {
           return TABLE_ADDRESS(trim6Table, offset-240, 6);
         }
         //Trim table 7
-        else if (offset < 336)
+        if (offset < TABLE6_SIZE*7)
         {
           return TABLE_ADDRESS(trim7Table, offset-288, 6);
         }
         //Trim table 8
-        else if (offset<384)
+        if (offset<TABLE6_SIZE*8)
         {
           return TABLE_ADDRESS(trim8Table, offset-336, 6);
         }
         break;
 
       case fuelMap2Page:
-        return TABLE_ADDRESS(fuelTable2, offset, 16);
+        if (offset < TABLE16_SIZE)
+        {
+          return TABLE_ADDRESS(fuelTable2, offset, 16);
+        }
         break;
 
       case wmiMapPage:
-        if (offset < 80) 
+        if (offset < TABLE8_SIZE) 
         {
           return TABLE_ADDRESS(wmiTable, offset, 8);
         }
-        else if (offset<160)
+        if (offset<TABLE8_SIZE+80)
         {
-          return NO_ADDRESS(160-80, offset-80);
+          return NO_ADDRESS(80, offset-TABLE8_SIZE);
         }
-        else if (offset<184)
+        if (offset<TABLE8_SIZE+80+TABLE4_SIZE)
         {
           return TABLE_ADDRESS(dwellTable, offset-160, 4);
         }
         break;
       
       case ignMap2Page:
-        return TABLE_ADDRESS(ignitionTable2, offset, 16);
+        if (offset < TABLE16_SIZE)
+        {
+          return TABLE_ADDRESS(ignitionTable2, offset, 16);
+        }
         break;
 
       case veSetPage: 
-        return RAW_ADDRESS(configPage2, offset);
+        if (offset<sizeof(configPage2))
+        {
+          return RAW_ADDRESS(configPage2, offset);
+        }
         break;
 
       case ignSetPage: 
-        return RAW_ADDRESS(configPage4, offset);
+        if (offset<sizeof(configPage4))
+        {
+          return RAW_ADDRESS(configPage4, offset);
+        }
         break;
 
       case afrSetPage: 
-      return RAW_ADDRESS(configPage6, offset);
+        if (offset<sizeof(configPage6))
+        {
+          return RAW_ADDRESS(configPage6, offset);
+        }
         break;
 
       case canbusPage:  
-        return RAW_ADDRESS(configPage9, offset);
+        if (offset<sizeof(configPage9))
+        {
+          return RAW_ADDRESS(configPage9, offset);
+        }
         break;
 
       case warmupPage: 
-        return RAW_ADDRESS(configPage10, offset);
+        if (offset<sizeof(configPage10))
+        {
+          return RAW_ADDRESS(configPage10, offset);
+        }
         break;
 
       case progOutsPage: 
-        return RAW_ADDRESS(configPage13, offset);
+        if (offset<sizeof(configPage13))
+        {
+          return RAW_ADDRESS(configPage13, offset);
+        }
         break;      
 
       default:
