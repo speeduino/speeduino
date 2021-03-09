@@ -11,21 +11,18 @@ const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,384,192,19
 
 namespace 
 {
-  enum struct entity_type : uint8_t { Raw, Table, None, End };
+  enum entity_type { Raw, Table, None, End };
 
   typedef struct entity_t {
     union {
       void *pData;
       table3D *pTable;
     };
+    uint8_t page;
+    uint16_t start;
     uint16_t size;
     entity_type type;
   } entity_t;
-  typedef struct
-  {
-    entity_t entity;
-    uint16_t offset;
-  } entity_address;
 
   #define TABLE_VALUE_SIZE(size) (size*size)
   #define TABLE_AXISX_END(size) (TABLE_VALUE_SIZE(size)+size)
@@ -37,170 +34,180 @@ namespace
   #define TABLE6_SIZE TABLE_SIZE(6)
   #define TABLE4_SIZE TABLE_SIZE(4)
 
-  #define END_ADDRESS entity_address { { nullptr, 0, entity_type::End },  0 }
+  inline entity_t page_end_entity(byte page)
+  {
+    return { { nullptr }, .page = page, .start = 0, .size = 0, .type = entity_type::End };
+  }
 
-  #define TABLE_ADDRESS(table, offset, size) \
-      entity_address { { &table, TABLE_SIZE(size), entity_type::Table }, offset }
+  inline entity_t table_entity(table3D *pTable, byte page, uint16_t start)
+  {
+      return { { pTable }, .page = page, .start = start, .size = TABLE_SIZE((uint16_t)pTable->xSize), .type = entity_type::Table };
+  }
+  
+  inline entity_t raw_entity(void *pEntity, byte page, uint16_t start, uint16_t size)
+  {
+    return { { pEntity }, .page = page, .start = start, .size = size, .type = entity_type::Raw };
+  }
 
-  #define RAW_ADDRESS(entity, offset) \
-      entity_address { { &entity, sizeof(entity), entity_type::Raw }, offset  }
-
-  #define NO_ADDRESS(size, offset) { { nullptr, size, entity_type::None }, offset }
+  inline entity_t no_entity(byte page, uint16_t start, uint16_t size)
+  {
+    return { nullptr, .page = page, .start = start, .size = size, .type = entity_type::None };
+  }
 
   // For some purposes a TS page is treated as a contiguous block of memory.
   // However, in Speeduino it's sometimes made up of multiple distinct and
   // non-contiguous chunks of data. This maps from the page address (number + offset)
   // to the type & position of the corresponding memory block.
-  inline entity_address map_page_offset_to_memory(uint8_t pageNumber, uint16_t offset)
+  inline entity_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
   {
     switch (pageNumber)
     {
       case veMapPage:
         if (offset < TABLE16_SIZE)
         {
-          return TABLE_ADDRESS(fuelTable, offset, 16);
+          return table_entity(&fuelTable, veMapPage, 0);
         }
         break;
 
       case ignMapPage: //Ignition settings page (Page 2)
         if (offset < TABLE16_SIZE)
         {
-          return TABLE_ADDRESS(ignitionTable, offset, 16);
+          return table_entity(&ignitionTable, ignMapPage, 0);
         }
         break;
 
       case afrMapPage: //Air/Fuel ratio target settings page
         if (offset < TABLE16_SIZE)
         {
-          return TABLE_ADDRESS(afrTable, offset, 16);
+          return table_entity(&afrTable, afrMapPage, 0);
         }
         break;
 
       case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
         if (offset < TABLE8_SIZE) //New value is on the Y (TPS) axis of the boost table
         {
-          return TABLE_ADDRESS(boostTable, offset, 8);
+          return table_entity(&boostTable, boostvvtPage, 0);
         }
         if (offset < TABLE8_SIZE*2)
         {
-          return TABLE_ADDRESS(vvtTable, offset-80, 8);
+          return table_entity(&vvtTable, boostvvtPage, TABLE8_SIZE);
         }
         else  if (offset < TABLE8_SIZE*3)
         {
-          return TABLE_ADDRESS(stagingTable, offset-160, 8);
+          return table_entity(&stagingTable, boostvvtPage, TABLE8_SIZE*2);
         }
         break;
 
       case seqFuelPage:
         if (offset < TABLE6_SIZE) 
         {
-          return TABLE_ADDRESS(trim1Table, offset, 6);
+          return table_entity(&trim1Table, seqFuelPage, 0);
         }
         //Trim table 2
         if (offset < TABLE6_SIZE*2) 
         { 
-          return TABLE_ADDRESS(trim2Table, offset-48, 6);
+          return table_entity(&trim2Table, seqFuelPage, TABLE6_SIZE);
         }
         //Trim table 3
         if (offset < TABLE6_SIZE*3)
         {
-          return TABLE_ADDRESS(trim3Table, offset-96, 6);
+          return table_entity(&trim3Table, seqFuelPage, TABLE6_SIZE*2);
         }
         //Trim table 4
         if (offset < TABLE6_SIZE*4)
         {
-          return TABLE_ADDRESS(trim4Table, offset-144, 6);
+          return table_entity(&trim4Table, seqFuelPage, TABLE6_SIZE*3);
         }
         //Trim table 5
         if (offset < TABLE6_SIZE*5)
         {
-          return TABLE_ADDRESS(trim5Table, offset-192, 6);
+          return table_entity(&trim5Table, seqFuelPage, TABLE6_SIZE*4);
         }
         //Trim table 6
         if (offset < TABLE6_SIZE*6)
         {
-          return TABLE_ADDRESS(trim6Table, offset-240, 6);
+          return table_entity(&trim6Table, seqFuelPage, TABLE6_SIZE*5);
         }
         //Trim table 7
         if (offset < TABLE6_SIZE*7)
         {
-          return TABLE_ADDRESS(trim7Table, offset-288, 6);
+          return table_entity(&trim7Table, seqFuelPage, TABLE6_SIZE*6);
         }
         //Trim table 8
         if (offset<TABLE6_SIZE*8)
         {
-          return TABLE_ADDRESS(trim8Table, offset-336, 6);
+          return table_entity(&trim8Table, seqFuelPage, TABLE6_SIZE*7);
         }
         break;
 
       case fuelMap2Page:
         if (offset < TABLE16_SIZE)
         {
-          return TABLE_ADDRESS(fuelTable2, offset, 16);
+          return table_entity(&fuelTable2, fuelMap2Page, 0);
         }
         break;
 
       case wmiMapPage:
         if (offset < TABLE8_SIZE) 
         {
-          return TABLE_ADDRESS(wmiTable, offset, 8);
+          return table_entity(&wmiTable, wmiMapPage, 0);
         }
         if (offset<TABLE8_SIZE+80)
         {
-          return NO_ADDRESS(80, offset-TABLE8_SIZE);
+          return no_entity(wmiMapPage, TABLE8_SIZE, 80);
         }
         if (offset<TABLE8_SIZE+80+TABLE4_SIZE)
         {
-          return TABLE_ADDRESS(dwellTable, offset-160, 4);
+          return table_entity(&dwellTable, wmiMapPage, TABLE8_SIZE+80);
         }
         break;
       
       case ignMap2Page:
         if (offset < TABLE16_SIZE)
         {
-          return TABLE_ADDRESS(ignitionTable2, offset, 16);
+          return table_entity(&ignitionTable2, ignMap2Page, 0);
         }
         break;
 
       case veSetPage: 
         if (offset<sizeof(configPage2))
         {
-          return RAW_ADDRESS(configPage2, offset);
+          return raw_entity(&configPage2, veSetPage, 0, sizeof(configPage2));
         }
         break;
 
       case ignSetPage: 
         if (offset<sizeof(configPage4))
         {
-          return RAW_ADDRESS(configPage4, offset);
+          return raw_entity(&configPage4, ignSetPage, 0, sizeof(configPage4));
         }
         break;
 
       case afrSetPage: 
         if (offset<sizeof(configPage6))
         {
-          return RAW_ADDRESS(configPage6, offset);
+          return raw_entity(&configPage6, afrSetPage, 0, sizeof(configPage6));
         }
         break;
 
       case canbusPage:  
         if (offset<sizeof(configPage9))
         {
-          return RAW_ADDRESS(configPage9, offset);
+          return raw_entity(&configPage9, canbusPage, 0, sizeof(configPage9));
         }
         break;
 
       case warmupPage: 
         if (offset<sizeof(configPage10))
         {
-          return RAW_ADDRESS(configPage10, offset);
+          return raw_entity(&configPage10, warmupPage, 0, sizeof(configPage10));
         }
         break;
 
       case progOutsPage: 
         if (offset<sizeof(configPage13))
         {
-          return RAW_ADDRESS(configPage13, offset);
+          return raw_entity(&configPage13, progOutsPage, 0, sizeof(configPage13));
         }
         break;      
 
@@ -208,7 +215,7 @@ namespace
         break;
     }
     
-    return END_ADDRESS;
+    return page_end_entity(pageNumber);
   }
 }
 
@@ -230,26 +237,26 @@ namespace
   #define OFFSET_TOAXIS_YINDEX(offset, size) ((size-1) - (offset - ((size*size) + size)))
 
   template <int8_t _Size>
-  inline table_address_t to_table_address(const entity_address &location)
+  inline table_address_t to_table_address(const table3D *pTable, uint16_t offset)
   {
-    if (location.offset < TABLE_VALUE_SIZE(_Size))
+    if (offset < TABLE_VALUE_SIZE(_Size))
     {
-      return { location.entity.pTable->values[OFFSET_TOVALUE_YINDEX(location.offset, _Size)] + OFFSET_TOVALUE_XINDEX(location.offset, _Size), table3D_section_t::Value };
+      return { pTable->values[OFFSET_TOVALUE_YINDEX(offset, _Size)] + OFFSET_TOVALUE_XINDEX(offset, _Size), table3D_section_t::Value };
     }
-    else if (location.offset < TABLE_AXISX_END(_Size))
+    else if (offset < TABLE_AXISX_END(_Size))
     {
-      return { (byte*)(location.entity.pTable->axisX + OFFSET_TOAXIS_XINDEX(location.offset, _Size)), table3D_section_t::axisX };
+      return { (byte*)(pTable->axisX + OFFSET_TOAXIS_XINDEX(offset, _Size)), table3D_section_t::axisX };
     }
-    else if (location.offset < TABLE_AXISY_END(_Size))
+    else if (offset < TABLE_AXISY_END(_Size))
     {
-      return { (byte*)(location.entity.pTable->axisY + OFFSET_TOAXIS_YINDEX(location.offset, _Size)), table3D_section_t::axisY };
+      return { (byte*)(pTable->axisY + OFFSET_TOAXIS_YINDEX(offset, _Size)), table3D_section_t::axisY };
     }
     return { nullptr, table3D_section_t::None }; 
   }
 
-  #define TO_TABLE_ADDRESS(size, location) case size: return to_table_address<size>(location); break;
+  #define TO_TABLE_ADDRESS(size, pTable, offset) case size: return to_table_address<size>(pTable, offset); break;
 
-  inline table_address_t to_table_address(const entity_address &location)
+  inline table_address_t to_table_address(const table3D *pTable, uint16_t offset)
   {
     // You might be tempted to remove the switch: DON'T
     //
@@ -263,29 +270,29 @@ namespace
     // (likely converting them to multiply & shift operations).
     //
     // So this is a massive performance win (2x to 3x).
-    switch (location.entity.pTable->xSize)
+    switch (pTable->xSize)
     {
-      TO_TABLE_ADDRESS(16, location);
-      TO_TABLE_ADDRESS(8, location);
-      TO_TABLE_ADDRESS(6, location);
-      TO_TABLE_ADDRESS(4, location);
+      TO_TABLE_ADDRESS(16, pTable, offset);
+      TO_TABLE_ADDRESS(8, pTable, offset);
+      TO_TABLE_ADDRESS(6, pTable, offset);
+      TO_TABLE_ADDRESS(4, pTable, offset);
     }
     return { nullptr, table3D_section_t::None }; 
   }
 
-  inline byte get_table_value(const entity_address &location)
+  inline byte get_table_value(const table3D *pTable, uint16_t offset)
   {
-    auto table_address = to_table_address(location);
+    auto table_address = to_table_address(pTable, offset);
     switch (table_address.section)
     {
       case table3D_section_t::Value: 
         return *table_address.pValue;
 
       case table3D_section_t::axisX:
-        return byte((*table_address.pAxis) / getTableXAxisFactor(location.entity.pTable)); 
+        return byte((*table_address.pAxis) / getTableXAxisFactor(pTable)); 
       
       case table3D_section_t::axisY:
-        return byte((*table_address.pAxis) / getTableYAxisFactor(location.entity.pTable)); 
+        return byte((*table_address.pAxis) / getTableYAxisFactor(pTable)); 
       
       default: return 0; // no-op
     }
@@ -293,16 +300,21 @@ namespace
     return 0U;
   }
 
-  inline uint8_t get_value(const entity_address &location)
+  inline byte* get_raw_value(const entity_t &entity, uint16_t offset)
   {
-    switch (location.entity.type)
+    return (byte*)entity.pData + offset;
+  }
+
+  inline uint8_t get_value(const entity_t &entity, uint16_t offset)
+  {
+    switch (entity.type)
     {
       case entity_type::Table:
-        return get_table_value(location);
+        return get_table_value(entity.pTable, offset);
         break;
   
       case entity_type::Raw:
-        return *((byte*)location.entity.pData + location.offset);
+        return *get_raw_value(entity, offset);
         break;
 
       default: return 0U;
@@ -310,9 +322,9 @@ namespace
     return 0U;
   }
 
-  inline void set_table_value(const entity_address &location, int8_t value)
+  inline void set_table_value(table3D *pTable, uint16_t offset, int8_t value)
   {
-    auto table_address = to_table_address(location);
+    auto table_address = to_table_address(pTable, offset);
     switch (table_address.section)
     {
       case table3D_section_t::Value: 
@@ -320,16 +332,16 @@ namespace
         break;
 
       case table3D_section_t::axisX:
-        *table_address.pAxis = (int)(value) * getTableXAxisFactor(location.entity.pTable); 
+        *table_address.pAxis = (int)(value) * getTableXAxisFactor(pTable); 
         break;
       
       case table3D_section_t::axisY:
-        *table_address.pAxis= (int)(value) * getTableYAxisFactor(location.entity.pTable);
+        *table_address.pAxis= (int)(value) * getTableYAxisFactor(pTable);
         break;
       
       default: ; // no-op
     }
-    location.entity.pTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+    pTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
   }
 }
 
@@ -341,24 +353,25 @@ namespace
  * @param valueAddress The address in the page that should be returned. This is as per the page definition in the ini
  * @return byte The requested value
  */
-byte getPageValue(byte page, uint16_t valueAddress)
+byte getPageValue(byte page, uint16_t offset)
 {
-  return get_value(map_page_offset_to_memory(page, valueAddress));
+  entity_t address = map_page_offset_to_entity(page, offset);
+  return get_value(address, offset-address.start);
 }
 
 
 void setPageValue(byte pageNum, uint16_t offset, byte value)
 {
-  entity_address location = map_page_offset_to_memory(pageNum, offset);
+  entity_t location = map_page_offset_to_entity(pageNum, offset);
 
-  switch (location.entity.type)
+  switch (location.type)
   {
   case entity_type::Table:
-    set_table_value(location, value);
+    set_table_value(location.pTable, offset-location.start, value);
     break;
   
   case entity_type::Raw:
-    *((byte*)location.entity.pData + location.offset) = value;
+    *get_raw_value(location, offset-location.start) = value;
     break;
       
   default:
@@ -369,43 +382,72 @@ void setPageValue(byte pageNum, uint16_t offset, byte value)
 namespace {
   FastCRC32 CRC32;
 
-  inline uint32_t initialize_crc(entity_address &address)
+  inline uint16_t copy_to(entity_t &entity, uint16_t &offset, byte *pStart, byte*pEnd)
   {
-    uint8_t startValue = get_value(address);
-    address.offset++;
-    return CRC32.crc32(&startValue, 1, false);
+    uint16_t num_bytes = min((uint16_t)(pEnd-pStart), entity.size-offset);
+    pEnd = pStart + num_bytes;
+    while (pStart!=pEnd)
+    {
+      *pStart = get_value(entity, offset);
+      ++offset;
+      ++pStart;
+    }
+    return num_bytes;
   }
 
-  inline uint32_t compute_raw_crc(entity_address &address)
+  inline uint32_t compute_raw_crc(entity_t &entity)
   {
-    return CRC32.crc32_upd(((uint8_t*)address.entity.pData)+address.offset, address.entity.size-address.offset, false);
+    return CRC32.crc32((uint8_t*)entity.pData, entity.size, false);
   }
 
-  inline uint32_t compute_crc_block(entity_address &address)
+  inline uint32_t update_raw_crc(entity_t &entity)
+  {
+    return CRC32.crc32_upd((uint8_t*)entity.pData, entity.size, false);
+  }
+
+  inline uint32_t compute_crc_block(entity_t &entity, uint16_t &offset)
   {
     uint8_t buffer[128];
-    uint8_t *pElement = buffer;  
-    uint8_t *pEnd = buffer + min(_countof(buffer), address.entity.size-address.offset);     
-    while (pElement!=pEnd)
-    {
-      *pElement = get_value(address);
-      ++address.offset;
-      ++pElement;
-    }
-    return CRC32.crc32_upd(buffer, pEnd-buffer, false);
+    return CRC32.crc32(buffer, copy_to(entity, offset, buffer, buffer+_countof(buffer)), false);
   }
 
-  inline uint32_t compute_crc(entity_address &address, uint32_t crc)
+  inline uint32_t update_crc_block(entity_t &entity, uint16_t &offset)
   {
-    if (address.entity.type==entity_type::Raw)
+    uint8_t buffer[128];
+    return CRC32.crc32_upd(buffer, copy_to(entity, offset, buffer, buffer+_countof(buffer)), false);
+  }
+
+  inline uint32_t compute_crc(entity_t &entity)
+  {
+    if (entity.type==entity_type::Raw)
     {
-      return compute_raw_crc(address);
+      return compute_raw_crc(entity);
     }
     else
     {
-      while (address.offset<address.entity.size)
+      uint16_t offset = 0;
+      uint32_t crc = compute_crc_block(entity, offset);
+      while (offset<entity.size)
       {  
-        crc = compute_crc_block(address);
+        crc = update_crc_block(entity, offset);
+      }
+      return crc;
+    }
+  }
+  
+  inline uint32_t update_crc(entity_t &entity)
+  {
+    if (entity.type==entity_type::Raw)
+    {
+      return update_raw_crc(entity);
+    }
+    else
+    {
+      uint16_t offset = 0;
+      uint32_t crc = update_crc_block(entity, offset);
+      while (offset<entity.size)
+      {  
+        crc = update_crc_block(entity, offset);
       }
       return crc;
     }
@@ -427,15 +469,16 @@ Calculates and returns the CRC32 value of a given page of memory
 */
 uint32_t calculateCRC32(byte pageNum)
 {
-  uint16_t totalOffset = 0;
-  entity_address location = map_page_offset_to_memory(pageNum, totalOffset);
-  uint32_t crc = initialize_crc(location);
+  entity_t location = map_page_offset_to_entity(pageNum, 0);
+  uint32_t crc = compute_crc(location);
 
-  while (location.entity.type!=entity_type::End)
+  uint16_t pageOffset = location.size;
+  location = map_page_offset_to_entity(pageNum, pageOffset);
+  while (location.type!=entity_type::End)
   {
-    crc = compute_crc(location, crc);
-    totalOffset += location.entity.size;
-    location = map_page_offset_to_memory(pageNum, totalOffset);
+    crc = update_crc(location);
+    pageOffset += location.size;
+    location = map_page_offset_to_entity(pageNum, pageOffset);
   }
-  return ~pad_crc(npage_size[pageNum] - totalOffset, crc);
+  return ~pad_crc(npage_size[pageNum] - pageOffset, crc);
 }
