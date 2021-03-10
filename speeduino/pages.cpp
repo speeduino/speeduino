@@ -34,25 +34,25 @@ namespace
   #define TABLE6_SIZE TABLE_SIZE(6)
   #define TABLE4_SIZE TABLE_SIZE(4)
 
-  inline entity_t page_end_entity(byte page)
-  {
-    return { { nullptr }, .page = page, .start = 0, .size = 0, .type = entity_type::End };
-  }
+  #define PAGE_END(pageNum, pageSize) \
+    { { nullptr }, .page = pageNum, .start = 0, .size = pageSize, .type = entity_type::End };
+ 
+  #define NO_ENTITY(pageNum, entityPageOffset, blockSize) \
+    { nullptr, .page = pageNum, .start = entityPageOffset, .size = blockSize, .type = entity_type::None };
 
-  inline entity_t table_entity(table3D *pTable, byte page, uint16_t start)
-  {
-      return { { pTable }, .page = page, .start = start, .size = TABLE_SIZE((uint16_t)pTable->xSize), .type = entity_type::Table };
-  }
-  
-  inline entity_t raw_entity(void *pEntity, byte page, uint16_t start, uint16_t size)
-  {
-    return { { pEntity }, .page = page, .start = start, .size = size, .type = entity_type::Raw };
-  }
+  #define CHECK_TABLE(offset, entityPageOffset, pTable, tableSize, pageNum) \
+    if (offset < entityPageOffset+tableSize) \
+    { \
+      return { { pTable }, .page = pageNum, .start = entityPageOffset, .size = tableSize, .type = entity_type::Table }; \
+    } \
+    entityPageOffset += tableSize;
 
-  inline entity_t no_entity(byte page, uint16_t start, uint16_t size)
-  {
-    return { nullptr, .page = page, .start = start, .size = size, .type = entity_type::None };
-  }
+  #define CHECK_RAW(offset, entityPageOffset, pDataBlock, blockSize, pageNum) \
+    if (offset < entityPageOffset+blockSize) \
+    { \
+      return { { pDataBlock }, .page = pageNum, .start = entityPageOffset, .size = blockSize, .type = entity_type::Raw }; \
+    } \
+    entityPageOffset += blockSize;
 
   // For some purposes a TS page is treated as a contiguous block of memory.
   // However, in Speeduino it's sometimes made up of multiple distinct and
@@ -60,162 +60,86 @@ namespace
   // to the type & position of the corresponding memory block.
   inline entity_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
   {
+    uint16_t entityPageOffset = 0;
+
     switch (pageNumber)
     {
       case veMapPage:
-        if (offset < TABLE16_SIZE)
-        {
-          return table_entity(&fuelTable, veMapPage, 0);
-        }
+        CHECK_TABLE(offset, entityPageOffset, &fuelTable, TABLE16_SIZE, pageNumber)
         break;
 
       case ignMapPage: //Ignition settings page (Page 2)
-        if (offset < TABLE16_SIZE)
-        {
-          return table_entity(&ignitionTable, ignMapPage, 0);
-        }
+        CHECK_TABLE(offset, entityPageOffset, &ignitionTable, TABLE16_SIZE, pageNumber)
         break;
 
       case afrMapPage: //Air/Fuel ratio target settings page
-        if (offset < TABLE16_SIZE)
-        {
-          return table_entity(&afrTable, afrMapPage, 0);
-        }
+        CHECK_TABLE(offset, entityPageOffset, &afrTable, TABLE16_SIZE, pageNumber)
         break;
 
       case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
-        if (offset < TABLE8_SIZE) //New value is on the Y (TPS) axis of the boost table
-        {
-          return table_entity(&boostTable, boostvvtPage, 0);
-        }
-        if (offset < TABLE8_SIZE*2)
-        {
-          return table_entity(&vvtTable, boostvvtPage, TABLE8_SIZE);
-        }
-        else  if (offset < TABLE8_SIZE*3)
-        {
-          return table_entity(&stagingTable, boostvvtPage, TABLE8_SIZE*2);
-        }
+        CHECK_TABLE(offset, entityPageOffset, &boostTable, TABLE8_SIZE, pageNumber)
+        CHECK_TABLE(offset, entityPageOffset, &vvtTable, TABLE8_SIZE, pageNumber)
+        CHECK_TABLE(offset, entityPageOffset, &stagingTable, TABLE8_SIZE, pageNumber)
         break;
 
       case seqFuelPage:
-        if (offset < TABLE6_SIZE) 
-        {
-          return table_entity(&trim1Table, seqFuelPage, 0);
-        }
-        //Trim table 2
-        if (offset < TABLE6_SIZE*2) 
-        { 
-          return table_entity(&trim2Table, seqFuelPage, TABLE6_SIZE);
-        }
-        //Trim table 3
-        if (offset < TABLE6_SIZE*3)
-        {
-          return table_entity(&trim3Table, seqFuelPage, TABLE6_SIZE*2);
-        }
-        //Trim table 4
-        if (offset < TABLE6_SIZE*4)
-        {
-          return table_entity(&trim4Table, seqFuelPage, TABLE6_SIZE*3);
-        }
-        //Trim table 5
-        if (offset < TABLE6_SIZE*5)
-        {
-          return table_entity(&trim5Table, seqFuelPage, TABLE6_SIZE*4);
-        }
-        //Trim table 6
-        if (offset < TABLE6_SIZE*6)
-        {
-          return table_entity(&trim6Table, seqFuelPage, TABLE6_SIZE*5);
-        }
-        //Trim table 7
-        if (offset < TABLE6_SIZE*7)
-        {
-          return table_entity(&trim7Table, seqFuelPage, TABLE6_SIZE*6);
-        }
-        //Trim table 8
-        if (offset<TABLE6_SIZE*8)
-        {
-          return table_entity(&trim8Table, seqFuelPage, TABLE6_SIZE*7);
-        }
+        CHECK_TABLE(offset, entityPageOffset, &trim1Table, TABLE6_SIZE, pageNumber)
+        CHECK_TABLE(offset, entityPageOffset, &trim2Table, TABLE6_SIZE, pageNumber)
+        CHECK_TABLE(offset, entityPageOffset, &trim3Table, TABLE6_SIZE, pageNumber)
+        CHECK_TABLE(offset, entityPageOffset, &trim4Table, TABLE6_SIZE, pageNumber)
+        CHECK_TABLE(offset, entityPageOffset, &trim5Table, TABLE6_SIZE, pageNumber)
+        CHECK_TABLE(offset, entityPageOffset, &trim6Table, TABLE6_SIZE, pageNumber)
+        CHECK_TABLE(offset, entityPageOffset, &trim7Table, TABLE6_SIZE, pageNumber)
+        CHECK_TABLE(offset, entityPageOffset, &trim8Table, TABLE6_SIZE, pageNumber)
         break;
 
       case fuelMap2Page:
-        if (offset < TABLE16_SIZE)
-        {
-          return table_entity(&fuelTable2, fuelMap2Page, 0);
-        }
+        CHECK_TABLE(offset, entityPageOffset, &fuelTable2, TABLE16_SIZE, pageNumber)
         break;
 
       case wmiMapPage:
-        if (offset < TABLE8_SIZE) 
+        CHECK_TABLE(offset, entityPageOffset, &wmiTable, TABLE8_SIZE, pageNumber)
+        if (offset<entityPageOffset+80)
         {
-          return table_entity(&wmiTable, wmiMapPage, 0);
+          return NO_ENTITY(wmiMapPage, entityPageOffset, 80);
         }
-        if (offset<TABLE8_SIZE+80)
-        {
-          return no_entity(wmiMapPage, TABLE8_SIZE, 80);
-        }
-        if (offset<TABLE8_SIZE+80+TABLE4_SIZE)
-        {
-          return table_entity(&dwellTable, wmiMapPage, TABLE8_SIZE+80);
-        }
+        entityPageOffset += 80;
+        CHECK_TABLE(offset, entityPageOffset, &dwellTable, TABLE4_SIZE, pageNumber)
         break;
       
       case ignMap2Page:
-        if (offset < TABLE16_SIZE)
-        {
-          return table_entity(&ignitionTable2, ignMap2Page, 0);
-        }
+        CHECK_TABLE(offset, entityPageOffset, &ignitionTable2, TABLE16_SIZE, pageNumber)
         break;
 
       case veSetPage: 
-        if (offset<sizeof(configPage2))
-        {
-          return raw_entity(&configPage2, veSetPage, 0, sizeof(configPage2));
-        }
+        CHECK_RAW(offset, entityPageOffset, &configPage2, sizeof(configPage2), pageNumber)
         break;
 
       case ignSetPage: 
-        if (offset<sizeof(configPage4))
-        {
-          return raw_entity(&configPage4, ignSetPage, 0, sizeof(configPage4));
-        }
+        CHECK_RAW(offset, entityPageOffset, &configPage4, sizeof(configPage4), pageNumber)
         break;
 
       case afrSetPage: 
-        if (offset<sizeof(configPage6))
-        {
-          return raw_entity(&configPage6, afrSetPage, 0, sizeof(configPage6));
-        }
+        CHECK_RAW(offset, entityPageOffset, &configPage6, sizeof(configPage6), pageNumber)
         break;
 
       case canbusPage:  
-        if (offset<sizeof(configPage9))
-        {
-          return raw_entity(&configPage9, canbusPage, 0, sizeof(configPage9));
-        }
+        CHECK_RAW(offset, entityPageOffset, &configPage9, sizeof(configPage9), pageNumber)
         break;
 
       case warmupPage: 
-        if (offset<sizeof(configPage10))
-        {
-          return raw_entity(&configPage10, warmupPage, 0, sizeof(configPage10));
-        }
+        CHECK_RAW(offset, entityPageOffset, &configPage10, sizeof(configPage10), pageNumber)
         break;
 
       case progOutsPage: 
-        if (offset<sizeof(configPage13))
-        {
-          return raw_entity(&configPage13, progOutsPage, 0, sizeof(configPage13));
-        }
+        CHECK_RAW(offset, entityPageOffset, &configPage13, sizeof(configPage13), pageNumber)
         break;      
 
       default:
         break;
     }
     
-    return page_end_entity(pageNumber);
+    return PAGE_END(pageNumber, entityPageOffset);
   }
 }
 
