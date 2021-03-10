@@ -4,42 +4,72 @@
 
 const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,384,192,192,288,192,128,288}; /**< This array stores the size (in bytes) of each configuration page */
 
-// #define DEBUG_PRINT(x) Serial.print(x);
-// #define DEBUG_PRINTLN(x) Serial.println(x);
-#define DEBUG_PRINT(x)
-#define DEBUG_PRINTLN(x)
 
+// This namespace maps from virtual page "addresses" to addresses/bytes of real in memory entities
+//
+// For TunerStudio:
+// 1. Each page has a numeric identifier (0 to N-1)
+// 2. A single page is a continguous block of data.
+// So individual bytes are identified by a page number + offset
+//
+// The TS layout is not what is in memory. E.g.
+//
+//    TS Page 2               |0123456789ABCD|0123456789ABCDEF|
+//                                /                       \
+//    Arduino In Memory  |--- Entity A ---|         |--- Entity B -----|
+//
+// Further, the in memory entity may also not be contiguous or in the same
+// order that TS expects
+//
+// So there is a 2 stage mapping:
+//  1. Page # + Offset to entity
+//  2. Offset to intra-entity byte
+// This namespace encapsulates step 1
 namespace 
 {
-  enum entity_type { Raw, Table, None, End };
+  enum entity_type { 
+    Raw,    // The offset mapped to block of memory
+    Table,  // The offset maaped to a 3D table
+    None,   // Valid offset, but no entity
+    End     // The offset was past any known entity for the page
+  };
 
   typedef struct entity_t {
     union {
-      void *pData;
-      table3D *pTable;
+      void *pData;      // Raw
+      table3D *pTable;  // Table
     };
-    uint8_t page;
-    uint16_t start;
-    uint16_t size;
-    entity_type type;
+    uint8_t page;   // The page the entity belongs to
+    uint16_t start; // The start position of the entity, in bytes, from the start of the page
+    uint16_t size;  // Size of the entity in bytes
+    entity_type type; // Type
   } entity_t;
 
+  // Handy table macros
   #define TABLE_VALUE_SIZE(size) (size*size)
   #define TABLE_AXISX_END(size) (TABLE_VALUE_SIZE(size)+size)
   #define TABLE_AXISY_END(size) (TABLE_AXISX_END(size)+size)
   #define TABLE_SIZE(size) TABLE_AXISY_END(size)
 
+  // Precompute for performance
   #define TABLE16_SIZE TABLE_SIZE(16)
   #define TABLE8_SIZE TABLE_SIZE(8)
   #define TABLE6_SIZE TABLE_SIZE(6)
   #define TABLE4_SIZE TABLE_SIZE(4)
 
+  // Create an End entity_t
   #define PAGE_END(pageNum, pageSize) \
     { { nullptr }, .page = pageNum, .start = 0, .size = pageSize, .type = entity_type::End };
  
-  #define NO_ENTITY(pageNum, entityPageOffset, blockSize) \
-    { nullptr, .page = pageNum, .start = entityPageOffset, .size = blockSize, .type = entity_type::None };
+  // If the offset is in range, create a None entity_t
+  #define CHECK_NOENTITY(offset, entityPageOffset, blockSize, pageNum) \
+    if (offset < entityPageOffset+blockSize) \
+    { \
+      return { nullptr, .page = pageNum, .start = entityPageOffset, .size = blockSize, .type = entity_type::None }; \
+    } \
+    entityPageOffset += blockSize;
 
+  // If the offset is in range, create a Table entity_t
   #define CHECK_TABLE(offset, entityPageOffset, pTable, tableSize, pageNum) \
     if (offset < entityPageOffset+tableSize) \
     { \
@@ -47,6 +77,7 @@ namespace
     } \
     entityPageOffset += tableSize;
 
+  // If the offset is in range, create a Raw entity_t
   #define CHECK_RAW(offset, entityPageOffset, pDataBlock, blockSize, pageNum) \
     if (offset < entityPageOffset+blockSize) \
     { \
@@ -54,12 +85,13 @@ namespace
     } \
     entityPageOffset += blockSize;
 
-  // For some purposes a TS page is treated as a contiguous block of memory.
-  // However, in Speeduino it's sometimes made up of multiple distinct and
-  // non-contiguous chunks of data. This maps from the page address (number + offset)
-  // to the type & position of the corresponding memory block.
-  inline entity_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
+  // Does the heavy lifting of the entity mapping
+  //
+  // Alternative implementation would be to encode the mapping into data structures
+  // That uses flash memory, which is scarce. And it was too slow,
+  inline /* <--I'm hopeful */ entity_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
   {
+    // A rolling offset from the page start
     uint16_t entityPageOffset = 0;
 
     switch (pageNumber)
@@ -99,11 +131,7 @@ namespace
 
       case wmiMapPage:
         CHECK_TABLE(offset, entityPageOffset, &wmiTable, TABLE8_SIZE, pageNumber)
-        if (offset<entityPageOffset+80)
-        {
-          return NO_ENTITY(wmiMapPage, entityPageOffset, 80);
-        }
-        entityPageOffset += 80;
+        CHECK_NOENTITY(offset, entityPageOffset, 80, pageNumber)
         CHECK_TABLE(offset, entityPageOffset, &dwellTable, TABLE4_SIZE, pageNumber)
         break;
       
@@ -139,10 +167,27 @@ namespace
         break;
     }
     
+    // entityPageOffset will be the max known page size 
     return PAGE_END(pageNumber, entityPageOffset);
+  }
+
+  // Support iteration over a pages entities.
+  // Check for entity.type==entity_type::End
+  inline entity_t page_begin(byte pageNum)
+  {
+    return map_page_offset_to_entity(pageNum, 0);
+  }
+  inline entity_t advance(const entity_t &it)
+  {
+    return map_page_offset_to_entity(it.page, it.start+it.size);
   }
 }
 
+// Tables do not map lineraly to the TS page address space, so special 
+// handling is necessary (we do noy use the normal array layout for
+// performance reasons elsewhere)
+//
+// We take the offset & map it to a single value, x-axis or y-axis element
 namespace
 {
   enum struct table3D_section_t : uint8_t{ Value, axisX, axisY, None } ;
@@ -155,11 +200,16 @@ namespace
     table3D_section_t section;
   } table_address_t;
 
+  // Macros + compile time constants = fast division/modulus
+  //
+  // The various fast division libraries, E.g. libdivide, use
+  // 32-bit operations for 16-bit division. Super slow.
   #define OFFSET_TOVALUE_YINDEX(offset, size) ((size-1) - (offset / size))
   #define OFFSET_TOVALUE_XINDEX(offset, size) (offset % size)
   #define OFFSET_TOAXIS_XINDEX(offset, size) (offset - (size*size))
   #define OFFSET_TOAXIS_YINDEX(offset, size) ((size-1) - (offset - ((size*size) + size)))
 
+  // A template is just easier than a macro here!
   template <int8_t _Size>
   inline table_address_t to_table_address(const table3D *pTable, uint16_t offset)
   {
@@ -190,7 +240,7 @@ namespace
     // emits code to perform the division. 
     //
     // However, by using compile time constants the compiler can do a ton of
-    // optimization of the division and modulus operations below
+    // optimization of the division and modulus operations above
     // (likely converting them to multiply & shift operations).
     //
     // So this is a massive performance win (2x to 3x).
@@ -224,28 +274,6 @@ namespace
     return 0U;
   }
 
-  inline byte* get_raw_value(const entity_t &entity, uint16_t offset)
-  {
-    return (byte*)entity.pData + offset;
-  }
-
-  inline uint8_t get_value(const entity_t &entity, uint16_t offset)
-  {
-    switch (entity.type)
-    {
-      case entity_type::Table:
-        return get_table_value(entity.pTable, offset);
-        break;
-  
-      case entity_type::Raw:
-        return *get_raw_value(entity, offset);
-        break;
-
-      default: return 0U;
-    }
-    return 0U;
-  }
-
   inline void set_table_value(table3D *pTable, uint16_t offset, int8_t value)
   {
     auto table_address = to_table_address(pTable, offset);
@@ -269,7 +297,30 @@ namespace
   }
 }
 
+namespace {
+  
+  inline byte* get_raw_value(const entity_t &entity, uint16_t offset)
+  {
+    return (byte*)entity.pData + offset;
+  }
 
+  inline uint8_t get_value(const entity_t &entity, uint16_t offset)
+  {
+    switch (entity.type)
+    {
+      case entity_type::Table:
+        return get_table_value(entity.pTable, offset);
+        break;
+  
+      case entity_type::Raw:
+        return *get_raw_value(entity, offset);
+        break;
+
+      default: return 0U;
+    }
+    return 0U;
+  }
+}
 /**
  * @brief Retrieves a single value from a memory page, with data aligned as per the ini file
  * 
@@ -279,23 +330,23 @@ namespace
  */
 byte getPageValue(byte page, uint16_t offset)
 {
-  entity_t address = map_page_offset_to_entity(page, offset);
-  return get_value(address, offset-address.start);
+  entity_t entity = map_page_offset_to_entity(page, offset);
+  return get_value(entity, offset-entity.start);
 }
 
 
 void setPageValue(byte pageNum, uint16_t offset, byte value)
 {
-  entity_t location = map_page_offset_to_entity(pageNum, offset);
+  entity_t entity = map_page_offset_to_entity(pageNum, offset);
 
-  switch (location.type)
+  switch (entity.type)
   {
   case entity_type::Table:
-    set_table_value(location.pTable, offset-location.start, value);
+    set_table_value(entity.pTable, offset-entity.start, value);
     break;
   
   case entity_type::Raw:
-    *get_raw_value(location, offset-location.start) = value;
+    *get_raw_value(entity, offset-entity.start) = value;
     break;
       
   default:
@@ -393,16 +444,14 @@ Calculates and returns the CRC32 value of a given page of memory
 */
 uint32_t calculateCRC32(byte pageNum)
 {
-  entity_t location = map_page_offset_to_entity(pageNum, 0);
-  uint32_t crc = compute_crc(location);
+  entity_t entity = page_begin(pageNum);
+  uint32_t crc = compute_crc(entity);
 
-  uint16_t pageOffset = location.size;
-  location = map_page_offset_to_entity(pageNum, pageOffset);
-  while (location.type!=entity_type::End)
+  entity = advance(entity);
+  while (entity.type!=entity_type::End)
   {
-    crc = update_crc(location);
-    pageOffset += location.size;
-    location = map_page_offset_to_entity(pageNum, pageOffset);
+    crc = update_crc(entity);
+    entity = advance(entity);
   }
-  return ~pad_crc(npage_size[pageNum] - pageOffset, crc);
+  return ~pad_crc(npage_size[pageNum] - entity.size, crc);
 }
