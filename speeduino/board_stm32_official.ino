@@ -5,8 +5,17 @@
 #include "idle.h"
 #include "scheduler.h"
 #include "HardwareTimer.h"
+#include "rtc_common.h"
 
+#ifdef RTC_ENABLED
 STM32RTC& rtc = STM32RTC::getInstance();
+//This function is called by the fatfs library to get the current time if a file is created or modified to update the file time
+uint32_t get_fattime (void){
+  uint32_t time;
+  time = (41<< 25) | (((uint32_t)rtc_getMonth())<< 21) | (((uint32_t)rtc_getDay())<< 16) | (((uint32_t)rtc_getHour())<< 11) | (((uint32_t)rtc_getMinute())<< 5) | (((uint32_t)rtc_getSecond())>>1);
+  return time;
+}
+#endif
 
   void initBoard()
   {
@@ -20,12 +29,14 @@ STM32RTC& rtc = STM32RTC::getInstance();
     delay(10);
 
     /*
-     ***********************************************************************************************************
-     * Real Time clock for datalogging/time stamping
-     */
-     
-     rtc.setClockSource(STM32RTC::LSE_CLOCK); //Initialize external clock for RTC. That is the only clock running of VBAT
-     rtc.begin(); // initialize RTC 24H format
+    ***********************************************************************************************************
+    * Real Time clock for datalogging/time stamping
+    */
+    if(configPage2.rtc_mode==1){
+      rtc.setClockSource(STM32RTC::LSE_CLOCK); //Initialize external clock for RTC. That is the only clock running of VBAT
+      rtc.begin(); // initialize RTC 24H format
+    }
+
 
     /*
     ***********************************************************************************************************
@@ -157,8 +168,12 @@ STM32RTC& rtc = STM32RTC::getInstance();
 
   uint16_t freeRam()
   {
+      uint32_t FreeRamBytes;
       char top = 't';
-      return &top - reinterpret_cast<char*>(sbrk(0));
+      FreeRamBytes = &top - reinterpret_cast<char*>(sbrk(0));
+      if (FreeRamBytes & ~0xFFFF) return 0xFFFF;
+      return FreeRamBytes;
+       
   }
 
   void doSystemReset( void )

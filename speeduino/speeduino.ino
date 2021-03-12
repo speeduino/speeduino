@@ -38,7 +38,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "utilities.h"
 #include "engineProtection.h"
 #include "secondaryTables.h"
+#include "SD_logger.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
+#include RTC_LIB_H
 
 int ignition1StartAngle = 0;
 int ignition2StartAngle = 0;
@@ -252,6 +254,11 @@ void loop()
       BIT_CLEAR(TIMER_mask, BIT_TIMER_10HZ);
       //updateFullStatus();
       checkProgrammableIO();
+    #ifdef SD_LOGGING
+      if((currentStatus.TS_SD_Status & SD_STATUS_FS_READY) & (configPage13.onboard_log_file_rate==LOGGER_RATE_10HZ)){
+        logger_writeLogEntry();
+      }
+    #endif
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
@@ -267,6 +274,15 @@ void loop()
       //else { vvt2_pwm_value = 1; }
       #if TPS_READ_FREQUENCY == 30
         readTPS();
+      #endif
+
+      #ifdef SD_LOGGING
+      //Writing to disk must atleast be called 2 times for every log line written 
+      //If not called freqently enough the buffer will fill-up and the logger stops
+      logger_WriteBufferToDisk();
+      if((currentStatus.TS_SD_Status & SD_STATUS_FS_READY) & (configPage13.onboard_log_file_rate==LOGGER_RATE_30HZ)){
+        logger_writeLogEntry();
+      }
       #endif
 
       if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
@@ -287,6 +303,12 @@ void loop()
       currentStatus.gear = getGear();
       currentStatus.fuelPressure = getFuelPressure();
       currentStatus.oilPressure = getOilPressure();
+
+    #ifdef SD_LOGGING
+      if((currentStatus.TS_SD_Status & SD_STATUS_FS_READY) & (configPage13.onboard_log_file_rate==LOGGER_RATE_4HZ)){
+        logger_writeLogEntry();
+      }
+    #endif
 
       if(auxIsEnabled == true)
       {
@@ -363,7 +385,11 @@ void loop()
           digitalWrite(pinWMIIndicator, configPage10.wmiIndicatorPolarity ? HIGH : LOW);
         } 
       }
-
+    #ifdef SD_LOGGING
+      if((currentStatus.TS_SD_Status & SD_STATUS_FS_READY) & (configPage13.onboard_log_file_rate==LOGGER_RATE_1HZ)){
+        logger_writeLogEntry();
+      }
+    #endif
     } //1Hz timer
 
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) )  { idleControl(); } //Run idlecontrol every loop for stepper idle.
