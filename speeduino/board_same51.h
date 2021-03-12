@@ -1,6 +1,6 @@
-#ifndef SAMD21_H
-#define SAMD21_H
-#if defined(CORE_SAMD21)
+#ifndef SAME51_H
+#define SAME51_H
+#if defined(CORE_SAME51)
 
 #include "sam.h"
 
@@ -12,6 +12,39 @@
   #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
   #define BOARD_MAX_IO_PINS  58 //digital pins + analog channels + 1
 
+  //#define PORT_TYPE uint8_t //Size of the port variables (Eg inj1_pin_port).
+  #define PINMASK_TYPE uint8_t
+  #define COMPARE_TYPE uint16_t
+  #define COUNTER_TYPE uint16_t
+  #ifdef USE_SPI_EEPROM
+    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    #include EEPROM_LIB_H
+    //SPIClass SPI_for_flash(1, 2, 3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+    SPIClass SPI_for_flash = SPI; //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+ 
+    //windbond W25Q16 SPI flash EEPROM emulation
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
+    //Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
+    SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
+  #else
+    //#define EEPROM_LIB_H <EEPROM.h>
+    #define EEPROM_LIB_H "src/FlashStorage/FlashAsEEPROM.h"
+  #endif
+  #define RTC_LIB_H "TimeLib.h"
+  void initBoard();
+  uint16_t freeRam();
+  void doSystemReset();
+  void jumpToBootloader();
+
+  #if defined(TIMER5_MICROS)
+    /*#define micros() (((timer5_overflow_count << 16) + TCNT5) * 4) */ //Fast version of micros() that uses the 4uS tick of timer5. See timers.ino for the overflow ISR of timer5
+    #define millis() (ms_counter) //Replaces the standard millis() function with this macro. It is both faster and more accurate. See timers.ino for its counter increment.
+    static inline unsigned long micros_safe(); //A version of micros() that is interrupt safe
+  #else
+    #define micros_safe() micros() //If the timer5 method is not used, the micros_safe() macro is simply an alias for the normal micros()
+  #endif
+  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB on other boards
+
   //Additional analog pins (These won't work without other changes)
   #define PIN_A6               (8ul)
   #define PIN_A7               (9ul)
@@ -21,7 +54,6 @@
   #define PIN_A14               (9ul)
   #define PIN_A15               (9ul)
 
-  static const uint8_t A6  = PIN_A6;
   static const uint8_t A7  = PIN_A7;
   static const uint8_t A8  = PIN_A8;
   static const uint8_t A9  = PIN_A9;
@@ -34,15 +66,16 @@
 * Schedules
 */
   //See : https://electronics.stackexchange.com/questions/325159/the-value-of-the-tcc-counter-on-an-atsam-controller-always-reads-as-zero
+  // SAME512 Timer channel list: https://user-images.githubusercontent.com/11770912/62131781-2e150b80-b31f-11e9-9970-9a6c2356a17c.png
   #define FUEL1_COUNTER TCC0->COUNT.reg
   #define FUEL2_COUNTER TCC0->COUNT.reg
   #define FUEL3_COUNTER TCC0->COUNT.reg
   #define FUEL4_COUNTER TCC0->COUNT.reg
   //The below are NOT YET RIGHT!
-  #define FUEL5_COUNTER TCC0->COUNT.reg
-  #define FUEL6_COUNTER TCC0->COUNT.reg
-  #define FUEL7_COUNTER TCC0->COUNT.reg
-  #define FUEL8_COUNTER TCC0->COUNT.reg
+  #define FUEL5_COUNTER TCC1->COUNT.reg
+  #define FUEL6_COUNTER TCC1->COUNT.reg
+  #define FUEL7_COUNTER TCC1->COUNT.reg
+  #define FUEL8_COUNTER TCC1->COUNT.reg
 
   #define IGN1_COUNTER  TCC1->COUNT.reg
   #define IGN2_COUNTER  TCC1->COUNT.reg
@@ -59,10 +92,10 @@
   #define FUEL3_COMPARE TCC0->CC[2].bit.CC
   #define FUEL4_COMPARE TCC0->CC[3].bit.CC
   //The below are NOT YET RIGHT!
-  #define FUEL5_COMPARE TCC0->CC0
-  #define FUEL6_COMPARE TCC0->CC1
-  #define FUEL7_COMPARE TCC0->CC2
-  #define FUEL8_COMPARE TCC0->CC3
+  #define FUEL5_COMPARE TCC1->CC[0].bit.CC
+  #define FUEL6_COMPARE TCC1->CC[1].bit.CC
+  #define FUEL7_COMPARE TCC1->CC[2].bit.CC
+  #define FUEL8_COMPARE TCC1->CC[3].bit.CC
 
   #define IGN1_COMPARE  TCC1->CC[0].bit.CC
   #define IGN2_COMPARE  TCC1->CC[1].bit.CC
