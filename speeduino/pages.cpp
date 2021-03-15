@@ -15,7 +15,7 @@ const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,384,192,19
 // The TS layout is not what is in memory. E.g.
 //
 //    TS Page 2               |0123456789ABCD|0123456789ABCDEF|
-//                                /                       \
+//                                |                       |
 //    Arduino In Memory  |--- Entity A ---|         |--- Entity B -----|
 //
 // Further, the in memory entity may also not be contiguous or in the same
@@ -34,10 +34,19 @@ namespace
     End     // The offset was past any known entity for the page
   };
 
+  enum struct table3D_section_t : uint8_t { Value, axisX, axisY, None } ;
+
+  struct table_entity_t {
+    table3D *pTable;
+    uint8_t xIndex;
+    uint8_t yIndex;
+    table3D_section_t section;
+  };  
+
   typedef struct entity_t {
     union {
+      table_entity_t table;
       void *pData;      // Raw
-      table3D *pTable;  // Table
     };
     uint8_t page;   // The page the entity belongs to
     uint16_t start; // The start position of the entity, in bytes, from the start of the page
@@ -57,8 +66,17 @@ namespace
   #define TABLE6_SIZE TABLE_SIZE(6)
   #define TABLE4_SIZE TABLE_SIZE(4)
 
+  // Macros + compile time constants = fast division/modulus
+  //
+  // The various fast division libraries, E.g. libdivide, use
+  // 32-bit operations for 16-bit division. Super slow.
+  #define OFFSET_TOVALUE_YINDEX(offset, size) ((uint8_t)((size-1) - (offset / size)))
+  #define OFFSET_TOVALUE_XINDEX(offset, size) ((uint8_t)(offset % size))
+  #define OFFSET_TOAXIS_XINDEX(offset, size) ((uint8_t)(offset - TABLE_VALUE_END(size)))
+  #define OFFSET_TOAXIS_YINDEX(offset, size) ((uint8_t)((size-1) - (offset - TABLE_AXISX_END(size))))
+
   #define NULL_TABLE \
-    { nullptr }
+    { nullptr, 0, 0, table3D_section_t::None }
 
   // Create an End entity_t
   #define PAGE_END(pageNum, pageSize) \
@@ -71,25 +89,55 @@ namespace
       return { NULL_TABLE, .page = pageNum, .start = (startByte), .size = blockSize, .type = entity_type::None }; \
     } 
 
+  // 
+  #define TABLE_VALUE(offset, startByte, pTable, tableSize) \
+    { pTable, \
+      OFFSET_TOVALUE_XINDEX((offset-(startByte)), tableSize), \
+      OFFSET_TOVALUE_YINDEX((offset-(startByte)), tableSize), \
+      table3D_section_t::Value }
+
+  #define TABLE_XAXIS(offset, startByte, pTable, tableSize) \
+    { pTable, \
+      OFFSET_TOAXIS_XINDEX((offset-(startByte)), tableSize), \
+      0U, \
+      table3D_section_t::axisX }
+
+  #define TABLE_YAXIS(offset, startByte, pTable, tableSize) \
+    { pTable, \
+      0U, \
+      OFFSET_TOAXIS_YINDEX((offset-(startByte)), tableSize), \
+      table3D_section_t::axisY }
+
+  #define TABLE_ENTITY(table_type, pageNum, startByte, tableSize) \
+    { table_type, .page = pageNum, .start = (startByte), .size = TABLE_SIZE(tableSize), .type = entity_type::Table }
+
   // If the offset is in range, create a Table entity_t
   #define CHECK_TABLE(offset, startByte, pTable, tableSize, pageNum) \
-    if (offset < startByte+TABLE_SIZE(tableSize)) \
+    if (offset < (startByte)+TABLE_VALUE_END(tableSize)) \
     { \
-      return { { pTable }, .page = pageNum, .start = startByte, .size = TABLE_SIZE(tableSize), .type = entity_type::Table }; \
-    } 
+      return TABLE_ENTITY(TABLE_VALUE(offset, startByte, pTable, tableSize), pageNum, startByte, tableSize); \
+    } \
+    if (offset < (startByte)+TABLE_AXISX_END(tableSize)) \
+    { \
+      return TABLE_ENTITY(TABLE_XAXIS(offset, startByte, pTable, tableSize), pageNum, startByte, tableSize); \
+    } \
+    if (offset < (startByte)+TABLE_AXISY_END(tableSize)) \
+    { \
+      return TABLE_ENTITY(TABLE_YAXIS(offset, startByte, pTable, tableSize), pageNum, startByte, tableSize); \
+    }
 
   // If the offset is in range, create a Raw entity_t
   #define CHECK_RAW(offset, startByte, pDataBlock, blockSize, pageNum) \
     if (offset < (startByte)+blockSize) \
     { \
-      return { { pDataBlock }, .page = pageNum, .start = (startByte), .size = blockSize, .type = entity_type::Raw }; \
+      return { { (table3D*)pDataBlock, 0, 0, table3D_section_t::None }, .page = pageNum, .start = (startByte), .size = blockSize, .type = entity_type::Raw }; \
     } 
 
   // Does the heavy lifting of the entity mapping
   //
   // Alternative implementation would be to encode the mapping into data structures
   // That uses flash memory, which is scarce. And it was too slow,
-  inline /* <--I'm hopeful */ entity_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
+  inline __attribute__((always_inline)) entity_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
   {
     switch (pageNumber)
     {
@@ -200,110 +248,43 @@ namespace
 // We take the offset & map it to a single value, x-axis or y-axis element
 namespace
 {
-  enum struct table3D_section_t : uint8_t{ Value, axisX, axisY, None } ;
-
-  typedef struct table_address_t {
-    union {
-      byte *pValue;
-      int16_t *pAxis;
-    };
-    table3D_section_t section;
-  } table_address_t;
-
-  // Macros + compile time constants = fast division/modulus
-  //
-  // The various fast division libraries, E.g. libdivide, use
-  // 32-bit operations for 16-bit division. Super slow.
-  #define OFFSET_TOVALUE_YINDEX(offset, size) ((size-1) - (offset / size))
-  #define OFFSET_TOVALUE_XINDEX(offset, size) (offset % size)
-  #define OFFSET_TOAXIS_XINDEX(offset, size) (offset - (size*size))
-  #define OFFSET_TOAXIS_YINDEX(offset, size) ((size-1) - (offset - ((size*size) + size)))
-
-  // A template is just easier than a macro here!
-  template <int8_t _Size>
-  inline table_address_t to_table_address(const table3D *pTable, uint16_t offset)
+  inline byte get_table_value(const table_entity_t &table)
   {
-    if (offset < TABLE_VALUE_END(_Size))
-    {
-      return { pTable->values[OFFSET_TOVALUE_YINDEX(offset, _Size)] + OFFSET_TOVALUE_XINDEX(offset, _Size), table3D_section_t::Value };
-    }
-    else if (offset < TABLE_AXISX_END(_Size))
-    {
-      return { (byte*)(pTable->axisX + OFFSET_TOAXIS_XINDEX(offset, _Size)), table3D_section_t::axisX };
-    }
-    else if (offset < TABLE_AXISY_END(_Size))
-    {
-      return { (byte*)(pTable->axisY + OFFSET_TOAXIS_YINDEX(offset, _Size)), table3D_section_t::axisY };
-    }
-    return { nullptr, table3D_section_t::None }; 
-  }
-
-  #define TO_TABLE_ADDRESS(size, pTable, offset) case size: return to_table_address<size>(pTable, offset); break;
-
-  inline table_address_t to_table_address(const table3D *pTable, uint16_t offset)
-  {
-    // You might be tempted to remove the switch: DON'T
-    //
-    // Some processors do not have division hardware. E.g. ATMega2560.
-    //
-    // So in the general case, division is done in software. I.e. the compiler
-    // emits code to perform the division. 
-    //
-    // However, by using compile time constants the compiler can do a ton of
-    // optimization of the division and modulus operations above
-    // (likely converting them to multiply & shift operations).
-    //
-    // So this is a massive performance win (2x to 3x).
-    switch (pTable->xSize)
-    {
-      TO_TABLE_ADDRESS(16, pTable, offset);
-      TO_TABLE_ADDRESS(8, pTable, offset);
-      TO_TABLE_ADDRESS(6, pTable, offset);
-      TO_TABLE_ADDRESS(4, pTable, offset);
-    }
-    return { nullptr, table3D_section_t::None }; 
-  }
-
-  inline byte get_table_value(const table3D *pTable, uint16_t offset)
-  {
-    auto table_address = to_table_address(pTable, offset);
-    switch (table_address.section)
+    switch (table.section)
     {
       case table3D_section_t::Value: 
-        return *table_address.pValue;
+        return table.pTable->values[table.yIndex][table.xIndex];
 
       case table3D_section_t::axisX:
-        return byte((*table_address.pAxis) / getTableXAxisFactor(pTable)); 
+        return (byte)(table.pTable->axisX[table.xIndex] / getTableXAxisFactor(table.pTable)); 
       
       case table3D_section_t::axisY:
-        return byte((*table_address.pAxis) / getTableYAxisFactor(pTable)); 
+        return byte(table.pTable->axisY[table.yIndex] / getTableYAxisFactor(table.pTable)); 
       
       default: return 0; // no-op
     }
-
     return 0U;
   }
 
-  inline void set_table_value(table3D *pTable, uint16_t offset, int8_t value)
+  inline void set_table_value(const table_entity_t &table, int8_t value)
   {
-    auto table_address = to_table_address(pTable, offset);
-    switch (table_address.section)
+    switch (table.section)
     {
       case table3D_section_t::Value: 
-        *table_address.pValue = value;
+        table.pTable->values[table.yIndex][table.xIndex] = value;
         break;
 
       case table3D_section_t::axisX:
-        *table_address.pAxis = (int)(value) * getTableXAxisFactor(pTable); 
+        table.pTable->axisX[table.xIndex] = (int)(value) * getTableXAxisFactor(table.pTable); 
         break;
       
       case table3D_section_t::axisY:
-        *table_address.pAxis= (int)(value) * getTableYAxisFactor(pTable);
+        table.pTable->axisY[table.yIndex]= (int)(value) * getTableYAxisFactor(table.pTable);
         break;
       
       default: ; // no-op
-    }
-    pTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+    }    
+    table.pTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
   }
 }
 
@@ -314,23 +295,8 @@ namespace {
     return (byte*)entity.pData + offset;
   }
 
-  inline uint8_t get_value(const entity_t &entity, uint16_t offset)
-  {
-    switch (entity.type)
-    {
-      case entity_type::Table:
-        return get_table_value(entity.pTable, offset);
-        break;
-  
-      case entity_type::Raw:
-        return *get_raw_value(entity, offset);
-        break;
-
-      default: return 0U;
-    }
-    return 0U;
-  }
 }
+
 /**
  * @brief Retrieves a single value from a memory page, with data aligned as per the ini file
  * 
@@ -341,7 +307,20 @@ namespace {
 byte getPageValue(byte page, uint16_t offset)
 {
   entity_t entity = map_page_offset_to_entity(page, offset);
-  return get_value(entity, offset-entity.start);
+
+  switch (entity.type)
+  {
+    case entity_type::Table:
+      return get_table_value(entity.table);
+      break;
+
+    case entity_type::Raw:
+      return *get_raw_value(entity, offset);
+      break;
+
+    default: return 0U;
+  }
+  return 0U;
 }
 
 
@@ -352,7 +331,7 @@ void setPageValue(byte pageNum, uint16_t offset, byte value)
   switch (entity.type)
   {
   case entity_type::Table:
-    set_table_value(entity.pTable, offset-entity.start, value);
+    set_table_value(entity.table, value);
     break;
   
   case entity_type::Raw:
@@ -367,13 +346,64 @@ void setPageValue(byte pageNum, uint16_t offset, byte value)
 namespace {
   FastCRC32 CRC32;
 
+  inline void move_next(table_entity_t &table)
+  {
+    switch (table.section)
+    {
+      case table3D_section_t::Value:
+        ++table.xIndex;
+        if (table.xIndex==table.pTable->xSize)
+        {
+          table.xIndex = 0;
+          if (table.yIndex>0)
+          {
+            --table.yIndex;
+          }
+          else
+          {
+            table.section = table3D_section_t::axisX;
+          }
+        }
+      break;
+
+      case table3D_section_t::axisX:
+        ++table.xIndex;
+        if (table.xIndex==table.pTable->xSize)
+        {
+          table.yIndex = table.pTable->xSize-1;
+          table.section = table3D_section_t::axisY;
+        }
+        break;
+
+      case table3D_section_t::axisY:
+        --table.yIndex;
+        break;
+
+    default:
+      break;
+    }
+  }
+
   inline uint16_t copy_to(entity_t &entity, uint16_t &offset, byte *pStart, byte*pEnd)
   {
-    uint16_t num_bytes = min((uint16_t)(pEnd-pStart), entity.size-offset);
+    uint16_t num_bytes = min((uint16_t)(pEnd-pStart), (uint16_t)(entity.size-offset));
     pEnd = pStart + num_bytes;
     while (pStart!=pEnd)
     {
-      *pStart = get_value(entity, offset);
+      switch (entity.type)
+      {
+       case entity_type::Table:
+        *pStart = get_table_value(entity.table);
+        move_next(entity.table);
+        break;
+
+       case entity_type::None:
+        *pStart = 0;
+        break;
+
+        default: abort(); break;
+      }
+
       ++offset;
       ++pStart;
     }
