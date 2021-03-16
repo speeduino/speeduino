@@ -1,6 +1,7 @@
 #include "pages.h"
 #include "src/FastCRC/FastCRC.h"
 #include "globals.h"
+#include "utilities.h"
 
 const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,384,192,192,288,192,128,288}; /**< This array stores the size (in bytes) of each configuration page */
 
@@ -289,6 +290,17 @@ namespace
     }    
     table.pTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
   }
+
+  // Support iteration over a pages entities.
+  // Check for entity.type==entity_type::End
+  inline entity_t page_begin(byte pageNum)
+  {
+    return map_page_offset_to_entity(pageNum, 0);
+  }
+  inline entity_t advance(const entity_t &it)
+  {
+    return map_page_offset_to_entity(it.page, it.start+it.size);
+  }
 }
 
 namespace {
@@ -351,166 +363,152 @@ namespace {
     
     FastCRC32 CRC32;
 
-}
+inline void move_next(table_entity_t &table)
+  {
+    switch (table.section)
+    {
+      case table3D_section_t::Value:
+        ++table.xIndex;
+        if (table.xIndex==table.pTable->xSize)
+        {
+          table.xIndex = 0;
+          if (table.yIndex>0)
+          {
+            --table.yIndex;
+          }
+          else
+          {
+            table.section = table3D_section_t::axisX;
+          }
+        }
+      break;
 
+      case table3D_section_t::axisX:
+        ++table.xIndex;
+        if (table.xIndex==table.pTable->xSize)
+        {
+          table.yIndex = table.pTable->xSize-1;
+          table.section = table3D_section_t::axisY;
+        }
+        break;
+
+      case table3D_section_t::axisY:
+        --table.yIndex;
+        break;
+
+    default:
+      break;
+    }
+  }
+
+  inline uint16_t copy_to(entity_t &entity, uint16_t &offset, byte *pStart, byte*pEnd)
+  {
+    uint16_t num_bytes = min((uint16_t)(pEnd-pStart), (uint16_t)(entity.size-offset));
+    pEnd = pStart + num_bytes;
+    while (pStart!=pEnd)
+    {
+      switch (entity.type)
+      {
+       case entity_type::Table:
+        *pStart = get_table_value(entity.table);
+        move_next(entity.table);
+        break;
+
+       case entity_type::None:
+        *pStart = 0;
+        break;
+
+        default: abort(); break;
+      }
+
+      ++offset;
+      ++pStart;
+    }
+    return num_bytes;
+  }
+
+  inline uint32_t compute_raw_crc(entity_t &entity)
+  {
+    return CRC32.crc32((uint8_t*)entity.pData, entity.size, false);
+  }
+
+  inline uint32_t update_raw_crc(entity_t &entity)
+  {
+    return CRC32.crc32_upd((uint8_t*)entity.pData, entity.size, false);
+  }
+
+  inline uint32_t compute_crc_block(entity_t &entity, uint16_t &offset)
+  {
+    uint8_t buffer[128];
+    return CRC32.crc32(buffer, copy_to(entity, offset, buffer, buffer+_countof(buffer)), false);
+  }
+
+  inline uint32_t update_crc_block(entity_t &entity, uint16_t &offset)
+  {
+    uint8_t buffer[128];
+    return CRC32.crc32_upd(buffer, copy_to(entity, offset, buffer, buffer+_countof(buffer)), false);
+  }
+
+  inline uint32_t compute_crc(entity_t &entity)
+  {
+    if (entity.type==entity_type::Raw)
+    {
+      return compute_raw_crc(entity);
+    }
+    else
+    {
+      uint16_t offset = 0;
+      uint32_t crc = compute_crc_block(entity, offset);
+      while (offset<entity.size)
+      {  
+        crc = update_crc_block(entity, offset);
+      }
+      return crc;
+    }
+  }
+  
+  inline uint32_t update_crc(entity_t &entity)
+  {
+    if (entity.type==entity_type::Raw)
+    {
+      return update_raw_crc(entity);
+    }
+    else
+    {
+      uint16_t offset = 0;
+      uint32_t crc = update_crc_block(entity, offset);
+      while (offset<entity.size)
+      {  
+        crc = update_crc_block(entity, offset);
+      }
+      return crc;
+    }
+  }
+
+  inline uint32_t pad_crc(uint16_t padding, uint32_t crc)
+  {
+    uint8_t raw_value = 0u;
+    while (padding>0)
+    {
+      crc = CRC32.crc32_upd(&raw_value, 1, false);
+      --padding;
+    }
+    return crc;
+  }
+}
 /*
 Calculates and returns the CRC32 value of a given page of memory
 */
-uint32_t calculateCRC32(byte pageNo)
+uint32_t calculateCRC32(byte pageNum)
 {
-  uint32_t CRC32_val;
-  byte raw_value;
-  void* pnt_configPage;
+  entity_t entity = page_begin(pageNum);
+  uint32_t crc = compute_crc(entity);
 
-  //This sucks (again) for all the 3D map pages that have to have a translation performed
-  switch(pageNo)
+  entity = advance(entity);
+  while (entity.type!=entity_type::End)
   {
-    case veMapPage:
-      //Confirmed working
-      raw_value = getPageValue(veMapPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[veMapPage]; x++)
-      //for(uint16_t x=1; x< 288; x++)
-      {
-        raw_value = getPageValue(veMapPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-
-    case veSetPage:
-      //Confirmed working
-      pnt_configPage = &configPage2; //Create a pointer to Page 1 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage2) );
-      break;
-
-    case ignMapPage:
-      //Confirmed working
-      raw_value = getPageValue(ignMapPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[ignMapPage]; x++)
-      {
-        raw_value = getPageValue(ignMapPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-
-    case ignSetPage:
-      //Confirmed working
-      pnt_configPage = &configPage4; //Create a pointer to Page 4 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage4) );
-      break;
-
-    case afrMapPage:
-      //Confirmed working
-      raw_value = getPageValue(afrMapPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[afrMapPage]; x++)
-      {
-        raw_value = getPageValue(afrMapPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-
-    case afrSetPage:
-      //Confirmed working
-      pnt_configPage = &configPage6; //Create a pointer to Page 4 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage6) );
-      break;
-
-    case boostvvtPage:
-      //Confirmed working
-      raw_value = getPageValue(boostvvtPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[boostvvtPage]; x++)
-      {
-        raw_value = getPageValue(boostvvtPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-
-    case seqFuelPage:
-      //Confirmed working
-      raw_value = getPageValue(seqFuelPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[seqFuelPage]; x++)
-      {
-        raw_value = getPageValue(seqFuelPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-
-    case canbusPage:
-      //Confirmed working
-      pnt_configPage = &configPage9; //Create a pointer to Page 9 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage9) );
-      break;
-
-    case warmupPage:
-      //Confirmed working
-      pnt_configPage = &configPage10; //Create a pointer to Page 10 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage10) );
-      break;
-
-    case fuelMap2Page:
-      //Confirmed working
-      raw_value = getPageValue(fuelMap2Page, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[fuelMap2Page]; x++)
-      //for(uint16_t x=1; x< 288; x++)
-      {
-        raw_value = getPageValue(fuelMap2Page, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-
-    case wmiMapPage:
-      //Confirmed working
-      raw_value = getPageValue(wmiMapPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[wmiMapPage]; x++)
-      {
-        raw_value = getPageValue(wmiMapPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-      
-    case progOutsPage:
-      //Confirmed working
-      pnt_configPage = &configPage13; //Create a pointer to Page 10 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage13) );
-      break;
-    
-    case ignMap2Page:
-      //Confirmed working
-      raw_value = getPageValue(ignMap2Page, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[ignMap2Page]; x++)
-      {
-        raw_value = getPageValue(ignMap2Page, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-
-    default:
-      CRC32_val = 0;
-      break;
+    crc = update_crc(entity);
+    entity = advance(entity);
   }
-  
-  return CRC32_val;
+  return ~pad_crc(npage_size[pageNum] - entity.size, crc);
 }
