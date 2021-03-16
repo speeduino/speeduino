@@ -28,7 +28,6 @@ extern uint8_t pinIsValid;
 void setResetControlPinState();
 byte pinTranslate(byte);
 byte pinTranslateAnalog(byte);
-uint32_t calculateCRC32(byte);
 void initialiseProgrammableIO();
 void checkProgrammableIO();
 int16_t ProgrammableIOGetData(uint16_t index);
