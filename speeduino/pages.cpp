@@ -2,6 +2,7 @@
 #include "src/FastCRC/FastCRC.h"
 #include "globals.h"
 #include "utilities.h"
+#include "table_iterator.h"
 
 const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,384,192,192,288,192,128,288}; /**< This array stores the size (in bytes) of each configuration page */
 
@@ -147,7 +148,7 @@ namespace
   // Alternative implementation would be to encode the mapping into data structures
   // That uses flash memory, which is scarce. And it was too slow.
   inline __attribute__((always_inline)) // <-- this is critical for performance
-  entity_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
+  entity_t map_page_offset_to_entity_inline(uint8_t pageNumber, uint16_t offset)
   {
     switch (pageNumber)
     {
@@ -247,11 +248,6 @@ namespace
 // We take the offset & map it to a single value, x-axis or y-axis element
 namespace
 {
-  inline int8_t getTableYAxisFactor(const table3D *pTable)
-  {
-    return pTable==&boostTable || pTable==&vvtTable ? 1 : TABLE_LOAD_MULTIPLIER;
-  }
-
   inline byte get_table_value(const table_entity_t &table)
   {
     switch (table.section)
@@ -260,7 +256,7 @@ namespace
         return table.pTable->values[table.yIndex][table.xIndex];
 
       case table3D_section_t::axisX:
-        return (byte)(table.pTable->axisX[table.xIndex] / TABLE_RPM_MULTIPLIER); 
+        return (byte)(table.pTable->axisX[table.xIndex] / getTableXAxisFactor(table.pTable)); 
       
       case table3D_section_t::axisY:
         return (byte)(table.pTable->axisY[table.yIndex] / getTableYAxisFactor(table.pTable)); 
@@ -279,7 +275,7 @@ namespace
         break;
 
       case table3D_section_t::axisX:
-        table.pTable->axisX[table.xIndex] = (int16_t)(value) * TABLE_RPM_MULTIPLIER; 
+        table.pTable->axisX[table.xIndex] = (int16_t)(value) * getTableXAxisFactor(table.pTable); 
         break;
       
       case table3D_section_t::axisY:
@@ -290,6 +286,12 @@ namespace
     }    
     table.pTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
   }
+
+  entity_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
+  {
+    return map_page_offset_to_entity_inline(pageNumber, offset);
+  }
+  
 
   // Support iteration over a pages entities.
   // Check for entity.type==entity_type::End
@@ -314,7 +316,7 @@ namespace {
 
 void setPageValue(byte pageNum, uint16_t offset, byte value)
 {
-  entity_t entity = map_page_offset_to_entity(pageNum, offset);
+  entity_t entity = map_page_offset_to_entity_inline(pageNum, offset);
 
   switch (entity.type)
   {
@@ -341,7 +343,7 @@ void setPageValue(byte pageNum, uint16_t offset, byte value)
  */
 byte getPageValue(byte page, uint16_t offset)
 {
-  entity_t entity = map_page_offset_to_entity(page, offset);
+  entity_t entity = map_page_offset_to_entity_inline(page, offset);
 
   switch (entity.type)
   {
@@ -360,129 +362,48 @@ byte getPageValue(byte page, uint16_t offset)
 
 
 namespace {
-    
-    FastCRC32 CRC32;
 
-inline void move_next(table_entity_t &table)
+  FastCRC32 CRC32;
+
+  typedef uint32_t (FastCRC32::*pCrcCalc)(const uint8_t *, const uint16_t, bool);
+
+  inline uint32_t compute_raw_crc(entity_t &entity, pCrcCalc calcFunc)
   {
-    switch (table.section)
+    return (CRC32.*calcFunc)((uint8_t*)entity.pData, entity.size, false);
+  }
+
+  inline uint32_t compute_tablevalues_crc(table_row_iterator_t it, pCrcCalc calcFunc)
+  {
+    table_row_t row = get_row(it);
+    uint32_t crc = (CRC32.*calcFunc)(row.pValue, row.pEnd-row.pValue, false);
+    advance_row(it);
+
+    while (!at_end(it))
     {
-      case table3D_section_t::Value:
-        ++table.xIndex;
-        if (table.xIndex==table.pTable->xSize)
-        {
-          table.xIndex = 0;
-          if (table.yIndex>0)
-          {
-            --table.yIndex;
-          }
-          else
-          {
-            table.section = table3D_section_t::axisX;
-          }
-        }
-      break;
-
-      case table3D_section_t::axisX:
-        ++table.xIndex;
-        if (table.xIndex==table.pTable->xSize)
-        {
-          table.yIndex = table.pTable->xSize-1;
-          table.section = table3D_section_t::axisY;
-        }
-        break;
-
-      case table3D_section_t::axisY:
-        --table.yIndex;
-        break;
-
-    default:
-      break;
+      row = get_row(it);
+      crc = CRC32.crc32_upd(row.pValue, row.pEnd-row.pValue, false);
+      advance_row(it);
     }
+    return crc;
   }
 
-  inline uint16_t copy_to(entity_t &entity, uint16_t &offset, byte *pStart, byte*pEnd)
+  inline uint32_t compute_tableaxis_crc(table_axis_iterator_t it, uint32_t crc)
   {
-    uint16_t num_bytes = min((uint16_t)(pEnd-pStart), (uint16_t)(entity.size-offset));
-    pEnd = pStart + num_bytes;
-    while (pStart!=pEnd)
+    byte values[32]; // Fingers crossed we don't have a table bigger than 32x32
+    byte *pValue = values;
+    while (!at_end(it))
     {
-      switch (entity.type)
-      {
-       case entity_type::Table:
-        *pStart = get_table_value(entity.table);
-        move_next(entity.table);
-        break;
-
-       case entity_type::None:
-        *pStart = 0;
-        break;
-
-        default: abort(); break;
-      }
-
-      ++offset;
-      ++pStart;
+      *pValue++ = get_value(it);
+      it = advance_axis(it);
     }
-    return num_bytes;
+    return pValue-values==0 ? crc : CRC32.crc32_upd(values, pValue-values, false);
   }
 
-  inline uint32_t compute_raw_crc(entity_t &entity)
+  inline uint32_t compute_table_crc(table3D *pTable, pCrcCalc calcFunc)
   {
-    return CRC32.crc32((uint8_t*)entity.pData, entity.size, false);
-  }
-
-  inline uint32_t update_raw_crc(entity_t &entity)
-  {
-    return CRC32.crc32_upd((uint8_t*)entity.pData, entity.size, false);
-  }
-
-  inline uint32_t compute_crc_block(entity_t &entity, uint16_t &offset)
-  {
-    uint8_t buffer[128];
-    return CRC32.crc32(buffer, copy_to(entity, offset, buffer, buffer+_countof(buffer)), false);
-  }
-
-  inline uint32_t update_crc_block(entity_t &entity, uint16_t &offset)
-  {
-    uint8_t buffer[128];
-    return CRC32.crc32_upd(buffer, copy_to(entity, offset, buffer, buffer+_countof(buffer)), false);
-  }
-
-  inline uint32_t compute_crc(entity_t &entity)
-  {
-    if (entity.type==entity_type::Raw)
-    {
-      return compute_raw_crc(entity);
-    }
-    else
-    {
-      uint16_t offset = 0;
-      uint32_t crc = compute_crc_block(entity, offset);
-      while (offset<entity.size)
-      {  
-        crc = update_crc_block(entity, offset);
-      }
-      return crc;
-    }
-  }
-  
-  inline uint32_t update_crc(entity_t &entity)
-  {
-    if (entity.type==entity_type::Raw)
-    {
-      return update_raw_crc(entity);
-    }
-    else
-    {
-      uint16_t offset = 0;
-      uint32_t crc = update_crc_block(entity, offset);
-      while (offset<entity.size)
-      {  
-        crc = update_crc_block(entity, offset);
-      }
-      return crc;
-    }
+    return compute_tableaxis_crc(y_begin(pTable), 
+              compute_tableaxis_crc(x_begin(pTable),
+                  compute_tablevalues_crc(rows_begin(pTable), calcFunc)));
   }
 
   inline uint32_t pad_crc(uint16_t padding, uint32_t crc)
@@ -495,19 +416,43 @@ inline void move_next(table_entity_t &table)
     }
     return crc;
   }
+
+  inline uint32_t compute_crc(entity_t &entity, pCrcCalc calcFunc)
+  {
+    switch (entity.type)
+    {
+    case entity_type::Raw:
+      return compute_raw_crc(entity, calcFunc);
+      break;
+
+    case entity_type::Table:
+      return compute_table_crc(entity.table.pTable, calcFunc);
+      break;
+    
+    case entity_type::None:
+      return pad_crc(entity.size, 0U);
+      break;
+
+    default:
+      abort();
+      break;
+    }
+ }
 }
+
 /*
 Calculates and returns the CRC32 value of a given page of memory
 */
 uint32_t calculateCRC32(byte pageNum)
 {
   entity_t entity = page_begin(pageNum);
-  uint32_t crc = compute_crc(entity);
+  // Initial CRC calc
+  uint32_t crc = compute_crc(entity, &FastCRC32::crc32);
 
   entity = advance(entity);
   while (entity.type!=entity_type::End)
   {
-    crc = update_crc(entity);
+    crc = compute_crc(entity, &FastCRC32::crc32_upd /* Note that we are *updating* */);
     entity = advance(entity);
   }
   return ~pad_crc(npage_size[pageNum] - entity.size, crc);
