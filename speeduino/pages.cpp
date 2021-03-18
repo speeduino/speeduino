@@ -28,14 +28,6 @@ const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,384,192,19
 // This namespace encapsulates step 1
 namespace 
 {
-  // Type of entity the offset mapped to
-  enum struct entity_type : uint8_t { 
-    Raw,    // A block of memory
-    Table,  // A 3D table
-    None,   // No entity, but a valid offset
-    End     // The offset was past any known entity for the page
-  };
-
   // What section of a 3D table the offset mapped to
   enum struct table3D_section_t : uint8_t { 
     Value,  // The values
@@ -52,7 +44,7 @@ namespace
     table3D_section_t section;
   };  
 
-  typedef struct entity_t {
+  struct entity_t {
     // The entity that the offset mapped to
     union {
       table_entity_t table;
@@ -62,7 +54,7 @@ namespace
     uint16_t start; // The start position of the entity, in bytes, from the start of the page
     uint16_t size;  // Size of the entity in bytes
     entity_type type;
-  } entity_t;
+  };
 
   // Handy table macros
   #define TABLE_VALUE_END(size) ((uint16_t)size*(uint16_t)size)
@@ -286,23 +278,6 @@ namespace
     }    
     table.pTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
   }
-
-  entity_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
-  {
-    return map_page_offset_to_entity_inline(pageNumber, offset);
-  }
-  
-
-  // Support iteration over a pages entities.
-  // Check for entity.type==entity_type::End
-  inline entity_t page_begin(byte pageNum)
-  {
-    return map_page_offset_to_entity(pageNum, 0);
-  }
-  inline entity_t advance(const entity_t &it)
-  {
-    return map_page_offset_to_entity(it.page, it.start+it.size);
-  }
 }
 
 namespace {
@@ -360,6 +335,35 @@ byte getPageValue(byte page, uint16_t offset)
   return 0U;
 }
 
+namespace {
+  
+  // Because trhe page iterators will not be called for every single byte
+  // inlining the mapping function is not performance critical.
+  //
+  // So save some memory.
+  entity_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
+  {
+    return map_page_offset_to_entity_inline(pageNumber, offset);
+  }
+
+  inline page_entity_t to_page_entity(entity_t mapped)
+  {
+    return { { mapped.type==entity_type::Table ? mapped.table.pTable : (table3D*)mapped.pData }, 
+           .page=mapped.page, .start = mapped.start, .size = mapped.size, .type = mapped.type };
+  }
+}
+
+// Support iteration over a pages entities.
+// Check for entity.type==entity_type::End
+page_entity_t page_begin(byte pageNum)
+{
+  return to_page_entity(map_page_offset_to_entity(pageNum, 0U));
+}
+
+page_entity_t advance(const page_entity_t &it)
+{
+    return to_page_entity(map_page_offset_to_entity(it.page, it.start+it.size));
+}
 
 namespace {
 
@@ -367,7 +371,7 @@ namespace {
 
   typedef uint32_t (FastCRC32::*pCrcCalc)(const uint8_t *, const uint16_t, bool);
 
-  inline uint32_t compute_raw_crc(entity_t &entity, pCrcCalc calcFunc)
+  inline uint32_t compute_raw_crc(page_entity_t &entity, pCrcCalc calcFunc)
   {
     return (CRC32.*calcFunc)((uint8_t*)entity.pData, entity.size, false);
   }
@@ -417,7 +421,7 @@ namespace {
     return crc;
   }
 
-  inline uint32_t compute_crc(entity_t &entity, pCrcCalc calcFunc)
+  inline uint32_t compute_crc(page_entity_t &entity, pCrcCalc calcFunc)
   {
     switch (entity.type)
     {
@@ -426,7 +430,7 @@ namespace {
       break;
 
     case entity_type::Table:
-      return compute_table_crc(entity.table.pTable, calcFunc);
+      return compute_table_crc(entity.pTable, calcFunc);
       break;
     
     case entity_type::None:
@@ -445,7 +449,7 @@ Calculates and returns the CRC32 value of a given page of memory
 */
 uint32_t calculateCRC32(byte pageNum)
 {
-  entity_t entity = page_begin(pageNum);
+  page_entity_t entity = page_begin(pageNum);
   // Initial CRC calc
   uint32_t crc = compute_crc(entity, &FastCRC32::crc32);
 
