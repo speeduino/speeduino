@@ -52,24 +52,6 @@ bool serialInProgress = false;
 bool toothLogSendInProgress = false;
 bool compositeLogSendInProgress = false;
 
-const char pageTitles[] PROGMEM //This is being stored in the avr flash instead of SRAM which there is not very much of
-  {
-   "\nVE Map\0"//This is an alternative to using a 2D array which would waste space because of the different lengths of the strings
-   "\nPg 1 Config\0"// 21-The configuration page titles' indexes are found by counting the chars
-   "\nIgnition Map\0"//35-The map page titles' indexes are put into a var called currentTitleIndex. That represents the first char of each string.
-   "\nPg 2 Config\0" //48
-   "\nAFR Map\0" //56
-   "\nPg 3 Config\0" //69
-   "\nPg 4 Config\0" //82
-   "\nBoost Map\0" //93
-   "\nVVT Map\0"//102-No need to put a trailing null because it's the last string and the compliler does it for you.
-   "\nPg 10 Config\0"//116
-   "\n2nd Fuel Map\0"//130
-   "\nWMI Map\0"//139
-   "\nPrgm IO\0"//148
-   "\n2nd Ignition Map"
-  };
-
 void command();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
 void sendValues(uint16_t, uint16_t,byte, byte);
 void sendValuesLegacy();
