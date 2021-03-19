@@ -27,6 +27,7 @@ uint8_t pinIsValid = 0;
 
 void setResetControlPinState();
 byte pinTranslate(byte);
+byte pinTranslateAnalog(byte);
 uint32_t calculateCRC32(byte);
 void initialiseProgrammableIO();
 void checkProgrammableIO();
