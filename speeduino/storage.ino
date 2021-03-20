@@ -17,13 +17,13 @@ bool eepromWritesPending = false;
 
 #define EEPROM_DATA_VERSION   0
 
-//Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
-#define EEPROM_PAGE_CRC32     3686 //Size of this is 4 * <number of pages> (CRC32 = 32 bits): 3742 - (14 * 4) = 3686
-#define EEPROM_LAST_BARO      3742 // 3743 - 1
-//New values using 2D tables
-#define EEPROM_CALIBRATION_O2   3743 //3839-96 +64
-#define EEPROM_CALIBRATION_IAT  3839 //3967-128
-#define EEPROM_CALIBRATION_CLT  3967 //4095-128
+// Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
+#define STORAGE_END 0xFFF       // Should be E2END?
+#define EEPROM_CALIBRATION_CLT  (STORAGE_END-(sizeof(cltCalibration_bins)+sizeof(cltCalibration_values)))
+#define EEPROM_CALIBRATION_IAT  (EEPROM_CALIBRATION_CLT-(sizeof(iatCalibration_bins)+sizeof(iatCalibration_values)))
+#define EEPROM_CALIBRATION_O2   (EEPROM_CALIBRATION_IAT-(sizeof(o2Calibration_bins)+sizeof(o2Calibration_values)))
+#define EEPROM_LAST_BARO        (EEPROM_CALIBRATION_O2-1)
+
 
 /** Write all config pages to EEPROM.
  */
@@ -308,6 +308,14 @@ void writeCalibration()
 
 }
 
+namespace {
+
+  uint16_t compute_crc_address(byte pageNo)
+  {
+    return EEPROM_LAST_BARO-((getPageCount() - pageNo)*sizeof(uint32_t));
+  }
+
+}
 /** Write CRC32 checksum to EEPROM.
 Takes a page number and CRC32 value then stores it in the relevant place in EEPROM
 Note: Each pages requires 4 bytes for its CRC32. These are stored in reverse page order (ie the last page is store first in EEPROM).
@@ -316,8 +324,7 @@ Note: Each pages requires 4 bytes for its CRC32. These are stored in reverse pag
 */
 void storePageCRC32(byte pageNo, uint32_t crc32_val)
 {
-  uint16_t address; //Start address for the relevant page
-  address = EEPROM_PAGE_CRC32 + ((getPageCount() - pageNo) * 4);
+  uint16_t address = compute_crc_address(pageNo);
 
   //One = Most significant -> Four = Least significant byte
   byte four = (crc32_val & 0xFF);
@@ -337,8 +344,7 @@ void storePageCRC32(byte pageNo, uint32_t crc32_val)
 */
 uint32_t readPageCRC32(byte pageNo)
 {
-  uint16_t address; //Start address for the relevant page
-  address = EEPROM_PAGE_CRC32 + ((getPageCount() - pageNo) * 4);
+  uint16_t address = compute_crc_address(pageNo);
 
   //Read the 4 bytes from the eeprom memory.
   uint32_t four = EEPROM.read(address);
