@@ -4,8 +4,6 @@
 #include "utilities.h"
 #include "table_iterator.h"
 
-const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,384,192,192,288,192,128,288}; /**< This array stores the size (in bytes) of each configuration page */
-
 // This namespace maps from virtual page "addresses" to addresses/bytes of real in memory entities
 //
 // For TunerStudio:
@@ -28,6 +26,9 @@ const uint16_t npage_size[NUM_PAGES] = {0,128,288,288,128,288,128,240,384,192,19
 // This namespace encapsulates step 1
 namespace 
 {
+  // Page sizes as defined in the .ini file
+  constexpr const uint16_t ini_page_sizes[] = { 0, 128, 288, 288, 128, 288, 128, 240, 384, 192, 192, 288, 192, 128, 288 };
+ 
   // What section of a 3D table the offset mapped to
   enum struct table3D_section_t : uint8_t { 
     Value,  // The values
@@ -289,6 +290,16 @@ namespace {
 
 }
 
+uint8_t getPageCount()
+{
+  return _countof(ini_page_sizes);
+}
+
+uint16_t getPageSize(byte pageNum)
+{
+  return ini_page_sizes[pageNum];
+}
+
 void setPageValue(byte pageNum, uint16_t offset, byte value)
 {
   entity_t entity = map_page_offset_to_entity_inline(pageNum, offset);
@@ -308,14 +319,6 @@ void setPageValue(byte pageNum, uint16_t offset, byte value)
   }
 }
 
-
-/**
- * @brief Retrieves a single value from a memory page, with data aligned as per the ini file
- * 
- * @param page The page number to retrieve data from
- * @param valueAddress The address in the page that should be returned. This is as per the page definition in the ini
- * @return byte The requested value
- */
 byte getPageValue(byte page, uint16_t offset)
 {
   entity_t entity = map_page_offset_to_entity_inline(page, offset);
@@ -444,9 +447,6 @@ namespace {
  }
 }
 
-/*
-Calculates and returns the CRC32 value of a given page of memory
-*/
 uint32_t calculateCRC32(byte pageNum)
 {
   page_entity_t entity = page_begin(pageNum);
@@ -459,5 +459,5 @@ uint32_t calculateCRC32(byte pageNum)
     crc = compute_crc(entity, &FastCRC32::crc32_upd /* Note that we are *updating* */);
     entity = advance(entity);
   }
-  return ~pad_crc(npage_size[pageNum] - entity.size, crc);
+  return ~pad_crc(getPageSize(pageNum) - entity.size, crc);
 }

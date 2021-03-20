@@ -470,7 +470,7 @@ Note: Each pages requires 4 bytes for its CRC32. These are stored in reverse pag
 void storePageCRC32(byte pageNo, uint32_t crc32_val)
 {
   uint16_t address; //Start address for the relevant page
-  address = EEPROM_PAGE_CRC32 + ((NUM_PAGES - pageNo) * 4);
+  address = EEPROM_PAGE_CRC32 + ((getPageCount() - pageNo) * 4);
 
   //One = Most significant -> Four = Least significant byte
   byte four = (crc32_val & 0xFF);
@@ -491,7 +491,7 @@ Retrieves and returns the 4 byte CRC32 for a given page from EEPROM
 uint32_t readPageCRC32(byte pageNo)
 {
   uint16_t address; //Start address for the relevant page
-  address = EEPROM_PAGE_CRC32 + ((NUM_PAGES - pageNo) * 4);
+  address = EEPROM_PAGE_CRC32 + ((getPageCount() - pageNo) * 4);
 
   //Read the 4 bytes from the eeprom memory.
   uint32_t four = EEPROM.read(address);
