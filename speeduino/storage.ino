@@ -19,11 +19,13 @@ bool eepromWritesPending = false;
 
 // Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
 #define STORAGE_END 0xFFF       // Should be E2END?
-#define EEPROM_CALIBRATION_CLT  (STORAGE_END-(sizeof(cltCalibration_bins)+sizeof(cltCalibration_values)))
-#define EEPROM_CALIBRATION_IAT  (EEPROM_CALIBRATION_CLT-(sizeof(iatCalibration_bins)+sizeof(iatCalibration_values)))
-#define EEPROM_CALIBRATION_O2   (EEPROM_CALIBRATION_IAT-(sizeof(o2Calibration_bins)+sizeof(o2Calibration_values)))
-#define EEPROM_LAST_BARO        (EEPROM_CALIBRATION_O2-1)
-
+#define EEPROM_CALIBRATION_CLT_VALUES (STORAGE_END-sizeof(cltCalibration_values))
+#define EEPROM_CALIBRATION_CLT_BINS   (EEPROM_CALIBRATION_CLT_VALUES-sizeof(cltCalibration_bins))
+#define EEPROM_CALIBRATION_IAT_VALUES (EEPROM_CALIBRATION_CLT_BINS-sizeof(iatCalibration_values))
+#define EEPROM_CALIBRATION_IAT_BINS   (EEPROM_CALIBRATION_IAT_VALUES-sizeof(iatCalibration_bins))
+#define EEPROM_CALIBRATION_O2_VALUES  (EEPROM_CALIBRATION_IAT_BINS-sizeof(o2Calibration_values))
+#define EEPROM_CALIBRATION_O2_BINS    (EEPROM_CALIBRATION_O2_VALUES-sizeof(o2Calibration_bins))
+#define EEPROM_LAST_BARO              (EEPROM_CALIBRATION_O2_BINS-1)
 
 /** Write all config pages to EEPROM.
  */
@@ -259,26 +261,17 @@ This is separate from the config load as the calibrations do not exist as pages 
 */
 void loadCalibration()
 {
+  // If you modify this function be sure to also modify writeCalibration();
+  // it should be a mirror image of this function.
 
-  for(int x=0; x<32; x++) //Each calibration table is 32 bytes long
-  {
-    int y = EEPROM_CALIBRATION_CLT + (x * 2);
-    EEPROM.get(y, cltCalibration_bins[x]);
-    y += 64; 
-    EEPROM.get(y, cltCalibration_values[x]);
+  EEPROM.get(EEPROM_CALIBRATION_O2_BINS, o2Calibration_bins);
+  EEPROM.get(EEPROM_CALIBRATION_O2_VALUES, o2Calibration_values);
+  
+  EEPROM.get(EEPROM_CALIBRATION_IAT_BINS, iatCalibration_bins);
+  EEPROM.get(EEPROM_CALIBRATION_IAT_VALUES, iatCalibration_values);
 
-    y = EEPROM_CALIBRATION_IAT + (x * 2);
-    EEPROM.get(y, iatCalibration_bins[x]);
-    y += 64; 
-    EEPROM.get(y, iatCalibration_values[x]);
-
-    y = EEPROM_CALIBRATION_O2 + (x * 2);
-    EEPROM.get(y, o2Calibration_bins[x]);
-    y = EEPROM_CALIBRATION_O2 + 64 + x;
-    o2Calibration_values[x] = EEPROM.read(y); //Byte values
-
-  }
-
+  EEPROM.get(EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
+  EEPROM.get(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
 }
 
 /** Write calibration tables to EEPROM.
@@ -287,25 +280,17 @@ and saves them to the EEPROM.
 */
 void writeCalibration()
 {
+  // If you modify this function be sure to also modify loadCalibration();
+  // it should be a mirror image of this function.
 
-  for(int x=0; x<32; x++) //Each calibration table is 32 bytes long
-  {
-    int y = EEPROM_CALIBRATION_CLT + (x * 2);
-    EEPROM.put(y, cltCalibration_bins[x]);
-    y += 64; 
-    EEPROM.put(y, cltCalibration_values[x]);
+  EEPROM.put(EEPROM_CALIBRATION_O2_BINS, o2Calibration_bins);
+  EEPROM.put(EEPROM_CALIBRATION_O2_VALUES, o2Calibration_values);
+  
+  EEPROM.put(EEPROM_CALIBRATION_IAT_BINS, iatCalibration_bins);
+  EEPROM.put(EEPROM_CALIBRATION_IAT_VALUES, iatCalibration_values);
 
-    y = EEPROM_CALIBRATION_IAT + (x * 2);
-    EEPROM.put(y, iatCalibration_bins[x]);
-    y += 64; 
-    EEPROM.put(y, iatCalibration_values[x]);
-
-    y = EEPROM_CALIBRATION_O2 + (x * 2);
-    EEPROM.put(y, o2Calibration_bins[x]);
-    y = EEPROM_CALIBRATION_O2 + 64 + x; 
-    EEPROM.update(y, o2Calibration_values[x]);
-  }
-
+  EEPROM.put(EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
+  EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
 }
 
 namespace {
