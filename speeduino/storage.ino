@@ -347,8 +347,6 @@ uint32_t readPageCRC32(byte pageNo)
 byte readLastBaro() { return EEPROM.read(EEPROM_LAST_BARO); }
 /// Write last acquired arometer reading to EEPROM.
 void storeLastBaro(byte newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
-/// Store calibration value byte into EEPROM (offset "location").
-void storeCalibrationValue(uint16_t location, byte value) { EEPROM.update(location, value); } //This is essentially just an abstraction for EEPROM.update()
 /// Read EEPROM current data format version (from offset EEPROM_DATA_VERSION).
 byte readEEPROMVersion() { return EEPROM.read(EEPROM_DATA_VERSION); }
 /// Store EEPROM current data format version (to offset EEPROM_DATA_VERSION).
