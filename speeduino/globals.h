@@ -1427,10 +1427,4 @@ extern struct table2D cltCalibrationTable; /**< A 32 bin array containing the co
 extern struct table2D iatCalibrationTable; /**< A 32 bin array containing the inlet air temperature sensor calibration values */
 extern struct table2D o2CalibrationTable; /**< A 32 bin array containing the O2 sensor calibration values */
 
-static_assert(sizeof(struct config2) == 128, "configPage2 size is not 128");
-static_assert(sizeof(struct config4) == 128, "configPage4 size is not 128");
-static_assert(sizeof(struct config6) == 128, "configPage6 size is not 128");
-static_assert(sizeof(struct config9) == 192, "configPage9 size is not 192");
-static_assert(sizeof(struct config10) == 192, "configPage10 size is not 192");
-static_assert(sizeof(struct config13) == 128, "configPage13 size is not 128");
 #endif // GLOBALS_H

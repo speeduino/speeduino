@@ -28,7 +28,7 @@ namespace
 {
   // Page sizes as defined in the .ini file
   constexpr const uint16_t ini_page_sizes[] = { 0, 128, 288, 288, 128, 288, 128, 240, 384, 192, 192, 288, 192, 128, 288 };
- 
+
   // What section of a 3D table the offset mapped to
   enum struct table3D_section_t : uint8_t { 
     Value,  // The values
@@ -57,6 +57,12 @@ namespace
     entity_type type;
   };
 
+  // This will fail AND print the page number and required size
+  template <uint8_t pageNum, uint16_t min>
+  static inline void check_size() {
+    static_assert(ini_page_sizes[pageNum] >= min, "Size is off!");
+  }
+
   // Handy table macros
   #define TABLE_VALUE_END(size) ((uint16_t)size*(uint16_t)size)
   #define TABLE_AXISX_END(size) (TABLE_VALUE_END(size)+(uint16_t)size)
@@ -81,12 +87,16 @@ namespace
   #define NULL_TABLE \
     { nullptr, 0, 0, table3D_section_t::None }
 
-  // Create an End entity_t
-  #define PAGE_END(pageNum, pageSize) \
-    { NULL_TABLE, .page = pageNum, .start = 0, .size = pageSize, .type = entity_type::End };
+  #define CREATE_PAGE_END(pageNum, pageSize) \
+    { NULL_TABLE, .page = pageNum, .start = 0, .size = pageSize, .type = entity_type::End }
+
+  // Signal the end of a page
+  #define END_OF_PAGE(pageNum, pageSize) \
+    check_size<pageNum, pageSize>(); \
+    return CREATE_PAGE_END(pageNum, pageSize);
  
   // If the offset is in range, create a None entity_t
-#define CHECK_NOENTITY(offset, startByte, blockSize, pageNum) \
+  #define CHECK_NOENTITY(offset, startByte, blockSize, pageNum) \
     if (offset < (startByte)+blockSize) \
     { \
       return { NULL_TABLE, .page = pageNum, .start = (startByte), .size = blockSize, .type = entity_type::None }; \
@@ -145,26 +155,29 @@ namespace
   {
     switch (pageNumber)
     {
+      case 0:
+        return CREATE_PAGE_END(0, 0);
+
       case veMapPage:
         CHECK_TABLE(offset, 0U, &fuelTable, 16, pageNumber)
-        return PAGE_END(pageNumber, TABLE16_SIZE);
+        END_OF_PAGE(veMapPage, TABLE16_SIZE);
         break;
 
       case ignMapPage: //Ignition settings page (Page 2)
         CHECK_TABLE(offset, 0U, &ignitionTable, 16, pageNumber)
-        return PAGE_END(pageNumber, TABLE16_SIZE);
+        END_OF_PAGE(ignMapPage, TABLE16_SIZE);
         break;
 
       case afrMapPage: //Air/Fuel ratio target settings page
         CHECK_TABLE(offset, 0U, &afrTable, 16, pageNumber)
-        return PAGE_END(pageNumber, TABLE16_SIZE);
+        END_OF_PAGE(afrMapPage, TABLE16_SIZE);
         break;
 
       case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
         CHECK_TABLE(offset, 0U, &boostTable, 8, pageNumber)
         CHECK_TABLE(offset, TABLE8_SIZE, &vvtTable, 8, pageNumber)
         CHECK_TABLE(offset, TABLE8_SIZE*2, &stagingTable, 8, pageNumber)
-        return PAGE_END(pageNumber, TABLE8_SIZE*3);
+        END_OF_PAGE(boostvvtPage, TABLE8_SIZE*3);
         break;
 
       case seqFuelPage:
@@ -176,61 +189,60 @@ namespace
         CHECK_TABLE(offset, TABLE6_SIZE*5, &trim6Table, 6, pageNumber)
         CHECK_TABLE(offset, TABLE6_SIZE*6, &trim7Table, 6, pageNumber)
         CHECK_TABLE(offset, TABLE6_SIZE*7, &trim8Table, 6, pageNumber)
-        return PAGE_END(pageNumber, TABLE6_SIZE*8);
+        END_OF_PAGE(seqFuelPage, TABLE6_SIZE*8);
         break;
 
       case fuelMap2Page:
         CHECK_TABLE(offset, 0U, &fuelTable2, 16, pageNumber)
-        return PAGE_END(pageNumber, TABLE16_SIZE);
+        END_OF_PAGE(fuelMap2Page, TABLE16_SIZE);
         break;
 
       case wmiMapPage:
         CHECK_TABLE(offset, 0U, &wmiTable, 8, pageNumber)
         CHECK_NOENTITY(offset, TABLE8_SIZE, 80, pageNumber)
         CHECK_TABLE(offset, TABLE8_SIZE + 80, &dwellTable, 4, pageNumber)
-        return PAGE_END(pageNumber, TABLE8_SIZE + 80 + TABLE4_SIZE);
+        END_OF_PAGE(wmiMapPage, TABLE8_SIZE + 80 + TABLE4_SIZE);
         break;
       
       case ignMap2Page:
         CHECK_TABLE(offset, 0U, &ignitionTable2, 16, pageNumber)
-        return PAGE_END(pageNumber, TABLE16_SIZE);
+        END_OF_PAGE(ignMap2Page, TABLE16_SIZE);
         break;
 
       case veSetPage: 
         CHECK_RAW(offset, 0U, &configPage2, sizeof(configPage2), pageNumber)
-        return PAGE_END(pageNumber, sizeof(configPage2));
+        END_OF_PAGE(veSetPage, sizeof(configPage2));
         break;
 
       case ignSetPage: 
         CHECK_RAW(offset, 0U, &configPage4, sizeof(configPage4), pageNumber)
-        return PAGE_END(pageNumber, sizeof(configPage4));
+        END_OF_PAGE(ignSetPage, sizeof(configPage4));
         break;
 
       case afrSetPage: 
         CHECK_RAW(offset, 0U, &configPage6, sizeof(configPage6), pageNumber)
-        return PAGE_END(pageNumber, sizeof(configPage6));
+        END_OF_PAGE(afrSetPage, sizeof(configPage6));
         break;
 
       case canbusPage:  
         CHECK_RAW(offset, 0U, &configPage9, sizeof(configPage9), pageNumber)
-        return PAGE_END(pageNumber, sizeof(configPage9));
+        END_OF_PAGE(canbusPage, sizeof(configPage9));
         break;
 
       case warmupPage: 
         CHECK_RAW(offset, 0U, &configPage10, sizeof(configPage10), pageNumber)
-        return PAGE_END(pageNumber, sizeof(configPage10));
+        END_OF_PAGE(warmupPage, sizeof(configPage10));
         break;
 
       case progOutsPage: 
         CHECK_RAW(offset, 0U, &configPage13, sizeof(configPage13), pageNumber)
-        return PAGE_END(pageNumber, sizeof(configPage13));
+        END_OF_PAGE(progOutsPage, sizeof(configPage13));
         break;      
 
       default:
+        abort(); // Unkown page number. Not a lot  we can do.
         break;
     }
-
-    return PAGE_END(pageNumber, 0);
   }
 }
 
