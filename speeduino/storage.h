@@ -1,8 +1,6 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
-#include "globals.h"
-
 void writeAllConfig();
 void writeConfig(byte);
 void loadConfig();
@@ -49,15 +47,5 @@ Current layout of EEPROM data is as follows (All sizes are in bytes):
 | 4095               | 0           | Storage End                         | // "down"
 |------------------------------------------------------------------------|
 */
-
-#define EEPROM_DATA_VERSION   0
-
-//Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
-#define EEPROM_PAGE_CRC32     3686 //Size of this is 4 * <number of pages> (CRC32 = 32 bits): 3742 - (14 * 4) = 3686
-#define EEPROM_LAST_BARO      3742 // 3743 - 1
-//New values using 2D tables
-#define EEPROM_CALIBRATION_O2   3743 //3839-96 +64
-#define EEPROM_CALIBRATION_IAT  3839 //3967-128
-#define EEPROM_CALIBRATION_CLT  3967 //4095-128
 
 #endif // STORAGE_H

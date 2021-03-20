@@ -8,14 +8,23 @@ A full copy of the license may be found in the projects root directory
  */
 
 #include "globals.h"
-#include "table.h"
-#include "comms.h" // Is this needed at all ?
 #include EEPROM_LIB_H //This is defined in the board .h files
 #include "storage.h"
 #include "pages.h"
 #include "table_iterator.h"
 
 bool eepromWritesPending = false;
+
+#define EEPROM_DATA_VERSION   0
+
+//Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
+#define EEPROM_PAGE_CRC32     3686 //Size of this is 4 * <number of pages> (CRC32 = 32 bits): 3742 - (14 * 4) = 3686
+#define EEPROM_LAST_BARO      3742 // 3743 - 1
+//New values using 2D tables
+#define EEPROM_CALIBRATION_O2   3743 //3839-96 +64
+#define EEPROM_CALIBRATION_IAT  3839 //3967-128
+#define EEPROM_CALIBRATION_CLT  3967 //4095-128
+
 /** Write all config pages to EEPROM.
  */
 void writeAllConfig()
