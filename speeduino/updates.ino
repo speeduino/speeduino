@@ -10,7 +10,6 @@
  */
 #include "globals.h"
 #include "storage.h"
-#include EEPROM_LIB_H //This is defined in the board .h files
 
 // These are "legacy" - since we now automatically pack pages
 // end-to-end.
@@ -30,7 +29,7 @@ void doUpdates()
    #ifndef SMALL_FLASH_MODE
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
+  if(readEEPROMVersion() == 2)
   {
     for(int x=0; x<16; x++)
     {
@@ -40,11 +39,10 @@ void doUpdates()
       }
     }
     writeAllConfig();
-    //EEPROM.write(EEPROM_DATA_VERSION, 3);
     storeEEPROMVersion(3);
   }
   //June 2017 required the forced addition of some CAN values to avoid weird errors
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 3)
+  if(readEEPROMVersion() == 3)
   {
     configPage9.speeduino_tsCanId = 0;
     configPage9.true_address = 256;
@@ -54,11 +52,10 @@ void doUpdates()
     if(configPage4.sparkDur == 255) { configPage4.sparkDur = 10; }
 
     writeAllConfig();
-    //EEPROM.write(EEPROM_DATA_VERSION, 4);
     storeEEPROMVersion(4);
   }
   //July 2017 adds a cranking enrichment curve in place of the single value. This converts that single value to the curve
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 4)
+  if(readEEPROMVersion() == 4)
   {
     //Some default values for the bins (Doesn't matter too much here as the values against them will all be identical)
     configPage10.crankingEnrichBins[0] = 0;
@@ -72,11 +69,10 @@ void doUpdates()
     configPage10.crankingEnrichValues[3] = 100 + configPage2.crankingPct;
 
     writeAllConfig();
-    //EEPROM.write(EEPROM_DATA_VERSION, 5);
     storeEEPROMVersion(5);
   }
   //September 2017 had a major change to increase the minimum table size to 128. This required multiple pieces of data being moved around
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 5)
+  if(readEEPROMVersion() == 5)
   {
     //Data after page 4 has to move back 128 bytes
     for(int x=0; x < 1152; x++)
@@ -95,11 +91,11 @@ void doUpdates()
       EEPROM.update(endMem, currentVal);
     }
 
-    EEPROM.write(EEPROM_DATA_VERSION, 6);
+    storeEEPROMVersion(6);
     loadConfig(); //Reload the config after changing everything in EEPROM
   }
   //November 2017 added the staging table that comes after boost and vvt in the EEPROM. This required multiple pieces of data being moved around
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 6)
+  if(readEEPROMVersion() == 6)
   {
     //Data after page 8 has to move back 82 bytes
     for(int x=0; x < 529; x++)
@@ -110,11 +106,11 @@ void doUpdates()
       EEPROM.update(endMem, currentVal);
     }
 
-    EEPROM.write(EEPROM_DATA_VERSION, 7);
+    storeEEPROMVersion(7);
     loadConfig(); //Reload the config after changing everything in EEPROM
   }
 
-  if (EEPROM.read(EEPROM_DATA_VERSION) == 7) {
+  if (readEEPROMVersion() == 7) {
     //Convert whatever flex fuel settings are there into the new tables
 
     configPage10.flexBoostBins[0] = 0;
@@ -144,10 +140,10 @@ void doUpdates()
     }
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 8);
+    storeEEPROMVersion(8);
   }
 
-  if (EEPROM.read(EEPROM_DATA_VERSION) == 8)
+  if (readEEPROMVersion() == 8)
   {
     //May 2018 adds separate load sources for fuel and ignition. Copy the existing load alogirthm into Both
     configPage2.fuelAlgorithm = configPage2.legacyMAP; //Was configPage2.unused2_38c
@@ -157,10 +153,10 @@ void doUpdates()
     configPage4.boostType = 1;
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 9);
+    storeEEPROMVersion(9);
   }
 
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 9)
+  if(readEEPROMVersion() == 9)
   {
     //October 2018 set default values for all the aux in variables (These were introduced in Aug, but no defaults were set then)
     //All aux channels set to Off
@@ -179,10 +175,10 @@ void doUpdates()
     configPage4.ADCFILTER_BARO= 64;
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 10);
+    storeEEPROMVersion(10);
   }
 
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 10)
+  if(readEEPROMVersion() == 10)
   {
     //May 2019 version adds the use of a 2D table for the priming pulse rather than a single value.
     //This sets all the values in the 2D table to be the same as the previous single value
@@ -249,10 +245,10 @@ void doUpdates()
 
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 11);
+    storeEEPROMVersion(11);
   }
 
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 11)
+  if(readEEPROMVersion() == 11)
   {
     //Sep 2019
     //A battery calibration offset value was introduced. Set default value to 0
@@ -267,10 +263,10 @@ void doUpdates()
     configPage10.fuel2SwitchValue = 7000; //7000 RPM switch point is safe
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 12);
+    storeEEPROMVersion(12);
   }
 
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 12)
+  if(readEEPROMVersion() == 12)
   {
     //Nov 2019
     //New option to only apply voltage correction to dead time. Set existing tunes to use old method
@@ -313,10 +309,10 @@ void doUpdates()
     configPage4.idleAdvValues[5] = 15;
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 13);
+    storeEEPROMVersion(13);
   }
 
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 13)
+  if(readEEPROMVersion() == 13)
   {
     //202005
     //Cranking enrichment range 0..1275% instead of older 0.255, so need to divide old values by 5
@@ -380,12 +376,12 @@ void doUpdates()
     configPage2.vssMode = 0;
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 14);
+    storeEEPROMVersion(14);
 
     //
   }
 
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 14)
+  if(readEEPROMVersion() == 14)
   {
     //202008
 
@@ -446,21 +442,20 @@ void doUpdates()
     configPage2.aseTaperTime = 10; //1 second taper
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 15);
+    storeEEPROMVersion(15);
   }
 
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 15)
+  if(readEEPROMVersion() == 15)
   {
     //202012
     configPage10.spark2Mode = 0; //Disable 2nd spark table
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 16);
+    storeEEPROMVersion(16);
   }
-
   //Move this #endif to only do latest updates to safe ROM space on small devices.
   #endif
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 16)
+  if(readEEPROMVersion() == 16)
   {
     //Fix for wrong placed page 13
     for(int x=EEPROM_CONFIG14_END; x>=EEPROM_CONFIG13_START; x--)
@@ -472,10 +467,10 @@ void doUpdates()
     configPage2.useDwellMap = 0; //Dwell map added, use old fixed value as default
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 17);
+    storeEEPROMVersion(17);
   }
 
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 17)
+  if(readEEPROMVersion() == 17)
   {
     //VVT stuff has now 0.5 accurasy, so shift values in vvt table by one.
     for(int x=0; x<8; x++)
@@ -505,11 +500,11 @@ void doUpdates()
     configPage9.boostByGearEnabled = 0;
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 18);
+    storeEEPROMVersion(18);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)
-  if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
+  if( (readEEPROMVersion() == 0) || (readEEPROMVersion() == 255) )
   {
     configPage9.true_address = 0x200;
     
@@ -525,9 +520,9 @@ void doUpdates()
 
     configPage4.FILTER_FLEX = 75;
 
-    EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION);
+    storeEEPROMVersion(CURRENT_DATA_VERSION);
   }
 
   //Check to see if someone has downgraded versions:
-  if( EEPROM.read(EEPROM_DATA_VERSION) > CURRENT_DATA_VERSION ) { EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION); }
+  if( readEEPROMVersion() > CURRENT_DATA_VERSION ) { storeEEPROMVersion(CURRENT_DATA_VERSION); }
 }
