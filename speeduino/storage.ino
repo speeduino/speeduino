@@ -20,20 +20,12 @@ bool eepromWritesPending = false;
  */
 void writeAllConfig()
 {
-  writeConfig(veSetPage);
-  if (eepromWritesPending == false) { writeConfig(veMapPage); }
-  if (eepromWritesPending == false) { writeConfig(ignMapPage); }
-  if (eepromWritesPending == false) { writeConfig(ignSetPage); }
-  if (eepromWritesPending == false) { writeConfig(afrMapPage); }
-  if (eepromWritesPending == false) { writeConfig(afrSetPage); }
-  if (eepromWritesPending == false) { writeConfig(boostvvtPage); }
-  if (eepromWritesPending == false) { writeConfig(seqFuelPage); }
-  if (eepromWritesPending == false) { writeConfig(canbusPage); }
-  if (eepromWritesPending == false) { writeConfig(warmupPage); }
-  if (eepromWritesPending == false) { writeConfig(fuelMap2Page); }
-  if (eepromWritesPending == false) { writeConfig(wmiMapPage); }
-  if (eepromWritesPending == false) { writeConfig(progOutsPage); }
-  if (eepromWritesPending == false) { writeConfig(ignMap2Page); }
+  uint8_t page = 1;
+  writeConfig(page++);
+  while (page<getPageCount() && !eepromWritesPending)
+  {
+    writeConfig(page++);
+  }
 }
 
 namespace {
