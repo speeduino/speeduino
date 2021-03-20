@@ -12,6 +12,17 @@
 #include "storage.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 
+// These are "legacy" - since we now automatically pack pages
+// end-to-end.
+#define EEPROM_CONFIG10_END   2094
+#define EEPROM_CONFIG13_START 2580
+#define EEPROM_CONFIG14_END   2998
+
+//These were the values used previously when all calibration tables were 512 long. They need to be retained for the update process (202005 -> 202008) can work. 
+#define EEPROM_CALIBRATION_O2_OLD   2559
+#define EEPROM_CALIBRATION_IAT_OLD  3071
+#define EEPROM_CALIBRATION_CLT_OLD  3583
+
 void doUpdates()
 {
   #define CURRENT_DATA_VERSION    18
