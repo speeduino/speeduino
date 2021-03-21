@@ -318,7 +318,8 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
       yMin = fromTable->lastYMin;
     }
     //2nd check is whether we're in the next MAP/TPS bin (Next one up)
-    else if ( (fromTable->lastYMin > 0 ) && (Y <= fromTable->axisY[fromTable->lastYMin - 1 ]) && (Y > fromTable->axisY[fromTable->lastYMax - 1]) ) //First make sure we're not already at the top Y bin
+    else if ( (fromTable->lastYMin > 0 ) && 
+          (Y >= fromTable->axisY[fromTable->lastYMax - 1]) && (Y < fromTable->axisY[fromTable->lastYMin - 1 ]) ) //First make sure we're not already at the top Y bin
     {
       yMax = fromTable->lastYMax - 1;
       fromTable->lastYMax = yMax;
@@ -328,7 +329,8 @@ int get3DTableValue(struct table3D *fromTable, int Y_in, int X_in)
       yMinValue = fromTable->axisY[fromTable->lastYMin];
     }
     //3rd check is to look at the previous bin (Next one down)
-    else if ( ((fromTable->lastYMax + 1) < fromTable->ySize) && (Y <= fromTable->axisY[fromTable->lastYMin + 1]) && (Y > fromTable->axisY[fromTable->lastYMax + 1]) ) //First make sure we're not already at the bottom Y bin
+    else if ( ((fromTable->lastYMax + 1) < fromTable->ySize) &&
+            (Y >= fromTable->axisY[fromTable->lastYMax + 1]) && (Y < fromTable->axisY[fromTable->lastYMin + 1]) ) //First make sure we're not already at the bottom Y bin
     {
       yMax = fromTable->lastYMax + 1;
       fromTable->lastYMax = yMax;
