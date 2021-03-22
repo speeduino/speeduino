@@ -76,6 +76,7 @@ void initialiseIdle()
       iacPWMTable.axisSize = SIZE_BYTE;
       iacPWMTable.values = configPage6.iacOLPWMVal;
       iacPWMTable.axisX = configPage6.iacBins;
+      break;
 
     case IAC_ALGORITHM_PWM_CL:
       //Case 3 is PWM closed loop
