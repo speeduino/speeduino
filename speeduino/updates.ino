@@ -11,6 +11,8 @@
 void doUpdates()
 {
   #define CURRENT_DATA_VERSION    17
+  //Only the latest updat for small flash devices must be retained
+   #ifndef SMALL_FLASH_MODE
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -441,6 +443,8 @@ void doUpdates()
     EEPROM.write(EEPROM_DATA_VERSION, 16);
   }
 
+  //Move this #endif to only do latest updates to safe ROM space on small devices.
+  #endif
   if(EEPROM.read(EEPROM_DATA_VERSION) == 16)
   {
     //Fix for wrong placed page 13

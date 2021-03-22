@@ -108,13 +108,22 @@ extern "C" char* sbrk(int incr);
   #endif
     InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 
-#elif defined(STM32F401xC)
+#elif defined(STM32F411xE)
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   #include EEPROM_LIB_H
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 131072UL, 4095UL, 0x08040000UL};
     InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 
-#else //default case, internal flash as EEPROM for STM32F4
+#elif defined(STM32F401xC)
+  //when using with internal falsh not enough rom is available so small flash mode is enabled
+  //be carefull that the only 50% of flash is can be used, the other 50% is used for eeprom emulation
+  #define SMALL_FLASH_MODE
+  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  #include EEPROM_LIB_H
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{1UL, 131072UL, 4095UL, 0x08020000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+
+#else //default case, internal flash as EEPROM for STM32F407
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   #include EEPROM_LIB_H
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08080000UL};
