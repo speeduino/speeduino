@@ -12,7 +12,7 @@ A full copy of the license may be found in the projects root directory
 #include "decoders.h"
 #include "TS_CommandButtonHandler.h"
 #include "errors.h"
-#include "src/FastCRC/FastCRC.h"
+// #include "src/FastCRC/FastCRC.h"
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
@@ -181,7 +181,9 @@ void command()
       break;
 
     case 'L': // List the contents of current page in human readable form
+      #ifndef SMALL_FLASH_MODE
       sendPageASCII();
+      #endif
       break;
 
     case 'm': //Send the current free memory

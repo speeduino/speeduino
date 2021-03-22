@@ -207,10 +207,8 @@ extern volatile unsigned long toothSystemLastToothTime; //As below, but used for
 extern volatile unsigned long toothLastToothTime; //The time (micros()) that the last tooth was registered
 extern volatile unsigned long toothLastSecToothTime; //The time (micros()) that the last tooth was registered on the secondary input
 extern volatile unsigned long toothLastMinusOneToothTime; //The time (micros()) that the tooth before the last tooth was registered
-#ifndef SMALL_FLASH_MODE
 extern volatile unsigned long toothLastMinusOneSecToothTime; //The time (micros()) that the tooth before the last tooth was registered on secondary input
 extern volatile unsigned long targetGap2;
-#endif
 
 extern volatile unsigned long toothOneTime; //The time (micros()) that tooth 1 last triggered
 extern volatile unsigned long toothOneMinusOneTime; //The 2nd to last time (micros()) that tooth 1 last triggered
