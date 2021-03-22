@@ -146,6 +146,7 @@ volatile uint16_t ignitionCount; /**< The count of ignition events that have tak
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360;
 int CRANK_ANGLE_MAX_INJ = 360; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+byte maxIgnOutputs = 1; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
 volatile uint32_t runSecsX10;
 volatile uint32_t seclx10;
 volatile byte HWTest_INJ = 0; /**< Each bit in this variable represents one of the injector channels and it's HW test status */
@@ -261,3 +262,52 @@ struct table2D iatCalibrationTable;
 uint16_t o2Calibration_bins[32];
 uint8_t o2Calibration_values[32];
 struct table2D o2CalibrationTable;
+
+//These function do checks on a pin to determine if it is already in use by another (higher importance) active function
+bool pinIsUsed(byte pin)
+{
+  bool used = false;
+  //Injector?
+  if (pin == pinInjector1)
+    used = true;
+  else if ((pin == pinInjector2) && (configPage2.nInjectors > 1))
+    used = true;
+  else if ((pin == pinInjector3) && (configPage2.nInjectors > 2))
+    used = true;
+  else if ((pin == pinInjector4) && (configPage2.nInjectors > 3))
+    used = true;
+  else if ((pin == pinInjector5) && (configPage2.nInjectors > 4))
+    used = true;
+  else if ((pin == pinInjector6) && (configPage2.nInjectors > 5))
+    used = true;
+  else if ((pin == pinInjector7) && (configPage2.nInjectors > 6))
+    used = true;
+  else if ((pin == pinInjector8) && (configPage2.nInjectors > 7))
+    used = true;
+  //Ignition?
+  if (pin == pinCoil1)
+    used = true;
+  else if ((pin == pinCoil2) && (maxIgnOutputs > 1))
+    used = true;
+  else if ((pin == pinCoil3) && (maxIgnOutputs > 2))
+    used = true;
+  else if ((pin == pinCoil4) && (maxIgnOutputs > 3))
+    used = true;
+  else if ((pin == pinCoil5) && (maxIgnOutputs > 4))
+    used = true;
+  else if ((pin == pinCoil6) && (maxIgnOutputs > 5))
+    used = true;
+  else if ((pin == pinCoil7) && (maxIgnOutputs > 6))
+    used = true;
+  else if ((pin == pinCoil8) && (maxIgnOutputs > 7))
+    used = true;
+  //Analog input?
+  if ( (pin == pinCLT) || (pin == pinIAT) || (pin == pinMAP) || (pin == pinTPS) || (pin == pinO2) || (pin == pinBat) )
+    used = true;
+  //Functions?
+  if ( (pin == pinFuelPump) || ((pin == pinFan) && (configPage6.fanEnable == 1)) || ((pin == pinVVT_1) && (configPage6.vvtEnabled > 0)) || ((pin == pinVVT_2) && (configPage6.vvtEnabled > 0)) || ((pin == pinBoost) && (configPage6.boostEnabled == 1)) || ((pin == pinIdle1) && ((configPage6.iacAlgorithm > 0) && (configPage6.iacAlgorithm <= 3))) || ((pin == pinIdle2) && (configPage6.iacChannels == 1)) || (pin == pinTachOut) )
+    used = true;
+  if ( pinIsReserved(pin) ) { used = true; }
+
+  return used;
+}

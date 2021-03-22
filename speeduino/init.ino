@@ -294,7 +294,6 @@ void initialiseAll()
     initialiseCorrections();
     BIT_CLEAR(currentStatus.engineProtectStatus, PROTECT_IO_ERROR); //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
     initialiseADC();
-    initialiseProgrammableIO();
 
     //Lookup the current MAP reading for barometric pressure
     instanteneousMAPReading();
@@ -1171,6 +1170,7 @@ void initialiseAll()
     }
     else { fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
 
+    initialiseProgrammableIO();
     interrupts();
     readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
     readTPS(false); // Need to read tps to detect flood clear state
