@@ -181,7 +181,9 @@ void command()
       break;
 
     case 'L': // List the contents of current page in human readable form
+      #ifndef SMALL_FLASH_MODE
       sendPageASCII();
+      #endif
       break;
 
     case 'm': //Send the current free memory
