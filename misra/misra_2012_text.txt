@@ -1,285 +1,285 @@
 Appendix A Summary of guidelines
 Rule 1.1
-C Syntax violation
+Required - The program shall contain no violations of C syntax and contraints, and shall not exceed the implementations translation limits
 Rule 1.2
-txt rule 1.2
+Advisory - Language extensions should not be used
 Rule 1.3
-No text specified
+Required - There shall be no occurrence of undefined or critical unspecified behavior
 Rule 2.1
-No text specified
+Required - The code shall not contain unreachable code
 Rule 2.2
-No text specified
+Required - There shall be no dead code
 Rule 2.3
-No text specified
+Advisory - A project should not contain unused type declarations
 Rule 2.4
-No text specified
+Advisory - A project should not contain unused tag declarations
 Rule 2.5
-No text specified
+Advisory - A project should not contain unused macro declarations
 Rule 2.6
-No text specified
+Advisory - A function should not contain unused label declarations
 Rule 2.7
-No text specified
+Advisory - There should be no unused parameters in functions
 Rule 3.1
-Mandatory - /* and // cannot used within a comment (ie No nested comments)
+Required - /* and // cannot used within a comment (ie No nested comments)
 Rule 3.2
-No text specified
+Required - Line-splicing shall not be used in double slash comments
 Rule 4.1
-No text specified
+Required - Octal and hexadecimal escape sequences shall be terminated
 Rule 4.2
-No text specified
+Advisory - Trigraphs should not be used
 Rule 5.1
-No text specified
+Required - External identifiers shall be distinct
 Rule 5.2
-No text specified
+Required - Identifiers declared in the same scope and name space shall be distinct
 Rule 5.3
-Mandatory - An identifier (variable) in an outer scope shall not be redfined within an inner scope
+Required - An identifier (variable) in an outer scope shall not be redfined within an inner scope
 Rule 5.4
-Mandatory - Macro names must be unique
+Required - Macro names must be unique
 Rule 5.5
-No text specified
+Required - Variable names shall be distinct from macros
 Rule 5.6
-No text specified
+Required - A typedef name shall be unique identifier
 Rule 5.7
-No text specified
+Required - A tag name shall be unique identifier
 Rule 5.8
-No text specified
+Required - Identifiers that define objects or functions with external linkage shall be unique
 Rule 5.9
-No text specified
+Required - Identifiers that define objects or functions with internal linkage shall be unique
 Rule 6.1
-No text specified
+Required - Bit-fields shall only be declared with an appropriate type
 Rule 6.2
-No text specified
+Required - Single-bit named bit-fields shall not be of a signed type
 Rule 7.1
-No text specified
+Required - Octal constants shall not be used
 Rule 7.2
-No text specified
+Required - A "u" or "U" suffix shall be applied to all integer constants represented in an unsigned type
 Rule 7.3
-No text specified
+Required - The lowercase character "l" shall not be used in a literal suffix
 Rule 7.4
-No text specified
+Required - A string literal shall not be assigned to an object unless the object's type is "pointer to const-qualified char"
 Rule 8.1
-No text specified
+Required - Types shall be splicitly specified
 Rule 8.2
-No text specified
+Required - Function types shall be in prototype from with named parameters
 Rule 8.3
-No text specified
+Required - All declarations of an object or function shall use the same name and type qualifiers
 Rule 8.4
-No text specified
+Required - A compatible declaration shall be visible
 Rule 8.6
-No text specified
+Required - An identifier with external linkage shall have exactly one external defnition
 Rule 8.7
-No text specified
+Advisory - Functions and objects should not be defined with external linkage if they are referenced in only one translation unit
 Rule 8.8
-No text specified
+Required - The static storage class specifier shall be used in all declarations of objects and functions that have internal linkage
 Rule 8.9
-No text specified
+Advisory - An object should be defined at block scope if its identifier only appears in a single function
 Rule 8.10
-No text specified
+Required - An inline function shall be declared with the static storage class
 Rule 8.11
-No text specified
+Advisory - When an array with external linkage is declared, its size should be explicitly specified
 Rule 8.12
-No text specified
+Required - Within an enumerator list, the value of an implicitly-specified enumeration constant shall be unique
 Rule 8.13
-No text specified
+Advisory - A pointer should point to a const-qualified type whenever possible
 Rule 8.14
-No text specified
+Required - The restrict type qualifier shall not be used
 Rule 9.1
-No text specified
+Mandatory - The value of an object with automatic storage duration shall not be read before it has been set
 Rule 9.2
-No text specified
+Required - The initializer for an aggregate or union shall be enclosed in braces
 Rule 9.3
-No text specified
+Required - Arrays shall not be partially initialized
 Rule 9.4
-No text specified
+Required - An element of an object shall not be initialized more than once
 Rule 9.5
-No text specified
+Required - Where designated initializers are used to initialize an array object the size of the array shall be specified explicitly
 Rule 10.1
-Operations must be of an essentially correct type (Eg no shift on signed values, comparison is not boolean, incrementing/decrementing a bool etc) 
+Required - Operations must be of an essentially correct type (Eg no shift on signed values, comparison is not boolean, incrementing/decrementing a bool etc) 
 Rule 10.2
-No text specified
+Required - Expressions of essentially character type shall not be used inappropriately in addition and subtraction operations
 Rule 10.3
-No text specified
+Required - Expression assigned to a narrower or different essential type
 Rule 10.4
-The target of an operation must be of an appropriate type
+Required - Both operands of an operator in which the usual arithmetic conversions are performed shall have the same essential type category 
 Rule 10.5
-No text specified
+Advisory - Impermissible cast; cannot cast from 'essentially unsigned' to 'essentially enum<i>'
 Rule 10.6
-An expression should not assign a value to a variable of a narrower or essentially different type
+Required - An expression should not implicit assign a value to a variable of a narrower or essentially different type
 Rule 10.7
-No text specified
+Required - If a composite expression is used as one operand of an operator in which the usual arithmetic conversions are performed then the other operand shall not have wider essential type
 Rule 10.8
-No text specified
+Required - The value of a composite expression shall not be cast to a different essential type category or a wider essential type
 Rule 11.1
-No text specified
+Required - Conversions shall not be performed between a pointer to a function and any other type
 Rule 11.2
-No text specified
+Required - Conversions shall not be performed between a pointer to an incomplete type and any other type
 Rule 11.3
-A cast shall not be performed between a pointer to object type and a pointer to a different object type
+Required - A cast shall not be performed between a pointer to object type and a pointer to a different object type
 Rule 11.4
 Advisory - Object pointers should not be treated as or converted to integers
 Rule 11.5
 Advisory - A void pointer should not be converted to an object pointer
 Rule 11.6
-No text specified
+Required - A cast shall not be performed between pointer to void and an arithmetic type
 Rule 11.7
-No text specified
+Required - A cast shall not be performed between pointer to object and a non-integer arithmetic type
 Rule 11.8
-No text specified
+Required - A cast shall not remove any const or volatile qualification from the type pointed to by a pointer
 Rule 11.9
-An integer null pointer shall have no value assigned other than NULL macro
+Required - An integer null pointer shall have no value assigned other than NULL macro
 Rule 12.1
 Advisory - Order of operations within an expression must be explicit. Multiple conditions in a logical operation should have brackets around them.
 Rule 12.2
-No text specified
+Required - The right hand operand of a shift operator shall lie in the range zero to one less than the width in bits of the essential type of the left hand operand
 Rule 12.3
 Advisory - The comma operator is not permitted.
 Rule 12.4
-No text specified
+Advisory - Evaluation of constant expressions should not lead to unsigned integer wrap-around
 Rule 13.1
-No text specified
+Required - Initializer lists shall not contain persistent side effects
 Rule 13.2
-No text specified
+Required - The value of an expression and its persistent side effects shall be the same under all permitted evaluation orders
 Rule 13.3
-No text specified
+Advisory - A full expression containing an increment (++) or decrement (--) operator should have no other potential side effects other than that caused by the increment or decrement operator
 Rule 13.4
 Advisory - Assignment operation should not be used in an expression (Check for = when == should have been used)
 Rule 13.5
-No text specified
+Advisory - The right hand operand of a logical && or || operator shall not contain persistent side effects
 Rule 13.6
-No text specified
+Mandatory - The operand of the sizeof operator shall not contain any expression which has potential side effects
 Rule 14.1
-No text specified
+Required - A loop counter shall not have essentially floating type
 Rule 14.2
-No text specified
+Required - A for loop shall be well-formed
 Rule 14.3
-No text specified
+Required - Controlling expressions shall not be invariant
 Rule 14.4
-Mandatory - Non-Boolean type expression used in an if statement or the conditional iteration statement of a loop
+Required - Non-Boolean type expression used in an if statement or the conditional iteration statement of a loop
 Rule 15.1
-No text specified
+Advisory - The 'goto' statement should not be used
 Rule 15.2
-No text specified
+Required - The 'goto' statement shall jump to a label declared later in the same function
 Rule 15.3
-No text specified
+Required - Any label referenced by a 'goto' statement shall be declared in the same block, or in any block enclosing the 'goto' statement
 Rule 15.4
-No text specified
+Advisory - There should be no more than one 'break' or 'goto' statement used to terminate any iteration statement
 Rule 15.5
 Advisory - A function should only have a single return point
 Rule 15.6
-Loops, switch and if/else statements must have brackets around their body
+Required - Loops, switch and if/else statements must have brackets around their body
 Rule 15.7
-'else if' statements must terminate with a final 'else'
+Required - All 'if' ... 'else if' statements must terminate with a final 'else' statement
 Rule 16.1
-No text specified
+Required - All 'switch' statements shall be well-formed
 Rule 16.2
-No text specified
+Required - A 'switch' label shall only be used when the most closely-enclosing compound statement is the body of a 'switch' statement
 Rule 16.3
-Mandatory - All cases within switchs must have an unconditional break statement
+Required - All cases within 'switch' must have an unconditional 'break' statement
 Rule 16.4
-Mandatory - All switch statements must have a default case
+Required - All 'switch' statements must have a 'default' case
 Rule 16.5
-No text specified
+Required - A 'default' label shall appear as either the first or the last 'switch' label of a 'switch' statement
 Rule 16.6
-No text specified
+Required - Every 'switch' statement shall have at least two 'switch-clauses'
 Rule 16.7
-No text specified
+Required - A 'switch-expression' shall not have essentially Boolean type
 Rule 17.1
-No text specified
+Required - The features of <stdarg.h> shall not be used
 Rule 17.2
-Functions shall not call themselves, either directly or indirectly
+Required - Functions shall not call themselves, either directly or indirectly
 Rule 17.3
-No text specified
+Mandatory - A function shall not be declared implicitly
 Rule 17.4
-No text specified
+Mandatory - All exit paths from a function with non-void return type shall have an explicit 'return' statement with an expression
 Rule 17.5
-No text specified
+Advisory - The function argument corresponding to a parameter declared tohave an array type shall have an appropriate number of elements
 Rule 17.6
-No text specified
+Mandatory - The declaration of an array parameter shall not contain the 'static' keyword between the []
 Rule 17.7
-The value returned by a function having non-void return type shall be used
+Required - The value returned by a function having non-void return type shall be used
 Rule 17.8
 Advisory - An argument to a function should be treated as read-only
 Rule 18.1
-No text specified
+Required - A pointer resulting from arithmetic on a pointer operand shall address an element of the same array as that pointer operand
 Rule 18.2
-No text specified
+Required - Subtraction between pointers shall only be applied to pointers that address elements of the same array
 Rule 18.3
-No text specified
+Required - The relational operators >, >=, < and <= shall not be applied to objects of pointer type except where they point into the same object
 Rule 18.4
 Advisory - The +, -, += and -= operators should not be applied to an expression of pointer type
 Rule 18.5
-No text specified
+Advisory - Declarations should contain no more than two levels of pointer nesting
 Rule 18.6
-No text specified
+Required - The address of an object with automatic storage shall not be copied to another object that persists after the first object has ceased to exist
 Rule 18.7
-No text specified
+Required - Flexible array members shall not be declared
 Rule 18.8
-No text specified
+Required - Variable-length array types shall not be used
 Rule 19.1
-No text specified
+Mandatory - An object shall not be assigned or copied to an overlapping object
 Rule 19.2
-No text specified
+Advisory - The 'union' keyword should not be used
 Rule 20.1
-Mandatory - Only comments and prepropccesor directives can come before #include statements
+Required - Only comments and preprocessor directives can come before #include statements
 Rule 20.2
-No text specified
+Required - The ', " or \ characters and the /* or // character sequences shall not occur in a header file name
 Rule 20.3
-Mandatory - #include statements must be followed by a filename
+Required - The #include directive shall be followed by either a <filename> or "filename" sequence
 Rule 20.4
-No text specified
+Required - A macro shall not be defined with the same name as a keyword
 Rule 20.5
 Advisory - Use of #undef is not permitted
 Rule 20.6
-No text specified
+Required - Tokens that look like a preprocessing directive shall not occur within a macro argument
 Rule 20.7
-Macro expressions must be enclosed in parentheses
+Required - Macro expressions must be enclosed in parentheses
 Rule 20.8
-No text specified
+Required - The controlling expression of a #if  or #elif preprocessing directive shall evaluate to 0 or 1
 Rule 20.9
-No text specified
+Required - All identifiers used in the controlling expression of #if or #elif preprocessing directives shall be #define’d before evaluation
 Rule 20.10
-No text specified
+Advisory - The # and ## preprocessor operators should not be used
 Rule 20.11
-No text specified
+Required - A macro parameter immediately following a # operator shall not immediately be followed by a ## operator
 Rule 20.12
-No text specified
+Required - A macro parameter used as an operand to the # or ## operators, which is itself subject to further macro replacement, shall only be used as an operand to these operators
 Rule 20.13
-No text specified
+Required - A line whose first token is # shall be a valid preprocessing directive
 Rule 20.14
-No text specified
+Required - All #else, #elif and #endif preprocessor directives shall reside in the same file as the #if, #ifdef or #ifndef directive to which they are related
 Rule 21.1
-No text specified
+Required - #define and #undef shall not be used on a reserved identifier or reserved macro name
 Rule 21.2
-No text specified
+Required - A reserved identifier or macro name shall not be declared
 Rule 21.3
-Memory allocation functions (Eg malloc(), talloc() etc) shall not be used
+Required - The memory allocation and deallocation functions of <stdlib.h> shall not be used
 Rule 21.4
-No text specified
+Required - The standard header file <setjmp.h> shall not be used
 Rule 21.5
-No text specified
+Required - The standard header file <signal.h> shall not be used
 Rule 21.6
-No text specified
+Required - The Standard Library input/output functions shall not be used
 Rule 21.7
-No text specified
+Required - The 'atof', 'atoi', 'atol' and 'atoll' functions of <stdlib.h> shall not be used
 Rule 21.8
-No text specified
+Required - The library functions 'abort', 'exit', 'getenv' and 'system' of <stdlib.h> shall not be used
 Rule 21.9
-No text specified
+Required - The library functions 'bsearch' and 'qsort' of <stdlib.h> shall not be used
 Rule 21.10
-No text specified
+Required - The Standard Library time and date functions shall not be used
 Rule 21.11
-No text specified
+Required - The standard header file <tgmath.h> shall not be used
 Rule 21.12
-No text specified
+Advisory - The exception handling features of <fenv.h> should not be used
 Rule 22.1
-No text specified
+Required - All resources obtained dynamically by means of Standard Library functions shall be explicitly released
 Rule 22.2
-No text specified
+Mandatory - A block of memory shall only be freed if it was allocated by means of a Standard Library function
 Rule 22.3
-No text specified
+Required - The same file shall not be open for read and write access at the same time on different streams
 Rule 22.4
-No text specified
+Mandatory - There shall be no attempt to write to a stream which has been opened as read-only
 Rule 22.5
-No text specified
+Mandatory - A pointer to a 'FILE' object shall not be dereferenced
 Rule 22.6
-No text specified
+Mandatory - The value of a pointer to a 'FILE' shall not be used after the associated stream has been closed
