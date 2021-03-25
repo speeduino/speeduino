@@ -10,6 +10,7 @@
  */
 #include "globals.h"
 #include "storage.h"
+#include "table_iterator.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 
 void doUpdates()
@@ -21,12 +22,15 @@ void doUpdates()
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(readEEPROMVersion() == 2)
   {
-    for(int x=0; x<16; x++)
+    auto table_it = rows_begin(&ignitionTable);
+    while (!at_end(table_it))
     {
-      for(int y=0; y<16; y++)
+      auto row = get_row(table_it);
+      while (row.pValue!=row.pEnd)
       {
-        ignitionTable.values[x][y] = ignitionTable.values[x][y] + 40;
-      }
+        *row.pValue++ += 40;
+      }      
+      table_it = advance_row(table_it);
     }
     writeAllConfig();
     storeEEPROMVersion(3);
