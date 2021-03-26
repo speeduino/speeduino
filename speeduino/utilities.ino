@@ -44,8 +44,12 @@ byte pinTranslateAnalog(byte rawPin)
     case 11: outputPin = A11; break;
     case 12: outputPin = A12; break;
     case 13: outputPin = A13; break;
-    case 14: outputPin = A14; break;
-    case 15: outputPin = A15; break;
+  #if BOARD_MAX_ADC_PINS >= 14
+      case 14: outputPin = A14; break;
+    #endif
+    #if BOARD_MAX_ADC_PINS >= 15
+      case 15: outputPin = A15; break;
+    #endif
     #if BOARD_MAX_ADC_PINS >= 16
       case 16: outputPin = A16; break;
     #endif
