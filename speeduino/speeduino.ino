@@ -353,7 +353,7 @@ void loop()
       if ( (configPage10.wmiEnabled > 0) && (configPage10.wmiIndicatorEnabled > 0) )
       {
         // water tank empty
-        if (currentStatus.wmiEmpty > 0)
+        if (BIT_CHECK(currentStatus.status4, BIT_STATUS4_WMI_EMPTY) > 0)
         {
           // flash with 1sec inverval
           digitalWrite(pinWMIIndicator, !digitalRead(pinWMIIndicator));

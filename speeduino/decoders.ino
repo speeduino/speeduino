@@ -30,6 +30,7 @@ toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
 
 void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
+void (*triggerTertiaryHandler)(); //Pointer for the tertiary trigger function (Gets pointed to the relevant decoder)
 uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
 int (*getCrankAngle)(); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of each decoder
@@ -38,6 +39,8 @@ volatile unsigned long curTime;
 volatile unsigned long curGap;
 volatile unsigned long curTime2;
 volatile unsigned long curGap2;
+volatile unsigned long curTime3;
+volatile unsigned long curGap3;
 volatile unsigned long lastGap;
 volatile unsigned long targetGap;
 volatile unsigned long compositeLastToothTime;
@@ -48,6 +51,7 @@ volatile byte toothSystemCount = 0; //Used for decoders such as Audi 135 where n
 volatile unsigned long toothSystemLastToothTime = 0; //As below, but used for decoders where not every tooth count is used for calculation
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
 volatile unsigned long toothLastSecToothTime = 0; //The time (micros()) that the last tooth was registered on the secondary input
+volatile unsigned long toothLastThirdToothTime = 0; //The time (micros()) that the last tooth was registered on the second cam input
 volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
 volatile unsigned long toothLastMinusOneSecToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered on secondary input
 volatile unsigned long targetGap2;
@@ -513,19 +517,31 @@ void triggerSec_missingTooth()
       secondaryToothCount++;
     }
     toothLastSecToothTime = curTime2;
-
-    //Record the VVT Angle
-    if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) )
-    {
-      int16_t curAngle;
-      curAngle = getCrankAngle();
-      while(curAngle > 360) { curAngle -= 360; }
-      curAngle -= configPage4.triggerAngle; //Value at TDC
-      if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCLMinAng; }
-
-      currentStatus.vvt1Angle = curAngle;
-    }
   } //Trigger filter
+
+  //Record the VVT Angle
+  if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) )
+  {
+    int16_t curAngle;
+    curAngle = getCrankAngle();
+    while(curAngle > 360) { curAngle -= 360; }
+    curAngle -= configPage4.triggerAngle; //Value at TDC
+    if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCL0DutyAng; }
+
+    currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
+  }
+}
+
+void triggerThird_missingTooth()
+{
+  //Record the VVT2 Angle (the only purpose of the third trigger)
+  int16_t curAngle;
+  curAngle = getCrankAngle();
+  while(curAngle > 360) { curAngle -= 360; }
+  curAngle -= configPage4.triggerAngle; //Value at TDC
+  if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CL0DutyAng; }
+  //currentStatus.vvt2Angle = int8_t (curAngle); //vvt1Angle is only int8, but +/-127 degrees is enough for VVT control
+  currentStatus.vvt2Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt2Angle);
 }
 
 uint16_t getRPM_missingTooth()
@@ -2228,9 +2244,11 @@ int getCrankAngle_Miata9905()
 
 int getCamAngle_Miata9905()
 {
+  int16_t curAngle;
   //lastVVTtime is the time between tooth #1 (10* BTDC) and the single cam tooth. 
   //All cam angles in in BTDC, so the actual advance angle is 370 - fastTimeToAngle(lastVVTtime) - <the angle of the cam at 0 advance>
-  currentStatus.vvt1Angle = 370 - fastTimeToAngle(lastVVTtime) - configPage10.vvtCLMinAng;
+  curAngle = 370 - fastTimeToAngle(lastVVTtime) - configPage10.vvtCLMinAng;
+  currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
 
   return currentStatus.vvt1Angle;
 }
@@ -3954,7 +3972,8 @@ void triggerSec_FordST170()
       while(curAngle > 360) { curAngle -= 360; }
       if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP )
       {
-        currentStatus.vvt1Angle = 360 - curAngle - configPage10.vvtCLMinAng;
+        curAngle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, curAngle);
+        currentStatus.vvt1Angle = 360 - curAngle - configPage10.vvtCL0DutyAng;
       }
     }
   } //Trigger filter
