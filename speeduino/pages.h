@@ -3,20 +3,14 @@
 #include "table.h"
 
 /**
- * @brief Page count, as defined in the INI file
- * 
- * @return uint8_t The page count
+ * Page count, as defined in the INI file
  */
 uint8_t getPageCount(); 
 
 /**
- * @brief Page size as defined in the .ini file
- * 
- * @param pageNum The page number 
- * @return uint16_t The page size in bytes
+ * Page size in bytes
  */
-uint16_t getPageSize(byte pageNum);
-
+uint16_t getPageSize(byte pageNum /**< [in] The page number */ );
 
 // These are the page numbers that the Tuner Studio serial protocol uses to transverse the different map and config pages.
 #define veMapPage    2
@@ -34,44 +28,36 @@ uint16_t getPageSize(byte pageNum);
 #define progOutsPage 13
 #define ignMap2Page  14
 
-/**
- * @brief Gets a single value from a page, with data aligned as per the ini file
- * 
- * @param pageNum The page number to retrieve data from
- * @param offset The address in the page that should be returned. This is as per the page definition in the ini
- * @return byte The requested value
- */
-byte getPageValue(byte pageNum, uint16_t offset);
+// ============================== Per-byte page access ==========================
 
 /**
- * @brief Sets a single value from a page, with data aligned as per the ini file
- * 
- * @param pageNum The page number to retrieve data from
- * @param offset The address in the page that should be returned. This is as per the page definition in the ini
- * @param value The new value
+ * Gets a single value from a page, with data aligned as per the ini file
  */
-void setPageValue(byte pageNum, uint16_t offset, byte value);
+byte getPageValue(  byte pageNum,       /**< [in] The page number to retrieve data from. */
+                    uint16_t offset);   /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
 
-/*
- * @brief Calculates and returns the CRC32 value of a given page of memory
- * 
- * @param pageNum The page number to retrieve data from
- * @return uint32_t The CRC
+/**
+ * Sets a single value from a page, with data aligned as per the ini file
  */
-uint32_t calculateCRC32(byte pageNum);
+void setPageValue(  byte pageNum,       /**< [in] The page number to retrieve data from. */
+                    uint16_t offset,    /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
+                    byte value);        /**< [in] The new value */
 
 // ============================== Page Iteration ==========================
 
-// Type of entity the offset mapped to
-enum struct entity_type : uint8_t { 
-    Raw,    // A block of memory
-    Table,  // A 3D table
-    None,   // No entity, but a valid offset
-    End     // The offset was past any known entity for the page
+// A logical TS page is actually multiple in memory entities. Allow iteration
+// over those entities.
+
+// Type of entity
+enum entity_type { 
+    Raw,        // A block of memory
+    Table,      // A 3D table
+    NoEntity,   // No entity, but a valid offset
+    End         // The offset was past any known entity for the page
 };
 
-struct page_entity_t {
-    // The entity that the offset mapped to
+// A entity on a logical page.
+struct page_iterator_t {
     union {
         table3D *pTable;
         void *pData;
@@ -82,7 +68,13 @@ struct page_entity_t {
     entity_type type;
 };
 
-// Support iteration over a pages entities.
-// Check for entity.type==entity_type::End
-page_entity_t page_begin(byte pageNum);
-page_entity_t advance(const page_entity_t &it);
+/**
+ * Initiates iteration over a pages entities.
+ * Test `entity.type==End` to determine the end of the page.
+ */
+page_iterator_t page_begin(byte pageNum /**< [in] The page number to iterate over. */);
+
+/**
+ * Moves the iterator to the next sub-entity on the page
+ */
+page_iterator_t advance(const page_iterator_t &it /**< [in] The current iterator */);

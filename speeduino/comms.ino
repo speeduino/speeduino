@@ -13,6 +13,7 @@ A full copy of the license may be found in the projects root directory
 #include "TS_CommandButtonHandler.h"
 #include "errors.h"
 #include "pages.h"
+#include "page_crc.h"
 #include "table_iterator.h"
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
@@ -1068,7 +1069,7 @@ void sendValuesLegacy()
 
 namespace {
 
-  void send_raw_entity(const page_entity_t &entity)
+  void send_raw_entity(const page_iterator_t &entity)
   {
     Serial.write((byte *)entity.pData, entity.size);
   }
@@ -1099,19 +1100,19 @@ namespace {
     send_table_axis(y_begin(pTable));
   }
 
-  void send_entity(const page_entity_t &entity)
+  void send_entity(const page_iterator_t &entity)
   {
     switch (entity.type)
     {
-    case entity_type::Raw:
+    case Raw:
       return send_raw_entity(entity);
       break;
 
-    case entity_type::Table:
+    case Table:
       return send_table_entity(entity.pTable);
       break;
     
-    case entity_type::None:
+    case NoEntity:
       // No-op
       break;
 
@@ -1130,9 +1131,9 @@ namespace {
  */
 void sendPage()
 {
-  page_entity_t entity = page_begin(currentPage);
+  page_iterator_t entity = page_begin(currentPage);
 
-  while (entity.type!=entity_type::End)
+  while (entity.type!=End)
   {
     send_entity(entity);
     entity = advance(entity);
