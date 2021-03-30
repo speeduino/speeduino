@@ -59,18 +59,20 @@ script:
   - platformio update
   - platformio platform update
 # Run the builds (Mega must be last so that the hex file isn't cleaned up)
-  - platformio run -e teensy35 -e teensy41 -e black_F407VE -e megaatmega2561 -e megaatmega2560
-# Run the remote unit tests (only on master)
-  - 'if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then platformio remote test --environment megaatmega2560; fi'
+  - platformio run -e teensy35 -e teensy36 -e teensy41 -e black_F407VE -e megaatmega2561 -e megaatmega2560
 # Uploading the firmware to speeduino.com (Only on master)
   - |
     if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
       # Upload ini and hex files to speeduino.com server
       curl -v https://speeduino.com:2078 || true
       curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
-      curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy35/firmware.hex" "https://speeduino.com:2078/teensy35/master.hex"
+      curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy35/firmware.hex" "https://speeduino.com:2078/teensy35/master-teensy35.hex"
+      curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy36/firmware.hex" "https://speeduino.com:2078/teensy36/master-teensy36.hex"
+      curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy41/firmware.hex" "https://speeduino.com:2078/teensy41/master-teensy41.hex"
       curl --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
     fi
+# Run the remote unit tests (only on master)
+  - 'if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then platformio remote test --force-remote --environment megaatmega2560; fi'
 #Build the doxygen documentation and commit to its repo (Only on master)
   - |
     if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then

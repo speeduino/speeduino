@@ -6,8 +6,9 @@
 #include "logger.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
-  #define BOARD_DIGITAL_GPIO_PINS 54
-  #define BOARD_NR_GPIO_PINS 62
+  #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
+  #define BOARD_MAX_IO_PINS 70 //digital pins + analog channels + 1
+  #define BOARD_MAX_ADC_PINS  15 //Number of analog pins
 #ifndef LED_BUILTIN
   #define LED_BUILTIN 13
 #endif
@@ -36,16 +37,19 @@
     #define CORE_TEENSY35
     #define BOARD_H "board_teensy35.h"
     #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
+    #define BOARD_MAX_ADC_PINS  22 //Number of analog pins
   #elif defined(__IMXRT1062__)
     #define CORE_TEENSY41
     #define BOARD_H "board_teensy41.h"
+    #define BOARD_MAX_ADC_PINS  17 //Number of analog pins
   #endif
   #define INJ_CHANNELS 8
   #define IGN_CHANNELS 8
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(STM32)
   #define CORE_STM32
-  #if defined(STM32F4) //F4 can do 8x8
+  #define BOARD_MAX_ADC_PINS  15 //Number of analog pins. THIS NEEDS CONFIRMING FOR STM32!
+  #if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 not
    #define INJ_CHANNELS 8
    #define IGN_CHANNELS 8
   #else
@@ -55,29 +59,30 @@
 
 //Select one for EEPROM,the default is EEPROM emulation on internal flash.
 //#define SRAM_AS_EEPROM /*Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin */
-#define USE_SPI_EEPROM PB0 /*Use M25Qxx SPI flash */
+//#define USE_SPI_EEPROM PB0 /*Use M25Qxx SPI flash */
 //#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
 
   #ifndef word
     #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
   #endif
   
+  
   #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
    || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
     //STM32 Pill boards
-    #define BOARD_DIGITAL_GPIO_PINS 34
-    #define BOARD_NR_GPIO_PINS 34
+    #ifndef NUM_DIGITAL_PINS
+      #define NUM_DIGITAL_PINS 35
+    #endif
     #ifndef LED_BUILTIN
       #define LED_BUILTIN PB1 //Maple Mini
     #endif
-  #elif defined(ARDUINO_BLACK_F407VE)
-    #define BOARD_DIGITAL_GPIO_PINS 74
-    #define BOARD_NR_GPIO_PINS 74
+  #elif defined(STM32F407xx)
+    #ifndef NUM_DIGITAL_PINS
+      #define NUM_DIGITAL_PINS 75
+    #endif
   #endif
 
   #if defined(STM32_CORE_VERSION)
-    //Need to identify the official core better
-    #define CORE_STM32_OFFICIAL
     #define BOARD_H "board_stm32_official.h"
   #else
     #define CORE_STM32_GENERIC
@@ -89,6 +94,8 @@
     #define SMALL_FLASH_MODE
   #endif
 
+  #define BOARD_MAX_DIGITAL_PINS NUM_DIGITAL_PINS
+  #define BOARD_MAX_IO_PINS NUM_DIGITAL_PINS
   #if __GNUC__ < 7 //Already included on GCC 7
   extern "C" char* sbrk(int incr); //Used to freeRam
   #endif
@@ -98,6 +105,19 @@
 #elif defined(__SAMD21G18A__)
   #define BOARD_H "board_samd21.h"
   #define CORE_SAMD21
+  #define CORE_SAM
+  #define INJ_CHANNELS 4
+  #define IGN_CHANNELS 4
+#elif defined(__SAMC21J18A__)
+  #define BOARD_H "board_samc21.h"
+  #define CORE_SAMC21
+  #define CORE_SAM
+#elif defined(__SAME51J19A__)
+  #define BOARD_H "board_same51.h"
+  #define CORE_SAME51
+  #define CORE_SAM
+  #define INJ_CHANNELS 8
+  #define IGN_CHANNELS 8
 #else
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif
@@ -153,7 +173,7 @@
 
 #define BIT_SPARK2_FLATSH         0  //Flat shift hard cut
 #define BIT_SPARK2_FLATSS         1  //Flat shift soft cut
-#define BIT_SPARK2_UNUSED3        2
+#define BIT_SPARK2_SPARK2_ACTIVE  2
 #define BIT_SPARK2_UNUSED4        3
 #define BIT_SPARK2_UNUSED5        4
 #define BIT_SPARK2_UNUSED6        5
@@ -188,13 +208,19 @@
 
 #define COMPOSITE_LOG_PRI   0
 #define COMPOSITE_LOG_SEC   1
-#define COMPOSITE_LOG_TRIG  2
-#define COMPOSITE_LOG_SYNC  3
+#define COMPOSITE_LOG_TRIG 2
+#define COMPOSITE_LOG_SYNC 3
 
-#define INJ_PAIRED          0
-#define INJ_SEMISEQUENTIAL  1
+#define INJ_TYPE_PORT 0
+#define INJ_TYPE_TBODY 1
+
+#define INJ_PAIRED 0
+#define INJ_SEMISEQUENTIAL 1
 #define INJ_BANKED          2
 #define INJ_SEQUENTIAL      3
+
+#define OUTPUT_CONTROL_DIRECT   0
+#define OUTPUT_CONTROL_MC33810  10
 
 #define IGN_MODE_WASTED     0
 #define IGN_MODE_SINGLE     1
@@ -204,6 +230,7 @@
 
 #define SEC_TRIGGER_SINGLE  0
 #define SEC_TRIGGER_4_1     1
+#define SEC_TRIGGER_POLL    2
 
 #define ROTARY_IGN_FC       0
 #define ROTARY_IGN_FD       1
@@ -259,10 +286,21 @@
 #define FUEL2_MODE_CONDITIONAL_SWITCH   3
 #define FUEL2_MODE_INPUT_SWITCH 4
 
+#define SPARK2_MODE_OFF      0
+#define SPARK2_MODE_MULTIPLY 1
+#define SPARK2_MODE_ADD      2
+#define SPARK2_MODE_CONDITIONAL_SWITCH   3
+#define SPARK2_MODE_INPUT_SWITCH 4
+
 #define FUEL2_CONDITION_RPM 0
 #define FUEL2_CONDITION_MAP 1
 #define FUEL2_CONDITION_TPS 2
 #define FUEL2_CONDITION_ETH 3
+
+#define SPARK2_CONDITION_RPM 0
+#define SPARK2_CONDITION_MAP 1
+#define SPARK2_CONDITION_TPS 2
+#define SPARK2_CONDITION_ETH 3
 
 #define RESET_CONTROL_DISABLED             0
 #define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
@@ -287,6 +325,9 @@
 
 #define FOUR_STROKE         0
 #define TWO_STROKE          1
+
+#define GOING_LOW         0
+#define GOING_HIGH        1
 
 #define MAX_RPM 18000 //This is the maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance
 
@@ -353,6 +394,11 @@ extern struct table3D trim1Table; //6x6 Fuel trim 1 map
 extern struct table3D trim2Table; //6x6 Fuel trim 2 map
 extern struct table3D trim3Table; //6x6 Fuel trim 3 map
 extern struct table3D trim4Table; //6x6 Fuel trim 4 map
+extern struct table3D trim5Table; //6x6 Fuel trim 5 map
+extern struct table3D trim6Table; //6x6 Fuel trim 6 map
+extern struct table3D trim7Table; //6x6 Fuel trim 7 map
+extern struct table3D trim8Table; //6x6 Fuel trim 8 map
+extern struct table3D dwellTable; //4x4 Dwell map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D maeTable;
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
@@ -456,8 +502,7 @@ extern int ignition7StartAngle;
 extern int ignition8StartAngle;
 
 //These are variables used across multiple files
-extern byte fullStatus[LOG_ENTRY_SIZE];
-extern byte fsIntIndex[31];
+extern const byte PROGMEM fsIntIndex[31];
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern volatile uint16_t mainLoopCount;
@@ -470,13 +515,20 @@ extern bool previousClutchTrigger;
 extern volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
 extern volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 extern volatile bool fpPrimed; //Tracks whether or not the fuel pump priming has been completed yet
+extern volatile bool injPrimed; //Tracks whether or not the injector priming has been completed yet
 extern volatile unsigned int toothHistoryIndex;
 extern volatile byte toothHistorySerialIndex;
 extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 extern unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
 extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
-extern byte primaryTriggerEdge;
-extern byte secondaryTriggerEdge;
+//The below shouldn't be needed and probably should be cleaned up, but the Atmel SAM boards use a specific type for the trigger edge values rather than a simple byte/int
+#if defined(CORE_SAMD21)
+  extern PinStatus primaryTriggerEdge;
+  extern PinStatus secondaryTriggerEdge;
+#else
+  extern byte primaryTriggerEdge;
+  extern byte secondaryTriggerEdge;
+#endif
 extern int CRANK_ANGLE_MAX;
 extern int CRANK_ANGLE_MAX_IGN;
 extern int CRANK_ANGLE_MAX_INJ; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
@@ -498,7 +550,7 @@ extern volatile byte LOOP_TIMER;
 #define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) || ((pin) == pinCoil5) || ((pin) == pinCoil6) || ((pin) == pinCoil7) || ((pin) == pinCoil8) )
 #define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
 #define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) )
-#define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) || pinIsOutput((pin)) )
+#define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) || pinIsOutput((pin)) || pinIsReserved((pin)) )
 
 //The status struct contains the current values for all 'live' variables
 //In current version this is 64 bytes
@@ -594,8 +646,9 @@ struct statuses {
   int16_t fuelLoad;
   int16_t fuelLoad2;
   int16_t ignLoad;
+  int16_t ignLoad2;
   bool fuelPumpOn; /**< Indicator showing the current status of the fuel pump */
-  byte syncLossCounter;
+  volatile byte syncLossCounter;
   byte knockRetard;
   bool knockActive;
   bool toothLogEnabled;
@@ -607,6 +660,7 @@ struct statuses {
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss; /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
+  bool idleUpOutputActive; /**< Whether the idle up output is currently active */
   byte gear; /**< Current gear (Calculated from vss) */
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure; /**< Oil pressure in PSI */
@@ -617,6 +671,7 @@ struct statuses {
   byte vvt2TargetAngle;
   byte vvt2Duty;
   byte outputsStatus;
+  byte TS_SD_Status; //TunerStudios SD card status
 };
 
 /**
@@ -633,7 +688,7 @@ struct config2 {
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
   byte battVCorMode : 1;
   byte SoftLimitMode : 1;
-  byte unused1_3c : 1;
+  byte useTachoSweep : 1;
   byte aeApplyMode : 1; //0 = Multiply | 1 = Add
   byte multiplyMAP : 2; //0 = off | 1 = baro | 2 = 100
   byte wueValues[10]; //Warm up enrichment array (10 bytes)
@@ -726,7 +781,9 @@ struct config2 {
 
   byte fanWhenOff : 1;      // Only run fan when engine is running
   byte fanWhenCranking : 1;      //**< Setting whether the fan output will stay on when the engine is cranking */ 
-  byte fanUnused : 5;
+  byte useDwellMap : 1;  // Setting to change between fixed dwell value and dwell map
+  byte fanUnused : 2;
+  byte rtc_mode : 2;
   byte incorporateAFR : 1;  //Incorporate AFR
   byte asePct[4];  //Afterstart enrichment (%)
   byte aseCount[4]; //Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
@@ -764,8 +821,20 @@ struct config2 {
   uint16_t vssRatio5;
   uint16_t vssRatio6;
 
-  byte unused2_95[9];
+  byte idleUpOutputEnabled : 1;
+  byte idleUpOutputInv : 1;
+  byte idleUpOutputPin  : 6;
+
+  byte tachoSweepMaxRPM;
   byte primingDelay;
+
+  byte iacTPSlimit;
+  byte iacRPMlimitHysteresis;
+
+  int8_t rtc_trim;
+  byte idleAdvVss;
+
+  byte unused2_95[3];
 
 #if defined(CORE_AVR)
   };
@@ -792,7 +861,8 @@ struct config4 {
   byte useResync : 1;
 
   byte sparkDur; //Spark duration in ms * 10
-  byte trigPatternSec; //Mode for Missing tooth secondary trigger.  Either single tooth cam wheel or 4-1
+  byte trigPatternSec : 7; //Mode for Missing tooth secondary trigger.  Either single tooth cam wheel, 4-1 or poll level
+  byte PollLevelPolarity : 1; //for poll level cam trigger. Sets if the cam trigger is supposed to be high or low for revolution one.
   uint8_t bootloaderCaps; //Capabilities of the bootloader over stock. e.g., 0=Stock, 1=Reset protection, etc.
 
   byte resetControlConfig : 2; //Which method of reset control to use (0=None, 1=Prevent When Running, 2=Prevent Always, 3=Serial Command)
@@ -923,7 +993,8 @@ struct config6 {
   byte boostKI;
   byte boostKD;
 
-  byte lnchPullRes : 2;
+  byte lnchPullRes : 1;
+  byte iacPWMrun : 1; //Should the PWM idle valve run before engine is cranked over
   byte fuelTrimEnabled : 1;
   byte flatSEnable : 1;
   byte baroPin : 4;
@@ -1153,11 +1224,11 @@ struct config10 {
   byte fuelPressureEnable : 1;
   byte oilPressureEnable : 1;
   byte oilPressureProtEnbl : 1;
-  byte unused10_135 : 5;
+  byte oilPressurePin : 5;
 
-  byte fuelPressurePin : 4;
-  byte oilPressurePin : 4;
-
+  byte fuelPressurePin : 5;
+  byte unused11_165 : 3;
+  
   int8_t fuelPressureMin;
   byte fuelPressureMax;
   int8_t oilPressureMin;
@@ -1198,17 +1269,17 @@ struct config10 {
   byte unused11_174_2 : 1;
 
   byte fuelTempBins[6];
-  byte fuelTempValues[6];
+  byte fuelTempValues[6]; //180
 
-  //Byte 122
+  //Byte 186
   byte spark2Algorithm : 3;
   byte spark2Mode : 3;
   byte spark2SwitchVariable : 2;
 
-  //Bytes 123-124
+  //Bytes 187-188
   uint16_t spark2SwitchValue;
 
-  //Byte 125
+  //Byte 189
   byte spark2InputPin : 6;
   byte spark2InputPolarity : 1;
   byte spark2InputPullup : 1;
@@ -1262,6 +1333,7 @@ extern byte pinInjector5; //Output pin injector 5
 extern byte pinInjector6; //Output pin injector 6
 extern byte pinInjector7; //Output pin injector 7
 extern byte pinInjector8; //Output pin injector 8
+extern byte injectorOutputControl; //Specifies whether the injectors are controlled directly (Via an IO pin) or using something like the MC33810
 extern byte pinCoil1; //Pin for coil 1
 extern byte pinCoil2; //Pin for coil 2
 extern byte pinCoil3; //Pin for coil 3
@@ -1270,6 +1342,7 @@ extern byte pinCoil5; //Pin for coil 5
 extern byte pinCoil6; //Pin for coil 6
 extern byte pinCoil7; //Pin for coil 7
 extern byte pinCoil8; //Pin for coil 8
+extern byte ignitionOutputControl; //Specifies whether the coils are controlled directly (Via an IO pin) or using something like the MC33810
 extern byte pinTrigger; //The CAS pin
 extern byte pinTrigger2; //The Cam Sensor pin
 extern byte pinTrigger3;	//the 2nd cam sensor pin
@@ -1288,8 +1361,10 @@ extern byte pinFuelPump; //Fuel pump on/off
 extern byte pinIdle1; //Single wire idle control
 extern byte pinIdle2; //2 wire idle control (Not currently used)
 extern byte pinIdleUp; //Input for triggering Idle Up
+extern byte pinIdleUpOutput; //Output that follows (normal or inverted) the idle up pin
 extern byte pinCTPS; //Input for triggering closed throttle state
 extern byte pinFuel2Input; //Input for switching to the 2nd fuel table
+extern byte pinSpark2Input; //Input for switching to the 2nd ignition table
 extern byte pinSpareTemp1; // Future use only
 extern byte pinSpareTemp2; // Future use only
 extern byte pinSpareOut1; //Generic output
@@ -1323,11 +1398,8 @@ extern byte pinOilPressure;
 extern byte pinWMIEmpty; // Water tank empty sensor
 extern byte pinWMIIndicator; // No water indicator bulb
 extern byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
-#ifdef USE_MC33810
-  //If the MC33810 IC\s are in use, these are the chip select pins
-  extern byte pinMC33810_1_CS;
-  extern byte pinMC33810_2_CS;
-#endif
+extern byte pinMC33810_1_CS;
+extern byte pinMC33810_2_CS;
 #ifdef USE_SPI_EEPROM
   extern byte pinSPIFlash_CS;
 #endif

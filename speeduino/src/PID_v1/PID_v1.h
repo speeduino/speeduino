@@ -97,7 +97,7 @@ class integerPID
 
     void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
 
-    bool Compute(bool pOnE);                       // * performs the PID calculation.  it should be
+    bool Compute(bool, long FeedForwardTerm = 0);                       // * performs the PID calculation.  it should be
                                           //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
@@ -127,6 +127,7 @@ class integerPID
 	int GetMode();						  //  inside the PID.
 	int GetDirection();					  //
   void Initialize();
+  void ResetIntegeral();
 
   private:
 

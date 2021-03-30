@@ -96,6 +96,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
       tachoOutputFlag = DEACTIVE;
     }
   }
+  // Tacho sweep
   
 
 
@@ -125,7 +126,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) { runSecsX10++; }
     else { runSecsX10 = 0; }
 
-    if ( (seclx10 == configPage2.primingDelay) && (currentStatus.RPM == 0) ) { beginInjectorPriming(); }
+    if ( (injPrimed == false) && (seclx10 == configPage2.primingDelay) && (currentStatus.RPM == 0) ) { beginInjectorPriming(); injPrimed = true; }
     seclx10++;
   }
 
@@ -260,10 +261,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
       if(BIT_CHECK(HWTest_IGN_50pc, IGN7_CMD_BIT)) { coil7Toggle(); }
       if(BIT_CHECK(HWTest_IGN_50pc, IGN8_CMD_BIT)) { coil8Toggle(); }
     }
-
-    //Reset the live data rate counter
-    dataRate = dataRateCounter;
-    dataRateCounter = 0;
 
   }
 #if defined(CORE_AVR) //AVR chips use the ISR for this
