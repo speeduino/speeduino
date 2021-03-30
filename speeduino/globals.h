@@ -195,6 +195,15 @@
 #define BIT_STATUS3_NSQUIRTS2     6
 #define BIT_STATUS3_NSQUIRTS3     7
 
+#define BIT_STATUS4_CLIDLE        0
+#define BIT_STATUS4_UNUSED1       1
+#define BIT_STATUS4_UNUSED2       2
+#define BIT_STATUS4_UNUSED3       3
+#define BIT_STATUS4_UNUSED4       4
+#define BIT_STATUS4_UNUSED5       5
+#define BIT_STATUS4_UNUSED6       6
+#define BIT_STATUS4_UNUSED7       7
+
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
@@ -638,6 +647,7 @@ struct statuses {
   uint8_t current_caninchannel = 0; /**< Current CAN channel, defaults to 0 */
   uint16_t crankRPM = 400; /**< The actual cranking RPM limit. This is derived from the value in the config page, but saves us multiplying it everytime it's used (Config page value is stored divided by 10) */
   volatile byte status3;
+  volatile byte status4;
   int16_t flexBoostCorrection; /**< Amount of boost added based on flex */
   byte nitrous_status;
   byte nSquirts;
@@ -1067,10 +1077,10 @@ struct config9 {
 
   byte iacMaxSteps; // Step limit beyond which the stepper won't be driven. Should always be less than homing steps. Stored div 3 as per home steps.
 
-  byte unused10_155;
-  byte unused10_156;
-  byte unused10_157;
-  byte unused10_158;
+  byte idlePidTimeDelay;
+  byte idlePidRpmdotDisable;
+  byte idlePidTpsDisable;
+  byte iacMinSteps;
   byte unused10_159;
   byte unused10_160;
   byte unused10_161;

@@ -882,6 +882,7 @@ byte getStatusEntry(uint16_t byteNum)
     case 114: statusValue = currentStatus.advance1; break; //advance 1 (%)
     case 115: statusValue = currentStatus.advance2; break; //advance 2 (%)
     case 116: statusValue = currentStatus.TS_SD_Status; break; //SD card status
+    case 117: statusValue = currentStatus.status4; break;
   }
 
   return statusValue;
