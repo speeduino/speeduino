@@ -16,6 +16,7 @@
 #define STEPPER_FORWARD 0
 #define STEPPER_BACKWARD 1
 #define IDLE_TABLE_SIZE 10
+unsigned long IdleOldTime=0;
 
 enum StepperStatus {SOFF, STEPPING, COOLING}; //The 2 statuses that a stepper can have. STEPPING means that a high pulse is currently being sent and will need to be turned off at some point.
 
