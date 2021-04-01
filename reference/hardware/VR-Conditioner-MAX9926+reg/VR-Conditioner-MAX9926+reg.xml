@@ -2,14 +2,14 @@
 <export version="D">
   <design>
     <source>/Users/phillrogers/Documents/kicad/Speeduino VR MAX9926/VR-Conditioner-MAX9926+reg/VR-Conditioner-MAX9926+reg.sch</source>
-    <date>Tuesday, 23 February 2021 at 11:13:50</date>
+    <date>Wednesday, 24 February 2021 at 12:25:04</date>
     <tool>Eeschema (5.1.6-0-10_14)</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
         <title>Dual Variable Reluctance MAX9926 mode A2</title>
         <company>(c)2021 Phill Rogers @ TechColab.co.je</company>
-        <rev>0.4</rev>
-        <date>2021-02-23</date>
+        <rev>3.5</rev>
+        <date>2021-02-24</date>
         <source>VR-Conditioner-MAX9926+reg.sch</source>
         <comment number="1" value="Optional onboard regulator or 5V direct"/>
         <comment number="2" value="Optional power resistors"/>
@@ -55,9 +55,9 @@
       <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
       <datasheet>~</datasheet>
       <fields>
-        <field name="Description">50 V ±10 % Tolerance X7R Surface Mount Multilayer Ceramic</field>
-        <field name="MFG Name">Kemet</field>
-        <field name="MFG Part Num">C0603X103G5JACTU</field>
+        <field name="Description">10 V ±5% Tolerance U2J Multilayer Ceramic Capacitor&#xD;</field>
+        <field name="MFG Name">Murata&#xD;Murata&#xD;</field>
+        <field name="MFG Part Num">GRM1857U1A103JA44D&#xD;</field>
         <field name="Package JEDEC ID">0603_1608Metric</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
@@ -69,9 +69,9 @@
       <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
       <datasheet>~</datasheet>
       <fields>
-        <field name="Description">50 V ±10 % Tolerance X7R Surface Mount Multilayer Ceramic</field>
-        <field name="MFG Name">Multicomp</field>
-        <field name="MFG Part Num">MC0603F104Z250CT</field>
+        <field name="Description">Ceramic 0.1uF 16V X7R 10% Pad SMD 0603 Soft Termination 125C Automotive T/R&#xD;</field>
+        <field name="MFG Name">Murata&#xD;</field>
+        <field name="MFG Part Num">GCJ188R71C104KA01D&#xD;</field>
         <field name="Package JEDEC ID">0603_1608Metric</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
@@ -83,9 +83,9 @@
       <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
       <datasheet>~</datasheet>
       <fields>
-        <field name="Description">50 V ±10 % Tolerance X7R Surface Mount Multilayer Ceramic</field>
-        <field name="MFG Name">Kemet</field>
-        <field name="MFG Part Num">C0603C105Z3VACTU</field>
+        <field name="Description">16V ±10% Tolerance X7R Surface Mount Multilayer Ceramic Capacitor&#xD;</field>
+        <field name="MFG Name">Murata&#xD;</field>
+        <field name="MFG Part Num">GCM188R71C105KA64D&#xD;</field>
         <field name="Package JEDEC ID">0603_1608Metric</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
@@ -97,9 +97,9 @@
       <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
       <datasheet>~</datasheet>
       <fields>
-        <field name="Description">100V ±10 % Tolerance X7R Surface Mount Multilayer Ceramic</field>
-        <field name="MFG Name">Kemet</field>
-        <field name="MFG Part Num">C0603C102G5GACTU</field>
+        <field name="Description">1000 pF 50 V ±5 % Tolerance C0G SMT Multilayer Ceramic Capacitor&#xD;</field>
+        <field name="MFG Name">Murata&#xD;</field>
+        <field name="MFG Part Num">GRM1885C1H102JA01D&#xD;</field>
         <field name="Package JEDEC ID">0603_1608Metric</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
@@ -111,9 +111,9 @@
       <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
       <datasheet>~</datasheet>
       <fields>
-        <field name="Description">100V ±10 % Tolerance X7R Surface Mount Multilayer Ceramic</field>
-        <field name="MFG Name">Kemet</field>
-        <field name="MFG Part Num">C0603C102G5GACTU</field>
+        <field name="Description">1000 pF 50 V ±5 % Tolerance C0G SMT Multilayer Ceramic Capacitor&#xD;</field>
+        <field name="MFG Name">Murata&#xD;</field>
+        <field name="MFG Part Num">GRM1885C1H102JA01D&#xD;</field>
         <field name="Package JEDEC ID">0603_1608Metric</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
@@ -181,7 +181,7 @@
       <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal</footprint>
       <datasheet>~</datasheet>
       <fields>
-        <field name="Critical">No. Option for user install</field>
+        <field name="Critical">DoNoPlace. User option</field>
         <field name="Description">3W, 5%</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
@@ -245,9 +245,9 @@
       <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
       <datasheet>~</datasheet>
       <fields>
-        <field name="Description">Multilayer Ceramic Capacitors (High dielectric type), 25V, 10 uF, ± 10 %, X5R,</field>
-        <field name="MFG Name">Kemet</field>
-        <field name="MFG Part Num">C0805C106K9PACTU</field>
+        <field name="Description">25 V 10 uF ±20% Tolerance X5R Multilayer Ceramic Capacitor&#xD;</field>
+        <field name="MFG Name">Murata&#xD;</field>
+        <field name="MFG Part Num">GRM21BR61E106MA73L&#xD;</field>
         <field name="Package JEDEC ID">0805_2012Metric</field>
       </fields>
       <libsource lib="Device" part="CP" description="Polarized capacitor"/>
@@ -259,7 +259,7 @@
       <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal</footprint>
       <datasheet>~</datasheet>
       <fields>
-        <field name="Critical">No. Option for user install</field>
+        <field name="Critical">DoNoPlace. User option</field>
         <field name="Description">3W, 5%</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
@@ -271,7 +271,7 @@
       <footprint>Package_TO_SOT_THT:TO-92_Inline_Wide</footprint>
       <datasheet>http://www.advanced-monolithic.com/pdf/ds1117.pdf</datasheet>
       <fields>
-        <field name="Critical">No. Option for user install</field>
+        <field name="Critical">DoNoPlace. User option</field>
         <field name="Description">1A Low Dropout Voltage Regulator</field>
         <field name="MFG Name">Advanced Monolithic Systems</field>
         <field name="MFG Part Num">AMS1117-5.0</field>
@@ -286,7 +286,7 @@
       <footprint>Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Horizontal</footprint>
       <datasheet>~</datasheet>
       <fields>
-        <field name="Critical">No. Option for user install</field>
+        <field name="Critical">DoNoPlace. User option</field>
       </fields>
       <libsource lib="Connector_Generic" part="Conn_01x04" description="Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
       <sheetpath names="/" tstamps="/"/>

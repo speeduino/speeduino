@@ -7,7 +7,7 @@
       "Application": "Pcbnew",
       "Version":     "(5.1.6-0-10_14)"
     },
-    "CreationDate":  "2021-02-23T10:58:49+00:00"
+    "CreationDate":  "2021-03-28T12:21:54+01:00"
   },
   "GeneralSpecs":
   {
@@ -15,7 +15,7 @@
     {
       "Name": "VR-Conditioner-MAX9926+reg",
       "GUID": "56522d43-6f6e-4646-9974-696f6e65722d",
-      "Revision": "0.4"
+      "Revision": "3.6"
     },
     "Size":
     {
