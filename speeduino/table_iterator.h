@@ -1,24 +1,13 @@
 #pragma once
 #include <Arduino.h>
-#include "table.h"
-#include "globals.h"
-
-inline int8_t getTableYAxisFactor(const table3D *pTable)
-{
-    return pTable==&boostTable || pTable==&vvtTable ? 1 : TABLE_LOAD_MULTIPLIER;
-}
-
-inline int8_t getTableXAxisFactor(const table3D *)
-{
-    return TABLE_RPM_MULTIPLIER;
-}
+#include "table3d.h"
 
 // ========================= AXIS ITERATION =========================  
 typedef struct table_axis_iterator_t
 {
-    int16_t *_pAxis;
-    int16_t *_pAxisEnd;
-    int16_t _axisFactor;
+    table3d_axis_t *_pAxis;
+    table3d_axis_t *_pAxisEnd;
+    table3d_axis_t _axisFactor;
     int8_t _stride;
 } table_axis_iterator_t;
 
@@ -43,29 +32,30 @@ inline void set_value(table_axis_iterator_t &it, byte value)
     *it._pAxis = value * it._axisFactor;
 }
 
-inline table_axis_iterator_t y_begin(const table3D *pTable)
+inline table_axis_iterator_t y_begin(const table3d_axis_t *pAxis, table3d_dim_t size, table3d_axis_t factor)
 {
-    return { pTable->axisY+(pTable->ySize-1), 
-            (pTable->axisY)-1, getTableYAxisFactor(pTable),
-            -1 };
+    return { const_cast<table3d_axis_t*>(pAxis)+(size-1), 
+             const_cast<table3d_axis_t*>(pAxis)-1, 
+             factor,
+             -1 };
 }
 
-inline table_axis_iterator_t y_rbegin(const table3D *pTable)
+inline table_axis_iterator_t y_rbegin(const table3d_axis_t *pAxis, table3d_dim_t size, table3d_axis_t factor)
 {
-    return { pTable->axisY, pTable->axisY + pTable->ySize, getTableYAxisFactor(pTable), 1 };
+    return { const_cast<table3d_axis_t*>(pAxis), const_cast<table3d_axis_t*>(pAxis)+size, factor, 1 };
 }
 
-inline table_axis_iterator_t x_begin(const table3D *pTable)
+inline table_axis_iterator_t x_begin(const table3d_axis_t *pAxis, table3d_dim_t size, table3d_axis_t factor)
 {
-    return { pTable->axisX, pTable->axisX+pTable->xSize, getTableXAxisFactor(pTable), 1 };
-} 
+    return { const_cast<table3d_axis_t*>(pAxis), const_cast<table3d_axis_t*>(pAxis)+size, factor, 1 };
+}
 
 // ========================= INTRA-ROW ITERATION ========================= 
 
 // A table row is directly iterable & addressable.
 typedef struct table_row_t {
-    byte *pValue;
-    byte *pEnd;
+    table3d_value_t *pValue;
+    table3d_value_t *pEnd;
 } table_row_t;
 
 inline bool at_end(const table_row_t &it)
@@ -76,18 +66,18 @@ inline bool at_end(const table_row_t &it)
 // ========================= INTER-ROW ITERATION ========================= 
 typedef struct table_row_iterator_t
 {
-    byte **pRowsStart;
-    byte **pRowsEnd;
+    table3d_value_t **pRowsStart;
+    table3d_value_t **pRowsEnd;
     uint8_t rowWidth;
 } table_row_iterator_t;
 
-inline table_row_iterator_t rows_begin(const table3D *pTable)
+inline table_row_iterator_t rows_begin(const table3d_value_t * const *pValues, table3d_dim_t axisSize)
 {
-    return {    pTable->values + (pTable->ySize-1),
-                pTable->values - 1,
-                pTable->xSize
+    return {    const_cast<table3d_value_t **>(pValues) + (axisSize-1),
+                const_cast<table3d_value_t **>(pValues - 1),
+                axisSize
     };
-};
+}
 
 inline bool at_end(const table_row_iterator_t &it)
 {

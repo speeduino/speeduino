@@ -8,7 +8,6 @@ A full copy of the license may be found in the projects root directory
  */
 
 #include "globals.h"
-#include "table.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 #include "storage.h"
 #include "table_iterator.h"

@@ -284,7 +284,7 @@ static inline void set_table_value(const table_entity_t &table, int8_t value)
     
     default: ; // no-op
   }    
-  table.pTable->cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+  table.pTable->getValueCache.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
 }
 
 static inline byte* get_raw_value(const entity_t &entity, uint16_t offset)
@@ -369,4 +369,28 @@ page_iterator_t page_begin(byte pageNum)
 page_iterator_t advance(const page_iterator_t &it)
 {
     return to_page_entity(map_page_offset_to_entity(it.page, it.start+it.size));
+}
+
+/**
+ * Convert page iterator to table value iterator.
+ */
+table_row_iterator_t rows_begin(const page_iterator_t &it)
+{
+  return rows_begin(it.pTable);
+}
+
+/**
+ * Convert page iterator to table x axis iterator.
+ */
+table_axis_iterator_t x_begin(const page_iterator_t &it)
+{
+  return x_begin(it.pTable);
+}
+
+/**
+ * Convert page iterator to table y axis iterator.
+ */
+table_axis_iterator_t y_begin(const page_iterator_t &it)
+{
+  return y_begin(it.pTable);
 }

@@ -1,6 +1,6 @@
 #pragma once
 #include <Arduino.h>
-#include "table.h"
+#include "table3d_types.h"
 
 /**
  * Page count, as defined in the INI file
@@ -80,3 +80,18 @@ page_iterator_t page_begin(byte pageNum /**< [in] The page number to iterate ove
  * Moves the iterator to the next sub-entity on the page
  */
 page_iterator_t advance(const page_iterator_t &it /**< [in] The current iterator */);
+
+/**
+ * Convert page iterator to table value iterator.
+ */
+table_row_iterator_t rows_begin(const page_iterator_t &it);
+
+/**
+ * Convert page iterator to table x axis iterator.
+ */
+table_axis_iterator_t x_begin(const page_iterator_t &it);
+
+/**
+ * Convert page iterator to table y axis iterator.
+ */
+table_axis_iterator_t y_begin(const page_iterator_t &it);

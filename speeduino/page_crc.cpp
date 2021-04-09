@@ -39,11 +39,11 @@ static inline uint32_t compute_tableaxis_crc(table_axis_iterator_t it, uint32_t 
     return pValue-values==0 ? crc : CRC32.crc32_upd(values, pValue-values, false);
 }
 
-static inline uint32_t compute_table_crc(table3D *pTable, pCrcCalc calcFunc)
+static inline uint32_t compute_table_crc(page_iterator_t &entity, pCrcCalc calcFunc)
 {
-    return compute_tableaxis_crc(y_begin(pTable), 
-                compute_tableaxis_crc(x_begin(pTable),
-                    compute_tablevalues_crc(rows_begin(pTable), calcFunc)));
+    return compute_tableaxis_crc(y_begin(entity), 
+                compute_tableaxis_crc(x_begin(entity),
+                    compute_tablevalues_crc(rows_begin(entity), calcFunc)));
 }
 
 static inline uint32_t pad_crc(uint16_t padding, uint32_t crc)
@@ -66,7 +66,7 @@ static inline uint32_t compute_crc(page_iterator_t &entity, pCrcCalc calcFunc)
         break;
 
     case Table:
-        return compute_table_crc(entity.pTable, calcFunc);
+        return compute_table_crc(entity, calcFunc);
         break;
 
     case NoEntity:
