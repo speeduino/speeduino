@@ -968,11 +968,11 @@ namespace {
     }
   }
 
-  void send_table_entity(table3D *pTable)
+  void send_table_entity(const page_iterator_t &entity)
   {
-    send_table_values(rows_begin(pTable));
-    send_table_axis(x_begin(pTable));
-    send_table_axis(y_begin(pTable));
+    send_table_values(rows_begin(entity));
+    send_table_axis(x_begin(entity));
+    send_table_axis(y_begin(entity));
   }
 
   void send_entity(const page_iterator_t &entity)
@@ -984,7 +984,7 @@ namespace {
       break;
 
     case Table:
-      return send_table_entity(entity.pTable);
+      return send_table_entity(entity);
       break;
     
     case NoEntity:
@@ -1078,11 +1078,10 @@ namespace {
     Serial.println();
   }
 
-  void print_x_axis(const table3D &currentTable)
+  void print_x_axis(table_axis_iterator_t &x_it)
   {
     Serial.print(F("    "));
 
-    auto x_it = x_begin(&currentTable);
     while(!at_end(x_it))
     {
       serial_print_prepadded_value(get_value(x_it));
@@ -1090,11 +1089,8 @@ namespace {
     }
   }
 
-  void serial_print_3dtable(const table3D &currentTable)
+  void serial_print_3dtable_elements(table_row_iterator_t row_it, table_axis_iterator_t x_it, table_axis_iterator_t y_it)
   {
-    auto y_it = y_begin(&currentTable);
-    auto row_it = rows_begin(&currentTable);
-
     while (!at_end(row_it))
     {
       print_row(y_it, get_row(row_it));
@@ -1102,9 +1098,12 @@ namespace {
       advance_row(row_it);
     }
 
-    print_x_axis(currentTable);
+    print_x_axis(x_it);
     Serial.println();
   }
+
+  #define serial_print_3dtable(table) \
+    serial_print_3dtable_elements(rows_begin(&table), x_begin(&table), y_begin(&table))
 }
 
 /** Send page as ASCII for debugging purposes.

@@ -60,10 +60,8 @@ enum entity_type {
 
 // A entity on a logical page.
 struct page_iterator_t {
-    union {
-        table3D *pTable;
-        void *pData;
-    };
+    void *pData;
+    uint16_t table_key;
     uint8_t page;   // The page the entity belongs to
     uint16_t start; // The start position of the entity, in bytes, from the start of the page
     uint16_t size;  // Size of the entity in bytes

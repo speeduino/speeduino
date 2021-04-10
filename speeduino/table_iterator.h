@@ -66,15 +66,15 @@ inline bool at_end(const table_row_t &it)
 // ========================= INTER-ROW ITERATION ========================= 
 typedef struct table_row_iterator_t
 {
-    table3d_value_t **pRowsStart;
-    table3d_value_t **pRowsEnd;
+    table3d_value_t *pRowsStart;
+    table3d_value_t *pRowsEnd;
     uint8_t rowWidth;
 } table_row_iterator_t;
 
-inline table_row_iterator_t rows_begin(const table3d_value_t * const *pValues, table3d_dim_t axisSize)
+inline table_row_iterator_t rows_begin(const table3d_value_t *pValues, table3d_dim_t axisSize)
 {
-    return {    const_cast<table3d_value_t **>(pValues) + (axisSize-1),
-                const_cast<table3d_value_t **>(pValues - 1),
+    return {    const_cast<table3d_value_t*>(pValues) + (axisSize*(axisSize-1)),
+                const_cast<table3d_value_t*>(pValues) - axisSize,
                 axisSize
     };
 }
@@ -86,11 +86,11 @@ inline bool at_end(const table_row_iterator_t &it)
 
 inline table_row_t get_row(const table_row_iterator_t &it)
 {
-    return { *it.pRowsStart, (*it.pRowsStart) + it.rowWidth };
+    return { it.pRowsStart, it.pRowsStart + it.rowWidth };
 }
 
 inline table_row_iterator_t& advance_row(table_row_iterator_t &it)
 {
-    --it.pRowsStart;
+    it.pRowsStart -= it.rowWidth;
     return it;
 }

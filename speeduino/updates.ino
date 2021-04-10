@@ -468,13 +468,18 @@ void doUpdates()
   if(readEEPROMVersion() == 17)
   {
     //VVT stuff has now 0.5 accurasy, so shift values in vvt table by one.
-    for(int x=0; x<8; x++)
+    auto table_it = rows_begin(&vvtTable);
+    while (!at_end(table_it))
     {
-      for(int y=0; y<8; y++)
+      auto row = get_row(table_it);
+      while (row.pValue!=row.pEnd)
       {
-        vvtTable.values[x][y] = vvtTable.values[x][y] << 1;
-      }
+        *row.pValue =*row.pValue << 1;
+        ++row.pValue;
+      }      
+      table_it = advance_row(table_it);
     }
+
     configPage10.vvtCLholdDuty = configPage10.vvtCLholdDuty << 1;
     configPage10.vvtCLminDuty = configPage10.vvtCLminDuty << 1;
     configPage10.vvtCLmaxDuty = configPage10.vvtCLmaxDuty << 1;

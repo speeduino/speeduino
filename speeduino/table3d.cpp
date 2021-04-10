@@ -7,22 +7,22 @@
 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: www.megamanual.com/v22manual/ve_tuner.pdf
-int get3DTableValue(struct table3DGetValueCache *fromTable, 
+table3d_value_t get3DTableValue(struct table3DGetValueCache *fromTable, 
                     table3d_dim_t axisSize,
-                    const table3d_value_t * const *pValues,
+                    const table3d_value_t *pValues,
                     const table3d_axis_t *pXAxis,
                     const table3d_axis_t *pYAxis,
-                    int Y_in, int X_in)
+                    table3d_axis_t Y_in, table3d_axis_t X_in)
   {
-    int X = X_in;
-    int Y = Y_in;
+    table3d_axis_t X = X_in;
+    table3d_axis_t Y = Y_in;
 
-    int tableResult = 0;
+    table3d_value_t tableResult = 0;
     //Loop through the X axis bins for the min/max pair
     //Note: For the X axis specifically, rather than looping from tableAxisX[0] up to tableAxisX[max], we start at tableAxisX[Max] and go down.
     //      This is because the important tables (fuel and injection) will have the highest RPM at the top of the X axis, so starting there will mean the best case occurs when the RPM is highest (And hence the CPU is needed most)
-    int xMinValue = pXAxis[0];
-    int xMaxValue = pXAxis[axisSize-1];
+    table3d_axis_t xMinValue = pXAxis[0];
+    table3d_axis_t xMaxValue = pXAxis[axisSize-1];
     byte xMin = 0;
     byte xMax = 0;
 
@@ -97,8 +97,8 @@ int get3DTableValue(struct table3DGetValueCache *fromTable,
     }
 
     //Loop through the Y axis bins for the min/max pair
-    int yMaxValue = pYAxis[0];
-    int yMinValue = pYAxis[axisSize-1];
+    table3d_axis_t yMaxValue = pYAxis[0];
+    table3d_axis_t yMinValue = pYAxis[axisSize-1];
     byte yMin = 0;
     byte yMax = 0;
 
@@ -178,10 +178,10 @@ int get3DTableValue(struct table3DGetValueCache *fromTable,
               C          D
 
     */
-    int A = pValues[yMin][xMin];
-    int B = pValues[yMin][xMax];
-    int C = pValues[yMax][xMin];
-    int D = pValues[yMax][xMax];
+    table3d_axis_t A = pValues[(yMin*axisSize)+xMin];
+    table3d_axis_t B = pValues[(yMin*axisSize)+xMax];
+    table3d_axis_t C = pValues[(yMax*axisSize)+xMin];
+    table3d_axis_t D = pValues[(yMax*axisSize)+xMax];
 
     //Check that all values aren't just the same (This regularly happens with things like the fuel trim maps)
     if( (A == B) && (A == C) && (A == D) ) { tableResult = A; }

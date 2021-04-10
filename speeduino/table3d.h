@@ -26,6 +26,18 @@ typedef byte table3d_dim_t;      // The x,y axis size & indices fit in this type
 typedef byte table3d_value_t;    // The type of each table value
 typedef int16_t table3d_axis_t;  // The type of each axis element
 
+enum axis_domain { axis_domain_Rpm, axis_domain_Load, axis_domain_Tps };
+
+#define TABLE_RPM_MULTIPLIER 100
+#define TABLE_LOAD_MULTIPLIER 2
+
+constexpr inline uint8_t getTableAxisFactor(axis_domain domain)
+{
+    return domain==axis_domain_Rpm ? TABLE_RPM_MULTIPLIER :
+                domain==axis_domain_Load ? TABLE_LOAD_MULTIPLIER :
+                    1;
+}
+
 struct table3DGetValueCache {
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
   byte lastXMax, lastXMin;
@@ -50,9 +62,9 @@ Eg: 2x2 table
 (1,0) = 1
 
 */
-int get3DTableValue(struct table3DGetValueCache *pTable, 
+table3d_value_t get3DTableValue(struct table3DGetValueCache *pTable, 
                     table3d_dim_t axisSize,
-                    const table3d_value_t * const *pValues,
+                    const table3d_value_t *pValues,
                     const table3d_axis_t *pXAxis,
                     const table3d_axis_t *pYAxis,
-                    int y, int x);
+                    table3d_axis_t y, table3d_axis_t x);

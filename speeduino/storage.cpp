@@ -64,14 +64,14 @@ typedef struct write_location {
 We only ever write to the EEPROM where the new value is different from the currently stored byte
 This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
 */
-static inline write_location update(uint8_t value, write_location location)
+static inline write_location update(uint8_t value, const write_location &location)
 {
   if (EEPROM.read(location.address)!=value)
   {
     EEPROM.write(location.address, value);
-    ++location.counter;
+    return { location.address+1, (uint8_t)(location.counter+1U) };
   }
-  return location;
+  return { location.address+1, location.counter };
 }
 
 static inline write_location write_range(const byte *pStart, const byte *pEnd, write_location location)
@@ -79,7 +79,7 @@ static inline write_location write_range(const byte *pStart, const byte *pEnd, w
   while (location.counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
   {
     location = update(*pStart, location);
-    ++pStart; ++location.address;
+    ++pStart; 
   }
   return location;
 }
@@ -89,7 +89,7 @@ static inline write_location write(const table_row_t &row, write_location locati
   return write_range(row.pValue, row.pEnd, location);
 }
 
-static inline write_location write(table_row_iterator_t it, write_location location)
+static inline write_location write(table_row_iterator_t &it, write_location location)
 {
   while ((location.counter<=EEPROM_MAX_WRITE_BLOCK) && !at_end(it))
   {
@@ -99,23 +99,25 @@ static inline write_location write(table_row_iterator_t it, write_location locat
   return location;
 }
 
-static inline write_location write(table_axis_iterator_t it, write_location location)
+static inline write_location write(table_axis_iterator_t &it, write_location location)
 {
   while ((location.counter<=EEPROM_MAX_WRITE_BLOCK) && !at_end(it))
   {
     location = update(get_value(it), location);
-    ++location.address;
     it = advance_axis(it);
   }
   return location;
 }
 
-static inline write_location writeTable(const table3D *pTable, write_location location)
+static inline write_location write_table_elements(table_row_iterator_t row_it, table_axis_iterator_t x_it, table_axis_iterator_t y_it, write_location location)
 {
-  return write(y_rbegin(pTable), 
-                write(x_begin(pTable), 
-                  write(rows_begin(pTable), location)));
+  return write(y_it, 
+                write((x_it), 
+                  write(row_it, location)));
 }
+
+#define writeTable(pTable, start_address, counter) \
+  write_table_elements(rows_begin(pTable), x_begin(pTable), y_rbegin(pTable), {start_address, counter})
 
 //  ================================= End write support ===============================
 
@@ -134,7 +136,7 @@ void writeConfig(uint8_t pageNum)
       | Fuel table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&fuelTable, { EEPROM_CONFIG1_MAP, 0 } );
+      result = writeTable(&fuelTable, EEPROM_CONFIG1_MAP, 0);
       break;
 
     case veSetPage:
@@ -150,7 +152,7 @@ void writeConfig(uint8_t pageNum)
       | Ignition table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&ignitionTable, { EEPROM_CONFIG3_MAP, 0 });
+      result = writeTable(&ignitionTable, EEPROM_CONFIG3_MAP, 0 );
       break;
 
     case ignSetPage:
@@ -166,7 +168,7 @@ void writeConfig(uint8_t pageNum)
       | AFR table (See storage.h for data layout) - Page 5
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&afrTable, {EEPROM_CONFIG5_MAP, 0} );
+      result = writeTable(&afrTable, EEPROM_CONFIG5_MAP, 0);
       break;
 
     case afrSetPage:
@@ -182,9 +184,9 @@ void writeConfig(uint8_t pageNum)
       | Boost and vvt tables (See storage.h for data layout) - Page 8
       | 8x8 table itself + the 8 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&boostTable, { EEPROM_CONFIG7_MAP1, 0 });
-      result = writeTable(&vvtTable, { EEPROM_CONFIG7_MAP2, result.counter });
-      result = writeTable(&stagingTable, { EEPROM_CONFIG7_MAP3, result.counter });
+      result = writeTable(&boostTable, EEPROM_CONFIG7_MAP1, 0 );
+      result = writeTable(&vvtTable, EEPROM_CONFIG7_MAP2, result.counter );
+      result = writeTable(&stagingTable, EEPROM_CONFIG7_MAP3, result.counter );
       break;
 
     case seqFuelPage:
@@ -192,14 +194,14 @@ void writeConfig(uint8_t pageNum)
       | Fuel trim tables (See storage.h for data layout) - Page 9
       | 6x6 tables itself + the 6 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&trim1Table, { EEPROM_CONFIG8_MAP1, 0} );
-      result = writeTable(&trim2Table, { EEPROM_CONFIG8_MAP2, result.counter});
-      result = writeTable(&trim3Table, { EEPROM_CONFIG8_MAP3, result.counter});
-      result = writeTable(&trim4Table, { EEPROM_CONFIG8_MAP4, result.counter});
-      result = writeTable(&trim5Table, { EEPROM_CONFIG8_MAP5, result.counter});
-      result = writeTable(&trim6Table, { EEPROM_CONFIG8_MAP6, result.counter});
-      result = writeTable(&trim7Table, { EEPROM_CONFIG8_MAP7, result.counter});
-      result = writeTable(&trim8Table, { EEPROM_CONFIG8_MAP8, result.counter});
+      result = writeTable(&trim1Table, EEPROM_CONFIG8_MAP1, 0 );
+      result = writeTable(&trim2Table, EEPROM_CONFIG8_MAP2, result.counter);
+      result = writeTable(&trim3Table, EEPROM_CONFIG8_MAP3, result.counter);
+      result = writeTable(&trim4Table, EEPROM_CONFIG8_MAP4, result.counter);
+      result = writeTable(&trim5Table, EEPROM_CONFIG8_MAP5, result.counter);
+      result = writeTable(&trim6Table, EEPROM_CONFIG8_MAP6, result.counter);
+      result = writeTable(&trim7Table, EEPROM_CONFIG8_MAP7, result.counter);
+      result = writeTable(&trim8Table, EEPROM_CONFIG8_MAP8, result.counter);
       break;
 
     case canbusPage:
@@ -223,7 +225,7 @@ void writeConfig(uint8_t pageNum)
       | Fuel table 2 (See storage.h for data layout)
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&fuelTable2, { EEPROM_CONFIG11_MAP, 0 });
+      result = writeTable(&fuelTable2, EEPROM_CONFIG11_MAP, 0 );
       break;
 
     case wmiMapPage:
@@ -233,9 +235,9 @@ void writeConfig(uint8_t pageNum)
       | 8x8 VVT2 table + the 8 values along each of the axis
       | 4x4 Dwell table itself + the 4 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&wmiTable, { EEPROM_CONFIG12_MAP, 0 });
-      result = writeTable(&vvt2Table, { EEPROM_CONFIG12_MAP2, result.counter});
-      result = writeTable(&dwellTable, { EEPROM_CONFIG12_MAP3, result.counter});
+      result = writeTable(&wmiTable, EEPROM_CONFIG12_MAP, 0 );
+      result = writeTable(&vvt2Table, EEPROM_CONFIG12_MAP2, result.counter);
+      result = writeTable(&dwellTable, EEPROM_CONFIG12_MAP3, result.counter);
       break;
       
   case progOutsPage:
@@ -250,7 +252,7 @@ void writeConfig(uint8_t pageNum)
       | Ignition table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&ignitionTable2, { EEPROM_CONFIG14_MAP, 0});
+      result = writeTable(&ignitionTable2, EEPROM_CONFIG14_MAP, 0);
       break;
 
     default:
@@ -320,12 +322,15 @@ static inline eeprom_address_t load(table_axis_iterator_t it, eeprom_address_t a
   return address;    
 }
 
-static inline eeprom_address_t loadTable(table3D *pTable, eeprom_address_t address)
+static inline eeprom_address_t load_table_elements(table_row_iterator_t row_it, table_axis_iterator_t x_it, table_axis_iterator_t y_it, eeprom_address_t address)
 {
-  return load(y_rbegin(pTable),
-                load(x_begin(pTable), 
-                  load(rows_begin(pTable), address)));
+  return load(y_it,
+                load(x_it, 
+                  load(row_it, address)));
 }
+
+#define loadTable(pTable, address) \
+  load_table_elements(rows_begin(pTable), x_begin(pTable), y_rbegin(pTable), address)
 
 
 //  ================================= End internal read support ===============================
