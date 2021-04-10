@@ -3,12 +3,12 @@
 #include "utilities.h"
 #include "table3d_iterator.h"
 
-// This namespace maps from virtual page "addresses" to addresses/bytes of real in memory entities
+// Maps from virtual page "addresses" to addresses/bytes of real in memory entities
 //
 // For TunerStudio:
 // 1. Each page has a numeric identifier (0 to N-1)
 // 2. A single page is a continguous block of data.
-// So individual bytes are identified by a page number + offset
+// So individual bytes are identified by a (page number, offset)
 //
 // The TS layout is not what is in memory. E.g.
 //
@@ -26,31 +26,27 @@
 // Page sizes as defined in the .ini file
 constexpr const uint16_t PROGMEM ini_page_sizes[] = { 0, 128, 288, 288, 128, 288, 128, 240, 384, 192, 192, 288, 192, 128, 288 };
 
-// What section of a 3D table the offset mapped to
-enum table3D_section_t { 
-  Value,  // The values
-  axisX,  // X axis
-  axisY,  // Y axis
-  TableSectionNone    // Should never happen!
-};
+// ========================= Offset to Entity Mapping types =========================
 
-// Stores enough information to access a table element
-struct table_entity_t {
-  table_type_t table_key;
-  uint8_t xIndex; // Value X index or X axis index
-  uint8_t yIndex; // Value Y index or Y axis index
-  table3D_section_t section;
-};  
+struct intra_entity_address_t {
+  // The byte where the requested offset maps to
+  void *pData;
+  // In some cases we convert 16-bit values to 8-bit. This is the factor applied during that conversion.
+  uint8_t factor; 
+};
 
 struct entity_t {
-  // The entity that the offset mapped to
-  void *pData;
-  table_entity_t table;
-  uint8_t page;   // The page the entity belongs to
+  entity_type type;
+  void *pEntity; // The start of the entity
+  table_type_t table_key;
   uint16_t start; // The start position of the entity, in bytes, from the start of the page
   uint16_t size;  // Size of the entity in bytes
-  entity_type type;
+
+  // The byte address that the offset mapped to.
+  intra_entity_address_t address;
 };
+
+// ========================= Static page size computation & checking ===================
 
 // This will fail AND print the page number and required size
 template <uint8_t pageNum, uint16_t min>
@@ -58,88 +54,118 @@ static inline void check_size() {
   static_assert(ini_page_sizes[pageNum] >= min, "Size is off!");
 }
 
+// Since pages are a logical contiguous block, we can automatically compute the 
+// logical start address of every item: the first one starts at zero, following
+// items must start at the end of the previous.
+#define _ENTITY_START(entityNum) entity ## entityNum ## Start
+#define ENTITY_START_VAR(entityNum) _ENTITY_START(entityNum)
+// Compute the start address of the next entity. We need this to be a constexpr
+// so we can static assert on it later. So we cannot increment an exiting var.
+#define DECLARE_NEXT_ENTITY_START(entityIndex, entitySize) \
+  constexpr uint16_t ENTITY_START_VAR( PP_INC(entityIndex) ) = ENTITY_START_VAR(entityIndex)+entitySize;
+
+// ========================= Logical page end processing ===================
+
+static const entity_t page_end_template = { 
+  .type = End,
+  .pEntity = nullptr, 
+  .table_key = 0U, 
+  .start = 0U,
+  .size = 0U, 
+  .address = { nullptr, 0U } 
+};
+
+// Signal the end of a page
+#define END_OF_PAGE(pageNum, entityNum) \
+  check_size<pageNum, ENTITY_START_VAR(entityNum)>(); \
+  return page_end_template; \
+
+// ========================= Table processing  ===================
+
+// Tables do not map linearly to the TS page address space, so special 
+// handling is necessary (we do not use the normal array layout for
+// performance reasons elsewhere)
+//
+// We take the offset & map it to a single value, x-axis or y-axis element
+
 // Handy table macros
 #define TABLE_VALUE_END(size) ((uint16_t)size*(uint16_t)size)
 #define TABLE_AXISX_END(size) (TABLE_VALUE_END(size)+(uint16_t)size)
 #define TABLE_AXISY_END(size) (TABLE_AXISX_END(size)+(uint16_t)size)
-#define TABLE_SIZE(size) TABLE_AXISY_END(size)
+#define TABLE_SIZE(pTable) TABLE_AXISY_END(key_to_axissize((pTable)->type_key))
 
-// Precompute for performance
-#define TABLE16_SIZE TABLE_SIZE(16)
-#define TABLE8_SIZE TABLE_SIZE(8)
-#define TABLE6_SIZE TABLE_SIZE(6)
-#define TABLE4_SIZE TABLE_SIZE(4)
+#define OFFSET_TO_XAXIS_INDEX(offset, size) (offset - sq(size))
+#define OFFSET_TO_YAXIS_INDEX(offset, size) ((size-1) - (offset - (sq(size)+size)))
 
-// Macros + compile time constants = fast division/modulus
+// This computes the index of the logical first element of the first row
+// Which isn't at values[0]
+#define FIRST_ELEMENT_INDEX(size) ((uint8_t)((size*size)-size))
+
+// Since table values aren't laid out linearily, converting a linear 
+// TS offset to the equivalent memory address requires a modulus operation
+// This is slow, since AVR hardware has no divider. We can gain performance
+// by forcing uint8_t calculations.
 //
-// The various fast division libraries, E.g. libdivide, use
-// 32-bit operations for 16-bit division. Super slow.
-#define OFFSET_TOVALUE_YINDEX(offset, size) ((uint8_t)((size-1) - (offset / size)))
-#define OFFSET_TOVALUE_XINDEX(offset, size) ((uint8_t)(offset % size))
-#define OFFSET_TOAXIS_XINDEX(offset, size) ((uint8_t)(offset - TABLE_VALUE_END(size)))
-#define OFFSET_TOAXIS_YINDEX(offset, size) ((uint8_t)((size-1) - (offset - TABLE_AXISX_END(size))))
+// THIS IS WORTH 20% to 30% speed up
+//
+// This limits us to 16x16 tables. If we need bigger and move to 16-bit 
+// operations, consider using libdivide.
+#define OFFSET_TO_VALUE_INDEX(offset, size) \
+  (FIRST_ELEMENT_INDEX(size)+(2*((uint8_t)offset % (uint8_t)size))-(uint8_t)offset)
 
-#define NULL_TABLE \
-  { 0U, 0, 0, TableSectionNone }
+#define CREATE_TABLE_ENTITY(pTable, intra_address, entityNum) \
+  { .type = Table, .pEntity = pTable, .table_key = (pTable)->type_key, \
+    .start = ENTITY_START_VAR(entityNum),\
+    .size = TABLE_SIZE(pTable), \
+    .address = intra_address }
 
-#define CREATE_PAGE_END(pageNum, pageSize) \
-  { nullptr, NULL_TABLE, .page = pageNum, .start = 0, .size = pageSize, .type = End }
-
-// Signal the end of a page
-#define END_OF_PAGE(pageNum, pageSize) \
-  check_size<pageNum, pageSize>(); \
-  return CREATE_PAGE_END(pageNum, pageSize);
-
-// If the offset is in range, create a None entity_t
-#define CHECK_NOENTITY(offset, startByte, blockSize, pageNum) \
-  if (offset < (startByte)+blockSize) \
-  { \
-    return { nullptr, NULL_TABLE, .page = pageNum, .start = (startByte), .size = blockSize, .type = NoEntity }; \
-  } 
-
-// 
-#define TABLE_VALUE(offset, startByte, pTable, tableSize) \
-  { (pTable)->type_key, \
-    OFFSET_TOVALUE_XINDEX((offset-(startByte)), tableSize), \
-    OFFSET_TOVALUE_YINDEX((offset-(startByte)), tableSize), \
-    Value }
-
-#define TABLE_XAXIS(offset, startByte, pTable, tableSize) \
-  { (pTable)->type_key, \
-    OFFSET_TOAXIS_XINDEX((offset-(startByte)), tableSize), \
-    0U, \
-    axisX }
-
-#define TABLE_YAXIS(offset, startByte, pTable, tableSize) \
-  { (pTable)->type_key, \
-    0U, \
-    OFFSET_TOAXIS_YINDEX((offset-(startByte)), tableSize), \
-    axisY }
-
-#define TABLE_ENTITY(pTable, table_type, pageNum, startByte, tableSize) \
-  { pTable, table_type, .page = pageNum, .start = (startByte), .size = TABLE_SIZE(tableSize), .type = Table }
+#define CREATE_VALUE_ADDRESS(offset, pTable, entityNum) \
+  { (pTable)->values + OFFSET_TO_VALUE_INDEX((offset-ENTITY_START_VAR(entityNum)), key_to_axissize((pTable)->type_key)), \
+     1 }
+#define CREATE_XAXIS_ADDRESS(offset, pTable, entityNum) \
+  { (pTable)->axisX + OFFSET_TO_XAXIS_INDEX((offset-ENTITY_START_VAR(entityNum)), key_to_axissize((pTable)->type_key)), \
+    getTableAxisFactor(key_to_xdomain((pTable)->type_key))}
+#define CREATE_YAXIS_ADDRESS(offset, pTable, entityNum) \
+  { (pTable)->axisY + OFFSET_TO_YAXIS_INDEX((offset-ENTITY_START_VAR(entityNum)), key_to_axissize((pTable)->type_key)), \
+    getTableAxisFactor(key_to_ydomain((pTable)->type_key))}
 
 // If the offset is in range, create a Table entity_t
-#define CHECK_TABLE(offset, startByte, pTable, tableSize, pageNum) \
-  if (offset < (startByte)+TABLE_VALUE_END(tableSize)) \
+#define CHECK_TABLE(offset, pTable, entityNum) \
   { \
-    return TABLE_ENTITY(pTable, TABLE_VALUE(offset, startByte, pTable, tableSize), pageNum, startByte, tableSize); \
+    constexpr uint16_t axis_length = key_to_axissize((pTable)->type_key); \
+    constexpr uint16_t start_address = ENTITY_START_VAR(entityNum); \
+    /* Limit table size to max 16 so we can force 8-bit calculations */ \
+    /* for performance. See comments around OFFSET_TO_VALUE_INDEX */ \
+    static_assert(axis_length<17, "Table is too big"); \
+    if (offset < start_address+TABLE_VALUE_END(axis_length)) \
+    { \
+      return CREATE_TABLE_ENTITY(pTable, CREATE_VALUE_ADDRESS(offset, pTable, entityNum), entityNum); \
+    } \
+    if (offset < start_address+TABLE_AXISX_END(axis_length)) \
+    { \
+      return CREATE_TABLE_ENTITY(pTable, CREATE_XAXIS_ADDRESS(offset, pTable, entityNum), entityNum); \
+    } \
+    if (offset < start_address+TABLE_AXISY_END(axis_length)) \
+    { \
+      return CREATE_TABLE_ENTITY(pTable, CREATE_YAXIS_ADDRESS(offset, pTable, entityNum), entityNum); \
+    } \
   } \
-  if (offset < (startByte)+TABLE_AXISX_END(tableSize)) \
-  { \
-    return TABLE_ENTITY(pTable, TABLE_XAXIS(offset, startByte, pTable, tableSize), pageNum, startByte, tableSize); \
-  } \
-  if (offset < (startByte)+TABLE_AXISY_END(tableSize)) \
-  { \
-    return TABLE_ENTITY(pTable, TABLE_YAXIS(offset, startByte, pTable, tableSize), pageNum, startByte, tableSize); \
-  }
+  DECLARE_NEXT_ENTITY_START(entityNum, TABLE_SIZE(pTable))
+
+// ========================= Raw memory block processing  ===================
 
 // If the offset is in range, create a Raw entity_t
-#define CHECK_RAW(offset, startByte, pDataBlock, blockSize, pageNum) \
-  if (offset < (startByte)+blockSize) \
+#define CHECK_RAW(offset, pDataBlock, blockSize, entityNum) \
+  if (offset < ENTITY_START_VAR(entityNum)+blockSize) \
   { \
-    return { pDataBlock, { 0U, 0, 0, TableSectionNone }, .page = pageNum, .start = (startByte), .size = blockSize, .type = Raw }; \
-  } 
+    return  { .type = Raw, .pEntity = pDataBlock, .table_key = 0U, \
+              .start = ENTITY_START_VAR(entityNum), \
+              .size = blockSize,  \
+              .address = { (byte*)pDataBlock+offset, 1 } } ; \
+  } \
+  DECLARE_NEXT_ENTITY_START(entityNum, blockSize)
+
+// ===============================================================================
 
 // Does the heavy lifting of mapping page+offset to an entity
 //
@@ -148,94 +174,111 @@ static inline void check_size() {
 static inline __attribute__((always_inline)) // <-- this is critical for performance
 entity_t map_page_offset_to_entity_inline(uint8_t pageNumber, uint16_t offset)
 {
+  // The start address of the 1st entity in any page.
+  static constexpr uint16_t ENTITY_START_VAR(0) = 0U;
+
   switch (pageNumber)
   {
     case 0:
-      return CREATE_PAGE_END(0, 0);
+      END_OF_PAGE(0, 0)
 
     case veMapPage:
-      CHECK_TABLE(offset, 0U, &fuelTable, 16, pageNumber)
-      END_OF_PAGE(veMapPage, TABLE16_SIZE);
-      break;
+    {
+      CHECK_TABLE(offset, &fuelTable, 0)
+      END_OF_PAGE(veMapPage, 1)
+    }
 
     case ignMapPage: //Ignition settings page (Page 2)
-      CHECK_TABLE(offset, 0U, &ignitionTable, 16, pageNumber)
-      END_OF_PAGE(ignMapPage, TABLE16_SIZE);
-      break;
+    {
+      CHECK_TABLE(offset, &ignitionTable, 0)
+      END_OF_PAGE(ignMapPage, 1)
+    }
 
     case afrMapPage: //Air/Fuel ratio target settings page
-      CHECK_TABLE(offset, 0U, &afrTable, 16, pageNumber)
-      END_OF_PAGE(afrMapPage, TABLE16_SIZE);
-      break;
+    {
+      CHECK_TABLE(offset, &afrTable, 0)
+      END_OF_PAGE(afrMapPage, 1)
+    }
 
     case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
-      CHECK_TABLE(offset, 0U, &boostTable, 8, pageNumber)
-      CHECK_TABLE(offset, TABLE8_SIZE, &vvtTable, 8, pageNumber)
-      CHECK_TABLE(offset, TABLE8_SIZE*2, &stagingTable, 8, pageNumber)
-      END_OF_PAGE(boostvvtPage, TABLE8_SIZE*3);
-      break;
+    {
+      CHECK_TABLE(offset, &boostTable, 0)
+      CHECK_TABLE(offset, &vvtTable, 1)
+      CHECK_TABLE(offset, &stagingTable, 2)
+      END_OF_PAGE(boostvvtPage, 3)
+    }
 
     case seqFuelPage:
-      CHECK_TABLE(offset, 0U, &trim1Table, 6, pageNumber)
-      CHECK_TABLE(offset, TABLE6_SIZE*1, &trim2Table, 6, pageNumber)
-      CHECK_TABLE(offset, TABLE6_SIZE*2, &trim3Table, 6, pageNumber)
-      CHECK_TABLE(offset, TABLE6_SIZE*3, &trim4Table, 6, pageNumber)
-      CHECK_TABLE(offset, TABLE6_SIZE*4, &trim5Table, 6, pageNumber)
-      CHECK_TABLE(offset, TABLE6_SIZE*5, &trim6Table, 6, pageNumber)
-      CHECK_TABLE(offset, TABLE6_SIZE*6, &trim7Table, 6, pageNumber)
-      CHECK_TABLE(offset, TABLE6_SIZE*7, &trim8Table, 6, pageNumber)
-      END_OF_PAGE(seqFuelPage, TABLE6_SIZE*8);
-      break;
+    {
+      CHECK_TABLE(offset, &trim1Table, 0)
+      CHECK_TABLE(offset, &trim2Table, 1)
+      CHECK_TABLE(offset, &trim3Table, 2)
+      CHECK_TABLE(offset, &trim4Table, 3)
+      CHECK_TABLE(offset, &trim5Table, 4)
+      CHECK_TABLE(offset, &trim6Table, 5)
+      CHECK_TABLE(offset, &trim7Table, 6)
+      CHECK_TABLE(offset, &trim8Table, 7)
+      END_OF_PAGE(seqFuelPage, 8)
+    }
 
     case fuelMap2Page:
-      CHECK_TABLE(offset, 0U, &fuelTable2, 16, pageNumber)
-      END_OF_PAGE(fuelMap2Page, TABLE16_SIZE);
-      break;
+    {
+      CHECK_TABLE(offset, &fuelTable2, 0)
+      END_OF_PAGE(fuelMap2Page, 1)
+    }
 
     case wmiMapPage:
-      CHECK_TABLE(offset, 0U, &wmiTable, 8, pageNumber)
-      CHECK_TABLE(offset, TABLE8_SIZE, &vvt2Table, 8, pageNumber)
-      CHECK_TABLE(offset, TABLE8_SIZE*2, &dwellTable, 4, pageNumber)
-      END_OF_PAGE(wmiMapPage, TABLE8_SIZE*2 + TABLE4_SIZE);
-      break;
+    {
+      CHECK_TABLE(offset, &wmiTable, 0)
+      CHECK_TABLE(offset, &vvt2Table, 1)
+      CHECK_TABLE(offset, &dwellTable, 2)
+      END_OF_PAGE(wmiMapPage, 3)
+    }
     
     case ignMap2Page:
-      CHECK_TABLE(offset, 0U, &ignitionTable2, 16, pageNumber)
-      END_OF_PAGE(ignMap2Page, TABLE16_SIZE);
-      break;
+    {
+      CHECK_TABLE(offset, &ignitionTable2, 0)
+      END_OF_PAGE(ignMap2Page, 1)
+    }
 
     case veSetPage: 
-      CHECK_RAW(offset, 0U, &configPage2, sizeof(configPage2), pageNumber)
-      END_OF_PAGE(veSetPage, sizeof(configPage2));
-      break;
+    {
+      CHECK_RAW(offset, &configPage2, sizeof(configPage2), 0)
+      END_OF_PAGE(veSetPage, 1)
+    }
 
     case ignSetPage: 
-      CHECK_RAW(offset, 0U, &configPage4, sizeof(configPage4), pageNumber)
-      END_OF_PAGE(ignSetPage, sizeof(configPage4));
-      break;
-
+    {
+      CHECK_RAW(offset, &configPage4, sizeof(configPage4), 0)
+      END_OF_PAGE(ignSetPage, 1)
+    }
+    
     case afrSetPage: 
-      CHECK_RAW(offset, 0U, &configPage6, sizeof(configPage6), pageNumber)
-      END_OF_PAGE(afrSetPage, sizeof(configPage6));
-      break;
+    {
+      CHECK_RAW(offset, &configPage6, sizeof(configPage6), 0)
+      END_OF_PAGE(afrSetPage, 1)
+    }
 
     case canbusPage:  
-      CHECK_RAW(offset, 0U, &configPage9, sizeof(configPage9), pageNumber)
-      END_OF_PAGE(canbusPage, sizeof(configPage9));
-      break;
+    {
+      CHECK_RAW(offset, &configPage9, sizeof(configPage9), 0)
+      END_OF_PAGE(canbusPage, 1)
+    }
 
     case warmupPage: 
-      CHECK_RAW(offset, 0U, &configPage10, sizeof(configPage10), pageNumber)
-      END_OF_PAGE(warmupPage, sizeof(configPage10));
-      break;
+    {
+      CHECK_RAW(offset, &configPage10, sizeof(configPage10), 0)
+      END_OF_PAGE(warmupPage, 1)
+    }
 
     case progOutsPage: 
-      CHECK_RAW(offset, 0U, &configPage13, sizeof(configPage13), pageNumber)
-      END_OF_PAGE(progOutsPage, sizeof(configPage13));
-      break;      
+    {
+      CHECK_RAW(offset, &configPage13, sizeof(configPage13), 0)
+      END_OF_PAGE(progOutsPage, 1)
+    }
 
     default:
-      abort(); // Unkown page number. Not a lot  we can do.
+      abort(); // Unkown page number. Not a lot we can do.
       break;
   }
 }
@@ -245,107 +288,12 @@ entity_t map_page_offset_to_entity_inline(uint8_t pageNumber, uint16_t offset)
 // With no templates or inheritance we need some way to call functions
 // for the various distinct table types. CONCRETE_TABLE_ACTION dispatches
 // to a caller defined function overloaded by the type of the table. 
-#define CONCRETE_TABLE_ACTION_INNER(size, xDomain, yDomain, pTable, function, ...) \
-  case DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)::type_key: return function((DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)*)pTable, ##__VA_ARGS__);
-#define CONCRETE_TABLE_ACTION(testKey, pTable, function, ...) \
+#define CONCRETE_TABLE_ACTION_INNER(size, xDomain, yDomain, action, ...) \
+  case DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)::type_key: action(size, xDomain, yDomain, ##__VA_ARGS__);
+#define CONCRETE_TABLE_ACTION(testKey, action, ...) \
   switch (testKey) { \
-  TABLE_GENERATOR(CONCRETE_TABLE_ACTION_INNER, pTable, function, ##__VA_ARGS__ ) \
+  TABLE_GENERATOR(CONCRETE_TABLE_ACTION_INNER, action, ##__VA_ARGS__ ) \
   default: abort(); }
-
-// ================================== Table getters & setters ===================
-
-#define GEN_GET_XAXIS(size, xDom, yDom) \
-    static inline table3d_axis_t* get_xaxis(DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable, uint16_t offset) \
-    { \
-      return pTable->axisX+offset; \
-    }
-TABLE_GENERATOR(GEN_GET_XAXIS)
-static inline table3d_axis_t* get_xaxis(uint16_t table_key, void* pTable, uint16_t offset)
-{
-   CONCRETE_TABLE_ACTION(table_key, pTable, get_xaxis, offset);
-}
-
-#define GEN_GET_YAXIS(size, xDom, yDom) \
-    static inline table3d_axis_t* get_yaxis(DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable, uint16_t offset) \
-    { \
-      return pTable->axisY+offset; \
-    }
-TABLE_GENERATOR(GEN_GET_YAXIS)
-static inline table3d_axis_t* get_yaxis(uint16_t table_key, void* pTable, uint16_t offset)
-{
-   CONCRETE_TABLE_ACTION(table_key, pTable, get_yaxis, offset);
-}
-
-#define GEN_GET_VALUE(size, xDom, yDom) \
-    static inline table3d_value_t* get_value(DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable, uint16_t xIndex, uint16_t yIndex) \
-    { \
-      return pTable->values+((yIndex * size)+xIndex); \
-    }
-TABLE_GENERATOR(GEN_GET_VALUE)
-static inline table3d_value_t* get_value(uint16_t table_key, void* pTable, uint16_t xIndex, uint16_t yIndex)
-{
-   CONCRETE_TABLE_ACTION(table_key, pTable, get_value, xIndex, yIndex);
-}
-
-#define GEN_INVALIDATE_CACHE(size, xDom, yDom) \
-  static inline void invalidate_cache(DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
-  { \
-     invalidate_cache(&pTable->get_value_cache); \
-  } 
-TABLE_GENERATOR(GEN_INVALIDATE_CACHE)
-static inline void invalidate_cache(uint16_t table_key, void* pTable)
-{
-   CONCRETE_TABLE_ACTION(table_key, pTable, invalidate_cache);
-}
-
-// Tables do not map linearly to the TS page address space, so special 
-// handling is necessary (we do not use the normal array layout for
-// performance reasons elsewhere)
-//
-// We take the offset & map it to a single value, x-axis or y-axis element
-static inline byte get_table_value(const entity_t &entity)
-{
-  switch (entity.table.section)
-  {
-    case Value: 
-      return *get_value(entity.table.table_key, entity.pData, entity.table.xIndex, entity.table.yIndex);
-
-    case axisX:
-      return (byte)(*get_xaxis(entity.table.table_key, entity.pData, entity.table.xIndex)/ getTableAxisFactor(key_to_xdomain(entity.table.table_key))); 
-    
-    case axisY:
-      return (byte)(*get_yaxis(entity.table.table_key, entity.pData, entity.table.yIndex) / getTableAxisFactor(key_to_ydomain(entity.table.table_key))); 
-    
-    default: return 0; // no-op
-  }
-  return 0U;
-}
-
-static inline void set_table_value(entity_t &entity, int8_t value)
-{
-  switch (entity.table.section)
-  {
-    case Value: 
-      *get_value(entity.table.table_key, entity.pData, entity.table.xIndex, entity.table.yIndex) = value;
-      break;
-
-    case axisX:
-      *get_xaxis(entity.table.table_key, entity.pData, entity.table.xIndex) = (int16_t)(value) * getTableAxisFactor(key_to_xdomain(entity.table.table_key)); 
-      break;
-    
-    case axisY:
-      *get_yaxis(entity.table.table_key, entity.pData, entity.table.yIndex) = (int16_t)(value) * getTableAxisFactor(key_to_ydomain(entity.table.table_key));
-      break;
-    
-    default: ; // no-op
-  }
-  invalidate_cache(entity.table.table_key, entity.pData);
-}
-
-static inline byte* get_raw_value(const entity_t &entity, uint16_t offset)
-{
-  return (byte*)entity.pData + offset;
-}
 
 // ============================ Page iteration support ======================
 
@@ -358,11 +306,15 @@ static entity_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
   return map_page_offset_to_entity_inline(pageNumber, offset);
 }
 
-static inline page_iterator_t to_page_entity(entity_t mapped)
+static inline page_iterator_t to_page_entity(const page_iterator_t &priorIt, entity_t mapped)
 {
-  return { mapped.pData,
-          .table_key = mapped.table.table_key,  
-          .page=mapped.page, .start = mapped.start, .size = mapped.size, .type = mapped.type };
+  return { .pData = mapped.pEntity,
+           .table_key = mapped.table_key, 
+           .page = priorIt.page, 
+           .start =mapped.type==End ? priorIt.start+priorIt.size : mapped.start, 
+           // Hit the end? Then size is the total actual page size (might be different than declared in the INI)
+           .size = mapped.type==End ? priorIt.start+priorIt.size : mapped.size, 
+           .type = mapped.type };
 }
 
 // ====================================== External functions  ====================================
@@ -379,39 +331,39 @@ uint16_t getPageSize(byte pageNum)
 
 void setPageValue(byte pageNum, uint16_t offset, byte value)
 {
-  entity_t entity = map_page_offset_to_entity_inline(pageNum, offset);
+  const entity_t entity = map_page_offset_to_entity_inline(pageNum, offset);
 
-  switch (entity.type)
+  if (entity.address.factor==1)
   {
-  case Table:
-    set_table_value(entity, value);
-    break;
-  
-  case Raw:
-    *get_raw_value(entity, offset-entity.start) = value;
-    break;
-      
-  default:
-    break;
+    *(byte*)(entity.address.pData) = value;
   }
+  else if (entity.address.factor>1)
+  {
+    (*(int16_t*)(entity.address.pData)) = value * entity.address.factor;
+  }
+  if (entity.type==Table)
+  {
+    #define GEN_INVALIDATE_CACHE(size, xDomain, yDomain, pTable) \
+        invalidate_cache(&((DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)*)pTable)->get_value_cache); \
+        break;
+
+    CONCRETE_TABLE_ACTION(entity.table_key, GEN_INVALIDATE_CACHE, entity.pEntity);      
+  }    
 }
 
 byte getPageValue(byte page, uint16_t offset)
 {
-  entity_t entity = map_page_offset_to_entity_inline(page, offset);
+  const intra_entity_address_t address = map_page_offset_to_entity_inline(page, offset).address;
 
-  switch (entity.type)
+  if (address.factor==1)
   {
-    case Table:
-      return get_table_value(entity);
-      break;
-
-    case Raw:
-      return *get_raw_value(entity, offset-entity.start);
-      break;
-
-    default: return 0U;
+    return *(byte*)(address.pData);
   }
+  else if (address.factor>1)
+  {
+    return  (*(int16_t*)(address.pData)) / address.factor;
+  }
+
   return 0U;
 }
 
@@ -419,12 +371,20 @@ byte getPageValue(byte page, uint16_t offset)
 // Check for entity.type==End
 page_iterator_t page_begin(byte pageNum)
 {
-  return to_page_entity(map_page_offset_to_entity(pageNum, 0U));
+  page_iterator_t start_page_it = {
+    .pData = nullptr,
+    .table_key = 0U,
+    .page = pageNum,
+    .start = 0U,
+    .size = 0U,
+    .type = NoEntity
+  };
+  return to_page_entity(start_page_it, map_page_offset_to_entity(pageNum, 0U));
 }
 
 page_iterator_t advance(const page_iterator_t &it)
 {
-    return to_page_entity(map_page_offset_to_entity(it.page, it.start+it.size));
+    return to_page_entity(it, map_page_offset_to_entity(it.page, it.start+it.size));
 }
 
 /**
@@ -432,7 +392,9 @@ page_iterator_t advance(const page_iterator_t &it)
  */
 table_row_iterator_t rows_begin(const page_iterator_t &it)
 {
-  CONCRETE_TABLE_ACTION(it.table_key, it.pData, rows_begin);
+  #define GET_ROW_ITERATOR(size, xDomain, yDomain, pTable) \
+      return rows_begin(((DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)*)pTable));
+  CONCRETE_TABLE_ACTION(it.table_key, GET_ROW_ITERATOR, it.pData);
 }
 
 /**
@@ -440,13 +402,18 @@ table_row_iterator_t rows_begin(const page_iterator_t &it)
  */
 table_axis_iterator_t x_begin(const page_iterator_t &it)
 {
-  CONCRETE_TABLE_ACTION(it.table_key, it.pData, x_begin);
+  #define GET_X_ITERATOR(size, xDomain, yDomain, pTable) \
+      return x_begin(((DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)*)pTable));
+  CONCRETE_TABLE_ACTION(it.table_key, GET_X_ITERATOR, it.pData);
 }
+
 
 /**
  * Convert page iterator to table y axis iterator.
  */
 table_axis_iterator_t y_begin(const page_iterator_t &it)
 {
-  CONCRETE_TABLE_ACTION(it.table_key, it.pData, y_begin);
+  #define GET_Y_ITERATOR(size, xDomain, yDomain, pTable) \
+      return y_begin(((DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)*)pTable));
+  CONCRETE_TABLE_ACTION(it.table_key, GET_Y_ITERATOR, it.pData);
 }
