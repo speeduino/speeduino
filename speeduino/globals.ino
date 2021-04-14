@@ -89,6 +89,9 @@ volatile PINMASK_TYPE tach_pin_mask;
 volatile PORT_TYPE *pump_pin_port;
 volatile PINMASK_TYPE pump_pin_mask;
 
+volatile PORT_TYPE *vialle_pin_port;
+volatile PINMASK_TYPE vialle_pin_mask;
+
 volatile PORT_TYPE *flex_pin_port;
 volatile PINMASK_TYPE flex_pin_mask;
 
@@ -120,6 +123,7 @@ int ignition8EndAngle = 0;
 const byte PROGMEM fsIntIndex[31] = {4, 14, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 96, 101}; //int indexes in fullStatus array
 bool initialisationComplete = false; //Tracks whether the setup() function has run completely
 byte fpPrimeTime = 0; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
+byte viallePrimeTime = 0;
 volatile uint16_t mainLoopCount;
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
@@ -130,6 +134,7 @@ bool previousClutchTrigger;
 volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
 volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 volatile bool fpPrimed = false; //Tracks whether or not the fuel pump priming has been completed yet
+volatile bool viallePrimed = false;
 volatile bool injPrimed = false; //Tracks whether or not the injectors priming has been completed yet
 volatile unsigned int toothHistoryIndex = 0;
 volatile byte toothHistorySerialIndex = 0;
@@ -152,6 +157,10 @@ volatile byte HWTest_INJ = 0; /**< Each bit in this variable represents one of t
 volatile byte HWTest_INJ_50pc = 0; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
 volatile byte HWTest_IGN = 0; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 volatile byte HWTest_IGN_50pc = 0; 
+
+int bufIndx = 0;
+byte inBuffer[5];
+int stateVialle = 0;
 
 
 //This needs to be here because using the config page directly can prevent burning the setting
@@ -194,6 +203,7 @@ byte pinBat; //Battery voltage pin
 byte pinDisplayReset; // OLED reset pin
 byte pinTachOut; //Tacho output
 byte pinFuelPump; //Fuel pump on/off
+byte pinVialle; //Vialle system on/off
 byte pinIdle1; //Single wire idle control
 byte pinIdle2; //2 wire idle control (Not currently used)
 byte pinIdleUp; //Input for triggering Idle Up

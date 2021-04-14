@@ -368,6 +368,9 @@
 #ifndef CORE_TEENSY41
   #define FUEL_PUMP_ON() *pump_pin_port |= (pump_pin_mask)
   #define FUEL_PUMP_OFF() *pump_pin_port &= ~(pump_pin_mask)
+
+  #define VIALLE_ON() *vialle_pin_port |= (vialle_pin_mask)
+  #define VIALLE_OFF() *vialle_pin_port &= ~(vialle_pin_mask)
 #else
   //Special compatibility case for TEENSY 41 (for now)
   #define FUEL_PUMP_ON() digitalWrite(pinFuelPump, HIGH);
@@ -465,6 +468,9 @@ extern volatile PINMASK_TYPE tach_pin_mask;
 extern volatile PORT_TYPE *pump_pin_port;
 extern volatile PINMASK_TYPE pump_pin_mask;
 
+extern volatile PORT_TYPE *vialle_pin_port;
+extern volatile PINMASK_TYPE vialle_pin_mask;
+
 extern volatile PORT_TYPE *flex_pin_port;
 extern volatile PINMASK_TYPE flex_pin_mask;
 
@@ -505,6 +511,7 @@ extern int ignition8StartAngle;
 extern const byte PROGMEM fsIntIndex[31];
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
+extern byte viallePrimeTime; 
 extern volatile uint16_t mainLoopCount;
 extern unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 extern volatile unsigned long timer5_overflow_count; //Increments every time counter 5 overflows. Used for the fast version of micros()
@@ -515,6 +522,7 @@ extern bool previousClutchTrigger;
 extern volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
 extern volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 extern volatile bool fpPrimed; //Tracks whether or not the fuel pump priming has been completed yet
+extern volatile bool viallePrimed;
 extern volatile bool injPrimed; //Tracks whether or not the injector priming has been completed yet
 extern volatile unsigned int toothHistoryIndex;
 extern volatile byte toothHistorySerialIndex;
@@ -538,6 +546,10 @@ extern volatile byte HWTest_INJ; /**< Each bit in this variable represents one o
 extern volatile byte HWTest_INJ_50pc; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
 extern volatile byte HWTest_IGN; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 extern volatile byte HWTest_IGN_50pc; /**< Each bit in this variable represents one of the ignition channels and it's 50% HW test status */
+
+extern int bufIndx;
+extern byte inBuffer[5];
+extern int stateVialle;
 
 //This needs to be here because using the config page directly can prevent burning the setting
 extern byte resetControl;
@@ -924,7 +936,9 @@ struct config4 {
 
   byte engineProtectMaxRPM;
 
-  byte unused4_120[7];
+  byte viallePin : 6;
+
+  byte unused4_120[6];
 
 #if defined(CORE_AVR)
   };
@@ -1357,6 +1371,7 @@ extern byte pinBat; //Battery voltage pin
 extern byte pinDisplayReset; // OLED reset pin
 extern byte pinTachOut; //Tacho output
 extern byte pinFuelPump; //Fuel pump on/off
+extern byte pinVialle; //Vialle system on/off
 extern byte pinIdle1; //Single wire idle control
 extern byte pinIdle2; //2 wire idle control (Not currently used)
 extern byte pinIdleUp; //Input for triggering Idle Up

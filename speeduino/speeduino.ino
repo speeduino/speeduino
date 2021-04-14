@@ -109,6 +109,7 @@ void loop()
 
       //Check for any new requets from serial.
       if ( (Serial.available()) > 0) { command(); }
+      if ( (Serial3.available()) > 0) { getVialle(); }
       else if(cmdPending == true)
       {
         //This is a special case just for the tooth and composite loggers
@@ -153,8 +154,15 @@ void loop()
       currentStatus.longRPM = getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
       currentStatus.RPMdiv100 = currentStatus.RPM / 100;
-      FUEL_PUMP_ON();
-      currentStatus.fuelPumpOn = true; //Not sure if this is needed.
+      if (stateVialle == 1){
+        FUEL_PUMP_OFF();
+        currentStatus.fuelPumpOn = true; //Not sure if this is needed.
+      }
+      else {
+        FUEL_PUMP_ON();
+        currentStatus.fuelPumpOn = false; //Not sure if this is needed.
+      }
+      VIALLE_ON();
     }
     else
     {
@@ -180,6 +188,7 @@ void loop()
       ignitionOn = false;
       fuelOn = false;
       if (fpPrimed == true) { FUEL_PUMP_OFF(); currentStatus.fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete
+      if (viallePrimed == true) { VIALLE_OFF(); } //Turn off the fuel pump, but only if the priming is complete
       if (configPage6.iacPWMrun == false) { disableIdle(); } //Turn off the idle PWM
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE

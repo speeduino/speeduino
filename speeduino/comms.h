@@ -97,6 +97,7 @@ void sendToothLog(uint8_t);
 void testComm();
 void commandButtons(int16_t);
 void sendCompositeLog(uint8_t);
+void getVialle();
 byte getPageValue(byte, uint16_t);
 byte getStatusEntry(uint16_t);
 

@@ -26,6 +26,7 @@
 void initialiseAll()
 {   
     fpPrimed = false;
+    viallePrimed = false;
     injPrimed = false;
 
     pinMode(LED_BUILTIN, OUTPUT);
@@ -385,6 +386,7 @@ void initialiseAll()
     dwellLimit_uS = (1000 * configPage4.dwellLimit);
     currentStatus.nChannels = ((uint8_t)INJ_CHANNELS << 4) + IGN_CHANNELS; //First 4 bits store the number of injection channels, 2nd 4 store the number of ignition channels
     fpPrimeTime = 0;
+    //viallePrimeTime = 0;
     ms_counter = 0;
     fixedCrankingOverride = 0;
     timer5_overflow_count = 0;
@@ -1171,6 +1173,8 @@ void initialiseAll()
     }
     else { fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
 
+    VIALLE_ON();
+
     interrupts();
     readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
     readTPS(false); // Need to read tps to detect flood clear state
@@ -1251,6 +1255,7 @@ void setPinMapping(byte boardID)
       pinVVT_1 = 6; //Default VVT output
       pinVVT_2 = 48; //Default VVT2 output
       pinFuelPump = 4; //Fuel pump output
+      pinVialle = 10; //Vialle system output
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinStepperEnable = 26; //Enable pin for DRV8825
@@ -2445,6 +2450,7 @@ void setPinMapping(byte boardID)
   if ( (configPage2.tachoPin != 0) && (configPage2.tachoPin < BOARD_MAX_IO_PINS) ) { pinTachOut = pinTranslate(configPage2.tachoPin); }
   if ( (configPage4.fuelPumpPin != 0) && (configPage4.fuelPumpPin < BOARD_MAX_IO_PINS) ) { pinFuelPump = pinTranslate(configPage4.fuelPumpPin); }
   if ( (configPage6.fanPin != 0) && (configPage6.fanPin < BOARD_MAX_IO_PINS) ) { pinFan = pinTranslate(configPage6.fanPin); }
+  //if ( (configPage4.viallePin != 0) && (configPage4.viallePin < BOARD_NR_GPIO_PINS) ) { pinVialle = pinTranslate(configPage4.viallePin); }
   if ( (configPage6.boostPin != 0) && (configPage6.boostPin < BOARD_MAX_IO_PINS) ) { pinBoost = pinTranslate(configPage6.boostPin); }
   if ( (configPage6.vvt1Pin != 0) && (configPage6.vvt1Pin < BOARD_MAX_IO_PINS) ) { pinVVT_1 = pinTranslate(configPage6.vvt1Pin); }
   if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_MAX_IO_PINS) ) { pinBaro = pinTranslateAnalog(configPage6.baroPin); }
@@ -2486,6 +2492,7 @@ void setPinMapping(byte boardID)
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinIdleUpOutput, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
+  pinMode(pinVialle, OUTPUT);
   pinMode(pinIgnBypass, OUTPUT);
   pinMode(pinFan, OUTPUT);
   pinMode(pinStepperDir, OUTPUT);
@@ -2592,6 +2599,9 @@ void setPinMapping(byte boardID)
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
   pump_pin_port = portOutputRegister(digitalPinToPort(pinFuelPump));
   pump_pin_mask = digitalPinToBitMask(pinFuelPump);
+
+  vialle_pin_port = portOutputRegister(digitalPinToPort(pinVialle));
+  vialle_pin_mask = digitalPinToBitMask(pinVialle);
 
   //And for inputs
   #if defined(CORE_STM32)

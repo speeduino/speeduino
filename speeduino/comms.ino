@@ -735,6 +735,27 @@ void command()
   }
 }
 
+void getVialle()
+{
+  while(Serial3.available() > 14) {
+      Serial3.read();
+  }
+    
+  if ( (Serial3.available() >= 5) && (Serial3.peek() == 0x02) ) {
+    for (bufIndx = 0; bufIndx <= 4; bufIndx++) {
+      inBuffer[bufIndx] = Serial3.read();
+    }
+           
+    if (inBuffer[0] == 2) { 
+      if ((inBuffer[1] == 0x20) && (inBuffer[3] == 0xDD)){ stateVialle = 1; return; }
+      else if ((inBuffer[1] == 0x40) && (inBuffer[3] == 0xBD)){ stateVialle = 0; return; }
+    }
+       
+  }
+  else if (Serial3.available() < 5) {return;}
+  else if (Serial3.available() > 5) {Serial3.read();} 
+}
+
 byte getStatusEntry(uint16_t byteNum)
 {
   byte statusValue = 0;

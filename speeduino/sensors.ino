@@ -515,8 +515,11 @@ void readBat()
   {
     //Reprime the fuel pump
     fpPrimeTime = currentStatus.secl;
+    viallePrimeTime = currentStatus.secl;
     fpPrimed = false;
+    viallePrimed = false;
     FUEL_PUMP_ON();
+    VIALLE_ON();
 
     //Redo the stepper homing
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
