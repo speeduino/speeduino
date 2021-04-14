@@ -906,6 +906,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
         CANSerial.write(cmd);
       }
       else if (cmd == 31) { CANSerial.write("A"); }        //confirm cmd type
+    #else
+      UNUSED(cmd);
     #endif
   }
   else

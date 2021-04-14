@@ -33,4 +33,8 @@ void initialiseProgrammableIO();
 void checkProgrammableIO();
 int16_t ProgrammableIOGetData(uint16_t index);
 
+#if !defined(UNUSED)
+#define UNUSED(x) (void)(x)
+#endif
+
 #endif // UTILS_H
