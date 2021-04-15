@@ -135,6 +135,19 @@ extern "C" char* sbrk(int incr);
 /*
 ***********************************************************************************************************
 * Schedules
+* Timers Table for STM32F1
+*   TIMER1    TIMER2    TIMER3    TIMER4
+* 1 - free  1 - INJ1  1 - IGN1  1 - oneMSInterval
+* 2 - BOOST 2 - INJ2  2 - IGN2  2 -
+* 3 - VVT   3 - INJ3  3 - IGN3  3 -
+* 4 - IDLE  4 - INJ4  4 - IGN4  4 -
+*
+* Timers Table for STM32F4
+*   TIMER1  |  TIMER2  |  TIMER3  |  TIMER4  |  TIMER5  |  TIMER11
+* 1 - free  |1 - INJ1  |1 - IGN1  |1 - IGN5  |1 - INJ5  |1 - oneMSInterval
+* 2 - BOOST |2 - INJ2  |2 - IGN2  |2 - IGN6  |2 - INJ6  |
+* 3 - VVT   |3 - INJ3  |3 - IGN3  |3 - IGN7  |3 - INJ7  |
+* 4 - IDLE  |4 - INJ4  |4 - IGN4  |4 - IGN8  |4 - INJ8  | 
 */
 #define MAX_TIMER_PERIOD 65535*4 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
 #define uS_TO_TIMER_COMPARE(uS) (uS>>2) //Converts a given number of uS into the required number of timer ticks until that time has passed.

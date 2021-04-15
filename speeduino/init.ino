@@ -1439,6 +1439,7 @@ void setPinMapping(byte boardID)
         //https://github.com/stm32duino/Arduino_Core_STM32/blob/master/variants/Generic_F411Cx/variant.h#L28
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
         //pins PB12, PB13, PB14 and PB15 are used to SPI FLASH
+        //PB2 can't be used as input becuase is BOOT pin
         pinInjector1 = PB7; //Output pin injector 1 is on
         pinInjector2 = PB6; //Output pin injector 2 is on
         pinInjector3 = PB5; //Output pin injector 3 is on
@@ -1454,18 +1455,18 @@ void setPinMapping(byte boardID)
         pinO2 = A8; //O2 Sensor pin
         pinBat = A4; //Battery reference voltage pin
         pinBaro = pinMAP;
-        pinIdle1 = PA5; //Single wire idle control
+        pinTachOut = PB1; //Tacho output pin  (Goes to ULN2803)
+        pinIdle1 = PB2; //Single wire idle control
+        pinIdle2 = PB10; //2 wire idle control
         pinBoost = PA6; //Boost control
-        //pinVVT_1 = 4; //Default VVT output
-        pinStepperDir = PC15; //Direction pin  for DRV8825 driver
-        pinStepperStep = PC14; //Step pin for DRV8825 driver
-        //pinStepperEnable = PC13; //Enable pin for DRV8825
-        pinFuelPump = PB10; //Fuel pump output
-        pinTachOut = PC13; //Tacho output pin
+        pinStepperDir = PB10; //Direction pin  for DRV8825 driver
+        pinStepperStep = PB2; //Step pin for DRV8825 driver
+        pinFuelPump = PA8; //Fuel pump output
+        pinFan = PA5; //Pin for the fan output (Goes to ULN2803)
         //external interrupt enabled pins
-        pinFlex = PB2; // Flex sensor (Must be external interrupt enabled)
-        pinTrigger = PB1; //The CAS pin
-        pinTrigger2 = PB10; //The Cam Sensor pin
+        pinFlex = PC14; // Flex sensor (Must be external interrupt enabled)
+        pinTrigger = PC13; //The CAS pin also led pin so bad idea
+        pinTrigger2 = PC15; //The Cam Sensor pin
       #endif
       break;
 
@@ -2221,7 +2222,8 @@ void setPinMapping(byte boardID)
         pinInjector7 = PE14; //
         // = PE15;  //
      #elif (defined(STM32F411xE) || defined(STM32F401xC))
-        //@VitroBoss please define the pinsout here
+        //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
+        //PB2 can't be used as input becuase is BOOT pin
         pinInjector1 = PB7; //Output pin injector 1 is on
         pinInjector2 = PB6; //Output pin injector 2 is on
         pinInjector3 = PB5; //Output pin injector 3 is on
@@ -2241,8 +2243,6 @@ void setPinMapping(byte boardID)
         pinIdle1 = PB2; //Single wire idle control
         pinIdle2 = PB10; //2 wire idle control
         pinBoost = PA6; //Boost control
-        pinVVT_1 = NC; //Default VVT output
-        pinVVT_2 = NC; //Default VVT2 output
         pinStepperDir = PB10; //Direction pin  for DRV8825 driver
         pinStepperStep = PB2; //Step pin for DRV8825 driver
         pinFuelPump = PA8; //Fuel pump output
@@ -2257,6 +2257,7 @@ void setPinMapping(byte boardID)
         //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
         //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
+        //PB2 can't be used as input becuase is BOOT pin
         pinInjector1 = PB7; //Output pin injector 1 is on
         pinInjector2 = PB6; //Output pin injector 2 is on
         pinInjector3 = PB5; //Output pin injector 3 is on
