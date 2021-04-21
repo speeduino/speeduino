@@ -79,9 +79,9 @@ volatile unsigned int vvt2_pwm_cur_value;
 long vvt1_pwm_value;
 long vvt2_pwm_value;
 long vvt_pid_target_angle;
-//long vvt_pid_current_angle;
-static inline void boostInterrupt();
-static inline void vvtInterrupt();
+
+void boostInterrupt();
+void vvtInterrupt();
 
 
 #endif

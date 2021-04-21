@@ -242,9 +242,9 @@ uint16_t FLASH_EEPROM_BaseClass::count(byte* buffer, uint32_t length){
   return count;
 }
 
-int8_t FLASH_EEPROM_BaseClass::readFlashBytes(uint32_t address , byte* buffer, uint32_t length){return -1;}
-int8_t FLASH_EEPROM_BaseClass::writeFlashBytes(uint32_t address, byte* buffer, uint32_t length){return -1;}
-int8_t FLASH_EEPROM_BaseClass::eraseFlashSector(uint32_t address, uint32_t length){return -1;}
+int8_t FLASH_EEPROM_BaseClass::readFlashBytes(uint32_t address __attribute__((__unused__)), byte* buffer __attribute__((__unused__)), uint32_t length __attribute__((__unused__))){return -1;}
+int8_t FLASH_EEPROM_BaseClass::writeFlashBytes(uint32_t address __attribute__((__unused__)), byte* buffer __attribute__((__unused__)), uint32_t length __attribute__((__unused__))){return -1;}
+int8_t FLASH_EEPROM_BaseClass::eraseFlashSector(uint32_t address __attribute__((__unused__)), uint32_t length __attribute__((__unused__))){return -1;}
 
 
 #if defined(ARDUINO_ARCH_STM32)
