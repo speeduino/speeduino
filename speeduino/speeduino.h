@@ -13,6 +13,8 @@
 #define SPEEDUINO_H
 //#include "globals.h"
 
+void setup();
+void loop();
 uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen);
 byte getVE1();
 byte getAdvance1();

@@ -14,8 +14,8 @@
   #define PINMASK_TYPE uint32_t
   #define COMPARE_TYPE uint32_t
   #define COUNTER_TYPE uint32_t
-  #define BOARD_DIGITAL_GPIO_PINS 34
-  #define BOARD_NR_GPIO_PINS 34
+  #define BOARD_MAX_DIGITAL_PINS 34
+  #define BOARD_MAX_IO_PINS 34 //digital pins + analog channels + 1
   #define EEPROM_LIB_H <EEPROM.h>
   #define RTC_ENABLED
   #define RTC_LIB_H "TimeLib.h"
@@ -154,9 +154,9 @@
 */
   #define USE_SERIAL3
   #include <FlexCAN_T4.h>
-  FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
-  FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1;
-  FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can2;
+  extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
+  extern FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1;
+  extern FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can2;
   static CAN_message_t outMsg;
   static CAN_message_t inMsg;
   //#define NATIVE_CAN_AVAILABLE //Disable for now as it causes lockup 

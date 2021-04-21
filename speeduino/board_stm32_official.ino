@@ -6,6 +6,56 @@
 #include "scheduler.h"
 #include "HardwareTimer.h"
 
+#if defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)
+#define NATIVE_CAN_AVAILABLE
+//This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
+STM32_CAN Can0 (_CAN1,DEF);
+#endif
+
+#if defined(SRAM_AS_EEPROM)
+    BackupSramAsEEPROM EEPROM;
+#elif defined(USE_SPI_EEPROM)
+    SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+ 
+    //windbond W25Q16 SPI flash EEPROM emulation
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
+    Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
+    SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
+#elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
+    #if defined(STM32F407xx)
+      FramClass EEPROM(PB5, PB4, PB3, PB0); /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
+    #else
+      FramClass EEPROM(PB15, PB14, PB13, PB12); //Blue/Black Pills
+    #endif
+#elif defined(STM32F7xx)
+  #if defined(DUAL_BANK)
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08120000UL};
+  #else
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 262144UL, 4095UL, 0x08180000UL};
+  #endif
+    InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+#elif defined(STM32F401xC)
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 131072UL, 4095UL, 0x08040000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+#else //default case, internal flash as EEPROM for STM32F4
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08080000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+#endif
+
+
+HardwareTimer Timer1(TIM1);
+HardwareTimer Timer2(TIM2);
+HardwareTimer Timer3(TIM3);
+HardwareTimer Timer4(TIM4);
+#if !defined(ARDUINO_BLUEPILL_F103C8) && !defined(ARDUINO_BLUEPILL_F103CB) //F103 just have 4 timers
+HardwareTimer Timer5(TIM5);
+#if defined(TIM11)
+HardwareTimer Timer11(TIM11);
+#elif defined(TIM7)
+HardwareTimer Timer11(TIM7);
+#endif
+#endif
+
 STM32RTC& rtc = STM32RTC::getInstance();
 
   void initBoard()
@@ -145,13 +195,32 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #endif
 
     Timer1.resume();
+    DISABLE_BOOST_TIMER();  //Make sure it is disabled. It's is enabled by default on the library
+    DISABLE_VVT_TIMER();    //Make sure it is disabled. It's is enabled by default on the library
+    IDLE_TIMER_DISABLE();   //Make sure it is disabled. It's is enabled by default on the library
     Timer2.resume();
+    IGN1_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
+    IGN2_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
+    IGN3_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
+    IGN4_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
     Timer3.resume();
+    FUEL1_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
+    FUEL2_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
+    FUEL3_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
+    FUEL4_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
     #if (IGN_CHANNELS >= 5)
     Timer4.resume();
+    IGN5_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
+    IGN6_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
+    IGN7_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
+    IGN8_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
     #endif
     #if (INJ_CHANNELS >= 5)
     Timer5.resume();
+    FUEL5_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
+    FUEL6_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
+    FUEL7_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
+    FUEL8_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
     #endif
   }
 

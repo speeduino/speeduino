@@ -14,8 +14,8 @@
   #define PINMASK_TYPE uint8_t
   #define COMPARE_TYPE uint16_t
   #define COUNTER_TYPE uint16_t
-  #define BOARD_DIGITAL_GPIO_PINS 34
-  #define BOARD_NR_GPIO_PINS 34
+  #define BOARD_MAX_DIGITAL_PINS 34
+  #define BOARD_MAX_IO_PINS 34 //digital pins + analog channels + 1
   #ifdef USE_SPI_EEPROM
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   #else
@@ -144,10 +144,10 @@
    #define USE_SERIAL3               // Secondary serial port to use
   #include <FlexCAN_T4.h>
 #if defined(__MK64FX512__)         // use for Teensy 3.5 only 
-  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
+  extern FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
 #elif defined(__MK66FX1M0__)         // use for Teensy 3.6 only
-  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
-  FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
+  extern FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
+  extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
 #endif
   static CAN_message_t outMsg;
   static CAN_message_t inMsg;

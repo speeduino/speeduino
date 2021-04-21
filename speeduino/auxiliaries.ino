@@ -333,7 +333,7 @@ void nitrousControl()
     if (configPage10.n2o_pin_polarity == 1) { isArmed = !isArmed; } //If nitrous is active when pin is low, flip the reading (n2o_pin_polarity = 0 = active when High)
 
     //Perform the main checks to see if nitrous is ready
-    if( (isArmed == true) && (currentStatus.coolant > (configPage10.n2o_minCLT - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.TPS > configPage10.n2o_minTPS) && (currentStatus.O2 < configPage10.n2o_maxAFR) && (currentStatus.MAP < configPage10.n2o_maxMAP) )
+    if( (isArmed == true) && (currentStatus.coolant > (configPage10.n2o_minCLT - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.TPS > configPage10.n2o_minTPS) && (currentStatus.O2 < configPage10.n2o_maxAFR) && (currentStatus.MAP < (uint16_t)(configPage10.n2o_maxMAP * 2)) )
     {
       //Config page values are divided by 100 to fit within a byte. Multiply them back out to real values. 
       uint16_t realStage1MinRPM = (uint16_t)configPage10.n2o_stage1_minRPM * 100;
@@ -458,7 +458,7 @@ void boostDisable()
 #if defined(CORE_AVR)
   ISR(TIMER1_COMPA_vect)
 #else
-  static inline void boostInterrupt() //Most ARM chips can simply call a function
+  void boostInterrupt() //Most ARM chips can simply call a function
 #endif
 {
   if (boost_pwm_state == true)
@@ -480,7 +480,7 @@ void boostDisable()
 #if defined(CORE_AVR)
   ISR(TIMER1_COMPB_vect)
 #else
-  static inline void vvtInterrupt() //Most ARM chips can simply call a function
+  void vvtInterrupt() //Most ARM chips can simply call a function
 #endif
 {
   if ( ((vvt1_pwm_state == false) || (vvt1_max_pwm == true)) && ((vvt2_pwm_state == false) || (vvt2_max_pwm == true)) )
