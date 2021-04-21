@@ -122,8 +122,8 @@
   #define VVT_TIMER_COMPARE     FTM1_C1V
   #define VVT_TIMER_COUNTER     FTM1_CNT
 
-  static inline void boostInterrupt();
-  static inline void vvtInterrupt();
+  void boostInterrupt();
+  void vvtInterrupt();
 
 /*
 ***********************************************************************************************************
@@ -135,7 +135,7 @@
   #define IDLE_TIMER_ENABLE() FTM2_C0SC |= FTM_CSC_CHIE
   #define IDLE_TIMER_DISABLE() FTM2_C0SC &= ~FTM_CSC_CHIE
 
-  static inline void idleInterrupt();
+  void idleInterrupt();
 
 /*
 ***********************************************************************************************************
