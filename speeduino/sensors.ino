@@ -12,6 +12,7 @@ A full copy of the license may be found in the projects root directory
 #include "idle.h"
 #include "errors.h"
 #include "corrections.h"
+#include "pages.h"
 
 void initialiseADC()
 {

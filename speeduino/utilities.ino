@@ -9,9 +9,10 @@
 #include "utilities.h"
 #include "decoders.h"
 #include "comms.h"
-#include "src/FastCRC/FastCRC.h"
 
-FastCRC32 CRC32;
+uint16_t ioDelay[sizeof(configPage13.outputPin)];
+uint8_t pinIsValid = 0;
+
 
 //This function performs a translation between the pin list that appears in TS and the actual pin numbers
 //For the digital IO, this will simply return the same number as the rawPin value as those are mapped directly.
@@ -44,8 +45,12 @@ byte pinTranslateAnalog(byte rawPin)
     case 11: outputPin = A11; break;
     case 12: outputPin = A12; break;
     case 13: outputPin = A13; break;
-    case 14: outputPin = A14; break;
-    case 15: outputPin = A15; break;
+  #if BOARD_MAX_ADC_PINS >= 14
+      case 14: outputPin = A14; break;
+    #endif
+    #if BOARD_MAX_ADC_PINS >= 15
+      case 15: outputPin = A15; break;
+    #endif
     #if BOARD_MAX_ADC_PINS >= 16
       case 16: outputPin = A16; break;
     #endif
@@ -99,167 +104,6 @@ void setResetControlPinState()
   }
 }
 
-/*
-Calculates and returns the CRC32 value of a given page of memory
-*/
-uint32_t calculateCRC32(byte pageNo)
-{
-  uint32_t CRC32_val;
-  byte raw_value;
-  void* pnt_configPage;
-
-  //This sucks (again) for all the 3D map pages that have to have a translation performed
-  switch(pageNo)
-  {
-    case veMapPage:
-      //Confirmed working
-      raw_value = getPageValue(veMapPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[veMapPage]; x++)
-      //for(uint16_t x=1; x< 288; x++)
-      {
-        raw_value = getPageValue(veMapPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-
-    case veSetPage:
-      //Confirmed working
-      pnt_configPage = &configPage2; //Create a pointer to Page 1 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage2) );
-      break;
-
-    case ignMapPage:
-      //Confirmed working
-      raw_value = getPageValue(ignMapPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[ignMapPage]; x++)
-      {
-        raw_value = getPageValue(ignMapPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-
-    case ignSetPage:
-      //Confirmed working
-      pnt_configPage = &configPage4; //Create a pointer to Page 4 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage4) );
-      break;
-
-    case afrMapPage:
-      //Confirmed working
-      raw_value = getPageValue(afrMapPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[afrMapPage]; x++)
-      {
-        raw_value = getPageValue(afrMapPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-
-    case afrSetPage:
-      //Confirmed working
-      pnt_configPage = &configPage6; //Create a pointer to Page 4 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage6) );
-      break;
-
-    case boostvvtPage:
-      //Confirmed working
-      raw_value = getPageValue(boostvvtPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[boostvvtPage]; x++)
-      {
-        raw_value = getPageValue(boostvvtPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-
-    case seqFuelPage:
-      //Confirmed working
-      raw_value = getPageValue(seqFuelPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[seqFuelPage]; x++)
-      {
-        raw_value = getPageValue(seqFuelPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-
-    case canbusPage:
-      //Confirmed working
-      pnt_configPage = &configPage9; //Create a pointer to Page 9 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage9) );
-      break;
-
-    case warmupPage:
-      //Confirmed working
-      pnt_configPage = &configPage10; //Create a pointer to Page 10 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage10) );
-      break;
-
-    case fuelMap2Page:
-      //Confirmed working
-      raw_value = getPageValue(fuelMap2Page, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[fuelMap2Page]; x++)
-      //for(uint16_t x=1; x< 288; x++)
-      {
-        raw_value = getPageValue(fuelMap2Page, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-
-    case wmiMapPage:
-      //Confirmed working
-      raw_value = getPageValue(wmiMapPage, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[wmiMapPage]; x++)
-      {
-        raw_value = getPageValue(wmiMapPage, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-      
-    case progOutsPage:
-      //Confirmed working
-      pnt_configPage = &configPage13; //Create a pointer to Page 10 in memory
-      CRC32_val = CRC32.crc32((byte *)pnt_configPage, sizeof(configPage13) );
-      break;
-    
-    case ignMap2Page:
-      //Confirmed working
-      raw_value = getPageValue(ignMap2Page, 0);
-      CRC32_val = CRC32.crc32(&raw_value, 1, false);
-      for(uint16_t x=1; x< npage_size[ignMap2Page]; x++)
-      {
-        raw_value = getPageValue(ignMap2Page, x);
-        CRC32_val = CRC32.crc32_upd(&raw_value, 1, false);
-      }
-      //Do a manual reflection of the CRC32 value
-      CRC32_val = ~CRC32_val;
-      break;
-
-    default:
-      CRC32_val = 0;
-      break;
-  }
-  
-  return CRC32_val;
-}
 
 //*********************************************************************************************************************************************************************************
 void initialiseProgrammableIO()
