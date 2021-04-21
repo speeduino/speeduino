@@ -36,6 +36,9 @@ void table2D_setSize(struct table2D* targetTable, byte newSize)
 }
 */
 
+static uint8_t _3DTable_heap[TABLE_HEAP_SIZE];
+static uint16_t _heap_pointer = 0;
+
 void* heap_alloc(uint16_t size)
  {
      uint8_t* value = nullptr;
