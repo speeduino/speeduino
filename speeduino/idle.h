@@ -63,12 +63,7 @@ byte idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output
 byte idleUpOutputLOW = LOW;   // Used to invert the idle Up Output 
 
 void initialiseIdle();
-void initialiseIdleUpOutput();
-static inline void disableIdle();
-static inline void enableIdle();
-static inline byte isStepperHomed();
-static inline byte checkForStepping();
-static inline void doStep();
-static inline void idleInterrupt();
+void disableIdle();
+void idleInterrupt();
 
 #endif

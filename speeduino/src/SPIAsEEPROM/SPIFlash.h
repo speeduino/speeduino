@@ -229,7 +229,7 @@ template <class T> bool SPIFlash::readAnything(uint32_t _addr, T& data, bool fas
 
 //---------------------------------- Private Templates ----------------------------------//
 
-template <class T> bool SPIFlash::_writeErrorCheck(uint32_t _addr, const T& value, uint32_t _sz, uint8_t _dataType) {
+template <class T> bool SPIFlash::_writeErrorCheck(uint32_t _addr, const T& value, uint32_t _sz, uint8_t _dataType __attribute__((__unused__))) {
   if (_isChipPoweredDown() || !_addressCheck(_addr, _sz) || !_notBusy()) {
     return false;
   }
