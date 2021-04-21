@@ -33,13 +33,8 @@
 #define DECODER_WEBER             19
 #define DECODER_ST170             20
 
-static inline void addToothLogEntry(unsigned long, bool);
 void loggerPrimaryISR();
 void loggerSecondaryISR();
-static inline uint16_t stdGetRPM(uint16_t);
-static inline void setFilter(unsigned long);
-static inline int crankingGetRPM(byte, uint16_t);
-//static inline void doPerToothTiming(uint16_t);
 
 //All of the below are the 6 required functions for each decoder / pattern
 void triggerSetup_missingTooth();
