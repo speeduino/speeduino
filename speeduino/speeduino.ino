@@ -286,7 +286,7 @@ void loop()
         readTPS();
       #endif
 
-      if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
+      if(isEepromWritePending()) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {

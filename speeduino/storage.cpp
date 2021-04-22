@@ -13,7 +13,12 @@ A full copy of the license may be found in the projects root directory
 #include "pages.h"
 #include "table_iterator.h"
 
-bool eepromWritesPending = false;
+static bool eepromWritesPending = false;
+
+bool isEepromWritePending()
+{
+  return eepromWritesPending;
+}
 
 #define EEPROM_DATA_VERSION   0
 
@@ -27,6 +32,12 @@ bool eepromWritesPending = false;
 #define EEPROM_CALIBRATION_O2_BINS    (EEPROM_CALIBRATION_O2_VALUES-sizeof(o2Calibration_bins))
 #define EEPROM_LAST_BARO              (EEPROM_CALIBRATION_O2_BINS-1)
 
+#if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
+#define EEPROM_MAX_WRITE_BLOCK 64 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
+#else
+#define EEPROM_MAX_WRITE_BLOCK 30 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
+#endif
+
 /** Write all config pages to EEPROM.
  */
 void writeAllConfig()
@@ -39,102 +50,103 @@ void writeAllConfig()
   }
 }
 
-namespace {
+//  ================================= Internal read & write support ===============================
 
-  uint16_t page_start_index(uint8_t pageNumber)
+static uint16_t page_start_index(uint8_t pageNumber)
+{
+  // Pages start at index 1 & are packed end-to-end
+  uint16_t index = 1;
+  while (pageNumber>0)
   {
-    // Pages start at index 1 & are packed end-to-end
-    uint16_t index = 1;
-    while (pageNumber>0)
-    {
-      index += getPageSize(--pageNumber);
-    }
-    // Page 0 has no size
-    return index;
+    index += getPageSize(--pageNumber);
+  }
+  // Page 0 has no size
+  return index;
+}
+
+//  ================================= Internal write support ===============================
+
+
+/** Update byte to EEPROM by first comparing content and the need to write it.
+We only ever write to the EEPROM where the new value is different from the currently stored byte
+This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
+*/
+static inline int16_t update(int index, uint8_t value, int16_t counter)
+{
+  if (EEPROM.read(index)!=value)
+  {
+    EEPROM.write(index, value);
+    return counter+1;
+  }
+  return counter;
+}
+
+static inline int16_t write_range(int &index, const byte *pStart, const byte *pEnd, int16_t counter)
+{
+  while (counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
+  {
+    counter = update(index, *pStart, counter);
+    ++pStart; ++index;
+  }
+  return counter;
+}
+
+static inline int16_t write(const table_row_t &row, int &index, int16_t counter)
+{
+  return write_range(index, row.pValue, row.pEnd, counter);
+}
+
+static inline int16_t write(table_row_iterator_t it, int &index, int16_t counter)
+{
+  while (counter<=EEPROM_MAX_WRITE_BLOCK && !at_end(it))
+  {
+    counter = write(get_row(it), index, counter);
+    advance_row(it);
+  }
+  return counter;
+}
+
+static inline int16_t write(table_axis_iterator_t it, int &index, int16_t counter)
+{
+  while (counter<=EEPROM_MAX_WRITE_BLOCK && !at_end(it))
+  {
+    counter = update(index++, get_value(it), counter);
+    advance_axis(it);
+  }
+  return counter;
+}
+
+static inline int16_t write(const table3D *pTable, int &index, int16_t counter)
+{
+  counter = write(rows_begin(pTable), index, counter);
+  counter = write(x_begin(pTable), index, counter);
+  return write(y_begin(pTable), index, counter);
+}
+
+static inline int16_t write(const page_iterator_t &entity, int &index, int16_t counter)
+{
+  switch (entity.type)
+  {
+  case Raw:
+    return write_range(index, (byte *)entity.pData, ((byte *)entity.pData)+entity.size, counter);
+    break;
+
+  case Table:
+    return write(entity.pTable, index, counter);
+    break;
+
+  case NoEntity:
+    index += entity.size;
+    return counter;
+    break;
+  
+  default:
+    abort();  // Code error
+    break;
   }
 }
 
-namespace {
-
-  /** Update byte to EEPROM by first comparing content and the need to write it.
-  We only ever write to the EEPROM where the new value is different from the currently stored byte
-  This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
-  */
-  inline int16_t update(int index, uint8_t value, int16_t counter)
-  {
-    if (EEPROM.read(index)!=value)
-    {
-      EEPROM.write(index, value);
-      return counter+1;
-    }
-    return counter;
-  }
-
-  inline int16_t write_range(int &index, const byte *pStart, const byte *pEnd, int16_t counter)
-  {
-    while (counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
-    {
-      counter = update(index, *pStart, counter);
-      ++pStart; ++index;
-    }
-    return counter;
-  }
-
-  inline int16_t write(const table_row_t &row, int &index, int16_t counter)
-  {
-    return write_range(index, row.pValue, row.pEnd, counter);
-  }
-
-  inline int16_t write(table_row_iterator_t it, int &index, int16_t counter)
-  {
-    while (counter<=EEPROM_MAX_WRITE_BLOCK && !at_end(it))
-    {
-      counter = write(get_row(it), index, counter);
-      advance_row(it);
-    }
-    return counter;
-  }
-
-  inline int16_t write(table_axis_iterator_t it, int &index, int16_t counter)
-  {
-    while (counter<=EEPROM_MAX_WRITE_BLOCK && !at_end(it))
-    {
-      counter = update(index++, get_value(it), counter);
-      advance_axis(it);
-    }
-    return counter;
-  }
-
-  inline int16_t write(const table3D *pTable, int &index, int16_t counter)
-  {
-    counter = write(rows_begin(pTable), index, counter);
-    counter = write(x_begin(pTable), index, counter);
-    return write(y_begin(pTable), index, counter);
-  }
-
-  inline int16_t write(const page_iterator_t &entity, int &index, int16_t counter)
-  {
-    switch (entity.type)
-    {
-    case Raw:
-      return write_range(index, (byte *)entity.pData, ((byte *)entity.pData)+entity.size, counter);
-      break;
-
-    case Table:
-      return write(entity.pTable, index, counter);
-      break;
-
-    case NoEntity:
-      index += entity.size;
-      return counter;
-      break;
-    
-    default:
-      abort();  // Code error
-      break;
-    }
-  }
-}
+//  ================================= End write support ===============================
 
 /** Write a table or map to EEPROM storage.
 Takes the current configuration (config pages and maps)
@@ -152,6 +164,7 @@ void writeConfig(byte pageNum)
   }
   eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
 }
+
 /** Reset all configPage* structs (2,4,6,9,10,13) and write them full of null-bytes.
  */
 void resetConfigPages()
@@ -170,82 +183,84 @@ void resetConfigPages()
   }
 }
 
-namespace
+//  ================================= Internal read support ===============================
+
+/** Load range of bytes form EEPROM offset to memory.
+ * @param index - start offset in EEPROM
+ * @param pFirst - Start memory address
+ * @param pLast - End memory address
+ */
+static inline int load_range(int index, byte *pFirst, byte *pLast)
 {
-  /** Load range of bytes form EEPROM offset to memory.
-   * @param index - start offset in EEPROM
-   * @param pFirst - Start memory address
-   * @param pLast - End memory address
-   */
-  inline int load_range(int index, byte *pFirst, byte *pLast)
+  for (; pFirst != pLast; ++index, (void)++pFirst)
   {
-	  for (; pFirst != pLast; ++index, (void)++pFirst)
-		{
-		  *pFirst = EEPROM.read(index);
-		}
-    return index;
+    *pFirst = EEPROM.read(index);
   }
+  return index;
+}
 
-  inline int load(table_row_t row, int index)
+static inline int load(table_row_t row, int index)
+{
+  return load_range(index, row.pValue, row.pEnd);;
+}
+
+static inline int load(table_row_iterator_t it, int index)
+{
+  while (!at_end(it))
   {
-    return load_range(index, row.pValue, row.pEnd);;
+    index = load(get_row(it), index);
+    advance_row(it);
   }
+  return index; 
+}
 
-  inline int load(table_row_iterator_t it, int index)
+static inline int load(table_axis_iterator_t it, int index)
+{
+  while (!at_end(it))
   {
-    while (!at_end(it))
-    {
-      index = load(get_row(it), index);
-      advance_row(it);
-    }
-    return index; 
+    set_value(it, EEPROM.read(index++));
+    advance_axis(it);
   }
+  return index;    
+}
 
-  inline int load(table_axis_iterator_t it, int index)
+static inline int load(table3D *pTable, int index)
+{
+  return load(y_begin(pTable),
+                load(x_begin(pTable), 
+                  load(rows_begin(pTable), index)));
+}
+
+
+static inline int load(page_iterator_t &entity, int index)
+{
+  switch (entity.type)
   {
-    while (!at_end(it))
-    {
-      set_value(it, EEPROM.read(index++));
-      advance_axis(it);
-    }
-    return index;    
-  }
+  case Raw: return load_range(index, (byte *)entity.pData, (byte *)entity.pData+entity.size);
 
-  inline int load(table3D *pTable, int index)
-  {
-    return load(y_begin(pTable),
-                  load(x_begin(pTable), 
-                    load(rows_begin(pTable), index)));
-  }
+  case Table: return load(entity.pTable, index);
 
+  case NoEntity: return index + entity.size;
   
-  inline int load(page_iterator_t &entity, int index)
-  {
-    switch (entity.type)
-    {
-    case Raw: return load_range(index, (byte *)entity.pData, (byte *)entity.pData+entity.size);
-
-    case Table: return load(entity.pTable, index);
-
-    case NoEntity: return index + entity.size;
-    
-    default:
-      abort();  // Code error
-      break;
-    }
-  }
-
-  inline void load_page(uint8_t page)
-  {
-    int index = page_start_index(page);
-    page_iterator_t entity = page_begin(page);
-    while (entity.type!=End)
-    {
-      index = load(entity, index);
-      entity = advance(entity);
-    }
+  default:
+    abort();  // Code error
+    break;
   }
 }
+
+static inline void load_page(uint8_t page)
+{
+  int index = page_start_index(page);
+  page_iterator_t entity = page_begin(page);
+  while (entity.type!=End)
+  {
+    index = load(entity, index);
+    entity = advance(entity);
+  }
+}
+
+//  ================================= End internal read support ===============================
+
 /** Load all config tables from storage.
  */
 void loadConfig()
@@ -293,13 +308,9 @@ void writeCalibration()
   EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
 }
 
-namespace {
-
-  uint16_t compute_crc_address(byte pageNo)
-  {
-    return EEPROM_LAST_BARO-((getPageCount() - pageNo)*sizeof(uint32_t));
-  }
-
+static uint16_t compute_crc_address(byte pageNo)
+{
+  return EEPROM_LAST_BARO-((getPageCount() - pageNo)*sizeof(uint32_t));
 }
 
 /** Write CRC32 checksum to EEPROM.
