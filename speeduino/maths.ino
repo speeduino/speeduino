@@ -68,8 +68,8 @@ unsigned long percentage(byte x, unsigned long y)
   //return divu100(y * x);
 }
 
-//Same as above, but 0.5% accurasy
-unsigned long halfpercentage(byte x, unsigned long y)
+//Same as above, but 0.5% accuracy
+unsigned long halfPercentage(byte x, unsigned long y)
 {
   return (y * x) / 200;
 }

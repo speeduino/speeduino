@@ -114,8 +114,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     BIT_SET(TIMER_mask, BIT_TIMER_15HZ);
   }
 
-  //Loop executed every 100ms loop
-  //Anything inside this if statement will run every 100ms.
+  //10Hz loop
   if (loop100ms == 100)
   {
     loop100ms = 0; //Reset counter
@@ -123,6 +122,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
+
     if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) { runSecsX10++; }
     else { runSecsX10 = 0; }
 
@@ -130,8 +130,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     seclx10++;
   }
 
-  //Loop executed every 250ms loop (1ms x 250 = 250ms)
-  //Anything inside this if statement will run every 250ms.
+  //4Hz loop
   if (loop250ms == 250)
   {
     loop250ms = 0; //Reset Counter
@@ -150,7 +149,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     #endif
   }
 
-  //Loop executed every 1 second (1ms x 1000 = 1000ms)
+  //1Hz loop
   if (loopSec == 1000)
   {
     loopSec = 0; //Reset counter.

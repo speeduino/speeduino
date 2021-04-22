@@ -246,7 +246,7 @@ void vvtControl()
       //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
       if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt1Duty < 200) ) { currentStatus.vvt1Duty = 0; }
 
-      vvt1_pwm_value = halfpercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
+      vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
 
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
       {
@@ -257,7 +257,7 @@ void vvtControl()
         //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
         if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt2Duty < 200) ) { currentStatus.vvt2Duty = 0; }
 
-        vvt2_pwm_value = halfpercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
+        vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
       }
 
     } //Open loop
@@ -275,14 +275,14 @@ void vvtControl()
       if ( currentStatus.vvt1Angle <=  configPage10.vvtCLMinAng || currentStatus.vvt1Angle > configPage10.vvtCLMaxAng )
       {
         currentStatus.vvt1Duty = 0;
-        vvt1_pwm_value = halfpercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
+        vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
         BIT_SET(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
       }
       //Check that we're not already at the angle we want to be
       else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt1TargetAngle == currentStatus.vvt1Angle) )
       {
         currentStatus.vvt1Duty = configPage10.vvtCLholdDuty;
-        vvt1_pwm_value = halfpercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
+        vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
         vvtPID.Initialize();
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
       }
@@ -297,7 +297,7 @@ void vvtControl()
         //vvtPID.Compute2(currentStatus.vvt1TargetAngle, currentStatus.vvt1Angle, false);
         //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
         //if (currentStatus.vvt1Angle > currentStatus.vvt1TargetAngle) { vvt_pwm_target_value = 0; }
-        if(PID_compute == true) { vvt1_pwm_value = halfpercentage(currentStatus.vvt1Duty, vvt_pwm_max_count); }
+        if(PID_compute == true) { vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count); }
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
       }
 
@@ -314,14 +314,14 @@ void vvtControl()
         if ( currentStatus.vvt2Angle <= configPage10.vvtCLMinAng || currentStatus.vvt2Angle > configPage10.vvtCLMaxAng )
         {
           currentStatus.vvt2Duty = 0;
-          vvt2_pwm_value = halfpercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
+          vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
           BIT_SET(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
         }
         //Check that we're not already at the angle we want to be
         else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt2TargetAngle == currentStatus.vvt2Angle) )
         {
           currentStatus.vvt2Duty = configPage10.vvtCLholdDuty;
-          vvt2_pwm_value = halfpercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
+          vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
           vvt2PID.Initialize();
           BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
         }
@@ -332,7 +332,7 @@ void vvtControl()
           vvt2_pid_current_angle = (long)currentStatus.vvt2Angle;
           //If not already at target angle, calculate new value from PID
           bool PID_compute = vvt2PID.Compute(true);
-          if(PID_compute == true) { vvt2_pwm_value = halfpercentage(currentStatus.vvt2Duty, vvt_pwm_max_count); }
+          if(PID_compute == true) { vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count); }
           BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
         }
       }
