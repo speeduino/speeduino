@@ -1,0 +1,20 @@
+### Module positions - created on Thursday, April 22, 2021 at 04:17:50 PM ###
+### Printed by Pcbnew version kicad (5.1.9-0-10_14)
+## Unit = mm, Angle = deg.
+## Side : All
+# Ref     Val       Package                                           PosX       PosY       Rot  Side
+C1        10n       C_0603_1608Metric                              17.1450     6.9850  180.0000  top
+C2        100n      C_0603_1608Metric                              17.1450     8.8900  180.0000  top
+C3        1u        C_0603_1608Metric                              17.1450    10.7950  180.0000  top
+C4        10u       C_0805_2012Metric                               9.1925     6.5950    0.0000  top
+C10       1n        C_0603_1608Metric                               3.0480    12.7000  180.0000  top
+C20       1n        C_0603_1608Metric                               3.1750     6.0960  180.0000  top
+FID1      Fiducial  Fiducial_0.5mm_Mask1mm                          1.9050     1.9050    0.0000  top
+FID2      Fiducial  Fiducial_0.5mm_Mask1mm                         18.4150    19.0500    0.0000  top
+R1        10k       R_1206_3216Metric                               3.0480    10.6680  180.0000  top
+R2        10k       R_1206_3216Metric                               3.0480     4.0640  180.0000  top
+R3        10k       R_1206_3216Metric                               3.0480     8.1280  180.0000  top
+R10       1k        R_0603_1608Metric_Pad1.05x0.95mm_HandSolder    17.1450    14.6050  180.0000  top
+R12       10k       R_1206_3216Metric                               3.0480    14.6050  180.0000  top
+R20       1k        R_0603_1608Metric_Pad1.05x0.95mm_HandSolder    17.1450    12.7000  180.0000  top
+## End
