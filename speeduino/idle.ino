@@ -90,7 +90,7 @@ void initialiseIdle()
       iacPWMTable.axisSize = SIZE_BYTE;
       iacPWMTable.values = configPage6.iacOLPWMVal;
       iacPWMTable.axisX = configPage6.iacBins;
-      break;
+      //missing break; is deliberately, init of both OL and CL must be done here.
 
     case IAC_ALGORITHM_PWM_CL:
       //Case 3 is PWM closed loop
