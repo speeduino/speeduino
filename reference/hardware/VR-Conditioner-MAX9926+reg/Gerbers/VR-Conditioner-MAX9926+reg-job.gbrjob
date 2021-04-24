@@ -5,9 +5,9 @@
     {
       "Vendor":      "KiCad",
       "Application": "Pcbnew",
-      "Version":     "(5.1.9-0-10_14)"
+      "Version":     "(5.1.6-0-10_14)"
     },
-    "CreationDate":  "2021-04-22T16:17:37+10:00"
+    "CreationDate":  "2021-04-24T12:15:59+01:00"
   },
   "GeneralSpecs":
   {
@@ -15,11 +15,11 @@
     {
       "Name": "VR-Conditioner-MAX9926+reg",
       "GUID": "56522d43-6f6e-4646-9974-696f6e65722d",
-      "Revision": "3.6"
+      "Revision": "3.7"
     },
     "Size":
     {
-      "X": 19.200,
+      "X": 19.835,
       "Y": 19.835
     },
     "LayerNumber": 2,

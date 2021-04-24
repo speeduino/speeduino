@@ -17,5 +17,14 @@ Renamed this from Notes.txt to README.md & corrected the date above.
 Added Comments to schematic, inc. single-sided design allowing 'Letter' postage!
 Updated BOM in schematic to reflect readily available parts found on OctoPart.
 
-2021-04-24
-Confused with GitHub. Hopefully copied the changes made by noisymime back to my fork.
+
+2021-04-22
+Goal: give the left 6 passive components some space from the edge.
+Re-route COUT1 from DIP.8 to SIL.4 in green so no signal traces are by the edge.
+Shift right 5 components slightly right
+Shift DIP, chip & hidden cap slightly right
+Shift left 6 components slightly right
+Re-route left 6 components to avoid side swapping, keeping the larger SMTs.
+Ensure GNG plane encircles everything with a via in each corner.
+Ensure all 'thin' traces are 0.20mm (up from 0.16)
+Tidy with some symetry.
