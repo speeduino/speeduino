@@ -16,3 +16,6 @@ Changed version number to 3.5 so that it reflects relative cronology from previo
 Renamed this from Notes.txt to README.md & corrected the date above.
 Added Comments to schematic, inc. single-sided design allowing 'Letter' postage!
 Updated BOM in schematic to reflect readily available parts found on OctoPart.
+
+2021-04-24
+Confused with GitHub. Hopefully copied the changes made by noisymime back to my fork.
