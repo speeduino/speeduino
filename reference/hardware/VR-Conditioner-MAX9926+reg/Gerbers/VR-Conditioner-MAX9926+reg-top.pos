@@ -1,7 +1,7 @@
-### Module positions - created on Saturday, April 24, 2021 at 12:46:16 PM ###
+### Module positions - created on Saturday, April 24, 2021 at 12:44:40 PM ###
 ### Printed by Pcbnew version kicad (5.1.6-0-10_14)
 ## Unit = mm, Angle = deg.
-## Side : All
+## Side : top
 # Ref     Val       Package                                           PosX       PosY       Rot  Side
 C1        10n       C_0603_1608Metric                              20.0025     8.8900  180.0000  top
 C2        100n      C_0603_1608Metric                              20.0025    10.7950  180.0000  top
