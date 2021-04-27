@@ -840,8 +840,9 @@ struct config2 {
 
   int8_t rtc_trim;
   byte idleAdvVss;
+  byte MapSwitchPoint;
 
-  byte unused2_95[3];
+  byte unused2_95[2];
 
 #if defined(CORE_AVR)
   };
