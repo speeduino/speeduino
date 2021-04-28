@@ -191,7 +191,7 @@ static inline void readMAP()
     case 1:
       //Average of a cycle
 
-      if ( ((currentStatus.RPM >> 6) > configPage2.MapSwitchPoint) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running and RPM above switch point, fall back to instantaneous reads
+      if ( ((currentStatus.RPM >> 6) > configPage2.MapSwitchPoint) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
       {
         if( (MAPcurRev == currentStatus.startRevolutions) || ( (MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
@@ -260,14 +260,14 @@ static inline void readMAP()
       else 
       {
         instanteneousMAPReading();
-        MAPrunningValue = currentStatus.mapADC;
+        MAPrunningValue = currentStatus.mapADC; //Keep updating the MAPrunningValue to give it head start when switching to cycle average.
         MAPcount = 1;
       }
       break;
 
     case 2:
       //Minimum reading in a cycle
-      if ((currentStatus.RPM >> 6) > configPage2.MapSwitchPoint) //If the engine isn't running, fall back to instantaneous reads
+      if ((currentStatus.RPM >> 6) > configPage2.MapSwitchPoint) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
       {
         if( (MAPcurRev == currentStatus.startRevolutions) || ((MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
@@ -304,13 +304,13 @@ static inline void readMAP()
       else 
       {
         instanteneousMAPReading();
-        MAPrunningValue = currentStatus.mapADC;
+        MAPrunningValue = currentStatus.mapADC;  //Keep updating the MAPrunningValue to give it head start when switching to cycle minimum.
       }
       break;
 
     case 3:
       //Average of an ignition event
-      if ( ((currentStatus.RPM >> 6) > configPage2.MapSwitchPoint) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running, fall back to instantaneous reads
+      if ( ((currentStatus.RPM >> 6) > configPage2.MapSwitchPoint) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
       {
         if( (MAPcurRev == ignitionCount) ) //Watch for a change in the ignition counter to determine whether we're still on the same event
         {
@@ -355,7 +355,7 @@ static inline void readMAP()
       else 
       {
         instanteneousMAPReading();
-        MAPrunningValue = currentStatus.mapADC;
+        MAPrunningValue = currentStatus.mapADC; //Keep updating the MAPrunningValue to give it head start when switching to ignition event average.
         MAPcount = 1;
       }
       break; 

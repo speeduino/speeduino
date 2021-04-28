@@ -487,6 +487,9 @@ void doUpdates()
     configPage10.vvtCLMaxAng = 200;
     configPage4.ANGLEFILTER_VVT = 0;
 
+    //RPM switch point added for map sample method. Set to 0 to not affect existing tunes.
+    configPage2.MapSwitchPoint = 0;
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 18);
   }
