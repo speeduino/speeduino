@@ -174,7 +174,46 @@ void boostControl()
     {
       if( (boostCounter & 7) == 1) 
       { 
-        if( (configPage9.boostByGearEnabled == 1) && (configPage2.vssMode > 1) ) 
+        if( (configPage9.boostByGearEnabled == 1) && (configPage2.vssMode > 1) )
+        {
+          uint16_t combinedBoost = 0;
+          switch (currentStatus.gear)
+          {
+            case 1:
+              combinedBoost = ( ((uint16_t)configPage9.boostByGear1 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
+              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+              else{ currentStatus.boostTarget = 511; }
+              break;
+            case 2:
+              combinedBoost = ( ((uint16_t)configPage9.boostByGear2 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
+              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+              else{ currentStatus.boostTarget = 511; }
+              break;
+            case 3:
+              combinedBoost = ( ((uint16_t)configPage9.boostByGear3 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
+              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+              else{ currentStatus.boostTarget = 511; }
+              break;
+            case 4:
+              combinedBoost = ( ((uint16_t)configPage9.boostByGear4 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
+              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+              else{ currentStatus.boostTarget = 511; }
+              break;
+            case 5:
+              combinedBoost = ( ((uint16_t)configPage9.boostByGear5 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
+              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+              else{ currentStatus.boostTarget = 511; }
+              break;
+            case 6:
+              combinedBoost = ( ((uint16_t)configPage9.boostByGear6 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
+              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+              else{ currentStatus.boostTarget = 511; }
+              break;
+            default:
+              break;
+          }
+        }
+        else if( (configPage9.boostByGearEnabled == 2) && (configPage2.vssMode > 1) ) 
         {
           switch (currentStatus.gear)
           {
