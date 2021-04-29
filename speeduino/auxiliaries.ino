@@ -174,33 +174,33 @@ void boostControl()
     {
       if( (boostCounter & 7) == 1) 
       { 
-        if( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ) 
+        if( (configPage9.boostByGearEnabled == 1) && (configPage2.vssMode > 1) ) 
         {
           switch (currentStatus.gear)
           {
             case 1:
-              currentStatus.boostTarget = (configPage9.boostByGear1 * 2);
+              currentStatus.boostTarget = (configPage9.boostByGear1 << 1);
               break;
             case 2:
-              currentStatus.boostTarget = (configPage9.boostByGear2 * 2);
+              currentStatus.boostTarget = (configPage9.boostByGear2 << 1);
               break;
             case 3:
-              currentStatus.boostTarget = (configPage9.boostByGear3 * 2);
+              currentStatus.boostTarget = (configPage9.boostByGear3 << 1);
               break;
             case 4:
-              currentStatus.boostTarget = (configPage9.boostByGear4 * 2);
+              currentStatus.boostTarget = (configPage9.boostByGear4 << 1);
               break;
             case 5:
-              currentStatus.boostTarget = (configPage9.boostByGear5 * 2);
+              currentStatus.boostTarget = (configPage9.boostByGear5 << 1);
               break;
             case 6:
-              currentStatus.boostTarget = (configPage9.boostByGear6 * 2);
+              currentStatus.boostTarget = (configPage9.boostByGear6 << 1);
               break;
             default:
               break;
           }
         }
-        else{ currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2; } //Boost target table is in kpa and divided by 2
+        else{ currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
       } 
       if(currentStatus.MAP >= 100 ) //Only engage boost control above 100kpa. 
       {
