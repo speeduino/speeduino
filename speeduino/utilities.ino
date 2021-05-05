@@ -108,83 +108,94 @@ void setResetControlPinState()
 //*********************************************************************************************************************************************************************************
 void initialiseProgrammableIO()
 {
-  for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
-  {
-    if ( (configPage13.outputPin[y] > 0) && (configPage13.outputPin[y] < BOARD_MAX_DIGITAL_PINS) )
-    {
-      if ( !pinIsUsed(configPage13.outputPin[y]) )
-      {
+  for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)  {
+    if ( (configPage13.outputPin[y] > 0) && 
+         (configPage13.outputPin[y] < BOARD_MAX_DIGITAL_PINS) ) {   // Note: no need for former check on '(configPage13.outputPin[y] <= 128)' in checkProgrammableIO()
+      if ( !pinIsUsed(configPage13.outputPin[y]) )  {                                                             
         pinMode(configPage13.outputPin[y], OUTPUT);
-        digitalWrite(configPage13.outputPin[y], (configPage13.outputInverted & (1U << y)));
         BIT_SET(pinIsValid, y);
+        procesOutputValueConditionally(y, false );                  // Assume conditions are not met at powering up. 
+        if (configPage13.outputDelay[y] >= 255){                    // Note: In 202103 there was a check on outputDelay[y] being smaller than 255. Just making it smaller than 254 is more robust
+          configPage13.outputDelay[y] = 254; 
+          } 
       }
     }
   }
 }
 
+/*
+ * This procedure is called every 0.1 sec. It checks the conditions for each active Programmable Output Rule.
+ * If the conditions are met and there is no delay needed, an output will be set to reflect the new situation.
+ * If the conditions are met and there is a delay needed, a counter will be incremented each next call of this procedure  
+ *    until we waited long enough. Then the output will be set to reflect the new situation.
+ * If the conditions are no longer met, an output will be set immidiately (!) to reflect the new situation.
+ */
 void checkProgrammableIO()
 {
-  int16_t data, data2;
-  bool firstCheck, secondCheck;
+  bool isEveryConditionFulfilled;
 
-  for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
-  {
-    firstCheck = false;
-    secondCheck = false;
-    if ( BIT_CHECK(pinIsValid, y) ) //if outputPin == 0 it is disabled
-    { 
-      //byte theIndex = configPage13.firstDataIn[y];
-      data = ProgrammableIOGetData(configPage13.firstDataIn[y]);
-      data2 = configPage13.firstTarget[y];
-
-      if ( (configPage13.operation[y].firstCompType == COMPARATOR_EQUAL) && (data == data2) ) { firstCheck = true; }
-      else if ( (configPage13.operation[y].firstCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { firstCheck = true; }
-      else if ( (configPage13.operation[y].firstCompType == COMPARATOR_GREATER) && (data > data2) ) { firstCheck = true; }
-      else if ( (configPage13.operation[y].firstCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { firstCheck = true; }
-      else if ( (configPage13.operation[y].firstCompType == COMPARATOR_LESS) && (data < data2) ) { firstCheck = true; }
-      else if ( (configPage13.operation[y].firstCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { firstCheck = true; }
-
-      if (configPage13.operation[y].bitwise != BITWISE_DISABLED)
-      {
-        if ( configPage13.secondDataIn[y] < LOG_ENTRY_SIZE ) //Failsafe check
-        {
-          data = ProgrammableIOGetData(configPage13.secondDataIn[y]);
-          data2 = configPage13.secondTarget[y];
-          
-          if ( (configPage13.operation[y].secondCompType == COMPARATOR_EQUAL) && (data == data2) ) { secondCheck = true; }
-          else if ( (configPage13.operation[y].secondCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { secondCheck = true; }
-          else if ( (configPage13.operation[y].secondCompType == COMPARATOR_GREATER) && (data > data2) ) { secondCheck = true; }
-          else if ( (configPage13.operation[y].secondCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { secondCheck = true; }
-          else if ( (configPage13.operation[y].secondCompType == COMPARATOR_LESS) && (data < data2) ) { secondCheck = true; }
-          else if ( (configPage13.operation[y].secondCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { secondCheck = true; }
-
-          if (configPage13.operation[y].bitwise == BITWISE_AND) { firstCheck &= secondCheck; }
-          if (configPage13.operation[y].bitwise == BITWISE_OR) { firstCheck |= secondCheck; }
-          if (configPage13.operation[y].bitwise == BITWISE_XOR) { firstCheck ^= secondCheck; }
+  for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)  {
+    if ( BIT_CHECK(pinIsValid, y) ) {                                                                    // is Rule enabled (is enabled when outputPin==1)?
+      bool isFirstConditionFulfilled = compare (ProgrammableIOGetData(configPage13.firstDataIn[y]),      // changing data
+                                                configPage13.firstTarget[y],                             // target data
+                                                configPage13.operation[y].firstCompType);                // comparator
+      if (configPage13.operation[y].bitwise == BITWISE_DISABLED)   {                                     // are we dealing with one or two enabled conditions?
+        isEveryConditionFulfilled = isFirstConditionFulfilled;
+      } else {
+        bool isSecondConditionFulfilled = compare (ProgrammableIOGetData(configPage13.secondDataIn[y]),  // changing data
+                                                   configPage13.secondTarget[y],                         // target data
+                                                   configPage13.operation[y].secondCompType);            // comparator
+        isEveryConditionFulfilled = combineConditions ( isFirstConditionFulfilled,                       // result first condition
+                                                        isSecondConditionFulfilled,                      // result second condition
+                                                        configPage13.operation[y].bitwise);              // AND, OR or XOR the conditions, depending on the user wishes
+      }
+      if ( (isEveryConditionFulfilled ) && (configPage13.outputDelay[y] > 0)) {                          // does this rule qualitfy for delayed response when conditons are met?
+        if ( (ioDelay[y] >= configPage13.outputDelay[y]) ) {                                             // qualified! and did we already wait long enough?
+          procesOutputValueConditionally(y, true);                                                       // waited long enough!! update io-port en status variables
+        } else {
+          ioDelay[y]++;                                                                                  // update counter. maybe next iteration.....
         }
+      } else {
+          if (isEveryConditionFulfilled) {
+            procesOutputValueConditionally(y, true);
+          } else { 
+            procesOutputValueConditionally(y, false);
+            ioDelay[y] = 0;
+          }
       }
-      
-
-      if ( (firstCheck == true) && (configPage13.outputDelay[y] != 0) && (configPage13.outputDelay[y] < 255) )
-      {
-        if ( (ioDelay[y] >= configPage13.outputDelay[y]) )
-        {
-          if (configPage13.outputPin[y] <= 128) { digitalWrite(configPage13.outputPin[y], (configPage13.outputInverted & (1U << y)) ^ firstCheck); }
-        }
-        else { ioDelay[y]++; }
-      }
-      else
-      {
-        if ( configPage13.outputPin[y] <= 128 ) { digitalWrite(configPage13.outputPin[y], (configPage13.outputInverted & (1U << y)) ^ firstCheck); }
-        if ( firstCheck == false ) { ioDelay[y] = 0; }
-      }
-      if ( firstCheck == true ) { BIT_SET(currentStatus.outputsStatus, y); }
-      else { BIT_CLEAR(currentStatus.outputsStatus, y); }
     }
-    else { BIT_CLEAR(currentStatus.outputsStatus, y); }
+    else {                                                                                             
+      BIT_CLEAR(currentStatus.outputsStatus, y);
+    }
   }
 }
 
+bool compare(int16_t data1, int16_t data2, byte comp) {
+  if ( (comp == COMPARATOR_EQUAL)          && (data1 == data2) ) { return true; }
+  if ( (comp == COMPARATOR_NOT_EQUAL)      && (data1 != data2) ) { return true; }
+  if ( (comp == COMPARATOR_GREATER)        && (data1 >  data2) ) { return true; }
+  if ( (comp == COMPARATOR_GREATER_EQUAL)  && (data1 >= data2) ) { return true; }
+  if ( (comp == COMPARATOR_LESS)           && (data1 < data2)  ) { return true; }
+  if ( (comp == COMPARATOR_LESS_EQUAL)     && (data1 <= data2) ) { return true; }
+  return false;   // shouldn't happen
+}
+
+bool combineConditions(bool bool1, bool bool2, byte operation) {
+  if (operation == BITWISE_AND) { return (bool1 & bool2); }
+  if (operation == BITWISE_OR)  { return (bool1 | bool2); }
+  if (operation == BITWISE_XOR) { return (bool1 ^ bool2); }
+  return false;  // shouldn't happen
+}
+
+void procesOutputValueConditionally(uint8_t y, bool isFulfilled) {
+  uint8_t valueToSet = (configPage13.outputInverted & (1U << y)) ^ isFulfilled;
+  digitalWrite(configPage13.outputPin[y], valueToSet);
+  if ( valueToSet == 0  )  {
+    BIT_CLEAR(currentStatus.outputsStatus, y);
+  }  else  {
+    BIT_SET(currentStatus.outputsStatus, y);
+  }
+}
 int16_t ProgrammableIOGetData(uint16_t index)
 {
   int16_t result;
