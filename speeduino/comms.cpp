@@ -22,6 +22,7 @@ A full copy of the license may be found in the projects root directory
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
+#include "pagePrintAscii.h"
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
@@ -206,7 +207,7 @@ void command()
 
     case 'L': // List the contents of current page in human readable form
       #ifndef SMALL_FLASH_MODE
-      sendPageASCII();
+      printPageAscii(currentPage, Serial);
       #endif
       break;
 
@@ -1015,207 +1016,6 @@ void sendPage()
     entity = advance(entity);
   }
 }
-
-namespace {
-
-  /// Prints each element in the memory byte range (*first, *last).
-  void serial_println_range(const byte *first, const byte *last)
-  {
-    while (first!=last)
-    {
-      Serial.println(*first);
-      ++first;
-    }
-  }
-  void serial_println_range(const uint16_t *first, const uint16_t *last)
-  {
-    while (first!=last)
-    {
-      Serial.println(*first);
-      ++first;
-    }
-  }
-
-  void serial_print_space_delimited(const byte *first, const byte *last)
-  {
-    while (first!=last)
-    {
-      Serial.print(*first);// This displays the values horizantially on the screen
-      Serial.print(F(" "));
-      ++first;
-    }
-    Serial.println();
-  }
-  #define serial_print_space_delimited_array(array) serial_print_space_delimited(array, _end_range_address(array))
-
-  void serial_print_prepadding(byte value)
-  {
-    if (value < 100)
-    {
-      Serial.print(F(" "));
-      if (value < 10)
-      {
-        Serial.print(F(" "));
-      }
-    }
-  }
-
-  void serial_print_prepadded_value(byte value)
-  {
-      serial_print_prepadding(value);
-      Serial.print(value);
-      Serial.print(F(" "));
-  }
-
-  void print_row(const table_axis_iterator_t &y_it, table_row_t row)
-  {
-    serial_print_prepadded_value(get_value(y_it));
-
-    while (!at_end(row))
-    {
-      serial_print_prepadded_value(*row.pValue++);
-    }
-    Serial.println();
-  }
-
-  void print_x_axis(const table3D &currentTable)
-  {
-    Serial.print(F("    "));
-
-    auto x_it = x_begin(&currentTable);
-    while(!at_end(x_it))
-    {
-      serial_print_prepadded_value(get_value(x_it));
-      advance_axis(x_it);
-    }
-  }
-
-  void serial_print_3dtable(const table3D &currentTable)
-  {
-    auto y_it = y_begin(&currentTable);
-    auto row_it = rows_begin(&currentTable);
-
-    while (!at_end(row_it))
-    {
-      print_row(y_it, get_row(row_it));
-      advance_axis(y_it);
-      advance_row(row_it);
-    }
-
-    print_x_axis(currentTable);
-    Serial.println();
-  }
-}
-
-/** Send page as ASCII for debugging purposes.
- * Similar to sendPage(), however data is sent in human readable format. Sends page given in @ref currentPage.
- * 
- * This is used for testing only (Not used by TunerStudio) in order to see current map and config data without the need for TunerStudio. 
- */
-void sendPageASCII()
-{
-  switch (currentPage)
-  {
-    case veMapPage:
-      Serial.println(F("\nVE Map"));
-      serial_print_3dtable(fuelTable);
-      break;
-
-    case veSetPage:
-      Serial.println(F("\nPg 2 Cfg"));
-      // The following loop displays in human readable form of all byte values in config page 1 up to but not including the first array.
-      serial_println_range((byte *)&configPage2, configPage2.wueValues);
-      serial_print_space_delimited_array(configPage2.wueValues);
-      // This displays all the byte values between the last array up to but not including the first unsigned int on config page 1
-      serial_println_range(_end_range_byte_address(configPage2.wueValues), (byte*)&configPage2.injAng);
-      // The following loop displays four unsigned ints
-      serial_println_range(configPage2.injAng, configPage2.injAng + _countof(configPage2.injAng));
-      // Following loop displays byte values between the unsigned ints
-      serial_println_range(_end_range_byte_address(configPage2.injAng), (byte*)&configPage2.mapMax);
-      Serial.println(configPage2.mapMax);
-      // Following loop displays remaining byte values of the page
-      serial_println_range(&configPage2.fpPrime, (byte *)&configPage2 + sizeof(configPage2));
-      break;
-
-    case ignMapPage:
-      Serial.println(F("\nIgnition Map"));
-      serial_print_3dtable(ignitionTable);
-      break;
-
-    case ignSetPage:
-      Serial.println(F("\nPg 4 Cfg"));
-      Serial.println(configPage4.triggerAngle);// configPage4.triggerAngle is an int so just display it without complication
-      // Following loop displays byte values after that first int up to but not including the first array in config page 2
-      serial_println_range((byte*)&configPage4.FixAng, configPage4.taeBins);
-      serial_print_space_delimited_array(configPage4.taeBins);
-      serial_print_space_delimited_array(configPage4.taeValues);
-      serial_print_space_delimited_array(configPage4.wueBins);
-      Serial.println(configPage4.dwellLimit);// Little lonely byte stuck between two arrays. No complications just display it.
-      serial_print_space_delimited_array(configPage4.dwellCorrectionValues);
-      serial_println_range(_end_range_byte_address(configPage4.dwellCorrectionValues), (byte *)&configPage4 + sizeof(configPage4));
-      break;
-
-    case afrMapPage:
-      Serial.println(F("\nAFR Map"));
-      serial_print_3dtable(afrTable);
-      break;
-
-    case afrSetPage:
-      Serial.println(F("\nPg 6 Config"));
-      serial_println_range((byte *)&configPage6, configPage6.voltageCorrectionBins);
-      serial_print_space_delimited_array(configPage6.voltageCorrectionBins);
-      serial_print_space_delimited_array(configPage6.injVoltageCorrectionValues);
-      serial_print_space_delimited_array(configPage6.airDenBins);
-      serial_print_space_delimited_array(configPage6.airDenRates);
-      serial_println_range(_end_range_byte_address(configPage6.airDenRates), configPage6.iacCLValues);
-      serial_print_space_delimited_array(configPage6.iacCLValues);
-      serial_print_space_delimited_array(configPage6.iacOLStepVal);
-      serial_print_space_delimited_array(configPage6.iacOLPWMVal);
-      serial_print_space_delimited_array(configPage6.iacBins);
-      serial_print_space_delimited_array(configPage6.iacCrankSteps);
-      serial_print_space_delimited_array(configPage6.iacCrankDuty);
-      serial_print_space_delimited_array(configPage6.iacCrankBins);
-      // Following loop is for remaining byte value of page
-      serial_println_range(_end_range_byte_address(configPage6.iacCrankBins), (byte *)&configPage6 + sizeof(configPage6));
-      break;
-
-    case boostvvtPage:
-      Serial.println(F("\nBoost Map"));
-      serial_print_3dtable(boostTable);
-      Serial.println(F("\nVVT Map"));
-      serial_print_3dtable(vvtTable);
-      break;
-
-    case seqFuelPage:
-      Serial.println(F("\nTrim 1 Table"));
-      serial_print_3dtable(trim1Table);
-      break;
-
-    case canbusPage:
-      Serial.println(F("\nPage 9 Cfg"));
-      serial_println_range((byte *)&configPage9, (byte *)&configPage9 + sizeof(configPage9));
-      break;
-
-    case fuelMap2Page:
-      Serial.println(F("\n2nd Fuel Map"));
-      serial_print_3dtable(fuelTable2);
-      break;
-   
-    case ignMap2Page:
-      Serial.println(F("\n2nd Ignition Map"));
-      serial_print_3dtable(ignitionTable2);
-      break;
-
-    case warmupPage:
-    case progOutsPage:
-    default:
-    #ifndef SMALL_FLASH_MODE
-        Serial.println(F("\nPage has not been implemented yet"));
-    #endif
-        break;
-  }
-}
-
 
 /** Processes an incoming stream of calibration data (for CLT, IAT or O2) from TunerStudio.
  * Result is store in EEPROM and memory.

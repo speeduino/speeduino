@@ -57,7 +57,6 @@ void sendValues(uint16_t, uint16_t,byte, byte);
 void sendValuesLegacy();
 void saveConfig();
 void sendPage();
-void sendPageASCII();
 void receiveCalibration(byte);
 void sendToothLog(uint8_t);
 void testComm();
