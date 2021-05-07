@@ -413,7 +413,7 @@ void initialiseAll()
     //Calculate the number of degrees between cylinders
     //Swet some default values. These will be updated below if required. 
     CRANK_ANGLE_MAX = 720;
-    CRANK_ANGLE_MAX_IGN = 360;
+    CRANK_ANGLE_MAX_IGN = 360; //variable actually, depending ignition mode
     CRANK_ANGLE_MAX_INJ = 360;
     channel1InjEnabled = true;
     channel2InjEnabled = false;

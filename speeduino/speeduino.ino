@@ -987,14 +987,13 @@ void loop()
         while (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
 
 #if IGN_CHANNELS >= 1
-        if ( (ignition1StartAngle <= crankAngle) && (ignitionSchedule1.Status == RUNNING) ) { ignition1StartAngle += CRANK_ANGLE_MAX_IGN; }
-        //if ( (ignition1StartAngle > crankAngle) && (curRollingCut != 1) )
-        if ( (ignition1StartAngle > crankAngle) && (!BIT_CHECK(curRollingCut, IGN1_CMD_BIT)) )
+        if ( (ignition1EndAngle <= crankAngle) && (ignitionSchedule1.Status == RUNNING) ) { ignition1EndAngle += CRANK_ANGLE_MAX_IGN; }
+        if ( (ignition1EndAngle > crankAngle) && (!BIT_CHECK(curRollingCut, IGN1_CMD_BIT)) )
         {
           
           setIgnitionSchedule1(ign1StartFunction,
                     //((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                    angleToTime((ignition1StartAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV),
+                    angleToTime((ignition1EndAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV)-currentStatus.dwell - fixedCrankingOverride,
                     currentStatus.dwell + fixedCrankingOverride, //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,
                     ign1EndFunction
                     );
