@@ -490,7 +490,7 @@ extern bool channel6InjEnabled;
 extern bool channel7InjEnabled;
 extern bool channel8InjEnabled;
 
-extern int ignition1EndAngle;
+extern int16_t ignition1EndAngle;
 extern int ignition2EndAngle;
 extern int ignition3EndAngle;
 extern int ignition4EndAngle;
@@ -539,7 +539,7 @@ extern volatile uint16_t ignitionCount; /**< The count of ignition events that h
   extern byte tertiaryTriggerEdge;
 #endif
 extern int CRANK_ANGLE_MAX;
-extern int CRANK_ANGLE_MAX_IGN;
+extern int16_t CRANK_ANGLE_MAX_IGN;
 extern int CRANK_ANGLE_MAX_INJ; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 extern volatile uint32_t runSecsX10; /**< Counter of seconds since cranking commenced (similar to runSecs) but in increments of 0.1 seconds */
 extern volatile uint32_t seclx10; /**< Counter of seconds since powered commenced (similar to secl) but in increments of 0.1 seconds */

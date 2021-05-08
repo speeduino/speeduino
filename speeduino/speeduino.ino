@@ -722,7 +722,7 @@ void loop()
       //This may potentially be called a number of times as we get closer and closer to the opening time
 
       //Determine the current crank angle
-      int crankAngle = getCrankAngle();
+      int16_t crankAngle = getCrankAngle();
       while(crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle = crankAngle - CRANK_ANGLE_MAX_INJ; } //Continue reducing the crank angle by the max injection amount until it's below the required limit. This will usually only run (at most) once, but in cases where there is sequential ignition and more than 2 squirts per cycle, it may run up to 4 times. 
 
       // if(Serial && false)
@@ -987,38 +987,25 @@ void loop()
         while (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
 
 #if IGN_CHANNELS >= 1
-        if ( (ignition1EndAngle <= crankAngle) && (ignitionSchedule1.Status == RUNNING) ) { ignition1EndAngle += CRANK_ANGLE_MAX_IGN; }
-        if ( (ignition1EndAngle > crankAngle) && (!BIT_CHECK(curRollingCut, IGN1_CMD_BIT)) )
+        int tempEndAngle;
+        tempCrankAngle = crankAngle - channel1IgnDegrees;
+        if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
+        tempEndAngle = ignition1EndAngle - channel1IgnDegrees;
+        if ( tempEndAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+
+        if (tempEndAngle <= tempCrankAngle)   { tempEndAngle += CRANK_ANGLE_MAX_IGN; }//calculate into the next cycle
+        if ( (tempEndAngle > tempCrankAngle) && (!BIT_CHECK(curRollingCut, IGN1_CMD_BIT)) )
         {
-          
+          unsigned long ignition1EndTime = 0;
+          ignition1EndTime= angleToTime((tempEndAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV);
           setIgnitionSchedule1(ign1StartFunction,
-                    //((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                    angleToTime((ignition1EndAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV)-currentStatus.dwell - fixedCrankingOverride,
+                    ignition1EndTime,
                     currentStatus.dwell + fixedCrankingOverride, //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,
                     ign1EndFunction
                     );
         }
 #endif
 
-#if defined(USE_IGN_REFRESH)
-        if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
-        {
-          unsigned long uSToEnd = 0;
-
-          crankAngle = getCrankAngle(); //Refresh with the latest crank angle
-          if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
-          
-          //ONLY ONE OF THE BELOW SHOULD BE USED (PROBABLY THE FIRST):
-          //*********
-          if(ignition1EndAngle > crankAngle) { uSToEnd = fastDegreesToUS( (ignition1EndAngle - crankAngle) ); }
-          else { uSToEnd = fastDegreesToUS( (360 + ignition1EndAngle - crankAngle) ); }
-          //*********
-          //uSToEnd = ((ignition1EndAngle - crankAngle) * (toothLastToothTime - toothLastMinusOneToothTime)) / triggerToothAngle;
-          //*********
-
-          refreshIgnitionSchedule1( uSToEnd + fixedCrankingOverride );
-        }
-  #endif
         
 #if IGN_CHANNELS >= 2
         if (maxIgnOutputs >= 2)
@@ -1353,7 +1340,7 @@ uint16_t calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_t injCh
 
 void calculateIgnitionAngle1(int dwellAngle)
 {
-  ignition1EndAngle = CRANK_ANGLE_MAX_IGN - currentStatus.advance;
+  ignition1EndAngle = channel1IgnDegrees - currentStatus.advance;
   if(ignition1EndAngle > CRANK_ANGLE_MAX_IGN) {ignition1EndAngle -= CRANK_ANGLE_MAX_IGN;}
   ignition1StartAngle = ignition1EndAngle - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
   if(ignition1StartAngle < 0) {ignition1StartAngle += CRANK_ANGLE_MAX_IGN;}

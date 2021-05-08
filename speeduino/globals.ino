@@ -107,7 +107,7 @@ bool channel6InjEnabled = false;
 bool channel7InjEnabled = false;
 bool channel8InjEnabled = false;
 
-int ignition1EndAngle = 0;
+int16_t ignition1EndAngle = 0;
 int ignition2EndAngle = 0;
 int ignition3EndAngle = 0;
 int ignition4EndAngle = 0;
@@ -146,7 +146,7 @@ volatile uint16_t ignitionCount; /**< The count of ignition events that have tak
   byte tertiaryTriggerEdge;
 #endif
 int CRANK_ANGLE_MAX = 720;
-int CRANK_ANGLE_MAX_IGN = 360;
+int16_t CRANK_ANGLE_MAX_IGN = 360;
 int CRANK_ANGLE_MAX_INJ = 360; //The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 volatile uint32_t runSecsX10;
 volatile uint32_t seclx10;
