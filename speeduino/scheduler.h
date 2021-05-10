@@ -82,14 +82,8 @@ void setFuelSchedule7(unsigned long timeout, unsigned long duration);
 void setFuelSchedule8(unsigned long timeout, unsigned long duration);
 
 void setIgnitionSchedule(struct Schedule *ignitionSchedule , int16_t crankAngle,int channelIgnDegrees,int ignitionEndAngle, unsigned long duration);
-void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+
+void ignitionScheduleInterrupt(struct Schedule *ignitionSchedule);
 
 void ign1TimerEnable();
 void ign2TimerEnable();

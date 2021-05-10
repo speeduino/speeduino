@@ -913,42 +913,9 @@ ISR(TIMER5_COMPA_vect) //ignitionSchedule1
 #else
 static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
-  { if (ignitionSchedule1.Status == PENDING){ //Check to see if this schedule is ready to be locked for action
-    ignitionSchedule1.Status = STAGED;
-    IGN1_COMPARE = ignitionSchedule1.startCompare;
-    }
-    else if (ignitionSchedule1.Status == STAGED) //Check to see if this schedule is ready to turn on
-    {
-      ignitionSchedule1.StartCallback();
-      ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule1.startTime = micros();
-      IGN1_COMPARE = ignitionSchedule1.endCompare; // Set end callback interrupt time
-    }
-    else if (ignitionSchedule1.Status == RUNNING) //Check to see if ready for spark
-    {
-      ignitionSchedule1.EndCallback(); //Turn coil off      
-      ignitionSchedule1.schedulesSet = 0;
-      ignitionSchedule1.endScheduleSetByDecoder = false;
-      ignitionCount += 1; //Increment the igintion counter
-      ignitionSchedule1.Status = OFF; //Spark done: turn off the schedule
-/*      //If there is a next schedule queued up, activate it
-      if(ignitionSchedule1.hasNextSchedule == true)
-      {
-        IGN1_COMPARE = ignitionSchedule1.nextStartCompare - uS_TO_TIMER_COMPARE(IGNITION_REFRESH_THRESHOLD); //this gets them values ready for staging
-        ignitionSchedule1.endCompare=ignitionSchedule1.nextEndCompare;  //load in values from queue
-        ignitionSchedule1.startCompare=ignitionSchedule1.nextStartCompare;
-        ignitionSchedule1.Status = PENDING;
-        ignitionSchedule1.schedulesSet = 1;
-        ignitionSchedule1.hasNextSchedule = false;
-      }
-      else{ IGN1_TIMER_DISABLE(); } //in case of no queued up values just turn off interrupts for now      
-*/
-    }
-    else if (ignitionSchedule1.Status == OFF)
-    {      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN1_TIMER_DISABLE(); //disables capture interrupts, timebase keeps running 
-    }
-  }
+{
+ignitionScheduleInterrupt(&ignitionSchedule1);
+}
 #endif
 
 #if IGN_CHANNELS >= 2
@@ -957,39 +924,9 @@ ISR(TIMER5_COMPB_vect) //ignitionSchedule2
 #else
 static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
-  {
-    if (ignitionSchedule2.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule2.StartCallback();
-      ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule2.startTime = micros();
-      if(ignitionSchedule2.endScheduleSetByDecoder == true) { IGN2_COMPARE = (uint16_t)ignitionSchedule2.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN2_COMPARE = (uint16_t)(IGN2_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule2.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
-    }
-    else if (ignitionSchedule2.Status == RUNNING)
-    {
-      ignitionSchedule2.Status = OFF; //Turn off the schedule
-      ignitionSchedule2.EndCallback();
-      ignitionSchedule2.schedulesSet = 0;
-      ignitionSchedule2.endScheduleSetByDecoder = false;
-      ignitionCount += 1; //Increment the igintion counter
-      
-      //If there is a next schedule queued up, activate it
-      if(ignitionSchedule2.hasNextSchedule == true)
-      {
-        IGN2_COMPARE = (uint16_t)ignitionSchedule2.nextStartCompare;
-        ignitionSchedule2.Status = PENDING;
-        ignitionSchedule2.schedulesSet = 1;
-        ignitionSchedule2.hasNextSchedule = false;
-      }
-      else{ IGN2_TIMER_DISABLE(); } //in case of no queued up values just turn off interrupts for now
-    }
-    else if (ignitionSchedule2.Status == OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN2_TIMER_DISABLE();
-    }
-  }
+{
+ignitionScheduleInterrupt(&ignitionSchedule2);
+}
 #endif
 
 #if IGN_CHANNELS >= 3
@@ -998,39 +935,9 @@ ISR(TIMER5_COMPC_vect) //ignitionSchedule3
 #else
 static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
-  {
-    if (ignitionSchedule3.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule3.StartCallback();
-      ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule3.startTime = micros();
-      if(ignitionSchedule3.endScheduleSetByDecoder == true) { IGN3_COMPARE = (uint16_t)ignitionSchedule3.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN3_COMPARE = (uint16_t)(IGN3_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule3.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
-    }
-    else if (ignitionSchedule3.Status == RUNNING)
-    {
-       ignitionSchedule3.Status = OFF; //Turn off the schedule
-       ignitionSchedule3.EndCallback();
-       ignitionSchedule3.schedulesSet = 0;
-       ignitionSchedule3.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the igintion counter
-
-       //If there is a next schedule queued up, activate it
-       if(ignitionSchedule3.hasNextSchedule == true)
-       {
-         IGN3_COMPARE = (uint16_t)ignitionSchedule3.nextStartCompare;
-         ignitionSchedule3.Status = PENDING;
-         ignitionSchedule3.schedulesSet = 1;
-         ignitionSchedule3.hasNextSchedule = false;
-       }
-       else { IGN3_TIMER_DISABLE(); }
-    }
-    else if (ignitionSchedule3.Status == OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN3_TIMER_DISABLE();
-    }
-  }
+{
+ignitionScheduleInterrupt(&ignitionSchedule3);
+}
 #endif
 
 #if IGN_CHANNELS >= 4
@@ -1039,39 +946,9 @@ ISR(TIMER4_COMPA_vect) //ignitionSchedule4
 #else
 static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
-  {
-    if (ignitionSchedule4.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule4.StartCallback();
-      ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule4.startTime = micros();
-      if(ignitionSchedule4.endScheduleSetByDecoder == true) { IGN4_COMPARE = (uint16_t)ignitionSchedule4.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN4_COMPARE = (uint16_t)(IGN4_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule4.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
-    }
-    else if (ignitionSchedule4.Status == RUNNING)
-    {
-       ignitionSchedule4.Status = OFF; //Turn off the schedule
-       ignitionSchedule4.EndCallback();
-       ignitionSchedule4.schedulesSet = 0;
-       ignitionSchedule4.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the igintion counter
-
-       //If there is a next schedule queued up, activate it
-       if(ignitionSchedule4.hasNextSchedule == true)
-       {
-         IGN4_COMPARE = (uint16_t)ignitionSchedule4.nextStartCompare;
-         ignitionSchedule4.Status = PENDING;
-         ignitionSchedule4.schedulesSet = 1;
-         ignitionSchedule4.hasNextSchedule = false;
-       }
-       else { IGN4_TIMER_DISABLE(); }
-    }
-    else if (ignitionSchedule4.Status == OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN4_TIMER_DISABLE();
-    }
-  }
+{
+ignitionScheduleInterrupt(&ignitionSchedule4);
+}
 #endif
 
 #if IGN_CHANNELS >= 5
@@ -1080,39 +957,9 @@ ISR(TIMER4_COMPC_vect) //ignitionSchedule5
 #else
 static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call a function
 #endif
-  {
-    if (ignitionSchedule5.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule5.StartCallback();
-      ignitionSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule5.startTime = micros();
-      if(ignitionSchedule5.endScheduleSetByDecoder == true) { IGN5_COMPARE = (uint16_t)ignitionSchedule5.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN5_COMPARE = (uint16_t)(IGN5_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule5.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
-    }
-    else if (ignitionSchedule5.Status == RUNNING)
-    {
-      ignitionSchedule5.Status = OFF; //Turn off the schedule
-      ignitionSchedule5.EndCallback();
-      ignitionSchedule5.schedulesSet = 0;
-      ignitionSchedule5.endScheduleSetByDecoder = false;
-      ignitionCount += 1; //Increment the igintion counter
-
-      //If there is a next schedule queued up, activate it
-      if(ignitionSchedule5.hasNextSchedule == true)
-      {
-        IGN5_COMPARE = (uint16_t)ignitionSchedule5.nextStartCompare;
-        ignitionSchedule5.Status = PENDING;
-        ignitionSchedule5.schedulesSet = 1;
-        ignitionSchedule5.hasNextSchedule = false;
-      }
-      else{ IGN5_TIMER_DISABLE(); }
-    }
-    else if (ignitionSchedule5.Status == OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN5_TIMER_DISABLE();
-    }
-  }
+{
+ignitionScheduleInterrupt(&ignitionSchedule5);
+}
 #endif
 
 #if IGN_CHANNELS >= 6
@@ -1121,39 +968,9 @@ ISR(TIMER4_COMPB_vect) //ignitionSchedule6
 #else
 static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call a function
 #endif
-  {
-    if (ignitionSchedule6.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule6.StartCallback();
-      ignitionSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule6.startTime = micros();
-      if(ignitionSchedule6.endScheduleSetByDecoder == true) { IGN6_COMPARE = (uint16_t)ignitionSchedule6.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN6_COMPARE = (uint16_t)(IGN6_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule6.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
-    }
-    else if (ignitionSchedule6.Status == RUNNING)
-    {
-      ignitionSchedule6.Status = OFF; //Turn off the schedule
-      ignitionSchedule6.EndCallback();
-      ignitionSchedule6.schedulesSet = 0;
-      ignitionSchedule6.endScheduleSetByDecoder = false;
-      ignitionCount += 1; //Increment the igintion counter
-
-      //If there is a next schedule queued up, activate it
-      if(ignitionSchedule6.hasNextSchedule == true)
-      {
-        IGN6_COMPARE = (uint16_t)ignitionSchedule6.nextStartCompare;
-        ignitionSchedule6.Status = PENDING;
-        ignitionSchedule6.schedulesSet = 1;
-        ignitionSchedule6.hasNextSchedule = false;
-      }
-      else{ IGN6_TIMER_DISABLE(); }
-    }
-    else if (ignitionSchedule6.Status == OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN6_TIMER_DISABLE();
-    }
-  }
+{
+ignitionScheduleInterrupt(&ignitionSchedule6);
+}
 #endif
 
 #if IGN_CHANNELS >= 7
@@ -1162,39 +979,9 @@ ISR(TIMER3_COMPC_vect) //ignitionSchedule6
 #else
 static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call a function
 #endif
-  {
-    if (ignitionSchedule7.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule7.StartCallback();
-      ignitionSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule7.startTime = micros();
-      if(ignitionSchedule7.endScheduleSetByDecoder == true) { IGN7_COMPARE = (uint16_t)ignitionSchedule7.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN7_COMPARE = (uint16_t)(IGN7_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule7.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
-    }
-    else if (ignitionSchedule7.Status == RUNNING)
-    {
-      ignitionSchedule7.Status = OFF; //Turn off the schedule
-      ignitionSchedule7.EndCallback();
-      ignitionSchedule7.schedulesSet = 0;
-      ignitionSchedule7.endScheduleSetByDecoder = false;
-      ignitionCount += 1; //Increment the igintion counter
-
-      //If there is a next schedule queued up, activate it
-      if(ignitionSchedule7.hasNextSchedule == true)
-      {
-        IGN7_COMPARE = (uint16_t)ignitionSchedule7.nextStartCompare;
-        ignitionSchedule7.Status = PENDING;
-        ignitionSchedule7.schedulesSet = 1;
-        ignitionSchedule7.hasNextSchedule = false;
-      }
-      else{ IGN7_TIMER_DISABLE(); }
-    }
-    else if (ignitionSchedule7.Status == OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN7_TIMER_DISABLE();
-    }
-  }
+{
+ignitionScheduleInterrupt(&ignitionSchedule7);
+}
 #endif
 
 #if IGN_CHANNELS >= 8
@@ -1203,37 +990,46 @@ ISR(TIMER3_COMPB_vect) //ignitionSchedule8
 #else
 static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call a function
 #endif
-  {
-    if (ignitionSchedule8.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule8.StartCallback();
-      ignitionSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule8.startTime = micros();
-      if(ignitionSchedule8.endScheduleSetByDecoder == true) { IGN8_COMPARE = (uint16_t)ignitionSchedule8.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN8_COMPARE = (uint16_t)(IGN8_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule8.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
-    }
-    else if (ignitionSchedule8.Status == RUNNING)
-    {
-      ignitionSchedule8.Status = OFF; //Turn off the schedule
-      ignitionSchedule8.EndCallback();
-      ignitionSchedule8.schedulesSet = 0;
-      ignitionSchedule8.endScheduleSetByDecoder = false;
-      ignitionCount += 1; //Increment the igintion counter
+{
+ignitionScheduleInterrupt(&ignitionSchedule8);
+}
+#endif
 
-      //If there is a next schedule queued up, activate it
-      if(ignitionSchedule8.hasNextSchedule == true)
-      {
-        IGN8_COMPARE = (uint16_t)ignitionSchedule8.nextStartCompare;
-        ignitionSchedule8.Status = PENDING;
-        ignitionSchedule8.schedulesSet = 1;
-        ignitionSchedule8.hasNextSchedule = false;
-      }
-      else{ IGN8_TIMER_DISABLE(); }
+void ignitionScheduleInterrupt(struct Schedule *ignitionSchedule) // common function that all ignition channel interrupts use
+{
+  { if (ignitionSchedule->Status == PENDING){ //Check to see if this schedule is ready to be locked for action
+    ignitionSchedule->Status = STAGED;
+    ignitionSchedule->setIgnitionCompare(ignitionSchedule->startCompare);
     }
-    else if (ignitionSchedule8.Status == OFF)
+    else if (ignitionSchedule->Status == STAGED) //Check to see if this schedule is ready to turn on
     {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN8_TIMER_DISABLE();
+      ignitionSchedule->StartCallback();
+      ignitionSchedule->Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule->startTime = micros();
+      ignitionSchedule->setIgnitionCompare(ignitionSchedule->endCompare); // Set end callback interrupt time
+    }
+    else if (ignitionSchedule->Status == RUNNING) //Check to see if ready for spark
+    {
+      ignitionSchedule->EndCallback(); //Turn coil off      
+      ignitionSchedule->schedulesSet = 0;
+      ignitionSchedule->endScheduleSetByDecoder = false;
+      ignitionCount += 1; //Increment the igintion counter
+      ignitionSchedule->Status = OFF; //Spark done: turn off the schedule
+      //If there is a next schedule queued up, activate it
+      if(ignitionSchedule1.hasNextSchedule == true)
+      {
+        ignitionSchedule->setIgnitionCompare(ignitionSchedule->nextStartCompare - uS_TO_TIMER_COMPARE(IGNITION_REFRESH_THRESHOLD)); //this gets them values ready for staging
+        ignitionSchedule->endCompare=ignitionSchedule->nextEndCompare;  //load in values from queue
+        ignitionSchedule->startCompare=ignitionSchedule->nextStartCompare;
+        ignitionSchedule->Status = PENDING;
+        ignitionSchedule->schedulesSet = 1;
+        ignitionSchedule->hasNextSchedule = false;
+      }
+
+    }
+    else if (ignitionSchedule->Status == OFF)
+    {      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
+      
     }
   }
-#endif
+}
