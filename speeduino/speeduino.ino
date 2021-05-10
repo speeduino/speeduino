@@ -691,7 +691,7 @@ void loop()
       //Set dwell
       //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage4. This number therefore needs to be multiplied by 100 to get dwell in uS
       if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) {
-        currentStatus.dwell =  (configPage4.dwellCrank * 100); //use cranking dwell
+        currentStatus.dwell =  ((uint16_t)configPage4.dwellCrank * 100); //use cranking dwell
       }
       else 
       {
@@ -987,22 +987,18 @@ void loop()
         while (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
 
 #if IGN_CHANNELS >= 1
-        int tempEndAngle;
+        int16_t tempEndAngle;
         tempCrankAngle = crankAngle - channel1IgnDegrees;
         if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
         tempEndAngle = ignition1EndAngle - channel1IgnDegrees;
-        if ( tempEndAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+        if ( tempEndAngle < 0) { tempEndAngle += CRANK_ANGLE_MAX_IGN; }
 
         if (tempEndAngle <= tempCrankAngle)   { tempEndAngle += CRANK_ANGLE_MAX_IGN; }//calculate into the next cycle
         if ( (tempEndAngle > tempCrankAngle) && (!BIT_CHECK(curRollingCut, IGN1_CMD_BIT)) )
         {
           unsigned long ignition1EndTime = 0;
           ignition1EndTime= angleToTime((tempEndAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV);
-          setIgnitionSchedule1(ign1StartFunction,
-                    ignition1EndTime,
-                    currentStatus.dwell + fixedCrankingOverride, //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,
-                    ign1EndFunction
-                    );
+          setIgnitionSchedule(&ignitionSchedule1, ignition1EndTime, currentStatus.dwell + fixedCrankingOverride); //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride, 
         }
 #endif
 

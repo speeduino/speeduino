@@ -80,6 +80,8 @@ void setFuelSchedule5(unsigned long timeout, unsigned long duration);
 void setFuelSchedule6(unsigned long timeout, unsigned long duration);
 void setFuelSchedule7(unsigned long timeout, unsigned long duration);
 void setFuelSchedule8(unsigned long timeout, unsigned long duration);
+
+void setIgnitionSchedule(struct Schedule *ignitionSchedule , unsigned long timeout, unsigned long duration);
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
@@ -88,6 +90,35 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
 void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+
+void ign1TimerEnable();
+void ign2TimerEnable();
+void ign3TimerEnable();
+void ign4TimerEnable();
+void ign5TimerEnable();
+void ign6TimerEnable();
+void ign7TimerEnable();
+void ign8TimerEnable();
+
+//those small functions are needed to use ignition counter definitions on different platvorms
+uint32_t getIgn1Counter();
+uint32_t getIgn2Counter();
+uint32_t getIgn3Counter();
+uint32_t getIgn4Counter();
+uint32_t getIgn5Counter();
+uint32_t getIgn6Counter();
+uint32_t getIgn7Counter();
+uint32_t getIgn8Counter();
+
+//those small functions are needed to use ignition counter compare definitions on different platvorms
+void setIgnition1Compare(uint32_t value);
+void setIgnition2Compare(uint32_t value);
+void setIgnition3Compare(uint32_t value);
+void setIgnition4Compare(uint32_t value);
+void setIgnition5Compare(uint32_t value);
+void setIgnition6Compare(uint32_t value);
+void setIgnition7Compare(uint32_t value);
+void setIgnition8Compare(uint32_t value);
 
 inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 
@@ -142,15 +173,19 @@ struct Schedule {
   volatile ScheduleStatus Status;
   volatile byte schedulesSet; //A counter of how many times the schedule has been set
   void (*StartCallback)(); //Start Callback function for schedule
-  void (*EndCallback)(); //Start Callback function for schedule
+  void (*EndCallback)(); //End Callback function for schedule
   volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
   volatile COMPARE_TYPE startCompare; //The counter value of the timer when this will start
-  volatile COMPARE_TYPE endCompare;
+  volatile COMPARE_TYPE endCompare; //The counter value when pulse will stop
 
   unsigned int nextStartCompare;
   unsigned int nextEndCompare;
   volatile bool hasNextSchedule = false;
   volatile bool endScheduleSetByDecoder = false;
+
+  uint32_t (*getIgnCounter)(); //Function for getting counter value
+  void (*setIgnitionCompare)(uint32_t); //Function for setting counter compare value
+  void (*ignTimerEnable)(); //Function to enable timer for specific channel
 };
 
 //Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables. They are removed in this struct to save RAM

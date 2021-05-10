@@ -490,7 +490,7 @@ extern bool channel6InjEnabled;
 extern bool channel7InjEnabled;
 extern bool channel8InjEnabled;
 
-extern int16_t ignition1EndAngle;
+extern int ignition1EndAngle;
 extern int ignition2EndAngle;
 extern int ignition3EndAngle;
 extern int ignition4EndAngle;
@@ -591,7 +591,7 @@ struct statuses {
   int batADC;
   int O2ADC;
   int O2_2ADC;
-  int dwell;
+  uint16_t dwell; //commanded dwell time [uS], can not really be negative so use uint16_t
   byte dwellCorrection; /**< The amount of correction being applied to the dwell time. */
   byte battery10; /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
   int8_t advance; /**< The current advance value being used in the spark calculation. Can be the same as advance1 or advance2, or a calculated value of both */

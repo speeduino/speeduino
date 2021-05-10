@@ -1163,6 +1163,8 @@ void initialiseAll()
         break;
     }
 
+    initialiseSchedulers(); //reapply all nessesary changes to the Schedulers also.
+
     //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
     //First check that the priming time is not 0
     if(configPage2.fpPrime > 0)

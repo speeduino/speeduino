@@ -108,6 +108,54 @@ void initialiseSchedulers()
     ignitionSchedule6.schedulesSet = 0;
     ignitionSchedule7.schedulesSet = 0;
     ignitionSchedule8.schedulesSet = 0;
+
+    //set counter related functions
+    ignitionSchedule1.getIgnCounter = getIgn1Counter;
+    ignitionSchedule2.getIgnCounter = getIgn2Counter;
+    ignitionSchedule3.getIgnCounter = getIgn3Counter;
+    ignitionSchedule4.getIgnCounter = getIgn4Counter;
+    ignitionSchedule5.getIgnCounter = getIgn5Counter;
+    ignitionSchedule6.getIgnCounter = getIgn6Counter;
+    ignitionSchedule7.getIgnCounter = getIgn7Counter;
+    ignitionSchedule8.getIgnCounter = getIgn8Counter;
+ 
+    ignitionSchedule1.setIgnitionCompare = setIgnition1Compare;
+    ignitionSchedule2.setIgnitionCompare = setIgnition2Compare;
+    ignitionSchedule3.setIgnitionCompare = setIgnition3Compare;
+    ignitionSchedule4.setIgnitionCompare = setIgnition4Compare;
+    ignitionSchedule5.setIgnitionCompare = setIgnition5Compare;
+    ignitionSchedule6.setIgnitionCompare = setIgnition6Compare;
+    ignitionSchedule7.setIgnitionCompare = setIgnition7Compare;
+    ignitionSchedule8.setIgnitionCompare = setIgnition8Compare;
+
+    ignitionSchedule1.ignTimerEnable = ign1TimerEnable;
+    ignitionSchedule2.ignTimerEnable = ign2TimerEnable;
+    ignitionSchedule3.ignTimerEnable = ign3TimerEnable;
+    ignitionSchedule4.ignTimerEnable = ign4TimerEnable;
+    ignitionSchedule5.ignTimerEnable = ign5TimerEnable;
+    ignitionSchedule6.ignTimerEnable = ign6TimerEnable;
+    ignitionSchedule7.ignTimerEnable = ign7TimerEnable;
+    ignitionSchedule8.ignTimerEnable = ign8TimerEnable;
+
+    ignitionSchedule1.StartCallback = ign1StartFunction; //Name the start callback function
+    ignitionSchedule2.StartCallback = ign2StartFunction; //Name the start callback function
+    ignitionSchedule3.StartCallback = ign3StartFunction; //Name the start callback function
+    ignitionSchedule4.StartCallback = ign4StartFunction; //Name the start callback function
+    ignitionSchedule5.StartCallback = ign5StartFunction; //Name the start callback function
+    ignitionSchedule6.StartCallback = ign6StartFunction; //Name the start callback function
+    ignitionSchedule7.StartCallback = ign7StartFunction; //Name the start callback function
+    ignitionSchedule8.StartCallback = ign8StartFunction; //Name the start callback function
+
+    ignitionSchedule1.EndCallback = ign1EndFunction; //Name the end callback function
+    ignitionSchedule2.EndCallback = ign2EndFunction; //Name the end callback function
+    ignitionSchedule3.EndCallback = ign3EndFunction; //Name the end callback function
+    ignitionSchedule4.EndCallback = ign4EndFunction; //Name the end callback function
+    ignitionSchedule5.EndCallback = ign5EndFunction; //Name the end callback function
+    ignitionSchedule6.EndCallback = ign6EndFunction; //Name the end callback function
+    ignitionSchedule7.EndCallback = ign7EndFunction; //Name the end callback function
+    ignitionSchedule8.EndCallback = ign8EndFunction; //Name the end callback function
+
+
 }
 
 /*
@@ -462,6 +510,74 @@ void setFuelSchedule8(unsigned long timeout, unsigned long duration) //Uses time
 }
 #endif
 
+//ignition timer enable functions
+void ign1TimerEnable(){IGN1_TIMER_ENABLE();}
+void ign2TimerEnable(){IGN2_TIMER_ENABLE();}
+void ign3TimerEnable(){IGN3_TIMER_ENABLE();}
+void ign4TimerEnable(){IGN4_TIMER_ENABLE();}
+void ign5TimerEnable(){IGN5_TIMER_ENABLE();}
+void ign6TimerEnable(){IGN6_TIMER_ENABLE();}
+void ign7TimerEnable(){IGN7_TIMER_ENABLE();}
+void ign8TimerEnable(){IGN8_TIMER_ENABLE();}
+
+uint32_t getIgn1Counter() {return IGN1_COUNTER;}
+uint32_t getIgn2Counter() {return IGN2_COUNTER;}
+uint32_t getIgn3Counter() {return IGN3_COUNTER;}
+uint32_t getIgn4Counter() {return IGN4_COUNTER;}
+uint32_t getIgn5Counter() {return IGN5_COUNTER;}
+uint32_t getIgn6Counter() {return IGN6_COUNTER;}
+uint32_t getIgn7Counter() {return IGN7_COUNTER;}
+uint32_t getIgn8Counter() {return IGN8_COUNTER;}
+
+void setIgnition1Compare(uint32_t compareValue){IGN1_COMPARE =(uint16_t)compareValue;}
+void setIgnition2Compare(uint32_t compareValue){IGN2_COMPARE =(uint16_t)compareValue;}
+void setIgnition3Compare(uint32_t compareValue){IGN3_COMPARE =(uint16_t)compareValue;}
+void setIgnition4Compare(uint32_t compareValue){IGN4_COMPARE =(uint16_t)compareValue;}
+void setIgnition5Compare(uint32_t compareValue){IGN5_COMPARE =(uint16_t)compareValue;}
+void setIgnition6Compare(uint32_t compareValue){IGN6_COMPARE =(uint16_t)compareValue;}
+void setIgnition7Compare(uint32_t compareValue){IGN7_COMPARE =(uint16_t)compareValue;}
+void setIgnition8Compare(uint32_t compareValue){IGN8_COMPARE =(uint16_t)compareValue;}
+
+//Ignition schedulers use Timer 5
+void setIgnitionSchedule(struct Schedule *ignitionSchedule , unsigned long timeout, unsigned long duration)
+{
+  uint16_t timeout_timer_compare;
+  unsigned long refreshSafetyLimit;
+
+  refreshSafetyLimit= duration + IGNITION_REFRESH_THRESHOLD +128; // It will skip pulses if timing is messed with at the last moment!
+  if(ignitionSchedule->Status != RUNNING && ignitionSchedule->Status != STAGED && (timeout>refreshSafetyLimit) ) //Check that we're not already part way through a schedule
+  {
+    ignitionSchedule->duration = duration;
+    
+    //timeout -= (micros() - lastCrankAngleCalc);
+    if (timeout > MAX_TIMER_PERIOD) {
+      ignitionSchedule->Status = OFF; //Off for now, come back later...
+     } 
+    else { 
+      timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout);  //Normal case
+      noInterrupts(); // make sure start and end values are updated simultaneously
+      ignitionSchedule->endCompare = ignitionSchedule->getIgnCounter() + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+      ignitionSchedule->startCompare = ignitionSchedule->endCompare - uS_TO_TIMER_COMPARE(duration);   
+      ignitionSchedule->setIgnitionCompare(ignitionSchedule->startCompare - uS_TO_TIMER_COMPARE(IGNITION_REFRESH_THRESHOLD));//set up time for staging (actual impulse starting and timing is done totally in interrupts)
+      ignitionSchedule->Status = PENDING; //Turn this schedule on
+      interrupts();      
+     ignitionSchedule->schedulesSet++;
+     ignitionSchedule->ignTimerEnable();
+    }
+  }
+  else
+  {
+    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    if (timeout < MAX_TIMER_PERIOD)
+    {
+      ignitionSchedule->nextEndCompare = ignitionSchedule->getIgnCounter() + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule->nextStartCompare = ignitionSchedule->nextEndCompare - uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule->hasNextSchedule = true;
+    }
+
+  }
+}
 //Ignition schedulers use Timer 5
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
