@@ -125,6 +125,7 @@ static void printPage1(Print &target) {
 	target.println(configPage1.iacRPMlimitHysteresis);
 	target.println(configPage1.rtc_trim);
 	target.println(configPage1.idleAdvVss);
+	target.println(configPage1.mapSwitchPoint);
 	print_array(target, configPage1.unused2_95);
 }
 
@@ -155,7 +156,7 @@ static void printPage4(Print &target) {
 	target.println(configPage4.useResync);
 	target.println(configPage4.sparkDur);
 	target.println(configPage4.trigPatternSec);
-	target.println(configPage4.PollLevelPolarity);
+	target.println(configPage4.PollLevelPol);
 	target.println(configPage4.bootloaderCaps);
 	target.println(configPage4.resetControlConfig);
 	target.println(configPage4.resetControlPin);
@@ -207,10 +208,11 @@ static void printPage4(Print &target) {
 	target.println(configPage4.engineProtectMaxRPM);
 	target.println(configPage4.vvt2CL0DutyAng);
 	target.println(configPage4.vvt2PWMdir);
-	target.println(configPage4.unusedBits4-123);
+	target.println(configPage4.unusedBits4_123);
 	target.println(configPage4.ANGLEFILTER_VVT);
 	target.println(configPage4.FILTER_FLEX);
-	print_array(target, configPage4.unused4_124);
+	target.println(configPage4.vvtMinClt);
+	target.println(configPage4.vvtDelay);
 }
 
 static void printPage5(Print &target) {
@@ -304,31 +306,31 @@ static void printPage6(Print &target) {
 static void printPage7(Print &target) {
 	target.println(F("\nPg 7 Cfg"));
 	target.println(F("\nBoost Duty / Target"));
-	serial_print_3dtable(target, boostTable);
+	serial_print_3dtable(target, boostTbl);
 	target.println(F("\nVVT control Table"));
-	serial_print_3dtable(target, vvtTable);
+	serial_print_3dtable(target, vvtTbl);
 	target.println(F("\nFuel Staging Table"));
-	serial_print_3dtable(target, stagingTable);
+	serial_print_3dtable(target, stagingTbl);
 }
 
 static void printPage8(Print &target) {
 	target.println(F("\nPg 8 Cfg"));
 	target.println(F("\nFuel trim Table 1"));
-	serial_print_3dtable(target, trim1Table);
+	serial_print_3dtable(target, fuelTrimTable1Tbl);
 	target.println(F("\nFuel trim Table 2"));
-	serial_print_3dtable(target, trim2Table);
+	serial_print_3dtable(target, fuelTrimTable2Tbl);
 	target.println(F("\nFuel trim Table 3"));
-	serial_print_3dtable(target, trim3Table);
+	serial_print_3dtable(target, fuelTrimTable3Tbl);
 	target.println(F("\nFuel trim Table 4"));
-	serial_print_3dtable(target, trim4Table);
+	serial_print_3dtable(target, fuelTrimTable4Tbl);
 	target.println(F("\nFuel trim Table 5"));
-	serial_print_3dtable(target, trim5Table);
+	serial_print_3dtable(target, fuelTrimTable5Tbl);
 	target.println(F("\nFuel trim Table 6"));
-	serial_print_3dtable(target, trim6Table);
+	serial_print_3dtable(target, fuelTrimTable6Tbl);
 	target.println(F("\nFuel trim Table 7"));
-	serial_print_3dtable(target, trim7Table);
+	serial_print_3dtable(target, fuelTrimTable7Tbl);
 	target.println(F("\nFuel trim Table 8"));
-	serial_print_3dtable(target, trim8Table);
+	serial_print_3dtable(target, fuelTrimTable8Tbl);
 }
 
 static void printPage9(Print &target) {
@@ -363,6 +365,7 @@ static void printPage9(Print &target) {
 	target.println(configPage9.blankfield);
 	target.println(configPage9.unused10_153);
 	target.println(configPage9.iacMaxSteps);
+	target.println(configPage9.idleAdvStartDelay);
 	target.println(configPage9.boostByGear1);
 	target.println(configPage9.boostByGear2);
 	target.println(configPage9.boostByGear3);
@@ -504,21 +507,30 @@ static void printPage11(Print &target) {
 static void printPage12(Print &target) {
 	target.println(F("\nPg 12 Cfg"));
 	target.println(F("\nWMI control Table"));
-	serial_print_3dtable(target, wmiTable);
+	serial_print_3dtable(target, wmiTbl);
 	target.println(F("\nVVT2 control Table"));
-	serial_print_3dtable(target, vvt2Table);
+	serial_print_3dtable(target, vvt2Tbl);
 	target.println(F("\nDwell map"));
-	serial_print_3dtable(target, dwellTable);
+	serial_print_3dtable(target, dwell_map);
 }
 
 static void printPage13(Print &target) {
 	target.println(F("\nPg 13 Cfg"));
 	target.println(configPage13.outputInverted);
+	target.println(configPage13.kindOfLimiting0);
+	target.println(configPage13.kindOfLimiting1);
+	target.println(configPage13.kindOfLimiting2);
+	target.println(configPage13.kindOfLimiting3);
+	target.println(configPage13.kindOfLimiting4);
+	target.println(configPage13.kindOfLimiting5);
+	target.println(configPage13.kindOfLimiting6);
+	target.println(configPage13.kindOfLimiting7);
 	print_array(target, configPage13.outputPin);
 	print_array(target, configPage13.outputDelay);
 	print_array(target, configPage13.firstDataIn);
 	print_array(target, configPage13.secondDataIn);
-	print_array(target, configPage13.unused_13);
+	print_array(target, configPage13.outputTimeLimit);
+	print_array(target, configPage13.unused13_35_49);
 	print_array(target, configPage13.firstTarget);
 	print_array(target, configPage13.secondTarget);
 	target.println(configPage13.operation[0].firstCompType);
@@ -546,7 +558,28 @@ static void printPage13(Print &target) {
 	target.println(configPage13.operation[7].secondCompType);
 	target.println(configPage13.operation[7].bitwise);
 	print_array(target, configPage13.candID);
-	print_array(target, configPage13.unused12_106_127);
+	print_array(target, configPage13.unused12_106_115);
+	target.println(configPage13.onboard_log_csv_separator);
+	target.println(configPage13.onboard_log_file_style);
+	target.println(configPage13.onboard_log_file_rate);
+	target.println(configPage13.onboard_log_filenaming);
+	target.println(configPage13.onboard_log_storage);
+	target.println(configPage13.onboard_log_trigger_boot);
+	target.println(configPage13.onboard_log_trigger_RPM);
+	target.println(configPage13.onboard_log_trigger_prot);
+	target.println(configPage13.onboard_log_trigger_Vbat);
+	target.println(configPage13.onboard_log_trigger_Epin);
+	target.println(configPage13.onboard_log_tr1_duration);
+	target.println(configPage13.onboard_log_tr2_thr_on);
+	target.println(configPage13.onboard_log_tr2_thr_off);
+	target.println(configPage13.onboard_log_tr3_thr_RPM);
+	target.println(configPage13.onboard_log_tr3_thr_MAP);
+	target.println(configPage13.onboard_log_tr3_thr_Oil);
+	target.println(configPage13.onboard_log_tr3_thr_AFR);
+	target.println(configPage13.onboard_log_tr4_thr_on);
+	target.println(configPage13.onboard_log_tr4_thr_off);
+	target.println(configPage13.onboard_log_tr5_thr_on);
+	print_array(target, configPage13.unused12_125_127);
 }
 
 static void printPage14(Print &target) {

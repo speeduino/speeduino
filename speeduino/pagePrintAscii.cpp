@@ -49,8 +49,9 @@ static void serial_print_space_delimited(Print &target, const uint16_t *first, c
     target.println();
 }
 
-static void serial_print_prepadding(Print &target, uint16_t value)
+static void serial_print_prepadding(Print &target, uint8_t value)
 {
+    target.print(F(" "));
     if (value < 100)
     {
         target.print(F(" "));
@@ -60,8 +61,22 @@ static void serial_print_prepadding(Print &target, uint16_t value)
         }
     }
 }
+static void serial_print_prepadding(Print &target, int16_t value)
+{
+    if (value < 1000)
+    {
+        target.print(F(" "));
+        serial_print_prepadding(target, (uint8_t)value);
+    }    
+}
 
-static void serial_print_prepadded_value(Print &target, uint16_t value)
+static void serial_print_prepadded_value(Print &target, uint8_t value)
+{
+    serial_print_prepadding(target, value);
+    target.print(value);
+    target.print(F(" "));
+}
+static void serial_print_prepadded_value(Print &target, int16_t value)
 {
     serial_print_prepadding(target, value);
     target.print(value);
@@ -70,7 +85,7 @@ static void serial_print_prepadded_value(Print &target, uint16_t value)
 
 static void print_row(Print &target, const table_axis_iterator_t &y_it, table_row_t row)
 {
-    serial_print_prepadded_value(target, get_value(y_it));
+    serial_print_prepadded_value(target, get_value16(y_it));
 
     while (!at_end(row))
     {
@@ -81,11 +96,11 @@ static void print_row(Print &target, const table_axis_iterator_t &y_it, table_ro
 
 static void print_x_axis(Print &target, table_axis_iterator_t x_it)
 {
-    target.print(F("    "));
+    target.print(F("     "));
 
     while(!at_end(x_it))
     {
-        serial_print_prepadded_value(target, get_value(x_it));
+        serial_print_prepadded_value(target, get_value16(x_it));
         advance_axis(x_it);
     }
 }
@@ -105,7 +120,7 @@ static void serial_print_3dtable(Print &target, table_row_iterator_t row_it, tab
 
 static void serial_print_3dtable(Print &target, const table3D &currentTable)
 {
-    serial_print_3dtable(target, rows_begin(&currentTable), x_begin(&currentTable), y_begin(&currentTable));
+    serial_print_3dtable(target, rows_begin_rev(&currentTable), x_raw_begin(&currentTable), y_raw_begin_rev(&currentTable));
 }
 
 #define print_array(outputName, array) serial_print_space_delimited(outputName, array, array+_countof(array));
