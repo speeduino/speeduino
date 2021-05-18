@@ -986,6 +986,15 @@ void loop()
         crankAngle = getCrankAngle(); //Refresh with the latest crank angle
         while (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
 
+        //dwell limiter(overdwell protection), makes it impossible to set too long pulses using schedulers.
+        if(configPage4.useDwellLim && ((currentStatus.dwell + fixedCrankingOverride) > dwellLimit_uS ))
+        {
+          fixedCrankingOverride = 0; //at first cancel the fixedCrankingOverride
+            if(currentStatus.dwell > dwellLimit_uS){ 
+            currentStatus.dwell = dwellLimit_uS;  //Still too much? How could this happen? Not any more!
+            }
+        } 
+
 #if IGN_CHANNELS >= 1
         if (!BIT_CHECK(curRollingCut, IGN1_CMD_BIT) )
         {

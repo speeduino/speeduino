@@ -999,7 +999,7 @@ void ignitionScheduleInterrupt(struct Schedule *ignitionSchedule) // common func
 {
   { if (ignitionSchedule->Status == PENDING){ //Check to see if this schedule is ready to be locked for action
     ignitionSchedule->Status = STAGED;
-    ignitionSchedule->setIgnitionCompare(ignitionSchedule->startCompare);
+    ignitionSchedule->setIgnitionCompare(ignitionSchedule->startCompare);//ignition pulse start timing now locked.     
     }
     else if (ignitionSchedule->Status == STAGED) //Check to see if this schedule is ready to turn on
     {
@@ -1008,9 +1008,9 @@ void ignitionScheduleInterrupt(struct Schedule *ignitionSchedule) // common func
       ignitionSchedule->startTime = micros();
       ignitionSchedule->setIgnitionCompare(ignitionSchedule->endCompare); // Set end callback interrupt time
     }
-    else if (ignitionSchedule->Status == RUNNING) //Check to see if ready for spark
+    else if (ignitionSchedule->Status == RUNNING) //Check to see if its time for spark
     {
-      ignitionSchedule->EndCallback(); //Turn coil off      
+      ignitionSchedule->EndCallback(); //Moment of spark      
       ignitionSchedule->schedulesSet = 0;
       ignitionSchedule->endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
