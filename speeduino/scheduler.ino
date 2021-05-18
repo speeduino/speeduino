@@ -542,7 +542,6 @@ void setIgnition8Compare(uint32_t compareValue){IGN8_COMPARE =(uint16_t)compareV
 //Ignition schedulers use Timer 5
 void setIgnitionSchedule(struct Schedule *ignitionSchedule ,  int16_t crankAngle, int channelIgnDegrees, int ignitionEndAngle, unsigned long duration)
 {  
-  unsigned long refreshSafetyLimit; //safety limit [uS]
   unsigned long timeout;
   uint16_t timeout_timer_compare; 
   int16_t tempCrankAngle;
@@ -554,24 +553,23 @@ void setIgnitionSchedule(struct Schedule *ignitionSchedule ,  int16_t crankAngle
   if ( tempEndAngle < 0) { tempEndAngle += CRANK_ANGLE_MAX_IGN; }
   while (tempEndAngle <= tempCrankAngle)   { tempEndAngle += CRANK_ANGLE_MAX_IGN; }//calculate into the next cycle
   
-  timeout= angleToTime((tempEndAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV);
-
-  refreshSafetyLimit= duration + IGNITION_REFRESH_THRESHOLD +128; // It will skip pulses if timing is messed with at the last moment!
-  if(ignitionSchedule->Status != RUNNING && ignitionSchedule->Status != STAGED && (timeout>refreshSafetyLimit) ) //Check that we're not already part way through a schedule
+  if(ignitionSchedule->Status == PENDING || ignitionSchedule->Status == OFF) //Check that we're not already part way through a schedule
   {
-    ignitionSchedule->duration = duration;    
+    timeout= angleToTime((tempEndAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV);
+   
     if (timeout > MAX_TIMER_PERIOD) {
       ignitionSchedule->Status = OFF; //Off for now, come back later...
      } 
-    else { 
+    else if(timeout > duration + IGNITION_REFRESH_THRESHOLD+20) { //refresh or start schedule safely       
       timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout);  //Normal case
       noInterrupts(); // make sure start and end values are updated simultaneously
       ignitionSchedule->endCompare = ignitionSchedule->getIgnCounter() + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-      ignitionSchedule->startCompare = ignitionSchedule->endCompare - uS_TO_TIMER_COMPARE(duration);   
+      ignitionSchedule->startCompare = ignitionSchedule->endCompare - (uint16_t)uS_TO_TIMER_COMPARE(duration);   
       ignitionSchedule->setIgnitionCompare(ignitionSchedule->startCompare - uS_TO_TIMER_COMPARE(IGNITION_REFRESH_THRESHOLD));//set up time for staging (actual impulse starting and timing is done totally in interrupts)
       ignitionSchedule->Status = PENDING; //Turn this schedule on
       interrupts();      
      ignitionSchedule->schedulesSet++;
+     ignitionSchedule->duration = duration;
      ignitionSchedule->ignTimerEnable(); //just in case. Actually can be omitted because timers are always on.
     }
   }
@@ -579,6 +577,7 @@ void setIgnitionSchedule(struct Schedule *ignitionSchedule ,  int16_t crankAngle
   {
     //If the schedule is already running, we can set the next schedule so it is ready to go
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    timeout= angleToTime((tempEndAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV);  
     if (timeout < MAX_TIMER_PERIOD)
     {
       ignitionSchedule->nextEndCompare = ignitionSchedule->getIgnCounter() + uS_TO_TIMER_COMPARE(timeout);
