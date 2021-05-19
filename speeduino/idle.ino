@@ -460,6 +460,7 @@ void idleControl()
           BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
           currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);
           if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
+          if(currentStatus.idleUpActive == true) { currentStatus.CLIdleTarget += configPage2.idleUpRPMAdder;  } //Add Idle Up RPM amount if active
 
         }
         idleCounter++;
@@ -503,6 +504,7 @@ void idleControl()
           BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
           currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);
           if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
+          if(currentStatus.idleUpActive == true) { currentStatus.CLIdleTarget += configPage2.idleUpRPMAdder;  } //Add Idle Up RPM amount if active
 
         }
         idleCounter++;
