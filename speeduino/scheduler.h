@@ -178,7 +178,7 @@ struct Schedule {
   volatile bool endScheduleSetByDecoder = false;
 
   uint32_t (*getIgnCounter)(); //Function for getting counter value
-  void (*setIgnitionCompare)(uint32_t); //Function for setting counter compare value
+  void (*setIgnitionCompare)(COMPARE_TYPE); //Function for setting counter compare value
   void (*ignTimerEnable)(); //Function to enable timer for specific channel
 };
 
