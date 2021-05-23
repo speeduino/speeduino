@@ -1906,7 +1906,7 @@ void setPinMapping(byte boardID)
       pinIAT = A11; //IAT sensor pin
       pinCLT = A4; //CLS sensor pin
       pinO2 = A12; //O2 Sensor pin
-      pinO2_2 = A13; //O2 sensor pin (second sensor)
+      pinO2_2 = A5; //O2 sensor pin (second sensor)
       pinBat = A1; //Battery reference voltage pin
       pinSpareTemp1 = A14; //spare Analog input 1
       pinLaunch = 24; //Can be overwritten below
