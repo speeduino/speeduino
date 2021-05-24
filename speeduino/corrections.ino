@@ -742,6 +742,7 @@ int8_t correctionIdleAdvance(int8_t advance)
 {
 
   int8_t ignIdleValue = advance;
+  byte idleUpRPMAdder = 0;
   //Adjust the advance based on idle target rpm.
   if( (configPage2.idleAdvEnabled >= 1) && (currentStatus.runSecs >= configPage2.IdleAdvDelay))
   {
