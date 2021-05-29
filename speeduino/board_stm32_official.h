@@ -78,11 +78,13 @@ extern "C" char* sbrk(int incr);
 */
 #if defined(SRAM_AS_EEPROM)
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
+    typedef uint16_t eeprom_address_t;
     #include EEPROM_LIB_H
     extern BackupSramAsEEPROM EEPROM;
 
 #elif defined(USE_SPI_EEPROM)
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    typedef uint16_t eeprom_address_t;
     #include EEPROM_LIB_H
     extern SPIClass SPI_for_flash; //SPI1_MOSI, SPI1_MISO, SPI1_SCK
  
@@ -93,6 +95,7 @@ extern "C" char* sbrk(int incr);
 
 #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
     #define EEPROM_LIB_H "src/FRAM/Fram.h"
+    typedef uint16_t eeprom_address_t;
     #include EEPROM_LIB_H
     #if defined(STM32F407xx)
       extern FramClass EEPROM; /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
@@ -102,6 +105,7 @@ extern "C" char* sbrk(int incr);
 
 #elif defined(STM32F7xx)
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  typedef uint16_t eeprom_address_t;
   #include EEPROM_LIB_H
   #if defined(DUAL_BANK)
     extern EEPROM_Emulation_Config EmulatedEEPROMMconfig;
@@ -112,6 +116,7 @@ extern "C" char* sbrk(int incr);
 
 #elif defined(STM32F411xE)
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  typedef uint16_t eeprom_address_t;
   #include EEPROM_LIB_H
     extern EEPROM_Emulation_Config EmulatedEEPROMMconfig;
     extern InternalSTM32F4_EEPROM_Class EEPROM;
@@ -121,12 +126,14 @@ extern "C" char* sbrk(int incr);
   //be carefull that the only 50% of flash is can be used, the other 50% is used for eeprom emulation
   #define SMALL_FLASH_MODE
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  typedef uint16_t eeprom_address_t;
   #include EEPROM_LIB_H
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{1UL, 131072UL, 4095UL, 0x08020000UL};
     InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 
 #else //default case, internal flash as EEPROM for STM32F407
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  typedef uint16_t eeprom_address_t;
   #include EEPROM_LIB_H
     extern EEPROM_Emulation_Config EmulatedEEPROMMconfig;
     extern InternalSTM32F4_EEPROM_Class EEPROM;
