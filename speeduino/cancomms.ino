@@ -298,50 +298,6 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[73] = currentStatus.tpsADC;
   fullStatus[74] = getNextError();
 
-  fullStatus[75] = lowByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[76] = highByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[77] = lowByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[78] = highByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[79] = lowByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[80] = highByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[81] = lowByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[82] = highByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
-
-  fullStatus[83] = currentStatus.status3;
-  fullStatus[84] = currentStatus.engineProtectStatus;
-  fullStatus[85] = lowByte(currentStatus.fuelLoad);
-  fullStatus[86] = highByte(currentStatus.fuelLoad);
-  fullStatus[87] = lowByte(currentStatus.ignLoad);
-  fullStatus[88] = highByte(currentStatus.ignLoad);
-  fullStatus[89] = lowByte(currentStatus.dwell);
-  fullStatus[90] = highByte(currentStatus.dwell);
-  fullStatus[91] = currentStatus.CLIdleTarget;
-  fullStatus[92] = currentStatus.mapDOT;
-  fullStatus[93] = (int8_t)currentStatus.vvt1Angle;
-  fullStatus[94] = currentStatus.vvt1TargetAngle;
-  fullStatus[95] = currentStatus.vvt1Duty;
-  fullStatus[96] = lowByte(currentStatus.flexBoostCorrection);
-  fullStatus[97] = highByte(currentStatus.flexBoostCorrection);
-  fullStatus[98] = currentStatus.baroCorrection;
-  fullStatus[99] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
-  fullStatus[100] = currentStatus.ASEValue; //Current ASE (%)
-  fullStatus[101] = lowByte(currentStatus.vss);
-  fullStatus[102] = highByte(currentStatus.vss);
-  fullStatus[103] = currentStatus.gear;
-  fullStatus[104] = currentStatus.fuelPressure;
-  fullStatus[105] = currentStatus.oilPressure;
-  fullStatus[106] = currentStatus.wmiPW;
-  fullStatus[107] = currentStatus.wmiEmpty;
-  fullStatus[108] = (int8_t)currentStatus.vvt2Angle;
-  fullStatus[109] = currentStatus.vvt2TargetAngle;
-  fullStatus[110] = currentStatus.vvt2Duty;
-  fullStatus[111] = currentStatus.outputsStatus;
-  fullStatus[112] = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); //Fuel temperature from flex sensor
-  fullStatus[113] = currentStatus.fuelTempCorrection; //Fuel temperature Correction (%)
-  fullStatus[114] = currentStatus.advance1; //advance 1 (%)
-  fullStatus[115] = currentStatus.advance2; //advance 2 (%)
-  fullStatus[116] = currentStatus.TS_SD_Status; //SD card status
-
   for(byte x=0; x<packetLength; x++)
   {
       if (portType == 1){ CANSerial.write(fullStatus[offset+x]); }
