@@ -487,6 +487,16 @@ void doUpdates()
     configPage10.vvtCLMaxAng = 200;
     configPage4.ANGLEFILTER_VVT = 0;
 
+    //Added possibility to set minimum programmable output time
+    configPage13.outputTimeLimit[0] = 0;
+    configPage13.outputTimeLimit[1] = 0;
+    configPage13.outputTimeLimit[2] = 0;
+    configPage13.outputTimeLimit[3] = 0;
+    configPage13.outputTimeLimit[4] = 0;
+    configPage13.outputTimeLimit[5] = 0;
+    configPage13.outputTimeLimit[6] = 0;
+    configPage13.outputTimeLimit[7] = 0;
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 18);
   }
