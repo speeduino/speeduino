@@ -566,7 +566,7 @@ void setIgnitionSchedule(struct Schedule *ignitionSchedule ,  int16_t crankAngle
       noInterrupts(); // make sure start and end values are updated simultaneously
       ignitionSchedule->endCompare = ignitionSchedule->getIgnCounter() + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
       ignitionSchedule->startCompare = ignitionSchedule->endCompare - (uint16_t)uS_TO_TIMER_COMPARE(duration);   
-      ignitionSchedule->setIgnitionCompare(ignitionSchedule->startCompare - uS_TO_TIMER_COMPARE(IGNITION_REFRESH_THRESHOLD+60));//set up time for staging (actual impulse starting and timing is done totally in interrupts)
+      ignitionSchedule->setIgnitionCompare(ignitionSchedule->startCompare - uS_TO_TIMER_COMPARE((IGNITION_REFRESH_THRESHOLD+60)));//set up time for staging (actual impulse starting and timing is done totally in interrupts)
       ignitionSchedule->Status = PENDING; //Turn this schedule on
       interrupts();      
      ignitionSchedule->schedulesSet++;
