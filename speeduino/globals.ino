@@ -12,6 +12,7 @@ struct table3D afrTable; //16x16 afr target map
 struct table3D stagingTable; //8x8 fuel staging table
 struct table3D boostTable; //8x8 boost map
 struct table3D vvtTable; //8x8 vvt map
+struct table3D vvt2Table; //8x8 vvt2 map
 struct table3D wmiTable; //8x8 wmi map
 struct table3D trim1Table; //6x6 Fuel trim 1 map
 struct table3D trim2Table; //6x6 Fuel trim 2 map
@@ -116,7 +117,7 @@ int ignition7EndAngle = 0;
 int ignition8EndAngle = 0;
 
 //These are variables used across multiple files
-const byte PROGMEM fsIntIndex[31] = {4, 14, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 96, 101}; //int indexes in fullStatus array
+const byte PROGMEM fsIntIndex[34] = {4, 14, 17, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 93, 97, 102, 190 }; //int indexes in fullStatus array
 bool initialisationComplete = false; //Tracks whether the setup() function has run completely
 byte fpPrimeTime = 0; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 volatile uint16_t mainLoopCount;
@@ -138,9 +139,11 @@ volatile uint16_t ignitionCount; /**< The count of ignition events that have tak
 #if defined(CORE_SAMD21)
   PinStatus primaryTriggerEdge;
   PinStatus secondaryTriggerEdge;
+  PinStatus tertiaryTriggerEdge;
 #else
   byte primaryTriggerEdge;
   byte secondaryTriggerEdge;
+  byte tertiaryTriggerEdge;
 #endif
 int CRANK_ANGLE_MAX = 720;
 int CRANK_ANGLE_MAX_IGN = 360;
@@ -259,4 +262,4 @@ uint16_t iatCalibration_values[32];
 struct table2D iatCalibrationTable;
 uint16_t o2Calibration_bins[32];
 uint8_t o2Calibration_values[32];
-struct table2D o2CalibrationTable;
+struct table2D o2CalibrationTable; 

@@ -9,7 +9,7 @@ https://github.com/nopnop2002/Arduino-STM32-CAN
 #ifndef STM32_CAN_H
 #define STM32_CAN_H
 
-#if defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)
+#if defined(STM32F407xx) || defined(STM32F1xx) || defined(STM32F405xx)
 #include <Arduino.h>
 
 #define STM32_CAN_TIR_TXRQ              (1U << 0U)  // Bit 0: Transmit Mailbox Request
@@ -48,7 +48,7 @@ typedef const struct
   uint8_t BRP;
 } CAN_bit_timing_config_t;
 
-typedef enum CAN_PINS {DEF, ALT, ALT2,} CAN_PINS;
+typedef enum CAN_PINS {DEF, ALT, ALT_2,} CAN_PINS;
 
 //STM32 has only 3 TX mailboxes
 typedef enum CAN_MAILBOX {

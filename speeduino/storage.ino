@@ -246,10 +246,13 @@ void writeConfig(byte tableNum)
       /*---------------------------------------------------
       | WMI and Dwell tables (See storage.h for data layout) - Page 12
       | 8x8 WMI table itself + the 8 values along each of the axis
+      | 8x8 VVT2 table + the 8 values along each of the axis
       | 4x4 Dwell table itself + the 4 values along each of the axis
       -----------------------------------------------------*/
       index = EEPROM_CONFIG12_XSIZE;
       writeCounter = writeTable(&wmiTable, index, writeCounter);
+      index = EEPROM_CONFIG12_XSIZE2;
+      writeCounter = writeTable(&vvt2Table, index, writeCounter);
       index = EEPROM_CONFIG12_XSIZE3;
       writeCounter = writeTable(&dwellTable, index, writeCounter);
       eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
@@ -391,8 +394,9 @@ void loadConfig()
   loadTable(&fuelTable2, EEPROM_CONFIG11_MAP);
 
   //*********************************************************************************************************************************************************************************
-  // WMI and Dwell table load
+  // WMI, VVT2 and Dwell table load
   loadTable(&wmiTable, EEPROM_CONFIG12_MAP);
+  loadTable(&vvt2Table, EEPROM_CONFIG12_MAP2);
   loadTable(&dwellTable, EEPROM_CONFIG12_MAP3);
 
   //*********************************************************************************************************************************************************************************

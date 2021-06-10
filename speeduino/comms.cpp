@@ -877,30 +877,32 @@ byte getStatusEntry(uint16_t byteNum)
     case 90: statusValue = highByte(currentStatus.dwell); break;
     case 91: statusValue = currentStatus.CLIdleTarget; break;
     case 92: statusValue = currentStatus.mapDOT; break;
-    case 93: statusValue = (int8_t)currentStatus.vvt1Angle; break;
-    case 94: statusValue = currentStatus.vvt1TargetAngle; break;
-    case 95: statusValue = currentStatus.vvt1Duty; break;
-    case 96: statusValue = lowByte(currentStatus.flexBoostCorrection); break;
-    case 97: statusValue = highByte(currentStatus.flexBoostCorrection); break;
-    case 98: statusValue = currentStatus.baroCorrection; break;
-    case 99: statusValue = currentStatus.VE; break; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
-    case 100: statusValue = currentStatus.ASEValue; break; //Current ASE (%)
-    case 101: statusValue = lowByte(currentStatus.vss); break;
-    case 102: statusValue = highByte(currentStatus.vss); break;
-    case 103: statusValue = currentStatus.gear; break;
-    case 104: statusValue = currentStatus.fuelPressure; break;
-    case 105: statusValue = currentStatus.oilPressure; break;
-    case 106: statusValue = currentStatus.wmiPW; break;
-    case 107: statusValue = currentStatus.wmiEmpty; break;
-    case 108: statusValue = (int8_t)currentStatus.vvt2Angle; break;
-    case 109: statusValue = currentStatus.vvt2TargetAngle; break;
-    case 110: statusValue = currentStatus.vvt2Duty; break;
-    case 111: statusValue = currentStatus.outputsStatus; break;
-    case 112: statusValue = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); break; //Fuel temperature from flex sensor
-    case 113: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
-    case 114: statusValue = currentStatus.advance1; break; //advance 1 (%)
-    case 115: statusValue = currentStatus.advance2; break; //advance 2 (%)
-    case 116: statusValue = currentStatus.TS_SD_Status; break; //SD card status
+    case 93: statusValue = lowByte(currentStatus.vvt1Angle); break; //2 bytes for vvt1Angle
+    case 94: statusValue = highByte(currentStatus.vvt1Angle); break;
+    case 95: statusValue = currentStatus.vvt1TargetAngle; break;
+    case 96: statusValue = (byte)(currentStatus.vvt1Duty); break;
+    case 97: statusValue = lowByte(currentStatus.flexBoostCorrection); break;
+    case 98: statusValue = highByte(currentStatus.flexBoostCorrection); break;
+    case 99: statusValue = currentStatus.baroCorrection; break;
+    case 100: statusValue = currentStatus.VE; break; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
+    case 101: statusValue = currentStatus.ASEValue; break; //Current ASE (%)
+    case 102: statusValue = lowByte(currentStatus.vss); break;
+    case 103: statusValue = highByte(currentStatus.vss); break;
+    case 104: statusValue = currentStatus.gear; break;
+    case 105: statusValue = currentStatus.fuelPressure; break;
+    case 106: statusValue = currentStatus.oilPressure; break;
+    case 107: statusValue = currentStatus.wmiPW; break;
+    case 108: statusValue = currentStatus.status4; break;
+    case 109: statusValue = lowByte(currentStatus.vvt2Angle); break; //2 bytes for vvt2Angle
+    case 110: statusValue = highByte(currentStatus.vvt2Angle); break;
+    case 111: statusValue = currentStatus.vvt2TargetAngle; break;
+    case 112: statusValue = (byte)(currentStatus.vvt2Duty); break;
+    case 113: statusValue = currentStatus.outputsStatus; break;
+    case 114: statusValue = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); break; //Fuel temperature from flex sensor
+    case 115: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
+    case 116: statusValue = currentStatus.advance1; break; //advance 1 (%)
+    case 117: statusValue = currentStatus.advance2; break; //advance 2 (%)
+    case 118: statusValue = currentStatus.TS_SD_Status; break; //SD card status
   }
 
   return statusValue;
@@ -925,6 +927,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
         CANSerial.write(cmd);
       }
       else if (cmd == 31) { CANSerial.write("A"); }        //confirm cmd type
+    #else
+      UNUSED(cmd);
     #endif
   }
   else

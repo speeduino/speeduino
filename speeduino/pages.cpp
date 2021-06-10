@@ -196,9 +196,9 @@ entity_t map_page_offset_to_entity_inline(uint8_t pageNumber, uint16_t offset)
 
     case wmiMapPage:
       CHECK_TABLE(offset, 0U, &wmiTable, 8, pageNumber)
-      CHECK_NOENTITY(offset, TABLE8_SIZE, 80, pageNumber)
-      CHECK_TABLE(offset, TABLE8_SIZE + 80, &dwellTable, 4, pageNumber)
-      END_OF_PAGE(wmiMapPage, TABLE8_SIZE + 80 + TABLE4_SIZE);
+      CHECK_TABLE(offset, TABLE8_SIZE, &vvt2Table, 8, pageNumber)
+      CHECK_TABLE(offset, TABLE8_SIZE*2, &dwellTable, 4, pageNumber)
+      END_OF_PAGE(wmiMapPage, TABLE8_SIZE*2 + TABLE4_SIZE);
       break;
     
     case ignMap2Page:

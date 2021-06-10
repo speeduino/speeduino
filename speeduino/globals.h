@@ -195,6 +195,15 @@
 #define BIT_STATUS3_NSQUIRTS2     6
 #define BIT_STATUS3_NSQUIRTS3     7
 
+#define BIT_STATUS4_WMI_EMPTY     0 //Indicates whether the WMI tank is empty
+#define BIT_STATUS4_VVT1_ERROR    1 //VVT1 cam angle within limits or not
+#define BIT_STATUS4_VVT2_ERROR    2 //VVT2 cam angle within limits or not
+#define BIT_STATUS4_UNUSED4       3
+#define BIT_STATUS4_UNUSED5       4
+#define BIT_STATUS4_UNUSED6       5
+#define BIT_STATUS4_UNUSED7       6
+#define BIT_STATUS4_UNUSED8       7
+
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
@@ -386,6 +395,7 @@ extern struct table3D afrTable; //16x16 afr target map
 extern struct table3D stagingTable; //8x8 fuel staging table
 extern struct table3D boostTable; //8x8 boost map
 extern struct table3D vvtTable; //8x8 vvt map
+extern struct table3D vvt2Table; //8x8 vvt2 map
 extern struct table3D wmiTable; //8x8 wmi map
 extern struct table3D trim1Table; //6x6 Fuel trim 1 map
 extern struct table3D trim2Table; //6x6 Fuel trim 2 map
@@ -499,7 +509,7 @@ extern int ignition7StartAngle;
 extern int ignition8StartAngle;
 
 //These are variables used across multiple files
-extern const byte PROGMEM fsIntIndex[31];
+extern const byte PROGMEM fsIntIndex[34];
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern volatile uint16_t mainLoopCount;
@@ -522,9 +532,11 @@ extern volatile uint16_t ignitionCount; /**< The count of ignition events that h
 #if defined(CORE_SAMD21)
   extern PinStatus primaryTriggerEdge;
   extern PinStatus secondaryTriggerEdge;
+  extern PinStatus tertiaryTriggerEdge;
 #else
   extern byte primaryTriggerEdge;
   extern byte secondaryTriggerEdge;
+  extern byte tertiaryTriggerEdge;
 #endif
 extern int CRANK_ANGLE_MAX;
 extern int CRANK_ANGLE_MAX_IGN;
@@ -649,10 +661,9 @@ struct statuses {
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
-  //int8_t vvt1Angle;
-  long vvt1Angle;
+  int16_t vvt1Angle; //Has to be a long for PID calcs (CL VVT control)
   byte vvt1TargetAngle;
-  byte vvt1Duty;
+  long vvt1Duty; //Has to be a long for PID calcs (CL VVT control)
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss; /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
@@ -662,10 +673,10 @@ struct statuses {
   byte oilPressure; /**< Oil pressure in PSI */
   byte engineProtectStatus;
   byte wmiPW;
-  bool wmiEmpty;
-  long vvt2Angle;
+  volatile byte status4;
+  int16_t vvt2Angle; //Has to be a long for PID calcs (CL VVT control)
   byte vvt2TargetAngle;
-  byte vvt2Duty;
+  long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
   byte outputsStatus;
   byte TS_SD_Status; //TunerStudios SD card status
 };
@@ -921,7 +932,12 @@ struct config4 {
 
   byte engineProtectMaxRPM;
 
-  byte unused4_120[7];
+  int16_t vvt2CL0DutyAng;
+  byte vvt2PWMdir : 1;
+  byte unusedBits4 : 7;
+  byte ANGLEFILTER_VVT;
+
+  byte unused4_124[3];
 
 #if defined(CORE_AVR)
   };
@@ -960,7 +976,7 @@ struct config6 {
   byte useExtBaro : 1;
   byte boostMode : 1; //Simple of full boost control
   byte boostPin : 6;
-  byte VVTasOnOff : 1; //Whether or not to use the VVT table as an on/off map
+  byte unused_bit : 1; //Previously was VVTasOnOff
   byte useEMAP : 1;
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
@@ -1212,8 +1228,9 @@ struct config10 {
   byte vvtCLKP; //Byte 127
   byte vvtCLKI; //Byte 128
   byte vvtCLKD; //Byte 129
-  int16_t vvtCLMinAng; //Bytes 130-131
-  int16_t vvtCLMaxAng; //Bytes 132-133
+  int16_t vvtCL0DutyAng; //Bytes 130-131
+  uint8_t vvtCLMinAng; //Byte 132
+  uint8_t vvtCLMaxAng; //Byte 133
 
   byte crankingEnrichTaper; //Byte 134
 
@@ -1261,8 +1278,8 @@ struct config10 {
   byte vvtCLminDuty;
   byte vvtCLmaxDuty;
   byte vvt2Pin : 6;
-  byte unused11_174_1 : 1;
-  byte unused11_174_2 : 1;
+  byte vvt2Enabled : 1;
+  byte TrigEdgeThrd : 1;
 
   byte fuelTempBins[6];
   byte fuelTempValues[6]; //180

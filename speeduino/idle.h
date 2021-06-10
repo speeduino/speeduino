@@ -63,6 +63,7 @@ byte idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output
 byte idleUpOutputLOW = LOW;   // Used to invert the idle Up Output 
 
 void initialiseIdle();
+void initialiseIdleUpOutput();
 void disableIdle();
 void idleInterrupt();
 
