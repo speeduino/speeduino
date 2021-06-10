@@ -209,6 +209,7 @@ extern volatile byte toothSystemCount; //Used for decoders such as Audi 135 wher
 extern volatile unsigned long toothSystemLastToothTime; //As below, but used for decoders where not every tooth count is used for calculation
 extern volatile unsigned long toothLastToothTime; //The time (micros()) that the last tooth was registered
 extern volatile unsigned long toothLastSecToothTime; //The time (micros()) that the last tooth was registered on the secondary input
+extern volatile unsigned long lastSecActiveEdgeTime; //The time (micros()) that the last active edge was registered on the secondary input, still to be filtered
 extern volatile unsigned long toothLastThirdToothTime; //The time (micros()) that the last tooth was registered on the second cam input
 extern volatile unsigned long toothLastMinusOneToothTime; //The time (micros()) that the tooth before the last tooth was registered
 extern volatile unsigned long toothLastMinusOneSecToothTime; //The time (micros()) that the tooth before the last tooth was registered on secondary input
