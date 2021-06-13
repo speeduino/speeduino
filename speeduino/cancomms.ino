@@ -298,8 +298,18 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[73] = currentStatus.tpsADC;
   fullStatus[74] = getNextError();
 
-  fullStatus[75] = lowByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[76] = highByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+  //group 8 bool status in one byte
+  fullStatus[75] = (byte)(currentStatus.fanOn\
+  | (currentStatus.fuelPumpOn << 1)\
+  | (currentStatus.launchingHard << 2)\
+  | (currentStatus.launchingSoft << 3)\
+  | (currentStatus.flatShiftingHard << 4)\
+  | (currentStatus.idleUpActive << 5)\
+  | (currentStatus.CTPSActive << 6)\
+  | (currentStatus.knockActive << 7));
+
+  fullStatus[76] = currentStatus.launchCorrection;
+
   fullStatus[77] = lowByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
   fullStatus[78] = highByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
   fullStatus[79] = lowByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
@@ -313,36 +323,37 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[86] = highByte(currentStatus.fuelLoad);
   fullStatus[87] = lowByte(currentStatus.ignLoad);
   fullStatus[88] = highByte(currentStatus.ignLoad);
-  fullStatus[89] = lowByte(currentStatus.dwell);
-  fullStatus[90] = highByte(currentStatus.dwell);
-  fullStatus[91] = currentStatus.CLIdleTarget;
-  fullStatus[92] = currentStatus.mapDOT;
-  fullStatus[93] = lowByte(currentStatus.vvt1Angle); //2 bytes for vvt1Angle
-  fullStatus[94] = highByte(currentStatus.vvt1Angle); 
+  fullStatus[89] = lowByte(currentStatus.injAngle); 
+  fullStatus[90] = highByte(currentStatus.injAngle); 
+  fullStatus[91] = currentStatus.idleDuty;
+  fullStatus[92] = currentStatus.CLIdleTarget; //closed loop idle target
+  fullStatus[93] = currentStatus.mapDOT; //rate of change of the map 
+  fullStatus[94] = (int8_t)currentStatus.vvt1Angle;
   fullStatus[95] = currentStatus.vvt1TargetAngle;
   fullStatus[96] = currentStatus.vvt1Duty;
   fullStatus[97] = lowByte(currentStatus.flexBoostCorrection);
   fullStatus[98] = highByte(currentStatus.flexBoostCorrection);
   fullStatus[99] = currentStatus.baroCorrection;
-  fullStatus[100] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
-  fullStatus[101] = currentStatus.ASEValue; //Current ASE (%)
-  fullStatus[102] = lowByte(currentStatus.vss);
-  fullStatus[103] = highByte(currentStatus.vss);
-  fullStatus[104] = currentStatus.gear;
-  fullStatus[105] = currentStatus.fuelPressure;
-  fullStatus[106] = currentStatus.oilPressure;
-  fullStatus[107] = currentStatus.wmiPW;
-  fullStatus[108] = currentStatus.status4;
-  fullStatus[109] = lowByte(currentStatus.vvt2Angle); //2 bytes for vvt2Angle
-  fullStatus[110] = highByte(currentStatus.vvt2Angle);
-  fullStatus[111] = currentStatus.vvt2TargetAngle;
-  fullStatus[112] = (byte)(currentStatus.vvt2Duty);
-  fullStatus[113] = currentStatus.outputsStatus;
-  fullStatus[114] = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); //Fuel temperature from flex sensor
-  fullStatus[115] = currentStatus.fuelTempCorrection; //Fuel temperature Correction (%)
-  fullStatus[116] = currentStatus.advance1; //advance 1 (%)
-  fullStatus[117] = currentStatus.advance2; //advance 2 (%)
-  fullStatus[118] = currentStatus.TS_SD_Status; //SD card status
+  fullStatus[100] = currentStatus.ASEValue; //Current ASE (%)
+  fullStatus[101] = lowByte(currentStatus.vss); //speed reading from the speed sensor
+  fullStatus[102] = highByte(currentStatus.vss);
+  fullStatus[103] = currentStatus.gear; 
+  fullStatus[104] = currentStatus.fuelPressure;
+  fullStatus[105] = currentStatus.oilPressure;
+  fullStatus[106] = currentStatus.wmiPW;
+  fullStatus[107] = currentStatus.status4;
+  fullStatus[108] = (int8_t)currentStatus.vvt2Angle;
+  fullStatus[109] = currentStatus.vvt2TargetAngle;
+  fullStatus[110] = currentStatus.vvt2Duty;
+  fullStatus[111] = currentStatus.outputsStatus;
+  fullStatus[112] = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); //Fuel temperature from flex sensor
+  fullStatus[113] = currentStatus.fuelTempCorrection; //Fuel temperature Correction (%)
+  fullStatus[114] = currentStatus.VE1; //VE 1 (%)
+  fullStatus[115] = currentStatus.VE2; //VE 2 (%)
+  fullStatus[116] = currentStatus.advance1; //advance 1 
+  fullStatus[117] = currentStatus.advance2; //advance 2 
+  fullStatus[118] = currentStatus.nitrous_status;
+  fullStatus[119] = currentStatus.TS_SD_Status; //SD card status
 
   for(byte x=0; x<packetLength; x++)
   {
