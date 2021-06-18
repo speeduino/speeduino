@@ -14,9 +14,11 @@
   #define PINMASK_TYPE uint32_t
   #define COMPARE_TYPE uint32_t
   #define COUNTER_TYPE uint32_t
-  #define BOARD_DIGITAL_GPIO_PINS 34
-  #define BOARD_NR_GPIO_PINS 34
+  #define BOARD_MAX_DIGITAL_PINS 34
+  #define BOARD_MAX_IO_PINS 34 //digital pins + analog channels + 1
   #define EEPROM_LIB_H <EEPROM.h>
+  #define RTC_ENABLED
+  #define RTC_LIB_H "TimeLib.h"
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB
@@ -131,8 +133,8 @@
   #define VVT_TIMER_COMPARE     PIT_LDVAL2
   #define VVT_TIMER_COUNTER     0
 
-  static inline void boostInterrupt();
-  static inline void vvtInterrupt();
+  void boostInterrupt();
+  void vvtInterrupt();
 
 /*
 ***********************************************************************************************************
@@ -144,19 +146,20 @@
   #define IDLE_TIMER_ENABLE() TMR3_CSCTRL1 |= TMR_CSCTRL_TCF1EN
   #define IDLE_TIMER_DISABLE() TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN
 
-  static inline void idleInterrupt();
+  void idleInterrupt();
 
 /*
 ***********************************************************************************************************
 * CAN / Second serial
 */
-   #define USE_SERIAL3
+  #define USE_SERIAL3
   #include <FlexCAN_T4.h>
-  FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
-  FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1;
-  FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can2;
+  extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
+  extern FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1;
+  extern FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can2;
   static CAN_message_t outMsg;
   static CAN_message_t inMsg;
+  //#define NATIVE_CAN_AVAILABLE //Disable for now as it causes lockup 
   
 #endif //CORE_TEENSY
 #endif //TEENSY41_H

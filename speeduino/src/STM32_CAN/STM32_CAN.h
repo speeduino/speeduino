@@ -9,7 +9,7 @@ https://github.com/nopnop2002/Arduino-STM32-CAN
 #ifndef STM32_CAN_H
 #define STM32_CAN_H
 
-#if defined(ARDUINO_ARCH_STM32)
+#if defined(STM32F407xx) || defined(STM32F1xx) || defined(STM32F405xx)
 #include <Arduino.h>
 
 #define STM32_CAN_TIR_TXRQ              (1U << 0U)  // Bit 0: Transmit Mailbox Request
@@ -48,7 +48,14 @@ typedef const struct
   uint8_t BRP;
 } CAN_bit_timing_config_t;
 
-typedef enum CAN_PINS {DEF, ALT, ALT2,} CAN_PINS;
+typedef enum CAN_PINS {DEF, ALT, ALT_2,} CAN_PINS;
+
+//STM32 has only 3 TX mailboxes
+typedef enum CAN_MAILBOX {
+  MB0 = 0,
+  MB1 = 1,
+  MB2 = 2
+} CAN_MAILBOX;
 
 #ifndef CAN2
 typedef enum CAN_CHANNEL {_CAN1,} CAN_CHANNEL;
@@ -76,6 +83,7 @@ class STM32_CAN {
   private: 
     void CANSetGpio(GPIO_TypeDef * addr, uint8_t index, uint8_t speed = 3);
     void CANSetFilter(uint8_t index, uint8_t scale, uint8_t mode, uint8_t fifo, uint32_t bank1, uint32_t bank2);
+    void writeTxMailbox(uint8_t mb_num, CAN_message_t &CAN_tx_msg);
     uint8_t CANMsgAvail();
     void SetTXRX();
 
@@ -83,7 +91,8 @@ class STM32_CAN {
     STM32_CAN(const CAN_CHANNEL channel, CAN_PINS pins) : _channel (channel), _pins (pins) { };
     void begin();
     void setBaudRate(uint32_t baud);
-    int write(CAN_message_t &CAN_tx_msg);
+    int write(CAN_message_t &CAN_tx_msg);  // use any available mailbox for transmitting
+    int write(CAN_MAILBOX mb_num, CAN_message_t &CAN_tx_msg); // use a single mailbox for transmitting
     int read(CAN_message_t &CAN_rx_msg);
     void enableFIFO(bool status = 1);
 };

@@ -18,6 +18,7 @@
   #else
     #define EEPROM_LIB_H <EEPROM.h>
   #endif
+  #define RTC_LIB_H "TimeLib.h"
   void initBoard();
   uint16_t freeRam();
   void doSystemReset();

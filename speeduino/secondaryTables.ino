@@ -84,20 +84,25 @@ void calculateSecondarySpark()
   { 
     if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY)
     {
+      BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE);
       currentStatus.advance2 = getAdvance2();
+      //make sure we don't have a negative value in the multiplier table (sharing a signed 8 bit table)
+      if(currentStatus.advance2 < 0) { currentStatus.advance2 = 0; }
       //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
-      uint16_t combinedadvance = ((uint16_t)currentStatus.advance1 * (uint16_t)currentStatus.advance2) / 100;
-      if(combinedadvance <= 255) { currentStatus.advance = combinedadvance; }
-      else { currentStatus.advance = 255; }
+      int16_t combinedAdvance = ((int16_t)currentStatus.advance1 * (int16_t)currentStatus.advance2) / 100;
+      //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
+      if(combinedAdvance <= 127) { currentStatus.advance = combinedAdvance; }
+      else { currentStatus.advance = 127; }
     }
     else if(configPage10.spark2Mode == SPARK2_MODE_ADD)
     {
       BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
       currentStatus.advance2 = getAdvance2();
       //Spark tables are added together, but a check is made to make sure this won't overflow the 8-bit VE value
-      uint16_t combinedadvance = (uint16_t)currentStatus.advance1 + (uint16_t)currentStatus.advance2;
-      if(combinedadvance <= 255) { currentStatus.advance = combinedadvance; }
-      else { currentStatus.advance = 255; }
+      int16_t combinedAdvance = (int16_t)currentStatus.advance1 + (int16_t)currentStatus.advance2;
+      //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
+      if(combinedAdvance <= 127) { currentStatus.advance = combinedAdvance; }
+      else { currentStatus.advance = 127; }
     }
     else if(configPage10.spark2Mode == SPARK2_MODE_CONDITIONAL_SWITCH )
     {
@@ -110,9 +115,9 @@ void calculateSecondarySpark()
           currentStatus.advance = currentStatus.advance2;
         }
       }
-      else if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_MAP)
+      else if(configPage10.spark2SwitchVariable == SPARK2_CONDITION_MAP)
       {
-        if(currentStatus.MAP > configPage10.fuel2SwitchValue)
+        if(currentStatus.MAP > configPage10.spark2SwitchValue)
         {
           BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
           currentStatus.advance2 = getAdvance2();
@@ -121,7 +126,7 @@ void calculateSecondarySpark()
       }
       else if(configPage10.spark2SwitchVariable == SPARK2_CONDITION_TPS)
       {
-        if(currentStatus.TPS > configPage10.fuel2SwitchValue)
+        if(currentStatus.TPS > configPage10.spark2SwitchValue)
         {
           BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
           currentStatus.advance2 = getAdvance2();
@@ -188,23 +193,24 @@ byte getVE2()
 byte getAdvance2()
 {
   byte tempAdvance = 0;
-  if (configPage2.ignAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
+  if (configPage10.spark2Algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
   {
     //Speed Density
-    currentStatus.ignLoad = currentStatus.MAP;
+    currentStatus.ignLoad2 = currentStatus.MAP;
   }
-  else if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS)
+  else if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
-    currentStatus.ignLoad = currentStatus.TPS;
+    currentStatus.ignLoad2 = currentStatus.TPS;
 
   }
-  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
+  else if (configPage10.spark2Algorithm == LOAD_SOURCE_IMAPEMAP)
   {
     //IMAP / EMAP
-    currentStatus.ignLoad = (currentStatus.MAP * 100) / currentStatus.EMAP;
+    currentStatus.ignLoad2 = (currentStatus.MAP * 100) / currentStatus.EMAP;
   }
-  tempAdvance = get3DTableValue(&ignitionTable2, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
+  else { currentStatus.ignLoad2 = currentStatus.MAP; }
+  tempAdvance = get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
   tempAdvance = correctionsIgn(tempAdvance);
 
   return tempAdvance;

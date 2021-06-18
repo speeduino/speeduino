@@ -68,4 +68,5 @@
 #define TS_CMD_VSS_RATIO5 39173
 #define TS_CMD_VSS_RATIO6 39174
 
-void TS_CommandButtonsHandler(int);
+/* the maximum id number is 65,535 */
+void TS_CommandButtonsHandler(uint16_t);

@@ -10,7 +10,9 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    16
+  #define CURRENT_DATA_VERSION    18
+  //Only the latest updat for small flash devices must be retained
+   #ifndef SMALL_FLASH_MODE
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -424,21 +426,87 @@ void doUpdates()
     //New AE option added to allow for PW added in addition to existing PW multiply
     configPage2.aeApplyMode = 0; //Set the AE mode to Multiply
 
+    //Injector priming delay added
+    configPage2.primingDelay = 0;
+    //ASE taper time added
+    configPage2.aseTaperTime = 10; //1 second taper
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 15);
   }
 
   if(EEPROM.read(EEPROM_DATA_VERSION) == 15)
   {
+    //202012
+    configPage10.spark2Mode = 0; //Disable 2nd spark table
 
     writeAllConfig();
-    //EEPROM.write(EEPROM_DATA_VERSION, 16);
+    EEPROM.write(EEPROM_DATA_VERSION, 16);
   }
-  
+
+  //Move this #endif to only do latest updates to safe ROM space on small devices.
+  #endif
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 16)
+  {
+    //Fix for wrong placed page 13
+    for(int x=EEPROM_CONFIG14_END; x>=EEPROM_CONFIG13_START; x--)
+    {
+      EEPROM.update(x, EEPROM.read(x-112));
+    }
+
+    configPage6.iacPWMrun = false; // just in case. This should be false anyways, but sill.
+    configPage2.useDwellMap = 0; //Dwell map added, use old fixed value as default
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 17);
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 17)
+  {
+    //VVT stuff has now 0.5 accurasy, so shift values in vvt table by one.
+    for(int x=0; x<8; x++)
+    {
+      for(int y=0; y<8; y++)
+      {
+        vvtTable.values[x][y] = vvtTable.values[x][y] << 1;
+      }
+    }
+    configPage10.vvtCLholdDuty = configPage10.vvtCLholdDuty << 1;
+    configPage10.vvtCLminDuty = configPage10.vvtCLminDuty << 1;
+    configPage10.vvtCLmaxDuty = configPage10.vvtCLmaxDuty << 1;
+
+    //VVT2 added, so default values and disable it
+    configPage10.vvt2Enabled = 0;
+    configPage4.vvt2PWMdir = 0;
+    configPage10.TrigEdgeThrd = 0;
+
+    //Old use as On/Off selection is removed, so change VVT mode to On/Off based on that
+    if(configPage6.unused_bit == 1) { configPage6.vvtMode = VVT_MODE_ONOFF; }
+
+    //Closed loop VVT improvements. Set safety limits to max/min working values and filter to minimum.
+    configPage10.vvtCLMinAng = 0;
+    configPage10.vvtCLMaxAng = 200;
+    configPage4.ANGLEFILTER_VVT = 0;
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 18);
+  }
+
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
   {
     configPage9.true_address = 0x200;
+    
+    //Programmable outputs added. Set all to disabled
+    configPage13.outputPin[0] = 0;
+    configPage13.outputPin[1] = 0;
+    configPage13.outputPin[2] = 0;
+    configPage13.outputPin[3] = 0;
+    configPage13.outputPin[4] = 0;
+    configPage13.outputPin[5] = 0;
+    configPage13.outputPin[6] = 0;
+    configPage13.outputPin[7] = 0;
+
     EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION);
   }
 

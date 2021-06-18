@@ -1,4 +1,4 @@
-#if defined(ARDUINO_ARCH_STM32)
+#if defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)
 #include "STM32_CAN.h"
 
 uint8_t STM32_CAN::CANMsgAvail()
@@ -88,6 +88,7 @@ void STM32_CAN::CANSetFilter(uint8_t index, uint8_t scale, uint8_t mode, uint8_t
 
 void STM32_CAN::begin()
 {
+  volatile int timeout = 0;
   if (_channel == _CAN1)
   {
     // CAN1
@@ -104,30 +105,28 @@ void STM32_CAN::begin()
 
   if (_channel == _CAN1)
   {
-	CAN1->MCR |= 0x1UL;                    // Require CAN1 to Initialization mode 
-    while (!(CAN1->MSR & 0x1UL));          // Wait for Initialization mode
+    CAN1->MCR |= 0x1UL;                                    // Require CAN1 to Initialization mode 
+    while ((!(CAN1->MSR & 0x1UL)) && timeout++ < 100000);  // Wait for Initialization mode
 
-    //CAN1->MCR = 0x51UL;                  // Hardware initialization(No automatic retransmission)
-    CAN1->MCR = 0x41UL;                    // Hardware initialization(With automatic retransmission)
+    CAN1->MCR = 0x51UL;                    // Hardware initialization(No automatic retransmission)
+    //CAN1->MCR = 0x41UL;                  // Hardware initialization(With automatic retransmission, not used because causes timer issues on speeduino)
   }
   #if defined(CAN2)
   else if (_channel == _CAN2)
   {
     // CAN2
-    CAN2->MCR |= 0x1UL;                    // Require CAN2 to Initialization mode
-    while (!(CAN2->MSR & 0x1UL));          // Wait for Initialization mode
+    CAN2->MCR |= 0x1UL;                                    // Require CAN2 to Initialization mode
+    while ((!(CAN2->MSR & 0x1UL)) && timeout++ < 100000);  // Wait for Initialization mode
 
-    //CAN2->MCR = 0x51UL;                  // Hardware initialization(No automatic retransmission)
-    CAN2->MCR = 0x41UL;                    // Hardware initialization(With automatic retransmission)
+    CAN2->MCR = 0x51UL;                    // Hardware initialization(No automatic retransmission)
+    //CAN2->MCR = 0x41UL;                  // Hardware initialization(With automatic retransmission, not used because causes timer issues on speeduino)
   }
   #endif
 }
 
-int STM32_CAN::write(CAN_message_t &CAN_tx_msg)
+void STM32_CAN::writeTxMailbox(uint8_t mb_num, CAN_message_t &CAN_tx_msg)
 {
-  volatile int count = 0;
   uint32_t out = 0;
-
   if (CAN_tx_msg.flags.extended == true) { // Extended frame format
       out = ((CAN_tx_msg.id & CAN_EXT_ID_MASK) << 3U) | STM32_CAN_TIR_IDE;
   }
@@ -141,62 +140,101 @@ int STM32_CAN::write(CAN_message_t &CAN_tx_msg)
 
   if (_channel == _CAN1)
   {
-    CAN1->sTxMailBox[0].TDTR &= ~(0xF);
-    CAN1->sTxMailBox[0].TDTR |= CAN_tx_msg.len & 0xFUL;
-    CAN1->sTxMailBox[0].TDLR  = (((uint32_t) CAN_tx_msg.buf[3] << 24) |
-                                 ((uint32_t) CAN_tx_msg.buf[2] << 16) |
-                                 ((uint32_t) CAN_tx_msg.buf[1] <<  8) |
-                                 ((uint32_t) CAN_tx_msg.buf[0]      ));
-    CAN1->sTxMailBox[0].TDHR  = (((uint32_t) CAN_tx_msg.buf[7] << 24) |
-                                 ((uint32_t) CAN_tx_msg.buf[6] << 16) |
-                                 ((uint32_t) CAN_tx_msg.buf[5] <<  8) |
-                                 ((uint32_t) CAN_tx_msg.buf[4]      ));
+    CAN1->sTxMailBox[mb_num].TDTR &= ~(0xF);
+    CAN1->sTxMailBox[mb_num].TDTR |= CAN_tx_msg.len & 0xFUL;
+    CAN1->sTxMailBox[mb_num].TDLR  = (((uint32_t) CAN_tx_msg.buf[3] << 24) |
+                                      ((uint32_t) CAN_tx_msg.buf[2] << 16) |
+                                      ((uint32_t) CAN_tx_msg.buf[1] <<  8) |
+                                      ((uint32_t) CAN_tx_msg.buf[0]      ));
+    CAN1->sTxMailBox[mb_num].TDHR  = (((uint32_t) CAN_tx_msg.buf[7] << 24) |
+                                      ((uint32_t) CAN_tx_msg.buf[6] << 16) |
+                                      ((uint32_t) CAN_tx_msg.buf[5] <<  8) |
+                                      ((uint32_t) CAN_tx_msg.buf[4]      ));
 
     // Send Go
-    CAN1->sTxMailBox[0].TIR = out | STM32_CAN_TIR_TXRQ;
+    CAN1->sTxMailBox[mb_num].TIR = out | STM32_CAN_TIR_TXRQ;
+  }
+  #if defined(CAN2)
+  if (_channel == _CAN2)
+  {
+    CAN2->sTxMailBox[mb_num].TDTR &= ~(0xF);
+    CAN2->sTxMailBox[mb_num].TDTR |= CAN_tx_msg.len & 0xFUL;
+    CAN2->sTxMailBox[mb_num].TDLR  = (((uint32_t) CAN_tx_msg.buf[3] << 24) |
+                                      ((uint32_t) CAN_tx_msg.buf[2] << 16) |
+                                      ((uint32_t) CAN_tx_msg.buf[1] <<  8) |
+                                      ((uint32_t) CAN_tx_msg.buf[0]      ));
+    CAN2->sTxMailBox[mb_num].TDHR  = (((uint32_t) CAN_tx_msg.buf[7] << 24) |
+                                      ((uint32_t) CAN_tx_msg.buf[6] << 16) |
+                                      ((uint32_t) CAN_tx_msg.buf[5] <<  8) |
+                                      ((uint32_t) CAN_tx_msg.buf[4]      ));
+    // Send Go
+    CAN2->sTxMailBox[mb_num].TIR = out | STM32_CAN_TIR_TXRQ;
+  }
+  #endif
+}
 
-    // Wait until the mailbox is empty
-    while(CAN1->sTxMailBox[0].TIR & 0x1UL && count++ < 1000000);
+int STM32_CAN::write(CAN_message_t &CAN_tx_msg)
+{
+  volatile int mailbox = 0;
 
-    if (CAN1->sTxMailBox[0].TIR & 0x1UL) {
+  if (_channel == _CAN1)
+  {
+    // Check if one of the three mailboxes is empty
+    while(CAN1->sTxMailBox[mailbox].TIR & 0x1UL &&  mailbox++ < 3);
+
+    if (mailbox >= 3) {
       //Serial.println("transmit Fail");
-      return -1; // transmit failed
+      return -1; // transmit failed, no mailboxes available
     }
-    else {
-      return 1; // transmit ok
+    else { // empty mailbox found, so it's ok to send new message
+      writeTxMailbox(mailbox, CAN_tx_msg);
+      return 1; // transmit done
     }
   }
   #if defined(CAN2)
   if (_channel == _CAN2)
   {
-    CAN2->sTxMailBox[0].TDTR &= ~(0xF);
-    CAN2->sTxMailBox[0].TDTR |= CAN_tx_msg.len & 0xFUL;
-    CAN2->sTxMailBox[0].TDLR  = (((uint32_t) CAN_tx_msg.buf[3] << 24) |
-                                 ((uint32_t) CAN_tx_msg.buf[2] << 16) |
-                                 ((uint32_t) CAN_tx_msg.buf[1] <<  8) |
-                                 ((uint32_t) CAN_tx_msg.buf[0]      ));
-    CAN2->sTxMailBox[0].TDHR  = (((uint32_t) CAN_tx_msg.buf[7] << 24) |
-                                 ((uint32_t) CAN_tx_msg.buf[6] << 16) |
-                                 ((uint32_t) CAN_tx_msg.buf[5] <<  8) |
-                                 ((uint32_t) CAN_tx_msg.buf[4]      ));
+    // Check if one of the three mailboxes is empty
+    while(CAN2->sTxMailBox[mailbox].TIR & 0x1UL &&  mailbox++ < 3);
 
-    // Send Go
-    CAN2->sTxMailBox[0].TIR = out | STM32_CAN_TIR_TXRQ;
-
-    // Wait until the mailbox is empty
-    while(CAN2->sTxMailBox[0].TIR & 0x1UL && count++ < 1000000);
-
-    if (CAN2->sTxMailBox[0].TIR & 0x1UL) {
+    if (mailbox >= 3) {
       //Serial.println("transmit Fail");
-      return -1; // transmit failed
+      return -1; // transmit failed, no mailboxes available
     }
-    else {
-      return 1; // transmit ok
+    else { // empty mailbox found, so it's ok to send new message
+      writeTxMailbox(mailbox, CAN_tx_msg);
+      return 1; // transmit done
     }
   }
   #endif
+}
 
-  return -1; //Transmit failed
+int STM32_CAN::write(CAN_MAILBOX mb_num, CAN_message_t &CAN_tx_msg)
+{
+  if (_channel == _CAN1)
+  {
+    if (CAN1->sTxMailBox[mb_num].TIR & 0x1UL) {
+      //Serial.println("transmit Fail");
+      return -1; // transmit failed, mailbox was not empty
+    }
+    else { // mailbox was empty, so it's ok to send new message
+      writeTxMailbox(mb_num, CAN_tx_msg);
+      return 1; // transmit done
+    }
+  }
+  #if defined(CAN2)
+  if (_channel == _CAN2)
+  {
+    if (CAN2->sTxMailBox[mb_num].TIR & 0x1UL) {
+      //Serial.println("transmit Fail");
+      return -1; // transmit failed, mailbox was not empty
+    }
+    else { // mailbox was empty, so it's ok to send new message
+      writeTxMailbox(mb_num, CAN_tx_msg);
+      return 1; // transmit done
+    }
+  }
+  #endif
 }
 
 int STM32_CAN::read(CAN_message_t &CAN_rx_msg)
@@ -310,15 +348,29 @@ void STM32_CAN::setBaudRate(uint32_t baud)
   {
     CAN1->BTR &= ~(((0x03) << 24) | ((0x07) << 20) | ((0x0F) << 16) | (0x1FF)); 
     CAN1->BTR |=  (((can_configs[bitrate].TS2-1) & 0x07) << 20) | (((can_configs[bitrate].TS1-1) & 0x0F) << 16) | ((can_configs[bitrate].BRP-1) & 0x1FF);
-
+  }
+  #if defined(CAN2)
+  else if (_channel == _CAN2)
+  {
+    CAN2->BTR &= ~(((0x03) << 24) | ((0x07) << 20) | ((0x0F) << 16) | (0x1FF)); 
+    CAN2->BTR |=  (((can_configs[bitrate].TS2-1) & 0x07) << 20) | (((can_configs[bitrate].TS1-1) & 0x0F) << 16) | ((can_configs[bitrate].BRP-1) & 0x1FF); 
+  }
+  #endif
+  
     // Configure Filters to default values
     CAN1->FMR  |=   0x1UL;                 // Set to filter initialization mode
     CAN1->FMR  &= 0xFFFFC0FF;              // Clear CAN2 start bank
 
     // bxCAN has 28 filters.
     // These filters are used for both CAN1 and CAN2.
-    // STM32F405 has CAN1 and CAN2, so CAN2 filters are offset by 14
+    #if defined(STM32F1xx)
+    // STM32F1xx has only CAN1, so all 28 are used for CAN1
+    CAN1->FMR  |= 0x1C << 8;              // Assign all filters to CAN1
+
+    #elif defined(STM32F4xx)
+    // STM32F4xx has CAN1 and CAN2, so CAN2 filters are offset by 14
     CAN1->FMR  |= 0xE00;                   // Start bank for the CAN2 interface
+    #endif
 
     // Set filter 0
     // Single 32-bit scale configuration 
@@ -333,85 +385,17 @@ void STM32_CAN::setBaudRate(uint32_t baud)
     // Filter assigned to FIFO 0 
     // Filter bank register to all 0
     CANSetFilter(14, 1, 0, 0, 0x0UL, 0x0UL); 
-  }
-  #if defined(CAN2)
-  else if (_channel == _CAN2)
-  {
-    CAN2->BTR &= ~(((0x03) << 24) | ((0x07) << 20) | ((0x0F) << 16) | (0x1FF)); 
-    CAN2->BTR |=  (((can_configs[bitrate].TS2-1) & 0x07) << 20) | (((can_configs[bitrate].TS1-1) & 0x0F) << 16) | ((can_configs[bitrate].BRP-1) & 0x1FF); 
-    // Configure Filters to default values
-    CAN2->FMR  |=   0x1UL;                 // Set to filter initialization mode
-    CAN2->FMR  &= 0xFFFFC0FF;              // Clear CAN2 start bank
-
-    // bxCAN has 28 filters.
-    // These filters are used for both CAN1 and CAN2.
-    // STM32F405 has CAN1 and CAN2, so CAN2 filters are offset by 14
-    CAN2->FMR  |= 0xE00;                   // Start bank for the CAN2 interface
-
-    // Set filter 0
-    // Single 32-bit scale configuration 
-    // Two 32-bit registers of filter bank x are in Identifier Mask mode
-    // Filter assigned to FIFO 0 
-    // Filter bank register to all 0
-    CANSetFilter(0, 1, 0, 0, 0x0UL, 0x0UL); 
-
-    // Set filter 14
-    // Single 32-bit scale configuration 
-    // Two 32-bit registers of filter bank x are in Identifier Mask mode
-    // Filter assigned to FIFO 0 
-    // Filter bank register to all 0
-    CANSetFilter(14, 1, 0, 0, 0x0UL, 0x0UL);
-  }
-  #endif
 
   if (_channel == _CAN1)
   {
     CAN1->FMR   &= ~(0x1UL);               // Deactivate initialization mode
-
-    uint16_t TimeoutMilliseconds = 1000;
-    bool can1 = false;
     CAN1->MCR   &= ~(0x1UL);               // Require CAN1 to normal mode 
-
-    // Wait for normal mode
-    // If the connection is not correct, it will not return to normal mode.
-    for (uint16_t wait_ack = 0; wait_ack < TimeoutMilliseconds; wait_ack++) {
-      if ((CAN1->MSR & 0x1UL) == 0) {
-        can1 = true;
-        break;
-      }
-      delayMicroseconds(1000);
-    }
-    if (can1) {
-      //Serial.println("CAN1 initialize ok");
-    } else {
-      //Serial.println("CAN1 initialize fail!!");
-    }
   }
   #if defined(CAN2)
   else if (_channel == _CAN2)
   {
     CAN2->FMR   &= ~(0x1UL);               // Deactivate initialization mode
-
-    uint16_t TimeoutMilliseconds = 1000;
-    bool can2 = false;
     CAN2->MCR   &= ~(0x1UL);               // Require CAN2 to normal mode  
-
-    // Wait for normal mode
-    // If the connection is not correct, it will not return to normal mode.
-    for (uint16_t wait_ack = 0; wait_ack < TimeoutMilliseconds; wait_ack++) {
-      if ((CAN2->MSR & 0x1UL) == 0) {
-        can2 = true;
-        break;
-      }
-      delayMicroseconds(1000);
-    }
-    //Serial.print("can2=");
-    //Serial.println(can2);
-    if (can2) {
-      //Serial.println("CAN2 initialize ok");
-    } else {
-      //Serial.println("CAN2 initialize fail!!");
-    }
   }
   #endif
 }
@@ -439,14 +423,17 @@ void STM32_CAN::SetTXRX()
       CANSetGpio(GPIOB, 8);                // Set PB8
     }
     //PA11/PA12 are second alternative pins, but it can't be used if native USB connection is in use.
-    if (_pins == ALT2) {
+    if (_pins == ALT_2) {
       RCC->AHB1ENR |= 0x1;                 // Enable GPIOA clock 
       CANSetGpio(GPIOA, 12);               // Set PA12
       CANSetGpio(GPIOA, 11);               // Set PA11
     }
     #elif defined(STM32F1xx)
+    RCC->APB2ENR |= 0x1UL;
+    AFIO->MAPR   &= 0xFFFF9FFF;          // reset CAN remap
     //PA11/PA12 as default, because those are only ones available on all F1 models.
     if (_pins == DEF) {
+      RCC->APB2ENR |= 0x4UL;           // Enable GPIOA clock
       AFIO->MAPR   &= 0xFFFF9FFF;          // reset CAN remap
                                            // CAN_RX mapped to PA11, CAN_TX mapped to PA12
       GPIOA->CRH   &= ~(0xFF000UL);        // Configure PA12(0b0000) and PA11(0b0000)
@@ -484,6 +471,26 @@ void STM32_CAN::SetTXRX()
                                            //   CNF=10(Input with pull-up / pull-down)
                                      
       GPIOB->ODR |= 0x1UL << 8;            // PB8 Upll-up
+    }
+    if (_pins == ALT_2) {
+      AFIO->MAPR   |= 0x00005000;      // set CAN remap
+                                       // CAN_RX mapped to PD0, CAN_TX mapped to PD1 (available on 100-pin and 144-pin package)
+
+      RCC->APB2ENR |= 0x20UL;          // Enable GPIOD clock
+      GPIOD->CRL   &= ~(0xFFUL);       // Configure PD1(0b0000) and PD0(0b0000)
+                                       // 0b0000
+                                       //   MODE=00(Input mode)
+                                       //   CNF=00(Analog mode)
+
+      GPIOD->CRH   |= 0xB8UL;          // Configure PD1(0b1011) and PD0(0b1000)
+                                       // 0b1000
+                                       //   MODE=00(Input mode)
+                                       //   CNF=10(Input with pull-up / pull-down)
+                                       // 0b1011
+                                       //   MODE=11(Output mode, max speed 50 MHz) 
+                                       //   CNF=10(Alternate function output Push-pull
+                                     
+      GPIOD->ODR |= 0x1UL << 0;        // PD0 Upll-up
     }
     #endif
   }

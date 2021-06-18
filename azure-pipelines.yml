@@ -25,8 +25,8 @@ steps:
   displayName: 'Making cppcheck'
 - bash: | 
     cd noisymime
-    chmod +x speeduino/misra/check_misra_github.sh
-    speeduino/misra/check_misra_github.sh
+    chmod +x speeduino/misra/check_misra.sh
+    speeduino/misra/check_misra.sh -c "cppcheck_github"
   #This task is always an error if there are MISRA violations
   continueOnError: true
   displayName: 'Running Scan'
