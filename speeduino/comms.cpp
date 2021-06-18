@@ -903,6 +903,8 @@ byte getStatusEntry(uint16_t byteNum)
     case 116: statusValue = currentStatus.advance1; break; //advance 1 (%)
     case 117: statusValue = currentStatus.advance2; break; //advance 2 (%)
     case 118: statusValue = currentStatus.TS_SD_Status; break; //SD card status
+    case 119: statusValue = lowByte(currentStatus.EMAP); break; //2 bytes for EMAP
+    case 120: statusValue = highByte(currentStatus.EMAP); break;
   }
 
   return statusValue;
