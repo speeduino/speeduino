@@ -301,7 +301,7 @@ static inline void readMAP()
 
     case 3:
       //Average of an ignition event
-      if ( (currentStatus.RPM > 0) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running, fall back to instantaneous reads
+      if ( (currentStatus.RPM > 0) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) && (! currentStatus.engineProtectStatus) ) //If the engine isn't running, fall back to instantaneous reads
       {
         if( (MAPcurRev == ignitionCount) ) //Watch for a change in the ignition counter to determine whether we're still on the same event
         {
