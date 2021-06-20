@@ -3,6 +3,9 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
+/** @file
+ * Read sensors with appropriate timing / scheduling.
+ */
 #include "sensors.h"
 #include "crankMaths.h"
 #include "globals.h"
@@ -14,6 +17,8 @@ A full copy of the license may be found in the projects root directory
 #include "corrections.h"
 #include "pages.h"
 
+/** Init all ADC conversions by setting resolutions, etc.
+ */
 void initialiseADC()
 {
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
@@ -544,6 +549,7 @@ uint16_t getSpeed()
   {
     //VSS mode 1 is (Will be) CAN
   }
+  // Interrupt driven mode
   else if(configPage2.vssMode > 1)
   {
     if( vssCount == VSS_SAMPLES ) //We only change the reading if we've reached the required number of samples
