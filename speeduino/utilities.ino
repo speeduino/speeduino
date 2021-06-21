@@ -188,21 +188,31 @@ void checkProgrammableIO()
 int16_t ProgrammableIOGetData(uint16_t index)
 {
   int16_t result;
-  uint8_t x;
-  if ( index < LOG_ENTRY_SIZE )
-  {
-    
-    for(x = 0; x<sizeof(fsIntIndex); x++)
-    {
-      if (fsIntIndex[x] == index) { break; }
-    }
-    if (x >= sizeof(fsIntIndex)) { result = getStatusEntry(index); }
-    else { result = word(getStatusEntry(index+1), getStatusEntry(index)); }
-    
 
+  if ( index < LOG_ENTRY_SIZE )
+  { 
+    if ( hasDoubleByteValue(index) ){ 
+      result = word(getStatusEntry(index+1), getStatusEntry(index)); 
+    }
+    else { 
+      result = getStatusEntry(index);
+    } 
+    
     //Special cases for temperatures
     if( (index == 6) || (index == 7) ) { result -= CALIBRATION_TEMPERATURE_OFFSET; }
   }
   else { result = -1; } //Index is bigger than fullStatus array
   return result;
+}
+
+/*
+Calculates whether the index'th bit in fsValueSize indicates a corresponding double byte value (by being a '1').
+*/
+boolean hasDoubleByteValue(uint16_t index) {  
+  // code test:  for (int j=0; j<119;j++) {  if(hasDoubleByteValue(j)) {  Serial.print(j);  Serial.print (", ");  }}   Serial.println();
+  byte byteIndex = index / 8; 
+  byte bitIndex = index % 8;
+  byte bits = pgm_read_byte(&(fsValueSize[byteIndex]));
+  byte bitMask = ( B10000000 >> bitIndex );      
+  return ( (bits & bitMask) != 0 );
 }
