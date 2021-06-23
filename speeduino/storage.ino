@@ -3,17 +3,20 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
-
+/** @file
+ * Lower level ConfigPage*, Table2D, Table3D and EEPROM storage operations.
+ */
 
 #include "globals.h"
 #include "table.h"
-#include "comms.h"
+#include "comms.h" // Is this needed at all ?
 #include EEPROM_LIB_H //This is defined in the board .h files
 #include "storage.h"
 #include "table_iterator.h"
 
 bool eepromWritesPending = false;
-
+/** Write all config pages to EEPROM.
+ */
 void writeAllConfig()
 {
   writeConfig(veSetPage);
@@ -34,7 +37,7 @@ void writeAllConfig()
 
 namespace {
 
-  /*
+  /** Update byte to EEPROM by first comparing content and the need to write it.
   We only ever write to the EEPROM where the new value is different from the currently stored byte
   This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
   */
@@ -92,9 +95,9 @@ namespace {
 }
 
 
-/*
+/** Write a table or map to EEPROM storage.
 Takes the current configuration (config pages and maps)
-and writes them to EEPROM as per the layout defined in storage.h
+and writes them to EEPROM as per the layout defined in storage.h.
 */
 void writeConfig(byte tableNum)
 {
@@ -282,7 +285,8 @@ void writeConfig(byte tableNum)
       break;
   }
 }
-
+/** Reset all configPage* structs (2,4,6,9,10,13) and write them full of null-bytes.
+ */
 void resetConfigPages()
 {
   memset(&configPage2, 0, sizeof(config2));
@@ -295,6 +299,11 @@ void resetConfigPages()
 
 namespace
 {
+  /** Load range of bytes form EEPROM offset to memory.
+   * @param index - start offset in EEPROM
+   * @param pFirst - Start memory address
+   * @param pLast - End memory address
+   */
   inline int load_range(int index, byte *pFirst, byte *pLast)
   {
 	  for (; pFirst != pLast; ++index, (void)++pFirst)
@@ -342,7 +351,8 @@ namespace
                                           loadTableValues(pTable, index)));
   }
 }
-
+/** Load all config tables from storage.
+ */
 void loadConfig()
 {
   loadTable(&fuelTable, EEPROM_CONFIG1_MAP);
@@ -412,9 +422,8 @@ void loadConfig()
   //*********************************************************************************************************************************************************************************
 }
 
-/*
-Reads the calibration information from EEPROM.
-This is separate from the config load as the calibrations do not exist as pages within the ini file for Tuner Studio
+/** Read the calibration information from EEPROM.
+This is separate from the config load as the calibrations do not exist as pages within the ini file for Tuner Studio.
 */
 void loadCalibration()
 {
@@ -440,7 +449,7 @@ void loadCalibration()
 
 }
 
-/*
+/** Write calibration tables to EEPROM.
 This takes the values in the 3 calibration tables (Coolant, Inlet temp and O2)
 and saves them to the EEPROM.
 */
@@ -467,9 +476,11 @@ void writeCalibration()
 
 }
 
-/*
+/** Write CRC32 checksum to EEPROM.
 Takes a page number and CRC32 value then stores it in the relevant place in EEPROM
-Note: Each pages requires 4 bytes for its CRC32. These are stored in reverse page order (ie the last page is store first in EEPROM)
+Note: Each pages requires 4 bytes for its CRC32. These are stored in reverse page order (ie the last page is store first in EEPROM).
+@param pageNo - Config page number
+@param crc32_val - CRC32 checksum
 */
 void storePageCRC32(byte pageNo, uint32_t crc32_val)
 {
@@ -489,8 +500,8 @@ void storePageCRC32(byte pageNo, uint32_t crc32_val)
   EEPROM.update(address + 3, one);
 }
 
-/*
-Retrieves and returns the 4 byte CRC32 for a given page from EEPROM
+/** Retrieves and returns the 4 byte CRC32 checksum for a given page from EEPROM.
+@param pageNo - Config page number
 */
 uint32_t readPageCRC32(byte pageNo)
 {
@@ -509,8 +520,13 @@ uint32_t readPageCRC32(byte pageNo)
 
 // Utility functions.
 // By having these in this file, it prevents other files from calling EEPROM functions directly. This is useful due to differences in the EEPROM libraries on different devces
+/// Read last stored barometer reading from EEPROM.
 byte readLastBaro() { return EEPROM.read(EEPROM_LAST_BARO); }
+/// Write last acquired arometer reading to EEPROM.
 void storeLastBaro(byte newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
+/// Store calibration value byte into EEPROM (offset "location").
 void storeCalibrationValue(uint16_t location, byte value) { EEPROM.update(location, value); } //This is essentially just an abstraction for EEPROM.update()
+/// Read EEPROM current data format version (from offset EEPROM_DATA_VERSION).
 byte readEEPROMVersion() { return EEPROM.read(EEPROM_DATA_VERSION); }
+/// Store EEPROM current data format version (to offset EEPROM_DATA_VERSION).
 void storeEEPROMVersion(byte newVersion) { EEPROM.update(EEPROM_DATA_VERSION, newVersion); }

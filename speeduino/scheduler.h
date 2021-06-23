@@ -1,25 +1,41 @@
-/*
+/** @file
+Injector and Ignition (on/off) scheduling (structs).
+
 This scheduler is designed to maintain 2 schedules for use by the fuel and ignition systems.
-It functions by waiting for the overflow vectors from each of the timers in use to overflow, which triggers an interrupt
+It functions by waiting for the overflow vectors from each of the timers in use to overflow, which triggers an interrupt.
 
-/Technical
-Currently I am prescaling the 16-bit timers to 256 for injection and 64 for ignition. This means that the counter increments every 16us (injection) / 4uS (ignition) and will overflow every 1048576uS
-Max Period = (Prescale)*(1/Frequency)*(2^17)
-(See playground.arduino.cc/code/timer1)
-This means that the precision of the scheduler is 16uS (+/- 8uS of target) for fuel and 4uS (+/- 2uS) for ignition
+## Technical
 
-/Features
-This differs from most other schedulers in that its calls are non-recurring (IE You schedule an event at a certain time and once it has occurred, it will not reoccur unless you explicitely ask for it)
-Each timer can have only 1 callback associated with it at any given time. If you call the setCallback function a 2nd time, the original schedule will be overwritten and not occur
+Currently I am prescaling the 16-bit timers to 256 for injection and 64 for ignition.
+This means that the counter increments every 16us (injection) / 4uS (ignition) and will overflow every 1048576uS.
 
-Timer identification
-The Arduino timer3 is used for schedule 1
-The Arduino timer4 is used for schedule 2
-Both of these are 16-bit timers (ie count to 65536)
-See page 136 of the processors datasheet: www.atmel.com/Images/doc2549.pdf
+    Max Period = (Prescale)*(1/Frequency)*(2^17)
 
-256 prescale gives tick every 16uS
-256 prescale gives overflow every 1048576uS (This means maximum wait time is 1.0485 seconds)
+For more details see https://playground.arduino.cc/Code/Timer1/ (OLD: http://playground.arduino.cc/code/timer1 ).
+This means that the precision of the scheduler is:
+
+- 16uS (+/- 8uS of target) for fuel
+- 4uS (+/- 2uS) for ignition
+
+## Features
+
+This differs from most other schedulers in that its calls are non-recurring (ie when you schedule an event at a certain time and once it has occurred,
+it will not reoccur unless you explicitely ask/re-register for it).
+Each timer can have only 1 callback associated with it at any given time. If you call the setCallback function a 2nd time,
+the original schedule will be overwritten and not occur.
+
+## Timer identification
+
+Arduino timers usage for injection and ignition schedules:
+- timer3 is used for schedule 1(?) (fuel 1,2,3,4 ign 7,8)
+- timer4 is used for schedule 2(?) (fuel 5,6 ign 4,5,6)
+- timer5 is used ... (fuel 7,8, ign 1,2,3)
+
+Timers 3,4 and 5 are 16-bit timers (ie count to 65536).
+See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pdf .
+
+256 prescale gives tick every 16uS.
+256 prescale gives overflow every 1048576uS (This means maximum wait time is 1.0485 seconds).
 
 */
 #ifndef SCHEDULER_H
@@ -48,9 +64,10 @@ extern void (*inj8StartFunction)();
 extern void (*inj8EndFunction)();
 
 /** @name IgnitionCallbacks
- * These are the function pointers that get called to begin and end the ignition coil charging. They are required for the various spark output modes
+ * These are the (global) function pointers that get called to begin and end the ignition coil charging.
+ * They are required for the various spark output modes.
+ * @{
 */
-///@{
 extern void (*ign1StartFunction)();
 extern void (*ign1EndFunction)();
 extern void (*ign2StartFunction)();
@@ -67,7 +84,7 @@ extern void (*ign7StartFunction)();
 extern void (*ign7EndFunction)();
 extern void (*ign8StartFunction)();
 extern void (*ign8EndFunction)();
-///@}
+/** @} */
 
 void initialiseSchedulers();
 void beginInjectorPriming();
@@ -134,32 +151,40 @@ inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((alw
   static inline void ignitionSchedule8Interrupt();
 #endif
 #endif
-
-enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The 3 statuses that a schedule can have
-
+/** Schedule statuses.
+ * - OFF - Schedule turned off and there is no scheduled plan
+ * - PENDING - There's a scheduled plan, but is has not started to run yet
+ * - STAGED - (???, Not used)
+ * - RUNNING - Schedule is currently running
+ */
+enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a schedule can have
+/** Ignition schedule.
+ */
 struct Schedule {
-  volatile unsigned long duration;
-  volatile ScheduleStatus Status;
-  volatile byte schedulesSet; //A counter of how many times the schedule has been set
-  void (*StartCallback)(); //Start Callback function for schedule
-  void (*EndCallback)(); //Start Callback function for schedule
+  volatile unsigned long duration;///< Scheduled duration (uS ?)
+  volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
+  volatile byte schedulesSet;     ///< A counter of how many times the schedule has been set
+  void (*StartCallback)();        ///< Start Callback function for schedule
+  void (*EndCallback)();          ///< End Callback function for schedule
   volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
-  volatile COMPARE_TYPE startCompare; //The counter value of the timer when this will start
-  volatile COMPARE_TYPE endCompare;
+  volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
+  volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
 
-  unsigned int nextStartCompare;
-  unsigned int nextEndCompare;
-  volatile bool hasNextSchedule = false;
+  unsigned int nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
+  unsigned int nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
+  volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
   volatile bool endScheduleSetByDecoder = false;
 };
-
-//Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables. They are removed in this struct to save RAM
+/** Fuel injection schedule.
+* Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
+* They are removed in this struct to save RAM.
+*/
 struct FuelSchedule {
-  volatile unsigned long duration;
-  volatile ScheduleStatus Status;
-  volatile byte schedulesSet; //A counter of how many times the schedule has been set
-  volatile COMPARE_TYPE startCompare; //The counter value of the timer when this will start
-  volatile COMPARE_TYPE endCompare;
+  volatile unsigned long duration;///< Scheduled duration (uS ?)
+  volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
+  volatile byte schedulesSet; ///< A counter of how many times the schedule has been set
+  volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
+  volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
 
   unsigned int nextStartCompare;
   unsigned int nextEndCompare;

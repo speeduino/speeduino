@@ -3,7 +3,10 @@
   Copyright (C) Josh Stewart
   A full copy of the license may be found in the projects root directory
 */
-
+/** @file
+ * Custom Programmable I/O.
+ * The config related to Programmable I/O is found on configPage13 (of type @ref config13).
+ */
 #include <avr/pgmspace.h>
 #include "globals.h"
 #include "utilities.h"
@@ -14,9 +17,12 @@ uint16_t ioDelay[sizeof(configPage13.outputPin)];
 uint8_t pinIsValid = 0;
 
 
-//This function performs a translation between the pin list that appears in TS and the actual pin numbers
-//For the digital IO, this will simply return the same number as the rawPin value as those are mapped directly.
-//For analog pins, it will translate them into the currect internal pin number
+/** Translate between the pin list that appears in TS and the actual pin numbers.
+For the **digital IO**, this will simply return the same number as the rawPin value as those are mapped directly.
+For **analog pins**, it will translate them into the correct internal pin number.
+* @param rawPin - High level pin number
+* @return Translated / usable pin number
+*/
 byte pinTranslate(byte rawPin)
 {
   byte outputPin = rawPin;
@@ -24,8 +30,9 @@ byte pinTranslate(byte rawPin)
 
   return outputPin;
 }
-//Translates an pin number (0 - 22) to the relevant Ax pin reference.
-//This is required as some ARM chips do not have all analog pins in order (EG pin A15 != A14 + 1)
+/** Translate a pin number (0 - 22) to the relevant Ax (analog) pin reference.
+* This is required as some ARM chips do not have all analog pins in order (EG pin A15 != A14 + 1).
+* */
 byte pinTranslateAnalog(byte rawPin)
 {
   byte outputPin = rawPin;
@@ -121,7 +128,11 @@ void initialiseProgrammableIO()
     }
   }
 }
-
+/** Check all (8) programmable I/O:s and carry out action on output pin as needed.
+ * Compare 2 (16 bit) vars in a way configured by @ref config13.cmpOperation.
+ * Use ProgrammableIOGetData() to get 2 vars to compare.
+ * Skip all programmable I/O:s where output pin is set 0 (meaning: not programmed).
+ */
 void checkProgrammableIO()
 {
   int16_t data, data2;
@@ -184,7 +195,11 @@ void checkProgrammableIO()
     else { BIT_CLEAR(currentStatus.outputsStatus, y); }
   }
 }
-
+/** Get single I/O data var (from currentStatus) for comparison.
+ * Uses member offset index @ref fsIntIndex to lookup realtime 'live' data from @ref currentStatus.
+ * @param index - Field index/number (?)
+ * @return 16 bit (int) result
+ */
 int16_t ProgrammableIOGetData(uint16_t index)
 {
   int16_t result;
@@ -194,10 +209,11 @@ int16_t ProgrammableIOGetData(uint16_t index)
     
     for(x = 0; x<sizeof(fsIntIndex); x++)
     {
+      // Stop at desired field
       if (fsIntIndex[x] == index) { break; }
     }
-    if (x >= sizeof(fsIntIndex)) { result = getStatusEntry(index); }
-    else { result = word(getStatusEntry(index+1), getStatusEntry(index)); }
+    if (x >= sizeof(fsIntIndex)) { result = getStatusEntry(index); } // 8-bit, coerce to 16 bit result
+    else { result = word(getStatusEntry(index+1), getStatusEntry(index)); } // Assemble 2 bytes to word of 16 bit result
     
 
     //Special cases for temperatures
