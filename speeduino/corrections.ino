@@ -609,7 +609,7 @@ byte correctionAFRClosedLoop()
       AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
         
       //Check all other requirements for closed loop adjustments
-      if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) )
+      if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) &&  (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 0) )
       {
 
         //Check which algorithm is used, simple or PID
