@@ -189,7 +189,7 @@ void checkProgrammableIO()
         if ( configPage13.outputPin[y] <= 128 ) { digitalWrite(configPage13.outputPin[y], (configPage13.outputInverted & (1U << y)) ^ firstCheck); }
         if ( firstCheck == false ) { ioDelay[y] = 0; }
       }
-      if ( firstCheck == true ) { BIT_SET(currentStatus.outputsStatus, y); }
+      if ( (firstCheck == true) && (ioDelay[y] >= configPage13.outputDelay[y]) ) { BIT_SET(currentStatus.outputsStatus, y); }
       else { BIT_CLEAR(currentStatus.outputsStatus, y); }
     }
     else { BIT_CLEAR(currentStatus.outputsStatus, y); }
