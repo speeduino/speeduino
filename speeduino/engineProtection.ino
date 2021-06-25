@@ -33,6 +33,7 @@ byte checkRevLimit()
 byte checkBoostLimit()
 {
   byte boostLimitActive = 0;
+  BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
   //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
   if( (configPage6.boostCutEnabled > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2)) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
   {

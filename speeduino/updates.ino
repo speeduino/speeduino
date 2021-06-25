@@ -1,8 +1,12 @@
-/*
- * This routine is used for doing any data conversions that are required during firmware changes
+/** @file
+ * EEPROM Storage updates.
+ */
+/** Store and load various configs to/from EEPROM considering the the data format versions of various SW generations.
+ * This routine is used for doing any data conversions that are required during firmware changes.
  * This prevents users getting difference reports in TS when such a data change occurs.
- * It also can be used for setting good values when there are viarables that move locations in the ini
- * When a user skips multiple firmware versions at a time, this will roll through the updates 1 at a time
+ * It also can be used for setting good values when there are viarables that move locations in the ini.
+ * When a user skips multiple firmware versions at a time, this will roll through the updates 1 at a time.
+ * The doUpdates() uses may lower level routines from Arduino EEPROM library and storage.ino to carry out EEPROM storage tasks.
  */
 #include "globals.h"
 #include "storage.h"
