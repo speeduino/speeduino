@@ -7,7 +7,7 @@ byte checkEngineProtect()
   byte protectActive = 0;
   if(checkRevLimit() || checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit())
   {
-    if(currentStatus.RPM > (configPage4.engineProtectMaxRPM*100U)) { protectActive = 1; }
+    if( currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM ) { protectActive = 1; }
   }
 
   return protectActive;
@@ -19,7 +19,7 @@ byte checkRevLimit()
   byte revLimiterActive = 0;
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
 
-  if (currentStatus.RPM > ((unsigned int)(configPage4.HardRevLim) * 100) )
+  if ( (currentStatus.RPMdiv100 > configPage4.HardRevLim) || ((runSecsX10 - softStartTime) >= configPage4.SoftLimMax) )
   { 
     BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); //Legacy and likely to be removed at some point
     BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
