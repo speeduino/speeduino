@@ -842,7 +842,7 @@ int8_t correctionSoftLaunch(int8_t advance)
  */
 int8_t correctionSoftFlatShift(int8_t advance)
 {
-  byte ignSoftFlatValue = advance;
+  int8_t ignSoftFlatValue = advance;
 
   if(configPage6.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage6.flatSSoftWin) ) )
   {
