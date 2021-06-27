@@ -491,6 +491,8 @@ void doUpdates()
     configPage10.vvtCLMaxAng = 200;
     configPage4.ANGLEFILTER_VVT = 0;
 
+    configPage2.IdleAdvDelay *= 2; //Increased resolution to 0.5 second
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 18);
   }
