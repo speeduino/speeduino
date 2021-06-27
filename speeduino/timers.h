@@ -23,7 +23,7 @@ volatile bool tachoAlt = false;
 #define TACHO_PULSE_HIGH() *tach_pin_port |= (tach_pin_mask)
 #define TACHO_PULSE_LOW() *tach_pin_port &= ~(tach_pin_mask)
 enum TachoOutputStatus {DEACTIVE, READY, ACTIVE}; //The 3 statuses that the tacho output pulse can have
-volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
+volatile uint8_t tachoTime; //The time (in ms) that the tacho pulse needs
 volatile TachoOutputStatus tachoOutputFlag;
 
 volatile byte loop33ms;

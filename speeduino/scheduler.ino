@@ -27,6 +27,7 @@ A full copy of the license may be found in the projects root directory
 #include "globals.h"
 #include "scheduler.h"
 #include "scheduledIO.h"
+#include "timers.h"
 
 FuelSchedule fuelSchedule1;
 FuelSchedule fuelSchedule2;
@@ -1114,6 +1115,7 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
       ignitionSchedule1.startTime = micros();
       if(ignitionSchedule1.endScheduleSetByDecoder == true) { IGN1_COMPARE = (uint16_t)ignitionSchedule1.endCompare; }
       else { IGN1_COMPARE = (uint16_t)(IGN1_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule1.duration)); } //Doing this here prevents a potential overflow on restarts
+      setTachoLow();
     }
     else if (ignitionSchedule1.Status == RUNNING)
     {
@@ -1155,6 +1157,7 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
       ignitionSchedule2.startTime = micros();
       if(ignitionSchedule2.endScheduleSetByDecoder == true) { IGN2_COMPARE = (uint16_t)ignitionSchedule2.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
       else { IGN2_COMPARE = (uint16_t)(IGN2_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule2.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
+      setTachoLow();
     }
     else if (ignitionSchedule2.Status == RUNNING)
     {
@@ -1196,6 +1199,7 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
       ignitionSchedule3.startTime = micros();
       if(ignitionSchedule3.endScheduleSetByDecoder == true) { IGN3_COMPARE = (uint16_t)ignitionSchedule3.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
       else { IGN3_COMPARE = (uint16_t)(IGN3_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule3.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
+      setTachoLow();
     }
     else if (ignitionSchedule3.Status == RUNNING)
     {
@@ -1237,6 +1241,7 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
       ignitionSchedule4.startTime = micros();
       if(ignitionSchedule4.endScheduleSetByDecoder == true) { IGN4_COMPARE = (uint16_t)ignitionSchedule4.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
       else { IGN4_COMPARE = (uint16_t)(IGN4_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule4.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
+      setTachoLow();
     }
     else if (ignitionSchedule4.Status == RUNNING)
     {
@@ -1278,6 +1283,7 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
       ignitionSchedule5.startTime = micros();
       if(ignitionSchedule5.endScheduleSetByDecoder == true) { IGN5_COMPARE = (uint16_t)ignitionSchedule5.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
       else { IGN5_COMPARE = (uint16_t)(IGN5_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule5.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
+      setTachoLow();
     }
     else if (ignitionSchedule5.Status == RUNNING)
     {
@@ -1319,6 +1325,7 @@ static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call
       ignitionSchedule6.startTime = micros();
       if(ignitionSchedule6.endScheduleSetByDecoder == true) { IGN6_COMPARE = (uint16_t)ignitionSchedule6.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
       else { IGN6_COMPARE = (uint16_t)(IGN6_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule6.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
+      setTachoLow();
     }
     else if (ignitionSchedule6.Status == RUNNING)
     {
@@ -1360,6 +1367,7 @@ static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call
       ignitionSchedule7.startTime = micros();
       if(ignitionSchedule7.endScheduleSetByDecoder == true) { IGN7_COMPARE = (uint16_t)ignitionSchedule7.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
       else { IGN7_COMPARE = (uint16_t)(IGN7_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule7.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
+      setTachoLow();
     }
     else if (ignitionSchedule7.Status == RUNNING)
     {
@@ -1401,6 +1409,7 @@ static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call
       ignitionSchedule8.startTime = micros();
       if(ignitionSchedule8.endScheduleSetByDecoder == true) { IGN8_COMPARE = (uint16_t)ignitionSchedule8.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
       else { IGN8_COMPARE = (uint16_t)(IGN8_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule8.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
+      setTachoLow();
     }
     else if (ignitionSchedule8.Status == RUNNING)
     {
@@ -1427,3 +1436,28 @@ static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call
     }
   }
 #endif
+
+/**
+ * @brief Set the Tacho Low with coil event
+ * Sincronize with coil event for stabilize eletronic RPM readings
+ */
+void setTachoLow(void)
+{
+  //Tacho is flagged as being ready for a pulse by the ignition outputs.
+  if( tachoOutputFlag == READY )
+  {
+    //Check for half speed tacho
+    if( (configPage2.tachoDiv == 0) || (tachoAlt == true) )
+    { 
+      TACHO_PULSE_LOW();
+      tachoTime = 0; //Tacho just started, set time to 0
+      tachoOutputFlag = ACTIVE;
+    }
+    else
+    {
+      //Don't run on this pulse (Half speed tacho)
+      tachoOutputFlag = DEACTIVE;
+    }
+    tachoAlt = !tachoAlt; //Flip the alternating value incase half speed tacho is in use.
+  }
+}

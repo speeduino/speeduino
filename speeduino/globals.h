@@ -733,7 +733,7 @@ struct config2 {
   byte crankingPct;     ///< Cranking enrichment (See @ref config10, updates.ino)
   byte pinMapping;      ///< The board / ping mapping number / id to be used (See: @ref setPinMapping in init.ino)
   byte tachoPin : 6;    ///< Custom pin setting for tacho output (if != 0, override copied to pinTachOut, which defaults to board assigned tach pin)
-  byte tachoDiv : 2;    ///< Whether to change the tacho speed ("half speed tacho" ?)
+  byte tachoDiv : 2;    ///< Whether to change the tacho speed (1 = "half speed tacho")
   byte tachoDuration;   //The duration of the tacho pulse in mS
   byte maeThresh;       /**< The MAPdot threshold that must be exceeded before AE is engaged */
   byte taeThresh;       /**< The TPSdot threshold that must be exceeded before AE is engaged */
