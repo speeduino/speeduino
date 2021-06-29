@@ -193,12 +193,20 @@ void checkProgrammableIO()
           if (configPage13.operation[y].bitwise == BITWISE_XOR) { firstCheck ^= secondCheck; }
         }
       }
-      
-      //If the limiting time is active(>0), using maximum time and time has counted, disable the output
+
+      //If the limiting time is active(>0) and using maximum time
       if (BIT_CHECK(configPage13.kindOfLimiting, y))
       {
-        if (!firstCheck) { ioOutDelay[y] = 0; }
-        if ((configPage13.outputTimeLimit[y] > 0) && (ioOutDelay[y] >= configPage13.outputTimeLimit[y])) { firstCheck = false; }
+        if(firstCheck)
+        {
+          if (ioOutDelay[y] >= configPage13.outputTimeLimit[y]) { firstCheck = false; } //Time has counted, disable the output
+        }
+        else
+        {
+          //Released before Maximum time, set delay to maximum to flip the output next
+          if(BIT_CHECK(currentStatus.outputsStatus, y)) { ioOutDelay[y] = configPage13.outputTimeLimit[y]; }
+          else { ioOutDelay[y] = 0; } //Reset the counter for next time
+        }
       }
 
       if ( (firstCheck == true) && (configPage13.outputDelay[y] < 255) )
@@ -225,7 +233,7 @@ void checkProgrammableIO()
         }
         else { ioOutDelay[y]++; }
 
-        if ( firstCheck == false ) { ioDelay[y] = 0; }
+        ioDelay[y] = 0;
       }
     }
   }
