@@ -51,14 +51,6 @@ int ignition6StartAngle = 0;
 int ignition7StartAngle = 0;
 int ignition8StartAngle = 0;
 
-int channel1IgnDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
-int channel2IgnDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-int channel3IgnDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
-int channel4IgnDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
-int channel5IgnDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
-int channel6IgnDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
-int channel7IgnDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
-int channel8IgnDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
 int channel1InjDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
 int channel2InjDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 int channel3InjDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
@@ -1015,7 +1007,7 @@ void loop()
 #if IGN_CHANNELS >= 1
         if (!BIT_CHECK(curRollingCut, IGN1_CMD_BIT) )
         {
-          setIgnitionSchedule(&ignitionSchedule1, crankAngle, channel1IgnDegrees, ignition1EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule1, crankAngle, ignitionSchedule1.channelIgnDegrees, ignition1EndAngle, currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
 
@@ -1023,49 +1015,49 @@ void loop()
 #if IGN_CHANNELS >= 2
         if (maxIgnOutputs >= 2 && !BIT_CHECK(curRollingCut, IGN2_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule2, crankAngle, channel2IgnDegrees, ignition2EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule2, crankAngle, ignitionSchedule2.channelIgnDegrees, ignition2EndAngle, currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
 
 #if IGN_CHANNELS >= 3
         if (maxIgnOutputs >= 3 && !BIT_CHECK(curRollingCut, IGN3_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule3, crankAngle, channel3IgnDegrees, ignition3EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule3, crankAngle, ignitionSchedule3.channelIgnDegrees, ignition3EndAngle, currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
 
 #if IGN_CHANNELS >= 4
         if (maxIgnOutputs >= 4 && !BIT_CHECK(curRollingCut, IGN4_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule4, crankAngle, channel4IgnDegrees, ignition4EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule4, crankAngle, ignitionSchedule4.channelIgnDegrees, ignition4EndAngle, currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
 
 #if IGN_CHANNELS >= 5
         if (maxIgnOutputs >= 5  && !BIT_CHECK(curRollingCut, IGN5_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule5, crankAngle, channel5IgnDegrees, ignition5EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule5, crankAngle, ignitionSchedule5.channelIgnDegrees, ignition5EndAngle, currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
 
 #if IGN_CHANNELS >= 6
         if (maxIgnOutputs >= 6 && !BIT_CHECK(curRollingCut, IGN6_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule6, crankAngle, channel6IgnDegrees, ignition6EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule6, crankAngle, ignitionSchedule6.channelIgnDegrees, ignition6EndAngle, currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
 
 #if IGN_CHANNELS >= 7
         if (maxIgnOutputs >= 7 && !BIT_CHECK(curRollingCut, IGN7_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule7, crankAngle, channel7IgnDegrees, ignition7EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule7, crankAngle, ignitionSchedule7.channelIgnDegrees, ignition7EndAngle, currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
 
 #if IGN_CHANNELS >= 8
         if (maxIgnOutputs >= 8  && !BIT_CHECK(curRollingCut, IGN8_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule8, crankAngle, channel8IgnDegrees, ignition8EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule8, crankAngle, ignitionSchedule8.channelIgnDegrees, ignition8EndAngle, currentStatus.dwell + fixedCrankingOverride);
         } 
 #endif
 
@@ -1227,7 +1219,7 @@ uint16_t calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_t injCh
 
 void calculateIgnitionAngle1(int dwellAngle)
 {
-  ignition1EndAngle = channel1IgnDegrees - currentStatus.advance;
+  ignition1EndAngle = ignitionSchedule1.channelIgnDegrees - currentStatus.advance;
   if(ignition1EndAngle > CRANK_ANGLE_MAX_IGN) {ignition1EndAngle -= CRANK_ANGLE_MAX_IGN;}
   ignition1StartAngle = ignition1EndAngle - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
   if(ignition1StartAngle < 0) {ignition1StartAngle += CRANK_ANGLE_MAX_IGN;}
@@ -1235,7 +1227,7 @@ void calculateIgnitionAngle1(int dwellAngle)
 
 void calculateIgnitionAngle2(int dwellAngle)
 {
-  ignition2EndAngle = channel2IgnDegrees - currentStatus.advance;
+  ignition2EndAngle = ignitionSchedule2.channelIgnDegrees - currentStatus.advance;
   if(ignition2EndAngle > CRANK_ANGLE_MAX_IGN) {ignition2EndAngle -= CRANK_ANGLE_MAX_IGN;}
   ignition2StartAngle = ignition2EndAngle - dwellAngle;
   if(ignition2StartAngle < 0) {ignition2StartAngle += CRANK_ANGLE_MAX_IGN;}
@@ -1243,7 +1235,7 @@ void calculateIgnitionAngle2(int dwellAngle)
 
 void calculateIgnitionAngle3(int dwellAngle)
 {
-  ignition3EndAngle = channel3IgnDegrees - currentStatus.advance;
+  ignition3EndAngle = ignitionSchedule3.channelIgnDegrees - currentStatus.advance;
   if(ignition3EndAngle > CRANK_ANGLE_MAX_IGN) {ignition3EndAngle -= CRANK_ANGLE_MAX_IGN;}
   ignition3StartAngle = ignition3EndAngle - dwellAngle;
   if(ignition3StartAngle < 0) {ignition3StartAngle += CRANK_ANGLE_MAX_IGN;}
@@ -1260,7 +1252,7 @@ void calculateIgnitionAngle3(int dwellAngle, int rotarySplitDegrees)
 
 void calculateIgnitionAngle4(int dwellAngle)
 {
-  ignition4EndAngle = channel4IgnDegrees - currentStatus.advance;
+  ignition4EndAngle = ignitionSchedule4.channelIgnDegrees - currentStatus.advance;
   if(ignition4EndAngle > CRANK_ANGLE_MAX_IGN) {ignition4EndAngle -= CRANK_ANGLE_MAX_IGN;}
   ignition4StartAngle = ignition4EndAngle - dwellAngle;
   if(ignition4StartAngle < 0) {ignition4StartAngle += CRANK_ANGLE_MAX_IGN;}
@@ -1277,7 +1269,7 @@ void calculateIgnitionAngle4(int dwellAngle, int rotarySplitDegrees)
 
 void calculateIgnitionAngle5(int dwellAngle)
 {
-  ignition5EndAngle = channel5IgnDegrees - currentStatus.advance;
+  ignition5EndAngle = ignitionSchedule5.channelIgnDegrees - currentStatus.advance;
   if(ignition5EndAngle > CRANK_ANGLE_MAX_IGN) {ignition5EndAngle -= CRANK_ANGLE_MAX_IGN;}
   ignition5StartAngle = ignition5EndAngle - dwellAngle;
   if(ignition5StartAngle < 0) {ignition5StartAngle += CRANK_ANGLE_MAX_IGN;}
@@ -1285,7 +1277,7 @@ void calculateIgnitionAngle5(int dwellAngle)
 
 void calculateIgnitionAngle6(int dwellAngle)
 {
-  ignition6EndAngle = channel6IgnDegrees - currentStatus.advance;
+  ignition6EndAngle = ignitionSchedule6.channelIgnDegrees - currentStatus.advance;
   if(ignition6EndAngle > CRANK_ANGLE_MAX_IGN) {ignition6EndAngle -= CRANK_ANGLE_MAX_IGN;}
   ignition6StartAngle = ignition6EndAngle - dwellAngle;
   if(ignition6StartAngle < 0) {ignition6StartAngle += CRANK_ANGLE_MAX_IGN;}
@@ -1293,7 +1285,7 @@ void calculateIgnitionAngle6(int dwellAngle)
 
 void calculateIgnitionAngle7(int dwellAngle)
 {
-  ignition7EndAngle = channel7IgnDegrees - currentStatus.advance;
+  ignition7EndAngle = ignitionSchedule7.channelIgnDegrees - currentStatus.advance;
   if(ignition7EndAngle > CRANK_ANGLE_MAX_IGN) {ignition7EndAngle -= CRANK_ANGLE_MAX_IGN;}
   ignition7StartAngle = ignition7EndAngle - dwellAngle;
   if(ignition7StartAngle < 0) {ignition7StartAngle += CRANK_ANGLE_MAX_IGN;}
@@ -1301,7 +1293,7 @@ void calculateIgnitionAngle7(int dwellAngle)
 
 void calculateIgnitionAngle8(int dwellAngle)
 {
-  ignition8EndAngle = channel8IgnDegrees - currentStatus.advance;
+  ignition8EndAngle = ignitionSchedule8.channelIgnDegrees - currentStatus.advance;
   if(ignition8EndAngle > CRANK_ANGLE_MAX_IGN) {ignition8EndAngle -= CRANK_ANGLE_MAX_IGN;}
   ignition8StartAngle = ignition8EndAngle - dwellAngle;
   if(ignition8StartAngle < 0) {ignition8StartAngle += CRANK_ANGLE_MAX_IGN;}
