@@ -560,16 +560,16 @@ inline void setIgnition7Compare(COMPARE_TYPE compareValue){IGN7_COMPARE =compare
 inline void setIgnition8Compare(COMPARE_TYPE compareValue){IGN8_COMPARE =compareValue;}
 
 //Ignition schedulers use Timer 5
-void setIgnitionSchedule(struct Schedule *ignitionSchedule ,  int16_t crankAngle, int channelIgnDegrees, int ignitionEndAngle, unsigned long duration)
+void setIgnitionSchedule(struct Schedule *ignitionSchedule ,  int16_t crankAngle, int ignitionEndAngle, unsigned long duration)
 {  
   unsigned long timeout;
   COMPARE_TYPE timeout_timer_compare; 
   int16_t tempCrankAngle;
   int16_t tempEndAngle;     
 
-  tempCrankAngle = crankAngle - channelIgnDegrees;
+  tempCrankAngle = crankAngle - ignitionSchedule->channelIgnDegrees;
   if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
-  tempEndAngle = ignitionEndAngle - channelIgnDegrees;
+  tempEndAngle = ignitionEndAngle - ignitionSchedule->channelIgnDegrees;
   if ( tempEndAngle < 0) { tempEndAngle += CRANK_ANGLE_MAX_IGN; }
   while (tempEndAngle <= tempCrankAngle)   { tempEndAngle += CRANK_ANGLE_MAX_IGN; }//calculate into the next cycle
   

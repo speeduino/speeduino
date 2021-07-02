@@ -1007,7 +1007,7 @@ void loop()
 #if IGN_CHANNELS >= 1
         if (!BIT_CHECK(curRollingCut, IGN1_CMD_BIT) )
         {
-          setIgnitionSchedule(&ignitionSchedule1, crankAngle, ignitionSchedule1.channelIgnDegrees, ignition1EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule1, crankAngle, ignition1EndAngle, currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
 
@@ -1015,49 +1015,49 @@ void loop()
 #if IGN_CHANNELS >= 2
         if (maxIgnOutputs >= 2 && !BIT_CHECK(curRollingCut, IGN2_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule2, crankAngle, ignitionSchedule2.channelIgnDegrees, ignition2EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule2, crankAngle, ignition2EndAngle, currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
 
 #if IGN_CHANNELS >= 3
         if (maxIgnOutputs >= 3 && !BIT_CHECK(curRollingCut, IGN3_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule3, crankAngle, ignitionSchedule3.channelIgnDegrees, ignition3EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule3, crankAngle, ignition3EndAngle, currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
 
 #if IGN_CHANNELS >= 4
         if (maxIgnOutputs >= 4 && !BIT_CHECK(curRollingCut, IGN4_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule4, crankAngle, ignitionSchedule4.channelIgnDegrees, ignition4EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule4, crankAngle, ignition4EndAngle, currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
 
 #if IGN_CHANNELS >= 5
         if (maxIgnOutputs >= 5  && !BIT_CHECK(curRollingCut, IGN5_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule5, crankAngle, ignitionSchedule5.channelIgnDegrees, ignition5EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule5, crankAngle, ignition5EndAngle, currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
 
 #if IGN_CHANNELS >= 6
         if (maxIgnOutputs >= 6 && !BIT_CHECK(curRollingCut, IGN6_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule6, crankAngle, ignitionSchedule6.channelIgnDegrees, ignition6EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule6, crankAngle, ignition6EndAngle, currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
 
 #if IGN_CHANNELS >= 7
         if (maxIgnOutputs >= 7 && !BIT_CHECK(curRollingCut, IGN7_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule7, crankAngle, ignitionSchedule7.channelIgnDegrees, ignition7EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule7, crankAngle, ignition7EndAngle, currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
 
 #if IGN_CHANNELS >= 8
         if (maxIgnOutputs >= 8  && !BIT_CHECK(curRollingCut, IGN8_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule8, crankAngle, ignitionSchedule8.channelIgnDegrees, ignition8EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule8, crankAngle, ignition8EndAngle, currentStatus.dwell + fixedCrankingOverride);
         } 
 #endif
 
