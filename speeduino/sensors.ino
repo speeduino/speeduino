@@ -179,6 +179,22 @@ static inline void instanteneousMAPReading()
 
   currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
   if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
+  
+  //Repeat for EMAP if it's enabled
+  if(configPage6.useEMAP == true)
+  {
+    tempReading = analogRead(pinEMAP);
+    tempReading = analogRead(pinEMAP);
+
+    //Error check
+    if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
+      {
+        currentStatus.EMAPADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
+      }
+    else { mapErrorCount += 1; }
+    currentStatus.EMAP = fastMap10Bit(currentStatus.EMAPADC, configPage2.EMAPMin, configPage2.EMAPMax);
+    if(currentStatus.EMAP < 0) { currentStatus.EMAP = 0; } //Sanity check
+  }
 
 }
 
