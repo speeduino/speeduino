@@ -1,4 +1,14 @@
 #include "pagePrintAscii.h"
+
+#ifdef SMALL_FLASH_MODE
+
+void printPageAscii(byte pageNum, Print &target)
+{
+    ; // Noop
+}
+
+#else
+
 #include "globals.h"
 #include "table_iterator.h"
 #include "utilities.h"
@@ -110,3 +120,5 @@ static void serial_print_3dtable(Print &target, const table3D &currentTable)
 
 // Pull in the generated code.
 #include "pagePrintAscii.g.hpp"
+
+#endif // SMALL_FLASH_MODE
