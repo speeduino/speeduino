@@ -10,9 +10,14 @@
 
 #include <inttypes.h>
 #include <SPI.h>
+#include <Arduino.h>
+#include <errno.h>
 
 //W25Q64 = 256_bytes_per_page * 16_pages_per_sector * 16_sectors_per_block * 128_blocks_per_chip
 //= 256b*16*16*128 = 8Mbyte = 64MBits
+
+//W25Q16 = 256_bytes_per_page * 16_pages_per_sector * 16_sectors_per_block * 32_blocks_per_chip
+//= 256b*16*16*32 = 2Mbyte = 16MBits
 
 #define _W25Q80  winbondFlashClass::W25Q80
 #define _W25Q16  winbondFlashClass::W25Q16
@@ -81,13 +86,13 @@ protected:
 class winbondFlashSPI: public winbondFlashClass {
 private:
   uint8_t nss;
- // SPIClass spi;
+  SPIClass *spi_port;
   inline void select() {
     digitalWrite(nss,LOW);
   }
 
   inline uint8_t transfer(uint8_t x) {
-    byte y = SPI.transfer(x);
+    byte y = spi_port->transfer(x);
     return y;
   }
 

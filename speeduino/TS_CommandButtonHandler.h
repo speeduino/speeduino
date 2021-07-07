@@ -4,6 +4,9 @@
  * The command handler manages all the inputs FROM TS which are issued when a command button is clicked by the user
  */
 
+#define TS_CMD_TEST_DSBL  256
+#define TS_CMD_TEST_ENBL  257
+
 #define TS_CMD_INJ1_ON    513
 #define TS_CMD_INJ1_OFF   514
 #define TS_CMD_INJ1_50PC  515
@@ -54,6 +57,9 @@
 #define TS_CMD_IGN8_OFF   791
 #define TS_CMD_IGN8_50PC  792
 
+#define TS_CMD_STM32_REBOOT     12800
+#define TS_CMD_STM32_BOOTLOADER 12801
+
 #define TS_CMD_VSS_60KMH  39168 //0x99x00
 #define TS_CMD_VSS_RATIO1 39169
 #define TS_CMD_VSS_RATIO2 39170
@@ -62,4 +68,5 @@
 #define TS_CMD_VSS_RATIO5 39173
 #define TS_CMD_VSS_RATIO6 39174
 
-uint16_t TS_CommandButtonsHandler(int);
+/* the maximum id number is 65,535 */
+void TS_CommandButtonsHandler(uint16_t);

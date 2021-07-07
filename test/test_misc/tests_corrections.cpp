@@ -7,6 +7,7 @@
 void testCorrections()
 {
   test_corrections_WUE();
+  test_corrections_dfco();
   /*
   RUN_TEST(test_corrections_cranking); //Not written yet
   RUN_TEST(test_corrections_ASE); //Not written yet
@@ -121,7 +122,66 @@ void test_corrections_launch(void)
 {
 
 }
-void test_corrections_dfco(void)
-{
 
+void setup_DFCO_on()
+{
+  //Sets all the required conditions to have the DFCO be active
+  configPage2.dfcoEnabled = 1; //Ensure DFCO option is turned on
+  currentStatus.RPM = 4000; //Set the current simulated RPM to a level above the DFCO rpm threshold
+  currentStatus.TPS = 0; //Set the simulated TPS to 0 
+  currentStatus.coolant = 80;
+  configPage4.dfcoRPM = 150; //DFCO enable RPM = 1500
+  configPage4.dfcoTPSThresh = 1;
+  configPage4.dfcoHyster = 50;
+  configPage2.dfcoMinCLT = 40; //Actually 0 with offset
+  configPage2.dfcoDelay = 10;
+
+  runSecsX10 = 1;
+  correctionDFCO();
+  runSecsX10 = 20;
+}
+
+void test_corrections_dfco_on(void)
+{
+  //Test under ideal conditions that DFCO goes active
+  setup_DFCO_on();
+
+  TEST_ASSERT_TRUE(correctionDFCO());
+}
+void test_corrections_dfco_off_RPM()
+{
+  //Test that DFCO comes on and then goes off when the RPM drops below threshold
+  setup_DFCO_on();
+
+  TEST_ASSERT_TRUE(correctionDFCO()); //Make sure DFCO is on initially
+  currentStatus.RPM = 1000; //Set the current simulated RPM below the threshold + hyster
+  TEST_ASSERT_FALSE(correctionDFCO()); //Test DFCO is now off
+}
+void test_corrections_dfco_off_TPS()
+{
+  //Test that DFCO comes on and then goes off when the TPS goes above the required threshold (ie not off throttle)
+  setup_DFCO_on();
+
+  TEST_ASSERT_TRUE(correctionDFCO()); //Make sure DFCO is on initially
+  currentStatus.TPS = 10; //Set the current simulated TPS to be above the threshold
+  TEST_ASSERT_FALSE(correctionDFCO()); //Test DFCO is now off
+}
+void test_corrections_dfco_off_delay()
+{
+  //Test that DFCO comes will not activate if there has not been a long enough delay
+  //The steup function below simulates a 2 second delay
+  setup_DFCO_on();
+
+  //Set the threshold to be 2.5 seconds, above the simulated delay of 2s
+  configPage2.dfcoDelay = 250;
+
+  TEST_ASSERT_FALSE(correctionDFCO()); //Make sure DFCO does not come on
+}
+
+void test_corrections_dfco()
+{
+  RUN_TEST(test_corrections_dfco_on);
+  RUN_TEST(test_corrections_dfco_off_RPM);
+  RUN_TEST(test_corrections_dfco_off_TPS);
+  RUN_TEST(test_corrections_dfco_off_delay);
 }

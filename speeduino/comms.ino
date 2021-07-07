@@ -8,11 +8,14 @@ A full copy of the license may be found in the projects root directory
 #include "cancomms.h"
 #include "storage.h"
 #include "maths.h"
-#include "utils.h"
+#include "utilities.h"
 #include "decoders.h"
 #include "TS_CommandButtonHandler.h"
-#include "logger.h"
 #include "errors.h"
+#include "src/FastCRC/FastCRC.h"
+#ifdef RTC_ENABLED
+  #include "rtc_common.h"
+#endif
 
 /*
   Processes the data on the serial buffer.
@@ -87,37 +90,33 @@ void command()
       break;
 
     case 'E': // receive command button commands
+      cmdPending = true;
 
-      if(cmdPending == true)
+      if(Serial.available() >= 2)
       {
-        //
+        byte cmdGroup = Serial.read();
+        byte cmdValue = Serial.read();
+        uint16_t cmdCombined = word(cmdGroup, cmdValue);
 
-      }
-      else
-      {
-        cmdPending = true;
-
-        if(Serial.available() >= 2)
+        if ( ((cmdCombined >= TS_CMD_INJ1_ON) && (cmdCombined <= TS_CMD_IGN8_50PC)) || (cmdCombined == TS_CMD_TEST_ENBL) || (cmdCombined == TS_CMD_TEST_DSBL) )
         {
-          byte cmdGroup = Serial.read();
-          byte cmdValue = Serial.read();
-          uint16_t cmdCombined = word(cmdGroup, cmdValue);
-
-          if ( (cmdCombined >= TS_CMD_INJ1_ON) && (cmdCombined <=TS_CMD_IGN8_50PC) )
-          {
-            //Hardware test buttons
-            if (currentStatus.RPM == 0) { TS_CommandButtonsHandler(cmdCombined); }
-            cmdPending = false;
-          }
-          else if( (cmdCombined >= TS_CMD_VSS_60KMH) && (cmdCombined <= TS_CMD_VSS_RATIO6) )
-          {
-            //VSS Calibration commands
-            TS_CommandButtonsHandler(cmdCombined);
-            cmdPending = false;
-          }
+          //Hardware test buttons
+          if (currentStatus.RPM == 0) { TS_CommandButtonsHandler(cmdCombined); }
+          cmdPending = false;
+        }
+        else if( (cmdCombined >= TS_CMD_VSS_60KMH) && (cmdCombined <= TS_CMD_VSS_RATIO6) )
+        {
+          //VSS Calibration commands
+          TS_CommandButtonsHandler(cmdCombined);
+          cmdPending = false;
+        }
+        else if( (cmdCombined >= TS_CMD_STM32_REBOOT) && (cmdCombined <= TS_CMD_STM32_BOOTLOADER) )
+        {
+          //STM32 DFU mode button
+          TS_CommandButtonsHandler(cmdCombined);
+          cmdPending = false;
         }
       }
-
       break;
 
     case 'F': // send serial protocol version
@@ -218,7 +217,7 @@ void command()
         }
         
         // Detecting if the current page is a table/map
-        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) ) { isMap = true; }
+        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) || (currentPage == ignMap2Page) ) { isMap = true; }
         else { isMap = false; }
         cmdPending = false;
       }
@@ -259,7 +258,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202003-dev"));
+      Serial.print(F("speeduino 202101-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -271,15 +270,145 @@ void command()
         cmd = Serial.read(); // read the command
 
         uint16_t offset, length;
+        byte tmp;
+        tmp = Serial.read();
+        offset = word(Serial.read(), tmp);
+        tmp = Serial.read();
+        length = word(Serial.read(), tmp);
+
+
         if(cmd == 0x30) //Send output channels command 0x30 is 48dec
         {
-          byte tmp;
-          tmp = Serial.read();
-          offset = word(Serial.read(), tmp);
-          tmp = Serial.read();
-          length = word(Serial.read(), tmp);
-          sendValues(offset, length,cmd, 0);
+          sendValues(offset, length, cmd, 0);
         }
+#ifdef RTC_ENABLED
+        else if(cmd == SD_RTC_PAGE) //Request to read SD card RTC
+        {
+          /*
+          uint16_t packetSize = 2 + 1 + length + 4;
+          packetSize = 15;
+          Serial.write(highByte(packetSize));
+          Serial.write(lowByte(packetSize));
+          byte packet[length+1];
+
+          packet[0] = 0;
+          packet[1] = length;
+          packet[2] = 0;
+          packet[3] = 0;
+          packet[4] = 0;
+          packet[5] = 0;
+          packet[6] = 0;
+          packet[7] = 0;
+          packet[8] = 0;
+          Serial.write(packet, 9);
+
+          FastCRC32 CRC32;
+          uint32_t CRC32_val = CRC32.crc32((byte *)packet, sizeof(packet) );;
+      
+          //Split the 4 bytes of the CRC32 value into individual bytes and send
+          Serial.write( ((CRC32_val >> 24) & 255) );
+          Serial.write( ((CRC32_val >> 16) & 255) );
+          Serial.write( ((CRC32_val >> 8) & 255) );
+          Serial.write( (CRC32_val & 255) );
+          */
+          Serial.write(rtc_getSecond()); //Seconds
+          Serial.write(rtc_getMinute()); //Minutes
+          Serial.write(rtc_getHour()); //Hours
+          Serial.write(rtc_getDOW()); //Day of Week
+          Serial.write(rtc_getDay()); //Date
+          Serial.write(rtc_getMonth()); //Month
+          Serial.write(lowByte(rtc_getYear())); //Year - NOTE 2 bytes
+          Serial.write(highByte(rtc_getYear())); //Year
+
+        }
+        else if(cmd == SD_READWRITE_PAGE) //Request SD card extended parameters
+        {
+          //SD read commands use the offset and length fields to indicate the request type
+          if((offset == SD_READ_STAT_OFFSET) && (length == SD_READ_STAT_LENGTH))
+          {
+            //Read the status of the SD card
+            
+            //Serial.write(0);
+
+
+            //Serial.write(currentStatus.TS_SD_Status);
+            Serial.write((uint8_t)5);
+            Serial.write((uint8_t)0);
+
+            //All other values are 2 bytes          
+            Serial.write((uint8_t)2); //Sector size
+            Serial.write((uint8_t)0); //Sector size
+
+            //Max blocks (4 bytes)
+            Serial.write((uint8_t)0);
+            Serial.write((uint8_t)0x20); //1gb dummy card
+            Serial.write((uint8_t)0);
+            Serial.write((uint8_t)0);
+
+            //Max roots (Number of files)
+            Serial.write((uint8_t)0);
+            Serial.write((uint8_t)1);
+
+            //Dir Start (4 bytes)
+            Serial.write((uint8_t)0); //Dir start lower 2 bytes
+            Serial.write((uint8_t)0); //Dir start lower 2 bytes
+            Serial.write((uint8_t)0); //Dir start lower 2 bytes
+            Serial.write((uint8_t)0); //Dir start lower 2 bytes
+
+            //Unkown purpose for last 2 bytes
+            Serial.write((uint8_t)0); //Dir start lower 2 bytes
+            Serial.write((uint8_t)0); //Dir start lower 2 bytes
+            
+            /*
+            Serial.write(lowByte(23));
+            Serial.write(highByte(23));
+
+            byte packet[17];
+            packet[0] = 0;
+            packet[1] = 5;
+            packet[2] = 0;
+
+            packet[3] = 2;
+            packet[4] = 0;
+
+            packet[5] = 0;
+            packet[6] = 0x20;
+            packet[7] = 0;
+            packet[8] = 0;
+
+            packet[9] = 0;
+            packet[10] = 1;
+
+            packet[11] = 0;
+            packet[12] = 0;
+            packet[13] = 0;
+            packet[14] = 0;
+
+            packet[15] = 0;
+            packet[16] = 0;
+
+            Serial.write(packet, 17);
+            FastCRC32 CRC32;
+            uint32_t CRC32_val = CRC32.crc32((byte *)packet, sizeof(packet) );;
+        
+            //Split the 4 bytes of the CRC32 value into individual bytes and send
+            Serial.write( ((CRC32_val >> 24) & 255) );
+            Serial.write( ((CRC32_val >> 16) & 255) );
+            Serial.write( ((CRC32_val >> 8) & 255) );
+            Serial.write( (CRC32_val & 255) );
+            */
+
+          }
+          //else if(length == 0x202)
+          {
+            //File info
+          }
+        }
+        else if(cmd == 0x14)
+        {
+          //Fetch data from file
+        }
+#endif
         else
         {
           //No other r/ commands should be called
@@ -289,7 +418,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2020.03-dev"));
+      Serial.print(F("Speeduino 2021.01-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -308,8 +437,8 @@ void command()
         Serial.read(); // First byte of the page identifier can be ignored. It's always 0
         Serial.read(); // First byte of the page identifier can be ignored. It's always 0
 
-        if(currentStatus.toothLogEnabled == true) { sendToothLog(); } //Sends tooth log values as ints
-        else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(); }
+        if(currentStatus.toothLogEnabled == true) { sendToothLog(0); } //Sends tooth log values as ints
+        else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(0); }
 
         cmdPending = false;
       }
@@ -318,7 +447,7 @@ void command()
 
       break;
 
-    case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>. This is an MS2/Extra command, NOT part of MS1 spec
+    case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>.
       byte tableID;
       //byte canID;
 
@@ -380,7 +509,7 @@ void command()
 
       break;
 
-    case 'w':
+    case 'M':
       cmdPending = true;
 
       if(chunkPending == false)
@@ -401,17 +530,18 @@ void command()
           offset1 = Serial.read();
           offset2 = Serial.read();
           valueOffset = word(offset2, offset1);
-          length1 = Serial.read(); // Length to be written (Should always be 1)
-          length2 = Serial.read(); // Length to be written (Should always be 1)
+          length1 = Serial.read();
+          length2 = Serial.read();
           chunkSize = word(length2, length1);
 
+          //Regular page data
           chunkPending = true;
           chunkComplete = 0;
         }
       }
       //This CANNOT be an else of the above if statement as chunkPending gets set to true above
       if(chunkPending == true)
-      {
+      { 
         while( (Serial.available() > 0) && (chunkComplete < chunkSize) )
         {
           receiveValue( (valueOffset + chunkComplete), Serial.read());
@@ -421,28 +551,123 @@ void command()
       }
       break;
 
+    case 'w':
+      if(Serial.available() >= 7)
+        {
+          byte offset1, offset2, length1, length2;
+
+          Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+          currentPage = Serial.read();
+          //currentPage = 1;
+          offset1 = Serial.read();
+          offset2 = Serial.read();
+          valueOffset = word(offset2, offset1);
+          length1 = Serial.read();
+          length2 = Serial.read();
+          chunkSize = word(length2, length1);
+        }
+#ifdef RTC_ENABLED
+      if(currentPage == SD_READWRITE_PAGE)
+        { 
+          cmdPending = false;
+
+          //Reserved for the SD card settings. Appears to be hardcoded into TS. Flush the final byte in the buffer as its not used for now
+          Serial.read(); 
+          if((valueOffset == SD_WRITE_DO_OFFSET) && (chunkSize == SD_WRITE_DO_LENGTH))
+          {
+            /*
+            SD DO command. Single byte of data where the commands are:
+            0 Reset
+            1 Reset
+            2 Stop logging
+            3 Start logging
+            4 Load status variable
+            5 Init SD card
+            */
+            Serial.read();
+          }
+          else if((valueOffset == SD_WRITE_SEC_OFFSET) && (chunkSize == SD_WRITE_SEC_LENGTH))
+          {
+            //SD write sector command
+          }
+          else if((valueOffset == SD_ERASEFILE_OFFSET) && (chunkSize == SD_ERASEFILE_LENGTH))
+          {
+            //Erase file command
+            //First 4 bytes are the log number in ASCII
+            /*
+            char log1 = Serial.read();
+            char log2 = Serial.read();
+            char log3 = Serial.read();
+            char log4 = Serial.read();
+            */
+
+            //Next 2 bytes are the directory block no
+            Serial.read();
+            Serial.read();
+          }
+          else if((valueOffset == SD_SPD_TEST_OFFSET) && (chunkSize == SD_SPD_TEST_LENGTH))
+          {
+            //Perform a speed test on the SD card
+            //First 4 bytes are the sector number to write to
+            Serial.read();
+            Serial.read();
+            Serial.read();
+            Serial.read();
+
+            //Last 4 bytes are the number of sectors to test
+            Serial.read();
+            Serial.read();
+            Serial.read();
+            Serial.read();
+          }
+        }
+        else if(currentPage == SD_RTC_PAGE)
+        {
+          cmdPending = false;
+          //Used for setting RTC settings
+          if((valueOffset == SD_RTC_WRITE_OFFSET) && (chunkSize == SD_RTC_WRITE_LENGTH))
+          {
+            //Set the RTC date/time
+            //Need to ensure there are 9 more bytes with the new values
+            while(Serial.available() < 9) {} //Terrible hack, but RTC values should not be set with the engine running anyway
+            byte second = Serial.read();
+            byte minute = Serial.read();
+            byte hour = Serial.read();
+            //byte dow = Serial.read();
+            Serial.read(); // This is the day of week value, which is currently unused
+            byte day = Serial.read();
+            byte month = Serial.read();
+            uint16_t year = Serial.read();
+            year = word(Serial.read(), year);
+            Serial.read(); //Final byte is unused (Always has value 0x5a)
+            rtc_setTime(second, minute, hour, day, month, year);
+          }
+        }
+#endif
+      break;
+
     case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed. This function takes 1.5kb of program space! :S
     #ifndef SMALL_FLASH_MODE
       Serial.println(F("Coolant"));
-      for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
+      for (int x = 0; x < 32; x++)
       {
-        Serial.print(x);
+        Serial.print(cltCalibration_bins[x]);
         Serial.print(", ");
-        Serial.println(cltCalibrationTable[x]);
+        Serial.println(cltCalibration_values[x]);
       }
       Serial.println(F("Inlet temp"));
-      for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
+      for (int x = 0; x < 32; x++)
       {
-        Serial.print(x);
+        Serial.print(iatCalibration_bins[x]);
         Serial.print(", ");
-        Serial.println(iatCalibrationTable[x]);
+        Serial.println(iatCalibration_values[x]);
       }
       Serial.println(F("O2"));
-      for (int x = 0; x < CALIBRATION_TABLE_SIZE; x++)
+      for (int x = 0; x < 32; x++)
       {
-        Serial.print(x);
+        Serial.print(o2Calibration_bins[x]);
         Serial.print(", ");
-        Serial.println(o2CalibrationTable[x]);
+        Serial.println(o2Calibration_values[x]);
       }
       Serial.println(F("WUE"));
       for (int x = 0; x < 10; x++)
@@ -456,7 +681,7 @@ void command()
       break;
 
     case 'z': //Send 256 tooth log entries to a terminal emulator
-      sendToothLog(); //Sends tooth log values as chars
+      sendToothLog(0); //Sends tooth log values as chars
       break;
 
     case '`': //Custom 16u2 firmware is making its presence known
@@ -508,14 +733,167 @@ void command()
   }
 }
 
+byte getStatusEntry(uint16_t byteNum)
+{
+  byte statusValue = 0;
+
+  switch(byteNum)
+  {
+    case 0: statusValue = currentStatus.secl; break; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
+    case 1: statusValue = currentStatus.status1; break; //status1 Bitfield
+    case 2: statusValue = currentStatus.engine; break; //Engine Status Bitfield
+    case 3: statusValue = currentStatus.syncLossCounter; break;
+    case 4: statusValue = lowByte(currentStatus.MAP); break; //2 bytes for MAP
+    case 5: statusValue = highByte(currentStatus.MAP); break;
+    case 6: statusValue = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); break; //mat
+    case 7: statusValue = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); break; //Coolant ADC
+    case 8: statusValue = currentStatus.batCorrection; break; //Battery voltage correction (%)
+    case 9: statusValue = currentStatus.battery10; break; //battery voltage
+    case 10: statusValue = currentStatus.O2; break; //O2
+    case 11: statusValue = currentStatus.egoCorrection; break; //Exhaust gas correction (%)
+    case 12: statusValue = currentStatus.iatCorrection; break; //Air temperature Correction (%)
+    case 13: statusValue = currentStatus.wueCorrection; break; //Warmup enrichment (%)
+    case 14: statusValue = lowByte(currentStatus.RPM); break; //rpm HB
+    case 15: statusValue = highByte(currentStatus.RPM); break; //rpm LB
+    case 16: statusValue = (byte)(currentStatus.AEamount >> 1); break; //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
+    case 17: statusValue = lowByte(currentStatus.corrections); break; //Total GammaE (%)
+    case 18: statusValue = highByte(currentStatus.corrections); break; //Total GammaE (%)
+    case 19: statusValue = currentStatus.VE1; break; //VE 1 (%)
+    case 20: statusValue = currentStatus.VE2; break; //VE 2 (%)
+    case 21: statusValue = currentStatus.afrTarget; break;
+    case 22: statusValue = currentStatus.tpsDOT; break; //TPS DOT
+    case 23: statusValue = currentStatus.advance; break;
+    case 24: statusValue = currentStatus.TPS; break; // TPS (0% to 100%)
+    
+    case 25: 
+      if(currentStatus.loopsPerSecond > 60000) { currentStatus.loopsPerSecond = 60000;}
+      statusValue = lowByte(currentStatus.loopsPerSecond); 
+      break;
+    case 26: 
+      if(currentStatus.loopsPerSecond > 60000) { currentStatus.loopsPerSecond = 60000;}
+      statusValue = highByte(currentStatus.loopsPerSecond); 
+      break;
+    
+    case 27: 
+      currentStatus.freeRAM = freeRam();
+      statusValue = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
+      break; 
+    case 28: 
+      currentStatus.freeRAM = freeRam();
+      statusValue = highByte(currentStatus.freeRAM); 
+      break;
+
+    case 29: statusValue = (byte)(currentStatus.boostTarget >> 1); break; //Divide boost target by 2 to fit in a byte
+    case 30: statusValue = (byte)(currentStatus.boostDuty / 100); break;
+    case 31: statusValue = currentStatus.spark; break; //Spark related bitfield
+
+    //rpmDOT must be sent as a signed integer
+    case 32: statusValue = lowByte(currentStatus.rpmDOT); break;
+    case 33: statusValue = highByte(currentStatus.rpmDOT); break;
+
+    case 34: statusValue = currentStatus.ethanolPct; break; //Flex sensor value (or 0 if not used)
+    case 35: statusValue = currentStatus.flexCorrection; break; //Flex fuel correction (% above or below 100)
+    case 36: statusValue = currentStatus.flexIgnCorrection; break; //Ignition correction (Increased degrees of advance) for flex fuel
+
+    case 37: statusValue = currentStatus.idleLoad; break;
+    case 38: statusValue = currentStatus.testOutputs; break;
+
+    case 39: statusValue = currentStatus.O2_2; break; //O2
+    case 40: statusValue = currentStatus.baro; break; //Barometer value
+
+    case 41: statusValue = lowByte(currentStatus.canin[0]); break;
+    case 42: statusValue = highByte(currentStatus.canin[0]); break;
+    case 43: statusValue = lowByte(currentStatus.canin[1]); break;
+    case 44: statusValue = highByte(currentStatus.canin[1]); break;
+    case 45: statusValue = lowByte(currentStatus.canin[2]); break;
+    case 46: statusValue = highByte(currentStatus.canin[2]); break;
+    case 47: statusValue = lowByte(currentStatus.canin[3]); break;
+    case 48: statusValue = highByte(currentStatus.canin[3]); break;
+    case 49: statusValue = lowByte(currentStatus.canin[4]); break;
+    case 50: statusValue = highByte(currentStatus.canin[4]); break;
+    case 51: statusValue = lowByte(currentStatus.canin[5]); break;
+    case 52: statusValue = highByte(currentStatus.canin[5]); break;
+    case 53: statusValue = lowByte(currentStatus.canin[6]); break;
+    case 54: statusValue = highByte(currentStatus.canin[6]); break;
+    case 55: statusValue = lowByte(currentStatus.canin[7]); break;
+    case 56: statusValue = highByte(currentStatus.canin[7]); break;
+    case 57: statusValue = lowByte(currentStatus.canin[8]); break;
+    case 58: statusValue = highByte(currentStatus.canin[8]); break;
+    case 59: statusValue = lowByte(currentStatus.canin[9]); break;
+    case 60: statusValue = highByte(currentStatus.canin[9]); break;
+    case 61: statusValue = lowByte(currentStatus.canin[10]); break;
+    case 62: statusValue = highByte(currentStatus.canin[10]); break;
+    case 63: statusValue = lowByte(currentStatus.canin[11]); break;
+    case 64: statusValue = highByte(currentStatus.canin[11]); break;
+    case 65: statusValue = lowByte(currentStatus.canin[12]); break;
+    case 66: statusValue = highByte(currentStatus.canin[12]); break;
+    case 67: statusValue = lowByte(currentStatus.canin[13]); break;
+    case 68: statusValue = highByte(currentStatus.canin[13]); break;
+    case 69: statusValue = lowByte(currentStatus.canin[14]); break;
+    case 70: statusValue = highByte(currentStatus.canin[14]); break;
+    case 71: statusValue = lowByte(currentStatus.canin[15]); break;
+    case 72: statusValue = highByte(currentStatus.canin[15]); break;
+
+    case 73: statusValue = currentStatus.tpsADC; break;
+    case 74: statusValue = getNextError(); break;
+
+    case 75: statusValue = lowByte(currentStatus.PW1); break; //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+    case 76: statusValue = highByte(currentStatus.PW1); break; //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+    case 77: statusValue = lowByte(currentStatus.PW2); break; //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
+    case 78: statusValue = highByte(currentStatus.PW2); break; //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
+    case 79: statusValue = lowByte(currentStatus.PW3); break; //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
+    case 80: statusValue = highByte(currentStatus.PW3); break; //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
+    case 81: statusValue = lowByte(currentStatus.PW4); break; //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
+    case 82: statusValue = highByte(currentStatus.PW4); break; //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
+
+    case 83: statusValue = currentStatus.status3; break;
+    case 84: statusValue = currentStatus.engineProtectStatus; break;
+    case 85: statusValue = lowByte(currentStatus.fuelLoad); break;
+    case 86: statusValue = highByte(currentStatus.fuelLoad); break;
+    case 87: statusValue = lowByte(currentStatus.ignLoad); break;
+    case 88: statusValue = highByte(currentStatus.ignLoad); break;
+    case 89: statusValue = lowByte(currentStatus.dwell); break;
+    case 90: statusValue = highByte(currentStatus.dwell); break;
+    case 91: statusValue = currentStatus.CLIdleTarget; break;
+    case 92: statusValue = currentStatus.mapDOT; break;
+    case 93: statusValue = (int8_t)currentStatus.vvt1Angle; break;
+    case 94: statusValue = currentStatus.vvt1TargetAngle; break;
+    case 95: statusValue = currentStatus.vvt1Duty; break;
+    case 96: statusValue = lowByte(currentStatus.flexBoostCorrection); break;
+    case 97: statusValue = highByte(currentStatus.flexBoostCorrection); break;
+    case 98: statusValue = currentStatus.baroCorrection; break;
+    case 99: statusValue = currentStatus.VE; break; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
+    case 100: statusValue = currentStatus.ASEValue; break; //Current ASE (%)
+    case 101: statusValue = lowByte(currentStatus.vss); break;
+    case 102: statusValue = highByte(currentStatus.vss); break;
+    case 103: statusValue = currentStatus.gear; break;
+    case 104: statusValue = currentStatus.fuelPressure; break;
+    case 105: statusValue = currentStatus.oilPressure; break;
+    case 106: statusValue = currentStatus.wmiPW; break;
+    case 107: statusValue = currentStatus.wmiEmpty; break;
+    case 108: statusValue = (int8_t)currentStatus.vvt2Angle; break;
+    case 109: statusValue = currentStatus.vvt2TargetAngle; break;
+    case 110: statusValue = currentStatus.vvt2Duty; break;
+    case 111: statusValue = currentStatus.outputsStatus; break;
+    case 112: statusValue = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); break; //Fuel temperature from flex sensor
+    case 113: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
+    case 114: statusValue = currentStatus.advance1; break; //advance 1 (%)
+    case 115: statusValue = currentStatus.advance2; break; //advance 2 (%)
+    case 116: statusValue = currentStatus.TS_SD_Status; break; //SD card status
+  }
+
+  return statusValue;
+
+  //Each new inclusion here need to be added on speeduino.ini@L78, only list first byte of an integer and second byte as "INVALID"
+  //Every 2-byte integer added here should have it's lowByte index added to fsIntIndex array on globals.ino@L116
+}
+
 /*
 This function returns the current values of a fixed group of variables
 */
 //void sendValues(int packetlength, byte portNum)
 void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
-{
-  byte fullStatus[LOG_ENTRY_SIZE];
-
+{  
   if (portNum == 3)
   {
     //CAN serial
@@ -524,12 +902,8 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
       {
         CANSerial.write("r");         //confirm cmd type
         CANSerial.write(cmd);
-        
       }
-      else if (cmd == 31)
-      {
-        CANSerial.write("A");         //confirm cmd type
-      }
+      else if (cmd == 31) { CANSerial.write("A"); }        //confirm cmd type
     #endif
   }
   else
@@ -540,137 +914,34 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
-  fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
-  fullStatus[1] = currentStatus.status1; //status1 Bitfield
-  fullStatus[2] = currentStatus.engine; //Engine Status Bitfield
-  fullStatus[3] = currentStatus.syncLossCounter;
-  fullStatus[4] = lowByte(currentStatus.MAP); //2 bytes for MAP
-  fullStatus[5] = highByte(currentStatus.MAP);
-  fullStatus[6] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
-  fullStatus[7] = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //Coolant ADC
-  fullStatus[8] = currentStatus.batCorrection; //Battery voltage correction (%)
-  fullStatus[9] = currentStatus.battery10; //battery voltage
-  fullStatus[10] = currentStatus.O2; //O2
-  fullStatus[11] = currentStatus.egoCorrection; //Exhaust gas correction (%)
-  fullStatus[12] = currentStatus.iatCorrection; //Air temperature Correction (%)
-  fullStatus[13] = currentStatus.wueCorrection; //Warmup enrichment (%)
-  fullStatus[14] = lowByte(currentStatus.RPM); //rpm HB
-  fullStatus[15] = highByte(currentStatus.RPM); //rpm LB
-  fullStatus[16] = (byte)(currentStatus.AEamount >> 1); //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
-  fullStatus[17] = lowByte(currentStatus.corrections); //Total GammaE (%)
-  fullStatus[18] = highByte(currentStatus.corrections); //Total GammaE (%)
-  fullStatus[19] = currentStatus.VE1; //VE 1 (%)
-  fullStatus[20] = currentStatus.VE2; //VE 2 (%)
-  fullStatus[21] = currentStatus.afrTarget;
-  fullStatus[22] = currentStatus.tpsDOT; //TPS DOT
-  fullStatus[23] = currentStatus.advance;
-  fullStatus[24] = currentStatus.TPS; // TPS (0% to 100%)
-  //Need to split the int loopsPerSecond value into 2 bytes
-  if(currentStatus.loopsPerSecond > 60000) { currentStatus.loopsPerSecond = 60000;}
-  fullStatus[25] = lowByte(currentStatus.loopsPerSecond);
-  fullStatus[26] = highByte(currentStatus.loopsPerSecond);
-
-  //The following can be used to show the amount of free memory
-  currentStatus.freeRAM = freeRam();
-  fullStatus[27] = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
-  fullStatus[28] = highByte(currentStatus.freeRAM);
-
-  fullStatus[29] = (byte)(currentStatus.boostTarget >> 1); //Divide boost target by 2 to fit in a byte
-  fullStatus[30] = (byte)(currentStatus.boostDuty / 100);
-  fullStatus[31] = currentStatus.spark; //Spark related bitfield
-
-  //rpmDOT must be sent as a signed integer
-  fullStatus[32] = lowByte(currentStatus.rpmDOT);
-  fullStatus[33] = highByte(currentStatus.rpmDOT);
-
-  fullStatus[34] = currentStatus.ethanolPct; //Flex sensor value (or 0 if not used)
-  fullStatus[35] = currentStatus.flexCorrection; //Flex fuel correction (% above or below 100)
-  fullStatus[36] = currentStatus.flexIgnCorrection; //Ignition correction (Increased degrees of advance) for flex fuel
-
-  fullStatus[37] = currentStatus.idleLoad;
-  fullStatus[38] = currentStatus.testOutputs;
-
-  fullStatus[39] = currentStatus.O2_2; //O2
-  fullStatus[40] = currentStatus.baro; //Barometer value
-
-  fullStatus[41] = lowByte(currentStatus.canin[0]);
-  fullStatus[42] = highByte(currentStatus.canin[0]);
-  fullStatus[43] = lowByte(currentStatus.canin[1]);
-  fullStatus[44] = highByte(currentStatus.canin[1]);
-  fullStatus[45] = lowByte(currentStatus.canin[2]);
-  fullStatus[46] = highByte(currentStatus.canin[2]);
-  fullStatus[47] = lowByte(currentStatus.canin[3]);
-  fullStatus[48] = highByte(currentStatus.canin[3]);
-  fullStatus[49] = lowByte(currentStatus.canin[4]);
-  fullStatus[50] = highByte(currentStatus.canin[4]);
-  fullStatus[51] = lowByte(currentStatus.canin[5]);
-  fullStatus[52] = highByte(currentStatus.canin[5]);
-  fullStatus[53] = lowByte(currentStatus.canin[6]);
-  fullStatus[54] = highByte(currentStatus.canin[6]);
-  fullStatus[55] = lowByte(currentStatus.canin[7]);
-  fullStatus[56] = highByte(currentStatus.canin[7]);
-  fullStatus[57] = lowByte(currentStatus.canin[8]);
-  fullStatus[58] = highByte(currentStatus.canin[8]);
-  fullStatus[59] = lowByte(currentStatus.canin[9]);
-  fullStatus[60] = highByte(currentStatus.canin[9]);
-  fullStatus[61] = lowByte(currentStatus.canin[10]);
-  fullStatus[62] = highByte(currentStatus.canin[10]);
-  fullStatus[63] = lowByte(currentStatus.canin[11]);
-  fullStatus[64] = highByte(currentStatus.canin[11]);
-  fullStatus[65] = lowByte(currentStatus.canin[12]);
-  fullStatus[66] = highByte(currentStatus.canin[12]);
-  fullStatus[67] = lowByte(currentStatus.canin[13]);
-  fullStatus[68] = highByte(currentStatus.canin[13]);
-  fullStatus[69] = lowByte(currentStatus.canin[14]);
-  fullStatus[70] = highByte(currentStatus.canin[14]);
-  fullStatus[71] = lowByte(currentStatus.canin[15]);
-  fullStatus[72] = highByte(currentStatus.canin[15]);
-
-  fullStatus[73] = currentStatus.tpsADC;
-  fullStatus[74] = getNextError();
-
-  fullStatus[75] = lowByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[76] = highByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[77] = lowByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[78] = highByte(currentStatus.PW2); //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[79] = lowByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[80] = highByte(currentStatus.PW3); //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[81] = lowByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[82] = highByte(currentStatus.PW4); //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
-
-  fullStatus[83] = currentStatus.status3;
-
-  fullStatus[84] = currentStatus.nChannels; //THIS IS CURRENTLY UNUSED!
-  fullStatus[85] = lowByte(currentStatus.fuelLoad);
-  fullStatus[86] = highByte(currentStatus.fuelLoad);
-  fullStatus[87] = lowByte(currentStatus.ignLoad);
-  fullStatus[88] = highByte(currentStatus.ignLoad);
-  fullStatus[89] = lowByte(currentStatus.dwell);
-  fullStatus[90] = highByte(currentStatus.dwell);
-  fullStatus[91] = currentStatus.CLIdleTarget;
-  fullStatus[92] = currentStatus.mapDOT;
-  fullStatus[93] = (int8_t)currentStatus.vvtAngle;
-  fullStatus[94] = currentStatus.vvtTargetAngle;
-  fullStatus[95] = currentStatus.vvtDuty;
-  fullStatus[96] = lowByte(currentStatus.flexBoostCorrection);
-  fullStatus[97] = highByte(currentStatus.flexBoostCorrection);
-  fullStatus[98] = currentStatus.baroCorrection;
-  fullStatus[99] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
-  fullStatus[100] = currentStatus.ASEValue; //Current ASE (%)
-  fullStatus[101] = currentStatus.vss;
-
   for(byte x=0; x<packetLength; x++)
   {
-    if (portNum == 0) { Serial.write(fullStatus[offset+x]); }
-    else if (portNum == 3){ CANSerial.write(fullStatus[offset+x]); }
+    if (portNum == 0) { Serial.write(getStatusEntry(offset+x)); }
+    #if defined(CANSerial_AVAILABLE)
+      else if (portNum == 3){ CANSerial.write(getStatusEntry(offset+x)); }
+    #endif
+
+    //Check whether the tx buffer still has space
+    if(Serial.availableForWrite() < 1) 
+    { 
+      //tx buffer is full. Store the current state so it can be resumed later
+      inProgressOffset = offset + x + 1;
+      inProgressLength = packetLength - x - 1;
+      serialInProgress = true;
+      return;
+    }
+    
   }
+  serialInProgress = false;
+  // Reset any flags that are being used to trigger page refreshes
+  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
 
 }
 
 void sendValuesLegacy()
 {
   uint16_t temp;
-  int bytestosend = 112;
+  int bytestosend = 114;
 
   bytestosend -= Serial.write(currentStatus.secl>>8);
   bytestosend -= Serial.write(currentStatus.secl);
@@ -777,6 +1048,13 @@ void sendValuesLegacy()
   bytestosend -= Serial.write(99); // fuelcor
   bytestosend -= Serial.write(99); // fuelcor
   bytestosend -= Serial.write(99); // portStatus
+
+  temp = currentStatus.advance1 * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
+  temp = currentStatus.advance2 * 10;
+  bytestosend -= Serial.write(temp>>8);
+  bytestosend -= Serial.write(temp);
 
   for(int i = 0; i < bytestosend; i++)
   {
@@ -960,11 +1238,31 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       else if (valueOffset < 180) { tempOffset = valueOffset - 144; trim4Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim4 map
       else if (valueOffset < 186) { tempOffset = valueOffset - 180; trim4Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
       else if (valueOffset < 192) { tempOffset = valueOffset - 186; trim4Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
+      //Trim table 5
+      else if (valueOffset < 228) { tempOffset = valueOffset - 192; trim5Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim5 map
+      else if (valueOffset < 234) { tempOffset = valueOffset - 228; trim5Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+      else if (valueOffset < 240) { tempOffset = valueOffset - 234; trim5Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
+      //Trim table 6
+      else if (valueOffset < 276) { tempOffset = valueOffset - 240; trim6Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim6 map
+      else if (valueOffset < 282) { tempOffset = valueOffset - 276; trim6Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+      else if (valueOffset < 288) { tempOffset = valueOffset - 282; trim6Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
+      //Trim table 7
+      else if (valueOffset < 324) { tempOffset = valueOffset - 288; trim7Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim7 map
+      else if (valueOffset < 330) { tempOffset = valueOffset - 324; trim7Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+      else if (valueOffset < 336) { tempOffset = valueOffset - 330; trim7Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
+      //Trim table 8
+      else if (valueOffset < 372) { tempOffset = valueOffset - 336; trim8Table.values[5 - (tempOffset / 6)][tempOffset % 6] = newValue; } //New value is part of the trim8 map
+      else if (valueOffset < 378) { tempOffset = valueOffset - 372; trim8Table.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER; } //New value is on the X (RPM) axis of the table. The RPM values sent by TunerStudio are divided by 100, need to multiply it back by 100 to make it correct (TABLE_RPM_MULTIPLIER)
+      else if (valueOffset < 384) { tempOffset = valueOffset - 378; trim8Table.axisY[(5 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER; } //New value is on the Y (Load) axis of the table
 
       trim1Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       trim2Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       trim3Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       trim4Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      trim5Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      trim6Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      trim7Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      trim8Table.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
     case canbusPage:
@@ -1012,7 +1310,73 @@ void receiveValue(uint16_t valueOffset, byte newValue)
       fuelTable2.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
 
+    case wmiMapPage:
+      if (valueOffset < 64) //New value is part of the wmi map
+      {
+        wmiTable.values[7 - (valueOffset / 8)][valueOffset % 8] = newValue;
+      }
+      else if (valueOffset < 72) //New value is on the X (RPM) axis of the wmi table
+      {
+        wmiTable.axisX[(valueOffset - 64)] = int(newValue) * TABLE_RPM_MULTIPLIER;
+      }
+      else if (valueOffset < 80) //New value is on the Y (MAP) axis of the wmi table
+      {
+        wmiTable.axisY[(7 - (valueOffset - 72))] = int(newValue) * TABLE_LOAD_MULTIPLIER;
+      }
+      //End of wmi table
+      else if (valueOffset < 176) //New value is part of the dwell map
+      {
+        tempOffset = valueOffset - 160;
+        dwellTable.values[3 - (tempOffset / 4)][tempOffset % 4] = newValue;
+      }
+      else if (valueOffset < 180) //New value is on the X (RPM) axis of the dwell table
+      {
+        tempOffset = valueOffset - 176;
+        dwellTable.axisX[tempOffset] = int(newValue) * TABLE_RPM_MULTIPLIER;
+      }
+      else if (valueOffset < 184) //New value is on the Y (Load) axis of the dwell table
+      {
+        tempOffset = valueOffset - 180;
+        dwellTable.axisY[(3 - tempOffset)] = int(newValue) * TABLE_LOAD_MULTIPLIER;
+      }
+      //End of dwell table
+      wmiTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      dwellTable.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
+      break;
+      
+    case progOutsPage:
+      pnt_configPage = &configPage13;
+      //For some reason, TunerStudio is sending offsets greater than the maximum page size. I'm not sure if it's their bug or mine, but the fix is to only update the config page if the offset is less than the maximum size
+      if (valueOffset < npage_size[currentPage])
+      {
+        *((byte *)pnt_configPage + (byte)valueOffset) = newValue;
+      }
+      break;
+
     default:
+      break;
+    
+    case ignMap2Page: //Ignition settings page (Page 2)
+      if (valueOffset < 256) //New value is part of the ignition map
+      {
+        ignitionTable2.values[15 - (valueOffset / 16)][valueOffset % 16] = newValue;
+      }
+      else
+      {
+        //Check whether this is on the X (RPM) or Y (MAP/TPS) axis
+        if (valueOffset < 272)
+        {
+          //X Axis
+          ignitionTable2.axisX[(valueOffset - 256)] = (int)(newValue) * TABLE_RPM_MULTIPLIER; //The RPM values sent by TunerStudio are divided by 100, need to multiple it back by 100 to make it correct
+        }
+        else if(valueOffset < 288)
+        {
+          //Y Axis
+          tempOffset = 15 - (valueOffset - 272); //Need to do a translation to flip the order
+          ignitionTable2.axisY[tempOffset] = (int)(newValue) * TABLE_LOAD_MULTIPLIER;
+        }
+      }
+      ignitionTable2.cacheIsValid = false; //Invalid the tables cache to ensure a lookup of new values
       break;
   }
   //if(Serial.available() > 16) { command(); }
@@ -1082,7 +1446,7 @@ void sendPage()
     case seqFuelPage:
     {
       //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
-      byte response[192]; //Bit hacky, but the size is: (6x6 + 6 + 6) * 4 = 192
+      byte response[384]; //Bit hacky, but the size is: (6x6 + 6 + 6) * 8 = 384
 
       //trim1 table
       for (int x = 0; x < 36; x++) { response[x] = trim1Table.values[5 - (x / 6)][x % 6]; }
@@ -1100,6 +1464,23 @@ void sendPage()
       for (int x = 0; x < 36; x++) { response[x + 144] = trim4Table.values[5 - (x / 6)][x % 6]; }
       for (int x = 36; x < 42; x++) { response[x + 144] = byte(trim4Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
       for (int y = 42; y < 48; y++) { response[y + 144] = byte(trim4Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+      //trim5 table
+      for (int x = 0; x < 36; x++) { response[x + 192] = trim5Table.values[5 - (x / 6)][x % 6]; }
+      for (int x = 36; x < 42; x++) { response[x + 192] = byte(trim5Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
+      for (int y = 42; y < 48; y++) { response[y + 192] = byte(trim5Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+      //trim6 table
+      for (int x = 0; x < 36; x++) { response[x + 240] = trim6Table.values[5 - (x / 6)][x % 6]; }
+      for (int x = 36; x < 42; x++) { response[x + 240] = byte(trim6Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
+      for (int y = 42; y < 48; y++) { response[y + 240] = byte(trim6Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+      //trim7 table
+      for (int x = 0; x < 36; x++) { response[x + 288] = trim7Table.values[5 - (x / 6)][x % 6]; }
+      for (int x = 36; x < 42; x++) { response[x + 288] = byte(trim7Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
+      for (int y = 42; y < 48; y++) { response[y + 288] = byte(trim7Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+      //trim8 table
+      for (int x = 0; x < 36; x++) { response[x + 336] = trim8Table.values[5 - (x / 6)][x % 6]; }
+      for (int x = 36; x < 42; x++) { response[x + 336] = byte(trim8Table.axisX[(x - 36)] / TABLE_RPM_MULTIPLIER); }
+      for (int y = 42; y < 48; y++) { response[y + 336] = byte(trim8Table.axisY[5 - (y - 42)] / TABLE_LOAD_MULTIPLIER); }
+
       Serial.write((byte *)&response, sizeof(response));
       sendComplete = true;
       break;
@@ -1114,6 +1495,33 @@ void sendPage()
 
     case fuelMap2Page:
       currentTable = fuelTable2;
+      break;
+
+    case wmiMapPage:
+    {
+      //Need to perform a translation of the values[MAP/TPS][RPM] into the MS expected format
+      byte response[80]; //Bit hacky, but send 1 map at a time (Each map is 8x8, so 64 + 8 + 8)
+
+      //WMI table
+      for (int x = 0; x < 64; x++) { response[x] = wmiTable.values[7 - (x / 8)][x % 8]; }
+      for (int x = 64; x < 72; x++) { response[x] = byte(wmiTable.axisX[(x - 64)] / TABLE_RPM_MULTIPLIER); }
+      for (int y = 72; y < 80; y++) { response[y] = byte(wmiTable.axisY[7 - (y - 72)] / TABLE_LOAD_MULTIPLIER); }
+      Serial.write((byte *)&response, 80);
+
+      //Dwell table
+      for (int x = 0; x < 16; x++) { response[x] = dwellTable.values[3 - (x / 4)][x % 4]; }
+      for (int x = 16; x < 20; x++) { response[x] = byte(dwellTable.axisX[(x - 16)] / TABLE_RPM_MULTIPLIER); }
+      for (int y = 20; y < 24; y++) { response[y] = byte(dwellTable.axisY[3 - (y - 20)] / TABLE_LOAD_MULTIPLIER); }
+      Serial.write((byte *)&response, 24);
+      break;
+    }
+      
+    case progOutsPage:
+      pnt_configPage = &configPage13; //Create a pointer to Page 13 in memory
+      break;
+    
+    case ignMap2Page:
+      currentTable = ignitionTable2;
       break;
 
     default:
@@ -1403,6 +1811,19 @@ void sendPageASCII()
       currentTable = fuelTable2;
       break;
 
+    case progOutsPage:
+      //NOT WRITTEN YET
+      #ifndef SMALL_FLASH_MODE
+        Serial.println(F("\nPage has not been implemented yet"));
+      #endif
+      sendComplete = true;
+      break;
+    
+    case ignMap2Page:
+      currentTitleIndex = 149;// the index to the first char of the third string in pageTitles
+      currentTable = ignitionTable2;
+      break;
+
     default:
     #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
@@ -1614,6 +2035,38 @@ byte getPageValue(byte page, uint16_t valueAddress)
             else if(tempAddress < 42) { returnValue = byte(trim4Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
             else if(tempAddress < 48) { returnValue = byte(trim4Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
           }
+          else if(valueAddress < 240)
+          {
+            tempAddress = valueAddress - 192;
+            //trim5 table
+            if(tempAddress < 36) { returnValue = trim5Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
+            else if(tempAddress < 42) { returnValue = byte(trim5Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
+            else if(tempAddress < 48) { returnValue = byte(trim5Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
+          }
+          else if(valueAddress < 288)
+          {
+            tempAddress = valueAddress - 240;
+            //trim6 table
+            if(tempAddress < 36) { returnValue = trim6Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
+            else if(tempAddress < 42) { returnValue = byte(trim6Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
+            else if(tempAddress < 48) { returnValue = byte(trim6Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
+          }
+          else if(valueAddress < 336)
+          {
+            tempAddress = valueAddress - 288;
+            //trim7 table
+            if(tempAddress < 36) { returnValue = trim7Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
+            else if(tempAddress < 42) { returnValue = byte(trim7Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
+            else if(tempAddress < 48) { returnValue = byte(trim7Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
+          }
+          else if(valueAddress < 385)
+          {
+            tempAddress = valueAddress - 336;
+            //trim8 table
+            if(tempAddress < 36) { returnValue = trim8Table.values[5 - (tempAddress / 6)][tempAddress % 6]; }
+            else if(tempAddress < 42) { returnValue = byte(trim8Table.axisX[(tempAddress - 36)] / TABLE_RPM_MULTIPLIER); }
+            else if(tempAddress < 48) { returnValue = byte(trim8Table.axisY[5 - (tempAddress - 42)] / TABLE_LOAD_MULTIPLIER); }
+          }
         }
         break;
 
@@ -1632,7 +2085,35 @@ byte getPageValue(byte page, uint16_t valueAddress)
         else if(valueAddress < 272) { returnValue =  byte(fuelTable2.axisX[(valueAddress - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
         else if (valueAddress < 288) { returnValue = byte(fuelTable2.axisY[15 - (valueAddress - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
         break;
+        
+    case wmiMapPage:
+        if(valueAddress < 80)
+        {
+          if(valueAddress < 64) { returnValue = wmiTable.values[7 - (valueAddress / 8)][valueAddress % 8]; }
+          else if(valueAddress < 72) { returnValue = byte(wmiTable.axisX[(valueAddress - 64)] / TABLE_RPM_MULTIPLIER); }
+          else if(valueAddress < 80) { returnValue = byte(wmiTable.axisY[7 - (valueAddress - 72)] / TABLE_LOAD_MULTIPLIER); }
+        }
+        else if(valueAddress < 184)
+        {
+          tempAddress = valueAddress - 160;
+          //Dwell table
+          if(tempAddress < 16) { returnValue = dwellTable.values[3 - (tempAddress / 4)][tempAddress % 4]; }
+          else if(tempAddress < 20) { returnValue = byte(dwellTable.axisX[(tempAddress - 16)] / TABLE_RPM_MULTIPLIER); }
+          else if(tempAddress < 24) { returnValue = byte(dwellTable.axisY[3 - (tempAddress - 20)] / TABLE_LOAD_MULTIPLIER); }
+        }
+        break;
 
+    case progOutsPage:
+        pnt_configPage = &configPage13; //Create a pointer to Page 13 in memory
+        returnValue = *((byte *)pnt_configPage + valueAddress);
+        break;
+
+    case ignMap2Page:
+        if( valueAddress < 256) { returnValue = ignitionTable2.values[15 - (valueAddress / 16)][valueAddress % 16]; } //This is slightly non-intuitive, but essentially just flips the table vertically (IE top line becomes the bottom line etc). Columns are unchanged. Every 16 loops, manually call loop() to avoid potential misses
+        else if(valueAddress < 272) { returnValue =  byte(ignitionTable2.axisX[(valueAddress - 256)] / TABLE_RPM_MULTIPLIER); }  //RPM Bins for VE table (Need to be dvidied by 100)
+        else if (valueAddress < 288) { returnValue = byte(ignitionTable2.axisY[15 - (valueAddress - 272)] / TABLE_LOAD_MULTIPLIER); } //MAP or TPS bins for VE table
+        break;
+      
     default:
     #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
@@ -1651,112 +2132,87 @@ byte getPageValue(byte page, uint16_t valueAddress)
  */
 void receiveCalibration(byte tableID)
 {
-  byte* pnt_TargetTable; //Pointer that will be used to point to the required target table
-  int OFFSET, DIVISION_FACTOR, BYTES_PER_VALUE, EEPROM_START;
+  void* pnt_TargetTable_values; //Pointer that will be used to point to the required target table values
+  uint16_t* pnt_TargetTable_bins;   //Pointer that will be used to point to the required target table bins
+  int OFFSET, DIVISION_FACTOR;
 
   switch (tableID)
   {
     case 0:
       //coolant table
-      pnt_TargetTable = (byte *)&cltCalibrationTable;
+      pnt_TargetTable_values = (uint16_t *)&cltCalibration_values;
+      pnt_TargetTable_bins = (uint16_t *)&cltCalibration_bins;
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
       DIVISION_FACTOR = 10;
-      BYTES_PER_VALUE = 2;
-      EEPROM_START = EEPROM_CALIBRATION_CLT;
       break;
     case 1:
       //Inlet air temp table
-      pnt_TargetTable = (byte *)&iatCalibrationTable;
+      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
+      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
       DIVISION_FACTOR = 10;
-      BYTES_PER_VALUE = 2;
-      EEPROM_START = EEPROM_CALIBRATION_IAT;
       break;
     case 2:
       //O2 table
-      pnt_TargetTable = (byte *)&o2CalibrationTable;
+      //pnt_TargetTable = (byte *)&o2CalibrationTable;
+      pnt_TargetTable_values = (uint8_t *)&o2Calibration_values;
+      pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins;
       OFFSET = 0;
       DIVISION_FACTOR = 1;
-      BYTES_PER_VALUE = 1;
-      EEPROM_START = EEPROM_CALIBRATION_O2;
       break;
 
     default:
       OFFSET = 0;
-      pnt_TargetTable = (byte *)&o2CalibrationTable;
-      DIVISION_FACTOR = 1;
-      BYTES_PER_VALUE = 1;
-      EEPROM_START = EEPROM_CALIBRATION_O2;
+      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
+      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
+      DIVISION_FACTOR = 10;
       break; //Should never get here, but if we do, just fail back to main loop
   }
 
-  //1024 value pairs are sent. We have to receive them all, but only use every second one (We only store 512 calibratino table entries to save on EEPROM space)
-  //The values are sent as 2 byte ints, but we convert them to single bytes. Any values over 255 are capped at 255.
-  int tempValue;
+  int16_t tempValue;
   byte tempBuffer[2];
-  bool every2nd = true;
-  int x;
-  int counter = 0;
-  bool useLEDIndicator = false;
-  if (pinIsOutput(LED_BUILTIN) == false)
-  {
-    pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, LOW);
-    useLEDIndicator = true;
-  }
 
-  for (x = 0; x < 1024; x++)
+  if(tableID == 2)
   {
-    //UNlike what is listed in the protocol documentation, the O2 sensor values are sent as bytes rather than ints
-    if (BYTES_PER_VALUE == 1)
+    //O2 calibration. Comes through as 1024 8-bit values of which we use every 32nd
+    for (int x = 0; x < 1024; x++)
     {
       while ( Serial.available() < 1 ) {}
       tempValue = Serial.read();
+
+      if( (x % 32) == 0)
+      {
+        ((uint8_t*)pnt_TargetTable_values)[(x/32)] = (byte)tempValue; //O2 table stores 8 bit values
+        pnt_TargetTable_bins[(x/32)] = (x);
+      }
+      
     }
-    else
+  }
+  else
+  {
+    //Temperature calibrations are sent as 32 16-bit values
+    for (uint16_t x = 0; x < 32; x++)
     {
       while ( Serial.available() < 2 ) {}
       tempBuffer[0] = Serial.read();
       tempBuffer[1] = Serial.read();
 
-      tempValue = div(int(word(tempBuffer[1], tempBuffer[0])), DIVISION_FACTOR).quot; //Read 2 bytes, convert to word (an unsigned int), convert to signed int. These values come through * 10 from Tuner Studio
+      tempValue = (int16_t)(word(tempBuffer[1], tempBuffer[0])); //Combine the 2 bytes into a single, signed 16-bit value
+      tempValue = div(tempValue, DIVISION_FACTOR).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
       tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
+      
+      //Apply the temp offset and check that it results in all values being positive
+      tempValue = tempValue + OFFSET;
+      if (tempValue < 0) { tempValue = 0; }
+
+      
+      ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
+      pnt_TargetTable_bins[x] = (x * 32U);
+      writeCalibration();
     }
-    tempValue = tempValue + OFFSET;
-
-    if (every2nd) //Only use every 2nd value
-    {
-      if (tempValue > 255) {
-        tempValue = 255;  // Cap the maximum value to prevent overflow when converting to byte
-      }
-      if (tempValue < 0) {
-        tempValue = 0;
-      }
-
-      pnt_TargetTable[(x / 2)] = (byte)tempValue;
-
-      //From TS3.x onwards, the EEPROM must be written here as TS restarts immediately after the process completes which is before the EEPROM write completes
-      int y = EEPROM_START + (x / 2);
-      //EEPROM.update(y, (byte)tempValue);
-      storeCalibrationValue(y, (byte)tempValue);
-
-      every2nd = false;
-      if(useLEDIndicator == true)
-      {
-        #if defined(CORE_STM32)
-          digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-        #else
-          analogWrite(LED_BUILTIN, (counter % 50) );
-        #endif
-      }
-      counter++;
-    }
-    else {
-      every2nd = true;
-    }
-
   }
 
+  writeCalibration();
 }
 
 /*
@@ -1764,13 +2220,21 @@ Send 256 tooth log entries
  * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
  * if useChar is false, the values are sent as a 2 byte integer which is readable by TunerStudios tooth logger
 */
-void sendToothLog()
+void sendToothLog(byte startOffset)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
-      for (int x = 0; x < TOOTH_LOG_SIZE; x++)
+      for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
       {
+        //Check whether the tx buffer still has space
+        if(Serial.availableForWrite() < 4) 
+        { 
+          //tx buffer is full. Store the current state so it can be resumed later
+          inProgressOffset = x;
+          toothLogSendInProgress = true;
+          return;
+        }
         //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
         //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
         Serial.write(toothHistory[toothHistorySerialIndex] >> 24);
@@ -1783,6 +2247,7 @@ void sendToothLog()
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       cmdPending = false;
+      toothLogSendInProgress = false;
   }
   else 
   { 
@@ -1795,24 +2260,28 @@ void sendToothLog()
   } 
 }
 
-void sendCompositeLog()
+void sendCompositeLog(byte startOffset)
 {
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
-      uint32_t runTime = 0;
-      for (int x = 0; x < TOOTH_LOG_SIZE; x++)
+      if(startOffset == 0) { inProgressCompositeTime = 0; }
+      for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
       {
-        runTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
-        
-        //Serial.write(highByte(runTime));
-        //Serial.write(lowByte(runTime));
-        Serial.write(runTime >> 24);
-        Serial.write(runTime >> 16);
-        Serial.write(runTime >> 8);
-        Serial.write(runTime);
+        //Check whether the tx buffer still has space
+        if(Serial.availableForWrite() < 4) 
+        { 
+          //tx buffer is full. Store the current state so it can be resumed later
+          inProgressOffset = x;
+          compositeLogSendInProgress = true;
+          return;
+        }
 
-        //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
-        //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
+        inProgressCompositeTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
+        
+        Serial.write(inProgressCompositeTime >> 24);
+        Serial.write(inProgressCompositeTime >> 16);
+        Serial.write(inProgressCompositeTime >> 8);
+        Serial.write(inProgressCompositeTime);
 
         Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
 
@@ -1824,6 +2293,8 @@ void sendCompositeLog()
       toothHistorySerialIndex = 0;
       compositeLastToothTime = 0;
       cmdPending = false;
+      compositeLogSendInProgress = false;
+      inProgressCompositeTime = 0;
   }
   else 
   { 
@@ -1841,4 +2312,3 @@ void testComm()
   Serial.write(1);
   return;
 }
-

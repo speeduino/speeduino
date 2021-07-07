@@ -10,7 +10,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    14
+  #define CURRENT_DATA_VERSION    17
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(EEPROM.read(EEPROM_DATA_VERSION) == 2)
@@ -301,7 +301,7 @@ void doUpdates()
 
   if(EEPROM.read(EEPROM_DATA_VERSION) == 13)
   {
-    //202003-dev
+    //202005
     //Cranking enrichment range 0..1275% instead of older 0.255, so need to divide old values by 5
     configPage10.crankingEnrichValues[0] = configPage10.crankingEnrichValues[0] / 5;
     configPage10.crankingEnrichValues[1] = configPage10.crankingEnrichValues[1] / 5;
@@ -309,10 +309,11 @@ void doUpdates()
     configPage10.crankingEnrichValues[3] = configPage10.crankingEnrichValues[3] / 5;
 
     //Added the injector timing curve
-    configPage2.injAng[0] = 355;
-    configPage2.injAng[1] = 355;
-    configPage2.injAng[2] = 355;
-    configPage2.injAng[3] = 355;
+    //Set all the values to be the same as the first one. 
+    configPage2.injAng[0] = configPage2.injAng[0]; //Obviously not needed, but here for completeness
+    configPage2.injAng[1] = configPage2.injAng[0];
+    configPage2.injAng[2] = configPage2.injAng[0];
+    configPage2.injAng[3] = configPage2.injAng[0];
     //The RPMs are divided by 100
     configPage2.injAngRPM[0] = 5;
     configPage2.injAngRPM[1] = 25;
@@ -322,7 +323,7 @@ void doUpdates()
     //Introdced a DFCO delay option. Default it to 0
     configPage2.dfcoDelay = 0;
     //Introdced a minimum temperature for DFCO. Default it to 40C
-    configPage2.dfcoMinCLT = 40;
+    configPage2.dfcoMinCLT = 80; //CALIBRATION_TEMPERATURE_OFFSET is 40
 
     //Update flexfuel ignition config values for 40 degrees offset
     for (int i=0; i<6; i++)
@@ -334,15 +335,149 @@ void doUpdates()
     configPage2.aeColdPct = 100;
     configPage2.aeColdTaperMin = 40;
     configPage2.aeColdTaperMax = 100;
+
+    //New PID resolution, old resolution was 100% for each increase, 100% now is stored as 32
+    if(configPage6.idleKP >= 8) { configPage6.idleKP = 255; }
+    else { configPage6.idleKP = configPage6.idleKP<<5; }
+    if(configPage6.idleKI >= 8) { configPage6.idleKI = 255; }
+    else { configPage6.idleKI = configPage6.idleKI<<5; }
+    if(configPage6.idleKD >= 8) { configPage6.idleKD = 255; }
+    else { configPage6.idleKD = configPage6.idleKD<<5; }
+    if(configPage10.vvtCLKP >= 8) { configPage10.vvtCLKP = 255; }
+    else { configPage10.vvtCLKP = configPage10.vvtCLKP<<5; }
+    if(configPage10.vvtCLKI >= 8) { configPage10.vvtCLKI = 255; }
+    else { configPage10.vvtCLKI = configPage10.vvtCLKI<<5; }
+    if(configPage10.vvtCLKD >= 8) { configPage10.vvtCLKD = 255; }
+    else { configPage10.vvtCLKD = configPage10.vvtCLKD<<5; }
+
+    //Cranking enrichment to run taper added. Default it to 0,1 secs
+    configPage10.crankingEnrichTaper = 1;
     
+    //ASE to run taper added. Default it to 0,1 secs
+    configPage2.aseTaperTime = 1;
+
+    // there is now optioon for fixed and relative timing retard for soft limit. This sets the soft limiter to the old fixed timing mode.
+    configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
+
+    //VSS was added for testing, disable it by default
+    configPage2.vssMode = 0;
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 14);
+
+    //
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 14)
+  {
+    //202008
+
+    //MAJOR update to move the coolant, IAT and O2 calibrations to 2D tables
+    int y;
+    for(int x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
+    {
+      y = EEPROM_CALIBRATION_CLT_OLD + (x * 16);
+      cltCalibration_values[x] = EEPROM.read(y);
+      cltCalibration_bins[x] = (x * 32);
+
+      y = EEPROM_CALIBRATION_IAT_OLD + (x * 16);
+      iatCalibration_values[x] = EEPROM.read(y);
+      iatCalibration_bins[x] = (x * 32);
+
+      y = EEPROM_CALIBRATION_O2_OLD + (x * 16);
+      o2Calibration_values[x] = EEPROM.read(y);
+      o2Calibration_bins[x] = (x * 32);
+    }
+    writeCalibration();
+
+    //Oil and fuel pressure inputs were introduced. Disable them both by default
+    configPage10.oilPressureProtEnbl = false;
+    configPage10.oilPressureEnable = false;
+    configPage10.fuelPressureEnable = false;
+
+    //wmi
+    configPage10.wmiEnabled = 0;
+    configPage10.wmiMode = 0;
+    configPage10.wmiOffset = 0;
+    configPage10.wmiIndicatorEnabled = 0;
+    configPage10.wmiEmptyEnabled = 0;
+    configPage10.wmiAdvEnabled = 0;
+    for(int i=0; i<6; i++)
+    {
+      configPage10.wmiAdvBins[i] = i*100/2;
+      configPage10.wmiAdvAdj[i] = OFFSET_IGNITION;
+    }
+
+    //Programmable outputs added. Set all to disabled
+    configPage13.outputPin[0] = 0;
+    configPage13.outputPin[1] = 0;
+    configPage13.outputPin[2] = 0;
+    configPage13.outputPin[3] = 0;
+    configPage13.outputPin[4] = 0;
+    configPage13.outputPin[5] = 0;
+    configPage13.outputPin[6] = 0;
+    configPage13.outputPin[7] = 0;
+
+    //New multiply MAP option added. Set new option to be the same as old
+    configPage2.multiplyMAP = configPage2.multiplyMAP_old;
+    //New AE option added to allow for PW added in addition to existing PW multiply
+    configPage2.aeApplyMode = 0; //Set the AE mode to Multiply
+
+    //Injector priming delay added
+    configPage2.primingDelay = 0;
+    //ASE taper time added
+    configPage2.aseTaperTime = 10; //1 second taper
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 15);
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 15)
+  {
+    //202012
+    configPage10.spark2Mode = 0; //Disable 2nd spark table
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 16);
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 16)
+  {
+    //Fix for wrong placed page 13
+    for(int x=EEPROM_CONFIG14_END; x>=EEPROM_CONFIG13_START; x--)
+    {
+      EEPROM.update(x, EEPROM.read(x-112));
+    }
+
+    configPage2.useDwellMap = 0; //Dwell map added, use old fixed value as default
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 17);
+  }
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 16)
+  {
+    configPage6.iacPWMrun = false; // just in case. This should be false anyways, but sill.
+
+    writeAllConfig();
+    //EEPROM.write(EEPROM_DATA_VERSION, 17);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
   {
     configPage9.true_address = 0x200;
+    
+    //Programmable outputs added. Set all to disabled
+    configPage13.outputPin[0] = 0;
+    configPage13.outputPin[1] = 0;
+    configPage13.outputPin[2] = 0;
+    configPage13.outputPin[3] = 0;
+    configPage13.outputPin[4] = 0;
+    configPage13.outputPin[5] = 0;
+    configPage13.outputPin[6] = 0;
+    configPage13.outputPin[7] = 0;
+
     EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION);
   }
 

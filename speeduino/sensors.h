@@ -15,13 +15,16 @@
 #define ADCFILTER_BARO  64
 */
 
-#define BARO_MIN      87
+#define BARO_MIN      65
 #define BARO_MAX      108
 
 #define KNOCK_MODE_DIGITAL  1
 #define KNOCK_MODE_ANALOG   2
 
-#define VSS_GEAR_HYSTERESIS 2
+#define VSS_GEAR_HYSTERESIS 10
+#define VSS_SAMPLES         4 //Must be a power of 2 and smaller than 255
+
+#define TPS_READ_FREQUENCY  15 //ONLY VALID VALUES ARE 15 or 30!!!
 
 /*
 #if defined(CORE_AVR)
@@ -30,6 +33,15 @@
 */
 
 volatile byte flexCounter = 0;
+volatile unsigned long flexStartTime;
+volatile unsigned long flexPulseWidth;
+
+#if defined(CORE_AVR)
+  #define READ_FLEX() ((*flex_pin_port & flex_pin_mask) ? true : false)
+#else
+  #define READ_FLEX() digitalRead(pinFlex)
+#endif
+
 volatile byte knockCounter = 0;
 volatile uint16_t knockAngle;
 
@@ -44,8 +56,11 @@ unsigned long TPSlast_time; //The time the previous TPS sample was taken
 byte MAPlast; /**< The previous MAP reading */
 unsigned long MAP_time; //The time the MAP sample was taken
 unsigned long MAPlast_time; //The time the previous MAP sample was taken
-unsigned long vssLastPulseTime; /**< The times of the last VSS_NUM_SAMPLES pulses of the VSS are stored in this array */
-unsigned long vssLastMinusOnePulseTime; /**< The times of the last VSS_NUM_SAMPLES pulses of the VSS are stored in this array */
+volatile unsigned long vssLastPulseTime; /**< The time of the last VSS pulse of the VSS */
+volatile unsigned long vssLastMinusOnePulseTime; /**< The time of the last VSS_NUM_SAMPLES pulses of the VSS are stored in this array */
+volatile unsigned long vssTotalTime; /**< Cumulative count of the last VSS_SAMPLES number of pulses */
+volatile byte vssCount;
+
 
 //These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
 byte mapErrorCount = 0;
@@ -61,11 +76,16 @@ byte cltErrorCount = 0;
 
 static inline void instanteneousMAPReading() __attribute__((always_inline));
 static inline void readMAP() __attribute__((always_inline));
+static inline void validateMAP();
 void initialiseADC();
 void readTPS(bool=true); //Allows the option to override the use of the filter
 void readO2_2();
 void flexPulse();
 void vssPulse();
+uint16_t getSpeed();
+byte getGear();
+byte getFuelPressure();
+byte getOilPressure();
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
 void readCLT(bool=true); //Allows the option to override the use of the filter

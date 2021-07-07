@@ -34,7 +34,7 @@ class SPIFlash {
 public:
   //------------------------------------ Constructor ------------------------------------//
   //New Constructor to Accept the PinNames as a Chip select Parameter - @boseji <salearj@hotmail.com> 02.03.17
-  #if defined (ARDUINO_ARCH_SAMD) || defined(ARCH_STM32) || defined(CORE_STM32_OFFICIAL)
+  #if defined (ARDUINO_ARCH_SAMD) || defined(ARDUINO_ARCH_STM32)
   SPIFlash(uint8_t cs = CS, SPIClass *spiinterface=&SPI);
   #elif defined (BOARD_RTL8195A)
   SPIFlash(PinName cs = CS);

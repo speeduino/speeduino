@@ -46,9 +46,9 @@ void initBoard()
 
         /*
         * Set Prescaler
-        * This is the slowest that the timer can be clocked (Without used the slow timer, which is too slow). It results in ticks of 2.13333uS on the teensy 3.5:
-        * 32000 Hz = F_BUS
-        * 128 * 1000000uS / F_BUS = 2.133uS
+        * This is the slowest that the timer can be clocked . It results in ticks of 32uS on the teensy 3.5:
+        * 31250 Hz = Slow_clock
+        * 1 * 1000000uS / Slow_clock = 32uS
         *
         * 000 = Divide by 1
         * 001 Divide by 2
@@ -115,9 +115,9 @@ void initBoard()
 
         /*
         * Set Prescaler
-        * This is the slowest that the timer can be clocked (Without used the slow timer, which is too slow). It results in ticks of 2.13333uS on the teensy 3.5:
-        * 32000 Hz = F_BUS
-        * 128 * 1000000uS / F_BUS = 2.133uS
+        * This is the slowest that the timer can be clocked . It results in ticks of 32uS on the teensy 3.5:
+        * 31250 Hz = Slow_clock
+        * 1 * 1000000uS / Slow_clock = 32uS
         *
         * 000 = Divide by 1
         * 001 Divide by 2
@@ -128,7 +128,7 @@ void initBoard()
         * 110 Divide by 64
         * 111 Divide by 128
         */
-        FTM2_SC |= FTM_SC_PS(0b0); //No prescaler
+        FTM1_SC |= FTM_SC_PS(0b0); //No prescaler
 
         //Setup the channels (See Pg 1014 of K64 DS).
         FTM1_C0SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
@@ -284,6 +284,91 @@ void initBoard()
     NVIC_ENABLE_IRQ(IRQ_FTM3);
 }
 
+void ftm0_isr(void)
+{
+  //Use separate variables for each test to ensure conversion to bool
+  bool interrupt1 = (FTM0_C0SC & FTM_CSC_CHF);
+  bool interrupt2 = (FTM0_C1SC & FTM_CSC_CHF);
+  bool interrupt3 = (FTM0_C2SC & FTM_CSC_CHF);
+  bool interrupt4 = (FTM0_C3SC & FTM_CSC_CHF);
+  bool interrupt5 = (FTM0_C4SC & FTM_CSC_CHF);
+  bool interrupt6 = (FTM0_C5SC & FTM_CSC_CHF);
+  bool interrupt7 = (FTM0_C6SC & FTM_CSC_CHF);
+  bool interrupt8 = (FTM0_C7SC & FTM_CSC_CHF);
+
+  if(interrupt1) { FTM0_C0SC &= ~FTM_CSC_CHF; fuelSchedule1Interrupt(); }
+  else if(interrupt2) { FTM0_C1SC &= ~FTM_CSC_CHF; fuelSchedule2Interrupt(); }
+  else if(interrupt3) { FTM0_C2SC &= ~FTM_CSC_CHF; fuelSchedule3Interrupt(); }
+  else if(interrupt4) { FTM0_C3SC &= ~FTM_CSC_CHF; fuelSchedule4Interrupt(); }
+  else if(interrupt5) { FTM0_C4SC &= ~FTM_CSC_CHF; ignitionSchedule1Interrupt(); }
+  else if(interrupt6) { FTM0_C5SC &= ~FTM_CSC_CHF; ignitionSchedule2Interrupt(); }
+  else if(interrupt7) { FTM0_C6SC &= ~FTM_CSC_CHF; ignitionSchedule3Interrupt(); }
+  else if(interrupt8) { FTM0_C7SC &= ~FTM_CSC_CHF; ignitionSchedule4Interrupt(); }
+
+}
+void ftm3_isr(void)
+{
+
+#if (INJ_CHANNELS >= 5)
+  bool interrupt1 = (FTM3_C0SC & FTM_CSC_CHF);
+  if(interrupt1) { FTM3_C0SC &= ~FTM_CSC_CHF; fuelSchedule5Interrupt(); }
+#endif
+#if (INJ_CHANNELS >= 6)
+  bool interrupt2 = (FTM3_C1SC & FTM_CSC_CHF);
+  if(interrupt2) { FTM3_C1SC &= ~FTM_CSC_CHF; fuelSchedule6Interrupt(); }
+#endif
+#if (INJ_CHANNELS >= 7)
+  bool interrupt3 = (FTM3_C2SC & FTM_CSC_CHF);
+  if(interrupt3) { FTM3_C2SC &= ~FTM_CSC_CHF; fuelSchedule7Interrupt(); }
+#endif
+#if (INJ_CHANNELS >= 8)
+  bool interrupt4 = (FTM3_C3SC & FTM_CSC_CHF);
+  if(interrupt4) { FTM3_C3SC &= ~FTM_CSC_CHF; fuelSchedule8Interrupt(); }
+#endif
+#if (IGN_CHANNELS >= 5)
+  bool interrupt5 = (FTM3_C4SC & FTM_CSC_CHF);
+  if(interrupt5) { FTM3_C4SC &= ~FTM_CSC_CHF; ignitionSchedule5Interrupt(); }
+#endif
+#if (IGN_CHANNELS >= 6)
+  bool interrupt6 = (FTM3_C5SC & FTM_CSC_CHF);
+  if(interrupt6) { FTM3_C5SC &= ~FTM_CSC_CHF; ignitionSchedule6Interrupt(); }
+#endif
+#if (IGN_CHANNELS >= 7)
+  bool interrupt7 = (FTM3_C6SC & FTM_CSC_CHF);
+  if(interrupt7) { FTM3_C6SC &= ~FTM_CSC_CHF; ignitionSchedule7Interrupt(); }
+#endif
+#if (IGN_CHANNELS >= 8)
+  bool interrupt8 = (FTM3_C7SC & FTM_CSC_CHF);
+  if(interrupt8) { FTM3_C7SC &= ~FTM_CSC_CHF; ignitionSchedule8Interrupt(); }
+#endif
+
+}
+
+//Boost and VVT handler
+void ftm1_isr(void)
+{
+  //FTM1 only has 2 compare channels (Is this correct?)
+  //Use separate variables for each test to ensure conversion to bool
+  bool interrupt1 = (FTM1_C0SC & FTM_CSC_CHF);
+  bool interrupt2 = (FTM1_C1SC & FTM_CSC_CHF);
+
+  if(interrupt1) { FTM1_C0SC &= ~FTM_CSC_CHF; boostInterrupt(); }
+  else if(interrupt2) { FTM1_C1SC &= ~FTM_CSC_CHF; vvtInterrupt(); }
+
+}
+
+//Idle and spare handler
+void ftm2_isr(void)
+{ 
+  //FTM2 only has 2 compare channels
+  //Use separate variables for each test to ensure conversion to bool
+  bool interrupt1 = (FTM2_C0SC & FTM_CSC_CHF);
+  bool interrupt2 = (FTM2_C1SC & FTM_CSC_CHF); //Not currently used
+
+  if(interrupt1) { FTM2_C0SC &= ~FTM_CSC_CHF; idleInterrupt(); }
+  else if(interrupt2) { FTM2_C1SC &= ~FTM_CSC_CHF; } //Add a callback function here if this is ever used
+}
+
 uint16_t freeRam()
 {
     uint32_t stackTop;
@@ -300,5 +385,8 @@ uint16_t freeRam()
     // The difference is the free, available ram.
     return (uint16_t)stackTop - heapTop;
 }
+
+void doSystemReset() { return; }
+void jumpToBootloader() { return; }
 
 #endif

@@ -8,6 +8,9 @@ void writeConfig(byte);
 void loadConfig();
 void loadCalibration();
 void writeCalibration();
+void loadCalibration_new();
+void writeCalibration_new();
+void resetConfigPages();
 
 //These are utility functions that prevent other files from having to use EEPROM.h directly
 byte readLastBaro();
@@ -18,7 +21,7 @@ void storeEEPROMVersion(byte);
 void storePageCRC32(byte, uint32_t);
 uint32_t readPageCRC32(byte);
 
-#if defined(CORE_STM32) || defined(CORE_TEENSY)
+#if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
 #define EEPROM_MAX_WRITE_BLOCK 64 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
 #else
 #define EEPROM_MAX_WRITE_BLOCK 30 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
@@ -69,6 +72,10 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 | 1479  |6    | X and Y Bins4                       |
 | 1500  |192  | CANBUS config and data (Table 10_)  |
 | 1692  |192  | Table 11 - General settings         |
+| 2385  |2    | X and Y sizes for wmi table         |
+| 2387  |64   | WMI Map (8x8)                       |
+| 2451  |8    | WMI Table RPM bins                  |
+| 2459  |8    | WMI Table TPS bins                  |
 |                                                   |
 | 2514  |44   | Table CRC32 values. Last table first|
 | 2558  |1    | Last recorded Baro value            |
@@ -111,11 +118,9 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG7_MAP2   1339
 #define EEPROM_CONFIG7_XBINS2 1403
 #define EEPROM_CONFIG7_YBINS2 1411
-
 #define EEPROM_CONFIG7_XSIZE3 1419
 #define EEPROM_CONFIG7_YSIZE3 1420
 #define EEPROM_CONFIG7_MAP3   1421
-
 #define EEPROM_CONFIG7_XBINS3 1485
 #define EEPROM_CONFIG7_YBINS3 1493
 #define EEPROM_CONFIG7_END    1501
@@ -139,8 +144,8 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG8_MAP4   1653
 #define EEPROM_CONFIG8_XBINS4 1689
 #define EEPROM_CONFIG8_YBINS4 1695
-#define EEPROM_CONFIG9_START 1710
-#define EEPROM_CONFIG9_END   1902
+#define EEPROM_CONFIG9_START  1710
+#define EEPROM_CONFIG9_END    1902
 #define EEPROM_CONFIG10_START 1902
 #define EEPROM_CONFIG10_END   2094
 #define EEPROM_CONFIG11_XSIZE 2094
@@ -149,12 +154,63 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG11_XBINS 2352
 #define EEPROM_CONFIG11_YBINS 2369
 #define EEPROM_CONFIG11_END   2385
+#define EEPROM_CONFIG12_XSIZE 2385
+#define EEPROM_CONFIG12_YSIZE 2386
+#define EEPROM_CONFIG12_MAP   2387
+#define EEPROM_CONFIG12_XBINS 2451
+#define EEPROM_CONFIG12_YBINS 2459
+#define EEPROM_CONFIG12_XSIZE2 2467
+//#define EEPROM_CONFIG12_YSIZE2 2468
+//#define EEPROM_CONFIG12_MAP2   2469
+//#define EEPROM_CONFIG12_XBINS2 2533
+//#define EEPROM_CONFIG12_YBINS2 2541
+#define EEPROM_CONFIG12_XSIZE3 2549
+#define EEPROM_CONFIG12_YSIZE3 2550
+#define EEPROM_CONFIG12_MAP3   2551
+#define EEPROM_CONFIG12_XBINS3 2567
+#define EEPROM_CONFIG12_YBINS3 2571
+#define EEPROM_CONFIG12_END   2575
+#define EEPROM_CONFIG13_START 2580
+#define EEPROM_CONFIG13_END   2708
+#define EEPROM_CONFIG14_XSIZE 2708
+#define EEPROM_CONFIG14_YSIZE 2709
+#define EEPROM_CONFIG14_MAP   2710
+#define EEPROM_CONFIG14_XBINS 2966
+#define EEPROM_CONFIG14_YBINS 2982
+#define EEPROM_CONFIG14_END   2998
+//This is OUT OF ORDER as Table 8 was expanded to add fuel trim 5-8. The EEPROM for them is simply added here so as not to impact existing tunes
+#define EEPROM_CONFIG8_XSIZE5 2999
+#define EEPROM_CONFIG8_YSIZE5 3000
+#define EEPROM_CONFIG8_MAP5   3001
+#define EEPROM_CONFIG8_XBINS5 3037
+#define EEPROM_CONFIG8_YBINS5 3043
+#define EEPROM_CONFIG8_XSIZE6 3049
+#define EEPROM_CONFIG8_YSIZE6 3050
+#define EEPROM_CONFIG8_MAP6   3051
+#define EEPROM_CONFIG8_XBINS6 3087
+#define EEPROM_CONFIG8_YBINS6 3093
+#define EEPROM_CONFIG8_XSIZE7 3099
+#define EEPROM_CONFIG8_YSIZE7 3100
+#define EEPROM_CONFIG8_MAP7   3101
+#define EEPROM_CONFIG8_XBINS7 3137
+#define EEPROM_CONFIG8_YBINS7 3143
+#define EEPROM_CONFIG8_XSIZE8 3149
+#define EEPROM_CONFIG8_YSIZE8 3150
+#define EEPROM_CONFIG8_MAP8   3151
+#define EEPROM_CONFIG8_XBINS8 3187
+#define EEPROM_CONFIG8_YBINS8 3193
+
 
 //Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
-#define EEPROM_PAGE_CRC32     2514 //Size of this is 4 * <number of pages> (CRC32 = 32 bits)
-#define EEPROM_LAST_BARO      2558
-#define EEPROM_CALIBRATION_O2 2559
-#define EEPROM_CALIBRATION_IAT 3071
-#define EEPROM_CALIBRATION_CLT 3583
+#define EEPROM_PAGE_CRC32     3686 //Size of this is 4 * <number of pages> (CRC32 = 32 bits): 3742 - (14 * 4) = 3686
+#define EEPROM_LAST_BARO      3742 // 3743 - 1
+//New values using 2D tables
+#define EEPROM_CALIBRATION_O2   3743 //3839-96 +64
+#define EEPROM_CALIBRATION_IAT  3839 //3967-128
+#define EEPROM_CALIBRATION_CLT  3967 //4095-128
+//These were the values used previously when all calibration tables were 512 long. They need to be retained for the update process (202005 -> 202008) can work. 
+#define EEPROM_CALIBRATION_O2_OLD   2559
+#define EEPROM_CALIBRATION_IAT_OLD  3071
+#define EEPROM_CALIBRATION_CLT_OLD  3583
 
 #endif // STORAGE_H

@@ -1,15 +1,12 @@
-#if defined(CORE_STM32_OFFICIAL)
 #include "board_stm32_official.h"
+#if defined(STM32_CORE_VERSION_MAJOR)
 #include "globals.h"
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
 #include "HardwareTimer.h"
-#ifdef USE_SPI_EEPROM
-  //We need to include and make a instance of the SPI flash EEPROM emulation if flag is set.
-  #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  SPIAsEEPROM EEPROM;
-#endif
+
+STM32RTC& rtc = STM32RTC::getInstance();
 
   void initBoard()
   {
@@ -21,13 +18,22 @@
       #define FLASH_LENGTH 8192
     #endif
     delay(10);
+
+    /*
+     ***********************************************************************************************************
+     * Real Time clock for datalogging/time stamping
+     */
+     
+     rtc.setClockSource(STM32RTC::LSE_CLOCK); //Initialize external clock for RTC. That is the only clock running of VBAT
+     rtc.begin(); // initialize RTC 24H format
+
     /*
     ***********************************************************************************************************
     * Idle
     */
-    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
+    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL))
     {
-        idle_pwm_max_count = 1000000L / (4 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
+        idle_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
     } 
 
     //This must happen at the end of the idle init
@@ -57,8 +63,8 @@
     * Auxilliaries
     */
     //2uS resolution Min 8Hz, Max 5KHz
-    boost_pwm_max_count = 1000000L / (4 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
-    vvt_pwm_max_count = 1000000L / (4 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle
+    boost_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+    vvt_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle
 
     //Need to be initialised last due to instant interrupt
     Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
@@ -71,16 +77,12 @@
     * Schedules
     */
     Timer1.setOverflow(0xFFFF, TICK_FORMAT);
-    #if defined(STM32F4)
-    Timer2.setOverflow(0xFFFFFFFF, TICK_FORMAT); //32bit timer
-    #else
     Timer2.setOverflow(0xFFFF, TICK_FORMAT);
-    #endif
     Timer3.setOverflow(0xFFFF, TICK_FORMAT);
 
-    Timer1.setPrescaleFactor(((Timer1.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
-    Timer2.setPrescaleFactor(((Timer2.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
-    Timer3.setPrescaleFactor(((Timer3.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
+    Timer1.setPrescaleFactor(((Timer1.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
+    Timer2.setPrescaleFactor(((Timer2.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
+    Timer3.setPrescaleFactor(((Timer3.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
 
     Timer2.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer2.setMode(2, TIMER_OUTPUT_COMPARE);
@@ -100,12 +102,8 @@
     Timer3.attachInterrupt(3, fuelSchedule3Interrupt);
     Timer3.attachInterrupt(4, fuelSchedule4Interrupt);
     #if (INJ_CHANNELS >= 5)
-    #if defined(STM32F4)
-    Timer5.setOverflow(0xFFFFFFFF, TICK_FORMAT); //32bit timer
-    #else
     Timer5.setOverflow(0xFFFF, TICK_FORMAT);
-    #endif
-    Timer5.setPrescaleFactor(((Timer5.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
+    Timer5.setPrescaleFactor(((Timer5.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
     Timer5.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer5.attachInterrupt(1, fuelSchedule5Interrupt);
     #endif
@@ -129,7 +127,7 @@
     Timer2.attachInterrupt(4, ignitionSchedule4Interrupt);
     #if (IGN_CHANNELS >= 5)
     Timer4.setOverflow(0xFFFF, TICK_FORMAT);
-    Timer4.setPrescaleFactor(((Timer4.getTimerClkFreq()/1000000) * 4)-1);   //4us resolution
+    Timer4.setPrescaleFactor(((Timer4.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
     Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer4.attachInterrupt(1, ignitionSchedule5Interrupt);
     #endif
@@ -163,10 +161,47 @@
       return &top - reinterpret_cast<char*>(sbrk(0));
   }
 
-    /*
+  void doSystemReset( void )
+  {
+    __disable_irq();
+    NVIC_SystemReset();
+  }
+
+  void jumpToBootloader( void ) // https://github.com/3devo/Arduino_Core_STM32/blob/jumpSysBL/libraries/SrcWrapper/src/stm32/bootloader.c
+  { // https://github.com/markusgritsch/SilF4ware/blob/master/SilF4ware/drv_reset.c
+    #if !defined(STM32F103xB)
+    HAL_RCC_DeInit();
+    HAL_DeInit();
+    SysTick->VAL = SysTick->LOAD = SysTick->CTRL = 0;
+    SYSCFG->MEMRMP = 0x01;
+
+    #if defined(STM32F7xx) || defined(STM32H7xx)
+    const uint32_t DFU_addr = 0x1FF00000; // From AN2606
+    #else
+    const uint32_t DFU_addr = 0x1FFF0000; // Default for STM32F10xxx and STM32F40xxx/STM32F41xxx from AN2606
+    #endif
+    // This is assembly to prevent modifying the stack pointer after
+    // loading it, and to ensure a jump (not call) to the bootloader.
+    // Not sure if the barriers are really needed, they were taken from
+    // https://github.com/GrumpyOldPizza/arduino-STM32L4/blob/ac659033eadd50cfe001ba1590a1362b2d87bb76/system/STM32L4xx/Source/boot_stm32l4xx.c#L159-L165
+    asm volatile (
+      "ldr r0, [%[DFU_addr], #0]   \n\t"  // get address of stack pointer
+      "msr msp, r0            \n\t"  // set stack pointer
+      "ldr r0, [%[DFU_addr], #4]   \n\t"  // get address of reset handler
+      "dsb                    \n\t"  // data sync barrier
+      "isb                    \n\t"  // instruction sync barrier
+      "bx r0                  \n\t"  // branch to bootloader
+      : : [DFU_addr] "l" (DFU_addr) : "r0"
+    );
+    __builtin_unreachable();
+    #endif
+  }
+
+  /*
   ***********************************************************************************************************
   * Interrupt callback functions
   */
+  #if ((STM32_CORE_VERSION_MINOR<=8) & (STM32_CORE_VERSION_MAJOR==1)) 
   void oneMSInterval(HardwareTimer*){oneMSInterval();}
   void boostInterrupt(HardwareTimer*){boostInterrupt();}
   void fuelSchedule1Interrupt(HardwareTimer*){fuelSchedule1Interrupt();}
@@ -203,5 +238,5 @@
   #if (IGN_CHANNELS >= 8)
   void ignitionSchedule8Interrupt(HardwareTimer*){ignitionSchedule8Interrupt();}
   #endif
-
+  #endif //End core<=1.8
 #endif
