@@ -760,7 +760,7 @@ int8_t correctionIdleAdvance(int8_t advance)
 
   int8_t ignIdleValue = advance;
   //Adjust the advance based on idle target rpm.
-  if( configPage2.idleAdvEnabled >= 1 )
+  if( (configPage2.idleAdvEnabled >= 1) && (runSecsX10 >= (configPage9.idleAdvStartDelay * 5)) )
   {
     currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
     int idleRPMdelta = (currentStatus.CLIdleTarget - (currentStatus.RPM / 10) ) + 50;
@@ -770,7 +770,7 @@ int8_t correctionIdleAdvance(int8_t advance)
     if( (currentStatus.RPMdiv100 < configPage2.idleAdvRPM) && ((configPage2.vssMode == 0) || (currentStatus.vss < configPage2.idleAdvVss))
     && (((configPage2.idleAdvAlgorithm == 0) && (currentStatus.TPS < configPage2.idleAdvTPS)) || ((configPage2.idleAdvAlgorithm == 1) && (currentStatus.CTPSActive == 1))) ) // closed throttle position sensor (CTPS) based idle state
     {
-      if( (runSecsX10 - idleAdvStart) >= (configPage2.IdleAdvDelay * 5) )
+      if( (runSecsX10 - idleAdvStart) >= configPage9.idleAdvStartDelay )
       {
         int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
         if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
