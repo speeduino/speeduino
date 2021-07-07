@@ -34,7 +34,7 @@ class SPIFlash {
 public:
   //------------------------------------ Constructor ------------------------------------//
   //New Constructor to Accept the PinNames as a Chip select Parameter - @boseji <salearj@hotmail.com> 02.03.17
-  #if defined (ARDUINO_ARCH_SAMD) || defined(ARDUINO_ARCH_STM32)
+  #if defined (ARDUINO_ARCH_SAMD) || defined(ARDUINO_ARCH_STM32) || defined (ARDUINO_ARCH_SAME) 
   SPIFlash(uint8_t cs = CS, SPIClass *spiinterface=&SPI);
   #elif defined (BOARD_RTL8195A)
   SPIFlash(PinName cs = CS);
@@ -229,7 +229,7 @@ template <class T> bool SPIFlash::readAnything(uint32_t _addr, T& data, bool fas
 
 //---------------------------------- Private Templates ----------------------------------//
 
-template <class T> bool SPIFlash::_writeErrorCheck(uint32_t _addr, const T& value, uint32_t _sz, uint8_t _dataType) {
+template <class T> bool SPIFlash::_writeErrorCheck(uint32_t _addr, const T& value, uint32_t _sz, uint8_t _dataType __attribute__((__unused__))) {
   if (_isChipPoweredDown() || !_addressCheck(_addr, _sz) || !_notBusy()) {
     return false;
   }

@@ -26,7 +26,7 @@ uint32_t readPageCRC32(byte);
 #else
 #define EEPROM_MAX_WRITE_BLOCK 30 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
 #endif
-bool eepromWritesPending = false;
+extern bool eepromWritesPending;
 
 /*
 Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes):
@@ -160,10 +160,10 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG12_XBINS 2451
 #define EEPROM_CONFIG12_YBINS 2459
 #define EEPROM_CONFIG12_XSIZE2 2467
-//#define EEPROM_CONFIG12_YSIZE2 2468
-//#define EEPROM_CONFIG12_MAP2   2469
-//#define EEPROM_CONFIG12_XBINS2 2533
-//#define EEPROM_CONFIG12_YBINS2 2541
+#define EEPROM_CONFIG12_YSIZE2 2468
+#define EEPROM_CONFIG12_MAP2   2469
+#define EEPROM_CONFIG12_XBINS2 2533
+#define EEPROM_CONFIG12_YBINS2 2541
 #define EEPROM_CONFIG12_XSIZE3 2549
 #define EEPROM_CONFIG12_YSIZE3 2550
 #define EEPROM_CONFIG12_MAP3   2551

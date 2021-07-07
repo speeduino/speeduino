@@ -21,6 +21,34 @@ sendcancommand is called when a command is to be sent either to serial3
 #include "errors.h"
 #include "utilities.h"
 
+uint8_t currentsecondserialCommand;
+uint8_t currentCanPage = 1;//Not the same as the speeduino config page numbers
+uint8_t nCanretry = 0;      //no of retrys
+uint8_t cancmdfail = 0;     //command fail yes/no
+uint8_t canlisten = 0;
+uint8_t Lbuffer[8];         //8 byte buffer to store incomng can data
+uint8_t Gdata[9];
+uint8_t Glow, Ghigh;
+bool canCmdPending = false;
+
+#if ( defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) )
+  #define CANSerial_AVAILABLE
+  HardwareSerial &CANSerial = Serial3;
+#elif defined(CORE_STM32)
+  #define CANSerial_AVAILABLE
+  #ifndef Serial2
+    #define Serial2 Serial1
+  #endif
+  #if defined(STM32GENERIC) // STM32GENERIC core
+    SerialUART &CANSerial = Serial2;
+  #else //libmaple core aka STM32DUINO
+    HardwareSerial &CANSerial = Serial2;
+  #endif
+#elif defined(CORE_TEENSY)
+  #define CANSerial_AVAILABLE
+  HardwareSerial &CANSerial = Serial2;
+#endif
+
 void secondserial_Command()
 {
   #if defined(CANSerial_AVAILABLE)
@@ -159,8 +187,6 @@ void secondserial_Command()
 }
 void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portType)
 {
-  byte fullStatus[NEW_CAN_PACKET_SIZE];    // this must be set to the maximum number of data fullstatus must read in
-
     //CAN serial
     #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)|| defined(CORE_STM32) || defined (CORE_TEENSY) //ATmega2561 does not have Serial3
       if (cmd == 0x30) 
@@ -182,6 +208,8 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
+#if defined(CANSerial_AVAILABLE)
+  byte fullStatus[NEW_CAN_PACKET_SIZE];    // this must be set to the maximum number of data fullstatus must read in
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   fullStatus[1] = currentStatus.status1; //status1 Bitfield
   fullStatus[2] = currentStatus.engine; //Engine Status Bitfield
@@ -272,14 +300,18 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 
   for(byte x=0; x<packetLength; x++)
   {
-    #if defined(CANSerial_AVAILABLE)
       if (portType == 1){ CANSerial.write(fullStatus[offset+x]); }
       else if (portType == 2)
       {
         //sendto canbus transmit routine
       }
-    #endif
   }
+#else 
+  UNUSED(offset);
+  UNUSED(packetLength);
+  UNUSED(cmd);
+  UNUSED(portType);
+#endif
 
 }
 
@@ -329,7 +361,7 @@ void can_Command()
 // this routine sends a request(either "0" for a "G" , "1" for a "L" , "2" for a "R" to the Can interface or "3" sends the request via the actual local canbus
 void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress)
 {
-  #if defined(CANSerial_AVAILABLE)
+#if defined(CANSerial_AVAILABLE)
     switch (cmdtype)
     {
       case 0:
@@ -373,7 +405,13 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
      default:
         break;
     }
-  #endif
+#else
+  UNUSED(cmdtype);
+  UNUSED(canaddress);
+  UNUSED(candata1);
+  UNUSED(candata2);
+  UNUSED(sourcecanAddress);
+#endif
 }
 
 #if defined(NATIVE_CAN_AVAILABLE)
