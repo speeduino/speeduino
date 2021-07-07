@@ -16,7 +16,9 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
-
+/** @file
+ * Speeduino initialization and main loop.
+ */
 #include <stdint.h> //developer.mbed.org/handbook/C-Data-Types
 //************************************************
 #include "globals.h"
@@ -85,7 +87,22 @@ void setup()
   initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
   initialiseAll();
 }
-
+/** Speeduino main loop.
+ * 
+ * Main loop chores (roughly in  order they are preformed):
+ * - Check if serial comms or tooth logging are in progress (send or reveive, prioritize communication)
+ * - Record loop timing vars
+ * - Check tooth time, update @ref statuses (currentStatus) variables
+ * - Read sensors
+ * - get VE for fuel calcs and spark advance for ignition
+ * - Check crank/cam/tooth/timing sync (skip remaining ops if out-of-sync)
+ * - execute doCrankSpeedCalcs()
+ * 
+ * single byte variable @ref LOOP_TIMER plays a big part here as:
+ * - it contains expire-bits for interval based frequency driven events (e.g. 15Hz, 4Hz, 1Hz)
+ * - Can be tested for certain frequency interval being expired by (eg) BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)
+ * 
+ */
 void loop()
 {
       mainLoopCount++;
@@ -406,7 +423,7 @@ void loop()
           //Check whether the user has selected to disable to the fan during cranking
           if(configPage2.fanWhenCranking == 0) { FAN_OFF(); }
         }
-      //END SETTING STATUSES
+      //END SETTING ENGINE STATUSES
       //-----------------------------------------------------------------------------------------------------
 
       //Begin the fuel calculation
@@ -1241,7 +1258,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   
   iVE = ((unsigned int)VE << 7) / 100;
 
-  //Check whether either of the mutiply MAP modes is turned on
+  //Check whether either of the multiply MAP modes is turned on
   if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
   else if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; }
   
@@ -1283,8 +1300,8 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   return (unsigned int)(intermediate);
 }
 
-/**
- * @brief Lookup the current VE value from the primary 3D fuel map. The Y axis value used for this lookup varies based on the fuel algorithm selected (speed density, alpha-n etc)
+/** Lookup the current VE value from the primary 3D fuel map.
+ * The Y axis value used for this lookup varies based on the fuel algorithm selected (speed density, alpha-n etc).
  * 
  * @return byte The current VE value
  */
@@ -1312,8 +1329,8 @@ byte getVE1()
   return tempVE;
 }
 
-/**
- * @brief Performs a lookup of the ignition advance table. The values used to look this up will be RPM and whatever load source the user has configured
+/** Lookup the ignition advance from 3D ignition table.
+ * The values used to look this up will be RPM and whatever load source the user has configured.
  * 
  * @return byte The current target advance value in degrees
  */
@@ -1433,10 +1450,13 @@ void calculateIgnitionAngle8(int dwellAngle)
   ignition8StartAngle = ignition8EndAngle - dwellAngle;
   if(ignition8StartAngle < 0) {ignition8StartAngle += CRANK_ANGLE_MAX_IGN;}
 }
-
+/** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).
+ * both start and end angles are calculated for each channel.
+ * Also the mode of ignition firing - wasted spark vs. dedicated spark per cyl. - is considered here.
+ */
 void calculateIgnitionAngles(int dwellAngle)
 {
-  //Calculate start and end angle for each channel
+  
 
   //This test for more cylinders and do the same thing
   switch (configPage2.nCylinders)

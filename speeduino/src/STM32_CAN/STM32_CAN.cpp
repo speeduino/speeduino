@@ -348,15 +348,29 @@ void STM32_CAN::setBaudRate(uint32_t baud)
   {
     CAN1->BTR &= ~(((0x03) << 24) | ((0x07) << 20) | ((0x0F) << 16) | (0x1FF)); 
     CAN1->BTR |=  (((can_configs[bitrate].TS2-1) & 0x07) << 20) | (((can_configs[bitrate].TS1-1) & 0x0F) << 16) | ((can_configs[bitrate].BRP-1) & 0x1FF);
-
+  }
+  #if defined(CAN2)
+  else if (_channel == _CAN2)
+  {
+    CAN2->BTR &= ~(((0x03) << 24) | ((0x07) << 20) | ((0x0F) << 16) | (0x1FF)); 
+    CAN2->BTR |=  (((can_configs[bitrate].TS2-1) & 0x07) << 20) | (((can_configs[bitrate].TS1-1) & 0x0F) << 16) | ((can_configs[bitrate].BRP-1) & 0x1FF); 
+  }
+  #endif
+  
     // Configure Filters to default values
     CAN1->FMR  |=   0x1UL;                 // Set to filter initialization mode
     CAN1->FMR  &= 0xFFFFC0FF;              // Clear CAN2 start bank
 
     // bxCAN has 28 filters.
     // These filters are used for both CAN1 and CAN2.
-    // STM32F405 has CAN1 and CAN2, so CAN2 filters are offset by 14
+    #if defined(STM32F1xx)
+    // STM32F1xx has only CAN1, so all 28 are used for CAN1
+    CAN1->FMR  |= 0x1C << 8;              // Assign all filters to CAN1
+
+    #elif defined(STM32F4xx)
+    // STM32F4xx has CAN1 and CAN2, so CAN2 filters are offset by 14
     CAN1->FMR  |= 0xE00;                   // Start bank for the CAN2 interface
+    #endif
 
     // Set filter 0
     // Single 32-bit scale configuration 
@@ -371,36 +385,6 @@ void STM32_CAN::setBaudRate(uint32_t baud)
     // Filter assigned to FIFO 0 
     // Filter bank register to all 0
     CANSetFilter(14, 1, 0, 0, 0x0UL, 0x0UL); 
-  }
-  #if defined(CAN2)
-  else if (_channel == _CAN2)
-  {
-    CAN2->BTR &= ~(((0x03) << 24) | ((0x07) << 20) | ((0x0F) << 16) | (0x1FF)); 
-    CAN2->BTR |=  (((can_configs[bitrate].TS2-1) & 0x07) << 20) | (((can_configs[bitrate].TS1-1) & 0x0F) << 16) | ((can_configs[bitrate].BRP-1) & 0x1FF); 
-    // Configure Filters to default values
-    CAN2->FMR  |=   0x1UL;                 // Set to filter initialization mode
-    CAN2->FMR  &= 0xFFFFC0FF;              // Clear CAN2 start bank
-
-    // bxCAN has 28 filters.
-    // These filters are used for both CAN1 and CAN2.
-    // STM32F405 has CAN1 and CAN2, so CAN2 filters are offset by 14
-    CAN2->FMR  |= 0xE00;                   // Start bank for the CAN2 interface
-
-    // Set filter 0
-    // Single 32-bit scale configuration 
-    // Two 32-bit registers of filter bank x are in Identifier Mask mode
-    // Filter assigned to FIFO 0 
-    // Filter bank register to all 0
-    CANSetFilter(0, 1, 0, 0, 0x0UL, 0x0UL); 
-
-    // Set filter 14
-    // Single 32-bit scale configuration 
-    // Two 32-bit registers of filter bank x are in Identifier Mask mode
-    // Filter assigned to FIFO 0 
-    // Filter bank register to all 0
-    CANSetFilter(14, 1, 0, 0, 0x0UL, 0x0UL);
-  }
-  #endif
 
   if (_channel == _CAN1)
   {
@@ -439,14 +423,17 @@ void STM32_CAN::SetTXRX()
       CANSetGpio(GPIOB, 8);                // Set PB8
     }
     //PA11/PA12 are second alternative pins, but it can't be used if native USB connection is in use.
-    if (_pins == ALT2) {
+    if (_pins == ALT_2) {
       RCC->AHB1ENR |= 0x1;                 // Enable GPIOA clock 
       CANSetGpio(GPIOA, 12);               // Set PA12
       CANSetGpio(GPIOA, 11);               // Set PA11
     }
     #elif defined(STM32F1xx)
+    RCC->APB2ENR |= 0x1UL;
+    AFIO->MAPR   &= 0xFFFF9FFF;          // reset CAN remap
     //PA11/PA12 as default, because those are only ones available on all F1 models.
     if (_pins == DEF) {
+      RCC->APB2ENR |= 0x4UL;           // Enable GPIOA clock
       AFIO->MAPR   &= 0xFFFF9FFF;          // reset CAN remap
                                            // CAN_RX mapped to PA11, CAN_TX mapped to PA12
       GPIOA->CRH   &= ~(0xFF000UL);        // Configure PA12(0b0000) and PA11(0b0000)
@@ -484,6 +471,26 @@ void STM32_CAN::SetTXRX()
                                            //   CNF=10(Input with pull-up / pull-down)
                                      
       GPIOB->ODR |= 0x1UL << 8;            // PB8 Upll-up
+    }
+    if (_pins == ALT_2) {
+      AFIO->MAPR   |= 0x00005000;      // set CAN remap
+                                       // CAN_RX mapped to PD0, CAN_TX mapped to PD1 (available on 100-pin and 144-pin package)
+
+      RCC->APB2ENR |= 0x20UL;          // Enable GPIOD clock
+      GPIOD->CRL   &= ~(0xFFUL);       // Configure PD1(0b0000) and PD0(0b0000)
+                                       // 0b0000
+                                       //   MODE=00(Input mode)
+                                       //   CNF=00(Analog mode)
+
+      GPIOD->CRH   |= 0xB8UL;          // Configure PD1(0b1011) and PD0(0b1000)
+                                       // 0b1000
+                                       //   MODE=00(Input mode)
+                                       //   CNF=10(Input with pull-up / pull-down)
+                                       // 0b1011
+                                       //   MODE=11(Output mode, max speed 50 MHz) 
+                                       //   CNF=10(Alternate function output Push-pull
+                                     
+      GPIOD->ODR |= 0x1UL << 0;        // PD0 Upll-up
     }
     #endif
   }

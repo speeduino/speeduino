@@ -1,3 +1,6 @@
+/** @file
+ * Speeduino Initialization (called at Arduino setup()).
+ */
 #include "globals.h"
 #include "init.h"
 #include "storage.h"
@@ -22,7 +25,26 @@
   #include "rtc_common.h"
 #endif
 
-
+/** Initialize Speeduino for the main loop.
+ * Top level init entrypoint for all initializations:
+ * - Intialize and set sizes of 3D tables
+ * - Load config from EEPROM, update config structures to current version of SW if needed.
+ * - Initialize board (The initBoard() is for board X implemented in board_X.ino file)
+ * - Initialize timers (See timers.ino)
+ * - Perform optional SD card and RTC battery inits
+ * - Load calibrarion tables from EEPROM
+ * - Perform pin mapping (calling @ref setPinMapping() based on @ref config2.pinMapping)
+ * - Stop any coil charging and close injectors
+ * - Intialize schedulers, Idle, Fan, auxPWM, Corrections, AD-conversions, Programmable I/O
+ * - Intialize baro (ambient pressure) by reading MAP (before engine runs)
+ * - Intialize triggers (by @ref initialiseTriggers() )
+ * - Perform cyl. count based initializations (@ref config2.nCylinders)
+ * - Perform injection and spark mode based setup
+ *   - Assign injector open/close and coil charge begin/end functions to their dedicated global vars
+ * - Perform fuel pressure priming by turning fuel pump on
+ * - Read CLT and TPS sensors to have cranking pulsewidths computed correctly
+ * - Mark Initialization completed (this flag-marking is used in code to prevent after-init changes)
+ */
 void initialiseAll()
 {   
     fpPrimed = false;
@@ -246,7 +268,8 @@ void initialiseAll()
     }
     else { setPinMapping(configPage2.pinMapping); }
 
-    //Note: This must come after the call to setPinMapping() or else pins 29 and 30 will become unusable as outputs. Workaround for: https://github.com/tonton81/FlexCAN_T4/issues/14
+    /* Note: This must come after the call to setPinMapping() or else pins 29 and 30 will become unusable as outputs.
+     * Workaround for: https://github.com/tonton81/FlexCAN_T4/issues/14 */
     #if defined(CORE_TEENSY35)
       Can0.setRX(DEF);
       Can0.setTX(DEF);
@@ -1179,7 +1202,11 @@ void initialiseAll()
     initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
 }
-
+/** Set board / microcontroller specfic pin mappings / assignments.
+ * The boardID is switch-case compared against raw boardID integers (not enum or #define:d label, and probably no need for that either)
+ * which are originated from tuning SW (e.g. TS) set values and are avilable in reference/speeduino.ini (See pinLayout, note also that
+ * numbering is not contiguous here).
+ */
 void setPinMapping(byte boardID)
 {
   //Force set defaults. Will be overwritten below if needed.
@@ -1904,7 +1931,7 @@ void setPinMapping(byte boardID)
       pinIAT = A11; //IAT sensor pin
       pinCLT = A4; //CLS sensor pin
       pinO2 = A12; //O2 Sensor pin
-      pinO2_2 = A13; //O2 sensor pin (second sensor)
+      pinO2_2 = A5; //O2 sensor pin (second sensor)
       pinBat = A1; //Battery reference voltage pin
       pinSpareTemp1 = A14; //spare Analog input 1
       pinLaunch = 24; //Can be overwritten below
@@ -2695,7 +2722,12 @@ void setPinMapping(byte boardID)
   flex_pin_mask = digitalPinToBitMask(pinFlex);
 
 }
-
+/** Initialize the chosen trigger decoder.
+ * - Set Interrput numbers @ref triggerInterrupt, @ref triggerInterrupt2 and @ref triggerInterrupt3  by pin their numbers (based on board CORE_* define)
+ * - Call decoder specific setup function triggerSetup_*() (by @ref config4.TrigPattern, set to one of the DECODER_* defines) and do any additional initializations needed.
+ * 
+ * @todo Explain why triggerSetup_*() alone cannot do all the setup, but there's ~10+ lines worth of extra init for each of decoders.
+ */
 void initialiseTriggers()
 {
   byte triggerInterrupt = 0; // By default, use the first interrupt
