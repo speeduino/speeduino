@@ -333,7 +333,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[106] = currentStatus.status4; // wmiEmptyBit(0), vvt1Error(1), vvt2Error(2), UnusedBits(3:7)
   fullStatus[107] = (int8_t)currentStatus.vvt2Angle;
   fullStatus[108] = currentStatus.vvt2TargetAngle;
-  fullStatus[119] = currentStatus.vvt2Duty;
+  fullStatus[109] = currentStatus.vvt2Duty;
   fullStatus[110] = currentStatus.outputsStatus;
   fullStatus[111] = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); //Fuel temperature from flex sensor
   fullStatus[112] = currentStatus.fuelTempCorrection; //Fuel temperature Correction (%)
