@@ -13,19 +13,17 @@ byte checkEngineProtect()
   return protectActive;
 }
 
+//Hardcut RPM limit
 byte checkRevLimit()
 {
-  //Hardcut RPM limit
   byte revLimiterActive = 0;
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
 
   if (currentStatus.RPM > ((unsigned int)(configPage4.HardRevLim) * 100) )
-  { 
-    BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); //Legacy and likely to be removed at some point
+  {
     BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
     revLimiterActive = 1; 
-  } 
-  else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM); }
+  }
 
   return revLimiterActive;
 }
