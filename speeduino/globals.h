@@ -873,7 +873,11 @@ struct config2 {
   int8_t rtc_trim;
   byte idleAdvVss;
 
-  byte unused2_95[3];
+  byte vntBoostInv : 1;
+  byte vntVaneSweepEnabled : 1;
+  byte unused_vnt_bits : 6;
+  byte vntVaneSweepMinDuty;
+  byte vntVaneSweepMaxDuty;
 
 #if defined(CORE_AVR)
   };

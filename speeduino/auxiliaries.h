@@ -17,8 +17,10 @@ void wmiControl();
 #define SIMPLE_BOOST_I  1
 #define SIMPLE_BOOST_D  1
 
-#define BOOST_PIN_LOW()  *boost_pin_port &= ~(boost_pin_mask)
-#define BOOST_PIN_HIGH() *boost_pin_port |= (boost_pin_mask)
+#define BOOST_PIN_PORT_LOW() *boost_pin_port &= ~(boost_pin_mask)
+#define BOOST_PIN_PORT_HIGH() *boost_pin_port |= (boost_pin_mask)
+#define BOOST_PIN_LOW()    ((configPage2.vntBoostInv) ? BOOST_PIN_PORT_HIGH() : BOOST_PIN_PORT_LOW())
+#define BOOST_PIN_HIGH()   ((configPage2.vntBoostInv) ? BOOST_PIN_PORT_LOW() : BOOST_PIN_PORT_HIGH())
 #define VVT1_PIN_LOW()    *vvt1_pin_port &= ~(vvt1_pin_mask)
 #define VVT1_PIN_HIGH()   *vvt1_pin_port |= (vvt1_pin_mask)
 #define VVT2_PIN_LOW()    *vvt2_pin_port &= ~(vvt2_pin_mask)
