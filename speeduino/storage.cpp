@@ -54,14 +54,14 @@ void writeAllConfig()
 
 //  ================================= Internal read & write support ===============================
 
-static eeprom_address_t page_start_index(uint8_t pageNumber)
+static eeprom_address_t page_start_index(uint8_t pageNum)
 {
   // Pages start at index 1 & are packed end-to-end
   eeprom_address_t index = 1U;
-  while (pageNumber!=0U)
+  while (pageNum!=0U)
   {
-    --pageNumber;
-    index += getPageSize(pageNumber);
+    --pageNum;
+    index += getPageSize(pageNum);
   }
   // Page 0 has no size
   return index;
@@ -163,7 +163,7 @@ static inline uint8_t write(const page_iterator_t &entity, eeprom_address_t &ind
 Takes the current configuration (config pages and maps)
 and writes them to EEPROM as per the layout defined in storage.h.
 */
-void writeConfig(byte pageNum)
+void writeConfig(uint8_t pageNum)
 {
   eeprom_address_t index = page_start_index(pageNum);
   uint8_t writeCounter = 0;
@@ -275,10 +275,10 @@ static inline eeprom_address_t load(page_iterator_t &entity, eeprom_address_t in
   return index;
 }
 
-static inline void load_page(uint8_t page)
+static inline void load_page(uint8_t pageNum)
 {
-  eeprom_address_t index = page_start_index(page);
-  page_iterator_t entity = page_begin(page);
+  eeprom_address_t index = page_start_index(pageNum);
+  page_iterator_t entity = page_begin(pageNum);
   while (entity.type!=End)
   {
     index = load(entity, index);
@@ -336,9 +336,9 @@ void writeCalibration()
   EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
 }
 
-static eeprom_address_t compute_crc_address(byte pageNo)
+static eeprom_address_t compute_crc_address(uint8_t pageNum)
 {
-  return EEPROM_LAST_BARO-((getPageCount() - pageNo)*sizeof(uint32_t));
+  return EEPROM_LAST_BARO-((getPageCount() - pageNum)*sizeof(uint32_t));
 }
 
 /** Write CRC32 checksum to EEPROM.
@@ -347,18 +347,18 @@ Note: Each pages requires 4 bytes for its CRC32. These are stored in reverse pag
 @param pageNo - Config page number
 @param crc32_val - CRC32 checksum
 */
-void storePageCRC32(byte pageNo, uint32_t crc32_val)
+void storePageCRC32(uint8_t pageNum, uint32_t crc32_val)
 {
-  EEPROM.put(compute_crc_address(pageNo), crc32_val);
+  EEPROM.put(compute_crc_address(pageNum), crc32_val);
 }
 
 /** Retrieves and returns the 4 byte CRC32 checksum for a given page from EEPROM.
 @param pageNo - Config page number
 */
-uint32_t readPageCRC32(byte pageNo)
+uint32_t readPageCRC32(uint8_t pageNum)
 {
   uint32_t crc32_val;
-  return EEPROM.get(compute_crc_address(pageNo), crc32_val);
+  return EEPROM.get(compute_crc_address(pageNum), crc32_val);
 }
 
 // Utility functions.
@@ -368,6 +368,6 @@ byte readLastBaro() { return EEPROM.read(EEPROM_LAST_BARO); }
 /// Write last acquired arometer reading to EEPROM.
 void storeLastBaro(byte newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
 /// Read EEPROM current data format version (from offset EEPROM_DATA_VERSION).
-byte readEEPROMVersion() { return EEPROM.read(EEPROM_DATA_VERSION); }
+uint8_t readEEPROMVersion() { return EEPROM.read(EEPROM_DATA_VERSION); }
 /// Store EEPROM current data format version (to offset EEPROM_DATA_VERSION).
-void storeEEPROMVersion(byte newVersion) { EEPROM.update(EEPROM_DATA_VERSION, newVersion); }
+void storeEEPROMVersion(uint8_t version) { EEPROM.update(EEPROM_DATA_VERSION, version); }

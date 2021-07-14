@@ -2,7 +2,7 @@
 #define STORAGE_H
 
 void writeAllConfig();
-void writeConfig(byte);
+void writeConfig(uint8_t pageNum);
 void loadConfig();
 void loadCalibration();
 void writeCalibration();
@@ -13,10 +13,10 @@ void resetConfigPages();
 //These are utility functions that prevent other files from having to use EEPROM.h directly
 byte readLastBaro();
 void storeLastBaro(byte);
-byte readEEPROMVersion();
-void storeEEPROMVersion(byte);
-void storePageCRC32(byte, uint32_t);
-uint32_t readPageCRC32(byte);
+uint8_t readEEPROMVersion();
+void storeEEPROMVersion(uint8_t version);
+void storePageCRC32(uint8_t pageNum, uint32_t crc32_val);
+uint32_t readPageCRC32(uint8_t pageNum);
 
 bool isEepromWritePending();
 
