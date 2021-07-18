@@ -872,7 +872,7 @@ struct config2 {
 
   int8_t rtc_trim;
   byte idleAdvVss;
-  byte MapSwitchPoint;
+  byte mapSwitchPoint;
 
   byte unused2_95[2];
 
