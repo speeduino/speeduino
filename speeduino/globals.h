@@ -154,6 +154,7 @@
 #define BIT_CLEAR(a,b) ((a) &= ~(1U<<(b)))
 #define BIT_CHECK(var,pos) !!((var) & (1U<<(pos)))
 #define BIT_TOGGLE(var,pos) ((var)^= 1UL << (pos))
+#define BIT_WRITE(var, pos, bitvalue) ((bitvalue) ? BIT_SET(var, pos) : bitClear(var, pos))
 
 #define interruptSafe(c) (noInterrupts(); {c} interrupts();) //Wraps any code between nointerrupt and interrupt calls
 
@@ -535,7 +536,7 @@ extern int ignition7StartAngle;
 extern int ignition8StartAngle;
 
 //These are variables used across multiple files
-extern const byte PROGMEM fsIntIndex[34];
+extern const byte PROGMEM fsIntIndex[33];
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern volatile uint16_t mainLoopCount;
@@ -872,8 +873,9 @@ struct config2 {
 
   int8_t rtc_trim;
   byte idleAdvVss;
+  byte mapSwitchPoint;
 
-  byte unused2_95[3];
+  byte unused2_95[2];
 
 #if defined(CORE_AVR)
   };
@@ -1358,13 +1360,14 @@ Page 13 - Programmable outputs logic rules.
 128 bytes long. Rules implemented in utilities.ino @ref checkProgrammableIO().
 */
 struct config13 {
-  uint8_t outputInverted; ///< Invert (on/off) value before writing to output pin (for all programmable I/O:s?).
-  uint8_t unused12_1; // Unused
+  uint8_t outputInverted; ///< Invert (on/off) value before writing to output pin (for all programmable I/O:s).
+  uint8_t kindOfLimiting; ///< Select which kind of output limiting are active (0 - minimum | 1 - maximum)
   uint8_t outputPin[8];   ///< Disable(0) or enable (set to valid pin number) Programmable Pin (output/target pin to set)
-  uint8_t outputDelay[8]; ///< Output write delay for each programmable I/O (Unit: 0.1S ?)
+  uint8_t outputDelay[8]; ///< Output write delay for each programmable I/O (Unit: 0.1S)
   uint8_t firstDataIn[8]; ///< Set of first I/O vars to compare
   uint8_t secondDataIn[8];///< Set of second I/O vars to compare
-  uint8_t unused_13[16]; // Unused
+  uint8_t outputTimeLimit[8]; ///< Output delay for each programmable I/O, kindOfLimiting bit dependant(Unit: 0.1S)
+  uint8_t unused_13[8]; // Unused
   int16_t firstTarget[8]; ///< first  target value to compare with numeric comp
   int16_t secondTarget[8];///< second target value to compare with bitwise op
   //89bytes
