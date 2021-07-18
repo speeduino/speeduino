@@ -1,8 +1,12 @@
-/*
- * This routine is used for doing any data conversions that are required during firmware changes
+/** @file
+ * EEPROM Storage updates.
+ */
+/** Store and load various configs to/from EEPROM considering the the data format versions of various SW generations.
+ * This routine is used for doing any data conversions that are required during firmware changes.
  * This prevents users getting difference reports in TS when such a data change occurs.
- * It also can be used for setting good values when there are viarables that move locations in the ini
- * When a user skips multiple firmware versions at a time, this will roll through the updates 1 at a time
+ * It also can be used for setting good values when there are viarables that move locations in the ini.
+ * When a user skips multiple firmware versions at a time, this will roll through the updates 1 at a time.
+ * The doUpdates() uses may lower level routines from Arduino EEPROM library and storage.ino to carry out EEPROM storage tasks.
  */
 #include "globals.h"
 #include "storage.h"
@@ -10,7 +14,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    17
+  #define CURRENT_DATA_VERSION    18
   //Only the latest updat for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -459,7 +463,40 @@ void doUpdates()
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 17);
   }
-  
+
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 17)
+  {
+    //VVT stuff has now 0.5 accurasy, so shift values in vvt table by one.
+    for(int x=0; x<8; x++)
+    {
+      for(int y=0; y<8; y++)
+      {
+        vvtTable.values[x][y] = vvtTable.values[x][y] << 1;
+      }
+    }
+    configPage10.vvtCLholdDuty = configPage10.vvtCLholdDuty << 1;
+    configPage10.vvtCLminDuty = configPage10.vvtCLminDuty << 1;
+    configPage10.vvtCLmaxDuty = configPage10.vvtCLmaxDuty << 1;
+
+    //VVT2 added, so default values and disable it
+    configPage10.vvt2Enabled = 0;
+    configPage4.vvt2PWMdir = 0;
+    configPage10.TrigEdgeThrd = 0;
+
+    //Old use as On/Off selection is removed, so change VVT mode to On/Off based on that
+    if(configPage6.unused_bit == 1) { configPage6.vvtMode = VVT_MODE_ONOFF; }
+
+    //Closed loop VVT improvements. Set safety limits to max/min working values and filter to minimum.
+    configPage10.vvtCLMinAng = 0;
+    configPage10.vvtCLMaxAng = 200;
+    configPage4.ANGLEFILTER_VVT = 0;
+
+    configPage9.boostByGearEnabled = 0;
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 18);
+  }
+
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
   {
@@ -474,6 +511,8 @@ void doUpdates()
     configPage13.outputPin[5] = 0;
     configPage13.outputPin[6] = 0;
     configPage13.outputPin[7] = 0;
+
+    configPage4.FILTER_FLEX = 75;
 
     EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION);
   }

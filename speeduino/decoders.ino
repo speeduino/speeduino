@@ -4,23 +4,34 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 
-/*
-This file contains the various crank and cam wheel decoder functions.
+/** @file
+ * 
+ * Crank and Cam decoders
+ * 
+ * This file contains the various crank and cam wheel decoder functions.
+ * Each decoder must have the following 4 functions (Where xxxx is the decoder name):
+ * 
+ * - **triggerSetup_xxxx** - Called once from within setup() and configures any required variables
+ * - **triggerPri_xxxx** - Called each time the primary (No. 1) crank/cam signal is triggered (Called as an interrupt, so variables must be declared volatile)
+ * - **triggerSec_xxxx** - Called each time the secondary (No. 2) crank/cam signal is triggered (Called as an interrupt, so variables must be declared volatile)
+ * - **getRPM_xxxx** - Returns the current RPM, as calculated by the decoder
+ * - **getCrankAngle_xxxx** - Returns the current crank angle, as calculated by the decoder
+ * - **getCamAngle_xxxx** - Returns the current CAM angle, as calculated by the decoder
+ *
+ * Each decoder must utilise at least the following variables:
+ * 
+ * - toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
+ */
 
-Each decoder must have the following 4 functions (Where xxxx is the decoder name):
-
-* triggerSetup_xxx - Called once from within setup() and configures any required variables
-* triggerPri_xxxx - Called each time the primary (No. 1) crank/cam signal is triggered (Called as an interrupt, so variables must be declared volatile)
-* triggerSec_xxxx - Called each time the secondary (No. 2) crank/cam signal is triggered (Called as an interrupt, so variables must be declared volatile)
-* getRPM_xxxx - Returns the current RPM, as calculated by the decoder
-* getCrankAngle_xxxx - Returns the current crank angle, as calculated by the decoder
-* getCamAngle_xxxx - Returns the current CAM angle, as calculated by the decoder
-
-And each decoder must utlise at least the following variables:
-toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
-*
-
-*/
+/* Notes on Doxygen Groups/Modules documentation style:
+ * - Installing doxygen (e.g. Ubuntu) via pkg mgr: sudo apt-get install doxygen graphviz
+ * - @defgroup tag name/description becomes the short name on (Doxygen) "Modules" page
+ * - Relying on JAVADOC_AUTOBRIEF (in Doxyfile, essentially automatic @brief), the first sentence (ending with period) becomes
+ *   the longer description (second column following name) on (Doxygen) "Modules" page (old Desc: ... could be this sentence)
+ * - All the content after first sentence (like old Note:...) is visible on the page linked from the name (1st col) on "Modules" page
+ * - To group all decoders together add 1) @defgroup dec Decoders (on top) and 2) "@ingroup dec" to each decoder (under @defgroup)
+ * - To compare Speeduino Doxyfile to default config, do: `doxygen -g Doxyfile.default ; diff Doxyfile.default Doxyfile`
+ */
 #include <limits.h>
 #include "globals.h"
 #include "decoders.h"
@@ -28,16 +39,19 @@ toothLastToothTime - The time (In uS) that the last primary tooth was 'seen'
 #include "scheduler.h"
 #include "crankMaths.h"
 
-void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
-void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
-uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
-int (*getCrankAngle)(); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
-void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of each decoder
+void (*triggerHandler)(); ///Pointer for the trigger function (Gets pointed to the relevant decoder)
+void (*triggerSecondaryHandler)(); ///Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
+void (*triggerTertiaryHandler)(); ///Pointer for the tertiary trigger function (Gets pointed to the relevant decoder)
+uint16_t (*getRPM)(); ///Pointer to the getRPM function (Gets pointed to the relevant decoder)
+int (*getCrankAngle)(); ///Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
+void (*triggerSetEndTeeth)(); ///Pointer to the triggerSetEndTeeth function of each decoder
 
 volatile unsigned long curTime;
 volatile unsigned long curGap;
 volatile unsigned long curTime2;
 volatile unsigned long curGap2;
+volatile unsigned long curTime3;
+volatile unsigned long curGap3;
 volatile unsigned long lastGap;
 volatile unsigned long targetGap;
 volatile unsigned long compositeLastToothTime;
@@ -48,6 +62,7 @@ volatile byte toothSystemCount = 0; //Used for decoders such as Audi 135 where n
 volatile unsigned long toothSystemLastToothTime = 0; //As below, but used for decoders where not every tooth count is used for calculation
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
 volatile unsigned long toothLastSecToothTime = 0; //The time (micros()) that the last tooth was registered on the secondary input
+volatile unsigned long toothLastThirdToothTime = 0; //The time (micros()) that the last tooth was registered on the second cam input
 volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
 volatile unsigned long toothLastMinusOneSecToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered on secondary input
 volatile unsigned long targetGap2;
@@ -89,10 +104,19 @@ uint16_t ignition8EndTooth = 0;
 int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 
 
-/*
+/** Universal (shared between decoders) decoder routines.
 *
-* whichTooth - 0 for Primary (Crank), 1 for Secondary (Cam)
+* @defgroup dec_uni Universal Decoder Routines
+* 
+* @{
 */
+// whichTooth - 0 for Primary (Crank), 1 for Secondary (Cam)
+
+/** Add tooth log entry to toothHistory (array).
+ * Enabled by (either) currentStatus.toothLogEnabled and currentStatus.compositeLogEnabled.
+ * @param toothTime - Tooth Time
+ * @param whichTooth - 0 for Primary (Crank), 1 for Secondary (Cam)
+ */
 static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
 {
   if(BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) { return; }
@@ -143,7 +167,7 @@ static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
   } //Tooth/Composite log enabled
 }
 
-/*
+/** Interrupt handler for primary trigger.
 * This function is called on both the rising and falling edges of the primary trigger, when either the 
 * composite or tooth loggers are turned on. 
 */
@@ -176,8 +200,8 @@ void loggerPrimaryISR()
   }
 }
 
-/*
-* As above, but for the secondary
+/** Interrupt handler for secondary trigger.
+* As loggerPrimaryISR, but for the secondary trigger.
 */
 void loggerSecondaryISR()
 {
@@ -187,7 +211,7 @@ void loggerSecondaryISR()
   1) If the primary trigger is RISING, then check whether the primary is currently HIGH
   2) If the primary trigger is FALLING, then check whether the primary is currently LOW
   3) The secondary trigger is CHANGING
-  If either of these are true, the primary decoder funtino is called
+  If any of these are true, the primary decoder funtion is called
   */
   if( ( (secondaryTriggerEdge == RISING) && (READ_SEC_TRIGGER() == HIGH) ) || ( (secondaryTriggerEdge == FALLING) && (READ_SEC_TRIGGER() == LOW) ) || (secondaryTriggerEdge == CHANGE) )
   {
@@ -201,10 +225,10 @@ void loggerSecondaryISR()
   }
 }
 
-/*
-As nearly all the decoders use a common method of determining RPM (The time the last full revolution took)
-A common function is simpler
-degreesOver is the number of crank degrees between tooth #1s. Some patterns have a tooth #1 every crank rev, others are every cam rev.
+/** Compute RPM.
+* As nearly all the decoders use a common method of determining RPM (The time the last full revolution took) A common function is simpler.
+* @param degreesOver - the number of crank degrees between tooth #1s. Some patterns have a tooth #1 every crank rev, others are every cam rev.
+* @return RPM
 */
 static inline uint16_t stdGetRPM(uint16_t degreesOver)
 {
@@ -229,9 +253,9 @@ static inline uint16_t stdGetRPM(uint16_t degreesOver)
   return tempRPM;
 }
 
-/*
+/**
  * Sets the new filter time based on the current settings.
- * This ONLY works for even spaced decoders
+ * This ONLY works for even spaced decoders.
  */
 static inline void setFilter(unsigned long curGap)
 {
@@ -242,11 +266,12 @@ static inline void setFilter(unsigned long curGap)
   else { triggerFilterTime = 0; } //trigger filter is turned off.
 }
 
-/*
-This is a special case of RPM measure that is based on the time between the last 2 teeth rather than the time of the last full revolution
+/**
+This is a special case of RPM measure that is based on the time between the last 2 teeth rather than the time of the last full revolution.
 This gives much more volatile reading, but is quite useful during cranking, particularly on low resolution patterns.
-It can only be used on patterns where the teeth are evently spaced
-It takes an argument of the full (COMPLETE) number of teeth per revolution. For a missing tooth wheel, this is the number if the tooth had NOT been missing (Eg 36-1 = 36)
+It can only be used on patterns where the teeth are evently spaced.
+It takes an argument of the full (COMPLETE) number of teeth per revolution.
+For a missing tooth wheel, this is the number if the tooth had NOT been missing (Eg 36-1 = 36)
 */
 static inline int crankingGetRPM(byte totalTeeth, uint16_t degreesOver)
 {
@@ -267,7 +292,7 @@ static inline int crankingGetRPM(byte totalTeeth, uint16_t degreesOver)
   return tempRPM;
 }
 
-/*
+/**
 On decoders that are enabled for per tooth based timing adjustments, this function performs the timer compare changes on the schedules themselves
 For each ignition channel, a check is made whether we're at the relevant tooth and whether that ignition schedule is currently running
 Only if both these conditions are met will the schedule be updated with the latest timing information.
@@ -328,11 +353,13 @@ static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth
 #endif
   }
 }
-
-/*
-Name: Missing tooth wheel
-Desc: A multi-tooth wheel with one of more 'missing' teeth. The first tooth after the missing one is considered number 1 and isthe basis for the trigger angle
-Note: This does not currently support dual wheel (ie missing tooth + single tooth on cam)
+/** @} */
+  
+/** A (single) multi-tooth wheel with one of more 'missing' teeth.
+* The first tooth after the missing one is considered number 1 and is the basis for the trigger angle.
+* Note: This decoder does not currently support dual wheel (ie missing tooth + single tooth on cam).
+* @defgroup dec_miss Missing tooth wheel
+* @{
 */
 void triggerSetup_missingTooth()
 {
@@ -513,19 +540,31 @@ void triggerSec_missingTooth()
       secondaryToothCount++;
     }
     toothLastSecToothTime = curTime2;
-
-    //Record the VVT Angle
-    if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) )
-    {
-      int16_t curAngle;
-      curAngle = getCrankAngle();
-      while(curAngle > 360) { curAngle -= 360; }
-      curAngle -= configPage4.triggerAngle; //Value at TDC
-      if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCLMinAng; }
-
-      currentStatus.vvt1Angle = curAngle;
-    }
   } //Trigger filter
+
+  //Record the VVT Angle
+  if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) )
+  {
+    int16_t curAngle;
+    curAngle = getCrankAngle();
+    while(curAngle > 360) { curAngle -= 360; }
+    curAngle -= configPage4.triggerAngle; //Value at TDC
+    if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCL0DutyAng; }
+
+    currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
+  }
+}
+
+void triggerThird_missingTooth()
+{
+  //Record the VVT2 Angle (the only purpose of the third trigger)
+  int16_t curAngle;
+  curAngle = getCrankAngle();
+  while(curAngle > 360) { curAngle -= 360; }
+  curAngle -= configPage4.triggerAngle; //Value at TDC
+  if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CL0DutyAng; }
+  //currentStatus.vvt2Angle = int8_t (curAngle); //vvt1Angle is only int8, but +/-127 degrees is enough for VVT control
+  currentStatus.vvt2Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt2Angle);
 }
 
 uint16_t getRPM_missingTooth()
@@ -647,12 +686,16 @@ void triggerSetEndTeeth_missingTooth()
 
   lastToothCalcAdvance = currentStatus.advance;
 }
+/** @} */
 
-/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: Dual wheel
-Desc: 2 wheels located either both on the crank or with the primary on the crank and the secondary on the cam.
-Note: There can be no missing teeth on the primary wheel
+/** Dual wheels - 2 wheels located either both on the crank or with the primary on the crank and the secondary on the cam.
+Note: There can be no missing teeth on the primary wheel.
+* @defgroup dec_dual Dual wheels
+* @{
 */
+/** Dual Wheel Setup.
+ * 
+ * */
 void triggerSetup_DualWheel()
 {
   triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
@@ -666,7 +709,9 @@ void triggerSetup_DualWheel()
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 }
 
-
+/** Dual Wheel Primary.
+ * 
+ * */
 void triggerPri_DualWheel()
 {
     curTime = micros();
@@ -706,7 +751,9 @@ void triggerPri_DualWheel()
       }
    } //Trigger filter
 }
-
+/** Dual Wheel Secondary.
+ * 
+ * */
 void triggerSec_DualWheel()
 {
   curTime2 = micros();
@@ -737,7 +784,9 @@ void triggerSec_DualWheel()
     triggerSecFilterTime = revolutionTime >> 1; //Set filter at 25% of the current cam speed. This needs to be performed here to prevent a situation where the RPM and triggerSecFilterTime get out of alignment and curGap2 never exceeds the filter value
   } //Trigger filter
 }
-
+/** Dual Wheel - Get RPM.
+ * 
+ * */
 uint16_t getRPM_DualWheel()
 {
   uint16_t tempRPM = 0;
@@ -748,7 +797,9 @@ uint16_t getRPM_DualWheel()
   }
   return tempRPM;
 }
-
+/** Dual Wheel - Get Crank angle.
+ * 
+ * */
 int getCrankAngle_DualWheel()
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
@@ -780,7 +831,9 @@ int getCrankAngle_DualWheel()
 
     return crankAngle;
 }
-
+/** Dual Wheel - Set End Teeth.
+ * 
+ * */
 void triggerSetEndTeeth_DualWheel()
 {
   //The toothAdder variable is used for when a setup is running sequentially, but the primary wheel is running at crank speed. This way the count of teeth will go up to 2* the number of primary teeth to allow for a sequential count. 
@@ -843,12 +896,14 @@ void triggerSetEndTeeth_DualWheel()
   lastToothCalcAdvance = currentStatus.advance;
 
 }
+/** @} */
 
-
-/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: Basic Distributor
-Desc: Tooth equal to the number of cylinders are evenly spaced on the cam. No position sensing (Distributor is retained) so crank angle is a made up figure based purely on the first teeth to be seen
-Note: This is a very simple decoder. See www.megamanual.com/ms2/GM_7pinHEI.htm
+/** Basic Distributor where tooth count is equal to the number of cylinders and teeth are evenly spaced on the cam.
+* No position sensing (Distributor is retained) so crank angle is
+* a made up figure based purely on the first teeth to be seen.
+* Note: This is a very simple decoder. See http://www.megamanual.com/ms2/GM_7pinHEI.htm
+* @defgroup dec_dist Basic Distributor
+* @{
 */
 void triggerSetup_BasicDistributor()
 {
@@ -989,12 +1044,13 @@ void triggerSetEndTeeth_BasicDistributor()
 
   lastToothCalcAdvance = currentStatus.advance;
 }
+/** @} */
 
-/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: GM7X
-Desc: GM 7X trigger wheel. It has six equally spaced teeth and a seventh tooth for cylinder identification.
-Note: Within the code below, the sync tooth is referred to as tooth #3 rather than tooth #7. This makes for simpler angle calculations
-www.speeduino.com/forum/download/file.php?id=4743
+/** Decode GM 7X trigger wheel with six equally spaced teeth and a seventh tooth for cylinder identification.
+* Note: Within the decoder code pf GM7X, the sync tooth is referred to as tooth #3 rather than tooth #7. This makes for simpler angle calculations
+* (See: http://www.speeduino.com/forum/download/file.php?id=4743 ).
+* @defgroup dec_gm7x GM7X
+* @{
 */
 void triggerSetup_GM7X()
 {
@@ -1124,14 +1180,14 @@ void triggerSetEndTeeth_GM7X()
     ignition3EndTooth = 4;
   }
 }
+/** @} */
 
-
-/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: Mitsubishi 4G63 / NA/NB Miata + MX-5 / 4/2
-Desc: TBA
+/** Mitsubishi 4G63 / NA/NB Miata + MX-5 / 4/2.
 Note: raw.githubusercontent.com/noisymime/speeduino/master/reference/wiki/decoders/4g63_trace.png
 Tooth #1 is defined as the next crank tooth after the crank signal is HIGH when the cam signal is falling.
-Tooth number one is at 355* ATDC
+Tooth number one is at 355* ATDC.
+* @defgroup dec_mitsu_miata Mistsubishi 4G63 and Miata + MX-5
+* @{
 */
 void triggerSetup_4G63()
 {
@@ -1560,13 +1616,16 @@ void triggerSetEndTeeth_4G63()
 
   lastToothCalcAdvance = currentStatus.advance;
 }
+/** @} */
 
-/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: GM
-Desc: TBA
+/** GM 24X Decoder (eg early LS1 1996-2005).
 Note: Useful references:
-www.vems.hu/wiki/index.php?page=MembersPage%2FJorgenKarlsson%2FTwentyFourX
+* 
+- www.vems.hu/wiki/index.php?page=MembersPage%2FJorgenKarlsson%2FTwentyFourX
+
 Provided that the cam signal is used, this decoder simply counts the teeth and then looks their angles up against a lookup table. The cam signal is used to determine tooth #1
+* @defgroup dec_gm GM 24X
+* @{
 */
 void triggerSetup_24X()
 {
@@ -1682,13 +1741,15 @@ void triggerSetEndTeeth_24X()
 
   lastToothCalcAdvance = currentStatus.advance;
 }
+/** @} */
 
-/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: Jeep 2000
-Desc: For '91 to 2000 6 cylinder Jeep engines
-Note: Quite similar to the 24X setup. 24 crank teeth over 720 degrees, in groups of 4. Crank wheel is high for 360 crank degrees. AS we only need timing within 360 degrees, only 12 tooth angles are defined.
-Tooth number 1 represents the first tooth seen after the cam signal goes high
-www.speeduino.com/forum/download/file.php?id=205
+/** Jeep 2000 - 24 crank teeth over 720 degrees, in groups of 4 ('91 to 2000 6 cylinder Jeep engines).
+* Crank wheel is high for 360 crank degrees. Quite similar to the 24X setup.
+* As we only need timing within 360 degrees, only 12 tooth angles are defined.
+* Tooth number 1 represents the first tooth seen after the cam signal goes high.
+* www.speeduino.com/forum/download/file.php?id=205
+* @defgroup dec_jeep Jeep 2000 (6 cyl)
+* @{
 */
 void triggerSetup_Jeep2000()
 {
@@ -1788,11 +1849,13 @@ void triggerSetEndTeeth_Jeep2000()
 
   lastToothCalcAdvance = currentStatus.advance;
 }
+/** @} */
 
-/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: Audi 135
-Desc: 135 teeth on the crank and 1 tooth on the cam.
-Note: This is very similar to the dual wheel decoder, however due to the 135 teeth not dividing evenly into 360, only every 3rd crank tooth is used in calculating the crank angle. This effectively makes it a 45 tooth dual wheel setup
+/** Audi with 135 teeth on the crank and 1 tooth on the cam.
+* This is very similar to the dual wheel decoder, however due to the 135 teeth not dividing evenly into 360,
+* only every 3rd crank tooth is used in calculating the crank angle. This effectively makes it a 45 tooth dual wheel setup.
+* @defgroup dec_audi135 Audi 135
+* @{
 */
 void triggerSetup_Audi135()
 {
@@ -1907,11 +1970,11 @@ void triggerSetEndTeeth_Audi135()
 {
   lastToothCalcAdvance = currentStatus.advance;
 }
-
-/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: Honda D17
-Desc:
-Note:
+/** @} */
+/** Honda D17 (1.7 liter 4 cyl SOHC).
+* 
+* @defgroup dec_honda_d17 Honda D17
+* @{
 */
 void triggerSetup_HondaD17()
 {
@@ -2006,12 +2069,15 @@ void triggerSetEndTeeth_HondaD17()
   lastToothCalcAdvance = currentStatus.advance;
 }
 
-/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: Miata '99 to '05
-Desc: TBA (See: www.forum.diyefi.org/viewtopic.php?f=56&t=1077)
-Note: 4x 70 degree duration teeth running at cam speed. Believed to be at the same angles as the 4g63 decoder
+/** @} */
+
+/** Miata '99 to '05 with 4x 70 degree duration teeth running at cam speed.
+Teeth believed to be at the same angles as the 4g63 decoder.
 Tooth #1 is defined as the next crank tooth after the crank signal is HIGH when the cam signal is falling.
-Tooth number one is at 355* ATDC
+Tooth number one is at 355* ATDC.
+* (See: www.forum.diyefi.org/viewtopic.php?f=56&t=1077)
+* @defgroup miata_99_05 Miata '99 to '05
+* @{
 */
 void triggerSetup_Miata9905()
 {
@@ -2228,9 +2294,11 @@ int getCrankAngle_Miata9905()
 
 int getCamAngle_Miata9905()
 {
+  int16_t curAngle;
   //lastVVTtime is the time between tooth #1 (10* BTDC) and the single cam tooth. 
   //All cam angles in in BTDC, so the actual advance angle is 370 - fastTimeToAngle(lastVVTtime) - <the angle of the cam at 0 advance>
-  currentStatus.vvt1Angle = 370 - fastTimeToAngle(lastVVTtime) - configPage10.vvtCLMinAng;
+  curAngle = 370 - fastTimeToAngle(lastVVTtime) - configPage10.vvtCLMinAng;
+  currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
 
   return currentStatus.vvt1Angle;
 }
@@ -2276,13 +2344,13 @@ void triggerSetEndTeeth_Miata9905()
 
   lastToothCalcAdvance = currentStatus.advance;
 }
+/** @} */
 
-/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: Mazda AU version
-Desc:
-Note:
-Tooth #2 is defined as the next crank tooth after the single cam tooth
-Tooth number one is at 348* ATDC
+/** Mazda AU version.
+Tooth #2 is defined as the next crank tooth after the single cam tooth.
+Tooth number one is at 348* ATDC.
+* @defgroup mazda_au Mazda AU
+* @{
 */
 void triggerSetup_MazdaAU()
 {
@@ -2428,11 +2496,12 @@ void triggerSetEndTeeth_MazdaAU()
 {
   lastToothCalcAdvance = currentStatus.advance;
 }
+/** @} */
 
-/*
-Name: Non-360 Dual wheel
-Desc: 2 wheels located either both on the crank or with the primary on the crank and the secondary on the cam.
-Note: There can be no missing teeth on the primary wheel
+/** Non-360 Dual wheel with 2 wheels located either both on the crank or with the primary on the crank and the secondary on the cam.
+There can be no missing teeth on the primary wheel.
+* @defgroup dec_non360 Non-360 Dual wheel
+* @{
 */
 void triggerSetup_non360()
 {
@@ -2501,11 +2570,12 @@ void triggerSetEndTeeth_non360()
 {
   lastToothCalcAdvance = currentStatus.advance;
 }
+/** @} */
 
-/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: Nissan 360 tooth with cam
-Desc:
-Note: wiki.r31skylineclub.com/index.php/Crank_Angle_Sensor
+/** Nissan 360 tooth on cam (Optical trigger disc inside distributor housing).
+See http://wiki.r31skylineclub.com/index.php/Crank_Angle_Sensor .
+* @defgroup dec_nissan360 Nissan 360 tooth on cam
+* @{
 */
 void triggerSetup_Nissan360()
 {
@@ -2729,11 +2799,12 @@ void triggerSetEndTeeth_Nissan360()
 
   lastToothCalcAdvance = currentStatus.advance;
 }
+/** @} */
 
-/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: Subaru 6/7
-Desc:
-Note:
+/** Subaru 6/7 Trigger pattern decoder for 6 tooth (irregularly spaced) crank and 7 tooth (also fairly irregular) cam wheels (eg late 90's Impreza 2.2).
+This seems to be present in late 90's Subaru. In 2001 Subaru moved to 36-2-2-2 (See: http://www.vems.hu/wiki/index.php?page=InputTrigger%2FSubaruTrigger ).
+* @defgroup dec_subaru_6_7 Subaru 6/7
+* @{
 */
 void triggerSetup_Subaru67()
 {
@@ -2978,11 +3049,14 @@ void triggerSetEndTeeth_Subaru67()
   
   lastToothCalcAdvance = currentStatus.advance;
 }
+/** @} */
 
-/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: Daihatsu +1 trigger for 3 and 4 cylinder engines
-Desc: Tooth equal to the number of cylinders are evenly spaced on the cam. No position sensing (Distributor is retained) so crank angle is a made up figure based purely on the first teeth to be seen
-Note: This is a very simple decoder. See www.megamanual.com/ms2/GM_7pinHEI.htm
+/** Daihatsu +1 trigger for 3 and 4 cylinder engines.
+* Tooth equal to the number of cylinders are evenly spaced on the cam. No position sensing (Distributor is retained),
+* so crank angle is a made up figure based purely on the first teeth to be seen.
+* Note: This is a very simple decoder. See http://www.megamanual.com/ms2/GM_7pinHEI.htm
+* @defgroup dec_daihatsu Daihatsu (3  and 4 cyl.)
+* @{
 */
 void triggerSetup_Daihatsu()
 {
@@ -3140,14 +3214,13 @@ void triggerSetEndTeeth_Daihatsu()
 {
   lastToothCalcAdvance = currentStatus.advance;
 }
+/** @} */
 
-/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Code for decoder.ino
-  Name: Harley
-  Desc: 2 uneven Spaced Tooth
-  Note: Within the code below, the sync tooth is referred to as tooth #1.
-  Derived from GMX7 and adapted for Harley
-  Only rising Edge is used for simplisity.The second input is ignored, as it does not help to desolve cam position
+/** Harley Davidson (V2) with 2 unevenly Spaced Teeth.
+Within the decoder code, the sync tooth is referred to as tooth #1. Derived from GMX7 and adapted for Harley.
+Only rising Edge is used for simplicity.The second input is ignored, as it does not help to desolve cam position.
+* @defgroup dec_harley Harley Davidson
+* @{
 */
 void triggerSetup_Harley()
 {
@@ -3279,15 +3352,19 @@ void triggerSetEndTeeth_Harley()
 {
   lastToothCalcAdvance = currentStatus.advance;
 }
+/** @} */
 
 //************************************************************************************************************************
 
-/*
-Name: 36-2-2-2 trigger wheel wheel
-Desc: A crank based trigger with a nominal 36 teeth, but 6 of these removed in 3 groups of 2. 2 of these groups are located concurrently.
-Note: This decoder supports both the H4 version (13-missing-16-missing-1-missing) and the H6 version of 36-2-2-2 (19-missing-10-missing-1-missing)
-The decoder checks which pattern is selected in order to determine the tooth number
-Note: www.thefactoryfiveforum.com/attachment.php?attachmentid=34279&d=1412431418
+/** 36-2-2-2 crank based trigger wheel.
+* A crank based trigger with a nominal 36 teeth, but 6 of these removed in 3 groups of 2.
+* 2 of these groups are located concurrently.
+* Note: This decoder supports both the H4 version (13-missing-16-missing-1-missing) and the H6 version of 36-2-2-2 (19-missing-10-missing-1-missing).
+* The decoder checks which pattern is selected in order to determine the tooth number
+* Note: www.thefactoryfiveforum.com/attachment.php?attachmentid=34279&d=1412431418
+* 
+* @defgroup dec_36_2_2_2 36-2-2-2 Trigger wheel
+* @{
 */
 void triggerSetup_ThirtySixMinus222()
 {
@@ -3463,13 +3540,13 @@ void triggerSetEndTeeth_ThirtySixMinus222()
 
   lastToothCalcAdvance = currentStatus.advance;
 }
-
+/** @} */
 
 //************************************************************************************************************************
 
-/*
-Name: 36-2-1, For the 4B11
-Desc: A crank based trigger with a nominal 36 teeth, but with 1 single and 1 double missing tooth.
+/** 36-2-1 / Mistsubishi 4B11 - A crank based trigger with a nominal 36 teeth, but with 1 single and 1 double missing tooth.
+* @defgroup dec_36_2_1 36-2-1 For Mistsubishi 4B11
+* @{
 */
 void triggerSetup_ThirtySixMinus21()
 {
@@ -3593,14 +3670,16 @@ void triggerSetEndTeeth_ThirtySixMinus21()
 
   lastToothCalcAdvance = currentStatus.advance;
 }
+/** @} */
 
 //************************************************************************************************************************
 
-/*
-Name: DSM 420a, For the DSM Eclipse
-Desc: https://github.com/noisymime/speeduino/issues/133
-      16 teeth total on the crank. Tracks the falling side of the signal
-      Sync is determined by watching for a falling edge on the secondary signal and checking if the primary signal is high then. 
+/** DSM 420a, For the DSM Eclipse with 16 teeth total on the crank.
+* Tracks the falling side of the signal.
+* Sync is determined by watching for a falling edge on the secondary signal and checking if the primary signal is high then.
+* https://github.com/noisymime/speeduino/issues/133
+* @defgroup dec_dsm_420a DSM 420a, For the DSM Eclipse
+* @{
 */
 void triggerSetup_420a()
 {
@@ -3777,11 +3856,12 @@ void triggerSetEndTeeth_420a()
 
   lastToothCalcAdvance = currentStatus.advance;
 }
+/** @} */
 
-/* -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Name: Weber-Marelli
-Desc: 2 wheels, 4 teeth 90deg apart on crank and 2 90deg apart on cam.
-Note: It use DualWheel decoders, There can be no missing teeth on the primary wheel
+/** Weber-Marelli trigger setup with 2 wheels, 4 teeth 90deg apart on crank and 2 90deg apart on cam.
+Uses DualWheel decoders, There can be no missing teeth on the primary wheel.
+* @defgroup dec_weber_marelli Weber-Marelli
+* @{
 */
 void triggerPri_Webber()
 {
@@ -3884,11 +3964,12 @@ void triggerSec_Webber()
     checkSyncToothCount = 1; //Reset tooth counter
   } //Trigger filter
 }
+/** @} */
 
-/*
-Name: Ford ST170
-Desc: A dedicated decoder for 01-04 Ford Focus ST170/SVT engine.
-Note: Standard 36-1 trigger wheel running at crank speed and 8-3 trigger wheel running at cam speed
+/** Ford ST170 - a dedicated decoder for 01-04 Ford Focus ST170/SVT engine.
+Standard 36-1 trigger wheel running at crank speed and 8-3 trigger wheel running at cam speed.
+* @defgroup dec_ford_st170 Ford ST170 (01-04 Focus)
+* @{
 */
 void triggerSetup_FordST170()
 {
@@ -3954,7 +4035,8 @@ void triggerSec_FordST170()
       while(curAngle > 360) { curAngle -= 360; }
       if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP )
       {
-        currentStatus.vvt1Angle = 360 - curAngle - configPage10.vvtCLMinAng;
+        curAngle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, curAngle);
+        currentStatus.vvt1Angle = 360 - curAngle - configPage10.vvtCL0DutyAng;
       }
     }
   } //Trigger filter
@@ -4045,3 +4127,5 @@ void triggerSetEndTeeth_FordST170()
 
   lastToothCalcAdvance = currentStatus.advance;
 }
+/** @} */
+
