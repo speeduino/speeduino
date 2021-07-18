@@ -3,6 +3,9 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
+/** @file
+ * Process Incoming and outgoing serial communications.
+ */
 #include "globals.h"
 #include "comms.h"
 #include "cancomms.h"
@@ -24,10 +27,10 @@ bool isMap = true; /**< Whether or not the currentPage contains only a 3D map th
 unsigned long requestCount = 0; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
 byte currentCommand; /**< The serial command that is currently being processed. This is only useful when cmdPending=True */
 bool cmdPending = false; /**< Whether or not a serial request has only been partially received. This occurs when a command character has been received in the serial buffer, but not all of its arguments have yet been received. If true, the active command will be stored in the currentCommand variable */
-bool chunkPending = false; /**< Whether or not the current chucnk write is complete or not */
+bool chunkPending = false; /**< Whether or not the current chunk write is complete or not */
 uint16_t chunkComplete = 0; /**< The number of bytes in a chunk write that have been written so far */
 uint16_t chunkSize = 0; /**< The complete size of the requested chunk write */
-int valueOffset; /**< THe memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
+int valueOffset; /**< The memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
 byte tsCanId = 0;     // current tscanid requested
 byte inProgressOffset;
 byte inProgressLength;
@@ -36,11 +39,12 @@ bool serialInProgress = false;
 bool toothLogSendInProgress = false;
 bool compositeLogSendInProgress = false;
 
-/*
-  Processes the data on the serial buffer.
-  Can be either a new command or a continuation of one that is already in progress:
-    * cmdPending = If a command has started but is wairing on further data to complete
-    * chunkPending = Specifically for the new receive value method where TS will send a known number of contiguous bytes to be written to a table
+/** Processes the incoming data on the serial buffer based on the command sent.
+Can be either data for a new command or a continuation of data for command that is already in progress:
+- cmdPending = If a command has started but is wairing on further data to complete
+- chunkPending = Specifically for the new receive value method where TS will send a known number of contiguous bytes to be written to a table
+
+Comands are single byte (letter symbol) commands.
 */
 void command()
 {
@@ -753,7 +757,14 @@ void command()
       break;
   }
 }
-
+/** Send a numbered byte-field (partial field in case of mul;ti-byte fields) from "current status" structure.
+ * Notes on fields:
+ * - Numbered field will be fields from @ref currentStatus, but not at all in the internal order of strct (e.g. field RPM value, number 14 will be
+ *   2nd field in struct)
+ * - The fields stored in multi-byte types will be accessed lowbyte and highbyte separately (e.g. PW1 will be broken into numbered byte-fields 75,76)
+ * @param byteNum - byte-Field number
+ * @return Field value in 1 byte size struct fields or 1 byte partial value (chunk) on multibyte fields.
+ */
 byte getStatusEntry(uint16_t byteNum)
 {
   byte statusValue = 0;
@@ -903,6 +914,8 @@ byte getStatusEntry(uint16_t byteNum)
     case 116: statusValue = currentStatus.advance1; break; //advance 1 (%)
     case 117: statusValue = currentStatus.advance2; break; //advance 2 (%)
     case 118: statusValue = currentStatus.TS_SD_Status; break; //SD card status
+    case 119: statusValue = lowByte(currentStatus.EMAP); break; //2 bytes for EMAP
+    case 120: statusValue = highByte(currentStatus.EMAP); break;
   }
 
   return statusValue;
@@ -911,9 +924,15 @@ byte getStatusEntry(uint16_t byteNum)
   //Every 2-byte integer added here should have it's lowByte index added to fsIntIndex array on globals.ino@L116
 }
 
-/*
-This function returns the current values of a fixed group of variables
-*/
+/** Send a status record back to tuning/logging SW.
+ * This will "live" information from @ref currentStatus struct.
+ * @param offset - Start field number
+ * @param packetLength - Length of actual message (after possible ack/confirm headers)
+ * @param cmd - ??? - Will be used as some kind of ack on CANSerial
+ * @param portNum - Port number (0=Serial, 3=CANSerial)
+ * E.g. tuning sw command 'A' (Send all values) will send data from field number 0, LOG_ENTRY_SIZE fields.
+ * @return the current values of a fixed group of variables
+ */
 //void sendValues(int packetlength, byte portNum)
 void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 {  
@@ -1144,11 +1163,12 @@ namespace {
   }
 }
 
-/**
- * @brief Packs the data within the current page (As set with the 'P' command) into a buffer and sends it.
+/** Pack the data within the current page (As set with the 'P' command) into a buffer and send it.
  * 
- * Note that some translation of the data is required to lay it out in the way Megasqurit / TunerStudio expect it
- * Data is sent in binary format, as defined by in each page in the ini
+ * Creates a page iterator by @ref page_begin() (See: pages.cpp). Sends page given in @ref currentPage.
+ * 
+ * Note that some translation of the data is required to lay it out in the way Megasqurit / TunerStudio expect it.
+ * Data is sent in binary format, as defined by in each page in the speeduino.ini.
  */
 void sendPage()
 {
@@ -1163,7 +1183,7 @@ void sendPage()
 
 namespace {
 
-  // Prints each element in the range [first,last)
+  /// Prints each element in the memory byte range (*first, *last).
   void serial_println_range(const byte *first, const byte *last)
   {
     while (first!=last)
@@ -1252,8 +1272,8 @@ namespace {
   }
 }
 
-/**
- * @brief Similar to sendPage(), however data is sent in human readable format
+/** Send page as ASCII for debugging purposes.
+ * Similar to sendPage(), however data is sent in human readable format. Sends page given in @ref currentPage.
  * 
  * This is used for testing only (Not used by TunerStudio) in order to see current map and config data without the need for TunerStudio. 
  */
@@ -1289,7 +1309,7 @@ void sendPageASCII()
 
     case ignSetPage:
       Serial.println(F("\nPg 4 Cfg"));
-      Serial.println(configPage4.triggerAngle);// configPsge2.triggerAngle is an int so just display it without complication
+      Serial.println(configPage4.triggerAngle);// configPage4.triggerAngle is an int so just display it without complication
       // Following loop displays byte values after that first int up to but not including the first array in config page 2
       serial_println_range((byte*)&configPage4.FixAng, configPage4.taeBins);
       serial_print_space_delimited_array(configPage4.taeBins);
@@ -1362,10 +1382,10 @@ void sendPageASCII()
 }
 
 
-/**
- * @brief Processes an incoming stream of calibration data from TunerStudio. Result is store in EEPROM and memory
+/** Processes an incoming stream of calibration data (for CLT, IAT or O2) from TunerStudio.
+ * Result is store in EEPROM and memory.
  * 
- * @param tableID Which calibration table to process. 0 = Coolant Sensor. 1 = IAT Sensor. 2 = O2 Sensor.
+ * @param tableID - calibration table to process. 0 = Coolant Sensor. 1 = IAT Sensor. 2 = O2 Sensor.
  */
 void receiveCalibration(byte tableID)
 {
@@ -1452,8 +1472,7 @@ void receiveCalibration(byte tableID)
   writeCalibration();
 }
 
-/*
-Send 256 tooth log entries
+/** Send 256 tooth log entries to serial.
  * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
  * if useChar is false, the values are sent as a 2 byte integer which is readable by TunerStudios tooth logger
 */
